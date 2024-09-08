@@ -30,7 +30,7 @@ paginate: true
 
 ---
 
-### Getting to the Command Line
+# Getting to the Command Line
 
 - Windows users:
   - PowerShell (built-in)
@@ -42,7 +42,57 @@ paginate: true
 
 ---
 
-### Installing Python
+# Command Line Navigation
+
+- Print Working Directory:
+  - `pwd` (Unix/Mac)
+  - `Get-Location` (PowerShell)
+- List Directory Contents:
+  - `ls` (Unix/Mac)
+  - `dir` (PowerShell)
+- Change Directory: `cd path/to/directory`
+- Special directories `.` and `..`
+
+---
+
+# File Operations
+
+- Create Directory: `mkdir new_folder`
+- Create Files: 
+  - `touch file.txt` (Unix/Mac)
+  - `New-Item file.txt` (PowerShell)
+- Copy Files: `cp source destination`
+- Move/Rename: `mv old_name new_name`
+- Remove: `rm file.txt` (use with caution!)
+
+---
+
+# Viewing File Contents
+
+- Display entire file:
+  - `cat file.txt` (Unix/Mac)
+  - `Get-Content file.txt` (PowerShell)
+- View beginning/end:
+  - `head file.txt` / `tail file.txt` (Unix/Mac)
+  - `Get-Content file.txt -Head 10` (PowerShell)
+
+---
+
+# Simple Text Manipulation
+
+- Search for patterns:
+  - `grep pattern file.txt` (Unix/Mac)
+  - `Select-String pattern file.txt` (PowerShell)
+- Chaining commands with pipe `|` (more on pipes in a future lecture)
+  ```
+  cat file.txt | grep pattern
+  ```
+---
+
+# Live Demo!
+
+---
+# Installing Python
 
 - Download and install Python
   - Windows: python.org or [winget](https://winget.run/pkg/Python/Python.3.12)
@@ -58,7 +108,7 @@ Python 3.12.5
 
 ---
 
-### Text Editor Options
+# Text Editor Options
 
 - Visual Studio Code (what I'll be using)
 - Sublime Text
@@ -68,7 +118,7 @@ Python 3.12.5
 
 ---
 
-### Running Python
+# Running Python
 
 - Interactive mode (Python REPL)
   ```
@@ -82,7 +132,7 @@ Python 3.12.5
   
 ---
 
-### Python Syntax Overview
+# Python Syntax Overview
 
 - Indentation matters!
 - Comments use `#`
@@ -93,7 +143,7 @@ Python 3.12.5
 
 ---
 
-### Basic Data Types
+# Basic Data Types
 
 - Integers: `x = 5`
 - Floats: `y = 3.14`
@@ -102,14 +152,14 @@ Python 3.12.5
 
 ---
 
-### Simple Operations
+# Simple Operations
 
 - Arithmetic: `+`, `-`, `*`, `/`, `**` (power)
 - String concatenation: `"Hello" + " " + "World"`
 
 ---
 
-### Control Structures
+# Control Structures
 
 - If statements:
   ```python
@@ -123,7 +173,7 @@ Python 3.12.5
 
 ---
 
-### Control Structures (cont.)
+# Control Structures (cont.)
 
 - For loops:
   ```python
@@ -133,67 +183,11 @@ Python 3.12.5
 
 ---
 
-## Command Line Basics
+# Live Demo!
 
 ---
 
-### Understanding the CLI
-
-- CLI = Command Line Interface
-- Text-based way to interact with your computer
-- Powerful for automation and data manipulation
-
----
-
-### Basic Navigation
-
-- Print Working Directory:
-  - `pwd` (Unix/Mac)
-  - `Get-Location` (PowerShell)
-- List Directory Contents:
-  - `ls` (Unix/Mac)
-  - `dir` (PowerShell)
-- Change Directory: `cd path/to/directory`
-- Special directories `.` and `..`
-
----
-
-### File Operations
-
-- Create Directory: `mkdir new_folder`
-- Create Files: 
-  - `touch file.txt` (Unix/Mac)
-  - `New-Item file.txt` (PowerShell)
-- Copy Files: `cp source destination`
-- Move/Rename: `mv old_name new_name`
-- Remove: `rm file.txt` (use with caution!)
-
----
-
-### Viewing File Contents
-
-- Display entire file:
-  - `cat file.txt` (Unix/Mac)
-  - `Get-Content file.txt` (PowerShell)
-- View beginning/end:
-  - `head file.txt` / `tail file.txt` (Unix/Mac)
-  - `Get-Content file.txt -Head 10` (PowerShell)
-
----
-
-### Simple Text Manipulation
-
-- Search for patterns:
-  - `grep pattern file.txt` (Unix/Mac)
-  - `Select-String pattern file.txt` (PowerShell)
-- Chaining commands with pipe `|`
-  ```
-  cat file.txt | grep pattern
-  ```
-
----
-
-## Practical Exercise
+# Practical Exercise
 
 1. Get everything installed
 2. Create an account on GitHub and join this course
@@ -204,7 +198,7 @@ Python 3.12.5
 
 ---
 
-## Wrap-up
+# Wrap-up
 
 - We've covered Python basics and essential command line operations
 - Assignment: Practice these concepts with provided exercises
@@ -212,7 +206,7 @@ Python 3.12.5
 
 ---
 
-## Additional Resources
+# Additional Resources
 
 - [Official Python documentation](https://docs.python.org/3/)
 - [PowerShell documentation](https://docs.microsoft.com/en-us/powershell/)
