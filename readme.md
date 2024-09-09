@@ -1,7 +1,7 @@
 # DataSci-217
 Introduction to Python & Data Science Tools
 
-## [Lecture 1: Introduction to Python and Command Line Basics](lecture01.md)
+## [Lecture 1: Introduction to Python and Command Line Basics](lecture01.html)
 - Python basics: syntax, data types, and control structures
 - Running Python scripts from the command line
 - Navigating the file system with `*sh`

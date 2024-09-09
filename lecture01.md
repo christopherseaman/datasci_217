@@ -48,7 +48,7 @@ paginate: true
 
 ---
 
-![width:100%](attachments/its-a-unix-system.jpeg)
+![width:100%](media/its-a-unix-system.jpeg)
 
 ---
 
