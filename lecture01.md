@@ -14,10 +14,28 @@ paginate: true
 
 ---
 # Class structure
-- Lectures cover new material
+- Lectures cover new material with hands-on demos
 - Lectures end with a practical assignment
 - Lab for help completing the practical assignment
 - Always due the following week unless otherwise noted
+---
+# Resources: Command Line
+- [LinuxCommand.org](http://linuxcommand.org/lc3_learning_the_shell.php)
+- [The Linux Command Line book](http://linuxcommand.org/tlcl.php)
+- [The Missing Semester](https://missing.csail.mit.edu/)
+---
+# Resources: Python
+- _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
+- _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
+- _Hitchhiker’s Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
+
+---
+# Getting Help
+
+ - RTFM `man COMMAND`
+ - Ask the computer `COMMAND --help`
+ - Ask a bigger computer (Claude, ChatGPT)
+ - Come to lab!
 
 ---
 # In the beginning there was `sh`
@@ -27,6 +45,10 @@ paginate: true
 - bash
 - csh
 - zsh
+
+---
+
+![width:100%](attachments/its-a-unix-system.jpeg)
 
 ---
 

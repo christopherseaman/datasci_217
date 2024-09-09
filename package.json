@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@marp-team/marp-cli": "^3.4.0"
+  }
+}
