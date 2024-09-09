@@ -1,5 +1,5 @@
 # DataSci-217
-Introduction to Python & Data Science Tools
+Introduction to Python & Data Science Tools ([canonical url](https://ds217.badmath.org))
 
 ## [Lecture 1: Introduction to Python and Command Line Basics](lecture01.html)
 - Python basics: syntax, data types, and control structures
