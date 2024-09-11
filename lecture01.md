@@ -124,7 +124,7 @@ paginate: true
 - Free and ubiquitous in industry
 - Readily available in GitHub Codespaces
 
-![width:100%](media/IDE_choice.png]]
+![width:100%](media/IDE_choice.png)
 
 ---
 
