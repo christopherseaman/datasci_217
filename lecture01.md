@@ -121,10 +121,8 @@ paginate: true
 - `nano` for quick fixes from the command line
 ---
 # Why VS Code?
-- Free and ubiquitous in industry
-- Readily available in GitHub Codespaces
 
-![width:100%](media/IDE_choice.png)
+![](media/IDE_choice.png)
 
 ---
 
