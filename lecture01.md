@@ -73,7 +73,7 @@ paginate: true
   - `ls` (Unix/Mac)
   - `dir` (PowerShell)
 - Change Directory: `cd path/to/directory`
-- Special directories `.` and `..`
+- Special directories `~`, `.` and `..`
 
 ---
 
