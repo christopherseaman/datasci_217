@@ -40,11 +40,11 @@ paginate: true
 ---
 # In the beginning there was `sh`
 
-- Powershell
 - sh
 - bash
 - csh
 - zsh
+- Powershell
 
 ---
 
