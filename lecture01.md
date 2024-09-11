@@ -56,7 +56,7 @@ paginate: true
 
 - Windows users:
   - PowerShell (built-in)
-  - Option: Windows Subsystem for Linux (WSL)
+  - Windows Subsystem for Linux [wsl](https://learn.microsoft.com/en-us/windows/wsl/install) - containerized Linux
 - Mac users:
   - Terminal (built-in)
 - Cloud options:
@@ -117,10 +117,11 @@ paginate: true
 # Installing Python
 
 - Download and install Python
-  - Windows: python.org or [winget](https://winget.run/pkg/Python/Python.3.12)
-    - `winget install -e --id Python.Python.3.12`
-  - Mac: python.org or [Homebrew](https://brew.sh) (recommended)
-    - Install Homebrew
+	- Windows: python.org or [winget](https://winget.run/pkg/Python/Python.3.12)
+	    - `winget install -e --id Python.Python.3.12`
+	- WSL Ubuntu - `apt install python3`
+- Mac: python.org or Homebrew (recommended)
+    - Install Homebrew from [brew.sh](https://brew.sh)
     - Install python `brew install python3`
 - Verify installation: 
 ```
@@ -132,11 +133,17 @@ Python 3.12.5
 
 # Text Editor Options
 
-- Visual Studio Code (what I'll be using)
+- Visual Studio Code (what I'll be using, also available on GitHub Codespaces)
 - Sublime Text
 - PyCharm
 - Notepad
-- `nano`
+- `nano` for quick fixes from the command line
+---
+# Why VS Code?
+- Free and ubiquitous in industry
+- Readily available in GitHub Codespaces
+
+![width:100%](media/IDE_choice.png]]
 
 ---
 
@@ -177,11 +184,19 @@ Python 3.12.5
 # Simple Operations
 
 - Arithmetic: `+`, `-`, `*`, `/`, `**` (power)
+- Modulus: `%`
 - String concatenation: `"Hello" + " " + "World"`
 
 ---
 
 # Control Structures
+
+- Equals ` ==` and Not Equals`!=`
+- `<`, `>`, `<=`, `>=`
+- `in`, and `not in`
+- `^` as `not`
+
+# Control Structures II
 
 - If statements:
   ```python
@@ -192,6 +207,18 @@ Python 3.12.5
   else:
       print("Zero")
   ```
+
+# Control Structures III
+- Compound if statements with `|` as `or`, and `&` as `and`:
+```python
+if (x > 0) | (x < 0):
+	print(“Non-zero”)
+elif (x == 0) and (x == 0):
+	print(“Very zero”)
+else:
+	# See string catenation below
+	print(f“What kind of number is {x}?”) 
+```
 
 ---
 
@@ -205,19 +232,31 @@ Python 3.12.5
 
 ---
 
+# Printing variables
+
+- String concatenation: `print(“Hello, “ + variable + “!”)`
+- Printing with f-strings: `print(f“Hello, {variable}!`
+---
 # Live Demo!
 
 ---
 
 # Practical Exercise
 
-1. Get everything installed
-2. Create an account on GitHub and join this course
+1. Get everything installed (or use the cloud) and play around a bit
+2. Create an account on GitHub
+	1. Apply for [GitHub Education](https://docs.github.com/en/education/explore-the-benefits-of-teaching-and-learning-with-github-education/github-education-for-students/apply-to-github-education-as-a-student)
+	2. [Join the course and see next week’s assignmnet](https://classroom.github.com/a/Z2sWwnXF)
 3. Create a Python script that prints "Hello, Data Science!"
-4. Save it as `hello_ds.py`
-5. Run it from the command line
-6. Use command line to create a `scripts` folder and move your file into it
-
+	1. Save it as `hello_ds.py`
+	2. Run it from the command line
+	3. Use command line to create a `scripts` folder and move your file into it
+4. Write a Python script to solve the following:
+	>If we list all the natural numbers below 10 that are multiples of 3 or 5, we get (3, 5, 6, 9). The sum of these multiples is 23. Find the sum of all the multiples of 3 or 5 below 1000.
+5. Email me:
+	1. GitHub username
+	2. Answer to the problem above + script you wrote to solve it 
+	3. Brief introduction (who are you, why are you here, anything you’re specifically hoping to get out of the course)
 ---
 
 # Wrap-up
