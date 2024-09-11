@@ -108,7 +108,24 @@ paginate: true
 - Chaining commands with pipe `|` (more on pipes in a future lecture)
   ```
   cat file.txt | grep pattern
-  ```
+	```
+
+---
+
+# Text Editor Options
+
+- Visual Studio Code (what I'll be using, also available on GitHub Codespaces)
+- Sublime Text
+- PyCharm
+- Notepad
+- `nano` for quick fixes from the command line
+---
+# Why VS Code?
+- Free and ubiquitous in industry
+- Readily available in GitHub Codespaces
+
+![width:100%](media/IDE_choice.png]]
+
 ---
 
 # Live Demo!
@@ -128,22 +145,6 @@ paginate: true
 ❯ python3 --version
 Python 3.12.5
 ```
-
----
-
-# Text Editor Options
-
-- Visual Studio Code (what I'll be using, also available on GitHub Codespaces)
-- Sublime Text
-- PyCharm
-- Notepad
-- `nano` for quick fixes from the command line
----
-# Why VS Code?
-- Free and ubiquitous in industry
-- Readily available in GitHub Codespaces
-
-![width:100%](media/IDE_choice.png]]
 
 ---
 
@@ -263,7 +264,7 @@ else:
 
 - We've covered Python basics and essential command line operations
 - Assignment: Practice these concepts with provided exercises
-- Next lecture: Version Control with Git and More Python
+- Next lecture: Version control with Git, shell scripting and more Python
 
 ---
 
