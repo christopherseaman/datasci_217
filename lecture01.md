@@ -112,6 +112,13 @@ paginate: true
 
 ---
 
+# Make it Stop!
+
+- `Control-c` for cancel!
+- `exit()`
+
+---
+
 # Text Editor Options
 
 - Visual Studio Code (what I'll be using, also available on GitHub Codespaces)
