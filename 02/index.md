@@ -42,7 +42,7 @@ Having your email address listed in a public repository is a **bad idea**. You w
 
 ---
 
-![](media/github_email.png)
+![bg contain](media/github_email.png)
 
 ---
 ## Cloud options
@@ -100,7 +100,7 @@ A pull request signals that your work may be complete and you’d like someone e
 
 ---
 
-![](media/git_branches.png)
+![bg contain](media/git_branches.png)
 
 ---
 ## Sensitive information
@@ -226,7 +226,7 @@ There is some variability in how these are applied between Slack, Notion, GitHub
 
 > Blockquote - prefix text with a greater-than sign to `>` blockquote (Notion uses the pipe | symbol). To blockquote multiple paragraphs, include a ‘>’ on the blank line between them
 
-```JSON
+```markdown
 > This is Blockquoted
 ```
 
@@ -321,7 +321,7 @@ Recommended to get VS Code working best with Markdown:
 
 ---
 ## Python Packages
-![](media/python_import.webp)
+![bg contain](media/python_import.webp)
 
 ---
 ## Python Virtual Environments
