@@ -3,7 +3,7 @@ marp: true
 theme: gaia
 paginate: true
 ---
-# Lecture 1: Introduction to Python and Command Line Basics
+## Lecture 1: Introduction to Python and Command Line Basics
 - Getting to the command line
 - Navigating the file system with `*sh`
 - Basic file operations (creating, moving, copying, deleting)
@@ -13,24 +13,24 @@ paginate: true
 - Python basics: syntax, data types, and control structures
 
 ---
-# Class structure
+## Class structure
 - Lectures cover new material with hands-on demos
 - Lectures end with a practical assignment
 - Lab for help completing the practical assignment
 - Always due the following week unless otherwise noted
 ---
-# Resources: Command Line
+## Resources: Command Line
 - [LinuxCommand.org](http://linuxcommand.org/lc3_learning_the_shell.php)
 - [The Linux Command Line book](http://linuxcommand.org/tlcl.php)
 - [The Missing Semester](https://missing.csail.mit.edu/)
 ---
-# Resources: Python
+## Resources: Python
 - _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 - _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
 - _Hitchhiker’s Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
 
 ---
-# Getting Help
+## Getting Help
 
  - RTFM `man COMMAND`
  - Ask the computer `COMMAND --help`
@@ -38,7 +38,7 @@ paginate: true
  - Come to lab!
 
 ---
-# In the beginning there was `sh`
+## In the beginning there was `sh`
 
 - sh
 - bash
@@ -52,11 +52,12 @@ paginate: true
 
 ---
 
-# Getting to the Command Line
+## Getting to the Command Line
 
 - Windows users:
   - PowerShell (built-in)
-  - Windows Subsystem for Linux [wsl](https://learn.microsoft.com/en-us/windows/wsl/install) - containerized Linux
+  - Option: Windows Subsystem for Linux (WSL)
+    - `wsl --install`
 - Mac users:
   - Terminal (built-in)
 - Cloud options:
@@ -64,7 +65,7 @@ paginate: true
 
 ---
 
-# Command Line Navigation
+## Command Line Navigation
 
 - Print Working Directory:
   - `pwd` (Unix/Mac)
@@ -77,7 +78,7 @@ paginate: true
 
 ---
 
-# File Operations
+## File Operations
 
 - Create Directory: `mkdir new_folder`
 - Create Files: 
@@ -89,7 +90,7 @@ paginate: true
 
 ---
 
-# Viewing File Contents
+## Viewing File Contents
 
 - Display entire file:
   - `cat file.txt` (Unix/Mac)
@@ -100,7 +101,7 @@ paginate: true
 
 ---
 
-# Simple Text Manipulation
+## Simple Text Manipulation
 
 - Search for patterns:
   - `grep pattern file.txt` (Unix/Mac)
@@ -112,33 +113,40 @@ paginate: true
 
 ---
 
-# Make it Stop!
+## Make it Stop!
 
 - `Control-c` for cancel!
 - `exit()`
 
 ---
 
-# Text Editor Options
+## Text Editor Options
 
 - Visual Studio Code (what I'll be using, also available on GitHub Codespaces)
 - Sublime Text
 - PyCharm
 - Notepad
 - `nano` for quick fixes from the command line
+- `code` to open a file in VS Code
+
 ---
-# Why VS Code?
+## Why VS Code?
 
 ![](media/IDE_choice.png)
 
 ---
 
-# Live Demo!
+## Live Demo!
 
 ---
-# Installing Python
+## Installing Python
 
 - Download and install Python
+	- Windows: python.org or [winget](https://winget.run/pkg/Python/Python.3.12)
+	    - `winget install -e --id Python.Python.3.12`
+	- WSL Ubuntu - `apt install python3`
+- Mac: python.org or Homebrew (recommended)
+    - Install Homebrew from [brew.sh](https://brew.sh)
 	- Windows: python.org or [winget](https://winget.run/pkg/Python/Python.3.12)
 	    - `winget install -e --id Python.Python.3.12`
 	- WSL Ubuntu - `apt install python3`
@@ -153,7 +161,7 @@ Python 3.12.5
 
 ---
 
-# Running Python
+## Running Python
 
 - Interactive mode (Python REPL)
   ```
@@ -167,7 +175,7 @@ Python 3.12.5
   
 ---
 
-# Python Syntax Overview
+## Python Syntax Overview
 
 - Indentation matters!
 - Comments use `#`
@@ -178,7 +186,7 @@ Python 3.12.5
 
 ---
 
-# Basic Data Types
+## Basic Data Types
 
 - Integers: `x = 5`
 - Floats: `y = 3.14`
@@ -187,7 +195,7 @@ Python 3.12.5
 
 ---
 
-# Simple Operations
+## Simple Operations
 
 - Arithmetic: `+`, `-`, `*`, `/`, `**` (power)
 - Modulus: `%`
@@ -195,14 +203,16 @@ Python 3.12.5
 
 ---
 
-# Control Structures
+## Control Structures
 
 - Equals ` ==` and Not Equals`!=`
 - `<`, `>`, `<=`, `>=`
 - `in`, and `not in`
 - `^` as `not`
 
-# Control Structures II
+---
+
+## Control Structures II
 
 - If statements:
   ```python
@@ -214,7 +224,9 @@ Python 3.12.5
       print("Zero")
   ```
 
-# Control Structures III
+---
+
+## Control Structures III
 - Compound if statements with `|` as `or`, and `&` as `and`:
 ```python
 if (x > 0) | (x < 0):
@@ -228,7 +240,7 @@ else:
 
 ---
 
-# Control Structures (cont.)
+## Control Structures (cont.)
 
 - For loops:
   ```python
@@ -238,17 +250,21 @@ else:
 
 ---
 
-# Printing variables
+## Printing variables
 
 - String concatenation: `print(“Hello, “ + variable + “!”)`
 - Printing with f-strings: `print(f“Hello, {variable}!`
 ---
-# Live Demo!
+## Live Demo!
 
 ---
 
-# Practical Exercise
+## Practical Exercise
 
+1. Get everything installed (or use the cloud) and play around a bit
+2. Create an account on GitHub
+	1. Apply for [GitHub Education](https://docs.github.com/en/education/explore-the-benefits-of-teaching-and-learning-with-github-education/github-education-for-students/apply-to-github-education-as-a-student)
+	2. [Join the course and see next week’s assignmnet](https://classroom.github.com/a/Z2sWwnXF)
 1. Get everything installed (or use the cloud) and play around a bit
 2. Create an account on GitHub
 	1. Apply for [GitHub Education](https://docs.github.com/en/education/explore-the-benefits-of-teaching-and-learning-with-github-education/github-education-for-students/apply-to-github-education-as-a-student)
@@ -263,9 +279,18 @@ else:
 	1. GitHub username
 	2. Answer to the problem above + script you wrote to solve it 
 	3. Brief introduction (who are you, why are you here, anything you’re specifically hoping to get out of the course)
+	1. Save it as `hello_ds.py`
+	2. Run it from the command line
+	3. Use command line to create a `scripts` folder and move your file into it
+4. Write a Python script to solve the following:
+	>If we list all the natural numbers below 10 that are multiples of 3 or 5, we get (3, 5, 6, 9). The sum of these multiples is 23. Find the sum of all the multiples of 3 or 5 below 1000.
+5. Email me:
+	1. GitHub username
+	2. Answer to the problem above + script you wrote to solve it 
+	3. Brief introduction (who are you, why are you here, anything you’re specifically hoping to get out of the course)
 ---
 
-# Wrap-up
+## Wrap-up
 
 - We've covered Python basics and essential command line operations
 - Assignment: Practice these concepts with provided exercises
@@ -273,7 +298,7 @@ else:
 
 ---
 
-# Additional Resources
+## Additional Resources
 
 - [Official Python documentation](https://docs.python.org/3/)
 - [PowerShell documentation](https://docs.microsoft.com/en-us/powershell/)

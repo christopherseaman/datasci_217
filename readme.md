@@ -1,7 +1,8 @@
 # DataSci-217
 Introduction to Python & Data Science Tools ([canonical url](https://ds217.badmath.org), [github repo](https://github.com/christopherseaman/datasci_217))
 
-## [Lecture 1: Introduction to Python and Command Line Basics](lecture01.html)
+## Lecture 1: Introduction to Python and Command Line Basics
+([slides](01), [pdf](01/index.pdf), [assignment](/assignment.html?n=01))
 - Python basics: syntax, data types, and control structures
 - Running Python scripts from the command line
 - Navigating the file system with `*sh`
@@ -9,6 +10,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Pipes and command chaining
 
 ## Lecture 2: Version Control with Git and More Python
+([slides](02), [pdf](02/index.pdf), [assignment](/assignment.html?n=02))
 - Git basics (init, clone, add, commit, push, pull)
 - Branching and merging
 - Collaboration workflows on GitHub
