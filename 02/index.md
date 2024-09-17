@@ -14,11 +14,13 @@ paginate: true
 - [Discord?](https://discord.gg/QdTYgR45er)
 
 ---
-## Notes from last lecture
+## Notes on WSL
 
 - `wsl --install`
 - Open `Ubuntu` from Start
 - Files from Windows available at `/mnt/c/Users/<user name>`
+- Install [`WSL` VS Code extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl)
+- `code` command should now work from WSL
 
 ---
 
@@ -321,6 +323,12 @@ Recommended to get VS Code working best with Markdown:
 
 ---
 ## Python Packages
+
+- The best code is the stuff you didn't have to write
+- That's maintained by a specialist who is not you
+
+---
+
 ![bg contain](media/python_import.webp)
 
 ---
