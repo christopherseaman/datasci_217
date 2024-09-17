@@ -57,6 +57,7 @@ paginate: true
 - Windows users:
   - PowerShell (built-in)
   - Option: Windows Subsystem for Linux (WSL)
+    - `wsl --install`
 - Mac users:
   - Terminal (built-in)
 - Cloud options:
@@ -198,7 +199,6 @@ Python 3.12.5
 
 - Arithmetic: `+`, `-`, `*`, `/`, `**` (power)
 - Modulus: `%`
-- Modulus: `%`
 - String concatenation: `"Hello" + " " + "World"`
 
 ---
@@ -223,6 +223,8 @@ Python 3.12.5
   else:
       print("Zero")
   ```
+
+---
 
 ## Control Structures III
 - Compound if statements with `|` as `or`, and `&` as `and`:
