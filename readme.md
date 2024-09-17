@@ -1,5 +1,5 @@
 # DataSci-217
-Introduction to Python & Data Science Tools ([canonical url](https://ds217.badmath.org))
+Introduction to Python & Data Science Tools ([canonical url](https://ds217.badmath.org), [github repo](https://github.com/christopherseaman/datasci_217))
 
 ## [Lecture 1: Introduction to Python and Command Line Basics](lecture01.html)
 - Python basics: syntax, data types, and control structures
@@ -7,13 +7,13 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Navigating the file system with `*sh`
 - Basic file operations (creating, moving, copying, deleting)
 - Pipes and command chaining
-- Introduction to shell scripting, variables, and `cron`
 
 ## Lecture 2: Version Control with Git and More Python
 - Git basics (init, clone, add, commit, push, pull)
 - Branching and merging
 - Collaboration workflows on GitHub
 - Conflict resolution 
+- Introduction to shell scripting, variables, and `cron`
 - Python functions, modules, and packages
 - Virtual environments and dependencies with pip
 
