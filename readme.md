@@ -10,7 +10,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Pipes and command chaining
 
 ## Lecture 2: Version Control with Git and More Python
-([slides](02), [pdf](02/index.pdf), [assignment](/assignment.html?n=02))
+([slides](02), [pdf](02/index.pdf), [assignment](https://classroom.github.com/a/Z2sWwnXF))
 - Git basics (init, clone, add, commit, push, pull)
 - Branching and merging
 - Collaboration workflows on GitHub

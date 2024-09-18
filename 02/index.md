@@ -8,6 +8,10 @@ paginate: true
 - `git` and GitHub
 - Markdown
 - Python environments and packages
+---
+## Offline discussion
+- CLE?
+- [Discord?](https://discord.gg/QdTYgR45er)
 
 ---
 ## Notes from last lecture
@@ -17,10 +21,23 @@ paginate: true
 - Files from Windows available at `/mnt/c/Users/<user name>`
 
 ---
+## Random links for the day
 
-## Getting started with `git`
+- [Data scientists work alone and that's bad | Ethan Rosenthal](https://www.ethanrosenthal.com/2023/01/10/data-scientists-alone)
+- [I Used Computer Vision To Destroy My Childhood High Score in a DS Game](https://betterprogramming.pub/using-computer-vision-to-destroy-my-childhood-high-score-in-a-ds-game-38ebd53a1d64) 
 
-Atlassian has an [excellent tutorial on git](https://www.atlassian.com/git/tutorials/what-is-version-control), the _Getting Started_ and _Collaborating_ sections will be most applicable early on.
+---
+## Resources for `git`, `markdown`, and `pip`
+
+* `git`
+	* GitHub's [Git Guides](https://github.com/git-guides), part of which is included in this week's assignment
+	* Atlassian has an [excellent tutorial on git](https://www.atlassian.com/git/tutorials/what-is-version-control), especially _Getting Started_ and _Collaborating_ 
+* Markdown
+	- [https://www.markdownguide.org/basic-syntax/](https://www.markdownguide.org/basic-syntax/) (cheat sheet)
+	- https://commonmark.org/help/tutorial (self-guided tutorial)
+	- [https://www.markdowntutorial.com](https://www.markdowntutorial.com/) (self-guided tutorial) 
+- `python` + packages
+	- _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 
 ---
 ## Configuring with your name and email
@@ -38,7 +55,7 @@ Having your email address listed in a public repository is a **bad idea**. You w
 
 ---
 
-![](media/github_email.png)
+![bg contain](media/github_email.png)
 
 ---
 ## Cloud options
@@ -76,9 +93,91 @@ If you have a `remote` set up, it does what it says on the tin. Cloning from Git
 - `git sync` (not all systems) will perform both a pull and push
 
 ---
+## Push ⇄ pull 
+
+From the command line, GitHub no longer allows password-based pushes, so you will need to either:
+1. Use the [GitHub CLI](https://cli.github.com/)
+3. Set up a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) or [ssh key](https://github.com/settings/keys)
+4. Use a GUI tool, e.g.,  VS Code or GitHub Desktop
+
+---
 ## Fork, branch, and merge
 
 Sometimes you want to work on something outside the “main” flow of a repository. Maybe there’s an analysis or model you’re working on that isn’t complete. By creating a separate **branch** of the repository, you can do your work without worrying about breaking the **main** or **trunk** branch of the repository. If you want to make your own work based on another repository, you can **fork** it, creating a copy that you own going forward.
+
+---
+## Git Checkout
+`git checkout` is used to switch between branches, restore working tree files, or examine specific commits.
+
+  ```
+  # Switch to an existing branch
+  git checkout <branch-name>
+  
+  # Create and switch to a new branch:
+  git checkout -b <new-branch-name>
+
+  # Discard changes to a file
+  git checkout -- <file-name>
+```
+
+---
+## If I could turn back time...
+
+You can view the commit history of your current branch using `git log` and see each commit's message and hash identifier.
+![](Pasted%20image%2020240918090552.png)
+
+---
+## If I could turn back time...
+
+```
+  # Examine a specific commit
+  git checkout <commit-hash>
+  ```
+  ![](Pasted%20image%2020240918090702.png)
+On most systems you can use a "short hash" with the first 7 characters:
+![](Pasted%20image%2020240918090806.png)
+
+---
+## Git Reset
+
+`git reset` allows you to undo changes in your repository
+
+- `git reset --soft <commit>` - Moves HEAD to `<commit>`, changes remain staged
+- `git reset --hard <commit>`- Moves HEAD to `<commit>`, discards all changes **(be careful!)**
+
+Note! You can use `HEAD~N` to step `N` commits backwards
+
+---
+## Git Reset Examples
+
+```
+# Moves HEAD to specified commit, unstages changes
+git reset <commit>
+
+# Undo the last commit, keep changes staged
+git reset --soft HEAD~1
+
+# Undo the last two commits, discard all changes
+git reset --hard HEAD~2
+```
+
+---
+## Choosing the Right Git Operation
+- `git merge` - Integrating completed features into the main branch
+	- **Use case:** Combining work from different branches
+	- **Best for:** Preserving full history of parallel development
+- `git reset` - Undoing recent commits or changes
+	- **Use case:** Correcting mistakes, reorganizing work
+	- **Best for:** Local changes that haven't been pushed
+- `git rebase` (advanced) - Cleaning up commit history before sharing
+	- **Use case:** Creating a linear project history
+	- **Best for:** Local branches before merging to main
+
+---
+## Best practices
+
+- Always pull before starting new work
+- When in doubt, create a backup branch first
 
 ---
 ## Branch workflow
@@ -90,18 +189,22 @@ One solution is to use a **branch workflow**, where work-in-progress happens in 
 ---
 ## Branch workflow II
 
-A best practice when merging work into the main branch is to use a **pull request** or **PR**. 
+A best practice when merging work into the main branch is to use a **pull request** or **PR**. This is the only way to merge branches on GitHub.
 
 A pull request signals that your work may be complete and you’d like someone else to review it and give feedback. This ensures not just that the changes you’ve made are correct, but that they are understandable to others. Once the reviewer gives the 👍 (and conflicts are resolved), your development branch can be merged into the main branch.
 
+We will walk through the process together in a few minutes...
+
 ---
 
-![](media/git_branches.png)
+![bg contain](media/git_branches.png)
 
 ---
 ## Sensitive information
 
 Never ever. Not once. This goes for passwords, PII, and PHI. Don’t put it on GitHub.
+
+We will see ways to store sensitive information using environment variables, secrets,  and `.env` files in a future lecture. 
 
 ---
 
@@ -123,16 +226,17 @@ Read more on merge conflicts in [Atlassian’s tutorial](https://www.atlassian.c
 
 ---
 
-![](media/xkcd_git.png)
+![bg contain](media/xkcd_git.png)
 
 ---
 ## Best Practices
 
 - Communicate with your team about merge conflicts
 - Pull changes frequently to minimize large conflicts
+- Always pull before starting new work
+- When in doubt, create a backup branch first
 - Use feature branches to isolate work
-- Consider using `git rebase` for a cleaner history
-
+---
 ## Conflict resolution: command line
 
 1. Pull the latest changes: `git pull origin main`
@@ -170,23 +274,10 @@ Read more on merge conflicts in [Atlassian’s tutorial](https://www.atlassian.c
 
 ## LIVE DEMO
 
-1. Clone a repo
-2. Make changes
-3. Push
-4. Make changes remotely & locally
-5. Conflict!
-6. Branch...
-
 ---
-
-#TODO-FIXME
 ## Markdown
 
 Markdown is a lightweight markup language for writing documents. The format was created as an alternative to HTML, while retaining most of the capabilities. It’s the most common format in many tools, including GitHub, Notion, and Google Docs (when enabled).
-
-- [https://www.markdownguide.org/basic-syntax/](https://www.markdownguide.org/basic-syntax/) (cheat sheet)
-- [https://www.markdowntutorial.com](https://www.markdowntutorial.com/) (self-guided tutorial)
-- https://commonmark.org/help/tutorial
 
 ---
 ## Paragraphs
@@ -208,9 +299,9 @@ This is a new paragraph!
 
 Starting a line with hash symbols `#` will creating headings within your document:
 
-# `# Header 1 (biggest)`
-## `## Header 2`
-### `### Header 3 (smallest commonly supported)`
+## `# Header 1 (biggest)`
+### `## Header 2`
+#### `### Header 3 (smallest commonly supported)`
 
 ---
 ## Font Styles
@@ -218,13 +309,16 @@ Starting a line with hash symbols `#` will creating headings within your documen
 There is some variability in how these are applied between Slack, Notion, GitHub, etc.
 
 - **Bold** - double-asterisks `**` around a word to **`**bold**`** (some apps allow single astersisks)
-- _italic_ - single underscores `_` around a word to _`_italicize_`_ (some apps also confusingly also use single asterisks for italic, too)
+- _italic_ - single underscores `_` around a word to _`_italicize_`_ (some apps confusingly use single asterisks for italic)
+- Blockquote - prefix text with a greater-than sign to `>` blockquote (Notion uses the pipe | symbol). To blockquote multiple paragraphs, include a ‘>’ on the blank line between them
 
-> Blockquote - prefix text with a greater-than sign to `>` blockquote (Notion uses the pipe | symbol). To blockquote multiple paragraphs, include a ‘>’ on the blank line between them
-
-```JSON
+```markdown
 > This is Blockquoted
+> and it continues...
 ```
+
+> This is Blockquoted
+> and it continues...
 
 ---
 ## Lists - unordered
@@ -246,7 +340,7 @@ There is some variability in how these are applied between Slack, Notion, GitHub
 
 **Ordered lists** start with numbers and indent similarly to undordered lists, but it actually doesn’t matter which digits you use.
 
-```JSON
+```markdown
 1. asdf
   3. jfjf
 7. btbk
@@ -259,9 +353,9 @@ There is some variability in how these are applied between Slack, Notion, GitHub
 ---
 ## Lists - checklists
 
-**Checklists** start with bracket pairs `[ ]`, completed items with an x inside `[x]`. **NOTE:** VS Code needs an extension to support completed items within a checklist
+**Checklists** start with bracket pairs `[ ]`, completed items with an x inside `[x]`. **NOTE:** VS Code needs extensions to support completed items within a checklist.
 
-```JSON
+```markdown
 [] do this
 [x] this is done
 ```
@@ -300,47 +394,176 @@ Neat collection of [data science notes](badmath.org/datasci)
 Neat collection of [data science notes](badmath.org/datasci)
 
 ---
+## Images
+
+Insert images similar to how you insert links
+
+```
+# General format
+![Alt text](image_url_or_path "Optional title")
+
+# Web-hosted image
+![Cute cat](https://example.com/cat.jpg "A cute cat")
+
+# Local image
+![My screenshot](screenshots/pandas_install.png "Pandas installation")
+```
+
+---
 ## readme.md
 
-This is your repository's introduction to the world. Please write something!
+A file names `readme.md` in the root of your repository is treated specially. This is your repository's introduction to the world. Please write something!
+
+You can see how I've used mine to show the syllabus in the [course repository](https://github.com/christopherseaman/datasci_217)
+
+---
+## VS Code Extensions
+
+Recommended to get VS Code working best with Markdown:
+- [GitHub Markdown Preview](https://marketplace.visualstudio.com/items?itemName=bierner.github-markdown-preview) for better Code/GitHub compatibility
+- [Markdown All-in-One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) for convenience features (e.g., continue lists on enter)
 
 ---
 ## LIVE DEMO
 
-
 ---
-
 ## Python Virtual Environments
 
+Virtual environments are isolated Python installations that allow you to manage project-specific dependencies without interfering with system-wide packages.
 
+### Creating a virtual environment
+
+```bash
+python -m venv myproject_env
+```
 
 ---
+### Activating the environment
 
+On Windows:
+```bash
+myproject_env\Scripts\activate
+```
+
+On macOS and Linux:
+```bash
+source myproject_env/bin/activate
+```
+
+---
+### Deactivating the environment
+
+```bash
+deactivate
+```
+
+---
 ## Python Packages
-![](media/python_import.webp)
+
+Packages are collections of Python modules that extend the language's functionality.
+
+The best code is code you didn't have to write, that is maintained by someone else who is a specialist in the field.
 
 ---
 
+![bg contain](media/python_import.webp)
+
+---
 ## Installing packages with pip
 
+`pip` is the package installer for Python. Use it to install packages from the Python Package Index (PyPI).
+
+```bash
+pip install package_name
+pip install package_name==1.2.3
+```
+
 ---
+## Requirement.txt
 
-## Importing packages
+This is a common file format for saving which packages/versions your project works with.
 
+It can be written manually or generated using 
+```bash
+pip freeze > requirements.txt
+```
 
+Install packages listed in a requirements.txt file:
+```bash
+pip install -r requirements.txt
+```
+
+---
+## Common Data Science Packages
+
+- `numpy`: Numerical computing
+- `pandas` or `polars`: Data manipulation and analysis
+- `matplotlib`: Data visualization
+- `scikit-learn`: Machine learning basics
+- `statsmodels`: Statistical modeling
+
+---
+## Importing libraries
+
+More on this in the future...
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn import linear_model
+```
 
 ---
 ## Please, `ignore` the mess...
 
+Programming with virtual environments often means installing packages in the same directory as your repository, but you **DON'T** want to commit these files to `git`. They take up extra space and may be specific to your machine/architecture.
+
+The `.gitignore` file tells Git which files or folders to ignore in a project.
+
+---
+## Example `.gitignore` for Python:
+
+```gitignore
+# Ignore this filename wherever it show up
+.DS_Store
+
+# Ignore these folders anywhere
+venv/ 
+
+# Ignore file pattern
+*.venv
+
+```
+
+---
+## Remember to add it!
+VS Code and GitHub have helpers to help you add files/folders to
+
+```bash
+git add .gitignore
+git commit -m "Add .gitignore file"
+```
 
 
 ---
 
+## LIVE DEMO
+
+---
+## GitHub Classroom
+
+- Accepting assignments creates a fork of the assignment repo
+- Complete assignments by committing to your copy of the repo
+- I've recently added another file to the assignment, so you may have to sync up with my changes
+---
+
+![bg contain](Pasted%20image%2020240918103045.png)
+
+---
 ## Practical
 
----
-
-## Links
-
-- [Data scientists work alone and that's bad | Ethan Rosenthal](https://www.ethanrosenthal.com/2023/01/10/data-scientists-alone)
-- [I Used Computer Vision To Destroy My Childhood High Score in a DS Game](https://betterprogramming.pub/using-computer-vision-to-destroy-my-childhood-high-score-in-a-ds-game-38ebd53a1d64) 
+- Accept the [assignment on GitHub Classroom](https://classroom.github.com/a/Z2sWwnXF)
+- Sync with upstream changes if needed
+- Read through the Readme.MD describing `git` and GitHub
+- Complete the assignment steps listed in `assignment.md`
