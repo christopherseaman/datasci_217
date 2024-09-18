@@ -14,11 +14,13 @@ paginate: true
 - [Discord?](https://discord.gg/QdTYgR45er)
 
 ---
-## Notes from last lecture
+## Notes on WSL
 
 - `wsl --install`
 - Open `Ubuntu` from Start
 - Files from Windows available at `/mnt/c/Users/<user name>`
+- Install [`WSL` VS Code extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl)
+- `code` command should now work from WSL
 
 ---
 ## Random links for the day
@@ -415,6 +417,13 @@ Insert images similar to how you insert links
 A file names `readme.md` in the root of your repository is treated specially. This is your repository's introduction to the world. Please write something!
 
 You can see how I've used mine to show the syllabus in the [course repository](https://github.com/christopherseaman/datasci_217)
+
+---
+## VS Code Extensions
+
+Recommended to get VS Code working best with Markdown:
+- [GitHub Markdown Preview](https://marketplace.visualstudio.com/items?itemName=bierner.github-markdown-preview) for better Code/GitHub compatibility
+- [Markdown All-in-One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) for convenience features (e.g., continue lists on enter)
 
 ---
 ## VS Code Extensions
