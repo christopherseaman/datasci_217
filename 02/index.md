@@ -31,15 +31,12 @@ paginate: true
 ---
 ## Resources for `git`, `markdown`, and `pip`
 
-* `git`
-	* GitHub's [Git Guides](https://github.com/git-guides), part of which is included in this week's assignment
-	* Atlassian has an [excellent tutorial on git](https://www.atlassian.com/git/tutorials/what-is-version-control), especially _Getting Started_ and _Collaborating_ 
-* Markdown
-	- [https://www.markdownguide.org/basic-syntax/](https://www.markdownguide.org/basic-syntax/) (cheat sheet)
-	- https://commonmark.org/help/tutorial (self-guided tutorial)
-	- [https://www.markdowntutorial.com](https://www.markdowntutorial.com/) (self-guided tutorial) 
-- `python` + packages
-	- _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
+- GitHub's [Git Guides](https://github.com/git-guides), part of which is included in this week's assignment
+- Atlassian has an [excellent tutorial on git](https://www.atlassian.com/git/tutorials/what-is-version-control), especially _Getting Started_ and _Collaborating_ 
+- [https://www.markdownguide.org/basic-syntax/](https://www.markdownguide.org/basic-syntax/) (cheat sheet)
+- https://commonmark.org/help/tutorial (self-guided tutorial)
+- [https://www.markdowntutorial.com](https://www.markdowntutorial.com/) (self-guided tutorial) 
+- _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 
 ---
 ## Configuring with your name and email
@@ -72,9 +69,10 @@ You can create a new repository in the current directory with the `git init` com
 To copy a remote repository to your local machine use the `git clone` command. This will copy the repository and all its version history to a subdirectory with the same name as the repository you’ve cloned.
 
 ---
-To clone the notebooks that accompany the book Python for Data Analysis:
+To clone the notebooks for _Python for Data Analysis_:
 
-`git clone` `[https://github.com/wesm/pydata-book.git](https://github.com/wesm/pydata-book.git)`
+`git clone https://github.com/wesm/pydata-book.git`
+
 ![](media/git_clone.png)
 
 ---
@@ -105,7 +103,11 @@ From the command line, GitHub no longer allows password-based pushes, so you wil
 ---
 ## Fork, branch, and merge
 
-Sometimes you want to work on something outside the “main” flow of a repository. Maybe there’s an analysis or model you’re working on that isn’t complete. By creating a separate **branch** of the repository, you can do your work without worrying about breaking the **main** or **trunk** branch of the repository. If you want to make your own work based on another repository, you can **fork** it, creating a copy that you own going forward.
+Sometimes you want to work on something outside the “main” flow of a repository. 
+
+By creating a separate **branch** of the repository, you can do your work without worrying about breaking the **main** or **trunk** branch of the repository. 
+
+If you want to make your own work based on another repository, you can **fork** it, creating a copy that you own going forward.
 
 ---
 ## Git Checkout
@@ -126,6 +128,7 @@ Sometimes you want to work on something outside the “main” flow of a reposit
 ## If I could turn back time...
 
 You can view the commit history of your current branch using `git log` and see each commit's message and hash identifier.
+
 ![](media/Pasted%20image%2020240918090552.png)
 
 ---
@@ -164,7 +167,6 @@ git reset --hard HEAD~2
 ```
 
 ---
-## Choosing the Right Git Operation
 - `git merge` - Integrating completed features into the main branch
 	- **Use case:** Combining work from different branches
 	- **Best for:** Preserving full history of parallel development
@@ -220,6 +222,7 @@ Sometimes your repos will get into states that can’t be resolved automatically
 
 There are a few ways to resolve git conflicts:
 
+- `git merge` - attempt the merge and resolve conflicts manually
 - `git restore <FILE>` - discard all changes to `<FILE>` since the last commit
 - `git rebase` - discard all changes
 - `git stash` - save the current state in a local “stash”, then rebase the repo to the last commit
@@ -307,9 +310,6 @@ Starting a line with hash symbols `#` will creating headings within your documen
 
 ---
 ## Font Styles
-
-There is some variability in how these are applied between Slack, Notion, GitHub, etc.
-
 - **Bold** - double-asterisks `**` around a word to **`**bold**`** (some apps allow single astersisks)
 - _italic_ - single underscores `_` around a word to _`_italicize_`_ (some apps confusingly use single asterisks for italic)
 - Blockquote - prefix with `>` to blockquote (`|` in Notion). To blockquote multiple paragraphs, include a ‘>’ on the blank line between them
@@ -357,8 +357,8 @@ There is some variability in how these are applied between Slack, Notion, GitHub
 [x] this is done
 ```
 
-- ☐ do this
-- ☑ this is done
+- 🔲 do this
+- ☑️ this is done
 
 ---
 ## Code
@@ -406,19 +406,14 @@ Insert images similar to how you insert links
 ![My screenshot](screenshots/pandas_install.png "Pandas installation")
 ```
 
+See the code for the lecture slides for examples
+
 ---
 ## readme.md
 
 A file named `readme.md` in the root of your repository is treated specially. This is your repository's introduction to the world. Please write something!
 
 You can see how I've used mine to show the syllabus in the [course repository](https://github.com/christopherseaman/datasci_217)
-
----
-## VS Code Extensions
-
-Recommended to get VS Code working best with Markdown:
-- [GitHub Markdown Preview](https://marketplace.visualstudio.com/items?itemName=bierner.github-markdown-preview) for better Code/GitHub compatibility
-- [Markdown All-in-One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) for convenience features (e.g., continue lists on enter)
 
 ---
 ## VS Code Extensions
@@ -486,7 +481,7 @@ python3 -m pip install package_name
 ```
 
 ---
-## Requirement.txt
+## Requirements.txt
 
 This is a common file format for saving which packages/versions your project works with.
 
