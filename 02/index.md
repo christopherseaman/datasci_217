@@ -126,7 +126,7 @@ Sometimes you want to work on something outside the “main” flow of a reposit
 ## If I could turn back time...
 
 You can view the commit history of your current branch using `git log` and see each commit's message and hash identifier.
-![](Pasted%20image%2020240918090552.png)
+![](media/Pasted%20image%2020240918090552.png)
 
 ---
 ## If I could turn back time...
@@ -135,9 +135,9 @@ You can view the commit history of your current branch using `git log` and see e
   # Examine a specific commit
   git checkout <commit-hash>
   ```
-  ![](Pasted%20image%2020240918090702.png)
+![](media/Pasted%20image%2020240918090702.png)
 On most systems you can use a "short hash" with the first 7 characters:
-![](Pasted%20image%2020240918090806.png)
+![](media/Pasted%20image%2020240918090806.png)
 
 ---
 ## Git Reset
@@ -287,12 +287,12 @@ Markdown is a lightweight markup language for writing documents. The format was 
 Start a new paragraph by separating it from the previous one with a blank line
 
 ```markdown
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 
 This is a new paragraph!
 ```
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 
 This is a new paragraph!
 
@@ -312,12 +312,7 @@ There is some variability in how these are applied between Slack, Notion, GitHub
 
 - **Bold** - double-asterisks `**` around a word to **`**bold**`** (some apps allow single astersisks)
 - _italic_ - single underscores `_` around a word to _`_italicize_`_ (some apps confusingly use single asterisks for italic)
-- Blockquote - prefix text with a greater-than sign to `>` blockquote (Notion uses the pipe | symbol). To blockquote multiple paragraphs, include a ‘>’ on the blank line between them
-
-```markdown
-> This is Blockquoted
-> and it continues...
-```
+- Blockquote - prefix with `>` to blockquote (`|` in Notion). To blockquote multiple paragraphs, include a ‘>’ on the blank line between them
 
 > This is Blockquoted
 > and it continues...
@@ -362,15 +357,15 @@ There is some variability in how these are applied between Slack, Notion, GitHub
 [x] this is done
 ```
 
-- [ ] do this
-- [x] this is done
+- ☐ do this
+- ☑ this is done
 
 ---
 ## Code
 
 Code is marked with surrounding backticks `` `code goes here` `` and can be included inside a paragraph  Larger blocks of code, spanning multiple lines begin and end with three backticks
 
-````JSON
+````markdown
 ```
 This is a large block of code
 
@@ -414,7 +409,7 @@ Insert images similar to how you insert links
 ---
 ## readme.md
 
-A file names `readme.md` in the root of your repository is treated specially. This is your repository's introduction to the world. Please write something!
+A file named `readme.md` in the root of your repository is treated specially. This is your repository's introduction to the world. Please write something!
 
 You can see how I've used mine to show the syllabus in the [course repository](https://github.com/christopherseaman/datasci_217)
 
@@ -430,7 +425,7 @@ Recommended to get VS Code working best with Markdown:
 
 Recommended to get VS Code working best with Markdown:
 - [GitHub Markdown Preview](https://marketplace.visualstudio.com/items?itemName=bierner.github-markdown-preview) for better Code/GitHub compatibility
-- [Markdown All-in-One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) for convenience features (e.g., continue lists on enter)
+- [Markdown All-in-One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) for convenience features 
 
 ---
 ## LIVE DEMO
@@ -485,6 +480,9 @@ The best code is code you didn't have to write, that is maintained by someone el
 ```bash
 pip install package_name
 pip install package_name==1.2.3
+
+# pip is just a package/module itself
+python3 -m pip install package_name
 ```
 
 ---
@@ -534,7 +532,7 @@ The `.gitignore` file tells Git which files or folders to ignore in a project.
 ## Example `.gitignore` for Python:
 
 ```gitignore
-# Ignore this filename wherever it show up
+# Ignore this (MacOS) filename wherever it show up
 .DS_Store
 
 # Ignore these folders anywhere
@@ -567,7 +565,7 @@ git commit -m "Add .gitignore file"
 - I've recently added another file to the assignment, so you may have to sync up with my changes
 ---
 
-![bg contain](Pasted%20image%2020240918103045.png)
+![bg contain](media/Pasted%20image%2020240918103045.png)
 
 ---
 ## Practical
