@@ -5,8 +5,10 @@
 		2. Edit, add, commit
 		3. Open in VS Code
 		4. View git history
-		5. Edit, add, commit
-		6. Create remote
+		5. Edit, add
+      6. Status
+      7. commit
+		8. Create remote (VS Code)
 	3. Push/pull
 	4. Create branch `git checkout -b feature-branch`
 3. Git log

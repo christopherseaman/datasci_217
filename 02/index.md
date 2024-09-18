@@ -41,11 +41,13 @@ paginate: true
 ---
 ## Configuring with your name and email
 
-We need to tell git who we are. We do this using `git config` to
+We need to tell git who we are. We do this using `git config`
 
+Set your name:
 `git config --global user.name "<YOUR NAME>"`
 
-`git config --global user.email "<YOUR EMAIL>"` to set your email address
+Set your (obfuscated) email address:
+`git config --global user.email "<YOUR EMAIL>"`
 
 ---
 
@@ -225,7 +227,7 @@ There are a few ways to resolve git conflicts:
 - `git merge` - attempt the merge and resolve conflicts manually
 - `git restore <FILE>` - discard all changes to `<FILE>` since the last commit
 - `git rebase` - discard all changes
-- `git stash` - save the current state in a local “stash”, then rebase the repo to the last commit
+- `git stash` (advanced) - save the current state in a local “stash”, then rebase the repo to the last commit
 
 Read more on merge conflicts in [Atlassian’s tutorial](https://www.atlassian.com/git/tutorials/using-branches/merge-conflicts)
 
