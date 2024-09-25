@@ -73,24 +73,18 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
    - `.profile`: Executed for login shells
    
 ---
-## Configuration Files: Takeaways
-
-Note for macOS users with Zsh (default since Catalina):
-- Primary configuration file: `.zshrc`
-- For login shells: `.zprofile` (if it exists)
-- For all Zsh instances: `.zshenv` (if it exists)
+## Configuration File Takeaways
 
 To ensure changes apply across different shells and scenarios:
 - For `bash` users: Modify both `.bashrc` and `.bash_profile`
-- For `zsh` users on macOS: Focus on `.zshrc` and `.zprofile`
+- For `zsh` users (e.g, macOS): Focus on `.zshenv`, `.zshrc`, and `.zprofile`
 - For cross-shell compatibility use shell-specific files to source a common configuration
 
 ---
 ## Setting Environment Variables from `.env` in the Shell
 
-There is **NOT** a single command to load a `.env` file from a shell (e.g., `source` expects `export` statements, not just `VARIABLE=value` pairs)
+There is **NOT** a single command to load a `.env` file, so let's define one in our shell config using [`set`'s `allexport` option](https://linuxcommand.org/lc3_man_pages/seth.html):
 
-A robust function for setting environment variables using [`set`'s `allexport` option](https://linuxcommand.org/lc3_man_pages/seth.html):
 ```bash
 # Add this to the shell configuration file, e.g., .bashrc for bash
 load_env () {
