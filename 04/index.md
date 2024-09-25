@@ -81,7 +81,7 @@ To ensure changes apply across different shells and scenarios:
 - For cross-shell compatibility use shell-specific files to source a common configuration
 
 ---
-## Setting Env Variables from `.env` in the Shell
+## Setting Variables from `.env` in the Shell
 
 There is **NOT** a single command to load a `.env` file, so let's define one in our shell config using [`set`'s `allexport` option](https://linuxcommand.org/lc3_man_pages/seth.html):
 
