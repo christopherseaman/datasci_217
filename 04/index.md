@@ -97,7 +97,7 @@ To ensure changes apply across different shells and scenarios:
 ---
 ## Setting Environment Variables from `.env` in the Shell
 
-A robust function for setting environment variables:
+A robust function for setting environment variables using [`set`'s `allexport` option](https://linuxcommand.org/lc3_man_pages/seth.html):
 ```bash
 # Add this to the shell configuration file, e.g., .bashrc for bash
 load_env () {
