@@ -667,3 +667,8 @@ print(all([]))  # Output: True (vacuously true)
 - List comprehensions: Concise way to create lists
 ---
 # LIVE DEMO!!!
+
+---
+## Assignment 
+
+### [https://classroom.github.com/a/bTwHLV-s](https://classroom.github.com/a/bTwHLV-s)
