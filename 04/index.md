@@ -44,7 +44,7 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 ---
 ## Configuration Files: `bash` (most common)
 
--  `.bashrc`: Executed for interactive non-login shells
+- `.bashrc`: Executed for interactive non-login shells
 - `.bash_profile`: Executed for login shells
 - `.bash_login`: Executed for login shells if `.bash_profile` doesn't exist
 - `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
@@ -67,11 +67,11 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 - `tcsh`
    - `.tcshrc`: Executed for all shells
    - `.login`: Executed for login shells, after `.tcshrc`
-   - `.logout`: Executed when a login shell exits
 
 - `ksh` (Korn Shell)
    - `.kshrc`: Executed for interactive shells
    - `.profile`: Executed for login shells
+   
 ---
 ## Configuration Files: Takeaways
 
@@ -83,10 +83,12 @@ Note for macOS users with Zsh (default since Catalina):
 To ensure changes apply across different shells and scenarios:
 - For `bash` users: Modify both `.bashrc` and `.bash_profile`
 - For `zsh` users on macOS: Focus on `.zshrc` and `.zprofile`
-- For cross-shell compatibility: Consider using shell-specific files and sourcing a common file from each
+- For cross-shell compatibility use shell-specific files to source a common configuration
 
 ---
 ## Setting Environment Variables from `.env` in the Shell
+
+There is **NOT** a single command to load a `.env` file from a shell (e.g., `source` expects `export` statements, not just `VARIABLE=value` pairs)
 
 A robust function for setting environment variables using [`set`'s `allexport` option](https://linuxcommand.org/lc3_man_pages/seth.html):
 ```bash
