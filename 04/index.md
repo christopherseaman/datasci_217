@@ -22,21 +22,12 @@ paginate: true
 
 ---
 ## Persistent Environment Variables:
-### Setting default editor to nano
+Setting default editor to nano
 
-1. Open your shell configuration file:
-   ```
-   nano ~/.bashrc
-   ```
-2. Add this line at the end of the file:
-   ```
-   export EDITOR=nano
-   ```
+1. Open your shell configuration file: `nano ~/.bashrc`
+2. Add this line at the end of the file: `export EDITOR=nano`
 3. Save and exit (Ctrl+X, then Y, then Enter)
-4. Reload the configuration:
-   ```
-   source ~/.bashrc
-   ```
+4. Reload the configuration: `source ~/.bashrc`
 ---
 ## THAT DIDN'T WORK! Why?
 
@@ -53,34 +44,34 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 ---
 ## Configuration Files by Shell: `bash` (most common)
 
-*  `.bashrc`: Executed for interactive non-login shells
-* `.bash_profile`: Executed for login shells
-* `.bash_login`: Executed for login shells if `.bash_profile` doesn't exist
-* `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
+-  `.bashrc`: Executed for interactive non-login shells
+- `.bash_profile`: Executed for login shells
+- `.bash_login`: Executed for login shells if `.bash_profile` doesn't exist
+- `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
 
 ---
 ## Configuration Files by Shell: `zsh` (MacOS default)
 
-* `.zshenv`: Executed for all shells (login, interactive, or script)
-* `.zprofile`: Executed for login shells
-* `.zshrc`: Executed for interactive shells
-* `.zlogin`: Executed for login shells, after `.zshrc`
-* `.zlogout`: Executed when a login shell exits
+- `.zshenv`: Executed for all shells (login, interactive, or script)
+- `.zprofile`: Executed for login shells
+- `.zshrc`: Executed for interactive shells
+- `.zlogin`: Executed for login shells, after `.zshrc`
+- `.zlogout`: Executed when a login shell exits
 ---
 ## Configuration Files by Shell: Others
 
-* `fish`
-   * `config.fish`: Executed for all shells
-   * `fish_variables`: Stores universal variables
+- `fish`
+   - `config.fish`: Executed for all shells
+   - `fish_variables`: Stores universal variables
 
-* `tcsh`
-   * `.tcshrc`: Executed for all shells
-   * `.login`: Executed for login shells, after `.tcshrc`
-   * `.logout`: Executed when a login shell exits
+- `tcsh`
+   - `.tcshrc`: Executed for all shells
+   - `.login`: Executed for login shells, after `.tcshrc`
+   - `.logout`: Executed when a login shell exits
 
-* `ksh` (Korn Shell)
-   * `.kshrc`: Executed for interactive shells
-   * `.profile`: Executed for login shells
+- `ksh` (Korn Shell)
+   - `.kshrc`: Executed for interactive shells
+   - `.profile`: Executed for login shells
 ---
 ## Configuration Files: Takeaways
 
@@ -306,7 +297,7 @@ print(message)  # Output: Hello, John Doe!
 
 ---
 
-## *args and **kwargs
+## `*args` and `**kwargs`
 
 `*args`: Variable number of positional arguments
 ```python
