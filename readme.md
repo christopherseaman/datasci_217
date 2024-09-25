@@ -15,24 +15,22 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Branching and merging
 - Collaboration workflows on GitHub
 - Conflict resolution 
-- Introduction to shell scripting, variables, and `cron`
-- Python functions, modules, and packages
+- Writing documents with Markdown and publishing to the web
 - Virtual environments and dependencies with pip
 
 ## Lecture 3: Python Data Structures and Documentation
-- Advanced Python data structures (lists, tuples, dictionaries, sets)
+- Introduction to shell scripting, variables, and `cron`
+- Python data structures (lists, tuples, dictionaries, sets)
 - List comprehensions and generator expressions
-- Writing documents with Markdown and publishing to the web
-- Creating and maintaining README files
-- Documenting Python code (docstrings, type hints)
-- Common tools (VS Code, Jupyter Notebooks)
+- Python functions, modules, and packages
+- Interacting with files
 
 ## Lecture 4: Remote Execution, HPC, and Python in Distributed Environments
 - Using SSH for remote access
 - Introduction to Jupyter Notebooks on remote servers
 - CUDA and GPUs with Python (brief introduction)
 - Submitting Python jobs to the university HPC cluster
-- Containerization with Docker & Kubernetes for Python applications
+- Containerization with Docker & Kubernetes for Python (brief introduction)
 - Parallel processing in Python (multiprocessing, concurrent.futures)
 
 ## Lecture 5: Python for Data Management I
