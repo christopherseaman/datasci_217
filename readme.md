@@ -63,6 +63,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Brief overview of ML libraries (PyTorch, TensorFlow, JAX, SciPy, statsmodels)
 
 ## Lecture 9: Algorithms, Data Structures, and Their Implementation in Python
+- List comprehensions, generators, and `yield`
 - Implementing common algorithms in Python (sorting, searching)
 - Python data structures (lists, dictionaries, custom classes)
 - Examples and practice problems

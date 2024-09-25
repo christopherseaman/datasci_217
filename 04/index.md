@@ -1,47 +1,118 @@
-## Dictionary Comprehensions (advanced)
+---
+marp: true
+theme: gaia
+paginate: true
+---
+# Lecture 4
 
-- Similar to list comprehensions, but create dictionaries
-- Syntax: `{key_expr: value_expr for item in iterable if condition}`
+- Lies from the previous lecture
+- Python
+	- File operations
+	- Functions & methods
+- Command line
+	- Remote access with `ssh`
+	- Remote Jupyter notebooks
+	- Brief: CUDA and GPUs with Python
+	- Brief: Submitting jobs to the university HPC cluster
+---
+# Lies!
 
-```python
-square_dict = {x: x**2 for x in range(5)}
-name_lengths = {name: len(name) for name in ['Alice', 'Bob', 'Charlie']}
+- Persistent environment variables
+- Setting environment variables from `.env` in the shell
+
+---
+## Persistent Environment Variables:
+### Setting default editor to nano
+
+1. Open your shell configuration file:
+   ```
+   nano ~/.bashrc
+   ```
+2. Add this line at the end of the file:
+   ```
+   export EDITOR=nano
+   ```
+3. Save and exit (Ctrl+X, then Y, then Enter)
+4. Reload the configuration:
+   ```
+   source ~/.bashrc
+   ```
+---
+## THAT DIDN'T WORK! Why?
+
+Modifying only `.bashrc` won't work for all scenarios because:
+
+1. Different shells use different configuration files
+2. Some programs may not read `.bashrc`
+3. Operating systems may have different default behaviors
+
+For example, if a user is using Zsh (default on macOS since Catalina) instead of Bash, changes in `.bashrc` won't affect their environment.
+
+### Find out which shell you're using with `echo $SHELL`
+
+---
+## Configuration Files by Shell: `bash` (most common)
+
+*  `.bashrc`: Executed for interactive non-login shells
+* `.bash_profile`: Executed for login shells
+* `.bash_login`: Executed for login shells if `.bash_profile` doesn't exist
+* `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
+
+---
+## Configuration Files by Shell: `zsh` (MacOS default)
+
+* `.zshenv`: Executed for all shells (login, interactive, or script)
+* `.zprofile`: Executed for login shells
+* `.zshrc`: Executed for interactive shells
+* `.zlogin`: Executed for login shells, after `.zshrc`
+* `.zlogout`: Executed when a login shell exits
+---
+## Configuration Files by Shell: Others
+
+* `fish`
+   * `config.fish`: Executed for all shells
+   * `fish_variables`: Stores universal variables
+
+* `tcsh`
+   * `.tcshrc`: Executed for all shells
+   * `.login`: Executed for login shells, after `.tcshrc`
+   * `.logout`: Executed when a login shell exits
+
+* `ksh` (Korn Shell)
+   * `.kshrc`: Executed for interactive shells
+   * `.profile`: Executed for login shells
+---
+## Configuration Files: Takeaways
+
+Note for macOS users with Zsh (default since Catalina):
+- Primary configuration file: `.zshrc`
+- For login shells: `.zprofile` (if it exists)
+- For all Zsh instances: `.zshenv` (if it exists)
+
+To ensure changes apply across different shells and scenarios:
+- For `bash` users: Modify both `.bashrc` and `.bash_profile`
+- For `zsh` users on macOS: Focus on `.zshrc` and `.zprofile`
+- For cross-shell compatibility: Consider using shell-specific files and sourcing a common file from each
+
+---
+## Setting Environment Variables from `.env` in the Shell
+
+A robust function for setting environment variables:
+```bash
+# Add this to the shell configuration file, e.g., .bashrc for bash
+load_env () {
+    set -o allexport # enable the "allexport" option
+    source $1        # set env var's from .env file
+    set +o allexport # disable the "allexport" option
+}
+
+# Usage
+load_env /path/to/.env
 ```
 
 ---
-## Generator Expressions (advanced)
+# LIVE DEMO
 
-- Similar to list comprehensions, but generate items one at a time
-- More memory-efficient for large datasets
-- Created using parentheses `()` instead of square brackets
-
-```python
-gen = (x**2 for x in range(1000000))
-print(next(gen))  # 0
-print(next(gen))  # 1
-```
-
----
-## The `yield` keyword
-
-- `yield` is used to define generator functions, it returns a generator object
-- When called, it runs until it hits a `yield` statement, then pauses and returns the yielded value
-- The function's state is saved, allowing it to resume where it left off on the next call
-
-Example:
-```python
-def countdown(n):
-    while n > 0:
-        yield n
-        n -= 1
-
-for number in countdown(5):
-    print(number)
-# Output: 5 4 3 2 1
-```
-
----
-# LIVE DEMO!!!
 ---
 ## Python: Files & Functions
 

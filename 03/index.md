@@ -171,25 +171,16 @@ ln -s /mnt/c/Users/YourName ~/windows_home
   - Format: `VARIABLE_NAME=value`
 
 ## NEVER COMMIT `.env` TO YOUR REPOSITORY!!!
----
-## Loading `.env` files in `bash`
-
-`bash` has a command `source` which processes your `.bashrc` when you log in. You can also call it by hand or in scripts to process `.env` files
-
-Using `source` command:
-   ```bash
-   source .env
-   ```
 
 ---
 ## `.env` Files and Environment Variables
 
-Sometimes we only have `sh` (not `bash`), which does not have a `source` command. We can save a more robust function in `sh` in `~/.profile` and `~/.bashrc` for these cases:
+A robust function for setting environment variables:
 ```bash
 load_env () {
-    set -o allexport
-    source $1
-    set +o allexport
+    set -o allexport # enable the "allexport" option
+    source $1        # set env var's from .env file
+    set +o allexport # disable the "allexport" option
 }
 
 # Usage
