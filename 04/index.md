@@ -42,7 +42,7 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 ### Find out which shell you're using with `echo $SHELL`
 
 ---
-## Configuration Files by Shell: `bash` (most common)
+## Configuration Files: `bash` (most common)
 
 -  `.bashrc`: Executed for interactive non-login shells
 - `.bash_profile`: Executed for login shells
@@ -50,7 +50,7 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 - `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
 
 ---
-## Configuration Files by Shell: `zsh` (MacOS default)
+## Configuration Files: `zsh` (MacOS default)
 
 - `.zshenv`: Executed for all shells (login, interactive, or script)
 - `.zprofile`: Executed for login shells
@@ -58,7 +58,7 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 - `.zlogin`: Executed for login shells, after `.zshrc`
 - `.zlogout`: Executed when a login shell exits
 ---
-## Configuration Files by Shell: Others
+## Configuration Files: Others
 
 - `fish`
    - `config.fish`: Executed for all shells
