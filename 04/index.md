@@ -404,3 +404,133 @@ Creating your own module:
 - Working with modules
 
 ---
+
+# LIVE DEMO!!!
+
+---
+## Spooky Action at a Distance
+
+- `ssh`
+	- [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh)
+	- [GCP free tier](https://cloud.google.com/free/docs/compute-getting-started)
+
+---
+
+#TODO-FIXME 
+# SSH 
+
+Free options:
+- UCSF "Wynton" HPC
+- Google Cloud
+- GitHub Codespaces
+
+---
+
+# Method 1: GCP Free Server with SSH Access
+
+1. Sign up for Google Cloud Platform (GCP)
+2. Create a new project
+3. Enable Compute Engine API
+4. Create a new VM instance
+5. Set up SSH keys
+6. Connect via SSH
+
+---
+
+# GCP: Create VM Instance
+
+```bash
+gcloud compute instances create my-instance \
+    --machine-type=e2-micro \
+    --zone=us-central1-a \
+    --image-family=ubuntu-2004-lts \
+    --image-project=ubuntu-os-cloud \
+    --boot-disk-size=10GB
+```
+
+---
+
+# GCP: Set Up SSH Keys
+
+```bash
+# Generate SSH key pair
+ssh-keygen -t rsa -f ~/.ssh/gcp_key -C "your-email@example.com"
+
+# Add public key to GCP metadata
+gcloud compute project-info add-metadata \
+    --metadata-from-file ssh-keys=~/.ssh/gcp_key.pub
+```
+
+---
+
+# GCP: Connect via SSH
+
+```bash
+ssh -i ~/.ssh/gcp_key your-username@INSTANCE_IP
+```
+
+Replace `INSTANCE_IP` with your VM's external IP address.
+
+---
+
+# Method 2: GitHub CLI to SSH into Codespaces
+
+1. Install GitHub CLI
+2. Authenticate with GitHub
+3. Create or select a Codespace
+4. Connect via SSH
+
+---
+
+# GitHub: Install and Authenticate CLI
+
+```bash
+# Install GitHub CLI (example for macOS with Homebrew)
+brew install gh
+
+# Authenticate
+gh auth login
+```
+
+Follow the prompts to complete authentication.
+
+---
+
+# GitHub: Create and Connect to Codespace
+
+```bash
+# Create a new Codespace
+gh codespace create
+
+# List available Codespaces
+gh codespace list
+
+# SSH into a Codespace
+gh codespace ssh -c CODESPACE_NAME
+```
+
+Replace `CODESPACE_NAME` with your Codespace's name.
+
+---
+
+# Comparison
+
+| Feature | GCP Free Server | GitHub Codespaces |
+|---------|-----------------|-------------------|
+| Cost    | Free tier       | Free tier available |
+| Setup   | More complex    | Simpler |
+| Control | Full control    | Limited control |
+| Purpose | General use     | Development focused |
+
+---
+#TODO-FIXME 
+
+## Jupyter Notebooks
+
+- Jupyter basics
+- Remote Jupyter
+	- No longer supported at Wynton
+	- [Paperspace](https://paperspace.com) - free option
+	- $\$\$ (advanced) [AWS](https://docs.aws.amazon.com/dlami/latest/devguide/setup-jupyter.html) and [GCP](https://cloud.google.com/deep-learning-vm/docs/jupyter)
+
+---
