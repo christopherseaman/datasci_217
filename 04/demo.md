@@ -5,12 +5,12 @@
 3. Log out/in
 4. Show env set
 
-# Python files
+# Python files & functions
 
-
-# Python functions
-
-1. if __name__ == 
+1. fruit.py writes to fruits.txt
+2. Run, then `if __name__ == __main__:`
+3. Module: `from fruit import write_fruits`
+4. `argparse`
 
 # Jupyter
 
