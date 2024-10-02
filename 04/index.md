@@ -594,6 +594,8 @@ scp [options] source destination
 
 3. Between Remote Hosts:
    `scp user1@host1:/file.txt user2@host2:/path/`
+---
+# A brief aside...
 
 ---
 ## Wynton High Performance Computing
