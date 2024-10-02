@@ -407,6 +407,21 @@ Creating your own module:
    ```
 
 ---
+## Preparing a Script to be a Module
+
+Whenever the Python interpreter reads a source file, it sets a few special variables like `__name__`, and then it executes all of the code found in the file (not wrapped up in functions/classes).
+
+```python
+# Make this available as a function & module
+def my_function(stuff):
+  ...
+
+# Do this if running the script
+if __name__ == "__main__":
+    my_function('stuff')
+```
+
+---
 ## Summary
 
 - File operations: open, read, write, close
@@ -687,7 +702,6 @@ Steps:
 ## `tmux`
 
 **T**erminal **Mu**ltiple**x**er: Similar to `screen`, but with more features
-- Basic usage:
   ```bash
   tmux                # Start a new session
   tmux new -s name    # Start a named session
