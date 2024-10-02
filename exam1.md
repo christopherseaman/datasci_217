@@ -1,6 +1,15 @@
 #draft
-
-1. Given a large FASTA file (text with ACTG base-pairs):
+1. **Largest Product in a File** (50 points) Given a file containing a 20x20 grid of numbers, find the greatest product of four adjacent numbers in the same direction (up, down, left, right, or diagonally). Requirements:
+    - Implement functions to read the grid from a file and to calculate the maximum product
+    - Use `with` statements for file operations
+    - Handle potential file I/O errors and invalid input with try/except
+    - Use a Jupyter notebook to visualize the grid and highlight the four numbers with the greatest product
+2.  **Longest Collatz Sequence** (40 points) For all starting numbers under a given limit (specified via command-line argument), calculate the length of the Collatz sequence. Write the results to a file, then read the file to find the starting number that produces the longest chain. Requirements:
+    - Implement a function to generate the Collatz sequence
+    - Use `with` statements for file operations
+    - Handle potential errors (file I/O, invalid input) with try/except
+    - Use a Jupyter notebook to plot the relationship between starting numbers and sequence lengths
+3. Given a large FASTA file (text with ACTG base-pairs):
 	1. Write python script that finds enzyme cutsites (specific short sequences and their complements)
 	2. Count the "coverage" for each position in the sequence; e.g., the number of enzyme cutsite pairs 100-200k bp apart containing that position. Save a graph of it (this code will be given).
 	3. Python script should take arguments for the cutsite sequence and FASTA file

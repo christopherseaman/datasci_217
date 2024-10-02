@@ -482,71 +482,61 @@ Note: Ensure proper port forwarding if using SSH
 ## Spooky Action at a Distance
 
 - `ssh`
-	- [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh)
-	- [GCP free tier](https://cloud.google.com/free/docs/compute-getting-started)
+- `scp`
 
 ---
-
-#TODO-FIXME 
 # SSH 
 
-Free options:
-- UCSF "Wynton" HPC
-- Google Cloud
-- GitHub Codespaces
+- [UCSF "Wynton" HPC](https://wynton.ucsf.edu/hpc/about/join.html) (IT approval required)
+- [Super Dimension Fortress](https://sdf.org) Remote Learning Lab
+- [Google Cloud Shell](https://cloud.google.com/free/docs/compute-getting-started)
+- [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh)
+- Your own machine! (easiest with macOS & Linux)
 
----
-
-# Method 1: GCP Free Server with SSH Access
-
-1. Sign up for Google Cloud Platform (GCP)
-2. Create a new project
-3. Enable Compute Engine API
-4. Create a new VM instance
-5. Set up SSH keys
-6. Connect via SSH
-
----
-
-# GCP: Create VM Instance
-
-**NOTE:** Can also use the web GUI
-
-```bash
-gcloud compute instances create my-instance \
-    --machine-type=e2-micro \
-    --zone=us-central1-a \
-    --image-family=ubuntu-2004-lts \
-    --image-project=ubuntu-os-cloud \
-    --boot-disk-size=10GB
+```shell
+ssh user@host.address 
+# Then enter your password or automatically
+# connect with a pre-shared key
 ```
 
 ---
+## Super Dimension Fortress Remote Learning Lab
 
-# GCP: Set Up SSH Keys
+Offers basic access to a learning environment for free.
 
-```bash
-# Generate SSH key pair
-ssh-keygen -t rsa -f ~/.ssh/gcp_key -C "your-email@example.com"
+Open command line:
 
-# Add public key to GCP metadata
-gcloud compute project-info add-metadata \
-    --metadata-from-file ssh-keys=~/.ssh/gcp_key.pub
+```shell
+ssh new@sdf.org
+# Then follow the instructions
 ```
 
 ---
+## Your own Mac
 
-# GCP: Connect via SSH
-
-```bash
-ssh -i ~/.ssh/gcp_key your-username@INSTANCE_IP
-```
-
-Replace `INSTANCE_IP` with your VM's external IP address.
+![bg contain](mac_ssh.png)
 
 ---
+## Google Cloud Shell
 
-# Method 2: GitHub CLI to SSH into Codespaces
+- Free temporary virtual machinen
+- Persistent 5gb storage
+
+1. Open [Google Cloud Console](https://console.cloud.google.com)
+2. Click the button at the top right that looks like a shell
+ ![](media/Pasted%20image%2020241001193551.png)
+---
+## Google Cloud Free Tier
+
+If you want an always-on option, Google Cloud offers a [free tier](https://cloud.google.com/free/docs/free-cloud-features#compute) for their Compute VM service:
+
+- One instance: `e2-micro`
+- Region: `us-west1`, `us-central1`, or `us-east1`
+- Storage: 30gb persistent
+- Always-on vs. Cloud Shell only active when you are 
+
+---
+## GitHub CLI to SSH into Codespaces
 
 1. Install GitHub CLI
 2. Authenticate with GitHub
@@ -557,9 +547,12 @@ Replace `INSTANCE_IP` with your VM's external IP address.
 
 # GitHub: Install and Authenticate CLI
 
+[GitHub offers a Command Line Interface](https://github.com/cli/cli), which includes many git commands as well as `ssh` access to Codespaces
+
 ```bash
 # Install GitHub CLI (example for macOS with Homebrew)
 brew install gh
+winget install --id GitHub.cli
 
 # Authenticate
 gh auth login
@@ -585,18 +578,6 @@ gh codespace ssh -c CODESPACE_NAME
 Replace `CODESPACE_NAME` with your Codespace's name.
 
 ---
-
-# Comparison
-
-| Feature      | GCP Free Server | GitHub Codespaces   |
-| ------------ | --------------- | ------------------- |
-| Cost         | Free tier       | Free tier available |
-| Setup        | More complex    | Simpler             |
-| Control      | Full control    | Limited control     |
-| Purpose      | General use     | Development focused |
-| Availability | Always running  | Launch on-demand    |
-
----
 ## Persistent Sessions on Remote Machines
 
 - Challenge: SSH connections can drop unexpectedly
@@ -604,6 +585,8 @@ Replace `CODESPACE_NAME` with your Codespace's name.
   - Screen
   - Tmux
   - Mosh (Mobile Shell)
+
+**NOTE:** None of these will persist across machine restarts
 
 ---
 ## Screen
@@ -647,7 +630,7 @@ Replace `CODESPACE_NAME` with your Codespace's name.
   ```bash
   mosh username@remote-server
   ```
-- Requires installation on both client and server
+- Requires installation on both client and server (advanced)
 - Uses SSH for initial authentication
 
 ---
@@ -660,3 +643,6 @@ Replace `CODESPACE_NAME` with your Codespace's name.
 | Network resilience | No | No | Yes |
 | Scroll back | Yes | Yes | Limited |
 | Learning curve | Moderate | Steeper | Easy |
+
+---
+# LIVE DEMO!!!
