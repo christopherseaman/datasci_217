@@ -81,6 +81,17 @@ To ensure changes apply across different shells and scenarios:
 - For `zsh` users (e.g, macOS): Focus on `.zshenv`, `.zshrc`, and `.zprofile`
 - For cross-shell compatibility use shell-specific files to source a common configuration
 
+
+---
+## Persistent Environment Variables (again)
+Setting default editor to nano
+
+1. Use `echo $SHELL` to learn which config file to change
+2. Open your shell configuration file: `nano ~/<CONFIG_FILE>`
+3. Add this line at the end of the file: `export EDITOR=nano`
+4. Save and exit (Ctrl+X, then Y, then Enter)
+5. Reload the configuration: `source ~/<CONFIG_FILE>`
+
 ---
 ## Setting Variables from `.env` in the Shell
 
