@@ -79,8 +79,8 @@ I cheat put everything in `.bashrc` and add `source .bashrc` to `.profile`
 ## Configuration File Takeaways
 
 To ensure changes apply across different shells and scenarios:
-- For `bash` users: Modify both `.bashrc` and `.bash_profile`
-- For `zsh` users (e.g, macOS): Focus on `.zshenv`, `.zshrc`, and `.zprofile`
+- For `bash` users: Modify both `.bashrc` and `.profile`
+- For `zsh` users (e.g, macOS): Focus on `.zshenv`, `.zshrc`, or `.zprofile`
 - For cross-shell compatibility use shell-specific files to source a common configuration
 
 
@@ -234,24 +234,17 @@ with open('data.txt', 'r') as file:
 ---
 
 ## Working with Directories
-
-- Get current working directory:
-  ```python
+```python
+# Get current working directory:
   current_dir = os.getcwd()
-  ```
 
-- Change current working directory:
-  ```python
+# Change current working directory:
   os.chdir('/path/to/new/directory')
-  ```
 
-- List contents of a directory:
-  ```python
+# List contents of a directory:
   contents = os.listdir('/path/to/directory')
-  ```
 
-- Check if a path is a directory:
-  ```python
+# Check if a path is a directory:
   is_dir = os.path.isdir('/path/to/check')
   ```
 
@@ -321,7 +314,7 @@ print_info(name="Alice", age=30, city="New York")
 
 You can pass arguments to python just like any other command
 
-- Two main methods:
+Two main methods:
   1. `sys.argv`: Argument order matters
 	  `python script.py arg1 arg2`
   2. `argparse`: Arguments are explicitly named
@@ -463,7 +456,7 @@ From VS Code:
 
 # LIVE DEMO!!!
 
-- 
+
 
 ---
 ## Spooky Action at a Distance
@@ -472,7 +465,7 @@ From VS Code:
 - `scp`
 
 ---
-# SSH 
+## SSH 
 
 - [UCSF "Wynton" HPC](https://wynton.ucsf.edu/hpc/about/join.html) (IT approval required)
 - [Super Dimension Fortress](https://sdf.org) Remote Learning Lab
@@ -499,8 +492,9 @@ ssh new@sdf.org
 ```
 
 ---
-## Your own Machine
-
+## Your
+## Own
+## Machine
 ![bg contain](media/mac_ssh.png)
 
 ---
@@ -640,10 +634,10 @@ Common packages for using GPU computing:
 - TensorFlow: Machine learning platform with GPU support
 - Numba: JIT compiler that can target NVIDIA GPUs
 
+Steps:
   1. Install necessary CUDA drivers and toolkit
   2. Use GPU-enabled Python libraries
   3. Specify device (CPU/GPU) in your code
-  4. Transfer data between CPU and GPU memory
 
 ---
 ## Persistent Sessions on Remote Machines
@@ -657,7 +651,7 @@ Common packages for using GPU computing:
 **NOTE:** None of these will persist across machine restarts
 
 ---
-## Screen
+## `screen`
 
 - Basic usage:
   ```bash
@@ -673,9 +667,9 @@ Common packages for using GPU computing:
   - `Ctrl-a p`: Previous window
 
 ---
-## Tmux
+## `tmux`
 
-- Similar to Screen, but with more features
+**T**erminal **Mu**ltiple**x**er: Similar to `screen`, but with more features
 - Basic usage:
   ```bash
   tmux                # Start a new session
@@ -690,7 +684,7 @@ Common packages for using GPU computing:
   - `Ctrl-b "`: Split pane horizontally
 
 ---
-## Mosh (Mobile Shell)
+## `mosh` (**Mo**bile **Sh**ell)
 
 - Alternative to SSH, more resilient to network issues
 - Maintains connection despite IP changes or sleep/wake
