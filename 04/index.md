@@ -11,6 +11,7 @@ paginate: true
 	- Functions & methods
 - Command line
 	- Remote access with `ssh`
+	- Persistent connections
 	- Remote Jupyter notebooks
 	- Brief: CUDA and GPUs with Python
 	- Brief: Submitting jobs to the university HPC cluster
@@ -311,7 +312,6 @@ def print_info(**kwargs):
 
 print_info(name="Alice", age=30, city="New York")
 ```
-
 ---
 ## Command Line Arguments in Python
 
@@ -393,7 +393,7 @@ Creating your own module:
    ```
 
 ---
-
+---
 ## Summary
 
 - File operations: open, read, write, close
@@ -402,6 +402,66 @@ Creating your own module:
 - Defining and using functions
 - Function arguments: positional, keyword, *args, **kwargs
 - Working with modules
+---
+# LIVE DEMO!!!
+---
+## Jupyter Notebooks
+
+- Jupyter basics
+- Remote Jupyter
+	- No longer supported at Wynton
+	- [Paperspace](https://paperspace.com) - free option
+	- $\$\$ (advanced) [AWS](https://docs.aws.amazon.com/dlami/latest/devguide/setup-jupyter.html) and [GCP](https://cloud.google.com/deep-learning-vm/docs/jupyter)
+---
+## What is Jupyter Notebook?
+
+- Interactive computing environment for Python, R, Julia, …
+- Combines code execution, rich text, mathematics, plots and rich media
+- Uses:
+  - Data cleaning and transformation
+  - Numerical simulation
+  - Statistical modeling
+  - Machine learning
+- File format: `.ipynb` (IPython Notebook)
+- Key features:
+  - In-line code execution
+  - Markdown support
+  - Code and output in the same document
+  - Easy sharing and collaboration
+
+---
+## Creating a Jupyter Notebook
+
+From the Terminal:
+1. Install Jupyter: `pip install jupyter`
+2. Navigate to your project directory
+3. Start Jupyter: `jupyter notebook`
+4. In the browser interface click "New" > "Python 3" 
+
+From VS Code:
+1. Install "Jupyter" extension
+2. Command palette: "Jupyter: Create New Blank Notebook"
+4. Select Python kernel when prompted
+
+Both methods create a `.ipynb` file in your current directory.
+
+---
+## Connecting to a Remote Jupyter Notebook with VS Code
+1. Start Jupyter on remote server:
+   ```bash
+   jupyter notebook --no-browser --port=PORTNUMBER # Often 8888
+   ```
+
+2. In VS Code:
+   - Command palette: "Jupyter: Specify local or remote Jupyter server"
+   - Enter the remote server's URL (e.g., `http://localhost:8888`)
+   - Provide the token or password if prompted
+
+3. Open or create a notebook
+   - It will now run on the remote server
+   - Any files or artifacts also have to be on the remote server
+
+Note: Ensure proper port forwarding if using SSH
 
 ---
 
@@ -438,6 +498,8 @@ Free options:
 ---
 
 # GCP: Create VM Instance
+
+**NOTE:** Can also use the web GUI
 
 ```bash
 gcloud compute instances create my-instance \
@@ -515,22 +577,75 @@ Replace `CODESPACE_NAME` with your Codespace's name.
 
 # Comparison
 
-| Feature | GCP Free Server | GitHub Codespaces |
-|---------|-----------------|-------------------|
-| Cost    | Free tier       | Free tier available |
-| Setup   | More complex    | Simpler |
-| Control | Full control    | Limited control |
-| Purpose | General use     | Development focused |
+| Feature      | GCP Free Server | GitHub Codespaces   |
+| ------------ | --------------- | ------------------- |
+| Cost         | Free tier       | Free tier available |
+| Setup        | More complex    | Simpler             |
+| Control      | Full control    | Limited control     |
+| Purpose      | General use     | Development focused |
+| Availability | Always running  | Launch on-demand    |
 
 ---
-#TODO-FIXME 
+## Persistent Sessions on Remote Machines
 
-## Jupyter Notebooks
-
-- Jupyter basics
-- Remote Jupyter
-	- No longer supported at Wynton
-	- [Paperspace](https://paperspace.com) - free option
-	- $\$\$ (advanced) [AWS](https://docs.aws.amazon.com/dlami/latest/devguide/setup-jupyter.html) and [GCP](https://cloud.google.com/deep-learning-vm/docs/jupyter)
+- Challenge: SSH connections can drop unexpectedly
+- Solution: Tools for maintaining persistent sessions
+  - Screen
+  - Tmux
+  - Mosh (Mobile Shell)
 
 ---
+## Screen
+
+- Basic usage:
+  ```bash
+  screen              # Start a new session
+  screen -S name      # Start a named session
+  screen -ls          # List sessions
+  screen -r [name]    # Reattach to a session
+  ```
+- Within a screen session:
+  - `Ctrl-a d`: Detach from session
+  - `Ctrl-a c`: Create a new window
+  - `Ctrl-a n`: Next window
+  - `Ctrl-a p`: Previous window
+
+---
+## Tmux
+
+- Similar to Screen, but with more features
+- Basic usage:
+  ```bash
+  tmux                # Start a new session
+  tmux new -s name    # Start a named session
+  tmux ls             # List sessions
+  tmux attach -t name # Attach to a session
+  ```
+- Within a tmux session:
+  - `Ctrl-b d`: Detach from session
+  - `Ctrl-b c`: Create a new window
+  - `Ctrl-b %`: Split pane vertically
+  - `Ctrl-b "`: Split pane horizontally
+
+---
+## Mosh (Mobile Shell)
+
+- Alternative to SSH, more resilient to network issues
+- Maintains connection despite IP changes or sleep/wake
+- Basic usage:
+  ```bash
+  mosh username@remote-server
+  ```
+- Requires installation on both client and server
+- Uses SSH for initial authentication
+
+---
+## Comparison
+
+| Feature | Screen | Tmux | Mosh |
+|---------|--------|------|------|
+| Persistence | Yes | Yes | Yes |
+| Split panes | Limited | Yes | No |
+| Network resilience | No | No | Yes |
+| Scroll back | Yes | Yes | Limited |
+| Learning curve | Moderate | Steeper | Easy |
