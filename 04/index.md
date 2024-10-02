@@ -50,6 +50,8 @@ For example, if a user is using Zsh (default on macOS since Catalina) instead of
 - `.bash_login`: Executed for login shells if `.bash_profile` doesn't exist
 - `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
 
+I cheat put everything in `.bashrc` and add `source .bashrc` to `.profile`
+
 ---
 ## Configuration Files: `zsh` (MacOS default)
 
@@ -148,7 +150,6 @@ Common file modes:
 - `'r+'`: Read and write
 - `'b'`: Binary mode (e.g., `'rb'`, `'wb'`)
 
-Example:
 ```python
 with open('example.txt', 'w') as file:
     file.write('Hello, World!')
@@ -199,19 +200,17 @@ with open('data.txt', 'r') as file:
 
 - Check if a file exists:
   ```python
-  import os
+  import os # Need this for all examples
   os.path.exists('file.txt')
   ```
 
 - Delete a file:
   ```python
-  import os
   os.remove('file.txt')
   ```
 
 - Rename a file:
   ```python
-  import os
   os.rename('old_name.txt', 'new_name.txt')
   ```
 
@@ -238,25 +237,21 @@ with open('data.txt', 'r') as file:
 
 - Get current working directory:
   ```python
-  import os
   current_dir = os.getcwd()
   ```
 
 - Change current working directory:
   ```python
-  import os
   os.chdir('/path/to/new/directory')
   ```
 
 - List contents of a directory:
   ```python
-  import os
   contents = os.listdir('/path/to/directory')
   ```
 
 - Check if a path is a directory:
   ```python
-  import os
   is_dir = os.path.isdir('/path/to/check')
   ```
 
@@ -264,14 +259,12 @@ with open('data.txt', 'r') as file:
 
 ## Python Functions
 
-Defining a function:
 ```python
 def greet(name):
     return f"Hello, {name}!"
 
 # Calling the function
-message = greet("Alice")
-print(message)  # Output: Hello, Alice!
+message = greet("Alice") # Hello, Alice!
 ```
 
 Function with default parameters:
@@ -305,7 +298,7 @@ print(message)  # Output: Hello, John Doe!
 
 ---
 
-## `*args` and `**kwargs`
+## `*args` and `**kwargs` (uncommon)
 
 `*args`: Variable number of positional arguments
 ```python
@@ -335,7 +328,7 @@ You can pass arguments to python just like any other command
 	  `python script.py -two arg2 -one arg1`
 
 ---
-## Using sys.argv
+## Using `sys.argv` (order is important)
 
 ```python
 import sys
@@ -350,7 +343,7 @@ print(f"Args: {arguments}")
 Usage: `python script.py arg1 arg2`
 
 ---
-## Using argparse Module
+## Using `argparse` (tell me about the argument)
 
 ```python
 import argparse
@@ -404,7 +397,6 @@ Creating your own module:
    ```
 
 ---
----
 ## Summary
 
 - File operations: open, read, write, close
@@ -428,14 +420,9 @@ Creating your own module:
 
 - Interactive computing environment for Python, R, Julia, …
 - Combines code execution, rich text, mathematics, plots and rich media
-- Uses:
-  - Data cleaning and transformation
-  - Numerical simulation
-  - Statistical modeling
-  - Machine learning
 - File format: `.ipynb` (IPython Notebook)
 - Key features:
-  - In-line code execution
+  - Interactive, in-line code execution
   - Markdown support
   - Code and output in the same document
   - Easy sharing and collaboration
@@ -445,38 +432,38 @@ Creating your own module:
 
 From the Terminal:
 1. Install Jupyter: `pip install jupyter`
-2. Navigate to your project directory
-3. Start Jupyter: `jupyter notebook`
-4. In the browser interface click "New" > "Python 3" 
+2. Start Jupyter: `jupyter notebook`
+3. In the browser interface click "New" > "Python 3" 
 
 From VS Code:
 1. Install "Jupyter" extension
 2. Command palette: "Jupyter: Create New Blank Notebook"
-4. Select Python kernel when prompted
-
-Both methods create a `.ipynb` file in your current directory.
+3. Select Python kernel when prompted
 
 ---
-## Connecting to a Remote Jupyter Notebook with VS Code
+## Remote Jupyter Notebook with VS Code
 1. Start Jupyter on remote server:
    ```bash
    jupyter notebook --no-browser --port=PORTNUMBER # Often 8888
    ```
 
 2. In VS Code:
-   - Command palette: "Jupyter: Specify local or remote Jupyter server"
+   - Command : "Jupyter: Specify local or remote Jupyter server"
    - Enter the remote server's URL (e.g., `http://localhost:8888`)
    - Provide the token or password if prompted
 
-3. Open or create a notebook
-   - It will now run on the remote server
-   - Any files or artifacts also have to be on the remote server
+---
+## Remote Jupyter Notebook Notes
 
-Note: Ensure proper port forwarding if using SSH
+- The Jupyter notebook is not on the remote server
+- All code will run on the remote server
+- Any files or artifacts the code interacts with also have to be on the remote server
 
 ---
 
 # LIVE DEMO!!!
+
+- 
 
 ---
 ## Spooky Action at a Distance
@@ -495,12 +482,12 @@ Note: Ensure proper port forwarding if using SSH
 
 ```shell
 ssh user@host.address 
-# Then enter your password or automatically
+# Then enter your password or 
 # connect with a pre-shared key
 ```
 
 ---
-## Super Dimension Fortress Remote Learning Lab
+## Super Dimension Fortress Learning Lab
 
 Offers basic access to a learning environment for free.
 
@@ -508,25 +495,25 @@ Open command line:
 
 ```shell
 ssh new@sdf.org
-# Then follow the instructions
+# Follow the instructions
 ```
 
 ---
-## Your own Mac
+## Your own Machine
 
-![bg contain](mac_ssh.png)
+![bg contain](media/mac_ssh.png)
 
 ---
 ## Google Cloud Shell
 
-- Free temporary virtual machinen
+- Free temporary virtual machine
 - Persistent 5gb storage
 
 1. Open [Google Cloud Console](https://console.cloud.google.com)
 2. Click the button at the top right that looks like a shell
  ![](media/Pasted%20image%2020241001193551.png)
 ---
-## Google Cloud Free Tier
+## Google Cloud Free Tier (advanced)
 
 If you want an always-on option, Google Cloud offers a [free tier](https://cloud.google.com/free/docs/free-cloud-features#compute) for their Compute VM service:
 
@@ -536,7 +523,9 @@ If you want an always-on option, Google Cloud offers a [free tier](https://cloud
 - Always-on vs. Cloud Shell only active when you are 
 
 ---
-## GitHub CLI to SSH into Codespaces
+## GitHub `gh` CLI to SSH into Codespaces
+
+[GitHub offers a Command Line Interface](https://github.com/cli/cli), which includes many git commands as well as `ssh` access to Codespaces
 
 1. Install GitHub CLI
 2. Authenticate with GitHub
@@ -544,10 +533,7 @@ If you want an always-on option, Google Cloud offers a [free tier](https://cloud
 4. Connect via SSH
 
 ---
-
-# GitHub: Install and Authenticate CLI
-
-[GitHub offers a Command Line Interface](https://github.com/cli/cli), which includes many git commands as well as `ssh` access to Codespaces
+## `gh`: Install and Authenticate CLI
 
 ```bash
 # Install GitHub CLI (example for macOS with Homebrew)
@@ -562,7 +548,7 @@ Follow the prompts to complete authentication.
 
 ---
 
-# GitHub: Create and Connect to Codespace
+## `gh`: Create and Connect Codespace
 
 ```bash
 # Create a new Codespace
@@ -578,7 +564,41 @@ gh codespace ssh -c CODESPACE_NAME
 Replace `CODESPACE_NAME` with your Codespace's name.
 
 ---
+## `scp` (securely) Moving Files Over SSH
+
+SCP (Secure Copy Protocol)
+
+- Secure file transfer between hosts
+- Based on SSH protocol
+- Encrypted and authenticated
+
+Key Features:
+- File encryption
+- SSH authentication
+- Preserves file attributes
+
+---
+## Using SCP
+
+Basic Syntax:
+```
+scp [options] source destination
+# Tip: Use `-r` for directories
+```
+
+1. Local to Remote:
+   `scp file.txt user@host:/path/`
+
+2. Remote to Local:
+   `scp user@host:/file.txt /local/path/`
+
+3. Between Remote Hosts:
+   `scp user1@host1:/file.txt user2@host2:/path/`
+
+---
 ## Wynton High Performance Computing
+
+(very briefly)
 
 - Uses Son of Grid Engine (SGE) as its job scheduler
 - Consists of many compute nodes with identical configurations
@@ -598,9 +618,9 @@ Key commands:
 - `qstat`: Check job status
 
 ---
-# CUDA and GPU Computing
+## CUDA and GPU Computing
 
-We'll hopefully get to do something with this in Paperspace later in the course
+We'll hopefully get work with this more later in the course
 
 - CUDA (Compute Unified Device Architecture)
   - NVIDIA's parallel computing platform and API model
@@ -611,13 +631,12 @@ We'll hopefully get to do something with this in Paperspace later in the course
 - Wynton has dedicated GPU servers in their cluster
 
 ---
+## GPU Computing with Python
 
-# GPU Computing with Python
-
+Common packages for using GPU computing:
 - PyTorch: Deep learning framework with GPU acceleration
 - TensorFlow: Machine learning platform with GPU support
 - Numba: JIT compiler that can target NVIDIA GPUs
-- PyCUDA: Python wrapper for CUDA
 
   1. Install necessary CUDA drivers and toolkit
   2. Use GPU-enabled Python libraries
