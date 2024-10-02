@@ -215,16 +215,33 @@ with open('data.txt', 'r') as file:
   ```
 
 ---
+## Printing to a File
+
+- `print()` can redirect the output to a file using the `file` parameter
+- `write()` is a built-in function specifically for writing to a file
+
+```python
+out_file = "output_filename.txt"
+with open(out_file, 'w') as f:
+    print(f"This will be written to {out_file}", file=f)
+    print("This is another line", file=f)
+    f.write("write() needs you to specify new lines\n")
+    # write() also only accepts strings
+```
+
+---
 ## Common Directory Operations
 - Create a new directory:
   ```python
   import os
+  # Create a new directory in the current working directory
   os.mkdir('new_directory')
   ```
 
 - Create nested directories:
   ```python
   import os
+  # Create new directory and all necessary parent directories
   os.makedirs('path/to/new/directory')
   
   # Can also allow the directory to already exist
