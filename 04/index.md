@@ -578,6 +578,53 @@ gh codespace ssh -c CODESPACE_NAME
 Replace `CODESPACE_NAME` with your Codespace's name.
 
 ---
+## Wynton High Performance Computing
+
+- Uses Son of Grid Engine (SGE) as its job scheduler
+- Consists of many compute nodes with identical configurations
+- Allows fair sharing of resources among users
+- Jobs are submitted to a queue and distributed across nodes
+
+---
+## Running Jobs on Wynton HPC
+
+1. Submit the script using `qsub` command
+   - Example: `qsub -cwd -j yes COMMAND_YOU_WANT_TO_RUN`
+2. Check job status with `qstat` command
+3. Retrieve results from output files (e.g., `hello_world.o<job_id>`)
+
+Key commands:
+- `qsub`: Submit jobs
+- `qstat`: Check job status
+
+---
+# CUDA and GPU Computing
+
+We'll hopefully get to do something with this in Paperspace later in the course
+
+- CUDA (Compute Unified Device Architecture)
+  - NVIDIA's parallel computing platform and API model
+  - Enables general-purpose computing on GPUs (GPGPU)
+- GPU advantages:
+  - Massive parallelism for data-intensive tasks
+  - Significantly faster than CPUs for certain operations
+- Wynton has dedicated GPU servers in their cluster
+
+---
+
+# GPU Computing with Python
+
+- PyTorch: Deep learning framework with GPU acceleration
+- TensorFlow: Machine learning platform with GPU support
+- Numba: JIT compiler that can target NVIDIA GPUs
+- PyCUDA: Python wrapper for CUDA
+
+  1. Install necessary CUDA drivers and toolkit
+  2. Use GPU-enabled Python libraries
+  3. Specify device (CPU/GPU) in your code
+  4. Transfer data between CPU and GPU memory
+
+---
 ## Persistent Sessions on Remote Machines
 
 - Challenge: SSH connections can drop unexpectedly
