@@ -25,7 +25,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - List comprehensions and generator expressions
 
 ## Lecture 4: Remote Execution, HPC, and Python in Distributed Environments
-([slides](04), [pdf](04/index.pdf), [assignment](https://classroom.github.com/a/m_U53ad8))
+([slides](04), [pdf](04/index.pdf), [(_optional_) shell exercises](04/shell_workout.md), [assignment](https://classroom.github.com/a/m_U53ad8))
 - Python functions, modules, and packages
 - Interacting with files
 - Using SSH for remote access
