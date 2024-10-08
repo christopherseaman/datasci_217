@@ -13,7 +13,17 @@
 <body>
     <div id="content"></div>
     <script>
-        fetch('readme.md')
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        let filePath = getQueryParam('f') || 'readme';
+        if (!filePath.endsWith('.md')) {
+            filePath += '.md';
+        }
+
+        fetch(filePath)
             .then(response => response.text())
             .then(text => {
                 const converter = new showdown.Converter();
