@@ -2,6 +2,7 @@
 marp: true
 theme: default
 paginate: true
+class: invert
 ---
 
 # Lecture 03

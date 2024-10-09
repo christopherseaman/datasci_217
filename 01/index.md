@@ -2,6 +2,7 @@
 marp: true
 theme: default
 paginate: true
+class: invert
 ---
 ## Lecture 1: Introduction to Python and Command Line Basics
 - Getting to the command line
