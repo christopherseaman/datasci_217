@@ -34,7 +34,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Submitting Python jobs to the university HPC cluster
 
 ## Lecture 5: Python for Data Management I
-([slides](05), [pdf](05/index.pdf), [exam 1](https://classroom.github.com/a/S2smrp6e))
+([slides](05), [pdf](05/index.pdf), [demos](?f=05/demo), [exam 1](https://classroom.github.com/a/S2smrp6e))
 - Remote Jupyter Notebooks
 - Saving your place in ssh: `screen`, `tmux`, and `mosh`
 - Introduction to NumPy & Pandas
@@ -88,7 +88,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 
 # Resources
 
-- [command line exercises](?f=shell_workout), [assignment](https://classroom.github.com/a/m_U53ad8)
+- [command line exercises](?f=shell_workout)
 
 ## Python
 
