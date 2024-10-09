@@ -34,11 +34,11 @@ class: invert
 - Common issues with standard SSH:
   - Lost work on network interruptions
   - Difficulty managing multiple tasks
-- Solutions: screen, tmux, mosh
+- Solutions: `screen`, `tmux`, `mosh`
 
 ---
 
-## screen
+## `screen`
 
 - Terminal multiplexer: multiple virtual terminals in one session
 - Persists sessions across disconnects
@@ -49,11 +49,16 @@ class: invert
   - `Ctrl-a c`: New window
   - `Ctrl-a n`: Next window
 
-#FIXME[add image of screen session]
+---
+## `screen` Example
+
+**NOTE:** `screen` has no visual interface
+
+![](media/screen.png)
 
 ---
 
-## tmux
+## `tmux`
 
 - Modern terminal multiplexer, highly customizable
 - Commands:
@@ -63,11 +68,16 @@ class: invert
   - `Ctrl-b c`: New window
   - `Ctrl-b n`: Next window
 
-#FIXME[add image of tmux session]
+---
+## `tmux` Example
+
+**NOTE:** `tmux` has a status bar at the bottom
+
+![](media/tmux.png)
 
 ---
 
-## mosh (Mobile Shell)
+## `mosh` (Mobile Shell)
 
 - SSH replacement for unreliable networks
 - Supports roaming and intermittent connectivity
@@ -76,24 +86,27 @@ class: invert
 
 ---
 
+# LIVE DEMO!
+
+---
 ## What is NumPy?
 
 - Numerical Python: fundamental for scientific computing
 - Provides support for large, multi-dimensional arrays and matrices
-- Efficient array operations
+- Efficient array operations (vectorized)
 - Comprehensive mathematical functions
 - Tools for integrating C/C++ and Fortran code
 - Linear algebra, Fourier transform, and random number capabilities
 
 ---
 
-## The NumPy ndarray Object
+## The NumPy `ndarray` Object
 
 - n-dimensional array
 - Homogeneous data type
 - Fixed size at creation
 
-```
+```python
 import numpy as np
 # Create a 1D array
 a = np.array([1, 2, 3, 4, 5])
@@ -140,12 +153,13 @@ a = np.array([1, 2, 3])
 b = np.array([4, 5, 6])
 
 # Element-wise operations
-c = a + b
-d = a * b
+c = a + b # [5, 7, 9]
+d = a * b # [4, 10, 18]
 
 # Matrix operations
-e = np.dot(a, b)
+e = np.dot(a, b) # 32
 f = np.outer(a, b)
+# [[4, 8, 12], [5, 10, 15], [6, 12, 18]]
 ```
 
 ---
@@ -155,7 +169,8 @@ f = np.outer(a, b)
 ```python
 import numpy as np
 
-arr = np.array([[1, 2, 3], [4, 5, 6]])
+arr = np.array([[1, 2, 3],
+                [4, 5, 6]])
 
 print(f"Shape: {arr.shape}")
 print(f"Dimensions: {arr.ndim}")
@@ -175,18 +190,22 @@ Data type: int64
 
 ## NumPy Array Indexing and Slicing
 
+Works like Python lists, but with additional features
+
 ```python
 import numpy as np
 
-arr = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
+arr = np.array([[1,  2,  3,  4],
+                [5,  6,  7,  8],
+                [9, 10, 11, 12]])
 
-print(arr[0, 2])  # Single element
-print(arr[1:, :2])  # Slice
+print(arr[0, 2])            # Single element
+print(arr[1:, :2])          # Slice
 print(arr[[0, 2], [1, 3]])  # Advanced indexing
 ```
 
 Output:
-```
+```python
 3
 [[5 6]
  [9 10]]
@@ -198,7 +217,8 @@ Output:
 ## Universal Functions (ufuncs)
 
 - Fast element-wise array operations
-- Examples: 
+
+Examples: 
 
 ```python
 a = np.array([1, 4, 9])
@@ -215,23 +235,43 @@ d = np.sin(a)   # [0.84, -0.76, 0.41]
 - NumPy's way of treating arrays with different shapes during arithmetic
 
 ```python
+# Not broadcasting
 a = np.array([1, 2, 3, 4])
 b = np.array([10, 20, 30, 40])
 c = a * b  # Element-wise: [10, 40, 90, 160]
 
+# Broadcasting
 d = np.array([[1, 2, 3], [4, 5, 6]])
 e = np.array([10, 20, 30])
 f = d + e  # Broadcasting: [[11, 22, 33], [14, 25, 36]]
 ```
 
-#FIXME[add image illustrating broadcasting]
+---
+
+![bg contain](media/broadcasting.png)
 
 ---
-# NumPy Array Operations
+## NumPy Array Operations
+
+### Generating sequences with `arange`
+
+```python
+arr = np.arange(0, 10, 2)
+```
+**Output:**
+```
+[0 2 4 6 8]
+```
+
+---
+## NumPy Array Operations
 
 ### Reshaping arrays:
 ```python
-arr = np.arange(12).reshape(3, 4)
+arr = np.arange(12)
+# arr = [ 0  1  2  3  4  5  6  7  8  9 10 11]
+
+arr = arr.reshape(3, 4)
 ```
 **Output:**
 ```
@@ -241,20 +281,32 @@ arr = np.arange(12).reshape(3, 4)
 ```
 
 ---
+## NumPy Array Operations: `flatten()` & `ravel()`
 
-# Flattening arrays
+- `flatten()` returns a copy of the array
+- `ravel()` returns a flattened view of the array
 
 ```python
-flat_arr = arr.ravel()
+arr = np.arange(12).reshape(3, 4)
+# arr = [[ 0  1  2  3]
+#        [ 4  5  6  7]
+#        [ 8  9 10 11]]
+
+# NOTE: arr will remain unchanged
+flat_arr  = arr.flatten()
+ravel_arr = arr.ravel()
 ```
 **Output:**
 ```
-[ 0  1  2  3  4  5  6  7  8  9 10 11]
+# flat_arr is a new array with the flattened elements of arr
+flat_arr = [ 0  1  2  3  4  5  6  7  8  9 10 11]
+
+# ravel_arr is a view of the original array
+ravel_arr = [ 0  1  2  3  4  5  6  7  8  9 10 11]
 ```
 
 ---
-
-# Stacking arrays
+## NumPy Array Operations: Stacking
 
 ### Vertical stacking:
 ```python
@@ -270,9 +322,12 @@ stacked = np.vstack((arr1, arr2))
 
 ---
 
-# Horizontal stacking
+## Horizontal stacking
 
 ```python
+arr1 = np.array([1, 2])
+arr2 = np.array([3, 4])
+
 hstacked = np.hstack((arr1, arr2))
 ```
 **Output:**
@@ -282,39 +337,15 @@ hstacked = np.hstack((arr1, arr2))
 
 ---
 
-# Generating sequences with `arange`
-
-```python
-arr = np.arange(0, 10, 2)
-```
-**Output:**
-```
-[0 2 4 6 8]
-```
+![bg contain](media/nparray_cheatsheet.png)
 
 ---
 
-# Flattening with `flatten`
-
-```python
-flat_arr = arr.flatten()
-```
-**Output:**
-```
-[0 2 4 6 8]
-```
+# LIVE DEMO!
 
 ---
 
-![bg fill](media/nparray_cheatsheet.png)
-
----
-
-# LIVE DEMO
-
----
-
-## What is Pandas?
+## What is `pandas`?
 
 - Python Data Analysis Library
 - Built on top of NumPy
