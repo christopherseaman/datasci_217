@@ -93,7 +93,23 @@ class: invert
 - Homogeneous data type
 - Fixed size at creation
 
-#FIXME[add image of ndarray structure]
+```
+import numpy as np
+# Create a 1D array
+a = np.array([1, 2, 3, 4, 5])
+
+# Create a 2D array
+b = np.array([[1, 2, 3], [4, 5, 6]])
+b = np.array([[1, 2, 3], # Equivalent
+              [4, 5, 6]])
+
+# Create a 3D array
+c = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+c = np.array([[[1, 2],
+               [3, 4]],
+                       [[5, 6],
+                        [7, 8]]])
+```
 
 ---
 
@@ -209,6 +225,88 @@ f = d + e  # Broadcasting: [[11, 22, 33], [14, 25, 36]]
 ```
 
 #FIXME[add image illustrating broadcasting]
+
+---
+# NumPy Array Operations
+
+### Reshaping arrays:
+```python
+arr = np.arange(12).reshape(3, 4)
+```
+**Output:**
+```
+[[ 0  1  2  3]
+ [ 4  5  6  7]
+ [ 8  9 10 11]]
+```
+
+---
+
+# Flattening arrays
+
+```python
+flat_arr = arr.ravel()
+```
+**Output:**
+```
+[ 0  1  2  3  4  5  6  7  8  9 10 11]
+```
+
+---
+
+# Stacking arrays
+
+### Vertical stacking:
+```python
+arr1 = np.array([1, 2])
+arr2 = np.array([3, 4])
+stacked = np.vstack((arr1, arr2))
+```
+**Output:**
+```
+[[1 2]
+ [3 4]]
+```
+
+---
+
+# Horizontal stacking
+
+```python
+hstacked = np.hstack((arr1, arr2))
+```
+**Output:**
+```
+[1 2 3 4]
+```
+
+---
+
+# Generating sequences with `arange`
+
+```python
+arr = np.arange(0, 10, 2)
+```
+**Output:**
+```
+[0 2 4 6 8]
+```
+
+---
+
+# Flattening with `flatten`
+
+```python
+flat_arr = arr.flatten()
+```
+**Output:**
+```
+[0 2 4 6 8]
+```
+
+---
+
+![bg fill](media/nparray_cheatsheet.png)
 
 ---
 
