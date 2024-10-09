@@ -62,7 +62,10 @@ class: invert
 
 - Modern terminal multiplexer, highly customizable
 - Commands:
-  - `tmux`: Start new session
+  - `tmux`: Start or reattach to session
+    - `tmux new -s NAME`: Start new session named `NAME`
+    - `tmux attach -t NAME`: Reattach to session named `NAME`
+    - `tmux ls`: List sessions
   - `Ctrl-b d`: Detach
   - `tmux attach`: Reattach
   - `Ctrl-b c`: New window
