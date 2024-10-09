@@ -4,11 +4,7 @@ theme: default
 paginate: true
 ---
 
-# Python for Data Management I
-
----
-
-## Agenda
+# Lecture 05: Welcome to Data Management
 
 1. Remote Jupyter Notebooks
 2. Saving your place in SSH: `screen`, `tmux`, `mosh`

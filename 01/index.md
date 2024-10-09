@@ -1,6 +1,6 @@
 ---
 marp: true
-theme: gaia
+theme: default
 paginate: true
 ---
 ## Lecture 1: Introduction to Python and Command Line Basics
