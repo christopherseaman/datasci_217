@@ -602,6 +602,7 @@ sed 's/^/text /' file.txt
 
 - Powerful pattern matching tool
 - Used with grep, sed, and many programming languages
+- Test regex patterns online: https://regex101.com/
 - Common regex elements:
   - `.` : Any single character
   - `*` : Zero or more of the previous character
@@ -655,7 +656,7 @@ sed 's/\b\w+\b/"&"/g' text.txt
 
 ## Combining Shell Commands
 
-- Use pipes (`|`) to chain commands
+- Use pipes `|` to chain commands
 - Create powerful data processing pipelines
 
 Example:
