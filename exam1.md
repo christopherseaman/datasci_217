@@ -15,13 +15,13 @@ Create a shell script that sets up a directory structure for a bioinformatics pr
 
 1. Create a main project directory called "bioinformatics_project".
 2. Inside the main directory, create the following subdirectories:
-   - data
-   - scripts
-   - results
+   - `data`
+   - `scripts`
+   - `results`
 3. In the scripts directory, create empty Python files named:
-   - generate_fasta.py
-   - dna_operations.py
-   - find_cutsites.py
+   - `generate_fasta.py`
+   - `dna_operations.py`
+   - `find_cutsites.py`
 4. In the results directory, create an empty file named "cutsite_summary.txt".
 5. In the data directory, create an empty file named "random_sequence.fasta".
 6. Create a README.md file in the main project directory with a brief description of the project structure.
@@ -36,7 +36,7 @@ Tips:
 
 Run the script and check the output (include all files in your assignmentrepository).
 
-Example usage:
+### Example usage
 ```
 bash setup_project.sh
 ```
@@ -44,7 +44,7 @@ bash setup_project.sh
 Expected output:
 ```
 Project directory structure created successfully:
-bioinformatics_project/
+your_repository/
 ├── data/
 ├── scripts/
 │   ├── generate_fasta.py
@@ -79,7 +79,7 @@ Tips:
 
 Run the script and check the output (include it in your repository).
 
-Example usage:
+###Example usage
 ```
 python generate_fasta.py
 ```
@@ -116,7 +116,7 @@ Tips:
 
 Run the script on the sequence "CCTCAGC"
 
-Example usage:
+### Example usage
 `````
 python dna_operations.py GAATTC
 `````
@@ -159,7 +159,7 @@ Tips:
 
 Run the script on the random sequence you generated in Question 2 and with cut site sequence "G|GATCC" (BamHI)
 
-Example usage:
+### Example usage
 `````
 python find_distant_cutsites.py data/random_sequence.fasta "G|GATCC"
 `````
