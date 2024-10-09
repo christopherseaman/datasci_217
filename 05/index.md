@@ -202,17 +202,13 @@ arr = np.array([[1,  2,  3,  4],
                 [5,  6,  7,  8],
                 [9, 10, 11, 12]])
 
-print(arr[0, 2])            # Single element
-print(arr[1:, :2])          # Slice
-print(arr[[0, 2], [1, 3]])  # Advanced indexing
-```
-
-Output:
-```python
-3
-[[5 6]
- [9 10]]
-[2 12]
+print(arr[0, 2])            # Single element: 3
+print(arr[1:, :2])          # Slice: [[5, 6], [9, 10]]
+print(arr[[0, 2], [1, 3]])  # Advanced indexing: [2, 8]
+# [0, 2] refers to the rows: row 0 and row 2
+# The second list [1, 3] refers to:
+#   - column 1 (of row 0)
+#   - column 3 (of row 2)
 ```
 
 ---
