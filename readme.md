@@ -34,14 +34,16 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Submitting Python jobs to the university HPC cluster
 
 ## Lecture 5: Python for Data Management I
+- Remote Jupyter Notebooks
+- Saving your place in ssh: `screen`, `tmux`, and `mosh`
 - Introduction to NumPy & Pandas
-- Basic array operations and broadcasting
-- Working with Pandas for data manipulation
+- Working with data files
 - DataFrame and Series objects
-- Basic data cleaning and transformation
+- Numpy arrays and operations
+- Preview of data manipulation with Pandas
 
 ## Lecture 6: Python for Data Management II
-- Advanced Pandas operations
+- Advanced Pandas operations - wrangling, filtering, and transforming data
 - Exploratory data analysis with Pandas
 - Handling missing data
 - Merging, joining, and reshaping data
