@@ -43,11 +43,11 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Preview of data manipulation with Pandas
 
 ## Lecture 6: Python for Data Management II
-- Advanced Pandas operations - wrangling, filtering, and transforming data
+- Wrangling, cleaning, filtering, and transforming data
 - Exploratory data analysis with Pandas
 - Handling missing data
 - Merging, joining, and reshaping data
-- Scaling to larger datasets (introduction to Dask)
+- Scaling to larger datasets
 
 ## Lecture 7: Python for Data Visualization
 - Introduction to Matplotlib
