@@ -57,15 +57,13 @@ your_repository/
 ## Question 2: Generate Random FASTA Data (25 points)
 File name: `generate_fasta.py`
 
-FASTA format is a text-based format for representing nucleotide or peptide sequences. It begins with a single-line description (preceded by a > symbol), followed by lines of sequence data. 
+FASTA format is a text-based format for representing nucleotide or peptide sequences. FASTA files usually include a header line with the `> Sequence Name` before the sequence data, but this is not required for this assignment. Examples of FASTA files can be found on its [Wikipedia page](https://en.wikipedia.org/wiki/FASTA_format).
 
 Create a Python script that generates a random DNA sequence and saves it in FASTA format. Your script should:
 
 1. Generate a random DNA sequence of 1 million base pairs (using A, C, G, T).
 2. Format the sequence with 80 base pairs per line.
 3. Save the sequence in FASTA format in the "data" directory, with the filename "random_sequence.fasta".
-
-(Note: FASTA files usually include a header line with the `> Sequence Name`, but this is not required for this assignment.)
 
 Tips:
 - Use Python's `random` module to generate random DNA sequences.
@@ -74,12 +72,11 @@ Tips:
 - Use a `for` loop to count characters when adding each line of the sequence to the file.
 - (optional, advanced) The `textwrap` module can help you format the sequence into 80-character lines.
 
-
 ### Task
 
 Run the script and check the output (include it in your repository).
 
-###Example usage
+### Example usage
 ```
 python generate_fasta.py
 ```

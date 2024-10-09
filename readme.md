@@ -24,8 +24,8 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Python data structures (lists, tuples, dictionaries, sets)
 - List comprehensions and generator expressions
 
-## Lecture 4: Remote Execution, HPC, and Python in Distributed Environments
-([slides](04), [pdf](04/index.pdf), [(_optional_) shell exercises](?f=shell_workout), [assignment](https://classroom.github.com/a/m_U53ad8))
+## Lecture 4: Functions, Methods, adn Remote Execution
+([slides](04), [pdf](04/index.pdf), [assignment](https://classroom.github.com/a/m_U53ad8))
 - Python functions, modules, and packages
 - Interacting with files
 - Using SSH for remote access
@@ -34,6 +34,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Submitting Python jobs to the university HPC cluster
 
 ## Lecture 5: Python for Data Management I
+([slides](05), [pdf](05/index.pdf), [exam 1](https://classroom.github.com/a/S2smrp6e))
 - Remote Jupyter Notebooks
 - Saving your place in ssh: `screen`, `tmux`, and `mosh`
 - Introduction to NumPy & Pandas
@@ -84,3 +85,51 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Introduction to web scraping with BeautifulSoup
 - Ethical considerations in web scraping and API usage
 - Building a simple data pipeline using an API
+
+# Resources
+
+- [command line exercises](?f=shell_workout), [assignment](https://classroom.github.com/a/m_U53ad8)
+
+## Python
+
+### Reference
+- _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
+- _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
+- _Hitchhiker’s Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
+- [Introduction to Python](http://introtopython.org/)
+- [_A Byte of Python_](https://python.swaroopch.com/)
+- [Official Python documentation](https://docs.python.org/3/)
+- [O’Reilly catalog via UCSF library](https://www.oreilly.com/library-access/)
+	- _Introducing Python_
+	- _Python Crash Course_
+
+### Courses
+- [Exercism Python track](https://exercism.io/tracks/python)
+- [Codecademy Python course](https://www.codecademy.com/learn/learn-python-3)
+- [Automate the Boring Stuff with Python](https://automatetheboringstuff.com/)
+- [Real Python](https://realpython.com/)
+- [DataCamp (Python + Data Science)](https://www.datacamp.com/)
+- [Learn Python 3 @ codeacademy.com](https://www.codecademy.com/learn/learn-python-3)
+- [Jetbrains' Learn PyCharm](https://www.jetbrains.com/pycharm/learn/)
+- [Effective PyCharm Course](https://training.talkpython.fm/courses/explore_pycharm/mastering-pycharm-ide) (\$\$\$)
+
+## Command Line
+- [LinuxCommand.org](http://linuxcommand.org/lc3_learning_the_shell.php)
+- [The Linux Command Line book](http://linuxcommand.org/tlcl.php)
+- [The Missing Semester](https://missing.csail.mit.edu/)
+- [Bash manual](https://www.gnu.org/software/bash/manual/)
+
+## Git
+- [Atlassian Git Tutorials](https://www.atlassian.com/git/tutorials)
+- [Pro Git book](https://git-scm.com/book/en/v2)
+- [Learn Git Branching](https://learngitbranching.js.org/)
+- [Official Git documentation](https://git-scm.com/doc)
+
+## Markdown
+- [Markdown Guide](https://www.markdownguide.org/)
+- [Markdown Tutorial](https://www.markdowntutorial.com/)
+- [CommonMark](https://commonmark.org/)
+
+## Free SSH Options
+- [Google Cloud Shell](https://cloud.google.com/free/docs/compute-getting-started)
+- [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh)
