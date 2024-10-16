@@ -13,77 +13,26 @@ class: invert
 
 ---
 
-# 1. Introduction to Data Wrangling with pandas
-
----
-
-## What is Data Wrangling?
-
-- Process of transforming and mapping data from one "raw" form into another format
-- Aims to make data more appropriate and valuable for downstream purposes
-- Key step in data preprocessing for analysis
-
----
-
-## Why pandas?
-
-- Powerful Python library for data manipulation and analysis
-- Built on top of NumPy
-- Provides high-performance, easy-to-use data structures and tools
-- Essential for working with structured data in Python
-
----
-
 ## Key pandas Data Structures
 
-1. Series: 1-dimensional labeled array
-2. DataFrame: 2-dimensional labeled data structure with columns of potentially different types
-
----
-
-## Creating a Series
+- Series: 1D labeled array
+- DataFrame: 2D labeled data structure
 
 ```python
-import pandas as pd
-
+# Series
 s = pd.Series([1, 3, 5, np.nan, 6, 8])
-print(s)
-```
 
-Output:
-```
-0    1.0
-1    3.0
-2    5.0
-3    NaN
-4    6.0
-5    8.0
-dtype: float64
+# DataFrame
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+
+# Selecting columns
+df['A']  # Returns a Series
+df[['A', 'B']]  # Returns a DataFrame
 ```
 
 ---
 
-## Creating a DataFrame
-
-```python
-data = {'name': ['John', 'Jane', 'Bob'],
-        'age': [25, 30, 35],
-        'city': ['New York', 'Paris', 'London']}
-df = pd.DataFrame(data)
-print(df)
-```
-
-Output:
-```
-   name  age      city
-0  John   25  New York
-1  Jane   30     Paris
-2   Bob   35    London
-```
-
----
-
-## Reading Data into pandas
+## Reading Data into pandas(review)
 
 Common file formats:
 - CSV: `pd.read_csv()`
@@ -98,7 +47,7 @@ df = pd.read_csv('patient_data.csv')
 
 ---
 
-## Basic DataFrame Operations
+## Basic DataFrame Operations (review)
 
 - Viewing data: `df.head()`, `df.tail()`, `df.info()`
 - Selecting columns: `df['column_name']` or `df.column_name`
@@ -135,13 +84,12 @@ df['age'] = df['age'].astype(int)
 ## Renaming Columns
 
 ```python
-df = df.rename(columns={'old_name': 'new_name'})
-```
+# Using rename with inplace
+df.rename(columns={'old_name': 'new_name'}, inplace=True)
 
-or
-
-```python
-df.columns = ['new_name1', 'new_name2', 'new_name3']
+# Using a list comprehension to modify column names
+new_columns = [col.lower().replace(' ', '_') for col in df.columns]
+df.columns = new_columns
 ```
 
 ---
@@ -154,6 +102,12 @@ df_sorted = df.sort_values('age')
 
 # Sort by multiple columns
 df_sorted = df.sort_values(['age', 'name'], ascending=[True, False])
+
+# Sort by index
+df_sorted = df.sort_index()
+
+# Sort in place
+df.sort_values('age', inplace=True)
 ```
 
 ---
@@ -166,15 +120,19 @@ df.groupby('city')['age'].mean()
 
 # Multiple aggregations
 df.groupby('city').agg({'age': 'mean', 'name': 'count'})
+
+# Named aggregation
+df.groupby('city').agg(
+    mean_age=('age', 'mean'),
+    total_patients=('name', 'count')
+)
 ```
 
 ---
 
-# BREAK TIME!
+# LIVE DEMO!
 
-Let's take a 5-minute break to stretch and process what we've learned so far.
-
-When we return, we'll dive into combining and reshaping data with pandas!
+Let's apply what we've learned so far with a hands-on demonstration.
 
 ---
 
@@ -233,7 +191,7 @@ Result:
 
 ## Reshaping Data: Melt
 
-Converting from wide to long format:
+Melt transforms "wide" format data into "long" format.
 
 ```python
 df = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'},
@@ -258,7 +216,7 @@ Result:
 
 ## Reshaping Data: Pivot
 
-Converting from long to wide format:
+Pivot transforms "long" format data into "wide" format.
 
 ```python
 pivoted = melted.pivot(index='A', columns='variable', values='value')
@@ -277,6 +235,8 @@ c         5  6
 
 ## Stacking and Unstacking
 
+Stacking rotates from columns to index, unstacking does the opposite.
+
 ```python
 # Stacking
 stacked = df.stack()
@@ -287,7 +247,34 @@ unstacked = stacked.unstack()
 
 ---
 
+# LIVE DEMO!
+
+Let's explore combining and reshaping data with some real-world examples.
+
+---
+
 # 3. Practical Data Cleaning Techniques
+
+---
+
+## Handling Missing Data
+
+```python
+# Detect missing values
+df.isna().sum()
+
+# Drop rows with any missing values
+df_clean = df.dropna()
+
+# Fill missing values
+df['column'].fillna(df['column'].mean(), inplace=True)
+
+# Forward fill
+df.ffill()
+
+# Backward fill
+df.bfill()
+```
 
 ---
 
@@ -299,6 +286,9 @@ df.duplicated()
 
 # Remove duplicates
 df_clean = df.drop_duplicates()
+
+# Remove duplicates based on specific columns
+df_clean = df.drop_duplicates(subset=['column1', 'column2'])
 ```
 
 ---
@@ -309,21 +299,21 @@ df_clean = df.drop_duplicates()
 2. Decide on a strategy: remove, cap, or transform
 
 ```python
-# Example: Capping outliers using quantiles
+# Using Z-score
+from scipy import stats
+z_scores = np.abs(stats.zscore(df['column']))
+df_clean = df[(z_scores < 3)]
+
+# Using IQR
 Q1 = df['column'].quantile(0.25)
 Q3 = df['column'].quantile(0.75)
 IQR = Q3 - Q1
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-
-df['column'] = df['column'].clip(lower_bound, upper_bound)
+df_clean = df[~((df['column'] < (Q1 - 1.5 * IQR)) | (df['column'] > (Q3 + 1.5 * IQR)))]
 ```
 
 ---
 
 ## String Manipulation
-
-pandas provides vectorized string methods:
 
 ```python
 # Convert to lowercase
@@ -334,6 +324,48 @@ df['name'] = df['name'].str.strip()
 
 # Replace values
 df['name'] = df['name'].str.replace('old', 'new')
+
+# Extract substrings
+df['domain'] = df['email'].str.extract('(@[\w.]+)')
+
+# String methods with regex
+df['name'] = df['name'].str.replace(r'^Dr\.\s*', '', regex=True)
+```
+---
+
+## Regular Expressions (Regex) in pandas
+
+- Powerful pattern matching tool, similar to command-line use
+- Used with string methods in pandas for advanced text processing
+- Common patterns:
+  - `\d`: any digit
+  - `\w`: any word character
+  - `\s`: any whitespace
+  - `+`: one or more
+  - `*`: zero or more
+  - `[]`: character set
+  - `()`: capturing group
+
+---
+
+## String Manipulation (with Regex)
+
+```python
+# Extract all email addresses
+df['emails'] = df['text'].str.findall(r'[\w\.-]+@[\w\.-]+')
+
+# Remove all non-alphanumeric characters
+df['clean_text'] = df['text'].str.replace(r'[^\w\s]', '', regex=True)
+
+# Extract dates in various formats
+date_pattern = r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}'
+df['dates'] = df['text'].str.extract(f'({date_pattern})')
+
+# Split text into sentences
+df['sentences'] = df['text'].str.split(r'(?<=[.!?]) +')
+
+# Mask sensitive information (e.g., SSN)
+df['masked_ssn'] = df['ssn'].str.replace(r'(\d{3})-(\d{2})-(\d{4})', r'XXX-XX-\3', regex=True)
 ```
 
 ---
@@ -351,6 +383,9 @@ df['day'] = df['date'].dt.day
 
 # Calculate time differences
 df['time_diff'] = df['end_date'] - df['start_date']
+
+# Resample time series data
+df_daily = df.resample('D', on='date').mean()
 ```
 
 ---
@@ -366,7 +401,7 @@ df['age_group'] = pd.cut(df['age'], bins=bins, labels=labels, right=False)
 
 ---
 
-## Handling Categorical Data
+## Categorical Data and Encoding
 
 ```python
 # Convert to category type
@@ -374,6 +409,87 @@ df['category'] = df['category'].astype('category')
 
 # One-hot encoding
 df_encoded = pd.get_dummies(df, columns=['category'])
+
+# Ordinal encoding
+from sklearn.preprocessing import OrdinalEncoder
+enc = OrdinalEncoder()
+df['category_encoded'] = enc.fit_transform(df[['category']])
+```
+
+---
+
+## Binning Data
+
+```python
+# Create age groups
+bins = [0, 18, 35, 50, 65, 100]
+labels = ['0-18', '19-35', '36-50', '51-65', '65+']
+df['age_group'] = pd.cut(df['age'], bins=bins, labels=labels, right=False)
+```
+
+---
+
+## Advanced Categorical Data Operations
+
+```python
+# Add new categories
+df['category'] = df['category'].cat.add_categories(['New_Cat1', 'New_Cat2'])
+
+# Remove unused categories
+df['category'] = df['category'].cat.remove_unused_categories()
+
+# Rename categories
+df['category'] = df['category'].cat.rename_categories({'Old_Name': 'New_Name'})
+
+# Reorder categories
+new_order = ['Cat3', 'Cat1', 'Cat2']
+df['category'] = df['category'].cat.reorder_categories(new_order, ordered=True)
+
+# Combine rare categories
+df['category'] = df['category'].replace(
+    df['category'].value_counts()[df['category'].value_counts() < 10].index, 'Other'
+)
+
+# Create hierarchical categories
+df['hierarchical_cat'] = df['main_cat'] + '_' + df['sub_cat']
+df['hierarchical_cat'] = df['hierarchical_cat'].astype('category')
+```
+
+---
+
+## Advanced Data Wrangling Techniques
+
+```python
+# Apply custom function to DataFrame
+df['new_column'] = df.apply(lambda row: some_function(row['col1'], row['col2']), axis=1)
+
+# Pivot tables
+pivot_table = df.pivot_table(values='value', index='category', columns='date', aggfunc='mean')
+
+# Melt with multiple id variables
+melted = pd.melt(df, id_vars=['id', 'date'], value_vars=['temp', 'pressure'])
+
+# Combine first and last name columns
+df['full_name'] = df['first_name'] + ' ' + df['last_name']
+```
+
+---
+
+## Data Validation and Cleaning
+
+```python
+# Check for valid values in a categorical column
+valid_categories = ['A', 'B', 'C']
+df['is_valid'] = df['category'].isin(valid_categories)
+
+# Remove rows with invalid data
+df_clean = df[df['is_valid']]
+
+# Replace invalid values
+df.loc[~df['category'].isin(valid_categories), 'category'] = 'Unknown'
+
+# Standardize date formats
+df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
 ```
 
 ---
@@ -392,14 +508,5 @@ df_encoded = pd.get_dummies(df, columns=['category'])
 
 # Conclusion
 
-- pandas is a powerful tool for data wrangling in Python
-- Key operations: reading, cleaning, reshaping, and combining data
-- Practice and experimentation are key to mastering pandas
-
-Remember: "Data scientists spend 80% of their time cleaning data, and 20% of their time complaining about cleaning data." - Unknown
-
----
-
-# Questions?
-
-Thank you for your attention! Any questions about pandas or data wrangling?
+> "Data is the new oil. It's valuable, but if unrefined it cannot really be used."
+\- Clive Humby
