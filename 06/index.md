@@ -31,11 +31,9 @@ df['A']  # Returns a Series
 df[['A', 'B']]  # Returns a DataFrame
 ```
 
-```mermaid
-graph TD;
-    A[Series] -->|1D labeled array| B[DataFrame];
-    B -->|2D labeled data structure| C[Data];
-```
+---
+
+![bg contain](media/diagram1.svg)
 
 ---
 
@@ -78,12 +76,9 @@ df = pd.read_csv('patient_data.csv')
 df['age'].fillna(df['age'].mean(), inplace=True)
 ```
 
-```mermaid
-graph TD;
-    A[DataFrame] -->|Detect Missing| B[isna(), isnull()];
-    B -->|Drop| C[dropna()];
-    B -->|Fill| D[fillna()];
-```
+---
+
+![bg contain](media/diagram2.svg)
 
 ---
 
@@ -130,11 +125,6 @@ df_sorted = df.sort_index()
 df.sort_values('age', inplace=True)
 ```
 
-```mermaid
-graph TD;
-    A[Unsorted DataFrame] -->|Sort by Column| B[Sorted DataFrame];
-```
-
 ---
 
 ## Grouping and Aggregation
@@ -155,8 +145,6 @@ df.groupby('city').agg(
 
 ## Quick Data Visualization with pandas
 
-Visualizing data can help identify patterns, outliers, and issues during the cleaning process. Pandas provides built-in plotting capabilities that integrate with matplotlib.
-
 ### Basic Plotting in pandas
 
 ```python
@@ -172,7 +160,9 @@ df.boxplot(column=['col1', 'col2', 'col3'])
 
 These simple plots can quickly reveal distributions and trends in your data.
 
-### Advanced Plotting with Seaborn
+---
+
+## Advanced Plotting with Seaborn
 
 Seaborn is a statistical data visualization library built on top of matplotlib.
 
@@ -363,13 +353,9 @@ y  2  4
 
 # LIVE DEMO!
 
-Let's explore combining and reshaping data with some real-world examples.
-
 ---
 
 # 3. Practical Data Cleaning Techniques
-
----
 
 ## Handling Missing Data
 
