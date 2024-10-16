@@ -14,6 +14,12 @@ class: invert
 
 ---
 
+> "Data is the new oil. It's valuable, but if unrefined it cannot really be used."
+
+\- Clive Humby
+
+---
+
 ## Key pandas Data Structures
 
 - Series: 1D labeled array
@@ -143,6 +149,8 @@ df.groupby('city').agg(
 )
 ```
 
+---
+
 ## Quick Data Visualization with pandas
 
 ### Basic Plotting in pandas
@@ -244,15 +252,6 @@ Result:
 
 Melt transforms "wide" format data into "long" format.
 
-Before:
-```python
-df = pd.DataFrame({
-    'A': ['a', 'b', 'c'],
-    'B': [1, 3, 5],
-    'C': [2, 4, 6]
-})
-print(df)
-```
 ```
    A  B  C
 0  a  1  2
@@ -281,10 +280,6 @@ print(melted)
 
 Pivot transforms "long" format data into "wide" format.
 
-Before (using melted data from previous slide):
-```python
-print(melted)
-```
 ```
    A variable  value
 0  a        B      1
@@ -314,11 +309,6 @@ c         5  6
 
 Stacking rotates from columns to index, unstacking does the opposite.
 
-Original DataFrame:
-```python
-df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]}, index=['x', 'y'])
-print(df)
-```
 ```
    A  B
 x  1  3
@@ -337,6 +327,8 @@ y  A    2
    B    4
 dtype: int64
 ```
+
+---
 
 Unstacked (back to original):
 ```python
@@ -450,8 +442,6 @@ df['name'] = df['name'].str.replace(r'^Dr\.\s*', '', regex=True)
 
 ## String Manipulation with Regex
 
-Example: Extracting information from text
-
 ```python
 df = pd.DataFrame({
     'text': [
@@ -546,11 +536,9 @@ df['category'] = df['category'].cat.remove_unused_categories()
 # Rename categories
 df['category'] = df['category'].cat.rename_categories({'A': 'Alpha', 'B': 'Beta'})
 
-print(df['category'].cat.categories)
 print(df)
 ```
 ```
-Index(['Alpha', 'Beta', 'C', 'D', 'E'], dtype='object')
   category
 0    Alpha
 1     Beta
@@ -596,6 +584,8 @@ missing_values = df.isnull().sum()
 print(missing_values)
 ```
 
+---
+
 ### Identifying Outliers
 
 Outliers can significantly impact statistical analyses and machine learning models.
@@ -608,6 +598,8 @@ outliers = df[z_scores > 3]
 ```
 
 This method flags values that are more than 3 standard deviations from the mean.
+
+---
 
 ### Validating Data Types and Unique Values
 
@@ -633,6 +625,8 @@ for col in categorical_cols:
 ## Custom Operations with apply() and applymap()
 
 For more complex data transformations, pandas provides `apply()` and `applymap()` functions. These allow you to apply custom functions to your data.
+
+---
 
 ### Using apply() on Columns or Rows
 
@@ -664,11 +658,6 @@ df_formatted = df.applymap(format_currency)
 ```
 
 This is useful for operations that need to be applied uniformly across all elements.
-
----
-
-> "Data is the new oil. It's valuable, but if unrefined it cannot really be used."
-\- Clive Humby
 
 ---
 
