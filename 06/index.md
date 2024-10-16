@@ -39,10 +39,6 @@ df[['A', 'B']]  # Returns a DataFrame
 
 ---
 
-![bg contain](media/diagram1.svg)
-
----
-
 ## Reading Data into pandas(review)
 
 Common file formats:
@@ -56,8 +52,6 @@ Example:
 df = pd.read_csv('patient_data.csv')
 ```
 
-#FIXME: Provide a visual flowchart of the data reading process.
-
 ---
 
 ## Basic DataFrame Operations (review)
@@ -66,8 +60,6 @@ df = pd.read_csv('patient_data.csv')
 - Selecting columns: `df['column_name']` or `df.column_name`
 - Filtering rows: `df[df['column_name'] > value]`
 - Adding new columns: `df['new_column'] = values`
-
-#FIXME: Use diagrams to show how data is selected and filtered.
 
 ---
 
@@ -110,8 +102,6 @@ df.rename(columns={'old_name': 'new_name'}, inplace=True)
 new_columns = [col.lower().replace(' ', '_') for col in df.columns]
 df.columns = new_columns
 ```
-
-#FIXME: Include a visual example of before and after renaming columns.
 
 ---
 
