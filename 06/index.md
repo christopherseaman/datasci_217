@@ -10,6 +10,7 @@ class: invert
 1. Introduction to Data Wrangling with pandas
 2. Combining and Reshaping Data
 3. Practical Data Cleaning Techniques
+4. Additional Data Wrangling Techniques
 
 ---
 
@@ -191,23 +192,35 @@ Result:
 
 Melt transforms "wide" format data into "long" format.
 
+Before:
 ```python
-df = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'},
-                   'B': {0: 1, 1: 3, 2: 5},
-                   'C': {0: 2, 1: 4, 2: 6}})
+df = pd.DataFrame({
+    'A': ['a', 'b', 'c'],
+    'B': [1, 3, 5],
+    'C': [2, 4, 6]
+})
+print(df)
+```
+```
+   A  B  C
+0  a  1  2
+1  b  3  4
+2  c  5  6
+```
 
+After:
+```python
 melted = pd.melt(df, id_vars=['A'], value_vars=['B', 'C'])
+print(melted)
 ```
-
-Result:
 ```
-     A variable  value
-0    a        B      1
-1    b        B      3
-2    c        B      5
-3    a        C      2
-4    b        C      4
-5    c        C      6
+   A variable  value
+0  a        B      1
+1  b        B      3
+2  c        B      5
+3  a        C      2
+4  b        C      4
+5  c        C      6
 ```
 
 ---
@@ -216,11 +229,25 @@ Result:
 
 Pivot transforms "long" format data into "wide" format.
 
+Before (using melted data from previous slide):
 ```python
-pivoted = melted.pivot(index='A', columns='variable', values='value')
+print(melted)
+```
+```
+   A variable  value
+0  a        B      1
+1  b        B      3
+2  c        B      5
+3  a        C      2
+4  b        C      4
+5  c        C      6
 ```
 
-Result:
+After:
+```python
+pivoted = melted.pivot(index='A', columns='variable', values='value')
+print(pivoted)
+```
 ```
 variable  B  C
 A            
@@ -235,12 +262,39 @@ c         5  6
 
 Stacking rotates from columns to index, unstacking does the opposite.
 
+Original DataFrame:
 ```python
-# Stacking
-stacked = df.stack()
+df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]}, index=['x', 'y'])
+print(df)
+```
+```
+   A  B
+x  1  3
+y  2  4
+```
 
-# Unstacking
+Stacked:
+```python
+stacked = df.stack()
+print(stacked)
+```
+```
+x  A    1
+   B    3
+y  A    2
+   B    4
+dtype: int64
+```
+
+Unstacked (back to original):
+```python
 unstacked = stacked.unstack()
+print(unstacked)
+```
+```
+   A  B
+x  1  3
+y  2  4
 ```
 
 ---
@@ -346,24 +400,33 @@ df['name'] = df['name'].str.replace(r'^Dr\.\s*', '', regex=True)
 
 ---
 
-## String Manipulation (with Regex)
+## String Manipulation with Regex
+
+Example: Extracting information from text
 
 ```python
-# Extract all email addresses
-df['emails'] = df['text'].str.findall(r'[\w\.-]+@[\w\.-]+')
+df = pd.DataFrame({
+    'text': [
+        'Contact: john@email.com, Phone: 123-456-7890',
+        'Meeting on 2023/05/15 with Jane (jane@company.com)'
+    ]
+})
 
-# Remove all non-alphanumeric characters
-df['clean_text'] = df['text'].str.replace(r'[^\w\s]', '', regex=True)
+# Extract email addresses
+df['email'] = df['text'].str.extract(r'([\w\.-]+@[\w\.-]+)')
 
-# Extract dates in various formats
-date_pattern = r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}'
-df['dates'] = df['text'].str.extract(f'({date_pattern})')
+# Extract phone numbers
+df['phone'] = df['text'].str.extract(r'(\d{3}-\d{3}-\d{4})')
 
-# Split text into sentences
-df['sentences'] = df['text'].str.split(r'(?<=[.!?]) +')
+# Extract dates
+df['date'] = df['text'].str.extract(r'(\d{4}/\d{2}/\d{2})')
 
-# Mask sensitive information (e.g., SSN)
-df['masked_ssn'] = df['ssn'].str.replace(r'(\d{3})-(\d{2})-(\d{4})', r'XXX-XX-\3', regex=True)
+print(df)
+```
+```
+                                               text               email         phone        date
+0  Contact: john@email.com, Phone: 123-456-7890    john@email.com  123-456-7890        NaN
+1  Meeting on 2023/05/15 with Jane (jane@company.com)  jane@company.com          NaN  2023/05/15
 ```
 
 ---
@@ -418,28 +481,36 @@ df['age_group'] = pd.cut(df['age'], bins=bins, labels=labels, right=False)
 
 ## Advanced Categorical Data Operations
 
+Example: Managing categories in a DataFrame
+
 ```python
-# Add new categories
-df['category'] = df['category'].cat.add_categories(['New_Cat1', 'New_Cat2'])
+df = pd.DataFrame({
+    'category': ['A', 'B', 'C', 'A', 'B', 'D', 'E']
+})
+df['category'] = df['category'].astype('category')
+
+# Add new category
+df['category'] = df['category'].cat.add_categories(['F'])
 
 # Remove unused categories
 df['category'] = df['category'].cat.remove_unused_categories()
 
 # Rename categories
-df['category'] = df['category'].cat.rename_categories({'Old_Name': 'New_Name'})
+df['category'] = df['category'].cat.rename_categories({'A': 'Alpha', 'B': 'Beta'})
 
-# Reorder categories
-new_order = ['Cat3', 'Cat1', 'Cat2']
-df['category'] = df['category'].cat.reorder_categories(new_order, ordered=True)
-
-# Combine rare categories
-df['category'] = df['category'].replace(
-    df['category'].value_counts()[df['category'].value_counts() < 10].index, 'Other'
-)
-
-# Create hierarchical categories
-df['hierarchical_cat'] = df['main_cat'] + '_' + df['sub_cat']
-df['hierarchical_cat'] = df['hierarchical_cat'].astype('category')
+print(df['category'].cat.categories)
+print(df)
+```
+```
+Index(['Alpha', 'Beta', 'C', 'D', 'E'], dtype='object')
+  category
+0    Alpha
+1     Beta
+2        C
+3    Alpha
+4     Beta
+5        D
+6        E
 ```
 
 ---
@@ -491,6 +562,134 @@ df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
 6. Feature engineering
 7. Save cleaned data
 
+---
+
+## Quick Data Visualization with pandas
+
+Visualizing data can help identify patterns, outliers, and issues during the cleaning process. Pandas provides built-in plotting capabilities that integrate with matplotlib.
+
+### Basic Plotting in pandas
+
+```python
+# Line plot
+df['column'].plot(kind='line')
+
+# Histogram
+df['column'].hist()
+
+# Box plot
+df.boxplot(column=['col1', 'col2', 'col3'])
+```
+
+These simple plots can quickly reveal distributions and trends in your data.
+
+### Advanced Plotting with Seaborn
+
+Seaborn is a statistical data visualization library built on top of matplotlib.
+
+```python
+import seaborn as sns
+
+# Scatter plot
+df.plot.scatter(x='col1', y='col2')
+
+# Correlation heatmap
+sns.heatmap(df.corr(), annot=True)
+
+# Pair plot
+sns.pairplot(df)
+```
+
+These plots help visualize relationships between multiple variables simultaneously.
+
+---
+
+## Data Quality Assessment Techniques
+
+Before diving into analysis, it's crucial to assess the quality of your data. This involves checking for issues like duplicates, outliers, and inconsistent data types.
+
+### Checking for Duplicates and Missing Values
+
+Duplicate rows can skew your analysis, while missing values need to be addressed.
+
+```python
+# Check for duplicates
+duplicates = df.duplicated().sum()
+print(f"Number of duplicate rows: {duplicates}")
+
+# Check for missing values
+missing_values = df.isnull().sum()
+print(missing_values)
+```
+
+### Identifying Outliers
+
+Outliers can significantly impact statistical analyses and machine learning models.
+
+```python
+# Identify outliers using Z-score
+from scipy import stats
+z_scores = np.abs(stats.zscore(df['column']))
+outliers = df[z_scores > 3]
+```
+
+This method flags values that are more than 3 standard deviations from the mean.
+
+### Validating Data Types and Unique Values
+
+Ensuring correct data types and examining unique values can reveal inconsistencies.
+
+```python
+# Validate data types
+print(df.dtypes)
+
+# Unique value counts
+unique_counts = df.nunique()
+print(unique_counts)
+
+# Check categorical columns
+categorical_cols = df.select_dtypes(include=['object']).columns
+for col in categorical_cols:
+    print(f"\nUnique values in {col}:")
+    print(df[col].value_counts())
+```
+
+---
+
+## Custom Operations with apply() and applymap()
+
+For more complex data transformations, pandas provides `apply()` and `applymap()` functions. These allow you to apply custom functions to your data.
+
+### Using apply() on Columns or Rows
+
+`apply()` lets you use custom functions on a whole Series or DataFrame.
+
+```python
+# apply() on a single column
+def celsius_to_fahrenheit(celsius):
+    return (celsius * 9/5) + 32
+
+df['temp_fahrenheit'] = df['temp_celsius'].apply(celsius_to_fahrenheit)
+
+# apply() on multiple columns
+def calculate_bmi(row):
+    return row['weight'] / (row['height'] / 100) ** 2
+
+df['bmi'] = df.apply(calculate_bmi, axis=1)
+```
+
+### Using applymap() on Entire DataFrames
+
+`applymap()` applies a function to every element in the DataFrame.
+
+```python
+def format_currency(value):
+    return f"${value:.2f}" if isinstance(value, (int, float)) else value
+
+df_formatted = df.applymap(format_currency)
+```
+
+This is useful for operations that need to be applied uniformly across all elements.
 
 ---
 
