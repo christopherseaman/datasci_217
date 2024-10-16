@@ -129,6 +129,45 @@ df.groupby('city').agg(
 )
 ```
 
+## Quick Data Visualization with pandas
+
+Visualizing data can help identify patterns, outliers, and issues during the cleaning process. Pandas provides built-in plotting capabilities that integrate with matplotlib.
+
+### Basic Plotting in pandas
+
+```python
+# Line plot
+df['column'].plot(kind='line')
+
+# Histogram
+df['column'].hist()
+
+# Box plot
+df.boxplot(column=['col1', 'col2', 'col3'])
+```
+
+These simple plots can quickly reveal distributions and trends in your data.
+
+### Advanced Plotting with Seaborn
+
+Seaborn is a statistical data visualization library built on top of matplotlib.
+
+```python
+import seaborn as sns
+
+# Scatter plot
+df.plot.scatter(x='col1', y='col2')
+
+# Correlation heatmap
+sns.heatmap(df.corr(), annot=True)
+
+# Pair plot
+sns.pairplot(df)
+```
+
+These plots help visualize relationships between multiple variables simultaneously.
+
+
 ---
 
 # LIVE DEMO!
@@ -515,43 +554,9 @@ Index(['Alpha', 'Beta', 'C', 'D', 'E'], dtype='object')
 
 ---
 
-## Advanced Data Wrangling Techniques
-
-```python
-# Apply custom function to DataFrame
-df['new_column'] = df.apply(lambda row: some_function(row['col1'], row['col2']), axis=1)
-
-# Pivot tables
-pivot_table = df.pivot_table(values='value', index='category', columns='date', aggfunc='mean')
-
-# Melt with multiple id variables
-melted = pd.melt(df, id_vars=['id', 'date'], value_vars=['temp', 'pressure'])
-
-# Combine first and last name columns
-df['full_name'] = df['first_name'] + ' ' + df['last_name']
-```
+# LIVE DEMO!
 
 ---
-
-## Data Validation and Cleaning
-
-```python
-# Check for valid values in a categorical column
-valid_categories = ['A', 'B', 'C']
-df['is_valid'] = df['category'].isin(valid_categories)
-
-# Remove rows with invalid data
-df_clean = df[df['is_valid']]
-
-# Replace invalid values
-df.loc[~df['category'].isin(valid_categories), 'category'] = 'Unknown'
-
-# Standardize date formats
-df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
-```
-
----
-
 ## Putting It All Together: A Data Cleaning Pipeline
 
 1. Load the data
@@ -561,46 +566,6 @@ df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
 5. Convert data types
 6. Feature engineering
 7. Save cleaned data
-
----
-
-## Quick Data Visualization with pandas
-
-Visualizing data can help identify patterns, outliers, and issues during the cleaning process. Pandas provides built-in plotting capabilities that integrate with matplotlib.
-
-### Basic Plotting in pandas
-
-```python
-# Line plot
-df['column'].plot(kind='line')
-
-# Histogram
-df['column'].hist()
-
-# Box plot
-df.boxplot(column=['col1', 'col2', 'col3'])
-```
-
-These simple plots can quickly reveal distributions and trends in your data.
-
-### Advanced Plotting with Seaborn
-
-Seaborn is a statistical data visualization library built on top of matplotlib.
-
-```python
-import seaborn as sns
-
-# Scatter plot
-df.plot.scatter(x='col1', y='col2')
-
-# Correlation heatmap
-sns.heatmap(df.corr(), annot=True)
-
-# Pair plot
-sns.pairplot(df)
-```
-
-These plots help visualize relationships between multiple variables simultaneously.
 
 ---
 
@@ -695,6 +660,43 @@ This is useful for operations that need to be applied uniformly across all eleme
 
 > "Data is the new oil. It's valuable, but if unrefined it cannot really be used."
 \- Clive Humby
+
+---
+
+## Advanced Data Wrangling Techniques
+
+```python
+# Apply custom function to DataFrame
+df['new_column'] = df.apply(lambda row: some_function(row['col1'], row['col2']), axis=1)
+
+# Pivot tables
+pivot_table = df.pivot_table(values='value', index='category', columns='date', aggfunc='mean')
+
+# Melt with multiple id variables
+melted = pd.melt(df, id_vars=['id', 'date'], value_vars=['temp', 'pressure'])
+
+# Combine first and last name columns
+df['full_name'] = df['first_name'] + ' ' + df['last_name']
+```
+
+---
+
+## Data Validation and Cleaning
+
+```python
+# Check for valid values in a categorical column
+valid_categories = ['A', 'B', 'C']
+df['is_valid'] = df['category'].isin(valid_categories)
+
+# Remove rows with invalid data
+df_clean = df[df['is_valid']]
+
+# Replace invalid values
+df.loc[~df['category'].isin(valid_categories), 'category'] = 'Unknown'
+
+# Standardize date formats
+df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
+```
 
 ---
 
