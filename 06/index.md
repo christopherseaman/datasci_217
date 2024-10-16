@@ -31,6 +31,12 @@ df['A']  # Returns a Series
 df[['A', 'B']]  # Returns a DataFrame
 ```
 
+```mermaid
+graph TD;
+    A[Series] -->|1D labeled array| B[DataFrame];
+    B -->|2D labeled data structure| C[Data];
+```
+
 ---
 
 ## Reading Data into pandas(review)
@@ -46,6 +52,8 @@ Example:
 df = pd.read_csv('patient_data.csv')
 ```
 
+#FIXME: Provide a visual flowchart of the data reading process.
+
 ---
 
 ## Basic DataFrame Operations (review)
@@ -54,6 +62,8 @@ df = pd.read_csv('patient_data.csv')
 - Selecting columns: `df['column_name']` or `df.column_name`
 - Filtering rows: `df[df['column_name'] > value]`
 - Adding new columns: `df['new_column'] = values`
+
+#FIXME: Use diagrams to show how data is selected and filtered.
 
 ---
 
@@ -66,6 +76,13 @@ df = pd.read_csv('patient_data.csv')
 ```python
 # Fill missing values with the mean of the column
 df['age'].fillna(df['age'].mean(), inplace=True)
+```
+
+```mermaid
+graph TD;
+    A[DataFrame] -->|Detect Missing| B[isna(), isnull()];
+    B -->|Drop| C[dropna()];
+    B -->|Fill| D[fillna()];
 ```
 
 ---
@@ -93,6 +110,8 @@ new_columns = [col.lower().replace(' ', '_') for col in df.columns]
 df.columns = new_columns
 ```
 
+#FIXME: Include a visual example of before and after renaming columns.
+
 ---
 
 ## Sorting Data
@@ -109,6 +128,11 @@ df_sorted = df.sort_index()
 
 # Sort in place
 df.sort_values('age', inplace=True)
+```
+
+```mermaid
+graph TD;
+    A[Unsorted DataFrame] -->|Sort by Column| B[Sorted DataFrame];
 ```
 
 ---
@@ -166,7 +190,6 @@ sns.pairplot(df)
 ```
 
 These plots help visualize relationships between multiple variables simultaneously.
-
 
 ---
 
