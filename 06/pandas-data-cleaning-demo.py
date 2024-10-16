@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Define whether we're running in Jupyter or not
+JUPYTER = False
+
 # Load the data
 df = pd.read_csv('messy_data.csv')
 print("Initial data shape:", df.shape)
@@ -50,13 +53,20 @@ print(df.dtypes)
 
 # 4. Handling Outliers
 print("\n4. Handling Outliers")
-def plot_boxplot(df, column):
+def plot_boxplot(df, column, filename=None):
     plt.figure(figsize=(10, 6))
     sns.boxplot(x=df[column])
     plt.title(f'Boxplot of {column}')
-    plt.show()
+    if JUPYTER:
+        plt.show()
+    else:
+        plt.savefig(filename)
+        plt.close()
 
-plot_boxplot(df, 'price')
+if JUPYTER:
+    plot_boxplot(df, 'price')
+else:
+    plot_boxplot(df, 'price', 'price_boxplot_before.png')
 
 # Remove outliers using IQR method
 Q1 = df['price'].quantile(0.25)
@@ -68,7 +78,10 @@ upper_bound = Q3 + 1.5 * IQR
 df = df[(df['price'] >= lower_bound) & (df['price'] <= upper_bound)]
 
 print("Shape after removing outliers:", df.shape)
-plot_boxplot(df, 'price')
+if JUPYTER:
+    plot_boxplot(df, 'price')
+else:
+    plot_boxplot(df, 'price', 'price_boxplot_after.png')
 
 # 5. Handling Inconsistent Categories
 print("\n5. Handling Inconsistent Categories")
@@ -107,10 +120,11 @@ print(df_encoded.describe())
 plt.figure(figsize=(12, 10))
 sns.heatmap(df_encoded.corr(), annot=True, cmap='coolwarm', linewidths=0.5)
 plt.title('Correlation Heatmap')
-plt.show()
-
-print("\nFinal data info:")
-df_encoded.info()
+if JUPYTER:
+    plt.show()
+else:
+    plt.savefig('correlation_heatmap.png')
+    plt.close()
 
 # 9. Comparing with Original Clean Data
 print("\n9. Comparing with Original Clean Data")
