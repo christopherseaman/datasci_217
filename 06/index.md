@@ -132,8 +132,6 @@ df.groupby('city').agg(
 
 # LIVE DEMO!
 
-Let's apply what we've learned so far with a hands-on demonstration.
-
 ---
 
 # 2. Combining and Reshaping Data
@@ -390,17 +388,6 @@ df_daily = df.resample('D', on='date').mean()
 
 ---
 
-## Binning Data
-
-```python
-# Create age groups
-bins = [0, 18, 35, 50, 65, 100]
-labels = ['0-18', '19-35', '36-50', '51-65', '65+']
-df['age_group'] = pd.cut(df['age'], bins=bins, labels=labels, right=False)
-```
-
----
-
 ## Categorical Data and Encoding
 
 ```python
@@ -504,9 +491,12 @@ df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
 6. Feature engineering
 7. Save cleaned data
 
----
 
-# Conclusion
+---
 
 > "Data is the new oil. It's valuable, but if unrefined it cannot really be used."
 \- Clive Humby
+
+---
+
+# LIVE DEMO!
