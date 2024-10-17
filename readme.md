@@ -44,11 +44,13 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Preview of data manipulation with Pandas
 
 ## Lecture 6: Python for Data Management II
+([slides](06), [pdf](06/index.pdf), [demos](06/demo.ipynb), [assignment](https://classroom.github.com/a/u8FyG16T))
 - Wrangling, cleaning, filtering, and transforming data
 - Exploratory data analysis with Pandas
 - Handling missing data
 - Merging, joining, and reshaping data
 - Scaling to larger datasets
+- Example scripts: [dirty-data](06/pandas-dirty-data.py),  [data-cleaning.py](06/pandas-data-cleaning.py)
 
 ## Lecture 7: Python for Data Visualization
 - Introduction to Matplotlib
