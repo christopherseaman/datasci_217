@@ -24,7 +24,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Python data structures (lists, tuples, dictionaries, sets)
 - List comprehensions and generator expressions
 
-## Lecture 4: Functions, Methods, adn Remote Execution
+## Lecture 4: Functions, Methods, and Remote Execution
 ([slides](04), [pdf](04/index.pdf), [assignment](https://classroom.github.com/a/m_U53ad8))
 - Python functions, modules, and packages
 - Interacting with files
