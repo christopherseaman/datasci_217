@@ -34,7 +34,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Submitting Python jobs to the university HPC cluster
 
 ## Lecture 5: Python for Data Management I
-([slides](05), [pdf](05/index.pdf), [demos](?f=05/demo), [exam 1](https://classroom.github.com/a/S2smrp6e) due Oct 23rd)
+([slides](05), [pdf](05/index.pdf), [demo](?f=05/demo), [exam 1](https://classroom.github.com/a/S2smrp6e) due Oct 23rd)
 - Remote Jupyter Notebooks
 - Saving your place in ssh: `screen`, `tmux`, and `mosh`
 - Introduction to NumPy & Pandas
@@ -44,7 +44,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Preview of data manipulation with Pandas
 
 ## Lecture 6: Python for Data Management II
-([slides](06), [pdf](06/index.pdf), [demos](06/demo.ipynb), [assignment](https://classroom.github.com/a/u8FyG16T))
+([slides](06), [pdf](06/index.pdf), [demo](06/demo.ipynb), [assignment](https://classroom.github.com/a/u8FyG16T))
 - Wrangling, cleaning, filtering, and transforming data
 - Exploratory data analysis with Pandas
 - Handling missing data
@@ -53,7 +53,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Example scripts: [dirty-data.py](06/pandas-dirty-data.py),  [data-cleaning.py](06/pandas-data-cleaning.py)
 
 ## Lecture 7: Python for Data Visualization
-([slides](07), [pdf](07/index.pdf), [demos], [assignment])
+([slides](07), [pdf](07/index.pdf), [demo](07/demo.ipynb), [assignment])
 - Introduction to Matplotlib
 - Creating basic plots (line, scatter, bar, histogram)
 - Plotting with Seaborn for statistical visualizations
