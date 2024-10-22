@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "@marp-team/marp-cli": "^3.4.0"
+  },
+  "scripts": {
+    "marp": "marp  --theme-set theme.css --allow-local-files */index.md",
+    "marpdf": "marp --pdf --theme-set theme.css --allow-local-files --chrome-path=\"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge\" */index.md"
   }
 }
