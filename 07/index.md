@@ -918,6 +918,8 @@ plt.show()
   - **Scales**: Control mapping from data space to aesthetic space
   - **Coordinate Systems (coords)**: The space in which the data is represented (e.g., Cartesian, polar)
 
+[plotnine.org](https://plotnine.org/)
+
 ---
 
 ## Plotnine vs. ggplot2
