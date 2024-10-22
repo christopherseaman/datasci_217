@@ -23,13 +23,11 @@ class: invert
     import matplotlib.pyplot as plt
     import seaborn as sns
     ```
-    - *Libraries are the pokémon in your coding arsenal—gotta import them all!*
 - **Working with DataFrames**
   - DataFrames are table-like data structures provided by pandas.
     ```python
     df = pd.read_csv('data.csv')
     ```
-    - *Like Excel spreadsheets, but way cooler and code-friendly!*
 
 ---
 
@@ -39,10 +37,8 @@ class: invert
     ```python
     plt.plot(x, y)
     ```
-    - *Because a picture is worth a thousand rows of data!*
 - **Displaying Plots**
   - Use `plt.show()` to render the visualization.
-    - *Don't leave your plots feeling unseen—let them shine!*
 
 *If you need a refresher on these concepts, please review previous lectures or resources.*
 
@@ -53,15 +49,12 @@ class: invert
 - **pandas**
   - High-level data manipulation library.
   - Built-in plotting methods that simplify creating visualizations from DataFrames.
-  - *Pandas: Not just adorable bears, but also your data's best friend!*
 - **Matplotlib**
   - Foundation library for data visualization in Python.
   - Offers detailed control over plots.
-  - *Think of it as the "Swiss Army Knife" of plotting—versatile and handy!*
 - **Seaborn**
   - Statistical data visualization library.
   - Provides attractive default styles and color palettes.
-  - *Because your data deserves to look as fabulous as it feels!*
 
 ---
 
@@ -70,9 +63,7 @@ class: invert
 ## Introduction
 
 - **Matplotlib** is the most widely used library for plotting in Python.
-  - *It's the OG of Python plotting—setting the stage since the early days!*
 - Think of it as the core building block for most other Python visualization libraries.
-  - *Other libraries stand on the shoulders of this giant!*
 
 ---
 
@@ -80,9 +71,7 @@ class: invert
 
 - **Figures and Axes**
   - **Figure**: The overall container for all plot elements.
-    - *The canvas where your masterpiece comes to life!*
   - **Axes**: The area where data is plotted (can be thought of as individual plots).
-    - *The stage where your data takes center spotlight!*
 
 ---
 
@@ -169,13 +158,10 @@ plt.show()
 
 - **No Plot Displayed**:
   - Ensure `plt.show()` is called after plotting commands.
-    - *Even the best actors need the curtain to rise—don't forget `plt.show()`!*
 - **Data Length Mismatch**:
   - Verify that `x` and `y` are of equal length.
-    - *Mismatch is great in a rom-com, but not in data plotting!*
 - **Import Errors**:
   - Install Matplotlib using `pip install matplotlib` if it's not installed.
-    - *Because missing imports are the coding equivalent of forgetting your keys!*
 
 ---
 
@@ -224,15 +210,12 @@ plt.show()
 - **Defining Data**:
   - `age`: List of ages.
   - `blood_pressure`: Corresponding blood pressure readings.
-  - *Matching ages with blood pressures like pairing fine wine with cheese!*
 - **Creating the Plot**:
   ```python
   plt.scatter(age, blood_pressure, c='red', alpha=0.7)
   ```
-  - *Plotting points like throwing darts at the board—aiming for insights!*
 - **Adding Labels and Title**:
   - Labels the axes and sets the title.
-  - *Guiding the audience through your data journey!*
 - **Displaying the Plot**:
   - Uses `plt.show()` to render the plot.
 
@@ -252,22 +235,18 @@ plt.show()
   ```python
   plt.bar(categories, values)
   ```
-  - *Great for categorical data—because sometimes you just need to raise the bar!*
 - **Histogram**:
   ```python
   plt.hist(data, bins=10)
   ```
-  - *Unveiling the distribution secrets of your data—think of it as data's fingerprint!*
 - **Box Plot**:
   ```python
   plt.boxplot(data)
   ```
-  - *Spotting outliers faster than you can say "Houston, we have a problem!"*
 - **Pie Chart**:
   ```python
   plt.pie(sizes, labels=labels)
   ```
-  - *When you want to show proportions and make your data slice-of-life interesting!*
 
 ---
 
@@ -277,7 +256,6 @@ plt.show()
 
 - pandas provides convenient plotting methods directly on DataFrames and Series.
 - Simplifies the creation of plots without explicitly using Matplotlib commands.
-- *It's like having a fast-pass to plotting—skip the lines and get straight to the fun!*
 
 ---
 
@@ -290,7 +268,6 @@ plt.show()
   ```python
   df.plot(x='column1', y='column2', kind='line', marker, title)
   ```
-  - *Who says data can't be classy? Let pandas do the heavy lifting!*
 
 ---
 
@@ -341,17 +318,14 @@ plt.show()
   ```python
   df = pd.read_csv('hospital_admissions.csv')
   ```
-  - *Because data isn't going to read itself—time to bring it into the game!*
 - **Inspecting Data**:
   ```python
   print(df.head())
   ```
-  - *Always good to peek under the hood before hitting the road!*
 - **Creating the Plot**:
   ```python
   df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
   ```
-  - *One line of code to plot—all the cool kids are doing it!*
 - **Adding Labels**:
   - Sets x and y-axis labels.
 - **Displaying the Plot**:
@@ -371,17 +345,14 @@ plt.show()
 
 - **Column Not Found**:
   - Ensure column names in `x` and `y` match exactly with the DataFrame.
-    - *Check your spelling—autocorrect won't save you here!*
 - **No Plot Displayed**:
   - If plots don't display in Jupyter notebooks, use `%matplotlib inline` at the beginning.
-    - *A little magic command to make plots appear—abracadabra!*
 
 ---
 
 ### 2. `hist()`: Histogram
 
 - **Explanation**: Plots a histogram of a single column or series.
-- *Unleash your inner statistician and dive into the distribution!*
 
 ---
 
@@ -416,7 +387,6 @@ plt.show()
   ```python
   df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   ```
-  - *Plotting that data like a boss—with colors and style!*
 - **Adding Labels and Title**:
   - Provides context to your masterpiece.
 - **Displaying the Plot**:
@@ -438,7 +408,6 @@ plt.show()
 
 - **Seaborn** enhances Matplotlib's functionality by providing high-level interfaces.
 - Ideal for statistical plots and works well with pandas DataFrames.
-- *It's like upgrading from a bicycle to a sports car—same principles, more speed and style!*
 
 ---
 
@@ -451,7 +420,6 @@ plt.show()
   ```python
   sns.scatterplot(x='x_col', y='y_col', data=df, hue, size, style)
   ```
-  - *Bring your scatter plots to life with colors and styles—because who wants a boring plot?*
 
 ---
 
@@ -485,12 +453,10 @@ plt.show()
   ```python
   df = pd.read_csv('health_data.csv')
   ```
-  - *Data in, insights out—that's the way we roll!*
 - **Creating the Plot**:
   ```python
   sns.scatterplot(x='BMI', y='BloodPressure', hue='AgeGroup', data=df)
   ```
-  - *Adding a splash of color—because life is too short for monochrome plots!*
 - **Adding Title**:
   - Sets the title of the plot.
 - **Displaying the Plot**:
@@ -510,10 +476,8 @@ plt.show()
 
 - **Color Coding**:
   - Different colors represent different age groups.
-    - *Like sorting candies by flavor—visually satisfying and informative!*
 - **Trend Analysis**:
   - Helps identify how BMI relates to Blood Pressure across age groups.
-    - *Finding patterns faster than a detective on a TV show!*
 
 ---
 
@@ -523,23 +487,19 @@ plt.show()
   ```python
   sns.histplot(data=df, x='BMI', kde=True)
   ```
-  - *Because sometimes you need more curves than a roller coaster!*
 - **Box Plot**:
   ```python
   sns.boxplot(x='AgeGroup', y='Cholesterol', data=df)
   ```
-  - *Unboxing the secrets of your data—no subscription required!*
 - **Heatmap**:
   ```python
   sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
   ```
-  - *Visualizing correlations hotter than the latest trends!*
 - **FacetGrid**:
   ```python
   g = sns.FacetGrid(df, col='Gender')
   g.map(plt.hist, 'BMI')
   ```
-  - *When one plot isn't enough—facet all the things!*
 
 ---
 
@@ -547,10 +507,8 @@ plt.show()
 
 - **Seaborn Version Compatibility**:
   - Ensure you have the latest version installed using `pip install seaborn --upgrade`.
-    - *Because outdated libraries are so last season!*
 - **Attribute Errors**:
   - Verify function names and parameters, as they may differ between versions.
-    - *Double-check before you wreck—your code, that is!*
 
 ---
 
@@ -558,16 +516,12 @@ plt.show()
 
 - **Consistency**:
   - Use consistent styles and color schemes throughout your visualizations.
-    - *Because even data likes to coordinate its outfit!*
 - **Clarity**:
   - Label axes, include units of measurement, and provide legends when necessary.
-    - *Don't make your audience play "Guess Who" with your plots!*
 - **Simplicity**:
   - Avoid unnecessary decorations that don't add informational value.
-    - *Remember, sometimes less is more—unless we're talking about tacos!*
 - **Interpretation**:
   - Always consider how the audience will interpret your plots.
-    - *Aim for "Aha!" moments, not head-scratching confusion!*
 
 ---
 
@@ -592,12 +546,10 @@ plt.show()
 - **Coxcomb Chart (Rose Diagram)**
   - Visualized causes of mortality during the Crimean War.
   - Highlighted the impact of poor sanitary conditions.
-  - *Proving that data visualization isn't just for the birds—even when it's called a "coxcomb"!*
 
 - **Impact**
   - Influenced medical reform and sanitary practices.
   - Early use of data visualization to drive policy change.
-  - *Nightingale: Saving lives with stats before it was cool.*
 
 ---
 
@@ -607,15 +559,12 @@ plt.show()
 
 - **Real-Time Visualization**
   - Tracked global COVID-19 cases, recoveries, and deaths.
-  - *When the world pressed pause, this dashboard played on.*
 
 - **Effective Use of Maps and Time Series**
   - Interactive and continuously updated.
-  - *Bringing pandemic data to the masses faster than toilet paper flew off shelves!*
 
 - **Global Impact**
   - Became a crucial resource for researchers, policymakers, and the public.
-  - *Proof that in data we trust—even more than in memes during quarantine!*
 
 ---
 
@@ -624,11 +573,9 @@ plt.show()
 - **Importance of Good Design**
   - Enhances comprehension and retention
   - Communicates data accurately and ethically
-  - *Because nobody wants their data presentation to be the next plot twist nobody asked for!*
 
 - **Based on Works of Edward Tufte and Claus O. Wilke**
   - Focus on clarity, precision, and efficiency in data presentation
-  - *Think of them as the Jedi Masters of data visualization!*
 
 ---
 
@@ -638,11 +585,9 @@ plt.show()
 
 - **Eliminate Non-Essential Elements**
   - Remove unnecessary gridlines, backgrounds, and decorations
-  - *Less is more—channel your inner minimalist!*
 
 - **Highlight Key Data**
   - Use visual emphasis (bolding, color) to draw attention to important information
-  - *Make your data the Beyoncé of the visualization—let it steal the spotlight!*
 
 ---
 
@@ -653,15 +598,12 @@ plt.show()
 
 - **Data-Ink Ratio**
   - Maximizing the proportion of ink used to present data.
-  - *Less is more—think of it as the "Marie Kondo" approach to data!*
 
 - **Chartjunk**
   - Eliminating unnecessary decorative elements.
-  - *Say no to chartjunk—because nobody needs a pie chart with 50 shades of gray!*
 
 - **Clarity and Precision**
   - Advocated for minimalist design focused on the data.
-  - *Data used to be shy; Tufte made it the star of the show!*
 
 - **Notable Works**
   - *The Visual Display of Quantitative Information*
@@ -678,8 +620,6 @@ plt.show()
 
 - **Goal**: Maximize data-ink ratio by reducing non-essential elements
 
-- *In other words, don't let your chart wear a heavy coat in summer—keep it light!*
-  
 ---
 
 ### Chartjunk
@@ -690,8 +630,6 @@ plt.show()
   - Excessive colors or patterns
   - 3D effects that distort data
   - Decorative images or clip art
-
-- *Chartjunk isn't adding pineapple to pizza, it's like adding poptarts—it might seem like a good idea to some, but it often just complicates things!*
 
 ---
 
@@ -745,15 +683,11 @@ plt.show()
 
 - **Avoid Misleading Visuals**
   - Start axes at zero when appropriate to prevent exaggeration
-    - *Unless you're trying to create the next big conspiracy theory, keep it real!*
   - Use consistent scales across related visuals
-    - *Inconsistency is only cool in plot twists, not in plots!*
 
 - **Accurate Data Representation**
   - Do not manipulate visuals to mislead or bias the audience
-    - *No one likes a data manipulator—trust is key!*
   - Clearly indicate any data exclusions or manipulations
-    - *Transparency isn't just for windows!*
 
 ---
 
@@ -761,12 +695,10 @@ plt.show()
 
 - **Functional Use**
   - Differentiate data categories meaningfully
-    - *Think Power Rangers—each color represents a different hero!*
   - Use color to highlight important data points
 
 - **Accessibility**
   - Use colorblind-friendly palettes (e.g., Viridis, Cividis)
-    - *Because everyone should be able to appreciate your data masterpiece!*
   - Ensure sufficient contrast between colors
 
 ---
@@ -777,21 +709,17 @@ plt.show()
 
 - **Aggregate Data**
   - Use aggregated or de-identified data to protect patient privacy
-    - *Doctor's code: First, do no harm—even in data!*
 
 - **Geographic Detail**
   - Be cautious with maps; avoid pinpointing exact locations if not necessary
-    - *We're not playing 'Where's Waldo' with patient data!*
 
 ## Ethical Representation
 
 - **Sensitive Topics**
   - Present data on sensitive health issues with care and respect
-    - *Handle with care—like it's hot coffee!*
 
 - **Cultural Sensitivity**
   - Use symbols and icons that are culturally appropriate
-    - *Avoid unintentional faux pas—it's not just about the data, but about respect!*
 
 ---
 
@@ -799,15 +727,12 @@ plt.show()
 
 - **Critical Evaluation**
   - Assess visualizations for simplicity and clarity
-    - *Is your chart more complicated than the plot of 'Inception'? Simplify!*
 
 - **Iterative Refinement**
   - Make incremental improvements based on feedback
-    - *Remember, even Tony Stark upgraded his suit—improve iteratively!*
 
 - **Audience Consideration**
   - Tailor visuals to the needs and expectations of the audience
-    - *Know your audience—don't serve sushi at a pizza party!*
 
 ---
 
@@ -815,15 +740,12 @@ plt.show()
 
 - **Narrative Flow**
   - Guide the viewer through the data logically
-    - *Be the Bob Ross of data—paint a happy little story, one insight at a time!*
 
 - **Annotations and Highlights**
   - Use text and markers to emphasize key points
-    - *Because sometimes even data needs a little spotlight!*
 
 - **Provide Context**
   - Background information aids interpretation
-    - *Set the scene before the action begins!*
 
 ---
 
@@ -831,15 +753,12 @@ plt.show()
 
 - **Simplicity is Key**
   - Strive for clarity and avoid unnecessary complexity
-    - *Don't turn your chart into a 'Where's Waldo' page!*
 
 - **Ethics Matter**
   - Represent data honestly and responsibly
-    - *With great data comes great responsibility!*
 
 - **Design with Purpose**
   - Every element in your visualization should serve a function
-    - *No more, no less—just like a perfectly balanced equation!*
 
 ---
 
@@ -849,7 +768,6 @@ plt.show()
 - **"Fundamentals of Data Visualization"** by Claus O. Wilke
 - [**"Tufte's Principles of Data-Ink"** Liu & Zhuang](https://jtr13.github.io/cc19/tuftes-principles-of-data-ink.html)
 - **Color Brewer 2**: [colorbrewer2.org](http://colorbrewer2.org/) for choosing colorblind-friendly palettes
-- *Because lifelong learning is the real infinite game!*
 
 ---
 
@@ -870,8 +788,6 @@ plt.show()
   - Clarity of labels and titles
   - Use of color and chart elements
   - Ethical representation of data
-
-- *Channel your inner Simon Cowell!*
 
 ---
 
@@ -1413,4 +1329,3 @@ st.plotly_chart(fig)
   - Dash: [Deployment](https://dash.plotly.com/deployment)
   - Streamlit: [Sharing Apps](https://streamlit.io/sharing)
 
----
