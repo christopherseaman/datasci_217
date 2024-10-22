@@ -4,7 +4,7 @@ theme: sqrl
 paginate: true
 class: invert
 ---
- 
+
 # Lecture 07 Outline: Data Visualization
 
 
