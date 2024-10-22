@@ -12,6 +12,10 @@ class: invert
 2. Design Principles for Effective Visualization
 3. Advanced Visualization
 
+<!--
+ADD SPEAKER NOTES IN COMMENTS LIKE THIS
+-->
+
 ---
 
 # Brief Recap: Essential Python Concepts
@@ -55,6 +59,145 @@ class: invert
 - **Seaborn**
   - Statistical data visualization library.
   - Provides attractive default styles and color palettes.
+
+---
+
+# pandas: Built-in Plotting
+
+## Introduction
+
+- pandas provides convenient plotting methods directly on DataFrames and Series.
+- Simplifies the creation of plots without explicitly using Matplotlib commands.
+
+---
+
+## Important Methods in pandas
+
+### 1. `plot()`: Line Plot
+
+- **Explanation**: Plots DataFrame or Series data as lines.
+- **Structure**:
+  ```python
+  df.plot(x='column1', y='column2', kind='line', marker, title)
+  ```
+
+---
+
+### Code Example: pandas Line Plot
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load data
+df = pd.read_csv('data.csv')
+
+# Inspect data
+print(df.head())
+```
+
+*Sample Output*:
+```
+   Year  Admissions
+0  2016         500
+1  2017         550
+2  2018         600
+3  2019         650
+4  2020         700
+```
+
+---
+
+### Continuing the Code Example
+
+```python
+# Plot data
+df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
+
+# Add labels
+plt.xlabel('Year')
+plt.ylabel('Number of Admissions')
+
+# Show plot
+plt.show()
+```
+
+---
+
+### Code Explanation
+
+- **Loading Data**:
+  ```python
+  df = pd.read_csv('data.csv')
+  ```
+- **Inspecting Data**:
+  ```python
+  print(df.head())
+  ```
+- **Creating the Plot**:
+  ```python
+  df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
+  ```
+- **Adding Labels**:
+  - Sets x and y-axis labels.
+- **Displaying the Plot**:
+  - Shows the plot using `plt.show()`.
+
+---
+
+### Output Example
+
+*An image showing a line plot of yearly hospital admissions.*
+
+#FIXME-{{Include the actual line plot image of hospital admissions over the years}}
+
+---
+
+### Common Issues and Troubleshooting
+
+- **Column Not Found**:
+  - Ensure column names in `x` and `y` match exactly with the DataFrame.
+- **No Plot Displayed**:
+  - If plots don't display in Jupyter notebooks, use `%matplotlib inline` at the beginning.
+
+---
+
+### 2. `hist()`: Histogram
+
+- **Explanation**: Plots a histogram of a single column or series.
+
+---
+
+### Code Example: pandas Histogram
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load data
+df = pd.read_csv('data.csv')
+
+# Plot histogram
+df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
+```
+
+---
+
+### Code Explanation
+
+- **Loading Data**:
+  - Reads patient age data into a DataFrame.
+- **Creating the Histogram**:
+  ```python
+  df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
+  ```
+---
+
+### Output Example
+
+*An image showing a histogram of patient age distribution.*
+
+#FIXME-{{Include the actual histogram image of patient age distribution}}
 
 ---
 
@@ -247,158 +390,24 @@ plt.show()
   ```python
   plt.pie(sizes, labels=labels)
   ```
-
----
-
-# pandas: Built-in Plotting
-
-## Introduction
-
-- pandas provides convenient plotting methods directly on DataFrames and Series.
-- Simplifies the creation of plots without explicitly using Matplotlib commands.
-
----
-
-## Important Methods in pandas
-
-### 1. `plot()`: Line Plot
-
-- **Explanation**: Plots DataFrame or Series data as lines.
-- **Structure**:
+- **Subplots**:
   ```python
-  df.plot(x='column1', y='column2', kind='line', marker, title)
+  fig, axs = plt.subplots(2, 2)  # Creates a 2x2 grid of subplots
+  axs[0, 0].plot(x, y)  # Plot in the first subplot
   ```
-
----
-
-### Code Example: pandas Line Plot
-
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load data
-df = pd.read_csv('hospital_admissions.csv')
-
-# Inspect data
-print(df.head())
-```
-
-*Sample Output*:
-```
-   Year  Admissions
-0  2016         500
-1  2017         550
-2  2018         600
-3  2019         650
-4  2020         700
-```
-
----
-
-### Continuing the Code Example
-
-```python
-# Plot data
-df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
-
-# Add labels
-plt.xlabel('Year')
-plt.ylabel('Number of Admissions')
-
-# Show plot
-plt.show()
-```
-
----
-
-### Code Explanation
-
-- **Loading Data**:
+- **Image Display**:
   ```python
-  df = pd.read_csv('hospital_admissions.csv')
+  plt.imshow(image_data)
   ```
-- **Inspecting Data**:
+- **Contour Plot**:
   ```python
-  print(df.head())
+  plt.contour(X, Y, Z)  # For line contours
+  plt.contourf(X, Y, Z)  # For filled contours
   ```
-- **Creating the Plot**:
+- **Error Bars**:
   ```python
-  df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
+  plt.errorbar(x, y, yerr=error)
   ```
-- **Adding Labels**:
-  - Sets x and y-axis labels.
-- **Displaying the Plot**:
-  - Shows the plot using `plt.show()`.
-
----
-
-### Output Example
-
-*An image showing a line plot of yearly hospital admissions.*
-
-#FIXME-{{Include the actual line plot image of hospital admissions over the years}}
-
----
-
-### Common Issues and Troubleshooting
-
-- **Column Not Found**:
-  - Ensure column names in `x` and `y` match exactly with the DataFrame.
-- **No Plot Displayed**:
-  - If plots don't display in Jupyter notebooks, use `%matplotlib inline` at the beginning.
-
----
-
-### 2. `hist()`: Histogram
-
-- **Explanation**: Plots a histogram of a single column or series.
-
----
-
-### Code Example: pandas Histogram
-
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load data
-df = pd.read_csv('patient_ages.csv')
-
-# Plot histogram
-df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
-
-# Add labels and title
-plt.xlabel('Age')
-plt.ylabel('Number of Patients')
-plt.title('Age Distribution of Patients')
-
-# Show plot
-plt.show()
-```
-
----
-
-### Code Explanation
-
-- **Loading Data**:
-  - Reads patient age data into a DataFrame.
-- **Creating the Histogram**:
-  ```python
-  df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
-  ```
-- **Adding Labels and Title**:
-  - Provides context to your masterpiece.
-- **Displaying the Plot**:
-  - Renders the histogram.
-
----
-
-### Output Example
-
-*An image showing a histogram of patient age distribution.*
-
-#FIXME-{{Include the actual histogram image of patient age distribution}}
 
 ---
 
@@ -431,7 +440,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load dataset
-df = pd.read_csv('health_data.csv')
+df = pd.read_csv('data.csv')
 
 # Create scatter plot
 sns.scatterplot(x='BMI', y='BloodPressure', hue='AgeGroup', data=df)
@@ -451,7 +460,7 @@ plt.show()
   - Imports seaborn, matplotlib, and pandas.
 - **Loading Data**:
   ```python
-  df = pd.read_csv('health_data.csv')
+  df = pd.read_csv('data.csv')
   ```
 - **Creating the Plot**:
   ```python
@@ -499,6 +508,39 @@ plt.show()
   ```python
   g = sns.FacetGrid(df, col='Gender')
   g.map(plt.hist, 'BMI')
+  ```
+- **Line Plot**:
+  ```python
+  sns.lineplot(x='Year', y='Value', data=df)
+  ```
+- **Bar Plot**:
+  ```python
+  sns.barplot(x='Category', y='Value', data=df)
+  ```
+- **Violin Plot**:
+  ```python
+  sns.violinplot(x='Category', y='Value', data=df)
+  ```
+- **Pair Plot**:
+  ```python
+  sns.pairplot(df, hue='Category')
+  ```
+
+---
+
+### Customization in Seaborn
+
+- **Setting Plot Style**:
+  ```python
+  sns.set_style("whitegrid")
+  ```
+- **Color Palettes**:
+  ```python
+  sns.set_palette("husl")
+  ```
+- **Figure Size**:
+  ```python
+  plt.figure(figsize=(10, 6))
   ```
 
 ---
@@ -1166,7 +1208,7 @@ import plotly.express as px
 import pandas as pd
 
 # Load data
-df = pd.read_csv('health_data.csv')
+df = pd.read_csv('data.csv')
 
 # Initialize the app
 app = dash.Dash(__name__)
@@ -1236,7 +1278,7 @@ import pandas as pd
 import plotly.express as px
 
 # Load data
-df = pd.read_csv('health_data.csv')
+df = pd.read_csv('data.csv')
 
 # App title
 st.title('Health Data Explorer')
