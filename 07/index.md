@@ -13,7 +13,7 @@ class: invert
 3. Advanced Visualization
 
 <!--
-ADD SPEAKER NOTES IN COMMENTS LIKE THIS
+ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
 -->
 
 ---
@@ -32,19 +32,6 @@ ADD SPEAKER NOTES IN COMMENTS LIKE THIS
     ```python
     df = pd.read_csv('data.csv')
     ```
-
----
-
-# Brief Recap: Essential Python Concepts
-- **Basic Plotting**
-  - Call plotting functions from libraries to create visualizations.
-    ```python
-    plt.plot(x, y)
-    ```
-- **Displaying Plots**
-  - Use `plt.show()` to render the visualization.
-
-*If you need a refresher on these concepts, please review previous lectures or resources.*
 
 ---
 
@@ -68,6 +55,10 @@ ADD SPEAKER NOTES IN COMMENTS LIKE THIS
 
 - pandas provides convenient plotting methods directly on DataFrames and Series.
 - Simplifies the creation of plots without explicitly using Matplotlib commands.
+- Basic workflow:
+  1. Create plot with df.plot() or series.plot()
+  2. Plots display automatically in Jupyter notebooks
+  3. For scripts, use plot.show()
 
 ---
 
@@ -83,136 +74,31 @@ ADD SPEAKER NOTES IN COMMENTS LIKE THIS
 
 ---
 
-### Code Example: pandas Line Plot
-
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load data
-df = pd.read_csv('data.csv')
-
-# Inspect data
-print(df.head())
-```
-
-*Sample Output*:
-```
-   Year  Admissions
-0  2016         500
-1  2017         550
-2  2018         600
-3  2019         650
-4  2020         700
-```
-
----
-
-### Continuing the Code Example
-
-```python
-# Plot data
-df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
-
-# Add labels
-plt.xlabel('Year')
-plt.ylabel('Number of Admissions')
-
-# Show plot
-plt.show()
-```
-
----
-
-### Code Explanation
-
-- **Loading Data**:
-  ```python
-  df = pd.read_csv('data.csv')
-  ```
-- **Inspecting Data**:
-  ```python
-  print(df.head())
-  ```
-- **Creating the Plot**:
-  ```python
-  df.plot(x='Year', y='Admissions', kind='line', marker='o', title='Yearly Hospital Admissions')
-  ```
-- **Adding Labels**:
-  - Sets x and y-axis labels.
-- **Displaying the Plot**:
-  - Shows the plot using `plt.show()`.
-
----
-
-### Output Example
-
-*An image showing a line plot of yearly hospital admissions.*
-
-#FIXME-{{Include the actual line plot image of hospital admissions over the years}}
-
----
-
-### Common Issues and Troubleshooting
-
-- **Column Not Found**:
-  - Ensure column names in `x` and `y` match exactly with the DataFrame.
-- **No Plot Displayed**:
-  - If plots don't display in Jupyter notebooks, use `%matplotlib inline` at the beginning.
-
----
 
 ### 2. `hist()`: Histogram
 
 - **Explanation**: Plots a histogram of a single column or series.
 
----
-
-### Code Example: pandas Histogram
-
 ```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load data
-df = pd.read_csv('data.csv')
-
-# Plot histogram
 df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 ```
 
 ---
 
-### Code Explanation
-
-- **Loading Data**:
-  - Reads patient age data into a DataFrame.
-- **Creating the Histogram**:
-  ```python
-  df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
-  ```
----
-
-### Output Example
-
-*An image showing a histogram of patient age distribution.*
-
-#FIXME-{{Include the actual histogram image of patient age distribution}}
+# LIVE DEMO!
 
 ---
-
 # Matplotlib: The Foundation
 
 ## Introduction
 
-- **Matplotlib** is the most widely used library for plotting in Python.
-- Think of it as the core building block for most other Python visualization libraries.
-
----
-
-## Key Concepts in Matplotlib
-
-- **Figures and Axes**
+- **Matplotlib**  most widely used plotting library - the basic building block behind most other Python visualization libraries.
+- Workflow:
+  1. Create figure with plt.figure()
+  2. Add data with plt.plot() or other plot types
+  3. Customize with labels, title, etc.
+  4. Display with plt.show()
+- Concepts
   - **Figure**: The overall container for all plot elements.
   - **Axes**: The area where data is plotted (can be thought of as individual plots).
 
@@ -238,76 +124,6 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 
 ---
 
-### Code Example: Line Plot
-
-```python
-import matplotlib.pyplot as plt
-
-# Data
-years = [2010, 2012, 2014, 2016, 2018, 2020]
-patients = [150, 180, 200, 230, 260, 300]
-
-# Create line plot
-plt.plot(years, patients, marker='o', linestyle='-', color='b', label='Patients')
-
-# Add labels and title
-plt.xlabel('Year')
-plt.ylabel('Number of Patients')
-plt.title('Number of Patients Over Years')
-
-# Add legend
-plt.legend()
-
-# Show plot
-plt.show()
-```
-
----
-
-### Code Explanation
-
-  ```python
-  import matplotlib.pyplot as plt
-  
-  years = [2010, 2012, 2014, 2016, 2018, 2020]
-  patients = [150, 180, 200, 230, 260, 300]
-  
-  # Creating the Plot
-  plt.plot(years, patients, marker='o', linestyle='-', color='b', label='Patients')
-  
-  # Adding Labels and Title
-  plt.xlabel('Year')
-  plt.ylabel('Number of Patients')
-  plt.title('Number of Patients Over Years')
-  
-  # Adding a Legend
-  plt.legend()
-  
-  # Displaying the Plot**:
-  plt.show()
-  ```
-  
----
-
-### Output Example
-
-*An image showing a line plot of patients over years with labeled axes and title.*
-
-#FIXME-{{Insert the actual line plot image showing the trend of patient numbers over the years}}
-
----
-
-### Common Issues and Troubleshooting
-
-- **No Plot Displayed**:
-  - Ensure `plt.show()` is called after plotting commands.
-- **Data Length Mismatch**:
-  - Verify that `x` and `y` are of equal length.
-- **Import Errors**:
-  - Install Matplotlib using `pip install matplotlib` if it's not installed.
-
----
-
 ### 2. `scatter()`: Scatter Plot
 
 - **Explanation**: Creates a scatter plot of x vs. y, useful for showing relationships between variables.
@@ -322,53 +138,6 @@ plt.show()
     - `s`: Size of markers.
     - `c`: Color of markers.
     - `alpha`: Transparency level of markers.
-
----
-
-### Code Example: Scatter Plot
-
-```python
-import matplotlib.pyplot as plt
-
-# Data
-age = [25, 35, 45, 20, 30, 40, 50, 60]
-blood_pressure = [120, 130, 125, 115, 135, 140, 150, 145]
-
-# Create scatter plot
-plt.scatter(age, blood_pressure, c='red', alpha=0.7)
-
-# Add labels and title
-plt.xlabel('Age')
-plt.ylabel('Blood Pressure')
-plt.title('Blood Pressure vs Age')
-
-# Show plot
-plt.show()
-```
-
----
-
-### Code Explanation
-
-- **Defining Data**:
-  - `age`: List of ages.
-  - `blood_pressure`: Corresponding blood pressure readings.
-- **Creating the Plot**:
-  ```python
-  plt.scatter(age, blood_pressure, c='red', alpha=0.7)
-  ```
-- **Adding Labels and Title**:
-  - Labels the axes and sets the title.
-- **Displaying the Plot**:
-  - Uses `plt.show()` to render the plot.
-
----
-
-### Output Example
-
-*An image showing a scatter plot of blood pressure vs age.*
-
-#FIXME-{{Include the actual scatter plot image of blood pressure versus age}}
 
 ---
 
@@ -411,14 +180,34 @@ plt.show()
 
 ---
 
+# Resources for Further Learning
+
+- **Matplotlib Documentation**: [matplotlib.org](https://matplotlib.org/)
+- **pandas Visualization Guide**: [pandas.pydata.org](https://pandas.pydata.org/pandas-docs/stable/user_guide/visualization.html)
+- **Seaborn Tutorials**: [seaborn.pydata.org](https://seaborn.pydata.org/tutorial.html)
+- **Troubleshooting Tips**: Search for errors on Stack Overflow or consult the official documentation.
+
+---
+
+# LIVE DEMO!
+
+---
+
+
 # Seaborn: Statistical Data Visualization
 
 ## Introduction
 
 - **Seaborn** enhances Matplotlib's functionality by providing high-level interfaces.
 - Ideal for statistical plots and works well with pandas DataFrames.
+- Basic workflow:
+  1. Create plot with sns.scatterplot() or other plot types
+  2. Plots display automatically in Jupyter notebooks
+  3. For scripts, use plt.show() since Seaborn uses Matplotlib backend
 
 ---
+
+
 
 ## Important Methods in Seaborn
 
@@ -427,66 +216,8 @@ plt.show()
 - **Explanation**: Creates enhanced scatter plots with additional functionalities.
 - **Structure**:
   ```python
-  sns.scatterplot(x='x_col', y='y_col', data=df, hue, size, style)
+  sns.scatterplot(data=df, x='x_col', y='y_col', hue='category', size='value')
   ```
-
----
-
-### Code Example: Seaborn Scatter Plot
-
-```python
-import seaborn as sns
-import matplotlib.pyplot as plt
-import pandas as pd
-
-# Load dataset
-df = pd.read_csv('data.csv')
-
-# Create scatter plot
-sns.scatterplot(x='BMI', y='BloodPressure', hue='AgeGroup', data=df)
-
-# Add title
-plt.title('Blood Pressure vs BMI by Age Group')
-
-# Show plot
-plt.show()
-```
-
----
-
-### Code Explanation
-
-- **Importing Libraries**:
-  - Imports seaborn, matplotlib, and pandas.
-- **Loading Data**:
-  ```python
-  df = pd.read_csv('data.csv')
-  ```
-- **Creating the Plot**:
-  ```python
-  sns.scatterplot(x='BMI', y='BloodPressure', hue='AgeGroup', data=df)
-  ```
-- **Adding Title**:
-  - Sets the title of the plot.
-- **Displaying the Plot**:
-  - Renders the scatter plot.
-
----
-
-### Output Example
-
-*An image showing a scatter plot of Blood Pressure vs BMI colored by Class.*
-
-#FIXME-{{Include the actual Seaborn scatter plot image with hue based on Age Group}}
-
----
-
-### Interpreting the Plot
-
-- **Color Coding**:
-  - Different colors represent different age groups.
-- **Trend Analysis**:
-  - Helps identify how BMI relates to Blood Pressure across age groups.
 
 ---
 
@@ -498,7 +229,7 @@ plt.show()
   ```
 - **Box Plot**:
   ```python
-  sns.boxplot(x='AgeGroup', y='Cholesterol', data=df)
+  sns.boxplot(data=df, x='AgeGroup', y='Cholesterol')
   ```
 - **Heatmap**:
   ```python
@@ -507,23 +238,28 @@ plt.show()
 - **FacetGrid**:
   ```python
   g = sns.FacetGrid(df, col='Gender')
-  g.map(plt.hist, 'BMI')
+  g.map(sns.histplot, 'BMI')
   ```
+
+---
+
+### Additional Plot Types in Seaborn
+
 - **Line Plot**:
   ```python
-  sns.lineplot(x='Year', y='Value', data=df)
+  sns.lineplot(data=df, x='Year', y='Value')
   ```
 - **Bar Plot**:
   ```python
-  sns.barplot(x='Category', y='Value', data=df)
+  sns.barplot(data=df, x='Category', y='Value')
   ```
 - **Violin Plot**:
   ```python
-  sns.violinplot(x='Category', y='Value', data=df)
+  sns.violinplot(data=df, x='Category', y='Value')
   ```
 - **Pair Plot**:
   ```python
-  sns.pairplot(df, hue='Category')
+  sns.pairplot(data=df, hue='Category')
   ```
 
 ---
@@ -540,50 +276,21 @@ plt.show()
   ```
 - **Figure Size**:
   ```python
-  plt.figure(figsize=(10, 6))
+  # Uses an arcane syntax within `set_theme` or `set_context`
+  # set_theme can also set the style (d'uh)
+  sns.set_theme(style="whitegrid", rc={"figure.figsize": (10, 6)})
   ```
-
----
-
-### Common Issues and Troubleshooting
-
-- **Seaborn Version Compatibility**:
-  - Ensure you have the latest version installed using `pip install seaborn --upgrade`.
-- **Attribute Errors**:
-  - Verify function names and parameters, as they may differ between versions.
-
----
-
-# Tips for Effective Visualization
-
-- **Consistency**:
-  - Use consistent styles and color schemes throughout your visualizations.
-- **Clarity**:
-  - Label axes, include units of measurement, and provide legends when necessary.
-- **Simplicity**:
-  - Avoid unnecessary decorations that don't add informational value.
-- **Interpretation**:
-  - Always consider how the audience will interpret your plots.
-
----
-
-# Resources for Further Learning
-
-- **Matplotlib Documentation**: [matplotlib.org](https://matplotlib.org/)
-- **pandas Visualization Guide**: [pandas.pydata.org](https://pandas.pydata.org/pandas-docs/stable/user_guide/visualization.html)
-- **Seaborn Tutorials**: [seaborn.pydata.org](https://seaborn.pydata.org/tutorial.html)
-- **Troubleshooting Tips**: Search for errors on Stack Overflow or consult the official documentation.
 
 ---
 
 # LIVE DEMO!
 
+---
 
 ![bg contain](media/Nightingale-mortality.jpg)
 
 ---
 ## Florence Nightingale: The Rose Diagram
-
 
 - **Coxcomb Chart (Rose Diagram)**
   - Visualized causes of mortality during the Crimean War.
@@ -639,13 +346,10 @@ plt.show()
 ## Edward Tufte: The Pioneer of Data Visualization
 
 - **Data-Ink Ratio**
-  - Maximizing the proportion of ink used to present data.
+  - The proportion of ink used to present actual data compared to the total ink used in the graphic.
 
 - **Chartjunk**
-  - Eliminating unnecessary decorative elements.
-
-- **Clarity and Precision**
-  - Advocated for minimalist design focused on the data.
+  - Unnecessary or distracting decorations in data visualizations that do not improve the viewer's understanding.
 
 - **Notable Works**
   - *The Visual Display of Quantitative Information*
@@ -654,28 +358,7 @@ plt.show()
 
 ---
 
-## Definitions
-
-### Data-Ink Ratio
-
-- **Definition**: The proportion of ink used to present actual data compared to the total ink used in the graphic
-
-- **Goal**: Maximize data-ink ratio by reducing non-essential elements
-
----
-
-### Chartjunk
-
-- **Definition**: Unnecessary or distracting decorations in data visualizations that do not improve the viewer's understanding
-
-- **Includes**:
-  - Excessive colors or patterns
-  - 3D effects that distort data
-  - Decorative images or clip art
-
----
-
-### Bad Example
+### Bad Examples
 
 - **Issues**:
   - Distracting colors
@@ -692,7 +375,7 @@ plt.show()
 
 ---
 
-### Good Example
+### Better Example
 
 - **Features**:
   - Clear labels and titles
@@ -721,7 +404,7 @@ plt.show()
 
 ---
 
-# Ethical Representation of Data (chartcrime)
+# "Legal" Representation of Data (chartcrime)
 
 - **Avoid Misleading Visuals**
   - Start axes at zero when appropriate to prevent exaggeration
@@ -731,10 +414,6 @@ plt.show()
   - Do not manipulate visuals to mislead or bias the audience
   - Clearly indicate any data exclusions or manipulations
 
----
-
-# Use of Color
-
 - **Functional Use**
   - Differentiate data categories meaningfully
   - Use color to highlight important data points
@@ -742,65 +421,6 @@ plt.show()
 - **Accessibility**
   - Use colorblind-friendly palettes (e.g., Viridis, Cividis)
   - Ensure sufficient contrast between colors
-
----
-
-# Specific Considerations in Health Data Visualization
-
-## Privacy and Confidentiality
-
-- **Aggregate Data**
-  - Use aggregated or de-identified data to protect patient privacy
-
-- **Geographic Detail**
-  - Be cautious with maps; avoid pinpointing exact locations if not necessary
-
-## Ethical Representation
-
-- **Sensitive Topics**
-  - Present data on sensitive health issues with care and respect
-
-- **Cultural Sensitivity**
-  - Use symbols and icons that are culturally appropriate
-
----
-
-# Applying Principles in Practice
-
-- **Critical Evaluation**
-  - Assess visualizations for simplicity and clarity
-
-- **Iterative Refinement**
-  - Make incremental improvements based on feedback
-
-- **Audience Consideration**
-  - Tailor visuals to the needs and expectations of the audience
-
----
-
-# Tell a Story
-
-- **Narrative Flow**
-  - Guide the viewer through the data logically
-
-- **Annotations and Highlights**
-  - Use text and markers to emphasize key points
-
-- **Provide Context**
-  - Background information aids interpretation
-
----
-
-# Takeaways
-
-- **Simplicity is Key**
-  - Strive for clarity and avoid unnecessary complexity
-
-- **Ethics Matter**
-  - Represent data honestly and responsibly
-
-- **Design with Purpose**
-  - Every element in your visualization should serve a function
 
 ---
 
@@ -854,6 +474,10 @@ plt.show()
 - **Plotnine**
   - Python implementation of the **Grammar of Graphics**
   - Inspired by R's **ggplot2**
+  - Basic workflow:
+    1. Create plot with ggplot()
+    2. Add layers with + operator
+    3. Display with plot.show() or plot.draw()
 - **Command-Line Visualization**
   - Tools for visualizing data directly from the command line
   - Examples: **Mermaid.js**, **spark**
@@ -863,7 +487,8 @@ plt.show()
 
 ---
 
-# Plotnine: Grammar of Graphics in Python
+# Plotnine: Grammar of Graphics in Python 
+*(Advanced)*
 
 ## Understanding the Grammar of Graphics
 
@@ -882,9 +507,11 @@ plt.show()
 
 ## Plotnine vs. ggplot2
 
-- **Similar Syntax and Concepts**
+99.99% compatible with ggplot2
+
+- **Syntax and Concepts**
   - Plotnine mirrors ggplot2's structure and functions
-  - Beneficial for students familiar with R
+  - Beneficial for anyone familiar with R
 - **Example Comparison**
 
   - **ggplot2 (R)**:
@@ -900,7 +527,7 @@ plt.show()
 
 ## Important Components in Plotnine
 
-### 1. `ggplot()`: Initialize a Plot
+### `ggplot()`: Initialize a Plot
 
 - **Explanation**: Creates a new plot object with data and aesthetic mappings
 - **Structure**:
@@ -913,129 +540,15 @@ plt.show()
 
 ---
 
-### Code Example: Basic Scatter Plot
+## Plotnine Resources
 
-```python
-from plotnine import ggplot, aes, geom_point, ggtitle
-import pandas as pd
+There are whole books just on `ggplot2`. In fact, it started as a book
 
-# Sample data
-df = pd.DataFrame({
-    'BMI': [22, 25, 28, 24, 27],
-    'BloodPressure': [120, 130, 125, 118, 135]
-})
+> Wilkinson, L. (2005), The Grammar of Graphics, 2nd ed., Springer
 
-# Create plot
-plot = (ggplot(df, aes(x='BMI', y='BloodPressure'))
-        + geom_point(color='blue')
-        + ggtitle('Blood Pressure vs BMI'))
-
-print(plot)
-```
-
----
-
-### Code Explanation
-
-- **Importing Libraries**:
-  ```python
-  from plotnine import ggplot, aes, geom_point, ggtitle
-  import pandas as pd
-  ```
-  - Imports necessary components from Plotnine and pandas.
-- **Defining Data**:
-  - Creates a DataFrame `df` with 'BMI' and 'BloodPressure' columns.
-- **Creating the Plot**:
-  ```python
-  plot = (ggplot(df, aes(x='BMI', y='BloodPressure'))
-          + geom_point(color='blue')
-          + ggtitle('Blood Pressure vs BMI'))
-  ```
-  - Initializes the plot with data and aesthetic mappings.
-  - Uses `geom_point()` to add scatter plot points.
-  - Adds a title with `ggtitle()`.
-- **Displaying the Plot**:
-  - The `print(plot)` statement renders the plot.
-
----
-
-### Output Description
-
-#FIXME
-- A scatter plot showing Blood Pressure versus BMI.
-- Each point represents a data entry from the DataFrame.
-- The plot includes axis labels and a title.
-
----
-
-### 2. Layering Geometries and Aesthetics
-
-- **Adding Layers**: Use the `+` operator to add layers.
-- **Example**: Adding a regression line
-  ```python
-  from plotnine import geom_smooth
-
-  plot = (ggplot(df, aes(x='BMI', y='BloodPressure'))
-          + geom_point(color='blue')
-          + geom_smooth(method='lm')
-          + ggtitle('Blood Pressure vs BMI with Regression Line'))
-  ```
-
----
-
-### Code Explanation
-
-- **Adding `geom_smooth()`**:
-  - Adds a smooth line (here, a linear regression line) to the plot.
-  - `method='lm'` specifies a linear model.
-- **Enhanced Visualization**:
-  - Helps in identifying trends or relationships in the data.
-
----
-
-### Output Description
-
-#FIXME
-- The scatter plot now includes a regression line.
-- Visualizes the trend of Blood Pressure increasing with BMI.
-
----
-
-### 3. Facetting: Creating Multiple Plots
-
-- **Explanation**: Splits the data into subsets according to a variable and creates multiple plots.
-- **Structure**:
-  ```python
-  + facet_wrap('~ variable')
-  ```
-- **Example**:
-  ```python
-  from plotnine import facet_wrap
-
-  plot = (ggplot(df, aes(x='BMI', y='BloodPressure'))
-          + geom_point(color='blue')
-          + facet_wrap('~ AgeGroup')
-          + ggtitle('Blood Pressure vs BMI by Age Group'))
-  ```
-
----
-
-### Code Explanation
-
-- **Assuming `df` Includes 'AgeGroup'**:
-  - The DataFrame has a categorical variable 'AgeGroup'.
-- **Using `facet_wrap()`**:
-  - Creates separate plots for each age group.
-- **Purpose**:
-  - Allows comparison across different subsets of the data.
-
----
-
-### Output Description
-
-#FIXME
-- Multiple scatter plots, each corresponding to an age group.
-- Facilitates analysis of patterns within subgroups.
+- [Data Visualization Ch 7](https://andrewirwin.github.io/data-visualization/grammar.html), Andrew Irwin
+- [U of Iowa GoG Tutorial](http://homepage.stat.uiowa.edu/~luke/classes/STAT4580-2024/ggplot.html)
+- [R Stats `ggplot2` Tutorial](http://r-statistics.co/Complete-Ggplot2-Tutorial-Part1-With-R-Code.html)
 
 ---
 
@@ -1049,25 +562,16 @@ print(plot)
 - **Advantages**:
   - Quick creation of diagrams without graphic design tools.
   - Integration with markdown documents and presentations.
-
----
-
-### Use Cases
-
-- **Documentation**: Embed diagrams in technical documents or code repositories.
-- **Workflow Visualization**: Illustrate processes, algorithms, or decision trees.
-- **Education**: Visual aid for teaching concepts.
-
----
-
-### Creating Diagrams with Mermaid.js
-
 - **Structure**:
   ```markdown
   ```mermaid
   [Diagram Definition]
   ```
   ```
+---
+
+### Creating Diagrams with Mermaid.js
+
 - **Example**:
 
   ```mermaid
@@ -1081,19 +585,15 @@ print(plot)
   ```
 
 
----
-
-![bg contain](media/mermaid.png)
-
----
-
-### Diagram Explanation
-
 - **Nodes**:
   - `A`, `B`, `C`, `D`, `E`, `F` represent steps or decisions.
 - **Edges**:
   - Arrows define the flow between nodes.
   - Labels like `|Yes|` and `|No|` represent decision outcomes.
+  - 
+---
+
+![bg contain](media/mermaid.png)
 
 ---
 
@@ -1116,7 +616,7 @@ print(plot)
 
 ## Gnuplot
 
-Viewing graphs from the command line (you will almost never do this, but it's cool!)
+Viewing graphs from the command line (you will almost never do this, ***but it's cool!***)
 
 ```bash
 ping -c 10 google.com -i 0.2 | awk '/time=/{ print $(NF-1) }' | cut -d= -f2 | \
@@ -1161,6 +661,10 @@ ping -c 10 google.com -i 0.2 | awk '/time=/{ print $(NF-1) }' | cut -d= -f2 | \
 
 ## Sparkline
 
+Because, why not?
+
+- [https://github.com/holman/spark](https://github.com/holman/spark)
+
 ```bash
 curl -s https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.csv | \
   sed '1d' | \
@@ -1183,16 +687,6 @@ curl -s https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.csv | 
   - Emphasizes minimal code to produce apps.
 - **Tableau/Superset/Looker/PowerBI**:
   - Popular BI tools for creating interactive dashboards. ($$$)
-
----
-
-### Comparison
-
-| Feature            | Plotly Dash                           | Streamlit                        |
-|--------------------|---------------------------------------|----------------------------------|
-| **Ease of Use**    | Moderate (requires understanding callbacks) | Easy (simple script-based apps)  |
-| **Customization**  | High (extensive layout and styling options) | Moderate                         |
-| **Best For**       | Complex dashboards, enterprise apps   | Quick prototypes, data exploration |
 
 ---
 
