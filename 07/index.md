@@ -140,6 +140,8 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - **Figure**: The overall container for all plot elements.
   - **Axes**: The area where data is plotted (can be thought of as individual plots).
 
+Note: Use plt.tight_layout() to prevent overlapping elements
+
 <!--
 - Figure/Axes hierarchy is key to understanding matplotlib
 - Think of figure as your canvas, axes as individual paintings
