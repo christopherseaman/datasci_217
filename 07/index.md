@@ -20,6 +20,10 @@ class: invert
 
 ---
 
+![bg contain](media/nixcraft.png)
+
+---
+
 # Brief Recap: Essential Python Concepts
 
 - **Importing Libraries**
