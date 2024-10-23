@@ -13,7 +13,9 @@ class: invert
 3. Advanced Visualization
 
 <!--
-ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
+- Python's visualization ecosystem evolved to serve different needs
+- Core libraries complement each other: pandas for quick plots, matplotlib for control, seaborn for statistics
+- Good visualization is about effective communication, not just pretty pictures
 -->
 
 ---
@@ -33,6 +35,12 @@ ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
     df = pd.read_csv('data.csv')
     ```
 
+<!--
+- Aliases like pd and plt are universal conventions - use them!
+- DataFrames are the foundation of data science in Python
+- Most visualization methods expect DataFrame input
+-->
+
 ---
 
 # Introduction to Data Visualization Tools
@@ -47,6 +55,12 @@ ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
   - Statistical data visualization library.
   - Provides attractive default styles and color palettes.
 
+<!--
+- Think of pandas as your sketch pad - quick and simple
+- Matplotlib gives you a full artist's toolset when needed
+- Seaborn makes your statistical plots look professional with minimal effort
+-->
+
 ---
 
 # pandas: Built-in Plotting
@@ -60,6 +74,12 @@ ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
   2. Plots display automatically in Jupyter notebooks
   3. For scripts, use plot.show()
 
+<!--
+- One line of code: df.plot() - that's all you need to start
+- Perfect for quick data exploration
+- Built on matplotlib but hides the complexity
+-->
+
 ---
 
 ## Important Methods in pandas
@@ -72,6 +92,12 @@ ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
   df.plot(x='column1', y='column2', kind='line', marker, title)
   ```
 
+<!--
+- Most versatile plotting method in pandas
+- Great for time series and trends
+- Can plot multiple columns at once
+-->
+
 ---
 
 
@@ -83,9 +109,21 @@ ADD SPEAKER NOTES FOR THIS SLIDE IN THIS COMMENT
 df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 ```
 
+<!--
+- Key tool for understanding data distribution
+- Bins parameter controls granularity
+- Alpha helps when data overlaps
+-->
+
 ---
 
 # LIVE DEMO!
+
+<!--
+- Watch for common gotchas with axes and scales
+- Notice how different parameters affect the visualization
+- Think about what each plot reveals about the data
+-->
 
 ---
 # Matplotlib: The Foundation
@@ -101,6 +139,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 - Concepts
   - **Figure**: The overall container for all plot elements.
   - **Axes**: The area where data is plotted (can be thought of as individual plots).
+
+<!--
+- Figure/Axes hierarchy is key to understanding matplotlib
+- Think of figure as your canvas, axes as individual paintings
+- Most customization happens at the axes level
+-->
 
 ---
 
@@ -122,6 +166,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
     - `color`: Color of the line.
     - `label`: Label for the legend.
 
+<!--
+- Markers show individual data points
+- Line styles connect the dots - or not
+- Colors and labels make plots readable
+-->
+
 ---
 
 ### 2. `scatter()`: Scatter Plot
@@ -138,6 +188,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
     - `s`: Size of markers.
     - `c`: Color of markers.
     - `alpha`: Transparency level of markers.
+
+<!--
+- Perfect for showing relationships between variables
+- Size and color can add two more dimensions
+- Alpha helps with overplotting
+-->
 
 ---
 
@@ -178,6 +234,13 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   plt.errorbar(x, y, yerr=error)
   ```
 
+<!--
+- Each plot type serves specific data types
+- Bar plots for categories
+- Box plots show distribution details
+- Subplots combine multiple views
+-->
+
 ---
 
 # Resources for Further Learning
@@ -187,9 +250,21 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 - **Seaborn Tutorials**: [seaborn.pydata.org](https://seaborn.pydata.org/tutorial.html)
 - **Troubleshooting Tips**: Search for errors on Stack Overflow or consult the official documentation.
 
+<!--
+- Documentation includes great galleries and examples
+- Stack Overflow is your friend
+- Practice with real datasets
+-->
+
 ---
 
 # LIVE DEMO!
+
+<!--
+- Watch for the figure/axes pattern
+- Notice how layers build up
+- See how styles affect readability
+-->
 
 ---
 
@@ -205,6 +280,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   2. Plots display automatically in Jupyter notebooks
   3. For scripts, use plt.show() since Seaborn uses Matplotlib backend
 
+<!--
+- Built for statistical visualization
+- Better defaults than matplotlib
+- Understands pandas DataFrames natively
+-->
+
 ---
 
 
@@ -218,6 +299,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   ```python
   sns.scatterplot(data=df, x='x_col', y='y_col', hue='category', size='value')
   ```
+
+<!--
+- Automatically handles categorical variables
+- Adds statistical context
+- Smart about categorical colors
+-->
 
 ---
 
@@ -241,6 +328,13 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   g.map(sns.histplot, 'BMI')
   ```
 
+<!--
+- KDE shows smooth distribution
+- Box plots reveal outliers
+- Heatmaps great for correlation
+- FacetGrid splits by categories
+-->
+
 ---
 
 ### Additional Plot Types in Seaborn
@@ -262,6 +356,13 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   sns.pairplot(data=df, hue='Category')
   ```
 
+<!--
+- Line plots include confidence intervals
+- Bar plots show error bars
+- Violin plots combine boxplot and KDE
+- Pair plots show all relationships at once
+-->
+
 ---
 
 ### Customization in Seaborn
@@ -281,13 +382,33 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   sns.set_theme(style="whitegrid", rc={"figure.figsize": (10, 6)})
   ```
 
+<!--
+- Styles affect all plot elements
+- Color palettes are colorblind-friendly
+- Size affects readability
+-->
+
 ---
 
 # LIVE DEMO!
 
+<!--
+- Notice the statistical elements
+- See how styles differ from matplotlib
+- Watch the categorical handling
+-->
+
 ---
 
 ![bg contain](media/Nightingale-mortality.jpg)
+
+<!--
+- First use of polar area diagram
+- Each wedge shows deaths by month
+- Blue: preventable diseases
+- Red: wounds
+- Black: other causes
+-->
 
 ---
 ## Florence Nightingale: The Rose Diagram
@@ -299,6 +420,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 - **Impact**
   - Influenced medical reform and sanitary practices.
   - Early use of data visualization to drive policy change.
+
+<!--
+- Area shows magnitude dramatically
+- Seasonal patterns become clear
+- Led to hospital sanitation reforms
+-->
 
 ---
 
@@ -315,6 +442,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 - **Global Impact**
   - Became a crucial resource for researchers, policymakers, and the public.
 
+<!--
+- Map shows geographic spread
+- Time series shows trends
+- Color intensity shows severity
+-->
+
 ---
 
 # Introduction to Design Principles
@@ -325,6 +458,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 
 - **Based on Works of Edward Tufte and Claus O. Wilke**
   - Focus on clarity, precision, and efficiency in data presentation
+
+<!--
+- Design serves understanding
+- Ethics in visualization matter
+- Less is often more
+-->
 
 ---
 
@@ -338,9 +477,25 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 - **Highlight Key Data**
   - Use visual emphasis (bolding, color) to draw attention to important information
 
+<!--
+- Every element should have purpose
+- Guide viewer's attention
+- Remove visual clutter
+-->
+
 ---
 
 ![bg contain](media/napoleon.webp)
+
+<!--
+- Shows six types of data
+- Army size shown by thickness
+- Temperature shown below
+- Geography shown by path
+- Time flows left to right
+- Color indicates direction
+- One of history's best visualizations
+-->
 
 ---
 ## Edward Tufte: The Pioneer of Data Visualization
@@ -356,6 +511,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - *Envisioning Information*
   - *Beautiful Evidence*
 
+<!--
+- Maximize data-ink ratio
+- Remove non-data ink
+- Every mark should inform
+-->
+
 ---
 
 ### Bad Examples
@@ -365,13 +526,31 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - Misleading scales
   - Unnecessary 3D effects
 
+<!--
+- 3D distorts perception
+- Decoration hides data
+- Colors confuse message
+-->
+
 ---
 
 ![bg contain](media/3d-junk.jpg)
 
+<!--
+- 3D adds no information
+- Perspective distorts values
+- Hard to compare heights
+-->
+
 ---
 
 ![bg contain](media/animal-junk.jpg)
+
+<!--
+- Pictures distract from data
+- Scale is inconsistent
+- Message gets lost
+-->
 
 ---
 
@@ -382,25 +561,61 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - Minimalist design
   - Accurate representation of data
 
+<!--
+- Labels guide understanding
+- White space helps clarity
+- Focus on the data
+-->
+
 ---
 
 ![bg contain](media/line-ink.png)
+
+<!--
+- Clean, clear design
+- Essential grid lines only
+- Data stands out
+-->
 
 ---
 
 ![bg contain](media/greenhouse-junk.webp)
 
+<!--
+- 3D obscures trends
+- Colors fight for attention
+- Hard to read values
+-->
+
 ---
 
 ![bg contain](media/greenhouse-ink.webp)
+
+<!--
+- Flat design shows trends
+- Colors support message
+- Easy to compare values
+-->
 
 ---
 
 ![bg contain](media/complicated-ink.png)
 
+<!--
+- Complex but clear
+- Each element has purpose
+- Multiple variables shown effectively
+-->
+
 ---
 
 ![bg contain](media/minimal-boxplot.png)
+
+<!--
+- Shows distribution clearly
+- Minimal decoration
+- Easy to compare groups
+-->
 
 ---
 
@@ -422,6 +637,13 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - Use colorblind-friendly palettes (e.g., Viridis, Cividis)
   - Ensure sufficient contrast between colors
 
+<!--
+- Zero baseline matters
+- Scale choices affect perception
+- Color serves function
+- Accessibility is essential
+-->
+
 ---
 
 # Additional Resources
@@ -431,11 +653,23 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
 - [**"Tufte's Principles of Data-Ink"** Liu & Zhuang](https://jtr13.github.io/cc19/tuftes-principles-of-data-ink.html)
 - **Color Brewer 2**: [colorbrewer2.org](http://colorbrewer2.org/) for choosing colorblind-friendly palettes
 
+<!--
+- Tufte's book is foundational
+- Wilke's book is modern, practical
+- ColorBrewer for accessible palettes
+-->
+
 ---
 
 # LIVE DEMO!
 
 *(sort of)*
+
+<!--
+- Watch for good/bad practices
+- Notice impact of small changes
+- See how principles apply
+-->
 
 ---
 
@@ -451,21 +685,55 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - Use of color and chart elements
   - Ethical representation of data
 
+<!--
+- Look for chartjunk
+- Check data representation
+- Consider improvements
+-->
+
 ---
 
 ![bg contain](media/bookdown.png)
+
+<!--
+- Unclear axis labels
+- Poor color choices
+- Missing title
+- Data hard to interpret
+-->
 
 ---
 
 ![bg contain](media/car_crime.jpeg)
 
+<!--
+- Misleading scale
+- Poor color contrast
+- Confusing layout
+- Missing context
+-->
+
 ---
 
 ![bg contain](media/social_media.png)
 
+<!--
+- Circular layout hard to read
+- Colors don't add meaning
+- Size comparisons difficult
+- Could be simple bar chart
+-->
+
 ---
 
 ![bg contain](media/gold.jpg)
+
+<!--
+- Misleading perspective
+- Scale distortion
+- Unnecessary decoration
+- Hard to compare values
+-->
 
 ---
 
@@ -485,6 +753,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - Tools for building interactive dashboards and applications
   - Examples: **Plotly Dash**, **Streamlit**
 
+<!--
+- Grammar of Graphics is powerful
+- Command line for quick views
+- Interactive for exploration
+-->
+
 ---
 
 # Plotnine: Grammar of Graphics in Python 
@@ -502,6 +776,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
   - **Coordinate Systems (coords)**: The space in which the data is represented (e.g., Cartesian, polar)
 
 [plotnine.org](https://plotnine.org/)
+
+<!--
+- Each component has specific role
+- Components combine flexibly
+- Powerful for complex plots
+-->
 
 ---
 
@@ -523,6 +803,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
     (ggplot(data, aes('x', 'y')) + geom_point())
     ```
 
+<!--
+- Nearly identical syntax
+- Easy R to Python transition
+- Same powerful capabilities
+-->
+
 ---
 
 ## Important Components in Plotnine
@@ -538,6 +824,12 @@ df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
     - `data`: DataFrame containing the data
     - `mapping`: Aesthetic mappings created with `aes()`
 
+<!--
+- Start with data and mapping
+- Add layers progressively
+- Each layer adds meaning
+-->
+
 ---
 
 ## Plotnine Resources
@@ -549,6 +841,12 @@ There are whole books just on `ggplot2`. In fact, it started as a book
 - [Data Visualization Ch 7](https://andrewirwin.github.io/data-visualization/grammar.html), Andrew Irwin
 - [U of Iowa GoG Tutorial](http://homepage.stat.uiowa.edu/~luke/classes/STAT4580-2024/ggplot.html)
 - [R Stats `ggplot2` Tutorial](http://r-statistics.co/Complete-Ggplot2-Tutorial-Part1-With-R-Code.html)
+
+<!--
+- Deep theoretical foundation
+- Many learning resources
+- Active community
+-->
 
 ---
 
@@ -568,6 +866,12 @@ There are whole books just on `ggplot2`. In fact, it started as a book
   [Diagram Definition]
   ```
   ```
+<!--
+- Text-based diagrams
+- Version control friendly
+- Quick to modify
+-->
+
 ---
 
 ### Creating Diagrams with Mermaid.js
@@ -591,9 +895,21 @@ There are whole books just on `ggplot2`. In fact, it started as a book
   - Arrows define the flow between nodes.
   - Labels like `|Yes|` and `|No|` represent decision outcomes.
   - 
+<!--
+- Nodes show states/steps
+- Arrows show flow
+- Labels add context
+-->
+
 ---
 
 ![bg contain](media/mermaid.png)
+
+<!--
+- Clear decision points
+- Logical flow shown
+- Easy to follow path
+-->
 
 ---
 
@@ -612,6 +928,12 @@ There are whole books just on `ggplot2`. In fact, it started as a book
   mmdc -i input.mmd -o output.svg
   ```
 
+<!--
+- Works in many tools
+- Easy to version control
+- CLI for automation
+-->
+
 ---
 
 ## Gnuplot
@@ -624,6 +946,12 @@ ping -c 10 google.com -i 0.2 | awk '/time=/{ print $(NF-1) }' | cut -d= -f2 | \
   "set terminal dumb size 90, 30; set autoscale; set title 'ping google.com';
    set ylabel 'ms'; set xlabel 'count'; plot '-'  with lines notitle";
 ```
+
+<!--
+- ASCII art visualization
+- Real-time data plotting
+- Unix pipeline power
+-->
 
 ---
 
@@ -657,6 +985,12 @@ ping -c 10 google.com -i 0.2 | awk '/time=/{ print $(NF-1) }' | cut -d= -f2 | \
                                             count
 ```
 
+<!--
+- Simple but effective
+- Shows trends clearly
+- Works anywhere
+-->
+
 ---
 
 ## Sparkline
@@ -673,98 +1007,60 @@ curl -s https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.csv | 
 ▃█▅▅█▅▃▃▅█▃▃▁▅▅▃▃▅▁▁▃▃▃▃▃▅▃█▅▁▃▅▃█▃▁
 ```
 
+<!--
+- Ultra-compact visualization
+- Great for terminals
+- Shows trends in text
+-->
+
 ---
 
 # Interactive and BI Visualizations
 
 ### Overview
 
-- **Plotly Dash**:
-  - Focused on creating complex, customizable applications.
-  - Uses Flask and React.js under the hood.
 - **Streamlit**:
   - Designed for rapid development and simplicity.
   - Emphasizes minimal code to produce apps.
+- **Plotly Dash**:
+  - Focused on creating complex, customizable applications.
+  - Uses Flask and React.js under the hood.
 - **Tableau/Superset/Looker/PowerBI**:
   - Popular BI tools for creating interactive dashboards. ($$$)
 
+<!--
+- Streamlit for quick wins
+- Dash for complex apps
+- BI tools for business
+-->
+
 ---
 
-## Plotly Dash: Building an App
-
-### Code Example: Simple Dash App
-
+### Streamlit
+- Python-first framework for rapidly building data apps
+- Key features:
+  - Simple API with minimal boilerplate code
+  - Auto-rerun on file changes
+  - Built-in widgets and layout components
+  - Native integration with pandas/numpy
+  - Caching system for performance
+- Best for:
+  - Data science prototypes
+  - ML model demos
+  - Quick internal tools
+- Example:
 ```python
-import dash
-from dash import dcc, html
-from dash.dependencies import Input, Output
-import plotly.express as px
+import streamlit as st
 import pandas as pd
 
-# Load data
-df = pd.read_csv('data.csv')
-
-# Initialize the app
-app = dash.Dash(__name__)
-
-# Define the layout
-app.layout = html.Div([
-    html.H1('Health Data Dashboard'),
-    dcc.Dropdown(
-        id='age-dropdown',
-        options=[{'label': age, 'value': age} for age in df['AgeGroup'].unique()],
-        value=df['AgeGroup'].unique()[0]
-    ),
-    dcc.Graph(id='bmi-bloodpressure-scatter')
-])
-
-# Define the callback
-@app.callback(
-    Output('bmi-bloodpressure-scatter', 'figure'),
-    [Input('age-dropdown', 'value')]
-)
-def update_graph(selected_age):
-    filtered_df = df[df['AgeGroup'] == selected_age]
-    fig = px.scatter(
-        filtered_df, x='BMI', y='BloodPressure',
-        title=f'BMI vs Blood Pressure for Age Group {selected_age}'
-    )
-    return fig
-
-# Run the app
-if __name__ == '__main__':
-    app.run_server(debug=True)
+st.title("Simple Data App")
+data = pd.read_csv("data.csv")
+st.line_chart(data)
 ```
 
 ---
 
-### Code Explanation
-
-- **Imports**:
-  - `dash`, `dash_core_components` (`dcc`), `dash_html_components` (`html`), `dash.dependencies` for interactivity.
-  - `plotly.express` for plotting.
-- **Data Loading**:
-  - Reads health data into a DataFrame.
-- **App Initialization**:
-  - Creates a Dash app instance.
-- **Layout Definition**:
-  - Contains a header, dropdown menu, and a graph component.
-- **Callback Function**:
-  - Updates the graph based on the selected age group from the dropdown.
-
----
-
-### Output Description
-
-- An interactive dashboard with:
-  - A dropdown to select the age group.
-  - A scatter plot of BMI vs. Blood Pressure that updates dynamically.
-
----
-
 ## Streamlit: Building an App
-
-### Code Example: Simple Streamlit App
 
 ```python
 import streamlit as st
@@ -812,46 +1108,104 @@ st.plotly_chart(fig)
 
 ---
 
-### Output Description
+### Plotly Dash
 
-- A simple web app with:
-  - A sidebar for selecting the age group.
-  - Display of filtered data.
-  - An interactive scatter plot.
+- Full-featured framework for building analytical web applications
+- Key features:
+  - React.js based components
+  - More granular control over layout/styling
+  - Advanced callback system
+  - Integration with Plotly graphing library
+  - Production-ready performance
+- Best for:
+  - Complex dashboards
+  - Interactive data exploration
+  - Enterprise applications
+- Example:
+```python
+from dash import Dash, dcc, html
+import plotly.express as px
 
----
-
-## Deployment Considerations
-
-- **Local Deployment**:
-  - Run the app on your local machine for testing and development.
-- **Sharing Apps**:
-  - **Plotly Dash**:
-    - Deploy on platforms like Heroku or Dash Enterprise.
-  - **Streamlit**:
-    - Use Streamlit Sharing or deploy on a cloud platform.
-- **Requirements**:
-  - Package dependencies specified in `requirements.txt`.
-
----
-
-## Applications in Health Data Science
-
-- **Interactive Data Exploration**:
-  - Enable users to explore datasets dynamically.
-- **Patient Data Dashboards**:
-  - Visualize patient metrics for clinical decision support.
-- **Educational Tools**:
-  - Create apps to teach concepts using real data.
+app = Dash(__name__)
+app.layout = html.Div([
+    dcc.Graph(figure=px.line(df, x='date', y='value'))
+])
+```
 
 ---
 
-# Summary
+## Plotly Dash: Building an App
 
-- **Advanced Visualization Tools** offer powerful ways to represent and interact with health data.
-- **Plotnine** brings the grammar of graphics to Python, allowing for elegant and complex static visualizations.
-- **Command-Line Tools** like **Mermaid.js** enable quick diagram creation within documentation.
-- **Interactive Frameworks** like **Plotly Dash** and **Streamlit** facilitate the development of data apps for deeper insights.
+
+```python
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+import plotly.express as px
+import pandas as pd
+
+# Load data
+df = pd.read_csv('data.csv')
+
+# Initialize the app
+app = dash.Dash(__name__)
+
+# Define the layout
+app.layout = html.Div([
+    html.H1('Health Data Dashboard'),
+    dcc.Dropdown(
+        id='age-dropdown',
+        options=[{'label': age, 'value': age} for age in df['AgeGroup'].unique()],
+        value=df['AgeGroup'].unique()[0]
+    ),
+    dcc.Graph(id='bmi-bloodpressure-scatter')
+])
+
+# Define the callback
+@app.callback(
+    Output('bmi-bloodpressure-scatter', 'figure'),
+    [Input('age-dropdown', 'value')]
+)
+def update_graph(selected_age):
+    filtered_df = df[df['AgeGroup'] == selected_age]
+    fig = px.scatter(
+        filtered_df, x='BMI', y='BloodPressure',
+        title=f'BMI vs Blood Pressure for Age Group {selected_age}'
+    )
+    return fig
+
+# Run the app
+if __name__ == '__main__':
+    app.run_server(debug=True)
+```
+
+<!--
+- Layout defines structure
+- Callbacks add interactivity
+- Components are reusable
+-->
+
+---
+
+### Code Explanation
+
+- **Imports**:
+  - `dash`, `dash_core_components` (`dcc`), `dash_html_components` (`html`), `dash.dependencies` for interactivity.
+  - `plotly.express` for plotting.
+- **Data Loading**:
+  - Reads health data into a DataFrame.
+- **App Initialization**:
+  - Creates a Dash app instance.
+- **Layout Definition**:
+  - Contains a header, dropdown menu, and a graph component.
+- **Callback Function**:
+  - Updates the graph based on the selected age group from the dropdown.
+
+<!--
+- Components build interface
+- Callbacks handle events
+- Data flows reactively
+-->
 
 ---
 
