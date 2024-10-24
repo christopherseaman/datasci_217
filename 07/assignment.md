@@ -4,12 +4,32 @@ In this assignment, you'll work with population data from the Gapminder dataset 
 
 ## Setup
 
-The data is located in the `ddf--datapoints--population--by--country--age--gender--year.zip` directory. Each file contains population data for a specific country across different years, ages, and genders.
+The data is located in the `ddf--datapoints--population--by--country--age--gender--year` directory. Each file contains population data for a specific country across different years, ages, and genders. 2024 and years in the future are estimates. Technically, all the years are estimates.
 
 ```python
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+```
+
+Tips for the data:
+- Use `df = pd.read_csv(FILENAME)` to read the data
+- You can make a dict of dataframes as `data = {}; data[COUNTRY] = pd.read_csv(COUNTRY_FILENAME)`
+- Combine dataframes from multiple countries using `pd.concat(DATAFRAME1, DATAFRAME2)`
+
+Other common operations:
+
+```python
+# Group by year and sum population
+yearly_total = df.groupby('year')['population'].sum()
+
+# Filter specific age groups
+youth = df[df['age'].isin(['0-4', '5-9', '10-14'])]
+
+# Calculate gender ratios
+gender_ratio = df.groupby('year').agg({
+    'population': lambda x: x[df['gender']=='f'].sum() / x[df['gender']=='m'].sum()
+})
 ```
 
 ## Submission
