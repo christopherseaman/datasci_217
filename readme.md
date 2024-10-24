@@ -53,7 +53,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Example scripts: [dirty-data.py](06/pandas-dirty-data.py),  [data-cleaning.py](06/pandas-data-cleaning.py)
 
 ## Lecture 7: Python for Data Visualization
-([slides](07), [pdf](07/index.pdf), [demo](07/demo.ipynb), [assignment])
+([slides](07), [pdf](07/index.pdf), [demo](07/demo.ipynb), [assignment](https://classroom.github.com/a/aqAaGXP3))
 - Introduction to Matplotlib
 - Creating basic plots (line, scatter, bar, histogram)
 - Plotting with Seaborn for statistical visualizations
