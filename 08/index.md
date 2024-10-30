@@ -1,7 +1,8 @@
 ---
 marp: true
-theme: default
+theme: sqrl
 paginate: true
+class: invert
 ---
 
 # Statistical & Machine Learning Methods
