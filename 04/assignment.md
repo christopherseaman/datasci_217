@@ -5,7 +5,7 @@
 	- Handle potential file I/O errors with `try`/`except`
 	- Use command-line arguments (via `argparse`) to specify the upper limit and output file name
 	- **Task: Generate the Fibonacci numbers less than 100 and write them to `fibonacci_100.txt`
-3. **Largest Prime Fibonacci Number:** Write a program that takes a number as an argument, finds the *Fibonacci* numbers less than that number, and prints the largest prime number in the list. 
+2. **Largest Prime Fibonacci Number:** Write a program that takes a number as an argument, finds the *Fibonacci* numbers less than that number, and prints the largest prime number in the list. 
 	- Use command-line arguments to specify the upper limit 
 	- Implement a function to check if a number is prime
 	- Import and use the Fibonacci generating function from problem 1 as a module
