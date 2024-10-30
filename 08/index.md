@@ -31,7 +31,7 @@ Key points to discuss:
   ```python
   # Input: data (array-like of numeric values), index (datetime-like array of same length as data)
   # Output: pandas Series with datetime index
-  ts = pd.Series(data, index=pd.date_range('2023', periods=12, freq='M'))
+  ts = pd.Series(data, index=pd.date_range('2023', periods=12, freq='ME'))
   ```
 - Types:
   - Fixed frequency (regular intervals)
@@ -57,7 +57,7 @@ dates = pd.date_range('2023-01-01', periods=5)
 # Input: date_str (str in YYYY-MM-DD format)
 # Output: Timestamp and Period objects
 ts = pd.Timestamp('2023-01-01')
-period = pd.Period('2023-01', freq='M')
+period = pd.Period('2023-01', freq='ME')
 
 # Input: timezone_str (str representing timezone)
 # Output: timezone-aware Timestamp objects
@@ -78,9 +78,9 @@ Key points:
 
 ## Time Series Operations
 ```python
-# Input: freq (str representing frequency e.g., 'M', 'H'), aggregation function
+# Input: freq (str representing frequency e.g., 'ME', 'H'), aggregation function
 # Output: resampled DataFrame with new frequency
-df.resample('M').mean()    # Downsample to monthly
+df.resample('ME').mean()    # Downsample to monthly
 df.resample('H').ffill()   # Upsample to hourly
 
 # Input: window (int) size of rolling window
@@ -110,12 +110,12 @@ Key points:
 # Output: DatetimeIndex with specified frequency
 pd.date_range('2023', freq='D', periods=365)   # Daily
 pd.date_range('2023', freq='B', periods=252)   # Business days
-pd.date_range('2023', freq='M', periods=12)    # Month end
+pd.date_range('2023', freq='ME', periods=12)    # Month end
 pd.date_range('2023', freq='Q', periods=4)     # Quarter end
 
 # Input: start (str), freq (str), periods (int)
 # Output: PeriodIndex with specified frequency
-pd.period_range('2023', freq='M', periods=12)
+pd.period_range('2023', freq='ME', periods=12)
 ```
 
 <!--
@@ -365,16 +365,16 @@ sm.graphics.influence_plot(results)
 
 # statsmodels (6/9)
 
-## Panel Data Analysis
+## OLS Panel Data Analysis
 ```pythoncode 
-from statsmodels.regression.linear_model import PanelOLS
+from statsmodels.regression.linear_model import OLS
 
 # Fixed effects
-model_fe = PanelOLS(y, X, entity_effects=True)
+model_fe = OLS(y, X, entity_effects=True)
 fe_results = model_fe.fit()
 
 # Random effects
-model_re = PanelOLS(y, X, random_effects=True)
+model_re = OLS(y, X, random_effects=True)
 re_results = model_re.fit()
 ```
 

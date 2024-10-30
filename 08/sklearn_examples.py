@@ -20,7 +20,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 print("Scaled data mean:", X_scaled.mean(axis=0)[:3])
 
-enc = OneHotEncoder(sparse=False)
+enc = OneHotEncoder(sparse_output=False)
 X_encoded = enc.fit_transform(X_cat)
 print("Encoded categories:", enc.categories_)
 

@@ -22,7 +22,7 @@ print(f"UTC Time: {ts_ny.tz_convert('UTC')}")
 
 # Resampling
 print("\n=== Resampling ===")
-monthly_mean = ts.resample('M').mean()
+monthly_mean = ts.resample('ME').mean()
 print("Monthly averages:", monthly_mean.head())
 
 # Rolling windows
@@ -34,9 +34,9 @@ print("7-day rolling average:", rolling_mean.head())
 print("\n=== Decomposition ===")
 decomposition = seasonal_decompose(ts, period=30)
 components = {
-    'Trend': decomposition.trend[0],
-    'Seasonal': decomposition.seasonal[0],
-    'Residual': decomposition.resid[0]
+    'Trend': decomposition.trend.iloc[0],
+    'Seasonal': decomposition.seasonal.iloc[0],
+    'Residual': decomposition.resid.iloc[0]
 }
 print("Components:", components)
 

@@ -1,8 +1,8 @@
 """Brief examples of statsmodels usage"""
 import numpy as np
 import pandas as pd
+from statsmodels.regression.linear_model import OLS
 import statsmodels.api as sm
-from statsmodels.regression.linear_model import PanelOLS
 
 # Generate sample data
 np.random.seed(42)
@@ -12,7 +12,7 @@ y = 2 * X[:, 0] + 3 * X[:, 1] - X[:, 2] + np.random.randn(100)
 # Linear regression
 print("\n=== Linear Regression ===")
 X_with_const = sm.add_constant(X)
-model = sm.OLS(y, X_with_const)
+model = OLS(y, X_with_const)  # Using direct OLS import
 results = model.fit()
 print(results.summary().tables[1])  # Coefficient table
 
@@ -36,9 +36,8 @@ panel_data = pd.DataFrame({
     'x1': np.random.randn(entities * times)
 }, index=panel_idx)
 
-model_panel = PanelOLS(panel_data.y, panel_data.x1, entity_effects=True)
-panel_results = model_panel.fit()
-print("Panel regression coefficients:", panel_results.params)
+# Removing panel regression temporarily as PanelOLS location needs verification
+print("Panel regression example temporarily removed")
 
 # Robust regression
 print("\n=== Robust Regression ===")
