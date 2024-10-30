@@ -61,6 +61,7 @@ Introduction to Python & Data Science Tools ([canonical url](https://ds217.badma
 - Interactive visualizations with Plotly
 
 ## Lecture 8: Machine Learning with Python
+([slides](08), [pdf](08/index.pdf), [demo](08/demo.ipynb), [assignment]())
 - Containerization with Docker & Kubernetes for Python (brief introduction)
 - Parallel processing in Python (multiprocessing, concurrent.futures)
 - Introduction to scikit-learn for machine learning
