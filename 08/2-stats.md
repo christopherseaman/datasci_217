@@ -138,7 +138,7 @@ Talking points:
 # statsmodels (6/9)
 
 ## Panel Data Analysis
-```python
+```pythoncode 
 from statsmodels.regression.linear_model import PanelOLS
 
 # Fixed effects
