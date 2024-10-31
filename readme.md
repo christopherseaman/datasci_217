@@ -99,6 +99,7 @@ Remember to check the [list of resources](#resources) below!
 ## Python
 
 ### Reference
+- _Python for Data Analysis_, McKinney - author's [website](https://wesmckinney.com/book/)
 - _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 - _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
 - _Hitchhiker’s Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
