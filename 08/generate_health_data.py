@@ -72,7 +72,7 @@ def generate_patient_cohort(n_patients=10000, random_seed=42):
     }
     return pd.DataFrame(data, columns=BASELINE_COLS)
 
-def generate_longitudinal_data(baseline_df, n_visits=40, max_years=5):
+def generate_longitudinal_data(baseline_df, n_visits=61, max_years=5):
     """Generate longitudinal measurements for each patient."""
     n_patients = len(baseline_df)
     start_date = datetime(2023, 1, 1)
