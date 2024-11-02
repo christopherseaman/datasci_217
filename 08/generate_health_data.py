@@ -22,7 +22,7 @@ TREATMENT_COLS = [
     'adherence', 'outcome'
 ]
 
-def generate_patient_cohort(n_patients=1000, random_seed=42):
+def generate_patient_cohort(n_patients=10000, random_seed=42):
     """Generate a cohort of patients with baseline characteristics."""
     np.random.seed(random_seed)
     
@@ -72,7 +72,7 @@ def generate_patient_cohort(n_patients=1000, random_seed=42):
     }
     return pd.DataFrame(data, columns=BASELINE_COLS)
 
-def generate_longitudinal_data(baseline_df, n_visits=4, max_years=2):
+def generate_longitudinal_data(baseline_df, n_visits=40, max_years=5):
     """Generate longitudinal measurements for each patient."""
     n_patients = len(baseline_df)
     start_date = datetime(2023, 1, 1)
