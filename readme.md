@@ -64,33 +64,24 @@ Remember to check the [list of resources](#resources) below!
 
 ## Lecture 8: Machine Learning with Python
 ([slides](08), [pdf](08/index.pdf), [demo](08/demo.ipynb), [assignment](https://classroom.github.com/a/AOMngUYk))
-- Containerization with Docker & Kubernetes for Python (brief introduction)
-- Parallel processing in Python (multiprocessing, concurrent.futures)
 - Introduction to scikit-learn for machine learning
 - Data preprocessing and feature engineering
 - Basic examples of regression and classification
 - Model evaluation and validation
-- Brief overview of ML libraries (PyTorch, TensorFlow, JAX, SciPy, statsmodels)
 
-## Lecture 9: Algorithms, Data Structures, and Their Implementation in Python
-- List comprehensions, generators, and `yield`
-- Implementing common algorithms in Python (sorting, searching)
-- Python data structures (lists, dictionaries, custom classes)
-- Examples and practice problems
-- Introduction to more advanced structures (trees, graphs)
-- Big O notation and algorithm efficiency
-- Dynamic programming and recursion
-- Solving coding interview-style problems in Python
+## Lecture 9: Practical Python & Command Line Automation
+([slides](09))
+- Revisiting powerful CLI commands and Python integration
+- Everyday automation with Python (file organization, batch operations)
+- Building practical data processing pipelines
+- Automated report generation and system monitoring
+- Real-world examples combining concepts from previous lectures
 
-## Lecture 10: API Usage and Web Scraping with Python
-- Understanding RESTful APIs
-- Making HTTP requests with the `requests` library
-- Parsing JSON responses
-- Authentication and API keys
-- Rate limiting and error handling
-- Introduction to web scraping with BeautifulSoup
-- Ethical considerations in web scraping and API usage
-- Building a simple data pipeline using an API
+## Lecture 10: Guest Lecturer, Albert Lee
+
+## Lecture 11: Guest Lecturer, Rian Bogley
+
+## Lecture 12: Guest Lecturer, Sam Chen
 
 # Resources
 
@@ -100,13 +91,13 @@ Remember to check the [list of resources](#resources) below!
 
 ### Reference
 - _Python for Data Analysis_, McKinney - author's [website](https://wesmckinney.com/book/)
-- _Whirlwind Tour of Python_, VanderPlas - author’s [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
+- _Whirlwind Tour of Python_, VanderPlas - author's [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 - _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
-- _Hitchhiker’s Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
+- _Hitchhiker's Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
 - [Introduction to Python](http://introtopython.org/)
 - [_A Byte of Python_](https://python.swaroopch.com/)
 - [Official Python documentation](https://docs.python.org/3/)
-- [O’Reilly catalog via UCSF library](https://www.oreilly.com/library-access/)
+- [O'Reilly catalog via UCSF library](https://www.oreilly.com/library-access/)
 	- _Introducing Python_
 	- _Python Crash Course_
 
