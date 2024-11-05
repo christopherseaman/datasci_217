@@ -31,14 +31,20 @@ def get_stock_data(symbol='AAPL', period='1y'):
 def get_mauna_loa_co2():
     """Get the famous Mauna Loa CO2 measurements"""
     data = co2.load()
-    return pd.Series(data.data, index=data.raw_data[:,0], name='co2_ppm')
+    dates = pd.date_range(start='1958-03-29', periods=len(data.data), freq='W-SAT')
+    df = pd.DataFrame(data.data, index=dates, columns=['co2'])
+    return df
 
 def get_weather_data():
-    """Get daily temperature data for New York City"""
+    """Get historical daily temperature data for Seattle from 2016"""
     url = "https://raw.githubusercontent.com/plotly/datasets/master/2016-weather-data-seattle.csv"
     df = pd.read_csv(url)
     df['Date'] = pd.to_datetime(df['Date'])
-    return df.set_index('Date')[['Mean_TemperatureF']].sort_index()
+    return df.set_index('Date')[[
+        'Max_TemperatureC', 
+        'Mean_TemperatureC', 
+        'Min_TemperatureC'
+    ]].sort_index()
 
 # Example usage showing multiple datasets
 if __name__ == "__main__":
@@ -62,5 +68,5 @@ if __name__ == "__main__":
     
     # 4. Weather Data
     weather = get_weather_data()
-    print("\nSeattle Weather Data (last 5 days):")
+    print("\nSeattle Historical Weather Data (last 5 days of dataset):")
     print(weather.tail())
