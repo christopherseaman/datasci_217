@@ -22,7 +22,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 ## Revisiting the Command Line
 
 - A few powerful CLI commands
-  - `tmux` and `screen` for persistent sessions
+  - `tmux`  for persistent sessions ([`tmux` cheat sheet](https://devhints.io/tmux))
   - `find`, `grep`, `awk`, `sed` for text processing
   - `ps`, `top`, `watch`, `df`, `du` for system monitoring
   - Pipes and redirections (`|`, `>`, `>>`)
@@ -147,6 +147,8 @@ def generate_report():
 # Can be automated with cron (Lecture 3)
 generate_report()
 ```
+
+### Example 3: ...?
 
 ## Key Takeaways
 
