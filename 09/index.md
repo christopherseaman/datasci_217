@@ -21,44 +21,11 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ## Revisiting the Command Line
 
-- A few powerful CLI commands
-  - `tmux`  for persistent sessions ([`tmux` cheat sheet](https://devhints.io/tmux))
-  - `find`, `grep`, `awk`, `sed` for text processing
-  - `ps`, `top`, `watch`, `df`, `du` for system monitoring
-  - Pipes and redirections (`|`, `>`, `>>`)
-- Combining commands with Python using `subprocess`
-- **Opinionated recommendation**: best way to learn this is to use it regularly, so set up a linux server for yourself
-  - Server options
-    - Old Mac or PC kicking around
-    - Google Cloud has a free tier including an always-on, low-spec virtual machine
-    - AWS, Azure, Google Cloud have VM's available for pennies per hour (remember to turn it off!)
-    - GitHub Codespaces has terminal access, but powers off automatically when not in use
-  - Accessing your server
-    - VS Code - install on the server, run `code tunnel service install`, follow the prompt to authenticate
-    - SSH - command line access to the server (no GUI)
-    - RDP or VNC - graphical remote access
-    - **Note:** except for VS Code, you may have to change your firewall settings (advanced) or install a VPN, the easiest VPN is probably Tailscale (moderate complexity), followed by Wireguard (advanced)  
-- Demo: Finding and organizing files by type/date
+<!-- TODO: Include 1-command_line.md -->
 
 ## Everyday Python
 
-- Debugging
-  - Linting (`pylint` & `ruff`)
-  - Reading error messages
-  - Debugging statements
-  - Using the VS Code debugger
-- File organization and backup scripts
-  - Using `os`, `shutil`, and `pathlib`
-  - Automatically organizing downloads folder
-  - Creating dated backup archives
-- Batch file operations
-  - Renaming files in bulk
-  - Converting file formats (images, documents)
-  - Extracting data from PDFs and spreadsheets
-- System monitoring and notifications
-  - Checking disk space and sending alerts
-  - Monitoring website availability
-  - Logging system metrics
+<!-- TODO: Include 2-everyday_python.md -->
 
 ## Bringing It All Together
 

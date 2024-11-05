@@ -166,19 +166,243 @@
 
 ---
 
-<!-- 
-#FIXME: Add slides on debugging and error handling
-- Debugging
-  - Linting (`pylint` & `ruff`)
-  - Debugging techniques
-    - Reading error messages
-    - Debugging statements
-    - Using the VS Code debugger
-- Error Handling
-  - Try/except blocks
-  - Exception types
-  - Custom exceptions
- -->
+## Code Quality Tools: Linters (1/6)
+
+A "linter" is a program that highlights potential errors before you even try running the code. There are linters for pretty much every language you can think of, even Markdown. For Python, the linter that I recommend trying is `ruff`. It is much faster than `pylint` and I find it gets "confused" less often about the code context.
+
+```python
+# Installing linters
+pip install pylint ruff
+
+# Running pylint
+pylint my_script.py
+
+# Running ruff
+ruff check .
+
+# Example pylint output:
+************* Module my_script
+my_script.py:10:0: C0303: Trailing whitespace (trailing-whitespace)
+my_script.py:15:0: C0116: Missing function docstring (missing-docstring)
+```
+
+<!--
+- Linters catch common mistakes
+- Enforce coding standards
+- Improve code quality
+- Prevent bugs before runtime
+-->
+
+---
+
+## Understanding Errors (2/6)
+
+```python
+# 1. Print Debugging
+def calculate_total(items):
+    print(f"Debug: items received = {items}")  # Debug print
+    total = 0
+    for item in items:
+        print(f"Debug: processing item = {item}")  # Debug print
+        total += item['price']
+    return total
+
+# 2. Interactive Debugging with pdb (advanced)
+def process_data(data):
+    results = []
+    for item in data:
+        breakpoint()  # Starts interactive debugger
+        result = complex_calculation(item)
+        results.append(result)
+    return results
+
+# 3. Common Error Patterns
+# NameError: Using undefined variables
+def process_stats():
+    total = count + 1  # count is not defined
+    return total
+
+# TypeError: Mixing incompatible types
+def calculate_average(numbers):
+    total = "0"  # String instead of number
+    for num in numbers:
+        total += num  # Can't add number to string
+    return total / len(numbers)
+
+# IndexError: Invalid list access
+def get_first_elements(list1, list2):
+    return [list1[0], list2[0]]  # Error if any list is empty
+
+# KeyError: Missing dictionary key
+def get_user_info(user_dict):
+    return f"{user_dict['name']} is {user_dict['age']}"  # Error if keys don't exist
+
+# AttributeError: Invalid object attributes
+class User:
+    def __init__(self, name):
+        self.name = name
+
+user = User("Alice")
+email = user.email  # email attribute doesn't exist
+
+# ValueError: Invalid type conversion
+def parse_user_data(data_str):
+    user_id = int(data_str)  # Error if data_str isn't a valid integer
+    return user_id
+```
+
+<!--
+- Use print statements strategically
+- Interactive debugging with pdb
+- Common error patterns
+- Debug step by step
+-->
+
+---
+
+
+## VS Code Debugger (3/6)
+
+See the docs at [https://code.visualstudio.com/Docs/editor/debugging](https://code.visualstudio.com/Docs/editor/debugging)
+
+```python
+# debug_example.py
+def process_list(items):
+    total = 0
+    for i, item in enumerate(items):
+        # Set a breakpoint here in VS Code
+        value = complex_calculation(item)
+        total += value
+    return total
+
+def complex_calculation(x):
+    # Step through this function
+    intermediate = x * 2
+    result = intermediate + 5
+    return result
+
+# Test data with potential issues
+numbers = [1, 2, "3", 4]  # Bug: string in list
+result = process_list(numbers)
+
+<!--
+- Set breakpoints in VS Code
+- Step through code execution
+- Inspect variables in debug view
+- Configure debug settings
+-->
+
+---
+
+![bg contain](media/debug_start.png)
+
+---
+
+![bg contain](media/debug_vscode.png)
+
+---
+
+## Try/Except Basics (4/6)
+
+```python
+def safe_divide(x, y):
+    try:
+        result = x / y
+        return result
+    except ZeroDivisionError:
+        print("Error: Division by zero!")
+        return None
+    except TypeError as e:
+        print(f"Error: Invalid types - {e}")
+        return None
+    finally:
+        print("Division operation attempted")
+
+# Example usage:
+print(safe_divide(10, 0))       # Handles ZeroDivisionError
+print(safe_divide("10", 2))     # Handles TypeError
+```
+
+<!--
+- Handle specific exceptions
+- Use descriptive error messages
+- Implement cleanup with finally
+- Return meaningful results
+-->
+
+---
+
+## Exception Types (5/6)
+
+```python
+# Common built-in exceptions and when they occur
+def demonstrate_exceptions():
+    # IndexError
+    list_demo = [1, 2, 3]
+    try:
+        value = list_demo[5]
+    except IndexError as e:
+        print(f"Index error: {e}")
+    
+    # TypeError
+    try:
+        result = "2" + 2
+    except TypeError as e:
+        print(f"Type error: {e}")
+    
+    # ValueError
+    try:
+        number = int("abc")
+    except ValueError as e:
+        print(f"Value error: {e}")
+    
+    # FileNotFoundError
+    try:
+        with open("nonexistent.txt") as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        print(f"File error: {e}")
+```
+
+<!--
+- Choose appropriate exceptions
+- Handle multiple error types
+- Provide context in messages
+- Learn from common errors
+-->
+
+---
+
+## Custom Exceptions (6/6)
+
+```python
+class ValidationError(Exception):
+    """Custom exception for data validation errors"""
+    def __init__(self, message, value):
+        self.message = message
+        self.value = value
+        super().__init__(self.message)
+
+def validate_age(age):
+    if not isinstance(age, (int, float)):
+        raise ValidationError("Age must be a number", age)
+    if age < 0 or age > 150:
+        raise ValidationError("Age must be between 0 and 150", age)
+    return age
+
+# Using custom exception
+try:
+    user_age = validate_age("twenty")
+except ValidationError as e:
+    print(f"Invalid age: {e.message}, got {e.value}")
+```
+
+<!--
+- Create specific exceptions
+- Add custom attributes
+- Improve error context
+- Better error handling
+-->
 
 ---
 
