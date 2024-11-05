@@ -1,178 +1,135 @@
-# DS-217 Final Exam
+# DS-217 Final Exam: Health Data Analysis Workflow
 
 ## Instructions
-- This exam consists of four interconnected questions that will guide you through a health data analysis workflow
+
+- This exam consists of four interconnected questions that will guide you through a health data analysis project
 - Submit your solutions as separate files with the names specified in each question
-- You may only use command line tools and Python features covered in the course outline
+- You may only use tools and techniques covered in the course outline
 - Each question builds upon the previous ones - complete them in order
 
-## Question 1: Data Directory Setup (20 points)
-File name: `setup_health_data.sh`
+## Question 1: Data Preparation with Command-Line Tools (20 points)
 
-Create a shell script that sets up a directory structure for analyzing patient health records. Your script should:
+File name: `prepare_health_data.sh`
 
-1. Create a directory structure:
-```
-health_records/
-├── raw_data/
-├── processed/
-└── reports/
-```
+You are provided with a raw CSV file containing health data. Create a shell script that prepares this dataset using command-line text processing tools.
 
-2. Create template data files in raw_data/:
-   - Use `echo` and redirection to create CSV headers for three files:
-     * patients.csv: "id,age,gender,condition"
-     * vitals.csv: "patient_id,timestamp,heart_rate,blood_pressure"
-     * medications.csv: "patient_id,medication,dosage,frequency"
+Your tasks:
 
-3. Set appropriate permissions:
-   - Make raw_data/ read-only using chmod
-   - Make the script executable
+1. Create text files categorizing key variables:
+   - Create a file for geographic regions
+   - Create a file for insurance types
+
+2. Clean the raw data file:
+   - Remove comment lines and headers
+   - Remove lines with extra or missing data
+   - Extract specific columns of interest
+
+3. Generate a summary of the processed data:
+   - Count the number of records
+   - Display the first few lines of the processed data
 
 Tips:
-- Use commands covered in lecture: mkdir, echo, chmod
-- Use redirection (>) to create files
-- Remember to add shebang line: #!/bin/bash
 
-### Example usage
-```bash
-chmod +x setup_health_data.sh
-./setup_health_data.sh
-```
+- Use `grep -v` to remove comment lines and headers
+- Use `sed` to handle extra commas or incomplete data
+  - `sed 's/,,*/,/g'` replaces multiple commas with a single comma
+  - `sed '/^$/d'` removes empty lines
+- Use `cut -d',' -f1,2,3,4,5` to extract specific columns
+- Use `wc -l` to count records
+- Use `head -n 5` to show first few lines
+- Combine commands with pipes (`|`) for complex processing
 
-## Question 2: Generate Health Records (25 points)
-File name: `generate_records.sh`
+## Question 2: Data Munging with Python (25 points)
 
-Create a shell script that generates sample health records using command line tools. Your script should:
+File name: `data_munge.py`
 
-1. Generate patient records:
-```bash
-# Create base patient data
-echo "1,67,M,hypertension
-2,45,F,diabetes
-3,52,M,hypertension
-4,71,F,diabetes
-5,39,M,asthma" > raw_data/patients.csv
-```
+Using the processed data from Question 1 and the category files you created:
 
-2. Generate vital signs records with timestamps:
-   - Use echo to create records
-   - Use `date` to generate timestamps
-   - Create multiple readings per patient
-   - Include realistic vital sign ranges
+1. Load the category files
 
-3. Process the generated data:
-   - Use grep to filter records
-   - Use cut to extract columns
-   - Use tr to standardize formatting
-   - Use sed to clean up data
+2. Load the processed health data
+
+3. Randomly assign categorical columns:
+   - Assign regions to patients
+   - Assign insurance types to patients
+
+4. Create two outcome variables:
+   - Generate a blood pressure variable with some systematic variation
+   - Generate a patient cost variable with some systematic variation
 
 Tips:
-- The `date` command isn't covered in lecture but is essential for timestamps
-  Example: `date "+%Y-%m-%d %H:%M:%S"`
-- Use pipes (|) to combine commands
-- Use redirection (>, >>) to save results
-- Test commands individually first
 
-### Example usage
-```bash
-./generate_records.sh
-```
+- Use `random.choice()` to assign categorical variables
+- Create dictionaries to add systematic variation
+  - Example: `region_bp_offset = {'Northeast': 5, 'Southeast': -3}`
+- Use NumPy for random number generation
+  - `np.random.normal(mean, std_dev, size)` creates semi-random variables
+- Add base value + variation + random noise
+  - `blood_pressure = 120 + region_offset + age_factor + random_noise`
+- Use pandas for data manipulation
+  - `.map()` to apply dictionary-based transformations
+  - `.to_csv()` to save processed data
 
-Example output (raw_data/vitals.csv):
-```
-patient_id,timestamp,heart_rate,blood_pressure
-1,2024-01-15 09:30:00,72,120/80
-1,2024-01-15 15:45:00,75,125/82
-2,2024-01-15 10:15:00,68,118/75
-```
+## Question 3: Statistical Analysis (25 points)
 
-## Question 3: Process Health Records (25 points)
-File name: `process_records.py`
+File name: `analyze.py`
 
-Create a Python script that processes the generated health records. Your script should:
+Perform statistical analysis on the munged data from Question 2:
 
-1. Read the CSV files created by the previous script
-2. For each patient:
-   - Calculate average vital signs
-   - Count number of readings
-   - Identify any missing values
-3. Create summary files in processed/:
-   - Use basic Python file operations
-   - Format numbers appropriately
-   - Handle potential errors
+1. Conduct a chi-square test to examine relationships between categorical variables
+
+2. Perform a linear regression:
+   - Predict an outcome variable based on other variables
+   - Assess the model's statistical significance
+
+3. Explore relationships between variables:
+   - Look for statistically significant associations
+   - Interpret your findings
 
 Tips:
-- Use only Python features covered in lecture
-- Use basic file operations (open, read, write)
-- Use string methods for parsing
-- Use lists and dictionaries for data storage
-- Handle potential file errors with try/except
 
-### Example usage
-```bash
-python process_records.py
-```
+- Use `scipy.stats.chi2_contingency()` for categorical analysis
+  - Create a contingency table with `pd.crosstab()`
+- Use scikit-learn for linear regression
+  - `LinearRegression().fit(X, y)` to create model
+  - `.score()` to get R-squared
+- Use statsmodels for detailed regression analysis
+  - `sm.OLS()` provides comprehensive statistical output
+- Extract and interpret key statistics:
+  - Coefficients
+  - P-values
+  - R-squared
+- Consider multiple features for prediction
 
-## Question 4: Analyze and Report (30 points)
-File name: `analyze_records.sh`
+## Question 4: Data Visualization (30 points)
 
-Create a shell script that analyzes the processed health records using command line tools. Your script should:
+File name: `visualize.py`
 
-1. Generate condition statistics:
-   - Use grep to count conditions
-   - Use tr to standardize case
-   - Use sed to format output
-   ```bash
-   grep "hypertension" raw_data/patients.csv | wc -l > reports/hypertension_count.txt
-   ```
+Create visualizations that help understand the data and analysis from previous questions:
 
-2. Analyze vital signs:
-   - Use cut to extract measurements
-   - Use grep to find concerning readings
-   - Use sed to format output
-   ```bash
-   cut -d',' -f2,3 raw_data/vitals.csv | grep "120/[89][0-9]"
-   ```
+1. Generate a pair plot showing relationships between key variables
 
-3. Create a final report:
-   - Use cat to combine statistics
-   - Use sed to format the report
-   - Use tr to clean up formatting
-   ```bash
-   cat reports/*_count.txt | sed 's/^/  /' > reports/final_report.txt
-   ```
+2. Create histograms that show the distribution of an outcome variable across different categories
+
+3. Produce a box plot comparing an outcome variable across different categorical groups
+
+4. Create a scatter plot exploring the relationship between two continuous variables
 
 Tips:
-- Use only commands from course outline
-- Combine commands with pipes
-- Use text processing tools: grep, sed, tr, cut
-- Format output for readability
 
-### Example usage
-```bash
-./analyze_records.sh
-```
-
-Example output (reports/final_report.txt):
-```
-HEALTH RECORDS ANALYSIS
-----------------------
-Patient Statistics:
-  Total Patients: 5
-  By Condition:
-    Hypertension: 2
-    Diabetes: 2
-    Asthma: 1
-
-Vital Signs Summary:
-  Readings: 15
-  Concerning BP: 3
-  High HR: 2
-```
+- Use seaborn for advanced visualizations
+  - `sns.pairplot()` for multi-variable relationships
+  - `sns.histplot()` with `hue` parameter for categorical distributions
+  - `sns.boxplot()` to compare distributions
+  - `sns.scatterplot()` to show correlations
+- Use `plt.subplot()` to create multi-panel figures
+- Add meaningful titles and labels
+- Use `hue` parameter to add categorical information
+- Save figures with `plt.savefig()`
 
 ### Bonus Points (10 points)
-- Add error checking to shell scripts
-- Create a simple command line menu using echo
-- Add data validation using grep patterns
-- Generate formatted reports using sed
+
+- Add error handling and input validation
+- Create more advanced or interactive visualizations
+- Implement additional statistical tests
+- Add command-line argument parsing
