@@ -171,8 +171,6 @@
 
 ---
 
-
-
 ## Basic Python
 
 - Variables and Data Types
