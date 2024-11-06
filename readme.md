@@ -107,10 +107,12 @@ Remember to check the [list of resources](#resources) below!
 ## Resources
 
 - [command line exercises](?f=shell_workout)
+- [The Missing Semester](https://missing.csail.mit.edu/) (command line, git, data wrangling) - Similar course at MIT, discovered while creating this version
 
 ### Python Reference
 
 - _Python for Data Analysis_, McKinney - author's [website](https://wesmckinney.com/book/)
+- _Automate the Boring Stuff with Python_, Sweigart - author's [website]](https://automatetheboringstuff.com/)
 - _Whirlwind Tour of Python_, VanderPlas - author's [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 - _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
 - _Hitchhiker's Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
@@ -132,10 +134,18 @@ Remember to check the [list of resources](#resources) below!
 - [Jetbrains' Learn PyCharm](https://www.jetbrains.com/pycharm/learn/)
 - [Effective PyCharm Course](https://training.talkpython.fm/courses/explore_pycharm/mastering-pycharm-ide) (\$\$\$)
 
+### Deep Learning
+
+- [TensorFlow Official Tutorials](https://www.tensorflow.org/tutorials)
+- [PyTorch Documentation](https://pytorch.org/docs/stable/tutorials/)
+- [Keras Documentation](https://keras.io/guides/)
+- [*Deep Learning with Python*, François Chollet](https://www.manning.com/books/deep-learning-with-python)
+- [*Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*](https://www.oreilly.com/library/view/hands-on-machine-learning/9781492032632/)
+
 ### Command Line
 
-- [LinuxCommand.org](http://linuxcommand.org/lc3_learning_the_shell.php)
 - [The Linux Command Line book](http://linuxcommand.org/tlcl.php)
+- [The Shell Scripting Tutorial](https://www.shellscript.sh/)
 - [The Missing Semester](https://missing.csail.mit.edu/)
 - [Bash manual](https://www.gnu.org/software/bash/manual/)
 

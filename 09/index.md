@@ -5,7 +5,11 @@ paginate: true
 class: invert
 ---
 
-# Lecture 9: Practical Python & Command Line Automation
+# Thank you
+
+---
+
+## Lecture 9: Practical Python & Command Line Automation
 
 ---
 
@@ -17,22 +21,8 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 1. [Request REDCap access](https://ucsf.service-now.com/ucsfit?id=ucsf_sc_cat_item&sys_id=42b99b6cdb040c10f3eddff648961988&sysparm_category=40c0305b7b92d000e2dc8180984d4d9f) for upcoming guest lecture
 2. Email me with "REDCap: YOUR_REDCAP_USERNAME" in the subject (replace with your REDCap user name)
-3. Someone will grant you access to an example REDCap project
-4. You will need to request API access to the project
-
-## References
-
-- [*Python for Data Analysis*, Wes McKinney](https://wesmckinney.com/book/) (basis for last few lectures)
-- [*Automate the Boring Stuff with Python*, Al Sweigart](https://automatetheboringstuff.com/)
-- **Deep Learning Resources**:
-  - [TensorFlow Official Tutorials](https://www.tensorflow.org/tutorials)
-  - [PyTorch Documentation](https://pytorch.org/docs/stable/tutorials/)
-  - [Keras Documentation](https://keras.io/guides/)
-  - [*Deep Learning with Python*, François Chollet](https://www.manning.com/books/deep-learning-with-python)
-  - [*Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*](https://www.oreilly.com/library/view/hands-on-machine-learning/9781492032632/)
-- [The Missing Semester](https://missing.csail.mit.edu/) (command line, git, data wrangling)
-- [*The Linux Command Line*, William Shotts](https://linuxcommand.org/tlcl.php)
-- [The Shell Scripting Tutorial](https://www.shellscript.sh/)
+3. We will invite you to a REDCap project
+4. You will need to request API access within that project
 
 ---
 
