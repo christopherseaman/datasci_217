@@ -1,4 +1,13 @@
+---
+marp: true
+theme: sqrl
+paginate: true
+class: invert
+---
+
 # Lecture 9: Practical Python & Command Line Automation
+
+---
 
 ## Overview
 
@@ -31,144 +40,68 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ---
 
-### Basic Navigation
+### Basic Navigation and File Operations
 
-- `pwd` - Print Working Directory
-- `ls` - List directory contents
-  - `-l` - Long format
-  - `-a` - Show hidden files
-- `cd` - Change Directory
-  - `cd ~` - Home directory
-  - `cd ..` - Parent directory
-  - `cd -` - Previous directory
+- Navigation Commands
+  - `pwd` - Print Working Directory
+  - `ls` - List directory contents (`-a` show hidden files, `-l`)
+    - `-l` - Long format
+    - `-a` - Show hidden files
+  - `cd ~` - Change Directory to home (`~`), parent (`..`)
 
-<!--
-- Understand file system hierarchy
-- Navigate efficiently between directories
-- Explore hidden files and detailed file information
-- Master basic directory traversal techniques
--->
-
----
-
-### File Operations
-
-- `mkdir` - Create directory
-- `touch` - Create empty file or update timestamp
-- `cp` - Copy files/directories
-  - `cp source destination`
+- File Manipulation Commands
+  - `mkdir` / `touch` - Create directory / files
+  - `cp -r source destination` - Copy files or directories (`-r`)
   - `cp -r` - Copy directories recursively
-- `mv` - Move/rename files
-- `rm` - Remove files
-  - `rm -r` - Remove directories recursively
-  - `rm -f` - Force remove without confirmation
+  - `mv` - Move/rename files
+  - `rm -r` - Remove files or directories (`-r`)
 
-<!--
-- Manage file and directory lifecycle
-- Perform safe and recursive file operations
-- Understand file manipulation techniques
-- Practice careful file deletion strategies
--->
-
----
-
-## File Viewing
-
-- `cat` - Display file contents
-- `head` - Show first lines of file
-  - `head -n N` - Show first N lines
-- `tail` - Show last lines of file
-  - `tail -n N` - Show last N lines
+- File Viewing Commands
+  - `cat` - Display file contents
+  - `head -n N` - Show first N lines of file
+  - `tail -n N` - Show last N lines of file
   - `tail -f` - Follow file updates
 
-<!--
-- Inspect file contents quickly
-- View file beginnings and endings
-- Monitor live file updates
-- Develop file examination skills
--->
-
 ---
 
-## Text Processing
+## Text Processing and File Links
 
-- `grep` - Search for patterns
-  - `grep "pattern" file`
+- `grep "pattern" file` - Search for patterns
   - `-i` - Case insensitive
   - `-r` - Recursive search
   - `-n` - Show line numbers
-- `cut` - Extract columns from files
-  - `cut -d',' -f1,3` - Extract columns 1 and 3 using comma delimiter
+- `cut -d',' -f1,3` - Extract columns 1 and 3 using comma delimiter
   - `cut -c5-10` - Extract characters 5-10 from each line
-- `tr` - Translate characters
-  - `tr 'a-z' 'A-Z'` - Convert to uppercase
+- `tr 'a-z' 'A-Z'` - Translate characters: convert to uppercase
   - `tr -d '0-9'` - Delete digits
   - `tr -s ' '` - Squeeze repeated spaces
-- `sed` - Stream editor for text manipulation
-  - `sed 's/old/new/'` - Replace first occurrence
+- `sed 's/old/new/'` - Stream editor: replace first occurrence
   - `sed 's/old/new/g'` - Replace all occurrences
   - `sed '/pattern/d'` - Delete lines matching pattern
 
-<!--
-- Master text search and filtering techniques
-- Extract and manipulate text data
-- Perform complex text transformations
-- Develop powerful text processing skills
--->
-
----
-
-## File Links
-
-- `ln` - Create links
+- File Links and Environment Variables
   - `ln -s target link_name` - Create symbolic link
-  - `ln target link_name` - Create hard link
-
-<!--
-- Understand file linking mechanisms
-- Differentiate between symbolic and hard links
-- Manage file references efficiently
--->
-
-### Environment Variables
-
-- `echo $VARIABLE` - Display variable value
-- `export VARIABLE=value` - Set environment variable
-- `env` - Display all environment variables
-- `.env` files for project-specific variables
-  - Create: `touch .env`
-  - Format: `VARIABLE_NAME=value`
-  - **Never commit .env files to version control!**
-
-<!--
-- Manage system and project-specific configurations
-- Understand environment variable scoping
-- Practice secure configuration management
--->
+  - Environment Variable Management
+    - `echo $VARIABLE` - Display variable value
+    - `export VARIABLE=value` - Set environment variable
+    - `env` - Display all environment variables
+    - `.env` files for project-specific variables
+      - Format: `VARIABLE_NAME=value`
 
 ---
 
-## Shell Scripts
+## Shell Scripts and Permissions
 
-- First line: `#!/bin/bash` (shebang)
-- Make executable: `chmod +x script.sh`
-- Run: `./script.sh` or `bash script.sh`
-- Arguments: `$1`, `$2`, etc. ($0 is script name)
-- `$#` - Number of arguments passed
+- Shell Script Basics
+  - First line: `#!/bin/bash` (shebang)
+  - Make executable: `chmod +x script.sh`
+  - Run: `./script.sh` or `bash script.sh`
+  - Arguments: `$1`, `$2`, etc. (`$0` is script name, `$#` number of arguments)
 
-<!--
-- Automate repetitive tasks
-- Create reusable command-line tools
-- Understand script execution and argument handling
-- Develop basic shell scripting skills
--->
-
-### File Permissions
-
-- `chmod` - Change file mode
-  - `chmod +x file` - Make executable
-  - `chmod u+w file` - Add write permission for user
-  - Numeric mode: `chmod 644 file` (owner rw, group/others r)
+- File Permissions
+  - `chmod +x file` - Change file mode: make executable
+    - `chmod u+w file` - Add write permission for user
+    - Numeric mode: `chmod 644 file` (owner rw, group/others r)
 
 <!--
 - Understand Unix file permission system
@@ -182,8 +115,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 - `cron` - Schedule recurring tasks
   - Edit: `crontab -e`
-  - Format: `* * * * * command`
-  - Fields: minute hour day_of_month month day_of_week
+  - Format: `* * * * * command` (minute hour day_of_month month day_of_week)
   - Example: `0 2 * * * backup.sh` (run at 2 AM daily)
 
 <!--
@@ -194,10 +126,8 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ## Remote Access
 
-- `ssh` - Secure shell
-  - `ssh user@host` - Connect to remote host
-- `scp` - Secure copy
-  - `scp file user@host:/path` - Copy to remote
+- `ssh user@host` - Secure shell to remote host
+- `scp file user@host:/path` - Secure copy file to remote host
   - `scp -r user@host:/path file` - Copy directory (`-r`) from remote
 
 <!--
@@ -210,8 +140,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ## Session Management
 
-- `tmux` - Modern terminal multiplexer ([`tmux` cheat sheet](https://devhints.io/tmux))
-  - `tmux` - Start new session
+- `tmux` - Modern terminal multiplexer ([`tmux` cheat sheet](https://devhints.io/tmux)), run first time starts new session
   - `tmux new -s name` - Start named session
   - `tmux attach -t name` - Attach to session
   - `tmux ls` - List sessions
@@ -473,93 +402,24 @@ du -sh *
 
 - Variables and Data Types
   - Integers, floats, strings
-  - Variables are dynamically typed
+  - Dynamically typed
   - Type conversion and checking
-  - String operations and f-strings
+  - Control Structures
+    - `if`/`elif`/`else` conditionals
+    - `for` and `while` loops
+    - Break and continue statements
+    - Compound conditions with `and`, `or`, `not`
 
-- Control Structures
-  - If/elif/else conditionals
-  - For and while loops
-  - Break and continue statements
-  - Compound conditions with `and`, `or`, `not`
+- Data Structures Overview
+  - Lists: 1-dimensional arrays
+  - Dictionaries: key-value pairs
+  - Sets: unique elements
+  - Tuples: immutable sequences
 
-<!--
-- Fundamental Python data handling
-- Type flexibility and conversion
-- Control flow and logical operations
-- String manipulation techniques
--->
-
----
-
-## Functions and Methods
-
-- Functions and Methods
-  - Function definition with `def`
-  - Parameters and return values
-  - Default arguments
-  - Command line arguments
-
-- Packages and Modules
-  - Installing packages
-  - Importing with aliases
-  - Specific functions and classes
-  - Managing virtual environments
-
-<!--
-- Function design and best practices
-- Modular code organization
-- Package management essentials
-- Dependency and environment control
--->
-
----
-
-## Data Structures
-
-- Lists
-  - Creation and indexing
-  - List methods (append, extend, pop)
-  - List slicing and operations
-  - List comprehensions
-  - Sorting and searching
-
-- Dictionaries
-  - Key-value pairs
-  - Dictionary methods
-  - Nested dictionaries
-  - Dictionary comprehensions
-  - Default dictionaries
-
-<!--
-- List manipulation techniques
-- Efficient data storage and retrieval
-- Advanced list and dictionary operations
-- Comprehensions for concise code
--->
-
----
-
-## Data Structures II
-
-- Sets
-  - Unique elements
-  - Set operations (union, intersection)
-  - Set methods
-  - Set comprehensions
-
-- Tuples
-  - Immutable sequences
-  - Tuple packing/unpacking
-  - Named tuples
-  - Using tuples as dictionary keys
-
-<!--
-- Set theory in Python
-- Immutability and its use cases
-- Advanced tuple techniques
-- Performance and memory considerations
--->
+- Functions: defined with `def`
+  - Take parameters and return values
+- Package management
+- Virtual environments
 
 ---
 
@@ -678,7 +538,7 @@ du -sh *
 
 ---
 
-## Running System Commands (1/3)
+## Running System Commands
 
 The `subprocess` module provides a powerful interface to run external commands:
 
@@ -692,7 +552,7 @@ print(result.stdout)
 # Shell commands (use shell=True)
 files = subprocess.check_output('find . -name "*.py"', shell=True).decode()
 
-# Handling errors
+# Handling errors (more on this later)
 try:
     subprocess.run(['nonexistent_command'], check=True)
 except subprocess.CalledProcessError as e:
