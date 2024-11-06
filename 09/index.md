@@ -281,7 +281,7 @@ grep -v "exclude_pattern" FILE
 sed 's/old/new/g' file.txt
 
 # Only replace first occurrence per line
-sed 's/old/new/g' file.txt
+sed 's/old/new/' file.txt
 
 # Delete lines matching pattern
 sed '/DEBUG/d' logfile.txt

@@ -1,4 +1,4 @@
-import random
+import randosm
 from datetime import datetime, timedelta
 import numpy as np
 
@@ -7,6 +7,8 @@ EDUCATION_LEVELS = ['High School', 'Some College', 'Bachelors', 'Graduate']
 START_DATE = datetime(2020, 1, 1)  # Study starts
 END_DATE = datetime(2024, 1, 1)    # Study ends
 NUM_PATIENTS = 1000
+
+asdf{'asdf'}
 
 # Extra metadata
 DATA_ENTRY_STAFF = ['JSmith', 'MJones', 'RWilson', 'KLee']
