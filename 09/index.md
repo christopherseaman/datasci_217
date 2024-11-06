@@ -9,11 +9,11 @@ class: invert
 
 ---
 
-## Lecture 9: Practical Python & Command Line Automation
+## Lecture 9: Practical Python & Command Line Automation
 
 ---
 
-## Housekeeping: REDCap Access
+## Housekeeping: REDCap Access 
 
 1. [Request REDCap access](https://ucsf.service-now.com/ucsfit?id=ucsf_sc_cat_item&sys_id=42b99b6cdb040c10f3eddff648961988&sysparm_category=40c0305b7b92d000e2dc8180984d4d9f) for upcoming guest lecture
 2. Email me with "REDCap: YOUR_REDCAP_USERNAME" in the subject (replace with your REDCap user name)
@@ -22,7 +22,7 @@ class: invert
 
 ---
 
-## Revisiting the Command Line
+## Revisiting the Command Line
 
 ---
 
