@@ -90,7 +90,7 @@ Remember to check the [list of resources](#resources) below!
 
 ### Lecture 9: Practical Python & Command Line Automation
 
-([slides](09), [pdf](09/index.pdf), [python demo](09/demo.ipynb) & [shell demo](09/shell_demo.md), [exam 2 TBD])
+([slides](09), [pdf](09/index.pdf), [python demo](09/demo.ipynb) & [shell demo](09/shell_demo.md), [exam 2](https://classroom.github.com/a/_RlVALv1))
 
 - Revisiting powerful CLI commands and Python integration
 - Everyday automation with Python (file organization, batch operations)
