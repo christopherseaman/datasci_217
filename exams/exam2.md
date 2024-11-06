@@ -4,25 +4,24 @@
 
 - This exam consists of four interconnected questions that will guide you through a health data analysis project
 - Submit your solutions as separate files with the names specified in each question
-- You may only use tools and techniques covered in the course outline
 - Each question builds upon the previous ones - complete them in order
 
 ## Question 1: Data Preparation with Command-Line Tools (20 points)
 
-File name: `prepare_health_data.sh`
+File name: `prepare.sh`
 
 You are provided with a raw CSV file containing health data. Create a shell script that prepares this dataset using command-line text processing tools.
 
 Your tasks:
 
 1. Create text files categorizing key variables:
-   - Create a file for geographic regions
-   - Create a file for insurance types
+   - Create a file for geographic `region`
+   - Create a file for `insurance_type`
 
 2. Clean the raw data file:
-   - Remove comment lines and headers
-   - Remove lines with extra or missing data
-   - Extract specific columns of interest
+   - Remove comment and empty lines
+   - Remove double-struck commas
+   - Extract specific columns of interest #FIXME-Which_ones
 
 3. Generate a summary of the processed data:
    - Count the number of records
@@ -30,9 +29,8 @@ Your tasks:
 
 Tips:
 
-- Use `grep -v` to remove comment lines and headers
-- Use `sed` to handle extra commas or incomplete data
-  - `sed 's/,,*/,/g'` replaces multiple commas with a single comma
+- Use `grep -v` to remove comment lines (start with '#')
+- Use `sed` to handle extra commas
   - `sed '/^$/d'` removes empty lines
 - Use `cut -d',' -f1,2,3,4,5` to extract specific columns
 - Use `wc -l` to count records
