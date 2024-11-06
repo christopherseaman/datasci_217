@@ -36,8 +36,7 @@ class: invert
 - File Manipulation Commands
   - `mkdir` / `touch` - Create directory / files
   - `cp -r source destination` - Copy files or directories (`-r`)
-  - `mv` - Move/rename files
-  - `rm -r` - Remove files or directories (`-r`)
+  - `mv`/ `rm -r` - Move / remove files or directories (`-r`)
 
 - File Viewing Commands
   - `cat` - Display file contents
@@ -54,7 +53,7 @@ class: invert
   - `cut -c5-10` - Extract characters 5-10 from each line
 - `tr 'a-z' 'A-Z'` - Translate characters: convert to uppercase
   - `tr -d '0-9'` - Delete digits;  `tr -s ' '` - Squeeze repeated spaces
-- `sed 's/old/new/'` - Stream editor: replace first occurrence on each line ('s/old/new/g' replaces all)
+- `sed 's/old/new/'` - Stream editor: replace 1st "old" on each line ('s/old/new/g' replaces all)
   - `sed '/pattern/d'` - Delete lines matching pattern
 - `ln -s target link_name` - Create symbolic link
 - Environment Variable Management
@@ -267,6 +266,9 @@ grep -ri "warning" /var/log/
 
 # Show context around matches
 grep -C 2 "exception" app.log
+
+# Inverse search
+grep -v "exclude_pattern" FILE
 ```
 
 ---
@@ -277,7 +279,10 @@ grep -C 2 "exception" app.log
 - Common uses: substitution, deletion, insertion
 
 ```bash
-# Replace text
+# Replace text everywhere
+sed 's/old/new/g' file.txt
+
+# Only replace first occurrence per line
 sed 's/old/new/g' file.txt
 
 # Delete lines matching pattern
@@ -376,22 +381,17 @@ du -sh *
 
 - Variables and Data Types
   - Integers, floats, strings - dynamically/duck typed
-  - Type conversion and checking
-  - Control Structures
-    - `if`/`elif`/`else` conditionals; `for` and `while` loops
-    - Compound conditions with `and`, `or`, `not`
-    - `break` and `continue` statements
-
+- Control Structures
+  - `if`/`elif`/`else` conditionals; `for` and `while` loops
+  - Compound conditions with `and`, `or`, `not`
+  - `break` and `continue` statements
 - Data Structures
   - Lists: 1-dimensional arrays
   - Dictionaries: key-value pairs
   - Sets: unique elements
   - Tuples: immutable sequences
-
-- Functions: defined with `def`
-  - Take parameters and return values
-- Package management
-- Virtual environments
+- Functions: defined with `def` - take parameters and return values
+- Package management & virtual environments
 
 ---
 
@@ -403,7 +403,6 @@ du -sh *
   - Context managers (`with` statement)
   - Binary file operations
   - CSV and JSON handling
-
 - Path Operations
   - Path manipulation with `os.path`
   - Modern path handling with `pathlib`
@@ -423,13 +422,10 @@ du -sh *
 
 - Jupyter Notebooks
   - Remote access and configuration
-  - Magic commands
-  - Cell execution and kernel management
+  - Magic commands, cell execution and kernel management
 - NumPy
-  - Array operations and broadcasting
-  - Mathematical functions
+  - Array & mathematical operations
   - Array manipulation and indexing
-  - Universal functions (ufuncs)
 - Pandas
   - Series and DataFrame objects
   - Data loading and manipulation
