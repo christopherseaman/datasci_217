@@ -104,29 +104,13 @@ for patient in patients:
 # Write dirty data file
 with open('ms_data_dirty.csv', 'w') as f:
     # Add comments and headers with extra commas
-    f.write('# Multiple Sclerosis Study Data Export\n')
-    f.write('# Generated: 2024-01-15\n')
-    f.write('# Timed 25-Foot Walk Test measurements across patient visits\n\n')
-    f.write('patient_id,visit_date,time,age,education_level,walking_speed,site,room,staff_id,form_version\n')
+    # f.write('# Multiple Sclerosis Study Data Export\n')
+    # f.write('# Generated: 2024-01-15\n')
+    # f.write('# Timed 25-Foot Walk Test measurements across patient visits\n\n')
+    f.write('patient_id,visit_date,time,age,category,walking_speed,site,room,staff_id,form_version\n')
     
     # Write visits with intentional noise
     for visit in sorted(visits, key=lambda x: (x['patient_id'], x['date'])):
-        # Oops, they skipped a visit
-        if random.random() < 0.05:
-            continue
-
-        # Sometimes add empty lines
-        if random.random() < 0.05:
-            f.write('\n')
-            
-        # Sometimes add comments
-        if random.random() < 0.05:
-            f.write('# Quality check: measurement verified\n')
-        
-        # Sometimes add extra commas
-        if random.random() < 0.1:
-            line = f"{visit['patient_id']},{visit['date']},{visit['time']},,{visit['age']},{visit['education']},{visit['walking_speed']},{visit['site']},{visit['room']},{visit['staff']},{visit['form_version']}\n"
-        else:
-            line = f"{visit['patient_id']},{visit['date']},{visit['time']},{visit['age']},{visit['education']},{visit['walking_speed']},{visit['site']},{visit['room']},{visit['staff']},{visit['form_version']}\n"
+        line = f"{visit['patient_id']},{visit['date']},{visit['time']},{visit['age']},{visit['education']},{visit['walking_speed']},{visit['site']},{visit['room']},{visit['staff']},{visit['form_version']}\n"
             
         f.write(line)

@@ -7,7 +7,7 @@ import subprocess
 Path('output').mkdir(parents=True, exist_ok=True)
 
 # Get CSV files using shell command
-cmd = "find 09/data/ -name '*.csv' -type f"
+cmd = "find data/ -name '*.csv' -type f"
 files = subprocess.check_output(cmd, shell=True).decode().split('\n')
 
 # Process each file
