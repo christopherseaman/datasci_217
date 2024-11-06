@@ -157,13 +157,22 @@ tmux attach -t perf
 To set up a quick ruff code review workflow, add this to your shell configuration (`.bashrc` or `.zshrc`):
 
 ```bash
-alias ruffedit='tmux new-session -d -s code_review \; \
-    send-keys "${EDITOR:-nano} $1" C-m \; \
-    split-window -v \; \
-    send-keys "while true; do ruff check \"$1\"; sleep 2; done" C-m \; \
-    set-option -t code_review remain-on-exit on \; \
-    set-hook -t code_review pane-exited "kill-session -t code_review" \; \
-    attach-session -t code_review'
+# Function to create a tmux-based code review environment
+ruffedit() {
+  # Clean up any existing session with this name
+  tmux kill-session -t code_review 2>/dev/null
+
+  # Create new tmux session with editor and ruff checker:
+  # - Main pane: Opens file in preferred editor (or nano)
+  # - Bottom pane: Shows real-time ruff linting
+  # - Ensures editor pane is selected
+  # - Displays the session
+  tmux new-session -d -s code_review \
+    "${EDITOR:-nano} $1 && tmux kill-session -t code_review" \; \
+    split-window -v "watch ruff check \"$1\"" \; \
+    select-pane -t 0 \; \
+    attach-session -t code_review
+}
 ```
 
 Usage:
