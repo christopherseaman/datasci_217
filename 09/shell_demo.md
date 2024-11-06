@@ -1,5 +1,3 @@
-
-
 ### Examples
 
 These examples demonstrate how to:
@@ -154,32 +152,34 @@ tmux send-keys 'top -b -n 1 | head -n 12' C-m
 tmux attach -t perf
 ```
 
-## Example 8: Automated Code Review
+## Example 8: Automated Code Review with Ruff
 
-Find and analyze code patterns:
+To set up a quick ruff code review workflow, add this to your shell configuration (`.bashrc` or `.zshrc`):
 
 ```bash
-# Create a tmux session
-tmux new-session -d -s code_review
-
-# Find all Python files and analyze imports
-tmux send-keys 'find . -name "*.py" -exec grep "^import" {} \; | \
-sort | uniq -c | sort -nr > imports.txt' C-m
-
-# Find long functions (>50 lines)
-tmux split-window -v
-tmux send-keys 'for f in $(find . -name "*.py"); do
-  echo "=== $f ==="
-  awk "/def /,/^$/" "$f" | grep -v "^$" | grep -B1 -A50 "def " 
-done > long_functions.txt' C-m
-
-# Monitor for TODO comments
-tmux split-window -h
-tmux send-keys 'watch -n 5 "find . -type f -exec grep -l \"TODO\" {} \; | wc -l"' C-m
-
-# Attach to session
-tmux attach -t code_review
+alias ruffedit='tmux new-session -d -s code_review \; \
+    send-keys "${EDITOR:-nano} $1" C-m \; \
+    split-window -v \; \
+    send-keys "while true; do ruff check \"$1\"; sleep 2; done" C-m \; \
+    set-option -t code_review remain-on-exit on \; \
+    set-hook -t code_review pane-exited "kill-session -t code_review" \; \
+    attach-session -t code_review'
 ```
+
+Usage:
+
+```bash
+# Open a Python file with continuous ruff checking
+ruffedit your_python_file.py
+```
+
+These aliases:
+
+- Uses $EDITOR (or nano as fallback)
+- Creates a tmux session named 'code_review'
+- Opens the specified file in one pane
+- Runs continuous ruff checks in another pane
+- Automatically closes the session when the editor exits
 
 ## Example 9: Real-time Log Analysis Dashboard
 
@@ -216,5 +216,3 @@ done' C-m
 # Attach to session
 tmux attach -t logs
 ```
-
----
