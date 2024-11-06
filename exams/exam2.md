@@ -1,8 +1,8 @@
-# DS-217 Final Exam: Health Data Analysis Workflow
+# DS-217 Final Exam: Multiple Sclerosis Analysis
 
 ## Instructions
 
-- This exam consists of four interconnected questions that will guide you through a health data analysis project
+- This exam consists of four interconnected questions analyzing MS patient data
 - Submit your solutions as separate files with the names specified in each question
 - Each question builds upon the previous ones - complete them in order
 
@@ -10,124 +10,129 @@
 
 File name: `prepare.sh`
 
-You are provided with a raw CSV file containing health data. Create a shell script that prepares this dataset using command-line text processing tools.
+You are provided with a raw CSV file containing longitudinal walking speed measurements. Create a shell script `prepare.sh` that prepares this dataset and extracts categorical variables.
 
 Your tasks:
 
-1. Create text files categorizing key variables:
-   - Create a file for geographic `region`
-   - Create a file for `insurance_type`
+1. Run the script `generate_dirty_data.py` to create `ms_data_dirty.csv` which you will clean in the next steps.
 
 2. Clean the raw data file:
-   - Remove comment and empty lines
-   - Remove double-struck commas
-   - Extract specific columns of interest #FIXME-Which_ones
+   - Remove comment lines
+   - Remove empty lines
+   - Remove extra commas
+   - Extract essential columns: patient_id, visit_date, age, education_level, walking_speed
 
-3. Generate a summary of the processed data:
-   - Count the number of records
-   - Display the first few lines of the processed data
+3. Create a file, `insurance.lst` listing unique labels for a new variable, `insurance_type`, one per line (your choice of labels).
+
+4. Generate a summary of the processed data:
+   - Count the total number of visits
+   - Display the first few records
 
 Tips:
 
-- Use `grep -v` to remove comment lines (start with '#')
-- Use `sed` to handle extra commas
-  - `sed '/^$/d'` removes empty lines
-- Use `cut -d',' -f1,2,3,4,5` to extract specific columns
+- Use `grep -v` to remove comment lines (starting with '#')
+- Use `sed` to remove empty lines. Reminders about `sed`:
+  - `sed -e 's/THIS/THAT/g'` to replace 'THIS' with 'THAT' everywhere in a line (that's what the `g` at the end means)
+  - `^` - start of line
+  - `$` - end of line
+- Use `cut` to extract specific columns (use `-d` to specify delimiter, `-f` to specify columns)
 - Use `wc -l` to count records
-- Use `head -n 5` to show first few lines
 - Combine commands with pipes (`|`) for complex processing
 
-## Question 2: Data Munging with Python (25 points)
+## Question 2: Data Analysis with Python (25 points)
 
-File name: `data_munge.py`
+File name: `analyze_visits.py`
 
-Using the processed data from Question 1 and the category files you created:
+Using the cleaned data and insurance category file from Question 1:
 
-1. Load the category files
+1. Load and structure the data:
+   - Read the processed CSV file
+   - Convert visit_date to datetime
+   - Sort by patient_id and visit_date
 
-2. Load the processed health data
+2. Add insurance information:
+   - Read insurance types from insurance_types.txt
+   - Randomly assign (but keep consistent per patient_id)
+   - Generate visit costs based on insurance type:
+     * Different plans have different effects on cost
+     * Add random variation 
 
-3. Randomly assign categorical columns:
-   - Assign regions to patients
-   - Assign insurance types to patients
-
-4. Create two outcome variables:
-   - Generate a blood pressure variable with some systematic variation
-   - Generate a patient cost variable with some systematic variation
+3. Calculate summary statistics:
+   - Mean walking speed by education level
+   - Mean costs by insurance type
+   - Age effects on walking speed
 
 Tips:
 
-- Use `random.choice()` to assign categorical variables
-- Create dictionaries to add systematic variation
-  - Example: `region_bp_offset = {'Northeast': 5, 'Southeast': -3}`
-- Use NumPy for random number generation
-  - `np.random.normal(mean, std_dev, size)` creates semi-random variables
-- Add base value + variation + random noise
-  - `blood_pressure = 120 + region_offset + age_factor + random_noise`
 - Use pandas for data manipulation
-  - `.map()` to apply dictionary-based transformations
-  - `.to_csv()` to save processed data
+  - `pd.read_csv()` to load data
+  - `pd.to_datetime()` for dates
+  - `.groupby()` for aggregations
+- Handle missing data appropriately
+- Consider seasonal variations in the data
 
 ## Question 3: Statistical Analysis (25 points)
 
-File name: `analyze.py`
+File name: `stats_analysis.py`
 
-Perform statistical analysis on the munged data from Question 2:
+Perform statistical analysis on both outcomes:
 
-1. Conduct a chi-square test to examine relationships between categorical variables
+1. Analyze walking speed:
+   - Multiple regression with education and age
+   - Account for repeated measures
+   - Test for significant trends
 
-2. Perform a linear regression:
-   - Predict an outcome variable based on other variables
-   - Assess the model's statistical significance
+2. Analyze costs:
+   - Simple analysis of insurance type effect
+   - Box plots and basic statistics
+   - Calculate effect sizes
 
-3. Explore relationships between variables:
-   - Look for statistically significant associations
-   - Interpret your findings
+3. Advanced analysis:
+   - Education + age interaction effects on walking speed
+   - Control for relevant confounders
+   - Report key statistics and p-values
 
 Tips:
 
-- Use `scipy.stats.chi2_contingency()` for categorical analysis
-  - Create a contingency table with `pd.crosstab()`
-- Use scikit-learn for linear regression
-  - `LinearRegression().fit(X, y)` to create model
-  - `.score()` to get R-squared
-- Use statsmodels for detailed regression analysis
-  - `sm.OLS()` provides comprehensive statistical output
-- Extract and interpret key statistics:
-  - Coefficients
-  - P-values
-  - R-squared
-- Consider multiple features for prediction
+- Use scipy.stats for statistical tests
+- Use statsmodels for regression analysis:
+  - Report coefficients and confidence intervals
 
 ## Question 4: Data Visualization (30 points)
 
-File name: `visualize.py`
+File name: `visualize.ipynb`
 
-Create visualizations that help understand the data and analysis from previous questions:
+Create visualizations for both walking speed and cost analyses in a Jupyter notebook:
 
-1. Generate a pair plot showing relationships between key variables
+1. Walking speed analysis:
+   - Scatter plot of age vs walking speed with regression line
+   - Box plots by education level
+   - Line plot showing education + age interaction
 
-2. Create histograms that show the distribution of an outcome variable across different categories
+2. Cost analysis:
+   - Bar plot of mean costs by insurance type
+   - Box plots showing cost distributions
+   - Add error bars or confidence intervals
 
-3. Produce a box plot comparing an outcome variable across different categorical groups
-
-4. Create a scatter plot exploring the relationship between two continuous variables
+3. Combined visualizations:
+   - Pair plot of key variables
+   - Faceted plots by education/insurance
+   - Time trends where relevant
 
 Tips:
 
-- Use seaborn for advanced visualizations
-  - `sns.pairplot()` for multi-variable relationships
-  - `sns.histplot()` with `hue` parameter for categorical distributions
-  - `sns.boxplot()` to compare distributions
-  - `sns.scatterplot()` to show correlations
-- Use `plt.subplot()` to create multi-panel figures
-- Add meaningful titles and labels
-- Use `hue` parameter to add categorical information
-- Save figures with `plt.savefig()`
+- Use seaborn for statistical visualizations:
+  - `sns.lmplot()` for regression plots
+  - `sns.boxplot()` for distributions
+  - `sns.barplot()` for means with error bars
+- Create clear, informative plots
+- Add proper titles and labels
+- Use appropriate color schemes
+- Save high-quality figures
 
 ### Bonus Points (10 points)
 
-- Add error handling and input validation
-- Create more advanced or interactive visualizations
-- Implement additional statistical tests
+- Implement advanced statistical methods
+- Create interactive visualizations
+- Analyze additional patterns
 - Add command-line argument parsing
