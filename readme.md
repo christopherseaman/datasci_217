@@ -102,6 +102,8 @@ Remember to check the [list of resources](#resources) below!
 
 ### Lecture 11: Guest Lecturer, Rian Bogley
 
+([slides](11), [pdf](11/index.pdf), [demo](11/demo.ipynb))
+
 ### Lecture 12: Guest Lecturer, Sam Chen
 
 ## Resources
