@@ -1062,8 +1062,6 @@ print(cleaning_system)  # "Build flexible, adaptable solution"
 - Enables automated data access
 - Standardizes data exchange
 
-![bg right:40%](suggested_api_diagram.png)
-
 <!--
 - Break down API concept simply
 - Use REDCap context for examples
