@@ -381,10 +381,11 @@ These concepts apply to any database system!
 ## Lesson 3: Don't Reinvent the Wheel & Embrace Standards
 
 ### Key Principles
-1. Check if solution exists before building
-2. Follow industry standards when available
+1. Check if solution already exists
+2. Follow industry standards
 3. Build on community knowledge
 4. Enable future compatibility
+![bg fit right](media/reinvent_the_wheel.png)
 
 <!--
 - Connect to previous lesson about transferability
@@ -405,11 +406,9 @@ These concepts apply to any database system!
 - Wanted to automate repetitive processes
 
 **My Journey**:
-1. Built custom Python package from scratch
-2. Spent weeks developing and testing
-3. Created functions for common operations
-4. Finally discovered: PyCap existed all along!
-
+- Built entire custom Python package from scratch
+- Discovered: ```PyCap``` existed all along!
+![bg right:25% 90%](media/pycap.jpeg)
 <!--
 - Share the excitement of building first solution
 - Admit to the oversight of not checking first
@@ -490,14 +489,14 @@ These concepts apply to any database system!
 
 ### When to Build Custom Solutions
 
-Sometimes building custom solutions makes sense:
+**DIY When:**
 - No suitable existing solution
 - Very specific requirements
 - Security constraints
 - Learning exercise
 
 **But Always**:
-- Document your decisions
+- Document your decisions and code
 - Follow industry standards where possible
 - Keep it maintainable
 - Share back with community when possible
@@ -508,6 +507,8 @@ Sometimes building custom solutions makes sense:
 - Emphasize documentation importance
 - Lead into decision helper function
 -->
+
+![bg right:40% 100%](media/explaining_your_code.jpg)
 
 ---
 
@@ -730,7 +731,8 @@ Consider automation when:
 2. **Start Simple, Grow Smart**:
    - Begin with core functionality
    - Add flexibility where needed
-   - Document expansion points
+
+![bg right 75%](media/over_complicating_things.jpg)
 
 <!--
 - Summarize key points
