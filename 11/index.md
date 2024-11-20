@@ -4,6 +4,7 @@ theme: sqrl
 paginate: true
 class: invert
 ---
+<!-- Use npx marp index.md in the dir to make the html presentation.-->
 
 # Clinical Research & Data Science
 ## Lessons Learned: The Good, the Bad, and the Boutique
@@ -272,46 +273,6 @@ Lessons I've learned from working with specialized databases and how these lesso
 -->
 
 ---
-### Evaluating Expertise Level as a Function
-
-```python
-def evaluate_expertise_balance(niche_tools, general_tools):
-    """
-    Evaluates the balance between expertise in niche tools vs general tools
-    
-    Parameters:
-    niche_tools: int (1-10) rating of specialized system expertise
-    general_tools: int (1-10) rating of general tool expertise
-    """
-    if niche_tools < 1 or general_tools < 1 or niche_tools > 10 or general_tools > 10:
-        return "Please rate skills from 1-10"
-    
-    ratio = niche_tools / general_tools
-    
-    if ratio > 2:
-        return "Risk of over-specialization. Consider expanding general data science skills."
-    elif ratio < 0.5:
-        return "Could benefit from deeper system knowledge while maintaining broad skills."
-    else:
-        return "Good balance of specialized and general expertise."
-
-# Example: Early career at MAC
-early_career = evaluate_expertise_balance(
-    niche_tools=8,    # Expert in LAVA
-    general_tools=2    # Basic programming/database knowledge
-)
-print("Early Career Example:", early_career)
-# "Risk of over-specialization..."
-```
-
-<!--
-- Walk through the function logic
-- Explain the ratios and why they matter
-- Share personal scoring at different career stages
-- Use this to transition into identifying transferable skills
--->
-
----
 
 ## Lesson 2: Identifying Transferable Skills
 ### Looking Beyond the Tool
@@ -417,52 +378,6 @@ These concepts apply to any database system!
 
 ---
 
-### Skill Transferability Evaluation as a Function
-```python
-def evaluate_system_transferability(system_features):
-    """
-    Evaluates how valuable a system is for building transferable data science skills
-    
-    Parameters:
-    system_features: dictionary of system characteristics
-        - 'query_language': bool (Has structured query language?)
-        - 'api_access': bool (Has API accessibility?)
-        - 'data_export': bool (Allows data export/manipulation?)
-        - 'customization': bool (Allows custom configurations?)
-    
-    Returns: String with evaluation and recommendation
-    """
-    score = sum(system_features.values())
-    
-    if score <= 1:
-        return "Limited transferability. Consider supplementing with more flexible tools."
-    elif score == 2:
-        return "Moderate potential. Focus on extracting data for analysis in other tools."
-    elif score == 3:
-        return "Good potential for skill development! Focus on query patterns and API usage."
-    else:
-        return "Excellent system for building transferable skills. Invest time in learning deeply."
-
-# Example usage: Evaluating a limited legacy system
-lava_system = {
-    'query_language': False,  # No query language
-    'api_access': False,      # No API
-    'data_export': True,      # Can export data
-    'customization': False    # Fixed configuration
-}
-print(evaluate_system_transferability(lava_system))
-# "Limited transferability. Consider supplementing..."
-```
-
-<!--
-- Walk through function logic and scoring
-- Apply to real-world examples beyond LAVA
-- Show how this helps in tool evaluation
-- Use this to transition into not reinventing the wheel
--->
-
----
-
 ## Lesson 3: Don't Reinvent the Wheel & Embrace Standards
 
 ### Key Principles
@@ -554,8 +469,7 @@ print(evaluate_system_transferability(lava_system))
 
 1. **Research First**:
    - Search for existing solutions & industry standards
-   - Review community resources
-   - Consult colleagues
+   - Review community resources & consult colleagues
 
 2. **Evaluate Options**:
    - Active maintenance? Community adoption? Documentation quality?
@@ -564,7 +478,6 @@ print(evaluate_system_transferability(lava_system))
 3. **Consider Hybrid Approaches**:
    - Build on existing tools
    - Follow established patterns
-   - Contribute improvements back
 
 <!--
 - Walk through each step with examples
@@ -587,53 +500,13 @@ Sometimes building custom solutions makes sense:
 - Document your decisions
 - Follow industry standards where possible
 - Keep it maintainable
-- Share with community when possible
+- Share back with community when possible
 
 <!--
 - Acknowledge valid reasons for custom solutions
 - Share examples of when custom was necessary
 - Emphasize documentation importance
 - Lead into decision helper function
--->
-
----
-
-### Decision Helper Function
-
-```python
-def should_you_diy(existing_solution_found, meets_needs, active_maintenance):
-    """
-    Simple decision helper for building custom solutions
-    
-    Parameters:
-    existing_solution_found (bool): Whether an existing solution was found after research
-    meets_needs (bool): Whether the existing solution meets your requirements
-    active_maintenance (bool): Whether the solution is actively maintained/updated
-    
-    Returns:
-    str: Recommendation for whether to build custom solution
-    """
-    if not existing_solution_found:
-        return "Build new solution"
-    elif meets_needs and active_maintenance:
-        return "Use existing solution"
-    else:
-        return "Consider contributing to existing solution"
-
-# Example usage:
-redcap_api_case = should_you_diy(
-    existing_solution_found=True,    # PyCap exists
-    meets_needs=True,                # Does what we need
-    active_maintenance=True          # Regularly updated
-)
-print(redcap_api_case)  # "Use existing solution"
-```
-
-<!--
-- Explain function logic and parameters
-- Share real examples of using this framework
-- Connect to project planning importance
-- Transition to next lesson
 -->
 
 ---
@@ -674,56 +547,6 @@ print(redcap_api_case)  # "Use existing solution"
 - Share stories of when planning helped
 - Also mention when lack of planning hurt
 - Emphasize documentation importance
--->
-
----
-
-### Data Project Planning as a Function
-
-```python
-def evaluate_project_readiness(requirements):
-    """
-    Evaluates if a data project is ready to begin
-    
-    Parameters:
-    requirements (dict): Key project elements and their status
-    
-    Returns:
-    str: Project readiness assessment and recommendations
-    """
-    essential_elements = {
-        'clear_objective': False,
-        'timeline_defined': False,
-        'resources_identified': False,
-        'success_metrics': False
-    }
-    
-    essential_elements.update(requirements)
-    readiness_score = sum(essential_elements.values())
-    
-    if readiness_score < 2:
-        return "Need more planning before starting"
-    elif readiness_score < 4:
-        return "Ready to begin planning phase"
-    else:
-        return "Ready to begin implementation"
-
-# Example usage:
-project_status = {
-    'clear_objective': True,
-    'timeline_defined': True,
-    'resources_identified': False,
-    'success_metrics': False
-}
-print(evaluate_project_readiness(project_status))
-# "Ready to begin planning phase"
-```
-
-<!--
-- Explain function logic
-- Show how it helps evaluate readiness
-- Share examples of using this framework
-- Connect to work efficiency
 -->
 
 ---
@@ -806,54 +629,6 @@ Consider automation when:
 
 ---
 
-### Should You Automate as a Function
-
-```python
-def should_you_automate(frequency, complexity, error_risk):
-    """
-    Evaluates whether a task should be automated based on simple criteria
-    
-    Parameters:
-    frequency: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
-    complexity: 'low', 'medium', 'high'
-    error_risk: 'low', 'medium', 'high'
-    """
-    # Simple scoring
-    freq_score = {'daily': 5, 'weekly': 4, 'monthly': 3, 
-                 'quarterly': 2, 'yearly': 1}
-    level_score = {'low': 1, 'medium': 2, 'high': 3}
-    
-    # Calculate total score
-    score = freq_score[frequency] * \
-            level_score[complexity] * \
-            level_score[error_risk]
-    
-    # Evaluate priority
-    if score >= 30:
-        return "High priority for automation"
-    elif score >= 15:
-        return "Consider automating"
-    else:
-        return "Manual process may be fine"
-
-# Example usage: LAVA data cleaning task
-lava_cleaning = should_you_automate(
-    frequency='weekly',      # Done every week
-    complexity='medium',     # Moderately complex
-    error_risk='high'       # High risk of manual errors
-)
-print(lava_cleaning)  # "High priority for automation"
-```
-
-<!--
-- Explain scoring system
-- Walk through real examples
-- Show how it guides decisions
-- Connect to upcoming lesson about adaptability
--->
-
----
-
 ## Lesson 6: Design for Adaptability
 
 ### Single-Use vs. Flexible Solutions
@@ -895,80 +670,6 @@ print(lava_cleaning)  # "High priority for automation"
 
 ---
 
-### Real-World Example: Data Cleaning Scripts
-
-**Initial Approach**:
-- Separate scripts for each data type
-- Hard-coded field names
-- Project-specific logic
-- Limited reusability
-
-**Evolution to Flexible System**:
-- Configurable field mappings
-- Modular cleaning functions
-- Standardized input/output
-- Documentation for reuse
-
-**Result**:
-- One system handles multiple data types
-- Easier maintenance
-- Team can adapt for new needs
-- Faster implementation
-
-<!--
-- Walk through evolution of approach
-- Share specific examples of improvements
-- Point out learning moments
-- Highlight benefits realized
--->
-
----
-
-### Finding the Balance
-
-```python
-def evaluate_flexibility_needs(use_cases, time_available, maintenance_capacity):
-    """
-    Helps decide whether to build flexible or single-use solution
-    
-    Parameters:
-    use_cases (int): Number of similar use cases identified
-    time_available (int): Development time in days
-    maintenance_capacity (bool): Team capacity for maintaining flexible system
-    
-    Returns:
-    str: Recommendation for development approach
-    """
-    if use_cases <= 1:
-        return "Build single-use solution"
-    
-    flexibility_score = use_cases * (time_available/10)
-    
-    if flexibility_score > 5 and maintenance_capacity:
-        return "Build flexible, adaptable solution"
-    elif flexibility_score > 2:
-        return "Consider modular approach with common components"
-    else:
-        return "Build separate single-use solutions"
-
-# Example: Data cleaning system
-cleaning_system = evaluate_flexibility_needs(
-    use_cases=4,              # Multiple data types to clean
-    time_available=20,        # 20 days for development
-    maintenance_capacity=True  # Team can maintain
-)
-print(cleaning_system)  # "Build flexible, adaptable solution"
-```
-
-<!--
-- Explain function logic
-- Share real decision examples
-- Show how it guides development
-- Connect to practical applications
--->
-
----
-
 ### Best Practices for Adaptable Systems
 
 **1. Design Principles**:
@@ -981,7 +682,6 @@ print(cleaning_system)  # "Build flexible, adaptable solution"
 - Start simple, add flexibility gradually
 - Test with different use cases
 - Get user feedback early
-- Plan for maintenance
 
 <!--
 - Explain each principle
@@ -997,7 +697,7 @@ print(cleaning_system)  # "Build flexible, adaptable solution"
 
 ---
 
-### Case Study: Evolution of a System
+### Example: Evolution of a System
 
 **Phase 1: Single-Use Script**
 - Built for specific LAVA export with hard-coded field names
@@ -1040,29 +740,11 @@ print(cleaning_system)  # "Build flexible, adaptable solution"
 
 ---
 
-## Transitioning to API Integration: A Perfect Example
-
-### Why APIs Demonstrate These Principles:
-- Built for flexibility
-- Designed for multiple use cases
-- Standardized interaction
-
-<!--
-- Show how APIs embody adaptable design
-- Connect previous lessons to API usage
-- Set up practical demonstration
-- Preview REDCap API benefits
--->
-
----
-
 ### What is an API?
 - Application Programming Interface
 - Allows systems to communicate
 - Enables automated data access
 - Standardizes data exchange
-
-![bg right:40%](suggested_api_diagram.png)
 
 <!--
 - Break down API concept simply
