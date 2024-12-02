@@ -99,6 +99,7 @@ Remember to check the [list of resources](#resources) below!
 - Real-world examples combining concepts from previous lectures
 
 ### Lecture 10: Guest Lecturer, Albert Lee
+([resources](https://tiny.ucsf.edu/9SlN8f))
 
 ### Lecture 11: Guest Lecturer, Rian Bogley
 
