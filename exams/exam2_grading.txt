@@ -1,0 +1,119 @@
+# DS-217 Exam 2 Grading System
+
+- Total points: 100 (plus 10 bonus)
+- Q1: Data Preparation (20 pts)
+- Q2: Data Analysis (25 pts)
+- Q3: Statistical Analysis (25 pts)
+- Q4: Data Visualization (30 pts)
+- Bonus: Advanced Features (10 pts)
+
+## DETAILED CRITERIA
+
+### Question 1: Data Preparation (20 points)
+1.1 Successfully runs generate_dirty_data.py and creates ms_data_dirty.csv (5 pts)
+1.2 Data cleaning operations (8 pts):
+    - Removes comment lines (2)
+    - Removes empty lines (2)
+    - Removes extra commas (2)
+    - Extracts correct columns in order (2)
+1.3 Creates insurance.lst with valid categories (3 pts)
+1.4 Generates correct data summary (4 pts):
+    - Counts total visits correctly (2)
+    - Displays first few records (2)
+
+### Question 2: Data Analysis (25 points)
+2.1 Data loading and structure (8 pts):
+    - Loads CSV correctly (2)
+    - Converts dates properly (2)
+    - Sorts data correctly (2)
+    - Handles data types appropriately (2)
+2.2 Insurance information (9 pts):
+    - Reads insurance types (2)
+    - Assigns consistently per patient (3)
+    - Generates valid costs (4)
+2.3 Summary statistics (8 pts):
+    - Walking speed by education (3)
+    - Costs by insurance (3)
+    - Age effects analysis (2)
+
+### Question 3: Statistical Analysis (25 points)
+3.1 Walking speed analysis (8 pts):
+    - Multiple regression implementation (3)
+    - Repeated measures handling (3)
+    - Trend testing (2)
+3.2 Cost analysis (8 pts):
+    - Insurance effect analysis (3)
+    - Box plot statistics (2)
+    - Effect size calculations (3)
+3.3 Advanced analysis (9 pts):
+    - Education-age interaction (3)
+    - Confounder control (3)
+    - Statistical reporting (3)
+
+### Question 4: Data Visualization (30 points)
+4.1 Walking speed visualizations (10 pts):
+    - Age vs speed scatter plot (3)
+    - Education level box plots (3)
+    - Education-age interaction plot (4)
+4.2 Cost visualizations (10 pts):
+    - Insurance type bar plot (3)
+    - Cost distribution box plots (3)
+    - Error bars/confidence intervals (4)
+4.3 Combined visualizations (10 pts):
+    - Pair plot implementation (3)
+    - Faceted plots (4)
+    - Time trend analysis (3)
+
+### Bonus Points (10 points)
+- Advanced statistical methods (3)
+- Interactive visualizations (3)
+- Additional pattern analysis (2)
+- Command-line argument parsing (2)
+
+## GRADING INSTRUCTIONS
+
+1. Submissions Location:
+   - Base directory: exams/09-second-exam-submissions/
+   - Format: 09-second-exam-USERNAME/
+   - Example: 09-second-exam-bobachubs/
+
+2. Required Files in Each Submission:
+   - prepare.sh
+   - ms_data.csv
+   - insurance.lst
+   - analyze_visits.py
+   - stats_analysis.py
+   - visualize.ipynb
+   - readme.md
+
+3. Evaluation Process:
+   - Review each file against rubric criteria
+   - Test functionality where applicable
+   - Assess code quality and documentation
+   - Consider partial credit for incomplete implementations
+   - Note exceptional work
+
+4. Output Format:
+   Save results to: exams/09-second-exam-scores.tsv
+   
+   Format example (tab-separated, one row per submission):
+   ```
+   username	total	q1_total	q2_total	q3_total	q4_total	bonus_total	1.1	1.2	1.3	1.4	2.1	2.2	2.3	3.1	3.2	3.3	4.1	4.2	4.3	bonus
+   bobachubs	95	18	24	23	30	8	5	7	2	4	8	8	8	7	8	8	10	10	10	8
+   ```
+
+   Column definitions match exam2_rubric.tsv:
+   - username: Extracted from submission directory name
+   - total: Overall score (max 100)
+   - q[1-4]_total: Question subtotals
+   - [1-4].[1-3]: Individual component scores
+   - bonus: Additional points (max 10)
+
+5. Guidelines:
+   - Missing files result in 0 points for affected components
+   - Award partial credit based on implementation quality
+   - Consider creative solutions that meet requirements
+   - Document point deductions clearly
+   - Note exceptional implementations
+   - Be consistent in point allocation
+   - Consider the holistic implementation
