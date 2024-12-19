@@ -5,34 +5,20 @@ paginate: true
 class: invert
 ---
 
-# Lecture 9: Practical Python & Command Line Automation
+# Thank you
 
 ---
 
-## Overview
+## Lecture 9: Practical Python & Command Line Automation
 
-In this final lecture, we'll bring together Python and command line tools to solve practical, everyday problems. We'll see how concepts from previous lectures combine to create useful automation solutions.
+---
 
-## REDCap Access
+## Housekeeping: REDCap Access 
 
 1. [Request REDCap access](https://ucsf.service-now.com/ucsfit?id=ucsf_sc_cat_item&sys_id=42b99b6cdb040c10f3eddff648961988&sysparm_category=40c0305b7b92d000e2dc8180984d4d9f) for upcoming guest lecture
 2. Email me with "REDCap: YOUR_REDCAP_USERNAME" in the subject (replace with your REDCap user name)
-3. Someone will grant you access to an example REDCap project
-4. You will need to request API access to the project
-
-## References
-
-- [*Python for Data Analysis*, Wes McKinney](https://wesmckinney.com/book/) (basis for last few lectures)
-- [*Automate the Boring Stuff with Python*, Al Sweigart](https://automatetheboringstuff.com/)
-- **Deep Learning Resources**:
-  - [TensorFlow Official Tutorials](https://www.tensorflow.org/tutorials)
-  - [PyTorch Documentation](https://pytorch.org/docs/stable/tutorials/)
-  - [Keras Documentation](https://keras.io/guides/)
-  - [*Deep Learning with Python*, François Chollet](https://www.manning.com/books/deep-learning-with-python)
-  - [*Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*](https://www.oreilly.com/library/view/hands-on-machine-learning/9781492032632/)
-- [The Missing Semester](https://missing.csail.mit.edu/) (command line, git, data wrangling)
-- [*The Linux Command Line*, William Shotts](https://linuxcommand.org/tlcl.php)
-- [The Shell Scripting Tutorial](https://www.shellscript.sh/)
+3. We will invite you to a REDCap project
+4. You will need to request API access within that project
 
 ---
 
@@ -44,53 +30,38 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 - Navigation Commands
   - `pwd` - Print Working Directory
-  - `ls` - List directory contents (`-a` show hidden files, `-l`)
-    - `-l` - Long format
-    - `-a` - Show hidden files
+  - `ls` - List directory contents (`-a` show hidden files, `-l` long format)
   - `cd ~` - Change Directory to home (`~`), parent (`..`)
-
 - File Manipulation Commands
   - `mkdir` / `touch` - Create directory / files
   - `cp -r source destination` - Copy files or directories (`-r`)
-  - `cp -r` - Copy directories recursively
-  - `mv` - Move/rename files
-  - `rm -r` - Remove files or directories (`-r`)
-
+  - `mv`/ `rm -r` - Move / remove files or directories (`-r`)
 - File Viewing Commands
   - `cat` - Display file contents
-  - `head -n N` - Show first N lines of file
-  - `tail -n N` - Show last N lines of file
+  - `head` / `tail -n N` - Show first N lines of file
   - `tail -f` - Follow file updates
 
 ---
 
-## Text Processing and File Links
+### Text Processing and File Links
 
-- `grep "pattern" file` - Search for patterns
-  - `-i` - Case insensitive
+- `grep "pattern" file` - Search for patterns (`-i` case insensitive, `-n` show line numbers)
   - `-r` - Recursive search
-  - `-n` - Show line numbers
 - `cut -d',' -f1,3` - Extract columns 1 and 3 using comma delimiter
   - `cut -c5-10` - Extract characters 5-10 from each line
 - `tr 'a-z' 'A-Z'` - Translate characters: convert to uppercase
-  - `tr -d '0-9'` - Delete digits
-  - `tr -s ' '` - Squeeze repeated spaces
-- `sed 's/old/new/'` - Stream editor: replace first occurrence
-  - `sed 's/old/new/g'` - Replace all occurrences
+  - `tr -d '0-9'` - Delete digits;  `tr -s ' '` - Squeeze repeated spaces
+- `sed 's/old/new/'` - Stream editor: replace 1st "old" on each line ('s/old/new/g' replaces all)
   - `sed '/pattern/d'` - Delete lines matching pattern
-
-- File Links and Environment Variables
-  - `ln -s target link_name` - Create symbolic link
-  - Environment Variable Management
-    - `echo $VARIABLE` - Display variable value
-    - `export VARIABLE=value` - Set environment variable
-    - `env` - Display all environment variables
-    - `.env` files for project-specific variables
-      - Format: `VARIABLE_NAME=value`
+- `ln -s target link_name` - Create symbolic link
+- Environment Variable Management
+  - `echo $VARIABLE` - Display variable value (`env` to display all variables)
+  - `export VARIABLE=value` - Set environment variable
+  - `.env` files for project-specific variables (format: `VARIABLE_NAME=value`)
 
 ---
 
-## Shell Scripts and Permissions
+### Shell Scripts and Permissions
 
 - Shell Script Basics
   - First line: `#!/bin/bash` (shebang)
@@ -124,7 +95,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 - Develop systematic task management skills
 -->
 
-## Remote Access
+### Remote Access
 
 - `ssh user@host` - Secure shell to remote host
 - `scp file user@host:/path` - Secure copy file to remote host
@@ -138,7 +109,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ---
 
-## Session Management
+### Session Management
 
 - `tmux` - Modern terminal multiplexer ([`tmux` cheat sheet](https://devhints.io/tmux)), run first time starts new session
   - `tmux new -s name` - Start named session
@@ -159,7 +130,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ---
 
-## Compression
+### Compression
 
 - `tar` - Archive files
   - `tar -cvf archive.tar files` - Create archive
@@ -179,7 +150,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ---
 
-## Pipes and Redirection
+### Pipes and Redirection
 
 - `|` - Pipe output to another command
   - Example: `cat file.txt | grep "pattern"`
@@ -197,7 +168,7 @@ In this final lecture, we'll bring together Python and command line tools to sol
 
 ---
 
-### Getting Acclimated with the Command Line
+## Getting Acclimated with the Command Line
 
 **Opinionated recommendation**: best way to learn the command line is to use it regularly, so set up a linux server for yourself
 
@@ -246,7 +217,7 @@ May need to configure firewall settings or use a VPN
 
 ---
 
-### A Few Powerful Command Line Tools
+## A Few Powerful Command Line Tools
 
 - Manipulation
   - `find`
@@ -293,6 +264,9 @@ grep -ri "warning" /var/log/
 
 # Show context around matches
 grep -C 2 "exception" app.log
+
+# Inverse search
+grep -v "exclude_pattern" FILE
 ```
 
 ---
@@ -303,8 +277,11 @@ grep -C 2 "exception" app.log
 - Common uses: substitution, deletion, insertion
 
 ```bash
-# Replace text
+# Replace text everywhere
 sed 's/old/new/g' file.txt
+
+# Only replace first occurrence per line
+sed 's/old/new/' file.txt
 
 # Delete lines matching pattern
 sed '/DEBUG/d' logfile.txt
@@ -327,7 +304,7 @@ ps aux
 ps axjf
 ```
 
-### `top` - Dynamic Process Viewer
+### `top` or `htop` - Dynamic Process Viewer
 
 - Interactive process viewer
 - Real-time system statistics
@@ -376,7 +353,7 @@ du -sh *
 
 ---
 
-## [Shell Demo!!!](shell_demo.sh)
+### [Shell Demo!!!](shell_demo.sh)
 
 ---
 
@@ -398,32 +375,25 @@ du -sh *
 
 ---
 
-## Basic Python
+### Basic Python
 
 - Variables and Data Types
-  - Integers, floats, strings
-  - Dynamically typed
-  - Type conversion and checking
-  - Control Structures
-    - `if`/`elif`/`else` conditionals
-    - `for` and `while` loops
-    - Break and continue statements
-    - Compound conditions with `and`, `or`, `not`
-
-- Data Structures Overview
+  - Integers, floats, strings - dynamically/duck typed
+- Control Structures
+  - `if`/`elif`/`else` conditionals; `for` and `while` loops
+  - Compound conditions with `and`, `or`, `not`
+  - `break` and `continue` statements
+- Data Structures
   - Lists: 1-dimensional arrays
   - Dictionaries: key-value pairs
   - Sets: unique elements
   - Tuples: immutable sequences
-
-- Functions: defined with `def`
-  - Take parameters and return values
-- Package management
-- Virtual environments
+- Functions: defined with `def` - take parameters and return values
+- Package management & virtual environments
 
 ---
 
-## File Operations
+### File Operations
 
 - File Handling
   - Opening and closing files
@@ -431,7 +401,6 @@ du -sh *
   - Context managers (`with` statement)
   - Binary file operations
   - CSV and JSON handling
-
 - Path Operations
   - Path manipulation with `os.path`
   - Modern path handling with `pathlib`
@@ -447,83 +416,14 @@ du -sh *
 
 ---
 
-## Numerical Packages
-
-- NumPy
-  - Arrays and operations
-  - Broadcasting
-  - Mathematical functions
-  - Array manipulation
-
-- Pandas
-  - Series and DataFrames
-  - Data loading and saving
-  - Data cleaning and transformation
-  - Grouping and aggregation
-  - Time series functionality
-
-<!--
-- Numerical computing foundations
-- Efficient array operations
-- Data manipulation and analysis
-- Time series data handling
--->
-
----
-
-## Data Visualization
-
-- Matplotlib
-- Seaborn statistical plots
-- Interactive visualization
-- Customizing plots
-
-<!--
-- Data representation techniques
-- Statistical and interactive plotting
-- Visualization best practices
--->
-
----
-
-## Statistical Methods
-
-- Time Series Analysis
-  - DateTime handling
-  - Resampling and rolling windows
-  - Seasonal decomposition
-  - ARIMA models
-- statsmodels
-  - Linear regression
-  - Generalized linear models
-  - Statistical tests
-  - Model diagnostics
-- Machine Learning
-  - scikit-learn basics
-  - Model selection and evaluation
-  - Feature engineering
-  - Cross-validation
-
-<!--
-- Advanced time series techniques
-- Statistical modeling approaches
-- Machine learning workflow
-- Model validation strategies
--->
-
----
-
-## Data Science Fundamentals
+### Data Science Fundamentals
 
 - Jupyter Notebooks
   - Remote access and configuration
-  - Magic commands
-  - Cell execution and kernel management
+  - Magic commands, cell execution and kernel management
 - NumPy
-  - Array operations and broadcasting
-  - Mathematical functions
+  - Array & mathematical operations
   - Array manipulation and indexing
-  - Universal functions (ufuncs)
 - Pandas
   - Series and DataFrame objects
   - Data loading and manipulation
@@ -538,7 +438,37 @@ du -sh *
 
 ---
 
-## Running System Commands
+### Data Visualization
+
+- Matplotlib
+- Seaborn statistical plots
+- Interactive visualization
+- Customizing plots
+
+<!--
+- Data representation techniques
+- Statistical and interactive plotting
+- Visualization best practices
+-->
+
+### Statistical Methods
+
+- Time Series Analysis
+  - DateTime handling, resampling and rolling windows
+  - Seasonal decomposition
+- statsmodels: Linear regression, GLM, statistical tests, diagnostics
+- Machine Learning: scikit-learn basics
+
+<!--
+- Advanced time series techniques
+- Statistical modeling approaches
+- Machine learning workflow
+- Model validation strategies
+-->
+
+---
+
+### Running System Commands (1/3)
 
 The `subprocess` module provides a powerful interface to run external commands:
 
@@ -567,7 +497,7 @@ except subprocess.CalledProcessError as e:
 
 ---
 
-## Running System Commands (2/3)
+### Running System Commands (2/3)
 
 Common subprocess patterns:
 
@@ -600,7 +530,7 @@ subprocess.run(['my_script.py'], env=env)
 
 ---
 
-## Running System Commands (3/3)
+### Running System Commands (3/3)
 
 Best practices and common pitfalls:
 
@@ -637,7 +567,7 @@ except subprocess.TimeoutExpired:
 
 ---
 
-## Code Quality Tools: Linters (1/5)
+### Code Quality Tools: Linters (1/5)
 
 A "linter" is a program that highlights potential errors before you even try running the code. There are linters for pretty much every language you can think of, even Markdown. For Python, the linter that I recommend trying is `ruff`. It is much faster than `pylint` and I find it gets "confused" less often about the code context.
 
@@ -666,7 +596,7 @@ my_script.py:15:0: C0116: Missing function docstring (missing-docstring)
 
 ---
 
-## Understanding Errors (2/5)
+### Understanding Errors (2/5)
 
 ```python
 # 1. Print Debugging
@@ -731,7 +661,7 @@ def parse_user_data(data_str):
 
 ---
 
-## VS Code Debugger (3/5)
+### VS Code Debugger (3/5)
 
 See the docs at [https://code.visualstudio.com/Docs/editor/debugging](https://code.visualstudio.com/Docs/editor/debugging)
 
@@ -785,7 +715,7 @@ result = process_list(numbers)
 
 ---
 
-## Try/Except Basics (4/5)
+### Try/Except Basics (4/5)
 
 ```python
 def safe_divide(x, y):
@@ -815,7 +745,7 @@ print(safe_divide("10", 2))     # Handles TypeError
 
 ---
 
-## Exception Types (5/5)
+### Exception Types (5/5)
 
 ```python
 # Common built-in exceptions and when they occur
@@ -856,7 +786,7 @@ def demonstrate_exceptions():
 
 ---
 
-## Deep Learning Frameworks: TensorFlow vs PyTorch
+### Deep Learning Frameworks: TensorFlow vs PyTorch
 
 ---
 
@@ -920,7 +850,6 @@ def demonstrate_exceptions():
    - Detect overfitting
 
 ---
-
 
 ### Complete Keras/TensorFlow Example
 

@@ -90,7 +90,7 @@ Remember to check the [list of resources](#resources) below!
 
 ### Lecture 9: Practical Python & Command Line Automation
 
-([slides](09), [pdf](09/index.pdf), [python demo](09/demo.ipynb) & [shell demo](09/shell_demo.md), [exam 2 TBD])
+([slides](09), [pdf](09/index.pdf), [python demo](09/demo.ipynb) & [shell demo](09/shell_demo.md), [exam 2](https://classroom.github.com/a/_RlVALv1))
 
 - Revisiting powerful CLI commands and Python integration
 - Everyday automation with Python (file organization, batch operations)
@@ -102,15 +102,19 @@ Remember to check the [list of resources](#resources) below!
 
 ### Lecture 11: Guest Lecturer, Rian Bogley
 
+([slides](11), [pdf](11/index.pdf), [demo](11/demo.ipynb))
+
 ### Lecture 12: Guest Lecturer, Sam Chen
 
 ## Resources
 
 - [command line exercises](?f=shell_workout)
+- [The Missing Semester](https://missing.csail.mit.edu/) (command line, git, data wrangling) - Similar course at MIT, discovered while creating this version
 
 ### Python Reference
 
 - _Python for Data Analysis_, McKinney - author's [website](https://wesmckinney.com/book/)
+- _Automate the Boring Stuff with Python_, Sweigart - author's [website]](https://automatetheboringstuff.com/)
 - _Whirlwind Tour of Python_, VanderPlas - author's [website](https://jakevdp.github.io/WhirlwindTourOfPython/)
 - _Think Python_, Downey - purchase or read at [Green Tea Press](https://greenteapress.com/wp/think-python/)
 - _Hitchhiker's Guide to Python!_ - official [documentation](https://docs.python-guide.org/)
@@ -132,10 +136,18 @@ Remember to check the [list of resources](#resources) below!
 - [Jetbrains' Learn PyCharm](https://www.jetbrains.com/pycharm/learn/)
 - [Effective PyCharm Course](https://training.talkpython.fm/courses/explore_pycharm/mastering-pycharm-ide) (\$\$\$)
 
+### Deep Learning
+
+- [TensorFlow Official Tutorials](https://www.tensorflow.org/tutorials)
+- [PyTorch Documentation](https://pytorch.org/docs/stable/tutorials/)
+- [Keras Documentation](https://keras.io/guides/)
+- [*Deep Learning with Python*, François Chollet](https://www.manning.com/books/deep-learning-with-python)
+- [*Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*](https://www.oreilly.com/library/view/hands-on-machine-learning/9781492032632/)
+
 ### Command Line
 
-- [LinuxCommand.org](http://linuxcommand.org/lc3_learning_the_shell.php)
 - [The Linux Command Line book](http://linuxcommand.org/tlcl.php)
+- [The Shell Scripting Tutorial](https://www.shellscript.sh/)
 - [The Missing Semester](https://missing.csail.mit.edu/)
 - [Bash manual](https://www.gnu.org/software/bash/manual/)
 
