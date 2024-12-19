@@ -1,5 +1,6 @@
 # DS-217 Exam 2 Grading System
 
+Point Structure:
 - Total points: 100 (plus 10 bonus)
 - Q1: Data Preparation (20 pts)
 - Q2: Data Analysis (25 pts)
@@ -87,29 +88,43 @@
    - readme.md
 
 3. Evaluation Process:
-   - Review each file against rubric criteria
+   - Review each file against criteria above
    - Test functionality where applicable
    - Assess code quality and documentation
    - Consider partial credit for incomplete implementations
    - Note exceptional work
 
-4. Output Format:
+4. Path Handling:
+   - You may fix hard-coded paths in student code to enable testing
+   - Apply a 5-point penalty if path fixes were required
+   - Document any path fixes in the feedback
+   - This is the ONLY correction you may make to student code
+
+5. Output Format:
    Save results to: exams/09-second-exam-scores.tsv
    
    Format example (tab-separated, one row per submission):
    ```
    username	total	q1_total	q2_total	q3_total	q4_total	bonus_total	1.1	1.2	1.3	1.4	2.1	2.2	2.3	3.1	3.2	3.3	4.1	4.2	4.3	bonus
+   ```
+   
+   Where:
+   - username: Extracted from submission directory name
+   - total: Overall score (max 100)
+   - q1_total: Data Preparation total (max 20)
+   - q2_total: Data Analysis total (max 25)
+   - q3_total: Statistical Analysis total (max 25)
+   - q4_total: Data Visualization total (max 30)
+   - bonus_total: Bonus points (max 10)
+   - 1.1-4.3: Individual component scores (points specified in criteria above)
+   - bonus: Additional points (max 10)
+
+   Example row:
+   ```
    bobachubs	95	18	24	23	30	8	5	7	2	4	8	8	8	7	8	8	10	10	10	8
    ```
 
-   Column definitions match exam2_rubric.tsv:
-   - username: Extracted from submission directory name
-   - total: Overall score (max 100)
-   - q[1-4]_total: Question subtotals
-   - [1-4].[1-3]: Individual component scores
-   - bonus: Additional points (max 10)
-
-5. Guidelines:
+6. Guidelines:
    - Missing files result in 0 points for affected components
    - Award partial credit based on implementation quality
    - Consider creative solutions that meet requirements
@@ -117,3 +132,4 @@
    - Note exceptional implementations
    - Be consistent in point allocation
    - Consider the holistic implementation
+   - Apply path fix penalty (-5) if needed
