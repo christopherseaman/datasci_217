@@ -6,3 +6,4 @@ dot.env
 .env
 .venv/
 exams/09-second-exam-submissions/
+exams/09-second-exam-scores.tsv

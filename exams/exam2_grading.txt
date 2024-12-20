@@ -11,65 +11,109 @@ Point Structure:
 ## DETAILED CRITERIA
 
 ### Question 1: Data Preparation (20 points)
-1.1 Successfully runs generate_dirty_data.py and creates ms_data_dirty.csv (5 pts)
-1.2 Data cleaning operations (8 pts):
-    - Removes comment lines (2)
-    - Removes empty lines (2)
-    - Removes extra commas (2)
+1.1 Successfully runs generate_dirty_data.py and creates ms_data_dirty.csv (3 pts)
+1.2 Data cleaning operations (10 pts):
+    - Removes comment lines (1)
+    - Removes empty lines (1)
+    - Removes extra commas (1)
     - Extracts correct columns in order (2)
+    - Implements error handling (2)
+    - Validates data types and ranges (2)
+    - Documents cleaning process (1)
 1.3 Creates insurance.lst with valid categories (3 pts)
+    - At least 3 categories (1)
+    - Proper formatting (1)
+    - Documentation of category definitions (1)
 1.4 Generates correct data summary (4 pts):
-    - Counts total visits correctly (2)
-    - Displays first few records (2)
+    - Comprehensive statistics (2)
+    - Data quality metrics (2)
 
 ### Question 2: Data Analysis (25 points)
 2.1 Data loading and structure (8 pts):
-    - Loads CSV correctly (2)
-    - Converts dates properly (2)
-    - Sorts data correctly (2)
-    - Handles data types appropriately (2)
+    - Loads CSV with error handling (2)
+    - Converts dates with timezone handling (2)
+    - Implements efficient sorting (2)
+    - Validates data types with constraints (2)
 2.2 Insurance information (9 pts):
-    - Reads insurance types (2)
-    - Assigns consistently per patient (3)
-    - Generates valid costs (4)
+    - Reads insurance types with validation (2)
+    - Implements consistent assignment algorithm (3)
+    - Generates realistic costs with documentation (4)
 2.3 Summary statistics (8 pts):
-    - Walking speed by education (3)
-    - Costs by insurance (3)
-    - Age effects analysis (2)
+    - Walking speed analysis with outlier detection (3)
+    - Cost analysis with confidence intervals (3)
+    - Age effects with multiple approaches (2)
 
 ### Question 3: Statistical Analysis (25 points)
 3.1 Walking speed analysis (8 pts):
-    - Multiple regression implementation (3)
-    - Repeated measures handling (3)
-    - Trend testing (2)
+    - Multiple regression with diagnostics (3)
+    - Repeated measures with proper nesting (3)
+    - Trend testing with assumptions verified (2)
 3.2 Cost analysis (8 pts):
-    - Insurance effect analysis (3)
-    - Box plot statistics (2)
-    - Effect size calculations (3)
+    - Insurance effect with multiple tests (3)
+    - Distribution analysis with normality tests (2)
+    - Effect size with power analysis (3)
 3.3 Advanced analysis (9 pts):
-    - Education-age interaction (3)
-    - Confounder control (3)
-    - Statistical reporting (3)
+    - Interaction analysis with visualization (3)
+    - Confounder identification and control (3)
+    - Comprehensive statistical reporting (3)
 
 ### Question 4: Data Visualization (30 points)
 4.1 Walking speed visualizations (10 pts):
-    - Age vs speed scatter plot (3)
-    - Education level box plots (3)
-    - Education-age interaction plot (4)
+    - Advanced scatter plot (3):
+        * Proper axis scales
+        * Color coding
+        * Confidence bands
+    - Enhanced box plots (3):
+        * Outlier identification
+        * Statistical annotations
+        * Clear formatting
+    - Complex interaction plot (4):
+        * Multiple variables
+        * Clear legend
+        * Proper formatting
 4.2 Cost visualizations (10 pts):
-    - Insurance type bar plot (3)
-    - Cost distribution box plots (3)
-    - Error bars/confidence intervals (4)
+    - Advanced bar plot (3):
+        * Error bars
+        * Statistical annotations
+        * Clear formatting
+    - Enhanced box plots (3):
+        * Outlier handling
+        * Multiple groupings
+        * Clear formatting
+    - Statistical overlays (4):
+        * Distribution curves
+        * Significance indicators
+        * Multiple comparisons
 4.3 Combined visualizations (10 pts):
-    - Pair plot implementation (3)
-    - Faceted plots (4)
-    - Time trend analysis (3)
+    - Advanced pair plot (3):
+        * Proper variable selection
+        * Statistical annotations
+        * Clear formatting
+    - Complex faceted plots (4):
+        * Multiple variables
+        * Clear organization
+        * Proper formatting
+    - Time series analysis (3):
+        * Trend identification
+        * Seasonal decomposition
+        * Clear formatting
 
 ### Bonus Points (10 points)
-- Advanced statistical methods (3)
-- Interactive visualizations (3)
-- Additional pattern analysis (2)
-- Command-line argument parsing (2)
+- Advanced statistical methods (3):
+    * Machine learning approaches
+    * Advanced regression techniques
+    * Cross-validation
+- Interactive visualizations (3):
+    * Multiple interaction types
+    * Clear user interface
+    * Proper documentation
+- Additional pattern analysis (2):
+    * Novel insights
+    * Clear documentation
+- Command-line argument parsing (2):
+    * Multiple options
+    * Error handling
+    * Documentation
 
 ## GRADING INSTRUCTIONS
 
@@ -93,6 +137,9 @@ Point Structure:
    - Assess code quality and documentation
    - Consider partial credit for incomplete implementations
    - Note exceptional work
+   - Verify all requirements are met for full points
+   - Check for proper error handling and edge cases
+   - Evaluate code efficiency and organization
 
 4. Path Handling:
    - You may fix hard-coded paths in student code to enable testing
@@ -133,3 +180,7 @@ Point Structure:
    - Be consistent in point allocation
    - Consider the holistic implementation
    - Apply path fix penalty (-5) if needed
+   - Full points require meeting ALL criteria for each component
+   - Deduct points for missing error handling or validation
+   - Consider code efficiency and organization
+   - Evaluate documentation completeness
