@@ -3,283 +3,404 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-from datetime import datetime
-import json
+import matplotlib.pyplot as plt
 import subprocess
+import json
 from pathlib import Path
+import re
+from typing import Dict, List, Tuple
+import ast
+import nbformat
+from nbconvert import PythonExporter
 
-class Exam2Grader:
-    def __init__(self, submission_dir):
-        self.submission_dir = Path(submission_dir)
-        self.total_points = 0
-        self.feedback = []
+class ExamGrader:
+    def __init__(self, submissions_dir: str):
+        self.submissions_dir = Path(submissions_dir)
+        self.results = []
         
-    def grade_q1(self, points=20):
-        """Grade Question 1: Data Preparation"""
-        earned = 0
+    def grade_all(self):
+        """Grade all submissions in the directory."""
+        for submission_dir in sorted(self.submissions_dir.glob("09-second-exam-*")):
+            if submission_dir.name == ".DS_Store":
+                continue
+            try:
+                username = submission_dir.name.replace("09-second-exam-", "")
+                print(f"\nGrading submission for: {username}")
+                scores = self.grade_submission(submission_dir)
+                self.results.append({
+                    "username": username,
+                    **scores
+                })
+            except Exception as e:
+                print(f"Error grading {submission_dir}: {str(e)}")
+                
+    def save_results(self, output_file: str):
+        """Save results to TSV file."""
+        df = pd.DataFrame(self.results)
+        # Ensure columns match required format
+        columns = ['username', 'total', 'q1_total', 'q2_total', 'q3_total', 'q4_total', 
+                  'bonus_total', '1.1', '1.2', '1.3', '1.4', '2.1', '2.2', '2.3',
+                  '3.1', '3.2', '3.3', '4.1', '4.2', '4.3', 'bonus']
+        df = df.reindex(columns=columns)
+        df.to_csv(output_file, sep='\t', index=False)
+
+    def grade_submission(self, submission_dir: Path) -> Dict:
+        """Grade a single submission."""
+        scores = {
+            'total': 0,
+            'q1_total': 0,
+            'q2_total': 0,
+            'q3_total': 0,
+            'q4_total': 0,
+            'bonus_total': 0,
+            '1.1': 0, '1.2': 0, '1.3': 0, '1.4': 0,
+            '2.1': 0, '2.2': 0, '2.3': 0,
+            '3.1': 0, '3.2': 0, '3.3': 0,
+            '4.1': 0, '4.2': 0, '4.3': 0,
+            'bonus': 0
+        }
         
-        # Check if prepare.sh exists
-        prepare_sh = self.submission_dir / 'prepare.sh'
-        if not prepare_sh.exists():
-            self.feedback.append("Q1: Missing prepare.sh (-20)")
-            return earned
-            
-        # Check if script is executable
-        if not os.access(prepare_sh, os.X_OK):
-            self.feedback.append("Q1: prepare.sh is not executable (-5)")
-            earned -= 5
-            
-        # Check if ms_data.csv exists
-        ms_data = self.submission_dir / 'ms_data.csv'
-        if not ms_data.exists():
-            self.feedback.append("Q1: Missing ms_data.csv (-10)")
-            return earned
-            
-        # Check insurance.lst exists
-        insurance_lst = self.submission_dir / 'insurance.lst'
-        if not insurance_lst.exists():
-            self.feedback.append("Q1: Missing insurance.lst (-5)")
-            earned -= 5
-            
-        # Validate ms_data.csv format
-        try:
-            df = pd.read_csv(ms_data)
-            required_cols = ['patient_id', 'visit_date', 'age', 
-                           'education_level', 'walking_speed']
-            
-            # Check columns
-            if not all(col in df.columns for col in required_cols):
-                self.feedback.append("Q1: ms_data.csv missing required columns (-5)")
-                earned -= 5
+        # Check required files exist
+        required_files = [
+            'prepare.sh',
+            'ms_data.csv',
+            'insurance.lst',
+            'analyze_visits.py',
+            'stats_analysis.py',
+            'visualize.ipynb',
+            'readme.md'
+        ]
+        
+        for file in required_files:
+            if not (submission_dir / file).exists():
+                print(f"Missing required file: {file}")
+                return scores
+
+        # Grade Q1: Data Preparation
+        scores.update(self.grade_q1(submission_dir))
+        
+        # Grade Q2: Data Analysis
+        scores.update(self.grade_q2(submission_dir))
+        
+        # Grade Q3: Statistical Analysis
+        scores.update(self.grade_q3(submission_dir))
+        
+        # Grade Q4: Data Visualization
+        scores.update(self.grade_q4(submission_dir))
+        
+        # Grade Bonus Features
+        scores.update(self.grade_bonus(submission_dir))
+        
+        # Calculate totals
+        scores['q1_total'] = sum(scores[k] for k in ['1.1', '1.2', '1.3', '1.4'])
+        scores['q2_total'] = sum(scores[k] for k in ['2.1', '2.2', '2.3'])
+        scores['q3_total'] = sum(scores[k] for k in ['3.1', '3.2', '3.3'])
+        scores['q4_total'] = sum(scores[k] for k in ['4.1', '4.2', '4.3'])
+        scores['bonus_total'] = scores['bonus']
+        scores['total'] = scores['q1_total'] + scores['q2_total'] + scores['q3_total'] + scores['q4_total']
+        
+        return scores
+
+    def grade_q1(self, submission_dir: Path) -> Dict:
+        """Grade Question 1: Data Preparation."""
+        scores = {'1.1': 0, '1.2': 0, '1.3': 0, '1.4': 0}
+        
+        # 1.1: Check if ms_data_dirty.csv was created (3 pts)
+        prepare_sh = submission_dir / 'prepare.sh'
+        if prepare_sh.exists():
+            with open(prepare_sh) as f:
+                content = f.read()
+                if 'generate_dirty_data.py' in content:
+                    scores['1.1'] = 3
+        
+        # 1.2: Data cleaning operations (10 pts)
+        ms_data = submission_dir / 'ms_data.csv'
+        if ms_data.exists():
+            try:
+                df = pd.read_csv(ms_data)
+                points = 0
                 
-            # Check walking speed range
-            speeds = df['walking_speed']
-            if not all((speeds >= 2.0) & (speeds <= 8.0)):
-                self.feedback.append("Q1: Invalid walking speeds found (-5)")
-                earned -= 5
+                # Check columns (2 pts)
+                expected_cols = ['patient_id', 'visit_date', 'age', 'education_level', 'walking_speed']
+                if list(df.columns) == expected_cols:
+                    points += 2
                 
-            # Check for empty lines/extra commas
-            with open(ms_data) as f:
-                lines = f.readlines()
-                if any(line.strip() == '' for line in lines):
-                    self.feedback.append("Q1: Empty lines found in ms_data.csv (-2)")
-                    earned -= 2
-                if any(line.count(',') > 4 for line in lines):
-                    self.feedback.append("Q1: Extra commas found in ms_data.csv (-2)")
-                    earned -= 2
+                # Check for no comments/empty lines (2 pts)
+                with open(ms_data) as f:
+                    lines = f.readlines()
+                    if not any(line.startswith('#') for line in lines):
+                        points += 1
+                    if not any(line.strip() == '' for line in lines):
+                        points += 1
+                
+                # Check data validation (4 pts)
+                if df['walking_speed'].between(2.0, 8.0).all():
+                    points += 2
+                if not df.isna().any().any():
+                    points += 2
+                
+                # Documentation check (1 pt)
+                readme = submission_dir / 'readme.md'
+                if readme.exists():
+                    with open(readme) as f:
+                        content = f.read().lower()
+                        if 'clean' in content and 'data' in content:
+                            points += 1
+                
+                scores['1.2'] = points
+            except Exception as e:
+                print(f"Error checking ms_data.csv: {str(e)}")
+        
+        # 1.3: Insurance categories (3 pts)
+        insurance_lst = submission_dir / 'insurance.lst'
+        if insurance_lst.exists():
+            try:
+                with open(insurance_lst) as f:
+                    categories = [line.strip() for line in f if line.strip()]
+                    points = 0
                     
-        except Exception as e:
-            self.feedback.append(f"Q1: Error reading ms_data.csv: {str(e)} (-10)")
-            earned -= 10
-            
-        # Check insurance types
-        try:
-            with open(insurance_lst) as f:
-                insurance_types = [line.strip() for line in f if line.strip()]
-                if len(insurance_types) < 3:
-                    self.feedback.append("Q1: Fewer than 3 insurance types defined (-5)")
-                    earned -= 5
-        except:
-            self.feedback.append("Q1: Error reading insurance.lst (-5)")
-            earned -= 5
-            
-        earned = max(0, points + earned)  # Don't go negative
-        self.total_points += earned
-        return earned
-
-    def grade_q2(self, points=25):
-        """Grade Question 2: Data Analysis"""
-        earned = 0
+                    # At least 3 categories (1 pt)
+                    if len(categories) >= 3:
+                        points += 1
+                    
+                    # Proper formatting (1 pt)
+                    if all(cat.isalnum() or ' ' in cat for cat in categories):
+                        points += 1
+                    
+                    # Documentation (1 pt)
+                    readme = submission_dir / 'readme.md'
+                    if readme.exists():
+                        with open(readme) as f:
+                            content = f.read().lower()
+                            if 'insurance' in content and 'categor' in content:
+                                points += 1
+                    
+                    scores['1.3'] = points
+            except Exception as e:
+                print(f"Error checking insurance.lst: {str(e)}")
         
-        # Check if analyze_visits.py exists
-        analyze_py = self.submission_dir / 'analyze_visits.py'
-        if not analyze_py.exists():
-            self.feedback.append("Q2: Missing analyze_visits.py (-25)")
-            return earned
-            
-        # Try to run the analysis script
-        try:
-            result = subprocess.run(['python', str(analyze_py)], 
-                                  capture_output=True, text=True)
-            if result.returncode != 0:
-                self.feedback.append(f"Q2: Error running analyze_visits.py: {result.stderr} (-15)")
-                earned -= 15
-        except Exception as e:
-            self.feedback.append(f"Q2: Error executing analyze_visits.py: {str(e)} (-15)")
-            earned -= 15
-            
-        # Check code content
-        try:
-            with open(analyze_py) as f:
-                code = f.read()
-                
-                # Check for required components
-                checks = {
-                    'pandas': ('import pandas' in code, "Missing pandas import (-2)"),
-                    'datetime': ('datetime' in code, "No datetime handling (-3)"),
-                    'groupby': ('.groupby' in code, "No groupby operations (-5)"),
-                    'insurance': ('insurance' in code.lower(), "No insurance analysis (-5)"),
-                    'education': ('education' in code.lower(), "No education analysis (-5)")
-                }
-                
-                for check, (passed, msg) in checks.items():
-                    if not passed:
-                        self.feedback.append(f"Q2: {msg}")
-                        earned -= int(msg.split('(')[1].split(')')[0])
+        # 1.4: Data summary (4 pts)
+        analyze_visits = submission_dir / 'analyze_visits.py'
+        if analyze_visits.exists():
+            try:
+                with open(analyze_visits) as f:
+                    content = f.read()
+                    points = 0
+                    
+                    # Check for comprehensive statistics (2 pts)
+                    if 'describe()' in content or 'agg' in content or 'groupby' in content:
+                        points += 2
+                    
+                    # Check for data quality metrics (2 pts)
+                    if 'isna()' in content or 'isnull()' in content or 'duplicated()' in content:
+                        points += 2
+                    
+                    scores['1.4'] = points
+            except Exception as e:
+                print(f"Error checking analyze_visits.py: {str(e)}")
+        
+        return scores
+
+    def grade_q2(self, submission_dir: Path) -> Dict:
+        """Grade Question 2: Data Analysis."""
+        scores = {'2.1': 0, '2.2': 0, '2.3': 0}
+        
+        analyze_visits = submission_dir / 'analyze_visits.py'
+        if analyze_visits.exists():
+            try:
+                with open(analyze_visits) as f:
+                    content = f.read()
+                    
+                    # 2.1: Data loading and structure (8 pts)
+                    points = 0
+                    if 'try' in content and 'except' in content:  # Error handling
+                        points += 2
+                    if 'pd.to_datetime' in content:  # Date conversion
+                        points += 2
+                    if 'sort_values' in content:  # Sorting
+                        points += 2
+                    if 'astype' in content or 'dtype' in content:  # Data types
+                        points += 2
+                    scores['2.1'] = points
+                    
+                    # 2.2: Insurance information (9 pts)
+                    points = 0
+                    if 'read' in content and 'insurance' in content:  # Reads insurance types
+                        points += 2
+                    if 'groupby' in content and 'patient_id' in content:  # Consistent assignment
+                        points += 3
+                    if 'random' in content and ('cost' in content or 'price' in content):  # Cost generation
+                        points += 4
+                    scores['2.2'] = points
+                    
+                    # 2.3: Summary statistics (8 pts)
+                    points = 0
+                    if 'education_level' in content and 'walking_speed' in content:
+                        points += 3
+                    if 'insurance' in content and ('cost' in content or 'price' in content):
+                        points += 3
+                    if 'age' in content and 'walking_speed' in content:
+                        points += 2
+                    scores['2.3'] = points
+            except Exception as e:
+                print(f"Error checking analyze_visits.py: {str(e)}")
+        
+        return scores
+
+    def grade_q3(self, submission_dir: Path) -> Dict:
+        """Grade Question 3: Statistical Analysis."""
+        scores = {'3.1': 0, '3.2': 0, '3.3': 0}
+        
+        stats_analysis = submission_dir / 'stats_analysis.py'
+        if stats_analysis.exists():
+            try:
+                with open(stats_analysis) as f:
+                    content = f.read()
+                    
+                    # 3.1: Walking speed analysis (8 pts)
+                    points = 0
+                    if 'regression' in content or 'lm' in content:  # Multiple regression
+                        points += 3
+                    if 'repeated' in content or 'mixed' in content:  # Repeated measures
+                        points += 3
+                    if 'trend' in content or 'time' in content:  # Trend testing
+                        points += 2
+                    scores['3.1'] = points
+                    
+                    # 3.2: Cost analysis (8 pts)
+                    points = 0
+                    if 'anova' in content or 'ttest' in content:  # Insurance effect
+                        points += 3
+                    if 'normality' in content or 'shapiro' in content:  # Distribution analysis
+                        points += 2
+                    if 'effect_size' in content or 'cohen' in content:  # Effect size
+                        points += 3
+                    scores['3.2'] = points
+                    
+                    # 3.3: Advanced analysis (9 pts)
+                    points = 0
+                    if 'interaction' in content:  # Interaction analysis
+                        points += 3
+                    if 'confounder' in content or 'covariate' in content:  # Confounders
+                        points += 3
+                    if 'summary()' in content or 'report' in content:  # Statistical reporting
+                        points += 3
+                    scores['3.3'] = points
+            except Exception as e:
+                print(f"Error checking stats_analysis.py: {str(e)}")
+        
+        return scores
+
+    def grade_q4(self, submission_dir: Path) -> Dict:
+        """Grade Question 4: Data Visualization."""
+        scores = {'4.1': 0, '4.2': 0, '4.3': 0}
+        
+        visualize_ipynb = submission_dir / 'visualize.ipynb'
+        if visualize_ipynb.exists():
+            try:
+                with open(visualize_ipynb) as f:
+                    nb = nbformat.read(f, as_version=4)
+                    
+                    # Convert notebook to Python code for easier analysis
+                    exporter = PythonExporter()
+                    code, _ = exporter.from_notebook_node(nb)
+                    
+                    # 4.1: Walking speed visualizations (10 pts)
+                    points = 0
+                    if 'scatter' in code and 'age' in code and 'walking_speed' in code:
+                        points += 3
+                    if 'boxplot' in code and 'education' in code:
+                        points += 3
+                    if 'interaction' in code or 'facet' in code:
+                        points += 4
+                    scores['4.1'] = points
+                    
+                    # 4.2: Cost visualizations (10 pts)
+                    points = 0
+                    if 'bar' in code and 'insurance' in code:
+                        points += 3
+                    if 'boxplot' in code and 'cost' in code:
+                        points += 3
+                    if 'errorbar' in code or 'confidence' in code:
+                        points += 4
+                    scores['4.2'] = points
+                    
+                    # 4.3: Combined visualizations (10 pts)
+                    points = 0
+                    if 'pairplot' in code or 'scatter_matrix' in code:
+                        points += 3
+                    if 'facet' in code or 'subplot' in code:
+                        points += 4
+                    if 'time' in code or 'trend' in code:
+                        points += 3
+                    scores['4.3'] = points
+            except Exception as e:
+                print(f"Error checking visualize.ipynb: {str(e)}")
+        
+        return scores
+
+    def grade_bonus(self, submission_dir: Path) -> Dict:
+        """Grade bonus features."""
+        bonus_points = 0
+        
+        # Check all relevant files for bonus features
+        files_to_check = [
+            'stats_analysis.py',
+            'visualize.ipynb',
+            'analyze_visits.py',
+            'prepare.sh'
+        ]
+        
+        for file in files_to_check:
+            file_path = submission_dir / file
+            if file_path.exists():
+                try:
+                    with open(file_path) as f:
+                        content = f.read().lower()
                         
-        except Exception as e:
-            self.feedback.append(f"Q2: Error checking analyze_visits.py: {str(e)} (-10)")
-            earned -= 10
-            
-        earned = max(0, points + earned)  # Don't go negative
-        self.total_points += earned
-        return earned
-
-    def grade_q3(self, points=25):
-        """Grade Question 3: Statistical Analysis"""
-        earned = 0
-        
-        # Check if stats_analysis.py exists
-        stats_py = self.submission_dir / 'stats_analysis.py'
-        if not stats_py.exists():
-            self.feedback.append("Q3: Missing stats_analysis.py (-25)")
-            return earned
-            
-        # Check code content
-        try:
-            with open(stats_py) as f:
-                code = f.read()
-                
-                # Check for required components
-                checks = {
-                    'scipy': ('import scipy' in code, "Missing scipy import (-3)"),
-                    'statsmodels': ('import statsmodels' in code, "Missing statsmodels import (-3)"),
-                    'regression': ('regression' in code.lower(), "No regression analysis (-5)"),
-                    'p-value': ('pvalue' in code.lower() or 'p_value' in code.lower(), 
-                               "No p-value reporting (-5)"),
-                    'confidence': ('confidence' in code.lower(), "No confidence intervals (-4)"),
-                    'interaction': ('interaction' in code.lower(), "No interaction effects (-5)")
-                }
-                
-                for check, (passed, msg) in checks.items():
-                    if not passed:
-                        self.feedback.append(f"Q3: {msg}")
-                        earned -= int(msg.split('(')[1].split(')')[0])
+                        # Advanced statistical methods (3 pts)
+                        if any(method in content for method in ['machine learning', 'cross_val', 'bootstrap']):
+                            bonus_points += 1
+                        if 'advanced' in content and 'regression' in content:
+                            bonus_points += 1
+                        if 'cross_validation' in content:
+                            bonus_points += 1
                         
-        except Exception as e:
-            self.feedback.append(f"Q3: Error checking stats_analysis.py: {str(e)} (-10)")
-            earned -= 10
-            
-        earned = max(0, points + earned)  # Don't go negative
-        self.total_points += earned
-        return earned
-
-    def grade_q4(self, points=30):
-        """Grade Question 4: Data Visualization"""
-        earned = 0
-        
-        # Check if visualize.ipynb exists
-        notebook = self.submission_dir / 'visualize.ipynb'
-        if not notebook.exists():
-            self.feedback.append("Q4: Missing visualize.ipynb (-30)")
-            return earned
-            
-        # Try to read notebook content
-        try:
-            with open(notebook) as f:
-                nb = json.load(f)
-                
-                # Check for required visualizations
-                viz_checks = {
-                    'scatter': ('scatter' in str(nb).lower(), "Missing scatter plot (-5)"),
-                    'boxplot': ('boxplot' in str(nb).lower(), "Missing box plots (-5)"),
-                    'barplot': ('barplot' in str(nb).lower(), "Missing bar plot (-5)"),
-                    'seaborn': ('import seaborn' in str(nb), "Not using seaborn (-5)"),
-                    'titles': ('title' in str(nb).lower(), "Missing plot titles (-5)"),
-                    'labels': ('label' in str(nb).lower(), "Missing axis labels (-5)")
-                }
-                
-                for check, (passed, msg) in viz_checks.items():
-                    if not passed:
-                        self.feedback.append(f"Q4: {msg}")
-                        earned -= int(msg.split('(')[1].split(')')[0])
+                        # Interactive visualizations (3 pts)
+                        if any(viz in content for viz in ['plotly', 'interactive', 'widget']):
+                            bonus_points += 2
+                        if 'bokeh' in content:
+                            bonus_points += 1
                         
-        except Exception as e:
-            self.feedback.append(f"Q4: Error checking visualize.ipynb: {str(e)} (-15)")
-            earned -= 15
-            
-        earned = max(0, points + earned)  # Don't go negative
-        self.total_points += earned
-        return earned
-
-    def grade_bonus(self, points=10):
-        """Grade bonus points"""
-        earned = 0
+                        # Additional pattern analysis (2 pts)
+                        if 'pattern' in content or 'cluster' in content:
+                            bonus_points += 1
+                        if 'novel' in content or 'additional analysis' in content:
+                            bonus_points += 1
+                        
+                        # Command-line argument parsing (2 pts)
+                        if 'argparse' in content:
+                            bonus_points += 1
+                        if '--help' in content or 'add_argument' in content:
+                            bonus_points += 1
+                except Exception as e:
+                    print(f"Error checking {file} for bonus: {str(e)}")
         
-        # Check for advanced features
-        advanced_features = {
-            'interactive': (
-                any(Path(self.submission_dir).glob('*plotly*')) or 
-                'interactive' in str(list(Path(self.submission_dir).glob('*.py'))),
-                "Interactive visualizations (+3)"
-            ),
-            'cli': (
-                'argparse' in str(list(Path(self.submission_dir).glob('*.py'))),
-                "Command-line argument parsing (+2)"
-            ),
-            'advanced_stats': (
-                any('advanced' in p.read_text().lower() 
-                    for p in Path(self.submission_dir).glob('*.py')),
-                "Advanced statistical methods (+3)"
-            ),
-            'extra_patterns': (
-                any('pattern' in p.read_text().lower() 
-                    for p in Path(self.submission_dir).glob('*.py')),
-                "Additional pattern analysis (+2)"
-            )
-        }
-        
-        for feature, (present, msg) in advanced_features.items():
-            if present:
-                points = int(msg.split('(')[1].split(')')[0].replace('+',''))
-                earned += points
-                self.feedback.append(f"Bonus: {msg}")
-                
-        earned = min(10, earned)  # Cap at 10 bonus points
-        self.total_points += earned
-        return earned
-
-    def grade(self):
-        """Grade all questions and return results"""
-        results = {
-            "Q1 (20pts)": self.grade_q1(),
-            "Q2 (25pts)": self.grade_q2(),
-            "Q3 (25pts)": self.grade_q3(),
-            "Q4 (30pts)": self.grade_q4(),
-            "Bonus (10pts)": self.grade_bonus()
-        }
-        
-        # Generate report
-        report = ["Exam 2 Grading Report", "=" * 50]
-        report.append(f"\nTotal Points: {self.total_points}/110\n")
-        report.append("Breakdown:")
-        for q, points in results.items():
-            report.append(f"{q}: {points}")
-            
-        report.append("\nFeedback:")
-        for fb in self.feedback:
-            report.append(f"- {fb}")
-            
-        return "\n".join(report)
+        return {'bonus': min(bonus_points, 10)}  # Cap at 10 points
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python grade_exam2.py <submission_directory>")
+        print("Usage: python grade_exam2.py <submissions_directory>")
         sys.exit(1)
-        
-    submission_dir = sys.argv[1]
-    grader = Exam2Grader(submission_dir)
-    print(grader.grade())
+    
+    submissions_dir = sys.argv[1]
+    if not os.path.isdir(submissions_dir):
+        print(f"Error: {submissions_dir} is not a directory")
+        sys.exit(1)
+    
+    grader = ExamGrader(submissions_dir)
+    grader.grade_all()
+    grader.save_results('exams/09-second-exam-scores.tsv')
 
 if __name__ == "__main__":
     main()
