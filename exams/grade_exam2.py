@@ -91,6 +91,24 @@ class ExamGrader:
         # Grade Bonus Features
         scores.update(self.grade_bonus(submission_dir))
         
+        # Track if path fixes were needed
+        path_fix_needed = False
+        
+        # Check for hardcoded paths and track if fixes needed
+        files_to_check = ['analyze_visits.py', 'stats_analysis.py', 'visualize.ipynb']
+        for file in files_to_check:
+            file_path = submission_dir / file
+            if file_path.exists():
+                try:
+                    with open(file_path) as f:
+                        content = f.read()
+                        # Look for hardcoded paths
+                        if any(p in content for p in ['/home/', '~/', '$HOME', 'C:', r'\\', '/Users/']):
+                            path_fix_needed = True
+                            print(f"Found hardcoded paths in {file}")
+                except Exception as e:
+                    print(f"Error checking paths in {file}: {str(e)}")
+
         # Calculate totals
         scores['q1_total'] = sum(scores[k] for k in ['1.1', '1.2', '1.3', '1.4'])
         scores['q2_total'] = sum(scores[k] for k in ['2.1', '2.2', '2.3'])
@@ -98,6 +116,11 @@ class ExamGrader:
         scores['q4_total'] = sum(scores[k] for k in ['4.1', '4.2', '4.3'])
         scores['bonus_total'] = scores['bonus']
         scores['total'] = scores['q1_total'] + scores['q2_total'] + scores['q3_total'] + scores['q4_total']
+        
+        # Apply path fix penalty if needed
+        if path_fix_needed:
+            scores['total'] = max(0, scores['total'] - 5)  # Apply 5-point penalty
+            print("Applied 5-point penalty for path fixes")
         
         return scores
 
