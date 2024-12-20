@@ -4,7 +4,6 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import subprocess
 import json
 from pathlib import Path
 import re
@@ -17,6 +16,93 @@ class ExamGrader:
     def __init__(self, submissions_dir: str):
         self.submissions_dir = Path(submissions_dir)
         self.results = []
+        
+    def find_home_path(self, submission_dir: Path) -> str:
+        """Find the common home path used in a submission's files."""
+        patterns = [
+            r'["\']?[A-Z]:/Users/[^/"\']*/[^/"\']*["\']?',  # Windows
+            r'["\']?/Users/[^/"\']*/[^/"\']*["\']?',        # Mac
+            r'["\']?/home/[^/"\']*/[^/"\']*["\']?'          # Linux
+        ]
+        
+        # Files that might contain paths
+        files_to_check = ['prepare.sh', 'analyze_visits.py', 'stats_analysis.py', 'visualize.ipynb']
+        
+        for file in files_to_check:
+            file_path = self.find_file(submission_dir, file)
+            if file_path and file_path.exists():
+                try:
+                    with open(file_path) as f:
+                        content = f.read()
+                        for pattern in patterns:
+                            matches = re.findall(pattern, content)
+                            if matches:
+                                # Clean up the found path
+                                path = matches[0].strip('"\'')
+                                return path
+                except Exception:
+                    continue
+        return None
+        
+    def fix_paths(self, submission_dir: Path, files: Dict[str, Path]) -> Tuple[bool, List[str]]:
+        """Fix hardcoded paths in submission files. Returns (fixed_any, fixed_files)."""
+        home_path = self.find_home_path(submission_dir)
+        if not home_path:
+            return False, []
+            
+        fixed_files = []
+        fixed_any = False
+        
+        for file_name, file_path in files.items():
+            if not file_path or not file_path.exists():
+                continue
+                
+            try:
+                with open(file_path) as f:
+                    content = f.read()
+                
+                # Replace the home path with relative path
+                new_content = content.replace(home_path, '.')
+                if new_content != content:
+                    with open(file_path, 'w') as f:
+                        f.write(new_content)
+                    fixed_files.append(file_name)
+                    fixed_any = True
+            except Exception as e:
+                print(f"Error fixing paths in {file_name}: {str(e)}")
+                
+        return fixed_any, fixed_files
+        
+    def find_file(self, submission_dir: Path, filename: str) -> Path:
+        """Find a file recursively in the submission directory."""
+        # First try exact match
+        for path in submission_dir.rglob(filename):
+            return path
+            
+        # Try common variations
+        filename_lower = filename.lower()
+        if filename_lower == 'prepare.sh':
+            variations = ['clean_ms_data.sh', 'clean.sh', 'data_prep.sh', 'clean_data.sh', 'process.sh']
+        elif filename_lower == 'visualize.ipynb':
+            variations = ['vizualize.ipynb', 'visualization.ipynb', 'viz.ipynb', 'plots.ipynb', 'figures.ipynb']
+        elif filename_lower == 'readme.md':
+            variations = ['README.md', 'ReadMe.md', 'README.txt', 'readme.txt', 'documentation.md', 'documentation.txt']
+        elif filename_lower == 'ms_data.csv':
+            variations = ['msdata.csv', 'ms-data.csv', 'ms_clean_data.csv', 'clean_data.csv', 'data.csv', 'cleaned_data.csv', 'processed_data.csv', 'ms_clean.csv', 'clean_ms.csv', 'ms.csv', 'visits.csv', 'patient_data.csv']
+        elif filename_lower == 'insurance.lst':
+            variations = ['insurance.txt', 'insurance_categories.txt', 'insurance_categories.lst', 'insurance_types.txt', 'insurance_types.lst', 'categories.lst', 'categories.txt', 'insurance_list.txt', 'insurance_list.lst', 'insurances.txt', 'insurances.lst', 'insurance_data.txt', 'insurance_data.lst']
+        elif filename_lower == 'analyze_visits.py':
+            variations = ['analyze.py', 'analysis.py', 'visit_analysis.py', 'process_visits.py']
+        elif filename_lower == 'stats_analysis.py':
+            variations = ['statistics.py', 'statistical_analysis.py', 'stats.py', 'statistical_tests.py']
+        else:
+            variations = []
+            
+        for variant in variations:
+            for path in submission_dir.rglob(variant):
+                return path
+                
+        return None
         
     def grade_all(self):
         """Grade all submissions in the directory."""
@@ -71,43 +157,107 @@ class ExamGrader:
             'readme.md'
         ]
         
+        # Check all required files
         for file in required_files:
-            if not (submission_dir / file).exists():
+            if not self.find_file(submission_dir, file.lower()):
                 print(f"Missing required file: {file}")
                 return scores
 
+        # Find all required files
+        files = {
+            file: self.find_file(submission_dir, file.lower())
+            for file in required_files
+        }
+        
         # Grade Q1: Data Preparation
-        scores.update(self.grade_q1(submission_dir))
+        scores.update(self.grade_q1(submission_dir, files))
         
         # Grade Q2: Data Analysis
-        scores.update(self.grade_q2(submission_dir))
+        scores.update(self.grade_q2(submission_dir, files))
         
         # Grade Q3: Statistical Analysis
-        scores.update(self.grade_q3(submission_dir))
+        scores.update(self.grade_q3(submission_dir, files))
         
         # Grade Q4: Data Visualization
-        scores.update(self.grade_q4(submission_dir))
+        scores.update(self.grade_q4(submission_dir, files))
         
         # Grade Bonus Features
-        scores.update(self.grade_bonus(submission_dir))
+        scores.update(self.grade_bonus(submission_dir, files))
         
-        # Track if path fixes were needed
+        # Fix hardcoded paths and run scripts
+        home_path = self.find_home_path(submission_dir)
         path_fix_needed = False
         
-        # Check for hardcoded paths and track if fixes needed
-        files_to_check = ['analyze_visits.py', 'stats_analysis.py', 'visualize.ipynb']
-        for file in files_to_check:
-            file_path = submission_dir / file
-            if file_path.exists():
+        if home_path:
+            print(f"Found home path: {home_path}")
+            fixed_any, fixed_files = self.fix_paths(submission_dir, files)
+            if fixed_any:
+                print(f"Fixed paths in: {', '.join(fixed_files)}")
+                path_fix_needed = True
+                
+                # Run scripts in order from their directory
+                original_dir = os.getcwd()
                 try:
-                    with open(file_path) as f:
-                        content = f.read()
-                        # Look for hardcoded paths
-                        if any(p in content for p in ['/home/', '~/', '$HOME', 'C:', r'\\', '/Users/']):
-                            path_fix_needed = True
-                            print(f"Found hardcoded paths in {file}")
-                except Exception as e:
-                    print(f"Error checking paths in {file}: {str(e)}")
+                    os.chdir(submission_dir)  # Change to submission directory
+                    import subprocess
+                    
+                    # Set up environment variables for Python
+                    env = os.environ.copy()
+                    env['PYTHONPATH'] = str(submission_dir)  # Add submission dir to Python path
+                    
+                    # Common subprocess options
+                    common_opts = {
+                        'capture_output': True,
+                        'text': True,
+                        'timeout': 30,  # 30 second timeout
+                        'env': env
+                    }
+                    
+                    prepare_sh = files['prepare.sh']
+                    if prepare_sh:
+                        print("Running prepare.sh...")
+                        os.chmod(prepare_sh, 0o755)  # Make executable
+                        try:
+                            result = subprocess.run(['bash', prepare_sh.name], **common_opts)
+                            if result.returncode != 0:
+                                print(f"prepare.sh failed with code {result.returncode}")
+                                if result.stdout: print("stdout:", result.stdout)
+                                if result.stderr: print("stderr:", result.stderr)
+                        except subprocess.TimeoutExpired:
+                            print("prepare.sh timed out after 30 seconds")
+                        except Exception as e:
+                            print(f"Error running prepare.sh: {e}")
+                    
+                    analyze_visits = files['analyze_visits.py']
+                    if analyze_visits:
+                        print("Running analyze_visits.py...")
+                        try:
+                            result = subprocess.run(['python', analyze_visits.name], **common_opts)
+                            if result.returncode != 0:
+                                print(f"analyze_visits.py failed with code {result.returncode}")
+                                if result.stdout: print("stdout:", result.stdout)
+                                if result.stderr: print("stderr:", result.stderr)
+                        except subprocess.TimeoutExpired:
+                            print("analyze_visits.py timed out after 30 seconds")
+                        except Exception as e:
+                            print(f"Error running analyze_visits.py: {e}")
+                    
+                    stats_analysis = files['stats_analysis.py']
+                    if stats_analysis:
+                        print("Running stats_analysis.py...")
+                        try:
+                            result = subprocess.run(['python', stats_analysis.name], **common_opts)
+                            if result.returncode != 0:
+                                print(f"stats_analysis.py failed with code {result.returncode}")
+                                if result.stdout: print("stdout:", result.stdout)
+                                if result.stderr: print("stderr:", result.stderr)
+                        except subprocess.TimeoutExpired:
+                            print("stats_analysis.py timed out after 30 seconds")
+                        except Exception as e:
+                            print(f"Error running stats_analysis.py: {e}")
+                            
+                finally:
+                    os.chdir(original_dir)  # Always change back to original directory
 
         # Calculate totals
         scores['q1_total'] = sum(scores[k] for k in ['1.1', '1.2', '1.3', '1.4'])
@@ -124,21 +274,21 @@ class ExamGrader:
         
         return scores
 
-    def grade_q1(self, submission_dir: Path) -> Dict:
+    def grade_q1(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade Question 1: Data Preparation."""
         scores = {'1.1': 0, '1.2': 0, '1.3': 0, '1.4': 0}
         
         # 1.1: Check if ms_data_dirty.csv was created (3 pts)
-        prepare_sh = submission_dir / 'prepare.sh'
-        if prepare_sh.exists():
+        prepare_sh = files['prepare.sh']
+        if prepare_sh and prepare_sh.exists():
             with open(prepare_sh) as f:
                 content = f.read()
                 if 'generate_dirty_data.py' in content:
                     scores['1.1'] = 3
         
         # 1.2: Data cleaning operations (10 pts)
-        ms_data = submission_dir / 'ms_data.csv'
-        if ms_data.exists():
+        ms_data = files['ms_data.csv']
+        if ms_data and ms_data.exists():
             try:
                 df = pd.read_csv(ms_data)
                 points = 0
@@ -163,8 +313,8 @@ class ExamGrader:
                     points += 2
                 
                 # Documentation check (1 pt)
-                readme = submission_dir / 'readme.md'
-                if readme.exists():
+                readme = files['readme.md']
+                if readme and readme.exists():
                     with open(readme) as f:
                         content = f.read().lower()
                         if 'clean' in content and 'data' in content:
@@ -175,8 +325,8 @@ class ExamGrader:
                 print(f"Error checking ms_data.csv: {str(e)}")
         
         # 1.3: Insurance categories (3 pts)
-        insurance_lst = submission_dir / 'insurance.lst'
-        if insurance_lst.exists():
+        insurance_lst = files['insurance.lst']
+        if insurance_lst and insurance_lst.exists():
             try:
                 with open(insurance_lst) as f:
                     categories = [line.strip() for line in f if line.strip()]
@@ -191,8 +341,8 @@ class ExamGrader:
                         points += 1
                     
                     # Documentation (1 pt)
-                    readme = submission_dir / 'readme.md'
-                    if readme.exists():
+                    readme = files['readme.md']
+                    if readme and readme.exists():
                         with open(readme) as f:
                             content = f.read().lower()
                             if 'insurance' in content and 'categor' in content:
@@ -203,8 +353,8 @@ class ExamGrader:
                 print(f"Error checking insurance.lst: {str(e)}")
         
         # 1.4: Data summary (4 pts)
-        analyze_visits = submission_dir / 'analyze_visits.py'
-        if analyze_visits.exists():
+        analyze_visits = files['analyze_visits.py']
+        if analyze_visits and analyze_visits.exists():
             try:
                 with open(analyze_visits) as f:
                     content = f.read()
@@ -224,12 +374,12 @@ class ExamGrader:
         
         return scores
 
-    def grade_q2(self, submission_dir: Path) -> Dict:
+    def grade_q2(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade Question 2: Data Analysis."""
         scores = {'2.1': 0, '2.2': 0, '2.3': 0}
         
-        analyze_visits = submission_dir / 'analyze_visits.py'
-        if analyze_visits.exists():
+        analyze_visits = files['analyze_visits.py']
+        if analyze_visits and analyze_visits.exists():
             try:
                 with open(analyze_visits) as f:
                     content = f.read()
@@ -270,12 +420,12 @@ class ExamGrader:
         
         return scores
 
-    def grade_q3(self, submission_dir: Path) -> Dict:
+    def grade_q3(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade Question 3: Statistical Analysis."""
         scores = {'3.1': 0, '3.2': 0, '3.3': 0}
         
-        stats_analysis = submission_dir / 'stats_analysis.py'
-        if stats_analysis.exists():
+        stats_analysis = files['stats_analysis.py']
+        if stats_analysis and stats_analysis.exists():
             try:
                 with open(stats_analysis) as f:
                     content = f.read()
@@ -314,12 +464,12 @@ class ExamGrader:
         
         return scores
 
-    def grade_q4(self, submission_dir: Path) -> Dict:
+    def grade_q4(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade Question 4: Data Visualization."""
         scores = {'4.1': 0, '4.2': 0, '4.3': 0}
         
-        visualize_ipynb = submission_dir / 'visualize.ipynb'
-        if visualize_ipynb.exists():
+        visualize_ipynb = files['visualize.ipynb']
+        if visualize_ipynb and visualize_ipynb.exists():
             try:
                 with open(visualize_ipynb) as f:
                     nb = nbformat.read(f, as_version=4)
@@ -362,7 +512,7 @@ class ExamGrader:
         
         return scores
 
-    def grade_bonus(self, submission_dir: Path) -> Dict:
+    def grade_bonus(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade bonus features."""
         bonus_points = 0
         
@@ -375,8 +525,8 @@ class ExamGrader:
         ]
         
         for file in files_to_check:
-            file_path = submission_dir / file
-            if file_path.exists():
+            file_path = files[file]
+            if file_path and file_path.exists():
                 try:
                     with open(file_path) as f:
                         content = f.read().lower()
@@ -424,6 +574,3 @@ def main():
     grader = ExamGrader(submissions_dir)
     grader.grade_all()
     grader.save_results('exams/09-second-exam-scores.tsv')
-
-if __name__ == "__main__":
-    main()
