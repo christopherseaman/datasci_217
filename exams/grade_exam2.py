@@ -214,7 +214,7 @@ class ExamGrader:
         scores['q3_total'] = sum(scores[k] for k in ['3.1', '3.2', '3.3'])
         scores['q4_total'] = sum(scores[k] for k in ['4.1', '4.2', '4.3'])
         scores['bonus_total'] = scores['bonus']
-        scores['total'] = scores['q1_total'] + scores['q2_total'] + scores['q3_total'] + scores['q4_total']
+        scores['total'] = scores['q1_total'] + scores['q2_total'] + scores['q3_total'] + scores['q4_total'] + scores['bonus']
         
         print(f"\nFinal scores: {scores}")
         return scores
@@ -564,20 +564,39 @@ class ExamGrader:
         return scores
 
     def grade_bonus(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
-        """Grade bonus features through static analysis."""
+        """Grade bonus features through comprehensive static analysis."""
         bonus_points = 0
+        bonus_details = []
         
         # Advanced statistical methods (3 pts)
         for file in ['stats_analysis.py', 'analyze_visits.py']:
             if files[file] and files[file].exists():
                 with open(files[file]) as f:
                     content = f.read().lower()
-                    if any(x in content for x in ['sklearn', 'keras', 'tensorflow', 'torch']):
+                    
+                    # Advanced statistical libraries (1 pt)
+                    advanced_libs = [
+                        'statsmodels', 'sklearn', 'keras', 'tensorflow', 'torch', 
+                        'xgboost', 'lightgbm', 'scipy.stats'
+                    ]
+                    lib_matches = [lib for lib in advanced_libs if lib in content]
+                    if lib_matches:
                         bonus_points += 1
-                    if 'cross_val' in content or 'bootstrap' in content:
-                        bonus_points += 1
-                    if any(x in content for x in ['regularization', 'ridge', 'lasso']):
-                        bonus_points += 1
+                        bonus_details.extend(lib_matches)
+                    
+                    # Advanced statistical techniques (2 pts)
+                    advanced_techniques = [
+                        'mixedlm', 'mixed effects', 'multilevel', 
+                        'cross_val', 'bootstrap', 'regularization', 'ridge', 'lasso', 
+                        'bayesian', 'monte carlo', 'permutation', 'bootstrapping',
+                        'anova', 'f_oneway', 'interaction', 'regression', 
+                        'correlation', 'covariance', 'confidence interval',
+                        'hierarchical', 'mixed effects', 'multilevel'
+                    ]
+                    technique_matches = [tech for tech in advanced_techniques if tech in content]
+                    if technique_matches:
+                        bonus_points += min(2, len(technique_matches))
+                        bonus_details.extend(technique_matches)
                         
         # Interactive visualizations (3 pts)
         if files['visualize.ipynb'] and files['visualize.ipynb'].exists():
@@ -587,33 +606,66 @@ class ExamGrader:
                     cell['source'] 
                     for cell in nb['cells'] 
                     if cell['cell_type'] == 'code'
-                )
-                if any(x in code_content for x in ['plotly', 'bokeh', 'altair']):
-                    bonus_points += 2
-                if 'widget' in code_content or 'interactive' in code_content:
+                ).lower()
+                
+                # Advanced visualization techniques (2 pts)
+                advanced_viz_techniques = [
+                    'facetgrid', 'pairplot', 'subplot', 'multiple subplots', 
+                    'multiple series', 'interaction plot', 'time series', 
+                    'error bars', 'confidence interval', 'regression line'
+                ]
+                viz_matches = [tech for tech in advanced_viz_techniques if tech in code_content]
+                if viz_matches:
+                    bonus_points += min(2, len(viz_matches))
+                    bonus_details.extend(viz_matches)
+                
+                # Interactive plotting libraries (1 pt)
+                interactive_libs = ['plotly', 'bokeh', 'altair', 'holoviews', 'hvplot', 'dash', 'streamlit']
+                lib_matches = [lib for lib in interactive_libs if lib in code_content]
+                if lib_matches:
                     bonus_points += 1
+                    bonus_details.extend(lib_matches)
+                
+                # Widgets and interactivity (1 pt)
+                if any(x in code_content for x in ['widget', 'interactive', 'ipywidgets', 'interact']):
+                    bonus_points += 1
+                    bonus_details.append("Interactive Widgets")
                     
         # Additional pattern analysis (2 pts)
         for file in ['stats_analysis.py', 'analyze_visits.py']:
             if files[file] and files[file].exists():
                 with open(files[file]) as f:
                     content = f.read().lower()
-                    if any(x in content for x in ['cluster', 'pca', 'decomposition']):
-                        bonus_points += 1
-                    if 'seasonal' in content or 'cyclical' in content:
-                        bonus_points += 1
+                    
+                    # Advanced analysis techniques (2 pts)
+                    pattern_techniques = [
+                        'cluster', 'pca', 'decomposition', 'seasonal', 'cyclical', 
+                        'time series', 'fourier', 'wavelet', 'anomaly detection',
+                        'correlation', 'cointegration', 'spectral analysis',
+                        'random seed', 'consistent assignment', 'variation generation'
+                    ]
+                    technique_matches = [tech for tech in pattern_techniques if tech in content]
+                    if technique_matches:
+                        bonus_points += min(2, len(technique_matches))
+                        bonus_details.extend(technique_matches)
                         
         # Command-line argument parsing (2 pts)
         for file in ['prepare.sh', 'analyze_visits.py', 'stats_analysis.py']:
             if files[file] and files[file].exists():
                 with open(files[file]) as f:
                     content = f.read().lower()
-                    if 'argparse' in content:
+                    
+                    # Argument parsing (2 pts)
+                    if 'argparse' in content or 'click' in content or 'sys.argv' in content:
                         bonus_points += 1
+                        bonus_details.append("Argument Parsing")
+                        
                         if '--help' in content or 'add_argument' in content:
                             bonus_points += 1
+                            bonus_details.append("Help/Advanced Argument Parsing")
                         break
-                        
+        
+        print(f"Bonus Details: {bonus_details}")
         return {'bonus': min(bonus_points, 10)}  # Cap at 10 points
 
 def main():
