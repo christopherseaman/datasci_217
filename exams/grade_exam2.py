@@ -17,91 +17,102 @@ class ExamGrader:
         self.submissions_dir = Path(submissions_dir)
         self.results = []
         
-    def find_home_path(self, submission_dir: Path) -> str:
-        """Find the common home path used in a submission's files."""
-        patterns = [
-            r'["\']?[A-Z]:/Users/[^/"\']*/[^/"\']*["\']?',  # Windows
-            r'["\']?/Users/[^/"\']*/[^/"\']*["\']?',        # Mac
-            r'["\']?/home/[^/"\']*/[^/"\']*["\']?'          # Linux
-        ]
-        
-        # Files that might contain paths
-        files_to_check = ['prepare.sh', 'analyze_visits.py', 'stats_analysis.py', 'visualize.ipynb']
-        
-        for file in files_to_check:
-            file_path = self.find_file(submission_dir, file)
-            if file_path and file_path.exists():
-                try:
-                    with open(file_path) as f:
-                        content = f.read()
-                        for pattern in patterns:
-                            matches = re.findall(pattern, content)
-                            if matches:
-                                # Clean up the found path
-                                path = matches[0].strip('"\'')
-                                return path
-                except Exception:
-                    continue
-        return None
-        
-    def fix_paths(self, submission_dir: Path, files: Dict[str, Path]) -> Tuple[bool, List[str]]:
-        """Fix hardcoded paths in submission files. Returns (fixed_any, fixed_files)."""
-        home_path = self.find_home_path(submission_dir)
-        if not home_path:
-            return False, []
-            
-        fixed_files = []
-        fixed_any = False
-        
-        for file_name, file_path in files.items():
-            if not file_path or not file_path.exists():
-                continue
-                
-            try:
-                with open(file_path) as f:
-                    content = f.read()
-                
-                # Replace the home path with relative path
-                new_content = content.replace(home_path, '.')
-                if new_content != content:
-                    with open(file_path, 'w') as f:
-                        f.write(new_content)
-                    fixed_files.append(file_name)
-                    fixed_any = True
-            except Exception as e:
-                print(f"Error fixing paths in {file_name}: {str(e)}")
-                
-        return fixed_any, fixed_files
-        
     def find_file(self, submission_dir: Path, filename: str) -> Path:
         """Find a file recursively in the submission directory."""
+        print(f"\nSearching for {filename} in {submission_dir}")
+        
         # First try exact match
         for path in submission_dir.rglob(filename):
+            print(f"Found exact match: {path}")
             return path
             
-        # Try common variations
+        # Try common variations and additional locations
         filename_lower = filename.lower()
         if filename_lower == 'prepare.sh':
-            variations = ['clean_ms_data.sh', 'clean.sh', 'data_prep.sh', 'clean_data.sh', 'process.sh']
+            variations = [
+                'clean_ms_data.sh', 'clean.sh', 'data_prep.sh', 'clean_data.sh', 
+                'process.sh', 'data_preparation.sh', 'prep_data.sh'
+            ]
         elif filename_lower == 'visualize.ipynb':
-            variations = ['vizualize.ipynb', 'visualization.ipynb', 'viz.ipynb', 'plots.ipynb', 'figures.ipynb']
+            variations = [
+                'vizualize.ipynb',
+                'visualization.ipynb', 
+                'viz.ipynb',
+                'plots.ipynb',
+                'figures.ipynb',
+                'analysis.ipynb',
+                'q4.ipynb',
+                'question4.ipynb',
+                'visualisations.ipynb',  # British spelling
+                'visualise.ipynb',
+                'plotting.ipynb',
+                'data_visualization.ipynb',
+                'ms_visualization.ipynb',
+                'walking_speed_viz.ipynb',
+                'cost_analysis.ipynb',
+                # Also look for Python files with visualization code
+                'visualize.py',
+                'visualization.py',
+                'viz.py',
+                'plots.py',
+                'figures.py',
+                'visualizevisualize.ipynb',
+                'plotting.py'
+            ]
         elif filename_lower == 'readme.md':
-            variations = ['README.md', 'ReadMe.md', 'README.txt', 'readme.txt', 'documentation.md', 'documentation.txt']
+            variations = [
+                'README.md', 'ReadMe.md', 'README.txt', 'readme.txt', 
+                'documentation.md', 'documentation.txt', 'report.md', 'report.txt'
+            ]
         elif filename_lower == 'ms_data.csv':
-            variations = ['msdata.csv', 'ms-data.csv', 'ms_clean_data.csv', 'clean_data.csv', 'data.csv', 'cleaned_data.csv', 'processed_data.csv', 'ms_clean.csv', 'clean_ms.csv', 'ms.csv', 'visits.csv', 'patient_data.csv']
+            variations = [
+                'msdata.csv', 'ms-data.csv', 'ms_clean_data.csv', 'clean_data.csv',
+                'data.csv', 'cleaned_data.csv', 'processed_data.csv', 'ms_clean.csv',
+                'clean_ms.csv', 'ms.csv', 'visits.csv', 'patient_data.csv',
+                'final_data.csv', 'output.csv'
+            ]
         elif filename_lower == 'insurance.lst':
-            variations = ['insurance.txt', 'insurance_categories.txt', 'insurance_categories.lst', 'insurance_types.txt', 'insurance_types.lst', 'categories.lst', 'categories.txt', 'insurance_list.txt', 'insurance_list.lst', 'insurances.txt', 'insurances.lst', 'insurance_data.txt', 'insurance_data.lst']
+            variations = [
+                'insurance.txt', 'insurance_categories.txt', 'insurance_categories.lst',
+                'insurance_types.txt', 'insurance_types.lst', 'categories.lst',
+                'categories.txt', 'insurance_list.txt', 'insurance_list.lst',
+                'insurances.txt', 'insurances.lst', 'insurance_data.txt',
+                'insurance_data.lst', 'insurance_info.txt', 'insurance_info.lst'
+            ]
         elif filename_lower == 'analyze_visits.py':
-            variations = ['analyze.py', 'analysis.py', 'visit_analysis.py', 'process_visits.py']
+            variations = [
+                'analyze.py', 'analysis.py', 'visit_analysis.py', 'process_visits.py',
+                'data_analysis.py', 'visits.py', 'q2.py', 'question2.py',
+                'analyze_data.py', 'process_data.py', 'main.py',
+                # British spelling variations
+                'analyse_visits.py', 'analyse.py', 'analyse_data.py'
+            ]
         elif filename_lower == 'stats_analysis.py':
-            variations = ['statistics.py', 'statistical_analysis.py', 'stats.py', 'statistical_tests.py']
+            variations = [
+                'statistics.py', 'statistical_analysis.py', 'stats.py', 
+                'statistical_tests.py', 'q3.py', 'question3.py', 'analysis_stats.py',
+                'stat_tests.py', 'statistical.py'
+            ]
         else:
             variations = []
             
-        for variant in variations:
-            for path in submission_dir.rglob(variant):
-                return path
+        # Common subdirectories to check
+        subdirs = ['', 'src/', 'source/', 'code/', 'scripts/', 'python/', 'notebooks/']
+        
+        print(f"Checking variations: {variations}")
+        for subdir in subdirs:
+            for variant in variations:
+                full_path = submission_dir / subdir / variant
+                if full_path.exists():
+                    print(f"Found variant {variant} in {subdir}: {full_path}")
+                    return full_path
+                    
+                # Also try recursive search for the variant
+                for path in submission_dir.rglob(variant):
+                    print(f"Found variant {variant} recursively: {path}")
+                    return path
                 
+        print(f"No match found for {filename}")
         return None
         
     def grade_all(self):
@@ -132,6 +143,8 @@ class ExamGrader:
 
     def grade_submission(self, submission_dir: Path) -> Dict:
         """Grade a single submission."""
+        print(f"\nDetailed grading for {submission_dir}")
+        
         scores = {
             'total': 0,
             'q1_total': 0,
@@ -146,7 +159,7 @@ class ExamGrader:
             'bonus': 0
         }
         
-        # Check required files exist
+        # Check required files exist and print what was found
         required_files = [
             'prepare.sh',
             'ms_data.csv',
@@ -157,108 +170,44 @@ class ExamGrader:
             'readme.md'
         ]
         
-        # Check all required files
+        print("Found files:")
+        files = {}
         for file in required_files:
-            if not self.find_file(submission_dir, file.lower()):
-                print(f"Missing required file: {file}")
-                return scores
+            found_file = self.find_file(submission_dir, file.lower())
+            files[file] = found_file
+            print(f"  {file}: {found_file}")
+            
+        # If no files found, return zeros
+        if not any(files.values()):
+            print("No required files found!")
+            return scores
 
-        # Find all required files
-        files = {
-            file: self.find_file(submission_dir, file.lower())
-            for file in required_files
-        }
+        # Grade each question and print scores
+        print("\nGrading Q1...")
+        q1_scores = self.grade_q1(submission_dir, files)
+        scores.update(q1_scores)
+        print(f"Q1 scores: {q1_scores}")
         
-        # Grade Q1: Data Preparation
-        scores.update(self.grade_q1(submission_dir, files))
+        print("\nGrading Q2...")
+        q2_scores = self.grade_q2(submission_dir, files)
+        scores.update(q2_scores)
+        print(f"Q2 scores: {q2_scores}")
         
-        # Grade Q2: Data Analysis
-        scores.update(self.grade_q2(submission_dir, files))
+        print("\nGrading Q3...")
+        q3_scores = self.grade_q3(submission_dir, files)
+        scores.update(q3_scores)
+        print(f"Q3 scores: {q3_scores}")
         
-        # Grade Q3: Statistical Analysis
-        scores.update(self.grade_q3(submission_dir, files))
+        print("\nGrading Q4...")
+        q4_scores = self.grade_q4(submission_dir, files)
+        scores.update(q4_scores)
+        print(f"Q4 scores: {q4_scores}")
         
-        # Grade Q4: Data Visualization
-        scores.update(self.grade_q4(submission_dir, files))
+        print("\nChecking for bonus points...")
+        bonus_scores = self.grade_bonus(submission_dir, files)
+        scores.update(bonus_scores)
+        print(f"Bonus scores: {bonus_scores}")
         
-        # Grade Bonus Features
-        scores.update(self.grade_bonus(submission_dir, files))
-        
-        # Fix hardcoded paths and run scripts
-        home_path = self.find_home_path(submission_dir)
-        path_fix_needed = False
-        
-        if home_path:
-            print(f"Found home path: {home_path}")
-            fixed_any, fixed_files = self.fix_paths(submission_dir, files)
-            if fixed_any:
-                print(f"Fixed paths in: {', '.join(fixed_files)}")
-                path_fix_needed = True
-                
-                # Run scripts in order from their directory
-                original_dir = os.getcwd()
-                try:
-                    os.chdir(submission_dir)  # Change to submission directory
-                    import subprocess
-                    
-                    # Set up environment variables for Python
-                    env = os.environ.copy()
-                    env['PYTHONPATH'] = str(submission_dir)  # Add submission dir to Python path
-                    
-                    # Common subprocess options
-                    common_opts = {
-                        'capture_output': True,
-                        'text': True,
-                        'timeout': 30,  # 30 second timeout
-                        'env': env
-                    }
-                    
-                    prepare_sh = files['prepare.sh']
-                    if prepare_sh:
-                        print("Running prepare.sh...")
-                        os.chmod(prepare_sh, 0o755)  # Make executable
-                        try:
-                            result = subprocess.run(['bash', prepare_sh.name], **common_opts)
-                            if result.returncode != 0:
-                                print(f"prepare.sh failed with code {result.returncode}")
-                                if result.stdout: print("stdout:", result.stdout)
-                                if result.stderr: print("stderr:", result.stderr)
-                        except subprocess.TimeoutExpired:
-                            print("prepare.sh timed out after 30 seconds")
-                        except Exception as e:
-                            print(f"Error running prepare.sh: {e}")
-                    
-                    analyze_visits = files['analyze_visits.py']
-                    if analyze_visits:
-                        print("Running analyze_visits.py...")
-                        try:
-                            result = subprocess.run(['python', analyze_visits.name], **common_opts)
-                            if result.returncode != 0:
-                                print(f"analyze_visits.py failed with code {result.returncode}")
-                                if result.stdout: print("stdout:", result.stdout)
-                                if result.stderr: print("stderr:", result.stderr)
-                        except subprocess.TimeoutExpired:
-                            print("analyze_visits.py timed out after 30 seconds")
-                        except Exception as e:
-                            print(f"Error running analyze_visits.py: {e}")
-                    
-                    stats_analysis = files['stats_analysis.py']
-                    if stats_analysis:
-                        print("Running stats_analysis.py...")
-                        try:
-                            result = subprocess.run(['python', stats_analysis.name], **common_opts)
-                            if result.returncode != 0:
-                                print(f"stats_analysis.py failed with code {result.returncode}")
-                                if result.stdout: print("stdout:", result.stdout)
-                                if result.stderr: print("stderr:", result.stderr)
-                        except subprocess.TimeoutExpired:
-                            print("stats_analysis.py timed out after 30 seconds")
-                        except Exception as e:
-                            print(f"Error running stats_analysis.py: {e}")
-                            
-                finally:
-                    os.chdir(original_dir)  # Always change back to original directory
-
         # Calculate totals
         scores['q1_total'] = sum(scores[k] for k in ['1.1', '1.2', '1.3', '1.4'])
         scores['q2_total'] = sum(scores[k] for k in ['2.1', '2.2', '2.3'])
@@ -267,110 +216,102 @@ class ExamGrader:
         scores['bonus_total'] = scores['bonus']
         scores['total'] = scores['q1_total'] + scores['q2_total'] + scores['q3_total'] + scores['q4_total']
         
-        # Apply path fix penalty if needed
-        if path_fix_needed:
-            scores['total'] = max(0, scores['total'] - 5)  # Apply 5-point penalty
-            print("Applied 5-point penalty for path fixes")
-        
+        print(f"\nFinal scores: {scores}")
         return scores
 
     def grade_q1(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade Question 1: Data Preparation."""
         scores = {'1.1': 0, '1.2': 0, '1.3': 0, '1.4': 0}
         
-        # 1.1: Check if ms_data_dirty.csv was created (3 pts)
+        print("\nGrading Q1:")
         prepare_sh = files['prepare.sh']
+        insurance_lst = files['insurance.lst']
+        
+        # 1.1: Check if ms_data_dirty.csv was used (3 pts)
         if prepare_sh and prepare_sh.exists():
             with open(prepare_sh) as f:
-                content = f.read()
-                if 'generate_dirty_data.py' in content:
+                content = f.read().lower()
+                if any(x in content for x in [
+                    'ms_data_dirty.csv',
+                    'generate_dirty_data.py',
+                    'python.*generate',
+                    './generate'
+                ]):
                     scores['1.1'] = 3
+                    print("  1.1: ✓ Found data generation (3/3)")
+                else:
+                    print("  1.1: ✗ Missing data generation (0/3)")
         
         # 1.2: Data cleaning operations (10 pts)
-        ms_data = files['ms_data.csv']
-        if ms_data and ms_data.exists():
-            try:
-                df = pd.read_csv(ms_data)
+        if prepare_sh and prepare_sh.exists():
+            with open(prepare_sh) as f:
+                content = f.read().lower()
                 points = 0
                 
-                # Check columns (2 pts)
-                expected_cols = ['patient_id', 'visit_date', 'age', 'education_level', 'walking_speed']
-                if list(df.columns) == expected_cols:
+                # Track which components were found
+                found = []
+                
+                # Remove comments (2 pts)
+                if any(x in content for x in ['grep -v "#"', 'grep.*#', 'sed.*#', '/^#/d']):
                     points += 2
+                    found.append("comments")
                 
-                # Check for no comments/empty lines (2 pts)
-                with open(ms_data) as f:
-                    lines = f.readlines()
-                    if not any(line.startswith('#') for line in lines):
-                        points += 1
-                    if not any(line.strip() == '' for line in lines):
-                        points += 1
-                
-                # Check data validation (4 pts)
-                if df['walking_speed'].between(2.0, 8.0).all():
+                # Remove empty lines (2 pts)
+                if any(x in content for x in ['grep -v "^$"', 'sed.*^$', '/^$/d', 'empty']):
                     points += 2
-                if not df.isna().any().any():
+                    found.append("empty lines")
+                
+                # Handle commas (2 pts)
+                if any(x in content for x in ['s/,,*/,/g', 's/,,/,/g', 'extra comma']):
                     points += 2
+                    found.append("commas")
                 
-                # Documentation check (1 pt)
-                readme = files['readme.md']
-                if readme and readme.exists():
-                    with open(readme) as f:
-                        content = f.read().lower()
-                        if 'clean' in content and 'data' in content:
-                            points += 1
+                # Extract columns (2 pts)
+                if any(x in content for x in ['cut -d', 'cut.*-f', 'f1,2,4,5,6']):
+                    points += 2
+                    found.append("columns")
                 
+                # Documentation (2 pts)
+                if any(x in content for x in ['step', 'clean', '#.*input', 'echo']):
+                    points += 2
+                    found.append("documentation")
+                    
                 scores['1.2'] = points
-            except Exception as e:
-                print(f"Error checking ms_data.csv: {str(e)}")
+                print(f"  1.2: Found {', '.join(found)} ({points}/10)")
         
         # 1.3: Insurance categories (3 pts)
-        insurance_lst = files['insurance.lst']
         if insurance_lst and insurance_lst.exists():
-            try:
-                with open(insurance_lst) as f:
-                    categories = [line.strip() for line in f if line.strip()]
-                    points = 0
+            with open(insurance_lst) as f:
+                content = f.read().lower()
+                lines = [line.strip() for line in content.split('\n') if line.strip()]
+                
+                points = 0
+                if 'insurance_type' in lines or 'insurance' in lines:  # Header
+                    points += 1
+                if len(lines) >= 3:  # At least 3 categories
+                    points += 1
+                if len(set(lines)) == len(lines):  # All unique
+                    points += 1
                     
-                    # At least 3 categories (1 pt)
-                    if len(categories) >= 3:
-                        points += 1
-                    
-                    # Proper formatting (1 pt)
-                    if all(cat.isalnum() or ' ' in cat for cat in categories):
-                        points += 1
-                    
-                    # Documentation (1 pt)
-                    readme = files['readme.md']
-                    if readme and readme.exists():
-                        with open(readme) as f:
-                            content = f.read().lower()
-                            if 'insurance' in content and 'categor' in content:
-                                points += 1
-                    
-                    scores['1.3'] = points
-            except Exception as e:
-                print(f"Error checking insurance.lst: {str(e)}")
+                scores['1.3'] = points
+                print(f"  1.3: Found {len(lines)} insurance categories ({points}/3)")
         
         # 1.4: Data summary (4 pts)
-        analyze_visits = files['analyze_visits.py']
-        if analyze_visits and analyze_visits.exists():
-            try:
-                with open(analyze_visits) as f:
-                    content = f.read()
-                    points = 0
+        if prepare_sh and prepare_sh.exists():
+            with open(prepare_sh) as f:
+                content = f.read().lower()
+                points = 0
+                
+                found = []
+                if any(x in content for x in ['wc -l', 'count', 'total.*visit']):
+                    points += 2
+                    found.append("visit count")
+                if any(x in content for x in ['head', 'first.*record', 'display.*data']):
+                    points += 2
+                    found.append("data preview")
                     
-                    # Check for comprehensive statistics (2 pts)
-                    if 'describe()' in content or 'agg' in content or 'groupby' in content:
-                        points += 2
-                    
-                    # Check for data quality metrics (2 pts)
-                    if 'isna()' in content or 'isnull()' in content or 'duplicated()' in content:
-                        points += 2
-                    
-                    scores['1.4'] = points
-            except Exception as e:
-                print(f"Error checking analyze_visits.py: {str(e)}")
+                scores['1.4'] = points
+                print(f"  1.4: Found {', '.join(found)} ({points}/4)")
         
         return scores
 
@@ -378,187 +319,301 @@ class ExamGrader:
         """Grade Question 2: Data Analysis."""
         scores = {'2.1': 0, '2.2': 0, '2.3': 0}
         
-        analyze_visits = files['analyze_visits.py']
-        if analyze_visits and analyze_visits.exists():
-            try:
-                with open(analyze_visits) as f:
-                    content = f.read()
-                    
-                    # 2.1: Data loading and structure (8 pts)
-                    points = 0
-                    if 'try' in content and 'except' in content:  # Error handling
-                        points += 2
-                    if 'pd.to_datetime' in content:  # Date conversion
-                        points += 2
-                    if 'sort_values' in content:  # Sorting
-                        points += 2
-                    if 'astype' in content or 'dtype' in content:  # Data types
-                        points += 2
-                    scores['2.1'] = points
-                    
-                    # 2.2: Insurance information (9 pts)
-                    points = 0
-                    if 'read' in content and 'insurance' in content:  # Reads insurance types
-                        points += 2
-                    if 'groupby' in content and 'patient_id' in content:  # Consistent assignment
-                        points += 3
-                    if 'random' in content and ('cost' in content or 'price' in content):  # Cost generation
-                        points += 4
-                    scores['2.2'] = points
-                    
-                    # 2.3: Summary statistics (8 pts)
-                    points = 0
-                    if 'education_level' in content and 'walking_speed' in content:
-                        points += 3
-                    if 'insurance' in content and ('cost' in content or 'price' in content):
-                        points += 3
-                    if 'age' in content and 'walking_speed' in content:
-                        points += 2
-                    scores['2.3'] = points
-            except Exception as e:
-                print(f"Error checking analyze_visits.py: {str(e)}")
-        
+        if not (files['analyze_visits.py'] and files['analyze_visits.py'].exists()):
+            return scores
+            
+        with open(files['analyze_visits.py']) as f:
+            content = f.read().lower()
+            
+            # 2.1: Data loading and structure (8 pts)
+            points = 0
+            found = []
+            if 'pd.read_csv' in content or 'pandas' in content:
+                points += 2
+                found.append("data loading")
+            
+            # Proper date handling (3 pts)
+            if 'to_datetime' in content:
+                points += 1
+                found.append("datetime")
+                if 'sort_values' in content and all(x in content for x in ['patient_id', 'visit_date']):
+                    points += 2
+                    found.append("proper sorting")
+            
+            # Data validation (3 pts)
+            if any(x in content for x in ['dropna', 'isnull', 'isna', 'astype', 'info()', 'describe()']):
+                points += 3
+                found.append("validation")
+                
+            scores['2.1'] = points
+            print(f"  2.1: Found {', '.join(found)} ({points}/8)")
+            
+            # 2.2: Insurance information (9 pts)
+            points = 0
+            found = []
+            # Reading insurance types (3 pts)
+            if ('read_csv' in content and 'insurance' in content) or ('open' in content and 'insurance.lst' in content):
+                points += 3
+                found.append("insurance file")
+            
+            # Consistent assignment (3 pts)
+            if 'random.seed' in content or 'np.random.seed' in content:
+                points += 1
+                found.append("seed")
+            if 'mapping' in content or 'dict' in content:
+                points += 2
+                found.append("patient mapping")
+            
+            # Cost generation (3 pts)
+            if 'cost' in content and ('dict' in content or 'mapping' in content):
+                points += 2
+                found.append("base costs")
+            if 'random' in content and ('normal' in content or 'uniform' in content):
+                points += 1
+                found.append("variation")
+                
+            scores['2.2'] = points
+            print(f"  2.2: Found {', '.join(found)} ({points}/9)")
+            
+            # 2.3: Summary statistics (8 pts)
+            points = 0
+            found = []
+            # Education grouping (3 pts)
+            if 'groupby' in content and 'education_level' in content:
+                points += 3
+                found.append("education stats")
+            
+            # Insurance grouping (3 pts)
+            if 'groupby' in content and 'insurance_type' in content:
+                points += 3
+                found.append("insurance stats")
+            
+            # Age effects (2 pts)
+            if 'corr' in content or ('age' in content and 'walking_speed' in content):
+                points += 2
+                found.append("age analysis")
+                
+            scores['2.3'] = points
+            print(f"  2.3: Found {', '.join(found)} ({points}/8)")
+            
         return scores
 
     def grade_q3(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
         """Grade Question 3: Statistical Analysis."""
         scores = {'3.1': 0, '3.2': 0, '3.3': 0}
         
-        stats_analysis = files['stats_analysis.py']
-        if stats_analysis and stats_analysis.exists():
-            try:
-                with open(stats_analysis) as f:
-                    content = f.read()
+        if not (files['stats_analysis.py'] and files['stats_analysis.py'].exists()):
+            return scores
+            
+        with open(files['stats_analysis.py']) as f:
+            content = f.read().lower()
+            
+            # 3.1: Walking speed analysis (8 pts)
+            points = 0
+            found = []
+            # Mixed model / repeated measures (5 pts)
+            if any(x in content for x in ['mixedlm', 'mixed', 'groups']):
+                points += 3
+                found.append("mixed model")
+                if 'patient_id' in content:
+                    points += 2
+                    found.append("patient grouping")
+            
+            # Model diagnostics and trends (3 pts)
+            if any(x in content for x in ['summary()', 'fit()', '.fit']):
+                points += 2
+                found.append("model fit")
+                if any(x in content for x in ['conf_int', 'p-value', 'p_value', 'pvalue']):
+                    points += 1
+                    found.append("significance")
                     
-                    # 3.1: Walking speed analysis (8 pts)
-                    points = 0
-                    if 'regression' in content or 'lm' in content:  # Multiple regression
-                        points += 3
-                    if 'repeated' in content or 'mixed' in content:  # Repeated measures
-                        points += 3
-                    if 'trend' in content or 'time' in content:  # Trend testing
-                        points += 2
-                    scores['3.1'] = points
+            scores['3.1'] = points
+            print(f"  3.1: Found {', '.join(found)} ({points}/8)")
+            
+            # 3.2: Cost analysis (8 pts)
+            points = 0
+            found = []
+            # Basic statistics and tests (4 pts)
+            if any(x in content for x in ['f_oneway', 'anova', 'ttest']):
+                points += 2
+                found.append("statistical test")
+            if any(x in content for x in ['mean', 'std', 'describe']):
+                points += 2
+                found.append("descriptive stats")
+            
+            # Effect size (4 pts)
+            if any(x in content for x in ['cohen', 'eta', 'effect']):
+                points += 4
+                found.append("effect size")
                     
-                    # 3.2: Cost analysis (8 pts)
-                    points = 0
-                    if 'anova' in content or 'ttest' in content:  # Insurance effect
-                        points += 3
-                    if 'normality' in content or 'shapiro' in content:  # Distribution analysis
-                        points += 2
-                    if 'effect_size' in content or 'cohen' in content:  # Effect size
-                        points += 3
-                    scores['3.2'] = points
+            scores['3.2'] = points
+            print(f"  3.2: Found {', '.join(found)} ({points}/8)")
+            
+            # 3.3: Advanced analysis (9 pts)
+            points = 0
+            found = []
+            # Interaction analysis (5 pts)
+            if '*' in content and ('education' in content or 'age' in content):
+                points += 3
+                found.append("interaction")
+                if 'summary()' in content:
+                    points += 2
+                    found.append("interaction results")
+            
+            # Control variables and reporting (4 pts)
+            if any(x in content for x in ['insurance_type', 'visit_cost']):
+                points += 2
+                found.append("controls")
+            if any(x in content for x in ['conf_int', 'p-value', 'p_value', 'pvalue']):
+                points += 2
+                found.append("significance reporting")
                     
-                    # 3.3: Advanced analysis (9 pts)
-                    points = 0
-                    if 'interaction' in content:  # Interaction analysis
-                        points += 3
-                    if 'confounder' in content or 'covariate' in content:  # Confounders
-                        points += 3
-                    if 'summary()' in content or 'report' in content:  # Statistical reporting
-                        points += 3
-                    scores['3.3'] = points
-            except Exception as e:
-                print(f"Error checking stats_analysis.py: {str(e)}")
-        
+            scores['3.3'] = points
+            print(f"  3.3: Found {', '.join(found)} ({points}/9)")
+            
         return scores
 
     def grade_q4(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
-        """Grade Question 4: Data Visualization."""
+        """Grade Question 4: Visualization."""
         scores = {'4.1': 0, '4.2': 0, '4.3': 0}
         
-        visualize_ipynb = files['visualize.ipynb']
-        if visualize_ipynb and visualize_ipynb.exists():
-            try:
-                with open(visualize_ipynb) as f:
-                    nb = nbformat.read(f, as_version=4)
+        try:
+            if not (files['visualize.ipynb'] and files['visualize.ipynb'].exists()):
+                return scores
+                
+            with open(files['visualize.ipynb']) as f:
+                nb = nbformat.read(f, as_version=4)
+                code_content = '\n'.join(
+                    cell['source'] 
+                    for cell in nb['cells'] 
+                    if cell['cell_type'] == 'code'
+                ).lower()
+                
+                # 4.1: Basic relationships (10 pts)
+                points = 0
+                found = []
+                # Scatter plots (4 pts)
+                if 'scatter' in code_content or 'lmplot' in code_content:
+                    points += 4
+                    found.append("scatter")
+                
+                # Distribution plots (3 pts)
+                if any(x in code_content for x in ['hist', 'kde', 'density']):
+                    points += 3
+                    found.append("distributions")
                     
-                    # Convert notebook to Python code for easier analysis
-                    exporter = PythonExporter()
-                    code, _ = exporter.from_notebook_node(nb)
+                # Plot customization (3 pts)
+                if any(x in code_content for x in ['title', 'xlabel', 'ylabel', 'figsize']):
+                    points += 3
+                    found.append("customization")
                     
-                    # 4.1: Walking speed visualizations (10 pts)
-                    points = 0
-                    if 'scatter' in code and 'age' in code and 'walking_speed' in code:
-                        points += 3
-                    if 'boxplot' in code and 'education' in code:
-                        points += 3
-                    if 'interaction' in code or 'facet' in code:
-                        points += 4
-                    scores['4.1'] = points
+                scores['4.1'] = points
+                print(f"  4.1: Found {', '.join(found)} ({points}/10)")
+                
+                # 4.2: Complex relationships (10 pts)
+                points = 0
+                found = []
+                # Multiple variables (4 pts)
+                if any(x in code_content for x in ['boxplot', 'violinplot']):
+                    points += 2
+                    found.append("categorical")
+                if 'facetgrid' in code_content or 'subplot' in code_content:
+                    points += 2
+                    found.append("facets")
                     
-                    # 4.2: Cost visualizations (10 pts)
-                    points = 0
-                    if 'bar' in code and 'insurance' in code:
-                        points += 3
-                    if 'boxplot' in code and 'cost' in code:
-                        points += 3
-                    if 'errorbar' in code or 'confidence' in code:
-                        points += 4
-                    scores['4.2'] = points
+                # Statistical visualization (3 pts)
+                if any(x in code_content for x in ['regplot', 'lmplot', 'residplot']):
+                    points += 3
+                    found.append("statistical")
                     
-                    # 4.3: Combined visualizations (10 pts)
-                    points = 0
-                    if 'pairplot' in code or 'scatter_matrix' in code:
-                        points += 3
-                    if 'facet' in code or 'subplot' in code:
-                        points += 4
-                    if 'time' in code or 'trend' in code:
-                        points += 3
-                    scores['4.3'] = points
-            except Exception as e:
-                print(f"Error checking visualize.ipynb: {str(e)}")
-        
+                # Legend and formatting (3 pts)
+                if 'legend' in code_content and any(x in code_content for x in ['style', 'palette']):
+                    points += 3
+                    found.append("formatting")
+                    
+                scores['4.2'] = points
+                print(f"  4.2: Found {', '.join(found)} ({points}/10)")
+                
+                # 4.3: Time trends (10 pts)
+                points = 0
+                found = []
+                # Time series basics (4 pts)
+                if 'to_datetime' in code_content:
+                    points += 2
+                    found.append("datetime")
+                if any(x in code_content for x in ['lineplot', 'plot', 'tsplot']):
+                    points += 2
+                    found.append("time plot")
+                    
+                # Grouping and aggregation (3 pts)
+                if 'groupby' in code_content and any(x in code_content for x in ['month', 'year', 'date']):
+                    points += 3
+                    found.append("time grouping")
+                    
+                # Multiple series (3 pts)
+                if 'hue' in code_content or len(re.findall(r'plot\(.*\)', code_content)) > 1:
+                    points += 3
+                    found.append("multiple series")
+                    
+                scores['4.3'] = points
+                print(f"  4.3: Found {', '.join(found)} ({points}/10)")
+                
+        except Exception as e:
+            print(f"Error grading visualization: {str(e)}")
+            
         return scores
 
     def grade_bonus(self, submission_dir: Path, files: Dict[str, Path]) -> Dict:
-        """Grade bonus features."""
+        """Grade bonus features through static analysis."""
         bonus_points = 0
         
-        # Check all relevant files for bonus features
-        files_to_check = [
-            'stats_analysis.py',
-            'visualize.ipynb',
-            'analyze_visits.py',
-            'prepare.sh'
-        ]
-        
-        for file in files_to_check:
-            file_path = files[file]
-            if file_path and file_path.exists():
-                try:
-                    with open(file_path) as f:
-                        content = f.read().lower()
+        # Advanced statistical methods (3 pts)
+        for file in ['stats_analysis.py', 'analyze_visits.py']:
+            if files[file] and files[file].exists():
+                with open(files[file]) as f:
+                    content = f.read().lower()
+                    if any(x in content for x in ['sklearn', 'keras', 'tensorflow', 'torch']):
+                        bonus_points += 1
+                    if 'cross_val' in content or 'bootstrap' in content:
+                        bonus_points += 1
+                    if any(x in content for x in ['regularization', 'ridge', 'lasso']):
+                        bonus_points += 1
                         
-                        # Advanced statistical methods (3 pts)
-                        if any(method in content for method in ['machine learning', 'cross_val', 'bootstrap']):
-                            bonus_points += 1
-                        if 'advanced' in content and 'regression' in content:
-                            bonus_points += 1
-                        if 'cross_validation' in content:
-                            bonus_points += 1
+        # Interactive visualizations (3 pts)
+        if files['visualize.ipynb'] and files['visualize.ipynb'].exists():
+            with open(files['visualize.ipynb']) as f:
+                nb = nbformat.read(f, as_version=4)
+                code_content = '\n'.join(
+                    cell['source'] 
+                    for cell in nb['cells'] 
+                    if cell['cell_type'] == 'code'
+                )
+                if any(x in code_content for x in ['plotly', 'bokeh', 'altair']):
+                    bonus_points += 2
+                if 'widget' in code_content or 'interactive' in code_content:
+                    bonus_points += 1
+                    
+        # Additional pattern analysis (2 pts)
+        for file in ['stats_analysis.py', 'analyze_visits.py']:
+            if files[file] and files[file].exists():
+                with open(files[file]) as f:
+                    content = f.read().lower()
+                    if any(x in content for x in ['cluster', 'pca', 'decomposition']):
+                        bonus_points += 1
+                    if 'seasonal' in content or 'cyclical' in content:
+                        bonus_points += 1
                         
-                        # Interactive visualizations (3 pts)
-                        if any(viz in content for viz in ['plotly', 'interactive', 'widget']):
-                            bonus_points += 2
-                        if 'bokeh' in content:
-                            bonus_points += 1
-                        
-                        # Additional pattern analysis (2 pts)
-                        if 'pattern' in content or 'cluster' in content:
-                            bonus_points += 1
-                        if 'novel' in content or 'additional analysis' in content:
-                            bonus_points += 1
-                        
-                        # Command-line argument parsing (2 pts)
-                        if 'argparse' in content:
-                            bonus_points += 1
+        # Command-line argument parsing (2 pts)
+        for file in ['prepare.sh', 'analyze_visits.py', 'stats_analysis.py']:
+            if files[file] and files[file].exists():
+                with open(files[file]) as f:
+                    content = f.read().lower()
+                    if 'argparse' in content:
+                        bonus_points += 1
                         if '--help' in content or 'add_argument' in content:
                             bonus_points += 1
-                except Exception as e:
-                    print(f"Error checking {file} for bonus: {str(e)}")
-        
+                        break
+                        
         return {'bonus': min(bonus_points, 10)}  # Cap at 10 points
 
 def main():
@@ -574,3 +629,6 @@ def main():
     grader = ExamGrader(submissions_dir)
     grader.grade_all()
     grader.save_results('exams/09-second-exam-scores.tsv')
+
+if __name__ == "__main__":
+    main()

@@ -34,13 +34,14 @@ Point Structure:
     - Converts dates with timezone handling (2)
     - Implements efficient sorting (2)
     - Validates data types with constraints (2)
+    - Correctly generates insurance.lst (2)
 2.2 Insurance information (9 pts):
     - Reads insurance types with validation (2)
     - Implements consistent assignment algorithm (3)
     - Generates realistic costs with documentation (4)
 2.3 Summary statistics (8 pts):
-    - Walking speed analysis with outlier detection (3)
-    - Cost analysis with confidence intervals (3)
+    - Walking speed analysis with outlier detection (2)
+    - Cost analysis with confidence intervals (2)
     - Age effects with multiple approaches (2)
 
 ### Question 3: Statistical Analysis (25 points)
