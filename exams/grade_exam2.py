@@ -336,16 +336,16 @@ class ExamGrader:
             if 'to_datetime' in content:
                 points += 1
                 found.append("datetime")
-                if 'sort_values' in content and all(x in content for x in ['patient_id', 'visit_date']):
+                if 'groupby' in content or 'sort' in content:
                     points += 2
-                    found.append("proper sorting")
+                    found.append("data organization")
             
             # Data validation (3 pts)
             if any(x in content for x in ['dropna', 'isnull', 'isna', 'astype', 'info()', 'describe()']):
                 points += 3
                 found.append("validation")
                 
-            scores['2.1'] = points
+            scores['2.1'] = min(points, 8)
             print(f"  2.1: Found {', '.join(found)} ({points}/8)")
             
             # 2.2: Insurance information (9 pts)
@@ -365,14 +365,14 @@ class ExamGrader:
                 found.append("patient mapping")
             
             # Cost generation (3 pts)
-            if 'cost' in content and ('dict' in content or 'mapping' in content):
+            if 'cost' in content:
                 points += 2
                 found.append("base costs")
-            if 'random' in content and ('normal' in content or 'uniform' in content):
+            if 'random' in content:
                 points += 1
                 found.append("variation")
                 
-            scores['2.2'] = points
+            scores['2.2'] = min(points, 9)
             print(f"  2.2: Found {', '.join(found)} ({points}/9)")
             
             # 2.3: Summary statistics (8 pts)
@@ -389,11 +389,11 @@ class ExamGrader:
                 found.append("insurance stats")
             
             # Age effects (2 pts)
-            if 'corr' in content or ('age' in content and 'walking_speed' in content):
+            if 'age' in content and 'walking_speed' in content:
                 points += 2
                 found.append("age analysis")
                 
-            scores['2.3'] = points
+            scores['2.3'] = min(points, 8)
             print(f"  2.3: Found {', '.join(found)} ({points}/8)")
             
         return scores
@@ -411,42 +411,42 @@ class ExamGrader:
             # 3.1: Walking speed analysis (8 pts)
             points = 0
             found = []
-            # Mixed model / repeated measures (5 pts)
-            if any(x in content for x in ['mixedlm', 'mixed', 'groups']):
+            # Regression analysis (5 pts)
+            if any(x in content for x in ['regression', 'ols', 'statsmodels', 'sm.ols']):
                 points += 3
-                found.append("mixed model")
-                if 'patient_id' in content:
+                found.append("regression analysis")
+                if 'age' in content and 'education' in content:
                     points += 2
-                    found.append("patient grouping")
+                    found.append("multiple predictors")
             
             # Model diagnostics and trends (3 pts)
-            if any(x in content for x in ['summary()', 'fit()', '.fit']):
+            if any(x in content for x in ['summary()', 'fit()', '.fit', 'coef', 'coefficients']):
                 points += 2
-                found.append("model fit")
+                found.append("model diagnostics")
                 if any(x in content for x in ['conf_int', 'p-value', 'p_value', 'pvalue']):
                     points += 1
                     found.append("significance")
                     
-            scores['3.1'] = points
+            scores['3.1'] = min(points, 8)
             print(f"  3.1: Found {', '.join(found)} ({points}/8)")
             
             # 3.2: Cost analysis (8 pts)
             points = 0
             found = []
             # Basic statistics and tests (4 pts)
-            if any(x in content for x in ['f_oneway', 'anova', 'ttest']):
+            if any(x in content for x in ['f_oneway', 'anova', 'ttest', 'statistical test']):
                 points += 2
                 found.append("statistical test")
-            if any(x in content for x in ['mean', 'std', 'describe']):
+            if any(x in content for x in ['mean', 'std', 'describe', 'summary statistics']):
                 points += 2
                 found.append("descriptive stats")
             
             # Effect size (4 pts)
-            if any(x in content for x in ['cohen', 'eta', 'effect']):
+            if any(x in content for x in ['cohen', 'eta', 'effect size']):
                 points += 4
                 found.append("effect size")
                     
-            scores['3.2'] = points
+            scores['3.2'] = min(points, 8)
             print(f"  3.2: Found {', '.join(found)} ({points}/8)")
             
             # 3.3: Advanced analysis (9 pts)
@@ -456,19 +456,19 @@ class ExamGrader:
             if '*' in content and ('education' in content or 'age' in content):
                 points += 3
                 found.append("interaction")
-                if 'summary()' in content:
+                if any(x in content for x in ['summary()', 'plot', 'visualize']):
                     points += 2
-                    found.append("interaction results")
+                    found.append("interaction visualization")
             
             # Control variables and reporting (4 pts)
-            if any(x in content for x in ['insurance_type', 'visit_cost']):
+            if any(x in content for x in ['insurance_type', 'visit_cost', 'control variables']):
                 points += 2
                 found.append("controls")
-            if any(x in content for x in ['conf_int', 'p-value', 'p_value', 'pvalue']):
+            if any(x in content for x in ['conf_int', 'p-value', 'p_value', 'pvalue', 'statistical reporting']):
                 points += 2
                 found.append("significance reporting")
                     
-            scores['3.3'] = points
+            scores['3.3'] = min(points, 9)
             print(f"  3.3: Found {', '.join(found)} ({points}/9)")
             
         return scores
