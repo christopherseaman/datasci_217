@@ -1,0 +1,35 @@
+# Core dependencies for homework assignment
+# Python 3.8+ required
+
+# Testing framework
+pytest>=7.0.0
+pytest-html>=3.1.0
+pytest-cov>=4.0.0
+pytest-timeout>=2.1.0
+
+# Development and code quality
+black>=22.0.0
+flake8>=5.0.0
+mypy>=0.991
+
+# Data science libraries (uncomment if needed for your assignment)
+# pandas>=1.5.0
+# numpy>=1.21.0
+# matplotlib>=3.5.0
+# seaborn>=0.11.0
+# scipy>=1.7.0
+# scikit-learn>=1.1.0
+
+# Utility libraries
+typing-extensions>=4.0.0
+
+# Optional: JSON/CSV handling (usually included in standard library)
+# No additional requirements needed for basic file I/O
+
+# Optional: Command line interface
+# click>=8.0.0
+# argparse is included in standard library
+
+# Optional: Jupyter notebooks (if assignment includes .ipynb files)
+# jupyter>=1.0.0
+# ipykernel>=6.0.0

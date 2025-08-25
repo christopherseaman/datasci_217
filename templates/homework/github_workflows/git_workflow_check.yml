@@ -1,0 +1,332 @@
+name: Git Workflow Verification
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  MIN_COMMITS: 3
+  REQUIRED_BRANCHES: "main"
+
+jobs:
+  git-workflow-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for analysis
+        
+    - name: Verify commit history
+      run: |
+        echo "🔍 Analyzing Git workflow..."
+        
+        # Count total commits
+        TOTAL_COMMITS=$(git rev-list --count HEAD)
+        echo "📊 Total commits: $TOTAL_COMMITS"
+        
+        if [ $TOTAL_COMMITS -lt $MIN_COMMITS ]; then
+          echo "⚠️  Warning: Only $TOTAL_COMMITS commits found. Minimum recommended: $MIN_COMMITS"
+          echo "COMMIT_WARNING=true" >> $GITHUB_ENV
+        else
+          echo "✅ Good commit history: $TOTAL_COMMITS commits"
+          echo "COMMIT_WARNING=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Check commit message quality
+      run: |
+        echo "📝 Analyzing commit message quality..."
+        
+        # Get recent commit messages
+        RECENT_COMMITS=$(git log --oneline -10 --pretty=format:"%s")
+        
+        # Check for meaningful commit messages
+        poor_messages=0
+        good_messages=0
+        
+        while IFS= read -r message; do
+          # Skip empty lines
+          if [ -z "$message" ]; then
+            continue
+          fi
+          
+          # Check for poor commit message patterns
+          if echo "$message" | grep -qi "^fix\|^update\|^change\|^test\|^wip\|^temp\|^asdf\|^[[:space:]]*$"; then
+            echo "⚠️  Poor commit message: '$message'"
+            poor_messages=$((poor_messages + 1))
+          elif [ ${#message} -lt 10 ]; then
+            echo "⚠️  Very short commit message: '$message'"
+            poor_messages=$((poor_messages + 1))
+          else
+            echo "✅ Good commit message: '$message'"
+            good_messages=$((good_messages + 1))
+          fi
+        done <<< "$RECENT_COMMITS"
+        
+        total_messages=$((poor_messages + good_messages))
+        
+        if [ $total_messages -gt 0 ]; then
+          quality_percentage=$((good_messages * 100 / total_messages))
+          echo "📊 Commit message quality: $quality_percentage% ($good_messages/$total_messages)"
+          
+          if [ $quality_percentage -lt 50 ]; then
+            echo "❌ Commit message quality is poor"
+            echo "MESSAGE_QUALITY=poor" >> $GITHUB_ENV
+          elif [ $quality_percentage -lt 80 ]; then
+            echo "⚠️  Commit message quality needs improvement"
+            echo "MESSAGE_QUALITY=needs_improvement" >> $GITHUB_ENV
+          else
+            echo "✅ Good commit message quality"
+            echo "MESSAGE_QUALITY=good" >> $GITHUB_ENV
+          fi
+        fi
+        
+    - name: Verify branch structure
+      run: |
+        echo "🌳 Checking branch structure..."
+        
+        # List all branches
+        ALL_BRANCHES=$(git branch -a | grep -v HEAD | sed 's/^\*\?\s*//; s/remotes\/origin\///' | sort -u)
+        echo "📋 Available branches:"
+        echo "$ALL_BRANCHES" | while read branch; do
+          if [ -n "$branch" ]; then
+            echo "   - $branch"
+          fi
+        done
+        
+        # Check for required branches
+        MISSING_BRANCHES=""
+        for required_branch in $REQUIRED_BRANCHES; do
+          if ! echo "$ALL_BRANCHES" | grep -q "^$required_branch$"; then
+            MISSING_BRANCHES="$MISSING_BRANCHES $required_branch"
+          fi
+        done
+        
+        if [ -n "$MISSING_BRANCHES" ]; then
+          echo "❌ Missing required branches:$MISSING_BRANCHES"
+          echo "BRANCH_STRUCTURE=invalid" >> $GITHUB_ENV
+        else
+          echo "✅ All required branches present"
+          echo "BRANCH_STRUCTURE=valid" >> $GITHUB_ENV
+        fi
+        
+        # Check current branch
+        CURRENT_BRANCH=$(git branch --show-current)
+        echo "📍 Current branch: $CURRENT_BRANCH"
+        
+    - name: Check file modification patterns
+      run: |
+        echo "📁 Analyzing file modification patterns..."
+        
+        # Get list of modified files across commits
+        MODIFIED_FILES=$(git log --name-only --pretty=format: | sort -u | grep -v '^$')
+        
+        echo "📋 Files modified in this repository:"
+        echo "$MODIFIED_FILES" | while read file; do
+          if [ -n "$file" ] && [ -f "$file" ]; then
+            # Count modifications for this file
+            MODIFICATIONS=$(git log --oneline --follow "$file" | wc -l)
+            echo "   - $file ($MODIFICATIONS commits)"
+          fi
+        done
+        
+        # Check for signs of good development practices
+        if echo "$MODIFIED_FILES" | grep -q "README.md"; then
+          echo "✅ README.md has been updated"
+        else
+          echo "⚠️  README.md not modified - consider updating documentation"
+        fi
+        
+        if echo "$MODIFIED_FILES" | grep -q "\.py$"; then
+          echo "✅ Python files have been modified"
+        else
+          echo "⚠️  No Python files modified"
+        fi
+        
+    - name: Check for merge commits
+      run: |
+        echo "🔀 Checking for merge commits..."
+        
+        MERGE_COMMITS=$(git log --merges --oneline | wc -l)
+        
+        if [ $MERGE_COMMITS -gt 0 ]; then
+          echo "📊 Found $MERGE_COMMITS merge commits"
+          echo "Recent merge commits:"
+          git log --merges --oneline -5 | sed 's/^/   - /'
+          echo "MERGE_COMMITS=$MERGE_COMMITS" >> $GITHUB_ENV
+        else
+          echo "✅ No merge commits found (linear history)"
+          echo "MERGE_COMMITS=0" >> $GITHUB_ENV
+        fi
+        
+    - name: Check commit timing
+      run: |
+        echo "⏰ Analyzing commit timing patterns..."
+        
+        # Get commit timestamps
+        git log --pretty=format:"%cd|%s" --date=iso | head -20 > recent_commits.txt
+        
+        # Check for suspicious patterns (all commits at once)
+        UNIQUE_DAYS=$(git log --pretty=format:"%cd" --date=short | head -10 | sort -u | wc -l)
+        
+        if [ $UNIQUE_DAYS -eq 1 ] && [ $(git rev-list --count HEAD) -gt 5 ]; then
+          echo "⚠️  All commits made on the same day - consider spreading work over time"
+          echo "TIMING_PATTERN=suspicious" >> $GITHUB_ENV
+        else
+          echo "✅ Commits spread over $UNIQUE_DAYS days"
+          echo "TIMING_PATTERN=good" >> $GITHUB_ENV
+        fi
+        
+        # Show recent commit timeline
+        echo "📅 Recent commit timeline:"
+        git log --oneline --pretty=format:"   %cd - %s" --date=short -10
+        
+    - name: Generate workflow report
+      if: always()
+      run: |
+        echo "📊 Generating Git workflow report..."
+        
+        cat > GIT_WORKFLOW_REPORT.md << EOF
+        # Git Workflow Analysis Report
+        
+        ## Summary
+        
+        This report analyzes the Git workflow and development practices for this assignment submission.
+        
+        ## Commit Analysis
+        
+        - **Total commits**: $(git rev-list --count HEAD)
+        - **Commit message quality**: ${MESSAGE_QUALITY:-unknown}
+        - **Branch structure**: ${BRANCH_STRUCTURE:-unknown}
+        - **Merge commits**: ${MERGE_COMMITS:-0}
+        - **Timing pattern**: ${TIMING_PATTERN:-unknown}
+        
+        ## Recent Commits
+        
+        \`\`\`
+        $(git log --oneline -10)
+        \`\`\`
+        
+        ## Recommendations
+        
+        EOF
+        
+        # Add specific recommendations based on analysis
+        if [ "${MESSAGE_QUALITY}" = "poor" ] || [ "${MESSAGE_QUALITY}" = "needs_improvement" ]; then
+          echo "- **Improve commit messages**: Use descriptive, specific messages that explain what and why" >> GIT_WORKFLOW_REPORT.md
+          echo "- **Good format**: 'Add function to calculate averages' instead of 'fix'" >> GIT_WORKFLOW_REPORT.md
+        fi
+        
+        if [ "${COMMIT_WARNING}" = "true" ]; then
+          echo "- **Make more frequent commits**: Commit your work in small, logical chunks" >> GIT_WORKFLOW_REPORT.md
+          echo "- **Save your progress**: Regular commits help prevent work loss" >> GIT_WORKFLOW_REPORT.md
+        fi
+        
+        if [ "${TIMING_PATTERN}" = "suspicious" ]; then
+          echo "- **Spread work over time**: Avoid doing all work at the last minute" >> GIT_WORKFLOW_REPORT.md
+          echo "- **Plan ahead**: Start early and make steady progress" >> GIT_WORKFLOW_REPORT.md
+        fi
+        
+        # Add positive feedback
+        echo "" >> GIT_WORKFLOW_REPORT.md
+        echo "## Good Practices Observed" >> GIT_WORKFLOW_REPORT.md
+        echo "" >> GIT_WORKFLOW_REPORT.md
+        
+        if [ "${MESSAGE_QUALITY}" = "good" ]; then
+          echo "- ✅ Good commit message quality" >> GIT_WORKFLOW_REPORT.md
+        fi
+        
+        if [ "${BRANCH_STRUCTURE}" = "valid" ]; then
+          echo "- ✅ Proper branch structure" >> GIT_WORKFLOW_REPORT.md
+        fi
+        
+        if [ "${TIMING_PATTERN}" = "good" ]; then
+          echo "- ✅ Work spread over multiple days" >> GIT_WORKFLOW_REPORT.md
+        fi
+        
+        echo "" >> GIT_WORKFLOW_REPORT.md
+        echo "---" >> GIT_WORKFLOW_REPORT.md
+        echo "*This analysis helps ensure good development practices but does not affect your assignment grade.*" >> GIT_WORKFLOW_REPORT.md
+        
+    - name: Upload workflow report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: git-workflow-report
+        path: GIT_WORKFLOW_REPORT.md
+        retention-days: 30
+        
+    - name: Comment on PR with workflow feedback
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const workflowReport = fs.readFileSync('GIT_WORKFLOW_REPORT.md', 'utf8');
+            
+            const comment = `## 🔍 Git Workflow Analysis
+            
+            ${workflowReport}
+            
+            💡 **Remember**: Good Git practices help you track your progress and collaborate effectively!
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not post workflow feedback:', error);
+          }
+          
+    - name: Set workflow status
+      if: always()
+      run: |
+        # Calculate overall workflow score
+        score=0
+        max_score=5
+        
+        # Good commit messages (+1)
+        if [ "${MESSAGE_QUALITY}" = "good" ]; then
+          score=$((score + 1))
+        fi
+        
+        # Sufficient commits (+1)
+        if [ "${COMMIT_WARNING}" != "true" ]; then
+          score=$((score + 1))
+        fi
+        
+        # Valid branch structure (+1)
+        if [ "${BRANCH_STRUCTURE}" = "valid" ]; then
+          score=$((score + 1))
+        fi
+        
+        # Good timing pattern (+1)
+        if [ "${TIMING_PATTERN}" = "good" ]; then
+          score=$((score + 1))
+        fi
+        
+        # No excessive merge commits (+1)
+        if [ "${MERGE_COMMITS:-0}" -lt 5 ]; then
+          score=$((score + 1))
+        fi
+        
+        percentage=$((score * 100 / max_score))
+        
+        echo "Git workflow score: $score/$max_score ($percentage%)"
+        
+        if [ $percentage -ge 80 ]; then
+          echo "✅ Excellent Git workflow practices!"
+        elif [ $percentage -ge 60 ]; then
+          echo "👍 Good Git workflow with room for improvement"
+        else
+          echo "⚠️  Git workflow needs improvement"
+        fi

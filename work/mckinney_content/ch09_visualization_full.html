@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Python for Data Analysis, 3E - 9&nbsp; Plotting and Visualization</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./data-aggregation.html" rel="next">
+<link href="./data-wrangling.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Python for Data Analysis, 3E - 9&nbsp; Plotting and Visualization">
+<meta property="og:description" content="">
+<meta property="og:image" content="images/cover.png">
+<meta property="og:site-name" content="Python for Data Analysis, 3E">
+<meta name="twitter:title" content="Python for Data Analysis, 3E - 9&nbsp; Plotting and Visualization">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="images/cover.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class='navbar-brand' href='/book/'>
+    <span class="navbar-title">Python for Data Analysis, 3E</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class='nav-link' href='https://wesmckinney.com/archives' rel target>
+ <span class="menu-text">Wes’s Blog</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/wesmckinn" rel="" target=""><i class="bi bi-twitter" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-bi-github" role="button" data-bs-toggle="dropdown" aria-expanded="false" rel="" target="">
+      <i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-bi-github">    
+        <li>
+    <a class="dropdown-item" href="https://github.com/wesm/pydata-book" rel="" target="">
+ <span class="dropdown-text">Data and Notebooks (GitHub)</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://gitee.com/wesmckinn/pydata-book" rel="" target="">
+ <span class="dropdown-text">Data and Notebooks (Gitee)</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href='/book/preface'>Chapters</a></li><li class="breadcrumb-item"><a href='/book/plotting-and-visualization'><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Plotting and Visualization</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/'>
+ <span class="menu-text">About the Open Edition</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Chapters</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/preface'>
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/preliminaries'>
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preliminaries</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/python-basics'>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Python Language Basics, IPython, and Jupyter Notebooks</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/python-builtin'>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Built-In Data Structures, Functions, and Files</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/numpy-basics'>
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NumPy Basics: Arrays and Vectorized Computation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/pandas-basics'>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Getting Started with pandas</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/accessing-data'>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Data Loading, Storage, and File Formats</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-cleaning'>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Data Cleaning and Preparation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-wrangling'>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Wrangling: Join, Combine, and Reshape</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link active' href='/book/plotting-and-visualization'>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Plotting and Visualization</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-aggregation'>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Data Aggregation and Group Operations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/time-series'>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/modeling'>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Introduction to Modeling Libraries in Python</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-analysis-examples'>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Data Analysis Examples</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/advanced-numpy'>
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Advanced NumPy</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/ipython'>
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">More on the IPython System</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar"><div class="quarto-margin-header"><div class="margin-header-item">
+<a href="https://amzn.to/3DyLaJc"><img src="images/cover.png" class="img-fluid"></a>
+<div data-ea-publisher="wesmckinneycom" data-ea-type="image">
+
+</div>
+</div></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#vis_matplotlib_primer" id="toc-vis_matplotlib_primer" class="nav-link active" data-scroll-target="#vis_matplotlib_primer"><span class="header-section-number">9.1</span> A Brief matplotlib API Primer</a>
+  <ul class="collapse">
+  <li><a href="#vis_matplotlib_figs_axes" id="toc-vis_matplotlib_figs_axes" class="nav-link" data-scroll-target="#vis_matplotlib_figs_axes">Figures and Subplots</a></li>
+  <li><a href="#vis_matplotlib_styles" id="toc-vis_matplotlib_styles" class="nav-link" data-scroll-target="#vis_matplotlib_styles">Colors, Markers, and Line Styles</a></li>
+  <li><a href="#vis_matplotlib_annotation" id="toc-vis_matplotlib_annotation" class="nav-link" data-scroll-target="#vis_matplotlib_annotation">Ticks, Labels, and Legends</a></li>
+  <li><a href="#vis_mpl_drawing" id="toc-vis_mpl_drawing" class="nav-link" data-scroll-target="#vis_mpl_drawing">Annotations and Drawing on a Subplot</a></li>
+  <li><a href="#vis_matplotlib_saving" id="toc-vis_matplotlib_saving" class="nav-link" data-scroll-target="#vis_matplotlib_saving">Saving Plots to File</a></li>
+  <li><a href="#vis_mpl_configuration" id="toc-vis_mpl_configuration" class="nav-link" data-scroll-target="#vis_mpl_configuration">matplotlib Configuration</a></li>
+  </ul></li>
+  <li><a href="#vis_pandas" id="toc-vis_pandas" class="nav-link" data-scroll-target="#vis_pandas"><span class="header-section-number">9.2</span> Plotting with pandas and seaborn</a>
+  <ul class="collapse">
+  <li><a href="#vis_pandas_line" id="toc-vis_pandas_line" class="nav-link" data-scroll-target="#vis_pandas_line">Line Plots</a></li>
+  <li><a href="#vis_pandas_barcharts" id="toc-vis_pandas_barcharts" class="nav-link" data-scroll-target="#vis_pandas_barcharts">Bar Plots</a></li>
+  <li><a href="#vis_pandas_histogram" id="toc-vis_pandas_histogram" class="nav-link" data-scroll-target="#vis_pandas_histogram">Histograms and Density Plots</a></li>
+  <li><a href="#vis_pandas_splom" id="toc-vis_pandas_splom" class="nav-link" data-scroll-target="#vis_pandas_splom">Scatter or Point Plots</a></li>
+  <li><a href="#vis_facet_grid" id="toc-vis_facet_grid" class="nav-link" data-scroll-target="#vis_facet_grid">Facet Grids and Categorical Data</a></li>
+  </ul></li>
+  <li><a href="#vis_tool_options" id="toc-vis_tool_options" class="nav-link" data-scroll-target="#vis_tool_options"><span class="header-section-number">9.3</span> Other Python Visualization Tools</a></li>
+  <li><a href="#data-visualization-summary" id="toc-data-visualization-summary" class="nav-link" data-scroll-target="#data-visualization-summary"><span class="header-section-number">9.4</span> Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="vis" class="quarto-section-identifier"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Plotting and Visualization</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>This Open Access web version of <em>Python for Data Analysis 3rd Edition</em> is now available as a companion to the <a href="https://amzn.to/3DyLaJc">print and digital editions</a>. If you encounter any errata, <a href="https://oreilly.com/catalog/0636920519829/errata">please report them here</a>. Please note that some aspects of this site as produced by Quarto will differ from the formatting of the print and eBook versions from O’Reilly.</p>
+<p>If you find the online edition of the book useful, please consider <a href="https://amzn.to/3DyLaJc">ordering a paper copy</a> or a <a href="https://www.ebooks.com/en-us/book/210644288/python-for-data-analysis/wes-mckinney/?affId=WES398681F">DRM-free eBook</a> to support the author. The content from this website may not be copied or reproduced. The code examples are MIT licensed and can be found on GitHub or Gitee.</p>
+</div>
+</div>
+</div>
+<p>Making informative visualizations (sometimes called <em>plots</em>) is one of the most important tasks in data analysis. It may be a part of the exploratory process—for example, to help identify outliers or needed data transformations, or as a way of generating ideas for models. For others, building an interactive visualization for the web may be the end goal. Python has many add-on libraries for making static or dynamic visualizations, but I’ll be mainly focused on <a href="https://matplotlib.org">matplotlib</a> and libraries that build on top of it.</p>
+<p>matplotlib is a desktop plotting package designed for creating plots and figures suitable for publication. The project was started by John Hunter in 2002 to enable a MATLAB-like plotting interface in Python. The matplotlib and IPython communities have collaborated to simplify interactive plotting from the IPython shell (and now, Jupyter notebook). matplotlib supports various GUI backends on all operating systems and can export visualizations to all of the common vector and raster graphics formats (PDF, SVG, JPG, PNG, BMP, GIF, etc.). With the exception of a few diagrams, nearly all of the graphics in this book were produced using matplotlib.</p>
+<p>Over time, matplotlib has spawned a number of add-on toolkits for data visualization that use matplotlib for their underlying plotting. One of these is <a href="http://seaborn.pydata.org">seaborn</a>, which we explore later in this chapter.</p>
+<p>The simplest way to follow the code examples in the chapter is to output plots in the Jupyter notebook. To set this up, execute the following statement in a Jupyter notebook:</p>
+<pre><code>%matplotlib inline</code></pre>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Since this book's first edition in 2012, many new data visualization libraries have been created, some of which (like Bokeh and Altair) take advantage of modern web technology to create interactive visualizations that integrate well with the Jupyter notebook. Rather than use multiple visualization tools in this book, I decided to stick with matplotlib for teaching the fundamentals, in particular since pandas has good integration with matplotlib. You can adapt the principles from this chapter to learn how to use other visualization libraries as well.</p>
+</div>
+</div>
+<section id="vis_matplotlib_primer" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="vis_matplotlib_primer"><span class="header-section-number">9.1</span> A Brief matplotlib API Primer</h2>
+<p>With matplotlib, we use the following import convention:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">13</span>]: <span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After running <code>%matplotlib notebook</code> in Jupyter (or simply <code>%matplotlib</code> in IPython), we can try creating a simple plot. If everything is set up right, a line plot like <a href="#mpl_first_plot">Simple line plot</a> should appear:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">14</span>]: data <span class="op">=</span> np.arange(<span class="dv">10</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">15</span>]: data</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">15</span>]: array([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>])</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">16</span>]: plt.plot(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_first_plot" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_first_plot.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.1: Simple line plot</figcaption>
+</figure>
+</div>
+<p>While libraries like seaborn and pandas's built-in plotting functions will deal with many of the mundane details of making plots, should you wish to customize them beyond the function options provided, you will need to learn a bit about the matplotlib API.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>There is not enough room in the book to give comprehensive treatment of the breadth and depth of functionality in matplotlib. It should be enough to teach you the ropes to get up and running. The matplotlib gallery and documentation are the best resource for learning advanced features.</p>
+</div>
+</div>
+<section id="vis_matplotlib_figs_axes" class="level3">
+<h3 class="anchored" data-anchor-id="vis_matplotlib_figs_axes">Figures and Subplots</h3>
+<p>Plots in matplotlib reside within a <code>Figure</code> object. You can create a new figure with <code>plt.figure</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">17</span>]: fig <span class="op">=</span> plt.figure()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In IPython, if you first run <code>%matplotlib</code> to set up the matplotlib integration, an empty plot window will appear, but in Jupyter nothing will be shown until we use a few more commands.</p>
+<p><code>plt.figure</code> has a number of options; notably, <code>figsize</code> will guarantee the figure has a certain size and aspect ratio if saved to disk.</p>
+<p>You can’t make a plot with a blank figure. You have to create one or more <code>subplots</code> using <code>add_subplot</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">18</span>]: ax1 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This means that the figure should be 2 × 2 (so up to four plots in total), and we’re selecting the first of four subplots (numbered from 1). If you create the next two subplots, you’ll end up with a visualization that looks like <a href="#mpl_empty_subplots">An empty matplotlib figure with three subplots</a>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">19</span>]: ax2 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">20</span>]: ax3 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_empty_subplots" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_empty_subplots.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.2: An empty matplotlib figure with three subplots</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>One nuance of using Jupyter notebooks is that plots are reset after each cell is evaluated, so you must put all of the plotting commands in a single notebook cell.</p>
+</div>
+</div>
+<p>Here we run all of these commands in the same cell:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> plt.figure()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>ax1 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>ax2 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ax3 <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>These plot axis objects have various methods that create different types of plots, and it is preferred to use the axis methods over the top-level plotting functions like <code>plt.plot</code>. For example, we could make a line plot with the <code>plot</code> method (see <a href="#mpl_subplots_one">Data visualization after a single plot</a>):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">21</span>]: ax3.plot(np.random.standard_normal(<span class="dv">50</span>).cumsum(), color<span class="op">=</span><span class="st">"black"</span>,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>   ....:          linestyle<span class="op">=</span><span class="st">"dashed"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_subplots_one" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_subplots_one.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.3: Data visualization after a single plot</figcaption>
+</figure>
+</div>
+<p>You may notice output like <code>&lt;matplotlib.lines.Line2D at ...&gt;</code> when you run this. matplotlib returns objects that reference the plot subcomponent that was just added. A lot of the time you can safely ignore this output, or you can put a semicolon at the end of the line to suppress the output.</p>
+<p>The additional options instruct matplotlib to plot a black dashed line. The objects returned by <code>fig.add_subplot</code> here are <code>AxesSubplot</code> objects, on which you can directly plot on the other empty subplots by calling each one’s instance method (see <a href="#mpl_subplots_two">Data visualization after additional plots</a>):</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">22</span>]: ax1.hist(np.random.standard_normal(<span class="dv">100</span>), bins<span class="op">=</span><span class="dv">20</span>, color<span class="op">=</span><span class="st">"black"</span>, alpha<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fl">.3</span>)<span class="op">;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">23</span>]: ax2.scatter(np.arange(<span class="dv">30</span>), np.arange(<span class="dv">30</span>) <span class="op">+</span> <span class="dv">3</span> <span class="op">*</span> np.random.standard_normal</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>(<span class="dv">30</span>))<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_subplots_two" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_subplots_two.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.4: Data visualization after additional plots</figcaption>
+</figure>
+</div>
+<p>The style option <code>alpha=0.3</code> sets the transparency of the overlaid plot.</p>
+<p>You can find a comprehensive catalog of plot types in the <a href="https://matplotlib.org">matplotlib documentation</a>.</p>
+<p>To make creating a grid of subplots more convenient, matplotlib includes a <code>plt.subplots</code> method that creates a new figure and returns a NumPy array containing the created subplot objects:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">25</span>]: fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">3</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">26</span>]: axes</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">26</span>]: </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>array([[<span class="op">&lt;</span>Axes: <span class="op">&gt;</span>, <span class="op">&lt;</span>Axes: <span class="op">&gt;</span>, <span class="op">&lt;</span>Axes: <span class="op">&gt;</span>],</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>       [<span class="op">&lt;</span>Axes: <span class="op">&gt;</span>, <span class="op">&lt;</span>Axes: <span class="op">&gt;</span>, <span class="op">&lt;</span>Axes: <span class="op">&gt;</span>]], dtype<span class="op">=</span><span class="bu">object</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>axes</code> array can then be indexed like a two-dimensional array; for example, <code>axes[0, 1]</code> refers to the subplot in the top row at the center. You can also indicate that subplots should have the same x- or y-axis using <code>sharex</code> and <code>sharey</code>, respectively. This can be useful when you're comparing data on the same scale; otherwise, matplotlib autoscales plot limits independently. See <a href="#tbl-table_plt_subplots">Table&nbsp;<span>9.1</span></a> for more on this method.</p>
+<div id="tbl-table_plt_subplots" class="anchored">
+<table class="table">
+<caption>Table&nbsp;9.1: <code>matplotlib.pyplot.subplots</code> options</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Argument</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>nrows</code></td>
+<td style="text-align: left;">Number of rows of subplots</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>ncols</code></td>
+<td style="text-align: left;">Number of columns of subplots</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>sharex</code></td>
+<td style="text-align: left;">All subplots should use the same x-axis ticks (adjusting the <code>xlim</code> will affect all subplots)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>sharey</code></td>
+<td style="text-align: left;">All subplots should use the same y-axis ticks (adjusting the <code>ylim</code> will affect all subplots)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>subplot_kw</code></td>
+<td style="text-align: left;">Dictionary of keywords passed to <code>add_subplot</code> call used to create each subplot</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>**fig_kw</code></td>
+<td style="text-align: left;">Additional keywords to <code>subplots</code> are used when creating the figure, such as <code>plt.subplots(2, 2, figsize=(8, 6))</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="vis_matplotlib_adjust_subplots" class="level4">
+<h4 class="anchored" data-anchor-id="vis_matplotlib_adjust_subplots">Adjusting the spacing around subplots</h4>
+<p>By default, matplotlib leaves a certain amount of padding around the outside of the subplots and in spacing between subplots. This spacing is all specified relative to the height and width of the plot, so that if you resize the plot either programmatically or manually using the GUI window, the plot will dynamically adjust itself. You can change the spacing using the <code>subplots_adjust</code> method on <code>Figure</code> objects:</p>
+<pre><code>subplots_adjust(left=None, bottom=None, right=None, top=None,
+                wspace=None, hspace=None)</code></pre>
+<p><code>wspace</code> and <code>hspace</code> control the percent of the figure width and figure height, respectively, to use as spacing between subplots. Here is a small example you can execute in Jupyter where I shrink the spacing all the way to zero (see <a href="#mpl_subplots_adjust">Data visualization with no inter-subplot spacing</a>):</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, sharex<span class="op">=</span><span class="va">True</span>, sharey<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>):</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>):</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        axes[i, j].hist(np.random.standard_normal(<span class="dv">500</span>), bins<span class="op">=</span><span class="dv">50</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                        color<span class="op">=</span><span class="st">"black"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>fig.subplots_adjust(wspace<span class="op">=</span><span class="dv">0</span>, hspace<span class="op">=</span><span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_subplots_adjust" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_subplots_adjust.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.5: Data visualization with no inter-subplot spacing</figcaption>
+</figure>
+</div>
+<p>You may notice that the axis labels overlap. matplotlib doesn’t check whether the labels overlap, so in a case like this you would need to fix the labels yourself by specifying explicit tick locations and tick labels (we'll look at how to do this in the later section <a href="#vis_matplotlib_annotation">Ticks, Labels, and Legends</a>).</p>
+</section>
+</section>
+<section id="vis_matplotlib_styles" class="level3">
+<h3 class="anchored" data-anchor-id="vis_matplotlib_styles">Colors, Markers, and Line Styles</h3>
+<p>matplotlib’s line <code>plot</code> function accepts arrays of x and y coordinates and optional color styling options. For example, to plot <code>x</code> versus <code>y</code> with green dashes, you would execute:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>ax.plot(x, y, linestyle<span class="op">=</span><span class="st">"--"</span>, color<span class="op">=</span><span class="st">"green"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A number of color names are provided for commonly used colors, but you can use any color on the spectrum by specifying its hex code (e.g., <code>"#CECECE"</code>). You can see some of the supported line styles by looking at the docstring for <code>plt.plot</code> (use <code>plt.plot?</code> in IPython or Jupyter). A more comprehensive reference is available in the online documentation.</p>
+<p>Line plots can additionally have <em>markers</em> to highlight the actual data points. Since matplotlib's <code>plot</code> function creates a continuous line plot, interpolating between points, it can occasionally be unclear where the points lie. The marker can be supplied as an additional styling option (see <a href="#mpl_marker_ex">Line plot with markers</a>):</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">31</span>]: ax <span class="op">=</span> fig.add_subplot()</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">32</span>]: ax.plot(np.random.standard_normal(<span class="dv">30</span>).cumsum(), color<span class="op">=</span><span class="st">"black"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>   ....:         linestyle<span class="op">=</span><span class="st">"dashed"</span>, marker<span class="op">=</span><span class="st">"o"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_marker_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_marker_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.6: Line plot with markers</figcaption>
+</figure>
+</div>
+<p>For line plots, you will notice that subsequent points are linearly interpolated by default. This can be altered with the <code>drawstyle</code> option (see <a href="#mpl_drawstyle_ex">Line plot with different drawstyle options</a>):</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">34</span>]: fig <span class="op">=</span> plt.figure()</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">35</span>]: ax <span class="op">=</span> fig.add_subplot()</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">36</span>]: data <span class="op">=</span> np.random.standard_normal(<span class="dv">30</span>).cumsum()</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">37</span>]: ax.plot(data, color<span class="op">=</span><span class="st">"black"</span>, linestyle<span class="op">=</span><span class="st">"dashed"</span>, label<span class="op">=</span><span class="st">"Default"</span>)<span class="op">;</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">38</span>]: ax.plot(data, color<span class="op">=</span><span class="st">"black"</span>, linestyle<span class="op">=</span><span class="st">"dashed"</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>   ....:         drawstyle<span class="op">=</span><span class="st">"steps-post"</span>, label<span class="op">=</span><span class="st">"steps-post"</span>)<span class="op">;</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">39</span>]: ax.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-mpl_drawstyle_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/mpl_drawstyle_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.7: Line plot with different drawstyle options</figcaption>
+</figure>
+</div>
+<p>Here, since we passed the <code>label</code> arguments to <code>plot</code>, we are able to create a plot legend to identify each line using <code>ax.legend</code>. I discuss legends more in <a href="#vis_matplotlib_annotation">Ticks, Labels, and Legends</a>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You must call <code>ax.legend</code> to create the legend, whether or not you passed the <code>label</code> options when plotting the data.</p>
+</div>
+</div>
+</section>
+<section id="vis_matplotlib_annotation" class="level3">
+<h3 class="anchored" data-anchor-id="vis_matplotlib_annotation">Ticks, Labels, and Legends</h3>
+<p>Most kinds of plot decorations can be accessed through methods on matplotlib axes objects. This includes methods like <code>xlim</code>, <code>xticks</code>, and <code>xticklabels</code>. These control the plot range, tick locations, and tick labels, respectively. They can be used in two ways:</p>
+<ul>
+<li><p>Called with no arguments returns the current parameter value (e.g., <code>ax.xlim()</code> returns the current x-axis plotting range)</p></li>
+<li><p>Called with parameters sets the parameter value (e.g., <code>ax.xlim([0, 10])</code> sets the x-axis range to 0 to 10)</p></li>
+</ul>
+<p>All such methods act on the active or most recently created <code>AxesSubplot</code>. Each corresponds to two methods on the subplot object itself; in the case of <code>xlim</code>, these are <code>ax.get_xlim</code> and <code>ax.set_xlim</code>.</p>
+<section id="vis_mpl_ticks" class="level4">
+<h4 class="anchored" data-anchor-id="vis_mpl_ticks">Setting the title, axis labels, ticks, and tick labels</h4>
+<p>To illustrate customizing the axes, I’ll create a simple figure and plot of a random walk (see <a href="#vis_ticks_one">Simple plot for illustrating xticks (with default labels)</a>):</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">40</span>]: fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">41</span>]: ax.plot(np.random.standard_normal(<span class="dv">1000</span>).cumsum())<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_ticks_one" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_ticks_one.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.8: Simple plot for illustrating xticks (with default labels)</figcaption>
+</figure>
+</div>
+<p>To change the x-axis ticks, it’s easiest to use <code>set_xticks</code> and <code>set_xticklabels</code>. The former instructs matplotlib where to place the ticks along the data range; by default these locations will also be the labels. But we can set any other values as the labels using <code>set_xticklabels</code>:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">42</span>]: ticks <span class="op">=</span> ax.set_xticks([<span class="dv">0</span>, <span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">1000</span>])</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">43</span>]: labels <span class="op">=</span> ax.set_xticklabels([<span class="st">"one"</span>, <span class="st">"two"</span>, <span class="st">"three"</span>, <span class="st">"four"</span>, <span class="st">"five"</span>],</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>   ....:                             rotation<span class="op">=</span><span class="dv">30</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>rotation</code> option sets the x tick labels at a 30-degree rotation. Lastly, <code>set_xlabel</code> gives a name to the x-axis, and <code>set_title</code> is the subplot title (see <a href="#vis_ticks_two">Simple plot for illustrating custom xticks</a> for the resulting figure):</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">44</span>]: ax.set_xlabel(<span class="st">"Stages"</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">44</span>]: Text(<span class="fl">0.5</span>, <span class="fl">6.666666666666652</span>, <span class="st">'Stages'</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">45</span>]: ax.set_title(<span class="st">"My first matplotlib plot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_ticks_two" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_ticks_two.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.9: Simple plot for illustrating custom xticks</figcaption>
+</figure>
+</div>
+<p>Modifying the y-axis consists of the same process, substituting <code>y</code> for <code>x</code> in this example. The axes class has a <code>set</code> method that allows batch setting of plot properties. From the prior example, we could also have written:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(title<span class="op">=</span><span class="st">"My first matplotlib plot"</span>, xlabel<span class="op">=</span><span class="st">"Stages"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="vis_mpl_legends" class="level4">
+<h4 class="anchored" data-anchor-id="vis_mpl_legends">Adding legends</h4>
+<p>Legends are another critical element for identifying plot elements. There are a couple of ways to add one. The easiest is to pass the <code>label</code> argument when adding each piece of the plot:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">46</span>]: fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">47</span>]: ax.plot(np.random.randn(<span class="dv">1000</span>).cumsum(), color<span class="op">=</span><span class="st">"black"</span>, label<span class="op">=</span><span class="st">"one"</span>)<span class="op">;</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">48</span>]: ax.plot(np.random.randn(<span class="dv">1000</span>).cumsum(), color<span class="op">=</span><span class="st">"black"</span>, linestyle<span class="op">=</span><span class="st">"dashed</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="er">",</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="er">   ....:         label="two");</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">49</span>]: ax.plot(np.random.randn(<span class="dv">1000</span>).cumsum(), color<span class="op">=</span><span class="st">"black"</span>, linestyle<span class="op">=</span><span class="st">"dotted</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="er">",</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="er">   ....:         label="three");</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Once you’ve done this, you can call <code>ax.legend()</code> to automatically create a legend. The resulting plot is in <a href="#vis_legend_ex">Simple plot with three lines and legend</a>:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">50</span>]: ax.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_legend_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_legend_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.10: Simple plot with three lines and legend</figcaption>
+</figure>
+</div>
+<p>The <code>legend</code> method has several other choices for the location <code>loc</code> argument. See the docstring (with <code>ax.legend?</code>) for more information.</p>
+<p>The <code>loc</code> legend option tells matplotlib where to place the plot. The default is <code>"best"</code>, which tries to choose a location that is most out of the way. To exclude one or more elements from the legend, pass no label or <code>label="_nolegend_"</code>.</p>
+</section>
+</section>
+<section id="vis_mpl_drawing" class="level3">
+<h3 class="anchored" data-anchor-id="vis_mpl_drawing">Annotations and Drawing on a Subplot</h3>
+<p>In addition to the standard plot types, you may wish to draw your own plot annotations, which could consist of text, arrows, or other shapes. You can add annotations and text using the <code>text</code>, <code>arrow</code>, and <code>annotate</code> functions. <code>text</code> draws text at given coordinates <code>(x, y)</code> on the plot with optional custom styling:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>ax.text(x, y, <span class="st">"Hello world!"</span>,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>        family<span class="op">=</span><span class="st">"monospace"</span>, fontsize<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Annotations can draw both text and arrows arranged appropriately. As an example, let’s plot the closing S&amp;P 500 index price since 2007 (obtained from Yahoo! Finance) and annotate it with some of the important dates from the 2008–2009 financial crisis. You can run this code example in a single cell in a Jupyter notebook. See <a href="#vis_crisis_dates">Important dates in the 2008–2009 financial crisis</a> for the result:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> pd.read_csv(<span class="st">"examples/spx.csv"</span>, index_col<span class="op">=</span><span class="dv">0</span>, parse_dates<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>spx <span class="op">=</span> data[<span class="st">"SPX"</span>]</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>spx.plot(ax<span class="op">=</span>ax, color<span class="op">=</span><span class="st">"black"</span>)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>crisis_data <span class="op">=</span> [</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    (datetime(<span class="dv">2007</span>, <span class="dv">10</span>, <span class="dv">11</span>), <span class="st">"Peak of bull market"</span>),</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    (datetime(<span class="dv">2008</span>, <span class="dv">3</span>, <span class="dv">12</span>), <span class="st">"Bear Stearns Fails"</span>),</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    (datetime(<span class="dv">2008</span>, <span class="dv">9</span>, <span class="dv">15</span>), <span class="st">"Lehman Bankruptcy"</span>)</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> date, label <span class="kw">in</span> crisis_data:</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>    ax.annotate(label, xy<span class="op">=</span>(date, spx.asof(date) <span class="op">+</span> <span class="dv">75</span>),</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>                xytext<span class="op">=</span>(date, spx.asof(date) <span class="op">+</span> <span class="dv">225</span>),</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>                arrowprops<span class="op">=</span><span class="bu">dict</span>(facecolor<span class="op">=</span><span class="st">"black"</span>, headwidth<span class="op">=</span><span class="dv">4</span>, width<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>                                headlength<span class="op">=</span><span class="dv">4</span>),</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>                horizontalalignment<span class="op">=</span><span class="st">"left"</span>, verticalalignment<span class="op">=</span><span class="st">"top"</span>)</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Zoom in on 2007-2010</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>ax.set_xlim([<span class="st">"1/1/2007"</span>, <span class="st">"1/1/2011"</span>])</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">600</span>, <span class="dv">1800</span>])</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Important dates in the 2008–2009 financial crisis"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_crisis_dates" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_crisis_dates.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.11: Important dates in the 2008–2009 financial crisis</figcaption>
+</figure>
+</div>
+<p>There are a couple of important points to highlight in this plot. The <code>ax.annotate</code> method can draw labels at the indicated x and y coordinates. We use the <code>set_xlim</code> and <code>set_ylim</code> methods to manually set the start and end boundaries for the plot rather than using matplotlib's default. Lastly, <code>ax.set_title</code> adds a main title to the plot.</p>
+<p>See the online matplotlib gallery for many more annotation examples to learn from.</p>
+<p>Drawing shapes requires some more care. matplotlib has objects that represent many common shapes, referred to as <em>patches</em>. Some of these, like <code>Rectangle</code> and <code>Circle</code>, are found in <code>matplotlib.pyplot</code>, but the full set is located in <code>matplotlib.patches</code>.</p>
+<p>To add a shape to a plot, you create the patch object and add it to a subplot <code>ax</code> by passing the patch to <code>ax.add_patch</code> (see <a href="#vis_patch_ex">Data visualization composed from three different patches</a>):</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>rect <span class="op">=</span> plt.Rectangle((<span class="fl">0.2</span>, <span class="fl">0.75</span>), <span class="fl">0.4</span>, <span class="fl">0.15</span>, color<span class="op">=</span><span class="st">"black"</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>circ <span class="op">=</span> plt.Circle((<span class="fl">0.7</span>, <span class="fl">0.2</span>), <span class="fl">0.15</span>, color<span class="op">=</span><span class="st">"blue"</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>pgon <span class="op">=</span> plt.Polygon([[<span class="fl">0.15</span>, <span class="fl">0.15</span>], [<span class="fl">0.35</span>, <span class="fl">0.4</span>], [<span class="fl">0.2</span>, <span class="fl">0.6</span>]],</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                   color<span class="op">=</span><span class="st">"green"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>ax.add_patch(rect)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>ax.add_patch(circ)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>ax.add_patch(pgon)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_patch_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_patch_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.12: Data visualization composed from three different patches</figcaption>
+</figure>
+</div>
+<p>If you look at the implementation of many familiar plot types, you will see that they are assembled from patches.</p>
+</section>
+<section id="vis_matplotlib_saving" class="level3">
+<h3 class="anchored" data-anchor-id="vis_matplotlib_saving">Saving Plots to File</h3>
+<p>You can save the active figure to file using the figure object’s <code>savefig</code> instance method. For example, to save an SVG version of a figure, you need only type:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>fig.savefig(<span class="st">"figpath.svg"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The file type is inferred from the file extension. So if you used <code>.pdf</code> instead, you would get a PDF. One important option that I use frequently for publishing graphics is <code>dpi</code>, which controls the dots-per-inch resolution. To get the same plot as a PNG at 400 DPI, you would do:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>fig.savefig(<span class="st">"figpath.png"</span>, dpi<span class="op">=</span><span class="dv">400</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>See <a href="#tbl-table_mpl_savefig">Table&nbsp;<span>9.2</span></a> for a list of some other options for <code>savefig</code>. For a comprehensive listing, refer to the docstring in IPython or Jupyter.</p>
+<div id="tbl-table_mpl_savefig" class="anchored">
+<table class="table">
+<caption>Table&nbsp;9.2: Some <code>fig.savefig</code> options</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Argument</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>fname</code></td>
+<td style="text-align: left;">String containing a filepath or a Python file-like object. The figure format is inferred from the file extension (e.g., <code>.pdf</code> for PDF or <code>.png</code> for PNG).</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>dpi</code></td>
+<td style="text-align: left;">The figure resolution in dots per inch; defaults to 100 in IPython or 72 in Jupyter out of the box but can be configured.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>facecolor, edgecolor</code></td>
+<td style="text-align: left;">The color of the figure background outside of the subplots; <code>"w"</code> (white), by default.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>format</code></td>
+<td style="text-align: left;">The explicit file format to use (<code>"png"</code>, <code>"pdf"</code>, <code>"svg"</code>, <code>"ps"</code>, <code>"eps"</code>, ...).</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="vis_mpl_configuration" class="level3">
+<h3 class="anchored" data-anchor-id="vis_mpl_configuration">matplotlib Configuration</h3>
+<p>matplotlib comes configured with color schemes and defaults that are geared primarily toward preparing figures for publication. Fortunately, nearly all of the default behavior can be customized via global parameters governing figure size, subplot spacing, colors, font sizes, grid styles, and so on. One way to modify the configuration programmatically from Python is to use the <code>rc</code> method; for example, to set the global default figure size to be 10 × 10, you could enter:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>plt.rc(<span class="st">"figure"</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">10</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>All of the current configuration settings are found in the <code>plt.rcParams</code> dictionary, and they can be restored to their default values by calling the <code>plt.rcdefaults()</code> function.</p>
+<p>The first argument to <code>rc</code> is the component you wish to customize, such as <code>"figure"</code>, <code>"axes"</code>, <code>"xtick"</code>, <code>"ytick"</code>, <code>"grid"</code>, <code>"legend"</code>, or many others. After that can follow a sequence of keyword arguments indicating the new parameters. A convenient way to write down the options in your program is as a dictionary:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>plt.rc(<span class="st">"font"</span>, family<span class="op">=</span><span class="st">"monospace"</span>, weight<span class="op">=</span><span class="st">"bold"</span>, size<span class="op">=</span><span class="dv">8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>For more extensive customization and to see a list of all the options, matplotlib comes with a configuration file <em>matplotlibrc</em> in the <em>matplotlib/mpl-data</em> directory. If you customize this file and place it in your home directory titled <em>.matplotlibrc</em>, it will be loaded each time you use matplotlib.</p>
+<p>As we'll see in the next section, the seaborn package has several built-in plot themes or <em>styles</em> that use matplotlib's configuration system internally.</p>
+</section>
+</section>
+<section id="vis_pandas" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="vis_pandas"><span class="header-section-number">9.2</span> Plotting with pandas and seaborn</h2>
+<p>matplotlib can be a fairly low-level tool. You assemble a plot from its base components: the data display (i.e., the type of plot: line, bar, box, scatter, contour, etc.), legend, title, tick labels, and other annotations.</p>
+<p>In pandas, we may have multiple columns of data, along with row and column labels. pandas itself has built-in methods that simplify creating visualizations from DataFrame and Series objects. Another library is <a href="https://seaborn.pydata.org"><code>seaborn</code></a>, a high-level statistical graphics library built on matplotlib. seaborn simplifies creating many common visualization types.</p>
+<section id="vis_pandas_line" class="level3">
+<h3 class="anchored" data-anchor-id="vis_pandas_line">Line Plots</h3>
+<p>Series and DataFrame have a <code>plot</code> attribute for making some basic plot types. By default, <code>plot()</code> makes line plots (see <a href="#vis_series_plot_1">Simple Series plot</a>):</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">61</span>]: s <span class="op">=</span> pd.Series(np.random.standard_normal(<span class="dv">10</span>).cumsum(), index<span class="op">=</span>np.arange(<span class="dv">0</span>,</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a> <span class="dv">100</span>, <span class="dv">10</span>))</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">62</span>]: s.plot()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_series_plot_1" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_series_plot_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.13: Simple Series plot</figcaption>
+</figure>
+</div>
+<p>The Series object’s index is passed to matplotlib for plotting on the x-axis, though you can disable this by passing <code>use_index=False</code>. The x-axis ticks and limits can be adjusted with the <code>xticks</code> and <code>xlim</code> options, and the y-axis respectively with <code>yticks</code> and <code>ylim</code>. See <a href="#tbl-table_plot_method">Table&nbsp;<span>9.3</span></a> for a partial listing of <code>plot</code> options. I’ll comment on a few more of them throughout this section and leave the rest for you to explore.</p>
+<div id="tbl-table_plot_method" class="anchored">
+<table class="table">
+<caption>Table&nbsp;9.3: <code>Series.plot</code> method arguments</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Argument</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>label</code></td>
+<td style="text-align: left;">Label for plot legend</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>ax</code></td>
+<td style="text-align: left;">matplotlib subplot object to plot on; if nothing passed, uses active matplotlib subplot</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>style</code></td>
+<td style="text-align: left;">Style string, like <code>"ko--"</code>, to be passed to matplotlib</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>alpha</code></td>
+<td style="text-align: left;">The plot fill opacity (from 0 to 1)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>kind</code></td>
+<td style="text-align: left;">Can be <code>"area"</code>, <code>"bar"</code>, <code>"barh"</code>, <code>"density"</code>, <code>"hist"</code>, <code>"kde"</code>, <code>"line"</code>, or <code>"pie"</code>; defaults to <code>"line"</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>figsize</code></td>
+<td style="text-align: left;">Size of the figure object to create</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>logx</code></td>
+<td style="text-align: left;">Pass <code>True</code> for logarithmic scaling on the x axis; pass <code>"sym"</code> for symmetric logarithm that permits negative values</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>logy</code></td>
+<td style="text-align: left;">Pass <code>True</code> for logarithmic scaling on the y axis; pass <code>"sym"</code> for symmetric logarithm that permits negative values</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>title</code></td>
+<td style="text-align: left;">Title to use for the plot</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>use_index</code></td>
+<td style="text-align: left;">Use the object index for tick labels</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>rot</code></td>
+<td style="text-align: left;">Rotation of tick labels (0 through 360)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>xticks</code></td>
+<td style="text-align: left;">Values to use for x-axis ticks</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>yticks</code></td>
+<td style="text-align: left;">Values to use for y-axis ticks</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>xlim</code></td>
+<td style="text-align: left;">x-axis limits (e.g., <code>[0, 10]</code>)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>ylim</code></td>
+<td style="text-align: left;">y-axis limits</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>grid</code></td>
+<td style="text-align: left;">Display axis grid (off by default)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Most of pandas’s plotting methods accept an optional <code>ax</code> parameter, which can be a matplotlib subplot object. This gives you more flexible placement of subplots in a grid layout.</p>
+<p>DataFrame’s <code>plot</code> method plots each of its columns as a different line on the same subplot, creating a legend automatically (see <a href="#vis_frame_plot_1">Simple DataFrame plot</a>):</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">63</span>]: df <span class="op">=</span> pd.DataFrame(np.random.standard_normal((<span class="dv">10</span>, <span class="dv">4</span>)).cumsum(<span class="dv">0</span>),</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>   ....:                   columns<span class="op">=</span>[<span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"D"</span>],</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>   ....:                   index<span class="op">=</span>np.arange(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">10</span>))</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">64</span>]: plt.style.use(<span class="st">'grayscale'</span>)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">65</span>]: df.plot()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_frame_plot_1" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_frame_plot_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.14: Simple DataFrame plot</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Here I used <code>plt.style.use('grayscale')</code> to switch to a color scheme more suitable for black and white publication, since some readers will not be able to see the full color plots.</p>
+</div>
+</div>
+<p>The <code>plot</code> attribute contains a "family" of methods for different plot types. For example, <code>df.plot()</code> is equivalent to <code>df.plot.line()</code>. We'll explore some of these methods next.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Additional keyword arguments to <code>plot</code> are passed through to the respective matplotlib plotting function, so you can further customize these plots by learning more about the matplotlib API.</p>
+</div>
+</div>
+<p>DataFrame has a number of options allowing some flexibility for how the columns are handled, for example, whether to plot them all on the same subplot or to create separate subplots. See <a href="#tbl-table_frame_plot_method">Table&nbsp;<span>9.4</span></a> for more on these.</p>
+<div id="tbl-table_frame_plot_method" class="anchored">
+<table class="table">
+<caption>Table&nbsp;9.4: DataFrame-specific plot arguments</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Argument</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>subplots</code></td>
+<td style="text-align: left;">Plot each DataFrame column in a separate subplot</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>layouts</code></td>
+<td style="text-align: left;">2-tuple (rows, columns) providing layout of subplots</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>sharex</code></td>
+<td style="text-align: left;">If <code>subplots=True</code>, share the same x-axis, linking ticks and limits</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>sharey</code></td>
+<td style="text-align: left;">If <code>subplots=True</code>, share the same y-axis</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>legend</code></td>
+<td style="text-align: left;">Add a subplot legend (<code>True</code> by default)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>sort_columns</code></td>
+<td style="text-align: left;">Plot columns in alphabetical order; by default uses existing column order</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For time series plotting, see <a href='/book/time-series'>Ch 11: Time Series</a>.</p>
+</div>
+</div>
+</section>
+<section id="vis_pandas_barcharts" class="level3">
+<h3 class="anchored" data-anchor-id="vis_pandas_barcharts">Bar Plots</h3>
+<p>The <code>plot.bar()</code> and <code>plot.barh()</code> make vertical and horizontal bar plots, respectively. In this case, the Series or DataFrame index will be used as the x (<code>bar</code>) or y (<code>barh</code>) ticks (see <a href="#vis_bar_plot_ex">Horizonal and vertical bar plot</a>):</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">66</span>]: fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">67</span>]: data <span class="op">=</span> pd.Series(np.random.uniform(size<span class="op">=</span><span class="dv">16</span>), index<span class="op">=</span><span class="bu">list</span>(<span class="st">"abcdefghijklmno</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="er">p"))</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="er">In [68]: data.plot.bar(ax=axes[0], color="black", alpha=0.7)</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="er">Out[68]: &lt;Axes: &gt;</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="er">In [69]: data.plot.barh(ax=axes[1], color="black", alpha=0.7)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_bar_plot_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_bar_plot_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.15: Horizonal and vertical bar plot</figcaption>
+</figure>
+</div>
+<p>With a DataFrame, bar plots group the values in each row in bars, side by side, for each value. See <a href="#vis_frame_barplot">DataFrame bar plot</a>:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">71</span>]: df <span class="op">=</span> pd.DataFrame(np.random.uniform(size<span class="op">=</span>(<span class="dv">6</span>, <span class="dv">4</span>)),</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>   ....:                   index<span class="op">=</span>[<span class="st">"one"</span>, <span class="st">"two"</span>, <span class="st">"three"</span>, <span class="st">"four"</span>, <span class="st">"five"</span>, <span class="st">"six"</span>],</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>   ....:                   columns<span class="op">=</span>pd.Index([<span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"D"</span>], name<span class="op">=</span><span class="st">"Genus"</span>))</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">72</span>]: df</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">72</span>]: </span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>Genus         A         B         C         D</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>one    <span class="fl">0.370670</span>  <span class="fl">0.602792</span>  <span class="fl">0.229159</span>  <span class="fl">0.486744</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>two    <span class="fl">0.420082</span>  <span class="fl">0.571653</span>  <span class="fl">0.049024</span>  <span class="fl">0.880592</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>three  <span class="fl">0.814568</span>  <span class="fl">0.277160</span>  <span class="fl">0.880316</span>  <span class="fl">0.431326</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>four   <span class="fl">0.374020</span>  <span class="fl">0.899420</span>  <span class="fl">0.460304</span>  <span class="fl">0.100843</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>five   <span class="fl">0.433270</span>  <span class="fl">0.125107</span>  <span class="fl">0.494675</span>  <span class="fl">0.961825</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>six    <span class="fl">0.601648</span>  <span class="fl">0.478576</span>  <span class="fl">0.205690</span>  <span class="fl">0.560547</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">73</span>]: df.plot.bar()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_frame_barplot" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_frame_barplot.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.16: DataFrame bar plot</figcaption>
+</figure>
+</div>
+<p>Note that the name “Genus” on the DataFrame’s columns is used to title the legend.</p>
+<p>We create stacked bar plots from a DataFrame by passing <code>stacked=True</code>, resulting in the value in each row being stacked together horizontally (see <a href="#vis_frame_barplot_stacked">DataFrame stacked bar plot</a>):</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">75</span>]: df.plot.barh(stacked<span class="op">=</span><span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_frame_barplot_stacked" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_frame_barplot_stacked.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.17: DataFrame stacked bar plot</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A useful recipe for bar plots is to visualize a Series’s value frequency using <code>value_counts</code>: <code>s.value_counts().plot.bar()</code>.</p>
+</div>
+</div>
+<p>Let's have a look at an example dataset about restaurant tipping. Suppose we wanted to make a stacked bar plot showing the percentage of data points for each party size for each day. I load the data using <code>read_csv</code> and make a cross-tabulation by day and party size. The <code>pandas.crosstab</code> function is a convenient way to compute a simple frequency table from two DataFrame columns:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">77</span>]: tips <span class="op">=</span> pd.read_csv(<span class="st">"examples/tips.csv"</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">78</span>]: tips.head()</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">78</span>]: </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>   total_bill   tip smoker  day    time  size</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>       <span class="fl">16.99</span>  <span class="fl">1.01</span>     No  Sun  Dinner     <span class="dv">2</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>       <span class="fl">10.34</span>  <span class="fl">1.66</span>     No  Sun  Dinner     <span class="dv">3</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>       <span class="fl">21.01</span>  <span class="fl">3.50</span>     No  Sun  Dinner     <span class="dv">3</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>       <span class="fl">23.68</span>  <span class="fl">3.31</span>     No  Sun  Dinner     <span class="dv">2</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>       <span class="fl">24.59</span>  <span class="fl">3.61</span>     No  Sun  Dinner     <span class="dv">4</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">79</span>]: party_counts <span class="op">=</span> pd.crosstab(tips[<span class="st">"day"</span>], tips[<span class="st">"size"</span>])</span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">80</span>]: party_counts <span class="op">=</span> party_counts.reindex(index<span class="op">=</span>[<span class="st">"Thur"</span>, <span class="st">"Fri"</span>, <span class="st">"Sat"</span>, <span class="st">"Sun"</span>])</span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">81</span>]: party_counts</span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">81</span>]: </span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a>size  <span class="dv">1</span>   <span class="dv">2</span>   <span class="dv">3</span>   <span class="dv">4</span>  <span class="dv">5</span>  <span class="dv">6</span></span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a>day                      </span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a>Thur  <span class="dv">1</span>  <span class="dv">48</span>   <span class="dv">4</span>   <span class="dv">5</span>  <span class="dv">1</span>  <span class="dv">3</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a>Fri   <span class="dv">1</span>  <span class="dv">16</span>   <span class="dv">1</span>   <span class="dv">1</span>  <span class="dv">0</span>  <span class="dv">0</span></span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a>Sat   <span class="dv">2</span>  <span class="dv">53</span>  <span class="dv">18</span>  <span class="dv">13</span>  <span class="dv">1</span>  <span class="dv">0</span></span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a>Sun   <span class="dv">0</span>  <span class="dv">39</span>  <span class="dv">15</span>  <span class="dv">18</span>  <span class="dv">3</span>  <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Since there are not many one- and six-person parties, I remove them here:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">82</span>]: party_counts <span class="op">=</span> party_counts.loc[:, <span class="dv">2</span>:<span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then, normalize so that each row sums to 1, and make the plot (see <a href="#vis_tips_barplot">Fraction of parties by size within each day</a>):</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Normalize to sum to 1</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">83</span>]: party_pcts <span class="op">=</span> party_counts.div(party_counts.<span class="bu">sum</span>(axis<span class="op">=</span><span class="st">"columns"</span>),</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>   ....:                               axis<span class="op">=</span><span class="st">"index"</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">84</span>]: party_pcts</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">84</span>]: </span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>size         <span class="dv">2</span>         <span class="dv">3</span>         <span class="dv">4</span>         <span class="dv">5</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>day                                         </span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>Thur  <span class="fl">0.827586</span>  <span class="fl">0.068966</span>  <span class="fl">0.086207</span>  <span class="fl">0.017241</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>Fri   <span class="fl">0.888889</span>  <span class="fl">0.055556</span>  <span class="fl">0.055556</span>  <span class="fl">0.000000</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>Sat   <span class="fl">0.623529</span>  <span class="fl">0.211765</span>  <span class="fl">0.152941</span>  <span class="fl">0.011765</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>Sun   <span class="fl">0.520000</span>  <span class="fl">0.200000</span>  <span class="fl">0.240000</span>  <span class="fl">0.040000</span></span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">85</span>]: party_pcts.plot.bar(stacked<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_tips_barplot" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_tips_barplot.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.18: Fraction of parties by size within each day</figcaption>
+</figure>
+</div>
+<p>So you can see that party sizes appear to increase on the weekend in this dataset.</p>
+<p>With data that requires aggregation or summarization before making a plot, using the <code>seaborn</code> package can make things much simpler (install it with <code>conda install seaborn</code>). Let's look now at the tipping percentage by day with seaborn (see <a href="#vis_tip_pct_seaborn">Tipping percentage by day with error bars</a> for the resulting plot):</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">87</span>]: <span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">88</span>]: tips[<span class="st">"tip_pct"</span>] <span class="op">=</span> tips[<span class="st">"tip"</span>] <span class="op">/</span> (tips[<span class="st">"total_bill"</span>] <span class="op">-</span> tips[<span class="st">"tip"</span>])</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">89</span>]: tips.head()</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">89</span>]: </span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>   total_bill   tip smoker  day    time  size   tip_pct</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>       <span class="fl">16.99</span>  <span class="fl">1.01</span>     No  Sun  Dinner     <span class="dv">2</span>  <span class="fl">0.063204</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>       <span class="fl">10.34</span>  <span class="fl">1.66</span>     No  Sun  Dinner     <span class="dv">3</span>  <span class="fl">0.191244</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>       <span class="fl">21.01</span>  <span class="fl">3.50</span>     No  Sun  Dinner     <span class="dv">3</span>  <span class="fl">0.199886</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>       <span class="fl">23.68</span>  <span class="fl">3.31</span>     No  Sun  Dinner     <span class="dv">2</span>  <span class="fl">0.162494</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>       <span class="fl">24.59</span>  <span class="fl">3.61</span>     No  Sun  Dinner     <span class="dv">4</span>  <span class="fl">0.172069</span></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">90</span>]: sns.barplot(x<span class="op">=</span><span class="st">"tip_pct"</span>, y<span class="op">=</span><span class="st">"day"</span>, data<span class="op">=</span>tips, orient<span class="op">=</span><span class="st">"h"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_tip_pct_seaborn" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_tip_pct_seaborn.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.19: Tipping percentage by day with error bars</figcaption>
+</figure>
+</div>
+<p>Plotting functions in seaborn take a <code>data</code> argument, which can be a pandas DataFrame. The other arguments refer to column names. Because there are multiple observations for each value in the <code>day</code>, the bars are the average value of <code>tip_pct</code>. The black lines drawn on the bars represent the 95% confidence interval (this can be configured through optional arguments).</p>
+<p><code>seaborn.barplot</code> has a <code>hue</code> option that enables us to split by an additional categorical value (see <a href="#vis_tip_pct_sns_grouped">Tipping percentage by day and time</a>):</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">92</span>]: sns.barplot(x<span class="op">=</span><span class="st">"tip_pct"</span>, y<span class="op">=</span><span class="st">"day"</span>, hue<span class="op">=</span><span class="st">"time"</span>, data<span class="op">=</span>tips, orient<span class="op">=</span><span class="st">"h"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_tip_pct_sns_grouped" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_tip_pct_sns_grouped.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.20: Tipping percentage by day and time</figcaption>
+</figure>
+</div>
+<p>Notice that seaborn has automatically changed the aesthetics of plots: the default color palette, plot background, and grid line colors. You can switch between different plot appearances using <code>seaborn.set_style</code>:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">94</span>]: sns.set_style(<span class="st">"whitegrid"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When producing plots for black-and-white print medium, you may find it useful to set a greyscale color palette, like so:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>sns.set_palette(<span class="st">"Greys_r"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="vis_pandas_histogram" class="level3">
+<h3 class="anchored" data-anchor-id="vis_pandas_histogram">Histograms and Density Plots</h3>
+<p>A <em>histogram</em> is a kind of bar plot that gives a discretized display of value frequency. The data points are split into discrete, evenly spaced bins, and the number of data points in each bin is plotted. Using the tipping data from before, we can make a histogram of tip percentages of the total bill using the <code>plot.hist</code> method on the Series (see <a href="#vis_hist_ex">Histogram of tip percentages</a>):</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">96</span>]: tips[<span class="st">"tip_pct"</span>].plot.hist(bins<span class="op">=</span><span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_hist_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_hist_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.21: Histogram of tip percentages</figcaption>
+</figure>
+</div>
+<p>A related plot type is a <em>density plot</em>, which is formed by computing an estimate of a continuous probability distribution that might have generated the observed data. The usual procedure is to approximate this distribution as a mixture of "kernels"—that is, simpler distributions like the normal distribution. Thus, density plots are also known as kernel density estimate (KDE) plots. Using <code>plot.density</code> makes a density plot using the conventional mixture-of-normals estimate (see <a href="#vis_kde_ex">Density plot of tip percentages</a>):</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">98</span>]: tips[<span class="st">"tip_pct"</span>].plot.density()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_kde_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_kde_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.22: Density plot of tip percentages</figcaption>
+</figure>
+</div>
+<p>This kind of plot requires SciPy, so if you do not have it installed already, you can pause and do that now:</p>
+<pre><code>conda install scipy</code></pre>
+<p>seaborn makes histograms and density plots even easier through its <code>histplot</code> method, which can plot both a histogram and a continuous density estimate simultaneously. As an example, consider a bimodal distribution consisting of draws from two different standard normal distributions (see <a href="#vis_series_kde">Normalized histogram of normal mixture</a>):</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">100</span>]: comp1 <span class="op">=</span> np.random.standard_normal(<span class="dv">200</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">101</span>]: comp2 <span class="op">=</span> <span class="dv">10</span> <span class="op">+</span> <span class="dv">2</span> <span class="op">*</span> np.random.standard_normal(<span class="dv">200</span>)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">102</span>]: values <span class="op">=</span> pd.Series(np.concatenate([comp1, comp2]))</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">103</span>]: sns.histplot(values, bins<span class="op">=</span><span class="dv">100</span>, color<span class="op">=</span><span class="st">"black"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_series_kde" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_series_kde.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.23: Normalized histogram of normal mixture</figcaption>
+</figure>
+</div>
+</section>
+<section id="vis_pandas_splom" class="level3">
+<h3 class="anchored" data-anchor-id="vis_pandas_splom">Scatter or Point Plots</h3>
+<p>Point plots or scatter plots can be a useful way of examining the relationship between two one-dimensional data series. For example, here we load the <code>macrodata</code> dataset from the statsmodels project, select a few variables, then compute log differences:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">104</span>]: macro <span class="op">=</span> pd.read_csv(<span class="st">"examples/macrodata.csv"</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">105</span>]: data <span class="op">=</span> macro[[<span class="st">"cpi"</span>, <span class="st">"m1"</span>, <span class="st">"tbilrate"</span>, <span class="st">"unemp"</span>]]</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">106</span>]: trans_data <span class="op">=</span> np.log(data).diff().dropna()</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">107</span>]: trans_data.tail()</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">107</span>]: </span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>          cpi        m1  tbilrate     unemp</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="dv">198</span> <span class="op">-</span><span class="fl">0.007904</span>  <span class="fl">0.045361</span> <span class="op">-</span><span class="fl">0.396881</span>  <span class="fl">0.105361</span></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="dv">199</span> <span class="op">-</span><span class="fl">0.021979</span>  <span class="fl">0.066753</span> <span class="op">-</span><span class="fl">2.277267</span>  <span class="fl">0.139762</span></span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a><span class="dv">200</span>  <span class="fl">0.002340</span>  <span class="fl">0.010286</span>  <span class="fl">0.606136</span>  <span class="fl">0.160343</span></span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a><span class="dv">201</span>  <span class="fl">0.008419</span>  <span class="fl">0.037461</span> <span class="op">-</span><span class="fl">0.200671</span>  <span class="fl">0.127339</span></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a><span class="dv">202</span>  <span class="fl">0.008894</span>  <span class="fl">0.012202</span> <span class="op">-</span><span class="fl">0.405465</span>  <span class="fl">0.042560</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can then use seaborn's <code>regplot</code> method, which makes a scatter plot and fits a linear regression line (see <a href="#scatter_plot_ex">A seaborn regression/scatter plot</a>):</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">109</span>]: ax <span class="op">=</span> sns.regplot(x<span class="op">=</span><span class="st">"m1"</span>, y<span class="op">=</span><span class="st">"unemp"</span>, data<span class="op">=</span>trans_data)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">110</span>]: ax.set_title(<span class="st">"Changes in log(m1) versus log(unemp)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-scatter_plot_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/scatter_plot_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.24: A seaborn regression/scatter plot</figcaption>
+</figure>
+</div>
+<p>In exploratory data analysis, it’s helpful to be able to look at all the scatter plots among a group of variables; this is known as a <em>pairs</em> plot or <em>scatter plot matrix</em>. Making such a plot from scratch is a bit of work, so seaborn has a convenient <code>pairplot</code> function that supports placing histograms or density estimates of each variable along the diagonal (see <a href="#scatter_matrix_ex">Pair plot matrix of statsmodels macro data</a> for the resulting plot):</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">111</span>]: sns.pairplot(trans_data, diag_kind<span class="op">=</span><span class="st">"kde"</span>, plot_kws<span class="op">=</span>{<span class="st">"alpha"</span>: <span class="fl">0.2</span>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-scatter_matrix_ex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/scatter_matrix_ex.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.25: Pair plot matrix of statsmodels macro data</figcaption>
+</figure>
+</div>
+<p>You may notice the <code>plot_kws</code> argument. This enables us to pass down configuration options to the individual plotting calls on the off-diagonal elements. Check out the <code>seaborn.pairplot</code> docstring for more granular configuration options.</p>
+</section>
+<section id="vis_facet_grid" class="level3">
+<h3 class="anchored" data-anchor-id="vis_facet_grid">Facet Grids and Categorical Data</h3>
+<p>What about datasets where we have additional grouping dimensions? One way to visualize data with many categorical variables is to use a <em>facet grid</em>, which is a two-dimensional layout of plots where the data is split across the plots on each axis based on the distinct values of a certain variable. seaborn has a useful built-in function <code>catplot</code> that simplifies making many kinds of faceted plots split by categorical variables (see <a href="#vis_tip_pct_sns_factorplot">Tipping percentage by day/time/smoker</a> for the resulting plot):</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">112</span>]: sns.catplot(x<span class="op">=</span><span class="st">"day"</span>, y<span class="op">=</span><span class="st">"tip_pct"</span>, hue<span class="op">=</span><span class="st">"time"</span>, col<span class="op">=</span><span class="st">"smoker"</span>,</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>   .....:             kind<span class="op">=</span><span class="st">"bar"</span>, data<span class="op">=</span>tips[tips.tip_pct <span class="op">&lt;</span> <span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_tip_pct_sns_factorplot" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_tip_pct_sns_factorplot.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.26: Tipping percentage by day/time/smoker</figcaption>
+</figure>
+</div>
+<p>Instead of grouping by <code>"time"</code> by different bar colors within a facet, we can also expand the facet grid by adding one row per <code>time</code> value (see <a href="#vis_tip_pct_sns_factorplot2">Tipping percentage by day split by time/smoker</a>):</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">113</span>]: sns.catplot(x<span class="op">=</span><span class="st">"day"</span>, y<span class="op">=</span><span class="st">"tip_pct"</span>, row<span class="op">=</span><span class="st">"time"</span>,</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>   .....:             col<span class="op">=</span><span class="st">"smoker"</span>,</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>   .....:             kind<span class="op">=</span><span class="st">"bar"</span>, data<span class="op">=</span>tips[tips.tip_pct <span class="op">&lt;</span> <span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_tip_pct_sns_factorplot2" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_tip_pct_sns_factorplot2.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.27: Tipping percentage by day split by time/smoker</figcaption>
+</figure>
+</div>
+<p><code>catplot</code> supports other plot types that may be useful depending on what you are trying to display. For example, <em>box plots</em> (which show the median, quartiles, and outliers) can be an effective visualization type (see <a href="#vis_tip_pct_sns_factor_box">Box plot of tipping percentage by day</a>):</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">114</span>]: sns.catplot(x<span class="op">=</span><span class="st">"tip_pct"</span>, y<span class="op">=</span><span class="st">"day"</span>, kind<span class="op">=</span><span class="st">"box"</span>,</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>   .....:             data<span class="op">=</span>tips[tips.tip_pct <span class="op">&lt;</span> <span class="fl">0.5</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-vis_tip_pct_sns_factor_box" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figs/vis_tip_pct_sns_factor_box.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;9.28: Box plot of tipping percentage by day</figcaption>
+</figure>
+</div>
+<p>You can create your own facet grid plots using the more general <code>seaborn.FacetGrid</code> class. See the <a href="https://seaborn.pydata.org/">seaborn documentation</a> for more.</p>
+</section>
+</section>
+<section id="vis_tool_options" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="vis_tool_options"><span class="header-section-number">9.3</span> Other Python Visualization Tools</h2>
+<p>As is common with open source, there many options for creating graphics in Python (too many to list). Since 2010, much development effort has been focused on creating interactive graphics for publication on the web. With tools like <a href="https://altair-viz.github.io">Altair</a>, <a href="http://bokeh.pydata.org">Bokeh</a>, and <a href="https://plotly.com/python">Plotly</a>, it's now possible to specify dynamic, interactive graphics in Python that are intended for use with web browsers.</p>
+<p>For creating static graphics for print or web, I recommend using matplotlib and libraries that build on matplotlib, like pandas and seaborn, for your needs. For other data visualization requirements, it may be useful to learn how to use one of the other available tools. I encourage you to explore the ecosystem as it continues to evolve and innovate into the future.</p>
+<p>An excellent book on data visualization is <em>Fundamentals of Data Visualization</em> by Claus O. Wilke (O'Reilly), which is available in print or on Claus's website at <a href="https://clauswilke.com/dataviz" class="uri">https://clauswilke.com/dataviz</a>.</p>
+</section>
+<section id="data-visualization-summary" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="data-visualization-summary"><span class="header-section-number">9.4</span> Conclusion</h2>
+<p>The goal of this chapter was to get your feet wet with some basic data visualization using pandas, matplotlib, and seaborn. If visually communicating the results of data analysis is important in your work, I encourage you to seek out resources to learn more about effective data visualization. It is an active field of research, and you can practice with many excellent learning resources available online and in print.</p>
+<p>In the next chapter, we turn our attention to data aggregation and group operations with pandas.</p>
+
+
+</section>
+
+<script async="" defer="" src="https://scripts.simpleanalyticscdn.com/latest.js"></script></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a class='pagination-link' href='/book/data-wrangling'>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Wrangling: Join, Combine, and Reshape</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a class='pagination-link' href='/book/data-aggregation'>
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Data Aggregation and Group Operations</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">Copyright 2023, Wes McKinney. All Rights Reserved.</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/wesmckinn">
+      <i class="bi bi-twitter" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+<script async="" src="https://media.ethicalads.io/media/client/ethicalads.min.js"></script>
+
+
+
+</body></html>

@@ -1,0 +1,447 @@
+name: Advanced Auto-Grading with Analysis
+
+on:
+  push:
+    branches: [ submit ]
+  pull_request:
+    branches: [ main, master ]
+    types: [opened, synchronize, labeled]
+  workflow_dispatch:
+    inputs:
+      grade_type:
+        description: 'Type of grading to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+        - full
+        - quick
+        - analysis-only
+
+env:
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  advanced-grading:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    strategy:
+      matrix:
+        test-type: [unit, integration, performance]
+      fail-fast: false
+      
+    steps:
+    - name: Checkout submission
+      uses: actions/checkout@v4
+      
+    - name: Set up Python with caching
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-html pytest-json-report pytest-cov pytest-benchmark
+        pip install pandas numpy matplotlib seaborn scipy scikit-learn
+        pip install memory-profiler psutil
+        
+        # Install student requirements
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+        
+    - name: Run code complexity analysis
+      if: matrix.test-type == 'unit'
+      run: |
+        pip install radon xenon
+        
+        echo "📊 Running code complexity analysis..."
+        
+        python_files=$(find . -name "*.py" -not -path "./.git/*")
+        
+        if [[ -n "$python_files" ]]; then
+          echo "## Code Complexity Analysis" > complexity_report.md
+          echo "" >> complexity_report.md
+          
+          # Cyclomatic complexity
+          echo "### Cyclomatic Complexity" >> complexity_report.md
+          radon cc $python_files -s >> complexity_report.md || echo "No complexity issues found" >> complexity_report.md
+          echo "" >> complexity_report.md
+          
+          # Maintainability index
+          echo "### Maintainability Index" >> complexity_report.md
+          radon mi $python_files >> complexity_report.md || echo "No maintainability issues found" >> complexity_report.md
+          echo "" >> complexity_report.md
+          
+          # Raw metrics
+          echo "### Raw Metrics" >> complexity_report.md
+          radon raw $python_files >> complexity_report.md || echo "No raw metrics available" >> complexity_report.md
+        else
+          echo "No Python files found for complexity analysis" > complexity_report.md
+        fi
+        
+    - name: Run unit tests with coverage
+      if: matrix.test-type == 'unit'
+      run: |
+        echo "🧪 Running unit tests with coverage..."
+        
+        pytest tests/ -v \
+          --cov=. --cov-report=html --cov-report=json \
+          --html=unit_test_report.html --self-contained-html \
+          --json-report --json-report-file=unit_test_results.json \
+          --tb=short --strict-markers \
+          -m "not integration and not performance" || true
+          
+    - name: Run integration tests
+      if: matrix.test-type == 'integration'
+      run: |
+        echo "🔗 Running integration tests..."
+        
+        pytest tests/ -v \
+          --html=integration_test_report.html --self-contained-html \
+          --json-report --json-report-file=integration_test_results.json \
+          --tb=short --strict-markers \
+          -m "integration" || true
+          
+    - name: Run performance tests
+      if: matrix.test-type == 'performance'
+      run: |
+        echo "⚡ Running performance tests..."
+        
+        # Install performance testing tools
+        pip install pytest-benchmark memory-profiler
+        
+        pytest tests/ -v \
+          --benchmark-only --benchmark-sort=mean \
+          --benchmark-json=performance_results.json \
+          --html=performance_test_report.html --self-contained-html \
+          --tb=short --strict-markers \
+          -m "performance" || true
+          
+    - name: Memory usage analysis
+      if: matrix.test-type == 'performance'
+      run: |
+        echo "💾 Running memory usage analysis..."
+        
+        if [ -f main.py ]; then
+          python -c "
+        import tracemalloc
+        import subprocess
+        import sys
+        import json
+        import os
+        
+        def analyze_memory():
+            tracemalloc.start()
+            
+            try:
+                # Run the main script and monitor memory
+                result = subprocess.run([sys.executable, 'main.py'], 
+                                      capture_output=True, text=True, timeout=60)
+                
+                current, peak = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
+                
+                memory_stats = {
+                    'current_memory_mb': round(current / 1024 / 1024, 2),
+                    'peak_memory_mb': round(peak / 1024 / 1024, 2),
+                    'exit_code': result.returncode
+                }
+                
+                with open('memory_analysis.json', 'w') as f:
+                    json.dump(memory_stats, f, indent=2)
+                
+                print(f'Memory usage - Current: {memory_stats[\"current_memory_mb\"]}MB, Peak: {memory_stats[\"peak_memory_mb\"]}MB')
+                
+                if memory_stats['peak_memory_mb'] > 500:
+                    print('⚠️  High memory usage detected')
+                    sys.exit(1)
+                elif memory_stats['peak_memory_mb'] > 100:
+                    print('⚠️  Moderate memory usage')
+                else:
+                    print('✅ Memory usage within reasonable limits')
+                    
+            except subprocess.TimeoutExpired:
+                print('❌ Script execution timed out')
+                sys.exit(1)
+            except Exception as e:
+                print(f'❌ Memory analysis failed: {e}')
+                sys.exit(1)
+        
+        analyze_memory()
+        "
+        fi
+        
+    - name: Security analysis
+      if: matrix.test-type == 'unit'
+      run: |
+        echo "🔒 Running security analysis..."
+        pip install bandit safety
+        
+        python_files=$(find . -name "*.py" -not -path "./.git/*")
+        
+        if [[ -n "$python_files" ]]; then
+          # Run bandit security scan
+          echo "Running Bandit security scan..."
+          bandit -r . -f json -o bandit_report.json || true
+          bandit -r . -f txt || echo "Security scan completed with warnings"
+          
+          # Check dependencies for known vulnerabilities
+          echo "Checking dependencies for vulnerabilities..."
+          if [ -f requirements.txt ]; then
+            safety check -r requirements.txt --json --output safety_report.json || echo "Safety check completed"
+          fi
+        fi
+        
+    - name: Generate comprehensive grade report
+      if: always()
+      run: |
+        python -c "
+        import json
+        import os
+        import glob
+        from pathlib import Path
+        
+        def load_json_safe(filename):
+            try:
+                if os.path.exists(filename):
+                    with open(filename, 'r') as f:
+                        return json.load(f)
+            except:
+                pass
+            return None
+        
+        def calculate_score():
+            total_score = 0
+            max_score = 100
+            details = []
+            
+            # Unit test results (40 points)
+            unit_results = load_json_safe('unit_test_results.json')
+            if unit_results:
+                passed = unit_results.get('summary', {}).get('passed', 0)
+                total = unit_results.get('summary', {}).get('total', 1)
+                unit_score = int((passed / total) * 40) if total > 0 else 0
+                total_score += unit_score
+                details.append(f'Unit Tests: {passed}/{total} passed ({unit_score}/40 points)')
+            
+            # Integration test results (20 points)
+            integration_results = load_json_safe('integration_test_results.json')
+            if integration_results:
+                passed = integration_results.get('summary', {}).get('passed', 0)
+                total = integration_results.get('summary', {}).get('total', 1)
+                integration_score = int((passed / total) * 20) if total > 0 else 0
+                total_score += integration_score
+                details.append(f'Integration Tests: {passed}/{total} passed ({integration_score}/20 points)')
+            
+            # Code coverage (15 points)
+            coverage_data = load_json_safe('coverage.json')
+            if coverage_data:
+                coverage_percent = coverage_data.get('totals', {}).get('percent_covered', 0)
+                coverage_score = int((coverage_percent / 100) * 15)
+                total_score += coverage_score
+                details.append(f'Code Coverage: {coverage_percent:.1f}% ({coverage_score}/15 points)')
+            
+            # Performance tests (10 points)
+            performance_results = load_json_safe('performance_results.json')
+            if performance_results:
+                benchmarks = performance_results.get('benchmarks', [])
+                if benchmarks:
+                    # Award points based on successful benchmark completion
+                    perf_score = min(10, len(benchmarks) * 2)
+                    total_score += perf_score
+                    details.append(f'Performance Tests: {len(benchmarks)} benchmarks ({perf_score}/10 points)')
+            
+            # Code quality (10 points)
+            complexity_report = Path('complexity_report.md').exists()
+            security_issues = 0
+            
+            bandit_report = load_json_safe('bandit_report.json')
+            if bandit_report:
+                security_issues = len(bandit_report.get('results', []))
+            
+            quality_score = 10
+            if security_issues > 0:
+                quality_score -= min(5, security_issues)
+                details.append(f'Security Issues: {security_issues} found (-{min(5, security_issues)} points)')
+            
+            if complexity_report:
+                details.append('Code Complexity: Analysis completed')
+            
+            total_score += quality_score
+            details.append(f'Code Quality: {quality_score}/10 points')
+            
+            # Memory usage (5 points)
+            memory_data = load_json_safe('memory_analysis.json')
+            if memory_data:
+                peak_mb = memory_data.get('peak_memory_mb', 0)
+                if peak_mb <= 50:
+                    memory_score = 5
+                elif peak_mb <= 100:
+                    memory_score = 3
+                elif peak_mb <= 500:
+                    memory_score = 1
+                else:
+                    memory_score = 0
+                
+                total_score += memory_score
+                details.append(f'Memory Usage: {peak_mb}MB peak ({memory_score}/5 points)')
+            
+            return min(total_score, max_score), details
+        
+        # Calculate final score
+        final_score, score_details = calculate_score()
+        
+        # Generate comprehensive report
+        report_lines = [
+            '# Advanced Homework Grading Report',
+            '',
+            f'## Final Score: {final_score}/100',
+            '',
+            '### Score Breakdown',
+        ]
+        
+        for detail in score_details:
+            report_lines.append(f'- {detail}')
+        
+        # Add grade interpretation
+        report_lines.extend([
+            '',
+            '### Grade Interpretation',
+        ])
+        
+        if final_score >= 95:
+            report_lines.append('🏆 **Outstanding (A+)** - Exceptional work!')
+        elif final_score >= 90:
+            report_lines.append('🌟 **Excellent (A)** - Great job!')
+        elif final_score >= 85:
+            report_lines.append('👍 **Very Good (A-)** - Well done!')
+        elif final_score >= 80:
+            report_lines.append('✅ **Good (B+)** - Solid work!')
+        elif final_score >= 75:
+            report_lines.append('👌 **Satisfactory (B)** - Meets requirements')
+        elif final_score >= 70:
+            report_lines.append('⚠️  **Acceptable (B-)** - Needs some improvement')
+        elif final_score >= 65:
+            report_lines.append('📝 **Below Expectations (C)** - Significant improvements needed')
+        else:
+            report_lines.append('❌ **Unsatisfactory (F)** - Please review and resubmit')
+        
+        # Write report
+        report_content = '\n'.join(report_lines)
+        with open('ADVANCED_GRADE_REPORT.md', 'w') as f:
+            f.write(report_content)
+        
+        print(report_content)
+        
+        # Set environment variable for other steps
+        with open(os.environ['GITHUB_ENV'], 'a') as f:
+            f.write(f'FINAL_SCORE={final_score}\n')
+        "
+        
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: grading-results-${{ matrix.test-type }}
+        path: |
+          *_test_report.html
+          *_test_results.json
+          coverage.json
+          htmlcov/
+          complexity_report.md
+          bandit_report.json
+          safety_report.json
+          memory_analysis.json
+          performance_results.json
+          ADVANCED_GRADE_REPORT.md
+        retention-days: 30
+        
+    - name: Post detailed feedback
+      if: github.event_name == 'pull_request' && matrix.test-type == 'unit'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            let comment = '## 🤖 Advanced Auto-Grading Results\n\n';
+            
+            if (fs.existsSync('ADVANCED_GRADE_REPORT.md')) {
+              const gradeReport = fs.readFileSync('ADVANCED_GRADE_REPORT.md', 'utf8');
+              comment += gradeReport + '\n\n';
+            }
+            
+            // Add specific feedback sections
+            comment += '### Detailed Analysis\n\n';
+            
+            // Coverage feedback
+            if (fs.existsSync('coverage.json')) {
+              const coverage = JSON.parse(fs.readFileSync('coverage.json', 'utf8'));
+              const coveragePercent = coverage.totals?.percent_covered || 0;
+              comment += `- **Test Coverage**: ${coveragePercent.toFixed(1)}%\n`;
+            }
+            
+            // Security feedback
+            if (fs.existsSync('bandit_report.json')) {
+              const security = JSON.parse(fs.readFileSync('bandit_report.json', 'utf8'));
+              const issues = security.results?.length || 0;
+              comment += `- **Security Issues**: ${issues} found\n`;
+            }
+            
+            // Memory feedback
+            if (fs.existsSync('memory_analysis.json')) {
+              const memory = JSON.parse(fs.readFileSync('memory_analysis.json', 'utf8'));
+              comment += `- **Memory Usage**: ${memory.peak_memory_mb}MB peak\n`;
+            }
+            
+            comment += '\n---\n*📊 View detailed reports in the Actions artifacts*';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not post detailed feedback:', error);
+          }
+
+  combine-results:
+    needs: advanced-grading
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      
+    - name: Combine results
+      run: |
+        echo "📊 Combining grading results from all test types..."
+        
+        # Create combined report
+        echo "# Combined Grading Report" > FINAL_REPORT.md
+        echo "" >> FINAL_REPORT.md
+        echo "This report combines results from unit, integration, and performance testing." >> FINAL_REPORT.md
+        echo "" >> FINAL_REPORT.md
+        
+        # Find and include individual reports
+        for report in grading-results-*/ADVANCED_GRADE_REPORT.md; do
+          if [ -f "$report" ]; then
+            echo "Including $report..."
+            echo "## $(basename $(dirname $report))" >> FINAL_REPORT.md
+            cat "$report" >> FINAL_REPORT.md
+            echo "" >> FINAL_REPORT.md
+          fi
+        done
+        
+    - name: Upload final report
+      uses: actions/upload-artifact@v3
+      with:
+        name: final-grading-report
+        path: FINAL_REPORT.md
+        retention-days: 90

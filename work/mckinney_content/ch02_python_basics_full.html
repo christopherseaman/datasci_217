@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Python for Data Analysis, 3E - 2&nbsp; Python Language Basics, IPython, and Jupyter Notebooks</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./python-builtin.html" rel="next">
+<link href="./preliminaries.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Python for Data Analysis, 3E - 2&nbsp; Python Language Basics, IPython, and Jupyter Notebooks">
+<meta property="og:description" content="">
+<meta property="og:image" content="images/cover.png">
+<meta property="og:site-name" content="Python for Data Analysis, 3E">
+<meta name="twitter:title" content="Python for Data Analysis, 3E - 2&nbsp; Python Language Basics, IPython, and Jupyter Notebooks">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="images/cover.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class='navbar-brand' href='/book/'>
+    <span class="navbar-title">Python for Data Analysis, 3E</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class='nav-link' href='https://wesmckinney.com/archives' rel target>
+ <span class="menu-text">Wes’s Blog</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/wesmckinn" rel="" target=""><i class="bi bi-twitter" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-bi-github" role="button" data-bs-toggle="dropdown" aria-expanded="false" rel="" target="">
+      <i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-bi-github">    
+        <li>
+    <a class="dropdown-item" href="https://github.com/wesm/pydata-book" rel="" target="">
+ <span class="dropdown-text">Data and Notebooks (GitHub)</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://gitee.com/wesmckinn/pydata-book" rel="" target="">
+ <span class="dropdown-text">Data and Notebooks (Gitee)</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href='/book/preface'>Chapters</a></li><li class="breadcrumb-item"><a href='/book/python-basics'><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Python Language Basics, IPython, and Jupyter Notebooks</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/'>
+ <span class="menu-text">About the Open Edition</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Chapters</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/preface'>
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/preliminaries'>
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preliminaries</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link active' href='/book/python-basics'>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Python Language Basics, IPython, and Jupyter Notebooks</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/python-builtin'>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Built-In Data Structures, Functions, and Files</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/numpy-basics'>
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NumPy Basics: Arrays and Vectorized Computation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/pandas-basics'>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Getting Started with pandas</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/accessing-data'>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Data Loading, Storage, and File Formats</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-cleaning'>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Data Cleaning and Preparation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-wrangling'>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Wrangling: Join, Combine, and Reshape</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/plotting-and-visualization'>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Plotting and Visualization</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-aggregation'>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Data Aggregation and Group Operations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/time-series'>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/modeling'>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Introduction to Modeling Libraries in Python</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-analysis-examples'>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Data Analysis Examples</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/advanced-numpy'>
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Advanced NumPy</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/ipython'>
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">More on the IPython System</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar"><div class="quarto-margin-header"><div class="margin-header-item">
+<a href="https://amzn.to/3DyLaJc"><img src="images/cover.png" class="img-fluid"></a>
+<div data-ea-publisher="wesmckinneycom" data-ea-type="image">
+
+</div>
+</div></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#python_interpreter" id="toc-python_interpreter" class="nav-link active" data-scroll-target="#python_interpreter"><span class="header-section-number">2.1</span> The Python Interpreter</a></li>
+  <li><a href="#ipython_basics" id="toc-ipython_basics" class="nav-link" data-scroll-target="#ipython_basics"><span class="header-section-number">2.2</span> IPython Basics</a>
+  <ul class="collapse">
+  <li><a href="#ipython_basics_shell" id="toc-ipython_basics_shell" class="nav-link" data-scroll-target="#ipython_basics_shell">Running the IPython Shell</a></li>
+  <li><a href="#ipython_basics_notebook" id="toc-ipython_basics_notebook" class="nav-link" data-scroll-target="#ipython_basics_notebook">Running the Jupyter Notebook</a></li>
+  <li><a href="#ipython_completion" id="toc-ipython_completion" class="nav-link" data-scroll-target="#ipython_completion">Tab Completion</a></li>
+  <li><a href="#ipython_introspection" id="toc-ipython_introspection" class="nav-link" data-scroll-target="#ipython_introspection">Introspection</a></li>
+  </ul></li>
+  <li><a href="#tut_basics" id="toc-tut_basics" class="nav-link" data-scroll-target="#tut_basics"><span class="header-section-number">2.3</span> Python Language Basics</a>
+  <ul class="collapse">
+  <li><a href="#language_semantics" id="toc-language_semantics" class="nav-link" data-scroll-target="#language_semantics">Language Semantics</a></li>
+  <li><a href="#scalar_types" id="toc-scalar_types" class="nav-link" data-scroll-target="#scalar_types">Scalar Types</a></li>
+  <li><a href="#control_flow" id="toc-control_flow" class="nav-link" data-scroll-target="#control_flow">Control Flow</a></li>
+  </ul></li>
+  <li><a href="#python_tutorial_summary" id="toc-python_tutorial_summary" class="nav-link" data-scroll-target="#python_tutorial_summary"><span class="header-section-number">2.4</span> Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="intro-python-environment" class="quarto-section-identifier"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Python Language Basics, IPython, and Jupyter Notebooks</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>This Open Access web version of <em>Python for Data Analysis 3rd Edition</em> is now available as a companion to the <a href="https://amzn.to/3DyLaJc">print and digital editions</a>. If you encounter any errata, <a href="https://oreilly.com/catalog/0636920519829/errata">please report them here</a>. Please note that some aspects of this site as produced by Quarto will differ from the formatting of the print and eBook versions from O’Reilly.</p>
+<p>If you find the online edition of the book useful, please consider <a href="https://amzn.to/3DyLaJc">ordering a paper copy</a> or a <a href="https://www.ebooks.com/en-us/book/210644288/python-for-data-analysis/wes-mckinney/?affId=WES398681F">DRM-free eBook</a> to support the author. The content from this website may not be copied or reproduced. The code examples are MIT licensed and can be found on GitHub or Gitee.</p>
+</div>
+</div>
+</div>
+<p>When I wrote the first edition of this book in 2011 and 2012, there were fewer resources available for learning about doing data analysis in Python. This was partially a chicken-and-egg problem; many libraries that we now take for granted, like pandas, scikit-learn, and statsmodels, were comparatively immature back then. Now in 2022, there is now a growing literature on data science, data analysis, and machine learning, supplementing the prior works on general-purpose scientific computing geared toward computational scientists, physicists, and professionals in other research fields. There are also excellent books about learning the Python programming language itself and becoming an effective software engineer.</p>
+<p>As this book is intended as an introductory text in working with data in Python, I feel it is valuable to have a self-contained overview of some of the most important features of Python’s built-in data structures and libraries from the perspective of data manipulation. So, I will only present roughly enough information in this chapter and <a href='/book/python-builtin'>Ch 3: Built-in Data Structures, Functions, and Files</a> to enable you to follow along with the rest of the book.</p>
+<p>Much of this book focuses on table-based analytics and data preparation tools for working with datasets that are small enough to fit on your personal computer. To use these tools you must sometimes do some wrangling to arrange messy data into a more nicely tabular (or <em>structured</em>) form. Fortunately, Python is an ideal language for doing this. The greater your facility with the Python language and its built-in data types, the easier it will be for you to prepare new datasets for analysis.</p>
+<p>Some of the tools in this book are best explored from a live IPython or Jupyter session. Once you learn how to start up IPython and Jupyter, I recommend that you follow along with the examples so you can experiment and try different things. As with any keyboard-driven console-like environment, developing familiarity with the common commands is also part of the learning curve.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>There are introductory Python concepts that this chapter does not cover, like classes and object-oriented programming, which you may find useful in your foray into data analysis in Python.</p>
+<p>To deepen your Python language knowledge, I recommend that you supplement this chapter with the <a href="http://docs.python.org">official Python tutorial</a> and potentially one of the many excellent books on general-purpose Python programming. Some recommendations to get you started include:</p>
+<ul>
+<li><p><em>Python Cookbook</em>, Third Edition, by David Beazley and Brian K. Jones (O'Reilly)</p></li>
+<li><p><em>Fluent Python</em> by Luciano Ramalho (O'Reilly)</p></li>
+<li><p><em>Effective Python</em>, Second Edition, by Brett Slatkin (Addison-Wesley)</p></li>
+</ul>
+</div>
+</div>
+<section id="python_interpreter" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="python_interpreter"><span class="header-section-number">2.1</span> The Python Interpreter</h2>
+<p>Python is an <em>interpreted</em> language. The Python interpreter runs a program by executing one statement at a time. The standard interactive Python interpreter can be invoked on the command line with the <code>python</code> command:</p>
+<pre><code>$ python
+Python 3.10.4 | packaged by conda-forge | (main, Mar 24 2022, 17:38:57)
+[GCC 10.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; a = 5
+&gt;&gt;&gt; print(a)
+5</code></pre>
+<p>The <code>&gt;&gt;&gt;</code> you see is the <em>prompt</em> after which you’ll type code expressions. To exit the Python interpreter, you can either type <code>exit()</code> or press Ctrl-D (works on Linux and macOS only).</p>
+<p>Running Python programs is as simple as calling <code>python</code> with a <em>.py</em> file as its first argument. Suppose we had created <em>hello_world.py</em> with these contents:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Hello world"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>You can run it by executing the following command (the <em>hello_world.py</em> file must be in your current working terminal directory):</p>
+<pre><code>$ python hello_world.py
+Hello world</code></pre>
+<p>While some Python programmers execute all of their Python code in this way, those doing data analysis or scientific computing make use of IPython, an enhanced Python interpreter, or Jupyter notebooks, web-based code notebooks originally created within the IPython project. I give an introduction to using IPython and Jupyter in this chapter and have included a deeper look at IPython functionality in <a href='/book/advanced-numpy'>Appendix A: Advanced NumPy</a>. When you use the <code>%run</code> command, IPython executes the code in the specified file in the same process, enabling you to explore the results interactively when it’s done:</p>
+<pre><code>$ ipython
+Python 3.10.4 | packaged by conda-forge | (main, Mar 24 2022, 17:38:57)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 7.31.1 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: %run hello_world.py
+Hello world
+
+In [2]:</code></pre>
+<p>The default IPython prompt adopts the numbered <code>In [2]:</code> style, compared with the standard <code>&gt;&gt;&gt;</code> prompt.</p>
+</section>
+<section id="ipython_basics" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="ipython_basics"><span class="header-section-number">2.2</span> IPython Basics</h2>
+<p>In this section, I'll get you up and running with the IPython shell and Jupyter notebook, and introduce you to some of the essential concepts.</p>
+<section id="ipython_basics_shell" class="level3">
+<h3 class="anchored" data-anchor-id="ipython_basics_shell">Running the IPython Shell</h3>
+<p>You can launch the IPython shell on the command line just like launching the regular Python interpreter except with the <code>ipython</code> command:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>$ ipython</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>Python <span class="fl">3.10.4</span> <span class="op">|</span> packaged by conda<span class="op">-</span>forge <span class="op">|</span> (main, Mar <span class="dv">24</span> <span class="dv">2022</span>, <span class="dv">17</span>:<span class="dv">38</span>:<span class="dv">57</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>Type <span class="st">'copyright'</span>, <span class="st">'credits'</span> <span class="kw">or</span> <span class="st">'license'</span> <span class="cf">for</span> more information</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>IPython <span class="fl">7.31.1</span> <span class="op">--</span> An enhanced Interactive Python. Type <span class="st">'?'</span> <span class="cf">for</span> <span class="bu">help</span>.</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">1</span>]: a <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">2</span>]: a</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">2</span>]: <span class="dv">5</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>You can execute arbitrary Python statements by typing them and pressing Return (or Enter). When you type just a variable into IPython, it renders a string representation of the object:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">5</span>]: <span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">6</span>]: data <span class="op">=</span> [np.random.standard_normal() <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">7</span>)]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">7</span>]: data</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">7</span>]: </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>[<span class="op">-</span><span class="fl">0.20470765948471295</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a> <span class="fl">0.47894333805754824</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a> <span class="op">-</span><span class="fl">0.5194387150567381</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a> <span class="op">-</span><span class="fl">0.55573030434749</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a> <span class="fl">1.9657805725027142</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a> <span class="fl">1.3934058329729904</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a> <span class="fl">0.09290787674371767</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The first two lines are Python code statements; the second statement creates a variable named <code>data</code> that refers to a newly created list. The last line prints the value of <code>data</code> in the console.</p>
+<p>Many kinds of Python objects are formatted to be more readable, or <em>pretty-printed</em>, which is distinct from normal printing with <code>print</code>. If you printed the above <code>data</code> variable in the standard Python interpreter, it would be much less readable:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> data <span class="op">=</span> [np.random.standard_normal() <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">7</span>)]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="bu">print</span>(data)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> data</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>[<span class="op">-</span><span class="fl">0.5767699931966723</span>, <span class="op">-</span><span class="fl">0.1010317773535111</span>, <span class="op">-</span><span class="fl">1.7841005313329152</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="op">-</span><span class="fl">1.524392126408841</span>, <span class="fl">0.22191374220117385</span>, <span class="op">-</span><span class="fl">1.9835710588082562</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="op">-</span><span class="fl">1.6081963964963528</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>IPython also provides facilities to execute arbitrary blocks of code (via a somewhat glorified copy-and-paste approach) and whole Python scripts. You can also use the Jupyter notebook to work with larger blocks of code, as we will soon see.</p>
+</section>
+<section id="ipython_basics_notebook" class="level3">
+<h3 class="anchored" data-anchor-id="ipython_basics_notebook">Running the Jupyter Notebook</h3>
+<p>One of the major components of the Jupyter project is the <em>notebook</em>, a type of interactive document for code, text (including Markdown), data visualizations, and other output. The Jupyter notebook interacts with <em>kernels</em>, which are implementations of the Jupyter interactive computing protocol specific to different programming languages. The Python Jupyter kernel uses the IPython system for its underlying behavior.</p>
+<p>To start up Jupyter, run the command <code>jupyter</code> <code>notebook</code> in a terminal:</p>
+<pre><code>$ jupyter notebook
+[I 15:20:52.739 NotebookApp] Serving notebooks from local directory:
+/home/wesm/code/pydata-book
+[I 15:20:52.739 NotebookApp] 0 active kernels
+[I 15:20:52.739 NotebookApp] The Jupyter Notebook is running at:
+http://localhost:8888/?token=0a77b52fefe52ab83e3c35dff8de121e4bb443a63f2d...
+[I 15:20:52.740 NotebookApp] Use Control-C to stop this server and shut down
+all kernels (twice to skip confirmation).
+Created new window in existing browser session.
+    To access the notebook, open this file in a browser:
+        file:///home/wesm/.local/share/jupyter/runtime/nbserver-185259-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:8888/?token=0a77b52fefe52ab83e3c35dff8de121e4...
+     or http://127.0.0.1:8888/?token=0a77b52fefe52ab83e3c35dff8de121e4...</code></pre>
+<p>On many platforms, Jupyter will automatically open in your default web browser (unless you start it with <code>--no-browser</code>). Otherwise, you can navigate to the HTTP address printed when you started the notebook, here <code>http://localhost:8888/?token=0a77b52fefe52ab83e3c35dff8de121e4bb443a63f2d3055</code>. See <a href="#fig-figure_jupyter_landing">Figure&nbsp;<span>2.1</span></a> for what this looks like in Google Chrome.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Many people use Jupyter as a local computing environment, but it can also be deployed on servers and accessed remotely. I won't cover those details here, but I encourage you to explore this topic on the internet if it's relevant to your needs.</p>
+</div>
+</div>
+<div id="fig-figure_jupyter_landing" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/pda3_0201.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;2.1: Jupyter notebook landing page</figcaption>
+</figure>
+</div>
+<p>To create a new notebook, click the New button and select the "Python 3" option. You should see something like <a href="#fig-figure_jupyter_new_nb">Figure&nbsp;<span>2.2</span></a>. If this is your first time, try clicking on the empty code "cell" and entering a line of Python code. Then press Shift-Enter to execute it.</p>
+<div id="fig-figure_jupyter_new_nb" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/pda3_0202.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;2.2: Jupyter new notebook view</figcaption>
+</figure>
+</div>
+<p>When you save the notebook (see "Save and Checkpoint" under the notebook File menu), it creates a file with the extension <em>.ipynb</em>. This is a self-contained file format that contains all of the content (including any evaluated code output) currently in the notebook. These can be loaded and edited by other Jupyter users.</p>
+<p>To rename an open notebook, click on the notebook title at the top of the page and type the new title, pressing Enter when you are finished.</p>
+<p>To load an existing notebook, put the file in the same directory where you started the notebook process (or in a subfolder within it), then click the name from the landing page. You can try it out with the notebooks from my <em>wesm/pydata-book</em> repository on GitHub. See <a href="#fig-figure_jupyter_existing_nb">Figure&nbsp;<span>2.3</span></a>.</p>
+<p>When you want to close a notebook, click the File menu and select "Close and Halt." If you simply close the browser tab, the Python process associated with the notebook will keep running in the background.</p>
+<p>While the Jupyter notebook may feel like a distinct experience from the IPython shell, nearly all of the commands and tools in this chapter can be used in either environment.</p>
+<div id="fig-figure_jupyter_existing_nb" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/pda3_0203.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;2.3: Jupyter example view for an existing notebook</figcaption>
+</figure>
+</div>
+</section>
+<section id="ipython_completion" class="level3">
+<h3 class="anchored" data-anchor-id="ipython_completion">Tab Completion</h3>
+<p>On the surface, the IPython shell looks like a cosmetically different version of the standard terminal Python interpreter (invoked with <code>python</code>). One of the major improvements over the standard Python shell is <em>tab completion</em>, found in many IDEs or other interactive computing analysis environments. While entering expressions in the shell, pressing the Tab key will search the namespace for any variables (objects, functions, etc.) matching the characters you have typed so far and show the results in a convenient drop-down menu:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">1</span>]: an_apple <span class="op">=</span> <span class="dv">27</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">2</span>]: an_example <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">3</span>]: an<span class="op">&lt;</span>Tab<span class="op">&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>an_apple   an_example  <span class="bu">any</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In this example, note that IPython displayed both of the two variables I defined, as well as the built-in function <code>any</code>. Also, you can also complete methods and attributes on any object after typing a period:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">3</span>]: b <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">4</span>]: b.<span class="op">&lt;</span>Tab<span class="op">&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>append()  count()   insert()  reverse()</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>clear()   extend()  pop()     sort()</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>copy()    index()   remove()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The same is true for modules:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">1</span>]: <span class="im">import</span> datetime</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">2</span>]: datetime.<span class="op">&lt;</span>Tab<span class="op">&gt;</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>date          MAXYEAR       timedelta</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>datetime      MINYEAR       timezone</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>datetime_CAPI time          tzinfo</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that IPython by default hides methods and attributes starting with underscores, such as magic methods and internal “private” methods and attributes, in order to avoid cluttering the display (and confusing novice users!). These, too, can be tab-completed, but you must first type an underscore to see them. If you prefer to always see such methods in tab completion, you can change this setting in the IPython configuration. See the <a href="https://ipython.readthedocs.io">IPython documentation</a> to find out how to do this.</p>
+</div>
+</div>
+<p>Tab completion works in many contexts outside of searching the interactive namespace and completing object or module attributes. When typing anything that looks like a file path (even in a Python string), pressing the Tab key will complete anything on your computer’s filesystem matching what you’ve typed.</p>
+<p>Combined with the <code>%run</code> command (see <a href='/book/ipython#ipython_basics_magic_run'>Appendix B.2.1: The %run Command</a>), this functionality can save you many keystrokes.</p>
+<p>Another area where tab completion saves time is in the completion of function keyword arguments (including the <code>=</code> sign!). See <a href="#fig-figure_jupyter_autocomplete_keywords">Figure&nbsp;<span>2.4</span></a>.</p>
+<div id="fig-figure_jupyter_autocomplete_keywords" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/pda3_0204.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;2.4: Autocomplete function keywords in a Jupyter notebook</figcaption>
+</figure>
+</div>
+<p>We'll have a closer look at functions in a little bit.</p>
+</section>
+<section id="ipython_introspection" class="level3">
+<h3 class="anchored" data-anchor-id="ipython_introspection">Introspection</h3>
+<p>Using a question mark (<code>?</code>) before or after a variable will display some general information about the object:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">1</span>]: b <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">2</span>]: b?</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>Type:        <span class="bu">list</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>String form: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>Length:      <span class="dv">3</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>Docstring:</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>Built<span class="op">-</span><span class="kw">in</span> mutable sequence.</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>If no argument <span class="kw">is</span> given, the constructor creates a new empty <span class="bu">list</span>.</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>The argument must be an iterable <span class="cf">if</span> specified.</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">3</span>]: <span class="bu">print</span>?</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>Docstring:</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(value, ..., sep<span class="op">=</span><span class="st">' '</span>, end<span class="op">=</span><span class="st">'</span><span class="ch">\n</span><span class="st">'</span>, <span class="bu">file</span><span class="op">=</span>sys.stdout, flush<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>Prints the values to a stream, <span class="kw">or</span> to sys.stdout by default.</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>Optional keyword arguments:</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="bu">file</span>:  a <span class="bu">file</span><span class="op">-</span>like <span class="bu">object</span> (stream)<span class="op">;</span> defaults to the current sys.stdout.</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>sep:   string inserted between values, default a space.</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>end:   string appended after the last value, default a newline.</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>flush: whether to forcibly flush the stream.</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>Type:      builtin_function_or_method</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This is referred to as <em>object introspection</em>. If the object is a function or instance method, the docstring, if defined, will also be shown. Suppose we’d written the following function (which you can reproduce in IPython or Jupyter):</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> add_numbers(a, b):</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Add two numbers together</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">    the_sum : type of arguments</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> a <span class="op">+</span> b</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then using <code>?</code> shows us the docstring:</p>
+<pre><code>In [6]: add_numbers?
+Signature: add_numbers(a, b)
+Docstring:
+Add two numbers together
+Returns
+-------
+the_sum : type of arguments
+File:      &lt;ipython-input-9-6a548a216e27&gt;
+Type:      function</code></pre>
+<p><code>?</code> has a final usage, which is for searching the IPython namespace in a manner similar to the standard Unix or Windows command line. A number of characters combined with the wildcard (<code>*</code>) will show all names matching the wildcard expression. For example, we could get a list of all functions in the top-level NumPy namespace containing <code>load</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">9</span>]: <span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">10</span>]: np.<span class="op">*</span>load<span class="op">*</span>?</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>np.__loader__</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>np.load</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>np.loads</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>np.loadtxt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="tut_basics" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="tut_basics"><span class="header-section-number">2.3</span> Python Language Basics</h2>
+<p>In this section, I will give you an overview of essential Python programming concepts and language mechanics. In the next chapter, I will go into more detail about Python data structures, functions, and other built-in tools.</p>
+<section id="language_semantics" class="level3">
+<h3 class="anchored" data-anchor-id="language_semantics">Language Semantics</h3>
+<p>The Python language design is distinguished by its emphasis on readability, simplicity, and explicitness. Some people go so far as to liken it to “executable pseudocode.”</p>
+<section id="semantics_whitespace" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_whitespace">Indentation, not braces</h4>
+<p>Python uses whitespace (tabs or spaces) to structure code instead of using braces as in many other languages like R, C++, Java, and Perl. Consider a <code>for</code> loop from a sorting algorithm:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> array:</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> x <span class="op">&lt;</span> pivot:</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>        less.append(x)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>        greater.append(x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A colon denotes the start of an indented code block after which all of the code must be indented by the same amount until the end of the block.</p>
+<p>Love it or hate it, significant whitespace is a fact of life for Python programmers. While it may seem foreign at first, you will hopefully grow accustomed to it in time.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>I strongly recommend using <em>four spaces</em> as your default indentation and replacing tabs with four spaces. Many text editors have a setting that will replace tab stops with spaces automatically (do this!). IPython and Jupyter notebooks will automatically insert four spaces on new lines following a colon and replace tabs by four spaces.</p>
+</div>
+</div>
+<p>As you can see by now, Python statements also do not need to be terminated by semicolons. Semicolons can be used, however, to separate multiple statements on a single line:</p>
+<pre><code>a = 5; b = 6; c = 7</code></pre>
+<p>Putting multiple statements on one line is generally discouraged in Python as it can make code less readable.</p>
+</section>
+<section id="semantics_everything_object" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_everything_object">Everything is an object</h4>
+<p>An important characteristic of the Python language is the consistency of its <em>object model</em>. Every number, string, data structure, function, class, module, and so on exists in the Python interpreter in its own “box,” which is referred to as a <em>Python object</em>. Each object has an associated <em>type</em> (e.g., <em>integer</em>, <em>string</em>, or <em>function</em>) and internal data. In practice this makes the language very flexible, as even functions can be treated like any other object.</p>
+</section>
+<section id="semantics_comments" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_comments">Comments</h4>
+<p>Any text preceded by the hash mark (pound sign) <code>#</code> is ignored by the Python interpreter. This is often used to add comments to code. At times you may also want to exclude certain blocks of code without deleting them. One solution is to <em>comment out</em> the code:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> []</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> line <span class="kw">in</span> file_handle:</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># keep the empty lines for now</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># if len(line) == 0:</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   continue</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    results.append(line.replace(<span class="st">"foo"</span>, <span class="st">"bar"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Comments can also occur after a line of executed code. While some programmers prefer comments to be placed in the line preceding a particular line of code, this can be useful at times:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Reached this line"</span>)  <span class="co"># Simple status report</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="semantics_function_calls" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_function_calls">Function and object method calls</h4>
+<p>You call functions using parentheses and passing zero or more arguments, optionally assigning the returned value to a variable:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> f(x, y, z)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>g()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Almost every object in Python has attached functions, known as <em>methods</em>, that have access to the object’s internal contents. You can call them using the following syntax:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>obj.some_method(x, y, z)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Functions can take both <em>positional</em> and <em>keyword</em> arguments:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> f(a, b, c, d<span class="op">=</span><span class="dv">5</span>, e<span class="op">=</span><span class="st">"foo"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We will look at this in more detail later.</p>
+</section>
+<section id="semantics_references" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_references">Variables and argument passing</h4>
+<p>When assigning a variable (or <em>name</em>) in Python, you are creating a <em>reference</em> to the object shown on the righthand side of the equals sign. In practical terms, consider a list of integers:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">8</span>]: a <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Suppose we assign <code>a</code> to a new variable <code>b</code>:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">9</span>]: b <span class="op">=</span> a</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">10</span>]: b</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">10</span>]: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In some languages, the assignment if <code>b</code> will cause the data <code>[1, 2, 3]</code> to be copied. In Python, <code>a</code> and <code>b</code> actually now refer to the same object, the original list <code>[1, 2, 3]</code> (see <a href="#fig-figure_references">Figure&nbsp;<span>2.5</span></a> for a mock-up). You can prove this to yourself by appending an element to <code>a</code> and then examining <code>b</code>:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">11</span>]: a.append(<span class="dv">4</span>)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">12</span>]: b</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">12</span>]: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-figure_references" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/pda3_0205.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;2.5: Two references for the same object</figcaption>
+</figure>
+</div>
+<p>Understanding the semantics of references in Python, and when, how, and why data is copied, is especially critical when you are working with larger datasets in Python.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Assignment is also referred to as <em>binding</em>, as we are binding a name to an object. Variable names that have been assigned may occasionally be referred to as bound variables.</p>
+</div>
+</div>
+<p>When you pass objects as arguments to a function, new local variables are created referencing the original objects without any copying. If you bind a new object to a variable inside a function, that will not overwrite a variable of the same name in the "scope" outside of the function (the "parent scope"). It is therefore possible to alter the internals of a mutable argument. Suppose we had the following function:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">13</span>]: <span class="kw">def</span> append_element(some_list, element):</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>   ....:     some_list.append(element)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then we have:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">14</span>]: data <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">15</span>]: append_element(data, <span class="dv">4</span>)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">16</span>]: data</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">16</span>]: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="semantics_strongly_typed" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_strongly_typed">Dynamic references, strong types</h4>
+<p>Variables in Python have no inherent type associated with them; a variable can refer to a different type of object simply by doing an assignment. There is no problem with the following:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">17</span>]: a <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">18</span>]: <span class="bu">type</span>(a)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">18</span>]: <span class="bu">int</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">19</span>]: a <span class="op">=</span> <span class="st">"foo"</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">20</span>]: <span class="bu">type</span>(a)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">20</span>]: <span class="bu">str</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Variables are names for objects within a particular namespace; the type information is stored in the object itself. Some observers might hastily conclude that Python is not a “typed language.” This is not true; consider this example:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">21</span>]: <span class="st">"5"</span> <span class="op">+</span> <span class="dv">5</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="op">---------------------------------------------------------------------------</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="pp">TypeError</span>                                 Traceback (most recent call last)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>ipython<span class="op">-</span><span class="bu">input</span><span class="op">-</span><span class="dv">21</span><span class="op">-</span><span class="dv">7</span><span class="er">fe5aa79f268</span><span class="op">&gt;</span> <span class="kw">in</span> <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="op">----&gt;</span> <span class="dv">1</span> <span class="st">"5"</span> <span class="op">+</span> <span class="dv">5</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="pp">TypeError</span>: can only concatenate <span class="bu">str</span> (<span class="kw">not</span> <span class="st">"int"</span>) to <span class="bu">str</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In some languages, the string <code>'5'</code> might get implicitly converted (or <em>cast</em>) to an integer, thus yielding 10. In other languages the integer <code>5</code> might be cast to a string, yielding the concatenated string <code>'55'</code>. In Python, such implicit casts are not allowed. In this regard we say that Python is a <em>strongly typed</em> language, which means that every object has a specific type (or <em>class</em>), and implicit conversions will occur only in certain permitted circumstances, such as:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">22</span>]: a <span class="op">=</span> <span class="fl">4.5</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">23</span>]: b <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co"># String formatting, to be visited later</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">24</span>]: <span class="bu">print</span>(<span class="ss">f"a is </span><span class="sc">{</span><span class="bu">type</span>(a)<span class="sc">}</span><span class="ss">, b is </span><span class="sc">{</span><span class="bu">type</span>(b)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>a <span class="kw">is</span> <span class="op">&lt;</span><span class="kw">class</span> <span class="st">'float'</span><span class="op">&gt;</span>, b <span class="kw">is</span> <span class="op">&lt;</span><span class="kw">class</span> <span class="st">'int'</span><span class="op">&gt;</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">25</span>]: a <span class="op">/</span> b</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">25</span>]: <span class="fl">2.25</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Here, even though <code>b</code> is an integer, it is implicitly converted to a float for the division operation.</p>
+<p>Knowing the type of an object is important, and it’s useful to be able to write functions that can handle many different kinds of input. You can check that an object is an instance of a particular type using the <code>isinstance</code> function:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">26</span>]: a <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">27</span>]: <span class="bu">isinstance</span>(a, <span class="bu">int</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">27</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>isinstance</code> can accept a tuple of types if you want to check that an object’s type is among those present in the tuple:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">28</span>]: a <span class="op">=</span> <span class="dv">5</span><span class="op">;</span> b <span class="op">=</span> <span class="fl">4.5</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">29</span>]: <span class="bu">isinstance</span>(a, (<span class="bu">int</span>, <span class="bu">float</span>))</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">29</span>]: <span class="va">True</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">30</span>]: <span class="bu">isinstance</span>(b, (<span class="bu">int</span>, <span class="bu">float</span>))</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">30</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="attributes_and_methods" class="level4">
+<h4 class="anchored" data-anchor-id="attributes_and_methods">Attributes and methods</h4>
+<p>Objects in Python typically have both attributes (other Python objects stored “inside” the object) and methods (functions associated with an object that can have access to the object’s internal data). Both of them are accessed via the syntax &lt;obj.attribute_name&gt;:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">1</span>]: a <span class="op">=</span> <span class="st">"foo"</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">2</span>]: a.<span class="op">&lt;</span>Press Tab<span class="op">&gt;</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>capitalize() index()        isspace()      removesuffix()  startswith()</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>casefold()   isprintable()  istitle()      replace()       strip()</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>center()     isalnum()      isupper()      rfind()         swapcase()</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>count()      isalpha()      join()         rindex()        title()</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>encode()     isascii()      ljust()        rjust()         translate()</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>endswith()   isdecimal()    lower()        rpartition()</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>expandtabs() isdigit()      lstrip()       rsplit()</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>find()       isidentifier() maketrans()    rstrip()</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="bu">format</span>()     islower()      partition()    split()</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>format_map() isnumeric()    removeprefix() splitlines()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Attributes and methods can also be accessed by name via the <code>getattr</code> function:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">32</span>]: <span class="bu">getattr</span>(a, <span class="st">"split"</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">32</span>]: <span class="op">&lt;</span>function <span class="bu">str</span>.split(sep<span class="op">=</span><span class="va">None</span>, maxsplit<span class="op">=-</span><span class="dv">1</span>)<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>While we will not extensively use the functions <code>getattr</code> and related functions <code>hasattr</code> and <code>setattr</code> in this book, they can be used very effectively to write generic, reusable code.</p>
+</section>
+<section id="duck_typing" class="level4">
+<h4 class="anchored" data-anchor-id="duck_typing">Duck typing</h4>
+<p>Often you may not care about the type of an object but rather only whether it has certain methods or behavior. This is sometimes called <em>duck typing</em>, after the saying "If it walks like a duck and quacks like a duck, then it's a duck." For example, you can verify that an object is iterable if it implements the <em>iterator protocol</em>. For many objects, this means it has an <code>__iter__</code> “magic method,” though an alternative and better way to check is to try using the <code>iter</code> function:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">33</span>]: <span class="kw">def</span> isiterable(obj):</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="cf">try</span>:</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>   ....:         <span class="bu">iter</span>(obj)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>   ....:         <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="cf">except</span> <span class="pp">TypeError</span>: <span class="co"># not iterable</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>   ....:         <span class="cf">return</span> <span class="va">False</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This function would return <code>True</code> for strings as well as most Python collection types:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">34</span>]: isiterable(<span class="st">"a string"</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">34</span>]: <span class="va">True</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">35</span>]: isiterable([<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>])</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">35</span>]: <span class="va">True</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">36</span>]: isiterable(<span class="dv">5</span>)</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">36</span>]: <span class="va">False</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="semantics_imports" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_imports">Imports</h4>
+<p>In Python, a <em>module</em> is simply a file with the <em>.py</em> extension containing Python code. Suppose we had the following module:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># some_module.py</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>PI <span class="op">=</span> <span class="fl">3.14159</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> f(x):</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">+</span> <span class="dv">2</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> g(a, b):</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> a <span class="op">+</span> b</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If we wanted to access the variables and functions defined in <em>some_module.py</em>, from another file in the same directory we could do:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> some_module</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> some_module.f(<span class="dv">5</span>)</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>pi <span class="op">=</span> some_module.PI</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Or alternately:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> some_module <span class="im">import</span> g, PI</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> g(<span class="dv">5</span>, PI)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>By using the <code>as</code> keyword, you can give imports different variable names:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> some_module <span class="im">as</span> sm</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> some_module <span class="im">import</span> PI <span class="im">as</span> pi, g <span class="im">as</span> gf</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>r1 <span class="op">=</span> sm.f(pi)</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>r2 <span class="op">=</span> gf(<span class="dv">6</span>, pi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="semantics_binary_ops" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_binary_ops">Binary operators and comparisons</h4>
+<p>Most of the binary math operations and comparisons use familiar mathematical syntax used in other programming languages:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">37</span>]: <span class="dv">5</span> <span class="op">-</span> <span class="dv">7</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">37</span>]: <span class="op">-</span><span class="dv">2</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">38</span>]: <span class="dv">12</span> <span class="op">+</span> <span class="fl">21.5</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">38</span>]: <span class="fl">33.5</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">39</span>]: <span class="dv">5</span> <span class="op">&lt;=</span> <span class="dv">2</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">39</span>]: <span class="va">False</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>See <a href="#tbl-table_binary_ops">Table&nbsp;<span>2.1</span></a> for all of the available binary operators.</p>
+<div id="tbl-table_binary_ops" class="anchored">
+<table class="table">
+<caption>Table&nbsp;2.1: Binary operators</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Operation</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>a + b</code></td>
+<td style="text-align: left;">Add <code>a</code> and <code>b</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a - b</code></td>
+<td style="text-align: left;">Subtract <code>b</code> from <code>a</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a * b</code></td>
+<td style="text-align: left;">Multiply <code>a</code> by <code>b</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a / b</code></td>
+<td style="text-align: left;">Divide <code>a</code> by <code>b</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a // b</code></td>
+<td style="text-align: left;">Floor-divide <code>a</code> by <code>b</code>, dropping any fractional remainder</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a ** b</code></td>
+<td style="text-align: left;">Raise <code>a</code> to the <code>b</code> power</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a &amp; b</code></td>
+<td style="text-align: left;"><code>True</code> if both <code>a</code> and <code>b</code> are <code>True</code>; for integers, take the bitwise <code>AND</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a | b</code></td>
+<td style="text-align: left;"><code>True</code> if either <code>a</code> or <code>b</code> is <code>True</code>; for integers, take the bitwise <code>OR</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a ^ b</code></td>
+<td style="text-align: left;">For Booleans, <code>True</code> if <code>a</code> or <code>b</code> is <code>True</code>, but not both; for integers, take the bitwise <code>EXCLUSIVE-OR</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a == b</code></td>
+<td style="text-align: left;"><code>True</code> if <code>a</code> equals <code>b</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a != b</code></td>
+<td style="text-align: left;"><code>True</code> if <code>a</code> is not equal to <code>b</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a &lt; b</code>, a &lt;= b</td>
+<td style="text-align: left;"><code>True</code> if <code>a</code> is less than (less than or equal to) <code>b</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a &gt; b, a &gt;= b</code></td>
+<td style="text-align: left;"><code>True</code> if <code>a</code> is greater than (greater than or equal to) <code>b</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>a is b</code></td>
+<td style="text-align: left;"><code>True</code> if <code>a</code> and <code>b</code> reference the same Python object</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>a is not b</code></td>
+<td style="text-align: left;"><code>True</code> if <code>a</code> and <code>b</code> reference different Python objects</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>To check if two variables refer to the same object, use the <code>is</code> keyword. Use <code>is</code> <code>not</code> to check that two objects are not the same:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">40</span>]: a <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">41</span>]: b <span class="op">=</span> a</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">42</span>]: c <span class="op">=</span> <span class="bu">list</span>(a)</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">43</span>]: a <span class="kw">is</span> b</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">43</span>]: <span class="va">True</span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">44</span>]: a <span class="kw">is</span> <span class="kw">not</span> c</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">44</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Since the <code>list</code> function always creates a new Python list (i.e., a copy), we can be sure that <code>c</code> is distinct from <code>a</code>. Comparing with <code>is</code> is not the same as the <code>==</code> operator, because in this case we have:</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">45</span>]: a <span class="op">==</span> c</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">45</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A common use of <code>is</code> and <code>is</code> <code>not</code> is to check if a variable is <code>None</code>, since there is only one instance of <code>None</code>:</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">46</span>]: a <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">47</span>]: a <span class="kw">is</span> <span class="va">None</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">47</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="semantics_mutability" class="level4">
+<h4 class="anchored" data-anchor-id="semantics_mutability">Mutable and immutable objects</h4>
+<p>Many objects in Python, such as lists, dictionaries, NumPy arrays, and most user-defined types (classes), are <em>mutable</em>. This means that the object or values that they contain can be modified:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">48</span>]: a_list <span class="op">=</span> [<span class="st">"foo"</span>, <span class="dv">2</span>, [<span class="dv">4</span>, <span class="dv">5</span>]]</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">49</span>]: a_list[<span class="dv">2</span>] <span class="op">=</span> (<span class="dv">3</span>, <span class="dv">4</span>)</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">50</span>]: a_list</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">50</span>]: [<span class="st">'foo'</span>, <span class="dv">2</span>, (<span class="dv">3</span>, <span class="dv">4</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Others, like strings and tuples, are immutable, which means their internal data cannot be changed:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">51</span>]: a_tuple <span class="op">=</span> (<span class="dv">3</span>, <span class="dv">5</span>, (<span class="dv">4</span>, <span class="dv">5</span>))</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">52</span>]: a_tuple[<span class="dv">1</span>] <span class="op">=</span> <span class="st">"four"</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="op">---------------------------------------------------------------------------</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="pp">TypeError</span>                                 Traceback (most recent call last)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>ipython<span class="op">-</span><span class="bu">input</span><span class="op">-</span><span class="dv">52</span><span class="op">-</span>cd2a018a7529<span class="op">&gt;</span> <span class="kw">in</span> <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="op">----&gt;</span> <span class="dv">1</span> a_tuple[<span class="dv">1</span>] <span class="op">=</span> <span class="st">"four"</span></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a><span class="pp">TypeError</span>: <span class="st">'tuple'</span> <span class="bu">object</span> does <span class="kw">not</span> support item assignment</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Remember that just because you <em>can</em> mutate an object does not mean that you always <em>should</em>. Such actions are known as <em>side effects</em>. For example, when writing a function, any side effects should be explicitly communicated to the user in the function’s documentation or comments. If possible, I recommend trying to avoid side effects and <em>favor immutability</em>, even though there may be mutable objects involved.</p>
+</section>
+</section>
+<section id="scalar_types" class="level3">
+<h3 class="anchored" data-anchor-id="scalar_types">Scalar Types</h3>
+<p>Python has a small set of built-in types for handling numerical data, strings, Boolean (<code>True</code> or <code>False</code>) values, and dates and time. These "single value" types are sometimes called <em>scalar types</em>, and we refer to them in this book as <em>scalars</em> . See <a href="#tbl-table_python_scalar_types">Table&nbsp;<span>2.2</span></a> for a list of the main scalar types. Date and time handling will be discussed separately, as these are provided by the <code>datetime</code> module in the standard library.</p>
+<div id="tbl-table_python_scalar_types" class="anchored">
+<table class="table">
+<caption>Table&nbsp;2.2: Standard Python scalar types</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Type</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">The Python “null” value (only one instance of the <code>None</code> object exists)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>str</code></td>
+<td style="text-align: left;">String type; holds Unicode strings</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>bytes</code></td>
+<td style="text-align: left;">Raw binary data</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>float</code></td>
+<td style="text-align: left;">Double-precision floating-point number (note there is no separate <code>double</code> type)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>bool</code></td>
+<td style="text-align: left;">A Boolean <code>True</code> or <code>False</code> value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>int</code></td>
+<td style="text-align: left;">Arbitrary precision integer</td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="scalar_numeric" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_numeric">Numeric types</h4>
+<p>The primary Python types for numbers are <code>int</code> and <code>float</code>. An <code>int</code> can store arbitrarily large numbers:</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">53</span>]: ival <span class="op">=</span> <span class="dv">17239871</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">54</span>]: ival <span class="op">**</span> <span class="dv">6</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">54</span>]: <span class="dv">26254519291092456596965462913230729701102721</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Floating-point numbers are represented with the Python <code>float</code> type. Under the hood, each one is a double-precision value. They can also be expressed with scientific notation:</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">55</span>]: fval <span class="op">=</span> <span class="fl">7.243</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">56</span>]: fval2 <span class="op">=</span> <span class="fl">6.78e-5</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Integer division not resulting in a whole number will always yield a floating-point number:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">57</span>]: <span class="dv">3</span> <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">57</span>]: <span class="fl">1.5</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>To get C-style integer division (which drops the fractional part if the result is not a whole number), use the floor division operator <code>//</code>:</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">58</span>]: <span class="dv">3</span> <span class="op">//</span> <span class="dv">2</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">58</span>]: <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="scalar_strings" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_strings">Strings</h4>
+<p>Many people use Python for its built-in string handling capabilities. You can write <em>string literals</em> using either single quotes <code>'</code> or double quotes <code>"</code> (double quotes are generally favored):</p>
+<div class="sourceCode" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> <span class="st">'one way of writing a string'</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="st">"another way"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The Python string type is <code>str</code>.</p>
+<p>For multiline strings with line breaks, you can use triple quotes, either <code>'''</code> or <code>"""</code>:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>c <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="st">This is a longer string that</span></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a><span class="st">spans multiple lines</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>It may surprise you that this string <code>c</code> actually contains four lines of text; the line breaks after <code>"""</code> and after <code>lines</code> are included in the string. We can count the new line characters with the <code>count</code> method on <code>c</code>:</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">60</span>]: c.count(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>)</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">60</span>]: <span class="dv">3</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Python strings are immutable; you cannot modify a string:</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">61</span>]: a <span class="op">=</span> <span class="st">"this is a string"</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">62</span>]: a[<span class="dv">10</span>] <span class="op">=</span> <span class="st">"f"</span></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="op">---------------------------------------------------------------------------</span></span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a><span class="pp">TypeError</span>                                 Traceback (most recent call last)</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>ipython<span class="op">-</span><span class="bu">input</span><span class="op">-</span><span class="dv">62</span><span class="op">-</span><span class="dv">3</span><span class="er">b2d95f10db4</span><span class="op">&gt;</span> <span class="kw">in</span> <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a><span class="op">----&gt;</span> <span class="dv">1</span> a[<span class="dv">10</span>] <span class="op">=</span> <span class="st">"f"</span></span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a><span class="pp">TypeError</span>: <span class="st">'str'</span> <span class="bu">object</span> does <span class="kw">not</span> support item assignment</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>To interpret this error message, read from the bottom up. We tried to replace the character (the "item") at position 10 with the letter <code>"f"</code>, but this is not allowed for string objects. If we need to modify a string, we have to use a function or method that creates a new string, such as the string <code>replace</code> method:</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">63</span>]: b <span class="op">=</span> a.replace(<span class="st">"string"</span>, <span class="st">"longer string"</span>)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">64</span>]: b</span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">64</span>]: <span class="st">'this is a longer string'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Afer this operation, the variable <code>a</code> is unmodified:</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">65</span>]: a</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">65</span>]: <span class="st">'this is a string'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Many Python objects can be converted to a string using the <code>str</code> function:</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">66</span>]: a <span class="op">=</span> <span class="fl">5.6</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">67</span>]: s <span class="op">=</span> <span class="bu">str</span>(a)</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">68</span>]: <span class="bu">print</span>(s)</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a><span class="fl">5.6</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Strings are a sequence of Unicode characters and therefore can be treated like other sequences, such as lists and tuples:</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">69</span>]: s <span class="op">=</span> <span class="st">"python"</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">70</span>]: <span class="bu">list</span>(s)</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">70</span>]: [<span class="st">'p'</span>, <span class="st">'y'</span>, <span class="st">'t'</span>, <span class="st">'h'</span>, <span class="st">'o'</span>, <span class="st">'n'</span>]</span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">71</span>]: s[:<span class="dv">3</span>]</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">71</span>]: <span class="st">'pyt'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The syntax <code>s[:3]</code> is called <em>slicing</em> and is implemented for many kinds of Python sequences. This will be explained in more detail later on, as it is used extensively in this book.</p>
+<p>The backslash character <code>\</code> is an <em>escape character</em>, meaning that it is used to specify special characters like newline <code>\n</code> or Unicode characters. To write a string literal with backslashes, you need to escape them:</p>
+<div class="sourceCode" id="cb59"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">72</span>]: s <span class="op">=</span> <span class="st">"12</span><span class="ch">\\</span><span class="st">34"</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">73</span>]: <span class="bu">print</span>(s)</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a><span class="dv">12</span>\<span class="dv">34</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If you have a string with a lot of backslashes and no special characters, you might find this a bit annoying. Fortunately you can preface the leading quote of the string with <code>r</code>, which means that the characters should be interpreted as is:</p>
+<div class="sourceCode" id="cb60"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">74</span>]: s <span class="op">=</span> <span class="vs">r"this\has\no\special\characters"</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">75</span>]: s</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">75</span>]: <span class="st">'this</span><span class="ch">\\</span><span class="st">has</span><span class="ch">\\</span><span class="st">no</span><span class="ch">\\</span><span class="st">special</span><span class="ch">\\</span><span class="st">characters'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>r</code> stands for <em>raw</em>.</p>
+<p>Adding two strings together concatenates them and produces a new string:</p>
+<div class="sourceCode" id="cb61"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">76</span>]: a <span class="op">=</span> <span class="st">"this is the first half "</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">77</span>]: b <span class="op">=</span> <span class="st">"and this is the second half"</span></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">78</span>]: a <span class="op">+</span> b</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">78</span>]: <span class="st">'this is the first half and this is the second half'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>String templating or formatting is another important topic. The number of ways to do so has expanded with the advent of Python 3, and here I will briefly describe the mechanics of one of the main interfaces. String objects have a <code>format</code> method that can be used to substitute formatted arguments into the string, producing a new string:</p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">79</span>]: template <span class="op">=</span> <span class="st">"</span><span class="sc">{0:.2f}</span><span class="st"> </span><span class="sc">{1:s}</span><span class="st"> are worth US$</span><span class="sc">{2:d}</span><span class="st">"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In this string:</p>
+<ul>
+<li><p><code>{0:.2f}</code> means to format the first argument as a floating-point number with two decimal places.</p></li>
+<li><p><code>{1:s}</code> means to format the second argument as a string.</p></li>
+<li><p><code>{2:d}</code> means to format the third argument as an exact integer.</p></li>
+</ul>
+<p>To substitute arguments for these format parameters, we pass a sequence of arguments to the <code>format</code> method:</p>
+<div class="sourceCode" id="cb63"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">80</span>]: template.<span class="bu">format</span>(<span class="fl">88.46</span>, <span class="st">"Argentine Pesos"</span>, <span class="dv">1</span>)</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">80</span>]: <span class="st">'88.46 Argentine Pesos are worth US$1'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Python 3.6 introduced a new feature called <em>f-strings</em> (short for <em>formatted string literals</em>) which can make creating formatted strings even more convenient. To create an f-string, write the character <code>f</code> immediately preceding a string literal. Within the string, enclose Python expressions in curly braces to substitute the value of the expression into the formatted string:</p>
+<div class="sourceCode" id="cb64"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">81</span>]: amount <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">82</span>]: rate <span class="op">=</span> <span class="fl">88.46</span></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">83</span>]: currency <span class="op">=</span> <span class="st">"Pesos"</span></span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">84</span>]: result <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>amount<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>currency<span class="sc">}</span><span class="ss"> is worth US$</span><span class="sc">{</span>amount <span class="op">/</span> rate<span class="sc">}</span><span class="ss">"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Format specifiers can be added after each expression using the same syntax as with the string templates above:</p>
+<div class="sourceCode" id="cb65"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">85</span>]: <span class="ss">f"</span><span class="sc">{</span>amount<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>currency<span class="sc">}</span><span class="ss"> is worth US$</span><span class="sc">{</span>amount <span class="op">/</span> rate<span class="sc">:.2f}</span><span class="ss">"</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">85</span>]: <span class="st">'10 Pesos is worth US$0.11'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>String formatting is a deep topic; there are multiple methods and numerous options and tweaks available to control how values are formatted in the resulting string. To learn more, consult the <a href="https://docs.python.org/3/library/string.html">official Python documentation</a>.</p>
+</section>
+<section id="scalar_bytes" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_bytes">Bytes and Unicode</h4>
+<p>In modern Python (i.e., Python 3.0 and up), Unicode has become the first-class string type to enable more consistent handling of ASCII and non-ASCII text. In older versions of Python, strings were all bytes without any explicit Unicode encoding. You could convert to Unicode assuming you knew the character encoding. Here is an example Unicode string with non-ASCII characters:</p>
+<div class="sourceCode" id="cb66"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">86</span>]: val <span class="op">=</span> <span class="st">"español"</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">87</span>]: val</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">87</span>]: <span class="st">'español'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can convert this Unicode string to its UTF-8 bytes representation using the <code>encode</code> method:</p>
+<div class="sourceCode" id="cb67"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">88</span>]: val_utf8 <span class="op">=</span> val.encode(<span class="st">"utf-8"</span>)</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">89</span>]: val_utf8</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">89</span>]: <span class="st">b'espa</span><span class="ch">\xc3\xb1</span><span class="st">ol'</span></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">90</span>]: <span class="bu">type</span>(val_utf8)</span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">90</span>]: <span class="bu">bytes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Assuming you know the Unicode encoding of a <code>bytes</code> object, you can go back using the <code>decode</code> method:</p>
+<div class="sourceCode" id="cb68"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">91</span>]: val_utf8.decode(<span class="st">"utf-8"</span>)</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">91</span>]: <span class="st">'español'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>While it is now preferable to use UTF-8 for any encoding, for historical reasons you may encounter data in any number of different encodings:</p>
+<div class="sourceCode" id="cb69"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">92</span>]: val.encode(<span class="st">"latin1"</span>)</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">92</span>]: <span class="st">b'espa</span><span class="ch">\xf1</span><span class="st">ol'</span></span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">93</span>]: val.encode(<span class="st">"utf-16"</span>)</span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">93</span>]: <span class="st">b'</span><span class="ch">\xff\xfe</span><span class="st">e</span><span class="ch">\x00</span><span class="st">s</span><span class="ch">\x00</span><span class="st">p</span><span class="ch">\x00</span><span class="st">a</span><span class="ch">\x00\xf1\x00</span><span class="st">o</span><span class="ch">\x00</span><span class="st">l</span><span class="ch">\x00</span><span class="st">'</span></span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">94</span>]: val.encode(<span class="st">"utf-16le"</span>)</span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">94</span>]: <span class="st">b'e</span><span class="ch">\x00</span><span class="st">s</span><span class="ch">\x00</span><span class="st">p</span><span class="ch">\x00</span><span class="st">a</span><span class="ch">\x00\xf1\x00</span><span class="st">o</span><span class="ch">\x00</span><span class="st">l</span><span class="ch">\x00</span><span class="st">'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>It is most common to encounter <code>bytes</code> objects in the context of working with files, where implicitly decoding all data to Unicode strings may not be desired.</p>
+</section>
+<section id="scalar_boolean" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_boolean">Booleans</h4>
+<p>The two Boolean values in Python are written as <code>True</code> and <code>False</code>. Comparisons and other conditional expressions evaluate to either <code>True</code> or <code>False</code>. Boolean values are combined with the <code>and</code> and <code>or</code> keywords:</p>
+<div class="sourceCode" id="cb70"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">95</span>]: <span class="va">True</span> <span class="kw">and</span> <span class="va">True</span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">95</span>]: <span class="va">True</span></span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">96</span>]: <span class="va">False</span> <span class="kw">or</span> <span class="va">True</span></span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">96</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When converted to numbers, <code>False</code> becomes <code>0</code> and <code>True</code> becomes <code>1</code>:</p>
+<div class="sourceCode" id="cb71"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">97</span>]: <span class="bu">int</span>(<span class="va">False</span>)</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">97</span>]: <span class="dv">0</span></span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">98</span>]: <span class="bu">int</span>(<span class="va">True</span>)</span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">98</span>]: <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The keyword <code>not</code> flips a Boolean value from <code>True</code> to <code>False</code> or vice versa:</p>
+<div class="sourceCode" id="cb72"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">99</span>]: a <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">100</span>]: b <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">101</span>]: <span class="kw">not</span> a</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">101</span>]: <span class="va">False</span></span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">102</span>]: <span class="kw">not</span> b</span>
+<span id="cb72-9"><a href="#cb72-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">102</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="scalar_casting" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_casting">Type casting</h4>
+<p>The <code>str</code>, <code>bool</code>, <code>int</code>, and <code>float</code> types are also functions that can be used to cast values to those types:</p>
+<div class="sourceCode" id="cb73"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">103</span>]: s <span class="op">=</span> <span class="st">"3.14159"</span></span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">104</span>]: fval <span class="op">=</span> <span class="bu">float</span>(s)</span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">105</span>]: <span class="bu">type</span>(fval)</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">105</span>]: <span class="bu">float</span></span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">106</span>]: <span class="bu">int</span>(fval)</span>
+<span id="cb73-9"><a href="#cb73-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">106</span>]: <span class="dv">3</span></span>
+<span id="cb73-10"><a href="#cb73-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-11"><a href="#cb73-11" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">107</span>]: <span class="bu">bool</span>(fval)</span>
+<span id="cb73-12"><a href="#cb73-12" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">107</span>]: <span class="va">True</span></span>
+<span id="cb73-13"><a href="#cb73-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-14"><a href="#cb73-14" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">108</span>]: <span class="bu">bool</span>(<span class="dv">0</span>)</span>
+<span id="cb73-15"><a href="#cb73-15" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">108</span>]: <span class="va">False</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Note that most nonzero values when cast to <code>bool</code> become <code>True</code>.</p>
+</section>
+<section id="scalar_none" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_none">None</h4>
+<p><code>None</code> is the Python null value type:</p>
+<div class="sourceCode" id="cb74"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">109</span>]: a <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">110</span>]: a <span class="kw">is</span> <span class="va">None</span></span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">110</span>]: <span class="va">True</span></span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">111</span>]: b <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">112</span>]: b <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span></span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">112</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>None</code> is also a common default value for function arguments:</p>
+<div class="sourceCode" id="cb75"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> add_and_maybe_multiply(a, b, c<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> a <span class="op">+</span> b</span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> c <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>        result <span class="op">=</span> result <span class="op">*</span> c</span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> result</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="scalar_dates" class="level4">
+<h4 class="anchored" data-anchor-id="scalar_dates">Dates and times</h4>
+<p>The built-in Python <code>datetime</code> module provides <code>datetime</code>, <code>date</code>, and <code>time</code> types. The <code>datetime</code> type combines the information stored in <code>date</code> and <code>time</code> and is the most commonly used:</p>
+<div class="sourceCode" id="cb76"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">113</span>]: <span class="im">from</span> datetime <span class="im">import</span> datetime, date, time</span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">114</span>]: dt <span class="op">=</span> datetime(<span class="dv">2011</span>, <span class="dv">10</span>, <span class="dv">29</span>, <span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">21</span>)</span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">115</span>]: dt.day</span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">115</span>]: <span class="dv">29</span></span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">116</span>]: dt.minute</span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">116</span>]: <span class="dv">30</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Given a <code>datetime</code> instance, you can extract the equivalent <code>date</code> and <code>time</code> objects by calling methods on the <code>datetime</code> of the same name:</p>
+<div class="sourceCode" id="cb77"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">117</span>]: dt.date()</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">117</span>]: datetime.date(<span class="dv">2011</span>, <span class="dv">10</span>, <span class="dv">29</span>)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">118</span>]: dt.time()</span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">118</span>]: datetime.time(<span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">21</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>strftime</code> method formats a <code>datetime</code> as a string:</p>
+<div class="sourceCode" id="cb78"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">119</span>]: dt.strftime(<span class="st">"%Y-%m-</span><span class="sc">%d</span><span class="st"> %H:%M"</span>)</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">119</span>]: <span class="st">'2011-10-29 20:30'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Strings can be converted (parsed) into <code>datetime</code> objects with the <code>strptime</code> function:</p>
+<div class="sourceCode" id="cb79"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">120</span>]: datetime.strptime(<span class="st">"20091031"</span>, <span class="st">"%Y%m</span><span class="sc">%d</span><span class="st">"</span>)</span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">120</span>]: datetime.datetime(<span class="dv">2009</span>, <span class="dv">10</span>, <span class="dv">31</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>See <a href='/book/time-series#tbl-table_datetime_formatting'>Table&nbsp;<span>11.2</span></a> for a full list of format specifications.</p>
+<p>When you are aggregating or otherwise grouping time series data, it will occasionally be useful to replace time fields of a series of <code>datetime</code>s—for example, replacing the <code>minute</code> and <code>second</code> fields with zero:</p>
+<div class="sourceCode" id="cb80"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">121</span>]: dt_hour <span class="op">=</span> dt.replace(minute<span class="op">=</span><span class="dv">0</span>, second<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">122</span>]: dt_hour</span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">122</span>]: datetime.datetime(<span class="dv">2011</span>, <span class="dv">10</span>, <span class="dv">29</span>, <span class="dv">20</span>, <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Since <code>datetime.datetime</code> is an immutable type, methods like these always produce new objects. So in the previous example, <code>dt</code> is not modified by <code>replace</code>:</p>
+<div class="sourceCode" id="cb81"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">123</span>]: dt</span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">123</span>]: datetime.datetime(<span class="dv">2011</span>, <span class="dv">10</span>, <span class="dv">29</span>, <span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">21</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The difference of two <code>datetime</code> objects produces a <code>datetime.timedelta</code> type:</p>
+<div class="sourceCode" id="cb82"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">124</span>]: dt2 <span class="op">=</span> datetime(<span class="dv">2011</span>, <span class="dv">11</span>, <span class="dv">15</span>, <span class="dv">22</span>, <span class="dv">30</span>)</span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">125</span>]: delta <span class="op">=</span> dt2 <span class="op">-</span> dt</span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">126</span>]: delta</span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">126</span>]: datetime.timedelta(days<span class="op">=</span><span class="dv">17</span>, seconds<span class="op">=</span><span class="dv">7179</span>)</span>
+<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">127</span>]: <span class="bu">type</span>(delta)</span>
+<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">127</span>]: datetime.timedelta</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The output <code>timedelta(17, 7179)</code> indicates that the <code>timedelta</code> encodes an offset of 17 days and 7,179 seconds.</p>
+<p>Adding a <code>timedelta</code> to a <code>datetime</code> produces a new shifted <code>datetime</code>:</p>
+<div class="sourceCode" id="cb83"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">128</span>]: dt</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">128</span>]: datetime.datetime(<span class="dv">2011</span>, <span class="dv">10</span>, <span class="dv">29</span>, <span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">21</span>)</span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">129</span>]: dt <span class="op">+</span> delta</span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">129</span>]: datetime.datetime(<span class="dv">2011</span>, <span class="dv">11</span>, <span class="dv">15</span>, <span class="dv">22</span>, <span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="control_flow" class="level3">
+<h3 class="anchored" data-anchor-id="control_flow">Control Flow</h3>
+<p>Python has several built-in keywords for conditional logic, loops, and other standard <em>control flow</em> concepts found in other programming languages.</p>
+<section id="control_if_else" class="level4">
+<h4 class="anchored" data-anchor-id="control_if_else">if, elif, and else</h4>
+<p>The <code>if</code> statement is one of the most well-known control flow statement types. It checks a condition that, if <code>True</code>, evaluates the code in the block that follows:</p>
+<div class="sourceCode" id="cb84"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="op">-</span><span class="dv">5</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> x <span class="op">&lt;</span> <span class="dv">0</span>:</span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"It's negative"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>An <code>if</code> statement can be optionally followed by one or more <code>elif</code> blocks and a catchall <code>else</code> block if all of the conditions are <code>False</code>:</p>
+<div class="sourceCode" id="cb85"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> x <span class="op">&lt;</span> <span class="dv">0</span>:</span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"It's negative"</span>)</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> x <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Equal to zero"</span>)</span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> <span class="dv">0</span> <span class="op">&lt;</span> x <span class="op">&lt;</span> <span class="dv">5</span>:</span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Positive but smaller than 5"</span>)</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Positive and larger than or equal to 5"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If any of the conditions are <code>True</code>, no further <code>elif</code> or <code>else</code> blocks will be reached. With a compound condition using <code>and</code> or <code>or</code>, conditions are evaluated left to right and will short-circuit:</p>
+<div class="sourceCode" id="cb86"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">130</span>]: a <span class="op">=</span> <span class="dv">5</span><span class="op">;</span> b <span class="op">=</span> <span class="dv">7</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">131</span>]: c <span class="op">=</span> <span class="dv">8</span><span class="op">;</span> d <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">132</span>]: <span class="cf">if</span> a <span class="op">&lt;</span> b <span class="kw">or</span> c <span class="op">&gt;</span> d:</span>
+<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a>   .....:     <span class="bu">print</span>(<span class="st">"Made it"</span>)</span>
+<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a>Made it</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In this example, the comparison <code>c &gt; d</code> never gets evaluated because the first comparison was <code>True</code>.</p>
+<p>It is also possible to chain comparisons:</p>
+<div class="sourceCode" id="cb87"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">133</span>]: <span class="dv">4</span> <span class="op">&gt;</span> <span class="dv">3</span> <span class="op">&gt;</span> <span class="dv">2</span> <span class="op">&gt;</span> <span class="dv">1</span></span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">133</span>]: <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="control_for" class="level4">
+<h4 class="anchored" data-anchor-id="control_for">for loops</h4>
+<p><code>for</code> loops are for iterating over a collection (like a list or tuple) or an iterater. The standard syntax for a <code>for</code> loop is:</p>
+<div class="sourceCode" id="cb88"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> value <span class="kw">in</span> collection:</span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># do something with value</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>You can advance a <code>for</code> loop to the next iteration, skipping the remainder of the block, using the <code>continue</code> keyword. Consider this code, which sums up integers in a list and skips <code>None</code> values:</p>
+<div class="sourceCode" id="cb89"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>sequence <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="va">None</span>, <span class="dv">4</span>, <span class="va">None</span>, <span class="dv">5</span>]</span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> value <span class="kw">in</span> sequence:</span>
+<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> value <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb89-5"><a href="#cb89-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">continue</span></span>
+<span id="cb89-6"><a href="#cb89-6" aria-hidden="true" tabindex="-1"></a>    total <span class="op">+=</span> value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A <code>for</code> loop can be exited altogether with the <code>break</code> keyword. This code sums elements of the list until a 5 is reached:</p>
+<div class="sourceCode" id="cb90"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>sequence <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">5</span>, <span class="dv">2</span>, <span class="dv">1</span>]</span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>total_until_5 <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> value <span class="kw">in</span> sequence:</span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> value <span class="op">==</span> <span class="dv">5</span>:</span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>    total_until_5 <span class="op">+=</span> value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>break</code> keyword only terminates the innermost <code>for</code> loop; any outer <code>for</code> loops will continue to run:</p>
+<div class="sourceCode" id="cb91"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">134</span>]: <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>):</span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>   .....:     <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>):</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>   .....:         <span class="cf">if</span> j <span class="op">&gt;</span> i:</span>
+<span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a>   .....:             <span class="cf">break</span></span>
+<span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a>   .....:         <span class="bu">print</span>((i, j))</span>
+<span id="cb91-6"><a href="#cb91-6" aria-hidden="true" tabindex="-1"></a>   .....:</span>
+<span id="cb91-7"><a href="#cb91-7" aria-hidden="true" tabindex="-1"></a>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb91-8"><a href="#cb91-8" aria-hidden="true" tabindex="-1"></a>(<span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb91-9"><a href="#cb91-9" aria-hidden="true" tabindex="-1"></a>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb91-10"><a href="#cb91-10" aria-hidden="true" tabindex="-1"></a>(<span class="dv">2</span>, <span class="dv">0</span>)</span>
+<span id="cb91-11"><a href="#cb91-11" aria-hidden="true" tabindex="-1"></a>(<span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb91-12"><a href="#cb91-12" aria-hidden="true" tabindex="-1"></a>(<span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb91-13"><a href="#cb91-13" aria-hidden="true" tabindex="-1"></a>(<span class="dv">3</span>, <span class="dv">0</span>)</span>
+<span id="cb91-14"><a href="#cb91-14" aria-hidden="true" tabindex="-1"></a>(<span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb91-15"><a href="#cb91-15" aria-hidden="true" tabindex="-1"></a>(<span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb91-16"><a href="#cb91-16" aria-hidden="true" tabindex="-1"></a>(<span class="dv">3</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>As we will see in more detail, if the elements in the collection or iterator are sequences (tuples or lists, say), they can be conveniently <em>unpacked</em> into variables in the <code>for</code> loop statement:</p>
+<div class="sourceCode" id="cb92"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> a, b, c <span class="kw">in</span> iterator:</span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># do something</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="control_while" class="level4">
+<h4 class="anchored" data-anchor-id="control_while">while loops</h4>
+<p>A <code>while</code> loop specifies a condition and a block of code that is to be executed until the condition evaluates to <code>False</code> or the loop is explicitly ended with <code>break</code>:</p>
+<div class="sourceCode" id="cb93"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="dv">256</span></span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a>total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> x <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> total <span class="op">&gt;</span> <span class="dv">500</span>:</span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>    total <span class="op">+=</span> x</span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> x <span class="op">//</span> <span class="dv">2</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="control_pass" class="level4">
+<h4 class="anchored" data-anchor-id="control_pass">pass</h4>
+<p><code>pass</code> is the “no-op” (or "do nothing") statement in Python. It can be used in blocks where no action is to be taken (or as a placeholder for code not yet implemented); it is required only because Python uses whitespace to delimit blocks:</p>
+<div class="sourceCode" id="cb94"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> x <span class="op">&lt;</span> <span class="dv">0</span>:</span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"negative!"</span>)</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> x <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># </span><span class="al">TODO</span><span class="co">: put something smart here</span></span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">pass</span></span>
+<span id="cb94-6"><a href="#cb94-6" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb94-7"><a href="#cb94-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"positive!"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="control_range" class="level4">
+<h4 class="anchored" data-anchor-id="control_range">range</h4>
+<p>The <code>range</code> function generates a sequence of evenly spaced integers:</p>
+<div class="sourceCode" id="cb95"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">135</span>]: <span class="bu">range</span>(<span class="dv">10</span>)</span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">135</span>]: <span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">10</span>)</span>
+<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">136</span>]: <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">10</span>))</span>
+<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">136</span>]: [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A start, end, and step (which may be negative) can be given:</p>
+<div class="sourceCode" id="cb96"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">137</span>]: <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="dv">2</span>))</span>
+<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">137</span>]: [<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">8</span>, <span class="dv">10</span>, <span class="dv">12</span>, <span class="dv">14</span>, <span class="dv">16</span>, <span class="dv">18</span>]</span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">138</span>]: <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">5</span>, <span class="dv">0</span>, <span class="op">-</span><span class="dv">1</span>))</span>
+<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">138</span>]: [<span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>As you can see, <code>range</code> produces integers up to but not including the endpoint. A common use of <code>range</code> is for iterating through sequences by index:</p>
+<div class="sourceCode" id="cb97"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">139</span>]: seq <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">140</span>]: <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(seq)):</span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>   .....:     <span class="bu">print</span>(<span class="ss">f"element </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>seq[i]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>element <span class="dv">0</span>: <span class="dv">1</span></span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>element <span class="dv">1</span>: <span class="dv">2</span></span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>element <span class="dv">2</span>: <span class="dv">3</span></span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>element <span class="dv">3</span>: <span class="dv">4</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>While you can use functions like <code>list</code> to store all the integers generated by <code>range</code> in some other data structure, often the default iterator form will be what you want. This snippet sums all numbers from 0 to 99,999 that are multiples of 3 or 5:</p>
+<div class="sourceCode" id="cb98"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">141</span>]: total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">142</span>]: <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">100_000</span>):</span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>   .....:     <span class="co"># % is the modulo operator</span></span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>   .....:     <span class="cf">if</span> i <span class="op">%</span> <span class="dv">3</span> <span class="op">==</span> <span class="dv">0</span> <span class="kw">or</span> i <span class="op">%</span> <span class="dv">5</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>   .....:         total <span class="op">+=</span> i</span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-8"><a href="#cb98-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">143</span>]: <span class="bu">print</span>(total)</span>
+<span id="cb98-9"><a href="#cb98-9" aria-hidden="true" tabindex="-1"></a><span class="dv">2333316668</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>While the range generated can be arbitrarily large, the memory use at any given time may be very small.</p>
+</section>
+</section>
+</section>
+<section id="python_tutorial_summary" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="python_tutorial_summary"><span class="header-section-number">2.4</span> Conclusion</h2>
+<p>This chapter provided a brief introduction to some basic Python language concepts and the IPython and Jupyter programming environments. In the next chapter, I will discuss many built-in data types, functions, and input-output utilities that will be used continuously throughout the rest of the book.</p>
+
+
+</section>
+
+<script async="" defer="" src="https://scripts.simpleanalyticscdn.com/latest.js"></script></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a class='pagination-link' href='/book/preliminaries'>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preliminaries</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a class='pagination-link' href='/book/python-builtin'>
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Built-In Data Structures, Functions, and Files</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">Copyright 2023, Wes McKinney. All Rights Reserved.</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/wesmckinn">
+      <i class="bi bi-twitter" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+<script async="" src="https://media.ethicalads.io/media/client/ethicalads.min.js"></script>
+
+
+
+</body></html>
