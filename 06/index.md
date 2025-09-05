@@ -1,691 +1,773 @@
+# Lecture 06: Advanced Data Loading + Data Cleaning Mastery
+
+**Duration**: 4.5 hours  
+**Level**: Advanced Professional Track  
+**Prerequisites**: L01-L05 foundation concepts
+
+## Professional Context: Why Advanced Data Loading Matters
+
+In professional data science and clinical research environments, you rarely work with clean, single-source datasets. Real-world projects involve:
+
+- **Multi-source integration**: EMR data, lab results, imaging metadata, registry data
+- **Large-scale processing**: Millions of patient records, genomic datasets, longitudinal studies
+- **Quality assurance**: Regulatory compliance, audit trails, reproducible pipelines
+- **Performance optimization**: Memory-efficient processing, parallel operations
+
+Today we master the professional-grade techniques that separate advanced practitioners from beginners.
+
+## Learning Objectives
+
+By the end of this lecture, you will:
+
+1. **Design and implement multi-source data integration pipelines**
+2. **Handle large datasets efficiently using chunking and streaming techniques**  
+3. **Build comprehensive data quality assessment frameworks**
+4. **Create automated cleaning workflows with audit trails**
+5. **Optimize memory usage and processing speed for production environments**
+
 ---
-marp: true
-theme: sqrl
-paginate: true
-class: invert
----
 
-# Lecture 06: Are you ready to wrangle?!?
+## Part 1: Multi-Source Data Integration (90 minutes)
 
-1. Introduction to Data Wrangling with pandas
-2. Combining and Reshaping Data
-3. Practical Data Cleaning Techniques
-4. Additional Data Wrangling Techniques
+### Professional Challenge: Clinical Research Data Pipeline
 
----
+Imagine you're building a cardiovascular outcomes study combining:
+- **EMR data**: Patient demographics, comorbidities, medications
+- **Lab data**: Serial biomarkers, lipid panels, HbA1c values  
+- **Claims data**: Procedures, diagnoses, healthcare utilization
+- **Registry data**: Cardiac catheterization results, outcomes
 
-> "Data is the new oil. It's valuable, but if unrefined it cannot really be used."
+Each source has different:
+- **Formats**: CSV, JSON, Parquet, database tables
+- **Schemas**: Different column names, data types, missing value encoding
+- **Temporal alignment**: Different time granularities, time zones
+- **Quality issues**: Duplicates, outliers, inconsistent coding
 
-\- Clive Humby
+### Advanced Loading Techniques
 
----
-
-## Key pandas Data Structures
-
-- Series: 1D labeled array
-- DataFrame: 2D labeled data structure
+#### 1. Schema-Aware Loading with Validation
 
 ```python
-# Series
-s = pd.Series([1, 3, 5, np.nan, 6, 8])
+import pandas as pd
+import numpy as np
+from pathlib import Path
+import yaml
+from typing import Dict, List, Optional
+import logging
 
-# DataFrame
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-
-# Selecting columns
-df['A']  # Returns a Series
-df[['A', 'B']]  # Returns a DataFrame
+class DataLoader:
+    def __init__(self, config_path: str):
+        """Initialize with configuration file defining schemas and rules."""
+        with open(config_path, 'r') as f:
+            self.config = yaml.safe_load(f)
+        self.setup_logging()
+    
+    def load_with_schema(self, source_name: str, file_path: str) -> pd.DataFrame:
+        """Load data with predefined schema validation."""
+        schema = self.config['schemas'][source_name]
+        
+        # Load with expected dtypes
+        df = pd.read_csv(
+            file_path,
+            dtype=schema['dtypes'],
+            parse_dates=schema.get('date_columns', []),
+            na_values=schema.get('na_values', [])
+        )
+        
+        # Validate required columns
+        missing_cols = set(schema['required_columns']) - set(df.columns)
+        if missing_cols:
+            raise ValueError(f"Missing required columns: {missing_cols}")
+        
+        # Log loading summary
+        self.logger.info(f"Loaded {source_name}: {df.shape[0]:,} rows, {df.shape[1]} columns")
+        
+        return df
 ```
 
----
+#### 2. Parallel Processing for Multiple Sources
 
-## Reading Data into pandas(review)
-
-Common file formats:
-- CSV: `pd.read_csv()`
-- Excel: `pd.read_excel()`
-- JSON: `pd.read_json()`
-- SQL databases: `pd.read_sql()`
-
-Example:
 ```python
-df = pd.read_csv('patient_data.csv')
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
+
+class ParallelDataLoader:
+    def __init__(self, n_workers: Optional[int] = None):
+        self.n_workers = n_workers or mp.cpu_count() - 1
+    
+    def load_multiple_sources(self, source_configs: List[Dict]) -> Dict[str, pd.DataFrame]:
+        """Load multiple data sources in parallel."""
+        
+        def load_single_source(config):
+            source_name = config['name']
+            file_path = config['path']
+            
+            if config.get('file_type') == 'parquet':
+                df = pd.read_parquet(file_path)
+            elif config.get('file_type') == 'json':
+                df = pd.read_json(file_path, lines=config.get('json_lines', False))
+            else:
+                df = pd.read_csv(file_path, **config.get('read_options', {}))
+            
+            return source_name, df
+        
+        results = {}
+        with ProcessPoolExecutor(max_workers=self.n_workers) as executor:
+            # Submit all loading tasks
+            future_to_source = {
+                executor.submit(load_single_source, config): config['name']
+                for config in source_configs
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_source):
+                source_name = future_to_source[future]
+                try:
+                    name, df = future.result()
+                    results[name] = df
+                    print(f"✓ Loaded {name}: {df.shape}")
+                except Exception as e:
+                    print(f"✗ Failed to load {source_name}: {e}")
+        
+        return results
 ```
 
+### Hands-On Exercise 1: Multi-Source Integration Pipeline
+
+**Scenario**: You're analyzing factors affecting hospital readmission rates.
+
+**Data Sources**:
+1. **Admissions data** (CSV): Patient ID, admission date, discharge date, primary diagnosis
+2. **Lab results** (JSON): Patient ID, test date, lab values, reference ranges
+3. **Medication data** (Parquet): Patient ID, medication, start date, stop date
+4. **Outcomes data** (CSV): Patient ID, readmission date, readmission reason
+
+**Your Task**: Build a pipeline that:
+- Loads all sources with appropriate schema validation
+- Handles different date formats and missing value encodings
+- Creates a unified patient timeline
+- Generates a loading report with data quality metrics
+
 ---
 
-## Basic DataFrame Operations (review)
+## Part 2: Large Dataset Handling (75 minutes)
 
-- Viewing data: `df.head()`, `df.tail()`, `df.info()`
-- Selecting columns: `df['column_name']` or `df.column_name`
-- Filtering rows: `df[df['column_name'] > value]`
-- Adding new columns: `df['new_column'] = values`
+### Professional Challenge: Memory-Efficient Processing
 
----
+Working with large datasets (>1GB) requires different strategies:
+- **Chunking**: Process data in manageable pieces
+- **Streaming**: Never load entire dataset into memory
+- **Lazy evaluation**: Defer computation until needed
+- **Memory profiling**: Monitor and optimize resource usage
 
-## Handling Missing Data
+### Advanced Techniques
 
-- Detecting missing values: `df.isna()`, `df.isnull()`
-- Dropping missing values: `df.dropna()`
-- Filling missing values: `df.fillna(value)`
+#### 1. Chunked Processing with Progress Tracking
 
 ```python
-# Fill missing values with the mean of the column
-df['age'].fillna(df['age'].mean(), inplace=True)
+from tqdm import tqdm
+import psutil
+import gc
+
+class ChunkedProcessor:
+    def __init__(self, chunk_size: int = 50000):
+        self.chunk_size = chunk_size
+        self.memory_threshold = 0.8  # 80% memory usage threshold
+    
+    def process_large_file(self, file_path: str, processing_func) -> pd.DataFrame:
+        """Process large CSV file in chunks with memory monitoring."""
+        
+        # Get total rows for progress bar
+        total_rows = sum(1 for _ in open(file_path)) - 1  # Exclude header
+        
+        results = []
+        memory_warnings = 0
+        
+        chunk_iter = pd.read_csv(file_path, chunksize=self.chunk_size)
+        
+        with tqdm(total=total_rows, desc="Processing chunks") as pbar:
+            for chunk_num, chunk in enumerate(chunk_iter):
+                # Check memory usage
+                memory_percent = psutil.virtual_memory().percent / 100
+                if memory_percent > self.memory_threshold:
+                    memory_warnings += 1
+                    gc.collect()  # Force garbage collection
+                
+                # Process chunk
+                processed_chunk = processing_func(chunk)
+                results.append(processed_chunk)
+                
+                pbar.update(len(chunk))
+                pbar.set_postfix({
+                    'chunk': chunk_num + 1,
+                    'memory': f"{memory_percent:.1%}",
+                    'warnings': memory_warnings
+                })
+        
+        return pd.concat(results, ignore_index=True)
 ```
 
----
-
-![bg contain](media/diagram2.svg)
-
----
-
-## Data Type Conversion
-
-- Checking data types: `df.dtypes`
-- Converting types: `df['column'].astype(type)`
+#### 2. Dask for Out-of-Core Processing
 
 ```python
-# Convert 'age' column to integer type
-df['age'] = df['age'].astype(int)
+import dask.dataframe as dd
+import dask
+
+class DaskProcessor:
+    def __init__(self, n_workers: int = 4):
+        # Configure Dask for optimal performance
+        dask.config.set({
+            'dataframe.query-planning': True,
+            'array.chunk-size': '256MiB'
+        })
+        self.n_workers = n_workers
+    
+    def create_large_dataset_pipeline(self, file_pattern: str) -> dd.DataFrame:
+        """Create processing pipeline for large datasets using Dask."""
+        
+        # Read multiple files as single Dask DataFrame
+        df = dd.read_csv(
+            file_pattern,
+            dtype={'patient_id': 'object',  # Avoid int64 memory issues
+                   'lab_value': 'float32'},     # Use smaller numeric types
+            parse_dates=['test_date']
+        )
+        
+        return df
+    
+    def complex_aggregation(self, df: dd.DataFrame) -> dd.DataFrame:
+        """Perform complex aggregations efficiently."""
+        
+        result = (df
+                  .groupby(['patient_id', df.test_date.dt.date])
+                  .agg({
+                      'lab_value': ['mean', 'std', 'count'],
+                      'abnormal_flag': 'sum'
+                  })
+                  .reset_index()
+                 )
+        
+        # Flatten column names
+        result.columns = ['_'.join(col).strip() if col[1] else col[0] 
+                         for col in result.columns.values]
+        
+        return result
 ```
 
----
+### Hands-On Exercise 2: Large Dataset Processing
 
-## Renaming Columns
+**Scenario**: You have 10 million lab results (2.5GB CSV) and need to create patient-level summaries.
 
-```python
-# Using rename with inplace
-df.rename(columns={'old_name': 'new_name'}, inplace=True)
+**Requirements**:
+- Calculate rolling 30-day averages for each patient
+- Identify abnormal value patterns  
+- Generate summary statistics by patient demographics
+- Process within 4GB memory limit
 
-# Using a list comprehension to modify column names
-new_columns = [col.lower().replace(' ', '_') for col in df.columns]
-df.columns = new_columns
-```
-
----
-
-## Sorting Data
-
-```python
-# Sort by a single column
-df_sorted = df.sort_values('age')
-
-# Sort by multiple columns
-df_sorted = df.sort_values(['age', 'name'], ascending=[True, False])
-
-# Sort by index
-df_sorted = df.sort_index()
-
-# Sort in place
-df.sort_values('age', inplace=True)
-```
+**Your Task**: Implement both chunked and Dask solutions, compare performance.
 
 ---
 
-## Grouping and Aggregation
+## Part 3: Comprehensive Data Quality Assessment (90 minutes)
+
+### Professional Framework: Automated Quality Pipeline
+
+Data quality in professional settings requires:
+- **Systematic assessment**: Standardized quality metrics
+- **Automated reporting**: Regular quality dashboards
+- **Audit trails**: Track all cleaning decisions
+- **Threshold-based alerts**: Flag critical quality issues
+
+### Advanced Quality Assessment
+
+#### 1. Comprehensive Quality Metrics
 
 ```python
-# Group by 'city' and calculate mean age
-df.groupby('city')['age'].mean()
-
-# Multiple aggregations
-df.groupby('city').agg({'age': 'mean', 'name': 'count'})
-
-# Named aggregation
-df.groupby('city').agg(
-    mean_age=('age', 'mean'),
-    total_patients=('name', 'count')
-)
-```
-
----
-
-## Quick Data Visualization with pandas
-
-### Basic Plotting in pandas
-
-```python
-# Line plot
-df['column'].plot(kind='line')
-
-# Histogram
-df['column'].hist()
-
-# Box plot
-df.boxplot(column=['col1', 'col2', 'col3'])
-```
-
-These simple plots can quickly reveal distributions and trends in your data.
-
----
-
-## Advanced Plotting with Seaborn
-
-Seaborn is a statistical data visualization library built on top of matplotlib.
-
-```python
+from dataclasses import dataclass
+from typing import Dict, Any
+import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Scatter plot
-df.plot.scatter(x='col1', y='col2')
+@dataclass
+class QualityReport:
+    dataset_name: str
+    n_rows: int
+    n_cols: int
+    missing_data: Dict[str, float]
+    duplicates: int
+    outliers: Dict[str, int]
+    data_types: Dict[str, str]
+    value_ranges: Dict[str, Dict[str, Any]]
+    categorical_issues: Dict[str, List[str]]
+    temporal_issues: Dict[str, str]
+    quality_score: float
 
-# Correlation heatmap
-sns.heatmap(df.corr(), annot=True)
-
-# Pair plot
-sns.pairplot(df)
+class DataQualityAssessor:
+    def __init__(self, config: Dict):
+        self.config = config
+        self.quality_thresholds = config.get('quality_thresholds', {
+            'missing_threshold': 0.3,  # 30% missing is concerning
+            'outlier_threshold': 0.05,  # 5% outliers is concerning
+            'duplicate_threshold': 0.01  # 1% duplicates is concerning
+        })
+    
+    def comprehensive_assessment(self, df: pd.DataFrame, dataset_name: str) -> QualityReport:
+        """Generate comprehensive data quality report."""
+        
+        # Basic metrics
+        n_rows, n_cols = df.shape
+        
+        # Missing data analysis
+        missing_data = self._analyze_missing_data(df)
+        
+        # Duplicate analysis
+        duplicates = self._analyze_duplicates(df)
+        
+        # Outlier analysis
+        outliers = self._analyze_outliers(df)
+        
+        # Data type consistency
+        data_types = self._analyze_data_types(df)
+        
+        # Value range analysis
+        value_ranges = self._analyze_value_ranges(df)
+        
+        # Categorical data issues
+        categorical_issues = self._analyze_categorical_issues(df)
+        
+        # Temporal consistency
+        temporal_issues = self._analyze_temporal_issues(df)
+        
+        # Overall quality score
+        quality_score = self._calculate_quality_score(
+            missing_data, duplicates, outliers, n_rows
+        )
+        
+        return QualityReport(
+            dataset_name=dataset_name,
+            n_rows=n_rows,
+            n_cols=n_cols,
+            missing_data=missing_data,
+            duplicates=duplicates,
+            outliers=outliers,
+            data_types=data_types,
+            value_ranges=value_ranges,
+            categorical_issues=categorical_issues,
+            temporal_issues=temporal_issues,
+            quality_score=quality_score
+        )
+    
+    def _analyze_missing_data(self, df: pd.DataFrame) -> Dict[str, float]:
+        """Analyze missing data patterns."""
+        missing_pct = (df.isnull().sum() / len(df) * 100).to_dict()
+        
+        # Identify missing data patterns
+        missing_patterns = {}
+        for col, pct in missing_pct.items():
+            if pct > 0:
+                missing_patterns[col] = {
+                    'percent': pct,
+                    'count': df[col].isnull().sum(),
+                    'pattern': self._identify_missing_pattern(df[col])
+                }
+        
+        return missing_patterns
+    
+    def _analyze_outliers(self, df: pd.DataFrame) -> Dict[str, int]:
+        """Identify outliers in numeric columns."""
+        outliers = {}
+        
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        
+        for col in numeric_cols:
+            if df[col].nunique() > 10:  # Skip categorical-like columns
+                Q1 = df[col].quantile(0.25)
+                Q3 = df[col].quantile(0.75)
+                IQR = Q3 - Q1
+                
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                
+                outlier_count = ((df[col] < lower_bound) | 
+                               (df[col] > upper_bound)).sum()
+                
+                if outlier_count > 0:
+                    outliers[col] = {
+                        'count': outlier_count,
+                        'percent': outlier_count / len(df) * 100,
+                        'bounds': (lower_bound, upper_bound)
+                    }
+        
+        return outliers
 ```
 
-These plots help visualize relationships between multiple variables simultaneously.
-
----
-
-# LIVE DEMO!
-
----
-
-# 2. Combining and Reshaping Data
-
----
-
-## Concatenating DataFrames
+#### 2. Automated Quality Dashboard
 
 ```python
-df1 = pd.DataFrame({'A': ['A0', 'A1'], 'B': ['B0', 'B1']})
-df2 = pd.DataFrame({'A': ['A2', 'A3'], 'B': ['B2', 'B3']})
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.express as px
 
-result = pd.concat([df1, df2])
+class QualityDashboard:
+    def __init__(self):
+        self.colors = {
+            'excellent': '#2E8B57',    # Sea Green
+            'good': '#32CD32',         # Lime Green  
+            'warning': '#FF8C00',      # Dark Orange
+            'critical': '#DC143C'      # Crimson
+        }
+    
+    def create_quality_dashboard(self, quality_report: QualityReport) -> go.Figure:
+        """Create interactive quality assessment dashboard."""
+        
+        # Create subplots
+        fig = make_subplots(
+            rows=2, cols=3,
+            subplot_titles=[
+                'Quality Score Overview',
+                'Missing Data by Column', 
+                'Outlier Distribution',
+                'Data Type Distribution',
+                'Duplicate Analysis',
+                'Temporal Issues'
+            ],
+            specs=[
+                [{'type': 'indicator'}, {'type': 'bar'}, {'type': 'bar'}],
+                [{'type': 'pie'}, {'type': 'bar'}, {'type': 'bar'}]
+            ]
+        )
+        
+        # Quality score gauge
+        score_color = self._get_score_color(quality_report.quality_score)
+        
+        fig.add_trace(
+            go.Indicator(
+                mode="gauge+number+delta",
+                value=quality_report.quality_score,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': "Overall Quality Score"},
+                gauge={
+                    'axis': {'range': [None, 100]},
+                    'bar': {'color': score_color},
+                    'steps': [
+                        {'range': [0, 50], 'color': self.colors['critical']},
+                        {'range': [50, 70], 'color': self.colors['warning']},
+                        {'range': [70, 85], 'color': self.colors['good']},
+                        {'range': [85, 100], 'color': self.colors['excellent']}
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 70
+                    }
+                }
+            ),
+            row=1, col=1
+        )
+        
+        # Missing data bar chart
+        if quality_report.missing_data:
+            missing_cols = list(quality_report.missing_data.keys())
+            missing_pcts = [quality_report.missing_data[col]['percent'] 
+                           for col in missing_cols]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=missing_cols,
+                    y=missing_pcts,
+                    marker_color=[self._get_missing_color(pct) for pct in missing_pcts],
+                    text=[f"{pct:.1f}%" for pct in missing_pcts],
+                    textposition='auto'
+                ),
+                row=1, col=2
+            )
+        
+        return fig
+    
+    def _get_score_color(self, score: float) -> str:
+        """Get color based on quality score."""
+        if score >= 85:
+            return self.colors['excellent']
+        elif score >= 70:
+            return self.colors['good']
+        elif score >= 50:
+            return self.colors['warning']
+        else:
+            return self.colors['critical']
 ```
 
-Result:
-```
-    A   B
-0  A0  B0
-1  A1  B1
-0  A2  B2
-1  A3  B3
-```
+### Hands-On Exercise 3: Automated Quality Pipeline
+
+**Scenario**: You're building a quality assurance system for a multi-site clinical trial.
+
+**Requirements**:
+- Process data from 15 sites with different collection practices
+- Generate automated quality reports every week
+- Flag datasets that don't meet quality thresholds
+- Create executive summary dashboards
+
+**Your Task**: Build an end-to-end quality assessment pipeline with automated reporting.
 
 ---
 
-## Merging DataFrames
+## Part 4: Production-Ready Cleaning Workflows (75 minutes)
+
+### Professional Standards: Reproducible Cleaning Pipelines
+
+Production cleaning workflows must be:
+- **Auditable**: Track every cleaning decision
+- **Reproducible**: Same results every time
+- **Configurable**: Easy to modify rules
+- **Scalable**: Handle growing datasets
+- **Documented**: Clear reasoning for all steps
+
+### Advanced Cleaning Framework
+
+#### 1. Rule-Based Cleaning Engine
 
 ```python
-left = pd.DataFrame({'key': ['K0', 'K1', 'K2'],
-                     'A': ['A0', 'A1', 'A2']})
-right = pd.DataFrame({'key': ['K0', 'K1', 'K3'],
-                      'B': ['B0', 'B1', 'B2']})
+from abc import ABC, abstractmethod
+from enum import Enum
+import json
+from datetime import datetime
 
-result = pd.merge(left, right, on='key')
+class CleaningAction(Enum):
+    REMOVE = "remove"
+    IMPUTE = "impute"  
+    TRANSFORM = "transform"
+    FLAG = "flag"
+    CORRECT = "correct"
+
+class CleaningRule(ABC):
+    def __init__(self, rule_id: str, description: str):
+        self.rule_id = rule_id
+        self.description = description
+        self.applied_count = 0
+    
+    @abstractmethod
+    def apply(self, df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+        """Apply cleaning rule and return modified df and audit log entries."""
+        pass
+
+class OutlierRemovalRule(CleaningRule):
+    def __init__(self, column: str, method: str = "iqr", multiplier: float = 1.5):
+        super().__init__(
+            rule_id=f"outlier_{column}_{method}",
+            description=f"Remove outliers from {column} using {method} method"
+        )
+        self.column = column
+        self.method = method
+        self.multiplier = multiplier
+    
+    def apply(self, df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+        audit_entries = []
+        
+        if self.column not in df.columns:
+            return df, audit_entries
+        
+        original_count = len(df)
+        
+        if self.method == "iqr":
+            Q1 = df[self.column].quantile(0.25)
+            Q3 = df[self.column].quantile(0.75)
+            IQR = Q3 - Q1
+            
+            lower_bound = Q1 - self.multiplier * IQR
+            upper_bound = Q3 + self.multiplier * IQR
+            
+            # Create mask for outliers
+            outlier_mask = (df[self.column] < lower_bound) | (df[self.column] > upper_bound)
+            outlier_indices = df[outlier_mask].index.tolist()
+            
+            # Remove outliers
+            df_cleaned = df[~outlier_mask].copy()
+            
+            removed_count = len(outlier_indices)
+            self.applied_count += removed_count
+            
+            audit_entries.append({
+                'rule_id': self.rule_id,
+                'action': CleaningAction.REMOVE.value,
+                'column': self.column,
+                'original_count': original_count,
+                'removed_count': removed_count,
+                'removed_indices': outlier_indices,
+                'bounds': {'lower': lower_bound, 'upper': upper_bound},
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            return df_cleaned, audit_entries
+        
+        return df, audit_entries
+
+class DataCleaningPipeline:
+    def __init__(self, pipeline_name: str):
+        self.pipeline_name = pipeline_name
+        self.rules = []
+        self.audit_log = []
+        self.execution_history = []
+    
+    def add_rule(self, rule: CleaningRule):
+        """Add cleaning rule to pipeline."""
+        self.rules.append(rule)
+    
+    def execute(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+        """Execute all cleaning rules and return results with audit trail."""
+        
+        execution_start = datetime.now()
+        df_working = df.copy()
+        execution_audit = []
+        
+        for rule in self.rules:
+            rule_start = datetime.now()
+            
+            df_working, rule_audit = rule.apply(df_working)
+            execution_audit.extend(rule_audit)
+            
+            rule_duration = (datetime.now() - rule_start).total_seconds()
+            
+            print(f"✓ Applied {rule.rule_id}: "
+                  f"{rule.applied_count} changes in {rule_duration:.2f}s")
+        
+        # Create execution summary
+        execution_summary = {
+            'pipeline_name': self.pipeline_name,
+            'execution_start': execution_start.isoformat(),
+            'execution_duration': (datetime.now() - execution_start).total_seconds(),
+            'original_shape': df.shape,
+            'final_shape': df_working.shape,
+            'rules_applied': len(self.rules),
+            'total_changes': sum(rule.applied_count for rule in self.rules),
+            'audit_entries': execution_audit
+        }
+        
+        self.audit_log.extend(execution_audit)
+        self.execution_history.append(execution_summary)
+        
+        return df_working, execution_summary
 ```
 
-Result:
-```
-  key   A   B
-0  K0  A0  B0
-1  K1  A1  B1
-```
-
----
-
-## Types of Joins
-
-- Inner join (default): `pd.merge(left, right, how='inner')`
-- Outer join: `pd.merge(left, right, how='outer')`
-- Left join: `pd.merge(left, right, how='left')`
-- Right join: `pd.merge(left, right, how='right')`
-
----
-
-## Reshaping Data: Melt
-
-Melt transforms "wide" format data into "long" format.
-
-```
-   A  B  C
-0  a  1  2
-1  b  3  4
-2  c  5  6
-```
-
-After:
-```python
-melted = pd.melt(df, id_vars=['A'], value_vars=['B', 'C'])
-print(melted)
-```
-```
-   A variable  value
-0  a        B      1
-1  b        B      3
-2  c        B      5
-3  a        C      2
-4  b        C      4
-5  c        C      6
-```
-
----
-
-## Reshaping Data: Pivot
-
-Pivot transforms "long" format data into "wide" format.
-
-```
-   A variable  value
-0  a        B      1
-1  b        B      3
-2  c        B      5
-3  a        C      2
-4  b        C      4
-5  c        C      6
-```
-
-After:
-```python
-pivoted = melted.pivot(index='A', columns='variable', values='value')
-print(pivoted)
-```
-```
-variable  B  C
-A            
-a         1  2
-b         3  4
-c         5  6
-```
-
----
-
-## Stacking and Unstacking
-
-Stacking rotates from columns to index, unstacking does the opposite.
-
-```
-   A  B
-x  1  3
-y  2  4
-```
-
-Stacked:
-```python
-stacked = df.stack()
-print(stacked)
-```
-```
-x  A    1
-   B    3
-y  A    2
-   B    4
-dtype: int64
-```
-
----
-
-Unstacked (back to original):
-```python
-unstacked = stacked.unstack()
-print(unstacked)
-```
-```
-   A  B
-x  1  3
-y  2  4
-```
-
----
-
-# LIVE DEMO!
-
----
-
-# 3. Practical Data Cleaning Techniques
-
-## Handling Missing Data
+### Clinical Research Integration: Regulatory Compliance
 
 ```python
-# Detect missing values
-df.isna().sum()
+class ClinicalDataCleaner(DataCleaningPipeline):
+    """Specialized cleaning pipeline for clinical research data."""
+    
+    def __init__(self, study_id: str, protocol_version: str):
+        super().__init__(f"clinical_study_{study_id}")
+        self.study_id = study_id
+        self.protocol_version = protocol_version
+        self.setup_clinical_rules()
+    
+    def setup_clinical_rules(self):
+        """Setup standard clinical data cleaning rules."""
+        
+        # Age validation (must be reasonable for study)
+        self.add_rule(RangeValidationRule(
+            'age', min_val=18, max_val=120,
+            rule_id='age_validation'
+        ))
+        
+        # Date consistency (visit dates must be after enrollment)
+        self.add_rule(DateConsistencyRule(
+            date_col='visit_date', 
+            reference_col='enrollment_date',
+            rule_id='visit_date_consistency'
+        ))
+        
+        # Lab value validation (physiologically plausible ranges)
+        self.add_rule(LabValueValidationRule(
+            lab_ranges_config='configs/lab_reference_ranges.json'
+        ))
+    
+    def generate_regulatory_report(self) -> str:
+        """Generate cleaning report meeting regulatory standards."""
+        
+        report = f"""
+# Data Cleaning Report - Clinical Study {self.study_id}
 
-# Drop rows with any missing values
-df_clean = df.dropna()
+**Protocol Version**: {self.protocol_version}
+**Generation Date**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-# Fill missing values
-df['column'].fillna(df['column'].mean(), inplace=True)
+## Executive Summary
 
-# Forward fill
-df.ffill()
+- **Total Executions**: {len(self.execution_history)}
+- **Total Records Processed**: {sum(exec['original_shape'][0] for exec in self.execution_history)}
+- **Total Cleaning Actions**: {sum(exec['total_changes'] for exec in self.execution_history)}
 
-# Backward fill
-df.bfill()
+## Cleaning Rules Applied
+
+"""
+        
+        for rule in self.rules:
+            report += f"- **{rule.rule_id}**: {rule.description} (Applied {rule.applied_count} times)\n"
+        
+        report += "\n## Detailed Audit Trail\n\n"
+        
+        for entry in self.audit_log[-10:]:  # Last 10 entries
+            report += f"- {entry['timestamp']}: {entry['rule_id']} - {entry['action']} - {entry.get('removed_count', 0)} records\n"
+        
+        return report
 ```
+
+### Final Exercise: Production Pipeline
+
+**Scenario**: Build a complete data cleaning pipeline for a cardiovascular outcomes registry.
+
+**Requirements**:
+- Handle 50,000+ patient records
+- Apply clinical validation rules
+- Generate regulatory-compliant audit trails  
+- Create automated quality reports
+- Support configurable cleaning thresholds
 
 ---
 
-## Handling Duplicates
+## Assessment and Next Steps
 
-```python
-# Check for duplicates
-df.duplicated()
+### Project-Based Assessment
 
-# Remove duplicates
-df_clean = df.drop_duplicates()
+**Mini-Project**: Multi-Source Clinical Data Integration
 
-# Remove duplicates based on specific columns
-df_clean = df.drop_duplicates(subset=['column1', 'column2'])
-```
+You'll work with simulated datasets representing:
+1. EMR demographics and encounters
+2. Laboratory results over time  
+3. Medication dispensing records
+4. Clinical outcomes
 
----
+**Deliverables**:
+1. **Integration Pipeline**: Load and merge all sources
+2. **Quality Assessment**: Comprehensive data quality report
+3. **Cleaning Workflow**: Automated cleaning with audit trail
+4. **Performance Analysis**: Memory and time optimization
+5. **Documentation**: Professional-grade documentation
 
-## Handling Outliers
+### Professional Skills Checklist
 
-1. Identify outliers (e.g., using Z-score or IQR)
-2. Decide on a strategy: remove, cap, or transform
+After this lecture, you should be able to:
 
-```python
-# Using Z-score
-from scipy import stats
-z_scores = np.abs(stats.zscore(df['column']))
-df_clean = df[(z_scores < 3)]
+- [ ] Design schema-aware data loading systems
+- [ ] Implement parallel processing for large datasets  
+- [ ] Build comprehensive data quality assessment frameworks
+- [ ] Create production-ready cleaning pipelines with audit trails
+- [ ] Optimize memory usage for large-scale data processing
+- [ ] Generate regulatory-compliant documentation
 
-# Using IQR
-Q1 = df['column'].quantile(0.25)
-Q3 = df['column'].quantile(0.75)
-IQR = Q3 - Q1
-df_clean = df[~((df['column'] < (Q1 - 1.5 * IQR)) | (df['column'] > (Q3 + 1.5 * IQR)))]
-```
+### Looking Ahead to L07
 
----
+In our next lecture, we'll build on these data loading and cleaning foundations to master:
+- **Complex data transformations** for analysis-ready datasets
+- **Hierarchical data structures** and multi-level indexing
+- **Publication-quality visualization** with statistical graphics
+- **Advanced wrangling techniques** for time series and longitudinal data
 
-## String Manipulation
-
-```python
-# Convert to lowercase
-df['name'] = df['name'].str.lower()
-
-# Remove whitespace
-df['name'] = df['name'].str.strip()
-
-# Replace values
-df['name'] = df['name'].str.replace('old', 'new')
-
-# Extract substrings
-df['domain'] = df['email'].str.extract('(@[\w.]+)')
-
-# String methods with regex
-df['name'] = df['name'].str.replace(r'^Dr\.\s*', '', regex=True)
-```
----
-
-## Regular Expressions (Regex) in pandas
-
-- Powerful pattern matching tool, similar to command-line use
-- Used with string methods in pandas for advanced text processing
-- Common patterns:
-  - `\d`: any digit
-  - `\w`: any word character
-  - `\s`: any whitespace
-  - `+`: one or more
-  - `*`: zero or more
-  - `[]`: character set
-  - `()`: capturing group
+The professional competencies you've developed today in data pipeline creation will be essential as we move toward sophisticated analysis workflows.
 
 ---
 
-## String Manipulation with Regex
-
-```python
-df = pd.DataFrame({
-    'text': [
-        'Contact: john@email.com, Phone: 123-456-7890',
-        'Meeting on 2023/05/15 with Jane (jane@company.com)'
-    ]
-})
-
-# Extract email addresses
-df['email'] = df['text'].str.extract(r'([\w\.-]+@[\w\.-]+)')
-
-# Extract phone numbers
-df['phone'] = df['text'].str.extract(r'(\d{3}-\d{3}-\d{4})')
-
-# Extract dates
-df['date'] = df['text'].str.extract(r'(\d{4}/\d{2}/\d{2})')
-
-print(df)
-```
-```
-                                               text               email         phone        date
-0  Contact: john@email.com, Phone: 123-456-7890    john@email.com  123-456-7890        NaN
-1  Meeting on 2023/05/15 with Jane (jane@company.com)  jane@company.com          NaN  2023/05/15
-```
-
----
-
-## Working with Dates and Times
-
-```python
-# Convert to datetime
-df['date'] = pd.to_datetime(df['date'])
-
-# Extract components
-df['year'] = df['date'].dt.year
-df['month'] = df['date'].dt.month
-df['day'] = df['date'].dt.day
-
-# Calculate time differences
-df['time_diff'] = df['end_date'] - df['start_date']
-
-# Resample time series data
-df_daily = df.resample('D', on='date').mean()
-```
-
----
-
-## Categorical Data and Encoding
-
-```python
-# Convert to category type
-df['category'] = df['category'].astype('category')
-
-# One-hot encoding
-df_encoded = pd.get_dummies(df, columns=['category'])
-
-# Ordinal encoding
-from sklearn.preprocessing import OrdinalEncoder
-enc = OrdinalEncoder()
-df['category_encoded'] = enc.fit_transform(df[['category']])
-```
-
----
-
-## Binning Data
-
-```python
-# Create age groups
-bins = [0, 18, 35, 50, 65, 100]
-labels = ['0-18', '19-35', '36-50', '51-65', '65+']
-df['age_group'] = pd.cut(df['age'], bins=bins, labels=labels, right=False)
-```
-
----
-
-## Advanced Categorical Data Operations
-
-Example: Managing categories in a DataFrame
-
-```python
-df = pd.DataFrame({
-    'category': ['A', 'B', 'C', 'A', 'B', 'D', 'E']
-})
-df['category'] = df['category'].astype('category')
-
-# Add new category
-df['category'] = df['category'].cat.add_categories(['F'])
-
-# Remove unused categories
-df['category'] = df['category'].cat.remove_unused_categories()
-
-# Rename categories
-df['category'] = df['category'].cat.rename_categories({'A': 'Alpha', 'B': 'Beta'})
-
-print(df)
-```
-```
-  category
-0    Alpha
-1     Beta
-2        C
-3    Alpha
-4     Beta
-5        D
-6        E
-```
-
----
-
-# LIVE DEMO!
-
----
-## Putting It All Together: A Data Cleaning Pipeline
-
-1. Load the data
-2. Handle missing values
-3. Remove duplicates
-4. Handle outliers
-5. Convert data types
-6. Feature engineering
-7. Save cleaned data
-
----
-
-## Data Quality Assessment Techniques
-
-Before diving into analysis, it's crucial to assess the quality of your data. This involves checking for issues like duplicates, outliers, and inconsistent data types.
-
-### Checking for Duplicates and Missing Values
-
-Duplicate rows can skew your analysis, while missing values need to be addressed.
-
-```python
-# Check for duplicates
-duplicates = df.duplicated().sum()
-print(f"Number of duplicate rows: {duplicates}")
-
-# Check for missing values
-missing_values = df.isnull().sum()
-print(missing_values)
-```
-
----
-
-### Identifying Outliers
-
-Outliers can significantly impact statistical analyses and machine learning models.
-
-```python
-# Identify outliers using Z-score
-from scipy import stats
-z_scores = np.abs(stats.zscore(df['column']))
-outliers = df[z_scores > 3]
-```
-
-This method flags values that are more than 3 standard deviations from the mean.
-
----
-
-### Validating Data Types and Unique Values
-
-Ensuring correct data types and examining unique values can reveal inconsistencies.
-
-```python
-# Validate data types
-print(df.dtypes)
-
-# Unique value counts
-unique_counts = df.nunique()
-print(unique_counts)
-
-# Check categorical columns
-categorical_cols = df.select_dtypes(include=['object']).columns
-for col in categorical_cols:
-    print(f"\nUnique values in {col}:")
-    print(df[col].value_counts())
-```
-
----
-
-## Custom Operations with apply() and applymap()
-
-For more complex data transformations, pandas provides `apply()` and `applymap()` functions. These allow you to apply custom functions to your data.
-
----
-
-### Using apply() on Columns or Rows
-
-`apply()` lets you use custom functions on a whole Series or DataFrame.
-
-```python
-# apply() on a single column
-def celsius_to_fahrenheit(celsius):
-    return (celsius * 9/5) + 32
-
-df['temp_fahrenheit'] = df['temp_celsius'].apply(celsius_to_fahrenheit)
-
-# apply() on multiple columns
-def calculate_bmi(row):
-    return row['weight'] / (row['height'] / 100) ** 2
-
-df['bmi'] = df.apply(calculate_bmi, axis=1)
-```
-
-### Using applymap() on Entire DataFrames
-
-`applymap()` applies a function to every element in the DataFrame.
-
-```python
-def format_currency(value):
-    return f"${value:.2f}" if isinstance(value, (int, float)) else value
-
-df_formatted = df.applymap(format_currency)
-```
-
-This is useful for operations that need to be applied uniformly across all elements.
-
----
-
-## Advanced Data Wrangling Techniques
-
-```python
-# Apply custom function to DataFrame
-df['new_column'] = df.apply(lambda row: some_function(row['col1'], row['col2']), axis=1)
-
-# Pivot tables
-pivot_table = df.pivot_table(values='value', index='category', columns='date', aggfunc='mean')
-
-# Melt with multiple id variables
-melted = pd.melt(df, id_vars=['id', 'date'], value_vars=['temp', 'pressure'])
-
-# Combine first and last name columns
-df['full_name'] = df['first_name'] + ' ' + df['last_name']
-```
-
----
-
-## Data Validation and Cleaning
-
-```python
-# Check for valid values in a categorical column
-valid_categories = ['A', 'B', 'C']
-df['is_valid'] = df['category'].isin(valid_categories)
-
-# Remove rows with invalid data
-df_clean = df[df['is_valid']]
-
-# Replace invalid values
-df.loc[~df['category'].isin(valid_categories), 'category'] = 'Unknown'
-
-# Standardize date formats
-df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
-```
-
----
-
-# LIVE DEMO!
+## Additional Resources
+
+- **Clinical Data Standards**: CDISC, HL7 FHIR
+- **Data Quality Frameworks**: DAMA-DMBOK, ISO 25012
+- **Performance Optimization**: Dask documentation, pandas performance tips
+- **Regulatory Compliance**: ICH-GCP guidelines for clinical data

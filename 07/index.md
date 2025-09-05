@@ -1,1227 +1,1212 @@
----
-marp: true
-theme: sqrl
-paginate: true
-class: invert
----
+# Lecture 07: Data Wrangling + Statistical Visualization
 
-# Lecture 07 Outline: Data Visualization
+**Duration**: 5 hours  
+**Level**: Advanced Professional Track  
+**Prerequisites**: L06 Advanced Data Loading + Cleaning
 
+## Professional Context: From Clean Data to Analysis-Ready Insights
 
-1. Data Visualization with pandas, matplotlib, and seaborn
-2. Design Principles for Effective Visualization
-3. Advanced Visualization
+With clean, integrated datasets from L06, we now face the next professional challenge: transforming data into analysis-ready formats and creating compelling visualizations that communicate findings effectively.
 
-<!--
-- Python's visualization ecosystem evolved to serve different needs
-- Core libraries complement each other: pandas for quick plots, matplotlib for control, seaborn for statistics
-- Good visualization is about effective communication, not just pretty pictures
--->
+In professional environments, data wrangling and visualization skills determine whether insights get implemented or ignored:
 
----
+- **Executive presentations**: Stakeholders need clear, compelling visuals
+- **Peer review**: Statistical graphics must meet publication standards  
+- **Regulatory submissions**: Visualizations require specific formatting and validation
+- **Clinical decision support**: Real-time dashboards must be intuitive and actionable
 
-![bg contain](media/nixcraft.png)
+Today we master the advanced wrangling and visualization techniques that transform data scientists into trusted analytical partners.
 
----
+## Learning Objectives
 
-# Brief Recap: Essential Python Concepts
+By the end of this lecture, you will:
 
-- **Importing Libraries**
-  - Use `import` statements to include external libraries.
-    ```python
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    ```
-- **Working with DataFrames**
-  - DataFrames are table-like data structures provided by pandas.
-    ```python
-    df = pd.read_csv('data.csv')
-    ```
-
-<!--
-- Aliases like pd and plt are universal conventions - use them!
-- DataFrames are the foundation of data science in Python
-- Most visualization methods expect DataFrame input
--->
+1. **Execute complex data transformations** using advanced pandas operations
+2. **Design hierarchical data structures** with multi-level indexing for complex analyses
+3. **Create publication-quality statistical visualizations** with proper statistical annotations
+4. **Build interactive dashboards** for stakeholder communication
+5. **Implement time series and longitudinal data analysis workflows**
 
 ---
 
-# Introduction to Data Visualization Tools
+## Part 1: Advanced Data Transformations (75 minutes)
 
-- **pandas**
-  - High-level data manipulation library.
-  - Built-in plotting methods that simplify creating visualizations from DataFrames.
-- **Matplotlib**
-  - Foundation library for data visualization in Python.
-  - Offers detailed control over plots.
-- **Seaborn**
-  - Statistical data visualization library.
-  - Provides attractive default styles and color palettes.
+### Professional Challenge: Longitudinal Clinical Data Analysis
 
-<!--
-- Think of pandas as your sketch pad - quick and simple
-- Matplotlib gives you a full artist's toolset when needed
-- Seaborn makes your statistical plots look professional with minimal effort
--->
+Consider a real-world scenario: analyzing treatment response patterns in a clinical trial with:
+- **Repeated measurements**: Lab values collected at baseline, 30, 60, 90 days
+- **Multiple treatments**: Drug A vs. Drug B vs. placebo across different sites
+- **Complex endpoints**: Primary outcome (efficacy) and safety outcomes
+- **Missing data patterns**: Informative missingness due to treatment discontinuation
 
----
+### Master-Level Pandas Operations
 
-# pandas: Built-in Plotting
-
-## Introduction
-
-- pandas provides convenient plotting methods directly on DataFrames and Series.
-- Simplifies the creation of plots without explicitly using Matplotlib commands.
-- Basic workflow:
-  1. Create plot with df.plot() or series.plot()
-  2. Plots display automatically in Jupyter notebooks
-  3. For scripts, use plot.show()
-
-<!--
-- One line of code: df.plot() - that's all you need to start
-- Perfect for quick data exploration
-- Built on matplotlib but hides the complexity
--->
-
----
-
-## Important Methods in pandas
-
-### 1. `plot()`: Line Plot
-
-- **Explanation**: Plots DataFrame or Series data as lines.
-- **Structure**:
-  ```python
-  df.plot(x='column1', y='column2', kind='line', marker, title)
-  ```
-
-<!--
-- Most versatile plotting method in pandas
-- Great for time series and trends
-- Can plot multiple columns at once
--->
-
----
-
-
-### 2. `hist()`: Histogram
-
-- **Explanation**: Plots a histogram of a single column or series.
+#### 1. Hierarchical Data Restructuring
 
 ```python
-df['Age'].hist(bins=10, color='skyblue', alpha=0.7)
-```
-
-<!--
-- Key tool for understanding data distribution
-- Bins parameter controls granularity
-- Alpha helps when data overlaps
--->
-
----
-
-# LIVE DEMO!
-
-<!--
-- Watch for common gotchas with axes and scales
-- Notice how different parameters affect the visualization
-- Think about what each plot reveals about the data
--->
-
----
-# Matplotlib: The Foundation
-
-## Introduction
-
-- **Matplotlib**  most widely used plotting library - the basic building block behind most other Python visualization libraries.
-- Workflow:
-  1. Create figure with plt.figure()
-  2. Add data with plt.plot() or other plot types
-  3. Customize with labels, title, etc.
-  4. Display with plt.show()
-- Concepts
-  - **Figure**: The overall container for all plot elements.
-  - **Axes**: The area where data is plotted (can be thought of as individual plots).
-
-Note: Use plt.tight_layout() to prevent overlapping elements
-
-<!--
-- Figure/Axes hierarchy is key to understanding matplotlib
-- Think of figure as your canvas, axes as individual paintings
-- Most customization happens at the axes level
--->
-
----
-
-## Important Methods in Matplotlib
-
-### 1. `plot()`: Basic Line Plot
-
-- **Explanation**: Creates a simple line plot connecting data points.
-- **Structure**:
-  ```python
-  plt.plot(x, y, marker, linestyle, color, label)
-  ```
-  - **Required Arguments**:
-    - `x`: Data for the x-axis.
-    - `y`: Data for the y-axis.
-  - **Optional Arguments**:
-    - `marker`: Style of the data point markers (e.g., `'o'` for circles).
-    - `linestyle`: Style of the line connecting data points (e.g., `'-'` for solid line).
-    - `color`: Color of the line.
-    - `label`: Label for the legend.
-
-<!--
-- Markers show individual data points
-- Line styles connect the dots - or not
-- Colors and labels make plots readable
--->
-
----
-
-### 2. `scatter()`: Scatter Plot
-
-- **Explanation**: Creates a scatter plot of x vs. y, useful for showing relationships between variables.
-- **Structure**:
-  ```python
-  plt.scatter(x, y, s, c, alpha)
-  ```
-  - **Required Arguments**:
-    - `x`: Data for the x-axis.
-    - `y`: Data for the y-axis.
-  - **Optional Arguments**:
-    - `s`: Size of markers.
-    - `c`: Color of markers.
-    - `alpha`: Transparency level of markers.
-
-<!--
-- Perfect for showing relationships between variables
-- Size and color can add two more dimensions
-- Alpha helps with overplotting
--->
-
----
-
-### Additional Plot Types in Matplotlib
-
-- **Bar Plot**:
-  ```python
-  plt.bar(categories, values)
-  ```
-- **Histogram**:
-  ```python
-  plt.hist(data, bins=10)
-  ```
-- **Box Plot**:
-  ```python
-  plt.boxplot(data)
-  ```
-- **Pie Chart**:
-  ```python
-  plt.pie(sizes, labels=labels)
-  ```
-- **Subplots**:
-  ```python
-  fig, axs = plt.subplots(2, 2)  # Creates a 2x2 grid of subplots
-  axs[0, 0].plot(x, y)  # Plot in the first subplot
-  ```
-- **Image Display**:
-  ```python
-  plt.imshow(image_data)
-  ```
-- **Contour Plot**:
-  ```python
-  plt.contour(X, Y, Z)  # For line contours
-  plt.contourf(X, Y, Z)  # For filled contours
-  ```
-- **Error Bars**:
-  ```python
-  plt.errorbar(x, y, yerr=error)
-  ```
-
-<!--
-- Each plot type serves specific data types
-- Bar plots for categories
-- Box plots show distribution details
-- Subplots combine multiple views
--->
-
----
-
-# Resources for Further Learning
-
-- **Matplotlib Documentation**: [matplotlib.org](https://matplotlib.org/)
-- **pandas Visualization Guide**: [pandas.pydata.org](https://pandas.pydata.org/pandas-docs/stable/user_guide/visualization.html)
-- **Seaborn Tutorials**: [seaborn.pydata.org](https://seaborn.pydata.org/tutorial.html)
-- **Troubleshooting Tips**: Search for errors on Stack Overflow or consult the official documentation.
-
-<!--
-- Documentation includes great galleries and examples
-- Stack Overflow is your friend
-- Practice with real datasets
--->
-
----
-
-# LIVE DEMO!
-
-<!--
-- Watch for the figure/axes pattern
-- Notice how layers build up
-- See how styles affect readability
--->
-
----
-
-
-# Seaborn: Statistical Data Visualization
-
-## Introduction
-
-- **Seaborn** enhances Matplotlib's functionality by providing high-level interfaces.
-- Ideal for statistical plots and works well with pandas DataFrames.
-- Basic workflow:
-  1. Create plot with sns.scatterplot() or other plot types
-  2. Plots display automatically in Jupyter notebooks
-  3. For scripts, use plt.show() since Seaborn uses Matplotlib backend
-
-<!--
-- Built for statistical visualization
-- Better defaults than matplotlib
-- Understands pandas DataFrames natively
--->
-
----
-
-
-
-## Important Methods in Seaborn
-
-### 1. `scatterplot()`: Scatter Plot
-
-- **Explanation**: Creates enhanced scatter plots with additional functionalities.
-- **Structure**:
-  ```python
-  sns.scatterplot(data=df, x='x_col', y='y_col', hue='category', size='value')
-  ```
-
-<!--
-- Automatically handles categorical variables
-- Adds statistical context
-- Smart about categorical colors
--->
-
----
-
-### Additional Plot Types in Seaborn
-
-- **Histogram and KDE Plot**:
-  ```python
-  sns.histplot(data=df, x='BMI', kde=True)
-  ```
-- **Box Plot**:
-  ```python
-  sns.boxplot(data=df, x='AgeGroup', y='Cholesterol')
-  ```
-- **Heatmap**:
-  ```python
-  sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
-  ```
-- **FacetGrid**:
-  ```python
-  g = sns.FacetGrid(df, col='Gender')
-  g.map(sns.histplot, 'BMI')
-  ```
-
-<!--
-- KDE shows smooth distribution
-- Box plots reveal outliers
-- Heatmaps great for correlation
-- FacetGrid splits by categories
--->
-
----
-
-### Additional Plot Types in Seaborn
-
-- **Line Plot**:
-  ```python
-  sns.lineplot(data=df, x='Year', y='Value')
-  ```
-- **Bar Plot**:
-  ```python
-  sns.barplot(data=df, x='Category', y='Value')
-  ```
-- **Violin Plot**:
-  ```python
-  sns.violinplot(data=df, x='Category', y='Value')
-  ```
-- **Pair Plot**:
-  ```python
-  sns.pairplot(data=df, hue='Category')
-  ```
-
-<!--
-- Line plots include confidence intervals
-- Bar plots show error bars
-- Violin plots combine boxplot and KDE
-- Pair plots show all relationships at once
--->
-
----
-
-### Customization in Seaborn
-
-- **Setting Plot Style**:
-  ```python
-  sns.set_style("whitegrid")
-  ```
-- **Color Palettes**:
-  ```python
-  sns.set_palette("husl")
-  ```
-- **Figure Size**:
-  ```python
-  # Uses an arcane syntax within `set_theme` or `set_context`
-  # set_theme can also set the style (d'uh)
-  sns.set_theme(style="whitegrid", rc={"figure.figsize": (10, 6)})
-  ```
-
-<!--
-- Styles affect all plot elements
-- Color palettes are colorblind-friendly
-- Size affects readability
--->
-
----
-
-# LIVE DEMO!
-
-<!--
-- Notice the statistical elements
-- See how styles differ from matplotlib
-- Watch the categorical handling
--->
-
----
-
-![bg contain](media/Nightingale-mortality.jpg)
-
-<!--
-- First use of polar area diagram
-- Each wedge shows deaths by month
-- Blue: preventable diseases
-- Red: wounds
-- Black: other causes
--->
-
----
-## Florence Nightingale: The Rose Diagram
-
-- **Coxcomb Chart (Rose Diagram)**
-  - Visualized causes of mortality during the Crimean War.
-  - Highlighted the impact of poor sanitary conditions.
-
-- **Impact**
-  - Influenced medical reform and sanitary practices.
-  - Early use of data visualization to drive policy change.
-
-<!--
-- Area shows magnitude dramatically
-- Seasonal patterns become clear
-- Led to hospital sanitation reforms
--->
-
----
-
-## COVID-19 Dashboard by Johns Hopkins University
-
-![bg left:60% 90%](media/jhu-covid.png)
-
-- **Real-Time Visualization**
-  - Tracked global COVID-19 cases, recoveries, and deaths.
-
-- **Effective Use of Maps and Time Series**
-  - Interactive and continuously updated.
-
-- **Global Impact**
-  - Became a crucial resource for researchers, policymakers, and the public.
-
-<!--
-- Map shows geographic spread
-- Time series shows trends
-- Color intensity shows severity
--->
-
----
-
-# Introduction to Design Principles
-
-- **Importance of Good Design**
-  - Enhances comprehension and retention
-  - Communicates data accurately and ethically
-
-- **Based on Works of Edward Tufte and Claus O. Wilke**
-  - Focus on clarity, precision, and efficiency in data presentation
-
-<!--
-- Design serves understanding
-- Ethics in visualization matter
-- Less is often more
--->
-
----
-
-# Key Concepts
-
-## Simplify and Focus
-
-- **Eliminate Non-Essential Elements**
-  - Remove unnecessary gridlines, backgrounds, and decorations
-
-- **Highlight Key Data**
-  - Use visual emphasis (bolding, color) to draw attention to important information
-
-<!--
-- Every element should have purpose
-- Guide viewer's attention
-- Remove visual clutter
--->
-
----
-
-![bg contain](media/napoleon.webp)
-
-<!--
-- Shows six types of data
-- Army size shown by thickness
-- Temperature shown below
-- Geography shown by path
-- Time flows left to right
-- Color indicates direction
-- One of history's best visualizations
--->
-
----
-## Edward Tufte: The Pioneer of Data Visualization
-
-- **Data-Ink Ratio**
-  - The proportion of ink used to present actual data compared to the total ink used in the graphic.
-
-- **Chartjunk**
-  - Unnecessary or distracting decorations in data visualizations that do not improve the viewer's understanding.
-
-- **Notable Works**
-  - *The Visual Display of Quantitative Information*
-  - *Envisioning Information*
-  - *Beautiful Evidence*
-
-<!--
-- Maximize data-ink ratio
-- Remove non-data ink
-- Every mark should inform
--->
-
----
-
-### Bad Examples
-
-- **Issues**:
-  - Distracting colors
-  - Misleading scales
-  - Unnecessary 3D effects
-
-<!--
-- 3D distorts perception
-- Decoration hides data
-- Colors confuse message
--->
-
----
-
-![bg contain](media/3d-junk.jpg)
-
-<!--
-- 3D adds no information
-- Perspective distorts values
-- Hard to compare heights
--->
-
----
-
-![bg contain](media/animal-junk.jpg)
-
-<!--
-- Pictures distract from data
-- Scale is inconsistent
-- Message gets lost
--->
-
----
-
-### Better Example
-
-- **Features**:
-  - Clear labels and titles
-  - Minimalist design
-  - Accurate representation of data
-
-<!--
-- Labels guide understanding
-- White space helps clarity
-- Focus on the data
--->
-
----
-
-![bg contain](media/line-ink.png)
-
-<!--
-- Clean, clear design
-- Essential grid lines only
-- Data stands out
--->
-
----
-
-![bg contain](media/greenhouse-junk.webp)
-
-<!--
-- 3D obscures trends
-- Colors fight for attention
-- Hard to read values
--->
-
----
-
-![bg contain](media/greenhouse-ink.webp)
-
-<!--
-- Flat design shows trends
-- Colors support message
-- Easy to compare values
--->
-
----
-
-![bg contain](media/complicated-ink.png)
-
-<!--
-- Complex but clear
-- Each element has purpose
-- Multiple variables shown effectively
--->
-
----
-
-![bg contain](media/minimal-boxplot.png)
-
-<!--
-- Shows distribution clearly
-- Minimal decoration
-- Easy to compare groups
--->
-
----
-
-# "Legal" Representation of Data (chartcrime)
-
-- **Avoid Misleading Visuals**
-  - Start axes at zero when appropriate to prevent exaggeration
-  - Use consistent scales across related visuals
-
-- **Accurate Data Representation**
-  - Do not manipulate visuals to mislead or bias the audience
-  - Clearly indicate any data exclusions or manipulations
-
-- **Functional Use**
-  - Differentiate data categories meaningfully
-  - Use color to highlight important data points
-
-- **Accessibility**
-  - Use colorblind-friendly palettes (e.g., Viridis, Cividis)
-  - Ensure sufficient contrast between colors
-
-<!--
-- Zero baseline matters
-- Scale choices affect perception
-- Color serves function
-- Accessibility is essential
--->
-
----
-
-# Additional Resources
-
-- **"The Visual Display of Quantitative Information"** by Edward Tufte
-- **"Fundamentals of Data Visualization"** by Claus O. Wilke
-- [**"Tufte's Principles of Data-Ink"** Liu & Zhuang](https://jtr13.github.io/cc19/tuftes-principles-of-data-ink.html)
-- **Color Brewer 2**: [colorbrewer2.org](http://colorbrewer2.org/) for choosing colorblind-friendly palettes
-
-<!--
-- Tufte's book is foundational
-- Wilke's book is modern, practical
-- ColorBrewer for accessible palettes
--->
-
----
-
-# LIVE DEMO!
-
-*(sort of)*
-
-<!--
-- Watch for good/bad practices
-- Notice impact of small changes
-- See how principles apply
--->
-
----
-
-# Interactive Activity
-
-## Critiquing a Visualization
-
-- **Exercise**:
-  - Examine the following chart and identify areas for improvement
-
-- **Consider**:
-  - Clarity of labels and titles
-  - Use of color and chart elements
-  - Ethical representation of data
-
-<!--
-- Look for chartjunk
-- Check data representation
-- Consider improvements
--->
-
----
-
-![bg contain](media/bookdown.png)
-
-<!--
-- Unclear axis labels
-- Poor color choices
-- Missing title
-- Data hard to interpret
--->
-
----
-
-![bg contain](media/car_crime.jpeg)
-
-<!--
-- Misleading scale
-- Poor color contrast
-- Confusing layout
-- Missing context
--->
-
----
-
-![bg contain](media/social_media.png)
-
-<!--
-- Circular layout hard to read
-- Colors don't add meaning
-- Size comparisons difficult
-- Could be simple bar chart
--->
-
----
-
-![bg contain](media/gold.jpg)
-
-<!--
-- Misleading perspective
-- Scale distortion
-- Unnecessary decoration
-- Hard to compare values
--->
-
----
-
-# Advanced Visualization Techniques in Health Data Science
-
-- **Plotnine**
-  - Python implementation of the **Grammar of Graphics**
-  - Inspired by R's **ggplot2**
-  - Basic workflow:
-    1. Create plot with ggplot()
-    2. Add layers with + operator
-    3. Display with plot.show() or plot.draw()
-- **Command-Line Visualization**
-  - Tools for visualizing data directly from the command line
-  - Examples: **Mermaid.js**, **spark**
-- **Interactive and BI Visualizations**
-  - Tools for building interactive dashboards and applications
-  - Examples: **Plotly Dash**, **Streamlit**
-
-<!--
-- Grammar of Graphics is powerful
-- Command line for quick views
-- Interactive for exploration
--->
-
----
-
-# Plotnine: Grammar of Graphics in Python 
-*(Advanced)*
-
-## Understanding the Grammar of Graphics
-
-- **Theory**: A structured approach to data visualization that breaks down graphs into semantic components
-  - **Data**: The dataset being visualized
-  - **Aesthetics (aes)**: Mappings between data and visual properties (e.g., x, y, color)
-  - **Geometries (geoms)**: Visual elements that represent data (e.g., points, lines)
-  - **Facets**: Subsets of data shown in multiple plots
-  - **Statistical Transformations (stats)**: Summarizing data (e.g., binning, smoothing)
-  - **Scales**: Control mapping from data space to aesthetic space
-  - **Coordinate Systems (coords)**: The space in which the data is represented (e.g., Cartesian, polar)
-
-[plotnine.org](https://plotnine.org/)
-
-<!--
-- Each component has specific role
-- Components combine flexibly
-- Powerful for complex plots
--->
-
----
-
-## Plotnine vs. ggplot2
-
-99.99% compatible with ggplot2
-
-- **Syntax and Concepts**
-  - Plotnine mirrors ggplot2's structure and functions
-  - Beneficial for anyone familiar with R
-- **Example Comparison**
-
-  - **ggplot2 (R)**:
-    ```R
-    ggplot(data, aes(x, y)) + geom_point()
-    ```
-  - **Plotnine (Python)**:
-    ```python
-    (ggplot(data, aes('x', 'y')) + geom_point())
-    ```
-
-<!--
-- Nearly identical syntax
-- Easy R to Python transition
-- Same powerful capabilities
--->
-
----
-
-## Important Components in Plotnine
-
-### `ggplot()`: Initialize a Plot
-
-- **Explanation**: Creates a new plot object with data and aesthetic mappings
-- **Structure**:
-  ```python
-  ggplot(data=DataFrame, mapping=aes('x_var', 'y_var'))
-  ```
-  - **Required Arguments**:
-    - `data`: DataFrame containing the data
-    - `mapping`: Aesthetic mappings created with `aes()`
-
-<!--
-- Start with data and mapping
-- Add layers progressively
-- Each layer adds meaning
--->
-
----
-
-## Plotnine Resources
-
-There are whole books just on `ggplot2`. In fact, it started as a book
-
-> Wilkinson, L. (2005), The Grammar of Graphics, 2nd ed., Springer
-
-- [Data Visualization Ch 7](https://andrewirwin.github.io/data-visualization/grammar.html), Andrew Irwin
-- [U of Iowa GoG Tutorial](http://homepage.stat.uiowa.edu/~luke/classes/STAT4580-2024/ggplot.html)
-- [R Stats `ggplot2` Tutorial](http://r-statistics.co/Complete-Ggplot2-Tutorial-Part1-With-R-Code.html)
-
-<!--
-- Deep theoretical foundation
-- Many learning resources
-- Active community
--->
-
----
-
-# Command-Line Visualization
-
-## Mermaid.js
-
-### Introduction
-
-- **Mermaid.js**: A JavaScript-based tool for generating diagrams and flowcharts from text definitions.
-- **Advantages**:
-  - Quick creation of diagrams without graphic design tools.
-  - Integration with markdown documents and presentations.
-- **Structure**:
-  ```markdown
-  ```mermaid
-  [Diagram Definition]
-  ```
-  ```
-<!--
-- Text-based diagrams
-- Version control friendly
-- Quick to modify
--->
-
----
-
-### Creating Diagrams with Mermaid.js
-
-- **Example**:
-
-  ```mermaid
-  graph LR
-    A[Start] --> B{Is the patient symptomatic?}
-    B -->|Yes| C[Conduct Tests]
-    B -->|No| D[Monitor Patient]
-    C --> E[Treatment Plan]
-    D --> E
-    E --> F[Follow-up]
-  ```
-
-
-- **Nodes**:
-  - `A`, `B`, `C`, `D`, `E`, `F` represent steps or decisions.
-- **Edges**:
-  - Arrows define the flow between nodes.
-  - Labels like `|Yes|` and `|No|` represent decision outcomes.
-  - 
-<!--
-- Nodes show states/steps
-- Arrows show flow
-- Labels add context
--->
-
----
-
-![bg contain](media/mermaid.png)
-
-<!--
-- Clear decision points
-- Logical flow shown
-- Easy to follow path
--->
-
----
-
-### Integrating Mermaid.js into Documents
-
-- **Markdown Files**:
-  - Supported in many markdown editors and viewers (Notion, VSCode, Obsidian, ...)
-- **Presentations**:
-  - Tools like **Marp** allow embedding Mermaid diagrams in slides.
-- **Version Control**:
-  - Diagrams are text-based, facilitating collaboration and version tracking.
-- **Command Line**:
-  - `mermaid-cli` tool for rendering diagrams from the command line.
-  ```bash
-  npm install -g @mermaid-js/mermaid-cli
-  mmdc -i input.mmd -o output.svg
-  ```
-
-<!--
-- Works in many tools
-- Easy to version control
-- CLI for automation
--->
-
----
-
-## Gnuplot
-
-Viewing graphs from the command line (you will almost never do this, ***but it's cool!***)
-
-```bash
-ping -c 10 google.com -i 0.2 | awk '/time=/{ print $(NF-1) }' | cut -d= -f2 | \
-  gnuplot -e \
-  "set terminal dumb size 90, 30; set autoscale; set title 'ping google.com';
-   set ylabel 'ms'; set xlabel 'count'; plot '-'  with lines notitle";
-```
-
-<!--
-- ASCII art visualization
-- Real-time data plotting
-- Unix pipeline power
--->
-
----
-
-```bash
-                                       ping google.com
-     55 +---------------------------------------------------------------------------+
-        |       +        +       +        +       +        +       +        +       |
-        |                                                                           |
-     50 |-+                                                                 *     +-|
-        |                                                                   *       |
-        |                                         *                        * *      |
-        |                                        * *                       * *      |
-     45 |-+                                      *  *                     *   *   +-|
-        |                                       *   *                     *   *     |
-        |                                       *    *                   *     *    |
-     40 |-+                                    *      *                  *     *  +-|
-        |                                      *       *                *       *   |
- ms     |                                     *         *               *       *   |
-     35 |-+                                   *          *             *        * +-|
-        |                                    *           *             *         *  |
-        |                                    *            *           *          *  |
-     30 |-+            *****                *              ***        *           *-|
-        |          ****     **              *                 *      *            * |
-        |**********           **           *                   **    *             *|
-        |                       *          *                     ** *              *|
-     25 |-+                      **********                         *             +-|
-        |                                                          *                |
-        |       +        +       +        +       +        +       +        +       |
-     20 +---------------------------------------------------------------------------+
-        0       1        2       3        4       5        6       7        8       9
-                                            count
-```
-
-<!--
-- Simple but effective
-- Shows trends clearly
-- Works anywhere
--->
-
----
-
-## Sparkline
-
-Because, why not?
-
-- [https://github.com/holman/spark](https://github.com/holman/spark)
-
-```bash
-curl -s https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.csv | \
-  sed '1d' | \
-  cut -d, -f5 | \
-  spark
-▃█▅▅█▅▃▃▅█▃▃▁▅▅▃▃▅▁▁▃▃▃▃▃▅▃█▅▁▃▅▃█▃▁
-```
-
-<!--
-- Ultra-compact visualization
-- Great for terminals
-- Shows trends in text
--->
-
----
-
-# Interactive and BI Visualizations
-
-### Overview
-
-- **Streamlit**:
-  - Designed for rapid development and simplicity.
-  - Emphasizes minimal code to produce apps.
-- **Plotly Dash**:
-  - Focused on creating complex, customizable applications.
-  - Uses Flask and React.js under the hood.
-- **Tableau/Superset/Looker/PowerBI**:
-  - Popular BI tools for creating interactive dashboards. ($$$)
-
-<!--
-- Streamlit for quick wins
-- Dash for complex apps
-- BI tools for business
--->
-
----
-
-### Streamlit
-- Python-first framework for rapidly building data apps
-- Key features:
-  - Simple API with minimal boilerplate code
-  - Auto-rerun on file changes
-  - Built-in widgets and layout components
-  - Native integration with pandas/numpy
-  - Caching system for performance
-- Best for:
-  - Data science prototypes
-  - ML model demos
-  - Quick internal tools
-- Example:
-```python
-import streamlit as st
 import pandas as pd
+import numpy as np
+from typing import List, Dict, Tuple, Optional
+import warnings
+warnings.filterwarnings('ignore')
 
-st.title("Simple Data App")
-data = pd.read_csv("data.csv")
-st.line_chart(data)
+class ClinicalDataTransformer:
+    """Advanced transformer for clinical trial longitudinal data."""
+    
+    def __init__(self, study_config: Dict):
+        self.config = study_config
+        self.visit_schedule = study_config['visit_schedule']
+        self.endpoints = study_config['endpoints']
+        
+    def create_analysis_dataset(self, 
+                               demographics: pd.DataFrame,
+                               lab_data: pd.DataFrame,
+                               outcomes: pd.DataFrame) -> pd.DataFrame:
+        """Create analysis-ready dataset with proper hierarchical structure."""
+        
+        # 1. Reshape lab data from long to wide format with visit structure
+        lab_pivoted = self._create_visit_structure(lab_data)
+        
+        # 2. Calculate derived variables (changes from baseline, percent changes)
+        lab_derived = self._calculate_derived_variables(lab_pivoted)
+        
+        # 3. Merge with demographics maintaining proper index structure  
+        analysis_df = self._merge_with_demographics(lab_derived, demographics)
+        
+        # 4. Add outcome variables with time-to-event calculations
+        final_df = self._add_outcomes(analysis_df, outcomes)
+        
+        return final_df
+    
+    def _create_visit_structure(self, lab_data: pd.DataFrame) -> pd.DataFrame:
+        """Transform long-format lab data to analysis-ready wide format."""
+        
+        # Create standardized visit labels
+        visit_mapping = {day: f"Visit_{i+1}" 
+                        for i, day in enumerate(self.visit_schedule)}
+        
+        lab_data['visit_std'] = lab_data['study_day'].map(
+            lambda x: self._map_to_nearest_visit(x, visit_mapping)
+        )
+        
+        # Pivot to create columns for each lab test at each visit
+        lab_pivoted = lab_data.pivot_table(
+            index=['patient_id', 'treatment_group'],
+            columns=['lab_test', 'visit_std'],
+            values='lab_value',
+            aggfunc='mean'  # Handle multiple values per visit
+        )
+        
+        # Flatten column names for easier access
+        lab_pivoted.columns = [f"{lab}_{visit}" for lab, visit in lab_pivoted.columns]
+        lab_pivoted = lab_pivoted.reset_index()
+        
+        return lab_pivoted
+    
+    def _calculate_derived_variables(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Calculate clinical endpoints: changes from baseline, percent changes."""
+        
+        derived_df = df.copy()
+        
+        # For each lab test, calculate derived variables
+        for lab_test in self.endpoints['lab_tests']:
+            baseline_col = f"{lab_test}_Visit_1"
+            
+            if baseline_col in df.columns:
+                # Absolute change from baseline for each visit
+                for visit in ['Visit_2', 'Visit_3', 'Visit_4']:
+                    current_col = f"{lab_test}_{visit}"
+                    change_col = f"{lab_test}_{visit}_change"
+                    
+                    if current_col in df.columns:
+                        derived_df[change_col] = (
+                            df[current_col] - df[baseline_col]
+                        )
+                
+                # Percent change from baseline
+                for visit in ['Visit_2', 'Visit_3', 'Visit_4']:
+                    current_col = f"{lab_test}_{visit}"
+                    pct_change_col = f"{lab_test}_{visit}_pct_change"
+                    
+                    if current_col in df.columns:
+                        derived_df[pct_change_col] = (
+                            (df[current_col] - df[baseline_col]) / 
+                            df[baseline_col] * 100
+                        )
+                
+                # Maximum change across all visits
+                change_cols = [f"{lab_test}_{visit}_change" 
+                             for visit in ['Visit_2', 'Visit_3', 'Visit_4']
+                             if f"{lab_test}_{visit}_change" in derived_df.columns]
+                
+                if change_cols:
+                    derived_df[f"{lab_test}_max_change"] = (
+                        derived_df[change_cols].max(axis=1)
+                    )
+        
+        return derived_df
+    
+    def _advanced_groupby_operations(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Demonstrate advanced groupby operations for clinical analysis."""
+        
+        # Complex aggregations by treatment group and site
+        treatment_summary = (df
+                           .groupby(['treatment_group', 'site_id'])
+                           .agg({
+                               'ldl_cholesterol_Visit_4': ['count', 'mean', 'std', 
+                                                         lambda x: x.quantile(0.25),
+                                                         lambda x: x.quantile(0.75)],
+                               'patient_id': 'count'
+                           })
+                           .round(2)
+        )
+        
+        # Flatten multi-level column names
+        treatment_summary.columns = [
+            '_'.join(col).strip() if col[1] else col[0]
+            for col in treatment_summary.columns.values
+        ]
+        
+        # Calculate treatment effect sizes by site
+        treatment_effects = []
+        
+        for site in df['site_id'].unique():
+            site_data = df[df['site_id'] == site]
+            
+            for endpoint in ['ldl_cholesterol_Visit_4_change', 'hdl_cholesterol_Visit_4_change']:
+                if endpoint in df.columns:
+                    # Calculate Cohen's d between treatment groups
+                    drug_a = site_data[site_data['treatment_group'] == 'Drug_A'][endpoint].dropna()
+                    placebo = site_data[site_data['treatment_group'] == 'Placebo'][endpoint].dropna()
+                    
+                    if len(drug_a) > 0 and len(placebo) > 0:
+                        pooled_std = np.sqrt(((len(drug_a) - 1) * drug_a.var() + 
+                                            (len(placebo) - 1) * placebo.var()) / 
+                                           (len(drug_a) + len(placebo) - 2))
+                        
+                        cohens_d = (drug_a.mean() - placebo.mean()) / pooled_std
+                        
+                        treatment_effects.append({
+                            'site_id': site,
+                            'endpoint': endpoint,
+                            'drug_a_mean': drug_a.mean(),
+                            'placebo_mean': placebo.mean(),
+                            'mean_difference': drug_a.mean() - placebo.mean(),
+                            'cohens_d': cohens_d,
+                            'n_drug_a': len(drug_a),
+                            'n_placebo': len(placebo)
+                        })
+        
+        return pd.DataFrame(treatment_effects)
 ```
+
+#### 2. Advanced String Operations for Clinical Coding
+
+```python
+class ClinicalCodingTransformer:
+    """Advanced text processing for clinical data (ICD codes, medications, etc.)."""
+    
+    def __init__(self):
+        self.icd_patterns = {
+            'cardiovascular': r'^I[0-9]',
+            'diabetes': r'^E1[0-4]',
+            'hypertension': r'^I1[0-5]',
+            'hyperlipidemia': r'^E78'
+        }
+    
+    def process_diagnosis_codes(self, df: pd.DataFrame, 
+                              diagnosis_col: str = 'primary_diagnosis') -> pd.DataFrame:
+        """Advanced processing of ICD-10 diagnosis codes."""
+        
+        result_df = df.copy()
+        
+        # Extract and standardize ICD codes
+        result_df['icd_clean'] = (
+            df[diagnosis_col]
+            .str.upper()
+            .str.replace(r'[^A-Z0-9.]', '', regex=True)
+            .str[:7]  # Standard ICD-10 length
+        )
+        
+        # Create disease category flags using vectorized operations
+        for category, pattern in self.icd_patterns.items():
+            result_df[f'has_{category}'] = (
+                result_df['icd_clean']
+                .str.contains(pattern, regex=True, na=False)
+            )
+        
+        # Extract ICD chapter (first character/digit)
+        result_df['icd_chapter'] = result_df['icd_clean'].str[0]
+        
+        # Count comorbidities per patient
+        comorbidity_cols = [f'has_{cat}' for cat in self.icd_patterns.keys()]
+        result_df['comorbidity_count'] = result_df[comorbidity_cols].sum(axis=1)
+        
+        return result_df
+    
+    def process_medication_strings(self, df: pd.DataFrame, 
+                                 med_col: str = 'medications') -> pd.DataFrame:
+        """Process free-text medication fields."""
+        
+        result_df = df.copy()
+        
+        # Common medication patterns
+        statin_pattern = r'(atorvastatin|simvastatin|rosuvastatin|lovastatin|pravastatin)'
+        ace_pattern = r'(lisinopril|enalapril|captopril|benazepril)'
+        beta_blocker_pattern = r'(metoprolol|propranolol|atenolol|carvedilol)'
+        
+        # Extract medication classes
+        result_df['on_statin'] = (
+            df[med_col]
+            .str.lower()
+            .str.contains(statin_pattern, regex=True, na=False)
+        )
+        
+        result_df['on_ace_inhibitor'] = (
+            df[med_col]
+            .str.lower() 
+            .str.contains(ace_pattern, regex=True, na=False)
+        )
+        
+        result_df['on_beta_blocker'] = (
+            df[med_col]
+            .str.lower()
+            .str.contains(beta_blocker_pattern, regex=True, na=False)
+        )
+        
+        # Count total medications (assuming comma-separated)
+        result_df['medication_count'] = (
+            df[med_col]
+            .str.count(',') + 1
+            .where(df[med_col].notna(), 0)
+        )
+        
+        return result_df
+```
+
+### Hands-On Exercise 1: Complex Clinical Data Transformation
+
+**Scenario**: You have longitudinal lipid panel data from a statin efficacy trial.
+
+**Data Structure**:
+- Patient demographics with baseline characteristics
+- Lab results collected at 0, 30, 60, 90 days  
+- Medication adherence data
+- Adverse event reports
+
+**Your Task**: Create an analysis-ready dataset that includes:
+- Baseline and change from baseline for all lipid parameters
+- Treatment group comparisons
+- Time-to-event variables for adverse events
+- Derived efficacy endpoints (% achieving LDL <70 mg/dL)
 
 ---
 
-## Streamlit: Building an App
+## Part 2: Multi-Level Indexing and Hierarchical Data (60 minutes)
+
+### Professional Application: Multi-Site Clinical Trial Analysis
+
+Multi-level indexing becomes essential when analyzing:
+- **Hierarchical structures**: Sites → Patients → Visits → Measurements
+- **Repeated measures**: Same patient measured multiple times
+- **Grouped analyses**: By treatment, site, demographics
+- **Complex aggregations**: Cross-tabulations with multiple dimensions
+
+### Advanced Indexing Techniques
+
+#### 1. Creating and Managing Multi-Level Indexes
 
 ```python
-import streamlit as st
+class HierarchicalDataManager:
+    """Manage complex hierarchical clinical trial data."""
+    
+    def __init__(self):
+        self.index_levels = ['site_id', 'patient_id', 'visit_number']
+    
+    def create_hierarchical_structure(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Convert flat data to hierarchical multi-index structure."""
+        
+        # Set hierarchical index
+        df_indexed = df.set_index(self.index_levels)
+        
+        # Sort index for optimal performance
+        df_indexed = df_indexed.sort_index()
+        
+        return df_indexed
+    
+    def analyze_by_hierarchy(self, df: pd.DataFrame) -> Dict:
+        """Perform analyses at different hierarchical levels."""
+        
+        results = {}
+        
+        # Site-level analysis
+        results['by_site'] = (
+            df.groupby(level='site_id')
+            .agg({
+                'ldl_cholesterol': ['mean', 'std', 'count'],
+                'hdl_cholesterol': ['mean', 'std', 'count'],
+                'total_cholesterol': ['mean', 'std', 'count']
+            })
+            .round(2)
+        )
+        
+        # Patient-level analysis (across all visits)
+        results['by_patient'] = (
+            df.groupby(level=['site_id', 'patient_id'])
+            .agg({
+                'ldl_cholesterol': ['mean', 'min', 'max', 'count'],
+                'systolic_bp': ['mean', 'min', 'max'],
+                'weight': ['first', 'last', lambda x: x.last() - x.first()]  # Weight change
+            })
+            .round(2)
+        )
+        
+        # Visit-level analysis
+        results['by_visit'] = (
+            df.groupby(level='visit_number')
+            .agg({
+                'ldl_cholesterol': ['mean', 'std', 'count'],
+                'patient_adherence': 'mean'
+            })
+            .round(2)
+        )
+        
+        return results
+    
+    def cross_sectional_analysis(self, df: pd.DataFrame, 
+                                treatment_col: str = 'treatment_group') -> pd.DataFrame:
+        """Create cross-tabulations across hierarchical levels."""
+        
+        # Reset index to access grouping variables
+        df_reset = df.reset_index()
+        
+        # Create cross-tabulation: Site × Treatment × Visit
+        cross_tab = pd.crosstab(
+            index=[df_reset['site_id'], df_reset['visit_number']],
+            columns=df_reset[treatment_col],
+            values=df_reset['ldl_cholesterol'],
+            aggfunc=['count', 'mean', 'std']
+        )
+        
+        return cross_tab
+    
+    def longitudinal_patterns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Analyze longitudinal patterns using advanced indexing."""
+        
+        # Calculate visit-to-visit changes
+        df_changes = (
+            df.groupby(level=['site_id', 'patient_id'])
+            .pct_change()  # Percent change from previous visit
+            .add_suffix('_pct_change')
+        )
+        
+        # Calculate rolling averages (3-visit window)
+        df_rolling = (
+            df.groupby(level=['site_id', 'patient_id'])
+            .rolling(window=3, min_periods=2)
+            .mean()
+            .add_suffix('_rolling_mean')
+        )
+        
+        # Combine original data with derived features
+        combined = pd.concat([df, df_changes, df_rolling], axis=1)
+        
+        return combined
+```
+
+#### 2. Advanced Slicing and Selection Operations
+
+```python
+class AdvancedDataSlicer:
+    """Advanced data slicing operations for clinical analysis."""
+    
+    def __init__(self, df: pd.DataFrame):
+        self.df = df  # Assumes multi-index DataFrame
+    
+    def slice_by_treatment_and_visit(self, 
+                                   treatment: str, 
+                                   visits: List[int]) -> pd.DataFrame:
+        """Advanced slicing by treatment group and visit numbers."""
+        
+        # Reset index to access treatment column, then re-index
+        df_reset = self.df.reset_index()
+        treatment_data = df_reset[df_reset['treatment_group'] == treatment]
+        
+        # Re-establish hierarchical index
+        treatment_indexed = treatment_data.set_index(['site_id', 'patient_id', 'visit_number'])
+        
+        # Slice by visits using isin for multiple values
+        visit_slice = treatment_indexed.loc[
+            treatment_indexed.index.get_level_values('visit_number').isin(visits)
+        ]
+        
+        return visit_slice
+    
+    def analyze_site_performance(self, endpoint: str = 'ldl_cholesterol') -> pd.DataFrame:
+        """Analyze site performance using advanced indexing."""
+        
+        site_analysis = []
+        
+        for site in self.df.index.get_level_values('site_id').unique():
+            site_data = self.df.xs(site, level='site_id')
+            
+            # Calculate site-specific metrics
+            baseline_mean = site_data.xs(1, level='visit_number')[endpoint].mean()
+            final_mean = site_data.xs(4, level='visit_number')[endpoint].mean()
+            
+            # Calculate percent of patients achieving target
+            final_values = site_data.xs(4, level='visit_number')[endpoint].dropna()
+            pct_at_target = (final_values < 70).mean() * 100  # LDL < 70 mg/dL
+            
+            site_analysis.append({
+                'site_id': site,
+                'n_patients': len(site_data.index.get_level_values('patient_id').unique()),
+                'baseline_mean': baseline_mean,
+                'final_mean': final_mean,
+                'mean_change': final_mean - baseline_mean,
+                'pct_at_ldl_target': pct_at_target
+            })
+        
+        return pd.DataFrame(site_analysis)
+    
+    def identify_treatment_responders(self, 
+                                    threshold: float = -30.0,
+                                    endpoint: str = 'ldl_cholesterol') -> pd.DataFrame:
+        """Identify treatment responders using complex criteria."""
+        
+        responder_analysis = []
+        
+        # Group by patient and calculate response
+        for (site, patient), patient_data in self.df.groupby(level=['site_id', 'patient_id']):
+            
+            if 1 in patient_data.index.get_level_values('visit_number') and \
+               4 in patient_data.index.get_level_values('visit_number'):
+                
+                baseline = patient_data.xs(1, level='visit_number')[endpoint].iloc[0]
+                final = patient_data.xs(4, level='visit_number')[endpoint].iloc[0]
+                
+                pct_change = ((final - baseline) / baseline) * 100
+                is_responder = pct_change <= threshold  # 30% reduction
+                
+                responder_analysis.append({
+                    'site_id': site,
+                    'patient_id': patient,
+                    'baseline_value': baseline,
+                    'final_value': final,
+                    'percent_change': pct_change,
+                    'is_responder': is_responder
+                })
+        
+        return pd.DataFrame(responder_analysis)
+```
+
+### Hands-On Exercise 2: Hierarchical Data Analysis
+
+**Scenario**: Multi-site diabetes management program with HbA1c monitoring.
+
+**Data Structure**: Site → Patient → Monthly visits with HbA1c, weight, blood pressure
+
+**Your Task**: 
+- Create hierarchical index structure
+- Analyze site-level performance differences
+- Identify patient response patterns
+- Calculate time-to-target achievement
+
+---
+
+## Part 3: Publication-Quality Statistical Visualization (90 minutes)
+
+### Professional Standards: Graphics That Get Published
+
+Publication-quality graphics require:
+- **Statistical accuracy**: Appropriate chart types for data types
+- **Visual clarity**: Clear legends, proper scaling, readable fonts
+- **Professional aesthetics**: Journal-ready formatting
+- **Statistical annotations**: Confidence intervals, p-values, effect sizes
+
+### Advanced Visualization Framework
+
+#### 1. Statistical Graphics with Seaborn and Matplotlib
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+
+class ClinicalVisualizationMaster:
+    """Create publication-quality clinical trial visualizations."""
+    
+    def __init__(self):
+        # Set publication-ready style
+        plt.style.use('seaborn-v0_8-whitegrid')
+        sns.set_palette("Set2")
+        
+        # Configure matplotlib for high-DPI displays
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['savefig.dpi'] = 300
+        plt.rcParams['font.size'] = 12
+        plt.rcParams['axes.labelsize'] = 14
+        plt.rcParams['axes.titlesize'] = 16
+        plt.rcParams['legend.fontsize'] = 12
+        
+    def create_primary_endpoint_plot(self, df: pd.DataFrame,
+                                   endpoint: str = 'ldl_cholesterol_change',
+                                   treatment_col: str = 'treatment_group') -> plt.Figure:
+        """Create primary endpoint analysis plot with statistical annotations."""
+        
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+        
+        # Box plot with individual points
+        sns.boxplot(data=df, x=treatment_col, y=endpoint, ax=ax1)
+        sns.swarmplot(data=df, x=treatment_col, y=endpoint, ax=ax1, 
+                     color='black', alpha=0.5, size=3)
+        
+        # Add statistical annotations
+        treatment_groups = df[treatment_col].unique()
+        if len(treatment_groups) == 2:
+            group1_data = df[df[treatment_col] == treatment_groups[0]][endpoint].dropna()
+            group2_data = df[df[treatment_col] == treatment_groups[1]][endpoint].dropna()
+            
+            # Perform t-test
+            t_stat, p_value = stats.ttest_ind(group1_data, group2_data)
+            
+            # Add p-value annotation
+            ax1.text(0.5, 0.95, f'p = {p_value:.4f}', 
+                    transform=ax1.transAxes, ha='center', fontsize=12,
+                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        
+        ax1.set_title('Primary Endpoint Analysis')
+        ax1.set_ylabel(f'{endpoint.replace("_", " ").title()} (mg/dL)')
+        
+        # Violin plot showing distribution
+        sns.violinplot(data=df, x=treatment_col, y=endpoint, ax=ax2)
+        ax2.set_title('Distribution Comparison')
+        ax2.set_ylabel('')
+        
+        plt.tight_layout()
+        return fig
+    
+    def create_longitudinal_plot(self, df: pd.DataFrame) -> plt.Figure:
+        """Create sophisticated longitudinal analysis plot."""
+        
+        # Prepare data for longitudinal plotting
+        visit_columns = [col for col in df.columns if 'Visit_' in col and 'ldl_cholesterol' in col and 'change' not in col]
+        
+        # Reshape to long format
+        id_vars = ['patient_id', 'treatment_group']
+        df_long = pd.melt(df[id_vars + visit_columns], 
+                         id_vars=id_vars,
+                         value_vars=visit_columns,
+                         var_name='visit',
+                         value_name='ldl_cholesterol')
+        
+        # Extract visit number
+        df_long['visit_number'] = df_long['visit'].str.extract(r'Visit_(\d+)').astype(int)
+        
+        # Calculate time in weeks (assuming visits at 0, 4, 8, 12 weeks)
+        visit_to_week = {1: 0, 2: 4, 3: 8, 4: 12}
+        df_long['week'] = df_long['visit_number'].map(visit_to_week)
+        
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+        
+        # Individual patient trajectories (sample)
+        sample_patients = df_long['patient_id'].unique()[:20]  # Show first 20 patients
+        for treatment in df_long['treatment_group'].unique():
+            treatment_data = df_long[
+                (df_long['treatment_group'] == treatment) & 
+                (df_long['patient_id'].isin(sample_patients))
+            ]
+            
+            for patient in treatment_data['patient_id'].unique():
+                patient_data = treatment_data[treatment_data['patient_id'] == patient]
+                ax1.plot(patient_data['week'], patient_data['ldl_cholesterol'], 
+                        alpha=0.3, linewidth=0.5, 
+                        color='blue' if treatment == 'Drug_A' else 'red')
+        
+        ax1.set_xlabel('Week')
+        ax1.set_ylabel('LDL Cholesterol (mg/dL)')
+        ax1.set_title('Individual Patient Trajectories (Sample)')
+        ax1.grid(True, alpha=0.3)
+        
+        # Mean trajectories with confidence intervals
+        sns.lineplot(data=df_long, x='week', y='ldl_cholesterol', 
+                    hue='treatment_group', ax=ax2, 
+                    marker='o', markersize=8, linewidth=3)
+        
+        ax2.set_xlabel('Week')
+        ax2.set_ylabel('LDL Cholesterol (mg/dL)')
+        ax2.set_title('Mean Treatment Response Over Time')
+        ax2.legend(title='Treatment Group', bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        plt.tight_layout()
+        return fig
+    
+    def create_forest_plot(self, effect_data: pd.DataFrame) -> plt.Figure:
+        """Create forest plot for meta-analysis or subgroup analysis."""
+        
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        y_positions = range(len(effect_data))
+        
+        # Plot effect sizes with confidence intervals
+        ax.errorbar(x=effect_data['effect_size'], 
+                   y=y_positions,
+                   xerr=[effect_data['effect_size'] - effect_data['ci_lower'],
+                         effect_data['ci_upper'] - effect_data['effect_size']],
+                   fmt='o', capsize=5, capthick=2, markersize=8,
+                   color='darkblue', ecolor='darkblue')
+        
+        # Add vertical line at null effect
+        ax.axvline(x=0, color='red', linestyle='--', alpha=0.7)
+        
+        # Customize axes
+        ax.set_yticks(y_positions)
+        ax.set_yticklabels(effect_data['subgroup'])
+        ax.set_xlabel('Effect Size (Cohen\'s d)')
+        ax.set_title('Treatment Effect by Subgroup')
+        
+        # Add effect sizes as text
+        for i, (idx, row) in enumerate(effect_data.iterrows()):
+            ax.text(row['effect_size'] + 0.1, i, 
+                   f"{row['effect_size']:.2f} ({row['ci_lower']:.2f}, {row['ci_upper']:.2f})",
+                   va='center', fontsize=10)
+        
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        return fig
+```
+
+#### 2. Interactive Dashboards with Plotly
+
+```python
+class InteractiveClinicalDashboard:
+    """Create interactive dashboards for clinical trial monitoring."""
+    
+    def __init__(self):
+        self.colors = {
+            'primary': '#1f77b4',
+            'secondary': '#ff7f0e', 
+            'success': '#2ca02c',
+            'warning': '#d62728'
+        }
+    
+    def create_trial_monitoring_dashboard(self, df: pd.DataFrame) -> go.Figure:
+        """Create comprehensive trial monitoring dashboard."""
+        
+        # Create subplots with different types
+        fig = make_subplots(
+            rows=2, cols=3,
+            subplot_titles=[
+                'Enrollment Progress',
+                'Primary Endpoint Distribution', 
+                'Safety Events Over Time',
+                'Site Performance Comparison',
+                'Treatment Response Rates',
+                'Quality Metrics'
+            ],
+            specs=[
+                [{'type': 'scatter'}, {'type': 'histogram'}, {'type': 'scatter'}],
+                [{'type': 'bar'}, {'type': 'pie'}, {'type': 'indicator'}]
+            ]
+        )
+        
+        # 1. Enrollment progress over time
+        enrollment_data = df.groupby('enrollment_date').size().cumsum().reset_index()
+        enrollment_data.columns = ['date', 'cumulative_enrollment']
+        
+        fig.add_trace(
+            go.Scatter(
+                x=enrollment_data['date'],
+                y=enrollment_data['cumulative_enrollment'],
+                mode='lines+markers',
+                name='Enrollment Progress',
+                line=dict(color=self.colors['primary'], width=3)
+            ),
+            row=1, col=1
+        )
+        
+        # 2. Primary endpoint distribution
+        fig.add_trace(
+            go.Histogram(
+                x=df['ldl_cholesterol_Visit_4_change'].dropna(),
+                nbinsx=30,
+                name='LDL Change Distribution',
+                marker_color=self.colors['secondary']
+            ),
+            row=1, col=2
+        )
+        
+        # 3. Safety events over time
+        if 'adverse_event_date' in df.columns:
+            safety_data = df[df['adverse_event'].notna()]
+            safety_counts = safety_data.groupby('adverse_event_date').size().reset_index()
+            
+            fig.add_trace(
+                go.Scatter(
+                    x=safety_counts['adverse_event_date'],
+                    y=safety_counts[0],
+                    mode='markers',
+                    name='Safety Events',
+                    marker=dict(color=self.colors['warning'], size=8)
+                ),
+                row=1, col=3
+            )
+        
+        # 4. Site performance comparison
+        site_performance = (df.groupby('site_id')['ldl_cholesterol_Visit_4_change']
+                           .mean().reset_index())
+        
+        fig.add_trace(
+            go.Bar(
+                x=site_performance['site_id'],
+                y=site_performance['ldl_cholesterol_Visit_4_change'],
+                name='Mean LDL Change by Site',
+                marker_color=self.colors['success']
+            ),
+            row=2, col=1
+        )
+        
+        # 5. Treatment response rates
+        response_rates = (df.groupby('treatment_group')['is_responder']
+                         .mean() * 100).reset_index()
+        
+        fig.add_trace(
+            go.Pie(
+                labels=response_rates['treatment_group'],
+                values=response_rates['is_responder'],
+                name='Response Rates'
+            ),
+            row=2, col=2
+        )
+        
+        # 6. Overall quality metric
+        quality_score = 85  # Calculate from actual data quality metrics
+        
+        fig.add_trace(
+            go.Indicator(
+                mode="gauge+number+delta",
+                value=quality_score,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': "Data Quality Score"},
+                gauge={'axis': {'range': [None, 100]},
+                      'bar': {'color': self.colors['success']},
+                      'steps': [
+                          {'range': [0, 50], 'color': "lightgray"},
+                          {'range': [50, 80], 'color': "gray"}
+                      ],
+                      'threshold': {'line': {'color': "red", 'width': 4},
+                                  'thickness': 0.75, 'value': 90}}
+            ),
+            row=2, col=3
+        )
+        
+        # Update layout
+        fig.update_layout(
+            height=800,
+            showlegend=False,
+            title_text="Clinical Trial Monitoring Dashboard",
+            title_x=0.5
+        )
+        
+        return fig
+```
+
+### Hands-On Exercise 3: Publication-Ready Visualizations
+
+**Scenario**: Create publication-ready figures for a cardiovascular outcomes paper.
+
+**Required Figures**:
+1. **Primary endpoint analysis**: Treatment comparison with statistical annotations
+2. **Longitudinal response**: Mean trajectories with confidence intervals  
+3. **Subgroup analysis**: Forest plot showing treatment effects across demographics
+4. **Safety profile**: Comprehensive adverse event visualization
+
+**Quality Standards**: Journal-ready formatting, statistical annotations, professional aesthetics.
+
+---
+
+## Part 4: Time Series and Longitudinal Analysis (75 minutes)
+
+### Professional Applications: Temporal Data Mastery
+
+Time series analysis is crucial for:
+- **Clinical monitoring**: Vital signs, lab values over time
+- **Epidemiological studies**: Disease surveillance, outbreak detection
+- **Healthcare operations**: Patient flow, resource utilization  
+- **Pharmacokinetics**: Drug concentration profiles
+
+### Advanced Temporal Analysis
+
+#### 1. Time Series Preprocessing and Feature Engineering
+
+```python
 import pandas as pd
-import plotly.express as px
+from datetime import datetime, timedelta
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 
-# Load data
-df = pd.read_csv('data.csv')
-
-# App title
-st.title('Health Data Explorer')
-
-# Sidebar filters
-age_group = st.sidebar.selectbox('Select Age Group', df['AgeGroup'].unique())
-
-# Filtered data
-filtered_df = df[df['AgeGroup'] == age_group]
-
-# Display data
-st.write(f'Data for Age Group: {age_group}')
-st.write(filtered_df)
-
-# Plot
-fig = px.scatter(filtered_df, x='BMI', y='BloodPressure',
-                 title=f'BMI vs Blood Pressure for Age Group {age_group}')
-st.plotly_chart(fig)
+class ClinicalTimeSeriesAnalyzer:
+    """Advanced time series analysis for clinical data."""
+    
+    def __init__(self):
+        self.scaler = StandardScaler()
+        
+    def preprocess_time_series(self, df: pd.DataFrame, 
+                             timestamp_col: str,
+                             value_col: str,
+                             patient_col: str) -> pd.DataFrame:
+        """Comprehensive time series preprocessing."""
+        
+        # Ensure datetime format
+        df[timestamp_col] = pd.to_datetime(df[timestamp_col])
+        
+        # Sort by patient and timestamp
+        df_sorted = df.sort_values([patient_col, timestamp_col])
+        
+        # Create time-based features
+        df_featured = self._create_temporal_features(df_sorted, timestamp_col)
+        
+        # Handle missing values with forward fill (clinical context appropriate)
+        df_featured[value_col] = (df_featured
+                                 .groupby(patient_col)[value_col]
+                                 .fillna(method='ffill'))
+        
+        # Detect and handle outliers
+        df_cleaned = self._handle_temporal_outliers(df_featured, value_col, patient_col)
+        
+        return df_cleaned
+    
+    def _create_temporal_features(self, df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
+        """Create comprehensive temporal features."""
+        
+        df_featured = df.copy()
+        
+        # Basic temporal components
+        df_featured['year'] = df[timestamp_col].dt.year
+        df_featured['month'] = df[timestamp_col].dt.month
+        df_featured['day_of_week'] = df[timestamp_col].dt.day_name()
+        df_featured['hour'] = df[timestamp_col].dt.hour
+        df_featured['is_weekend'] = df[timestamp_col].dt.weekend
+        
+        # Clinical context: shift patterns
+        df_featured['shift'] = pd.cut(df_featured['hour'], 
+                                    bins=[0, 8, 16, 24], 
+                                    labels=['Night', 'Day', 'Evening'],
+                                    right=False)
+        
+        # Time since first measurement (per patient)
+        df_featured['days_since_baseline'] = (
+            df_featured.groupby('patient_id')[timestamp_col]
+            .transform(lambda x: (x - x.min()).dt.days)
+        )
+        
+        return df_featured
+    
+    def analyze_longitudinal_patterns(self, df: pd.DataFrame,
+                                    value_col: str,
+                                    patient_col: str) -> Dict:
+        """Analyze longitudinal patterns in clinical data."""
+        
+        patterns = {}
+        
+        # 1. Individual patient trajectories
+        patient_trajectories = []
+        
+        for patient in df[patient_col].unique():
+            patient_data = df[df[patient_col] == patient].copy()
+            
+            if len(patient_data) >= 3:  # Minimum observations for trend analysis
+                # Calculate trend using linear regression
+                x = np.arange(len(patient_data))
+                y = patient_data[value_col].values
+                
+                # Remove NaN values
+                mask = ~np.isnan(y)
+                if mask.sum() >= 2:
+                    slope, intercept = np.polyfit(x[mask], y[mask], 1)
+                    
+                    patient_trajectories.append({
+                        'patient_id': patient,
+                        'n_observations': len(patient_data),
+                        'slope': slope,
+                        'baseline_value': y[0] if not np.isnan(y[0]) else np.nan,
+                        'final_value': y[-1] if not np.isnan(y[-1]) else np.nan,
+                        'trend_direction': 'increasing' if slope > 0 else 'decreasing',
+                        'mean_value': np.nanmean(y),
+                        'value_range': np.nanmax(y) - np.nanmin(y)
+                    })
+        
+        patterns['individual_trajectories'] = pd.DataFrame(patient_trajectories)
+        
+        # 2. Population-level trends
+        daily_means = (df.groupby(df['timestamp'].dt.date)[value_col]
+                      .agg(['mean', 'std', 'count'])
+                      .reset_index())
+        
+        patterns['population_trends'] = daily_means
+        
+        # 3. Seasonal patterns (if applicable)
+        monthly_patterns = (df.groupby(df['timestamp'].dt.month)[value_col]
+                           .agg(['mean', 'std'])
+                           .reset_index())
+        
+        patterns['seasonal_patterns'] = monthly_patterns
+        
+        return patterns
+    
+    def detect_change_points(self, df: pd.DataFrame, 
+                           value_col: str,
+                           patient_col: str) -> pd.DataFrame:
+        """Detect significant changes in patient trajectories."""
+        
+        change_points = []
+        
+        for patient in df[patient_col].unique():
+            patient_data = df[df[patient_col] == patient].copy()
+            patient_data = patient_data.sort_values('timestamp')
+            
+            if len(patient_data) >= 5:  # Minimum for change point detection
+                values = patient_data[value_col].dropna().values
+                
+                if len(values) >= 5:
+                    # Simple change point detection using moving averages
+                    window = max(2, len(values) // 4)
+                    
+                    # Calculate moving averages
+                    early_avg = np.mean(values[:window])
+                    late_avg = np.mean(values[-window:])
+                    
+                    # Check for significant change (>20% change)
+                    pct_change = abs((late_avg - early_avg) / early_avg) * 100
+                    
+                    if pct_change > 20:  # Threshold for clinically significant change
+                        change_points.append({
+                            'patient_id': patient,
+                            'early_average': early_avg,
+                            'late_average': late_avg,
+                            'percent_change': pct_change,
+                            'change_direction': 'increase' if late_avg > early_avg else 'decrease',
+                            'n_observations': len(values)
+                        })
+        
+        return pd.DataFrame(change_points)
 ```
 
----
+#### 2. Advanced Time Series Visualization
 
-### Code Explanation
-
-- **Imports**:
-  - `streamlit` for the app interface.
-  - `pandas` and `plotly.express` for data handling and plotting.
-- **Data Loading**:
-  - Reads the health data into a DataFrame.
-- **App Components**:
-  - `st.title()` sets the title.
-  - `st.sidebar.selectbox()` creates a dropdown in the sidebar.
-  - `st.write()` displays text and data.
-  - `st.plotly_chart()` renders the plot.
-- **Interactivity**:
-  - Selecting an age group filters the data and updates the display and plot.
-
----
-
-### Plotly Dash
-
-- Full-featured framework for building analytical web applications
-- Key features:
-  - React.js based components
-  - More granular control over layout/styling
-  - Advanced callback system
-  - Integration with Plotly graphing library
-  - Production-ready performance
-- Best for:
-  - Complex dashboards
-  - Interactive data exploration
-  - Enterprise applications
-- Example:
 ```python
-from dash import Dash, dcc, html
-import plotly.express as px
-
-app = Dash(__name__)
-app.layout = html.Div([
-    dcc.Graph(figure=px.line(df, x='date', y='value'))
-])
+class TimeSeriesVisualizer:
+    """Create sophisticated time series visualizations."""
+    
+    def create_longitudinal_heatmap(self, df: pd.DataFrame,
+                                  patient_col: str,
+                                  timestamp_col: str,
+                                  value_col: str) -> plt.Figure:
+        """Create heatmap showing patient trajectories over time."""
+        
+        # Pivot data for heatmap
+        # First, create time bins (e.g., weekly)
+        df['time_bin'] = df[timestamp_col].dt.to_period('W')
+        
+        pivot_data = df.pivot_table(
+            index=patient_col,
+            columns='time_bin',
+            values=value_col,
+            aggfunc='mean'
+        )
+        
+        # Create heatmap
+        fig, ax = plt.subplots(figsize=(15, 10))
+        
+        sns.heatmap(pivot_data, 
+                   cmap='RdYlBu_r', 
+                   center=pivot_data.mean().mean(),
+                   cbar_kws={'label': f'{value_col.replace("_", " ").title()}'},
+                   ax=ax)
+        
+        ax.set_title('Longitudinal Patient Trajectories Heatmap')
+        ax.set_xlabel('Time Period (Weeks)')
+        ax.set_ylabel('Patient ID')
+        
+        plt.tight_layout()
+        return fig
+    
+    def create_trajectory_clusters(self, df: pd.DataFrame,
+                                 patient_trajectories: pd.DataFrame) -> plt.Figure:
+        """Visualize clusters of similar patient trajectories."""
+        
+        # Perform clustering on trajectory features
+        from sklearn.cluster import KMeans
+        from sklearn.preprocessing import StandardScaler
+        
+        # Features for clustering: slope, baseline, final value
+        features = ['slope', 'baseline_value', 'final_value', 'mean_value']
+        trajectory_features = patient_trajectories[features].dropna()
+        
+        # Standardize features
+        scaler = StandardScaler()
+        features_scaled = scaler.fit_transform(trajectory_features)
+        
+        # Perform clustering
+        kmeans = KMeans(n_clusters=3, random_state=42)
+        clusters = kmeans.fit_predict(features_scaled)
+        
+        trajectory_features['cluster'] = clusters
+        
+        # Create visualization
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # Scatter plot: Slope vs Baseline
+        scatter = ax1.scatter(trajectory_features['baseline_value'], 
+                            trajectory_features['slope'],
+                            c=clusters, cmap='viridis', alpha=0.7)
+        ax1.set_xlabel('Baseline Value')
+        ax1.set_ylabel('Slope (Trend)')
+        ax1.set_title('Patient Trajectories: Slope vs Baseline')
+        plt.colorbar(scatter, ax=ax1)
+        
+        # Box plot: Mean values by cluster
+        trajectory_features_long = trajectory_features.reset_index()
+        sns.boxplot(data=trajectory_features_long, x='cluster', y='mean_value', ax=ax2)
+        ax2.set_title('Mean Values by Trajectory Cluster')
+        ax2.set_xlabel('Cluster')
+        ax2.set_ylabel('Mean Value')
+        
+        # Histogram: Slope distribution by cluster
+        for cluster in sorted(clusters):
+            cluster_data = trajectory_features[trajectory_features['cluster'] == cluster]
+            ax3.hist(cluster_data['slope'], alpha=0.7, label=f'Cluster {cluster}', bins=20)
+        ax3.set_xlabel('Slope')
+        ax3.set_ylabel('Frequency')
+        ax3.set_title('Slope Distribution by Cluster')
+        ax3.legend()
+        
+        # Summary statistics table
+        cluster_summary = trajectory_features.groupby('cluster').agg({
+            'slope': ['mean', 'std'],
+            'baseline_value': ['mean', 'std'],
+            'final_value': ['mean', 'std'],
+            'mean_value': ['mean', 'std']
+        }).round(2)
+        
+        # Display as text in subplot
+        ax4.axis('off')
+        table_data = []
+        for cluster in sorted(clusters):
+            cluster_data = cluster_summary.loc[cluster]
+            table_data.append([
+                f'Cluster {cluster}',
+                f"{cluster_data[('slope', 'mean')]:.2f} ± {cluster_data[('slope', 'std')]:.2f}",
+                f"{cluster_data[('baseline_value', 'mean')]:.1f} ± {cluster_data[('baseline_value', 'std')]:.1f}",
+                f"{cluster_data[('final_value', 'mean')]:.1f} ± {cluster_data[('final_value', 'std')]:.1f}"
+            ])
+        
+        table = ax4.table(cellText=table_data,
+                         colLabels=['Cluster', 'Slope (Mean ± SD)', 'Baseline (Mean ± SD)', 'Final (Mean ± SD)'],
+                         cellLoc='center',
+                         loc='center')
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)
+        table.scale(1.2, 1.5)
+        ax4.set_title('Cluster Summary Statistics')
+        
+        plt.tight_layout()
+        return fig
 ```
 
----
+### Hands-On Exercise 4: Longitudinal Clinical Analysis
 
-## Plotly Dash: Building an App
+**Scenario**: ICU patient monitoring data with continuous vital signs.
 
+**Data**: Blood pressure, heart rate, oxygen saturation collected every 15 minutes for 72 hours
 
-```python
-import dash
-from dash import dcc, html
-from dash.dependencies import Input, Output
-import plotly.express as px
-import pandas as pd
-
-# Load data
-df = pd.read_csv('data.csv')
-
-# Initialize the app
-app = dash.Dash(__name__)
-
-# Define the layout
-app.layout = html.Div([
-    html.H1('Health Data Dashboard'),
-    dcc.Dropdown(
-        id='age-dropdown',
-        options=[{'label': age, 'value': age} for age in df['AgeGroup'].unique()],
-        value=df['AgeGroup'].unique()[0]
-    ),
-    dcc.Graph(id='bmi-bloodpressure-scatter')
-])
-
-# Define the callback
-@app.callback(
-    Output('bmi-bloodpressure-scatter', 'figure'),
-    [Input('age-dropdown', 'value')]
-)
-def update_graph(selected_age):
-    filtered_df = df[df['AgeGroup'] == selected_age]
-    fig = px.scatter(
-        filtered_df, x='BMI', y='BloodPressure',
-        title=f'BMI vs Blood Pressure for Age Group {selected_age}'
-    )
-    return fig
-
-# Run the app
-if __name__ == '__main__':
-    app.run_server(debug=True)
-```
-
-<!--
-- Layout defines structure
-- Callbacks add interactivity
-- Components are reusable
--->
+**Your Task**:
+- Preprocess and clean the time series data
+- Identify patient trajectory patterns
+- Detect clinically significant changes
+- Create visualization dashboard for ICU monitoring
 
 ---
 
-### Code Explanation
+## Assessment and Professional Integration
 
-- **Imports**:
-  - `dash`, `dash_core_components` (`dcc`), `dash_html_components` (`html`), `dash.dependencies` for interactivity.
-  - `plotly.express` for plotting.
-- **Data Loading**:
-  - Reads health data into a DataFrame.
-- **App Initialization**:
-  - Creates a Dash app instance.
-- **Layout Definition**:
-  - Contains a header, dropdown menu, and a graph component.
-- **Callback Function**:
-  - Updates the graph based on the selected age group from the dropdown.
+### Capstone Project: Comprehensive Clinical Trial Analysis
 
-<!--
-- Components build interface
-- Callbacks handle events
-- Data flows reactively
--->
+**Project Overview**: Complete analysis of a simulated Phase III cardiovascular trial
+
+**Dataset Components**:
+- **Demographics**: 500 patients across 10 sites
+- **Laboratory data**: Lipid panels at baseline, 30, 60, 90 days
+- **Medication data**: Adherence monitoring
+- **Outcomes**: Primary (LDL reduction) and safety endpoints
+
+**Deliverables**:
+
+1. **Data Integration Pipeline** (25 points)
+   - Multi-source data loading with validation
+   - Hierarchical data structure creation
+   - Quality assessment report
+
+2. **Advanced Transformations** (25 points)  
+   - Derived variable calculations
+   - Time-to-event analysis
+   - Missing data handling strategy
+
+3. **Publication-Quality Visualizations** (25 points)
+   - Primary endpoint analysis with statistical annotations
+   - Longitudinal response trajectories
+   - Subgroup analysis forest plots
+   - Interactive monitoring dashboard
+
+4. **Professional Documentation** (25 points)
+   - Executive summary for clinical team
+   - Technical methods documentation
+   - Reproducible analysis pipeline
+   - Regulatory compliance report
+
+### Professional Skills Mastery Checklist
+
+After this lecture, you should confidently:
+
+- [ ] Execute complex multi-step data transformations
+- [ ] Design and manage hierarchical data structures  
+- [ ] Create publication-ready statistical visualizations
+- [ ] Build interactive dashboards for stakeholder communication
+- [ ] Analyze longitudinal and time series clinical data
+- [ ] Apply advanced pandas operations for real-world scenarios
+- [ ] Integrate clinical domain knowledge into technical solutions
+
+### Looking Ahead to L08
+
+In our next lecture, we'll leverage these data wrangling and visualization foundations to master:
+- **Advanced statistical modeling** techniques
+- **Machine learning pipelines** for predictive analytics
+- **Model interpretation** and clinical decision support
+- **Time series forecasting** for healthcare applications
+
+The professional-grade data manipulation and visualization skills you've developed today will be essential as we move toward sophisticated analytical modeling.
 
 ---
 
-# Further Resources
+## Additional Resources
 
-- **Plotnine Documentation**: [plotnine.readthedocs.io](https://plotnine.readthedocs.io/)
-- **Mermaid.js Documentation**: [mermaid-js.github.io](https://mermaid-js.github.io/)
-- **Plotly Dash User Guide**: [dash.plotly.com](https://dash.plotly.com/)
-- **Streamlit Documentation**: [docs.streamlit.io](https://docs.streamlit.io/)
-- **Deployment Guides**:
-  - Dash: [Deployment](https://dash.plotly.com/deployment)
-  - Streamlit: [Sharing Apps](https://streamlit.io/sharing)
+### Technical References
+- **Pandas Documentation**: Advanced operations guide
+- **Seaborn Gallery**: Statistical visualization examples
+- **Plotly Documentation**: Interactive dashboard creation
+- **Clinical Data Interchange Standards Consortium (CDISC)**: Data standards
 
+### Statistical Graphics References
+- Tufte, E. "The Visual Display of Quantitative Information"
+- Cleveland, W. "Visualizing Data"
+- Wickham, H. "ggplot2: Elegant Graphics for Data Analysis"
+
+### Clinical Research Integration
+- ICH Guidelines for Clinical Data Management
+- FDA Guidance on Electronic Source Data
+- Clinical Data Acquisition Standards Harmonization (CDASH)
+
+The professional competencies you've developed today position you to create publication-quality analyses that meet both technical and clinical standards.

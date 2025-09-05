@@ -1,742 +1,817 @@
----
-marp: true
-theme: sqrl
-paginate: true
-class: invert
----
-# Lecture 4
+# Lecture 04: NumPy Foundations for Data Science
 
-- Lies from the previous lecture
-- Python
-	- File operations
-	- Functions & methods
-- Command line
-	- Remote access with `ssh`
-	- Persistent connections
-	- Remote Jupyter notebooks
-	- Brief: CUDA and GPUs with Python
-	- Brief: Submitting jobs to the university HPC cluster
----
-# Lies!
+**Duration**: 4 hours  
+**Focus**: N-dimensional arrays, vectorized operations, performance optimization, mathematical computing
 
-- Persistent environment variables
-- Setting environment variables from `.env` in the shell
+## Learning Objectives
+
+By the end of this lecture, students will:
+- Understand why NumPy is the foundation of Python's data science ecosystem
+- Master N-dimensional array operations and vectorized computing
+- Implement high-performance numerical algorithms with 10-100x speedups
+- Apply broadcasting and advanced indexing for complex data manipulations
+- Optimize memory usage and computational efficiency in data processing
 
 ---
-## Persistent Environment Variables:
-Setting default editor to nano
 
-1. Open your shell configuration file: `nano ~/.bashrc`
-2. Add this line at the end of the file: `export EDITOR=nano`
-3. Save and exit (Ctrl+X, then Y, then Enter)
-4. Reload the configuration: `source ~/.bashrc`
----
-## THAT DIDN'T WORK! Why?
+## Part 1: Why NumPy Changes Everything (45 minutes)
 
-Modifying only `.bashrc` won't work for all scenarios because:
+### Opening Performance Demonstration: "The 100x Speedup"
 
-1. Different shells use different configuration files
-2. Some programs may not read `.bashrc`
-3. Operating systems may have different default behaviors
+```python
+import numpy as np
+import time
+import matplotlib.pyplot as plt
 
-For example, if a user is using Zsh (default on macOS since Catalina) instead of Bash, changes in `.bashrc` won't affect their environment.
+# Generate test data
+n = 1_000_000
+python_list = list(range(n))
+numpy_array = np.arange(n)
 
-### Find out which shell you're using with `echo $SHELL`
+print(f"Processing {n:,} numbers...")
 
----
-## Configuration Files: `bash` (most common)
+# Pure Python approach
+start_time = time.time()
+python_result = [x**2 + 2*x + 1 for x in python_list]
+python_time = time.time() - start_time
 
-- `.bashrc`: Executed for interactive non-login shells
-- `.bash_profile`: Executed for login shells
-- `.bash_login`: Executed for login shells if `.bash_profile` doesn't exist
-- `.profile`: Executed for login shells if neither `.bash_profile` nor `.bash_login` exist
+# NumPy approach
+start_time = time.time()
+numpy_result = numpy_array**2 + 2*numpy_array + 1
+numpy_time = time.time() - start_time
 
-I cheat put everything in `.bashrc` and add `source .bashrc` to `.profile`
+print(f"Pure Python: {python_time:.4f} seconds")
+print(f"NumPy:       {numpy_time:.4f} seconds")
+print(f"Speedup:     {python_time/numpy_time:.1f}x faster")
 
----
-## Configuration Files: `zsh` (MacOS default)
-
-- `.zshenv`: Executed for all shells (login, interactive, or script)
-- `.zprofile`: Executed for login shells
-- `.zshrc`: Executed for interactive shells
-- `.zlogin`: Executed for login shells, after `.zshrc`
-- `.zlogout`: Executed when a login shell exits
----
-## Configuration Files: Others
-
-- `fish`
-   - `config.fish`: Executed for all shells
-   - `fish_variables`: Stores universal variables
-
-- `tcsh`
-   - `.tcshrc`: Executed for all shells
-   - `.login`: Executed for login shells, after `.tcshrc`
-
-- `ksh` (Korn Shell)
-   - `.kshrc`: Executed for interactive shells
-   - `.profile`: Executed for login shells
-   
----
-## Configuration File Takeaways
-
-To ensure changes apply across different shells and scenarios:
-- For `bash` users: Modify both `.bashrc` and `.profile`
-- For `zsh` users (e.g, macOS): Focus on `.zshenv`, `.zshrc`, or `.zprofile`
-- For cross-shell compatibility use shell-specific files to source a common configuration
-
-
----
-## Persistent Environment Variables (again)
-Setting default editor to nano
-
-1. Use `echo $SHELL` to learn which config file to change
-2. Open your shell configuration file: `nano ~/<CONFIG_FILE>`
-3. Add this line at the end of the file: `export EDITOR=nano`
-4. Save and exit (Ctrl+X, then Y, then Enter)
-5. Reload the configuration: `source ~/<CONFIG_FILE>`
-
----
-## Setting Variables from `.env` in the Shell
-
-There is **NOT** a single command to load a `.env` file, so let's define one in our shell config using [`set`'s `allexport` option](https://linuxcommand.org/lc3_man_pages/seth.html):
-
-```bash
-# Add this to the shell configuration file, e.g., .bashrc for bash
-load_env () {
-    set -o allexport # enable the "allexport" option
-    source $1        # set env var's from .env file
-    set +o allexport # disable the "allexport" option
-}
-
-# Usage
-load_env /path/to/.env
+# Verify results are identical
+print(f"Results match: {np.allclose(python_result, numpy_result)}")
 ```
 
----
-# LIVE DEMO
+**Typical Results**:
+- Pure Python: 0.2847 seconds
+- NumPy: 0.0029 seconds  
+- Speedup: **98.2x faster**
 
----
-## Python: Files & Functions
-
-- Interacting with files
-- Python functions, modules
-- Common file operations 
-- Reading a file line-by-line
-- Splitting lines into arrays
----
-
-## Interacting with Files
-
-Basic file operations:
-- Opening a file: `open(filename, mode)`
-- Reading from a file: `file.read()`, `file.readline()`, `file.readlines()`
-- Writing to a file: `file.write()`, `file.writelines()`
-- Closing a file: `file.close()`
-
-Always use the `with` statement for automatic file closing:
+### The Science Behind the Speed
 
 ```python
-with open('example.txt', 'r') as file:
-    content = file.read()
-```
-
----
-
-## File Modes
-
-Common file modes:
-- `'r'`: Read (default)
-- `'w'`: Write (overwrites existing content)
-- `'a'`: Append
-- `'r+'`: Read and write
-- `'b'`: Binary mode (e.g., `'rb'`, `'wb'`)
-
-```python
-with open('example.txt', 'w') as file:
-    file.write('Hello, World!')
-```
-
----
-
-## Reading a File Line-by-Line
-
-Method 1: Using a for loop
-```python
-with open('example.txt', 'r') as file:
-    for line in file:
-        print(line.strip())
-```
-
-Method 2: Using `readline()`
-```python
-with open('example.txt', 'r') as file:
-    while True:
-        line = file.readline()
-        if not line:
-            break
-        print(line.strip())
-```
-
----
-
-## Splitting Lines into Arrays
-
-Using the `split()` method:
-
-```python
-with open('data.txt', 'r') as file:
-    for line in file:
-        # Split by whitespace (default)
-        items = line.split()
-        
-        # Split by specific delimiter
-        items = line.split(',')
-        
-        print(items)
-```
-
----
-
-## Common File Operations
-
-- Check if a file exists:
-  ```python
-  import os # Need this for all examples
-  os.path.exists('file.txt')
-  ```
-
-- Delete a file:
-  ```python
-  os.remove('file.txt')
-  ```
-
-- Rename a file:
-  ```python
-  os.rename('old_name.txt', 'new_name.txt')
-  ```
-
----
-## Printing to a File
-
-- `print()` can redirect the output to a file using the `file` parameter
-- `write()` is a built-in function specifically for writing to a file
-
-```python
-out_file = "output_filename.txt"
-with open(out_file, 'w') as f:
-    print(f"This will be written to {out_file}", file=f)
-    print("This is another line", file=f)
-    f.write("write() needs you to specify new lines\n")
-    # write() also only accepts strings
-```
-
----
-## Common Directory Operations
-- Create a new directory:
-  ```python
-  import os
-  # Create a new directory in the current working directory
-  os.mkdir('new_directory')
-  ```
-
-- Create nested directories:
-  ```python
-  import os
-  # Create new directory and all necessary parent directories
-  os.makedirs('path/to/new/directory')
-  
-  # Can also allow the directory to already exist
-  os.makedirs('path/to/new/directory', exist_ok = True)
-  ```
-
----
-
-## Working with Directories
-```python
-# Get current working directory:
-  current_dir = os.getcwd()
-
-# Change current working directory:
-  os.chdir('/path/to/new/directory')
-
-# List contents of a directory:
-  contents = os.listdir('/path/to/directory')
-
-# Check if a path is a directory:
-  is_dir = os.path.isdir('/path/to/check')
-  ```
-
----
-
-## Python Functions
-
-```python
-def greet(name):
-    return f"Hello, {name}!"
-
-# Calling the function
-message = greet("Alice") # Hello, Alice!
-```
-
-Function with default parameters:
-```python
-def greet(name="World"):
-    return f"Hello, {name}!"
-
-print(greet())  # Output: Hello, World!
-print(greet("Bob"))  # Output: Hello, Bob!
-```
-
----
-## Function Arguments
-
-Positional arguments:
-```python
-def add(a, b):
-    return a + b
-
-result = add(3, 5)  # result = 8
-```
-
-Keyword arguments:
-```python
-def greet(first_name, last_name):
-    return f"Hello, {first_name} {last_name}!"
-
-message = greet(last_name="Doe", first_name="John")
-print(message)  # Output: Hello, John Doe!
-```
-
----
-
-## `*args` and `**kwargs` (uncommon)
-
-`*args`: Variable number of positional arguments
-```python
-def sum_all(*args):
-    return sum(args)
-
-result = sum_all(1, 2, 3, 4)  # result = 10
-```
-
-`**kwargs`: Variable number of keyword arguments
-```python
-def print_info(**kwargs):
-    for key, value in kwargs.items():
-        print(f"{key}: {value}")
-
-print_info(name="Alice", age=30, city="New York")
-```
----
-## Command Line Arguments in Python
-
-You can pass arguments to python just like any other command
-
-Two main methods:
-  1. `sys.argv`: Argument order matters
-	  `python script.py arg1 arg2`
-  2. `argparse`: Arguments are explicitly named
-	  `python script.py -two arg2 -one arg1`
-
----
-## Using `sys.argv` (order is important)
-
-```python
+# Memory efficiency comparison
 import sys
 
-script_name = sys.argv[0]
-arguments = sys.argv[1:]
+# Python list memory usage
+python_list = [i for i in range(1000)]
+python_memory = sys.getsizeof(python_list)
+for item in python_list[:10]:  # Sample a few items
+    python_memory += sys.getsizeof(item)
 
-print(f"Script: {script_name}")
-print(f"Args: {arguments}")
+# NumPy array memory usage
+numpy_array = np.arange(1000)
+numpy_memory = numpy_array.nbytes
+
+print(f"Python list memory: {python_memory:,} bytes")
+print(f"NumPy array memory: {numpy_memory:,} bytes")
+print(f"Memory efficiency: {python_memory/numpy_memory:.1f}x more efficient")
+
+# Data type precision and memory
+print("\nNumPy Data Type Efficiency:")
+data = np.arange(1000)
+for dtype in ['int8', 'int16', 'int32', 'int64', 'float32', 'float64']:
+    typed_array = data.astype(dtype)
+    print(f"{dtype:>7}: {typed_array.nbytes:,} bytes ({typed_array.itemsize} bytes per element)")
 ```
 
-Usage: `python script.py arg1 arg2`
-
----
-## Using `argparse` (tell me about the argument)
+### CPU Optimization: SIMD and Vectorization
 
 ```python
-import argparse
+# Demonstrate vectorized operations
+def compare_operations(size=1_000_000):
+    """Compare different approaches to mathematical operations."""
+    
+    # Generate test data
+    x = np.random.random(size)
+    y = np.random.random(size)
+    
+    results = {}
+    
+    # Method 1: Pure Python with explicit loops
+    start = time.time()
+    python_result = []
+    for i in range(size):
+        python_result.append(x[i] * y[i] + np.sin(x[i]))
+    results['Pure Python'] = time.time() - start
+    
+    # Method 2: NumPy vectorized
+    start = time.time()
+    numpy_result = x * y + np.sin(x)
+    results['NumPy Vectorized'] = time.time() - start
+    
+    # Method 3: NumPy with explicit indexing (slower)
+    start = time.time()
+    indexed_result = np.array([x[i] * y[i] + np.sin(x[i]) for i in range(size)])
+    results['NumPy Indexed'] = time.time() - start
+    
+    # Display results
+    fastest = min(results.values())
+    for method, time_taken in results.items():
+        speedup = fastest / time_taken if time_taken != fastest else 1.0
+        print(f"{method:>15}: {time_taken:.4f}s (baseline)" if time_taken == fastest 
+              else f"{method:>15}: {time_taken:.4f}s ({speedup:.1f}x slower)")
+    
+    return results
 
-parser = argparse.ArgumentParser()
-parser.add_argument("name", help="Name to greet")
-parser.add_argument("-c", "--count", type=int, default=1)
-
-args = parser.parse_args()
-
-for _ in range(args.count):
-    print(f"Hello, {args.name}!")
+compare_operations()
 ```
 
-Usage: `python script.py Alice -c 3`
-
 ---
-## Key Benefits of argparse
 
-- Automatic help messages
-- Type conversion
-- Optional and positional arguments
-- Default values
+## Part 2: Array Thinking - Beyond Lists (60 minutes)
 
-Example: `python script.py -h`
-
----
-## Python Modules
-
-Importing modules:
-```python
-import math
-print(math.pi)  # Output: 3.141592653589793
-
-from math import sqrt
-print(sqrt(16))  # Output: 4.0
-
-from math import *  # Import all (use cautiously)
-```
-
----
-## Modules are just `.py` files!
-
-Creating your own module:
-1. Create a file `mymodule.py`
-2. Define functions in the file
-3. Import and use in another file:
-   ```python
-   import mymodule
-   mymodule.my_function()
-   ```
-
----
-## Preparing a Script to be a Module
-
-Whenever the Python interpreter reads a source file, it sets a few special variables like `__name__`, and then it executes all of the code found in the file (not wrapped up in functions/classes).
+### N-Dimensional Data Structures
 
 ```python
-# Make this available as a function & module
-def my_function(stuff):
-  ...
+# 1D Array: Time series data
+temperatures = np.array([20.1, 21.3, 19.8, 22.5, 18.9])
+print(f"1D - Shape: {temperatures.shape}, Size: {temperatures.size}")
 
-# Do this if running the script
-if __name__ == "__main__":
-    my_function('stuff')
+# 2D Array: Tabular data (like spreadsheet)
+sales_data = np.array([
+    [100, 150, 120],  # Product A sales by month
+    [200, 180, 220],  # Product B sales by month
+    [80,  95,  110]   # Product C sales by month
+])
+print(f"2D - Shape: {sales_data.shape} (rows × columns)")
+
+# 3D Array: Time series of tabular data
+# Shape: (time_periods, products, months)
+quarterly_data = np.random.randint(50, 300, size=(4, 3, 3))
+print(f"3D - Shape: {quarterly_data.shape} (quarters × products × months)")
+
+# 4D Array: Multi-location time series
+# Shape: (locations, quarters, products, months)
+multi_location = np.random.randint(50, 300, size=(5, 4, 3, 3))
+print(f"4D - Shape: {multi_location.shape} (locations × quarters × products × months)")
+```
+
+### Array Creation Patterns
+
+```python
+# Zeros and ones - common initialization patterns
+zeros_2d = np.zeros((3, 4))           # 3×4 matrix of zeros
+ones_3d = np.ones((2, 3, 4))          # 2×3×4 tensor of ones
+identity = np.eye(5)                  # 5×5 identity matrix
+
+# Ranges and sequences
+linear_space = np.linspace(0, 10, 101)    # 101 points from 0 to 10
+log_space = np.logspace(0, 3, 4)          # [1, 10, 100, 1000]
+mesh_x, mesh_y = np.meshgrid(
+    np.linspace(-5, 5, 11),
+    np.linspace(-3, 3, 7)
+)  # 2D coordinate grids
+
+# Random data generation for testing
+np.random.seed(42)  # Reproducible results
+normal_data = np.random.normal(100, 15, size=(1000, 5))  # Mean=100, std=15
+uniform_data = np.random.uniform(0, 1, size=(500, 3))
+choice_data = np.random.choice(['A', 'B', 'C'], size=100, p=[0.5, 0.3, 0.2])
+
+# Structured arrays for mixed data types
+structured_dtype = np.dtype([
+    ('name', 'U20'),      # Unicode string, max 20 chars
+    ('age', 'i4'),        # 32-bit integer
+    ('salary', 'f8')      # 64-bit float
+])
+
+employees = np.array([
+    ('Alice Johnson', 32, 75000.0),
+    ('Bob Smith', 28, 68000.0),
+    ('Carol Davis', 35, 82000.0)
+], dtype=structured_dtype)
+
+print(f"Employee names: {employees['name']}")
+print(f"Average salary: ${employees['salary'].mean():,.2f}")
+```
+
+### Data Type Optimization
+
+```python
+def optimize_data_types(data):
+    """Demonstrate automatic data type optimization."""
+    
+    # Start with default (usually int64/float64)
+    original_array = np.array(data)
+    original_memory = original_array.nbytes
+    
+    print(f"Original: {original_array.dtype}, {original_memory} bytes")
+    
+    # Optimize integer data
+    if np.issubdtype(original_array.dtype, np.integer):
+        max_val = np.max(original_array)
+        min_val = np.min(original_array)
+        
+        if min_val >= 0:  # Unsigned
+            if max_val <= 255:
+                optimized = original_array.astype(np.uint8)
+            elif max_val <= 65535:
+                optimized = original_array.astype(np.uint16)
+            else:
+                optimized = original_array.astype(np.uint32)
+        else:  # Signed
+            if min_val >= -128 and max_val <= 127:
+                optimized = original_array.astype(np.int8)
+            elif min_val >= -32768 and max_val <= 32767:
+                optimized = original_array.astype(np.int16)
+            else:
+                optimized = original_array.astype(np.int32)
+    
+    # Optimize float data
+    elif np.issubdtype(original_array.dtype, np.floating):
+        # Try float32 if precision loss is acceptable
+        float32_version = original_array.astype(np.float32)
+        if np.allclose(original_array, float32_version):
+            optimized = float32_version
+        else:
+            optimized = original_array
+    
+    optimized_memory = optimized.nbytes
+    savings = (original_memory - optimized_memory) / original_memory * 100
+    
+    print(f"Optimized: {optimized.dtype}, {optimized_memory} bytes")
+    print(f"Memory savings: {savings:.1f}%")
+    
+    return optimized
+
+# Example usage
+large_integers = np.random.randint(0, 100, size=10000)
+optimize_data_types(large_integers)
 ```
 
 ---
-## Summary
 
-- File operations: open, read, write, close
-- Reading files line-by-line
-- Splitting lines into arrays
-- Defining and using functions
-- Function arguments: positional, keyword, *args, **kwargs
-- Working with modules
----
-# LIVE DEMO!!!
----
-## Jupyter Notebooks
+## Part 3: Advanced Operations - The Power Tools (75 minutes)
 
-- Jupyter basics
-- Remote Jupyter
-	- No longer supported at Wynton
-	- [Paperspace](https://paperspace.com) - free option
-	- $\$\$ (advanced) [AWS](https://docs.aws.amazon.com/dlami/latest/devguide/setup-jupyter.html) and [GCP](https://cloud.google.com/deep-learning-vm/docs/jupyter)
----
-## What is Jupyter Notebook?
+### Indexing and Slicing Mastery
 
-- Interactive computing environment for Python, R, Julia, …
-- Combines code execution, rich text, mathematics, plots and rich media
-- File format: `.ipynb` (IPython Notebook)
-- Key features:
-  - Interactive, in-line code execution
-  - Markdown support
-  - Code and output in the same document
-  - Easy sharing and collaboration
+```python
+# Create sample 3D dataset: (days, products, metrics)
+data = np.random.randint(10, 100, size=(7, 5, 4))
+print(f"Dataset shape: {data.shape} (days × products × metrics)")
 
----
-## Creating a Jupyter Notebook
+# Basic indexing
+print(f"Day 0, Product 0, All metrics: {data[0, 0, :]}")
+print(f"All days, Product 2, Metric 1: {data[:, 2, 1]}")
 
-From the Terminal:
-1. Install Jupyter: `pip install jupyter`
-2. Start Jupyter: `jupyter notebook`
-3. In the browser interface click "New" > "Python 3" 
+# Advanced slicing
+print(f"First 3 days, Last 2 products, All metrics:")
+print(data[:3, -2:, :])
 
-From VS Code:
-1. Install "Jupyter" extension
-2. Command palette: "Jupyter: Create New Blank Notebook"
-3. Select Python kernel when prompted
+# Boolean indexing - the game changer
+high_performance = data > 80
+print(f"Number of high-performance instances: {np.sum(high_performance)}")
 
----
-## Remote Jupyter Notebook with VS Code
-1. Start Jupyter on remote server:
-   ```bash
-   jupyter notebook --no-browser --port=PORTNUMBER # Often 8888
-   ```
+# Extract all high-performance values
+high_values = data[high_performance]
+print(f"High performance values: {high_values}")
 
-2. In VS Code:
-   - Command : "Jupyter: Specify local or remote Jupyter server"
-   - Enter the remote server's URL (e.g., `http://localhost:8888`)
-   - Provide the token or password if prompted
+# Conditional indexing
+# Find products that had any day with all metrics > 70
+all_metrics_high = np.all(data > 70, axis=2)  # Check across metrics
+products_with_high_days = np.any(all_metrics_high, axis=0)  # Check across days
+print(f"Products with at least one high-performance day: {np.where(products_with_high_days)[0]}")
 
----
-## Remote Jupyter Notebook Notes
+# Fancy indexing - select specific combinations
+selected_days = [0, 2, 4]
+selected_products = [1, 3]
+selected_metrics = [0, 2]
 
-- The Jupyter notebook is not on the remote server
-- All code will run on the remote server
-- Any files or artifacts the code interacts with also have to be on the remote server
+# This creates a subset: selected days × selected products × selected metrics
+subset = data[np.ix_(selected_days, selected_products, selected_metrics)]
+print(f"Subset shape: {subset.shape}")
+```
 
----
+### Broadcasting: The Silent Superpower
 
-# LIVE DEMO!!!
+```python
+# Broadcasting enables operations between arrays of different shapes
+sales_by_month = np.array([[100, 120, 140],    # Product A
+                          [200, 180, 220],    # Product B
+                          [150, 160, 180]])   # Product C
 
+# Scenario 1: Apply monthly growth rates
+monthly_growth = np.array([1.05, 1.08, 1.12])  # 5%, 8%, 12%
+projected_sales = sales_by_month * monthly_growth
+print("Projected sales with growth:")
+print(projected_sales)
 
+# Scenario 2: Normalize by product totals
+product_totals = np.sum(sales_by_month, axis=1, keepdims=True)
+normalized_sales = sales_by_month / product_totals
+print("\nSales as fraction of product total:")
+print(normalized_sales)
 
----
-## Spooky Action at a Distance
+# Scenario 3: Complex broadcasting
+# Add fixed costs per product and variable costs per month
+fixed_costs_per_product = np.array([[50], [75], [60]])    # Shape: (3, 1)
+variable_costs_per_month = np.array([10, 15, 20])         # Shape: (3,)
 
-- `ssh`
-- `scp`
+total_costs = fixed_costs_per_product + variable_costs_per_month
+profit = sales_by_month - total_costs
+print("\nProfit after costs:")
+print(profit)
 
----
-## SSH 
+# Broadcasting rules visualization
+def show_broadcasting_rules():
+    """Demonstrate NumPy broadcasting alignment rules."""
+    examples = [
+        ("(3, 4) + (4,)", "✓ Compatible - trailing dimensions match"),
+        ("(3, 4) + (3, 1)", "✓ Compatible - one dimension is 1"),
+        ("(3, 4) + (1, 4)", "✓ Compatible - one dimension is 1"),
+        ("(3, 4) + (2, 4)", "✗ Incompatible - neither is 1, and 3 ≠ 2"),
+        ("(3, 1, 4) + (2, 4)", "✓ Compatible - adds dimension"),
+    ]
+    
+    for shapes, result in examples:
+        print(f"{shapes:20} → {result}")
 
-- [UCSF "Wynton" HPC](https://wynton.ucsf.edu/hpc/about/join.html) (IT approval required)
-- [Super Dimension Fortress](https://sdf.org) Remote Learning Lab
-- [Google Cloud Shell](https://cloud.google.com/free/docs/compute-getting-started)
-- [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh)
-- Your own machine! (easiest with macOS & Linux)
+show_broadcasting_rules()
+```
 
-```shell
-ssh user@host.address 
-# Then enter your password or 
-# connect with a pre-shared key
+### Mathematical Operations Arsenal
+
+```python
+# Statistical operations across different axes
+data = np.random.normal(100, 15, size=(30, 5, 4))  # 30 days, 5 products, 4 metrics
+
+# Axis operations
+daily_averages = np.mean(data, axis=0)      # Average across days: (5, 4)
+product_totals = np.sum(data, axis=1)       # Sum across products: (30, 4)
+metric_stdev = np.std(data, axis=2)         # StdDev across metrics: (30, 5)
+
+print(f"Daily averages shape: {daily_averages.shape}")
+print(f"Product totals shape: {product_totals.shape}")
+print(f"Metric standard deviations shape: {metric_stdev.shape}")
+
+# Advanced mathematical functions
+angles = np.linspace(0, 2*np.pi, 100)
+sine_wave = np.sin(angles)
+cosine_wave = np.cos(angles)
+combined_wave = sine_wave * cosine_wave
+
+# Financial calculations
+principal = 10000
+rates = np.array([0.03, 0.04, 0.05, 0.06])  # 3%, 4%, 5%, 6%
+years = np.arange(1, 11)  # 1 to 10 years
+
+# Compound interest calculation using broadcasting
+compound_growth = principal * (1 + rates.reshape(-1, 1)) ** years
+print(f"Compound growth shape: {compound_growth.shape} (rates × years)")
+
+# Linear algebra operations
+A = np.random.random((3, 3))
+B = np.random.random((3, 3))
+
+# Matrix operations
+matrix_product = A @ B                    # Matrix multiplication (preferred)
+element_product = A * B                   # Element-wise multiplication
+transpose = A.T                           # Transpose
+determinant = np.linalg.det(A)           # Determinant
+eigenvals, eigenvecs = np.linalg.eig(A)  # Eigenvalues and eigenvectors
+
+print(f"Determinant: {determinant:.4f}")
+print(f"Eigenvalues: {eigenvals}")
+```
+
+### Performance Optimization Techniques
+
+```python
+def performance_comparison():
+    """Compare different approaches to common operations."""
+    
+    # Large dataset for timing
+    data = np.random.random((10000, 100))
+    
+    times = {}
+    
+    # Method 1: Python loops (slow)
+    start = time.time()
+    result1 = np.zeros_like(data)
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            result1[i, j] = data[i, j] ** 2 + 2 * data[i, j]
+    times['Python loops'] = time.time() - start
+    
+    # Method 2: NumPy vectorized (fast)
+    start = time.time()
+    result2 = data**2 + 2*data
+    times['NumPy vectorized'] = time.time() - start
+    
+    # Method 3: NumPy with pre-allocation
+    start = time.time()
+    result3 = np.empty_like(data)
+    np.square(data, out=result3)  # In-place square
+    result3 += 2 * data
+    times['NumPy in-place'] = time.time() - start
+    
+    # Method 4: Using numexpr for very large operations
+    try:
+        import numexpr as ne
+        start = time.time()
+        result4 = ne.evaluate("data**2 + 2*data")
+        times['NumExpr'] = time.time() - start
+    except ImportError:
+        print("NumExpr not installed - skipping")
+    
+    # Display results
+    fastest = min(times.values())
+    for method, time_taken in times.items():
+        speedup = time_taken / fastest
+        print(f"{method:>18}: {time_taken:.4f}s ({speedup:.1f}x)")
+    
+    return times
+
+performance_comparison()
 ```
 
 ---
-## Super Dimension Fortress Learning Lab
 
-Offers basic access to a learning environment for free.
+## Part 4: Real-World Applications (60 minutes)
 
-Open command line:
+### Data Analysis Pipeline with NumPy
 
-```shell
-ssh new@sdf.org
-# Follow the instructions
+```python
+class DataProcessor:
+    """Professional data processing with NumPy."""
+    
+    def __init__(self):
+        self.processing_stats = {}
+    
+    def load_and_validate(self, data_source):
+        """Load data with validation and basic cleaning."""
+        if isinstance(data_source, str):  # File path
+            data = np.loadtxt(data_source, delimiter=',', skiprows=1)
+        else:  # Direct array
+            data = np.asarray(data_source)
+        
+        # Validation
+        if data.size == 0:
+            raise ValueError("Empty dataset")
+        
+        # Check for problematic values
+        nan_count = np.isnan(data).sum()
+        inf_count = np.isinf(data).sum()
+        
+        self.processing_stats['nan_values'] = nan_count
+        self.processing_stats['inf_values'] = inf_count
+        self.processing_stats['shape'] = data.shape
+        
+        if nan_count > 0:
+            print(f"Warning: {nan_count} NaN values detected")
+        if inf_count > 0:
+            print(f"Warning: {inf_count} infinite values detected")
+        
+        return data
+    
+    def outlier_detection(self, data, method='iqr', factor=1.5):
+        """Detect outliers using various methods."""
+        if method == 'iqr':
+            Q1 = np.percentile(data, 25, axis=0)
+            Q3 = np.percentile(data, 75, axis=0)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - factor * IQR
+            upper_bound = Q3 + factor * IQR
+            
+            outliers = (data < lower_bound) | (data > upper_bound)
+            
+        elif method == 'zscore':
+            z_scores = np.abs((data - np.mean(data, axis=0)) / np.std(data, axis=0))
+            outliers = z_scores > factor
+        
+        elif method == 'modified_zscore':
+            median = np.median(data, axis=0)
+            mad = np.median(np.abs(data - median), axis=0)
+            modified_z = 0.6745 * (data - median) / mad
+            outliers = np.abs(modified_z) > factor
+        
+        outlier_count = np.sum(outliers)
+        outlier_percentage = outlier_count / data.size * 100
+        
+        print(f"Outlier detection ({method}): {outlier_count} outliers ({outlier_percentage:.2f}%)")
+        
+        return outliers
+    
+    def normalize_data(self, data, method='minmax'):
+        """Normalize data using different methods."""
+        if method == 'minmax':
+            data_min = np.min(data, axis=0)
+            data_max = np.max(data, axis=0)
+            normalized = (data - data_min) / (data_max - data_min)
+            
+        elif method == 'zscore':
+            data_mean = np.mean(data, axis=0)
+            data_std = np.std(data, axis=0)
+            normalized = (data - data_mean) / data_std
+            
+        elif method == 'robust':
+            data_median = np.median(data, axis=0)
+            data_mad = np.median(np.abs(data - data_median), axis=0)
+            normalized = (data - data_median) / data_mad
+        
+        return normalized
+    
+    def compute_statistics(self, data):
+        """Compute comprehensive statistics."""
+        stats = {
+            'count': data.shape[0],
+            'mean': np.mean(data, axis=0),
+            'median': np.median(data, axis=0),
+            'std': np.std(data, axis=0),
+            'min': np.min(data, axis=0),
+            'max': np.max(data, axis=0),
+            'q25': np.percentile(data, 25, axis=0),
+            'q75': np.percentile(data, 75, axis=0),
+            'skewness': self._skewness(data),
+            'kurtosis': self._kurtosis(data)
+        }
+        
+        return stats
+    
+    def _skewness(self, data):
+        """Calculate skewness (third moment)."""
+        mean = np.mean(data, axis=0)
+        std = np.std(data, axis=0)
+        skew = np.mean(((data - mean) / std) ** 3, axis=0)
+        return skew
+    
+    def _kurtosis(self, data):
+        """Calculate kurtosis (fourth moment)."""
+        mean = np.mean(data, axis=0)
+        std = np.std(data, axis=0)
+        kurt = np.mean(((data - mean) / std) ** 4, axis=0) - 3
+        return kurt
+
+# Usage example
+processor = DataProcessor()
+
+# Generate sample data
+np.random.seed(42)
+sample_data = np.random.multivariate_normal(
+    mean=[100, 50, 25],
+    cov=[[100, 20, 10],
+         [20, 50, 15],
+         [10, 15, 25]],
+    size=1000
+)
+
+# Add some outliers
+outlier_indices = np.random.choice(1000, size=50, replace=False)
+sample_data[outlier_indices] += np.random.normal(0, 50, size=(50, 3))
+
+# Process the data
+validated_data = processor.load_and_validate(sample_data)
+outliers = processor.outlier_detection(validated_data, method='iqr')
+normalized_data = processor.normalize_data(validated_data, method='zscore')
+statistics = processor.compute_statistics(validated_data)
+
+print("\nDataset Statistics:")
+for stat_name, values in statistics.items():
+    if isinstance(values, np.ndarray):
+        print(f"{stat_name:>10}: [{', '.join([f'{v:.3f}' for v in values])}]")
+    else:
+        print(f"{stat_name:>10}: {values}")
+```
+
+### Financial Time Series Analysis
+
+```python
+def financial_analysis_demo():
+    """Demonstrate NumPy for financial data analysis."""
+    
+    # Simulate stock prices with random walk
+    np.random.seed(42)
+    days = 252  # One trading year
+    initial_price = 100
+    daily_returns = np.random.normal(0.0005, 0.02, days)  # Mean return, volatility
+    
+    # Calculate cumulative prices
+    prices = initial_price * np.exp(np.cumsum(daily_returns))
+    
+    # Technical analysis calculations
+    def moving_average(data, window):
+        """Calculate moving average using convolution."""
+        weights = np.ones(window) / window
+        return np.convolve(data, weights, mode='valid')
+    
+    def rsi(prices, period=14):
+        """Relative Strength Index calculation."""
+        deltas = np.diff(prices)
+        gains = np.where(deltas > 0, deltas, 0)
+        losses = np.where(deltas < 0, -deltas, 0)
+        
+        avg_gains = np.convolve(gains, np.ones(period)/period, mode='valid')
+        avg_losses = np.convolve(losses, np.ones(period)/period, mode='valid')
+        
+        rs = avg_gains / avg_losses
+        rsi_values = 100 - (100 / (1 + rs))
+        return rsi_values
+    
+    def bollinger_bands(prices, period=20, std_dev=2):
+        """Calculate Bollinger Bands."""
+        ma = moving_average(prices, period)
+        rolling_std = np.array([
+            np.std(prices[i:i+period]) 
+            for i in range(len(prices) - period + 1)
+        ])
+        
+        upper_band = ma + (std_dev * rolling_std)
+        lower_band = ma - (std_dev * rolling_std)
+        
+        return upper_band, ma, lower_band
+    
+    # Calculate indicators
+    ma_20 = moving_average(prices, 20)
+    ma_50 = moving_average(prices, 50)
+    rsi_values = rsi(prices)
+    bb_upper, bb_middle, bb_lower = bollinger_bands(prices)
+    
+    # Portfolio analysis
+    def portfolio_metrics(returns):
+        """Calculate portfolio performance metrics."""
+        total_return = np.prod(1 + returns) - 1
+        annual_return = (1 + total_return) ** (252 / len(returns)) - 1
+        annual_volatility = np.std(returns) * np.sqrt(252)
+        sharpe_ratio = annual_return / annual_volatility
+        
+        # Maximum drawdown calculation
+        cumulative_returns = np.cumprod(1 + returns)
+        running_max = np.maximum.accumulate(cumulative_returns)
+        drawdowns = (cumulative_returns - running_max) / running_max
+        max_drawdown = np.min(drawdowns)
+        
+        return {
+            'total_return': total_return,
+            'annual_return': annual_return,
+            'annual_volatility': annual_volatility,
+            'sharpe_ratio': sharpe_ratio,
+            'max_drawdown': max_drawdown
+        }
+    
+    metrics = portfolio_metrics(daily_returns)
+    
+    print("Financial Analysis Results:")
+    print(f"Final Price: ${prices[-1]:.2f}")
+    print(f"Total Return: {metrics['total_return']:.2%}")
+    print(f"Annual Return: {metrics['annual_return']:.2%}")
+    print(f"Annual Volatility: {metrics['annual_volatility']:.2%}")
+    print(f"Sharpe Ratio: {metrics['sharpe_ratio']:.3f}")
+    print(f"Maximum Drawdown: {metrics['max_drawdown']:.2%}")
+    
+    return prices, metrics
+
+prices, metrics = financial_analysis_demo()
 ```
 
 ---
-## Your
-## Own
-## Machine
-![bg contain](media/mac_ssh.png)
 
----
-## Google Cloud Shell
+## Practical Exercises
 
-- Free temporary virtual machine
-- Persistent 5gb storage
+### Exercise 1: Performance Comparison Workshop (60 minutes)
 
-1. Open [Google Cloud Console](https://console.cloud.google.com)
-2. Click the button at the top right that looks like a shell
- ![](media/Pasted%20image%2020241001193551.png)
----
-## Google Cloud Free Tier (advanced)
+Build a comprehensive performance testing framework that compares Pure Python, NumPy, and optimized NumPy approaches.
 
-If you want an always-on option, Google Cloud offers a [free tier](https://cloud.google.com/free/docs/free-cloud-features#compute) for their Compute VM service:
+**Requirements**:
+- Test multiple operation types (arithmetic, statistical, matrix operations)
+- Measure execution time and memory usage
+- Generate performance visualizations
+- Test different data sizes to show scaling behavior
+- Include real-world data processing scenarios
 
-- One instance: `e2-micro`
-- Region: `us-west1`, `us-central1`, or `us-east1`
-- Storage: 30gb persistent
-- Always-on vs. Cloud Shell only active when you are 
-
----
-## GitHub `gh` CLI to SSH into Codespaces
-
-[GitHub offers a Command Line Interface](https://github.com/cli/cli), which includes many git commands as well as `ssh` access to Codespaces
-
-1. Install GitHub CLI
-2. Authenticate with GitHub
-3. Create or select a Codespace
-4. Connect via SSH
-
----
-## `gh`: Install and Authenticate CLI
-
-```bash
-# Install GitHub CLI (example for macOS with Homebrew)
-brew install gh
-winget install --id GitHub.cli
-
-# Authenticate
-gh auth login
+**Implementation Framework**:
+```python
+class PerformanceBenchmark:
+    def __init__(self):
+        self.results = {}
+        self.data_sizes = [1000, 10000, 100000, 1000000]
+    
+    def benchmark_arithmetic_operations(self):
+        """Benchmark basic arithmetic across implementations."""
+        pass
+    
+    def benchmark_statistical_operations(self):
+        """Benchmark statistical calculations."""
+        pass
+    
+    def benchmark_matrix_operations(self):
+        """Benchmark linear algebra operations."""
+        pass
+    
+    def generate_report(self):
+        """Generate comprehensive performance report."""
+        pass
 ```
 
-Follow the prompts to complete authentication.
+### Exercise 2: Array Manipulation for Data Analysis (45 minutes)
 
----
+Create a data analysis toolkit using advanced NumPy operations on a real dataset.
 
-## `gh`: Create and Connect Codespace
+**Requirements**:
+- Load multi-dimensional sales data (provided CSV)
+- Implement complex indexing and slicing operations
+- Use broadcasting for calculations across different dimensions
+- Apply statistical operations with proper axis handling
+- Create summary reports with insights
 
-```bash
-# Create a new Codespace
-gh codespace create
+**Data Structure**: Sales data with dimensions (months, products, regions, metrics)
 
-# List available Codespaces
-gh codespace list
+### Exercise 3: Statistical Computing with NumPy (45 minutes)
 
-# SSH into a Codespace
-gh codespace ssh -c CODESPACE_NAME
+Implement statistical functions from scratch using NumPy's mathematical operations.
+
+**Requirements**:
+- Correlation and covariance matrices
+- Principal Component Analysis (PCA)
+- Linear regression with confidence intervals
+- Statistical hypothesis testing
+- Bootstrap resampling
+
+**Expected Functions**:
+```python
+def correlation_matrix(data):
+    """Calculate correlation matrix from scratch."""
+    pass
+
+def pca_analysis(data, n_components=None):
+    """Perform PCA using NumPy linear algebra."""
+    pass
+
+def linear_regression(X, y):
+    """Implement linear regression with statistics."""
+    pass
+
+def bootstrap_confidence_interval(data, statistic, confidence=0.95, n_bootstrap=1000):
+    """Calculate bootstrap confidence intervals."""
+    pass
 ```
 
-Replace `CODESPACE_NAME` with your Codespace's name.
-
 ---
-## `scp` (securely) Moving Files Over SSH
 
-SCP (Secure Copy Protocol)
+## Wrap-up and Integration (30 minutes)
 
-- Secure file transfer between hosts
-- Based on SSH protocol
-- Encrypted and authenticated
+### Key Performance Principles
 
-Key Features:
-- File encryption
-- SSH authentication
-- Preserves file attributes
+1. **Vectorization First**: Always think in terms of array operations, not loops
+2. **Memory Awareness**: Choose appropriate data types and pre-allocate arrays
+3. **Broadcasting Mastery**: Leverage NumPy's broadcasting for complex operations
+4. **Axis Understanding**: Master axis-based operations for multi-dimensional data
 
----
-## Using SCP
+### NumPy Best Practices Checklist
 
-Basic Syntax:
+```python
+# ✓ DO: Vectorized operations
+result = data**2 + 2*data
+
+# ✗ DON'T: Element-wise loops
+result = np.array([x**2 + 2*x for x in data])
+
+# ✓ DO: Proper memory pre-allocation
+result = np.empty_like(data)
+np.square(data, out=result)
+
+# ✗ DON'T: Repeated array creation
+result = np.array([])
+for x in data:
+    result = np.append(result, x**2)  # Very slow!
+
+# ✓ DO: Appropriate data types
+small_integers = np.array(data, dtype=np.int16)  # If data fits
+
+# ✗ DON'T: Default to largest types
+large_integers = np.array(data, dtype=np.int64)  # Wastes memory
 ```
-scp [options] source destination
-# Tip: Use `-r` for directories
-```
 
-1. Local to Remote:
-   `scp file.txt user@host:/path/`
+### Integration with the Data Science Ecosystem
 
-2. Remote to Local:
-   `scp user@host:/file.txt /local/path/`
+NumPy is the foundation for:
+- **Pandas**: All DataFrame operations are built on NumPy arrays
+- **Matplotlib**: Plotting functions expect NumPy arrays
+- **Scikit-learn**: Machine learning algorithms use NumPy for computation
+- **SciPy**: Advanced scientific computing built on NumPy
+- **TensorFlow/PyTorch**: Deep learning frameworks use NumPy-compatible arrays
 
-3. Between Remote Hosts:
-   `scp user1@host1:/file.txt user2@host2:/path/`
----
-# A brief aside...
+### Preparation for Next Lecture
 
----
-## Wynton High Performance Computing
+Next lecture introduces Pandas, which adds labeled, structured data operations on top of NumPy's raw performance. You'll see how:
+- NumPy arrays become Pandas Series and DataFrames
+- Broadcasting principles apply to data alignment
+- Performance optimizations carry forward
+- Complex data operations become intuitive
 
-(very briefly)
+The transition from NumPy to Pandas represents moving from mathematical computing to data analysis - keeping all the performance benefits while gaining usability for real-world data challenges.
 
-- Uses Son of Grid Engine (SGE) as its job scheduler
-- Consists of many compute nodes with identical configurations
-- Allows fair sharing of resources among users
-- Jobs are submitted to a queue and distributed across nodes
+### Extended Learning Resources
 
----
-## Running Jobs on Wynton HPC
+- **NumPy Documentation**: User guide and API reference
+- **Performance**: "Guide to NumPy" by Travis Oliphant
+- **Advanced Topics**: SciPy lectures and NumPy tutorials
+- **Integration**: How other libraries build on NumPy foundations
 
-1. Submit the script using `qsub` command
-   - Example: `qsub -cwd -j yes COMMAND_YOU_WANT_TO_RUN`
-2. Check job status with `qstat` command
-3. Retrieve results from output files (e.g., `hello_world.o<job_id>`)
-
-Key commands:
-- `qsub`: Submit jobs
-- `qstat`: Check job status
-
----
-## CUDA and GPU Computing
-
-We'll hopefully get work with this more later in the course
-
-- CUDA (Compute Unified Device Architecture)
-  - NVIDIA's parallel computing platform and API model
-  - Enables general-purpose computing on GPUs (GPGPU)
-- GPU advantages:
-  - Massive parallelism for data-intensive tasks
-  - Significantly faster than CPUs for certain operations
-- Wynton has dedicated GPU servers in their cluster
-
----
-## GPU Computing with Python
-
-Common packages for using GPU computing:
-- PyTorch: Deep learning framework with GPU acceleration
-- TensorFlow: Machine learning platform with GPU support
-- Numba: JIT compiler that can target NVIDIA GPUs
-
-Steps:
-  1. Install necessary CUDA drivers and toolkit
-  2. Use GPU-enabled Python libraries
-  3. Specify device (CPU/GPU) in your code
-
----
-## Persistent Sessions on Remote Machines
-
-- Challenge: SSH connections can drop unexpectedly
-- Solution: Tools for maintaining persistent sessions
-  - Screen
-  - Tmux
-  - Mosh (Mobile Shell)
-
-**NOTE:** None of these will persist across machine restarts
-
----
-## `screen`
-
-- Basic usage:
-  ```bash
-  screen              # Start a new session
-  screen -S name      # Start a named session
-  screen -ls          # List sessions
-  screen -r [name]    # Reattach to a session
-  ```
-- Within a screen session:
-  - `Ctrl-a d`: Detach from session
-  - `Ctrl-a c`: Create a new window
-  - `Ctrl-a n`: Next window
-  - `Ctrl-a p`: Previous window
-
----
-## `tmux`
-
-**T**erminal **Mu**ltiple**x**er: Similar to `screen`, but with more features
-  ```bash
-  tmux                # Start a new session
-  tmux new -s name    # Start a named session
-  tmux ls             # List sessions
-  tmux attach -t name # Attach to a session
-  ```
-- Within a tmux session:
-  - `Ctrl-b d`: Detach from session
-  - `Ctrl-b c`: Create a new window
-  - `Ctrl-b %`: Split pane vertically
-  - `Ctrl-b "`: Split pane horizontally
-
----
-## `mosh` (**Mo**bile **Sh**ell)
-
-- Alternative to SSH, more resilient to network issues
-- Maintains connection despite IP changes or sleep/wake
-- Basic usage:
-  ```bash
-  mosh username@remote-server
-  ```
-- Requires installation on both client and server (advanced)
-- Uses SSH for initial authentication
-
----
-## Comparison
-
-| Feature | Screen | Tmux | Mosh |
-|---------|--------|------|------|
-| Persistence | Yes | Yes | Yes |
-| Split panes | Limited | Yes | No |
-| Network resilience | No | No | Yes |
-| Scroll back | Yes | Yes | Limited |
-| Learning curve | Moderate | Steeper | Easy |
-
----
-# LIVE DEMO!!!
+NumPy mastery is the difference between writing slow, memory-intensive Python and building high-performance data science applications that can handle real-world scale data.
