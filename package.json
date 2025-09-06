@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "@marp-team/marp-cli": "^3.4.0",
-    "claude-flow": "^2.0.0-alpha.91"
+    "claude-flow": "^2.0.0-alpha.101"
   },
   "scripts": {
     "marp": "marp  --theme-set theme.css --allow-local-files */index.md",

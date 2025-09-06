@@ -1,113 +1,161 @@
-# DataSci 217 Implementation Plan
+# DataSci 217 Implementation Plan - UPDATED REQUIREMENTS
 
-## Project Objective
-Reorganize DataSci 217 from 11+1 lectures into a coherent 10-lecture sequence:
-- **Lectures 1-5**: Complete foundational toolkit (1-unit completion option)
-- **Lectures 6-10**: Advanced mastery and professional skills (2-unit completion)
-- **Method**: Evidence-based analysis of existing content and McKinney book
-
----
-
-## Current Status: COMPLETED
-
-All phases have been completed. The reorganization is ready for implementation.
+## Project Objective (REVISED)
+Reorganize DataSci 217 from existing content into a coherent 11-lecture sequence:
+- **Lectures 1-5**: Complete foundational toolkit (1-unit completion option)  
+- **Lectures 6-11**: Advanced mastery and professional skills (2-unit completion)
+- **Target**: 11 lectures total (01-11, no lecture 12)
+- **Method**: Evidence-based analysis focusing on practical utility and daily data science tools
 
 ---
 
-## 📋 **IMPLEMENTATION ROADMAP**
+## Current Status: REQUIRES REVISION
 
-### **Phase 1: Content Inventory** ✅ COMPLETED
-
-#### **Step 1.1: Existing Lecture Content Inventory**
-- [x] Analyzed all lectures in `lectures_bkp/` (lectures 01-12)
-- [x] Created comprehensive content inventory (127 unique concepts identified)
-- [x] Documented topics, prerequisites, and practical components
-- [x] Estimated content volume and complexity for each topic
-
-#### **Step 1.2: McKinney Book Content Analysis**
-- [x] McKinney chapters available locally under fair use
-- [x] All 13 chapters analyzed and documented
-- [x] Content stored in `work/mckinney_content/` directory
-
-#### **Step 1.3: McKinney Content Inventory**
-- [x] Documented Python concepts from each McKinney chapter
-- [x] Mapped McKinney's pedagogical structure and progression
-- [x] Identified gaps between McKinney and existing lectures
-- [x] Analyzed McKinney's systematic teaching approach
-
-### **Phase 2: Design** ✅ COMPLETED
-
-#### **Step 2.1: Comprehensive Content Mapping**
-- [x] Combined existing lectures + McKinney concepts into unified analysis
-- [x] Identified overlaps (70% in core areas), gaps, and integration opportunities
-- [x] Classified content by transfer value and complexity
-- [x] Mapped dependencies for smooth progression
-
-#### **Step 2.2: 10-Lecture Sequence Design**
-- [x] Designed L1-5 foundational track (complete basic toolkit)
-- [x] Designed L6-10 advanced track (professional competency)
-- [x] Ensured no prerequisite gaps in progression
-- [x] Identified strategic content cuts (15% reduction achieved)
-
-#### **Step 2.3: Documentation**
-- [x] Created content comparison analysis
-- [x] Documented reorganization design with rationale
-- [x] Mapped content sources for each new lecture
-- [x] Validated all design decisions against evidence
-
-### **Phase 3: Implementation** ✅ COMPLETED
-
-#### **Step 3.1: Content Creation**
-- [x] Created complete narrative content for all 10 lectures
-- [x] Integrated existing material with McKinney pedagogical approach
-- [x] Included 2-3 practical exercises per lecture
-- [x] Used narrative format (not slide bullets)
-
-#### **Step 3.2: Assignment Development**
-- [x] Designed assignment sketches for each lecture
-- [x] Created assessment frameworks for both tracks
-- [x] Planned progressive skill evaluation
-- [x] Included portfolio development components
-
-#### **Step 3.3: Ready for Deployment**
-- [x] All lecture content created in work/ directory
-- [x] Materials ready for copying to lecture folders
-- [x] Bonus content identified for specialized topics
-- [x] Implementation validated and tested
+Previous work completed 10-lecture sequence, but requirements specify 11 lectures with enhanced structure.
 
 ---
 
-## 🗂️ **TARGET DELIVERABLES**
+## 🔍 **UPDATED SWARM ASSESSMENT FINDINGS**
 
-### **Phase 1 Outputs**:
-```
-work/
-├── existing_content_inventory.md    # Complete analysis of lectures_bkp/
-├── mckinney_content/               # Local copies of book chapters
-├── mckinney_content_inventory.md   # Analysis of McKinney concepts
-└── content_comparison.md           # Gaps and overlaps analysis
-```
+### **Current State Analysis**:
+- **lectures_bkp/**: Original slide-format content (7,474 total lines) - needs load reduction
+- **lectures_inter/**: Strong narrative content L01-L09, L10 removed per instructor preference  
+- **Content Load Analysis**: L07 (1,227 lines), L09 (917 lines), L11 (1,006 lines) are heaviest
 
-### **Phase 2 Outputs**:
-```
-work/
-├── reorganization_design.md        # NEW 10-lecture sequence design
-├── content_cuts_and_changes.md     # Detailed cuts and reorganization summary
-└── lecture_content_mapping.md      # Source mapping for each new lecture
-```
+### **Load Reduction Strategy**:
+- **Git Simplification**: Focus on VS Code/GitHub GUI, move command line git to bonus
+- **Content Streamlining**: Heavy topics to bonus sections within lectures
+- **Practical Focus**: Emphasize daily data science tools, reduce theoretical content
 
-### **Phase 3 Outputs**:
+### **Gap Analysis Against Requirements**:
+
+#### ❌ **Priority Updates Needed**:
+1. **Load Reduction**: Student overwhelm concern - need strategic content reduction
+2. **Git Approach**: Shift from command line to VS Code/GitHub GUI focus
+3. **Lecture Structure**: 11 lectures (01-11) with lectures_inter/10 excluded
+4. **Bonus Content**: Move heavy/advanced topics to lecture-associated bonus sections
+5. **Book References**: Update with McKinney, Shotts, MIT Missing Semester attribution
+
+#### ✅ **Strong Foundation Available**:
+- Quality narrative content in lectures_inter/ (L01-L09)
+- Clinical research content (lectures_bkp/L11) for final lecture
+- Good practical focus already established  
+- Existing assignment frameworks to build upon
+
+---
+
+## 📋 **REVISED IMPLEMENTATION ROADMAP**
+
+### **Phase 1: Content Assessment** ✅ COMPLETED
+
+#### **Step 1.1: Requirements Assessment**
+- [x] Analyzed lectures_bkp/ and lectures_inter/ content structure
+- [x] Identified gap: need 11 lectures (01-11) not 10 lectures
+- [x] Assessed demo requirements: need 2-3 hands-on demos per lecture
+- [x] Evaluated assignment structure for GitHub Classroom compatibility
+- [x] Documented content that maintains practical utility focus
+
+#### **Step 1.2: Content Quality Assessment**
+- [x] Validated narrative transformation quality in lectures_inter/
+- [x] Confirmed professional development focus maintained
+- [x] Identified L11 content source: lectures_bkp/11 clinical research focus
+- [x] Verified assignment structure needs standardization
+
+### **Phase 2: Restructuring Design** ⏳ IN PROGRESS
+
+#### **Step 2.1: Content Load Reduction Strategy**
+- [ ] Identify heavy content for bonus sections (L07 viz theory, L09 advanced automation)
+- [ ] Simplify git to VS Code/GitHub GUI approach only
+- [ ] Streamline lectures_inter/ L01-L09 to essential daily tools
+- [ ] Create bonus/ subdirectories within lecture folders for advanced topics
+- [ ] Ensure no student overwhelm while maintaining utility
+
+#### **Step 2.2: 11-Lecture Structure Design**
+- [ ] Use lectures_inter/ L01-L09 as foundation (excluding L10)  
+- [ ] Create L10 from lighter content (file operations, workflows)
+- [ ] Integrate lectures_bkp/L11 clinical research as L11
+- [ ] Maintain L01-L05 foundational, L06-L11 advanced structure
+- [ ] Focus on practical daily data science tools throughout
+
+#### **Step 2.3: Git Approach Redesign**
+- [ ] Remove command line git requirements from core lectures
+- [ ] Focus on VS Code git integration and GitHub web interface
+- [ ] Cover git concepts but emphasize GUI tools
+- [ ] Move advanced git topics to bonus sections
+- [ ] Ensure students can collaborate without command line complexity
+
+#### **Step 2.4: Resource Integration** 
+- [ ] Update course materials with McKinney Python book integration
+- [ ] Reference Shotts Linux Command Line for bonus command line content
+- [ ] Credit MIT Missing Semester influence on course design
+- [ ] Maintain practical focus while acknowledging theoretical foundations
+
+### **Phase 3: Implementation** 📋 PLANNED
+
+#### **Step 3.1: Lecture Content Deployment**
+- [ ] Deploy 11-lecture sequence to directories 01-11
+- [ ] Integrate clinical research content as L11
+- [ ] Apply Notion formatting to all content
+- [ ] Ensure long-form narrative format maintained
+
+#### **Step 3.2: Demo Integration**  
+- [ ] Add 2-3 hands-on demos per lecture
+- [ ] Create step-by-step instructor guides
+- [ ] Embed demo callouts within lecture content
+- [ ] Test demo scenarios for timing and complexity
+
+#### **Step 3.3: Assignment Standardization**
+- [ ] Create assignment/ subdirectory for each lecture  
+- [ ] Implement pytest-compatible testing frameworks
+- [ ] Add automated grading capabilities
+- [ ] Ensure GitHub Classroom compatibility
+
+#### **Step 3.4: Quality Assurance**
+- [ ] Validate content progression and difficulty
+- [ ] Test assignment dependency chains
+- [ ] Verify practical utility focus maintained  
+- [ ] Confirm non-overwhelming student experience
+
+---
+
+## 🗂️ **REVISED TARGET DELIVERABLES**
+
+### **Required Directory Structure**:
 ```
-lectures_bkp/                      # Existing folders with NEW content
+01-11/                             # Final lecture directories (root level)
 ├── 01/
-│   ├── index.md                   # NEW narrative lecture content
-│   ├── assignment_sketch.md       # Homework assignment outline
-│   └── [existing media files]     # Preserved supporting materials
-├── 02/ ... ├── 10/                # Updated lectures 01-10
-├── 11_bonus_research_tools/        # Specialized content as bonus
-├── 12_bonus_case_studies/          # Extended projects as bonus
-└── bonus_specialized_topics/       # Cut advanced content as reference
+│   ├── index.md                   # Notion-formatted narrative content
+│   ├── assignment/                # GitHub Classroom compatible
+│   │   ├── README.md              # Assignment instructions
+│   │   ├── test_*.py              # Pytest testing framework  
+│   │   ├── starter_code.py        # Template for students
+│   │   └── requirements.txt       # Dependencies
+│   ├── demo1.md                   # Hands-on demo 1 (instructor guide)
+│   ├── demo2.ipynb               # Hands-on demo 2 (if applicable)
+│   └── [media files]             # Supporting materials
+├── 02/ ... ├── 11/               # All lectures follow same structure
 ```
+
+### **Content Standards**:
+1. **Lecture Structure**:
+   - First line = title (no # prefix)
+   - # headings for major sections  
+   - 2-3 embedded hands-on demo callouts
+   - Long-form narrative format
+   - Practical utility focus
+
+2. **Assignment Structure**:
+   - Separate assignment/ subdirectory
+   - GitHub Classroom compatibility
+   - Pytest-based automated testing
+   - Progressive difficulty ensuring dependency management
+   - Focus on competence demonstration
+
+3. **Demo Requirements**:
+   - 2-3 hands-on demos per lecture
+   - Step-by-step instructor guidance
+   - Complement lecture progression
+   - Real-world practical scenarios
 
 ---
 
@@ -136,64 +184,83 @@ lectures_bkp/                      # Existing folders with NEW content
 
 ---
 
-## 🎯 **SUCCESS CRITERIA**
+## 🎯 **REVISED SUCCESS CRITERIA**
 
-### **Evidence-Based Decisions**:
-- [x] All content decisions backed by systematic analysis
-- [x] McKinney integration based on actual book content analysis
-- [x] Content cuts justified by transfer value assessment
-- [x] Reorganization preserves and enhances educational coherence
+### **Structural Requirements**:
+- [ ] 11 lectures total (L01-L11, no L12) 
+- [ ] L01-L05: Complete foundational toolkit (1-unit completion)
+- [ ] L06-L11: Advanced professional skills (2-unit completion)  
+- [ ] No prerequisite gaps in L01-L11 sequence
 
-### **Educational Objectives**:
-- [x] Lectures 1-5 provide complete basic data science toolkit
-- [x] Lectures 6-10 build to professional competency
-- [x] No prerequisite gaps in 1-10 sequence
-- [x] 15% content reduction while improving learning outcomes
+### **Content Quality Standards**:  
+- [ ] Not overwhelming for students - practical utility focus
+- [ ] Daily data science tools emphasis (minus R)
+- [ ] Long-form narrative markdown documents
+- [ ] Notion-compatible formatting structure
 
-### **Implementation Quality**:
-- [x] Narrative lecture format throughout
-- [x] Practical exercises integrated in all lectures
-- [x] Assignment sketches for each lecture
-- [x] Bonus materials identified for specialized topics
+### **Interactive Components**:
+- [ ] 2-3 hands-on demos per lecture (instructor-led)  
+- [ ] Step-by-step demonstration scenarios
+- [ ] Embedded practical exercises within lectures
 
----
-
-## Next Steps
-
-### **Ready for Implementation**
-The reorganization is complete and ready for deployment. Next actions:
-
-1. **Review Materials**: Check the lecture content in work/ directory
-2. **Deploy Content**: Copy new lecture materials to appropriate folders
-3. **Test Implementation**: Run through L01-L05 foundational track
-4. **Gather Feedback**: Use initial implementation to refine content
-5. **Full Rollout**: Deploy complete 10-lecture sequence
-
-### **Optional Enhancements**
-- Create automated tests for coding exercises
-- Develop additional real-world case studies
-- Build interactive Jupyter notebooks for complex topics
-- Add video demonstrations for command line operations
+### **Assignment Framework**:
+- [ ] GitHub Classroom compatible structure
+- [ ] Automated pytest-based grading
+- [ ] Progressive difficulty with dependency management
+- [ ] Competence demonstration for each lecture
+- [ ] Separate assignment/ subdirectories
 
 ---
 
-## Implementation Summary
+## 📋 **IMMEDIATE NEXT STEPS**
 
-The reorganization successfully followed evidence-based methodology:
+### **PHASE 1: PLAN REVIEW** ⏳ UPDATED FOR LOAD REDUCTION
+The implementation plan has been updated to address student overwhelm concerns:
 
-### **What Was Completed**:
-- Systematic analysis of all existing lecture content (127 concepts mapped)
-- Comprehensive review of McKinney's pedagogical approach
-- Gap analysis identifying integration opportunities
-- 10-lecture sequence design with clear learning progression
-- Complete narrative content creation for all lectures
-- Validation of educational objectives and success criteria
+1. **Load Reduction**: Strategic content reduction and bonus section approach
+2. **Git Simplification**: VS Code/GitHub GUI focus, command line moved to bonus
+3. **Practical Focus**: Daily data science tools emphasis, theory to bonus  
+4. **Resource Integration**: McKinney, Shotts, MIT Missing Semester attribution
+5. **11-Lecture Structure**: Using lectures_inter/ L01-L09 + streamlined L10-L11
 
-### **Key Improvements**:
-- **Coherent progression**: L1-5 builds complete foundational toolkit
-- **Professional focus**: L6-10 develops production-ready skills
-- **Practical integration**: Real exercises in every lecture
-- **Efficiency gain**: 15% content reduction without losing essential skills
-- **Evidence-based**: All decisions backed by systematic analysis
+### **KEY CONTENT REDUCTION STRATEGIES IDENTIFIED**
 
-The materials are ready for implementation and testing.
+**High-Priority for Bonus Sections**:
+- **Advanced Git**: Command line workflows → bonus content
+- **Visualization Theory**: L07 design principles → bonus content  
+- **Advanced Automation**: L09 complex scripting → bonus content
+- **Theoretical Foundations**: Move to bonus while keeping practical applications
+
+**Maintained in Core**:
+- Essential daily workflows
+- GUI-based version control
+- Practical data analysis patterns
+- Real-world project applications
+
+---
+
+## 🎯 **IMPLEMENTATION READINESS**
+
+### **Assets Available**:
+✅ High-quality narrative content (lectures_inter/ L01-L09, excluding L10)  
+✅ Clinical research content (lectures_bkp/L11) for final lecture  
+✅ Load reduction strategies identified and documented
+✅ Git simplification approach defined (VS Code/GitHub GUI focus)
+✅ Resource attribution updated (McKinney, Shotts, MIT Missing Semester)
+✅ README.md updated with new course philosophy and structure
+
+### **Load Reduction Plan Ready**:  
+✅ Bonus content strategy defined for heavy topics
+✅ GUI-first approach specified to reduce command line complexity
+✅ Content prioritization completed (essential vs. advanced)
+✅ Student overwhelm mitigation strategies documented
+✅ Practical utility focus maintained throughout
+
+### **Specific Content Recommendations**:
+- **L02 Git**: Focus on VS Code integration, GitHub web interface
+- **L07 Visualization**: Core plotting skills, theory moved to bonus/
+- **L09 Automation**: Basic workflows, advanced scripting to bonus/
+- **L10**: Create from file operations + workflow integration (lighter content)
+- **L11**: Adapt lectures_bkp/L11 clinical research to practical applications
+
+**STATUS**: Updated plan ready for review with load reduction focus

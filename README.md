@@ -11,27 +11,106 @@ The course offers **two track options** to accommodate different student backgro
 **Time**: 5 weeks × 3.5 hours = 17.5 contact hours + independent work  
 **Outcome**: Core data science competency for immediate application
 
-1. **Python Fundamentals + Command Line Integration**
-2. **Data Structures + Development Workflows** 
-3. **Data Science Foundations** (NumPy, Pandas)
-4. **Data Analysis + Visualization**
-5. **Applied Project + Best Practices**
+1. **Command Line Foundations + Development Environment**
+   - Command line navigation and file operations
+   - Python installation and virtual environments
+   - VS Code setup and basic workflows
+   - Introduction to development tools
 
-### 10-Lecture Extended Track  
+2. **Python Basics + Version Control**
+   - Python syntax, variables, and data types (McKinney Ch 2)
+   - Control structures and functions basics
+   - Git through VS Code/GitHub (GUI focus)
+   - Project organization and collaboration
+
+3. **Python Data Structures**
+   - Lists, tuples, dictionaries, and sets (McKinney Ch 3)
+   - String manipulation and text processing
+   - File I/O and data loading fundamentals
+   - Error handling basics
+
+4. **NumPy Fundamentals**
+   - N-dimensional arrays and array creation (McKinney Ch 4)
+   - Array operations and universal functions
+   - Boolean indexing and fancy indexing
+   - Basic mathematical operations
+
+5. **Pandas Getting Started**
+   - Series and DataFrame creation (McKinney Ch 5)
+   - Data selection and filtering
+   - Basic data cleaning operations
+   - Reading from common file formats (CSV, Excel)
+
+### 11-Lecture Extended Track  
 **Target**: Complete beginners, comprehensive preparation  
-**Time**: 10 weeks × 4 hours = 40 contact hours + independent work  
+**Time**: 11 weeks × 3.5 hours = 38.5 contact hours + independent work  
 **Outcome**: Professional-level data science skills
 
-1. Command Line & Development Environment
-2. Git Mastery & Collaboration  
-3. Automation & Remote Computing
-4. Python Programming Fundamentals
-5. File Operations & Error Handling
-6. NumPy & Scientific Computing
-7. Pandas Mastery & Data Manipulation
-8. Advanced Visualization & Design
-9. Statistical Analysis & Machine Learning
-10. Professional Workflows & Integration
+1. **Command Line Foundations + Development Environment**
+   - Command line navigation and file operations
+   - Python installation and virtual environments
+   - VS Code setup and basic workflows
+   - Introduction to development tools
+
+2. **Python Basics + Version Control**
+   - Python syntax, variables, and data types (McKinney Ch 2)
+   - Control structures and functions basics
+   - Git through VS Code/GitHub (GUI focus)
+   - Project organization and collaboration
+
+3. **Python Data Structures**
+   - Lists, tuples, dictionaries, and sets (McKinney Ch 3)
+   - String manipulation and text processing
+   - File I/O and data loading fundamentals
+   - Error handling basics
+
+4. **NumPy Fundamentals**
+   - N-dimensional arrays and array creation (McKinney Ch 4)
+   - Array operations and universal functions
+   - Boolean indexing and fancy indexing
+   - Basic mathematical operations
+
+5. **Pandas Getting Started**
+   - Series and DataFrame creation (McKinney Ch 5)
+   - Data selection and filtering
+   - Basic data cleaning operations
+   - Reading from common file formats (CSV, Excel)
+
+6. **Data Loading and File Formats**
+   - Advanced file reading/writing operations (McKinney Ch 6)
+   - Working with different data formats (JSON, HDF5, databases)
+   - Handling messy and missing data
+   - Web scraping basics
+
+7. **Data Cleaning and Preparation**
+   - Data transformation techniques (McKinney Ch 7)
+   - String operations for data cleaning
+   - Handling missing data strategies
+   - Data validation and quality assessment
+
+8. **Data Wrangling**
+   - Merge, join, and concatenate operations (McKinney Ch 8)
+   - Reshaping data (pivot, melt, stack/unstack)
+   - Grouping and aggregation
+   - Advanced data transformation patterns
+
+9. **Plotting and Visualization**
+   - Matplotlib fundamentals (McKinney Ch 9)
+   - Pandas plotting interface
+   - Seaborn for statistical visualization
+   - Creating effective data visualizations
+
+10. **Data Aggregation and Group Operations**
+    - GroupBy mechanics and advanced techniques (McKinney Ch 10)
+    - Aggregation functions and transformations
+    - Pivot tables and cross-tabulation
+    - Time series basics
+
+11. **Time Series and Applied Analysis**
+    - Time series data handling and analysis (McKinney Ch 11)
+    - Date/time operations and resampling
+    - Applied data analysis workflows
+    - Clinical research applications and case studies
 
 ## Implementation Status
 
