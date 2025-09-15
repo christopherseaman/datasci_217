@@ -137,25 +137,59 @@ Previous work completed 10-lecture sequence, but requirements specify 11 lecture
 ```
 
 ### **Content Standards**:
-1. **Lecture Structure**:
-   - First line = title (no # prefix)
-   - # headings for major sections  
+
+1. **Lecture Format**:
+   - **Title**: First line = plain text title (no # prefix)
+   - **Notion-compatible headings**: Use one less # than standard markdown
+     * Section headings: `# Section Name` (instead of `##`)
+     * Subsections: `## Subsection Name` (instead of `###`)
+     * Sub-subsections: `### Details` (instead of `####`)
    - 2-3 embedded hands-on demo callouts
    - Long-form narrative format
    - Practical utility focus
 
-2. **Assignment Structure**:
-   - Separate assignment/ subdirectory
-   - GitHub Classroom compatibility
-   - Pytest-based automated testing
-   - Progressive difficulty ensuring dependency management
-   - Focus on competence demonstration
+2. **Lecture Content Organization**:
+   - **Topic Structure**:
+     * Brief conceptual description (what the method/tool is)
+     * Reference section (function/method structure, inputs/outputs, params)
+     * Visual content (at most 1-2 pieces for visual learners)
+     * VERY brief usage example (context covered in demos)
+   - **Content Triage**:
+     * **Main lecture**: Essential daily data science tools only
+     * **Bonus content**: Advanced topics, theoretical deep-dives, cut content from lectures_bkp
+     * **Reduction goal**: Significantly reduce content volume from lectures_bkp
+   - **Tone**: Highly knowledgeable with nerdy humor, relevant xkcd comics (suggestions for similar also welcome), occasional memes
 
-3. **Demo Requirements**:
-   - 2-3 hands-on demos per lecture
-   - Step-by-step instructor guidance
-   - Complement lecture progression
-   - Real-world practical scenarios
+3. **Interactive Components per Lecture**:
+   - **Demos**: Exactly 2-3 hands-on demos per lecture
+     * Step-by-step instructor guidance
+     * Practical/hands-on review of lecture concepts
+     * Real-world scenarios, minimal context (lecture provides theory)
+   - **Assignment**: Exactly 1 assignment per lecture
+     * Gradable via pytest for GitHub Classroom submission
+     * Progressive difficulty within assignment (multiple questions building on earlier ones)
+     * Focus on practical competence demonstration with methods/tools, not excellence
+     * Dependency management across lectures
+
+4. **Assignment Structure**:
+   - Separate assignment/ subdirectory per lecture
+   - GitHub Classroom compatibility required
+   - Pytest-based automated testing framework
+   - Progressive difficulty within each assignment (questions build on previous questions)
+   - Practical competence-focused grading (can you use the tool?) rather than excellence-focused
+   - Clear grading criteria and test cases
+
+5. **McKinney Integration**:
+   - Follow McKinney's Python content organization and progression
+   - Exclude capstone project work
+   - Use McKinney's pedagogical approach for Python concepts
+   - Reference McKinney chapters in lecture materials
+
+6. **Bonus Content Strategy ("DLC")**:
+   - Move cut content from lectures_bkp to appropriate lecture bonus/ directories
+   - Advanced topics that exceed daily tool usage
+   - Theoretical foundations beyond practical application
+   - Optional enrichment for motivated students
 
 ---
 
