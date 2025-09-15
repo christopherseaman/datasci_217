@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Python for Data Analysis, 3E - 12&nbsp; Introduction to Modeling Libraries in Python</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./data-analysis-examples.html" rel="next">
+<link href="./time-series.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Python for Data Analysis, 3E - 12&nbsp; Introduction to Modeling Libraries in Python">
+<meta property="og:description" content="">
+<meta property="og:image" content="images/cover.png">
+<meta property="og:site-name" content="Python for Data Analysis, 3E">
+<meta name="twitter:title" content="Python for Data Analysis, 3E - 12&nbsp; Introduction to Modeling Libraries in Python">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="images/cover.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class='navbar-brand' href='/book/'>
+    <span class="navbar-title">Python for Data Analysis, 3E</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class='nav-link' href='https://wesmckinney.com/archives' rel target>
+ <span class="menu-text">Wes’s Blog</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/wesmckinn" rel="" target=""><i class="bi bi-twitter" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-bi-github" role="button" data-bs-toggle="dropdown" aria-expanded="false" rel="" target="">
+      <i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-bi-github">    
+        <li>
+    <a class="dropdown-item" href="https://github.com/wesm/pydata-book" rel="" target="">
+ <span class="dropdown-text">Data and Notebooks (GitHub)</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://gitee.com/wesmckinn/pydata-book" rel="" target="">
+ <span class="dropdown-text">Data and Notebooks (Gitee)</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href='/book/preface'>Chapters</a></li><li class="breadcrumb-item"><a href='/book/modeling'><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Introduction to Modeling Libraries in Python</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/'>
+ <span class="menu-text">About the Open Edition</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Chapters</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/preface'>
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/preliminaries'>
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preliminaries</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/python-basics'>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Python Language Basics, IPython, and Jupyter Notebooks</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/python-builtin'>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Built-In Data Structures, Functions, and Files</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/numpy-basics'>
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NumPy Basics: Arrays and Vectorized Computation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/pandas-basics'>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Getting Started with pandas</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/accessing-data'>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Data Loading, Storage, and File Formats</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-cleaning'>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Data Cleaning and Preparation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-wrangling'>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Wrangling: Join, Combine, and Reshape</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/plotting-and-visualization'>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Plotting and Visualization</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-aggregation'>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Data Aggregation and Group Operations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/time-series'>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link active' href='/book/modeling'>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Introduction to Modeling Libraries in Python</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/data-analysis-examples'>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Data Analysis Examples</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/advanced-numpy'>
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Advanced NumPy</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a class='sidebar-item-text sidebar-link' href='/book/ipython'>
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">More on the IPython System</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar"><div class="quarto-margin-header"><div class="margin-header-item">
+<a href="https://amzn.to/3DyLaJc"><img src="images/cover.png" class="img-fluid"></a>
+<div data-ea-publisher="wesmckinneycom" data-ea-type="image">
+
+</div>
+</div></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#modeling-pandas-external" id="toc-modeling-pandas-external" class="nav-link active" data-scroll-target="#modeling-pandas-external"><span class="header-section-number">12.1</span> Interfacing Between pandas and Model Code</a></li>
+  <li><a href="#modeling-patsy" id="toc-modeling-patsy" class="nav-link" data-scroll-target="#modeling-patsy"><span class="header-section-number">12.2</span> Creating Model Descriptions with Patsy</a>
+  <ul class="collapse">
+  <li><a href="#modeling-patsy-transform" id="toc-modeling-patsy-transform" class="nav-link" data-scroll-target="#modeling-patsy-transform">Data Transformations in Patsy Formulas</a></li>
+  <li><a href="#modeling-patsy-categorical" id="toc-modeling-patsy-categorical" class="nav-link" data-scroll-target="#modeling-patsy-categorical">Categorical Data and Patsy</a></li>
+  </ul></li>
+  <li><a href="#modeling-statsmodels" id="toc-modeling-statsmodels" class="nav-link" data-scroll-target="#modeling-statsmodels"><span class="header-section-number">12.3</span> Introduction to statsmodels</a>
+  <ul class="collapse">
+  <li><a href="#modeling-statsmodels-lm" id="toc-modeling-statsmodels-lm" class="nav-link" data-scroll-target="#modeling-statsmodels-lm">Estimating Linear Models</a></li>
+  <li><a href="#modeling-statsmodels-tsa" id="toc-modeling-statsmodels-tsa" class="nav-link" data-scroll-target="#modeling-statsmodels-tsa">Estimating Time Series Processes</a></li>
+  </ul></li>
+  <li><a href="#modeling-scikit-learn" id="toc-modeling-scikit-learn" class="nav-link" data-scroll-target="#modeling-scikit-learn"><span class="header-section-number">12.4</span> Introduction to scikit-learn</a></li>
+  <li><a href="#modeling-continuing" id="toc-modeling-continuing" class="nav-link" data-scroll-target="#modeling-continuing"><span class="header-section-number">12.5</span> Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="adv-analytics" class="quarto-section-identifier"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Introduction to Modeling Libraries in Python</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>This Open Access web version of <em>Python for Data Analysis 3rd Edition</em> is now available as a companion to the <a href="https://amzn.to/3DyLaJc">print and digital editions</a>. If you encounter any errata, <a href="https://oreilly.com/catalog/0636920519829/errata">please report them here</a>. Please note that some aspects of this site as produced by Quarto will differ from the formatting of the print and eBook versions from O’Reilly.</p>
+<p>If you find the online edition of the book useful, please consider <a href="https://amzn.to/3DyLaJc">ordering a paper copy</a> or a <a href="https://www.ebooks.com/en-us/book/210644288/python-for-data-analysis/wes-mckinney/?affId=WES398681F">DRM-free eBook</a> to support the author. The content from this website may not be copied or reproduced. The code examples are MIT licensed and can be found on GitHub or Gitee.</p>
+</div>
+</div>
+</div>
+<p>In this book, I have focused on providing a programming foundation for doing data analysis in Python. Since data analysts and scientists often report spending a disproportionate amount of time with data wrangling and preparation, the book's structure reflects the importance of mastering these techniques.</p>
+<p>Which library you use for developing models will depend on the application. Many statistical problems can be solved by simpler techniques like ordinary least squares regression, while other problems may call for more advanced machine learning methods. Fortunately, Python has become one of the languages of choice for implementing analytical methods, so there are many tools you can explore after completing this book.</p>
+<p>In this chapter, I will review some features of pandas that may be helpful when you're crossing back and forth between data wrangling with pandas and model fitting and scoring. I will then give short introductions to two popular modeling toolkits, <a href="http://statsmodels.org">statsmodels</a> and <a href="http://scikit-learn.org">scikit-learn</a>. Since each of these projects is large enough to warrant its own dedicated book, I make no effort to be comprehensive and instead direct you to both projects' online documentation along with some other Python-based books on data science, statistics, and machine learning.</p>
+<section id="modeling-pandas-external" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="modeling-pandas-external"><span class="header-section-number">12.1</span> Interfacing Between pandas and Model Code</h2>
+<p>A common workflow for model development is to use pandas for data loading and cleaning before switching over to a modeling library to build the model itself. An important part of the model development process is called <em>feature engineering</em> in machine learning. This can describe any data transformation or analytics that extract information from a raw dataset that may be useful in a modeling context. The data aggregation and GroupBy tools we have explored in this book are used often in a feature engineering context.</p>
+<p>While details of "good" feature engineering are out of scope for this book, I will show some methods to make switching between data manipulation with pandas and modeling as painless as possible.</p>
+<p>The point of contact between pandas and other analysis libraries is usually NumPy arrays. To turn a DataFrame into a NumPy array, use the <code>to_numpy</code> method:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">12</span>]: data <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'x0'</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>],</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'x1'</span>: [<span class="fl">0.01</span>, <span class="op">-</span><span class="fl">0.01</span>, <span class="fl">0.25</span>, <span class="op">-</span><span class="fl">4.1</span>, <span class="fl">0.</span>],</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'y'</span>: [<span class="op">-</span><span class="fl">1.5</span>, <span class="fl">0.</span>, <span class="fl">3.6</span>, <span class="fl">1.3</span>, <span class="op">-</span><span class="fl">2.</span>]})</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">13</span>]: data</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">13</span>]: </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>   x0    x1    y</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>   <span class="dv">1</span>  <span class="fl">0.01</span> <span class="op">-</span><span class="fl">1.5</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>   <span class="dv">2</span> <span class="op">-</span><span class="fl">0.01</span>  <span class="fl">0.0</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>   <span class="dv">3</span>  <span class="fl">0.25</span>  <span class="fl">3.6</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>   <span class="dv">4</span> <span class="op">-</span><span class="fl">4.10</span>  <span class="fl">1.3</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>   <span class="dv">5</span>  <span class="fl">0.00</span> <span class="op">-</span><span class="fl">2.0</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">14</span>]: data.columns</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">14</span>]: Index([<span class="st">'x0'</span>, <span class="st">'x1'</span>, <span class="st">'y'</span>], dtype<span class="op">=</span><span class="st">'object'</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">15</span>]: data.to_numpy()</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">15</span>]: </span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>array([[ <span class="fl">1.</span>  ,  <span class="fl">0.01</span>, <span class="op">-</span><span class="fl">1.5</span> ],</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">2.</span>  , <span class="op">-</span><span class="fl">0.01</span>,  <span class="fl">0.</span>  ],</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">3.</span>  ,  <span class="fl">0.25</span>,  <span class="fl">3.6</span> ],</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">4.</span>  , <span class="op">-</span><span class="fl">4.1</span> ,  <span class="fl">1.3</span> ],</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">5.</span>  ,  <span class="fl">0.</span>  , <span class="op">-</span><span class="fl">2.</span>  ]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>To convert back to a DataFrame, as you may recall from earlier chapters, you can pass a two-dimensional ndarray with optional column names:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">16</span>]: df2 <span class="op">=</span> pd.DataFrame(data.to_numpy(), columns<span class="op">=</span>[<span class="st">'one'</span>, <span class="st">'two'</span>, <span class="st">'three'</span>])</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">17</span>]: df2</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">17</span>]: </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>   one   two  three</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>  <span class="fl">1.0</span>  <span class="fl">0.01</span>   <span class="op">-</span><span class="fl">1.5</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>  <span class="fl">2.0</span> <span class="op">-</span><span class="fl">0.01</span>    <span class="fl">0.0</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>  <span class="fl">3.0</span>  <span class="fl">0.25</span>    <span class="fl">3.6</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>  <span class="fl">4.0</span> <span class="op">-</span><span class="fl">4.10</span>    <span class="fl">1.3</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>  <span class="fl">5.0</span>  <span class="fl">0.00</span>   <span class="op">-</span><span class="fl">2.0</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>to_numpy</code> method is intended to be used when your data is homogeneous—for example, all numeric types. If you have heterogeneous data, the result will be an ndarray of Python objects:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">18</span>]: df3 <span class="op">=</span> data.copy()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">19</span>]: df3[<span class="st">'strings'</span>] <span class="op">=</span> [<span class="st">'a'</span>, <span class="st">'b'</span>, <span class="st">'c'</span>, <span class="st">'d'</span>, <span class="st">'e'</span>]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">20</span>]: df3</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">20</span>]: </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>   x0    x1    y strings</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>   <span class="dv">1</span>  <span class="fl">0.01</span> <span class="op">-</span><span class="fl">1.5</span>       a</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>   <span class="dv">2</span> <span class="op">-</span><span class="fl">0.01</span>  <span class="fl">0.0</span>       b</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>   <span class="dv">3</span>  <span class="fl">0.25</span>  <span class="fl">3.6</span>       c</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>   <span class="dv">4</span> <span class="op">-</span><span class="fl">4.10</span>  <span class="fl">1.3</span>       d</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>   <span class="dv">5</span>  <span class="fl">0.00</span> <span class="op">-</span><span class="fl">2.0</span>       e</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">21</span>]: df3.to_numpy()</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">21</span>]: </span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>array([[<span class="dv">1</span>, <span class="fl">0.01</span>, <span class="op">-</span><span class="fl">1.5</span>, <span class="st">'a'</span>],</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>       [<span class="dv">2</span>, <span class="op">-</span><span class="fl">0.01</span>, <span class="fl">0.0</span>, <span class="st">'b'</span>],</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>       [<span class="dv">3</span>, <span class="fl">0.25</span>, <span class="fl">3.6</span>, <span class="st">'c'</span>],</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>       [<span class="dv">4</span>, <span class="op">-</span><span class="fl">4.1</span>, <span class="fl">1.3</span>, <span class="st">'d'</span>],</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>       [<span class="dv">5</span>, <span class="fl">0.0</span>, <span class="op">-</span><span class="fl">2.0</span>, <span class="st">'e'</span>]], dtype<span class="op">=</span><span class="bu">object</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>For some models, you may wish to use only a subset of the columns. I recommend using <code>loc</code> indexing with <code>to_numpy</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">22</span>]: model_cols <span class="op">=</span> [<span class="st">'x0'</span>, <span class="st">'x1'</span>]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">23</span>]: data.loc[:, model_cols].to_numpy()</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">23</span>]: </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>array([[ <span class="fl">1.</span>  ,  <span class="fl">0.01</span>],</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">2.</span>  , <span class="op">-</span><span class="fl">0.01</span>],</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">3.</span>  ,  <span class="fl">0.25</span>],</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">4.</span>  , <span class="op">-</span><span class="fl">4.1</span> ],</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">5.</span>  ,  <span class="fl">0.</span>  ]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Some libraries have native support for pandas and do some of this work for you automatically: converting to NumPy from DataFrame and attaching model parameter names to the columns of output tables or Series. In other cases, you will have to perform this "metadata management" manually.</p>
+<p>In <a href='/book/data-cleaning#pandas-categorical'>Ch 7.5: Categorical Data</a>, we looked at pandas's <code>Categorical</code> type and the <code>pandas.get_dummies</code> function. Suppose we had a nonnumeric column in our example dataset:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">24</span>]: data[<span class="st">'category'</span>] <span class="op">=</span> pd.Categorical([<span class="st">'a'</span>, <span class="st">'b'</span>, <span class="st">'a'</span>, <span class="st">'a'</span>, <span class="st">'b'</span>],</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>   ....:                                   categories<span class="op">=</span>[<span class="st">'a'</span>, <span class="st">'b'</span>])</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">25</span>]: data</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">25</span>]: </span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>   x0    x1    y category</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>   <span class="dv">1</span>  <span class="fl">0.01</span> <span class="op">-</span><span class="fl">1.5</span>        a</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>   <span class="dv">2</span> <span class="op">-</span><span class="fl">0.01</span>  <span class="fl">0.0</span>        b</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>   <span class="dv">3</span>  <span class="fl">0.25</span>  <span class="fl">3.6</span>        a</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>   <span class="dv">4</span> <span class="op">-</span><span class="fl">4.10</span>  <span class="fl">1.3</span>        a</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>   <span class="dv">5</span>  <span class="fl">0.00</span> <span class="op">-</span><span class="fl">2.0</span>        b</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If we wanted to replace the <code>'category'</code> column with dummy variables, we create dummy variables, drop the <code>'category'</code> column, and then join the result:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">26</span>]: dummies <span class="op">=</span> pd.get_dummies(data.category, prefix<span class="op">=</span><span class="st">'category'</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>   ....:                          dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">27</span>]: data_with_dummies <span class="op">=</span> data.drop(<span class="st">'category'</span>, axis<span class="op">=</span><span class="dv">1</span>).join(dummies)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">28</span>]: data_with_dummies</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">28</span>]: </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>   x0    x1    y  category_a  category_b</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>   <span class="dv">1</span>  <span class="fl">0.01</span> <span class="op">-</span><span class="fl">1.5</span>         <span class="fl">1.0</span>         <span class="fl">0.0</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>   <span class="dv">2</span> <span class="op">-</span><span class="fl">0.01</span>  <span class="fl">0.0</span>         <span class="fl">0.0</span>         <span class="fl">1.0</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>   <span class="dv">3</span>  <span class="fl">0.25</span>  <span class="fl">3.6</span>         <span class="fl">1.0</span>         <span class="fl">0.0</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>   <span class="dv">4</span> <span class="op">-</span><span class="fl">4.10</span>  <span class="fl">1.3</span>         <span class="fl">1.0</span>         <span class="fl">0.0</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>   <span class="dv">5</span>  <span class="fl">0.00</span> <span class="op">-</span><span class="fl">2.0</span>         <span class="fl">0.0</span>         <span class="fl">1.0</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There are some nuances to fitting certain statistical models with dummy variables. It may be simpler and less error-prone to use Patsy (the subject of the next section) when you have more than simple numeric columns.</p>
+</section>
+<section id="modeling-patsy" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="modeling-patsy"><span class="header-section-number">12.2</span> Creating Model Descriptions with Patsy</h2>
+<p><a href="https://patsy.readthedocs.io/">Patsy</a> is a Python library for describing statistical models (especially linear models) with a string-based "formula syntax," which is inspired by (but not exactly the same as) the formula syntax used by the R and S statistical programming languages. It is installed automatically when you install statsmodels:</p>
+<pre><code>conda install statsmodels</code></pre>
+<p>Patsy is well supported for specifying linear models in statsmodels, so I will focus on some of the main features to help you get up and running. Patsy's <em>formulas</em> are a special string syntax that looks like:</p>
+<pre><code>y ~ x0 + x1</code></pre>
+<p>The syntax <code>a + b</code> does not mean to add <code>a</code> to <code>b</code>, but rather that these are <em>terms</em> in the <em>design matrix</em> created for the model. The <code>patsy.dmatrices</code> function takes a formula string along with a dataset (which can be a DataFrame or a dictionary of arrays) and produces design matrices for a linear model:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">29</span>]: data <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'x0'</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>],</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'x1'</span>: [<span class="fl">0.01</span>, <span class="op">-</span><span class="fl">0.01</span>, <span class="fl">0.25</span>, <span class="op">-</span><span class="fl">4.1</span>, <span class="fl">0.</span>],</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'y'</span>: [<span class="op">-</span><span class="fl">1.5</span>, <span class="fl">0.</span>, <span class="fl">3.6</span>, <span class="fl">1.3</span>, <span class="op">-</span><span class="fl">2.</span>]})</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">30</span>]: data</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">30</span>]: </span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>   x0    x1    y</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>   <span class="dv">1</span>  <span class="fl">0.01</span> <span class="op">-</span><span class="fl">1.5</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>   <span class="dv">2</span> <span class="op">-</span><span class="fl">0.01</span>  <span class="fl">0.0</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>   <span class="dv">3</span>  <span class="fl">0.25</span>  <span class="fl">3.6</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>   <span class="dv">4</span> <span class="op">-</span><span class="fl">4.10</span>  <span class="fl">1.3</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>   <span class="dv">5</span>  <span class="fl">0.00</span> <span class="op">-</span><span class="fl">2.0</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">31</span>]: <span class="im">import</span> patsy</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">32</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'y ~ x0 + x1'</span>, data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now we have:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">33</span>]: y</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">33</span>]: </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">5</span>, <span class="dv">1</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>     y</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span><span class="fl">1.5</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.0</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>   <span class="fl">3.6</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>   <span class="fl">1.3</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span><span class="fl">2.0</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">'y'</span> (column <span class="dv">0</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">34</span>]: X</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">34</span>]: </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">5</span>, <span class="dv">3</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  Intercept  x0     x1</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">1</span>   <span class="fl">0.01</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">2</span>  <span class="op">-</span><span class="fl">0.01</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">3</span>   <span class="fl">0.25</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">4</span>  <span class="op">-</span><span class="fl">4.10</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">5</span>   <span class="fl">0.00</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">'x0'</span> (column <span class="dv">1</span>)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">'x1'</span> (column <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>These Patsy <code>DesignMatrix</code> instances are NumPy ndarrays with additional metadata:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">35</span>]: np.asarray(y)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">35</span>]: </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>array([[<span class="op">-</span><span class="fl">1.5</span>],</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">0.</span> ],</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">3.6</span>],</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.3</span>],</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>       [<span class="op">-</span><span class="fl">2.</span> ]])</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">36</span>]: np.asarray(X)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">36</span>]: </span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>array([[ <span class="fl">1.</span>  ,  <span class="fl">1.</span>  ,  <span class="fl">0.01</span>],</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>  ,  <span class="fl">2.</span>  , <span class="op">-</span><span class="fl">0.01</span>],</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>  ,  <span class="fl">3.</span>  ,  <span class="fl">0.25</span>],</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>  ,  <span class="fl">4.</span>  , <span class="op">-</span><span class="fl">4.1</span> ],</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>  ,  <span class="fl">5.</span>  ,  <span class="fl">0.</span>  ]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>You might wonder where the <code>Intercept</code> term came from. This is a convention for linear models like ordinary least squares (OLS) regression. You can suppress the intercept by adding the term <code>+ 0</code> to the model:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">37</span>]: patsy.dmatrices(<span class="st">'y ~ x0 + x1 + 0'</span>, data)[<span class="dv">1</span>]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">37</span>]: </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">5</span>, <span class="dv">2</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  x0     x1</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>   <span class="dv">1</span>   <span class="fl">0.01</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>   <span class="dv">2</span>  <span class="op">-</span><span class="fl">0.01</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>   <span class="dv">3</span>   <span class="fl">0.25</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>   <span class="dv">4</span>  <span class="op">-</span><span class="fl">4.10</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>   <span class="dv">5</span>   <span class="fl">0.00</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">'x0'</span> (column <span class="dv">0</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">'x1'</span> (column <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The Patsy objects can be passed directly into algorithms like <code>numpy.linalg.lstsq</code>, which performs an ordinary least squares regression:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">38</span>]: coef, resid, _, _ <span class="op">=</span> np.linalg.lstsq(X, y, rcond<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The model metadata is retained in the <code>design_info</code> attribute, so you can reattach the model column names to the fitted coefficients to obtain a Series, for example:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">39</span>]: coef</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">39</span>]: </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>array([[ <span class="fl">0.3129</span>],</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>       [<span class="op">-</span><span class="fl">0.0791</span>],</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>       [<span class="op">-</span><span class="fl">0.2655</span>]])</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">40</span>]: coef <span class="op">=</span> pd.Series(coef.squeeze(), index<span class="op">=</span>X.design_info.column_names)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">41</span>]: coef</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">41</span>]: </span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>Intercept    <span class="fl">0.312910</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>x0          <span class="op">-</span><span class="fl">0.079106</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>x1          <span class="op">-</span><span class="fl">0.265464</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>dtype: float64</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="modeling-patsy-transform" class="level3">
+<h3 class="anchored" data-anchor-id="modeling-patsy-transform">Data Transformations in Patsy Formulas</h3>
+<p>You can mix Python code into your Patsy formulas; when evaluating the formula, the library will try to find the functions you use in the enclosing scope:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">42</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'y ~ x0 + np.log(np.abs(x1) + 1)'</span>, data)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">43</span>]: X</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">43</span>]: </span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">5</span>, <span class="dv">3</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  Intercept  x0  np.log(np.<span class="bu">abs</span>(x1) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">1</span>                 <span class="fl">0.00995</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">2</span>                 <span class="fl">0.00995</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">3</span>                 <span class="fl">0.22314</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">4</span>                 <span class="fl">1.62924</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>   <span class="dv">5</span>                 <span class="fl">0.00000</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">'x0'</span> (column <span class="dv">1</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">'np.log(np.abs(x1) + 1)'</span> (column <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Some commonly used variable transformations include <em>standardizing</em> (to mean 0 and variance 1) and <em>centering</em> (subtracting the mean). Patsy has built-in functions for this purpose:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">44</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'y ~ standardize(x0) + center(x1)'</span>, data)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">45</span>]: X</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">45</span>]: </span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">5</span>, <span class="dv">3</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  Intercept  standardize(x0)  center(x1)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>         <span class="op">-</span><span class="fl">1.41421</span>        <span class="fl">0.78</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>         <span class="op">-</span><span class="fl">0.70711</span>        <span class="fl">0.76</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="fl">0.00000</span>        <span class="fl">1.02</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="fl">0.70711</span>       <span class="op">-</span><span class="fl">3.33</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="fl">1.41421</span>        <span class="fl">0.77</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">'standardize(x0)'</span> (column <span class="dv">1</span>)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">'center(x1)'</span> (column <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>As part of a modeling process, you may fit a model on one dataset, then evaluate the model based on another. This might be a <em>hold-out</em> portion or new data that is observed later. When applying transformations like center and standardize, you should be careful when using the model to form predications based on new data. These are called <em>stateful</em> transformations, because you must use statistics like the mean or standard deviation of the original dataset when transforming a new dataset.</p>
+<p>The <code>patsy.build_design_matrices</code> function can apply transformations to new <em>out-of-sample</em> data using the saved information from the original <em>in-sample</em> dataset:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">46</span>]: new_data <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'x0'</span>: [<span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>],</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'x1'</span>: [<span class="fl">3.1</span>, <span class="op">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">2.3</span>],</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'y'</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]})</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">47</span>]: new_X <span class="op">=</span> patsy.build_design_matrices([X.design_info], new_data)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">48</span>]: new_X</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">48</span>]: </span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>[DesignMatrix <span class="cf">with</span> shape (<span class="dv">4</span>, <span class="dv">3</span>)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>   Intercept  standardize(x0)  center(x1)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>           <span class="dv">1</span>          <span class="fl">2.12132</span>        <span class="fl">3.87</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>           <span class="dv">1</span>          <span class="fl">2.82843</span>        <span class="fl">0.27</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>           <span class="dv">1</span>          <span class="fl">3.53553</span>        <span class="fl">0.77</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>           <span class="dv">1</span>          <span class="fl">4.24264</span>        <span class="fl">3.07</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>   Terms:</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>     <span class="st">'standardize(x0)'</span> (column <span class="dv">1</span>)</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>     <span class="st">'center(x1)'</span> (column <span class="dv">2</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Because the plus symbol (<code>+</code>) in the context of Patsy formulas does not mean addition, when you want to add columns from a dataset by name, you must wrap them in the special <code>I</code> function:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">49</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'y ~ I(x0 + x1)'</span>, data)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">50</span>]: X</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">50</span>]: </span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">5</span>, <span class="dv">2</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  Intercept  I(x0 <span class="op">+</span> x1)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>        <span class="fl">1.01</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>        <span class="fl">1.99</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>        <span class="fl">3.25</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>       <span class="op">-</span><span class="fl">0.10</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>        <span class="fl">5.00</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">'I(x0 + x1)'</span> (column <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Patsy has several other built-in transforms in the <code>patsy.builtins</code> module. See the online documentation for more.</p>
+<p>Categorical data has a special class of transformations, which I explain next.</p>
+</section>
+<section id="modeling-patsy-categorical" class="level3">
+<h3 class="anchored" data-anchor-id="modeling-patsy-categorical">Categorical Data and Patsy</h3>
+<p>Nonnumeric data can be transformed for a model design matrix in many different ways. A complete treatment of this topic is outside the scope of this book and would be studied best along with a course in statistics.</p>
+<p>When you use nonnumeric terms in a Patsy formula, they are converted to dummy variables by default. If there is an intercept, one of the levels will be left out to avoid collinearity:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">51</span>]: data <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'key1'</span>: [<span class="st">'a'</span>, <span class="st">'a'</span>, <span class="st">'b'</span>, <span class="st">'b'</span>, <span class="st">'a'</span>, <span class="st">'b'</span>, <span class="st">'a'</span>, <span class="st">'b'</span>],</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'key2'</span>: [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>],</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'v1'</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">8</span>],</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>   ....:     <span class="st">'v2'</span>: [<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="fl">2.5</span>, <span class="op">-</span><span class="fl">0.5</span>, <span class="fl">4.0</span>, <span class="op">-</span><span class="fl">1.2</span>, <span class="fl">0.2</span>, <span class="op">-</span><span class="fl">1.7</span>]</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>   ....: })</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">52</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'v2 ~ key1'</span>, data)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">53</span>]: X</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">53</span>]: </span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">8</span>, <span class="dv">2</span>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  Intercept  key1[T.b]</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key1'</span> (column <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If you omit the intercept from the model, then columns for each category value will be included in the model design matrix:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">54</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'v2 ~ key1 + 0'</span>, data)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">55</span>]: X</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">55</span>]: </span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">8</span>, <span class="dv">2</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  key1[a]  key1[b]</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span>        <span class="dv">0</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span>        <span class="dv">0</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>        <span class="dv">0</span>        <span class="dv">1</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>        <span class="dv">0</span>        <span class="dv">1</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span>        <span class="dv">0</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>        <span class="dv">0</span>        <span class="dv">1</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span>        <span class="dv">0</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>        <span class="dv">0</span>        <span class="dv">1</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key1'</span> (columns <span class="dv">0</span>:<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Numeric columns can be interpreted as categorical with the <code>C</code> function:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">56</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'v2 ~ C(key2)'</span>, data)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">57</span>]: X</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">57</span>]: </span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">8</span>, <span class="dv">2</span>)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  Intercept  C(key2)[T<span class="fl">.1</span>]</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">1</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">1</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">1</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">'C(key2)'</span> (column <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When you're using multiple categorical terms in a model, things can be more complicated, as you can include interaction terms of the form <code>key1:key2</code>, which can be used, for example, in analysis of variance (ANOVA) models:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">58</span>]: data[<span class="st">'key2'</span>] <span class="op">=</span> data[<span class="st">'key2'</span>].<span class="bu">map</span>({<span class="dv">0</span>: <span class="st">'zero'</span>, <span class="dv">1</span>: <span class="st">'one'</span>})</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">59</span>]: data</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">59</span>]: </span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  key1  key2  v1   v2</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>    a  zero   <span class="dv">1</span> <span class="op">-</span><span class="fl">1.0</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>    a   one   <span class="dv">2</span>  <span class="fl">0.0</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>    b  zero   <span class="dv">3</span>  <span class="fl">2.5</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>    b   one   <span class="dv">4</span> <span class="op">-</span><span class="fl">0.5</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>    a  zero   <span class="dv">5</span>  <span class="fl">4.0</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="dv">5</span>    b   one   <span class="dv">6</span> <span class="op">-</span><span class="fl">1.2</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="dv">6</span>    a  zero   <span class="dv">7</span>  <span class="fl">0.2</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="dv">7</span>    b  zero   <span class="dv">8</span> <span class="op">-</span><span class="fl">1.7</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">60</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'v2 ~ key1 + key2'</span>, data)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">61</span>]: X</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">61</span>]: </span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">8</span>, <span class="dv">3</span>)</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>  Intercept  key1[T.b]  key2[T.zero]</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">1</span></span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">0</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">1</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">1</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">0</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">1</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">1</span></span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key1'</span> (column <span class="dv">1</span>)</span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key2'</span> (column <span class="dv">2</span>)</span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">62</span>]: y, X <span class="op">=</span> patsy.dmatrices(<span class="st">'v2 ~ key1 + key2 + key1:key2'</span>, data)</span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">63</span>]: X</span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">63</span>]: </span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>DesignMatrix <span class="cf">with</span> shape (<span class="dv">8</span>, <span class="dv">4</span>)</span>
+<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a>  Intercept  key1[T.b]  key2[T.zero]  key1[T.b]:key2[T.zero]</span>
+<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">1</span>                       <span class="dv">0</span></span>
+<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">0</span>                       <span class="dv">0</span></span>
+<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">1</span>                       <span class="dv">1</span></span>
+<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">0</span>                       <span class="dv">0</span></span>
+<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">1</span>                       <span class="dv">0</span></span>
+<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">0</span>                       <span class="dv">0</span></span>
+<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">0</span>             <span class="dv">1</span>                       <span class="dv">0</span></span>
+<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a>          <span class="dv">1</span>          <span class="dv">1</span>             <span class="dv">1</span>                       <span class="dv">1</span></span>
+<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a>  Terms:</span>
+<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a>    <span class="co">'Intercept'</span> (column <span class="dv">0</span>)</span>
+<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key1'</span> (column <span class="dv">1</span>)</span>
+<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key2'</span> (column <span class="dv">2</span>)</span>
+<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a>    <span class="co">'key1:key2'</span> (column <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Patsy provides for other ways to transform categorical data, including transformations for terms with a particular ordering. See the online documentation for more.</p>
+</section>
+</section>
+<section id="modeling-statsmodels" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="modeling-statsmodels"><span class="header-section-number">12.3</span> Introduction to statsmodels</h2>
+<p><a href="http://www.statsmodels.org">statsmodels</a> is a Python library for fitting many kinds of statistical models, performing statistical tests, and data exploration and visualization. statsmodels contains more "classical" frequentist statistical methods, while Bayesian methods and machine learning models are found in other libraries.</p>
+<p>Some kinds of models found in statsmodels include:</p>
+<ul>
+<li><p>Linear models, generalized linear models, and robust linear models</p></li>
+<li><p>Linear mixed effects models</p></li>
+<li><p>Analysis of variance (ANOVA) methods</p></li>
+<li><p>Time series processes and state space models</p></li>
+<li><p>Generalized method of moments</p></li>
+</ul>
+<p>In the next few pages, we will use a few basic tools in statsmodels and explore how to use the modeling interfaces with Patsy formulas and pandas DataFrame objects. If you didn't install statsmodels in the Patsy discussion earlier, you can install it now with:</p>
+<pre><code>conda install statsmodels</code></pre>
+<section id="modeling-statsmodels-lm" class="level3">
+<h3 class="anchored" data-anchor-id="modeling-statsmodels-lm">Estimating Linear Models</h3>
+<p>There are several kinds of linear regression models in statsmodels, from the more basic (e.g., ordinary least squares) to more complex (e.g., iteratively reweighted least squares).</p>
+<p>Linear models in statsmodels have two different main interfaces: array based and formula based. These are accessed through these API module imports:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> statsmodels.api <span class="im">as</span> sm</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> statsmodels.formula.api <span class="im">as</span> smf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>To show how to use these, we generate a linear model from some random data. Run the following code in a Jupyter cell:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># To make the example reproducible</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(seed<span class="op">=</span><span class="dv">12345</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dnorm(mean, variance, size<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">isinstance</span>(size, <span class="bu">int</span>):</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>        size <span class="op">=</span> size,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> mean <span class="op">+</span> np.sqrt(variance) <span class="op">*</span> rng.standard_normal(<span class="op">*</span>size)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> np.c_[dnorm(<span class="dv">0</span>, <span class="fl">0.4</span>, size<span class="op">=</span>N),</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>          dnorm(<span class="dv">0</span>, <span class="fl">0.6</span>, size<span class="op">=</span>N),</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>          dnorm(<span class="dv">0</span>, <span class="fl">0.2</span>, size<span class="op">=</span>N)]</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>eps <span class="op">=</span> dnorm(<span class="dv">0</span>, <span class="fl">0.1</span>, size<span class="op">=</span>N)</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> [<span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>]</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.dot(X, beta) <span class="op">+</span> eps</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Here, I wrote down the "true" model with known parameters <code>beta</code>. In this case, <code>dnorm</code> is a helper function for generating normally distributed data with a particular mean and variance. So now we have:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">66</span>]: X[:<span class="dv">5</span>]</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">66</span>]: </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>array([[<span class="op">-</span><span class="fl">0.9005</span>, <span class="op">-</span><span class="fl">0.1894</span>, <span class="op">-</span><span class="fl">1.0279</span>],</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">0.7993</span>, <span class="op">-</span><span class="fl">1.546</span> , <span class="op">-</span><span class="fl">0.3274</span>],</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>       [<span class="op">-</span><span class="fl">0.5507</span>, <span class="op">-</span><span class="fl">0.1203</span>,  <span class="fl">0.3294</span>],</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>       [<span class="op">-</span><span class="fl">0.1639</span>,  <span class="fl">0.824</span> ,  <span class="fl">0.2083</span>],</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>       [<span class="op">-</span><span class="fl">0.0477</span>, <span class="op">-</span><span class="fl">0.2131</span>, <span class="op">-</span><span class="fl">0.0482</span>]])</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">67</span>]: y[:<span class="dv">5</span>]</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">67</span>]: array([<span class="op">-</span><span class="fl">0.5995</span>, <span class="op">-</span><span class="fl">0.5885</span>,  <span class="fl">0.1856</span>, <span class="op">-</span><span class="fl">0.0075</span>, <span class="op">-</span><span class="fl">0.0154</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A linear model is generally fitted with an intercept term, as we saw before with Patsy. The <code>sm.add_constant</code> function can add an intercept column to an existing matrix:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">68</span>]: X_model <span class="op">=</span> sm.add_constant(X)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">69</span>]: X_model[:<span class="dv">5</span>]</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">69</span>]: </span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>array([[ <span class="fl">1.</span>    , <span class="op">-</span><span class="fl">0.9005</span>, <span class="op">-</span><span class="fl">0.1894</span>, <span class="op">-</span><span class="fl">1.0279</span>],</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>    ,  <span class="fl">0.7993</span>, <span class="op">-</span><span class="fl">1.546</span> , <span class="op">-</span><span class="fl">0.3274</span>],</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>    , <span class="op">-</span><span class="fl">0.5507</span>, <span class="op">-</span><span class="fl">0.1203</span>,  <span class="fl">0.3294</span>],</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>    , <span class="op">-</span><span class="fl">0.1639</span>,  <span class="fl">0.824</span> ,  <span class="fl">0.2083</span>],</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>    , <span class="op">-</span><span class="fl">0.0477</span>, <span class="op">-</span><span class="fl">0.2131</span>, <span class="op">-</span><span class="fl">0.0482</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>sm.OLS</code> class can fit an ordinary least squares linear regression:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">70</span>]: model <span class="op">=</span> sm.OLS(y, X)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The model's <code>fit</code> method returns a regression results object containing estimated model parameters and other diagnostics:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">71</span>]: results <span class="op">=</span> model.fit()</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">72</span>]: results.params</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">72</span>]: array([<span class="fl">0.0668</span>, <span class="fl">0.268</span> , <span class="fl">0.4505</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>summary</code> method on <code>results</code> can print a model detailing diagnostic output of the model:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">73</span>]: <span class="bu">print</span>(results.summary())</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>OLS Regression Results                                </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="op">=================================================================================</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="op">======</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>Dep. Variable:                      y   R<span class="op">-</span>squared (uncentered):                  </span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a> <span class="fl">0.469</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>Model:                            OLS   Adj. R<span class="op">-</span>squared (uncentered):             </span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a> <span class="fl">0.452</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>Method:                 Least Squares   F<span class="op">-</span>statistic:                             </span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a> <span class="fl">28.51</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>Date:                Wed, <span class="dv">12</span> Apr <span class="dv">2023</span>   Prob (F<span class="op">-</span>statistic):                    <span class="fl">2.</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="fl">66e-13</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>Time:                        <span class="dv">13</span>:<span class="dv">0</span><span class="er">9</span>:<span class="dv">20</span>   Log<span class="op">-</span>Likelihood:                         <span class="op">-</span></span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a><span class="fl">25.611</span></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>No. Observations:                 <span class="dv">100</span>   AIC:                                     </span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a> <span class="fl">57.22</span></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>Df Residuals:                      <span class="dv">97</span>   BIC:                                     </span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a> <span class="fl">65.04</span></span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>Df Model:                           <span class="dv">3</span>                                            </span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>Covariance Type:            nonrobust                                            </span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a><span class="op">==============================================================================</span></span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>                 coef    std err          t      P<span class="op">&gt;|</span>t<span class="op">|</span>      [<span class="fl">0.025</span>      <span class="fl">0.975</span>]</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a><span class="op">------------------------------------------------------------------------------</span></span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>x1             <span class="fl">0.0668</span>      <span class="fl">0.054</span>      <span class="fl">1.243</span>      <span class="fl">0.217</span>      <span class="op">-</span><span class="fl">0.040</span>       <span class="fl">0.174</span></span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>x2             <span class="fl">0.2680</span>      <span class="fl">0.042</span>      <span class="fl">6.313</span>      <span class="fl">0.000</span>       <span class="fl">0.184</span>       <span class="fl">0.352</span></span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>x3             <span class="fl">0.4505</span>      <span class="fl">0.068</span>      <span class="fl">6.605</span>      <span class="fl">0.000</span>       <span class="fl">0.315</span>       <span class="fl">0.586</span></span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a><span class="op">==============================================================================</span></span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>Omnibus:                        <span class="fl">0.435</span>   Durbin<span class="op">-</span>Watson:                   <span class="fl">1.869</span></span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>Prob(Omnibus):                  <span class="fl">0.805</span>   Jarque<span class="op">-</span>Bera (JB):                <span class="fl">0.301</span></span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>Skew:                           <span class="fl">0.134</span>   Prob(JB):                        <span class="fl">0.860</span></span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>Kurtosis:                       <span class="fl">2.995</span>   Cond. No.                         <span class="fl">1.64</span></span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a><span class="op">==============================================================================</span></span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a>Notes:</span>
+<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] R² <span class="kw">is</span> computed without centering (uncentered) since the model does <span class="kw">not</span> contai</span>
+<span id="cb30-37"><a href="#cb30-37" aria-hidden="true" tabindex="-1"></a>n a constant.</span>
+<span id="cb30-38"><a href="#cb30-38" aria-hidden="true" tabindex="-1"></a>[<span class="dv">2</span>] Standard Errors assume that the covariance matrix of the errors <span class="kw">is</span> correctly </span>
+<span id="cb30-39"><a href="#cb30-39" aria-hidden="true" tabindex="-1"></a>specified.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The parameter names here have been given the generic names <code>x1, x2</code>, and so on. Suppose instead that all of the model parameters are in a DataFrame:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">74</span>]: data <span class="op">=</span> pd.DataFrame(X, columns<span class="op">=</span>[<span class="st">'col0'</span>, <span class="st">'col1'</span>, <span class="st">'col2'</span>])</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">75</span>]: data[<span class="st">'y'</span>] <span class="op">=</span> y</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">76</span>]: data[:<span class="dv">5</span>]</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">76</span>]: </span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>       col0      col1      col2         y</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span> <span class="op">-</span><span class="fl">0.900506</span> <span class="op">-</span><span class="fl">0.189430</span> <span class="op">-</span><span class="fl">1.027870</span> <span class="op">-</span><span class="fl">0.599527</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>  <span class="fl">0.799252</span> <span class="op">-</span><span class="fl">1.545984</span> <span class="op">-</span><span class="fl">0.327397</span> <span class="op">-</span><span class="fl">0.588454</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="op">-</span><span class="fl">0.550655</span> <span class="op">-</span><span class="fl">0.120254</span>  <span class="fl">0.329359</span>  <span class="fl">0.185634</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span> <span class="op">-</span><span class="fl">0.163916</span>  <span class="fl">0.824040</span>  <span class="fl">0.208275</span> <span class="op">-</span><span class="fl">0.007477</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span> <span class="op">-</span><span class="fl">0.047651</span> <span class="op">-</span><span class="fl">0.213147</span> <span class="op">-</span><span class="fl">0.048244</span> <span class="op">-</span><span class="fl">0.015374</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now we can use the statsmodels formula API and Patsy formula strings:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">77</span>]: results <span class="op">=</span> smf.ols(<span class="st">'y ~ col0 + col1 + col2'</span>, data<span class="op">=</span>data).fit()</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">78</span>]: results.params</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">78</span>]: </span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>Intercept   <span class="op">-</span><span class="fl">0.020799</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>col0         <span class="fl">0.065813</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>col1         <span class="fl">0.268970</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>col2         <span class="fl">0.449419</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>dtype: float64</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">79</span>]: results.tvalues</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">79</span>]: </span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>Intercept   <span class="op">-</span><span class="fl">0.652501</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>col0         <span class="fl">1.219768</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>col1         <span class="fl">6.312369</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>col2         <span class="fl">6.567428</span></span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>dtype: float64</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Observe how statsmodels has returned results as Series with the DataFrame column names attached. We also do not need to use <code>add_constant</code> when using formulas and pandas objects.</p>
+<p>Given new out-of-sample data, you can compute predicted values given the estimated model parameters:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">80</span>]: results.predict(data[:<span class="dv">5</span>])</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">80</span>]: </span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>   <span class="op">-</span><span class="fl">0.592959</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>   <span class="op">-</span><span class="fl">0.531160</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>    <span class="fl">0.058636</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>    <span class="fl">0.283658</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span>   <span class="op">-</span><span class="fl">0.102947</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>dtype: float64</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There are many additional tools for analysis, diagnostics, and visualization of linear model results in statsmodels that you can explore. There are also other kinds of linear models beyond ordinary least squares.</p>
+</section>
+<section id="modeling-statsmodels-tsa" class="level3">
+<h3 class="anchored" data-anchor-id="modeling-statsmodels-tsa">Estimating Time Series Processes</h3>
+<p>Another class of models in statsmodels is for time series analysis. Among these are autoregressive processes, Kalman filtering and other state space models, and multivariate autoregressive models.</p>
+<p>Let's simulate some time series data with an autoregressive structure and noise. Run the following in Jupyter:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>init_x <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>values <span class="op">=</span> [init_x, init_x]</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">1000</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>b0 <span class="op">=</span> <span class="fl">0.8</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>b1 <span class="op">=</span> <span class="op">-</span><span class="fl">0.4</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>noise <span class="op">=</span> dnorm(<span class="dv">0</span>, <span class="fl">0.1</span>, N)</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>    new_x <span class="op">=</span> values[<span class="op">-</span><span class="dv">1</span>] <span class="op">*</span> b0 <span class="op">+</span> values[<span class="op">-</span><span class="dv">2</span>] <span class="op">*</span> b1 <span class="op">+</span> noise[i]</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>    values.append(new_x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This data has an AR(2) structure (two <em>lags</em>) with parameters <code>0.8</code> and <code>–0.4</code>. When you fit an AR model, you may not know the number of lagged terms to include, so you can fit the model with some larger number of lags:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">82</span>]: <span class="im">from</span> statsmodels.tsa.ar_model <span class="im">import</span> AutoReg</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">83</span>]: MAXLAGS <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">84</span>]: model <span class="op">=</span> AutoReg(values, MAXLAGS)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">85</span>]: results <span class="op">=</span> model.fit()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The estimated parameters in the results have the intercept first, and the estimates for the first two lags next:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">86</span>]: results.params</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">86</span>]: array([ <span class="fl">0.0235</span>,  <span class="fl">0.8097</span>, <span class="op">-</span><span class="fl">0.4287</span>, <span class="op">-</span><span class="fl">0.0334</span>,  <span class="fl">0.0427</span>, <span class="op">-</span><span class="fl">0.0567</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Deeper details of these models and how to interpret their results are beyond what I can cover in this book, but there's plenty more to discover in the statsmodels documentation.</p>
+</section>
+</section>
+<section id="modeling-scikit-learn" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="modeling-scikit-learn"><span class="header-section-number">12.4</span> Introduction to scikit-learn</h2>
+<p><a href="http://scikit-learn.org">scikit-learn</a> is one of the most widely used and trusted general-purpose Python machine learning toolkits. It contains a broad selection of standard supervised and unsupervised machine learning methods, with tools for model selection and evaluation, data transformation, data loading, and model persistence. These models can be used for classification, clustering, prediction, and other common tasks. You can install scikit-learn from conda like so:</p>
+<pre><code>conda install scikit-learn</code></pre>
+<p>There are excellent online and print resources for learning about machine learning and how to apply libraries like scikit-learn to solve real-world problems. In this section, I will give a brief flavor of the scikit-learn API style.</p>
+<p>pandas integration in scikit-learn has improved significantly in recent years, and by the time you are reading this it may have improved even more. I encourage you to check out the latest project documentation.</p>
+<p>As an example for this chapter, I use a <a href="https://www.kaggle.com/c/titanic">now-classic dataset from a Kaggle competition</a> about passenger survival rates on the <em>Titanic</em> in 1912. We load the training and test datasets using pandas:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">87</span>]: train <span class="op">=</span> pd.read_csv(<span class="st">'datasets/titanic/train.csv'</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">88</span>]: test <span class="op">=</span> pd.read_csv(<span class="st">'datasets/titanic/test.csv'</span>)</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">89</span>]: train.head(<span class="dv">4</span>)</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">89</span>]: </span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>   PassengerId  Survived  Pclass   </span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>            <span class="dv">1</span>         <span class="dv">0</span>       <span class="dv">3</span>  <span class="op">\</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>            <span class="dv">2</span>         <span class="dv">1</span>       <span class="dv">1</span>   </span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>            <span class="dv">3</span>         <span class="dv">1</span>       <span class="dv">3</span>   </span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>            <span class="dv">4</span>         <span class="dv">1</span>       <span class="dv">1</span>   </span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>                                                  Name     Sex   Age  SibSp   </span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>                              Braund, Mr. Owen Harris    male  <span class="fl">22.0</span>      <span class="dv">1</span>  <span class="op">\</span></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>  Cumings, Mrs. John Bradley (Florence Briggs Thayer)  female  <span class="fl">38.0</span>      <span class="dv">1</span>   </span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>                               Heikkinen, Miss. Laina  female  <span class="fl">26.0</span>      <span class="dv">0</span>   </span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>         Futrelle, Mrs. Jacques Heath (Lily May Peel)  female  <span class="fl">35.0</span>      <span class="dv">1</span>   </span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>   Parch            Ticket     Fare Cabin Embarked  </span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a><span class="dv">0</span>      <span class="dv">0</span>         A<span class="op">/</span><span class="dv">5</span> <span class="dv">21171</span>   <span class="fl">7.2500</span>   NaN        S  </span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span>      <span class="dv">0</span>          PC <span class="dv">17599</span>  <span class="fl">71.2833</span>   C85        C  </span>
+<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span>      <span class="dv">0</span>  STON<span class="op">/</span>O2. <span class="dv">3101282</span>   <span class="fl">7.9250</span>   NaN        S  </span>
+<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span>      <span class="dv">0</span>            <span class="dv">113803</span>  <span class="fl">53.1000</span>  C123        S  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Libraries like statsmodels and scikit-learn generally cannot be fed missing data, so we look at the columns to see if there are any that contain missing data:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">90</span>]: train.isna().<span class="bu">sum</span>()</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">90</span>]: </span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>PassengerId      <span class="dv">0</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>Survived         <span class="dv">0</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>Pclass           <span class="dv">0</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>Name             <span class="dv">0</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>Sex              <span class="dv">0</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>Age            <span class="dv">177</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>SibSp            <span class="dv">0</span></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>Parch            <span class="dv">0</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>Ticket           <span class="dv">0</span></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>Fare             <span class="dv">0</span></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>Cabin          <span class="dv">687</span></span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>Embarked         <span class="dv">2</span></span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>dtype: int64</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">91</span>]: test.isna().<span class="bu">sum</span>()</span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">91</span>]: </span>
+<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a>PassengerId      <span class="dv">0</span></span>
+<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>Pclass           <span class="dv">0</span></span>
+<span id="cb39-21"><a href="#cb39-21" aria-hidden="true" tabindex="-1"></a>Name             <span class="dv">0</span></span>
+<span id="cb39-22"><a href="#cb39-22" aria-hidden="true" tabindex="-1"></a>Sex              <span class="dv">0</span></span>
+<span id="cb39-23"><a href="#cb39-23" aria-hidden="true" tabindex="-1"></a>Age             <span class="dv">86</span></span>
+<span id="cb39-24"><a href="#cb39-24" aria-hidden="true" tabindex="-1"></a>SibSp            <span class="dv">0</span></span>
+<span id="cb39-25"><a href="#cb39-25" aria-hidden="true" tabindex="-1"></a>Parch            <span class="dv">0</span></span>
+<span id="cb39-26"><a href="#cb39-26" aria-hidden="true" tabindex="-1"></a>Ticket           <span class="dv">0</span></span>
+<span id="cb39-27"><a href="#cb39-27" aria-hidden="true" tabindex="-1"></a>Fare             <span class="dv">1</span></span>
+<span id="cb39-28"><a href="#cb39-28" aria-hidden="true" tabindex="-1"></a>Cabin          <span class="dv">327</span></span>
+<span id="cb39-29"><a href="#cb39-29" aria-hidden="true" tabindex="-1"></a>Embarked         <span class="dv">0</span></span>
+<span id="cb39-30"><a href="#cb39-30" aria-hidden="true" tabindex="-1"></a>dtype: int64</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In statistics and machine learning examples like this one, a typical task is to predict whether a passenger would survive based on features in the data. A model is fitted on a <em>training</em> dataset and then evaluated on an out-of-sample <em>testing</em> dataset.</p>
+<p>I would like to use <code>Age</code> as a predictor, but it has missing data. There are a number of ways to do missing data imputation, but I will do a simple one and use the median of the training dataset to fill the nulls in both tables:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">92</span>]: impute_value <span class="op">=</span> train[<span class="st">'Age'</span>].median()</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">93</span>]: train[<span class="st">'Age'</span>] <span class="op">=</span> train[<span class="st">'Age'</span>].fillna(impute_value)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">94</span>]: test[<span class="st">'Age'</span>] <span class="op">=</span> test[<span class="st">'Age'</span>].fillna(impute_value)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now we need to specify our models. I add a column <code>IsFemale</code> as an encoded version of the <code>'Sex'</code> column:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">95</span>]: train[<span class="st">'IsFemale'</span>] <span class="op">=</span> (train[<span class="st">'Sex'</span>] <span class="op">==</span> <span class="st">'female'</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">96</span>]: test[<span class="st">'IsFemale'</span>] <span class="op">=</span> (test[<span class="st">'Sex'</span>] <span class="op">==</span> <span class="st">'female'</span>).astype(<span class="bu">int</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then we decide on some model variables and create NumPy arrays:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">97</span>]: predictors <span class="op">=</span> [<span class="st">'Pclass'</span>, <span class="st">'IsFemale'</span>, <span class="st">'Age'</span>]</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">98</span>]: X_train <span class="op">=</span> train[predictors].to_numpy()</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">99</span>]: X_test <span class="op">=</span> test[predictors].to_numpy()</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">100</span>]: y_train <span class="op">=</span> train[<span class="st">'Survived'</span>].to_numpy()</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">101</span>]: X_train[:<span class="dv">5</span>]</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">101</span>]: </span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>array([[ <span class="fl">3.</span>,  <span class="fl">0.</span>, <span class="fl">22.</span>],</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>,  <span class="fl">1.</span>, <span class="fl">38.</span>],</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">3.</span>,  <span class="fl">1.</span>, <span class="fl">26.</span>],</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">1.</span>,  <span class="fl">1.</span>, <span class="fl">35.</span>],</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>       [ <span class="fl">3.</span>,  <span class="fl">0.</span>, <span class="fl">35.</span>]])</span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">102</span>]: y_train[:<span class="dv">5</span>]</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">102</span>]: array([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I make no claims that this is a good model or that these features are engineered properly. We use the <code>LogisticRegression</code> model from scikit-learn and create a model instance:</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">103</span>]: <span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">104</span>]: model <span class="op">=</span> LogisticRegression()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can fit this model to the training data using the model's <code>fit</code> method:</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">105</span>]: model.fit(X_train, y_train)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">105</span>]: LogisticRegression()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now, we can form predictions for the test dataset using <code>model.predict</code>:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">106</span>]: y_predict <span class="op">=</span> model.predict(X_test)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">107</span>]: y_predict[:<span class="dv">10</span>]</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">107</span>]: array([<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If you had the true values for the test dataset, you could compute an accuracy percentage or some other error metric:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>(y_true <span class="op">==</span> y_predict).mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In practice, there are often many additional layers of complexity in model training. Many models have parameters that can be tuned, and there are techniques such as <em>cross-validation</em> that can be used for parameter tuning to avoid overfitting to the training data. This can often yield better predictive performance or robustness on new data.</p>
+<p>Cross-validation works by splitting the training data to simulate out-of-sample prediction. Based on a model accuracy score like mean squared error, you can perform a grid search on model parameters. Some models, like logistic regression, have estimator classes with built-in cross-validation. For example, the <code>LogisticRegressionCV</code> class can be used with a parameter indicating how fine-grained of a grid search to do on the model regularization parameter <code>C</code>:</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">108</span>]: <span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegressionCV</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">109</span>]: model_cv <span class="op">=</span> LogisticRegressionCV(Cs<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">110</span>]: model_cv.fit(X_train, y_train)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">110</span>]: LogisticRegressionCV()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>To do cross-validation by hand, you can use the <code>cross_val_score</code> helper function, which handles the data splitting process. For example, to cross-validate our model with four nonoverlapping splits of the training data, we can do:</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">111</span>]: <span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_val_score</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">112</span>]: model <span class="op">=</span> LogisticRegression(C<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">113</span>]: scores <span class="op">=</span> cross_val_score(model, X_train, y_train, cv<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>In [<span class="dv">114</span>]: scores</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>Out[<span class="dv">114</span>]: array([<span class="fl">0.7758</span>, <span class="fl">0.7982</span>, <span class="fl">0.7758</span>, <span class="fl">0.7883</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The default scoring metric is model dependent, but it is possible to choose an explicit scoring function. Cross-validated models take longer to train but can often yield better model performance.</p>
+</section>
+<section id="modeling-continuing" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="modeling-continuing"><span class="header-section-number">12.5</span> Conclusion</h2>
+<p>While I have only skimmed the surface of some Python modeling libraries, there are more and more frameworks for various kinds of statistics and machine learning either implemented in Python or with a Python user interface.</p>
+<p>This book is focused especially on data wrangling, but there are many others dedicated to modeling and data science tools. Some excellent ones are:</p>
+<ul>
+<li><p><em>Introduction to Machine Learning with Python</em> by Andreas Müller and Sarah Guido (O'Reilly)</p></li>
+<li><p><em>Python Data Science Handbook</em> by Jake VanderPlas (O'Reilly)</p></li>
+<li><p><em>Data Science from Scratch: First Principles with Python</em> by Joel Grus (O'Reilly)</p></li>
+<li><p><em>Python Machine Learning</em> by Sebastian Raschka and Vahid Mirjalili (Packt Publishing)</p></li>
+<li><p><em>Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow</em> by Aurélien Géron (O'Reilly)</p></li>
+</ul>
+<p>While books can be valuable resources for learning, they can sometimes grow out of date when the underlying open source software changes. It's a good idea to be familiar with the documentation for the various statistics or machine learning frameworks to stay up to date on the latest features and API.</p>
+
+
+</section>
+
+<script async="" defer="" src="https://scripts.simpleanalyticscdn.com/latest.js"></script></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a class='pagination-link' href='/book/time-series'>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Time Series</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a class='pagination-link' href='/book/data-analysis-examples'>
+        <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Data Analysis Examples</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">Copyright 2023, Wes McKinney. All Rights Reserved.</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/wesmckinn">
+      <i class="bi bi-twitter" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+<script async="" src="https://media.ethicalads.io/media/client/ethicalads.min.js"></script>
+
+
+
+</body></html>

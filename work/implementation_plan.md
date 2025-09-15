@@ -174,16 +174,24 @@ Previous work completed 10-lecture sequence, but requirements specify 11 lecture
 4. **Assignment Structure**:
    - Separate assignment/ subdirectory per lecture
    - GitHub Classroom compatibility required
-   - Pytest-based automated testing framework
+   - Pytest-based automated testing framework following `work/example_assignment_with_github_actions/` structure:
+     * `.github/workflows/classroom.yml` for automated grading
+     * `.github/tests/` directory with test files that can be updated remotely
+     * Assignment content in dedicated files (not README.md - reserve for student use)
+     * Requirements.txt for dependencies
    - Progressive difficulty within each assignment (questions build on previous questions)
    - Practical competence-focused grading (can you use the tool?) rather than excellence-focused
    - Clear grading criteria and test cases
 
-5. **McKinney Integration**:
-   - Follow McKinney's Python content organization and progression
-   - Exclude capstone project work
-   - Use McKinney's pedagogical approach for Python concepts
-   - Reference McKinney chapters in lecture materials
+5. **Content Source Integration**:
+   - **Python Content**: McKinney (`work/mckinney_topics_summary.md`) is THE authoritative reference for all Python content organization and progression, exclude capstone project work
+   - **Non-Python Content**: Draw from multiple sources:
+     * Command line/shell: `work/tlcl_topics.md` (The Linux Command Line book)
+     * Development workflows: `work/missing_semester_topics.md`
+     * Existing lecture content: `lectures_bkp/` for established patterns
+     * Internet resources: As needed for current best practices
+   - Integrate content from these sources into cohesive lecture materials
+   - **Prerequisite Planning**: Follow dependency mapping in `work/prerequisites_mapping.md` to ensure no skill gaps in lecture sequence
 
 6. **Bonus Content Strategy ("DLC")**:
    - Move cut content from lectures_bkp to appropriate lecture bonus/ directories
