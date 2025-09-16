@@ -9,6 +9,7 @@ exams/09-second-exam-submissions/
 exams/problem/
 exams/09-second-exam-scores.tsv
 ._*
+.claude*/
 
 
 
@@ -24,7 +25,7 @@ exams/09-second-exam-scores.tsv
 
 
 # Claude Flow generated files
-.claude*/
+.claude/settings.local.json
 .mcp.json
 claude-flow.config.json
 .swarm/
@@ -47,4 +48,3 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
-.claude-flow/metrics/system-metrics.json
