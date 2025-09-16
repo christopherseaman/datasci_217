@@ -8,9 +8,9 @@ By the end of today, you'll understand when and how to use Jupyter for explorato
 
 Don't worry - pandas makes data science decisions much clearer!
 
-#FIXME: IMAGE - diagram1.svg (Data flow diagram - Show data processing workflow)
+![Data Processing Workflow](media/diagram1.svg)
 
-#FIXME: IMAGE - diagram2.svg (Data flow diagram - Show data cleaning and transformation process)
+![Data Cleaning and Transformation](media/diagram2.svg)
 
 When to Use Jupyter vs Scripts
 

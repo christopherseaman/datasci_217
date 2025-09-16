@@ -1,4 +1,4 @@
-Python Data Structures and File Operations
+# Python Data Structures and File Operations
 
 Welcome to week 3! Now that you've mastered the basics of Python and Git, it's time to learn Python's powerful built-in data structures and how to work with files. These are the fundamental building blocks of data science.
 
@@ -8,9 +8,9 @@ By the end of today, you'll know how to organize data using lists and dictionari
 
 Python's data structures really are that elegant and powerful!
 
-Why Data Structures Matter
+# Why Data Structures Matter
 
-The Problem with Basic Variables
+## The Problem with Basic Variables
 
 Imagine tracking student grades with individual variables:
 ```python
@@ -30,7 +30,7 @@ student_2_name = "Bob"
 ... this gets unwieldy fast!
 ```
 
-The Data Structure Solution
+## The Data Structure Solution
 
 Python's built-in data structures let you organize related data efficiently:
 
@@ -39,13 +39,13 @@ Python's built-in data structures let you organize related data efficiently:
 
 Combined, they can represent complex, real-world data structures that scale to thousands of records.
 
-Essential Data Structures
+# Essential Data Structures
 
-Lists - Ordered Collections
+## Lists - Ordered Collections
 
 Lists store multiple items in a specific order. Think of them as "smart arrays" with powerful built-in methods.
 
-Creating and Accessing Lists
+### Creating and Accessing Lists
 
 **Reference:**
 ```python
@@ -63,7 +63,7 @@ first_two = grades[0:2]      # [85, 92]
 last_two = grades[-2:]       # [78, 95]
 ```
 
-Essential List Methods
+### Essential List Methods
 
 **Reference:**
 ```python
@@ -98,11 +98,11 @@ print(f"Total assignments: {len(assignments)}")
 print(f"Next assignment: {assignments[len(assignments)//2]}")
 ```
 
-Dictionaries - Key-Value Relationships
+## Dictionaries - Key-Value Relationships
 
 Dictionaries store data as key-value pairs. Perfect for representing real-world entities with named properties.
 
-Creating and Accessing Dictionaries
+### Creating and Accessing Dictionaries
 
 **Reference:**
 ```python
@@ -120,7 +120,7 @@ student["grade"] = 90                    # Update existing
 student["year"] = "Graduate"             # Add new key-value pair
 ```
 
-Essential Dictionary Methods
+### Essential Dictionary Methods
 
 **Reference:**
 ```python
@@ -138,7 +138,7 @@ removed_grade = student.pop("grade")     # Remove and return value: 90
 student.pop("phone", "Not found")       # Remove with default if key missing
 ```
 
-Dictionary Iteration Patterns
+### Dictionary Iteration Patterns
 
 **Reference:**
 ```python
@@ -168,7 +168,7 @@ if "alice" in students:
     print(f"Alice's grade: {students['alice']['grade']}")
 ```
 
-Sets and Tuples - Quick Overview
+## Sets and Tuples - Quick Overview
 
 **Sets** - Unordered collections of unique items:
 ```python
@@ -188,13 +188,13 @@ x, y = coordinates                       # Unpack values
 LIVE DEMO!
 *Working with nested data structures: lists of dictionaries representing a class roster*
 
-File Operations
+# File Operations
 
-Why File I/O Matters for Data Science
+## Why File I/O Matters for Data Science
 
 Data rarely exists only in your Python script. You'll constantly read data from files (CSV, JSON, text) and write results back to files. File operations are fundamental to any data pipeline.
 
-Opening and Closing Files
+### Opening and Closing Files
 
 **Reference:**
 ```python
@@ -215,7 +215,7 @@ File automatically closed when leaving 'with' block
 - `"a"` - Append to end of file
 - `"r+"` - Read and write
 
-Reading Files
+### Reading Files
 
 **Reference:**
 ```python

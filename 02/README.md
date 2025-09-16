@@ -146,9 +146,9 @@ Local location: Choose a folder you'll remember (Desktop, Documents, etc.)
 LIVE DEMO!
 *Creating repository on GitHub and cloning to VS Code*
 
-#FIXME: IMAGE - git_branches.png (Git branch visualization - Show how branches work as parallel timelines)
+![Git Branch Visualization](media/git_branches.png)
 
-#FIXME: IMAGE - python_import.webp (Python import example - Demonstrate Python import functionality)
+![Python Import Example](media/python_import.webp)
 
 Basic Git Workflow in VS Code
 
@@ -475,5 +475,7 @@ Remember: This workflow becomes automatic with practice. Professional data scien
 
 **Looking Ahead:**
 Next week we'll expand on these foundations by learning Python functions and data structures. You'll discover how to organize code effectively and process data using Python's built-in capabilities. The Git skills you've learned today will become second nature as you start making regular commits to track your progress through increasingly complex programming challenges.
+
+![xkcd Git Comic](media/xkcd_git.png)
 
 ![xkcd 1296: Git Commit](media/xkcd_1296.png)

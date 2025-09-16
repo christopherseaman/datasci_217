@@ -8,9 +8,9 @@ By the end of today, you'll know how to set up isolated Python environments for 
 
 Don't worry - we'll keep your environment manageable with best practices!
 
-#FIXME: IMAGE - screen.png (Screen command example - Show screen interface for remote session management)
+![Screen Command Interface](media/screen.png)
 
-#FIXME: IMAGE - tmux.png (Tmux interface - Show tmux status bar and session management)
+![Tmux Interface](media/tmux.png)
 
 Why Package Management Matters
 

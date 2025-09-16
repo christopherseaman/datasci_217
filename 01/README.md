@@ -2,6 +2,89 @@ Python and Command Line Foundations
 
 Welcome to your journey into data science! Today we're building the foundation you'll use every single day as a data scientist: basic Python programming and command line navigation. Think of this as learning to walk before we run.
 
+## Class Structure
+
+- **Lectures** cover new material with hands-on demos
+- **Lectures end** with a practical assignment
+- **Lab** for help completing the practical assignment
+- **Assignments** are always due the following week unless otherwise noted
+
+# Getting Started: Your First Steps
+
+Before we dive into the technical content, let's make sure you have everything you need to succeed. This section covers the essential setup that every data scientist needs.
+
+## Getting to the Command Line
+
+The command line is your direct conversation with your computer. Here's how to access it on different systems:
+
+**Windows Users:**
+- **PowerShell** (built-in): Press `Win + X`, then select "Windows PowerShell"
+- **Windows Subsystem for Linux (WSL)** (recommended): Run `wsl --install` in PowerShell as Administrator
+- **GitHub Codespaces** (cloud option): No installation needed
+
+**Mac Users:**
+- **Terminal** (built-in): Press `Cmd + Space`, type "Terminal", press Enter
+- **GitHub Codespaces** (cloud option): No installation needed
+
+**Cloud Options:**
+- **GitHub Codespaces**: Free tier available, works on any device with internet
+
+## Installing Python
+
+Python is the language of data science. Here's how to get it on your system:
+
+**Windows:**
+```bash
+# Option 1: Official installer from python.org
+# Download Python 3.12+ from https://python.org
+
+# Option 2: Using winget (Windows Package Manager)
+winget install -e --id Python.Python.3.12
+```
+
+**Mac:**
+```bash
+# Option 1: Official installer from python.org
+# Download Python 3.12+ from https://python.org
+
+# Option 2: Using Homebrew (recommended)
+# First install Homebrew from https://brew.sh
+brew install python3
+```
+
+**WSL Ubuntu:**
+```bash
+sudo apt update
+sudo apt install python3 python3-pip
+```
+
+**Verify Installation:**
+```bash
+python3 --version
+# Should show: Python 3.12.x (or similar)
+```
+
+## Text Editor Options
+
+You'll need a good text editor to write Python code. Here are your options:
+
+**Visual Studio Code (Recommended):**
+- Free, powerful, and perfect for data science
+- Available on all platforms
+- Built-in Python support
+- Can open files from command line with `code filename.py`
+
+**Other Options:**
+- **Sublime Text**: Fast and lightweight
+- **PyCharm**: Full-featured Python IDE
+- **nano**: Simple command-line editor for quick fixes
+
+## Why VS Code?
+
+![IDE Choice Guidance](media/IDE_choice.png)
+
+VS Code strikes the perfect balance between simplicity and power. It's what most professional data scientists use, and it's what we'll use in this course.
+
 # Why Both Python and Command Line?
 
 You might wonder: "Why do I need to learn two things at once?" Here's the reality - professional data scientists constantly switch between Python scripts and command line operations. You'll write Python to analyze data, then use command line to organize files, run scripts, and manage projects.
@@ -122,9 +205,17 @@ tail -n 5 results.txt   # See the last few results
 
 Your best friends when you're stuck!
 
-# Why VS Code?
+## Make it Stop!
 
-![IDE Choice Guidance](media/IDE_choice.png)
+Sometimes you need to stop what you're doing:
+
+**Command Line:**
+- `Control-c` - Cancel the current command
+- `exit` - Close the terminal
+
+**Python:**
+- `Control-c` - Cancel the current operation
+- `exit()` - Quit interactive Python
 
 # Python Basics
 
@@ -142,6 +233,49 @@ python                  # Start interactive Python
 python script.py        # Run a Python script
 exit()                 # Quit interactive Python
 ```
+
+**Interactive Mode Example:**
+```python
+$ python
+>>> print("Hello, World!")
+Hello, World!
+>>> exit()
+```
+
+**Script Mode Example:**
+```bash
+$ python my_script.py
+```
+
+## Python Syntax Overview
+
+Python has some unique syntax rules that are essential to understand:
+
+**Indentation Matters!**
+Python uses indentation (spaces or tabs) to group code together. This is different from most programming languages:
+
+```python
+# Correct indentation
+if x > 0:
+    print("Positive")    # This line is indented
+    print("Still positive")  # This line is also indented
+
+# Wrong indentation (will cause an error)
+if x > 0:
+print("This will cause an IndentationError")
+```
+
+**Comments Use `#`**
+```python
+# This is a comment - Python ignores this line
+print("This is code")  # Comments can also go at the end of lines
+```
+
+**Key Syntax Rules:**
+- Use 4 spaces for indentation (not tabs)
+- No semicolons needed at the end of lines
+- Case-sensitive: `Name` and `name` are different variables
+- Use quotes for strings: `"Hello"` or `'Hello'`
 
 ## Variables and Data Types
 
@@ -222,26 +356,108 @@ print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 
 **Reference:**
 ```python
-Math
+# Math operations
 result = 10 + 5         # Addition: 15
 result = 10 - 3         # Subtraction: 7  
 result = 4 * 6          # Multiplication: 24
 result = 15 / 4         # Division: 3.75
 result = 15 // 4        # Integer division: 3
 result = 15 % 4         # Remainder: 3
+result = 2 ** 3         # Power: 8
 
-String operations
+# String operations
 full_name = first + " " + last        # Concatenation
 message = f"Hello {name}!"            # f-string formatting (preferred)
 ```
 
 **Brief Example:**
 ```python
-Calculate BMI
+# Calculate BMI
 weight_kg = 70
 height_m = 1.75
 bmi = weight_kg / (height_m ** 2)
 print(f"BMI is {bmi:.1f}")
+```
+
+## Control Structures
+
+Control structures let your programs make decisions and repeat actions - essential for data analysis!
+
+### Comparison Operators
+
+**Reference:**
+```python
+# Equality and inequality
+x == y          # Equal to
+x != y          # Not equal to
+x < y           # Less than
+x > y           # Greater than
+x <= y          # Less than or equal
+x >= y          # Greater than or equal
+
+# Membership testing
+x in [1, 2, 3]  # Is x in the list?
+x not in [1, 2, 3]  # Is x NOT in the list?
+```
+
+### If Statements
+
+**Basic If Statements:**
+```python
+# Simple decision making
+score = 85
+
+if score >= 90:
+    print("Grade: A")
+elif score >= 80:
+    print("Grade: B")
+elif score >= 70:
+    print("Grade: C")
+else:
+    print("Grade: F")
+```
+
+**Compound Conditions:**
+```python
+# Multiple conditions with and/or
+age = 25
+has_license = True
+
+if age >= 18 and has_license:
+    print("Can drive")
+elif age >= 16 and not has_license:
+    print("Can learn to drive")
+else:
+    print("Cannot drive")
+```
+
+### For Loops
+
+**Basic For Loops:**
+```python
+# Count from 0 to 4
+for i in range(5):
+    print(f"Count: {i}")
+
+# Loop through a list
+grades = [85, 92, 78, 96, 88]
+for grade in grades:
+    print(f"Grade: {grade}")
+```
+
+**Practical Data Science Example:**
+```python
+# Calculate average grade
+grades = [85, 92, 78, 96, 88]
+total = 0
+count = 0
+
+for grade in grades:
+    total += grade
+    count += 1
+
+average = total / count
+print(f"Average grade: {average:.1f}")
 ```
 
 LIVE DEMO!
@@ -387,18 +603,16 @@ print(f"Result: {result}")
 - **Test with small examples first** - don't write 50 lines then run
 - **One step at a time** - add complexity gradually
 
-# Putting It All Together
+# Simple Workflow Example
 
-Let's see how command line and Python work together in real data science workflows:
+Let's see how command line and Python work together in a basic data science workflow:
 
-**Workflow 1: Quick Data Calculation**
+**Basic Data Calculation Workflow:**
 ```bash
 # Command line: Set up workspace
 mkdir data_analysis
 cd data_analysis
 touch calculate_stats.py
-
-# Then edit calculate_stats.py with your favorite text editor
 ```
 
 ```python
@@ -428,152 +642,12 @@ Average daily sales: $1,500.00
 Best day: $1750
 ```
 
-**Workflow 2: Data File Analysis**
-```bash
-# Command line: Organize data files
-mkdir customer_analysis
-cd customer_analysis
-mkdir data results
-touch data/customers.txt results/summary.txt
-touch analyze_customers.py
-```
-
-```python
-# Python: analyze_customers.py
-# Reading and processing data files
-import os
-
-# Sample customer data simulation
-customer_data = """Alice,25,Engineer,75000
-Bob,32,Teacher,45000
-Carol,28,Designer,55000
-David,45,Manager,85000"""
-
-# Write sample data to file
-with open('data/customers.txt', 'w') as f:
-    f.write(customer_data)
-
-# Read and analyze the data
-customers = []
-total_salary = 0
-total_age = 0
-
-with open('data/customers.txt', 'r') as f:
-    for line in f:
-        name, age, job, salary = line.strip().split(',')
-        customers.append({
-            'name': name,
-            'age': int(age),
-            'job': job,
-            'salary': int(salary)
-        })
-        total_salary += int(salary)
-        total_age += int(age)
-
-# Calculate summary statistics
-num_customers = len(customers)
-avg_salary = total_salary / num_customers
-avg_age = total_age / num_customers
-
-# Generate report
-report = f"""Customer Analysis Report
-========================
-Total customers: {num_customers}
-Average age: {avg_age:.1f} years
-Average salary: ${avg_salary:,.2f}
-
-Detailed breakdown:"""
-
-for customer in customers:
-    report += f"""
-{customer['name']}: {customer['age']} years old, {customer['job']}, ${customer['salary']:,}"""
-
-# Write report to file
-with open('results/summary.txt', 'w') as f:
-    f.write(report)
-
-print("Analysis complete! Results saved to results/summary.txt")
-print(f"Processed {num_customers} customers")
-```
-
-```bash
-# Command line: Run analysis and view results
-python analyze_customers.py
-cat results/summary.txt
-```
-
-**Workflow 3: Iterative Development (How Real Data Science Works)**
-```bash
-# Step 1: Start small
-touch test_calculation.py
-```
-
-```python
-# test_calculation.py - Start with simple test
-test_data = [10, 20, 30]
-print(f"Sum: {sum(test_data)}")
-print(f"Average: {sum(test_data)/len(test_data)}")
-```
-
-```bash
-# Step 2: Test your logic
-python test_calculation.py
-```
-
-```bash
-# Step 3: Expand to real problem
-cp test_calculation.py sales_analysis.py
-# Edit sales_analysis.py to add more features
-```
-
-```python
-# sales_analysis.py - Enhanced version
-monthly_sales = [12000, 15000, 18000, 11000, 16500, 17500, 14000, 19000, 16000, 18500, 20000, 22000]
-
-# Basic statistics
-total = sum(monthly_sales)
-average = total / len(monthly_sales)
-highest = max(monthly_sales)
-lowest = min(monthly_sales)
-
-# Data science insights
-growth = monthly_sales[-1] - monthly_sales[0]  # Last month - first month
-growth_rate = (growth / monthly_sales[0]) * 100
-
-print(f"Annual Sales Analysis")
-print(f"====================")
-print(f"Total sales: ${total:,}")
-print(f"Monthly average: ${average:,.2f}")
-print(f"Best month: ${highest:,}")
-print(f"Worst month: ${lowest:,}")
-print(f"Annual growth: ${growth:,} ({growth_rate:.1f}%)")
-
-# Month-by-month breakdown
-print(f"\\nMonthly breakdown:")
-months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-for month, sales in zip(months, monthly_sales):
-    print(f"{month}: ${sales:,}")
-```
-
-```bash
-# Step 4: Run enhanced analysis
-python sales_analysis.py
-
-# Step 5: Save results for later
-python sales_analysis.py > monthly_report.txt
-head monthly_report.txt
-```
-
 **Key Workflow Principles:**
 1. **Start small** - test logic with simple data first
 2. **Build incrementally** - add complexity step by step
 3. **Test frequently** - run your code after every few changes
 4. **Save your work** - use meaningful file names and organize results
 5. **Document as you go** - use print statements to explain what's happening
-
-This iterative approach is exactly how professional data scientists work!
 
 # Key Takeaways
 
@@ -606,6 +680,37 @@ These might seem like simple tools, but they're the foundation everything else b
 Real data scientists spend 80% of their time doing exactly these things: organizing files, reading data, cleaning it up, and generating clear reports. The fancy algorithms are just 20% of the work!
 
 Next week: We'll learn how to save and share our work with Git and GitHub!
+
+# Practical Exercise
+
+Now let's put everything together with a hands-on exercise that combines command line skills and Python programming.
+
+## Exercise 1: Setup and Hello World
+
+1. **Get everything installed** (or use the cloud) and play around a bit
+2. **Create an account on GitHub**
+   - Apply for [GitHub Education](https://docs.github.com/en/education/explore-the-benefits-of-teaching-and-learning-with-github-education/github-education-for-students/apply-to-github-education-as-a-student)
+   - [Join the course and see next week's assignment](https://classroom.github.com/a/Z2sWwnXF)
+
+3. **Create a Python script that prints "Hello, Data Science!"**
+   - Save it as `hello_ds.py`
+   - Run it from the command line
+   - Use command line to create a `scripts` folder and move your file into it
+
+## Exercise 2: Mathematical Problem Solving
+
+Write a Python script to solve the following problem:
+
+> If we list all the natural numbers below 10 that are multiples of 3 or 5, we get (3, 5, 6, 9). The sum of these multiples is 23. Find the sum of all the multiples of 3 or 5 below 1000.
+
+**Hint:** Use a for loop and if statements to check each number!
+
+## Exercise 3: Email Submission
+
+Email me:
+1. **GitHub username**
+2. **Answer to the problem above + script you wrote to solve it**
+3. **Brief introduction** (who are you, why are you here, anything you're specifically hoping to get out of the course)
 
 # Comprehensive Practice Challenge
 
@@ -682,3 +787,29 @@ Remember: Every data scientist started exactly where you are now. The difference
 
 **What's Next:**
 Next week we'll build on these foundations by learning Git and GitHub - the tools that let data scientists collaborate, save versions of their work, and share their findings with the world. Everything you've learned today will make that much easier!
+
+# Additional Resources
+
+## Command Line Resources
+- [LinuxCommand.org](http://linuxcommand.org/lc3_learning_the_shell.php) - Excellent beginner tutorial
+- [The Linux Command Line book](http://linuxcommand.org/tlcl.php) - Free online book
+- [The Missing Semester](https://missing.csail.mit.edu/) - MIT's course on essential tools
+
+## Python Resources
+- [Official Python documentation](https://docs.python.org/3/) - The definitive reference
+- [Whirlwind Tour of Python](https://jakevdp.github.io/WhirlwindTourOfPython/) - Quick overview by Jake VanderPlas
+- [Think Python](https://greenteapress.com/wp/think-python/) - Free book by Allen Downey
+- [Hitchhiker's Guide to Python!](https://docs.python-guide.org/) - Best practices and conventions
+- [Codecademy Python course](https://www.codecademy.com/learn/learn-python-3) - Interactive learning
+
+## Getting Help
+- **RTFM**: `man COMMAND` - Read the manual for any command
+- **Ask the computer**: `COMMAND --help` - Quick help for any command
+- **Ask a bigger computer**: Claude, ChatGPT, or Stack Overflow
+- **Come to lab!** - We're here to help
+
+## Wrap-up
+
+- We've covered Python basics and essential command line operations
+- Assignment: Practice these concepts with provided exercises
+- Next lecture: Version control with Git, shell scripting and more Python

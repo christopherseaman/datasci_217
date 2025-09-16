@@ -8,7 +8,7 @@ By the end of today, you'll know how to handle messy real-world data and create 
 
 That's actually pretty accurate - but we'll make the cleaning part less painful!
 
-#FIXME: IMAGE - nixcraft.png (Visualization philosophy - "Good visualization is about effective communication, not just pretty pictures")
+![Visualization Philosophy](media/nixcraft.png)
 
 Why Data Cleaning Matters
 
@@ -372,11 +372,11 @@ plt.tight_layout()
 plt.show()
 ```
 
-#FIXME: IMAGE - Nightingale-mortality.jpg (Historical visualization - Florence Nightingale's polar area diagram showing causes of death in Crimean War)
+![Florence Nightingale's Mortality Chart](media/Nightingale-mortality.jpg)
 
-#FIXME: IMAGE - napoleon.webp (Historical visualization - Napoleon's march showing army size, temperature, geography, and time)
+![Napoleon's March Visualization](media/napoleon.webp)
 
-#FIXME: IMAGE - jhu-covid.png (Modern visualization - Johns Hopkins COVID-19 dashboard showing effective use of maps and time series)
+![Johns Hopkins COVID-19 Dashboard](media/jhu-covid.png)
 
 Introduction to matplotlib
 
