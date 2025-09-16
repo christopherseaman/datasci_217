@@ -7,6 +7,14 @@
 section {
   font-family: "EB Garamond", "Times New Roman", serif !important;
 }
+
+/* Apply EB Garamond to body and content areas */
+body, .content {
+  font-family: "EB Garamond", "Times New Roman", serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 code {
    font-family: "Fira Mono", ui-monospace, SFMono-Regular, "SF Mono", monospace
 }
