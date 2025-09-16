@@ -11,22 +11,22 @@ const navConfig = {
         {
             title: "Foundational Track",
             links: [
-                { file: "01/index", label: "1: Command Line + Python" },
-                { file: "02/index", label: "2: Python + Git" },
-                { file: "03/index", label: "3: Data Structures" },
-                { file: "04/index", label: "4: NumPy" },
-                { file: "05/index", label: "5: Pandas" }
+                { file: "01", label: "1: Command Line + Python" },
+                { file: "02", label: "2: Python + Git" },
+                { file: "03", label: "3: Data Structures" },
+                { file: "04", label: "4: NumPy" },
+                { file: "05", label: "5: Pandas" }
             ]
         },
         {
             title: "Extended Track",
             links: [
-                { file: "06/index", label: "6: Data Loading" },
-                { file: "07/index", label: "7: Data Cleaning" },
-                { file: "08/index", label: "8: Data Wrangling" },
-                { file: "09/index", label: "9: Visualization" },
-                { file: "10/index", label: "10: Aggregation" },
-                { file: "11/index", label: "11: Time Series" }
+                { file: "06", label: "6: Data Loading" },
+                { file: "07", label: "7: Data Cleaning" },
+                { file: "08", label: "8: Data Wrangling" },
+                { file: "09", label: "9: Visualization" },
+                { file: "10", label: "10: Aggregation" },
+                { file: "11", label: "11: Time Series" }
             ]
         },
         {
@@ -41,16 +41,16 @@ const navConfig = {
     ],
     pageTitles: {
         'README': 'Course Overview',
-        '01/index': '1: Command Line + Python',
-        '02/index': '2: Python + Git',
-        '03/index': '3: Data Structures',
-        '04/index': '4: NumPy',
-        '05/index': '5: Pandas',
-        '06/index': '6: Data Loading',
-        '07/index': '7: Data Cleaning',
-        '08/index': '8: Data Wrangling',
-        '09/index': '9: Visualization',
-        '10/index': '10: Aggregation',
-        '11/index': '11: Time Series'
+        '01': '1: Command Line + Python',
+        '02': '2: Python + Git',
+        '03': '3: Data Structures',
+        '04': '4: NumPy',
+        '05': '5: Pandas',
+        '06': '6: Data Loading',
+        '07': '7: Data Cleaning',
+        '08': '8: Data Wrangling',
+        '09': '9: Visualization',
+        '10': '10: Aggregation',
+        '11': '11: Time Series'
     }
 };
