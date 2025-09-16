@@ -4,9 +4,13 @@ Welcome to week 5! Today we're diving into Python's powerful ecosystem of librar
 
 By the end of today, you'll know how to set up isolated Python environments for different projects and perform efficient numerical computations with NumPy arrays.
 
-*[xkcd 1987: "Python Environment" - Shows a person saying "My Python environment has become so complex that I keep a docker container just to update my package manager to install a new version of a program to manage my Python versions to install libraries."]*
+![xkcd 1987: Python Environment](media/xkcd_1987.png)
 
 Don't worry - we'll keep your environment manageable with best practices!
+
+#FIXME: IMAGE - screen.png (Screen command example - Show screen interface for remote session management)
+
+#FIXME: IMAGE - tmux.png (Tmux interface - Show tmux status bar and session management)
 
 Why Package Management Matters
 
@@ -227,6 +231,8 @@ random_arr = np.random.rand(3, 4)      # 3x4 array of random numbers [0,1)
 random_int = np.random.randint(1, 11, 10)  # 10 random integers [1,10]
 ```
 
+![NumPy Array Cheatsheet](media/nparray_cheatsheet.png)
+
 Array Attributes
 
 **Reference:**
@@ -347,6 +353,8 @@ Operations with scalars (broadcasting)
 scaled = arr1 * 10            # [10 20 30 40]
 shifted = arr1 + 5            # [6 7 8 9]
 ```
+
+![NumPy Broadcasting Diagram](media/broadcasting.png)
 
 Statistical Functions
 

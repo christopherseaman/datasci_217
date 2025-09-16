@@ -4,7 +4,7 @@ Welcome to week 3! Now that you've mastered the basics of Python and Git, it's t
 
 By the end of today, you'll know how to organize data using lists and dictionaries, manipulate text files, and handle CSV data - the core skills for any data analysis project.
 
-*[xkcd 353: "Python" - "I wrote 20 short programs in Python yesterday. It was wonderful. Perl, I'm leaving you." Shows a person floating away with "import antigravity"]*
+![xkcd 353: Python](media/xkcd_353.png)
 
 Python's data structures really are that elegant and powerful!
 

@@ -4,9 +4,11 @@ Welcome to week 7! Now that you're comfortable with pandas DataFrames, it's time
 
 By the end of today, you'll know how to handle messy real-world data and create clear, informative plots that tell compelling stories.
 
-*[xkcd 2054: "Data Quality" - Shows a person looking at messy data saying "I spent 80% of my time cleaning the data and 20% complaining about how messy it was."]*
+![xkcd 2054: Data Quality](media/xkcd_2054.png)
 
 That's actually pretty accurate - but we'll make the cleaning part less painful!
+
+#FIXME: IMAGE - nixcraft.png (Visualization philosophy - "Good visualization is about effective communication, not just pretty pictures")
 
 Why Data Cleaning Matters
 
@@ -370,6 +372,12 @@ plt.tight_layout()
 plt.show()
 ```
 
+#FIXME: IMAGE - Nightingale-mortality.jpg (Historical visualization - Florence Nightingale's polar area diagram showing causes of death in Crimean War)
+
+#FIXME: IMAGE - napoleon.webp (Historical visualization - Napoleon's march showing army size, temperature, geography, and time)
+
+#FIXME: IMAGE - jhu-covid.png (Modern visualization - Johns Hopkins COVID-19 dashboard showing effective use of maps and time series)
+
 Introduction to matplotlib
 
 For more control over your plots, use matplotlib directly.
@@ -474,6 +482,30 @@ axes[1,1].set_title('Dataset Summary')
 plt.tight_layout()
 plt.show()
 ```
+
+#FIXME: IMAGE - 3d-junk.jpg (Bad visualization example - 3D chart that distorts perception and adds no information)
+
+#FIXME: IMAGE - animal-junk.jpg (Bad visualization example - Pictures distract from data, inconsistent scale)
+
+#FIXME: IMAGE - line-ink.png (Good visualization example - Clean, clear design with essential grid lines only)
+
+#FIXME: IMAGE - greenhouse-junk.webp (Bad visualization example - 3D obscures trends, colors fight for attention)
+
+#FIXME: IMAGE - greenhouse-ink.webp (Good visualization example - Flat design shows trends, colors support message)
+
+#FIXME: IMAGE - complicated-ink.png (Good visualization example - Complex but clear, each element has purpose)
+
+#FIXME: IMAGE - minimal-boxplot.png (Good visualization example - Shows distribution clearly with minimal decoration)
+
+#FIXME: IMAGE - bookdown.png (Bad visualization example - Unclear axis labels, poor color choices, missing title)
+
+#FIXME: IMAGE - car_crime.jpeg (Bad visualization example - Misleading scale, poor color contrast, confusing layout)
+
+#FIXME: IMAGE - social_media.png (Bad visualization example - Circular layout hard to read, colors don't add meaning)
+
+#FIXME: IMAGE - gold.jpg (Bad visualization example - Misleading perspective, scale distortion, unnecessary decoration)
+
+#FIXME: IMAGE - mermaid.png (Good visualization example - Clear decision points, logical flow shown)
 
 LIVE DEMO!
 *Creating a complete data cleaning and visualization workflow: load messy data, clean systematically, create informative plots*

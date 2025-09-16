@@ -4,7 +4,7 @@ Welcome to week 10! You've mastered data analysis and automation, and now it's t
 
 By the end of today, you'll create visualizations that clearly communicate insights to stakeholders and build complete analytical reports that combine code, analysis, and professional presentation.
 
-*[xkcd 552: "Correlation" - Shows two graphs with the caption "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."]*
+![xkcd 552: Correlation](media/xkcd_552.png)
 
 Today we'll make sure your visualizations tell the right story - clearly and convincingly!
 

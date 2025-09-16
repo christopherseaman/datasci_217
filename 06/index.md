@@ -4,9 +4,13 @@ Welcome to week 6! Today marks a major transition - we're introducing Jupyter no
 
 By the end of today, you'll understand when and how to use Jupyter for exploratory analysis and perform efficient data manipulation with pandas DataFrames.
 
-*[xkcd 2083: "Data Pipeline" - Shows a complex data processing pipeline with the caption "Look, I'm not saying the data is definitely wrong, but have you considered that maybe the entire field of data science is just an elaborate excuse to avoid having to make decisions?"]*
+![xkcd 2083: Data Pipeline](media/xkcd_2083.png)
 
 Don't worry - pandas makes data science decisions much clearer!
+
+#FIXME: IMAGE - diagram1.svg (Data flow diagram - Show data processing workflow)
+
+#FIXME: IMAGE - diagram2.svg (Data flow diagram - Show data cleaning and transformation process)
 
 When to Use Jupyter vs Scripts
 

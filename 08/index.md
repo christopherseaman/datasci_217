@@ -4,7 +4,7 @@ Welcome to week 8! Now that you have solid foundations in data manipulation and 
 
 By the end of today, you'll have a toolkit for approaching any data analysis problem methodically and debugging issues that inevitably arise in real-world data work.
 
-*[xkcd 1845: "Data" - Shows a frustrated person at a computer with the caption "I've been staring at this data for 20 minutes and I still don't understand why customer satisfaction is negatively correlated with how much we charge them."]*
+![xkcd 1845: Data](media/xkcd_1845.png)
 
 Don't worry - systematic analysis techniques make data insights much clearer!
 

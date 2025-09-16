@@ -4,7 +4,7 @@ Welcome to week 4! Today we're combining two powerful skillsets: command line te
 
 By the end of today, you'll be able to perform rapid data exploration in the terminal and write clean, modular Python code that you can use across multiple projects.
 
-*[xkcd 1205: "Is It Worth the Time?" - Shows a table of how much time you can spend on making a routine task more efficient before you're spending more time than you save.]*
+![xkcd 1205: Is It Worth the Time?](media/xkcd_1205.png)
 
 Don't worry - these command line skills save time almost immediately!
 
