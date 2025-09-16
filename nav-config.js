@@ -33,7 +33,7 @@ const navConfig = {
             title: "Resources",
             links: [
                 { file: "https://github.com/christopherseaman/datasci_217", label: "GitHub Repository", external: true },
-                { file: "https://wesmckinney.com/book/", label: "McKinney Book", external: true },
+                { file: "https://wesmckinney.com/book/", label: "Python for Data Analysis", external: true },
                 { file: "https://missing.csail.mit.edu/", label: "The Missing Semester", external: true },
                 { file: "http://linuxcommand.org/tlcl.php", label: "The Linux Command Line", external: true }
             ]
