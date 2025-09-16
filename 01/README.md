@@ -18,8 +18,11 @@ Before we dive into the technical content, let's make sure you have everything y
 The command line is your direct conversation with your computer. Here's how to access it on different systems:
 
 **Windows Users:**
-- **PowerShell** (built-in): Press `Win + X`, then select "Windows PowerShell"
+WSL:
 - **Windows Subsystem for Linux (WSL)** (recommended): Run `wsl --install` in PowerShell as Administrator
+
+Native:
+- **PowerShell** (built-in): Press `Win + X`, then select "Windows PowerShell"
 - **GitHub Codespaces** (cloud option): No installation needed
 
 **Mac Users:**
@@ -33,7 +36,14 @@ The command line is your direct conversation with your computer. Here's how to a
 
 Python is the language of data science. Here's how to get it on your system:
 
-**Windows:**
+
+**Windows WSL (Ubuntu):**
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
+
+**Windows Native:**
 ```bash
 # Option 1: Official installer from python.org
 # Download Python 3.12+ from https://python.org
@@ -50,12 +60,6 @@ winget install -e --id Python.Python.3.12
 # Option 2: Using Homebrew (recommended)
 # First install Homebrew from https://brew.sh
 brew install python3
-```
-
-**WSL Ubuntu:**
-```bash
-sudo apt update
-sudo apt install python3 python3-pip
 ```
 
 **Verify Installation:**
