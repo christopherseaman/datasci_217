@@ -22,12 +22,9 @@ exams/09-second-exam-scores.tsv
 
 
 
+
 # Claude Flow generated files
-.claude*/
-.roo/
-.roomodes
-CLAUDE.md
-memory/
+.claude/settings.local.json
 .mcp.json
 claude-flow.config.json
 .swarm/
