@@ -59,7 +59,11 @@
                     if (link.external) {
                         linkEl.href = link.file;
                         linkEl.target = '_blank';
+                    } else if (link.file.endsWith('/')) {
+                        // Directory links go directly to the directory
+                        linkEl.href = link.file;
                     } else {
+                        // Other files use ?f= for dynamic loading
                         linkEl.href = `?f=${link.file}`;
                     }
                     

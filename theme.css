@@ -53,8 +53,6 @@ body {
   padding: 20px;
   background: white;
   min-height: 100vh;
-  width: calc(100% - 280px);
-  box-sizing: border-box;
 }
 .logo {
   font-size: 1.2em;
@@ -93,9 +91,6 @@ body {
 .content {
   max-width: 800px;
   margin: 0 auto;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
 }
 .content h1 { 
   color: #2c3e50; 
@@ -170,4 +165,47 @@ body {
   .nav-toggle {
     display: none;
   }
+}
+
+/* Lecture page styles - simple layout without navigation */
+.lecture-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.lecture-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #3498db;
+}
+
+.lecture-header h1 {
+  color: #2c3e50;
+  margin: 0 0 10px 0;
+}
+
+.lecture-header p {
+  color: #7f8c8d;
+  font-size: 1.2em;
+  margin: 0 0 20px 0;
+}
+
+.lecture-nav {
+  margin-top: 20px;
+}
+
+.lecture-nav a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.lecture-nav a:hover {
+  text-decoration: underline;
+}
+
+.lecture-content {
+  line-height: 1.6;
 }
