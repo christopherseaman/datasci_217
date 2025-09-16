@@ -4,7 +4,7 @@ Welcome to week 9! You've mastered data analysis fundamentals, and now it's time
 
 By the end of today, you'll build automated analysis pipelines that can process multiple datasets with a single command, and master advanced pandas techniques for combining and reshaping data.
 
-*[xkcd 1319: "Automation" - Shows a person deciding whether to automate a 5-minute task that occurs monthly, with elaborate decision trees and time calculations. The caption reads: "If you're spending more time calculating whether to automate something than automating it, you've probably made your decision."]*
+![xkcd 1319: Automation](media/xkcd_1319.png)
 
 Today you'll learn when and how to automate - and actually save time doing it!
 
@@ -18,6 +18,10 @@ Building Reusable Analysis Scripts
 - **Error handling** - Scripts should fail gracefully and give helpful messages
 - **Documentation** - Future you will thank present you
 - **Modularity** - Break complex tasks into smaller, reusable functions
+
+#FIXME: IMAGE - debug_start.png (VS Code debugging interface - Visual representation of debugging workflow and key UI elements)
+
+#FIXME: IMAGE - debug_vscode.png (Detailed debugging process - Inspect variables and call stack, learn interactive debugging techniques)
 
 Creating Professional Analysis Scripts
 

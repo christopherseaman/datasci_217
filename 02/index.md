@@ -4,7 +4,7 @@ Today we're learning the most important skill for collaborative data science: ve
 
 By the end of today, you'll know how to save your work, share it with others, and never lose progress again. Plus, you'll have a professional portfolio on GitHub!
 
-*[xkcd 1597: "Git" - "This is git. It tracks collaborative work on projects through a beautiful distributed graph theory tree model." "Cool. How do we use it?" "No idea. Just memorize these shell commands and try not to break anything."]*
+![xkcd 1597: Git](media/xkcd_1597.png)
 
 Don't worry - we're taking a different approach than that xkcd suggests!
 
@@ -81,6 +81,8 @@ Git configuration (one-time setup):
 - Email: alice.smith@ucsf.edu (use your actual UCSF email)
 ```
 
+![GitHub Email Setup](media/github_email.png)
+
 LIVE DEMO!
 *Setting up Git configuration and exploring VS Code's Git interface*
 
@@ -139,8 +141,14 @@ Clone URL: https://github.com/yourusername/datasci-practice.git
 Local location: Choose a folder you'll remember (Desktop, Documents, etc.)
 ```
 
+![Git Clone Demonstration](media/git_clone.png)
+
 LIVE DEMO!
 *Creating repository on GitHub and cloning to VS Code*
+
+#FIXME: IMAGE - git_branches.png (Git branch visualization - Show how branches work as parallel timelines)
+
+#FIXME: IMAGE - python_import.webp (Python import example - Demonstrate Python import functionality)
 
 Basic Git Workflow in VS Code
 
@@ -468,4 +476,4 @@ Remember: This workflow becomes automatic with practice. Professional data scien
 **Looking Ahead:**
 Next week we'll expand on these foundations by learning Python functions and data structures. You'll discover how to organize code effectively and process data using Python's built-in capabilities. The Git skills you've learned today will become second nature as you start making regular commits to track your progress through increasingly complex programming challenges.
 
-*[xkcd 1296: "Git Commit" - Shows a humorous flowchart of git commit decision-making]*
+![xkcd 1296: Git Commit](media/xkcd_1296.png)

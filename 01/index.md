@@ -8,7 +8,7 @@ You might wonder: "Why do I need to learn two things at once?" Here's the realit
 
 It's like being bilingual in the data world. Python speaks to your data, command line speaks to your computer.
 
-*[xkcd 353: "Python" - There's always a relevant XKCD!]*
+![xkcd 353: Python](media/xkcd_353.png)
 
 Command Line Essentials
 
@@ -17,6 +17,8 @@ What is the Command Line?
 The command line is your direct conversation with your computer. Instead of clicking icons, you type commands. Why? Because it's faster, more precise, and works exactly the same way on every computer.
 
 Think of it as texting your computer instead of playing charades with icons.
+
+![Unix System Reference](media/its-a-unix-system.jpeg)
 
 Navigation Commands
 
@@ -119,6 +121,10 @@ Getting Help
 - `which [command]` - Find where command is located
 
 Your best friends when you're stuck!
+
+## Why VS Code?
+
+![IDE Choice Guidance](media/IDE_choice.png)
 
 Python Basics
 
@@ -672,7 +678,7 @@ If you answered "yes" to all four, you're ready for next week!
 
 Remember: Every data scientist started exactly where you are now. The difference between a beginner and an expert isn't talent - it's practice and persistence!
 
-*[xkcd 1513: "Code Quality" - Perfect is the enemy of good enough!]*
+![xkcd 1513: Code Quality](media/xkcd_1513.png)
 
 **What's Next:**
 Next week we'll build on these foundations by learning Git and GitHub - the tools that let data scientists collaborate, save versions of their work, and share their findings with the world. Everything you've learned today will make that much easier!

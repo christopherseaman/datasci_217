@@ -4,9 +4,33 @@ Welcome to the final week of DataSci 217! You've built a comprehensive toolkit o
 
 By the end of today, you'll understand how to apply your skills in research contexts, create reproducible analysis workflows, and have a clear path for your data science career development.
 
-*[xkcd 435: "Purity" - Shows fields arranged by mathematical purity, from sociology at the bottom through psychology, biology, chemistry, physics, math, with the ultimate pure mathematicians looking down at everyone saying "Oh, that's nice" to physicists.]*
+#FIXME: IMAGE - the_infinity_stones.jpg (Career progression - Transition to lessons learned section, preview the progression of lessons)
+
+#FIXME: IMAGE - boutique_expert.jpg (Specialization concept - Pros and cons of over-specialization, job security vs limited career mobility)
+
+#FIXME: IMAGE - reinvent_the_wheel.png (Standards concept - Don't reinvent the wheel, embrace industry standards and community knowledge)
+
+#FIXME: IMAGE - pycap.jpeg (PyCap example - Built custom Python package, discovered PyCap existed all along)
+
+#FIXME: IMAGE - explaining_your_code.jpg (Documentation importance - Acknowledge valid reasons for custom solutions, emphasize documentation)
+
+#FIXME: IMAGE - is_it_worth_the_time_2x.png (Time investment chart - Break down the chart, share personal experiences with each timeframe)
+
+#FIXME: IMAGE - pass_the_salt.png (System evolution - Example of evolution from single-use script to flexible system)
+
+#FIXME: IMAGE - over_complicating_things.jpg (Simplicity principle - Start simple, grow smart, begin with core functionality)
+
+![xkcd 435: Purity](media/xkcd_435.png)
 
 Don't worry - as data scientists, we get to work with everyone and solve real problems!
+
+#FIXME: IMAGE - lava.png (LAVA interface - Walk through key elements of LAVA interface, point out unique aspects of the system)
+
+#FIXME: IMAGE - lava_query.png (LAVA query interface - Demonstrate query building interface, highlight limitations and strengths)
+
+#FIXME: IMAGE - redcap_vs_lava_meme.jpg (REDCap vs LAVA comparison - Introduce REDCap as contrast to LAVA, emphasize widespread adoption)
+
+#FIXME: IMAGE - redcap.png (REDCap interface - Walk through interface elements, show key features, point out common usage areas)
 
 Reproducible Research Principles
 
@@ -464,4 +488,4 @@ Remember: Great data scientists are made through consistent practice, continuous
 - Specialized materials for research contexts and team collaboration
 - Comprehensive career development guides and networking strategies
 
-*[xkcd 1513: "Code Quality" - Perfect is the enemy of good enough!]*
+![xkcd 1513: Code Quality](media/xkcd_1513.png)
