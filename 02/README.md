@@ -8,9 +8,9 @@ By the end of today, you'll know how to save your work, share it with others, an
 
 Don't worry - we're taking a different approach than that xkcd suggests!
 
-Why Version Control Matters
+# Why Version Control Matters
 
-The Problem Without Version Control
+## The Problem Without Version Control
 
 Picture this: You're working on a data analysis. You create these files:
 - `analysis_v1.py`
@@ -21,7 +21,7 @@ Picture this: You're working on a data analysis. You create these files:
 
 Sound familiar? Now imagine collaborating with teammates doing the same thing. Chaos!
 
-The Git Solution
+## The Git Solution
 
 Git tracks every change to every file in your project. You can:
 - See exactly what changed and when

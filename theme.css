@@ -10,3 +10,147 @@ section {
 code {
    font-family: "Fira Mono", ui-monospace, SFMono-Regular, "SF Mono", monospace
 }
+
+/* Course navigation styles */
+* { box-sizing: border-box; }
+body { 
+  line-height: 1.6; 
+  margin: 0; 
+  padding: 0;
+  background-color: #f8f9fa;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 280px;
+  background: #2c3e50;
+  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  position: fixed;
+  height: 100vh;
+  transition: transform 0.3s ease;
+}
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 20px;
+  background: white;
+  min-height: 100vh;
+}
+.logo {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #3498db;
+}
+.nav-section {
+  margin-bottom: 20px;
+}
+.nav-section h3 {
+  color: #3498db;
+  margin: 0 0 10px 0;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.nav-link {
+  display: block;
+  color: #ecf0f1;
+  text-decoration: none;
+  padding: 8px 12px;
+  margin: 2px 0;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.nav-link:hover {
+  background-color: #34495e;
+  color: white;
+}
+.nav-link.active {
+  background-color: #3498db;
+  color: white;
+}
+.content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.content h1 { 
+  color: #2c3e50; 
+  border-bottom: 3px solid #3498db;
+  padding-bottom: 10px;
+}
+.content h2 { color: #34495e; }
+.content h3 { color: #7f8c8d; }
+.content pre {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 15px;
+  overflow-x: auto;
+}
+.content code {
+  background: #f8f9fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+}
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+}
+.nav-toggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1001;
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+/* Responsive - hide sidebar on smaller screens for presentations */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 1000;
+  }
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  .nav-toggle {
+    display: block;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 10px;
+  }
+  .nav-toggle {
+    display: none;
+  }
+}

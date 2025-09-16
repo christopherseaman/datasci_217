@@ -2,7 +2,7 @@ Python and Command Line Foundations
 
 Welcome to your journey into data science! Today we're building the foundation you'll use every single day as a data scientist: basic Python programming and command line navigation. Think of this as learning to walk before we run.
 
-Why Both Python and Command Line?
+# Why Both Python and Command Line?
 
 You might wonder: "Why do I need to learn two things at once?" Here's the reality - professional data scientists constantly switch between Python scripts and command line operations. You'll write Python to analyze data, then use command line to organize files, run scripts, and manage projects.
 
@@ -10,9 +10,9 @@ It's like being bilingual in the data world. Python speaks to your data, command
 
 ![xkcd 353: Python](media/xkcd_353.png)
 
-Command Line Essentials
+# Command Line Essentials
 
-What is the Command Line?
+## What is the Command Line?
 
 The command line is your direct conversation with your computer. Instead of clicking icons, you type commands. Why? Because it's faster, more precise, and works exactly the same way on every computer.
 
@@ -20,7 +20,7 @@ Think of it as texting your computer instead of playing charades with icons.
 
 ![Unix System Reference](media/its-a-unix-system.jpeg)
 
-Navigation Commands
+## Navigation Commands
 
 **Reference:**
 - `pwd` - Print working directory (where am I?)  
@@ -41,7 +41,7 @@ pwd                    # Shows: /Users/yourname/Documents
 LIVE DEMO!
 *Navigation practice: We'll walk through your file system together*
 
-File and Directory Operations
+# File and Directory Operations
 
 **Reference:**
 - `mkdir [name]` - Make directory
@@ -98,7 +98,7 @@ touch analysis.py        # Create Python file
 mkdir data              # Create data subfolder
 ```
 
-Viewing Files
+# Viewing Files
 
 **Reference:**
 - `cat [filename]` - Show entire file contents
@@ -113,7 +113,7 @@ head data.csv           # Quick peek at data file
 tail -n 5 results.txt   # See the last few results
 ```
 
-Getting Help
+# Getting Help
 
 **Reference:**
 - `man [command]` - Manual page for command
@@ -122,13 +122,13 @@ Getting Help
 
 Your best friends when you're stuck!
 
-## Why VS Code?
+# Why VS Code?
 
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-Python Basics
+# Python Basics
 
-Running Python
+## Running Python
 
 You have three ways to run Python:
 
@@ -143,7 +143,7 @@ python script.py        # Run a Python script
 exit()                 # Quit interactive Python
 ```
 
-Variables and Data Types
+## Variables and Data Types
 
 Python stores information in variables - think of them as labeled boxes that you can put different types of information in.
 
@@ -218,7 +218,7 @@ mysterious_data = "22"       # Looks like a number, but it's text
 print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 ```
 
-Basic Operations
+## Basic Operations
 
 **Reference:**
 ```python
@@ -247,7 +247,7 @@ print(f"BMI is {bmi:.1f}")
 LIVE DEMO!
 *We'll create our first data science calculation together*
 
-Printing and Basic Input
+## Printing and Basic Input
 
 **Essential Output Formatting for Data Science:**
 
@@ -312,7 +312,7 @@ print(type(actual_number))                           # <class 'float'>
 **Why F-Strings Matter in Data Science:**
 F-strings let you create clear, readable output that tells the story of your data. Instead of printing raw numbers, you can provide context, explanations, and professional formatting that makes your analysis understandable to anyone.
 
-Debugging and Error Handling Basics
+# Debugging and Error Handling Basics
 
 **Reading Python Error Messages (Essential Skill!):**
 
@@ -387,7 +387,7 @@ print(f"Result: {result}")
 - **Test with small examples first** - don't write 50 lines then run
 - **One step at a time** - add complexity gradually
 
-Putting It All Together
+# Putting It All Together
 
 Let's see how command line and Python work together in real data science workflows:
 
@@ -575,7 +575,7 @@ head monthly_report.txt
 
 This iterative approach is exactly how professional data scientists work!
 
-Key Takeaways
+# Key Takeaways
 
 By the end of today's session, you should feel comfortable with:
 
@@ -607,7 +607,7 @@ Real data scientists spend 80% of their time doing exactly these things: organiz
 
 Next week: We'll learn how to save and share our work with Git and GitHub!
 
-Comprehensive Practice Challenge
+# Comprehensive Practice Challenge
 
 **Challenge Level 1: Basic Skills (Everyone Should Complete)**
 1. Create a project structure using command line:
