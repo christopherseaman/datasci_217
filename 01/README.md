@@ -1,6 +1,4 @@
-Python and Command Line Foundations
-
-Welcome to your journey into data science! Today we're building the foundation you'll use every single day as a data scientist: basic Python programming and command line navigation. Think of this as learning to walk before we run.
+# Python and Command Line Foundations
 
 ## Class Structure
 
@@ -14,6 +12,8 @@ Welcome to your journey into data science! Today we're building the foundation y
 Before we dive into the technical content, let's make sure you have everything you need to succeed. This section covers the essential setup that every data scientist needs.
 
 ## Getting to the Command Line
+
+![learning to code is kind of like this](media/rocket_packs.png)
 
 The command line is your direct conversation with your computer. Here's how to access it on different systems:
 
