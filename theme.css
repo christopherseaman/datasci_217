@@ -53,6 +53,8 @@ body {
   padding: 20px;
   background: white;
   min-height: 100vh;
+  width: calc(100% - 280px);
+  box-sizing: border-box;
 }
 .logo {
   font-size: 1.2em;
@@ -91,6 +93,9 @@ body {
 .content {
   max-width: 800px;
   margin: 0 auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 .content h1 { 
   color: #2c3e50; 

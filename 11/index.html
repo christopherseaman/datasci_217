@@ -61,10 +61,6 @@
                         linkEl.target = '_blank';
                     } else {
                         linkEl.href = `?f=${link.file}`;
-                        linkEl.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            loadContent(link.file);
-                        });
                     }
                     
                     sectionDiv.appendChild(linkEl);

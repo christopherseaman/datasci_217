@@ -61,10 +61,6 @@
                         linkEl.target = '_blank';
                     } else {
                         linkEl.href = `?f=${link.file}`;
-                        linkEl.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            loadContent(link.file);
-                        });
                     }
                     
                     sectionDiv.appendChild(linkEl);
@@ -94,7 +90,8 @@
             
             updateActiveNav(filePath);
             
-            if (!filePath.endsWith('.md')) {
+            // Only add .md extension if it's not a directory link and doesn't already have an extension
+            if (!filePath.endsWith('/') && !filePath.endsWith('.md') && !filePath.includes('.')) {
                 filePath += '.md';
             }
 
