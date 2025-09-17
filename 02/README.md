@@ -67,43 +67,9 @@ Command line Git is powerful, but the visual interface helps you understand what
 
 Once you understand Git concepts, you can choose GUI or command line based on the task.
 
-Setting Up Git in VS Code
-
-**Reference:**
-1. Install VS Code (if not already done)
-2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
-3. If first time: VS Code will prompt to configure Git username/email
-
-**Brief Example:**
-```
-Git configuration (one-time setup):
-- Full Name: Alice Smith
-- Email: alice.smith@ucsf.edu (use your actual UCSF email)
-```
-
-![GitHub Email Setup](media/github_email.png)
 
 LIVE DEMO!
 *Setting up Git configuration and exploring VS Code's Git interface*
-
-GitHub Account Setup
-
-Creating Your GitHub Account
-
-**Reference:**
-1. Go to github.com
-2. Sign up with your UCSF email (or personal email)
-3. Choose a professional username (you'll use this for years!)
-4. Verify your email address
-
-**Username Tips:**
-- Use your name or initials: `alice-smith`, `asmith-ucsf`
-- Avoid hard-to-remember numbers: `alice_smith_9847`
-- Keep it professional - future employers will see this
-- You can change it later, but links might break
-
-GitHub Student Pack (Optional Bonus)
-With your .edu email, you can get free premium features. We don't need them for class, but they're nice to have!
 
 Your First Repository
 

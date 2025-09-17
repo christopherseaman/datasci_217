@@ -1,491 +1,450 @@
-Research Applications and Best Practices
+# Time Series Analysis with pandas
 
-Welcome to the final week of DataSci 217! You've built a comprehensive toolkit of data science skills, from command-line fundamentals to advanced visualization. Now it's time to integrate everything into professional research workflows, understand ethical considerations, and plan your continued growth in data science.
+Welcome to our exploration of time series analysis! Time series data is fundamental in many fields including finance, economics, ecology, neuroscience, and physics. This lecture covers the essential tools and techniques for working with temporal data using pandas.
 
-By the end of today, you'll understand how to apply your skills in research contexts, create reproducible analysis workflows, and have a clear path for your data science career development.
+By the end of this session, you'll understand how to manipulate dates and times, work with time series indexes, perform resampling operations, and apply moving window functions to analyze temporal patterns in your data.
 
-#FIXME: IMAGE - the_infinity_stones.jpg (Career progression - Transition to lessons learned section, preview the progression of lessons)
+## Learning Objectives
 
-#FIXME: IMAGE - boutique_expert.jpg (Specialization concept - Pros and cons of over-specialization, job security vs limited career mobility)
+- Master date and time data types in Python and pandas
+- Create and manipulate time series with [`DatetimeIndex`](11/README.md:1)
+- Understand frequency codes and date offsets
+- Handle time zones and period arithmetic
+- Perform resampling for frequency conversion
+- Apply moving window functions for time series analysis
 
-#FIXME: IMAGE - reinvent_the_wheel.png (Standards concept - Don't reinvent the wheel, embrace industry standards and community knowledge)
+## What is Time Series Data?
 
-#FIXME: IMAGE - pycap.jpeg (PyCap example - Built custom Python package, discovered PyCap existed all along)
+Time series data consists of observations recorded at many points in time. These can be:
 
-#FIXME: IMAGE - explaining_your_code.jpg (Documentation importance - Acknowledge valid reasons for custom solutions, emphasize documentation)
+- **Timestamps**: Specific instants in time (2023-01-15 14:30:00)
+- **Fixed periods**: Time spans like months or years (January 2023, Q1 2023)
+- **Intervals**: Ranges defined by start and end timestamps
+- **Elapsed time**: Measurements relative to a start time
 
-#FIXME: IMAGE - is_it_worth_the_time_2x.png (Time investment chart - Break down the chart, share personal experiences with each timeframe)
+Time series can be **fixed frequency** (regular intervals like daily, hourly) or **irregular** (no fixed pattern between observations).
 
-#FIXME: IMAGE - pass_the_salt.png (System evolution - Example of evolution from single-use script to flexible system)
+## 11.1 Date and Time Data Types and Tools
 
-#FIXME: IMAGE - over_complicating_things.jpg (Simplicity principle - Start simple, grow smart, begin with core functionality)
+### Python's datetime Module
 
-![xkcd 435: Purity](media/xkcd_435.png)
+Python's standard library provides foundational date/time functionality:
 
-Don't worry - as data scientists, we get to work with everyone and solve real problems!
-
-#FIXME: IMAGE - lava.png (LAVA interface - Walk through key elements of LAVA interface, point out unique aspects of the system)
-
-#FIXME: IMAGE - lava_query.png (LAVA query interface - Demonstrate query building interface, highlight limitations and strengths)
-
-#FIXME: IMAGE - redcap_vs_lava_meme.jpg (REDCap vs LAVA comparison - Introduce REDCap as contrast to LAVA, emphasize widespread adoption)
-
-#FIXME: IMAGE - redcap.png (REDCap interface - Walk through interface elements, show key features, point out common usage areas)
-
-Reproducible Research Principles
-
-The Reproducibility Crisis and Solution
-
-**Why Reproducible Research Matters:**
-- **Scientific integrity** - Others can verify and build on your work
-- **Career advancement** - Reproducible work demonstrates professional competence
-- **Time savings** - Future you will understand past you's decisions
-- **Collaboration** - Teams can work together effectively on complex projects
-- **Error detection** - Systematic approaches catch mistakes early
-
-Essential Reproducibility Framework
-
-**Reference:**
 ```python
-File: analysis_template.py
-"""
-Simple Reproducible Analysis Template
+from datetime import datetime, timedelta
 
-Core principles for reproducible research:
-1. Clear directory structure
-2. Version control integration
-3. Comprehensive documentation
-4. Parameterized analysis
-"""
+# Current date and time
+now = datetime.now()
+print(now)  # 2023-04-12 13:09:16.484533
 
+# Extract components
+print(now.year, now.month, now.day)  # (2023, 4, 12)
+
+# Time differences
+delta = datetime(2011, 1, 7) - datetime(2008, 6, 24, 8, 15)
+print(delta)  # 926 days, 15:45:00
+print(delta.days)  # 926
+
+# Adding/subtracting time
+start = datetime(2011, 1, 7)
+future = start + timedelta(12)  # 12 days later
+past = start - 2 * timedelta(12)  # 24 days earlier
+```
+
+### String to Datetime Conversion
+
+pandas provides powerful tools for parsing date strings:
+
+```python
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from pathlib import Path
-from datetime import datetime
-import json
 
-class SimpleReproducibleAnalysis:
-    """
-    Basic framework for reproducible data analysis
-    """
+# Parse date strings automatically
+datestrs = ['2011-07-06 12:00:00', '2011-08-06 00:00:00']
+dates = pd.to_datetime(datestrs)
+print(dates)
+# DatetimeIndex(['2011-07-06 12:00:00', '2011-08-06 00:00:00'], dtype='datetime64[ns]')
 
-    def __init__(self, project_name):
-        self.project_name = project_name
-        self.start_time = datetime.now()
-        self.analysis_log = []
-
-        # Create basic directory structure
-        self.setup_directories()
-
-    def setup_directories(self):
-        """Create standardized project structure"""
-        directories = ['data', 'scripts', 'results', 'figures', 'logs']
-
-        for directory in directories:
-            Path(directory).mkdir(exist_ok=True)
-
-        print(f"Project '{self.project_name}' initialized")
-        print("Directory structure created: data/, scripts/, results/, figures/, logs/")
-
-    def log_step(self, step_name, description=""):
-        """Log each analysis step with timestamp"""
-        step_info = {
-            'step': step_name,
-            'description': description,
-            'timestamp': datetime.now().isoformat()
-        }
-
-        self.analysis_log.append(step_info)
-        print(f"Step logged: {step_name}")
-
-    def save_analysis_log(self):
-        """Save complete analysis log"""
-        log_file = Path('logs') / f'analysis_log_{self.start_time.strftime("%Y%m%d_%H%M%S")}.json'
-
-        full_log = {
-            'project_name': self.project_name,
-            'start_time': self.start_time.isoformat(),
-            'end_time': datetime.now().isoformat(),
-            'steps': self.analysis_log
-        }
-
-        with open(log_file, 'w') as f:
-            json.dump(full_log, f, indent=2)
-
-        print(f"Analysis log saved: {log_file}")
-        return log_file
-
-# Example usage
-def example_reproducible_workflow():
-    """
-    Example of basic reproducible analysis workflow
-    """
-    # Initialize analysis
-    analysis = SimpleReproducibleAnalysis("Customer_Analysis")
-
-    # Step 1: Load data
-    data = {
-        'customer_id': range(1, 101),
-        'satisfaction': np.random.normal(4.2, 0.8, 100),
-        'purchase_amount': np.random.normal(150, 40, 100)
-    }
-    df = pd.DataFrame(data)
-    analysis.log_step('data_loading', 'Created sample customer data')
-
-    # Step 2: Basic analysis
-    avg_satisfaction = df['satisfaction'].mean()
-    avg_purchase = df['purchase_amount'].mean()
-    analysis.log_step('descriptive_stats', f'Calculated means: satisfaction={avg_satisfaction:.2f}, purchase=${avg_purchase:.2f}')
-
-    # Step 3: Save results
-    results = {
-        'average_satisfaction': float(avg_satisfaction),
-        'average_purchase_amount': float(avg_purchase),
-        'sample_size': len(df)
-    }
-
-    with open('results/summary_stats.json', 'w') as f:
-        json.dump(results, f, indent=2)
-    analysis.log_step('save_results', 'Saved summary statistics to results/')
-
-    # Step 4: Create visualization
-    plt.figure(figsize=(10, 5))
-
-    plt.subplot(1, 2, 1)
-    plt.hist(df['satisfaction'], bins=15, alpha=0.7)
-    plt.title('Customer Satisfaction Distribution')
-    plt.xlabel('Satisfaction Score')
-    plt.ylabel('Frequency')
-
-    plt.subplot(1, 2, 2)
-    plt.scatter(df['satisfaction'], df['purchase_amount'], alpha=0.6)
-    plt.title('Satisfaction vs Purchase Amount')
-    plt.xlabel('Satisfaction Score')
-    plt.ylabel('Purchase Amount ($)')
-
-    plt.tight_layout()
-    plt.savefig('figures/customer_analysis.png', dpi=300, bbox_inches='tight')
-    plt.close()
-    analysis.log_step('create_visualization', 'Generated analysis plots')
-
-    # Step 5: Finalize
-    log_file = analysis.save_analysis_log()
-
-    print(f"\nAnalysis complete!")
-    print(f"- Results: results/summary_stats.json")
-    print(f"- Figures: figures/customer_analysis.png")
-    print(f"- Log: {log_file}")
-
-    return analysis
-
-# Run example
-example_analysis = example_reproducible_workflow()
+# Handle unparseable dates with errors='coerce'
+mixed_dates = ['2011-07-06 12:00:00', 'invalid_date', '2011-08-06']
+parsed = pd.to_datetime(mixed_dates, errors='coerce')
+print(parsed)  # NaT (Not a Time) for invalid dates
 ```
 
-**Key Reproducibility Practices:**
-1. **Consistent Structure** - Use the same directory organization for all projects
-2. **Version Control** - Track all changes with Git
-3. **Documentation** - Log every analysis step with timestamps
-4. **Parameter Files** - Store settings in configuration files, not code
-5. **Automated Workflow** - Scripts that run from raw data to final results
+## 11.2 Time Series Basics
 
-Data Management Essentials
+### Creating Time Series
 
-Basic Research Data Organization
+A time series in pandas is typically a [`Series`](11/README.md:1) with a [`DatetimeIndex`](11/README.md:1):
 
-**Project Directory Structure:**
-```
-your_project/
-├── data/
-│   ├── raw/           # Original, unmodified data
-│   └── processed/     # Cleaned data ready for analysis
-├── scripts/           # Analysis code and functions
-├── results/           # Tables, statistics, processed output
-├── figures/           # All plots and visualizations
-├── docs/             # Documentation and notes
-└── logs/             # Analysis logs and metadata
-```
-
-**File Naming Conventions:**
-- Use dates: `2024-01-15_customer_survey.csv`
-- Be descriptive: `processed_customer_data_v2.csv`
-- Avoid spaces: Use underscores or hyphens
-- Include version numbers for important files
-
-**Data Documentation Best Practices:**
 ```python
-def create_simple_data_dictionary(df, filename):
-    """
-    Create basic data dictionary for a dataset
-    """
-    with open(f'docs/{filename}_dictionary.md', 'w') as f:
-        f.write(f"# Data Dictionary: {filename}\n\n")
-        f.write(f"**Created:** {datetime.now().strftime('%Y-%m-%d')}\n")
-        f.write(f"**Records:** {len(df):,}\n")
-        f.write(f"**Variables:** {len(df.columns)}\n\n")
+# Create time series from datetime objects
+dates = [datetime(2011, 1, 2), datetime(2011, 1, 5), 
+         datetime(2011, 1, 7), datetime(2011, 1, 8)]
+ts = pd.Series(np.random.randn(4), index=dates)
+print(ts)
 
-        f.write("## Variables\n\n")
-        f.write("| Variable | Type | Description | Example |\n")
-        f.write("|----------|------|-------------|----------|\n")
-
-        for col in df.columns:
-            dtype = str(df[col].dtype)
-            example = str(df[col].iloc[0]) if not df[col].empty else "N/A"
-            f.write(f"| {col} | {dtype} | [Add description] | {example} |\n")
-
-    print(f"Data dictionary created: docs/{filename}_dictionary.md")
-
-# Example: Document your data
-# create_simple_data_dictionary(your_dataframe, "customer_analysis")
+# The index is automatically converted to DatetimeIndex
+print(type(ts.index))  # <class 'pandas.core.indexes.datetimes.DatetimeIndex'>
+print(ts.index.dtype)  # datetime64[ns]
 ```
 
-Ethical Considerations in Data Science
+### Indexing and Selection
 
-Essential Ethical Guidelines
+Time series support flexible indexing and slicing:
 
-**Core Ethical Principles:**
-
-1. **Privacy and Consent**
-   - Only use data you have permission to use
-   - Protect personal identifiers and sensitive information
-   - Follow data sharing agreements and institutional policies
-
-2. **Fairness and Bias**
-   - Check if your sample represents the population you want to study
-   - Be aware that historical data may contain historical biases
-   - Consider how your results might affect different groups
-
-3. **Transparency and Honesty**
-   - Document your methods clearly so others can understand and reproduce them
-   - Report limitations and uncertainties in your analysis
-   - Acknowledge when you don't know something
-
-4. **Beneficence and Non-maleficence**
-   - Aim for your work to benefit people and society
-   - Consider potential negative consequences of your analysis
-   - Don't use data science to harm individuals or groups
-
-**Simple Ethical Checklist:**
 ```python
-def ethics_checklist():
-    """
-    Basic ethical review questions for data analysis
-    """
-    checklist = [
-        "Do I have permission to use this data?",
-        "Are personal identifiers properly protected?",
-        "Is my sample representative of my target population?",
-        "Have I documented my methods clearly?",
-        "Have I acknowledged limitations in my analysis?",
-        "Could my results be used to harm anyone?",
-        "Am I being honest about uncertainties in my conclusions?"
-    ]
+# Create longer time series
+longer_ts = pd.Series(np.random.randn(1000),
+                     index=pd.date_range('2000-01-01', periods=1000))
 
-    print("ETHICAL ANALYSIS CHECKLIST")
-    print("=" * 30)
-    for i, question in enumerate(checklist, 1):
-        print(f"{i}. {question}")
-        print("   ☐ Yes   ☐ No   ☐ Need to investigate")
-        print()
+# Select by year
+print(longer_ts['2001'])
 
-    print("If you answered 'No' or 'Need to investigate' to any question,")
-    print("address those issues before proceeding with your analysis.")
+# Select by year and month
+print(longer_ts['2001-05'])
 
-# Run the checklist for your project
-ethics_checklist()
+# Slice by date range
+print(longer_ts['2001-05-15':'2001-05-25'])
+
+# Boolean indexing works too
+recent_data = longer_ts[longer_ts.index >= '2001-01-01']
 ```
 
-Career Development and Next Steps
+### Working with DataFrames
 
-Skills Assessment and Growth Planning
+Time series operations work seamlessly with DataFrames:
 
-**Your DataSci 217 Skills Foundation:**
+```python
+# Create DataFrame with date index
+dates = pd.date_range('2000-01-01', periods=100, freq='W-WED')
+df = pd.DataFrame(np.random.randn(100, 4),
+                  index=dates,
+                  columns=['A', 'B', 'C', 'D'])
 
-After completing this course, you should feel confident with:
+# Select data for specific years
+print(df['2001'])
 
-1. **Technical Skills:**
-   - Command-line navigation and file management
-   - Python programming for data analysis
-   - Version control with Git and GitHub
-   - Data manipulation with pandas and NumPy
-   - Data cleaning and quality assessment
-   - Statistical analysis and hypothesis testing
-   - Data visualization with matplotlib and seaborn
-   - Automated analysis workflows
+# Select specific columns and date ranges
+print(df.loc['2001-05':'2001-08', ['A', 'C']])
+```
 
-2. **Professional Skills:**
-   - Systematic approach to data problems
-   - Debugging and validation techniques
-   - Project organization and documentation
-   - Reproducible research practices
-   - Basic understanding of data ethics
-   - Team collaboration with version control
+## 11.3 Date Ranges, Frequencies, and Shifting
 
-**Simple Self-Assessment:**
-Rate yourself on a 1-4 scale:
-- 1 = Still learning basics
-- 2 = Can do with guidance
-- 3 = Confident and independent
-- 4 = Can teach others
+### Generating Date Ranges
 
-Focus your continued learning on areas where you rated yourself 1-2.
+The [`pd.date_range()`](11/README.md:1) function creates sequences of dates:
 
-Essential Resources for Continued Learning
+```python
+# Basic date range (daily by default)
+index = pd.date_range('2012-04-01', '2012-06-01')
+print(index)
 
-**Core Learning Resources:**
+# Specify number of periods
+daily_range = pd.date_range(start='2012-04-01', periods=20)
+monthly_range = pd.date_range(end='2012-06-01', periods=20)
 
-**Books (pick 1-2 to start):**
-- *Python for Data Analysis* by Wes McKinney - The definitive pandas guide
-- *Storytelling with Data* by Cole Nussbaumer Knaflic - Better visualizations
-- *The Art of Statistics* by David Spiegelhalter - Statistics for everyone
+# Business month end frequency
+business_months = pd.date_range('2000-01-01', '2000-12-01', freq='BM')
+print(business_months)
+```
 
-**Online Learning (free options):**
-- Kaggle Learn - Practical micro-courses
-- Coursera (audit mode) - University-level courses
-- YouTube: 3Blue1Brown, StatQuest - Excellent explanations
+### Frequency Codes and Date Offsets
 
-**Practice Opportunities:**
-- Kaggle competitions and datasets
-- GitHub - contribute to open source projects
-- Personal projects using public datasets
-- Recreate analyses from published papers
+pandas supports many frequency codes for different time intervals:
 
-**Professional Networking:**
-- LinkedIn - Build your professional profile
-- Local data science meetups
-- Online communities: r/datascience, Stack Overflow
-- Twitter #DataScience hashtag
+| Code | Description | Code | Description |
+|------|-------------|------|-------------|
+| D | Calendar day | B | Business day |
+| W | Weekly | M | Month end |
+| BM | Business month end | MS | Month start |
+| Q | Quarter end | A | Year end |
+| H | Hourly | T, min | Minutely |
+| S | Secondly | L, ms | Millisecond |
 
-**Your 90-Day Development Plan:**
+```python
+# Different frequencies
+hourly = pd.date_range('2000-01-01', periods=10, freq='H')
+every_4_hours = pd.date_range('2000-01-01', '2000-01-03 23:59', freq='4H')
 
-**Month 1: Foundation Strengthening**
-- Complete 1-2 online courses in your weak areas
-- Start a personal data project
-- Set up professional LinkedIn profile
-- Read one book from the recommended list
+# Custom frequency strings
+custom_freq = pd.date_range('2000-01-01', periods=10, freq='1h30min')
 
-**Month 2: Practice and Application**
-- Complete a Kaggle competition or dataset analysis
-- Write blog posts about your learning journey
-- Attend virtual meetups or conferences
-- Apply your skills to a real problem
+# Week of month dates (3rd Friday of each month)
+third_fridays = pd.date_range('2012-01-01', '2012-09-01', freq='WOM-3FRI')
+```
 
-**Month 3: Portfolio and Network**
-- Finish and document your major project
-- Update GitHub with clean, documented code
-- Conduct informational interviews with professionals
-- Start applying to relevant positions or opportunities
+### Shifting Data
 
-Building Your Professional Network
+Shifting moves data forward or backward in time:
 
-**Online Presence Strategy:**
+```python
+ts = pd.Series(np.random.randn(4),
+               index=pd.date_range('2000-01-01', periods=4, freq='M'))
 
-1. **LinkedIn Profile:**
-   - Professional headline: "Data Science Student | Python | Analytics"
-   - Summary highlighting your projects and learning journey
-   - Skills section with pandas, Python, Git, etc.
-   - Regular posts about what you're learning
+# Shift data by 2 periods (keeps same timestamps)
+shifted_data = ts.shift(2)
 
-2. **GitHub Profile:**
-   - Clean repositories with good README files
-   - Pin your best projects to your profile
-   - Contribute to open source when ready
-   - Consistent commit history showing growth
+# Shift timestamps by 2 months (keeps same data alignment)
+shifted_time = ts.shift(2, freq='M')
 
-3. **Engage with Community:**
-   - Join online discussions (don't just lurk!)
-   - Share interesting resources you find
-   - Ask thoughtful questions
-   - Help others when you can
+# Calculate period-over-period changes
+returns = ts / ts.shift(1) - 1
+```
 
-Key Takeaways - Your DataSci 217 Journey
+## 11.4 Time Zone Handling
 
-What You've Accomplished
+### Time Zone Localization and Conversion
 
-Through DataSci 217, you have built a comprehensive foundation:
+pandas provides comprehensive time zone support:
 
-**Technical Mastery:**
-- Command-line proficiency for data workflows
-- Python programming for data analysis
-- Version control with Git for collaboration
-- pandas and NumPy for data manipulation
-- Statistical analysis and visualization
-- Automated analysis pipelines
-- Professional reporting and communication
+```python
+# Create naive (no timezone) time series
+dates = pd.date_range('2012-03-09 09:30', periods=6)
+ts = pd.Series(np.random.randn(6), index=dates)
 
-**Professional Skills:**
-- Systematic approach to data problems
-- Debugging and validation techniques
-- Project organization and documentation
-- Reproducible research practices
-- Ethical data handling awareness
-- Team collaboration patterns
+# Localize to a specific timezone
+ts_utc = ts.tz_localize('UTC')
+ts_eastern = ts.tz_localize('US/Eastern')
 
-**Real-World Applications:**
-You can now tackle problems like:
-- Analyzing business data to answer questions
-- Cleaning and preparing datasets for analysis
-- Creating compelling visualizations
-- Building reproducible analysis workflows
-- Collaborating on data science projects
-- Following ethical guidelines in your work
+# Convert between timezones
+ts_tokyo = ts_utc.tz_convert('Asia/Tokyo')
 
-You are prepared to contribute meaningfully to research teams, organizations, and your chosen career path.
+# Create timezone-aware date ranges
+utc_range = pd.date_range('2012-03-09 09:30', periods=10, tz='UTC')
+```
 
-Your Next Steps
+### Operations with Different Time Zones
 
-1. **Complete Your Portfolio**
-   - Showcase your best work from this class
-   - Document projects clearly on GitHub
-   - Write descriptions that non-technical people can understand
+```python
+# Combining different timezone series results in UTC
+ts1 = pd.Series(np.random.randn(3),
+                index=pd.date_range('2012-03-07 09:30', periods=3, freq='B', tz='US/Eastern'))
+ts2 = pd.Series(np.random.randn(3),
+                index=pd.date_range('2012-03-07 09:30', periods=3, freq='B', tz='Europe/Berlin'))
 
-2. **Continue Learning**
-   - Identify your top 3 skill development priorities
-   - Create a learning plan with specific goals
-   - Join professional communities and engage actively
+# Result is automatically converted to UTC
+result = ts1 + ts2
+print(result.index.tz)  # UTC
+```
 
-3. **Apply Your Skills**
-   - Look for opportunities to use data science in your current work/studies
-   - Volunteer for organizations that need data analysis help
-   - Consider internships or entry-level positions
+## 11.5 Periods and Period Arithmetic
 
-4. **Build Your Network**
-   - Connect with classmates and maintain relationships
-   - Attend data science events (virtual or in-person)
-   - Find a mentor and consider mentoring others
+### Working with Periods
 
-5. **Stay Ethical**
-   - Always consider the ethical implications of your work
-   - Keep learning about responsible data science practices
-   - Use your skills to benefit others and society
+Periods represent time spans rather than specific timestamps:
 
-Final Practice Challenge
+```python
+# Create period objects
+p = pd.Period('2011', freq='A-DEC')  # Annual period ending in December
+print(p)  # Period('2011', 'A-DEC')
 
-**Your Portfolio Project:**
-Choose a dataset and research question that interests you. Apply the complete DataSci 217 workflow:
+# Period arithmetic
+print(p + 5)  # Period('2016', 'A-DEC')
+print(p - 2)  # Period('2009', 'A-DEC')
 
-1. **Set up** a reproducible project structure
-2. **Clean and explore** your data systematically
-3. **Analyze** using appropriate statistical methods
-4. **Visualize** your findings clearly
-5. **Document** everything for reproducibility
-6. **Share** your work with the community
+# Create period ranges
+periods = pd.period_range('2000-01-01', '2000-06-30', freq='M')
+pts = pd.Series(np.random.randn(6), index=periods)
+```
 
-This project will demonstrate your mastery of integrated data science skills and serve as a centerpiece for your professional portfolio.
+### Period Frequency Conversion
 
-**What's Next:**
-Keep practicing, keep learning, and keep applying your skills ethically. The field of data science needs thoughtful, skilled practitioners like you.
+Convert periods between different frequencies:
 
-Congratulations on completing DataSci 217! You now have the foundation to excel in data science research and industry applications.
+```python
+p = pd.Period('2011', freq='A-DEC')
 
-Remember: Great data scientists are made through consistent practice, continuous learning, and ethical application of skills. You have the foundation - now build upon it!
+# Convert to monthly periods
+print(p.asfreq('M', how='start'))  # Period('2011-01', 'M')
+print(p.asfreq('M', how='end'))    # Period('2011-12', 'M')
 
-*Welcome to your data science career!*
+# Convert entire period series
+annual_periods = pd.period_range('2006', '2009', freq='A-DEC')
+ts = pd.Series(np.random.randn(4), index=annual_periods)
+monthly_ts = ts.asfreq('M', how='start')
+```
 
-**Additional Resources:**
-- Advanced topics in `/DLC/` directories for deeper exploration
-- Specialized materials for research contexts and team collaboration
-- Comprehensive career development guides and networking strategies
+### Converting Between Timestamps and Periods
 
-![xkcd 1513: Code Quality](media/xkcd_1513.png)
+```python
+# Timestamp to period conversion
+dates = pd.date_range('2000-01-01', periods=3, freq='M')
+ts = pd.Series(np.random.randn(3), index=dates)
+pts = ts.to_period()
+
+# Period to timestamp conversion
+back_to_ts = pts.to_timestamp(how='end')
+```
+
+## 11.6 Resampling and Frequency Conversion
+
+Resampling converts time series from one frequency to another.
+
+### Downsampling
+
+Aggregating higher frequency data to lower frequency:
+
+```python
+# Create minute-frequency data
+dates = pd.date_range('2000-01-01', periods=12, freq='T')
+ts = pd.Series(np.arange(12), index=dates)
+
+# Downsample to 5-minute intervals
+five_min_sum = ts.resample('5min').sum()
+five_min_mean = ts.resample('5min').mean()
+five_min_ohlc = ts.resample('5min').ohlc()  # Open, High, Low, Close
+
+# Control bin edges and labels
+result = ts.resample('5min', closed='right', label='right').sum()
+```
+
+### Upsampling and Interpolation
+
+Converting lower frequency to higher frequency:
+
+```python
+# Weekly data
+frame = pd.DataFrame(np.random.randn(2, 4),
+                     index=pd.date_range('2000-01-01', periods=2, freq='W-WED'),
+                     columns=['A', 'B', 'C', 'D'])
+
+# Upsample to daily frequency
+daily_frame = frame.resample('D').asfreq()  # Introduces NaN values
+
+# Forward fill missing values
+daily_filled = frame.resample('D').ffill()
+
+# Limit forward filling
+limited_fill = frame.resample('D').ffill(limit=2)
+```
+
+### Resampling with Periods
+
+```python
+# Monthly period data
+frame = pd.DataFrame(np.random.randn(24, 4),
+                     index=pd.period_range('2000-01', '2001-12', freq='M'),
+                     columns=['A', 'B', 'C', 'D'])
+
+# Downsample to annual
+annual_frame = frame.resample('A-DEC').mean()
+
+# Upsample to quarterly
+quarterly_frame = annual_frame.resample('Q-DEC').ffill()
+```
+
+## 11.7 Moving Window Functions
+
+Moving window functions compute statistics over sliding time windows.
+
+### Rolling Windows
+
+```python
+# Load sample stock data and resample to business days
+# (In practice, you'd load real data)
+np.random.seed(12345)
+close_px = pd.Series(np.random.randn(1000).cumsum(),
+                     index=pd.date_range('2000-01-01', periods=1000))
+close_px = close_px.resample('B').ffill()
+
+# 250-day moving average
+ma250 = close_px.rolling(250).mean()
+
+# Rolling standard deviation with minimum periods
+std250 = close_px.pct_change().rolling(250, min_periods=10).std()
+
+# Rolling correlations
+returns = pd.DataFrame({
+    'AAPL': np.random.randn(1000),
+    'MSFT': np.random.randn(1000),
+    'SPX': np.random.randn(1000)
+}, index=pd.date_range('2000-01-01', periods=1000))
+
+# Rolling correlation between AAPL and SPX
+corr = returns['AAPL'].rolling(125, min_periods=100).corr(returns['SPX'])
+```
+
+### Expanding Windows
+
+```python
+# Expanding window (all data from start to current point)
+expanding_mean = close_px.expanding().mean()
+expanding_std = close_px.expanding().std()
+```
+
+### Exponentially Weighted Functions
+
+```python
+# Exponentially weighted moving average
+ema = close_px.ewm(span=30).mean()
+
+# Compare with simple moving average
+sma = close_px.rolling(30, min_periods=20).mean()
+```
+
+### Custom Moving Window Functions
+
+```python
+from scipy.stats import percentileofscore
+
+def score_at_2percent(x):
+    return percentileofscore(x, 0.02)
+
+# Apply custom function over rolling window
+result = returns['AAPL'].rolling(250).apply(score_at_2percent)
+```
+
+## Practical Time Series Analysis Workflow
+
+### Complete Example: Stock Price Analysis
+
+```python
+# 1. Create sample time series data
+np.random.seed(42)
+dates = pd.date_range('2020-01-01', '2023-12-31', freq='D')
+prices = 100 * (1 + np.random.randn(len(dates)).cumsum() * 0.01)
+stock_data = pd.Series(prices, index=dates, name='Stock_Price')
+
+# 2. Basic time series operations
+print("Data shape:", stock_data.shape)
+print("Date range:", stock_data.index.min(), "to", stock_data.index.max())
+
+# 3. Resample to monthly data
+monthly_prices = stock_data.resample('M').last()
+monthly_returns = monthly_prices.pct_change().dropna()
+
+# 4. Calculate moving averages
+stock_data_clean = stock_data.dropna()
+sma_20 = stock_data_clean.rolling(20).mean()
+sma_50 = stock_data_clean.rolling(50).mean()
+
+# 5. Volatility analysis
+daily_returns = stock_data_clean.pct_change().dropna()
+rolling_vol = daily_returns.rolling(30).std() * np.sqrt(252)  # Annualized
+
+# 6. Time-based filtering
+covid_period = stock_data['2020-03':'2020-06']
+recovery_period = stock_data['2020-07':'2021-12']
+
+print("Analysis complete!")
+```
+
+## Key Takeaways
+
+1. **DatetimeIndex** is the foundation of time series in pandas
+2. **Frequency codes** provide flexible ways to specify time intervals
+3. **Resampling** allows conversion between different time frequencies
+4. **Moving windows** enable trend and volatility analysis
+5. **Time zones** can be handled systematically across operations
+6. **Periods** represent time spans and support arithmetic operations
+
+## Next Steps
+
+- Practice with real-world time series datasets
+- Explore seasonal decomposition techniques
+- Learn about time series forecasting methods
+- Investigate financial time series analysis
+- Study irregularly-spaced time series handling
+
+Time series analysis is a rich field with applications across many domains. The pandas tools covered here provide a solid foundation for temporal data manipulation and analysis in your data science projects.

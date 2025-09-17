@@ -19,7 +19,7 @@ By completing this assignment, you will:
 
 ### Task 1: Repository Setup
 1. Accept the GitHub Classroom assignment link (provided in class)
-2. Clone your assignment repository to your local machine
+2. Clone your assignment repository to your local machine or open it in a GitHub Codespace
 3. Navigate to the assignment directory using command line
 
 ### Task 2: Environment Verification  
@@ -34,20 +34,20 @@ By completing this assignment, you will:
 4. Verify the output file was created: `ls` or `dir`
 
 ### Task 4: Result Submission
-1. Add your results to Git: `git add processed_email.txt`
-2. Commit with a descriptive message: `git commit -m "Add processed email results"`  
-3. Push to GitHub: `git push`
+1. Add your results to Git using one of:
+    - `git add processed_email.txt` 
+    - Use the VS Code GUI
+    - Upload to your GitHub repo on the web
+2. Commit with a descriptive message using one of: 
+    - `git commit -m "Add processed email results"`
+    - GUI in VS Code  
+3. Push to GitHub: `git push` 
 
-### Task 5: Verification Questions
-Edit the file `reflection.md` and answer:
-1. What operating system are you using?
-2. Which Python command worked for you (`python` or `python3`)?
-3. What was in your `processed_email.txt` file?
-4. What challenges did you encounter, if any?
+### Task 5:  Questions
+Edit the file `reflection.md` and let me know more about yourself!
 
 ## Files Provided
 - `process_email.py` - Script that processes your email address
-- `test_assignment.py` - Automated tests (don't modify)
 - `README.md` - This instruction file  
 - `reflection.md` - File for your responses
 

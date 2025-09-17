@@ -24,11 +24,6 @@ def process_email(email_address):
     
     print(f"Processing email: {email_address}")
     
-    # Validate email format
-    if not re.match(r'^[a-zA-Z0-9._%+-]+@ucsf\.edu$', email_address):
-        print("Error: Please provide a valid UCSF email address (yourname@ucsf.edu)")
-        return None
-    
     # Extract username
     username = email_address.split('@')[0]
     print(f"Extracting username: {username}")
@@ -36,6 +31,9 @@ def process_email(email_address):
     # Convert to lowercase and strip whitespace
     username_clean = username.lower().strip()
     print(f"Converting to lowercase: {username_clean}")
+    # Remove any non-alphanumeric characters
+    username_clean = re.sub(r'[^a-z0-9]', '', username_clean)
+    print(f"Cleaning username: {username_clean}")
     
     # Create hash for verification (SHA256)
     hash_object = hashlib.sha256(username_clean.encode())
@@ -47,7 +45,6 @@ def process_email(email_address):
         'original_email': email_address,
         'username': username_clean,
         'hash': username_hash,
-        'status': 'processed'
     }
     
     return results
@@ -60,7 +57,7 @@ def save_results(results, output_file='processed_email.txt'):
         
     try:
         with open(output_file, 'w') as f:
-            f.write(f"{results['username']},{results['hash']},{results['status']}\n")
+            f.write(f"{results['hash']}\n")
         print(f"Results saved to {output_file}")
         return True
     
