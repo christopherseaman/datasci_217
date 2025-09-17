@@ -36,34 +36,31 @@
 **Script:** `02_cli_navigation_demo.sh`
 
 **Key Steps:**
-1. Connect to previous demo
-   - Real command line operations
-   - Essential CLI skills for data science
+1. Basic navigation commands
+   - pwd (where am I?)
+   - ls (what's here?)
+   - mkdir (create directories)
+   - cd (change directories)
 
-2. Navigation and Project Structure
+2. Quick project creation
    ```bash
    ./02_cli_navigation_demo.sh
    ```
-   - Organized folder structure as industry standard
-   - pwd, ls, mkdir, cd commands
+   - Simple directory structure
+   - File creation with echo redirection
 
-3. File Operations
-   - Creating files with cat and heredoc
-   - Real CSV data and Python script creation
+3. File viewing
+   - cat command to display file contents
+   - Basic CSV data example
 
-4. Path Problems
-   - Path error occurs naturally
-   - Most common error in data science
-   - Relative vs absolute paths concept
-
-5. File Viewing and Navigation
-   - cat, head, tail commands
-   - cd navigation practice
-   - Directory cleanup options
+4. Path problem demonstration
+   - Script fails due to wrong file path
+   - Fix shown as commented line in script
+   - Teaches relative path concept
 
 **Discussion Points:**
-- Why the script failed initially
-- Solutions for fixing relative path issues
+- Why the Python script couldn't find the file
+- How file paths work from different directories
 
 # Demo 3: Python Basics with Debugging
 **Script:** `03_python_basics_demo.py`
