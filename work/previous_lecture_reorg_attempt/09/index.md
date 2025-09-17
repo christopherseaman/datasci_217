@@ -1,0 +1,1116 @@
+# Automation and Advanced Data Manipulation
+
+Welcome to week 9! You've mastered data analysis fundamentals, and now it's time to automate your workflows and tackle complex data manipulation tasks. You'll learn to create reusable analysis scripts, process multiple datasets efficiently, and perform advanced pandas operations that handle real-world data complexity.
+
+By the end of today, you'll build automated analysis pipelines that can process multiple datasets with a single command, and master advanced pandas techniques for combining and reshaping data.
+
+*[xkcd 1319: "Automation" - Shows a person deciding whether to automate a 5-minute task that occurs monthly, with elaborate decision trees and time calculations. The caption reads: "If you're spending more time calculating whether to automate something than automating it, you've probably made your decision."]*
+
+Today you'll learn when and how to automate - and actually save time doing it!
+
+# Workflow Automation
+
+## Building Reusable Analysis Scripts
+
+**The Automation Mindset:**
+- **DRY Principle** - Don't Repeat Yourself with analysis workflows
+- **Parameterize everything** - Make scripts work with different inputs
+- **Error handling** - Scripts should fail gracefully and give helpful messages
+- **Documentation** - Future you will thank present you
+- **Modularity** - Break complex tasks into smaller, reusable functions
+
+### Creating Professional Analysis Scripts
+
+**Reference:**
+```python
+#!/usr/bin/env python3
+"""
+Sales Analysis Automation Script
+
+This script processes sales data files and generates standardized reports.
+Usage: python sales_analysis.py --input data.csv --output report.html
+"""
+
+import pandas as pd
+import numpy as np
+import argparse
+import sys
+from pathlib import Path
+import logging
+
+# Setup logging for script execution
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('analysis.log'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
+
+def load_and_validate_data(file_path):
+    """
+    Load data file and perform basic validation
+    
+    Args:
+        file_path (str): Path to data file
+        
+    Returns:
+        pandas.DataFrame: Validated data
+        
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        ValueError: If data validation fails
+    """
+    logger.info(f"Loading data from {file_path}")
+    
+    # Check file exists
+    if not Path(file_path).exists():
+        raise FileNotFoundError(f"Data file not found: {file_path}")
+    
+    # Load data
+    try:
+        df = pd.read_csv(file_path)
+        logger.info(f"Data loaded: {df.shape[0]} rows, {df.shape[1]} columns")
+    except Exception as e:
+        logger.error(f"Failed to load data: {str(e)}")
+        raise
+    
+    # Basic validation
+    required_columns = ['date', 'product', 'revenue']
+    missing_cols = [col for col in required_columns if col not in df.columns]
+    
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+    
+    # Check for completely empty data
+    if df.empty:
+        raise ValueError("Data file is empty")
+    
+    logger.info("Data validation passed")
+    return df
+
+def analyze_sales_data(df):
+    """
+    Perform standard sales data analysis
+    
+    Args:
+        df (pandas.DataFrame): Sales data
+        
+    Returns:
+        dict: Analysis results
+    """
+    logger.info("Starting sales analysis")
+    
+    results = {}
+    
+    # Overall metrics
+    results['total_revenue'] = df['revenue'].sum()
+    results['total_transactions'] = len(df)
+    results['average_transaction'] = df['revenue'].mean()
+    results['date_range'] = f"{df['date'].min()} to {df['date'].max()}"
+    
+    # Product analysis
+    product_summary = df.groupby('product')['revenue'].agg(['count', 'sum', 'mean'])
+    product_summary.columns = ['transactions', 'total_revenue', 'avg_revenue']
+    product_summary = product_summary.sort_values('total_revenue', ascending=False)
+    
+    results['top_products'] = product_summary.head(10)
+    
+    # Time-based analysis
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date'])
+        df['month'] = df['date'].dt.to_period('M')
+        monthly_revenue = df.groupby('month')['revenue'].sum()
+        results['monthly_trend'] = monthly_revenue
+    
+    logger.info("Analysis completed")
+    return results
+
+def generate_report(results, output_file):
+    """
+    Generate HTML report from analysis results
+    
+    Args:
+        results (dict): Analysis results
+        output_file (str): Output file path
+    """
+    logger.info(f"Generating report: {output_file}")
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Sales Analysis Report</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            h1, h2 {{ color: #333; }}
+            table {{ border-collapse: collapse; width: 100%; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: right; }}
+            th {{ background-color: #f2f2f2; }}
+            .metric {{ background-color: #e7f3ff; padding: 10px; margin: 10px 0; }}
+        </style>
+    </head>
+    <body>
+        <h1>Sales Analysis Report</h1>
+        <p>Generated on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        
+        <h2>Summary Metrics</h2>
+        <div class="metric">Total Revenue: ${results['total_revenue']:,.2f}</div>
+        <div class="metric">Total Transactions: {results['total_transactions']:,}</div>
+        <div class="metric">Average Transaction: ${results['average_transaction']:,.2f}</div>
+        <div class="metric">Date Range: {results['date_range']}</div>
+        
+        <h2>Top Products by Revenue</h2>
+        {results['top_products'].to_html()}
+        
+        <h2>Monthly Revenue Trend</h2>
+        {results['monthly_trend'].to_frame('revenue').to_html()}
+    </body>
+    </html>
+    """
+    
+    with open(output_file, 'w') as f:
+        f.write(html_content)
+    
+    logger.info(f"Report saved to {output_file}")
+
+def main():
+    """
+    Main script execution function
+    """
+    # Setup command line argument parsing
+    parser = argparse.ArgumentParser(description='Automated sales data analysis')
+    
+    parser.add_argument('--input', '-i', required=True,
+                       help='Input CSV file path')
+    parser.add_argument('--output', '-o', default='sales_report.html',
+                       help='Output report file path')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Enable verbose logging')
+    
+    args = parser.parse_args()
+    
+    # Set logging level
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    logger.info("=== Sales Analysis Automation Starting ===")
+    
+    try:
+        # Execute analysis pipeline
+        df = load_and_validate_data(args.input)
+        results = analyze_sales_data(df)
+        generate_report(results, args.output)
+        
+        logger.info("=== Analysis completed successfully ===")
+        print(f"Report generated: {args.output}")
+        
+    except Exception as e:
+        logger.error(f"Analysis failed: {str(e)}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+```
+
+### Command Line Arguments and Script Organization
+
+**Reference:**
+```python
+# Basic argparse patterns
+import argparse
+
+def setup_argument_parser():
+    """Setup command line argument parsing"""
+    parser = argparse.ArgumentParser(
+        description='Process data files with specified parameters',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    python script.py --input data.csv
+    python script.py --input data/ --recursive --output results/
+    python script.py --config analysis_config.json
+        """
+    )
+    
+    # Required arguments
+    parser.add_argument('--input', '-i', required=True,
+                       help='Input file or directory path')
+    
+    # Optional arguments with defaults
+    parser.add_argument('--output', '-o', default='output',
+                       help='Output directory (default: output)')
+    parser.add_argument('--format', choices=['csv', 'json', 'excel'],
+                       default='csv', help='Output format')
+    
+    # Boolean flags
+    parser.add_argument('--recursive', '-r', action='store_true',
+                       help='Process files recursively')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Enable verbose output')
+    parser.add_argument('--dry-run', action='store_true',
+                       help='Show what would be done without executing')
+    
+    # Numeric arguments with validation
+    parser.add_argument('--batch-size', type=int, default=1000,
+                       help='Batch size for processing (default: 1000)')
+    parser.add_argument('--threshold', type=float, default=0.05,
+                       help='Analysis threshold (default: 0.05)')
+    
+    return parser
+
+def validate_arguments(args):
+    """Validate parsed arguments"""
+    errors = []
+    
+    # Check input path exists
+    if not Path(args.input).exists():
+        errors.append(f"Input path does not exist: {args.input}")
+    
+    # Validate numeric ranges
+    if args.batch_size <= 0:
+        errors.append("Batch size must be positive")
+    
+    if not 0 <= args.threshold <= 1:
+        errors.append("Threshold must be between 0 and 1")
+    
+    if errors:
+        raise ValueError("Argument validation failed:\n" + "\n".join(f"  - {error}" for error in errors))
+    
+    return True
+
+# Usage in main function
+def main():
+    parser = setup_argument_parser()
+    args = parser.parse_args()
+    
+    try:
+        validate_arguments(args)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+    
+    # Continue with script execution...
+```
+
+**Brief Example:**
+```python
+# Simple batch processing script
+import pandas as pd
+from pathlib import Path
+
+def process_csv_files(input_dir, output_dir):
+    """
+    Process all CSV files in a directory
+    """
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(exist_ok=True)
+    
+    csv_files = list(input_path.glob("*.csv"))
+    print(f"Found {len(csv_files)} CSV files to process")
+    
+    for csv_file in csv_files:
+        print(f"Processing {csv_file.name}...")
+        
+        # Load and process each file
+        df = pd.read_csv(csv_file)
+        
+        # Example processing: calculate summary statistics
+        summary = df.describe()
+        
+        # Save processed results
+        output_file = output_path / f"{csv_file.stem}_summary.csv"
+        summary.to_csv(output_file)
+        
+        print(f"  Saved summary to {output_file}")
+    
+    print("Batch processing complete!")
+
+# Command line usage:
+# python batch_processor.py --input data/ --output summaries/
+```
+
+## Shell Scripting for Data Tasks
+
+### Basic Bash Scripts for Data Workflows
+
+**Reference:**
+```bash
+#!/bin/bash
+# data_pipeline.sh - Complete data processing pipeline
+
+# Script configuration
+DATA_DIR="data"
+OUTPUT_DIR="output"
+LOG_FILE="pipeline.log"
+
+# Create output directory
+mkdir -p "$OUTPUT_DIR"
+
+# Function to log messages
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+# Function to check if command succeeded
+check_success() {
+    if [ $? -eq 0 ]; then
+        log_message "SUCCESS: $1"
+    else
+        log_message "ERROR: $1 failed"
+        exit 1
+    fi
+}
+
+log_message "Starting data processing pipeline"
+
+# Step 1: Data validation
+log_message "Step 1: Validating data files"
+python validate_data.py --input "$DATA_DIR"
+check_success "Data validation"
+
+# Step 2: Data processing
+log_message "Step 2: Processing data files"
+for file in "$DATA_DIR"/*.csv; do
+    if [ -f "$file" ]; then
+        log_message "Processing $(basename "$file")"
+        python process_data.py --input "$file" --output "$OUTPUT_DIR"
+        check_success "Processing $(basename "$file")"
+    fi
+done
+
+# Step 3: Generate reports
+log_message "Step 3: Generating final reports"
+python generate_reports.py --input "$OUTPUT_DIR" --format html
+check_success "Report generation"
+
+# Step 4: Archive results
+log_message "Step 4: Archiving results"
+timestamp=$(date '+%Y%m%d_%H%M%S')
+tar -czf "results_$timestamp.tar.gz" "$OUTPUT_DIR"
+check_success "Results archiving"
+
+log_message "Pipeline completed successfully"
+log_message "Results archived as: results_$timestamp.tar.gz"
+```
+
+### Combining Shell and Python
+
+**Reference:**
+```python
+# run_analysis_pipeline.py - Python wrapper for complex workflows
+import subprocess
+import sys
+import os
+from pathlib import Path
+
+def run_shell_command(command, description):
+    """
+    Run shell command and handle errors
+    """
+    print(f"Running: {description}")
+    print(f"Command: {command}")
+    
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(f"✓ {description} completed successfully")
+        if result.stdout:
+            print(f"Output: {result.stdout}")
+        return result
+        
+    except subprocess.CalledProcessError as e:
+        print(f"✗ {description} failed")
+        print(f"Error: {e.stderr}")
+        sys.exit(1)
+
+def main():
+    """
+    Run complete analysis pipeline
+    """
+    print("=== Data Analysis Pipeline ===")
+    
+    # Step 1: Prepare environment
+    run_shell_command(
+        "mkdir -p data processed results",
+        "Creating directories"
+    )
+    
+    # Step 2: Download/prepare data (if needed)
+    if not Path("data").exists() or not any(Path("data").iterdir()):
+        run_shell_command(
+            "python download_data.py --output data/",
+            "Downloading data"
+        )
+    
+    # Step 3: Run Python analysis
+    run_shell_command(
+        "python analyze_data.py --input data/ --output processed/",
+        "Data analysis"
+    )
+    
+    # Step 4: Generate visualizations
+    run_shell_command(
+        "python create_visualizations.py --input processed/ --output results/",
+        "Creating visualizations"
+    )
+    
+    # Step 5: Create final report
+    run_shell_command(
+        "python generate_report.py --input results/ --output final_report.html",
+        "Generating final report"
+    )
+    
+    print("=== Pipeline completed successfully ===")
+    print("Final report: final_report.html")
+
+if __name__ == "__main__":
+    main()
+```
+
+# Advanced pandas Operations
+
+## Merging and Joining Datasets
+
+### Understanding Different Join Types
+
+**Reference:**
+```python
+import pandas as pd
+
+# Sample datasets for demonstration
+customers = pd.DataFrame({
+    'customer_id': [1, 2, 3, 4, 5],
+    'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
+    'city': ['New York', 'London', 'Paris', 'Tokyo', 'Sydney']
+})
+
+orders = pd.DataFrame({
+    'order_id': [101, 102, 103, 104, 105, 106],
+    'customer_id': [1, 2, 2, 3, 3, 6],  # Note: customer 6 doesn't exist in customers
+    'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Tablet', 'Phone'],
+    'amount': [1200, 25, 75, 300, 500, 800]
+})
+
+# Inner join - only matching records
+inner_result = pd.merge(customers, orders, on='customer_id', how='inner')
+print("INNER JOIN - Only customers who have orders:")
+print(inner_result)
+print(f"Result shape: {inner_result.shape}\n")
+
+# Left join - all customers, matching orders
+left_result = pd.merge(customers, orders, on='customer_id', how='left')
+print("LEFT JOIN - All customers, with their orders (NaN if no orders):")
+print(left_result)
+print(f"Result shape: {left_result.shape}\n")
+
+# Right join - all orders, matching customers
+right_result = pd.merge(customers, orders, on='customer_id', how='right')
+print("RIGHT JOIN - All orders, with customer info (NaN if customer not found):")
+print(right_result)
+print(f"Result shape: {right_result.shape}\n")
+
+# Outer join - all records from both tables
+outer_result = pd.merge(customers, orders, on='customer_id', how='outer')
+print("OUTER JOIN - All customers and orders:")
+print(outer_result)
+print(f"Result shape: {outer_result.shape}\n")
+```
+
+### Advanced Merge Techniques
+
+**Reference:**
+```python
+# Merging on multiple columns
+sales_data = pd.DataFrame({
+    'date': ['2024-01-01', '2024-01-01', '2024-01-02', '2024-01-02'],
+    'store_id': [1, 2, 1, 2],
+    'revenue': [1000, 1500, 1200, 1300]
+})
+
+store_info = pd.DataFrame({
+    'store_id': [1, 2, 3],
+    'store_name': ['Downtown', 'Mall', 'Airport'],
+    'manager': ['Alice', 'Bob', 'Charlie']
+})
+
+# Simple merge on single column
+merged = pd.merge(sales_data, store_info, on='store_id', how='left')
+print("Merged sales and store data:")
+print(merged)
+
+# Merging with different column names
+products = pd.DataFrame({
+    'prod_id': [1, 2, 3, 4],
+    'product_name': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
+    'category': ['Electronics', 'Accessories', 'Accessories', 'Electronics']
+})
+
+sales_detailed = pd.DataFrame({
+    'sale_id': [1001, 1002, 1003],
+    'product_id': [1, 2, 1],  # Different column name
+    'quantity': [2, 5, 1],
+    'sale_date': ['2024-01-15', '2024-01-16', '2024-01-17']
+})
+
+# Merge with different column names
+detailed_sales = pd.merge(
+    sales_detailed, 
+    products, 
+    left_on='product_id', 
+    right_on='prod_id', 
+    how='left'
+).drop('prod_id', axis=1)  # Remove duplicate column
+
+print("\nDetailed sales with product info:")
+print(detailed_sales)
+
+# Merge with suffixes for overlapping column names
+team_a = pd.DataFrame({
+    'player_id': [1, 2, 3],
+    'name': ['Alice', 'Bob', 'Charlie'],
+    'score': [95, 87, 92]
+})
+
+team_b = pd.DataFrame({
+    'player_id': [1, 2, 4],
+    'name': ['Alice', 'Bob', 'Diana'],  # Same names, different players
+    'score': [88, 94, 89]
+})
+
+# Merge with suffixes to distinguish columns
+team_comparison = pd.merge(
+    team_a, 
+    team_b, 
+    on='player_id', 
+    how='outer',
+    suffixes=('_team_a', '_team_b')
+)
+
+print("\nTeam comparison with suffixes:")
+print(team_comparison)
+```
+
+## Data Reshaping with Pivot and Melt
+
+### Pivot Operations - Wide Format
+
+**Reference:**
+```python
+# Sample long-format data
+sales_long = pd.DataFrame({
+    'date': ['2024-01-01', '2024-01-01', '2024-01-02', '2024-01-02', 
+             '2024-01-01', '2024-01-01', '2024-01-02', '2024-01-02'],
+    'product': ['Laptop', 'Mouse', 'Laptop', 'Mouse', 
+                'Laptop', 'Mouse', 'Laptop', 'Mouse'],
+    'metric': ['revenue', 'revenue', 'revenue', 'revenue',
+               'units', 'units', 'units', 'units'],
+    'value': [1200, 25, 1300, 30, 2, 5, 3, 6]
+})
+
+print("Original long-format data:")
+print(sales_long)
+
+# Basic pivot - products as columns, dates as rows
+revenue_pivot = sales_long[sales_long['metric'] == 'revenue'].pivot(
+    index='date', 
+    columns='product', 
+    values='value'
+)
+
+print("\nRevenue by date and product (pivot):")
+print(revenue_pivot)
+
+# Pivot with multiple values
+full_pivot = sales_long.pivot(
+    index='date',
+    columns=['product', 'metric'],
+    values='value'
+)
+
+print("\nFull pivot with multiple metrics:")
+print(full_pivot)
+
+# Pivot table with aggregation
+sales_with_duplicates = pd.DataFrame({
+    'date': ['2024-01-01', '2024-01-01', '2024-01-01', '2024-01-02'],
+    'product': ['Laptop', 'Laptop', 'Mouse', 'Laptop'],
+    'store': ['A', 'B', 'A', 'A'],
+    'revenue': [1200, 1100, 25, 1300]
+})
+
+pivot_table_result = pd.pivot_table(
+    sales_with_duplicates,
+    index='date',
+    columns='product',
+    values='revenue',
+    aggfunc='sum',  # Aggregate function for duplicates
+    fill_value=0    # Fill missing values
+)
+
+print("\nPivot table with aggregation:")
+print(pivot_table_result)
+```
+
+### Melt Operations - Long Format
+
+**Reference:**
+```python
+# Sample wide-format data
+sales_wide = pd.DataFrame({
+    'date': ['2024-01-01', '2024-01-02', '2024-01-03'],
+    'Laptop': [1200, 1300, 1400],
+    'Mouse': [25, 30, 28],
+    'Keyboard': [75, 80, 85],
+    'Monitor': [300, 320, 310]
+})
+
+print("Original wide-format data:")
+print(sales_wide)
+
+# Basic melt - convert to long format
+sales_melted = pd.melt(
+    sales_wide,
+    id_vars=['date'],      # Columns to keep as identifiers
+    var_name='product',    # Name for the variable column
+    value_name='revenue'   # Name for the value column
+)
+
+print("\nMelted to long format:")
+print(sales_melted)
+
+# Melt with multiple ID variables
+detailed_wide = pd.DataFrame({
+    'date': ['2024-01-01', '2024-01-02'],
+    'store': ['Downtown', 'Mall'],
+    'Laptop_revenue': [1200, 1100],
+    'Laptop_units': [2, 2],
+    'Mouse_revenue': [25, 30],
+    'Mouse_units': [5, 6]
+})
+
+print("\nDetailed wide format with multiple metrics:")
+print(detailed_wide)
+
+# Advanced melt for complex reshaping
+detailed_melted = pd.melt(
+    detailed_wide,
+    id_vars=['date', 'store'],
+    var_name='product_metric',
+    value_name='value'
+)
+
+# Split the product_metric column
+detailed_melted[['product', 'metric']] = detailed_melted['product_metric'].str.split('_', expand=True)
+detailed_melted = detailed_melted.drop('product_metric', axis=1)
+
+print("\nComplex melt with split columns:")
+print(detailed_melted.head(10))
+
+# Pivot back to get clean format
+final_format = detailed_melted.pivot_table(
+    index=['date', 'store', 'product'],
+    columns='metric',
+    values='value',
+    aggfunc='first'
+).reset_index()
+
+print("\nFinal clean format:")
+print(final_format)
+```
+
+## Time Series Basics
+
+### Working with Dates and Times
+
+**Reference:**
+```python
+# Creating datetime data
+date_strings = ['2024-01-01', '2024-01-15', '2024-02-01', '2024-02-15']
+dates = pd.to_datetime(date_strings)
+
+print("Date conversion:")
+print(f"Original strings: {date_strings}")
+print(f"Converted dates: {dates}")
+
+# Creating a time series DataFrame
+ts_data = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=90, freq='D'),
+    'sales': np.random.normal(1000, 200, 90),
+    'customers': np.random.poisson(50, 90)
+})
+
+# Set date as index for time series operations
+ts_data.set_index('date', inplace=True)
+
+print(f"\nTime series data shape: {ts_data.shape}")
+print("First 5 rows:")
+print(ts_data.head())
+
+# Date-based selection
+print("\nJanuary 2024 data:")
+january_data = ts_data['2024-01']
+print(f"January shape: {january_data.shape}")
+print(january_data.head())
+
+# Date range selection
+print("\nFirst two weeks of January:")
+first_two_weeks = ts_data['2024-01-01':'2024-01-14']
+print(first_two_weeks)
+
+# Resampling - aggregate to different time periods
+print("\nWeekly aggregation:")
+weekly_data = ts_data.resample('W').agg({
+    'sales': 'sum',
+    'customers': 'mean'
+})
+print(weekly_data.head())
+
+print("\nMonthly aggregation:")
+monthly_data = ts_data.resample('M').agg({
+    'sales': ['sum', 'mean'],
+    'customers': ['sum', 'mean']
+})
+print(monthly_data)
+
+# Rolling calculations
+ts_data['sales_7day_avg'] = ts_data['sales'].rolling(window=7).mean()
+ts_data['sales_7day_sum'] = ts_data['sales'].rolling(window=7).sum()
+
+print("\nWith rolling calculations:")
+print(ts_data.head(10))
+```
+
+**Brief Example:**
+```python
+# Complete workflow: Load, merge, reshape, and analyze
+def analyze_multi_dataset_workflow():
+    """
+    Demonstrate complete workflow with multiple datasets
+    """
+    # Load multiple datasets
+    customers = pd.read_csv('customers.csv')
+    orders = pd.read_csv('orders.csv')
+    products = pd.read_csv('products.csv')
+    
+    print("=== MULTI-DATASET ANALYSIS WORKFLOW ===")
+    
+    # Step 1: Merge datasets
+    print("\n1. MERGING DATASETS")
+    # First merge orders with customers
+    orders_with_customers = pd.merge(orders, customers, on='customer_id', how='left')
+    
+    # Then merge with products
+    full_dataset = pd.merge(orders_with_customers, products, on='product_id', how='left')
+    
+    print(f"Final merged dataset: {full_dataset.shape}")
+    
+    # Step 2: Reshape for analysis
+    print("\n2. RESHAPING DATA")
+    # Create pivot table for analysis
+    customer_product_summary = pd.pivot_table(
+        full_dataset,
+        index='customer_name',
+        columns='product_category',
+        values='order_amount',
+        aggfunc='sum',
+        fill_value=0
+    )
+    
+    print("Customer purchase patterns by category:")
+    print(customer_product_summary.head())
+    
+    # Step 3: Time-based analysis
+    print("\n3. TIME-BASED ANALYSIS")
+    full_dataset['order_date'] = pd.to_datetime(full_dataset['order_date'])
+    daily_sales = full_dataset.groupby('order_date')['order_amount'].sum()
+    
+    # Calculate 7-day moving average
+    daily_sales_ma = daily_sales.rolling(window=7).mean()
+    
+    print("Daily sales trend with moving average:")
+    print(daily_sales_ma.tail())
+    
+    return full_dataset, customer_product_summary, daily_sales_ma
+
+# This function could be called from command line script
+```
+
+# LIVE DEMO!
+*Building a complete automated analysis pipeline: from script creation to batch processing multiple datasets*
+
+# Professional Code Organization
+
+## Functions and Modularity
+
+**Reference:**
+```python
+# analysis_utils.py - Shared utility functions
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+def load_and_validate_csv(file_path, required_columns=None):
+    """
+    Load CSV with validation
+    
+    Args:
+        file_path (str): Path to CSV file
+        required_columns (list): List of required column names
+        
+    Returns:
+        pandas.DataFrame: Validated data
+    """
+    if not Path(file_path).exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
+    
+    df = pd.read_csv(file_path)
+    
+    if required_columns:
+        missing_cols = [col for col in required_columns if col not in df.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns: {missing_cols}")
+    
+    return df
+
+def calculate_summary_statistics(df, numeric_columns=None):
+    """
+    Calculate comprehensive summary statistics
+    
+    Args:
+        df (pandas.DataFrame): Input data
+        numeric_columns (list): Specific columns to analyze
+        
+    Returns:
+        dict: Summary statistics
+    """
+    if numeric_columns is None:
+        numeric_columns = df.select_dtypes(include=[np.number]).columns
+    
+    summary = {}
+    
+    for col in numeric_columns:
+        summary[col] = {
+            'count': df[col].count(),
+            'mean': df[col].mean(),
+            'median': df[col].median(),
+            'std': df[col].std(),
+            'min': df[col].min(),
+            'max': df[col].max(),
+            'missing': df[col].isnull().sum()
+        }
+    
+    return summary
+
+def export_results(data, output_path, format='csv'):
+    """
+    Export results in specified format
+    
+    Args:
+        data: Data to export (DataFrame, dict, etc.)
+        output_path (str): Output file path
+        format (str): Export format ('csv', 'json', 'excel')
+    """
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    if format == 'csv' and hasattr(data, 'to_csv'):
+        data.to_csv(output_path, index=False)
+    elif format == 'json' and hasattr(data, 'to_json'):
+        data.to_json(output_path, orient='records', indent=2)
+    elif format == 'excel' and hasattr(data, 'to_excel'):
+        data.to_excel(output_path, index=False)
+    else:
+        raise ValueError(f"Unsupported format: {format}")
+    
+    print(f"Results exported to {output_path}")
+```
+
+### Documentation and Comments
+
+**Reference:**
+```python
+def advanced_data_processor(df, config=None):
+    """
+    Process dataset with configurable transformations and analysis.
+    
+    This function performs a comprehensive analysis pipeline including
+    data cleaning, feature engineering, statistical analysis, and 
+    results export. It's designed to be flexible and handle various
+    data quality issues automatically.
+    
+    Args:
+        df (pandas.DataFrame): Input dataset to process
+        config (dict, optional): Configuration parameters including:
+            - 'remove_outliers' (bool): Whether to remove statistical outliers
+            - 'fill_missing' (str): Method for handling missing values 
+              ('mean', 'median', 'drop', 'forward_fill')
+            - 'normalize_text' (bool): Whether to normalize text columns
+            - 'date_columns' (list): Columns to parse as dates
+            - 'output_format' (str): Export format ('csv', 'json', 'excel')
+    
+    Returns:
+        tuple: (processed_dataframe, analysis_results, metadata)
+            - processed_dataframe: Cleaned and transformed data
+            - analysis_results: Dictionary of statistical results
+            - metadata: Processing information and data quality metrics
+    
+    Raises:
+        ValueError: If required columns are missing or config is invalid
+        TypeError: If input data is not a pandas DataFrame
+        
+    Examples:
+        Basic usage:
+        >>> df = pd.read_csv('data.csv')
+        >>> processed_df, results, meta = advanced_data_processor(df)
+        
+        With configuration:
+        >>> config = {'remove_outliers': True, 'fill_missing': 'median'}
+        >>> processed_df, results, meta = advanced_data_processor(df, config)
+    
+    Note:
+        This function modifies numeric data types for memory efficiency
+        and logs all processing steps for reproducibility.
+    """
+    
+    # Input validation
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    
+    if df.empty:
+        raise ValueError("Input DataFrame is empty")
+    
+    # Set default configuration
+    default_config = {
+        'remove_outliers': False,
+        'fill_missing': 'drop',
+        'normalize_text': True,
+        'date_columns': [],
+        'output_format': 'csv'
+    }
+    
+    # Merge with user config
+    if config is None:
+        config = {}
+    
+    processing_config = {**default_config, **config}
+    
+    # Initialize tracking variables
+    processing_steps = []
+    original_shape = df.shape
+    
+    # Start processing pipeline
+    processed_df = df.copy()
+    
+    # Step 1: Handle missing values
+    if processing_config['fill_missing'] == 'drop':
+        # Remove rows with any missing values
+        processed_df = processed_df.dropna()
+        processing_steps.append(f"Removed {original_shape[0] - len(processed_df)} rows with missing values")
+    
+    elif processing_config['fill_missing'] in ['mean', 'median']:
+        # Fill numeric columns with specified statistic
+        numeric_cols = processed_df.select_dtypes(include=[np.number]).columns
+        
+        for col in numeric_cols:
+            if processed_df[col].isnull().any():
+                fill_value = processed_df[col].mean() if processing_config['fill_missing'] == 'mean' else processed_df[col].median()
+                processed_df[col].fillna(fill_value, inplace=True)
+                processing_steps.append(f"Filled missing values in {col} with {processing_config['fill_missing']}")
+    
+    # Step 2: Text normalization
+    if processing_config['normalize_text']:
+        text_cols = processed_df.select_dtypes(include=['object']).columns
+        
+        for col in text_cols:
+            # Convert to lowercase and strip whitespace
+            processed_df[col] = processed_df[col].astype(str).str.lower().str.strip()
+            processing_steps.append(f"Normalized text in {col}")
+    
+    # Step 3: Date parsing
+    for col in processing_config['date_columns']:
+        if col in processed_df.columns:
+            processed_df[col] = pd.to_datetime(processed_df[col], errors='coerce')
+            processing_steps.append(f"Parsed {col} as datetime")
+    
+    # Step 4: Outlier removal (if requested)
+    if processing_config['remove_outliers']:
+        numeric_cols = processed_df.select_dtypes(include=[np.number]).columns
+        outliers_removed = 0
+        
+        for col in numeric_cols:
+            # Use IQR method for outlier detection
+            Q1 = processed_df[col].quantile(0.25)
+            Q3 = processed_df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            before_count = len(processed_df)
+            processed_df = processed_df[(processed_df[col] >= lower_bound) & (processed_df[col] <= upper_bound)]
+            after_count = len(processed_df)
+            
+            outliers_removed += (before_count - after_count)
+        
+        if outliers_removed > 0:
+            processing_steps.append(f"Removed {outliers_removed} outlier rows")
+    
+    # Generate analysis results
+    analysis_results = calculate_summary_statistics(processed_df)
+    
+    # Create metadata
+    metadata = {
+        'original_shape': original_shape,
+        'processed_shape': processed_df.shape,
+        'processing_steps': processing_steps,
+        'config_used': processing_config,
+        'data_types': dict(processed_df.dtypes),
+        'memory_usage_mb': processed_df.memory_usage(deep=True).sum() / (1024**2)
+    }
+    
+    return processed_df, analysis_results, metadata
+```
+
+# Key Takeaways
+
+1. **Automation saves time** - invest upfront in reusable scripts and workflows
+2. **Command line arguments** make scripts flexible and professional
+3. **Error handling and logging** are essential for production workflows
+4. **pandas merging** handles complex data relationships efficiently
+5. **Pivot and melt** convert between wide and long formats as needed
+6. **Time series operations** unlock temporal analysis capabilities
+7. **Modular code organization** makes analysis reproducible and maintainable
+8. **Documentation** is crucial for future maintainability
+
+You now have the skills to create automated analysis workflows that can process multiple datasets efficiently and handle complex data manipulation tasks professionally.
+
+Next week: We'll explore statistical analysis and hypothesis testing techniques!
+
+# Practice Challenge
+
+Before next class:
+1. **Automation Practice:**
+   - Create a command-line script that processes multiple CSV files
+   - Add error handling and logging to your script
+   - Use shell scripting to automate a multi-step workflow
+   
+2. **Advanced pandas:**
+   - Practice merging datasets with different join types
+   - Convert data between wide and long formats using pivot/melt
+   - Work with time series data and calculate rolling statistics
+   
+3. **Professional Practices:**
+   - Organize your analysis code into reusable functions
+   - Add comprehensive documentation to your functions
+   - Create a complete automated pipeline for a multi-dataset analysis
+
+Remember: Good automation is about creating reliable, reusable workflows that save time in the long run!

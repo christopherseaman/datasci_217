@@ -1,0 +1,48 @@
+student_id,name,major,year,difficulty,usefulness,instructor_rating,comments
+S001, alice SMITH ,biology,2024,4,5,4,Great course overall! Really helped me understand the concepts.
+S002,BOB Chen,chemistry,2025,3,4,5,Professor was excellent but material was challenging.
+S003,  Carol Davis  ,physics,2023,5,3,3,Very difficult but I learned a lot. Could use more examples.
+S004,david wilson,Biology,2024,,4,4,Missing some difficulty rating but good course.
+S005,Emma Thompson,mathematics,2025,4,,5,Loved the instructor! Very clear explanations.
+S006,frank garcia,Chemistry,2023,2,5,4,Easier than expected but very practical applications.
+S007,  Grace Lee,biology,2024,4,5,,Excellent course content missing instructor rating.
+S008,henry wang,PHYSICS,2025,5,2,2,Too theoretical not enough practical work.
+S009,Isabel Rodriguez,chemistry,2023,3,4,5,Well balanced course good mix of theory and practice.
+S010,James Miller,Biology,2024,4,4,4,Solid course met my expectations exactly.
+S011,  karen johnson  ,mathematics,2025,5,5,5,Perfect course! Challenging but very rewarding.
+S012,luis martinez,Chemistry,2023,2,3,4,Could be more challenging but good introduction.
+S013,Maria Gonzalez,physics,2024,4,5,4,Great practical applications loved the lab work.
+S014,Nathan Brown,BIOLOGY,2025,3,4,3,Good course but could use more current examples.
+S015,olivia taylor,chemistry,2023,,3,4,Material was okay but presentation could improve.
+S016,Peter Anderson,Mathematics,2024,5,4,5,Very challenging but instructor was super helpful.
+S017,  quinn wilson,biology,2025,4,5,4,Excellent balance of difficulty and usefulness.
+S018,rachel kim,CHEMISTRY,2023,3,5,5,Practical focus was exactly what I needed.
+S019,steven clark,Physics,2024,5,3,3,Interesting material but very demanding workload.
+S020,tina patel,biology,2025,2,4,4,Easier than other courses but still valuable.
+S021,victor huang,Mathematics,2023,4,,4,Good course missing usefulness rating somehow.
+S022,  wendy liu,chemistry,2024,3,4,5,Well structured course with clear objectives.
+S023,xavier cruz,PHYSICS,2025,5,5,4,Challenging but absolutely worth the effort.
+S024,yvonne zhang,Biology,2023,4,4,4,Consistent quality throughout the semester.
+S025,zachary adams,mathematics,2024,3,5,5,Very practical applications great instructor.
+S026,amy foster,Chemistry,2025,,4,3,Course content was good instructor needs improvement.
+S027,brian cooper,biology,2023,4,3,4,Decent course but could be more engaging.
+S028,  christina ward,PHYSICS,2024,5,4,4,Demanding but fair challenging material well presented.
+S029,daniel torres,chemistry,2025,2,5,5,Surprisingly practical very applicable to real world.
+S030,elena rivera,Mathematics,2023,4,4,,Good mathematical foundation missing instructor rating.
+S031,felix wong,biology,2024,3,4,4,Well organized course good progression of topics.
+S032,gina murphy,CHEMISTRY,2025,4,5,5,Perfect blend of theory and practical application.
+S033,  henry scott,physics,2023,5,3,3,Very theoretical could use more hands on work.
+S034,iris chen,Biology,2024,2,4,4,Less challenging than expected but still learned.
+S035,jack robinson,mathematics,2025,5,5,4,Excellent course very comprehensive coverage.
+S036,kelly wright,chemistry,2023,,3,4,Content was average nothing particularly exciting.
+S037,lucas green,PHYSICS,2024,4,4,5,Great instructor made difficult material accessible.
+S038,monica hall,biology,2025,3,5,4,Very practical applications loved the real world examples.
+S039,noah campbell,Mathematics,2023,4,4,4,Solid foundational course good preparation for advanced work.
+S040,  ophelia king,chemistry,2024,5,4,3,Challenging material instructor could be clearer.
+S041,paul evans,BIOLOGY,2025,3,4,5,Good balance not too easy not too hard.
+S042,quincy baker,physics,2023,5,5,5,Outstanding course! Difficult but incredibly rewarding.
+S043,ruby nelson,chemistry,2024,2,3,4,Easier course good for building confidence.
+S044,seth parker,Mathematics,2025,4,5,,Excellent practical focus missing instructor rating.
+S045,tara collins,biology,2023,4,4,4,Consistent quality good learning experience overall.
+S046,  ulysses gray,CHEMISTRY,2024,3,5,5,Very applicable to real world situations loved it.
+S047,vera phillips,Physics,2025,5,3,3,Interesting but very theoretical approach throughout.

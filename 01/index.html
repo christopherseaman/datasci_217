@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataSci-217: Lecture 01 - Command Line + Python</title>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+</head>
+<body>
+    <div class="lecture-container">
+        <header class="lecture-header">
+            <h1>DataSci-217: Lecture 01</h1>
+            <p>Command Line + Python</p>
+            <nav class="lecture-nav">
+                <a href="../">← Back to Course</a>
+            </nav>
+        </header>
+        
+        <main class="lecture-content">
+            <div class="content" id="content">
+                <div class="loading">Loading content...</div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        fetch('README.md')
+            .then(response => response.text())
+            .then(text => {
+                const converter = new showdown.Converter({
+                    tables: true,
+                    strikethrough: true,
+                    tasklists: true
+                });
+                document.getElementById('content').innerHTML = converter.makeHtml(text);
+            })
+            .catch(error => {
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <h2>Error Loading Content</h2>
+                        <p>Could not load README.md</p>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            });
+    </script>
+</body>
+</html>

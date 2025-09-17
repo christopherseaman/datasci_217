@@ -1,0 +1,8 @@
+# Assignment 01 Requirements
+# Basic Python standard library - no additional packages needed
+
+# For testing (used by GitHub Classroom autograding)
+pytest>=7.0.0
+
+# Note: This assignment only uses Python standard library
+# Future assignments will have more substantial requirements
