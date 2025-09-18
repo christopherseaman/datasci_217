@@ -74,26 +74,28 @@
    ```bash
    python3 03_python_basics_demo.py
    ```
-   - Typo error happens: "student_naem"
-   - Error message hints
+   - Typo error shown: "student_naem" (commented out with fix)
+   - Error message explanations and debugging tips
 
 3. F-strings
-   - Missing 'f' mistake
+   - Missing 'f' mistake (commented out with fix)
    - Common error pattern
    - Professional formatting
 
 4. Indentation and Lists
    - Python's unique indentation-based syntax
-   - IndexError: lists start at 0, not 1
+   - IndexError: lists start at 0, not 1 (commented out with fix)
 
-5. Real-world Debugging
-   - Actual data with actual problems
+5. Basic Operations and Error Handling
+   - Math operations and string handling
+   - Division by zero and off-by-one errors (commented out with fixes)
    - Step-by-step debugging approach
-   - Data validation importance
+   - Data type checking importance
 
 **Interactive Elements:**
-- Have students identify errors as they occur
+- Have students identify errors as they occur (now shown as commented-out code)
 - Discuss data types and their importance
+- Practice reading error messages and understanding fixes
 
 # Demo 4: Control Structures
 **Script:** `04_control_structures_demo.py`
@@ -103,15 +105,15 @@
    ```bash
    python3 04_control_structures_demo.py
    ```
-   - = assigns, == compares
-   - Order-matters error in conditions
+   - = assigns, == compares (commented out with fix)
+   - Order-matters error in conditions (commented out with fix)
 
 2. For Loops
-   - 0-based vs 1-based indexing confusion
+   - 0-based vs 1-based indexing confusion (commented out with fix)
    - enumerate() as Python's elegant solution
 
 3. While Loops
-   - Commented-out infinite loop
+   - Commented-out infinite loop (commented out with fix)
    - Ensuring loops can end
 
 4. Nested Loops and Comprehensions
@@ -126,6 +128,7 @@
 **Interactive Elements:**
 - Have students predict output before execution
 - Compare different coding approaches
+- Practice identifying logic errors in commented-out code
 
 # Demo 5: Complete Integration
 **Script:** `05_integration_workflow_demo.py`
@@ -141,6 +144,7 @@
    ```
    - Professional project structure
    - Intentional bad data as realistic scenario
+   - Simplified linear workflow (no complex functions)
 
 3. Data Loading with Validation
    - Validation catching problems
@@ -163,16 +167,11 @@
 - Potential additions to the analysis
 - Scaling considerations for larger datasets
 
-# Post-Demo Wrap-up
+# Take-away Message:
 
-# Key Messages to Reinforce:
 1. **Errors are teachers** - "Every error message is a learning opportunity"
 2. **Organization matters** - "Start clean, stay clean"
 3. **Test small, build big** - "Always verify each piece works"
 4. **Debugging is detective work** - "Use print(), check types, read errors"
 5. **This is real** - "You've seen actual data science workflow"
 
-# Call to Action:
-- "Run these demos yourself - break them, fix them, modify them"
-- "The homework builds directly on these concepts"
-- "Office hours if you get stuck - bring your errors!"
