@@ -2,7 +2,9 @@
 
 Welcome to week 3! Now that you've mastered the basics of Python and Git, it's time to learn Python's powerful built-in data structures and how to work with files. These are the fundamental building blocks of data science.
 
-By the end of today, you'll know how to organize data using lists and dictionaries, manipulate text files, and handle CSV data - the core skills for any data analysis project.
+**Note:** This lecture also covers virtual environments and package management - essential tools for managing Python dependencies and keeping your projects isolated and reproducible.
+
+By the end of today, you'll know how to organize data using lists and dictionaries, manipulate text files, handle CSV data, and manage Python environments - the core skills for any data analysis project.
 
 ![xkcd 353: Python](media/xkcd_353.png)
 

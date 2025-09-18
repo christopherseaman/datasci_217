@@ -19,7 +19,7 @@ Reorganize DataSci 217 from existing content into a coherent 11-lecture sequence
 ```
 01-11/                             # Final lecture directories (root level)
 ├── 01/
-│   ├── index.md                   # Notion-formatted narrative content
+│   ├── README.md                   # Notion-formatted narrative content
 │   ├── assignment/                # GitHub Classroom compatible
 │   │   ├── README.md              # Assignment instructions
 │   │   ├── test_*.py              # Pytest testing framework  
@@ -51,8 +51,7 @@ Reorganize DataSci 217 from existing content into a coherent 11-lecture sequence
      * VERY brief usage example (context covered in demos)
    - **Content Triage**:
      * **Main lecture**: Essential daily data science tools only
-     * **Bonus content**: Advanced topics, theoretical deep-dives, cut content from lectures_bkp
-     * **Reduction goal**: Significantly reduce content volume from lectures_bkp
+     * **Bonus content**: Advanced topics, theoretical deep-dives, 
    - **Tone**: Highly knowledgeable with nerdy humor, relevant xkcd comics (suggestions for similar also welcome), occasional memes
 
 3. **Interactive Components per Lecture**:
@@ -89,7 +88,6 @@ Reorganize DataSci 217 from existing content into a coherent 11-lecture sequence
    - **Prerequisite Planning**: Follow dependency mapping in `work/prerequisites_mapping.md` to ensure no skill gaps in lecture sequence
 
 6. **Bonus Content Strategy ("DLC")**:
-   - Move cut content from lectures_bkp to appropriate lecture bonus/ directories
    - Advanced topics that exceed daily tool usage
    - Theoretical foundations beyond practical application
    - Optional enrichment for motivated students
