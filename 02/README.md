@@ -1,4 +1,4 @@
-Command Line Mastery, Python Fundamentals, and Version Control
+Command Line & Python Fundamentals, plus Version Control
 
 ![xkcd 1597: Git](media/xkcd_1597.png)
 
@@ -431,14 +431,59 @@ sorted_students = sorted(students, key=lambda x: x[1], reverse=True)
 
 # Git Version Control
 
-Git provides distributed version control through a sophisticated data model based on content-addressed objects. Understanding Git's underlying concepts enables effective use of both command-line and graphical interfaces. The system tracks changes through snapshots rather than file differences, creating a robust foundation for collaborative development.
+Don't worry - we're taking a different approach than that xkcd suggests!
 
 ![xkcd Git](media/xkcd_git.png)
 
-## Git Data Model and Concepts
+## Why Version Control Matters
 
-**Conceptual Description:**
-Git models project history as a directed acyclic graph of snapshots. Each commit represents a complete project state, with references providing human-readable names for specific commits. This design enables powerful branching and merging capabilities.
+### The Problem Without Version Control
+
+Picture this: You're working on a data analysis. You create these files:
+
+- `analysis_v1.py`
+- `analysis_v2.py`
+- `analysis_v2_final.py`
+- `analysis_v2_final_ACTUALLY_FINAL.py`
+- `analysis_fixed_broken_computer_recovery.py`
+
+Sound familiar? Now imagine collaborating with teammates doing the same thing. Chaos!
+
+### The Git Solution
+
+Git tracks every change to every file in your project. You can:
+
+- See exactly what changed and when
+- Go back to any previous version
+- Work on features in parallel without conflicts
+- Collaborate with teammates seamlessly
+- Never lose work (it's all backed up on GitHub)
+
+It's like having infinite "undo" for your entire project, plus collaboration superpowers.
+
+## Git Concepts - The Mental Model
+
+### Repository (Repo)
+Your project folder that Git tracks. Contains your files plus a hidden `.git` folder with all the version history.
+
+Think: "This entire folder is under Git management."
+
+### Commit
+A saved snapshot of your project at a specific point in time. Like saving a game - you can always come back to this exact state.
+
+Think: "I'm saving my progress with a description of what I accomplished."
+
+### Remote
+The version of your repository stored on GitHub (or similar service). Your local computer has a copy, GitHub has a copy, your teammates have copies.
+
+Think: "The shared version everyone can access."
+
+### Branch
+A parallel timeline for your project. The main branch contains your official version, feature branches contain experimental work.
+
+Think: "I'm trying something new without risking the working version."
+
+*We'll focus on the main branch today - branches come later!*
 
 **Reference:**
 - **Repository**: Collection of objects and references
@@ -452,26 +497,62 @@ Git models project history as a directed acyclic graph of snapshots. Each commit
 
 ![Git Branches](media/git_branches.png)
 
+
+![Git Clone](media/git_clone.png)
+
+## GUI-First Git with VS Code
+
+### Why Start with GUI?
+
+Command line Git is powerful, but the visual interface helps you understand what's happening. VS Code's Git integration shows you:
+
+- Which files changed (visual diff)
+- What you're about to commit
+- The status of everything at a glance
+
+Once you understand Git concepts, you can choose GUI or command line based on the task.
+
+### Setting Up Git in VS Code
+
+**Reference:**
+
+1. Install VS Code (if not already done)
+2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
+3. If first time: VS Code will prompt to configure Git username/email
+
 **Brief Example:**
-```bash
-# Git objects are content-addressed
-git cat-file -p HEAD          # View current commit
-git ls-tree HEAD              # View current directory structure
-git show HEAD:filename        # View file in current commit
+
 ```
+Git configuration (one-time setup):
+- Full Name: Alice Smith
+- Email: alice.smith@ucsf.edu (use your actual UCSF email)
+```
+
+![GitHub Email Setup](media/github_email.png)
 
 ## Essential Git Commands
 
 **Conceptual Description:**
-Basic Git commands manipulate the object database and references. The three-stage workflow (working directory, staging area, repository) provides precise control over what changes are committed.
-
-![Git Clone](media/git_clone.png)
+Basic Git commands manipulate the object database and references. The three-stage workflow (working directory, staging 
+area, repository) provides precise control over what changes are committed.
 
 **Reference:**
+
+Essential:
+
 - `git init` - Initialize repository
+- `git clone [url]` - Copy remote repository
 - `git status` - Show working directory status
 - `git add [file]` - Stage changes
 - `git commit -m "message"` - Create commit
+- `git push [remote] [branch]` - Send commits to remote
+- `git pull [remote] [branch]` - Fetch and merge from remote
+
+Helpful but less essential:
+
+- `git remote add [name] [url]` - Add remote
+- `git fetch [remote]` - Download commits without merging
+- `git remote -v` - List remotes
 - `git log` - Show commit history
 - `git diff` - Show changes
 - `git checkout [commit/branch]` - Switch to commit or branch
@@ -479,6 +560,7 @@ Basic Git commands manipulate the object database and references. The three-stag
 - `git merge [branch]` - Merge branch
 
 **Brief Example:**
+
 ```bash
 git init                      # Start new repository
 git add analysis.py           # Stage file
@@ -488,75 +570,12 @@ git branch feature-analysis  # Create branch
 git checkout feature-analysis # Switch to branch
 ```
 
-## Remote Repositories and Collaboration
-
-**Conceptual Description:**
-Remote repositories enable collaboration by providing shared storage for project history. Git's distributed nature allows multiple developers to work independently while maintaining synchronization through push and pull operations.
-
-**Reference:**
-- `git clone [url]` - Copy remote repository
-- `git remote add [name] [url]` - Add remote
-- `git push [remote] [branch]` - Send commits to remote
-- `git pull [remote] [branch]` - Fetch and merge from remote
-- `git fetch [remote]` - Download commits without merging
-- `git remote -v` - List remotes
-
-**Brief Example:**
+**Another Example:**
 ```bash
 git clone https://github.com/user/repo.git
 git remote add origin https://github.com/user/repo.git
 git push origin main
 git pull origin main
-```
-
-## VS Code Git Integration
-
-**Conceptual Description:**
-VS Code provides visual Git integration through the Source Control panel, making version control accessible through graphical interfaces. The integration shows file changes, staging status, and commit history without requiring command-line knowledge.
-
-**Reference:**
-- Source Control panel shows modified files
-- Visual diff displays changes side-by-side
-- Staging area shows files ready for commit
-- Commit message input with validation
-- Branch switching through interface
-- Merge conflict resolution tools
-
-**Brief Example:**
-```
-VS Code Workflow:
-1. Edit files in editor
-2. Source Control panel shows changes
-3. Click "+" to stage files
-4. Enter commit message
-5. Click checkmark to commit
-6. Click sync to push to remote
-```
-
-## GitHub Web Interface
-
-**Conceptual Description:**
-GitHub's web interface provides repository management, collaboration tools, and project hosting. The platform extends Git's capabilities with issue tracking, pull requests, and automated workflows.
-
-
-**Reference:**
-- Repository creation and management
-- File editing through web interface
-- Issue tracking and project management
-- Pull request workflow for code review
-- GitHub Actions for automation
-- Fork and clone operations
-- Release management
-
-**Brief Example:**
-```
-GitHub Workflow:
-1. Create repository on GitHub
-2. Clone to local machine
-3. Make changes locally
-4. Push changes to GitHub
-5. Create pull request for review
-6. Merge after approval
 ```
 
 ## VS Code Git Integration
