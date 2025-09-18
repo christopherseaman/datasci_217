@@ -1,9 +1,0 @@
-student_id,course,grade,semester
-001,Python,87.5,Fall 2024
-001,Statistics,92.0,Fall 2024
-002,Python,78.3,Fall 2024
-002,Database,,Fall 2024
-003,Python,95.2,Fall 2024
-004,Python,invalid,Fall 2024
-005,Statistics,88.7,Fall 2024
-006,Python,73.5,Fall 2024

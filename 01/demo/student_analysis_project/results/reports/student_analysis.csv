@@ -1,7 +1,0 @@
-student_id,name,major,year,courses_taken,average_grade,highest_grade,lowest_grade,status
-001,Alice Johnson,Computer Science,3,2,89.75,92.0,87.5,PASSING
-002,Bob Smith,Data Science,2,1,78.30,78.3,78.3,PASSING
-003,Charlie Brown,Statistics,4,1,95.20,95.2,95.2,PASSING
-004,Diana Prince,Computer Science,2,0,0.00,0.0,0.0,FAILING
-005,Eve Anderson,Data Science,3,1,88.70,88.7,88.7,PASSING
-006,Frank Miller,Statistics,1,1,73.50,73.5,73.5,PASSING
