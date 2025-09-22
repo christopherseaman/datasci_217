@@ -2,438 +2,10 @@ Command Line & Python Fundamentals, plus Version Control
 
 ![xkcd 1597: Git](media/xkcd_1597.png)
 
-# Command Line Mastery
-
-### Essential Navigation Commands
-
-**Conceptual Description:**
-Navigation commands form the foundation of command line usage, allowing you to orient yourself within the file system and move between directories efficiently.
-
-![xkcd 353: Python](media/xkcd_353.png)
-
-**Reference:**
-- `pwd` - Print working directory (shows current location)
-- `ls` - List directory contents
-- `ls -la` - List with detailed information (permissions, size, date)
-- `cd [path]` - Change directory
-- `cd ..` - Move up one directory level
-- `cd ~` - Navigate to home directory
-- `cd -` - Return to previous directory
-
-**Brief Example:**
-```bash
-pwd                    # /Users/username/Documents
-ls -la                 # Show all files with details
-cd projects/data_science
-pwd                    # /Users/username/Documents/projects/data_science
-```
-
-### File and Directory Operations
-
-**Conceptual Description:**
-File operations enable creation, modification, and organization of your project structure. These commands form the building blocks of data science project management.
-
-**Reference:**
-- `mkdir [name]` - Create directory
-- `mkdir -p [path/to/nested]` - Create nested directories
-- `touch [filename]` - Create empty file
-- `cp [source] [destination]` - Copy files or directories
-- `mv [source] [destination]` - Move or rename files
-- `rm [filename]` - Remove file
-- `rm -r [directory]` - Remove directory recursively
-- `rm -rf [directory]` - Force remove directory (use with caution)
-
-**Brief Example:**
-```bash
-mkdir -p data/raw data/processed scripts
-touch scripts/analysis.py
-cp data/raw/dataset.csv data/processed/
-```
-
-### Text Processing and Search
-
-**Conceptual Description:**
-Text processing commands enable efficient data exploration and manipulation. These tools become essential when working with log files, configuration files, or any text-based data.
-
-**Reference:**
-- `cat [filename]` - Display entire file
-- `head [filename]` - Show first 10 lines
-- `tail [filename]` - Show last 10 lines
-- `grep [pattern] [filename]` - Search for text patterns
-- `grep -r [pattern] [directory]` - Recursive search
-- `wc -l [filename]` - Count lines in file
-
-**Brief Example:**
-```bash
-head -20 data.csv              # Preview first 20 lines
-grep "error" logfile.txt       # Find error messages
-```
-
-### Visual Directory Structure
-
-**Conceptual Description:**
-Sometimes you need to see the overall structure of a project or directory tree. The `tree` command provides a clean, hierarchical view that's invaluable for understanding project organization.
-
-**Reference:**
-- `tree` - Show directory structure
-- `tree -L 2` - Limit depth to 2 levels
-- `tree -a` - Show hidden files
-- `tree -d` - Show directories only
-
-**Brief Example:**
-```bash
-tree                    # Show full directory structure
-tree -L 2              # Show only 2 levels deep
-tree -d                # Show only directories
-```
-
-### History Navigation and Shortcuts
-
-**Conceptual Description:**
-Command line efficiency comes from mastering shortcuts and history navigation. These tools save time and reduce errors in daily work.
-
-**Reference:**
-- `Up arrow` - Previous command
-- `Down arrow` - Next command
-- `Ctrl+A` - Move to beginning of line
-- `Ctrl+E` - Move to end of line
-- `Ctrl+K` - Delete from cursor to end of line
-- `Ctrl+U` - Delete from cursor to beginning of line
-- `Tab` - Auto-complete commands, files, directories
-- `Ctrl+R` - Reverse search through history
-- `Ctrl+C` - Cancel current command
-- `Ctrl+D` - Exit shell
-
-**Brief Example:**
-```bash
-# Use up arrow to recall previous commands
-# Use Tab to complete: cd pro<Tab> → cd projects/
-# Use Ctrl+R to search: Ctrl+R then type "git" to find git commands
-```
-
-### Shell Scripting Fundamentals
-
-**Conceptual Description:**
-Shell scripting automates repetitive tasks and creates reusable command sequences. Scripts combine multiple commands with control flow to handle complex data processing workflows.
-
-**Reference:**
-- `#!/bin/bash` - Shebang line for bash scripts
-- `$1, $2, $3...` - Command line arguments
-- `$@` - All arguments
-- `$#` - Number of arguments
-- `$?` - Exit code of last command
-- `if [ condition ]; then ... fi` - Conditional execution
-- `for variable in list; do ... done` - Loop execution
-
-**Brief Example:**
-```bash
-#!/bin/bash
-# Process multiple data files
-for file in data/*.csv; do
-    echo "Processing $file"
-    head -1 "$file" > "processed/$(basename "$file")"
-done
-```
-
-### Command Chaining and Redirection
-
-**Conceptual Description:**
-Command chaining allows complex data processing pipelines by connecting multiple commands. Redirection controls where input comes from and where output goes, enabling powerful data transformations.
-
-**Reference:**
-- `command1 | command2` - Pipe output to next command
-- `command1 && command2` - Run command2 only if command1 succeeds
-- `command1 || command2` - Run command2 only if command1 fails
-- `command > file` - Redirect output to file
-- `command >> file` - Append output to file
-- `command < file` - Use file as input
-
-**Brief Example:**
-```bash
-grep "error" logfile.txt | wc -l    # Count error lines
-ls *.csv | head -5 > filelist.txt   # Save first 5 CSV files to list
-```
-
-# Python Fundamentals (McKinney Ch2+3)
-
-Python's design emphasizes readability and simplicity, making it ideal for data analysis. The language's object model treats everything as an object, providing consistent behavior across different data types. McKinney's approach focuses on practical data manipulation skills essential for scientific computing.
-
-![Python Import](media/python_import.webp)
-
-## Language Semantics and Object Model
-
-**Conceptual Description:**
-Python uses indentation for code structure instead of braces, creating visually clean code. Every value is an object with associated type information, enabling dynamic behavior and introspection capabilities.
-
-**Reference:**
-- Indentation defines code blocks (4 spaces recommended)
-- `#` for comments
-- `type(object)` - Get object type
-- `isinstance(object, type)` - Type checking
-- `id(object)` - Get object identity
-- `dir(object)` - List object attributes
-
-**Brief Example:**
-```python
-# Indentation matters
-if x > 0:
-    print("Positive")
-    y = x * 2
-
-# Everything is an object
-print(type(42))        # <class 'int'>
-print(isinstance("hello", str))  # True
-```
-
-## Scalar Types and Operations
-
-**Conceptual Description:**
-Scalar types represent single values in Python. The language provides rich support for numeric operations, string manipulation, and boolean logic essential for data analysis.
-
-**Reference:**
-- `int` - Arbitrary precision integers
-- `float` - Double-precision floating-point
-- `str` - Unicode strings
-- `bool` - True/False values
-- `None` - Null value
-- Arithmetic: `+`, `-`, `*`, `/`, `//`, `%`, `**`
-- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
-- Logical: `and`, `or`, `not`
-
-**Brief Example:**
-```python
-# Numeric operations
-count = 150
-average = 87.3
-population = 1.4e9  # Scientific notation
-
-# String operations
-name = "Alice Johnson"
-clean_name = "  Bob Smith  ".strip()
-
-# Boolean logic
-has_data = True
-analysis_ready = has_data and count > 0
-```
-
-## Print Statements and Output Formatting
-
-**Conceptual Description:**
-Print statements are your primary tool for communicating results and debugging code. Understanding different formatting options enables clear, professional output essential for data analysis.
-
-**Reference:**
-- `print(value)` - Basic printing
-- `print(value1, value2, value3)` - Multiple values
-- `f"text {variable}"` - F-string formatting (preferred)
-- `"text {}".format(variable)` - Format method
-- `print(f"Debug: {var} = {value}")` - Debugging output
-- `print(f"Result: {result:.2f}")` - Number formatting
-
-**Brief Example:**
-```python
-# Basic printing
-print("Analysis complete")
-print("Value:", 42)
-
-# F-string formatting (preferred)
-name = "Alice"
-score = 87.3
-print(f"Student: {name}")
-print(f"Score: {score:.1f}%")
-
-# Debugging with print
-data = [1, 2, 3, 4, 5]
-print(f"Debug: data = {data}, length = {len(data)}")
-print(f"Debug: type = {type(data)}")
-```
-
-## Type Checking and Debugging
-
-**Conceptual Description:**
-Understanding data types is crucial for debugging and data analysis. Python's dynamic typing means variables can change type, making type checking essential for reliable code.
-
-**Reference:**
-- `type(variable)` - Get variable type
-- `isinstance(variable, type)` - Check if variable is specific type
-- `print(f"Type: {type(var)}")` - Debug type information
-- `print(f"Value: {var}")` - Debug variable values
-- `print(f"Debug: {var} = {value}, type = {type(value)}")` - Complete debugging
-
-**Brief Example:**
-```python
-# Type checking for debugging
-user_input = "42"  # This is a string, not a number!
-print(f"Input: {user_input}")
-print(f"Type: {type(user_input)}")  # <class 'str'>
-
-# Convert and verify
-number = int(user_input)
-print(f"Converted: {number}")
-print(f"New type: {type(number)}")  # <class 'int'>
-
-# Debugging data processing
-data = [1, 2, "3", 4, 5]  # Mixed types!
-for item in data:
-    print(f"Item: {item}, Type: {type(item)}")
-    if isinstance(item, str):
-        print(f"  Converting string '{item}' to int")
-        item = int(item)
-```
-
-## Control Flow Structures
-
-**Conceptual Description:**
-Control flow determines program execution order through conditional statements and loops. Python's syntax emphasizes readability while providing powerful iteration capabilities.
-
-**Reference:**
-- `if condition: ... elif condition: ... else: ...`
-- `for variable in iterable: ...`
-- `while condition: ...`
-- `break` - Exit loop
-- `continue` - Skip to next iteration
-- `range(start, stop, step)` - Generate number sequences
-
-**Brief Example:**
-```python
-# Conditional logic
-score = 85
-if score >= 90:
-    grade = "A"
-elif score >= 80:
-    grade = "B"
-else:
-    grade = "C"
-
-# Iteration
-for i in range(5):
-    print(f"Count: {i}")
-
-# List iteration
-grades = [85, 92, 78, 96]
-for grade in grades:
-    if grade >= 90:
-        print(f"Excellent: {grade}")
-```
-
-## Data Structures: Lists and Tuples
-
-**Conceptual Description:**
-Lists provide mutable sequences for storing and manipulating data collections. Tuples offer immutable sequences useful for fixed data records and function returns.
-
-**Reference:**
-- `list()` - Create list
-- `[item1, item2, ...]` - List literal
-- `list.append(item)` - Add to end
-- `list.insert(index, item)` - Insert at position
-- `list.remove(item)` - Remove first occurrence
-- `list.pop(index)` - Remove and return item
-- `tuple()` - Create tuple
-- `(item1, item2, ...)` - Tuple literal
-
-**Brief Example:**
-```python
-# Lists - mutable sequences
-grades = [85, 92, 78, 96, 88]
-grades.append(90)
-grades.insert(1, 87)
-total = sum(grades)
-
-# Tuples - immutable sequences
-coordinates = (40.7128, -74.0060)
-name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
-```
-
-## Data Structures: Dictionaries and Sets
-
-**Conceptual Description:**
-Dictionaries provide key-value storage for structured data, while sets offer unique collections with mathematical operations. Both are essential for data organization and lookup operations.
-
-**Reference:**
-- `dict()` - Create dictionary
-- `{key: value, ...}` - Dictionary literal
-- `dict[key]` - Access value
-- `dict.get(key, default)` - Safe access
-- `dict.keys()`, `dict.values()`, `dict.items()` - Iteration
-- `set()` - Create set
-- `{item1, item2, ...}` - Set literal
-- `set.union()`, `set.intersection()`, `set.difference()` - Set operations
-
-**Brief Example:**
-```python
-# Dictionaries - key-value storage
-student = {"name": "Alice", "grade": 85, "major": "Data Science"}
-print(student["name"])  # "Alice"
-print(student.get("gpa", 0.0))  # Safe access
-
-# Sets - unique collections
-math_students = {"Alice", "Bob", "Charlie"}
-cs_students = {"Alice", "Diana", "Eve"}
-both_subjects = math_students & cs_students  # Intersection
-```
-
-## List Comprehensions and Sequence Functions
-
-**Conceptual Description:**
-List comprehensions provide concise syntax for creating lists through transformation and filtering. Built-in sequence functions offer efficient operations on data collections.
-
-**Reference:**
-- `[expr for item in iterable if condition]` - List comprehension
-- `enumerate(iterable)` - Get index and value pairs
-- `zip(iterable1, iterable2)` - Combine sequences
-- `sorted(iterable)` - Create sorted list
-- `reversed(iterable)` - Reverse sequence
-- `sum()`, `min()`, `max()`, `len()` - Aggregation functions
-
-**Brief Example:**
-```python
-# List comprehensions
-grades = [85, 92, 78, 96, 88]
-passing_grades = [g for g in grades if g >= 80]
-letter_grades = ['A' if g >= 90 else 'B' if g >= 80 else 'C' for g in grades]
-
-# Sequence functions
-for index, grade in enumerate(grades):
-    print(f"Student {index + 1}: {grade}")
-
-names = ["Alice", "Bob", "Charlie"]
-scores = [85, 92, 78]
-for name, score in zip(names, scores):
-    print(f"{name}: {score}")
-```
-
-## Functions and Lambda Expressions
-
-**Conceptual Description:**
-Functions organize code into reusable units with clear interfaces. Lambda expressions provide concise syntax for simple function definitions, particularly useful with higher-order functions.
-
-**Reference:**
-- `def function_name(parameters): ...` - Function definition
-- `return value` - Return value
-- `lambda parameters: expression` - Lambda function
-- `*args` - Variable positional arguments
-- `**kwargs` - Variable keyword arguments
-- `function.__doc__` - Function documentation
-
-**Brief Example:**
-```python
-# Function definition
-def calculate_average(grades):
-    """Calculate the average of a list of grades."""
-    if not grades:
-        return 0
-    return sum(grades) / len(grades)
-
-# Lambda functions
-square = lambda x: x ** 2
-students = [("Alice", 85), ("Bob", 92), ("Charlie", 78)]
-sorted_students = sorted(students, key=lambda x: x[1], reverse=True)
-```
 
 # Git Version Control
 
 Don't worry - we're taking a different approach than that xkcd suggests!
-
-![xkcd Git](media/xkcd_git.png)
 
 ## Why Version Control Matters
 
@@ -689,7 +261,9 @@ git commit -m "Add data validation to analysis script
 Fixes issue #123"
 ```
 
-## Markdown Documentation
+![xkcd 1296: Git Commit](media/xkcd_1296.png)
+
+# Markdown Documentation
 
 **Conceptual Description:**
 Markdown is a lightweight markup language for creating formatted text. It's essential for documentation, README files, and project communication. Markdown files are human-readable in plain text but render beautifully when displayed on platforms like GitHub.
@@ -706,136 +280,434 @@ Markdown is a lightweight markup language for creating formatted text. It's esse
 - Tables: `| col1 | col2 |`
 
 **Brief Example:**
-```markdown
-# Project Title
 
-## Overview
-This project analyzes **sales data** using Python.
+#FIXME: Add markdown example here
 
-### Features
-- Data cleaning
-- Statistical analysis
-- Visualization
+# Python Fundamentals (McKinney Ch2+3)
 
-## Installation
-```bash
-pip install -r requirements.txt
-```
+Python's design emphasizes readability and simplicity, making it ideal for data analysis. The language's object model treats everything as an object, providing consistent behavior across different data types. McKinney's approach focuses on practical data manipulation skills essential for scientific computing.
 
-## Usage
+![Python Import](media/python_import.webp)
+
+## Language Semantics and Object Model
+
+**Conceptual Description:**
+Python uses indentation for code structure instead of braces, creating visually clean code. Every value is an object with associated type information, enabling dynamic behavior and introspection capabilities.
+
+**Reference:**
+- Indentation defines code blocks (4 spaces recommended)
+- `#` for comments
+- `type(object)` - Get object type
+- `isinstance(object, type)` - Type checking
+- `id(object)` - Get object identity
+- `dir(object)` - List object attributes
+
+**Brief Example:**
 ```python
-import pandas as pd
-data = pd.read_csv('sales.csv')
+# Indentation matters
+if x > 0:
+    print("Positive")
+    y = x * 2
+
+# Everything is an object
+print(type(42))        # <class 'int'>
+print(isinstance("hello", str))  # True
 ```
 
-## Links
-- [Documentation](https://docs.example.com)
-- [Issues](https://github.com/user/repo/issues)
+## Scalar Types and Operations
+
+**Conceptual Description:**
+Scalar types represent single values in Python. The language provides rich support for numeric operations, string manipulation, and boolean logic essential for data analysis.
+
+**Reference:**
+- `int` - Arbitrary precision integers
+- `float` - Double-precision floating-point
+- `str` - Unicode strings
+- `bool` - True/False values
+- `None` - Null value
+- Arithmetic: `+`, `-`, `*`, `/`, `//`, `%`, `**`
+- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
+- Logical: `and`, `or`, `not`
+
+**Brief Example:**
+```python
+# Numeric operations
+count = 150
+average = 87.3
+population = 1.4e9  # Scientific notation
+
+# String operations
+name = "Alice Johnson"
+clean_name = "  Bob Smith  ".strip()
+
+# Boolean logic
+has_data = True
+analysis_ready = has_data and count > 0
 ```
 
-# Key Takeaways
+## Print Statements and Output Formatting
 
-## Command Line Mastery
-1. **Navigation**: `pwd`, `ls`, `cd` for file system orientation
-2. **File Operations**: `mkdir`, `touch`, `cp`, `mv`, `rm` for project management
-3. **Text Processing**: `grep`, `head`, `tail` for data exploration
-4. **Visual Structure**: `tree` for directory visualization
-5. **History Navigation**: Shortcuts and command recall for efficiency
-6. **Shell Scripting**: Automation through command sequences and control flow
-7. **Command Chaining**: Pipes and redirection for data processing pipelines
+**Conceptual Description:**
+Print statements are your primary tool for communicating results and debugging code. Understanding different formatting options enables clear, professional output essential for data analysis.
 
-## Python Fundamentals (McKinney Ch2+3)
-8. **Language Semantics**: Indentation-based structure and object model
-9. **Scalar Types**: `int`, `float`, `str`, `bool`, `None` with rich operations
-10. **Print and Output**: F-string formatting and debugging with print statements
-11. **Type Checking**: `type()` and `isinstance()` for debugging and validation
-12. **Control Flow**: `if/elif/else`, `for/while` loops for program logic
-13. **Data Structures**: Lists, tuples, dictionaries, sets for data organization
-14. **List Comprehensions**: Concise syntax for data transformation
-15. **Functions**: Code organization and reusability with lambda expressions
+**Reference:**
+- `print(value)` - Basic printing
+- `print(value1, value2, value3)` - Multiple values
+- `f"text {variable}"` - F-string formatting (preferred)
+- `"text {}".format(variable)` - Format method
+- `print(f"Debug: {var} = {value}")` - Debugging output
+- `print(f"Result: {result:.2f}")` - Number formatting
 
-## Git Version Control
-16. **Data Model**: Content-addressed objects and reference system
-17. **Essential Commands**: `init`, `add`, `commit`, `log`, `diff`, `checkout`
-18. **Remote Collaboration**: `clone`, `push`, `pull` for distributed development
-19. **VS Code Integration**: Visual Git workflow through Source Control panel
-20. **GitHub Interface**: Web-based repository management and collaboration
-21. **Professional Workflow**: Atomic commits, descriptive messages, branch strategy
+**Brief Example:**
+```python
+# Basic printing
+print("Analysis complete")
+print("Value:", 42)
 
-## Integration and Workflow
-22. **Command Line + Python**: Seamless integration for data science pipelines
-23. **Python + Git**: Professional development with version control
-24. **VS Code + GitHub**: Modern development environment for collaboration
+# F-string formatting (preferred)
+name = "Alice"
+score = 87.3
+print(f"Student: {name}")
+print(f"Score: {score:.1f}%")
 
-## Markdown Documentation
-25. **Lightweight Markup**: Essential formatting for README files and documentation
-26. **GitHub Integration**: Renders beautifully on GitHub and other platforms
-27. **Code Documentation**: Syntax highlighting and inline code formatting
+# Debugging with print
+data = [1, 2, 3, 4, 5]
+print(f"Debug: data = {data}, length = {len(data)}")
+print(f"Debug: type = {type(data)}")
+```
 
-These four pillars—command line mastery, Python fundamentals, Git version control, and Markdown documentation—form the essential toolkit for data science. Mastery of these tools enables efficient data processing, reproducible analysis, and professional collaboration. The combination provides the foundation for advanced data science work with pandas, NumPy, and machine learning libraries.
+## Type Checking and Debugging
 
-Next week: We'll dive deeper into data manipulation with pandas and NumPy, building on these Python fundamentals to handle real-world datasets efficiently.
+**Conceptual Description:**
+Understanding data types is crucial for debugging and data analysis. Python's dynamic typing means variables can change type, making type checking essential for reliable code.
 
-# Practice Challenge
+**Reference:**
+- `type(variable)` - Get variable type
+- `isinstance(variable, type)` - Check if variable is specific type
+- `print(f"Type: {type(var)}")` - Debug type information
+- `print(f"Value: {var}")` - Debug variable values
+- `print(f"Debug: {var} = {value}, type = {type(value)}")` - Complete debugging
 
-Before next class, complete this exercise that integrates command line, Python, and Git:
+**Brief Example:**
+```python
+# Type checking for debugging
+user_input = "42"  # This is a string, not a number!
+print(f"Input: {user_input}")
+print(f"Type: {type(user_input)}")  # <class 'str'>
 
-## Part 1: Repository Setup
-1. Create a new repository called `week-02-practice`
-2. Clone it to your local machine using VS Code
+# Convert and verify
+number = int(user_input)
+print(f"Converted: {number}")
+print(f"New type: {type(number)}")  # <class 'int'>
 
-## Part 2: Command Line + Python Exercise
-Create a Python script called `file_analyzer.py` that:
+# Debugging data processing
+data = [1, 2, "3", 4, 5]  # Mixed types!
+for item in data:
+    print(f"Item: {item}, Type: {type(item)}")
+    if isinstance(item, str):
+        print(f"  Converting string '{item}' to int")
+        item = int(item)
+```
 
-**Requirements:**
-- Use command line arguments to specify input file
-- Analyze text files (count words, lines, characters)
-- Generate a summary report
-- Handle errors gracefully
+## Control Flow Structures
 
-**Command Line Usage:**
+**Conceptual Description:**
+Control flow determines program execution order through conditional statements and loops. Python's syntax emphasizes readability while providing powerful iteration capabilities.
+
+**Reference:**
+- `if condition: ... elif condition: ... else: ...`
+- `for variable in iterable: ...`
+- `while condition: ...`
+- `break` - Exit loop
+- `continue` - Skip to next iteration
+- `range(start, stop, step)` - Generate number sequences
+
+**Brief Example:**
+```python
+# Conditional logic
+score = 85
+if score >= 90:
+    grade = "A"
+elif score >= 80:
+    grade = "B"
+else:
+    grade = "C"
+
+# Iteration
+for i in range(5):
+    print(f"Count: {i}")
+
+# List iteration
+grades = [85, 92, 78, 96]
+for grade in grades:
+    if grade >= 90:
+        print(f"Excellent: {grade}")
+```
+
+## Data Structures: Lists and Tuples
+
+**Conceptual Description:**
+Lists provide mutable sequences for storing and manipulating data collections. Tuples offer immutable sequences useful for fixed data records and function returns.
+
+**Reference:**
+- `list()` - Create list
+- `[item1, item2, ...]` - List literal
+- `list.append(item)` - Add to end
+- `list.insert(index, item)` - Insert at position
+- `list.remove(item)` - Remove first occurrence
+- `list.pop(index)` - Remove and return item
+- `tuple()` - Create tuple
+- `(item1, item2, ...)` - Tuple literal
+
+**Brief Example:**
+```python
+# Lists - mutable sequences
+grades = [85, 92, 78, 96, 88]
+grades.append(90)
+grades.insert(1, 87)
+total = sum(grades)
+
+# Tuples - immutable sequences
+coordinates = (40.7128, -74.0060)
+name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
+```
+
+## Data Structures: Dictionaries and Sets
+
+**Conceptual Description:**
+Dictionaries provide key-value storage for structured data, while sets offer unique collections with mathematical operations. Both are essential for data organization and lookup operations.
+
+**Reference:**
+- `dict()` - Create dictionary
+- `{key: value, ...}` - Dictionary literal
+- `dict[key]` - Access value
+- `dict.get(key, default)` - Safe access
+- `dict.keys()`, `dict.values()`, `dict.items()` - Iteration
+- `set()` - Create set
+- `{item1, item2, ...}` - Set literal
+- `set.union()`, `set.intersection()`, `set.difference()` - Set operations
+
+**Brief Example:**
+```python
+# Dictionaries - key-value storage
+student = {"name": "Alice", "grade": 85, "major": "Data Science"}
+print(student["name"])  # "Alice"
+print(student.get("gpa", 0.0))  # Safe access
+
+# Sets - unique collections
+math_students = {"Alice", "Bob", "Charlie"}
+cs_students = {"Alice", "Diana", "Eve"}
+both_subjects = math_students & cs_students  # Intersection
+```
+
+## List Comprehensions and Sequence Functions
+
+#FIXME: keep list manipulation (enumerate, zip, sorted, reversed, sum/min/max/len) but move function-based list comprehensions to bonus/DLC, e.g., `[function for item in iterable if condition]`
+
+**Conceptual Description:**
+List comprehensions provide concise syntax for creating lists through transformation and filtering. Built-in sequence functions offer efficient operations on data collections.
+
+**Reference:**
+- `[expr for item in iterable if condition]` - List comprehension
+- `enumerate(iterable)` - Get index and value pairs
+- `zip(iterable1, iterable2)` - Combine sequences
+- `sorted(iterable)` - Create sorted list
+- `reversed(iterable)` - Reverse sequence
+- `sum()`, `min()`, `max()`, `len()` - Aggregation functions
+
+**Brief Example:**
+```python
+# List comprehensions
+grades = [85, 92, 78, 96, 88]
+passing_grades = [g for g in grades if g >= 80]
+letter_grades = ['A' if g >= 90 else 'B' if g >= 80 else 'C' for g in grades]
+
+# Sequence functions
+for index, grade in enumerate(grades):
+    print(f"Student {index + 1}: {grade}")
+
+names = ["Alice", "Bob", "Charlie"]
+scores = [85, 92, 78]
+for name, score in zip(names, scores):
+    print(f"{name}: {score}")
+```
+
+## Functions and Lambda Expressions
+
+#FIXME: move lambda functions to DLC / bonus content; new section for __main__ vs inline flow (can call functions like a library from other code!)
+
+**Conceptual Description:**
+Functions organize code into reusable units with clear interfaces. Lambda expressions provide concise syntax for simple function definitions, particularly useful with higher-order functions.
+
+**Reference:**
+- `def function_name(parameters): ...` - Function definition
+- `return value` - Return value
+- `lambda parameters: expression` - Lambda function
+- `*args` - Variable positional arguments
+- `**kwargs` - Variable keyword arguments
+- `function.__doc__` - Function documentation
+
+**Brief Example:**
+```python
+# Function definition
+def calculate_average(grades):
+    """Calculate the average of a list of grades."""
+    if not grades:
+        return 0
+    return sum(grades) / len(grades)
+
+# Lambda functions
+square = lambda x: x ** 2
+students = [("Alice", 85), ("Bob", 92), ("Charlie", 78)]
+sorted_students = sorted(students, key=lambda x: x[1], reverse=True)
+```
+
+# Command Line Mastery (review)
+
+### Essential Navigation Commands
+
+**Conceptual Description:**
+Navigation commands form the foundation of command line usage, allowing you to orient yourself within the file system and move between directories efficiently.
+
+**Reference:**
+- `pwd` - Print working directory (shows current location)
+- `ls` - List directory contents
+- `ls -la` - List with detailed information (permissions, size, date)
+- `cd [path]` - Change directory
+- `cd ..` - Move up one directory level
+- `cd ~` - Navigate to home directory
+- `cd -` - Return to previous directory
+
+**Brief Example:**
 ```bash
-python file_analyzer.py data.txt
+pwd                    # /Users/username/Documents
+ls -la                 # Show all files with details
+cd projects/data_science
+pwd                    # /Users/username/Documents/projects/data_science
 ```
 
-**Expected Output:**
+### File and Directory Operations
+
+**Conceptual Description:**
+File operations enable creation, modification, and organization of your project structure. These commands form the building blocks of data science project management.
+
+**Reference:**
+- `mkdir [name]` - Create directory
+- `mkdir -p [path/to/nested]` - Create nested directories
+- `touch [filename]` - Create empty file
+- `cp [source] [destination]` - Copy files or directories
+- `mv [source] [destination]` - Move or rename files
+- `rm [filename]` - Remove file
+- `rm -r [directory]` - Remove directory recursively
+- `rm -rf [directory]` - Force remove directory (use with caution)
+
+**Brief Example:**
+```bash
+mkdir -p data/raw data/processed scripts
+touch scripts/analysis.py
+cp data/raw/dataset.csv data/processed/
 ```
-File Analysis Report
-===================
-File: data.txt
-Lines: 25
-Words: 150
-Characters: 1,200
-Average words per line: 6.0
+
+### Text Processing and Search
+
+**Conceptual Description:**
+Text processing commands enable efficient data exploration and manipulation. These tools become essential when working with log files, configuration files, or any text-based data.
+
+**Reference:**
+- `cat [filename]` - Display entire file
+- `head [filename]` - Show first 10 lines
+- `tail [filename]` - Show last 10 lines
+- `grep [pattern] [filename]` - Search for text patterns
+- `grep -r [pattern] [directory]` - Recursive search
+- `wc -l [filename]` - Count lines in file
+
+**Brief Example:**
+```bash
+head -20 data.csv              # Preview first 20 lines
+grep "error" logfile.txt       # Find error messages
 ```
 
-## Part 3: Git Workflow Practice
-1. **Initial Commit:** Add your Python script
-2. **Feature Commit:** Add command line argument handling
-3. **Enhancement Commit:** Add error handling and file validation
-4. **Documentation Commit:** Update README.md with usage instructions
+### Visual Directory Structure
 
-## Part 4: Professional Documentation
-Create a README.md that includes:
-- Project description
-- Installation instructions
-- Usage examples
-- Your name and contact information
+**Conceptual Description:**
+Sometimes you need to see the overall structure of a project or directory tree. The `tree` command provides a clean, hierarchical view that's invaluable for understanding project organization.
 
-## Submission Checklist
-- [ ] Repository created and cloned locally
-- [ ] Python script works with command line arguments
-- [ ] All Git commits have descriptive messages
-- [ ] README.md is professional and complete
-- [ ] All files are pushed to GitHub
+**Reference:**
+- `tree` - Show directory structure
+- `tree -L 2` - Limit depth to 2 levels
+- `tree -a` - Show hidden files
+- `tree -d` - Show directories only
 
-**Bonus Challenge:** Add support for analyzing multiple files at once.
+**Brief Example:**
+```bash
+tree                    # Show full directory structure
+tree -L 2              # Show only 2 levels deep
+tree -d                # Show only directories
+```
 
-Remember: This workflow becomes automatic with practice. Professional data scientists do this hundreds of times per week!
+### History Navigation and Shortcuts
 
-**Looking Ahead:**
-Next week we'll dive deeper into data manipulation with pandas and NumPy. You'll learn how to work with real datasets, perform statistical analysis, and create visualizations. The command line, Python fundamentals, and Git workflow you've mastered today will be essential as we move into more advanced data science techniques.
+**Conceptual Description:**
+Command line efficiency comes from mastering shortcuts and history navigation. These tools save time and reduce errors in daily work.
 
-![xkcd Git Comic](media/xkcd_git.png)
+**Reference:**
+- `Up arrow` - Previous command
+- `Down arrow` - Next command
+- `Ctrl+A` - Move to beginning of line
+- `Ctrl+E` - Move to end of line
+- `Ctrl+K` - Delete from cursor to end of line
+- `Ctrl+U` - Delete from cursor to beginning of line
+- `Tab` - Auto-complete commands, files, directories
+- `Ctrl+R` - Reverse search through history
+- `Ctrl+C` - Cancel current command
+- `Ctrl+D` - Exit shell
 
-![xkcd 1296: Git Commit](media/xkcd_1296.png)
+**Brief Example:**
+```bash
+# Use up arrow to recall previous commands
+# Use Tab to complete: cd pro<Tab> → cd projects/
+# Use Ctrl+R to search: Ctrl+R then type "git" to find git commands
+```
+
+### Shell Scripting Fundamentals
+
+**Conceptual Description:**
+Shell scripting automates repetitive tasks and creates reusable command sequences. Scripts combine multiple commands with control flow to handle complex data processing workflows.
+
+**Reference:**
+- `#!/bin/bash` - Shebang line for bash scripts
+- `$1, $2, $3...` - Command line arguments
+- `$@` - All arguments
+- `$#` - Number of arguments
+- `$?` - Exit code of last command
+- `if [ condition ]; then ... fi` - Conditional execution
+- `for variable in list; do ... done` - Loop execution
+
+**Brief Example:**
+```bash
+#!/bin/bash
+# Process multiple data files
+for file in data/*.csv; do
+    echo "Processing $file"
+    head -1 "$file" > "processed/$(basename "$file")"
+done
+```
+
+### Command Chaining and Redirection
+
+**Conceptual Description:**
+Command chaining allows complex data processing pipelines by connecting multiple commands. Redirection controls where input comes from and where output goes, enabling powerful data transformations.
+
+**Reference:**
+- `command1 | command2` - Pipe output to next command
+- `command1 && command2` - Run command2 only if command1 succeeds
+- `command1 || command2` - Run command2 only if command1 fails
+- `command > file` - Redirect output to file
+- `command >> file` - Append output to file
+- `command < file` - Use file as input
+
+**Brief Example:**
+```bash
+grep "error" logfile.txt | wc -l    # Count error lines
+ls *.csv | head -5 > filelist.txt   # Save first 5 CSV files to list
+```
