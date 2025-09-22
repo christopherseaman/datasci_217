@@ -200,6 +200,9 @@ GitHub's web interface provides comprehensive repository management, collaborati
 - **Code Review**: Comment on specific lines, approve/request changes
 
 **Collaboration Features:**
+
+#FIXME: need to explain .gitignore
+
 ```
 Repository Management:
 - Create repositories with README, .gitignore, license
