@@ -533,8 +533,7 @@ Git configuration (one-time setup):
 ## Essential Git Commands
 
 **Conceptual Description:**
-Basic Git commands manipulate the object database and references. The three-stage workflow (working directory, staging 
-area, repository) provides precise control over what changes are committed.
+Basic Git commands manipulate the object database and references. The three-stage workflow (working directory, staging area, repository) provides precise control over what changes are committed.
 
 **Reference:**
 
