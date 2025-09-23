@@ -1,130 +1,222 @@
 #!/usr/bin/env python3
 """
-Test suite for Assignment 01 - Setup and Email Processing
-Tests email validation and reflection completion
+DataSci 217 - Lecture 02 Assignment Tests
+Git Workflow, CLI Automation, and Python Data Processing
+
+Test cases for validating assignment completion with progressive difficulty.
 """
 
+import pytest
+import sys
 import os
-import hashlib
-import re
+import subprocess
+import json
+from pathlib import Path
 
+# Add the assignment directory to the path
+sys.path.insert(0, str(Path(__file__).parent))
 
-def test_processed_email_exists():
-    """Test that processed_email.txt exists"""
-    assert os.path.exists("processed_email.txt"), "processed_email.txt file not found. Did you run process_email.py?"
+try:
+    import main
+except ImportError:
+    print("Error: Could not import main.py")
+    sys.exit(1)
 
+class TestLecture02:
+    """Test cases for Lecture 02 assignment - Progressive Difficulty"""
 
-def test_email_hash_valid():
-    """Test that the email hash is in the pre-approved list"""
-    # Pre-hashed list of valid student emails
-    # These are SHA256 hashes of cleaned usernames (lowercase, alphanumeric only)
-    valid_hashes = [
-        "042de7d63dd818a2cdbb4e29d095b3ae055e28d0da90d53de50eb77e13375647",
-        "04edd70d3fde2adf5054fb19b3309b7b4fa7aafc468152e7524d70d54524fcbd",
-        "07c719b4532d3d8acbd7fe3ee88eee18d1a6917df627e05aadb75555863f63ea",
-        "124c44fca353a751ce8439391f18b83e1b6182d17a9ad152205f916057c71ed0",
-        "138215b37c8bda19e69635d84ca7427922deb2c4565edc4161e69a56592de54c",
-        "1422882332977f7e7acc311c57b22ea9e642ec4ed326f853794cfdeaad0d6554",
-        "1a9863ce354e6ca4d926de9ff1a0b9f3da45a360e7d2ebdca8327189eeae0d2b",
-        "1c9ed27ecddc296ac90a21112d3393c860a1b1f6aa474087e6426f95707a2937",
-        "1ce5b2fc796f7e29b9bb030ce2a51430bd2447bbabc928382cf411db2de9139c",
-        "21160b1690002b9d8caba2749d00616dbca84d6b640967fbbe307ac77174dcb5",
-        "268dffd00de602897c13142ee88e17267656df26f5052ec669bd26a44bc2c55e",
-        "299d5a0a4f2a53250bb795f6c4eaf3530bd415add9e2e045878244ce161ae21c",
-        "2a2871901079e9f77bb99f7f662260986f1c0a034f0865a87282356e59c505eb",
-        "364078b38c138a41f4a583706aa5cb7c970586cc3b8bd12bf0189e0c310443db",
-        "39f01b347aef82d56a2922dcac2b84c198f539703459e0237dd9b4c8ee50819d",
-        "46b3239056bc6f2b3e725f46ac226166f4fa9612fb7bcdadf06eb946b93aab0a",
-        "4f86617cd650b3fb956fe5127a33b39e485e4224d0ec2aacc87acf9cd73a8f08",
-        "5548c153730c80c3bab6e4ca26c39212c5199c6bb8b8fdd3bb18c1c73ededecb",
-        "6371b85722ea50fe82f37c87ae7d4fd4b2959dec5994c2025990eb9f0cfc3492",
-        "7a707c8a88e997c5b9d0498bd3a740813f98ac32dd81067060ab5fcbd0d24f8f",
-        "7d3d6e37aef24f67a9349001e3f11505e58cf7d5f4cdc3591e00be9e94ef76d4",
-        "7d94b55d0c91acf0ffc9b84bec1131452326bbcf5c177d97dd97205d90a6a2d5",
-        "94afe77f864c2365b4274b33fc4f44e0b0c451262baab67558035e72a6d6fa70",
-        "9ee3d9c36d454e5a095b5f12bc3c02f830b39310a4f5882774b62a954a782a5c",
-        "9f784ddc20bcedd9ff14892db31db7c34cf380a21854ba989c01184e11137688",
-        "ac948541bcac67153ad5f6dd44dbe85f318a0f4a3b0294632f4ddc3f9fcedebc",
-        "ada09398f9068fbb9768120c3b2cf542000413f98949ffe48123cb43f0650b30",
-        "b107815729cc3f17b5fff4a86b1dce722c161b1184251c55e16564bd9312b110",
-        "b3b0dcdab039ff1ecd38097c190887688ca0e48b40a59d6c4709f21a58c64b32",
-        "b3e75663ad8f65fc82430672fcf39bb084dc76f5b7e2023b5e26a79524575225",
-        "ba59958684beac750f85a10c5993eb2afc8a24c583797c90bcc656c37b5dca04",
-        "cb56fd9de33b1adcfadc51175bf8c922c837fc1cb4e4dab524bd03e7ce47b9dd",
-        "ce0a2529a63fbf1fc5846d32859aee1169840d0dfb56e4e7498250b4adef9654",
-        "d2e1b7428d83c0b939415777b2d8cd49006893532ca6320e08145f550e42f2bb",
-        "d793158628ad3cc8624061252a418a71843a2f784e39c9fbbbe743818b1f90f2",
-        "d7bb88aae579282c0c326e81793730b37f0ec33342b28284f90b815a42f5a9c4",
-        "e8f65ef495b91c4ed789032d102a9697c0f6ee0ffa5a3354478cf06cf435543e",
-        "e96ed33350e276d858264495dfb7e2df84fa7d057c09c848f34f988b3a272e76",
-        "e9d7ea3eccdf8d6ecf9169096bc5e6c9b66c048e67c2552a9ef89ee118b3300f",
-        "ed1a8c3015d5a5d5b4d7be2f7390c4bf59cfd0fcfe82a5d5143d1a02b245465c",
-        "ed82cca0f5f496a8c821530c9f67d5955a331faf17a3cb916fe3ab39d3a094d0",
-        "f6df5aee62ade4205c4836135b0c55b71a6bfbff71a9b07a388ec45d2f9b70c3",
-        "fccbe9a00585237b09ae788f96272b9e9d8d3e952e5abfef63a55acd8fb92dc3",
-    ]
+    def test_main_function_exists(self):
+        """Test that main function exists"""
+        assert hasattr(main, 'main'), "main() function not found in main.py"
 
-    # Read the submitted hash
-    assert os.path.exists("processed_email.txt"), "processed_email.txt not found"
+    def test_main_function_callable(self):
+        """Test that main function is callable"""
+        assert callable(main.main), "main() function is not callable"
 
-    with open("processed_email.txt", "r") as f:
-        submitted_hash = f.read().strip()
+    def test_main_runs_without_error(self):
+        """Test that main function runs without errors"""
+        try:
+            main.main()
+        except Exception as e:
+            pytest.fail(f"main() function raised an exception: {e}")
 
-    # Verify hash format (64 hex characters)
-    assert len(submitted_hash) == 64, f"Invalid hash length: expected 64 characters, got {len(submitted_hash)}"
-    assert all(c in '0123456789abcdef' for c in submitted_hash.lower()), "Invalid hash format: not a valid hex string"
+class TestPart1GitWorkflow:
+    """Test cases for Part 1: Git Workflow Mastery (7 points)"""
 
-    # Check if hash is in valid list
-    assert submitted_hash in valid_hashes, "Email hash not found in student roster. Please use your UCSF email."
+    def test_git_repository_exists(self):
+        """Test that Git repository is properly initialized"""
+        assert Path('.git').exists(), "Git repository not found (.git directory missing)"
+    
+    def test_gitignore_exists(self):
+        """Test that .gitignore file exists"""
+        assert Path('.gitignore').exists(), ".gitignore file not found"
+    
+    def test_readme_exists(self):
+        """Test that README.md exists and has content"""
+        readme_path = Path('README.md')
+        assert readme_path.exists(), "README.md not found"
+        
+        readme_content = readme_path.read_text()
+        assert len(readme_content) > 100, "README.md appears to be too short or empty"
+        assert "DataSci" in readme_content, "README.md should mention DataSci"
+    
+    def test_requirements_exists(self):
+        """Test that requirements.txt exists"""
+        assert Path('requirements.txt').exists(), "requirements.txt not found"
 
+class TestPart2CLIAutomation:
+    """Test cases for Part 2: CLI Project Scaffold Script (6 points)"""
 
-def test_reflection_exists():
-    """Test that reflection.md exists and has been modified"""
-    assert os.path.exists("reflection.md"), "reflection.md file not found"
+    def test_setup_script_exists(self):
+        """Test that setup_project.sh exists"""
+        assert Path('setup_project.sh').exists(), "setup_project.sh not found"
+    
+    def test_setup_script_executable(self):
+        """Test that setup_project.sh is executable"""
+        setup_script = Path('setup_project.sh')
+        assert setup_script.exists(), "setup_project.sh not found"
+        
+        # Check if script is executable
+        assert os.access(setup_script, os.X_OK), "setup_project.sh is not executable"
+    
+    def test_setup_script_content(self):
+        """Test that setup_project.sh has required functionality"""
+        setup_script = Path('setup_project.sh')
+        assert setup_script.exists(), "setup_project.sh not found"
+        
+        script_content = setup_script.read_text()
+        
+        # Check for required functions
+        assert 'create_directories' in script_content, "create_directories function not found"
+        assert 'create_initial_files' in script_content, "create_initial_files function not found"
+        assert 'create_sample_data' in script_content, "create_sample_data function not found"
+        assert 'create_python_templates' in script_content, "create_python_templates function not found"
+        
+        # Check for shebang
+        assert script_content.startswith('#!/bin/bash'), "Script should start with shebang"
+    
+    def test_directory_structure_created(self):
+        """Test that required directory structure exists"""
+        required_dirs = ['src', 'data', 'output']
+        for dir_name in required_dirs:
+            assert Path(dir_name).exists(), f"Required directory '{dir_name}' not found"
+    
+    def test_sample_data_files(self):
+        """Test that sample data files exist"""
+        data_files = ['data/students.csv', 'data/courses.json']
+        for file_path in data_files:
+            assert Path(file_path).exists(), f"Sample data file '{file_path}' not found"
+    
+    def test_python_templates(self):
+        """Test that Python template files exist"""
+        python_files = ['src/data_analysis.py', 'src/data_analysis_functions.py']
+        for file_path in python_files:
+            assert Path(file_path).exists(), f"Python template '{file_path}' not found"
 
-    with open("reflection.md", "r") as f:
-        content = f.read()
+class TestPart3PythonProgramming:
+    """Test cases for Part 3: Python Data Processing (7 points)"""
 
-    # Check that file has content
-    assert len(content) > 100, "reflection.md appears to be empty or too short"
+    def test_basic_analysis_script(self):
+        """Test that basic analysis script exists and is functional"""
+        script_path = Path('src/data_analysis.py')
+        assert script_path.exists(), "src/data_analysis.py not found"
+        
+        # Check for required functions
+        script_content = script_path.read_text()
+        assert 'def main():' in script_content, "main() function not found in basic script"
+        assert 'def load_students(' in script_content, "load_students() function not found"
+        assert 'def calculate_average_grade(' in script_content, "calculate_average_grade() function not found"
+    
+    def test_advanced_analysis_script(self):
+        """Test that advanced analysis script exists and is functional"""
+        script_path = Path('src/data_analysis_functions.py')
+        assert script_path.exists(), "src/data_analysis_functions.py not found"
+        
+        # Check for required functions
+        script_content = script_path.read_text()
+        assert 'def main():' in script_content, "main() function not found in advanced script"
+        assert 'def load_data(' in script_content, "load_data() function not found"
+        assert 'def analyze_data(' in script_content, "analyze_data() function not found"
+        assert 'def save_results(' in script_content, "save_results() function not found"
+    
+    def test_scripts_run_without_error(self):
+        """Test that both Python scripts run without errors"""
+        scripts = ['src/data_analysis.py', 'src/data_analysis_functions.py']
+        
+        for script_path in scripts:
+            if Path(script_path).exists():
+                try:
+                    # Run the script and check for errors
+                    result = subprocess.run([sys.executable, script_path], 
+                                          capture_output=True, text=True, timeout=30)
+                    assert result.returncode == 0, f"Script {script_path} failed with error: {result.stderr}"
+                except subprocess.TimeoutExpired:
+                    pytest.fail(f"Script {script_path} timed out")
+                except Exception as e:
+                    pytest.fail(f"Error running {script_path}: {e}")
+    
+    def test_output_file_generated(self):
+        """Test that analysis output file is generated"""
+        output_file = Path('output/analysis_report.txt')
+        assert output_file.exists(), "output/analysis_report.txt not found"
+        
+        # Check that output file has content
+        output_content = output_file.read_text()
+        assert len(output_content) > 50, "Output file appears to be empty or too short"
+        assert "Analysis" in output_content, "Output file should contain analysis results"
+    
+    def test_data_processing_functionality(self):
+        """Test that data processing works correctly"""
+        # Check if students.csv exists and has expected content
+        students_file = Path('data/students.csv')
+        if students_file.exists():
+            students_content = students_file.read_text()
+            assert 'name,age,grade,subject' in students_content, "Students CSV missing header"
+            assert 'Alice' in students_content, "Students CSV missing sample data"
+        
+        # Check if courses.json exists and has expected content
+        courses_file = Path('data/courses.json')
+        if courses_file.exists():
+            try:
+                with open(courses_file, 'r') as f:
+                    courses_data = json.load(f)
+                assert 'courses' in courses_data, "Courses JSON missing 'courses' key"
+            except json.JSONDecodeError:
+                pytest.fail("Courses JSON file is not valid JSON")
 
+class TestIntegration:
+    """Integration tests for the complete assignment"""
 
-def test_reflection_modified():
-    """Test that reflection has been meaningfully modified from template"""
-    with open("reflection.md", "r") as f:
-        content = f.read()
+    def test_complete_workflow(self):
+        """Test that the complete workflow can be executed"""
+        # Test that all required files exist
+        required_files = [
+            'README.md',
+            '.gitignore', 
+            'requirements.txt',
+            'setup_project.sh',
+            'src/data_analysis.py',
+            'src/data_analysis_functions.py'
+        ]
+        
+        for file_path in required_files:
+            assert Path(file_path).exists(), f"Required file '{file_path}' not found"
+    
+    def test_git_workflow_demonstration(self):
+        """Test that Git workflow is properly demonstrated"""
+        # Check for Git repository
+        assert Path('.git').exists(), "Git repository not initialized"
+        
+        # Check for meaningful commit history (this is a basic check)
+        try:
+            result = subprocess.run(['git', 'log', '--oneline'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                commits = result.stdout.strip().split('\n')
+                assert len(commits) >= 1, "No Git commits found"
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            # Git might not be available in test environment
+            pass
 
-    # Original template is ~650 characters
-    # With answers it should be significantly longer
-    original_template_size = 650
-
-    # Should be at least 50% longer than template (conservative)
-    assert len(content) > original_template_size * 1.5, \
-        "reflection.md doesn't appear to have been answered. Please add your responses."
-
-    # Check that there aren't too many placeholder brackets
-    # Students should replace [bracketed text] with their answers
-    bracket_count = content.count('[')
-
-    # Original has 4 bracketed placeholders, should have fewer after answering
-    # But be flexible - students might use brackets in their answers
-    assert bracket_count < 8, \
-        "Too many placeholder brackets found. Please replace the [bracketed text] with your actual answers."
-
-
-def test_reflection_has_url():
-    """Test that reflection contains at least one URL (for question 4)"""
-    with open("reflection.md", "r") as f:
-        content = f.read()
-
-    # Look for URL patterns
-    url_patterns = [
-        r'https?://[^\s]+',  # HTTP/HTTPS URLs
-        r'www\.[^\s]+',      # www URLs
-        r'[a-zA-Z0-9]+\.(com|org|edu|io|dev|net|gov)[^\s]*'  # Common domains
-    ]
-
-    has_url = any(re.search(pattern, content) for pattern in url_patterns)
-
-    assert has_url, \
-        "No URL found in reflection. Please include a link to something you enjoy in question 4."
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

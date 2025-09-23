@@ -213,6 +213,47 @@ Day-to-day VS Code Git workflow:
 6. Click sync button to push to GitHub
 ```
 
+## Advanced Git Workflow: Branching and Merging
+
+Professional Git workflows use branching to develop features in isolation, then merge them back to the main branch. This enables parallel development and safe experimentation.
+
+**Reference:**
+
+- `git branch [name]` - Create new branch
+- `git checkout [branch]` - Switch to branch
+- `git checkout -b [name]` - Create and switch to new branch
+- `git merge [branch]` - Merge branch into current branch
+- `git branch -d [name]` - Delete branch
+- `git push origin [branch]` - Push branch to remote
+
+**Branching Workflow:**
+
+```bash
+# Create feature branch
+git checkout -b feature/data-analysis
+# Make changes, commit
+git add .
+git commit -m "Add data analysis functionality"
+git push origin feature/data-analysis
+
+# Switch back to main and merge
+git checkout main
+git merge feature/data-analysis
+git push origin main
+
+# Clean up feature branch
+git branch -d feature/data-analysis
+```
+
+**Merge Conflict Resolution:**
+When Git cannot automatically merge changes, it creates merge conflicts that must be resolved manually:
+
+1. Open conflicted files in VS Code
+2. Choose which changes to keep
+3. Remove conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
+4. Stage resolved files: `git add [file]`
+5. Complete merge: `git commit`
+
 ## GitHub Web Interface
 
 GitHub's web interface provides comprehensive repository management, collaboration features, and project organization tools. It serves as the central hub for code sharing, issue tracking, and team collaboration.

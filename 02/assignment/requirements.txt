@@ -1,0 +1,19 @@
+# DataSci 217 - Lecture 02 Assignment Requirements
+# Git Workflow, CLI Automation, and Python Data Processing
+
+# Core Python packages (built-in, no external dependencies required)
+# This assignment focuses on fundamental Python concepts and file I/O
+
+# Testing framework
+pytest>=7.0.0
+
+# Optional: For enhanced development experience
+# pathlib (built-in since Python 3.4)
+# json (built-in)
+# csv (built-in)
+# subprocess (built-in)
+# os (built-in)
+# sys (built-in)
+
+# Note: This assignment is designed to use only Python standard library
+# to focus on core programming concepts without external dependencies

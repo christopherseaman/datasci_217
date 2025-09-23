@@ -1,4 +1,4 @@
-name: Assignment 01 - Setup and Email Processing
+name: Lecture 02 - Git Workflow, CLI Automation, and Python Data Processing
 
 on:
   push:
@@ -22,28 +22,29 @@ jobs:
     - name: Download latest test files from upstream
       run: |
         # Create the target directory if it doesn't exist
-        mkdir -p .github/tests
+        mkdir -p .github/test
 
         # Download the latest test files from the upstream repository
         # This ensures students always run against the latest tests
-        curl -o .github/tests/test_assignment.py \
-          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw1/main/.github/tests/test_assignment.py || true
-
-        # If download fails, use the local version
-        if [ ! -f .github/tests/test_assignment.py ]; then
-          echo "Using local test file"
+        if curl -o .github/test/test_assignment.py \
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw2/main/.github/test/test_assignment.py; then
+          echo "✅ Successfully updated test file from upstream"
         else
-          echo "Updated test file from upstream"
+          echo "⚠️ Failed to download from upstream, using local test file"
+          # Restore the local version if download failed
+          git checkout .github/test/test_assignment.py 2>/dev/null || echo "No local test file to restore"
         fi
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pytest
-        # Install any other requirements if they exist
+        # Install test requirements
+        if [ -f .github/test/requirements.txt ]; then pip install -r .github/test/requirements.txt; fi
+        # Install assignment requirements if they exist
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Run tests
       run: |
-        # Run the test suite
-        pytest .github/tests/test_assignment.py -v --tb=short
+        # Run the test suite with detailed output
+        pytest .github/test/test_assignment.py -v --tb=short --color=yes
