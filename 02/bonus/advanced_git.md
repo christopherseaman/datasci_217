@@ -448,3 +448,31 @@ git push --force --all
 5. Practice resolving merge conflicts in a safe test repository
 
 Remember: These are power-user features. Master the basics first!
+
+## Professional Git Workflow
+
+Professional Git workflows emphasize clear commit messages, logical change organization, and effective collaboration patterns. These practices ensure project history remains understandable and maintainable.
+
+**Reference:**
+
+- **Commit Messages**: Present tense, descriptive, under 50 characters
+- **Atomic Commits**: One logical change per commit
+- **Branch Strategy**: Feature branches for development
+- **Pull Requests**: Code review before merging
+- **Conflict Resolution**: Merge conflicts handled systematically
+- **History Management**: Clean, linear history when possible
+
+**Brief Example:**
+
+```bash
+# Good commit message format
+git commit -m "Add data validation to analysis script
+
+- Validate input file exists before processing
+- Check data format matches expected schema
+- Add error handling for malformed data
+
+Fixes issue #123"
+```
+
+![xkcd 1296: Git Commit](../media/xkcd_1296.png)
