@@ -76,7 +76,7 @@ Run the analysis: `python src/data_analysis.py`
 
 2. **Create .gitignore**:
 ```
-# Virtual environments
+# Virtual environments - we'll learn about these soon!
 venv/
 env/
 week02/
