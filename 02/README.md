@@ -1,8 +1,71 @@
 Command Line & Python Fundamentals, plus Version Control
 
-![xkcd 1597: Git](media/xkcd_1597.png)
+
+# VS Code Basics (GUI-first)
+
+We'll start in the editor so Git makes visual sense later. No JSON needed—just the VS Code interface.
+
+## Palette Cleanse: Command Palette & Quick Open
+
+- Open Command Palette: View → Command Palette… (Cmd+Shift+P)
+- Quick Open files: (Cmd+P)
+- Search across files: View → Search (Cmd+Shift+F)
+
+## Themes and Schemes: Make it Py‑pretty
+
+- Change Color Theme: Code → Settings → Theme → Color Theme (or Cmd+K, Cmd+T). I am a fan of:
+    - "Tomorrow Night Bright"
+    - "GitHub Dark High Contrast"
+- Toggle icons: Code → Settings → Theme → File Icon Theme
+
+## Meet the Main Bars
+
+- Activity Bar (left): Explorer, Search, Source Control, Run & Debug, Extensions
+- Side Bar: Toggle via View → Appearance → Show Side Bar
+- Panel (bottom): Problems, Output, Debug Console, Terminal (toggle: View → Appearance → Panel Position)
+- Secondary Side Bar (right): View → Appearance → Show Secondary Side Bar
+- Breadcrumbs: View → Appearance → Show Breadcrumbs
+- Zen Mode: View → Appearance → Zen Mode (Esc Esc to exit)
+
+## Core Panes You’ll Use
+
+- Explorer: View → Explorer (Cmd+Shift+E)
+- Source Control: View → Source Control (Cmd+Shift+G)
+- Run & Debug: Run → Start Debugging (F5) or View → Run (Ctrl+Shift+D)
+- Extensions: View → Extensions (Cmd+Shift+X)
+- Terminal: View → Terminal (Ctrl+`)
+- Split Editor: View → Editor Layout → Split Right (or Cmd+\)
+
+## Settings (GUI) you’ll toggle today
+
+- Format on Save: Code → Settings → Settings → Search “Format on Save” → check
+- Python Interpreter: Click bottom‑right “Python” status or Cmd+Shift+P → “Python: Select Interpreter”
+- Default Formatter (optional): Settings → Search “Default Formatter” → choose “Black” or “Ruff” if installed
+- Markdown Preview: Right‑click a .md → “Open Preview to the Side” (Cmd+K V)
+
+## Recommended Extensions (install via View → Extensions)
+
+- Python
+- Pylance (can help with debugging later, I prefer ruff)
+- Jupyter (we'll use this a lot later)
+- Markdown All in One
+- markdownlint
+- Markdown Checkboxes
+- GitHub Markdown Preview
+- Bonus mentions: Error Lens, YAML, indent‑rainbow, GitLens
+
+## Break(points) the Ice: 5‑minute hands‑on
+
+1) Change the Color Theme (Preferences: Color Theme)
+2) Install “Python” and “Markdown All in One”
+3) Turn on “Format on Save” in Settings (GUI)
+4) Open a `.py` file → add a breakpoint (click gutter) → Run → Start Debugging
+5) Open a `.md` file → right‑click → Open Preview to the Side
+6) Make a small edit → View → Source Control → stage, commit (GUI)
 
 # Git Version Control
+
+![xkcd 1597: Git](media/xkcd_1597.png)
 
 Don't worry - we're taking a different approach than that xkcd suggests!
 
@@ -73,14 +136,6 @@ Think: "I'm trying something new without risking the working version."
 
 ![Git Branches](media/git_branches.png)
 
-![Git Clone](media/git_clone.png)
-
-<!-- FIXME: Add Git workflow diagram showing working directory → staging area → repository flow -->
-![Git Workflow Diagram](media/git_workflow_diagram.png)
-
-<!-- FIXME: Add VS Code Git interface screenshot showing Source Control panel -->
-![VS Code Git Interface](media/vscode_git_interface.png)
-
 ## GUI-First Git with VS Code
 
 ### Why Start with GUI?
@@ -101,19 +156,13 @@ Once you understand Git concepts, you can choose GUI or command line based on th
 2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
 3. If first time: VS Code will prompt to configure Git username/email
 
-**Brief Example:**
-
-```
-Git configuration (one-time setup):
-- Full Name: Alice Smith
-- Email: alice.smith@ucsf.edu (use your actual UCSF email)
-```
-
-![GitHub Email Setup](media/github_email.png)
 
 ## Essential Git Commands
 
 Basic Git commands manipulate the object database and references. The three-stage workflow (working directory, staging area, repository) provides precise control over what changes are committed.
+
+<!-- FIXME: Add Git workflow diagram showing working directory → staging area → repository flow -->
+![Git Workflow Diagram](media/git_workflow_diagram.png)
 
 **Reference:**
 
@@ -158,6 +207,8 @@ git push origin main
 git pull origin main
 ```
 
+![Git Clone](media/git_clone.png)
+
 **Good vs. Bad Commit Messages**
 
 ```bash
@@ -178,6 +229,9 @@ git commit -m "minor changes"
 ## VS Code Git Integration
 
 VS Code provides a visual Git workflow through its Source Control panel, making version control accessible without memorizing command-line syntax. This integration streamlines the daily workflow of staging, committing, and managing changes.
+
+<!-- FIXME: Add VS Code Git interface screenshot showing Source Control panel -->
+![VS Code Git Interface](media/vscode_git_interface.png)
 
 **Reference:**
 
