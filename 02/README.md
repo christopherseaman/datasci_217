@@ -404,21 +404,20 @@ This means functions work with any object that behaves as expected, not just tho
 - `help(object)` - Shows documentation
 
 ```python
-# Duck typing: treat any iterable as a sequence
-text = "Hello World"
-numbers = [1, 2, 3, 4, 5]
-user_data = {'name': 'Alice', 'age': 30, 'city': 'Boston'}
+# Duck typing: treat the same object as different types
+big_number = 12345
+print(f"As a number: {big_number} (type: {type(big_number).__name__})")
 
-for item in [text, numbers, user_data]:
-    print(f"Type: {type(item).__name__:<8} | Length: {len(item)}")
+# Convert to string - now we can iterate through digits
+number_as_string = str(big_number)
+print(f"As a string: '{number_as_string}' (type: {type(number_as_string).__name__})")
 
-def print_items(sequence):
-    for item in sequence:
-        print(f"  - {item}")
-
-print_items(text)        # string
-print_items(numbers)     # list
-print_items(user_data)   # dictionary (prints keys)
+# Duck typing: if it acts like an iterable, treat it like one
+digit_sum = 0
+for digit_char in number_as_string:  # Treating string like a list
+    digit_sum += int(digit_char)     # Converting back to int
+    
+print(f"Sum of digits: {digit_sum}")
 ```
 
 ## Scalar Types and Operations
