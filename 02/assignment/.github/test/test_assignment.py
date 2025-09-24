@@ -16,30 +16,6 @@ from pathlib import Path
 # Add the assignment directory to the path
 sys.path.insert(0, str(Path(__file__).parent))
 
-try:
-    import main
-except ImportError:
-    print("Error: Could not import main.py")
-    sys.exit(1)
-
-class TestLecture02:
-    """Test cases for Lecture 02 assignment - Progressive Difficulty"""
-
-    def test_main_function_exists(self):
-        """Test that main function exists"""
-        assert hasattr(main, 'main'), "main() function not found in main.py"
-
-    def test_main_function_callable(self):
-        """Test that main function is callable"""
-        assert callable(main.main), "main() function is not callable"
-
-    def test_main_runs_without_error(self):
-        """Test that main function runs without errors"""
-        try:
-            main.main()
-        except Exception as e:
-            pytest.fail(f"main() function raised an exception: {e}")
-
 class TestPart1GitWorkflow:
     """Test cases for Part 1: Git Workflow Mastery (7 points)"""
 
@@ -83,15 +59,15 @@ class TestPart2CLIAutomation:
         """Test that setup_project.sh has required functionality"""
         setup_script = Path('setup_project.sh')
         assert setup_script.exists(), "setup_project.sh not found"
-        
+
         script_content = setup_script.read_text()
-        
-        # Check for required functions
-        assert 'create_directories' in script_content, "create_directories function not found"
-        assert 'create_initial_files' in script_content, "create_initial_files function not found"
-        assert 'create_sample_data' in script_content, "create_sample_data function not found"
-        assert 'create_python_templates' in script_content, "create_python_templates function not found"
-        
+
+        # Check for required commands (not functions)
+        assert 'mkdir -p' in script_content, "mkdir -p command not found"
+        assert 'echo' in script_content, "echo command not found"
+        assert 'cat >' in script_content, "cat > command for file creation not found"
+        assert 'EOF' in script_content, "Here-document (EOF) not found"
+
         # Check for shebang
         assert script_content.startswith('#!/bin/bash'), "Script should start with shebang"
     
@@ -103,9 +79,8 @@ class TestPart2CLIAutomation:
     
     def test_sample_data_files(self):
         """Test that sample data files exist"""
-        data_files = ['data/students.csv', 'data/courses.json']
-        for file_path in data_files:
-            assert Path(file_path).exists(), f"Sample data file '{file_path}' not found"
+        students_file = Path('data/students.csv')
+        assert students_file.exists(), "Sample data file 'data/students.csv' not found"
     
     def test_python_templates(self):
         """Test that Python template files exist"""
@@ -173,16 +148,6 @@ class TestPart3PythonProgramming:
             students_content = students_file.read_text()
             assert 'name,age,grade,subject' in students_content, "Students CSV missing header"
             assert 'Alice' in students_content, "Students CSV missing sample data"
-        
-        # Check if courses.json exists and has expected content
-        courses_file = Path('data/courses.json')
-        if courses_file.exists():
-            try:
-                with open(courses_file, 'r') as f:
-                    courses_data = json.load(f)
-                assert 'courses' in courses_data, "Courses JSON missing 'courses' key"
-            except json.JSONDecodeError:
-                pytest.fail("Courses JSON file is not valid JSON")
 
 class TestIntegration:
     """Integration tests for the complete assignment"""

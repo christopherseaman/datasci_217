@@ -602,9 +602,16 @@ print("Value:", 42)
 
 # F-string formatting (preferred)
 name = "Alice"
-score = 87.3
+score = 87.3456
+average = 92.8
 print(f"Student: {name}")
-print(f"Score: {score:.1f}%")
+print(f"Score: {score:.1f}%")        # Shows 87.3%
+print(f"Average: {average:.2f}")     # Shows 92.80
+
+# Printing to files
+with open('report.txt', 'w') as f:
+    print(f"Final Score: {score:.1f}", file=f)
+    print(f"Class Average: {average:.2f}", file=f)
 
 # Debugging with print
 data = [1, 2, 3, 4, 5]
@@ -637,11 +644,29 @@ with open('data.txt', 'r') as file:
     content = file.read()
     print(f"File content: {content}")
 
+# Reading a CSV file line by line
+with open('students.csv', 'r') as file:
+    lines = file.readlines()
+    header = lines[0].strip()  # First line is header
+    for line in lines[1:]:     # Skip header, process data
+        fields = line.strip().split(',')
+        name, age, grade = fields[0], fields[1], fields[2]
+        print(f"Student: {name}, Grade: {grade}")
+
 # Writing to a file
 results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
 with open('grades.txt', 'w') as file:
     for result in results:
         file.write(f"{result}\n")
+
+# Creating output directory if needed
+import os
+if not os.path.exists('output'):
+    os.makedirs('output')
+
+with open('output/report.txt', 'w') as file:
+    file.write("Analysis Report\n")
+    file.write("=" * 40 + "\n")
 
 # Appending to a file
 with open('log.txt', 'a') as file:
@@ -1002,22 +1027,34 @@ Shell scripting automates repetitive tasks and creates reusable command sequence
 **Reference:**
 
 - `#!/bin/bash` - Shebang line for bash scripts
+- `echo "text"` - Print text to terminal
+- `mkdir -p dirname` - Create directory (and parents if needed)
+- `chmod +x script.sh` - Make script executable
 - `$1, $2, $3...` - Command line arguments
 - `$@` - All arguments
 - `$#` - Number of arguments
 - `$?` - Exit code of last command
-- `if [ condition ]; then ... fi` - Conditional execution
-- `for variable in list; do ... done` - Loop execution
 
 **Brief Example:**
 
 ```bash
 #!/bin/bash
-# Process multiple data files
-for file in data/*.csv; do
-    echo "Processing $file"
-    head -1 "$file" > "processed/$(basename "$file")"
-done
+# Create project structure
+echo "Setting up project..."
+mkdir -p src data output
+echo "Directories created"
+
+# Make script executable
+chmod +x setup.sh
+
+# Create files using here-documents
+cat > data/sample.csv << 'EOF'
+name,age,grade
+Alice,20,85
+Bob,19,92
+EOF
+
+echo "Setup complete!"
 ```
 
 ### Command Chaining and Redirection
