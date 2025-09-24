@@ -1,4 +1,4 @@
-Command Line & Python Fundamentals, plus Version Control
+# `git gud` with Version Control
 
 ![xkcd 1597: Git](media/xkcd_1597.png)
 
@@ -22,15 +22,15 @@ Sound familiar? Now imagine collaborating with teammates doing the same thing. C
 
 ### The Git Solution
 
-Git tracks every change to every file in your project. You can:
+Git tracks every change to every file in your project, letting you:
 
-- See exactly what changed and when
-- Go back to any previous version
-- Work on features in parallel without conflicts
-- Collaborate with teammates seamlessly
-- Never lose work (it's all backed up on GitHub)
+- See what changed and when
+- Restore previous versions
+- Work on features in parallel
+- Collaborate easily
+- Avoid losing work (backed up on GitHub)
 
-It's like having infinite "undo" for your entire project, plus collaboration superpowers.
+It's like having infinite "undo" for your project, plus collaboration superpowers.
 
 ## Git Concepts - The Mental Model
 
@@ -85,13 +85,13 @@ Think: "I'm trying something new without risking the working version."
 
 ### Why Start with GUI?
 
-Command line Git is powerful, but the visual interface helps you understand what's happening. VS Code's Git integration shows you:
+Command line Git is powerful, but the visual interface helps you see what's happening. VS Code's Git integration shows you:
 
-- Which files changed (visual diff)
+- Which files changed
 - What you're about to commit
-- The status of everything at a glance
+- Status at a glance
 
-Once you understand Git concepts, you can choose GUI or command line based on the task.
+Once you understand Git concepts, you can use GUI or command line as needed.
 
 ### Setting Up Git in VS Code
 
@@ -113,7 +113,7 @@ Git configuration (one-time setup):
 
 ## Essential Git Commands
 
-Basic Git commands manipulate the object database and references. The three-stage workflow (working directory, staging area, repository) provides precise control over what changes are committed.
+Basic Git commands let you control what changes are committed using a three-stage workflow: working directory, staging area, repository.
 
 **Reference:**
 
@@ -141,21 +141,17 @@ Helpful but less essential:
 **Brief Example:**
 
 ```bash
+# Local repository workflow
 git init                      # Start new repository
 git add analysis.py           # Stage file
 git commit -m "Add analysis script"  # Create commit
-git log --oneline            # View history
 git branch feature-analysis  # Create branch
 git checkout feature-analysis # Switch to branch
-```
 
-**Another Example:**
-
-```bash
-git clone https://github.com/user/repo.git
-git remote add origin https://github.com/user/repo.git
-git push origin main
-git pull origin main
+# Remote repository workflow
+git clone https://github.com/user/repo.git  # Clone existing repo
+git push origin main          # Push changes
+git pull origin main          # Pull updates
 ```
 
 **Good vs. Bad Commit Messages**
@@ -175,9 +171,10 @@ git commit -m "minor changes"
 ```
 
 ![xkcd 1296: Git Commit](media/xkcd_1296.png)
+
 ## VS Code Git Integration
 
-VS Code provides a visual Git workflow through its Source Control panel, making version control accessible without memorizing command-line syntax. This integration streamlines the daily workflow of staging, committing, and managing changes.
+VS Code's Source Control panel makes version control accessible without memorizing command-line syntax. This integration streamlines daily staging, committing, and managing changes.
 
 **Reference:**
 
@@ -188,34 +185,20 @@ VS Code provides a visual Git workflow through its Source Control panel, making 
 - **Branch Management**: Click branch name in status bar to switch/create branches
 - **Push/Pull**: Use sync button or command palette (`Ctrl+Shift+P`)
 
-**Step-by-Step Workflow:**
+**VS Code Git Workflow:**
 
 ```
-1. Open VS Code in your project directory
-2. Make changes to files (edit, create, delete)
-3. Open Source Control panel (Ctrl+Shift+G)
-4. Review changes in "Changes" section
-5. Stage files by clicking + next to each file
-6. Type commit message in text box
-7. Press Ctrl+Enter to commit
-8. Click sync button to push to remote
-```
-
-**Brief Example:**
-
-```
-Day-to-day VS Code Git workflow:
-1. Edit analysis.py file
-2. Ctrl+Shift+G → See "analysis.py" in Changes
-3. Click + to stage file
-4. Type: "Add data validation to analysis script"
+1. Edit files (e.g., analysis.py)
+2. Ctrl+Shift+G → Open Source Control panel
+3. Click + next to changed files to stage
+4. Type commit message: "Add data validation to analysis script"
 5. Ctrl+Enter to commit
 6. Click sync button to push to GitHub
 ```
 
-## Advanced Git Workflow: Branching and Merging
+## Git Workflow: Branching and Merging
 
-Professional Git workflows use branching to develop features in isolation, then merge them back to the main branch. This enables parallel development and safe experimentation.
+Git workflows use branching to develop features in isolation, then merge them back to main. This enables parallel development and safe experimentation.
 
 **Reference:**
 
@@ -256,7 +239,7 @@ When Git cannot automatically merge changes, it creates merge conflicts that mus
 
 ## GitHub Web Interface
 
-GitHub's web interface provides comprehensive repository management, collaboration features, and project organization tools. It serves as the central hub for code sharing, issue tracking, and team collaboration.
+GitHub's web interface provides repository management, collaboration features, and project organization tools. It's the central hub for code sharing, issue tracking, and team collaboration.
 
 **Reference:**
 
@@ -286,45 +269,24 @@ A `.gitignore` file specifies which files and directories Git should ignore when
 **Brief Example:**
 
 ```
-# Ignore Python cache files
+# Python cache files
 __pycache__/
 *.pyc
 
-# Ignore data files
+# Data and secrets
 data/raw/*.csv
-results/**/*.txt
-
-# Ignore secrets
 .env
 *.key
 
-# Ignore IDE files
+# IDE files
 .vscode/
 .idea/
 
-# But track important data files
+# Track important files
 !data/processed/important_results.csv
 ```
 
 This prevents accidentally committing sensitive information, large files, or generated content while preserving important project files.
-
-```
-Repository Management:
-- Create repositories with README, .gitignore, license
-- Manage branch protection rules
-- Configure repository settings and permissions
-
-File Operations:
-- Create, edit, and delete files directly in browser
-- Upload multiple files via drag-and-drop
-- View file history and blame annotations
-
-Team Collaboration:
-- Create and manage pull requests
-- Review code with inline comments
-- Track issues and project milestones
-- Use GitHub Actions for automation
-```
 
 **Brief Example:**
 
@@ -345,10 +307,9 @@ Adding files via web interface:
 5. Click "Commit new file"
 ```
 
-
 # Markdown Documentation
 
-Markdown is a lightweight markup language for creating formatted text. It's essential for documentation, README files, and project communication. Markdown files are human-readable in plain text but render beautifully when displayed on platforms like GitHub.
+Markdown is a lightweight markup language for formatted text. It's essential for documentation, README files, and project communication. Markdown files are human-readable but render beautifully on platforms like GitHub.
 
 **Reference:**
 
@@ -368,46 +329,43 @@ Markdown is a lightweight markup language for creating formatted text. It's esse
 # Data Analysis Report
 
 ## Overview
-This report analyzes the relationship between **study time** and *academic performance*.
+Analyzes study time vs. academic performance.
 
 ### Key Findings
-1. Students who study **more than 20 hours per week** achieve higher grades
-2. *Regular study habits* correlate with better outcomes
-3. **Group study sessions** are particularly effective
+- More study hours → higher grades
+- Regular study habits help
+- Group study sessions are effective
 
 ## Data Summary
-| Study Hours | Average Grade | Sample Size |
-|-------------|---------------|-------------|
-| 0-10 | 2.8 | 45 |
-| 11-20 | 3.2 | 67 |
-| 21+ | 3.7 | 38 |
+| Study Hours | Avg Grade | N |
+|-------------|-----------|---|
+| 0-10        | 2.8       | 45|
+| 11-20       | 3.2       | 67|
+| 21+         | 3.7       | 38|
 
-> **Note**: All grades are on a 4.0 scale
+> Grades on 4.0 scale
 
 ### Code Example
 ```python
 import pandas as pd
-
-# Load and analyze study data
 df = pd.read_csv('study_data.csv')
-correlation = df['hours'].corr(df['grade'])
-print(f"Correlation: {correlation:.2f}")
+print(f"Correlation: {df['hours'].corr(df['grade']):.2f}")
 ```
 
-[View raw data](data/study_data.csv) | [Download report](report.pdf)
+[Raw data](data/study_data.csv) | [Report](report.pdf)
 
 ```
 
 # Python Fundamentals (McKinney Ch2+3)
 
-Python's design emphasizes readability and simplicity, making it ideal for data analysis. The language's object model treats everything as an object, providing consistent behavior across different data types. McKinney's approach focuses on practical data manipulation skills essential for scientific computing.
+Python emphasizes readability and simplicity, making it ideal for data analysis. Its object model treats everything as an object, providing consistent behavior across data types. McKinney's approach focuses on practical data manipulation skills for scientific computing.
 
 ![Python Import](media/python_import.webp)
 
 ## Language Semantics and Object Model
 
 
-Python uses indentation for code structure instead of braces, creating visually clean code. Every value is an object with associated type information, enabling dynamic behavior and introspection capabilities.
+Python uses indentation for code structure instead of braces, creating visually clean code. Every value is an object with type information, enabling dynamic behavior and introspection.
 
 **Reference:**
 - Indentation defines code blocks (4 spaces recommended)
@@ -424,47 +382,47 @@ if x > 0:
     print("Positive")
     y = x * 2
 
-# Everything is an object
 print(type(42))        # <class 'int'>
 print(isinstance("hello", str))  # True
 ```
 
-
 ## Object Introspection and Dynamic Type Checking
 
-Object introspection allows you to examine objects at runtime, revealing their type, attributes, and methods. This is particularly valuable in data science for understanding unknown datasets, debugging complex objects, and writing flexible code that adapts to different data structures.
+Object introspection lets you examine objects at runtime—their type, attributes, and methods. This is valuable for understanding unknown datasets and writing flexible code.
+
+Python uses **duck typing**: "If it walks like a duck and quacks like a duck, then it must be a duck." If an object supports the needed methods, you can use it—regardless of its actual type.
+
+![Duck Typing](media/duck_typing.jpg)
+
+This means functions work with any object that behaves as expected, not just those of a specific type.
 
 **Reference:**
 
-- `type(object)` - Returns the object's type as a class
-- `dir(object)` - Returns a list of valid attributes and methods
-- `help(object)` - Displays comprehensive documentation for the object
-
-**Brief Example:**
+- `type(object)` - Returns the object's type
+- `dir(object)` - Lists attributes and methods
+- `help(object)` - Shows documentation
 
 ```python
-# Understanding data structures
-import pandas as pd
-import numpy as np
+# Duck typing: treat any iterable as a sequence
+text = "Hello World"
+numbers = [1, 2, 3, 4, 5]
+user_data = {'name': 'Alice', 'age': 30, 'city': 'Boston'}
 
-# Create sample data
-data = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-numbers = np.array([1, 2, 3, 4, 5])
+for item in [text, numbers, user_data]:
+    print(f"Type: {type(item).__name__:<8} | Length: {len(item)}")
 
-# Basic object introspection
-print(f"Data type: {type(data)}")           # <class 'pandas.core.frame.DataFrame'>
-print(f"Array type: {type(numbers)}")       # <class 'numpy.ndarray'>
+def print_items(sequence):
+    for item in sequence:
+        print(f"  - {item}")
 
-# Examine available methods
-print("DataFrame methods:", [m for m in dir(data) if not m.startswith('_')][:10])
-
-# Get help on specific methods
-help(data.head)
+print_items(text)        # string
+print_items(numbers)     # list
+print_items(user_data)   # dictionary (prints keys)
 ```
 
 ## Scalar Types and Operations
 
-Scalar types represent single values in Python. The language provides rich support for numeric operations, string manipulation, and boolean logic essential for data analysis.
+Scalar types represent single values in Python. The language provides rich support for numeric operations, string manipulation, and boolean logic.
 
 **Reference:**
 
@@ -496,7 +454,7 @@ analysis_ready = has_data and count > 0
 
 ## String Operations for Data Cleaning
 
-String operations are fundamental for data cleaning and preprocessing. Python provides powerful built-in methods for transforming, cleaning, and validating text data, essential for working with real-world datasets.
+String operations are fundamental for data cleaning and preprocessing. Python provides built-in methods for transforming, cleaning, and validating text data.
 
 **Reference:**
 
@@ -528,7 +486,7 @@ if user_input.isalnum():
 
 ## Print Statements and Output Formatting
 
-Print statements are your primary tool for communicating results and debugging code. Understanding different formatting options enables clear, professional output essential for data analysis.
+Print statements are your primary tool for communicating results and debugging code. Understanding formatting options enables clear output for data analysis.
 
 **Reference:**
 
@@ -560,7 +518,7 @@ print(f"Debug: type = {type(data)}")
 
 ## Basic File I/O Operations
 
-File input/output operations are essential for data science workflows. Python provides simple yet powerful tools for reading from and writing to files, enabling data import, export, and persistent storage.
+File input/output operations are essential for data science workflows. Python provides simple tools for reading and writing files, enabling data import, export, and persistent storage.
 
 **Reference:**
 
@@ -596,7 +554,7 @@ with open('log.txt', 'a') as file:
 
 ## Type Checking and Debugging
 
-Understanding data types is crucial for debugging and data analysis. Python's dynamic typing means variables can change type, making type checking essential for reliable code.
+Understanding data types is crucial for debugging and data analysis. Python's dynamic typing means variables can change type, so type checking is essential for reliable code.
 
 **Reference:**
 
@@ -655,7 +613,7 @@ except ZeroDivisionError:
 
 ## Control Flow Structures
 
-Control flow determines program execution order through conditional statements and loops. Python's syntax emphasizes readability while providing powerful iteration capabilities.
+Control flow determines program execution order through conditional statements and loops. Python's syntax emphasizes readability and provides powerful iteration capabilities.
 
 **Reference:**
 
@@ -691,7 +649,7 @@ for grade in grades:
 
 ## Data Structures: Lists and Tuples
 
-Lists provide mutable sequences for storing and manipulating data collections. Tuples offer immutable sequences useful for fixed data records and function returns.
+Lists provide mutable sequences for storing and manipulating data. Tuples offer immutable sequences useful for fixed records and function returns.
 
 **Reference:**
 
@@ -718,10 +676,9 @@ coordinates = (40.7128, -74.0060)
 name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
 ```
 
-
 ## Data Structures: Dictionaries and Sets
 
-Dictionaries provide key-value storage for structured data, while sets offer unique collections with mathematical operations. Both are essential for data organization and lookup operations.
+Dictionaries provide key-value storage for structured data, while sets offer unique collections with mathematical operations. Both are essential for data organization and lookup.
 
 **Reference:**
 
@@ -750,7 +707,7 @@ both_subjects = math_students & cs_students  # Intersection
 
 ## List Comprehensions and Sequence Functions
 
-List comprehensions provide concise syntax for creating lists through transformation and filtering. Built-in sequence functions offer efficient operations on data collections.
+List comprehensions provide concise syntax for creating lists through transformation and filtering. Built-in sequence functions offer efficient operations on collections.
 
 **Reference:**
 
@@ -780,7 +737,7 @@ for name, score in zip(names, scores):
 
 ## Functions
 
-Functions organize code into reusable units with clear interfaces. They enable code reuse, testing, and modular design essential for maintainable data science projects.
+Functions organize code into reusable units with clear interfaces. They enable code reuse, testing, and modular design for maintainable data science projects.
 
 **Reference:**
 
@@ -815,19 +772,17 @@ result = average([90, 95, 87])
 
 ### `__main__` for script execution
 
-if __name__ == "__main__":
+if **name** == "**main**":
     # This code runs when script is executed directly
     grades = [85, 92, 78, 96, 88]
     average = calculate_average(grades)
     print(f"Average grade: {average:.1f}")
 
-
-
 # Command Line Mastery (review)
 
 ### Essential Navigation Commands
 
-Navigation commands form the foundation of command line usage, allowing you to orient yourself within the file system and move between directories efficiently.
+Navigation commands form the foundation of command line usage, allowing you to orient yourself within the file system and move between directories.
 
 **Reference:**
 
@@ -856,7 +811,7 @@ pwd                    # /Users/username/Documents/projects/data_science
 
 ### File and Directory Operations
 
-File operations enable creation, modification, and organization of your project structure. These commands form the building blocks of data science project management.
+File operations enable creation, modification, and organization of your project structure. These commands are the building blocks of data science project management.
 
 **Reference:**
 
@@ -879,7 +834,7 @@ cp data/raw/dataset.csv data/processed/
 
 ### Text Processing and Search
 
-Text processing commands enable efficient data exploration and manipulation. These tools become essential when working with log files, configuration files, or any text-based data.
+Text processing commands enable efficient data exploration and manipulation. These tools are essential when working with log files, configuration files, or any text-based data.
 
 **Reference:**
 
@@ -899,7 +854,7 @@ grep "error" logfile.txt       # Find error messages
 
 ### Visual Directory Structure
 
-Sometimes you need to see the overall structure of a project or directory tree. The `tree` command provides a clean, hierarchical view that's invaluable for understanding project organization.
+Sometimes you need to see the overall structure of a project or directory tree. The `tree` command provides a clean, hierarchical view for understanding project organization.
 
 **Reference:**
 
@@ -918,7 +873,7 @@ tree -d                # Show only directories
 
 ### History Navigation and Shortcuts
 
-Command line efficiency comes from mastering shortcuts and history navigation. These tools save time and reduce errors in daily work.
+Command line efficiency comes from mastering shortcuts and history navigation. These tools save time and reduce errors.
 
 **Reference:**
 
@@ -943,7 +898,7 @@ Command line efficiency comes from mastering shortcuts and history navigation. T
 
 ### Shell Scripting Fundamentals
 
-Shell scripting automates repetitive tasks and creates reusable command sequences. Scripts combine multiple commands with control flow to handle complex data processing workflows.
+Shell scripting automates repetitive tasks and creates reusable command sequences. Scripts combine multiple commands with control flow for complex data processing workflows.
 
 **Reference:**
 
@@ -968,7 +923,7 @@ done
 
 ### Command Chaining and Redirection
 
-Command chaining allows complex data processing pipelines by connecting multiple commands. Redirection controls where input comes from and where output goes, enabling powerful data transformations.
+Command chaining allows complex data processing pipelines by connecting multiple commands. Redirection controls input and output, enabling powerful data transformations.
 
 **Reference:**
 
