@@ -1,8 +1,71 @@
 # `git gud` with Version Control
 
-![xkcd 1597: Git](media/xkcd_1597.png)
+
+# VS Code Basics (GUI-first)
+
+We'll start in the editor so Git makes visual sense later. No JSON needed—just the VS Code interface.
+
+## Palette Cleanse: Command Palette & Quick Open
+
+- Open Command Palette: View → Command Palette… (Cmd+Shift+P)
+- Quick Open files: (Cmd+P)
+- Search across files: View → Search (Cmd+Shift+F)
+
+## Themes and Schemes: Make it Py‑pretty
+
+- Change Color Theme: Code → Settings → Theme → Color Theme (or Cmd+K, Cmd+T). I am a fan of:
+    - "Tomorrow Night Bright"
+    - "GitHub Dark High Contrast"
+- Toggle icons: Code → Settings → Theme → File Icon Theme
+
+## Meet the Main Bars
+
+- Activity Bar (left): Explorer, Search, Source Control, Run & Debug, Extensions
+- Side Bar: Toggle via View → Appearance → Show Side Bar
+- Panel (bottom): Problems, Output, Debug Console, Terminal (toggle: View → Appearance → Panel Position)
+- Secondary Side Bar (right): View → Appearance → Show Secondary Side Bar
+- Breadcrumbs: View → Appearance → Show Breadcrumbs
+- Zen Mode: View → Appearance → Zen Mode (Esc Esc to exit)
+
+## Core Panes You’ll Use
+
+- Explorer: View → Explorer (Cmd+Shift+E)
+- Source Control: View → Source Control (Cmd+Shift+G)
+- Run & Debug: Run → Start Debugging (F5) or View → Run (Ctrl+Shift+D)
+- Extensions: View → Extensions (Cmd+Shift+X)
+- Terminal: View → Terminal (Ctrl+`)
+- Split Editor: View → Editor Layout → Split Right (or Cmd+\)
+
+## Settings (GUI) you’ll toggle today
+
+- Format on Save: Code → Settings → Settings → Search “Format on Save” → check
+- Python Interpreter: Click bottom‑right “Python” status or Cmd+Shift+P → “Python: Select Interpreter”
+- Default Formatter (optional): Settings → Search “Default Formatter” → choose “Black” or “Ruff” if installed
+- Markdown Preview: Right‑click a .md → “Open Preview to the Side” (Cmd+K V)
+
+## Recommended Extensions (install via View → Extensions)
+
+- Python
+- Pylance (can help with debugging later, I prefer ruff)
+- Jupyter (we'll use this a lot later)
+- Markdown All in One
+- markdownlint
+- Markdown Checkboxes
+- GitHub Markdown Preview
+- Bonus mentions: Error Lens, YAML, indent‑rainbow, GitLens
+
+## Break(points) the Ice: 5‑minute hands‑on
+
+1) Change the Color Theme (Preferences: Color Theme)
+2) Install “Python” and “Markdown All in One”
+3) Turn on “Format on Save” in Settings (GUI)
+4) Open a `.py` file → add a breakpoint (click gutter) → Run → Start Debugging
+5) Open a `.md` file → right‑click → Open Preview to the Side
+6) Make a small edit → View → Source Control → stage, commit (GUI)
 
 # Git Version Control
+
+![xkcd 1597: Git](media/xkcd_1597.png)
 
 Don't worry - we're taking a different approach than that xkcd suggests!
 
@@ -73,14 +136,6 @@ Think: "I'm trying something new without risking the working version."
 
 ![Git Branches](media/git_branches.png)
 
-![Git Clone](media/git_clone.png)
-
-<!-- FIXME: Add Git workflow diagram showing working directory → staging area → repository flow -->
-![Git Workflow Diagram](media/git_workflow_diagram.png)
-
-<!-- FIXME: Add VS Code Git interface screenshot showing Source Control panel -->
-![VS Code Git Interface](media/vscode_git_interface.png)
-
 ## GUI-First Git with VS Code
 
 ### Why Start with GUI?
@@ -101,19 +156,13 @@ Once you understand Git concepts, you can use GUI or command line as needed.
 2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
 3. If first time: VS Code will prompt to configure Git username/email
 
-**Brief Example:**
-
-```
-Git configuration (one-time setup):
-- Full Name: Alice Smith
-- Email: alice.smith@ucsf.edu (use your actual UCSF email)
-```
-
-![GitHub Email Setup](media/github_email.png)
 
 ## Essential Git Commands
 
 Basic Git commands let you control what changes are committed using a three-stage workflow: working directory, staging area, repository.
+
+<!-- FIXME: Add Git workflow diagram showing working directory → staging area → repository flow -->
+![Git Workflow Diagram](media/git_workflow_diagram.png)
 
 **Reference:**
 
@@ -154,6 +203,8 @@ git push origin main          # Push changes
 git pull origin main          # Pull updates
 ```
 
+![Git Clone](media/git_clone.png)
+
 **Good vs. Bad Commit Messages**
 
 ```bash
@@ -175,6 +226,9 @@ git commit -m "minor changes"
 ## VS Code Git Integration
 
 VS Code's Source Control panel makes version control accessible without memorizing command-line syntax. This integration streamlines daily staging, committing, and managing changes.
+
+<!-- FIXME: Add VS Code Git interface screenshot showing Source Control panel -->
+![VS Code Git Interface](media/vscode_git_interface.png)
 
 **Reference:**
 
@@ -506,9 +560,16 @@ print("Value:", 42)
 
 # F-string formatting (preferred)
 name = "Alice"
-score = 87.3
+score = 87.3456
+average = 92.8
 print(f"Student: {name}")
-print(f"Score: {score:.1f}%")
+print(f"Score: {score:.1f}%")        # Shows 87.3%
+print(f"Average: {average:.2f}")     # Shows 92.80
+
+# Printing to files
+with open('report.txt', 'w') as f:
+    print(f"Final Score: {score:.1f}", file=f)
+    print(f"Class Average: {average:.2f}", file=f)
 
 # Debugging with print
 data = [1, 2, 3, 4, 5]
@@ -541,11 +602,29 @@ with open('data.txt', 'r') as file:
     content = file.read()
     print(f"File content: {content}")
 
+# Reading a CSV file line by line
+with open('students.csv', 'r') as file:
+    lines = file.readlines()
+    header = lines[0].strip()  # First line is header
+    for line in lines[1:]:     # Skip header, process data
+        fields = line.strip().split(',')
+        name, age, grade = fields[0], fields[1], fields[2]
+        print(f"Student: {name}, Grade: {grade}")
+
 # Writing to a file
 results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
 with open('grades.txt', 'w') as file:
     for result in results:
         file.write(f"{result}\n")
+
+# Creating output directory if needed
+import os
+if not os.path.exists('output'):
+    os.makedirs('output')
+
+with open('output/report.txt', 'w') as file:
+    file.write("Analysis Report\n")
+    file.write("=" * 40 + "\n")
 
 # Appending to a file
 with open('log.txt', 'a') as file:
@@ -903,22 +982,34 @@ Shell scripting automates repetitive tasks and creates reusable command sequence
 **Reference:**
 
 - `#!/bin/bash` - Shebang line for bash scripts
+- `echo "text"` - Print text to terminal
+- `mkdir -p dirname` - Create directory (and parents if needed)
+- `chmod +x script.sh` - Make script executable
 - `$1, $2, $3...` - Command line arguments
 - `$@` - All arguments
 - `$#` - Number of arguments
 - `$?` - Exit code of last command
-- `if [ condition ]; then ... fi` - Conditional execution
-- `for variable in list; do ... done` - Loop execution
 
 **Brief Example:**
 
 ```bash
 #!/bin/bash
-# Process multiple data files
-for file in data/*.csv; do
-    echo "Processing $file"
-    head -1 "$file" > "processed/$(basename "$file")"
-done
+# Create project structure
+echo "Setting up project..."
+mkdir -p src data output
+echo "Directories created"
+
+# Make script executable
+chmod +x setup.sh
+
+# Create files using here-documents
+cat > data/sample.csv << 'EOF'
+name,age,grade
+Alice,20,85
+Bob,19,92
+EOF
+
+echo "Setup complete!"
 ```
 
 ### Command Chaining and Redirection

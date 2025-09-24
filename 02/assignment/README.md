@@ -1,8 +1,14 @@
 # Assignment 02: Git Workflow, CLI Automation, and Python Data Processing
 
-**Due Date**: [To be set by instructor]  
-**Points**: 20 total  
+**Due Date**: [To be set by instructor]
+**Points**: 20 total
 **Estimated Time**: 3-4 hours
+
+## Provided Files
+
+- `requirements.txt` - Python requirements file (no external packages needed)
+- `TIPS.md` - Troubleshooting guide for common issues
+- `.github/test/test_assignment.py` - Automated tests for grading
 
 ## Learning Objectives
 
@@ -21,7 +27,7 @@ This assignment has **three progressive parts** that build upon each other. Each
 **Objective**: Demonstrate Git branching, committing, and merging workflows.
 
 **Tasks**:
-1. Create a new repository named `datasci-week02-integration`
+1. Create a new repository named `datasci-week02-integration` (separate from this assignment folder)
 2. Set up the following branch structure:
    - `main` branch (initial commit)
    - `feature/project-scaffold` branch
@@ -91,180 +97,35 @@ datasci-week02-integration/
 **Objective**: Create a shell script that automates project setup.
 
 **Tasks**:
-1. Create `setup_project.sh` with the following functionality:
-   - Create directory structure
+1. Create `setup_project.sh` from scratch with the following functionality:
+   - Create directory structure (src, data, output)
    - Generate initial files (.gitignore, requirements.txt)
-   - Create sample data files
-   - Set up Python template files
-2. Make the script executable and test it
-3. Commit the script to the `feature/project-scaffold` branch
+   - Create sample data files (students.csv with at least 8 records)
+   - Set up Python template files with TODO placeholders
+2. Make the script executable using chmod +x
+3. Test the script and verify all files are created
+4. Commit the script to the `feature/project-scaffold` branch
 
 **Script Requirements**:
-```bash
-#!/bin/bash
-# setup_project.sh - Automated project setup script
+- Must start with `#!/bin/bash`
+- Use `echo` to provide user feedback
+- Use `mkdir -p` to create directories
+- Use here-documents (`cat > filename << 'EOF'`) to create files
+- Create a CSV file with student data (name,age,grade,subject)
+- Create Python templates with function stubs and TODO comments
+- Make the script executable: `chmod +x setup_project.sh`
 
-# Function to create directory structure
-create_directories() {
-    echo "Creating directory structure..."
-    mkdir -p src data output
-    echo "✓ Directories created"
-}
-
-# Function to create initial files
-create_initial_files() {
-    echo "Creating initial files..."
-    
-    # Create .gitignore
-    cat > .gitignore << 'EOF'
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-
-# Data files
-data/raw/*.csv
-data/raw/*.json
-output/*.txt
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-EOF
-
-    # Create requirements.txt
-    cat > requirements.txt << 'EOF'
-# DataSci 217 - Week 02 Requirements
-# No external dependencies required for this assignment
-EOF
-
-    echo "✓ Initial files created"
-}
-
-# Function to generate sample data
-create_sample_data() {
-    echo "Generating sample data..."
-    
-    # Create students.csv
-    cat > data/students.csv << 'EOF'
-name,age,grade,subject
-Alice,20,85,Math
-Bob,19,92,Science
-Charlie,21,78,English
-Diana,20,88,Math
-Eve,22,95,Science
-Frank,19,82,History
-Grace,21,91,Math
-Henry,20,76,Science
-EOF
-
-    # Create courses.json
-    cat > data/courses.json << 'EOF'
-{
-    "courses": [
-        {"id": "MATH101", "name": "Calculus I", "credits": 4},
-        {"id": "SCI201", "name": "Physics I", "credits": 3},
-        {"id": "ENG101", "name": "Composition", "credits": 3},
-        {"id": "HIST101", "name": "World History", "credits": 3}
-    ]
-}
-EOF
-
-    echo "✓ Sample data generated"
-}
-
-# Function to create Python templates
-create_python_templates() {
-    echo "Creating Python templates..."
-    
-    # Create basic analysis script
-    cat > src/data_analysis.py << 'EOF'
-#!/usr/bin/env python3
-"""
-Basic Data Analysis Script
-Demonstrates file I/O and data processing
-"""
-
-def main():
-    print("Data Analysis Script")
-    print("=" * 30)
-    
-    # TODO: Implement data analysis
-    print("Analysis complete!")
-
-if __name__ == "__main__":
-    main()
-EOF
-
-    # Create functions template
-    cat > src/data_analysis_functions.py << 'EOF'
-#!/usr/bin/env python3
-"""
-Advanced Data Analysis with Functions
-Demonstrates modular design and function usage
-"""
-
-def load_data(filename):
-    """Load data from file."""
-    # TODO: Implement data loading
-    pass
-
-def analyze_data(data):
-    """Analyze the data."""
-    # TODO: Implement analysis
-    pass
-
-def save_results(results, filename):
-    """Save results to file."""
-    # TODO: Implement result saving
-    pass
-
-def main():
-    """Main function."""
-    print("Advanced Data Analysis")
-    print("=" * 30)
-    
-    # TODO: Implement main workflow
-    print("Analysis complete!")
-
-if __name__ == "__main__":
-    main()
-EOF
-
-    echo "✓ Python templates created"
-}
-
-# Main execution
-main() {
-    echo "Setting up DataSci Week 02 Integration Project..."
-    echo "=" * 50
-    
-    create_directories
-    create_initial_files
-    create_sample_data
-    create_python_templates
-    
-    echo ""
-    echo "✅ Project setup complete!"
-    echo "Next steps:"
-    echo "1. Review generated files"
-    echo "2. Implement Python analysis scripts"
-    echo "3. Test your implementation"
-}
-
-# Run main function
-main "$@"
+**Expected Output Structure**:
+After running your script, the following files and directories should exist:
+```
+├── src/
+│   ├── data_analysis.py
+│   └── data_analysis_functions.py
+├── data/
+│   └── students.csv
+├── output/
+├── .gitignore
+└── requirements.txt
 ```
 
 ### Part 3: Python Data Processing (7 points)
@@ -272,271 +133,68 @@ main "$@"
 **Objective**: Implement Python scripts that process data and output results to files.
 
 **Tasks**:
-1. Complete `src/data_analysis.py` with basic functionality
-2. Complete `src/data_analysis_functions.py` with modular design
+1. Create and complete `src/data_analysis.py` with basic functionality
+2. Create and complete `src/data_analysis_functions.py` with modular design
 3. Ensure both scripts output results to `output/analysis_report.txt`
 4. Test your implementation thoroughly
 
 **Python Requirements**:
 
 **Basic Analysis Script** (`src/data_analysis.py`):
-```python
-#!/usr/bin/env python3
-"""
-Basic Data Analysis Script
-Demonstrates file I/O and data processing
-"""
 
-import csv
-import json
-from pathlib import Path
+Your script should:
+- Read the CSV file line by line using `open()` and `readlines()`
+- Split each line by commas to extract fields
+- Calculate basic statistics (total students, average grade)
+- Count students by subject
+- Write results to `output/analysis_report.txt`
+- Use f-strings with `.1f` formatting for decimal numbers
 
-def main():
-    print("Data Analysis Script")
-    print("=" * 30)
-    
-    # Load student data
-    students = load_students('data/students.csv')
-    courses = load_courses('data/courses.json')
-    
-    # Perform basic analysis
-    total_students = len(students)
-    average_grade = calculate_average_grade(students)
-    math_students = count_math_students(students)
-    
-    # Generate report
-    report = generate_report(total_students, average_grade, math_students)
-    
-    # Save results
-    save_report(report, 'output/analysis_report.txt')
-    
-    print(f"Analysis complete! Results saved to output/analysis_report.txt")
+**Required Functions**:
+- `load_students(filename)`: Read CSV and return list of student data
+- `calculate_average_grade(students)`: Calculate and return average
+- `count_math_students(students)`: Count students in Math
+- `generate_report()`: Create formatted report string
+- `save_report(report, filename)`: Write report to file
+- `main()`: Orchestrate the analysis
 
-def load_students(filename):
-    """Load student data from CSV file."""
-    students = []
-    try:
-        with open(filename, 'r') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                students.append({
-                    'name': row['name'],
-                    'age': int(row['age']),
-                    'grade': int(row['grade']),
-                    'subject': row['subject']
-                })
-    except FileNotFoundError:
-        print(f"Error: File {filename} not found")
-    except Exception as e:
-        print(f"Error loading students: {e}")
-    
-    return students
-
-def load_courses(filename):
-    """Load course data from JSON file."""
-    try:
-        with open(filename, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        print(f"Error: File {filename} not found")
-        return {}
-    except Exception as e:
-        print(f"Error loading courses: {e}")
-        return {}
-
-def calculate_average_grade(students):
-    """Calculate average grade across all students."""
-    if not students:
-        return 0
-    total = sum(student['grade'] for student in students)
-    return total / len(students)
-
-def count_math_students(students):
-    """Count students taking Math courses."""
-    return len([s for s in students if s['subject'].lower() == 'math'])
-
-def generate_report(total_students, average_grade, math_students):
-    """Generate analysis report."""
-    report = f"""Student Grade Analysis Report
-{'=' * 40}
-
-Summary Statistics:
-- Total Students: {total_students}
-- Average Grade: {average_grade:.1f}
-- Math Students: {math_students}
-
-Analysis completed successfully!
-"""
-    return report
-
-def save_report(report, filename):
-    """Save report to file."""
-    try:
-        Path('output').mkdir(exist_ok=True)
-        with open(filename, 'w') as file:
-            file.write(report)
-        print(f"Report saved to {filename}")
-    except Exception as e:
-        print(f"Error saving report: {e}")
-
-if __name__ == "__main__":
-    main()
-```
+**Hints**:
+- Skip the header line when reading CSV: `lines[1:]`
+- Split CSV lines: `line.strip().split(',')`
+- Convert strings to integers: `int(value)`
+- Format decimals: `f"{average:.1f}"`
+- Create output directory if needed before writing file
 
 **Advanced Analysis Script** (`src/data_analysis_functions.py`):
-```python
-#!/usr/bin/env python3
-"""
-Advanced Data Analysis with Functions
-Demonstrates modular design and function usage
-"""
 
-import csv
-import json
-from pathlib import Path
+Your modular script should:
+- Separate data loading, processing, and saving into different functions
+- Load CSV data using the same technique as the basic script
+- Provide more detailed analysis (highest/lowest grades, grade distribution)
+- Generate a more comprehensive report
+- Demonstrate function reusability and modular design
 
-def load_data(filename):
-    """Load data from CSV or JSON file."""
-    if filename.endswith('.csv'):
-        return load_csv(filename)
-    elif filename.endswith('.json'):
-        return load_json(filename)
-    else:
-        print(f"Unsupported file format: {filename}")
-        return None
+**Required Functions**:
+- `load_data(filename)`: Generic loader that checks file extension
+- `load_csv(filename)`: Load CSV data (same technique as basic script)
+- `analyze_data(students)`: Return dictionary with multiple statistics
+- `analyze_grade_distribution(grades)`: Count grades by letter grade ranges
+- `save_results(results, filename)`: Save detailed report
+- `main()`: Orchestrate the analysis using all functions
 
-def load_csv(filename):
-    """Load data from CSV file."""
-    data = []
-    try:
-        with open(filename, 'r') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                data.append({
-                    'name': row['name'],
-                    'age': int(row['age']),
-                    'grade': int(row['grade']),
-                    'subject': row['subject']
-                })
-    except FileNotFoundError:
-        print(f"Error: File {filename} not found")
-    except Exception as e:
-        print(f"Error loading CSV: {e}")
-    
-    return data
+**Additional Requirements**:
+- Calculate highest and lowest grades using `max()` and `min()`
+- Count students by multiple subjects (Math, Science, etc.)
+- Create grade distribution (A: 90-100, B: 80-89, C: 70-79, D: 60-69, F: 0-59)
+- Calculate and display percentages with `.1f` formatting
+- Use dictionaries to store analysis results
 
-def load_json(filename):
-    """Load data from JSON file."""
-    try:
-        with open(filename, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        print(f"Error: File {filename} not found")
-        return {}
-    except Exception as e:
-        print(f"Error loading JSON: {e}")
-        return {}
-
-def analyze_data(students):
-    """Analyze student data and return statistics."""
-    if not students:
-        return {}
-    
-    grades = [student['grade'] for student in students]
-    
-    analysis = {
-        'total_students': len(students),
-        'average_grade': sum(grades) / len(grades),
-        'highest_grade': max(grades),
-        'lowest_grade': min(grades),
-        'math_students': len([s for s in students if s['subject'].lower() == 'math']),
-        'science_students': len([s for s in students if s['subject'].lower() == 'science']),
-        'grade_distribution': analyze_grade_distribution(grades)
-    }
-    
-    return analysis
-
-def analyze_grade_distribution(grades):
-    """Analyze grade distribution."""
-    distribution = {
-        'A (90-100)': 0,
-        'B (80-89)': 0,
-        'C (70-79)': 0,
-        'D (60-69)': 0,
-        'F (0-59)': 0
-    }
-    
-    for grade in grades:
-        if grade >= 90:
-            distribution['A (90-100)'] += 1
-        elif grade >= 80:
-            distribution['B (80-89)'] += 1
-        elif grade >= 70:
-            distribution['C (70-79)'] += 1
-        elif grade >= 60:
-            distribution['D (60-69)'] += 1
-        else:
-            distribution['F (0-59)'] += 1
-    
-    return distribution
-
-def save_results(results, filename):
-    """Save analysis results to file."""
-    try:
-        Path('output').mkdir(exist_ok=True)
-        
-        with open(filename, 'w') as file:
-            file.write("Advanced Student Analysis Report\n")
-            file.write("=" * 40 + "\n\n")
-            
-            file.write("Basic Statistics:\n")
-            file.write(f"- Total Students: {results['total_students']}\n")
-            file.write(f"- Average Grade: {results['average_grade']:.1f}\n")
-            file.write(f"- Highest Grade: {results['highest_grade']}\n")
-            file.write(f"- Lowest Grade: {results['lowest_grade']}\n\n")
-            
-            file.write("Subject Distribution:\n")
-            file.write(f"- Math Students: {results['math_students']}\n")
-            file.write(f"- Science Students: {results['science_students']}\n\n")
-            
-            file.write("Grade Distribution:\n")
-            for grade_range, count in results['grade_distribution'].items():
-                percentage = (count / results['total_students']) * 100
-                file.write(f"- {grade_range}: {count} students ({percentage:.1f}%)\n")
-            
-            file.write("\nAnalysis completed successfully!\n")
-        
-        print(f"Results saved to {filename}")
-        return True
-    except Exception as e:
-        print(f"Error saving results: {e}")
-        return False
-
-def main():
-    """Main function demonstrating module usage."""
-    print("Advanced Data Analysis")
-    print("=" * 30)
-    
-    # Load data
-    students = load_data('data/students.csv')
-    courses = load_data('data/courses.json')
-    
-    if not students:
-        print("No student data to analyze")
-        return
-    
-    # Analyze data
-    results = analyze_data(students)
-    
-    # Save results
-    if save_results(results, 'output/analysis_report.txt'):
-        print("✅ Advanced analysis complete!")
-    else:
-        print("❌ Analysis failed")
-
-if __name__ == "__main__":
-    main()
-```
+**Expected Output Format**:
+Both scripts should create `output/analysis_report.txt` with:
+- Total number of students
+- Average grade (formatted to 1 decimal place)
+- Subject counts
+- For advanced script: grade distribution with percentages
 
 ## Submission Requirements
 
