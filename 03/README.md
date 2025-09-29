@@ -440,10 +440,53 @@ cat data.csv | \
   head -n 10 > results.tsv
 ```
 
-## Command Line Graphing
+## Quick Data Visualization
 
-Not the best way to visualize, but it can be helpful in a pinch.
+Command line tools for quick data visualization without leaving the terminal.
 
-#FIXME: gnuplot & sparkline?
+**Reference:**
+
+```bash
+# sparklines: Inline Unicode graphs
+# Install: pip install sparklines
+# Or: brew install sparklines (Mac)
+
+# Visualize grade trends inline
+cut -d',' -f3 students.csv | tail -n +2 | sparklines
+#     Extract column 3 -> Skip header (line 1) -> Graph
+#     tail -n +2 means "start at line 2" (skip the header)
+# Output: ▅█▃▆▇▄▇▂▆▅
+
+# With statistics
+cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
+
+# gnuplot: Create terminal plots
+# Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
+
+# Simple line plot in terminal
+gnuplot -e "set terminal dumb; plot 'data.txt' with lines"
+
+# Quick histogram
+cut -d',' -f3 students.csv | tail -n +2 | \
+  gnuplot -e "
+    set terminal dumb size 60,20;
+    set boxwidth 0.5;
+    plot '-' using 1 with boxes notitle
+  "
+
+# Bar chart from aggregated data
+awk -F',' 'NR>1 {count[$4]++} END {for(s in count) print s, count[s]}' students.csv | \
+  gnuplot -e "
+    set terminal dumb size 50,15;
+    set style data histogram;
+    plot '-' using 2:xtic(1) notitle
+  "
+```
+
+Use cases:
+- Quick trend checks in SSH sessions
+- Data quality sanity checks
+- Pipeline debugging visualization
+- Terminal dashboards
 
 **LIVE DEMO!**
