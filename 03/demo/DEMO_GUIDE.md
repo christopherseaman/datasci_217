@@ -1,15 +1,4 @@
-# Demo Guide - Lecture 3: NumPy Arrays and Data Science Tools
-
-This guide provides hands-on demonstrations for Lecture 3, organized to match the lecture flow.
-
-## Demo Structure
-
-Each demo corresponds to a **LIVE DEMO!** callout in the lecture:
-
-1. **Demo 1**: Assignment 02 Walkthrough (no script)
-2. **Demo 2**: Virtual Environments and Python Potpourri → `demo2_python_potpourri.py`
-3. **Demo 3**: NumPy Arrays and Operations → `demo3_numpy_performance.py` + `demo3_student_analysis.py`
-4. **Demo 4**: Command Line Data Processing → `demo4_cli_processing.sh`
+Demo Guide - Lecture 3: NumPy Arrays and Data Science Tools
 
 # Demo 1: Assignment 02 Walkthrough
 

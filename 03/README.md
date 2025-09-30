@@ -132,7 +132,7 @@ print(f"Mean: {arr.mean():.2f}")
 
 **LIVE DEMO!**
 
-![Learning to Code...](media/learning_to_code.png)
+![It's pronounced...](media/numpy.webp)
 
 # Why NumPy Matters
 
@@ -467,6 +467,8 @@ data = rng.random((3, 3))  # Same result every time
 *Essential NumPy operations at a glance*
 
 **LIVE DEMO!**
+
+![Learning to Code...](media/learning_to_code.png)
 
 # Command Line Data Processing
 
