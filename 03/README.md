@@ -353,6 +353,97 @@ arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
 transposed = arr_2d.T         # Shape (2,3) -> (3,2)
 ```
 
+# Semi-Advanced Numpy
+
+Debating punting these for the bonus content but want to at least mention them...
+
+## Universal Functions (ufuncs)
+
+**Reference:**
+
+```python
+arr = np.array([1, 4, 9, 16, 25])
+
+# Common mathematical functions
+sqrt_arr = np.sqrt(arr)         # array([1., 2., 3., 4., 5.])
+exp_arr = np.exp([1, 2, 3])     # array([2.718, 7.389, 20.086])
+
+# Binary functions
+arr1 = np.array([1, 5, 3])
+arr2 = np.array([4, 2, 6])
+max_arr = np.maximum(arr1, arr2) # array([4, 5, 6])
+```
+
+## Conditional Logic
+
+**Reference:**
+
+```python
+# np.where: vectorized if-else
+arr = np.array([1, -2, 3, -4, 5])
+result = np.where(arr > 0, arr, 0)  # Replace negatives with 0
+# array([1, 0, 3, 0, 5])
+
+# Multiple conditions
+np.where(arr > 0, 'positive', 'negative')
+```
+
+## Boolean Array Methods
+
+**Reference:**
+
+```python
+arr = np.array([True, False, True, False])
+
+# Check if any/all values are True
+has_any = arr.any()      # True - at least one True
+all_true = arr.all()     # False - not all True
+
+# Works with conditions too
+grades = np.array([85, 92, 78, 95])
+any_above_90 = (grades > 90).any()  # True
+all_above_80 = (grades > 80).all()  # True
+```
+
+## Sorting
+
+**Reference:**
+
+```python
+arr = np.array([3, 1, 4, 1, 5])
+
+# In-place sorting (modifies original)
+arr.sort()              # arr becomes [1, 1, 3, 4, 5]
+
+# Return sorted copy (original unchanged)
+arr = np.array([3, 1, 4, 1, 5])
+sorted_arr = np.sort(arr)  # [1, 1, 3, 4, 5], arr unchanged
+
+# 2D sorting
+arr_2d = np.array([[3, 1], [2, 4]])
+arr_2d.sort(axis=0)     # Sort columns
+arr_2d.sort(axis=1)     # Sort rows
+```
+
+## Random Number Generation
+
+**Reference:**
+
+```python
+# Create random generator
+rng = np.random.default_rng()  # No seed (different each time)
+rng_seeded = np.random.default_rng(seed=42)  # Reproducible
+
+# Generate random numbers
+random_nums = rng.random(5)              # 5 random floats [0, 1)
+random_ints = rng.integers(1, 10, size=5) # 5 random ints [1, 10)
+normal_nums = rng.standard_normal(5)     # 5 from normal distribution
+
+# With seed for reproducibility
+rng = np.random.default_rng(seed=123)
+data = rng.random((3, 3))  # Same result every time
+```
+
 ## NumPy Quick Reference
 
 ![NumPy Cheatsheet](media/nparray_cheatsheet.png)
@@ -449,7 +540,6 @@ Command line tools for quick data visualization without leaving the terminal.
 ```bash
 # sparklines: Inline Unicode graphs
 # Install: pip install sparklines
-# Or: brew install sparklines (Mac)
 
 # Visualize grade trends inline
 cut -d',' -f3 students.csv | tail -n +2 | sparklines
@@ -460,31 +550,21 @@ cut -d',' -f3 students.csv | tail -n +2 | sparklines
 # With statistics
 cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
 
-# gnuplot: Create terminal plots
+# gnuplot: Create terminal plots (optional - many dependencies)
 # Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
 
-# Simple line plot in terminal
-gnuplot -e "set terminal dumb; plot 'data.txt' with lines"
-
-# Quick histogram
+# Simple plot of grades
 cut -d',' -f3 students.csv | tail -n +2 | \
-  gnuplot -e "
-    set terminal dumb size 60,20;
-    set boxwidth 0.5;
-    plot '-' using 1 with boxes notitle
-  "
+  gnuplot -e "set terminal dumb; plot '-' with linespoints"
 
-# Bar chart from aggregated data
-awk -F',' 'NR>1 {count[$4]++} END {for(s in count) print s, count[s]}' students.csv | \
-  gnuplot -e "
-    set terminal dumb size 50,15;
-    set style data histogram;
-    plot '-' using 2:xtic(1) notitle
-  "
+# Bar chart: count students by subject
+cut -d',' -f4 students.csv | tail -n +2 | sort | uniq -c | \
+  gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
 ```
 
 Use cases:
-- Quick trend checks in SSH sessions
+
+- Quick trend checks in terminal sessions
 - Data quality sanity checks
 - Pipeline debugging visualization
 - Terminal dashboards

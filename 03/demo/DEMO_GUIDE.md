@@ -64,12 +64,17 @@ A: One logical change per commit. If you can't write a concise commit message, i
 Show creating and activating a virtual environment:
 
 ```bash
-# Using venv (standard library)
-python -m venv datasci-practice
-source datasci-practice/bin/activate  # Mac/Linux
-# datasci-practice\Scripts\activate   # Windows
+# Create virtual environment in .venv (standard location)
+python3 -m venv .venv
 
+# Activate it
+source .venv/bin/activate  # Mac/Linux
+# .venv\Scripts\activate   # Windows
+
+# Install required packages
 pip install numpy pandas matplotlib
+
+# Save dependencies
 pip freeze > requirements.txt
 ```
 
@@ -78,6 +83,7 @@ pip freeze > requirements.txt
 Execute the demo script:
 
 ```bash
+source .venv/bin/activate  # Activate the virtual environment first
 python demo2_python_potpourri.py
 ```
 
@@ -111,19 +117,21 @@ A: For debugging! `type()` helps you understand what you're actually working wit
 Run the performance demo:
 
 ```bash
+source .venv/bin/activate  # Activate the virtual environment first
 python demo3_numpy_performance.py
 ```
 
 **Expected Output**
-- Python list operations - ~50ms
-- NumPy array operations - ~0.5ms
-- **100x speedup!**
+- Python list operations: tens of milliseconds
+- NumPy array operations: single-digit milliseconds
+- **10-100x speedup** (exact speedup varies by system)
 
 ## 3b. Student Grade Analysis
 
 Run the practical demo:
 
 ```bash
+source .venv/bin/activate  # Activate the virtual environment first
 python demo3_student_analysis.py
 ```
 
@@ -173,37 +181,41 @@ A: NumPy reduces dimensions. Use `grades[0:1, :]` to keep 2D.
 
 # Demo 4: Command Line Data Processing
 
-**Script** - `demo4_cli_processing.sh`
+**Data file** - `students.csv` (already exists in repo)
 
 ## Demo Flow
 
-Run the complete demo:
-
-```bash
-bash demo4_cli_processing.sh
-```
-
-The script demonstrates 12 parts. Key teaching moments
-
-### Essential Commands (4a-4g)
+Run these commands manually to demonstrate CLI data processing:
 
 **4a. `cut`** - Extract columns
+```bash
+cut -d',' -f1,3 students.csv | head -5
+```
 - `-d','` - Set delimiter to comma
 - `-f1,3` - Select fields 1 and 3
 - Use case - Quick column extraction from CSV
 
 **4b. `sort`** - Sort data
+```bash
+sort -t',' -k3 -n students.csv | head -5
+```
 - `-n` - Numerical sort (not alphabetical)
 - `-t','` - Set delimiter
 - `-k3` - Sort by field 3
 - Common mistake - Forgetting `-n` for numbers!
 
 **4c. `uniq`** - Count occurrences
+```bash
+cut -d',' -f4 students.csv | sort | uniq -c
+```
 - **Must sort first!** `uniq` only removes adjacent duplicates
 - `-c` - Count occurrences
 - Pattern - `sort | uniq -c` is very common
 
 **4d. `grep`** - Search and filter
+```bash
+grep "Math" students.csv
+```
 - Basic search - `grep "Math"`
 - `-v` - Inverse match (NOT)
 - `-i` - Case-insensitive
@@ -220,12 +232,13 @@ The script demonstrates 12 parts. Key teaching moments
 - Use case - More powerful than `tr`
 
 **4g. `awk`** - Pattern processing
+```bash
+awk -F',' 'NR>1 {sum+=$3; count++} END {print "Average grade:", sum/count}' students.csv
+```
 - Print columns - `awk '{print $1, $3}'`
 - Filter rows - `awk '$3 > 85'`
 - Calculate - `awk '{sum+=$3} END {print sum/NR}'`
 - **Most powerful tool for structured data**
-
-### Pipelines (4h-4i)
 
 **4h. Complex pipelines**
 How to chain commands:
@@ -242,34 +255,29 @@ grep "Math" students.csv | \
 3. Sort - What order?
 4. Limit - How many results?
 
-**4i. Real-world example** - Sales analysis
-- Demonstrates awk's power for aggregation
-- Revenue calculations
-- Grouping by product
+**4i. Sparklines** - Inline graphs
 
-### Data Visualization (4j-4k)
+Install (in your venv):
+```bash
+source .venv/bin/activate
+pip install sparklines
+```
 
-**4j. Sparklines** - Inline graphs
+Basic usage:
 ```bash
 cut -d',' -f3 students.csv | tail -n +2 | sparklines
 ```
 
-**Key Teaching Points**
+With statistics:
+```bash
+cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
+```
+
+**Teaching Points:**
 - `tail -n +2` means "start at line 2" (skip header)
-- Alternative - `sed '1d'` or `awk 'NR>1'`
-- Sparklines show trends at a glance
-- Perfect for quick checks in SSH sessions
-
-**4k. Gnuplot** - Terminal plots
-- ASCII art histograms and bar charts
-- More detailed than sparklines
-- Great for exploratory data analysis
-- No need to leave the terminal!
-
-
-### Report Generation (4l)
-
-**4l. Generate summary report** - Shows how to combine everything into automated reports.
+- Shows inline graphs perfect for SSH sessions and remote work
+- Lightweight visualization without leaving the terminal
+- Great for quick data exploration
 
 # Common Mistakes and How to Address Them
 
@@ -277,68 +285,50 @@ cut -d',' -f3 students.csv | tail -n +2 | sparklines
 
 **Mistake** - Committing too much at once
 - **Fix** - Break into logical chunks
-- **Teaching moment** - "If you can't write a concise commit message, it's too much"
+- **Thought** - "If you can't write a concise commit message, it's too much"
 
 **Mistake** - Forgetting to add files
 - **Fix** - Use `git status` before committing
-- **Teaching moment** - Show `git status` output interpretation
+- **Thought** - Show `git status` output interpretation
 
 ## Python Issues
 
 **Mistake** - Mixing string and numeric operations
 - **Fix** - Use `type()` to check, convert with `int()`, `float()`, `str()`
-- **Teaching moment** - "Python won't guess - you need to convert explicitly"
+- **Thought** - "Python won't guess - you need to convert explicitly"
 
 **Mistake** - F-string syntax errors
 - **Fix** - Remember the `f` prefix - `f"..."` not `"..."`
-- **Teaching moment** - Show the error message, explain how to read it
+- **Thought** - Show the error message, explain how to read it
 
 ## NumPy Issues
 
 **Mistake** - Modifying a view thinking it's a copy
 - **Fix** - Use `.copy()` when you need independence
-- **Teaching moment** - Show how changes propagate through views
+- **Thought** - Show how changes propagate through views
 
 **Mistake** - Wrong axis specification
 - **Fix** - Remember "axis is what you're collapsing"
-- **Teaching moment** - Show with small 2D array, visualize what each axis does
+- **Thought** - Show with small 2D array, visualize what each axis does
 
 **Mistake** - Boolean indexing without parentheses
 - **Fix** - `(grades > 80) & (grades < 90)` not `grades > 80 & grades < 90`
-- **Teaching moment** - Show the error, explain operator precedence
+- **Thought** - Show the error, explain operator precedence
 
 ## CLI Issues
 
 **Mistake** - Forgetting to sort before `uniq`
 - **Fix** - Always `sort | uniq -c`
-- **Teaching moment** - Show what happens without sort
+- **Thought** - Show what happens without sort
 
 **Mistake** - Using alphabetical sort on numbers
 - **Fix** - Add `-n` flag for numerical sort
-- **Teaching moment** - Show "10" sorting before "2" without `-n`
+- **Thought** - Show "10" sorting before "2" without `-n`
 
 **Mistake** - Not skipping CSV headers
 - **Fix** - Use `tail -n +2`, `sed '1d'`, or `awk 'NR>1'`
-- **Teaching moment** - Show error when trying to do math on header text
+- **Thought** - Show error when trying to do math on header text
 
 **Mistake** - Wrong field delimiter
 - **Fix** - Remember `-d','` for CSVs, `-t','` for sort
-- **Teaching moment** - Show what happens with wrong delimiter (gets wrong columns)
-
----
-
----
-
-# Pre-Demo Checklist
-
-Before lecture, ensure you have
-
-- [ ] All demo scripts are executable (`chmod +x *.sh`)
-- [ ] Virtual environment created and tested
-- [ ] Required packages installed - numpy, matplotlib
-- [ ] Optional tools installed - sparklines, gnuplot
-- [ ] Sample data files created (scripts create them, but verify)
-- [ ] Terminal font size large enough for back of room
-- [ ] All scripts run without errors
-
-**Test run** - Execute all demos in order at least once before lecture
+- **Thought** - Show what happens with wrong delimiter (gets wrong columns)
