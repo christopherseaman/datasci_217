@@ -156,6 +156,8 @@ _Assignment Requirement: Complete `src/data_analysis.py` to read CSV file line b
 git checkout -b feature/data-processing
 ```
 
+Edit `src/data_analysis.py` to add these implementations:
+
 ### _Read CSV file line by line using `open()` and `readlines()`_
 
 Implement `load_students()` (`lines[1:]` skips header, `strip()` removes newlines, `split(',')` parses CSV):
@@ -263,6 +265,8 @@ git commit -m "Implement basic student data analysis"
 ## Part 3b: Advanced Analysis
 
 _Assignment Requirement: Complete `src/data_analysis_functions.py` with modular design using separate functions; More detailed analysis (highest/lowest grades, grade distribution); Grade distribution by letter grade with percentages_
+
+Edit `src/data_analysis_functions.py` to add these implementations:
 
 ### _Modular design with separate functions_
 
