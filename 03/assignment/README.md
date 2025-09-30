@@ -1,397 +1,324 @@
-# Assignment 03: Data Processing with Python Structures
-
-**Due:** Before next class  
-**Points:** 20 points total  
-**Submit:** Via GitHub repository (link submitted to Canvas)
-
-## Overview
-
-Practice Python data structures and file operations by processing a realistic dataset. You'll work with CSV files, organize data using lists and dictionaries, and generate meaningful analysis results.
-
-This assignment simulates real data science workflows where you receive messy data and need to clean, analyze, and report results.
-
-## Learning Objectives
-
-By completing this assignment, you will:
-- Read and write CSV files using Python's csv module
-- Organize complex data using lists and dictionaries  
-- Clean and process text data using string methods
-- Generate summary statistics from datasets
-- Create professional output files with results
-- Practice defensive programming with file operations
-
-## Dataset Description
-
-You'll work with a fictional "Student Course Evaluations" dataset containing:
-- Student information (ID, name, major, year)
-- Course ratings (difficulty, usefulness, instructor_rating)
-- Comments (free text responses)
-
-The data contains realistic inconsistencies you'll need to handle:
-- Mixed case names and majors
-- Extra whitespace in text fields
-- Some missing ratings (empty strings)
-- Inconsistent year formats
-
-## Setup Instructions
-
-1. **Create Repository**
-   - Name: `datasci217-assignment03`
-   - Clone to your computer using VS Code
-   - Create project structure:
-
-```
-datasci217-assignment03/
-├── README.md
-├── requirements.txt
-├── src/
-│   ├── data_processor.py
-│   └── analysis_report.py
-├── data/
-│   ├── student_evaluations.csv (provided)
-│   └── README.md
-└── output/
-    └── README.md
-```
-
-2. **Download Dataset**
-   - Canvas → Assignment 03 → download `student_evaluations.csv`
-   - Place in `data/` directory
-   - **DO NOT** commit this file to Git (it's in .gitignore)
+# Assignment 03: NumPy Arrays & Virtual Environments - Health Sensor Data Analysis
 
 ## Requirements
 
-### Part 1: Data Loading and Cleaning (8 points)
+This assignment has **three progressive parts** that build upon each other. Each part focuses on essential data science skills.
 
-Create `src/data_processor.py` with the following functions:
+### Provided Files
 
-**Function 1: `load_student_data(filename)`**
+- `generate_health_data.py` - Script to generate sample health sensor data
+- `analyze_health_data.py` - Scaffold script with TODO comments for you to complete
+- `requirements.txt` - Python dependencies (NumPy)
+- `TIPS.md` - Troubleshooting guide for common issues
+- `.github/test/test_assignment.py` - Automated tests for grading
+- `expected_outputs/` - Reference examples of expected output files
+
+## Assignment
+
+### Part 0: Run the Script to Prepare Example Data
+
+**Setup**:
+First, generate the sample data by running:
+
+```bash
+python generate_health_data.py
+```
+
+This creates `health_data.csv` with **50,000 rows** containing:
+
+**CSV Schema:**
+
+```
+patient_id,timestamp,heart_rate,blood_pressure_systolic,blood_pressure_diastolic,temperature,glucose_level,sensor_id
+```
+
+**Sample Data:**
+
+```csv
+patient_id,timestamp,heart_rate,blood_pressure_systolic,blood_pressure_diastolic,temperature,glucose_level,sensor_id
+P00001,2024-01-15T08:23:45,72,120,80,98.6,95,S001
+P00002,2024-01-15T08:24:12,68,115,75,98.4,88,S002
+P00003,2024-01-15T08:25:33,75,135,85,98.9,102,S003
+...
+```
+
+### Part 1: CLI Data Tools (7 points)
+
+**Objective**: Use command-line tools to analyze a large CSV file containing health sensor data.
+
+**Tasks**:
+
+You must complete these tasks using command-line tools and save output to files in the `output/` directory.
+
+**Task 1.1: Count Unique Patients** (1.5 points)
+
+```bash
+# Extract patient IDs from the first column and count unique values
+# Expected tools: cut, sort, uniq, wc
+# Output format: Single number (e.g., "10000")
+# Save to: output/part1_patient_count.txt
+```
+
+**Task 1.2: High Blood Pressure Analysis** (2 points)
+
+```bash
+# Find and count readings where systolic BP > 130
+# Expected tools: grep or awk, wc
+# Output format: Single number (e.g., "8543")
+# Save to: output/part1_high_bp_count.txt
+```
+
+**Task 1.3: Average Temperature** (2 points)
+
+```bash
+# Calculate average temperature across all readings
+# Expected tools: cut, awk, tail
+# Output format: Single number with 2 decimal places (e.g., "98.25")
+# Save to: output/part1_avg_temp.txt
+```
+
+**Task 1.4: Glucose Statistics** (1.5 points)
+
+```bash
+# Find the top 5 highest glucose readings
+# Expected tools: cut, sort, head
+# Output format: Five numbers, one per line, sorted descending
+# Save to: output/part1_glucose_stats.txt
+```
+
+**Hints**:
+
+- Use `cut -d',' -f1` to extract the first column
+- Use `tail -n +2` to skip the header row
+- Use `sort | uniq` to find unique values
+- Use `awk -F','` to process CSV with awk
+- Chain commands with pipes (`|`) to create data processing pipelines
+
+### Part 2: Virtual Environment Setup (5 points)
+
+**Objective**: Set up a Python virtual environment using `venv` and install NumPy.
+
+**Tasks**:
+
+1. **Create a virtual environment** named `.venv` using Python's venv module
+2. **Activate the virtual environment**
+3. **Install NumPy** from requirements.txt
+4. **Verify NumPy** is installed and accessible
+
+**Instructions**:
+
+```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate (Mac/Linux/WSL)
+source .venv/bin/activate
+
+# Activate (Windows)
+.venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify installation
+python -c "import numpy; print(numpy.__version__)"
+
+# Deactivate when done
+deactivate
+```
+
+**What to Submit**:
+
+- NOTHING!
+- Successful completion of Part 3 (which requires NumPy) shows you've managed packages
+
+**Why This Matters**:
+Virtual environments ensure your project dependencies are isolated from other Python projects, making your analysis reproducible and avoiding version conflicts.
+
+### Part 3: NumPy Data Analysis (8 points)
+
+**Objective**: Complete the scaffold Python script that uses NumPy to analyze health sensor data.
+
+**Tasks**:
+
+The provided file `analyze_health_data.py` contains function signatures with TODO comments. It is a scaffold for you to build upon. You must implement the following functions:
+
+**Function 1: `load_data(filename)`** (1.5 points)
+
+The code for loading data with `np.genfromtxt()` is **provided for you** because this function is not covered in the lecture. You can use this function as-is.
+
 ```python
-def load_student_data(filename):
-    """
-    Load student evaluation data from CSV file.
+def load_data(filename):
+    """Load CSV data using NumPy.
     
     Args:
-        filename (str): Path to CSV file
+        filename: Path to CSV file
         
     Returns:
-        list: List of dictionaries, one per student record
-        
-    Example return:
-    [
-        {
-            'student_id': 'S001',
-            'name': 'Alice Smith',
-            'major': 'Biology',
-            'year': 2024,
-            'difficulty': 4,
-            'usefulness': 5,
-            'instructor_rating': 4,
-            'comments': 'Great course overall!'
-        },
-        ...
-    ]
+        NumPy structured array with all columns
     """
-    # Your implementation here
-    pass
+    # This code is provided (np.genfromtxt not covered in lecture)
+    dtype = [('patient_id', 'U10'), ('timestamp', 'U20'),
+             ('heart_rate', 'i4'), ('blood_pressure_systolic', 'i4'),
+             ('blood_pressure_diastolic', 'i4'), ('temperature', 'f4'),
+             ('glucose_level', 'i4'), ('sensor_id', 'U10')]
+    
+    data = np.genfromtxt(filename, delimiter=',', dtype=dtype, skip_header=1)
+    return data
 ```
 
-**Requirements:**
-- Use `csv.DictReader` to read the file
-- Handle missing files gracefully (print error, return empty list)
-- Convert numeric fields to integers (difficulty, usefulness, instructor_rating, year)
-- Handle empty/invalid numeric values by setting them to 0
-- Clean text fields by stripping whitespace and applying title case to names/majors
+**Function 2: `calculate_statistics(data)`** (2 points)
 
-**Function 2: `clean_student_record(record)`**
 ```python
-def clean_student_record(record):
-    """
-    Clean a single student record dictionary.
+def calculate_statistics(data):
+    """Calculate basic statistics for numeric columns.
     
     Args:
-        record (dict): Raw student record from CSV
+        data: NumPy structured array
         
     Returns:
-        dict: Cleaned student record
+        Dictionary with statistics
+        
+    TODO: Calculate and return:
+    - Average heart rate (use .mean())
+    - Average systolic BP (use .mean())
+    - Average glucose level (use .mean())
+    - Return as dictionary
+    - Format values with f-strings using .1f
     """
-    # Your implementation here
-    pass
 ```
 
-**Requirements:**
-- Strip whitespace from all text fields
-- Apply title case to name and major fields
-- Convert year to integer, handle invalid years by using current year
-- Convert rating fields to integers, use 0 for invalid/empty values
-- Ensure comments field is a string (empty string if missing)
+**Function 3: `find_abnormal_readings(data)`** (2 points)
 
-### Part 2: Data Analysis (6 points)
-
-Create analysis functions in `src/data_processor.py`:
-
-**Function 3: `calculate_major_statistics(students)`**
 ```python
-def calculate_major_statistics(students):
-    """
-    Calculate statistics grouped by major.
+def find_abnormal_readings(data):
+    """Find readings with abnormal values.
     
     Args:
-        students (list): List of student dictionaries
+        data: NumPy structured array
         
     Returns:
-        dict: Statistics by major
+        Dictionary with counts
         
-    Example return:
-    {
-        'Biology': {
-            'count': 15,
-            'avg_difficulty': 3.8,
-            'avg_usefulness': 4.2,
-            'avg_instructor': 4.0
-        },
-        'Chemistry': {
-            'count': 12,
-            'avg_difficulty': 4.1,
-            'avg_usefulness': 3.9,
-            'avg_instructor': 3.8
-        }
-    }
+    TODO: Count readings where:
+    - Heart rate > 90 (use boolean indexing)
+    - Systolic BP > 130 (use boolean indexing)
+    - Glucose > 110 (use boolean indexing)
+    - Return dictionary with counts
     """
-    # Your implementation here
-    pass
 ```
 
-**Function 4: `find_top_students(students, metric='usefulness', top_n=5)`**
+**Function 4: `generate_report(stats, abnormal)`** (1.5 points)
+
 ```python
-def find_top_students(students, metric='usefulness', top_n=5):
-    """
-    Find students with highest ratings for a given metric.
+def generate_report(stats, abnormal):
+    """Generate formatted analysis report.
     
     Args:
-        students (list): List of student dictionaries
-        metric (str): Rating field to sort by ('difficulty', 'usefulness', 'instructor_rating')
-        top_n (int): Number of top students to return
+        stats: Dictionary of statistics
+        abnormal: Dictionary of abnormal counts
         
     Returns:
-        list: List of student dictionaries, sorted by metric (highest first)
+        Formatted string report
+        
+    TODO: Create a formatted report string using f-strings
+    - Include all statistics with proper formatting
+    - Use .1f for decimal numbers
+    - Make it readable and well-formatted
     """
-    # Your implementation here
-    pass
 ```
 
-### Part 3: Report Generation (4 points)
+**Function 5: `save_report(report, filename)`** (0.5 points)
 
-Create `src/analysis_report.py` with reporting functions:
-
-**Function 5: `generate_summary_report(students, output_file)`**
 ```python
-def generate_summary_report(students, output_file):
-    """
-    Generate a comprehensive summary report.
+def save_report(report, filename):
+    """Save report to file.
     
     Args:
-        students (list): List of student dictionaries
-        output_file (str): Path for output text file
+        report: Report string
+        filename: Output filename
+        
+    TODO: Write the report to a file
     """
-    # Your implementation here
-    pass
 ```
 
-**Report should include:**
-- Total number of evaluations
-- Overall average ratings (difficulty, usefulness, instructor)
-- Statistics by major (count, averages)
-- Top 5 students by usefulness rating
-- Bottom 5 students by difficulty rating (easiest experience)
-
-**Function 6: `export_cleaned_data(students, output_file)`**
-```python
-def export_cleaned_data(students, output_file):
-    """
-    Export cleaned data to CSV file.
-    
-    Args:
-        students (list): List of cleaned student dictionaries
-        output_file (str): Path for output CSV file
-    """
-    # Your implementation here
-    pass
-```
-
-### Part 4: Main Script (2 points)
-
-Create a main execution block in `data_processor.py`:
+**Function 6: `main()`** (0.5 points)
 
 ```python
-if __name__ == "__main__":
-    # Load and clean data
-    print("Loading student evaluation data...")
-    students = load_student_data("data/student_evaluations.csv")
-    print(f"Loaded {len(students)} student records")
+def main():
+    """Main execution function.
     
-    # Generate reports
-    print("Generating analysis report...")
-    generate_summary_report(students, "output/analysis_summary.txt")
-    
-    print("Exporting cleaned data...")
-    export_cleaned_data(students, "output/cleaned_evaluations.csv")
-    
-    print("Analysis complete! Check output/ directory for results.")
+    TODO: Orchestrate the analysis:
+    1. Load the data from 'health_data.csv'
+    2. Calculate statistics
+    3. Find abnormal readings
+    4. Generate report
+    5. Save to 'analysis_report.txt'
+    6. Print success message
+    """
 ```
 
-## File Structure Requirements
+**Expected Output Format**:
 
-**requirements.txt:**
-```
-# No external packages needed - using only Python standard library
-```
+Your completed script should generate `output/analysis_report.txt` with content similar to:
 
-**data/README.md:**
-```markdown
-# Data Directory
-
-## Files
-- `student_evaluations.csv` - Raw evaluation data (not tracked by Git)
-
-## Data Dictionary
-- student_id: Unique student identifier
-- name: Student full name
-- major: Academic major
-- year: Graduation year
-- difficulty: Course difficulty rating (1-5 scale)
-- usefulness: Course usefulness rating (1-5 scale) 
-- instructor_rating: Instructor effectiveness rating (1-5 scale)
-- comments: Free text feedback
-```
-
-**output/README.md:**
-```markdown
-# Output Directory
-
-Generated files from analysis:
-- `analysis_summary.txt` - Summary report with key statistics
-- `cleaned_evaluations.csv` - Cleaned version of original data
-
-Files in this directory are generated by scripts and not tracked by Git.
-```
-
-**.gitignore** (add these lines):
-```
-# Data files (often contain sensitive information)
-data/*.csv
-data/*.xlsx
-
-# Generated output files
-output/*.txt
-output/*.csv
-output/*.json
-```
-
-## Sample Expected Output
-
-**analysis_summary.txt** (partial example):
-```
-Student Course Evaluation Analysis
+```text
+Health Sensor Data Analysis Report
 ==================================
-Generated: 2024-03-15 14:30:22
 
-OVERALL STATISTICS
-Total Evaluations: 47
-Average Difficulty: 3.8 (out of 5)
-Average Usefulness: 4.1 (out of 5) 
-Average Instructor Rating: 4.0 (out of 5)
+Dataset Summary:
+- Total readings: 50000
 
-STATISTICS BY MAJOR
-Biology (n=15):
-  Avg Difficulty: 3.9
-  Avg Usefulness: 4.2
-  Avg Instructor: 4.1
+Average Measurements:
+- Heart Rate: 79.8 bpm
+- Systolic BP: 125.2 mmHg
+- Glucose Level: 99.5 mg/dL
 
-Chemistry (n=12):
-  Avg Difficulty: 4.0
-  Avg Usefulness: 3.8
-  Avg Instructor: 3.9
-
-[... continues with more majors ...]
-
-TOP 5 STUDENTS BY USEFULNESS RATING
-1. Alice Johnson (Biology) - 5.0
-2. Bob Chen (Chemistry) - 5.0  
-3. Carol Davis (Physics) - 4.0
-4. David Wilson (Biology) - 4.0
-5. Emma Thompson (Math) - 4.0
-
-[... more sections ...]
+Abnormal Readings:
+- High Heart Rate (>90): 4523 readings
+- High Blood Pressure (>130): 8234 readings
+- High Glucose (>110): 9876 readings
 ```
 
-## Testing Your Code
+**NumPy Operations Expected** (from lecture):
 
-Before submitting:
+- ✅ Accessing array columns/fields
+- ✅ Statistical operations (`.mean()`)
+- ✅ Boolean indexing for filtering (`data[data['column'] > threshold]`)
+- ✅ Counting with `.sum()` or `len()` on filtered arrays
+- ✅ F-string formatting with `.1f`
 
-1. **Test with provided data:**
-   ```bash
-   python src/data_processor.py
-   ```
+**Note**: The `np.genfromtxt()` code is provided for you since it's not covered in the lecture.
 
-2. **Verify output files:**
-   - `output/analysis_summary.txt` should contain readable report
-   - `output/cleaned_evaluations.csv` should be valid CSV
+**Running Your Script**:
 
-3. **Test error handling:**
-   - Rename data file temporarily, run script (should handle gracefully)
-   - Create CSV with some invalid/missing values
+```bash
+# Make sure your virtual environment is activated
+source .venv/bin/activate  # Mac/Linux
+# or
+.venv\Scripts\activate  # Windows
 
-4. **Code quality check:**
-   - All functions have docstrings
-   - Code uses meaningful variable names
-   - No hardcoded values (use parameters/constants)
+# Run the analysis
+python3 analyze_health_data.py
 
-## Grading Rubric
+# Check the output
+cat output/analysis_report.txt
+```
 
-- **Data Loading & Cleaning (8 pts):** Functions load CSV correctly, handle errors, clean data appropriately
-- **Data Analysis (6 pts):** Statistics calculations are correct, functions work with different inputs
-- **Report Generation (4 pts):** Reports are readable, comprehensive, and properly formatted
-- **Main Script (2 pts):** Script runs without errors, produces expected output files
+## Common Issues to Avoid
 
-**Bonus Points (up to 2 pts):**
-- Handle edge cases elegantly (empty datasets, all missing values)
-- Add additional meaningful statistics or analysis
-- Create particularly well-structured, readable code
+1. **CLI Issues**:
+   - Don't forget to skip the header row with `tail -n +2`
+   - Remember to use comma delimiter with `-d','` or `-F','`
+   - Pipe commands together to create complete pipelines
 
-## Common Pitfalls to Avoid
+2. **Virtual Environment Issues**:
+   - Always activate the environment before running Python scripts
+   - Use `which python` to verify you're using the venv Python
+   - Deactivate when switching to other projects
 
-1. **File paths:** Use `os.path.join()` for cross-platform compatibility
-2. **Error handling:** Don't let your script crash on missing/invalid data
-3. **Data types:** Convert strings to numbers where appropriate
-4. **CSV headers:** Use `DictReader`/`DictWriter` for maintainable code
-5. **Hardcoding:** Don't hardcode filenames or values that should be parameters
-
-## Getting Help
-
-- **Office Hours:** [Your office hours]
-- **Discord:** #assignment03-help channel
-- **Debugging Tips:** Add print statements to see what your data looks like at each step
-
-## Submission Instructions
-
-1. **Commit your code** using good commit messages:
-   ```
-   git add .
-   git commit -m "Implement data loading and cleaning functions"
-   git commit -m "Add analysis and reporting functionality"
-   git commit -m "Complete main script and documentation"
-   ```
-
-2. **Test everything works** by running your script from scratch
-
-3. **Push to GitHub**:
-   ```
-   git push origin main
-   ```
-
-4. **Submit repository link** via Canvas
-
-**Due:** [Insert due date] at 11:59 PM
-
-Late submissions: -10% per day, up to 3 days maximum.
+3. **NumPy Issues**:
+   - Use `skip_header=1` in `np.genfromtxt()` to skip the CSV header
+   - Access structured array fields with bracket notation: `data['column_name']`
+   - Boolean indexing returns a filtered array: `data[data['heart_rate'] > 90]`
+   - Use `.sum()` on boolean arrays to count True values

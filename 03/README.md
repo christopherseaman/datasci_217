@@ -215,6 +215,8 @@ num_arr = str_arr.astype(float)
 
 ## Basic Indexing
 
+NumPy's indexing syntax allows you to access and slice array elements using familiar Python notation, extended to work seamlessly across multiple dimensions.
+
 **Reference:**
 
 ```python
@@ -231,6 +233,8 @@ every_other = arr[::2]  # array([0, 2, 4, 6, 8])
 
 ## Multidimensional Indexing
 
+With multidimensional arrays, you can use comma-separated indices to access elements, rows, or columns, making it easy to work with matrices and higher-dimensional data.
+
 **Reference:**
 
 ```python
@@ -246,6 +250,8 @@ middle_column = arr_2d[:, 1] # Column 1: array([2, 5, 8])
 ```
 
 ## Boolean Indexing
+
+Boolean indexing allows you to filter arrays using conditional logic, selecting only elements that meet specific criteria. This is essential for data analysis tasks like finding outliers, filtering datasets, or applying conditional transformations.
 
 **Reference:**
 
@@ -266,6 +272,8 @@ filtered = arr[mask]
 
 ## Fancy Indexing
 
+Fancy indexing uses integer arrays to select multiple elements at arbitrary positions in a single operation. This powerful technique enables efficient data reordering, sampling, and custom selection patterns without explicit loops.
+
 **Reference:**
 
 ```python
@@ -281,6 +289,8 @@ selected = arr_2d[[0, 2], [1, 2]]  # array([2, 9])
 ```
 
 ## Views vs Copies
+
+Understanding the distinction between views and copies is critical for avoiding unexpected behavior: slicing operations create views that share memory with the original array, while explicit copies create independent arrays.
 
 **Reference:**
 
@@ -303,6 +313,8 @@ print(arr)                  # array([1, 2, 3, 4, 5])
 
 ## Arithmetic and Vectorized Operations
 
+NumPy's vectorized operations perform element-wise calculations across entire arrays without explicit loops, providing both cleaner code and significant performance improvements over standard Python operations.
+
 **Reference:**
 
 ```python
@@ -322,6 +334,8 @@ result = arr + 10           # Adds 10 to all elements
 
 ## Statistical Operations
 
+NumPy provides built-in statistical functions that operate across entire arrays or along specific axes, enabling quick computation of summary statistics for data analysis.
+
 **Reference:**
 
 ```python
@@ -339,6 +353,8 @@ test_avg = grades.mean(axis=0)     # Average per test
 ```
 
 ## Array Reshaping
+
+Reshaping operations let you change an array's dimensions without copying data, making it easy to convert between 1D, 2D, and higher-dimensional representations as needed for different operations.
 
 **Reference:**
 

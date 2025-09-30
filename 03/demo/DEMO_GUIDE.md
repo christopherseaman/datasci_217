@@ -11,47 +11,371 @@ Each demo corresponds to a **LIVE DEMO!** callout in the lecture:
 3. **Demo 3**: NumPy Arrays and Operations → `demo3_numpy_performance.py` + `demo3_student_analysis.py`
 4. **Demo 4**: Command Line Data Processing → `demo4_cli_processing.sh`
 
----
-
 # Demo 1: Assignment 02 Walkthrough
 
-## Key Teaching Points
+## Part 1: Git Workflow Setup
 
 ### 1a. Repository Setup
-- Initialize Git repository
-- Create meaningful README
-- First commit with good commit message
-- Show `git log --oneline`
 
-### 1b. Feature Branch Workflow
-- Create feature branch: `git checkout -b feature/project-scaffold`
-- Build project structure with automation script
-- Create `.gitignore` for Python projects
-- Commit changes to feature branch
+```bash
+# Create new repository (separate from assignment folder)
+mkdir datasci-week02-integration
+cd datasci-week02-integration
+git init
 
-### 1c. Python Integration
-- Write Python script for data analysis
-- Use CLI tools to prepare data
-- Integrate Python with shell scripts
-- Test the complete workflow
+# Create initial README
+# (Students can follow README template from assignment)
+git add README.md
+git commit -m "Initial commit: Add project README"
 
-### 1d. Merge and Tag
-- Merge feature branch to main
-- Create annotated tag: `git tag -a v1.0 -m "Release 1.0"`
-- Show complete history: `git log --oneline --graph --all`
+# Verify first commit
+git log --oneline
+```
+
+### 1b. Feature Branch for Project Scaffold
+
+```bash
+# Create branch for Part 2 - CLI automation script
+git checkout -b feature/project-scaffold
+```
+
+## Part 2: CLI Project Scaffold Script
+
+_Assignment Requirement: Create `setup_project.sh` from scratch with the following functionality: Create directory structure (src, data, output); Generate initial files (.gitignore, requirements.txt); Create sample data files (students.csv with at least 8 records); Set up Python template files with TODO placeholders_
+
+### _Create directory structure (src, data, output)_
+
+Start with shebang and user feedback:
+
+```bash
+#!/bin/bash
+echo "Creating project structure..."
+```
+
+Add directory creation (`mkdir -p` creates parent directories if needed):
+
+```bash
+mkdir -p src data output
+echo "✓ Created directories: src, data, output"
+```
+
+### _Generate initial files (.gitignore, requirements.txt)_
+
+Add .gitignore (heredoc with `'EOF'` prevents variable expansion):
+
+```bash
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS files
+.DS_Store
+EOF
+echo "✓ Created .gitignore"
+```
+
+### _Create sample data files (students.csv with at least 8 records)_
+
+Add sample CSV (must have header row and at least 8 data rows):
+
+```bash
+cat > data/students.csv << 'EOF'
+name,age,grade,subject
+Alice,20,92,Math
+Bob,21,85,Science
+Charlie,19,78,Math
+Diana,22,95,Science
+Eve,20,88,Math
+Frank,21,76,Science
+Grace,19,91,Math
+Henry,22,82,Science
+EOF
+echo "✓ Created data/students.csv with 8 records"
+```
+
+### _Set up Python template files with TODO placeholders_
+
+Add Python templates with function stubs (students fill in TODOs):
+
+```bash
+cat > src/data_analysis.py << 'EOF'
+"""Basic student data analysis script."""
+
+def load_students(filename):
+    """Load student data from CSV file."""
+    # TODO: Implement CSV loading
+    pass
+
+def calculate_average_grade(students):
+    """Calculate average grade from student data."""
+    # TODO: Implement average calculation
+    pass
+
+# ... (additional function stubs)
+
+if __name__ == "__main__":
+    main()
+EOF
+```
+
+### Test and Commit
+
+```bash
+# Make executable
+chmod +x setup_project.sh
+
+# Test it
+./setup_project.sh
+
+# Verify structure
+ls -R
+
+# Commit to feature branch
+git add setup_project.sh
+git commit -m "Add project setup automation script"
+```
+
+### Merge to Main
+
+```bash
+git checkout main
+git merge feature/project-scaffold
+git log --oneline --graph --all
+```
+
+## Part 3: Python Data Processing
+
+_Assignment Requirement: Complete `src/data_analysis.py` to read CSV file line by line using `open()` and `readlines()`; Calculate basic statistics (total students, average grade); Count students by subject; Write results to `output/analysis_report.txt`_
+
+### Create Feature Branch
+
+```bash
+# New feature = new branch
+git checkout -b feature/data-processing
+```
+
+### _Read CSV file line by line using `open()` and `readlines()`_
+
+Implement `load_students()` (`lines[1:]` skips header, `strip()` removes newlines, `split(',')` parses CSV):
+
+```python
+def load_students(filename):
+    """Load student data from CSV file."""
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    students = []
+    for line in lines[1:]:  # Skip header
+        line = line.strip()
+        if line:
+            name, age, grade, subject = line.split(',')
+            students.append({
+                'name': name,
+                'age': int(age),
+                'grade': int(grade),
+                'subject': subject
+            })
+
+    return students
+```
+
+### _Calculate basic statistics (total students, average grade)_
+
+Implement `calculate_average_grade()` (list comprehension with `sum()` is concise):
+
+```python
+def calculate_average_grade(students):
+    """Calculate average grade from student data."""
+    if not students:
+        return 0.0
+
+    total = sum(student['grade'] for student in students)
+    return total / len(students)
+```
+
+### _Count students by subject_
+
+Implement `count_math_students()` (generator expression for counting):
+
+```python
+def count_math_students(students):
+    """Count students enrolled in Math."""
+    return sum(1 for student in students if student['subject'] == 'Math')
+```
+
+### _Write results to `output/analysis_report.txt`_
+
+Implement `generate_report()` (f-strings with `.1f` for one decimal, triple-quotes for multi-line):
+
+```python
+def generate_report(students):
+    """Generate formatted analysis report."""
+    total = len(students)
+    avg = calculate_average_grade(students)
+    math_count = count_math_students(students)
+
+    report = f"""Student Analysis Report
+{'=' * 40}
+
+Total Students: {total}
+Average Grade: {avg:.1f}
+
+Subject Distribution:
+  Math: {math_count}
+  Science: {total - math_count}
+"""
+    return report
+```
+
+Implement `save_report()` and `main()` (`os.makedirs(..., exist_ok=True)` creates output directory if needed):
+
+```python
+import os
+
+def save_report(report, filename):
+    """Save report to file."""
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w') as f:
+        f.write(report)
+
+def main():
+    """Main execution function."""
+    students = load_students('data/students.csv')
+    report = generate_report(students)
+    save_report(report, 'output/analysis_report.txt')
+    print(report)
+```
+
+### Test and Commit
+
+```bash
+# Test and verify output
+python src/data_analysis.py
+cat output/analysis_report.txt
+
+# Commit
+git add src/data_analysis.py
+git commit -m "Implement basic student data analysis"
+```
+
+## Part 3b: Advanced Analysis
+
+_Assignment Requirement: Complete `src/data_analysis_functions.py` with modular design using separate functions; More detailed analysis (highest/lowest grades, grade distribution); Grade distribution by letter grade with percentages_
+
+### _Modular design with separate functions_
+
+Implement `analyze_data()` (return dictionary with all results for easy access):
+
+```python
+def analyze_data(students):
+    """Perform comprehensive analysis on student data."""
+    grades = [s['grade'] for s in students]
+
+    return {
+        'total_students': len(students),
+        'average_grade': sum(grades) / len(grades),
+        'highest_grade': max(grades),
+        'lowest_grade': min(grades),
+        'subjects': count_by_subject(students),
+        'distribution': analyze_grade_distribution(grades)
+    }
+```
+
+### _More detailed analysis (highest/lowest grades, grade distribution)_
+
+Implement `analyze_grade_distribution()` (dictionary comprehension for percentages):
+
+```python
+def analyze_grade_distribution(grades):
+    """Analyze grade distribution by letter grade."""
+    total = len(grades)
+    counts = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0}
+
+    for grade in grades:
+        if grade >= 90:
+            counts['A'] += 1
+        elif grade >= 80:
+            counts['B'] += 1
+        elif grade >= 70:
+            counts['C'] += 1
+        elif grade >= 60:
+            counts['D'] += 1
+        else:
+            counts['F'] += 1
+
+    percentages = {
+        letter: (count / total * 100)
+        for letter, count in counts.items()
+    }
+
+    return {'counts': counts, 'percentages': percentages}
+```
+
+### _Grade distribution by letter grade with percentages_
+
+Implement `save_results()` (accessing nested dictionaries, building string with `+=`):
+
+```python
+def save_results(results, filename):
+    """Save analysis results to file."""
+    report = f"""Advanced Student Analysis Report
+{'=' * 50}
+
+Total Students: {results['total_students']}
+Average Grade: {results['average_grade']:.1f}
+Highest: {results['highest_grade']} | Lowest: {results['lowest_grade']}
+
+Grade Distribution:
+"""
+
+    for letter in ['A', 'B', 'C', 'D', 'F']:
+        count = results['distribution']['counts'][letter]
+        pct = results['distribution']['percentages'][letter]
+        report += f"  {letter}: {count} students ({pct:.1f}%)\n"
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w') as f:
+        f.write(report)
+```
+
+### Test and Commit
+
+```bash
+# Test and verify enhanced output
+python src/data_analysis_functions.py
+cat output/analysis_report.txt
+
+# Commit
+git add src/data_analysis_functions.py
+git commit -m "Implement advanced student data analysis with modular design"
+```
+
+### Merge and Tag
+
+```bash
+# Merge to main
+git checkout main
+git merge feature/data-processing
+
+# Create release tag
+git tag -a v1.0 -m "Release 1.0: Complete integration project"
+
+# Show complete history with both feature branches merged
+git log --oneline --graph --all
+```
 
 ## Common Questions
-
-**Q: "Why not just work on main?"**
-A: Feature branches let you experiment without breaking working code. Multiple people can work simultaneously.
 
 **Q: "What if I mess up a commit?"**
 A: `git commit --amend` for last commit, or `git revert` for older commits. Show examples.
 
-**Q: "How do I know what to commit together?"**
-A: One logical change per commit. If you can't write a concise commit message, it's probably too much.
+**Q: "Do I need to use `csv` module?"**
+A: No - assignment requires manual parsing with `split()` to understand fundamentals.
 
----
+**Q: "What if the output directory doesn't exist?"**
+A: That's why we use `os.makedirs(..., exist_ok=True)` before writing files.
 
 # Demo 2: Virtual Environments and Python Potpourri
 
@@ -96,15 +420,10 @@ python demo2_python_potpourri.py
 ## Common Questions
 
 **Q: "Can I have multiple virtual environments?"**
-A: Yes! One per project is common. They're independent.
+A: Yes - one per project is standard practice. Each environment is isolated.
 
 **Q: "What's the difference between f-strings and .format()?"**
-A: F-strings are faster, more readable, and the modern Python way (3.6+).
-
-**Q: "Why do I need type checking if Python is dynamically typed?"**
-A: For debugging! `type()` helps you understand what you're actually working with.
-
----
+A: F-strings (Python 3.6+) are faster and more concise than `.format()`.
 
 # Demo 3: NumPy Arrays and Operations
 
@@ -169,15 +488,13 @@ python demo3_student_analysis.py
 ## Common Questions
 
 **Q: "Why does slicing give a view, not a copy?"**
-A: Performance! Views save memory. Use `.copy()` when you need independence.
+A: NumPy uses views for memory efficiency. Use `.copy()` when you need independence.
 
 **Q: "What's the difference between `grades[grades > 85]` and `np.where(grades > 85)`?"**
-A: Boolean indexing returns values, `np.where()` returns indices. Both are useful.
+A: Boolean indexing returns values, `np.where()` returns indices.
 
 **Q: "Why do I get a 1D array when I slice a single row?"**
-A: NumPy reduces dimensions. Use `grades[0:1, :]` to keep 2D.
-
----
+A: NumPy reduces dimensions when possible. Use `grades[0:1, :]` to keep 2D.
 
 # Demo 4: Command Line Data Processing
 
@@ -249,7 +566,7 @@ grep "Math" students.csv | \
   head -n 3
 ```
 
-**Points** - Break down the pipeline step by step
+Break down the pipeline step by step:
 1. Filter - What rows do we keep?
 2. Extract - What columns do we need?
 3. Sort - What order?
@@ -273,7 +590,7 @@ With statistics:
 cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
 ```
 
-**Teaching Points:**
+Note:
 - `tail -n +2` means "start at line 2" (skip header)
 - Shows inline graphs perfect for SSH sessions and remote work
 - Lightweight visualization without leaving the terminal
