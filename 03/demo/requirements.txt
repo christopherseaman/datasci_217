@@ -1,0 +1,12 @@
+# Requirements for Lecture 03 Demo Scripts
+# Install with: pip install -r requirements.txt or uv pip install -r requirements.txt
+
+# NumPy - Required for:
+# - demo2_python_potpourri.py (type demonstrations)
+# - demo3_numpy_performance.py (performance comparison)
+# - demo3_student_analysis.py (array operations)
+numpy>=1.24.0
+
+# Optional: Sparklines for Demo 4 (CLI visualization)
+# Uncomment if you want to run sparklines examples
+# sparklines>=0.4.0
