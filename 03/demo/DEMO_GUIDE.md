@@ -350,7 +350,7 @@ def main():
 
 ### Complete Basic Script
 
-For the complete implementation, see [demo1a_data_analysis.py](demo1a_data_analysis.py).
+For the complete implementation, see [demo1a_data_analysis.py](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo1a_data_analysis.py).
 
 ### Test and Commit
 
@@ -558,7 +558,7 @@ if __name__ == "__main__":
 
 ### Complete Advanced Script
 
-For the complete implementation, see [demo1b_data_analysis_functions.py](demo1b_data_analysis_functions.py).
+For the complete implementation, see [demo1b_data_analysis_functions.py](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo1b_data_analysis_functions.py).
 
 ### Test and Commit
 
@@ -613,7 +613,7 @@ A: Yes - both scripts write to `output/analysis_report.txt`. The basic script cr
 
 # Demo 2: Virtual Environments and Python Potpourri
 
-**Script** - `demo2_python_potpourri.py`
+**Script** - [`demo2_python_potpourri.py`](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo2_python_potpourri.py)
 
 ## Demo Flow
 
@@ -686,8 +686,8 @@ A: F-strings (Python 3.6+) are faster and more concise than `.format()`.
 
 **Scripts**
 
-- `demo3_numpy_performance.py` (performance comparison)
-- `demo3_student_analysis.py` (practical operations)
+- [`demo3_numpy_performance.py`](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo3_numpy_performance.py)
+- [`demo3_student_analysis.py`](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo3_student_analysis.py)
 
 ## 3a. Performance Comparison
 
