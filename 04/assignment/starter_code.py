@@ -1,171 +1,176 @@
 #!/usr/bin/env python3
 """
-Assignment 04: Command Line Text Processing and Python Functions
-Starter code template for student completion.
+Assignment 4: Pandas Basics and Data Exploration
+===============================================
+
+Starter code for the pandas basics assignment.
+Complete the functions below according to the assignment requirements.
+
+Run this in a Jupyter notebook for the best experience!
 """
 
-import csv
-import re
-import sys
-from pathlib import Path
-from typing import List, Dict, Any, Optional
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+# Set display options
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
+%matplotlib inline
 
-def validate_email(email: str) -> bool:
+def load_and_explore_data(filepath):
     """
-    Validate email address format.
-
+    Task 1: Load and explore the dataset
+    
     Args:
-        email (str): Email address to validate
-
+        filepath (str): Path to the CSV file
+        
     Returns:
-        bool: True if valid email format, False otherwise
-
-    Example:
-        >>> validate_email("user@example.com")
-        True
-        >>> validate_email("invalid-email")
-        False
+        pd.DataFrame: Loaded dataset
     """
-    # TODO: Implement email validation using regex
+    # TODO: Load the dataset from CSV
+    # TODO: Display first 5 rows
+    # TODO: Show shape of dataset
+    # TODO: Display data types
+    # TODO: Check for missing values
+    
     pass
 
-
-def clean_text(text: str, remove_punctuation: bool = True) -> str:
+def select_and_filter_data(df):
     """
-    Clean and normalize text data.
-
+    Task 2: Perform data selection and filtering
+    
     Args:
-        text (str): Input text to clean
-        remove_punctuation (bool): Whether to remove punctuation
-
+        df (pd.DataFrame): Input dataset
+        
     Returns:
-        str: Cleaned text
-
-    Example:
-        >>> clean_text("  Hello, World!  ")
-        "hello world"
+        dict: Dictionary containing filtered datasets
     """
-    # TODO: Implement text cleaning
-    # - Convert to lowercase
-    # - Strip whitespace
-    # - Optionally remove punctuation
-    pass
+    # TODO: Select employees from 'Sales' department
+    sales_employees = None
+    
+    # TODO: Find employees with salary > $60,000
+    high_salary_employees = None
+    
+    # TODO: Get employees aged 25-35
+    young_employees = None
+    
+    # TODO: Select Name, Age, Salary columns
+    basic_info = None
+    
+    # TODO: Find top 5 highest-paid employees
+    top_earners = None
+    
+    return {
+        'sales_employees': sales_employees,
+        'high_salary_employees': high_salary_employees,
+        'young_employees': young_employees,
+        'basic_info': basic_info,
+        'top_earners': top_earners
+    }
 
-
-def extract_numbers(text: str) -> List[float]:
+def analyze_data(df):
     """
-    Extract all numbers from text string.
-
+    Task 3: Perform data analysis
+    
     Args:
-        text (str): Input text containing numbers
-
+        df (pd.DataFrame): Input dataset
+        
     Returns:
-        List[float]: List of extracted numbers
-
-    Example:
-        >>> extract_numbers("Temperature: 23.5°C, Humidity: 67%")
-        [23.5, 67.0]
+        dict: Dictionary containing analysis results
     """
-    # TODO: Implement number extraction using regex
-    pass
+    # TODO: Calculate average salary by department
+    avg_salary_by_dept = None
+    
+    # TODO: Find department with highest average salary
+    highest_paying_dept = None
+    
+    # TODO: Calculate age distribution
+    age_stats = None
+    
+    # TODO: Count employees by city
+    employees_by_city = None
+    
+    # TODO: Find correlation between age and salary
+    age_salary_correlation = None
+    
+    return {
+        'avg_salary_by_dept': avg_salary_by_dept,
+        'highest_paying_dept': highest_paying_dept,
+        'age_stats': age_stats,
+        'employees_by_city': employees_by_city,
+        'age_salary_correlation': age_salary_correlation
+    }
 
-
-def process_csv_file(filepath: str, required_columns: List[str]) -> Dict[str, Any]:
+def clean_data(df):
     """
-    Process CSV file and return summary statistics.
-
+    Task 4: Clean the dataset
+    
     Args:
-        filepath (str): Path to CSV file
-        required_columns (List[str]): Required column names
-
+        df (pd.DataFrame): Input dataset
+        
     Returns:
-        Dict[str, Any]: Summary statistics and validation results
-
-    Example return:
-        {
-            'row_count': 100,
-            'column_count': 5,
-            'missing_columns': [],
-            'has_missing_data': False
-        }
+        pd.DataFrame: Cleaned dataset
     """
-    # TODO: Implement CSV processing
-    # - Check if file exists
-    # - Validate required columns exist
-    # - Count rows and columns
-    # - Check for missing data
-    pass
+    # TODO: Handle missing values
+    # TODO: Remove duplicates
+    # TODO: Clean Name column
+    # TODO: Convert Salary to numeric
+    # TODO: Create Salary_Category column
+    
+    cleaned_df = df.copy()
+    
+    # Your cleaning code here
+    
+    return cleaned_df
 
-
-def create_frequency_table(data: List[str]) -> Dict[str, int]:
+def export_and_summarize(df, output_path):
     """
-    Create frequency table from list of strings.
-
+    Task 5: Export data and create summary
+    
     Args:
-        data (List[str]): List of strings to count
-
+        df (pd.DataFrame): Cleaned dataset
+        output_path (str): Path for output CSV file
+        
     Returns:
-        Dict[str, int]: Frequency table
-
-    Example:
-        >>> create_frequency_table(['a', 'b', 'a', 'c', 'b', 'a'])
-        {'a': 3, 'b': 2, 'c': 1}
+        dict: Summary statistics
     """
-    # TODO: Implement frequency counting
-    pass
+    # TODO: Export to CSV
+    # TODO: Create summary report
+    # TODO: Generate insights
+    
+    summary = {
+        'total_employees': len(df),
+        'departments': df['Department'].nunique(),
+        'cities': df['City'].nunique(),
+        'avg_salary': df['Salary'].mean(),
+        'age_range': (df['Age'].min(), df['Age'].max())
+    }
+    
+    return summary
 
-
-def filter_data_by_criteria(data: List[Dict], criteria: Dict[str, Any]) -> List[Dict]:
-    """
-    Filter list of dictionaries based on criteria.
-
-    Args:
-        data (List[Dict]): List of data records
-        criteria (Dict[str, Any]): Filtering criteria
-
-    Returns:
-        List[Dict]: Filtered data
-
-    Example:
-        >>> data = [{'name': 'Alice', 'age': 25}, {'name': 'Bob', 'age': 30}]
-        >>> filter_data_by_criteria(data, {'age': 25})
-        [{'name': 'Alice', 'age': 25}]
-    """
-    # TODO: Implement data filtering
-    pass
-
-
-def write_results_to_file(data: Any, filepath: str, format_type: str = 'json') -> bool:
-    """
-    Write results to file in specified format.
-
-    Args:
-        data: Data to write
-        filepath (str): Output file path
-        format_type (str): Output format ('json', 'csv', 'txt')
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    # TODO: Implement file writing with format handling
-    pass
-
-
-def main():
-    """
-    Main function for testing the implemented functions.
-    This function is called when the script is run directly.
-    """
-    print("Testing Assignment 04 functions...")
-
-    # TODO: Add test calls to your functions here
-    # Example:
-    # test_email = "student@university.edu"
-    # print(f"Email validation test: {validate_email(test_email)}")
-
-    print("All tests completed!")
-
-
+# Main execution
 if __name__ == "__main__":
-    main()
+    # Load and explore data
+    print("=== TASK 1: DATA LOADING AND EXPLORATION ===")
+    df = load_and_explore_data('employee_data.csv')
+    
+    # Select and filter data
+    print("\n=== TASK 2: DATA SELECTION AND FILTERING ===")
+    filtered_data = select_and_filter_data(df)
+    
+    # Analyze data
+    print("\n=== TASK 3: DATA ANALYSIS ===")
+    analysis_results = analyze_data(df)
+    
+    # Clean data
+    print("\n=== TASK 4: DATA CLEANING ===")
+    cleaned_df = clean_data(df)
+    
+    # Export and summarize
+    print("\n=== TASK 5: EXPORT AND SUMMARY ===")
+    summary = export_and_summarize(cleaned_df, 'cleaned_employee_data.csv')
+    
+    print("\n=== ASSIGNMENT COMPLETE ===")
+    print("Summary:", summary)

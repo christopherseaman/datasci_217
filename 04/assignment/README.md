@@ -1,81 +1,101 @@
-# Assignment 04: Command Line Text Processing and Python Functions
+# Assignment 4: Pandas Basics and Data Exploration
 
 ## Overview
-This assignment tests your ability to use command line text processing tools and create reusable Python functions for data analysis workflows.
+
+In this assignment, you'll practice fundamental pandas operations including data loading, exploration, selection, and basic manipulation. You'll work with a real dataset to gain hands-on experience with pandas DataFrames and Series.
 
 ## Learning Objectives
-- Master CLI text processing tools (grep, cut, sort, uniq, pipes)
-- Design effective Python functions for data processing
-- Integrate CLI and Python tools in workflows
-- Build reusable utility functions
 
-## Assignment Structure
+By completing this assignment, you will:
+- Load and explore datasets using pandas
+- Perform data selection and filtering operations
+- Handle missing data appropriately
+- Apply basic data manipulation techniques
+- Use Jupyter notebooks effectively for data analysis
 
-### Part 1: CLI Text Processing (40 points)
-Use command line tools to process and analyze provided datasets.
+## Dataset
 
-**Tasks:**
-1. **Data filtering with grep** (10 points)
-   - Extract specific patterns from log files
-   - Create filtered datasets based on criteria
+You'll work with a dataset containing information about employees at a fictional company. The dataset includes:
+- Employee names and IDs
+- Demographics (age, gender, city)
+- Job information (department, position, salary)
+- Performance metrics
 
-2. **Column extraction with cut** (10 points)
-   - Process CSV files to extract relevant columns
-   - Handle different delimiter types
+## Assignment Tasks
 
-3. **Data sorting and deduplication** (10 points)
-   - Sort data by multiple criteria
-   - Remove duplicates and count frequencies
+### Task 1: Data Loading and Initial Exploration (20 points)
 
-4. **Pipeline construction** (10 points)
-   - Build complex data processing pipelines
-   - Combine multiple CLI tools effectively
+1. Load the dataset from the provided CSV file
+2. Display the first 5 rows of the data
+3. Show the shape of the dataset (rows and columns)
+4. Display the data types of each column
+5. Check for missing values in the dataset
 
-### Part 2: Python Functions (40 points)
-Create reusable Python functions for data processing tasks.
+### Task 2: Data Selection and Filtering (25 points)
 
-**Tasks:**
-1. **Data validation functions** (15 points)
-   - Input validation and type checking
-   - Error handling and reporting
+1. Select all employees from the 'Sales' department
+2. Find employees with salary greater than $60,000
+3. Get employees aged between 25 and 35 (inclusive)
+4. Select only the 'Name', 'Age', and 'Salary' columns for all employees
+5. Find the top 5 highest-paid employees
 
-2. **Text processing utilities** (15 points)
-   - String cleaning and normalization
-   - Pattern extraction functions
+### Task 3: Data Analysis (25 points)
 
-3. **File processing functions** (10 points)
-   - Read and write data files
-   - Handle different file formats
+1. Calculate the average salary by department
+2. Find the department with the highest average salary
+3. Calculate the age distribution (min, max, mean, median)
+4. Count the number of employees in each city
+5. Find the correlation between age and salary
 
-### Part 3: Integration Project (20 points)
-Combine CLI and Python tools to solve a real-world data problem.
+### Task 4: Data Cleaning (20 points)
 
-**Tasks:**
-1. **Hybrid workflow implementation** (20 points)
-   - Use CLI tools for preprocessing
-   - Apply Python functions for analysis
-   - Generate formatted output
+1. Handle any missing values in the dataset appropriately
+2. Remove any duplicate entries
+3. Clean the 'Name' column (remove extra spaces, standardize format)
+4. Convert the 'Salary' column to numeric type if needed
+5. Create a new column 'Salary_Category' based on salary ranges
 
-## Files Provided
-- `data/`: Sample datasets for processing
-- `starter_code.py`: Template functions to complete
-- `test_assignment.py`: Automated tests for validation
+### Task 5: Data Export and Summary (10 points)
 
-## Submission Requirements
-- Complete all functions in `starter_code.py`
-- Ensure all tests pass (`pytest test_assignment.py`)
-- Include CLI commands used in `cli_commands.txt`
-- Add brief explanations in code comments
+1. Export the cleaned dataset to a new CSV file
+2. Create a summary report of your findings
+3. Include at least 3 interesting insights about the data
+
+## Requirements
+
+- Use Jupyter notebook for this assignment
+- Include markdown cells to explain your approach
+- Use appropriate pandas methods for each task
+- Handle errors gracefully
+- Comment your code appropriately
+
+## Submission
+
+Submit your completed Jupyter notebook (.ipynb file) with:
+- All code cells executed
+- Clear explanations in markdown cells
+- Results and visualizations included
+- Summary of findings
 
 ## Grading Criteria
-- **Functionality** (60%): Code works correctly and passes tests
-- **Code Quality** (25%): Clean, readable, well-documented code
-- **CLI Integration** (15%): Effective use of command line tools
 
-## Due Date
-See course calendar for submission deadline.
+- **Code Quality (30%)**: Clean, readable, and well-commented code
+- **Correctness (40%)**: Accurate implementation of pandas operations
+- **Documentation (20%)**: Clear explanations and markdown cells
+- **Insights (10%)**: Meaningful analysis and conclusions
 
-## Getting Help
-- Review lecture materials and demos
-- Use office hours for complex questions
-- Check discussion forum for clarifications
+## Tips
+
+- Start with simple operations and build complexity gradually
+- Use the pandas documentation for reference
+- Test your code with small samples first
+- Don't forget to handle edge cases (missing data, etc.)
+- Use appropriate data types for better performance
+
+## Resources
+
+- [Pandas Documentation](https://pandas.pydata.org/docs/)
+- [Jupyter Notebook Documentation](https://jupyter-notebook.readthedocs.io/)
+- [Pandas Cheat Sheet](https://pandas.pydata.org/Pandas_Cheat_Sheet.pdf)
+
+Good luck with your assignment!
