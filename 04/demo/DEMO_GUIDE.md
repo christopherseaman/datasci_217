@@ -164,29 +164,67 @@ print(f"\nData types:\n{df.dtypes}")
 - `.shape` shows (rows, columns)
 - `.dtypes` shows column data types
 
-## Step 2: DataFrame Inspection
+## Step 2: Column Selection (THE FIRST THING YOU DO!)
+
+```python
+# Single column (returns Series)
+names = df['name']
+print("Single column (Series):")
+print(type(names))
+print(names)
+
+# Multiple columns (returns DataFrame)
+basic_info = df[['name', 'department']]
+print("\nMultiple columns (DataFrame):")
+print(type(basic_info))
+print(basic_info)
+
+# Select only numeric columns
+numeric_cols = df.select_dtypes(include=['number'])
+print("\nNumeric columns only:")
+print(numeric_cols)
+```
+
+**What this demonstrates**:
+
+- **CRITICAL**: Column selection is the first operation after loading data
+- `df['col']` → Series, `df[['col1', 'col2']]` → DataFrame
+- `select_dtypes()` filters by data type (super useful!)
+
+## Step 3: DataFrame Inspection & Summary Statistics
 
 ```python
 # First few rows
 print("First 3 rows:")
 print(df.head(3))
 
-# Summary statistics
+# Summary statistics - THE most important exploration tool
 print("\nSummary statistics:")
 print(df.describe())
 
-# Info about DataFrame
+# DataFrame structure and memory
 print("\nDataFrame info:")
 df.info()
 
-# Unique values in a column
+# Count values
+print(f"\nTotal rows: {len(df)}")
+print(f"\nNon-null counts per column:")
+print(df.count())
+
+# Unique values in categorical columns
 print(f"\nDepartments: {df['department'].unique()}")
 print(f"Number of unique departments: {df['department'].nunique()}")
+print(f"\nValue counts for department:")
+print(df['department'].value_counts())
 ```
 
-**What this demonstrates**: Essential exploration tools to understand your data quickly
+**What this demonstrates**:
 
-## Step 3: Label vs Position Selection (.loc vs .iloc)
+- `.describe()` is your go-to for numeric column summaries
+- `.info()` shows data types, memory, and null counts
+- `.value_counts()` essential for categorical data exploration
+
+## Step 4: Label vs Position Selection (.loc vs .iloc)
 
 ```python
 # .loc - label-based selection
@@ -204,7 +242,7 @@ print(df.iloc[0:2, [1, 3]])  # Rows 0-1 (exclusive!), columns at positions 1 and
 - `.iloc[]` uses integer positions - EXCLUSIVE slicing (like Python lists)
 - This is the #1 confusion point for pandas beginners!
 
-## Step 4: Boolean Filtering
+## Step 5: Boolean Filtering & .query()
 
 ```python
 # Single condition
@@ -221,14 +259,26 @@ print(experienced_engineers)
 sales_or_marketing = df[df['department'].isin(['Sales', 'Marketing'])]
 print("\nSales or Marketing:")
 print(sales_or_marketing)
+
+# Using .query() for more readable filtering
+high_earner_query = df.query('salary > 70000')
+print("\nUsing .query() - more readable:")
+print(high_earner_query)
+
+# Complex query with multiple conditions
+complex_query = df.query('department == "Engineering" and years_experience > 4')
+print("\nComplex query:")
+print(complex_query)
 ```
 
 **What this demonstrates**:
+
 - Boolean masks filter rows based on conditions
 - Use `&` (and), `|` (or), `~` (not) - MUST use parentheses
 - `.isin()` checks membership in a list
+- `.query()` provides SQL-like readable syntax (great for complex filters!)
 
-## Step 5: Column Operations
+## Step 6: Column Operations
 
 ```python
 # Create new column
@@ -249,7 +299,7 @@ print(df_subset.columns)
 
 **What this demonstrates**: DataFrames are mutable - add, rename, drop columns easily
 
-## Step 6: Sorting and Ranking
+## Step 7: Sorting and Ranking
 
 ```python
 # Sort by salary
@@ -324,30 +374,63 @@ print(df_sales.isnull().sum())
 - Missing values appear as NaN
 - Always check for missing data after loading
 
-## Step 3: Handle Missing Data
+## Step 3: Data Quality Assessment
 
 ```python
+# Check for missing values
+print("Missing values per column:")
+print(df_sales.isnull().sum())
+
 # See rows with missing values
-print("Rows with missing values:")
+print("\nRows with missing values:")
 print(df_sales[df_sales.isnull().any(axis=1)])
 
+# Check for duplicates
+print(f"\nNumber of duplicate rows: {df_sales.duplicated().sum()}")
+
+# Check data types
+print("\nData types:")
+print(df_sales.dtypes)
+```
+
+**What this demonstrates**:
+
+- Always check for missing values, duplicates, and data types after loading
+- `.isnull().sum()` shows missing count per column
+- `.duplicated()` finds duplicate rows
+
+## Step 4: Handle Missing Data & Type Conversion
+
+```python
 # Fill missing quantity with 0
 df_sales['quantity'] = df_sales['quantity'].fillna(0)
 
 # Fill missing price with median price for that product
 df_sales['price'] = df_sales.groupby('product')['price'].transform(lambda x: x.fillna(x.median()))
 
-print("\nAfter handling missing values:")
+print("After handling missing values:")
 print(df_sales)
+
+# Convert quantity to integer (was float due to NaN)
+df_sales['quantity'] = df_sales['quantity'].astype('int64')
+
+# Convert date column to datetime
+df_sales['date'] = pd.to_datetime(df_sales['date'])
+
+print("\nAfter type conversion:")
+print(df_sales.dtypes)
 print(f"\nRemaining missing values: {df_sales.isnull().sum().sum()}")
 ```
 
 **What this demonstrates**:
+
 - Different strategies for different columns (0 for quantity, median for price)
 - `groupby().transform()` fills within groups
-- Real-world data is messy - always have a strategy for missing values
+- `.astype()` converts data types (useful after filling NaN)
+- `pd.to_datetime()` converts strings to datetime objects
+- Real-world data is messy - always have a cleaning strategy!
 
-## Step 4: Basic Analysis
+## Step 5: Basic Analysis
 
 ```python
 # Add calculated column
@@ -375,7 +458,7 @@ print(region_summary)
 - `groupby().agg()` summarizes data
 - Multiple aggregations at once
 
-## Step 5: Value Counts and Quick Insights
+## Step 6: Value Counts and Quick Insights
 
 ```python
 # Most common products
@@ -396,7 +479,7 @@ print(f"Largest sale: ${df_sales['total_sale'].max():.2f}")
 - `.value_counts()` is your best friend for categorical data
 - Quick statistical summaries guide deeper analysis
 
-## Step 6: Save Results
+## Step 7: Save Results
 
 ```python
 # Save cleaned data

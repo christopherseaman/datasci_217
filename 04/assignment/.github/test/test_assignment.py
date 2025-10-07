@@ -14,6 +14,7 @@ def sample_df():
         'quantity': [2, np.nan, 3, 1, 4, 2],
         'price': [29.99, 49.99, 29.99, 19.99, 49.99, 29.99],
         'order_date': ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06'],
+        # Region "Cancelled" demonstrates that only North/South rows remain once the cleaning filters are applied.
         'region': ['North', 'South', 'North', 'East', 'South', 'Cancelled'],
         'status': ['Complete', 'Complete', 'Complete', 'Complete', 'Cancelled', 'Complete']
     }
@@ -79,7 +80,11 @@ def test_analyze_orders(sample_df):
     df_clean['quantity'] = df_clean['quantity'].fillna(1)
     df_clean = df_clean[df_clean['region'].isin(['North', 'South'])]
 
+    # Analyze
     results = analyze_orders(df_clean)
+
+    # total_price should exist after analysis
+    assert 'total_price' in df_clean.columns, "DataFrame should include total_price column after analyze_orders"
 
     # Check return type
     assert isinstance(results, dict), "Function must return a dictionary"
