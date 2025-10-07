@@ -8,8 +8,6 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 # Jupyter Notebooks: Interactive Data Analysis
 
-In Lectures 1-3, you wrote Python scripts (`.py` files) that run top-to-bottom. Jupyter notebooks (`.ipynb` files) let you run code in any order, see results immediately, and mix code with documentation - perfect for data exploration and analysis. Think of `.py` files for production code and automation, and `.ipynb` files for interactive analysis and storytelling with data.
-
 Jupyter notebooks provide an interactive environment for data analysis, combining code execution with rich output display. They're essential for exploratory data analysis, prototyping, and sharing results with stakeholders.
 
 <!-- FIXME: Add screenshot of Jupyter interface in VS Code showing:
@@ -19,7 +17,7 @@ Jupyter notebooks provide an interactive environment for data analysis, combinin
      - Variable explorer panel
      File: media/jupyter_interface.png -->
 
-## Jupyter Notebook Interface
+# Jupyter Notebook Interface
 
 Jupyter notebooks organize work into cells that can contain code or markdown. This structure enables iterative analysis and clear documentation of the analytical process.
 
@@ -55,9 +53,7 @@ plt.title('Sample Data')
 plt.show()
 ```
 
-## Jupyter Magic Commands
-
-Magic commands are like cheat codes for Jupyter - they give you special powers that normal Python doesn't have. Think of them as the "konami code" of data science, except instead of getting 30 extra lives, you get inline plots and package installation!
+# Jupyter Magic Commands
 
 Magic commands provide special functionality for notebook environments. They start with `%` and extend Jupyter's capabilities for data analysis.
 
@@ -87,7 +83,7 @@ plt.show()
 %ls
 ```
 
-## Jupyter Notebooks in VS Code
+# Jupyter Notebooks in VS Code
 
 VS Code provides excellent Jupyter notebook support with integrated terminal, git management, and debugging capabilities. Understanding how to work with notebooks in VS Code is essential for modern data science workflows.
 
@@ -243,8 +239,6 @@ print(df.describe())  # Summary statistics for numeric columns
 ```
 
 ## Data Type Conversion
-
-Converting data types is like trying to convince your data to identify as something else. Sometimes it works smoothly (string "42" → int 42), sometimes you need therapy (error handling), and sometimes it just refuses and throws a ValueError. Just remember: you can't force a square peg into a round hole, but pandas will try its best!
 
 Converting data to the correct types is essential for proper analysis. This includes converting strings to numbers, dates, and other appropriate types.
 
@@ -534,6 +528,10 @@ For data in databases, pandas can connect and read directly using SQL queries.
 ## Summary Statistics
 
 Summary statistics provide a quick overview of your data's distribution and characteristics. They're essential for understanding data quality and identifying patterns.
+
+<!-- FIXME: Add xkcd 552 about correlation
+     https://xkcd.com/552/
+     File: media/xkcd_552.png -->
 
 *Remember: Correlation does not imply causation! (But it's still useful for understanding patterns in your data)*
 

@@ -1,223 +1,101 @@
-#!/usr/bin/env python3
-"""
-Assignment 04: Test Suite
-Automated tests for validating student solutions.
-"""
-
 import pytest
-import sys
-from pathlib import Path
-import tempfile
-import json
-import csv
+import pandas as pd
+import numpy as np
+from main import load_and_explore, clean_and_filter, analyze_orders
 
-# Add the current directory to Python path for imports
-sys.path.append(str(Path(__file__).parent))
+# Test data fixture
+@pytest.fixture
+def sample_df():
+    """Create sample test data"""
+    data = {
+        'order_id': ['O001', 'O002', 'O003', 'O004', 'O005', 'O006'],
+        'customer_id': ['C001', 'C002', 'C003', 'C001', 'C004', 'C002'],
+        'product': ['Widget A', 'Widget B', 'Widget A', 'Widget C', 'Widget B', 'Widget A'],
+        'quantity': [2, np.nan, 3, 1, 4, 2],
+        'price': [29.99, 49.99, 29.99, 19.99, 49.99, 29.99],
+        'order_date': ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06'],
+        'region': ['North', 'South', 'North', 'East', 'South', 'Cancelled'],
+        'status': ['Complete', 'Complete', 'Complete', 'Complete', 'Cancelled', 'Complete']
+    }
+    return pd.DataFrame(data)
 
-from starter_code import (
-    validate_email,
-    clean_text,
-    extract_numbers,
-    process_csv_file,
-    create_frequency_table,
-    filter_data_by_criteria,
-    write_results_to_file
-)
+def test_load_and_explore(tmp_path, capsys):
+    """Test Part 1: Data loading and exploration"""
+    # Create test CSV
+    test_csv = tmp_path / "orders.csv"
+    test_data = """order_id,customer_id,product,quantity,price,order_date,region,status
+O001,C001,Widget A,2,29.99,2024-01-01,North,Complete
+O002,C002,Widget B,3,49.99,2024-01-02,South,Complete"""
+    test_csv.write_text(test_data)
 
+    # Change to temp directory
+    import os
+    original_dir = os.getcwd()
+    os.chdir(tmp_path)
 
-class TestEmailValidation:
-    """Test email validation function."""
+    try:
+        df = load_and_explore()
 
-    def test_valid_emails(self):
-        """Test with valid email addresses."""
-        valid_emails = [
-            "user@example.com",
-            "student@university.edu",
-            "name.surname@domain.org",
-            "test123@test-domain.co.uk"
-        ]
-        for email in valid_emails:
-            assert validate_email(email), f"Failed to validate: {email}"
+        # Check return type
+        assert isinstance(df, pd.DataFrame), "Function must return a DataFrame"
 
-    def test_invalid_emails(self):
-        """Test with invalid email addresses."""
-        invalid_emails = [
-            "invalid-email",
-            "@domain.com",
-            "user@",
-            "user..name@domain.com",
-            "user@domain",
-            ""
-        ]
-        for email in invalid_emails:
-            assert not validate_email(email), f"Incorrectly validated: {email}"
+        # Check shape
+        assert df.shape == (2, 8), f"Expected shape (2, 8), got {df.shape}"
 
+        # Check columns
+        expected_cols = ['order_id', 'customer_id', 'product', 'quantity', 'price', 'order_date', 'region', 'status']
+        assert list(df.columns) == expected_cols, "Column names don't match"
 
-class TestTextCleaning:
-    """Test text cleaning function."""
+    finally:
+        os.chdir(original_dir)
 
-    def test_basic_cleaning(self):
-        """Test basic text cleaning operations."""
-        assert clean_text("  Hello, World!  ") == "hello world"
-        assert clean_text("UPPERCASE TEXT") == "uppercase text"
-        assert clean_text("   mixed   spacing   ") == "mixed spacing"
+def test_clean_and_filter(sample_df):
+    """Test Part 2: Data cleaning and filtering"""
+    df_clean = clean_and_filter(sample_df.copy())
 
-    def test_punctuation_removal(self):
-        """Test punctuation removal."""
-        text_with_punct = "Hello, world! How are you?"
-        expected = "hello world how are you"
-        assert clean_text(text_with_punct, remove_punctuation=True) == expected
+    # Check return type
+    assert isinstance(df_clean, pd.DataFrame), "Function must return a DataFrame"
 
-    def test_punctuation_retention(self):
-        """Test keeping punctuation when specified."""
-        text_with_punct = "Hello, world!"
-        result = clean_text(text_with_punct, remove_punctuation=False)
-        assert "," in result and "!" in result
+    # Check no cancelled orders
+    assert 'Cancelled' not in df_clean['status'].values, "Cancelled orders should be removed"
 
+    # Check no missing quantity values
+    assert df_clean['quantity'].isnull().sum() == 0, "Missing quantity values should be filled"
 
-class TestNumberExtraction:
-    """Test number extraction function."""
+    # Check only North and South regions
+    assert set(df_clean['region'].unique()) <= {'North', 'South'}, "Should only have North and South regions"
 
-    def test_simple_numbers(self):
-        """Test extraction of simple numbers."""
-        text = "The temperature is 23.5 degrees and humidity is 67%"
-        numbers = extract_numbers(text)
-        assert 23.5 in numbers
-        assert 67.0 in numbers
+    # Check the filled value
+    # Original had NaN at index 1, after filling should be 1
+    original_nan_indices = sample_df[sample_df['quantity'].isnull()].index
+    for idx in original_nan_indices:
+        if idx in df_clean.index:
+            assert df_clean.loc[idx, 'quantity'] == 1, "Missing quantity should be filled with 1"
 
-    def test_multiple_number_formats(self):
-        """Test various number formats."""
-        text = "Values: 100, -15.7, 0.001, 1e5"
-        numbers = extract_numbers(text)
-        assert len(numbers) >= 3  # At least basic numbers should be found
+def test_analyze_orders(sample_df):
+    """Test Part 3: Analysis and insights"""
+    # Clean the data first
+    df_clean = sample_df[sample_df['status'] != 'Cancelled'].copy()
+    df_clean['quantity'] = df_clean['quantity'].fillna(1)
+    df_clean = df_clean[df_clean['region'].isin(['North', 'South'])]
 
-    def test_no_numbers(self):
-        """Test text with no numbers."""
-        text = "No numbers in this text"
-        numbers = extract_numbers(text)
-        assert len(numbers) == 0
+    results = analyze_orders(df_clean)
 
+    # Check return type
+    assert isinstance(results, dict), "Function must return a dictionary"
+    assert 'revenue_by_region' in results, "Dictionary must have 'revenue_by_region' key"
+    assert 'top_3_products' in results, "Dictionary must have 'top_3_products' key"
 
-class TestCSVProcessing:
-    """Test CSV file processing function."""
+    # Check revenue_by_region
+    revenue = results['revenue_by_region']
+    assert isinstance(revenue, pd.Series), "revenue_by_region must be a Series"
+    assert revenue.index.name == 'region' or 'region' in str(revenue.index), "Index should be regions"
 
-    def test_valid_csv_processing(self):
-        """Test processing a valid CSV file."""
-        # Create temporary CSV file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-            writer = csv.writer(f)
-            writer.writerow(['name', 'age', 'city'])
-            writer.writerow(['Alice', '25', 'New York'])
-            writer.writerow(['Bob', '30', 'San Francisco'])
-            temp_filepath = f.name
-
-        try:
-            result = process_csv_file(temp_filepath, ['name', 'age'])
-            assert result['row_count'] == 2  # Excluding header
-            assert result['column_count'] == 3
-            assert len(result['missing_columns']) == 0
-        finally:
-            Path(temp_filepath).unlink()
-
-    def test_missing_columns(self):
-        """Test with missing required columns."""
-        # Create temporary CSV file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-            writer = csv.writer(f)
-            writer.writerow(['name', 'age'])
-            writer.writerow(['Alice', '25'])
-            temp_filepath = f.name
-
-        try:
-            result = process_csv_file(temp_filepath, ['name', 'age', 'city'])
-            assert 'city' in result['missing_columns']
-        finally:
-            Path(temp_filepath).unlink()
-
-
-class TestFrequencyTable:
-    """Test frequency table creation."""
-
-    def test_basic_frequency_count(self):
-        """Test basic frequency counting."""
-        data = ['a', 'b', 'a', 'c', 'b', 'a']
-        result = create_frequency_table(data)
-        assert result['a'] == 3
-        assert result['b'] == 2
-        assert result['c'] == 1
-
-    def test_empty_list(self):
-        """Test with empty list."""
-        result = create_frequency_table([])
-        assert len(result) == 0
-
-    def test_single_item(self):
-        """Test with single item."""
-        result = create_frequency_table(['item'])
-        assert result['item'] == 1
-
-
-class TestDataFiltering:
-    """Test data filtering function."""
-
-    def test_simple_filtering(self):
-        """Test simple filtering by criteria."""
-        data = [
-            {'name': 'Alice', 'age': 25, 'city': 'New York'},
-            {'name': 'Bob', 'age': 30, 'city': 'San Francisco'},
-            {'name': 'Charlie', 'age': 25, 'city': 'Chicago'}
-        ]
-        result = filter_data_by_criteria(data, {'age': 25})
-        assert len(result) == 2
-        assert all(record['age'] == 25 for record in result)
-
-    def test_multiple_criteria(self):
-        """Test filtering with multiple criteria."""
-        data = [
-            {'name': 'Alice', 'age': 25, 'city': 'New York'},
-            {'name': 'Bob', 'age': 30, 'city': 'New York'},
-            {'name': 'Charlie', 'age': 25, 'city': 'Chicago'}
-        ]
-        result = filter_data_by_criteria(data, {'age': 25, 'city': 'New York'})
-        assert len(result) == 1
-        assert result[0]['name'] == 'Alice'
-
-
-class TestFileWriting:
-    """Test file writing function."""
-
-    def test_json_writing(self):
-        """Test writing JSON format."""
-        data = {'test': 'value', 'number': 42}
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            temp_filepath = f.name
-
-        try:
-            success = write_results_to_file(data, temp_filepath, 'json')
-            assert success
-
-            # Verify the file was written correctly
-            with open(temp_filepath, 'r') as f:
-                loaded_data = json.load(f)
-                assert loaded_data == data
-        finally:
-            Path(temp_filepath).unlink()
-
-    def test_invalid_format(self):
-        """Test with invalid format type."""
-        data = {'test': 'value'}
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            temp_filepath = f.name
-
-        try:
-            success = write_results_to_file(data, temp_filepath, 'invalid_format')
-            # Should handle gracefully, either return False or use default format
-            assert isinstance(success, bool)
-        finally:
-            if Path(temp_filepath).exists():
-                Path(temp_filepath).unlink()
-
+    # Check top_3_products
+    top_products = results['top_3_products']
+    assert isinstance(top_products, pd.Series), "top_3_products must be a Series"
+    assert len(top_products) <= 3, "Should return at most 3 products"
+    assert top_products.index.name == 'product' or 'product' in str(top_products.index), "Index should be products"
 
 if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])
+    pytest.main([__file__, '-v'])

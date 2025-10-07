@@ -1,0 +1,29 @@
+employee_id,name,department,salary,years_experience,performance_score,hire_date,status
+E001,  Alice Johnson  ,ENGINEERING,85000,5,4.5,2019-03-15,active
+E002,bob smith,engineering,65000,-999,3.2,2020-06-01,Active
+E003,Charlie Davis,  Sales  ,92000,8,4.8,2017-11-20,ACTIVE
+E004,DIANA MARTINEZ,Marketing,-999,2,3.0,UNKNOWN,active
+E005,Eve Wilson,sales,71000,,4.1,2021-01-10,Active
+E006,Frank Brown,Engineering,105000,12,4.9,2015-05-22,active
+E007,Grace Lee,marketing,58000,1,2.8,2023-02-14,ACTIVE
+E008,Henry Taylor,Sales,78000,6,3.9,2018-09-30,active
+E009,Iris Chen,ENGINEERING,,7,4.3,2017-08-12,Active
+E010,Jack Wilson,engineering,95000,10,4.7,2016-12-05,ACTIVE
+E011,  Karen White  ,Sales,62000,3,3.1,2021-07-18,active
+E012,Leo Garcia,Marketing,67000,4,3.6,2020-03-25,Active
+E013,Maria Rodriguez,engineering,88000,9,4.4,2016-04-08,active
+E014,Nathan Kim,SALES,750000,15,5.0,2014-01-15,ACTIVE
+E015,Olivia Anderson,Marketing,54000,2,2.9,UNKNOWN,active
+E016,Paul Martinez,Engineering,-5000,6,4.2,2018-11-11,Active
+E017,Quinn Foster,sales,69000,-999,3.7,2022-05-20,active
+E018,Rachel Green,MARKETING,61000,3,3.4,2021-09-08,ACTIVE
+E019,Steve Rogers,Engineering,98000,11,4.6,2015-07-30,active
+E020,Tina Turner,sales,73000,5,4.0,2019-10-12,Active
+E021,Uma Thurman,Marketing,59000,2,3.3,2022-12-01,active
+E022,Victor Stone,ENGINEERING,91000,8,4.5,2017-06-15,ACTIVE
+E023,Wendy Darling,Sales,,,3.8,2020-08-22,active
+E024,Xander Cage,engineering,87000,7,4.1,2018-02-28,Active
+E025,Yara Shahidi,Marketing,56000,1,2.7,2023-04-10,active
+E026,Zachary Levi,SALES,76000,5,3.9,2019-12-03,ACTIVE
+E027,Alice Johnson,ENGINEERING,85000,5,4.5,2019-03-15,active
+E028,bob smith,engineering,65000,-999,3.2,2020-06-01,Active

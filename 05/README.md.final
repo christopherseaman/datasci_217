@@ -1,4 +1,4 @@
-Data Cleaning and Preparation
+# Data Cleaning and Preparation
 
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 
@@ -199,37 +199,6 @@ df['B'] = df['B'].astype('int64')  # Convert float to integer
 print(df.dtypes)  # A: int64, B: int64
 ```
 
-## Renaming Axis Indexes
-
-Renaming changes row or column labels without modifying data. This is essential for making your data more readable and standardizing column names.
-
-**Reference:**
-
-- `df.rename(index={old: new})` - Rename rows
-- `df.rename(columns={old: new})` - Rename columns
-- `df.rename(columns=str.lower)` - Apply function to all columns
-- `df.rename(columns=str.strip)` - Remove whitespace from column names
-- `inplace=True` - Modify DataFrame in place
-
-**Brief Example:**
-
-```python
-# Rename specific columns
-df = pd.DataFrame({'OldName': [1, 2, 3], 'Another_Old': [4, 5, 6]})
-df_renamed = df.rename(columns={'OldName': 'new_name', 'Another_Old': 'better_name'})
-print(df_renamed.columns)  # ['new_name', 'better_name']
-
-# Apply function to all columns
-df.columns = ['First Column', ' Second ', 'THIRD']
-df_clean = df.rename(columns=str.lower)  # Lowercase all
-df_clean = df_clean.rename(columns=str.strip)  # Remove spaces
-print(df_clean.columns)  # ['first column', 'second', 'third']
-
-# Rename index
-df.index = ['a', 'b', 'c']
-df_reindexed = df.rename(index={'a': 'row_1', 'b': 'row_2'})
-```
-
 ## Creating Categories
 
 Converting continuous variables into categories makes data easier to analyze and visualize. This is especially useful for age groups, income brackets, and other meaningful categories.
@@ -250,39 +219,6 @@ Converting continuous variables into categories makes data easier to analyze and
 ages = pd.Series([25, 30, 45, 60, 75])
 age_groups = pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior'])
 print(age_groups)  # [Young, Young, Middle, Senior, Senior]
-```
-
-## Detecting and Filtering Outliers
-
-Outliers are extreme values that may represent errors or important anomalies. Detecting and handling them appropriately is crucial for reliable analysis.
-
-**Reference:**
-
-- `df[df['col'] > threshold]` - Filter by threshold
-- `df.clip(lower, upper)` - Cap values at bounds
-- `df.quantile([0.25, 0.75])` - Find quartiles for IQR method
-- `df[(df > lower) & (df < upper)]` - Filter within bounds
-
-**Brief Example:**
-
-```python
-# Remove values beyond 3 standard deviations
-df = pd.DataFrame({'value': [1, 2, 3, 100, 4, 5]})
-mean, std = df['value'].mean(), df['value'].std()
-df_clean = df[abs(df['value'] - mean) < 3 * std]
-print(df_clean)  # Removes 100
-
-# Cap extreme values
-df['value'] = df['value'].clip(lower=0, upper=10)
-print(df)  # Values capped at 0-10 range
-
-# IQR method for outlier detection
-Q1 = df['value'].quantile(0.25)
-Q3 = df['value'].quantile(0.75)
-IQR = Q3 - Q1
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-df_no_outliers = df[(df['value'] >= lower_bound) & (df['value'] <= upper_bound)]
 ```
 
 **LIVE DEMO!**
@@ -461,35 +397,6 @@ print(names_split)  # [['Alice', 'Smith'], ['Bob', 'Jones'], ['Charlie', 'Brown'
 # Split into columns
 names_df = full_names.str.split(' ', expand=True)
 print(names_df)  # Two columns with first and last names
-```
-
-## Creating Indicator Variables
-
-Indicator (dummy) variables convert categories into binary columns for modeling. This is essential for machine learning and statistical analysis with categorical data.
-
-**Reference:**
-
-- `pd.get_dummies(series)` - Create dummy variables
-- `prefix='category'` - Add prefix to column names
-- `drop_first=True` - Avoid multicollinearity (drop first category)
-- `dtype='int64'` - Specify data type for dummies
-
-**Brief Example:**
-
-```python
-# Create dummy variables
-df = pd.DataFrame({'color': ['red', 'blue', 'red', 'green']})
-dummies = pd.get_dummies(df['color'], prefix='color')
-print(dummies)
-# Creates: color_blue, color_green, color_red columns with 0/1 values
-
-# Add to original DataFrame
-df_with_dummies = pd.concat([df, dummies], axis=1)
-print(df_with_dummies)
-
-# Drop first category to avoid multicollinearity
-dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True)
-print(dummies)  # Only color_green and color_red (blue is the reference)
 ```
 
 **LIVE DEMO!**

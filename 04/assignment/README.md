@@ -1,101 +1,221 @@
-# Assignment 4: Pandas Basics and Data Exploration
+# Assignment 4: Pandas Data Analysis
 
 ## Overview
 
-In this assignment, you'll practice fundamental pandas operations including data loading, exploration, selection, and basic manipulation. You'll work with a real dataset to gain hands-on experience with pandas DataFrames and Series.
+This assignment tests your ability to work with pandas DataFrames for real-world data analysis. You'll load data, clean it, analyze it, and extract insights - the core workflow of a data scientist.
+
+**Assignment Type:** Pass/Fail (auto-graded via pytest)
 
 ## Learning Objectives
 
-By completing this assignment, you will:
-- Load and explore datasets using pandas
-- Perform data selection and filtering operations
-- Handle missing data appropriately
-- Apply basic data manipulation techniques
-- Use Jupyter notebooks effectively for data analysis
+- Load and inspect data from CSV files
+- Select and filter data using pandas methods
+- Handle missing values appropriately
+- Perform groupby aggregations
+- Create calculated columns and summaries
 
 ## Dataset
 
-You'll work with a dataset containing information about employees at a fictional company. The dataset includes:
-- Employee names and IDs
-- Demographics (age, gender, city)
-- Job information (department, position, salary)
-- Performance metrics
+You'll work with a fictional dataset of customer orders from an e-commerce platform.
+
+**File:** `orders.csv` (provided)
+
+**Schema:**
+```
+order_id,customer_id,product,quantity,price,order_date,region,status
+```
 
 ## Assignment Tasks
 
-### Task 1: Data Loading and Initial Exploration (20 points)
+The assignment has **3 parts** that build on each other. Complete them in order.
 
-1. Load the dataset from the provided CSV file
-2. Display the first 5 rows of the data
-3. Show the shape of the dataset (rows and columns)
-4. Display the data types of each column
-5. Check for missing values in the dataset
+### Part 1: Data Loading and Exploration (Foundation)
 
-### Task 2: Data Selection and Filtering (25 points)
+**File to edit:** `main.py`
 
-1. Select all employees from the 'Sales' department
-2. Find employees with salary greater than $60,000
-3. Get employees aged between 25 and 35 (inclusive)
-4. Select only the 'Name', 'Age', and 'Salary' columns for all employees
-5. Find the top 5 highest-paid employees
+Implement the `load_and_explore()` function that:
 
-### Task 3: Data Analysis (25 points)
+1. Loads `orders.csv` into a DataFrame
+2. Prints the shape of the data
+3. Prints the first 5 rows
+4. Returns the DataFrame
 
-1. Calculate the average salary by department
-2. Find the department with the highest average salary
-3. Calculate the age distribution (min, max, mean, median)
-4. Count the number of employees in each city
-5. Find the correlation between age and salary
+**Expected behavior:**
+```python
+df = load_and_explore()
+# Should print:
+# Shape: (100, 8)
+# First 5 rows: [displays DataFrame.head()]
+# Returns: DataFrame with 100 rows, 8 columns
+```
 
-### Task 4: Data Cleaning (20 points)
+**Testing:** `pytest test_assignment.py::test_load_and_explore -v`
 
-1. Handle any missing values in the dataset appropriately
-2. Remove any duplicate entries
-3. Clean the 'Name' column (remove extra spaces, standardize format)
-4. Convert the 'Salary' column to numeric type if needed
-5. Create a new column 'Salary_Category' based on salary ranges
+### Part 2: Data Cleaning and Filtering (Build on Part 1)
 
-### Task 5: Data Export and Summary (10 points)
+**File to edit:** `main.py`
 
-1. Export the cleaned dataset to a new CSV file
-2. Create a summary report of your findings
-3. Include at least 3 interesting insights about the data
+Implement the `clean_and_filter()` function that:
 
-## Requirements
+1. Takes a DataFrame as input (from Part 1)
+2. Removes rows where `status` is 'Cancelled'
+3. Fills missing `quantity` values with 1
+4. Keeps only orders from 'North' and 'South' regions
+5. Returns the cleaned DataFrame
 
-- Use Jupyter notebook for this assignment
-- Include markdown cells to explain your approach
-- Use appropriate pandas methods for each task
-- Handle errors gracefully
-- Comment your code appropriately
+**Expected behavior:**
+```python
+df_clean = clean_and_filter(df)
+# Should return DataFrame with:
+# - No 'Cancelled' orders
+# - No missing quantity values
+# - Only 'North' and 'South' regions
+```
 
-## Submission
+**Testing:** `pytest test_assignment.py::test_clean_and_filter -v`
 
-Submit your completed Jupyter notebook (.ipynb file) with:
-- All code cells executed
-- Clear explanations in markdown cells
-- Results and visualizations included
-- Summary of findings
+### Part 3: Analysis and Insights (Combine Part 1 & 2)
 
-## Grading Criteria
+**File to edit:** `main.py`
 
-- **Code Quality (30%)**: Clean, readable, and well-commented code
-- **Correctness (40%)**: Accurate implementation of pandas operations
-- **Documentation (20%)**: Clear explanations and markdown cells
-- **Insights (10%)**: Meaningful analysis and conclusions
+Implement the `analyze_orders()` function that:
+
+1. Takes a cleaned DataFrame as input (from Part 2)
+2. Creates a new column `total_price` = `quantity` * `price`
+3. Calculates total revenue by region (sum of `total_price` grouped by `region`)
+4. Finds the top 3 products by total quantity sold
+5. Returns a dictionary with:
+   ```python
+   {
+       'revenue_by_region': Series,  # region as index, total revenue as values
+       'top_3_products': Series       # product names as index, quantities as values
+   }
+   ```
+
+**Expected output format:**
+```python
+results = analyze_orders(df_clean)
+# results['revenue_by_region']:
+#   North    15234.50
+#   South    12456.75
+#   dtype: float64
+
+# results['top_3_products']:
+#   Widget A    45
+#   Widget C    38
+#   Widget B    32
+#   dtype: int64
+```
+
+**Testing:** `pytest test_assignment.py::test_analyze_orders -v`
+
+## Starter Code
+
+```python
+# main.py
+import pandas as pd
+
+def load_and_explore():
+    """
+    Load orders.csv and explore the data.
+
+    Returns:
+        pd.DataFrame: The loaded data
+    """
+    # TODO: Implement this function
+    pass
+
+def clean_and_filter(df):
+    """
+    Clean and filter the orders data.
+
+    Args:
+        df (pd.DataFrame): Raw orders data
+
+    Returns:
+        pd.DataFrame: Cleaned and filtered data
+    """
+    # TODO: Implement this function
+    pass
+
+def analyze_orders(df_clean):
+    """
+    Analyze cleaned orders data.
+
+    Args:
+        df_clean (pd.DataFrame): Cleaned orders data
+
+    Returns:
+        dict: Dictionary with 'revenue_by_region' and 'top_3_products' Series
+    """
+    # TODO: Implement this function
+    pass
+
+if __name__ == "__main__":
+    # Test your functions
+    df = load_and_explore()
+    df_clean = clean_and_filter(df)
+    results = analyze_orders(df_clean)
+
+    print("\n=== Revenue by Region ===")
+    print(results['revenue_by_region'])
+
+    print("\n=== Top 3 Products ===")
+    print(results['top_3_products'])
+```
+
+## Testing Your Code
+
+Run all tests:
+```bash
+pytest test_assignment.py -v
+```
+
+Run individual tests:
+```bash
+pytest test_assignment.py::test_load_and_explore -v
+pytest test_assignment.py::test_clean_and_filter -v
+pytest test_assignment.py::test_analyze_orders -v
+```
+
+## Grading
+
+- **Part 1:** 33% - Data loading and exploration
+- **Part 2:** 33% - Data cleaning and filtering
+- **Part 3:** 34% - Analysis and insights
+
+**Pass threshold:** All 3 parts must pass their tests
 
 ## Tips
 
-- Start with simple operations and build complexity gradually
-- Use the pandas documentation for reference
-- Test your code with small samples first
-- Don't forget to handle edge cases (missing data, etc.)
-- Use appropriate data types for better performance
+1. **Part 1:**
+   - Use `pd.read_csv()` to load the file
+   - Use `.shape` for dimensions
+   - Use `.head()` to preview data
 
-## Resources
+2. **Part 2:**
+   - Chain multiple filtering operations
+   - Remember: `df[df['column'] != 'value']` removes rows
+   - Use `.fillna()` for missing values
+   - `.isin()` is useful for multiple values
 
-- [Pandas Documentation](https://pandas.pydata.org/docs/)
-- [Jupyter Notebook Documentation](https://jupyter-notebook.readthedocs.io/)
-- [Pandas Cheat Sheet](https://pandas.pydata.org/Pandas_Cheat_Sheet.pdf)
+3. **Part 3:**
+   - Create column before grouping: `df['total'] = df['a'] * df['b']`
+   - Use `.groupby()` with `.sum()` for aggregation
+   - Use `.nlargest(3)` or `.sort_values()` + `.head(3)` for top 3
 
-Good luck with your assignment!
+## Common Errors
+
+- **FileNotFoundError:** Make sure `orders.csv` is in the same directory as `main.py`
+- **KeyError:** Check column names are exactly as specified (case-sensitive!)
+- **AssertionError in tests:** Your return values don't match expected format - check data types
+- **AttributeError:** Make sure you're returning DataFrames/Series, not lists or dicts
+
+## Submission
+
+Your repository should contain:
+- `main.py` - Your completed solution
+- `orders.csv` - Provided data file (don't modify)
+- `test_assignment.py` - Test file (don't modify)
+
+Push to GitHub and verify the auto-grading passes (green checkmark).

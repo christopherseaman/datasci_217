@@ -48,7 +48,7 @@ jobs:
     - name: Verify required files exist
       run: |
         echo "Checking for required files..."
-        required_files=("assignment.py")
+        required_files=("main.py" "employees_raw.csv")
         missing_files=""
 
         for file in "${required_files[@]}"; do
@@ -69,8 +69,8 @@ jobs:
       if: env.MISSING_FILES == 'false'
       run: |
         echo "Running syntax check..."
-        python -m py_compile assignment.py || {
-          echo "❌ Syntax errors found in assignment.py"
+        python -m py_compile main.py || {
+          echo "❌ Syntax errors found in main.py"
           echo "SYNTAX_ERRORS=true" >> $GITHUB_ENV
           exit 1
         }
@@ -134,7 +134,7 @@ jobs:
             report = []
             report.append('# Lecture 05 Assignment - Grade Report')
             report.append('')
-            report.append('## Topic: Python Libraries and Environment Management')
+            report.append('## Topic: Data Cleaning Exam')
             report.append('')
             report.append(f'## Final Score: {total_score}/{max_score}')
 
