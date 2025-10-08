@@ -1,6 +1,7 @@
 Pandas on Jupyter: Data Structures & I/O
 
 See [BONUS.md](BONUS.md) for advanced topics:
+
 - Alignment and broadcasting tricks
 - Function application patterns and method chaining notes
 - Ranking strategies and working with duplicate index labels
@@ -167,6 +168,7 @@ The kernel is the Python interpreter running your code. Sometimes it gets stuck 
 **Example:**
 
 When to restart your kernel:
+
 - Code behaves unexpectedly
 - Variables seem to have wrong values
 - "It worked before but now it doesn't"
@@ -179,6 +181,7 @@ When to restart your kernel:
 This means if you accidentally print your password, patient data, or that embarrassing test result, it's now permanently saved in your notebook file. It's like having a photographic memory of your most awkward moments.
 
 **Before committing to git (the "digital hygiene" moment):**
+
 1. **Clear all outputs** - Click the "Clear All Outputs" button in VS Code
 2. **Check for sensitive data** - Make sure no personal information, passwords, or confidential data is visible
 3. **Save the notebook** - The outputs will be removed from the file
@@ -194,7 +197,9 @@ display(df.head())  # Shows patient names, IDs, medical info
 
 **After running this code, the patient data will be visible in your notebook file. Always clear outputs before sharing or committing to git.**
 
-**LIVE DEMO!**
+# LIVE DEMO!
+
+(Demo 1: Jupyter Basics - interface, cells, magic commands)
 
 # Introduction to Pandas
 
@@ -344,11 +349,11 @@ display(numeric_data.columns)  # ['Age', 'Salary', 'Years_Experience']
 
 /callout("This is confusing!")
 **Tips:**
+
 - Use `df['column']` for single columns when you want a Series
 - Use `df[['column']]` for single columns when you want a DataFrame
 - Bracket notation `df['column']` is safer than dot notation `df.column`
 - Multiple column selection always returns a DataFrame, even if you select just one column
-
 
 ## Data Selection and Indexing
 
@@ -428,9 +433,9 @@ high_earners = employees.loc[employees['Salary'] > 60000]  # Charlie
 ```
 
 **Memory Trick:**
+
 - **`.loc`** = **"L"abels** (names, strings, custom indices)
 - **`.iloc`** = **"i"nteger** **"L"ocations** (0, 1, 2, 3... like list positions)
-
 
 ### Adding Columns to DataFrames
 
@@ -517,7 +522,9 @@ df['C'] = pd.to_numeric(df['C'], errors='coerce')  # Invalid becomes NaN
 display(df['C'])  # [1.0, 2.0, NaN, 4.0]
 ```
 
-**LIVE DEMO!**
+# LIVE DEMO!
+
+(Demo 2: Pandas DataFrames - selection, filtering, groupby, operations)
 
 # Essential Pandas Operations
 
@@ -587,8 +594,6 @@ dept_summary = comp.groupby('Department')['Salary'].agg(['count', 'mean'])
 display(dept_summary)
 ```
 
-**LIVE DEMO!**
-
 # Data Loading and Storage
 
 *Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!" (Usually `pd.read_[format]()` - pandas is surprisingly comprehensive at reading data from just about anywhere)*
@@ -602,6 +607,7 @@ CSV files are the most common format for data analysis. Pandas makes it easy to 
 **Reference:**
 
 Reading
+
 - `pd.read_csv('filename.csv')` - Read CSV file
 - `pd.read_csv('filename.csv', sep=';')` - Custom separator
 - `pd.read_csv('filename.csv', header=0)` - Specify header row
@@ -609,6 +615,7 @@ Reading
 - `pd.read_csv(path, sep=',', header=0, index_col=None)` — all options
 
 Writing
+
 - `df.to_csv('asdf.csv') - no frills
 - `df.to_csv('tab_separated.tsv', sep='\t')
 - `df.to_csv(path, index=False, na_rep='')` — write cleaned results
@@ -631,10 +638,12 @@ display(df.head())
 **Reference:**
 
 Excel
+
 - `pd.read_excel(path, sheet_name=0, usecols=None)` — ingest worksheets
 - `df.to_excel(path, sheet_name='Summary', index=False)` — share spreadsheets
 
 JSON
+
 - `pd.read_json(path_or_buf, orient='records')` — parse structured payloads
 - `df.to_json(path_or_buf, orient='records', indent=2)` — export API-friendly data
 
@@ -651,7 +660,6 @@ payload.to_json('inventory_payload_export.json', orient='records', indent=2)
 ```
 
 **Note:** Database access and sql will be covered later course content.
-**LIVE DEMO!**
 
 # Data Exploration and Summary Statistics
 
@@ -710,4 +718,6 @@ display(df.dtypes)  # Data types per column
 display(df.info())  # Detailed information
 ```
 
-**LIVE DEMO!**
+# LIVE DEMO!
+
+(Demo 3: Data I/O - CSV, Excel, JSON, real-world cleaning workflow)

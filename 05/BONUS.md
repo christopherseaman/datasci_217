@@ -2,6 +2,72 @@ Bonus Content: Advanced Data Cleaning
 
 *These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!*
 
+## Modern Pandas Extension Types
+
+Pandas extension types solve longstanding issues with missing data and memory efficiency. While useful, these are advanced features that go beyond basic data cleaning workflows.
+
+*Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
+
+### Extension Types for Better Missing Data Handling
+
+Traditional NumPy-based types couldn't represent missing integers or booleans. Extension types provide proper NA support across all data types.
+
+**Reference:**
+
+- `astype('Int64')` - Nullable integer (note capital I)
+- `astype('Float64')` - Nullable float
+- `astype('boolean')` - Nullable boolean
+- `astype('string')` - Efficient string type
+- `pd.NA` - Missing value marker for extension types
+- vs `np.nan` - Old-style missing value (float only)
+
+**Brief Example:**
+
+```python
+# Old way: integers become floats with missing data
+s_old = pd.Series([1, 2, None])
+print(s_old.dtype)  # float64 (forced conversion!)
+
+# New way: integers stay integers
+s_new = pd.Series([1, 2, None], dtype='Int64')
+print(s_new.dtype)  # Int64
+print(s_new)  # [1, 2, <NA>]
+
+# Boolean with proper missing values
+bools = pd.Series([True, False, None], dtype='boolean')
+print(bools)  # [True, False, <NA>]
+```
+
+### Why Use Extension Types?
+
+Extension types provide better memory efficiency, faster operations, and proper missing data handling.
+
+**When to use:**
+- **Int64, Int32, Int16, Int8**: Integer data that might have missing values
+- **Float64, Float32**: When you need explicit control over precision
+- **boolean**: Boolean data with potential missing values
+- **string**: Large text datasets (uses less memory than object dtype)
+- **category**: Repeated string values (huge memory savings)
+
+**Brief Example:**
+
+```python
+# Convert existing DataFrame to extension types
+df = pd.DataFrame({
+    'age': [25, 30, None, 45],
+    'name': ['Alice', 'Bob', 'Charlie', None],
+    'is_member': [True, False, None, True]
+})
+
+# Convert to extension types
+df['age'] = df['age'].astype('Int64')
+df['name'] = df['name'].astype('string')
+df['is_member'] = df['is_member'].astype('boolean')
+
+print(df.dtypes)
+print(df)
+```
+
 ## Advanced Regular Expressions for Text Data
 
 Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks.

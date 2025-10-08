@@ -119,6 +119,42 @@ print("\nAge groups and income levels:")
 print(df_clean[['age', 'age_group', 'income', 'income_level']])
 ```
 
+## Apply Custom Functions for Data Transformation
+
+```python
+# Use .apply() to create custom satisfaction score
+def score_satisfaction(text):
+    """Convert text satisfaction to numeric score"""
+    scores = {
+        'very satisfied': 5,
+        'satisfied': 4,
+        'neutral': 3,
+        'dissatisfied': 2,
+        'very dissatisfied': 1
+    }
+    return scores.get(text.lower(), 3)  # Default to neutral if unknown
+
+df_clean['satisfaction_score'] = df_clean['satisfaction'].apply(score_satisfaction)
+print("\nSatisfaction scores:")
+print(df_clean[['satisfaction', 'satisfaction_score']])
+
+# Use .map() to create education rank
+education_rank = {
+    'High School': 1,
+    'Bachelors': 2,
+    'Masters': 3,
+    'PhD': 4
+}
+df_clean['education_rank'] = df_clean['education'].map(education_rank)
+print("\nEducation ranks:")
+print(df_clean[['education', 'education_rank']])
+
+# Use .apply() with lambda for quick calculations
+df_clean['income_thousands'] = df_clean['income'].apply(lambda x: round(x / 1000, 1))
+print("\nIncome in thousands:")
+print(df_clean[['income', 'income_thousands']])
+```
+
 ## Create Dummy Variables for Modeling
 
 ```python
@@ -128,6 +164,29 @@ df_final = pd.concat([df_clean, region_dummies], axis=1)
 
 print("\nWith region dummies:")
 print(df_final[['region', 'region_North', 'region_South']])
+```
+
+## Use Categorical Data Type for Memory Efficiency
+
+```python
+# Check current memory usage
+print("\nMemory usage before categorical:")
+print(f"Region: {df_final['region'].memory_usage(deep=True)} bytes")
+print(f"Education: {df_final['education'].memory_usage(deep=True)} bytes")
+
+# Convert to categorical
+df_final['region'] = df_final['region'].astype('category')
+df_final['education'] = df_final['education'].astype('category')
+
+print("\nMemory usage after categorical:")
+print(f"Region: {df_final['region'].memory_usage(deep=True)} bytes")
+print(f"Education: {df_final['education'].memory_usage(deep=True)} bytes")
+
+# See the categories
+print("\nRegion categories:")
+print(df_final['region'].cat.categories)
+print("\nRegion codes:")
+print(df_final['region'].cat.codes)
 
 print("\nFinal cleaned dataset:")
 print(df_final)

@@ -2,9 +2,13 @@ Data Cleaning and Preparation
 
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 
-Data cleaning follows a systematic workflow: **detect → handle → validate → transform**. We'll cover each technique individually, then bring it all together in a complete pipeline at the end.
+<!-- FIXME: xkcd 2054 "Data Pipeline"
+     Shows the reality that data cleaning is most of the work
+     Perfect intro to data cleaning lecture - sets expectations
+     https://xkcd.com/2054/
+     File: media/xkcd_2054.png -->
 
-**LIVE DEMO!**
+Data cleaning follows a systematic workflow: **detect → handle → validate → transform**. We'll cover each technique individually, then bring it all together in a complete pipeline at the end.
 
 # Handling Missing Data
 
@@ -37,7 +41,7 @@ Missing data detection identifies where data is missing and helps understand the
 - `df.isnull().any()` - True if any missing values in column
 - `df.isnull().all()` - True if all values missing in column
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Check for missing values
@@ -66,7 +70,7 @@ Missing data analysis helps understand the pattern and mechanism of missingness.
 - `df.dropna(axis=1)` - Remove columns with any missing values
 - `df.dropna(thresh=n)` - Keep rows with at least n non-null values
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Analyze missing data patterns
@@ -94,7 +98,7 @@ Missing data imputation fills in missing values using various strategies. The ch
 - `df.fillna(df.mode().iloc[0])` - Fill with column mode
 - `df.interpolate()` - Interpolate missing values
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Fill missing values
@@ -113,7 +117,7 @@ df_ffill = df.fillna(method='ffill')
 print(df_ffill)  # Missing values replaced with previous value
 ```
 
-**LIVE DEMO!**
+**LIVE DEMO!** (Demo 1: Missing Data - detection, analysis, and imputation strategies)
 
 # Data Transformation Techniques
 
@@ -130,7 +134,7 @@ Duplicate rows can skew your analysis and waste computational resources. Removin
 - `df.drop_duplicates(subset=['col1', 'col2'])` - Remove duplicates in specific columns
 - `df.drop_duplicates(keep='first')` - Keep first occurrence of duplicates
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Check for duplicates
@@ -156,7 +160,7 @@ The `replace()` method provides a flexible way to substitute specific values or 
 - `df.replace({val1: new1, val2: new2})` - Dictionary mapping
 - `df.replace(regex=True)` - Use regular expressions
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Replace sentinel values with NaN
@@ -175,6 +179,69 @@ df = df.replace({'A': {1: 100}, 'B': {'x': 'alpha'}})
 print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
 ```
 
+## Applying Custom Functions
+
+<!-- FIXME: xkcd 1205 "Is It Worth the Time?"
+     Classic time-saving calculation chart
+     Perfect for .apply() section - when is automation worth it?
+     https://xkcd.com/1205/
+     File: media/xkcd_1205.png -->
+
+Sometimes built-in methods aren't enough - you need to apply custom logic to transform your data. The `.apply()` and `.map()` methods let you use any function (built-in or custom) to transform data.
+
+*Think of `.apply()` as your data transformation Swiss Army knife - when pandas doesn't have a built-in method for what you need, you can just write your own function and apply it to every row, column, or value.*
+
+**Reference:**
+
+- `series.map(dict_or_func)` - Map values in a Series (element-wise)
+- `series.apply(func)` - Apply function to each element in a Series
+- `df.apply(func, axis=0)` - Apply function to each column (axis=0, default)
+- `df.apply(func, axis=1)` - Apply function to each row (axis=1)
+- `df.map(func)` - Apply function element-wise to entire DataFrame (pandas 2.1+)
+- `df.applymap(func)` - Deprecated in pandas 2.1+, use `.map()` instead
+
+**Example:**
+
+```python
+# Clean text data with custom function
+def clean_text(text):
+    """Remove whitespace and convert to lowercase"""
+    return text.strip().lower()
+
+names = pd.Series(['  Alice  ', 'BOB', '  Charlie'])
+names_clean = names.apply(clean_text)
+print(names_clean)  # ['alice', 'bob', 'charlie']
+
+# Map categorical values to numbers
+status = pd.Series(['active', 'inactive', 'active', 'pending'])
+status_map = {'active': 1, 'inactive': 0, 'pending': 2}
+status_coded = status.map(status_map)
+print(status_coded)  # [1, 0, 1, 2]
+
+# Apply function to DataFrame rows
+df = pd.DataFrame({'min': [1, 4, 7], 'max': [5, 9, 12]})
+df['range'] = df.apply(lambda row: row['max'] - row['min'], axis=1)
+print(df)
+#    min  max  range
+# 0    1    5      4
+# 1    4    9      5
+# 2    7   12      5
+
+# Apply function to DataFrame columns
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+column_sums = df.apply(sum, axis=0)  # Sum each column
+print(column_sums)  # A: 6, B: 15
+
+# Element-wise function application (pandas 2.1+)
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+df_squared = df.map(lambda x: x ** 2)
+print(df_squared)
+#    A   B
+# 0  1  16
+# 1  4  25
+# 2  9  36
+```
+
 ## Data Type Conversion
 
 Converting data to the correct types is essential for proper analysis. This includes converting strings to numbers, dates, and other appropriate types.
@@ -189,7 +256,7 @@ Converting data to the correct types is essential for proper analysis. This incl
 - `pd.to_datetime(df['date_column'])` - Convert to datetime
 - `pd.to_numeric(df['column'], errors='coerce')` - Convert to numeric, errors become NaN
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Convert data types
@@ -211,7 +278,7 @@ Renaming changes row or column labels without modifying data. This is essential 
 - `df.rename(columns=str.strip)` - Remove whitespace from column names
 - `inplace=True` - Modify DataFrame in place
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Rename specific columns
@@ -243,7 +310,7 @@ Converting continuous variables into categories makes data easier to analyze and
 - `bins=[0, 18, 35, 50, 100]` - Custom bin edges
 - `labels=['Young', 'Middle', 'Senior']` - Custom labels for bins
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Create age groups
@@ -263,7 +330,7 @@ Outliers are extreme values that may represent errors or important anomalies. De
 - `df.quantile([0.25, 0.75])` - Find quartiles for IQR method
 - `df[(df > lower) & (df < upper)]` - Filter within bounds
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Remove values beyond 3 standard deviations
@@ -285,83 +352,15 @@ upper_bound = Q3 + 1.5 * IQR
 df_no_outliers = df[(df['value'] >= lower_bound) & (df['value'] <= upper_bound)]
 ```
 
-**LIVE DEMO!**
+# Categorical Data Encoding
 
-# Modern Pandas Data Types
+Working with categorical data is common in data analysis. Pandas provides two main approaches: the categorical data type for efficient storage, and dummy variables for machine learning models.
 
-Pandas extension types solve longstanding issues with missing data and memory efficiency. Understanding these types is essential for modern pandas workflows.
-
-*Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
-
-## Extension Types for Better Missing Data Handling
-
-Traditional NumPy-based types couldn't represent missing integers or booleans. Extension types provide proper NA support across all data types.
-
-<!-- FIXME: Add comparison table visual:
-     - Old way (NumPy): int → float64 with NaN when missing
-     - New way (Extension): Int64 with pd.NA when missing
-     - Memory and type preservation benefits
-     File: media/extension_types_comparison.png -->
-
-**Reference:**
-
-- `astype('Int64')` - Nullable integer (note capital I)
-- `astype('Float64')` - Nullable float
-- `astype('boolean')` - Nullable boolean
-- `astype('string')` - Efficient string type
-- `pd.NA` - Missing value marker for extension types
-- vs `np.nan` - Old-style missing value (float only)
-
-**Brief Example:**
-
-```python
-# Old way: integers become floats with missing data
-s_old = pd.Series([1, 2, None])
-print(s_old.dtype)  # float64 (forced conversion!)
-
-# New way: integers stay integers
-s_new = pd.Series([1, 2, None], dtype='Int64')
-print(s_new.dtype)  # Int64
-print(s_new)  # [1, 2, <NA>]
-
-# Boolean with proper missing values
-bools = pd.Series([True, False, None], dtype='boolean')
-print(bools)  # [True, False, <NA>]
-```
-
-## Why Use Extension Types?
-
-Extension types provide better memory efficiency, faster operations, and proper missing data handling.
-
-**When to use:**
-- **Int64, Int32, Int16, Int8**: Integer data that might have missing values
-- **Float64, Float32**: When you need explicit control over precision
-- **boolean**: Boolean data with potential missing values
-- **string**: Large text datasets (uses less memory than object dtype)
-- **category**: Repeated string values (huge memory savings)
-
-**Brief Example:**
-
-```python
-# Convert existing DataFrame to extension types
-df = pd.DataFrame({
-    'age': [25, 30, None, 45],
-    'name': ['Alice', 'Bob', 'Charlie', None],
-    'is_member': [True, False, None, True]
-})
-
-# Convert to extension types
-df['age'] = df['age'].astype('Int64')
-df['name'] = df['name'].astype('string')
-df['is_member'] = df['is_member'].astype('boolean')
-
-print(df.dtypes)
-print(df)
-```
+*Pro tip: Categorical encoding is like translating between languages - categories can be stored efficiently as codes (integers) or expanded into binary columns for models. Choose the right translation for your task!*
 
 ## Categorical Data Type
 
-The categorical type is incredibly powerful for memory optimization and is a form of extension type.
+The categorical type is incredibly powerful for memory optimization, especially when you have repeated string values.
 
 <!-- FIXME: Add visual showing categorical encoding:
      - Original: ['red', 'blue', 'red', 'green', 'blue']
@@ -377,7 +376,7 @@ The categorical type is incredibly powerful for memory optimization and is a for
 - `cat.codes` - View numeric codes
 - Use for: Repeated string values, ordered categories
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Huge memory savings for repeated values
@@ -392,7 +391,38 @@ print(colors_cat.cat.categories)  # ['blue', 'green', 'red']
 print(colors_cat.cat.codes[:5])   # [2, 0, 2, 1, 0]
 ```
 
-**LIVE DEMO!**
+## Creating Indicator (Dummy) Variables
+
+Indicator variables convert categories into binary (0/1) columns, which is essential for machine learning models that require numeric input.
+
+*Think of dummy variables as translating categories into a language that models can understand - instead of "red", "blue", "green", you get three columns of 1s and 0s indicating which color each row has.*
+
+**Reference:**
+
+- `pd.get_dummies(series)` - Create dummy variables
+- `prefix='category'` - Add prefix to column names
+- `drop_first=True` - Avoid multicollinearity (drop first category)
+- `dtype='int64'` - Specify data type for dummies
+
+**Example:**
+
+```python
+# Create dummy variables
+df = pd.DataFrame({'color': ['red', 'blue', 'red', 'green']})
+dummies = pd.get_dummies(df['color'], prefix='color')
+print(dummies)
+# Creates: color_blue, color_green, color_red columns with 0/1 values
+
+# Add to original DataFrame
+df_with_dummies = pd.concat([df, dummies], axis=1)
+print(df_with_dummies)
+
+# Drop first category to avoid multicollinearity
+dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True)
+print(dummies)  # Only color_green and color_red (blue is the reference)
+```
+
+**LIVE DEMO!** (Demo 2: Transformations - categorical encoding, string operations, sampling)
 
 # String Manipulation
 
@@ -409,11 +439,11 @@ String operations are essential for cleaning text data. Pandas provides easy-to-
      - Quick lookup table format
      File: media/string_operations_reference.png -->
 
-<!-- FIXME: xkcd 2138 "Emoji/Unicode Issues"
-     About text encoding and emoji rendering problems
-     Perfect for introducing string/encoding challenges in data cleaning
-     https://xkcd.com/2138/
-     File: media/xkcd_2138.png -->
+<!-- FIXME: xkcd 1171 "Perl Problems"
+     "I got 99 problems, so I used regex. Now I have 100 problems."
+     Perfect humor for string manipulation complexity
+     https://xkcd.com/1171/
+     File: media/xkcd_1171.png -->
 
 **Reference:**
 
@@ -425,7 +455,7 @@ String operations are essential for cleaning text data. Pandas provides easy-to-
 - `series.str.startswith(prefix)` - Check if string starts with prefix
 - `series.str.endswith(suffix)` - Check if string ends with suffix
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Clean text data
@@ -450,7 +480,7 @@ Splitting and joining strings is common when working with structured text data l
 - `series.str.cat(sep=' ')` - Join strings with separator
 - `series.str.join(sep)` - Join list elements with separator
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Split strings
@@ -462,37 +492,6 @@ print(names_split)  # [['Alice', 'Smith'], ['Bob', 'Jones'], ['Charlie', 'Brown'
 names_df = full_names.str.split(' ', expand=True)
 print(names_df)  # Two columns with first and last names
 ```
-
-## Creating Indicator Variables
-
-Indicator (dummy) variables convert categories into binary columns for modeling. This is essential for machine learning and statistical analysis with categorical data.
-
-**Reference:**
-
-- `pd.get_dummies(series)` - Create dummy variables
-- `prefix='category'` - Add prefix to column names
-- `drop_first=True` - Avoid multicollinearity (drop first category)
-- `dtype='int64'` - Specify data type for dummies
-
-**Brief Example:**
-
-```python
-# Create dummy variables
-df = pd.DataFrame({'color': ['red', 'blue', 'red', 'green']})
-dummies = pd.get_dummies(df['color'], prefix='color')
-print(dummies)
-# Creates: color_blue, color_green, color_red columns with 0/1 values
-
-# Add to original DataFrame
-df_with_dummies = pd.concat([df, dummies], axis=1)
-print(df_with_dummies)
-
-# Drop first category to avoid multicollinearity
-dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True)
-print(dummies)  # Only color_green and color_red (blue is the reference)
-```
-
-**LIVE DEMO!**
 
 # Random Sampling and Permutation
 
@@ -510,7 +509,7 @@ Random sampling creates representative subsets of data for analysis, testing, an
 - `random_state=42` - Reproducible sampling
 - `df.iloc[::step]` - Systematic sampling every nth row
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Random sampling
@@ -536,7 +535,7 @@ Permutation randomizes data order while preserving relationships. It's essential
 - `np.random.permutation(array)` - Randomly permute array
 - `random_state=42` - Reproducible permutation
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Shuffle DataFrame
@@ -549,9 +548,13 @@ bootstrap = df.sample(n=len(df), replace=True, random_state=42)
 print(len(bootstrap))  # 4 (same length, but with replacement)
 ```
 
-**LIVE DEMO!**
-
 # Data Validation and Quality Assessment
+
+<!-- FIXME: xkcd 2239 "Database"
+     Shows data errors invalidating research - perfect for validation section
+     About discovering data errors that invalidate analysis
+     https://xkcd.com/2239/
+     File: media/xkcd_2239.png -->
 
 ## Data Quality Checks
 
@@ -567,7 +570,7 @@ Data quality checks identify issues like missing values, duplicates, outliers, a
 - `df.info()` - Detailed information
 - `df.memory_usage()` - Memory usage per column
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Data quality assessment
@@ -592,7 +595,7 @@ Data validation rules ensure data meets business requirements and constraints. T
 - `df.str.len()` - Get string length
 - `df.str.isdigit()` - Check if strings are digits
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Data validation rules
@@ -608,30 +611,41 @@ valid_emails = df[df['Email'].str.match(email_pattern)]
 print(valid_emails)  # All rows (emails are valid)
 ```
 
-**LIVE DEMO!**
-
 # Data Cleaning Pipeline
 
 A systematic approach to data cleaning ensures consistent, high-quality results. Follow these steps in order for best results.
 
-<!-- FIXME: Add data cleaning pipeline flowchart:
-     - Step 1: Detect (missing, duplicates, outliers)
-     - Step 2: Handle (fill, drop, transform)
-     - Step 3: Validate (check results)
-     - Step 4: Document (record decisions)
-     - Show decision points and feedback loops
-     File: media/cleaning_pipeline.png -->
+```mermaid
+graph TD
+    A[Load Data] --> B{Inspect Data}
+    B --> C[Check Missing Values]
+    B --> D[Check Duplicates]
+    B --> E[Check Data Types]
+    B --> F[Check Outliers]
 
-<!-- FIXME: xkcd 2239 "Data Pipeline"
-     Shows the reality of data pipelines (messy vs theory)
-     Perfect complement to the pipeline flowchart
-     https://xkcd.com/2239/
-     File: media/xkcd_2239.png -->
+    C --> G{Issues Found?}
+    D --> G
+    E --> G
+    F --> G
 
-<!-- FIXME: Verify xkcd 1205 exists and is properly sized
-     https://xkcd.com/1205/
-     Should show the time-saving calculation chart
-     File: media/xkcd_1205.png -->
+    G -->|Yes| H[Handle Issues]
+    G -->|No| L[Validate Results]
+
+    H --> I[Fill/Drop Missing]
+    H --> J[Remove Duplicates]
+    H --> K[Convert Types]
+    H --> M[Handle Outliers]
+
+    I --> L
+    J --> L
+    K --> L
+    M --> L
+
+    L --> N{Data Quality OK?}
+    N -->|No| B
+    N -->|Yes| O[Document Decisions]
+    O --> P[Export Clean Data]
+```
 
 *Think of data cleaning as being a detective - you need to follow the clues, ask the right questions, and sometimes you have to make tough decisions about what to keep and what to throw away.*
 
@@ -645,7 +659,7 @@ A systematic approach to data cleaning ensures consistent, high-quality results.
 6. **Validate data quality** - Check ranges, patterns, consistency
 7. **Export clean data** - `df.to_csv()`, `df.to_excel()`
 
-**Brief Example:**
+**Example:**
 
 ```python
 # Step 1: Load and inspect
@@ -677,17 +691,4 @@ print(df.dtypes)
 df.to_csv('clean_data.csv', index=False)
 ```
 
-**LIVE DEMO!**
-
-
----
-
-## Want to Learn More?
-
-See [BONUS.md](BONUS.md) for advanced topics:
-- Advanced regular expressions for text data
-- Statistical outlier detection methods (IQR, Z-score)
-- Complex string transformations and Unicode normalization
-- Fuzzy string matching for near-duplicates
-- Memory optimization with data type tuning
-- Conditional data replacement with `np.where()` and `np.select()`
+**LIVE DEMO!** (Demo 3: Complete Workflow - end-to-end data cleaning pipeline)

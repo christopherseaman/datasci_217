@@ -49,7 +49,7 @@
     - Reading from common file formats (CSV, Excel)
     - Advanced file reading/writing operations
     - Handling messy and missing data
-5. [5. Data Cleaning and Preparation](https://www.notion.so/sqrlly/5-Data-Cleaning-and-Preparation-281d9fdd1a1a8015bcdbc11415191ac2?source=copy_link) (ch 7)**
+5. [5. Data Cleaning and Preparation](https://www.notion.so/sqrlly/5-Data-Cleaning-and-Preparation-281d9fdd1a1a8015bcdbc11415191ac2?source=copy_link) (ch 7)
     - Data transformation techniques
     - String operations for data cleaning
     - Handling missing data strategies
