@@ -315,6 +315,12 @@ def test_output_content():
 - Focus on: commit, push, pull, branch creation via GUI
 - Command-line git reserved for BONUS content
 
+### Git Commit Messages
+- **NO Co-authored-by tags** - Never add "Co-Authored-By: Claude" or similar AI attribution
+- **NO cutesy messages** - Keep commits professional and technical
+- **Clean commit messages** - Focus on technical changes and impact
+- **Standard format** - Use conventional commit format when appropriate (feat:, fix:, docs:, etc.)
+
 ## Important Notes & Course-Specific Rules
 
 ### Critical Development Rules
