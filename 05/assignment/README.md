@@ -1,176 +1,484 @@
-Assignment 5: Data Cleaning Exam
-================
+# Assignment 5: Midterm Exam - Clinical Trial Data Analysis
 
-**Type**: Exam (graded 0-100)
-**Topics**: Missing data handling, data transformation, data validation, outlier detection
+**Total: 100 points**
 
-## Overview
+## Scenario
 
-You've been hired to clean a messy employee dataset from a company's HR system. The data has missing values, inconsistent formatting, sentinel values, and data quality issues. Your job is to build a complete data cleaning pipeline that transforms the raw data into analysis-ready format.
+You're analyzing data from a multi-site cardiovascular health clinical trial. The trial enrolled 10,000 patients across 5 hospital sites over 2 years, testing two different treatment interventions against a control group.
 
-This assignment tests everything from Lectures 1-5: Python fundamentals, data structures, NumPy operations, pandas basics, and data cleaning techniques.
+**Your task:** Build a complete data processing pipeline to clean, validate, and analyze the clinical trial data.
 
-## Dataset
+**Dataset:** `data/clinical_trial_raw.csv` (10,000 patients, 18 variables)
 
-The file `employees_raw.csv` contains employee records with the following columns:
-- `employee_id`: Unique identifier
-- `name`: Employee full name
-- `department`: Department name
-- `salary`: Annual salary
-- `years_experience`: Years of work experience
-- `performance_score`: Performance rating (1-5 scale)
-- `hire_date`: Date hired
-- `status`: Employment status
+**Configuration:** `config.txt` (trial parameters)
 
-**Known Issues**:
-- Missing values across multiple columns
-- Sentinel value `-999` used for missing numeric data
-- Inconsistent text capitalization
-- Invalid dates (some use "UNKNOWN")
-- Salary outliers and data entry errors
-- Inconsistent department names
+**Variables:**
+- **Demographics:** patient_id, age, sex, bmi, enrollment_date
+- **Clinical measurements:** systolic_bp, diastolic_bp, cholesterol_total, cholesterol_hdl, cholesterol_ldl, glucose_fasting
+- **Trial info:** site, intervention_group, follow_up_months, adverse_events
+- **Outcomes:** outcome_cvd, adherence_pct, dropout
 
-## Tasks
+---
 
-Complete the functions in `main.py`. Each function is worth points as shown below.
+## Question 1: Project Setup Script (10 points)
 
-### Part 1: Data Audit (20 points)
+**File:** `setup_project.sh`
 
-**Function**: `audit_data(df)`
+Create an executable shell script that sets up the project structure.
 
-Create a data quality report that returns a dictionary containing:
-- `total_rows`: Total number of rows
-- `total_columns`: Total number of columns
-- `missing_count`: Dictionary mapping column names to count of missing/NaN values
-- `duplicate_count`: Number of duplicate rows
-- `negative_salaries`: Count of negative salary values
-- `invalid_dates`: Count of rows with "UNKNOWN" in hire_date
+### Requirements:
 
-**Requirements**:
-- Count NaN values per column
-- Identify duplicate rows (entire row duplicates)
-- Find negative salaries (< 0)
-- Find invalid date strings
-
-### Part 2: Data Cleaning (40 points)
-
-**Function**: `clean_data(df)`
-
-Clean the raw data and return a cleaned DataFrame:
-1. **Replace sentinel values**: Replace `-999` in numeric columns with NaN
-2. **Handle missing numeric data**:
-   - Fill missing `salary` with median salary
-   - Fill missing `years_experience` with median experience
-   - Fill missing `performance_score` with 3.0 (neutral rating)
-3. **Clean text data**:
-   - Standardize `name` to Title Case (strip whitespace)
-   - Standardize `department` to Title Case (strip whitespace)
-   - Standardize `status` to lowercase (strip whitespace)
-4. **Fix dates**: Convert `hire_date` to datetime, replace "UNKNOWN" and invalid dates with NaT
-5. **Remove outliers**: Drop rows where salary is negative OR greater than $500,000
-6. **Drop duplicates**: Remove duplicate rows
-
-**Return**: Cleaned DataFrame
-
-### Part 3: Data Transformation (25 points)
-
-**Function**: `transform_data(df_clean)`
-
-Add calculated and categorical columns to the cleaned data:
-1. **Experience categories**: Create `experience_level` column using `pd.cut()`:
-   - 0-2 years: "Junior"
-   - 2-5 years: "Mid"
-   - 5+ years: "Senior"
-2. **Salary categories**: Create `salary_tier` column using `pd.qcut()`:
-   - Bottom 33%: "Low"
-   - Middle 33%: "Medium"
-   - Top 33%: "High"
-3. **Performance indicator**: Create `high_performer` boolean column:
-   - True if `performance_score >= 4`
-   - False otherwise
-4. **Tenure calculation**: Create `tenure_years` column:
-   - Calculate years since hire_date (use 2024 as current year)
-   - Fill NaT dates with 0
-
-**Return**: Transformed DataFrame with new columns
-
-### Part 4: Data Analysis (15 points)
-
-**Function**: `analyze_data(df_final)`
-
-Analyze the cleaned and transformed data. Return a dictionary with:
-- `avg_salary_by_dept`: Series with average salary per department
-- `high_performer_count`: Total count of high performers
-- `senior_avg_performance`: Average performance score for Senior experience level
-- `top_department`: Department name with highest average salary
-
-**Requirements**:
-- Use `groupby()` for aggregations
-- Filter data appropriately
-- Return correct data types (Series, int/float, string)
-
-## Grading Breakdown
-
-- **Part 1 (20 points)**: Data audit function
-  - Correct dictionary structure: 5 points
-  - Accurate missing value counts: 5 points
-  - Correct duplicate and data issue detection: 10 points
-
-- **Part 2 (40 points)**: Data cleaning function
-  - Sentinel value replacement: 5 points
-  - Missing data handling: 10 points
-  - Text standardization: 10 points
-  - Date handling: 5 points
-  - Outlier removal: 5 points
-  - Duplicate removal: 5 points
-
-- **Part 3 (25 points)**: Data transformation function
-  - Experience categories: 7 points
-  - Salary tiers: 7 points
-  - Performance indicator: 6 points
-  - Tenure calculation: 5 points
-
-- **Part 4 (15 points)**: Data analysis function
-  - Average salary by department: 5 points
-  - High performer count: 3 points
-  - Senior average performance: 4 points
-  - Top department: 3 points
-
-## Files Provided
-
-- `employees_raw.csv`: Raw employee data (DO NOT MODIFY)
-- `main.py`: Template with function stubs (COMPLETE THIS)
-- `test_assignment.py`: Local tests you can run
-
-## Testing Your Code
-
-Run local tests:
 ```bash
-pytest test_assignment.py -v
+#!/bin/bash
+
+# Create directory structure
+mkdir -p data
+mkdir -p output
+mkdir -p reports
+
+# Move/copy raw data file to data/ (if not already there)
+# Save directory structure to reports/directory_structure.txt
 ```
 
-Run a specific test:
+**Your script must:**
+1. Be executable (`chmod +x setup_project.sh`) - **2 pts**
+2. Have shebang `#!/bin/bash` - **1 pt**
+3. Create `data/` directory - **2 pts**
+4. Create `output/` directory - **2 pts**
+5. Create `reports/` directory - **2 pts**
+6. Save directory listing to `reports/directory_structure.txt` - **1 pt**
+
+**Test it:**
 ```bash
-pytest test_assignment.py::test_audit_data -v
+./setup_project.sh
+ls -la
+cat reports/directory_structure.txt
 ```
 
-## Submission
+---
 
-Push your completed `main.py` to GitHub. The autograder will run and report your score (0-100).
+## Question 2: Python Data Processing (25 points)
 
-**Important**:
-- Only modify `main.py`
-- Do not modify `employees_raw.csv`
-- Your code must run without errors
-- Partial credit available for partially working functions
+**File:** `process_metadata.py`
+
+Create an executable Python script that processes the trial configuration file (`config.txt`).
+
+The config file format is:
+```
+study_name=CardioHealth Trial 2023
+primary_investigator=Dr. Sarah Chen
+min_age=18
+max_age=85
+target_enrollment=10000
+sites=5
+```
+
+### Required Functions:
+
+```python
+#!/usr/bin/env python3
+"""Process clinical trial metadata."""
+
+def parse_config(filepath: str) -> dict:
+    """
+    Parse config file (key=value format) into dictionary.
+
+    Args:
+        filepath: Path to config.txt
+
+    Returns:
+        dict: Configuration as key-value pairs
+    """
+    # TODO: Read file, split on '=', create dict
+    pass
+
+def validate_config(config: dict) -> dict:
+    """
+    Validate configuration values using if/elif/else logic.
+
+    Rules:
+    - min_age must be >= 18
+    - max_age must be <= 100
+    - target_enrollment must be > 0
+    - sites must be >= 1
+
+    Args:
+        config: Configuration dictionary
+
+    Returns:
+        dict: Validation results {key: True/False}
+    """
+    # TODO: Implement with if/elif/else
+    pass
+
+def process_files(file_list: list) -> list:
+    """
+    Filter file list to only .csv files.
+
+    Args:
+        file_list: List of filenames
+
+    Returns:
+        list: Filtered list of .csv files only
+    """
+    # TODO: Filter to .csv files (any valid approach)
+    pass
+
+def calculate_statistics(data: list) -> dict:
+    """
+    Calculate basic statistics.
+
+    Args:
+        data: List of numbers
+
+    Returns:
+        dict: {mean, median, sum, count}
+    """
+    # TODO: Calculate stats
+    pass
+
+if __name__ == '__main__':
+    # TODO: Load and process config
+    # TODO: Save outputs to output/
+```
+
+### Grading:
+
+**Structure (5 pts):**
+- Executable with shebang - 2 pts
+- Has `if __name__ == '__main__':` - 1 pt
+- Functions importable - 2 pts
+
+**Functions (16 pts):**
+- `parse_config()` works correctly - 4 pts
+- `validate_config()` logic correct - 4 pts
+- `process_files()` filters correctly - 4 pts
+- `calculate_statistics()` returns correct stats - 4 pts
+
+**Outputs (4 pts):**
+- `output/config_summary.txt` - 1 pt
+- `output/validation_report.txt` - 1 pt
+- `output/file_manifest.txt` - 1 pt
+- `output/statistics.txt` - 1 pt
+
+---
+
+## Question 3: Data Loading & Exploration (10 points)
+
+**File:** `exploration.py`
+
+Create a module to load and explore the clinical trial data.
+
+### Required Functions:
+
+```python
+"""Data loading and exploration functions."""
+
+import pandas as pd
+
+def load_data(filepath: str) -> pd.DataFrame:
+    """Load CSV file into DataFrame."""
+    pass
+
+def get_summary_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Return df.describe() for numeric columns."""
+    pass
+
+def get_value_counts(df: pd.DataFrame, column: str) -> pd.Series:
+    """Return value_counts for specified column."""
+    pass
+```
+
+### Save these outputs:
+- `output/summary_stats.csv` (from .describe())
+- `output/value_counts_site.csv` (value_counts for 'site' column)
+
+### Grading (10 pts):
+- `load_data()` returns DataFrame - 2 pts
+- `get_summary_stats()` correct - 4 pts
+- `get_value_counts()` correct - 2 pts
+- Output files exist - 2 pts
+
+---
+
+## Question 4: Data Selection & Filtering (10 points)
+
+**File:** `selection.py`
+
+Create functions demonstrating different pandas selection methods.
+
+### Required Functions:
+
+```python
+"""Data selection and filtering functions."""
+
+import pandas as pd
+
+def select_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Return only numeric columns using .select_dtypes()."""
+    pass
+
+def select_by_loc(df: pd.DataFrame, rows: list, cols: list) -> pd.DataFrame:
+    """Use .loc[] to select specific rows and columns."""
+    pass
+
+def select_by_iloc(df: pd.DataFrame, row_start: int, row_end: int, col_indices: list) -> pd.DataFrame:
+    """Use .iloc[] for position-based selection."""
+    pass
+
+def filter_single_condition(df: pd.DataFrame, column: str, threshold: float) -> pd.DataFrame:
+    """Filter using single boolean condition (e.g., age > threshold)."""
+    pass
+
+def filter_multiple_conditions(df: pd.DataFrame, col1: str, val1, col2: str, val2) -> pd.DataFrame:
+    """Filter using multiple conditions with & operator."""
+    pass
+
+def filter_by_category(df: pd.DataFrame, column: str, categories: list) -> pd.DataFrame:
+    """Filter using .isin() for categorical values."""
+    pass
+```
+
+### Grading (10 pts):
+- `select_numeric_columns()` - 2 pts
+- `select_by_loc()` - 2 pts
+- `select_by_iloc()` - 1 pt
+- `filter_single_condition()` - 2 pts
+- `filter_multiple_conditions()` - 2 pts
+- `filter_by_category()` - 1 pt
+
+---
+
+## Question 5: Missing Data Handling (15 points)
+
+**File:** `missing_data.py`
+
+Implement multiple strategies for handling missing data.
+
+### Required Functions:
+
+```python
+"""Missing data detection and handling."""
+
+import pandas as pd
+import numpy as np
+
+def detect_missing(df: pd.DataFrame) -> pd.Series:
+    """Return .isnull().sum() for all columns."""
+    pass
+
+def fill_with_mean(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Fill missing values in column with mean using .fillna()."""
+    pass
+
+def fill_with_median(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Fill missing values in column with median."""
+    pass
+
+def forward_fill(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Forward fill missing values using .fillna(method='ffill')."""
+    pass
+
+def drop_missing_rows(df: pd.DataFrame, subset: list) -> pd.DataFrame:
+    """Drop rows with missing values in specified subset of columns."""
+    pass
+```
+
+### Grading (15 pts):
+- `detect_missing()` - 2 pts
+- `fill_with_mean()` - 3 pts
+- `fill_with_median()` - 3 pts
+- `forward_fill()` - 3 pts
+- `drop_missing_rows()` - 4 pts
+
+---
+
+## Question 6: Data Transformation (15 points)
+
+**File:** `transform.py`
+
+Implement data cleaning and transformation functions.
+
+### Required Functions:
+
+```python
+"""Data transformation functions."""
+
+import pandas as pd
+import numpy as np
+
+def convert_to_datetime(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Convert column to datetime using pd.to_datetime()."""
+    pass
+
+def convert_to_numeric(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Convert to numeric using pd.to_numeric(errors='coerce')."""
+    pass
+
+def convert_to_category(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Convert column to category type using .astype('category')."""
+    pass
+
+def replace_sentinels(df: pd.DataFrame, column: str, sentinel_value) -> pd.DataFrame:
+    """Replace sentinel values (e.g., -999) with NaN using .replace()."""
+    pass
+
+def apply_custom_function(df: pd.DataFrame, column: str, func) -> pd.DataFrame:
+    """Apply custom function to column using .apply()."""
+    pass
+
+def map_values(df: pd.DataFrame, column: str, mapping: dict) -> pd.DataFrame:
+    """Map values using dictionary with .map()."""
+    pass
+
+def clean_strings(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Clean strings using .str.lower() and .str.strip()."""
+    pass
+
+def add_calculated_column(df: pd.DataFrame, new_col: str, col1: str, col2: str) -> pd.DataFrame:
+    """Create new column from calculation (e.g., LDL/HDL ratio)."""
+    pass
+```
+
+### Grading (15 pts):
+- `convert_to_datetime()` - 2 pts
+- `convert_to_numeric()` - 2 pts
+- `convert_to_category()` - 2 pts
+- `replace_sentinels()` - 2 pts
+- `apply_custom_function()` - 2 pts
+- `map_values()` - 2 pts
+- `clean_strings()` - 1 pt
+- `add_calculated_column()` - 2 pts
+
+---
+
+## Question 7: Groupby & Aggregation (10 points)
+
+**File:** `aggregation.py`
+
+Implement groupby and aggregation functions.
+
+### Required Functions:
+
+```python
+"""Groupby and aggregation functions."""
+
+import pandas as pd
+
+def group_and_sum(df: pd.DataFrame, group_col: str, sum_col: str) -> pd.DataFrame:
+    """Group by column and sum another column."""
+    pass
+
+def group_and_aggregate_multiple(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.DataFrame:
+    """
+    Group and apply multiple aggregations using .agg().
+
+    Example agg_dict: {'age': 'mean', 'bmi': ['mean', 'std']}
+    """
+    pass
+
+def get_top_n(df: pd.DataFrame, column: str, n: int) -> pd.DataFrame:
+    """Get top N rows using .nlargest()."""
+    pass
+
+def group_and_sort(df: pd.DataFrame, group_col: str, agg_col: str) -> pd.DataFrame:
+    """Group, aggregate, and sort results."""
+    pass
+```
+
+### Grading (10 pts):
+- `group_and_sum()` - 3 pts
+- `group_and_aggregate_multiple()` - 3 pts
+- `get_top_n()` - 2 pts
+- `group_and_sort()` - 2 pts
+
+---
+
+## Question 8: Pipeline Automation Script (5 points)
+
+**File:** `run_pipeline.sh`
+
+Create an executable shell script that runs the entire analysis pipeline.
+
+### Requirements:
+
+```bash
+#!/bin/bash
+
+# Run pipeline steps in order
+# Check exit codes after each step
+# Generate logs and final report
+
+echo "Starting clinical trial data pipeline..." > reports/pipeline_log.txt
+
+# Example structure:
+python process_metadata.py
+if [ $? -ne 0 ]; then
+    echo "ERROR: Metadata processing failed" >> reports/pipeline_log.txt
+    exit 1
+fi
+
+# TODO: Run other scripts
+# TODO: Generate reports/quality_report.txt
+# TODO: Save output/final_clean_data.csv
+```
+
+### Grading (5 pts):
+- Script is executable - 1 pt
+- Has shebang - 1 pt
+- `reports/pipeline_log.txt` exists - 1 pt
+- `reports/quality_report.txt` exists - 1 pt
+- `output/final_clean_data.csv` exists - 1 pt
+
+---
+
+## Submission Checklist
+
+**Scripts (8 files):**
+- [ ] `setup_project.sh` (executable)
+- [ ] `process_metadata.py` (executable)
+- [ ] `exploration.py`
+- [ ] `selection.py`
+- [ ] `missing_data.py`
+- [ ] `transform.py`
+- [ ] `aggregation.py`
+- [ ] `run_pipeline.sh` (executable)
+
+**Directories:**
+- [ ] `data/` (contains clinical_trial_raw.csv)
+- [ ] `output/` (contains CSV outputs)
+- [ ] `reports/` (contains text reports)
+
+---
+
+## Grading Summary
+
+| Question | Topic | Points |
+|----------|-------|--------|
+| Q1 | Project Setup (Shell) | 10 |
+| Q2 | Python Fundamentals | 25 |
+| Q3 | Data Loading | 10 |
+| Q4 | Selection & Filtering | 10 |
+| Q5 | Missing Data | 15 |
+| Q6 | Transformation | 15 |
+| Q7 | Aggregation | 10 |
+| Q8 | Pipeline Automation | 5 |
+| **TOTAL** | | **100** |
+
+**Grading Scale:**
+- 90-100: A
+- 80-89: B
+- 70-79: C
+- 60-69: D
+- <60: F
+
+---
 
 ## Tips
 
-- Start with Part 1 to understand the data
-- Use `.copy()` to avoid modifying the original DataFrame
-- Test each function independently
-- Check data types after transformations
-- Use `df.head()` and `df.info()` to inspect results
-- Remember: `cut()` creates equal-width bins, `qcut()` creates equal-frequency bins
+See `TIPS.md` for:
+- Code scaffolding and starter templates
+- Common pandas patterns
+- Debugging strategies
 
-Good luck! This exam tests your complete data cleaning pipeline skills.
+**Good luck!**
