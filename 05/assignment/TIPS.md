@@ -242,6 +242,18 @@ df_subset = df.dropna(subset=['blood_pressure', 'cholesterol'], how='all')
 
 ## Q6: Data Transformation
 
+**Removing duplicates:**
+```python
+# Remove duplicate rows
+df_unique = df.drop_duplicates()
+
+# Remove duplicates based on specific columns
+df_unique = df.drop_duplicates(subset=['patient_id'])
+
+# Keep last occurrence instead of first
+df_unique = df.drop_duplicates(subset=['patient_id'], keep='last')
+```
+
 **Type conversions:**
 ```python
 # Convert to datetime
@@ -303,6 +315,56 @@ df['name'] = df['name'].str.strip().str.title()
 # Create new column from calculation
 df['cholesterol_ratio'] = df['cholesterol_ldl'] / df['cholesterol_hdl']
 df['bmi_calc'] = df['weight_kg'] / (df['height_m'] ** 2)
+```
+
+**Creating categorical bins:**
+```python
+# Equal-width bins with pd.cut()
+df['age_group'] = pd.cut(df['age'],
+                         bins=[0, 30, 50, 100],
+                         labels=['Young', 'Middle', 'Senior'])
+
+# Or specify bin edges and labels
+bins = [0, 18, 65, 120]
+labels = ['Child', 'Adult', 'Senior']
+df['age_category'] = pd.cut(df['age'], bins=bins, labels=labels)
+
+# Equal-frequency bins with pd.qcut()
+df['bmi_quartile'] = pd.qcut(df['bmi'], q=4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
+```
+
+**Dummy variable encoding:**
+```python
+# Create dummy variables from categorical column
+dummies = pd.get_dummies(df['intervention_group'], prefix='treatment')
+
+# Join with original DataFrame and drop original column
+df = pd.concat([df, dummies], axis=1)
+df = df.drop('intervention_group', axis=1)
+
+# Or in one step
+df = pd.get_dummies(df, columns=['intervention_group'], drop_first=False)
+```
+
+**Outlier detection with IQR:**
+```python
+# Calculate IQR (Interquartile Range)
+Q1 = df['cholesterol_total'].quantile(0.25)
+Q3 = df['cholesterol_total'].quantile(0.75)
+IQR = Q3 - Q1
+
+# Define outlier bounds
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Detect outliers (boolean Series)
+outliers = (df['cholesterol_total'] < lower_bound) | (df['cholesterol_total'] > upper_bound)
+
+# Filter to only outliers
+outlier_rows = df[outliers]
+
+# Remove outliers
+df_clean = df[~outliers]
 ```
 
 ---

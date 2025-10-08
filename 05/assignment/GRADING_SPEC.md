@@ -1,6 +1,6 @@
 # Assignment 5 Midterm: Grading Specification
 
-**Total: 100 points across ~85 behavioral tests**
+**Total: 108 points across ~93 behavioral tests**
 **Max per test: 4 points (most are 1-2 pts)**
 **Philosophy: Test behavior, not implementation**
 
@@ -156,7 +156,7 @@ result = calculate_statistics(data)
 
 ---
 
-## Q6: Data Transformation (15 points)
+## Q6: Data Transformation (23 points)
 
 **Deliverable:** `transform.py`
 
@@ -190,6 +190,22 @@ result = calculate_statistics(data)
 **Function: `add_calculated_column(df, new_col: str, col1: str, col2: str) -> pd.DataFrame` (2 pts):**
 1. New column exists - 1 pt
 2. Calculation correct - 1 pt
+
+**Function: `remove_duplicates(df, subset: list = None) -> pd.DataFrame` (2 pts):**
+1. Returns DataFrame - 1 pt
+2. Duplicates removed correctly (respects subset parameter) - 1 pt
+
+**Function: `create_age_bins(df, column: str, bins: list, labels: list) -> pd.DataFrame` (2 pts):**
+1. New binned column created - 1 pt
+2. Bins and labels applied correctly - 1 pt
+
+**Function: `encode_categorical(df, column: str) -> pd.DataFrame` (2 pts):**
+1. Dummy columns created - 1 pt
+2. Original column removed - 1 pt
+
+**Function: `detect_outliers_iqr(df, column: str) -> pd.Series` (2 pts):**
+1. Returns boolean Series - 1 pt
+2. IQR method correctly identifies outliers - 1 pt
 
 ---
 
@@ -276,23 +292,23 @@ with open('setup_project.sh') as f:
 
 ## Grading Summary
 
-**Total: 100 points**
+**Total: 108 points**
 - Q1: 10 pts (shell script, directories, files)
 - Q2: 25 pts (Python fundamentals, functions, control flow)
 - Q3: 10 pts (pandas loading, exploration)
 - Q4: 10 pts (pandas selection, filtering)
 - Q5: 15 pts (missing data handling)
-- Q6: 15 pts (data transformation)
+- Q6: 23 pts (data transformation, duplicates, binning, encoding, outliers)
 - Q7: 10 pts (groupby, aggregation)
 - Q8: 5 pts (pipeline automation)
 
 **Grading Scale:**
-- 90-100: A
-- 80-89: B
-- 70-79: C
-- 60-69: D
-- <60: F
+- 97-108: A (90%+)
+- 86-96: B (80%+)
+- 76-85: C (70%+)
+- 65-75: D (60%+)
+- <65: F
 
-**Robustness:** Students can miss 10 points (10 tests) and still get a B!
+**Robustness:** Students can miss 11 points (~10%) and still get an A!
 
 **All tests are behavioral - we test WHAT the code does, not HOW it's written.**

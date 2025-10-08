@@ -293,7 +293,7 @@ def drop_missing_rows(df: pd.DataFrame, subset: list) -> pd.DataFrame:
 
 ---
 
-## Question 6: Data Transformation (15 points)
+## Question 6: Data Transformation (23 points)
 
 **File:** `transform.py`
 
@@ -338,9 +338,25 @@ def clean_strings(df: pd.DataFrame, column: str) -> pd.DataFrame:
 def add_calculated_column(df: pd.DataFrame, new_col: str, col1: str, col2: str) -> pd.DataFrame:
     """Create new column from calculation (e.g., LDL/HDL ratio)."""
     pass
+
+def remove_duplicates(df: pd.DataFrame, subset: list = None) -> pd.DataFrame:
+    """Remove duplicate rows using .drop_duplicates(subset=...)."""
+    pass
+
+def create_age_bins(df: pd.DataFrame, column: str, bins: list, labels: list) -> pd.DataFrame:
+    """Create categorical bins from continuous data using pd.cut()."""
+    pass
+
+def encode_categorical(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Create dummy variables using pd.get_dummies(), drop original column."""
+    pass
+
+def detect_outliers_iqr(df: pd.DataFrame, column: str) -> pd.Series:
+    """Detect outliers using IQR method, return boolean Series."""
+    pass
 ```
 
-### Grading (15 pts):
+### Grading (23 pts):
 - `convert_to_datetime()` - 2 pts
 - `convert_to_numeric()` - 2 pts
 - `convert_to_category()` - 2 pts
@@ -349,6 +365,10 @@ def add_calculated_column(df: pd.DataFrame, new_col: str, col1: str, col2: str) 
 - `map_values()` - 2 pts
 - `clean_strings()` - 1 pt
 - `add_calculated_column()` - 2 pts
+- `remove_duplicates()` - 2 pts
+- `create_age_bins()` - 2 pts
+- `encode_categorical()` - 2 pts
+- `detect_outliers_iqr()` - 2 pts
 
 ---
 
@@ -460,17 +480,17 @@ fi
 | Q3 | Data Loading | 10 |
 | Q4 | Selection & Filtering | 10 |
 | Q5 | Missing Data | 15 |
-| Q6 | Transformation | 15 |
+| Q6 | Transformation | 23 |
 | Q7 | Aggregation | 10 |
 | Q8 | Pipeline Automation | 5 |
-| **TOTAL** | | **100** |
+| **TOTAL** | | **108** |
 
 **Grading Scale:**
-- 90-100: A
-- 80-89: B
-- 70-79: C
-- 60-69: D
-- <60: F
+- 97-108: A (90%+)
+- 86-96: B (80%+)
+- 76-85: C (70%+)
+- 65-75: D (60%+)
+- <65: F
 
 ---
 
