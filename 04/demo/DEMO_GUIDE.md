@@ -2,6 +2,8 @@ Demo Guide - Lecture 4: Pandas on Jupyter
 
 # Demo 1: Jupyter Notebooks Basics
 
+**File:** [demo1_jupyter_basics.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb)
+
 **Objective**: Get comfortable with Jupyter notebooks in VS Code - creating, running, and managing notebooks.
 
 **Key Concepts**: Notebook interface, cell execution, kernel management, git safety
@@ -131,6 +133,8 @@ Your notebook now has OUTPUT saved in it (that bar chart, the DataFrames, etc.)
 ---
 
 # Demo 2: Pandas DataFrames Exploration
+
+**File:** [demo2_pandas_basics.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb)
 
 **Objective**: Master pandas DataFrame basics - creation, selection, filtering, and exploration.
 
@@ -323,6 +327,8 @@ print(df_sorted_index)
 ---
 
 # Demo 3: Data I/O and Real-World Workflow
+
+**File:** [demo3_data_io.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)
 
 **Objective**: Load real data from files, handle missing values, and perform basic analysis.
 

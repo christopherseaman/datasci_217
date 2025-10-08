@@ -2,7 +2,7 @@ Demo Guide - Lecture 5: Data Cleaning and Preparation
 
 # Demo 1: Missing Data Detective Work
 
-**File:** `demo1_missing_data.md`
+**File:** [demo1_missing_data.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb)
 
 **Objective**: Master missing data detection, analysis, and handling strategies.
 
@@ -34,7 +34,7 @@ Students work through patient data with various missing values:
 
 # Demo 2: Data Transformation and Cleaning Pipeline
 
-**File:** `demo2_transformations.md`
+**File:** [demo2_transformations.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb)
 
 **Objective**: Build a complete data cleaning pipeline with transformations, custom functions, and categorical encoding.
 
@@ -48,13 +48,13 @@ Students work through messy survey data with multiple quality issues:
 2. **Clean column names** - Lowercase, strip whitespace, replace spaces with underscores
 3. **Handle sentinel values** - Replace -999 with NaN, use `errors='coerce'` for invalid data, fill strategically
 4. **Standardize text** - Use `.str.strip()`, `.str.title()`, and mapping dictionaries
-5. **Apply custom functions** - NEW CONTENT:
+5. **Apply custom functions**:
    - `.apply()` with custom function to score satisfaction levels
    - `.map()` with dictionary to rank education levels
    - Lambda functions for quick calculations (income in thousands)
 6. **Create categories** - Use `pd.cut()` for age groups, `pd.qcut()` for income levels
 7. **Create dummy variables** - Use `pd.get_dummies()` for one-hot encoding regions
-8. **Categorical dtype** - NEW CONTENT:
+8. **Categorical dtype**:
    - Show memory usage before/after conversion to categorical
    - Access categories with `.cat.categories`
    - Access codes with `.cat.codes`
@@ -79,7 +79,7 @@ Students work through messy survey data with multiple quality issues:
 
 # Demo 3: Complete Data Cleaning Workflow
 
-**File:** `demo3_workflow.md`
+**File:** [demo3_workflow.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
 **Objective**: Put it all together - a realistic, end-to-end cleaning pipeline.
 
