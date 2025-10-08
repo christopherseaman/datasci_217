@@ -16,6 +16,8 @@ jupyter:
 
 Loading real data, handling missing values, and performing analysis
 
+## Step 1: Create Sample CSV Data
+
 ```python
 import pandas as pd
 import os
@@ -38,7 +40,7 @@ with open('sales_data.csv', 'w') as f:
 print("Created sales_data.csv")
 ```
 
-## Load and Inspect Data
+## Step 2: Load and Inspect Data
 
 ```python
 # Read CSV
@@ -54,25 +56,49 @@ print("\nMissing values per column:")
 print(df_sales.isnull().sum())
 ```
 
-## Handle Missing Data
+## Step 3: Data Quality Assessment
 
 ```python
+# Check for missing values
+print("Missing values per column:")
+print(df_sales.isnull().sum())
+
 # See rows with missing values
-print("Rows with missing values:")
+print("\nRows with missing values:")
 print(df_sales[df_sales.isnull().any(axis=1)])
 
+# Check for duplicates
+print(f"\nNumber of duplicate rows: {df_sales.duplicated().sum()}")
+
+# Check data types
+print("\nData types:")
+print(df_sales.dtypes)
+```
+
+## Step 4: Handle Missing Data & Type Conversion
+
+```python
 # Fill missing quantity with 0
 df_sales['quantity'] = df_sales['quantity'].fillna(0)
 
 # Fill missing price with median price for that product
 df_sales['price'] = df_sales.groupby('product')['price'].transform(lambda x: x.fillna(x.median()))
 
-print("\nAfter handling missing values:")
+print("After handling missing values:")
 print(df_sales)
+
+# Convert quantity to integer (was float due to NaN)
+df_sales['quantity'] = df_sales['quantity'].astype('int64')
+
+# Convert date column to datetime
+df_sales['date'] = pd.to_datetime(df_sales['date'])
+
+print("\nAfter type conversion:")
+print(df_sales.dtypes)
 print(f"\nRemaining missing values: {df_sales.isnull().sum().sum()}")
 ```
 
-## Basic Analysis
+## Step 5: Basic Analysis
 
 ```python
 # Add calculated column
@@ -95,7 +121,7 @@ region_summary = df_sales.groupby('region')['total_sale'].sum().sort_values(asce
 print(region_summary)
 ```
 
-## Value Counts and Quick Insights
+## Step 6: Value Counts and Quick Insights
 
 ```python
 # Most common products
@@ -112,7 +138,7 @@ print(f"Average transaction: ${df_sales['total_sale'].mean():.2f}")
 print(f"Largest sale: ${df_sales['total_sale'].max():.2f}")
 ```
 
-## Save Results
+## Step 7: Save Results
 
 ```python
 # Save cleaned data

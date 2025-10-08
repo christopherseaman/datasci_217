@@ -16,6 +16,8 @@ jupyter:
 
 Mastering pandas basics: creation, selection, filtering, and operations
 
+## Step 1: Create DataFrame from Dictionary
+
 ```python
 import pandas as pd
 import numpy as np
@@ -35,27 +37,55 @@ print(f"\nShape: {df.shape}")
 print(f"\nData types:\n{df.dtypes}")
 ```
 
-## DataFrame Inspection
+## Step 2: Column Selection (THE FIRST THING YOU DO!)
+
+```python
+# Single column (returns Series)
+names = df['name']
+print("Single column (Series):")
+print(type(names))
+print(names)
+
+# Multiple columns (returns DataFrame)
+basic_info = df[['name', 'department']]
+print("\nMultiple columns (DataFrame):")
+print(type(basic_info))
+print(basic_info)
+
+# Select only numeric columns
+numeric_cols = df.select_dtypes(include=['number'])
+print("\nNumeric columns only:")
+print(numeric_cols)
+```
+
+## Step 3: DataFrame Inspection & Summary Statistics
 
 ```python
 # First few rows
 print("First 3 rows:")
 print(df.head(3))
 
-# Summary statistics
+# Summary statistics - THE most important exploration tool
 print("\nSummary statistics:")
 print(df.describe())
 
-# Info about DataFrame
+# DataFrame structure and memory
 print("\nDataFrame info:")
 df.info()
 
-# Unique values in a column
+# Count values
+print(f"\nTotal rows: {len(df)}")
+print(f"\nNon-null counts per column:")
+print(df.count())
+
+# Unique values in categorical columns
 print(f"\nDepartments: {df['department'].unique()}")
 print(f"Number of unique departments: {df['department'].nunique()}")
+print(f"\nValue counts for department:")
+print(df['department'].value_counts())
 ```
 
-## Label vs Position Selection (.loc vs .iloc)
+## Step 4: Label vs Position Selection (.loc vs .iloc)
 
 ```python
 # .loc - label-based selection
@@ -68,7 +98,7 @@ print(df.iloc[0, 1])  # Row 0, column 1 (position)
 print(df.iloc[0:2, [1, 3]])  # Rows 0-1 (exclusive!), columns at positions 1 and 3
 ```
 
-## Boolean Filtering
+## Step 5: Boolean Filtering & .query()
 
 ```python
 # Single condition
@@ -85,9 +115,19 @@ print(experienced_engineers)
 sales_or_marketing = df[df['department'].isin(['Sales', 'Marketing'])]
 print("\nSales or Marketing:")
 print(sales_or_marketing)
+
+# Using .query() for more readable filtering
+high_earner_query = df.query('salary > 70000')
+print("\nUsing .query() - more readable:")
+print(high_earner_query)
+
+# Complex query with multiple conditions
+complex_query = df.query('department == "Engineering" and years_experience > 4')
+print("\nComplex query:")
+print(complex_query)
 ```
 
-## Column Operations
+## Step 6: Column Operations
 
 ```python
 # Create new column
@@ -106,7 +146,7 @@ print("\nAfter dropping employee_id:")
 print(df_subset.columns)
 ```
 
-## Sorting and Ranking
+## Step 7: Sorting and Ranking
 
 ```python
 # Sort by salary
