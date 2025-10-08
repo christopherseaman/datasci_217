@@ -12,173 +12,228 @@ jupyter:
     name: python3
 ---
 
-# Assignment 4: E-commerce Data Analysis
+## Instructions
 
-Welcome to your first Jupyter-based assignment! In this assignment, you'll use pandas to analyze e-commerce order data.
+Complete the three questions below. Each question builds on the previous one.
+
+**Important:**
+- Run cells in order from top to bottom
+- Each question must save a CSV file to the `output/` directory
+- Test your work locally before submitting: `pytest .github/test/test_assignment.py -v`
+- Before final submission: Restart kernel and "Run All" to verify everything works
+
+---
 
 ## Setup
 
-First, import the necessary libraries:
+Run this cell first to import libraries and create the output directory:
 
 ```python
 import pandas as pd
 import numpy as np
+import os
+
+# Create output directory
+os.makedirs('output', exist_ok=True)
+
+print("✓ Setup complete")
 ```
 
-## Part 1: Load and Explore Data (Foundation)
+---
 
-Load the `orders.csv` file and explore its structure.
+## Question 1: Data Loading & Exploration
 
-### Task 1.1: Load the data
+**Objective:** Load the dataset, select specific columns, perform basic inspection, and generate summary statistics.
+
+### Part A: Load and Inspect the Data
+
+Load `data/customer_purchases.csv` and display basic information about the dataset.
 
 ```python
-def load_and_explore():
-    """
-    Load the orders.csv file and return basic information about the dataset.
+# TODO: Load the CSV file into a DataFrame called 'df'
+df = None  # Replace with pd.read_csv(...)
 
-    Returns:
-        dict: A dictionary containing:
-            - 'df': The loaded DataFrame
-            - 'num_rows': Number of rows
-            - 'num_cols': Number of columns
-            - 'columns': List of column names
-    """
-    # TODO: Implement this function
-    # Hint: Use pd.read_csv() to load the data
-    # Hint: Use .shape to get dimensions
-    # Hint: Use .columns to get column names
+# TODO: Display the shape of the DataFrame
+# Hint: Use .shape
 
-    pass
+# TODO: Display the first 5 rows
+# Hint: Use .head()
+
+# TODO: Display column names and data types
+# Hint: Use .info()
 ```
 
-```python
-# Test your function
-result = load_and_explore()
-print(f"Dataset has {result['num_rows']} rows and {result['num_cols']} columns")
-print(f"Columns: {result['columns']}")
-print("\nFirst few rows:")
-print(result['df'].head())
-```
+### Part B: Check for Missing Values
 
-### Task 1.2: Check for missing values
+Identify which columns have missing values and how many.
 
 ```python
-# TODO: Check which columns have missing values
+# TODO: Display the count of missing values for each column
 # Hint: Use .isnull().sum()
 ```
 
-### Task 1.3: Explore data types
+### Part C: Select Numeric Columns
+
+Create a new DataFrame containing only the numeric columns from the original data.
 
 ```python
-# TODO: Display the data types of each column
-# Hint: Use .dtypes or .info()
+# TODO: Select only numeric columns into a new DataFrame called 'df_numeric'
+# Hint: Use .select_dtypes(include=['number'])
+df_numeric = None  # Replace with your code
 ```
 
-## Part 2: Clean and Filter (Builds on Part 1)
+### Part D: Generate Summary Statistics
 
-Clean the data by handling missing values and filtering out invalid records.
-
-### Task 2.1: Implement the cleaning function
+Calculate summary statistics for the numeric columns.
 
 ```python
-def clean_and_filter(df):
-    """
-    Clean the DataFrame by:
-    1. Filling missing 'quantity' values with 1
-    2. Filling missing 'price' values with the median price
-    3. Removing rows where status is 'cancelled'
-    4. Removing rows with missing 'product' values
+# TODO: Generate summary statistics for df_numeric
+# Hint: Use .describe()
 
-    Args:
-        df (pd.DataFrame): Raw order data
-
-    Returns:
-        pd.DataFrame: Cleaned data
-    """
-    # TODO: Implement this function
-    # Hint: Use .fillna() for missing values
-    # Hint: Use df[df['column'] != 'value'] to filter rows
-    # Hint: Use .dropna(subset=['column']) to drop rows with missing values
-
-    pass
+# TODO: Save the summary statistics to 'output/exploration_summary.csv'
+# Hint: Use .to_csv()
+# Example: summary_stats.to_csv('output/exploration_summary.csv')
 ```
+
+**Expected output file:** `output/exploration_summary.csv` containing summary statistics (count, mean, std, min, 25%, 50%, 75%, max) for numeric columns.
+
+---
+
+## Question 2: Data Cleaning & Transformation
+
+**Objective:** Handle missing values, convert data types, filter the data, and save the cleaned dataset.
+
+### Part A: Handle Missing Values
+
+Fill missing values in the `quantity` column with 1, and drop rows where `shipping_method` is missing.
 
 ```python
-# Test your function
-df_raw = load_and_explore()['df']
-df_clean = clean_and_filter(df_raw)
-print(f"Original rows: {len(df_raw)}, Cleaned rows: {len(df_clean)}")
-print("\nCleaned data:")
-print(df_clean.head())
+# TODO: Fill missing 'quantity' values with 1
+# Hint: Use .fillna()
+
+# TODO: Drop rows where 'shipping_method' is missing
+# Hint: Use .dropna(subset=['column_name'])
+
+# TODO: Verify no missing values remain in 'quantity' and 'shipping_method'
+# Hint: Use .isnull().sum()
 ```
 
-### Task 2.2: Verify cleaning
+### Part B: Convert Data Types
+
+Convert the `purchase_date` column from string to datetime, and `quantity` to integer.
 
 ```python
-# TODO: Verify there are no missing values in critical columns
-# TODO: Verify there are no cancelled orders
-# Hint: Use assertions or print statements to check
+# TODO: Convert 'purchase_date' to datetime
+# Hint: Use pd.to_datetime()
+
+# TODO: Convert 'quantity' to integer type
+# Hint: Use .astype('int64')
+
+# TODO: Verify the data types changed
+# Hint: Use .dtypes
 ```
 
-## Part 3: Analysis and Insights (Combines Parts 1 & 2)
+### Part C: Filter the Data
 
-Analyze the cleaned data to extract business insights.
-
-### Task 3.1: Implement the analysis function
+Keep only purchases from California (CA) and New York (NY) with quantity greater than or equal to 2.
 
 ```python
-def analyze_orders(df_clean):
-    """
-    Analyze the cleaned order data.
+# TODO: Filter the DataFrame to keep only:
+#       - customer_state is 'CA' or 'NY'
+#       - quantity >= 2
+# Hint: Use boolean indexing with &
+# Hint: Use .isin(['CA', 'NY']) for multiple values
+df_filtered = None  # Replace with your filtering code
 
-    Args:
-        df_clean (pd.DataFrame): Cleaned order data
-
-    Returns:
-        dict: Analysis results containing:
-            - 'total_revenue': Sum of all order totals (price * quantity)
-            - 'avg_order_value': Average order total
-            - 'top_product': Most frequently ordered product
-            - 'orders_by_region': Series with count of orders per region
-    """
-    # TODO: Implement this function
-    # Hint: Create a 'total' column by multiplying price and quantity
-    # Hint: Use .sum(), .mean() for aggregations
-    # Hint: Use .value_counts() to count by category
-    # Hint: Use .mode() or .value_counts().index[0] for most common
-
-    pass
+# TODO: Display how many rows remain after filtering
 ```
+
+### Part D: Save Cleaned Data
+
+Save the cleaned and filtered DataFrame.
 
 ```python
-# Test your function
-analysis = analyze_orders(df_clean)
-print("=== ORDER ANALYSIS ===")
-print(f"Total Revenue: ${analysis['total_revenue']:,.2f}")
-print(f"Average Order Value: ${analysis['avg_order_value']:.2f}")
-print(f"Top Product: {analysis['top_product']}")
-print(f"\nOrders by Region:")
-print(analysis['orders_by_region'])
+# TODO: Save df_filtered to 'output/cleaned_data.csv' (without the index)
+# Hint: Use .to_csv('filename.csv', index=False)
 ```
 
-### Task 3.2: Additional exploration (optional)
+**Expected output file:** `output/cleaned_data.csv` containing the cleaned and filtered data (no missing values in quantity/shipping_method, only CA/NY states, quantity >= 2, datetime and integer types).
+
+---
+
+## Question 3: Analysis & Aggregation
+
+**Objective:** Create calculated columns, perform groupby aggregations, find top products, and save results.
+
+**Note:** Use the cleaned DataFrame (`df_filtered`) from Question 2 for this question.
+
+### Part A: Create a Calculated Column
+
+Create a new column `total_price` by multiplying `quantity` and `price_per_item`.
 
 ```python
-# TODO: Try additional analysis:
-# - Which region generates the most revenue?
-# - What's the most expensive product?
-# - What's the average quantity per order?
+# TODO: Create 'total_price' column
+# Hint: df['new_col'] = df['col1'] * df['col2']
+
+# TODO: Display the first few rows to verify
 ```
 
-<!-- #region -->
-## Submission
+### Part B: Calculate Total Revenue by Product Category
 
-Make sure all three functions (`load_and_explore`, `clean_and_filter`, `analyze_orders`) are implemented and working correctly. Copy your final implementations to `main.py` for autograding.
+Group the data by `product_category` and calculate the sum of `total_price` for each category.
 
-## Tips
+```python
+# TODO: Group by 'product_category' and sum 'total_price'
+# Hint: Use .groupby('column')['target'].sum()
+revenue_by_category = None  # Replace with your code
 
-- Test each function independently before moving to the next part
-- Use `df.head()` frequently to inspect your data
-- Check the shape and info of DataFrames after each transformation
-- Remember: each part builds on the previous one!
-<!-- #endregion -->
+# TODO: Sort by revenue (descending)
+# Hint: Use .sort_values(ascending=False)
+
+# TODO: Display the results
+```
+
+### Part C: Find Top 5 Products by Quantity Sold
+
+Find the 5 products with the highest total quantity sold.
+
+```python
+# TODO: Group by 'product_name' and sum 'quantity'
+# TODO: Get the top 5 using .nlargest(5) or .sort_values().head(5)
+top_5_products = None  # Replace with your code
+
+# TODO: Display the results
+```
+
+### Part D: Save Analysis Results
+
+Combine the revenue by category and top 5 products into a summary and save it.
+
+```python
+# TODO: Create a DataFrame with your analysis results
+# Hint: You can create a DataFrame with:
+#   pd.DataFrame({
+#       'category_revenue': revenue_by_category,
+#       'top_products': top_5_products  # You may need to reindex or align these
+#   })
+#
+# OR save them separately and combine in a way that makes sense
+# The tests will check that you saved the correct aggregated data
+
+# TODO: Save to 'output/analysis_results.csv'
+# Make sure the CSV has at least these columns or data:
+#   - Product categories with their total revenue
+#   - Top products by quantity
+# Format the output so the auto-grader can find the aggregated values
+
+# Example structure (adjust as needed):
+analysis_summary = pd.DataFrame({
+    'product_category': revenue_by_category.index,
+    'total_revenue': revenue_by_category.values
+})
+
+# TODO: Save analysis_summary or your own structured result
+# analysis_summary.to_csv('output/analysis_results.csv', index=False)
+```
+
+**Expected output file:** `output/analysis_results.csv` containing aggregated analysis results (revenue by category, top products).

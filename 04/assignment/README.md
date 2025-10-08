@@ -1,221 +1,109 @@
 # Assignment 4: Pandas Data Analysis
 
-## Overview
+**Deliverable:** Completed `assignment.ipynb` with output files in `output/`
 
-This assignment tests your ability to work with pandas DataFrames for real-world data analysis. You'll load data, clean it, analyze it, and extract insights - the core workflow of a data scientist.
+## Generate the Dataset (Provided)
 
-**Assignment Type:** Pass/Fail (auto-graded via pytest)
+Run the data generator notebook to create your dataset:
 
-## Learning Objectives
-
-- Load and inspect data from CSV files
-- Select and filter data using pandas methods
-- Handle missing values appropriately
-- Perform groupby aggregations
-- Create calculated columns and summaries
-
-## Dataset
-
-You'll work with a fictional dataset of customer orders from an e-commerce platform.
-
-**File:** `orders.csv` (provided)
-
-**Schema:**
-```
-order_id,customer_id,product,quantity,price,order_date,region,status
-```
-
-## Assignment Tasks
-
-The assignment has **3 parts** that build on each other. Complete them in order.
-
-### Part 1: Data Loading and Exploration (Foundation)
-
-**File to edit:** `main.py`
-
-Implement the `load_and_explore()` function that:
-
-1. Loads `orders.csv` into a DataFrame
-2. Prints the shape of the data
-3. Prints the first 5 rows
-4. Returns the DataFrame
-
-**Expected behavior:**
-```python
-df = load_and_explore()
-# Should print:
-# Shape: (100, 8)
-# First 5 rows: [displays DataFrame.head()]
-# Returns: DataFrame with 100 rows, 8 columns
-```
-
-**Testing:** `pytest test_assignment.py::test_load_and_explore -v`
-
-### Part 2: Data Cleaning and Filtering (Build on Part 1)
-
-**File to edit:** `main.py`
-
-Implement the `clean_and_filter()` function that:
-
-1. Takes a DataFrame as input (from Part 1)
-2. Removes rows where `status` is 'Cancelled'
-3. Fills missing `quantity` values with 1
-4. Keeps only orders from 'North' and 'South' regions
-5. Returns the cleaned DataFrame
-
-**Expected behavior:**
-```python
-df_clean = clean_and_filter(df)
-# Should return DataFrame with:
-# - No 'Cancelled' orders
-# - No missing quantity values
-# - Only 'North' and 'South' regions
-```
-
-**Testing:** `pytest test_assignment.py::test_clean_and_filter -v`
-
-### Part 3: Analysis and Insights (Combine Part 1 & 2)
-
-**File to edit:** `main.py`
-
-Implement the `analyze_orders()` function that:
-
-1. Takes a cleaned DataFrame as input (from Part 2)
-2. Creates a new column `total_price` = `quantity` * `price`
-3. Calculates total revenue by region (sum of `total_price` grouped by `region`)
-4. Finds the top 3 products by total quantity sold
-5. Returns a dictionary with:
-   ```python
-   {
-       'revenue_by_region': Series,  # region as index, total revenue as values
-       'top_3_products': Series       # product names as index, quantities as values
-   }
-   ```
-
-**Expected output format:**
-```python
-results = analyze_orders(df_clean)
-# results['revenue_by_region']:
-#   North    15234.50
-#   South    12456.75
-#   dtype: float64
-
-# results['top_3_products']:
-#   Widget A    45
-#   Widget C    38
-#   Widget B    32
-#   dtype: int64
-```
-
-**Testing:** `pytest test_assignment.py::test_analyze_orders -v`
-
-## Starter Code
-
-```python
-# main.py
-import pandas as pd
-
-def load_and_explore():
-    """
-    Load orders.csv and explore the data.
-
-    Returns:
-        pd.DataFrame: The loaded data
-    """
-    # TODO: Implement this function
-    pass
-
-def clean_and_filter(df):
-    """
-    Clean and filter the orders data.
-
-    Args:
-        df (pd.DataFrame): Raw orders data
-
-    Returns:
-        pd.DataFrame: Cleaned and filtered data
-    """
-    # TODO: Implement this function
-    pass
-
-def analyze_orders(df_clean):
-    """
-    Analyze cleaned orders data.
-
-    Args:
-        df_clean (pd.DataFrame): Cleaned orders data
-
-    Returns:
-        dict: Dictionary with 'revenue_by_region' and 'top_3_products' Series
-    """
-    # TODO: Implement this function
-    pass
-
-if __name__ == "__main__":
-    # Test your functions
-    df = load_and_explore()
-    df_clean = clean_and_filter(df)
-    results = analyze_orders(df_clean)
-
-    print("\n=== Revenue by Region ===")
-    print(results['revenue_by_region'])
-
-    print("\n=== Top 3 Products ===")
-    print(results['top_3_products'])
-```
-
-## Testing Your Code
-
-Run all tests:
 ```bash
-pytest test_assignment.py -v
+jupyter notebook data_generator.ipynb
 ```
 
-Run individual tests:
-```bash
-pytest test_assignment.py::test_load_and_explore -v
-pytest test_assignment.py::test_clean_and_filter -v
-pytest test_assignment.py::test_analyze_orders -v
+Run all cells to create `data/customer_purchases.csv` (records of customer purchase data).
+
+## Complete the Three Questions
+
+Open `assignment.ipynb` and work through the three questions.
+
+### Question 1: Data Loading & Exploration
+
+**What you'll do:**
+
+- Load `data/customer_purchases.csv` into a pandas DataFrame
+- Select only numeric columns using `.select_dtypes()`
+- Check for missing values with `.isnull().sum()`
+- Generate summary statistics using `.describe()`
+- Save summary to `output/exploration_summary.csv`
+
+**Skills:** CSV reading, column selection, data inspection, summary statistics
+
+**Output:** `output/exploration_summary.csv`
+
+### Question 2: Data Cleaning & Transformation
+
+**What you'll do:**
+
+- Fill missing `quantity` values with 1 using `.fillna()`
+- Drop rows with missing `shipping_method` using `.dropna()`
+- Convert `purchase_date` to datetime with `pd.to_datetime()`
+- Convert `quantity` to integer with `.astype()`
+- Filter to CA/NY states with quantity >= 2 using boolean indexing
+- Save cleaned data to `output/cleaned_data.csv`
+
+**Skills:** Missing value handling, type conversion, boolean filtering
+
+**Output:** `output/cleaned_data.csv`
+
+### Question 3: Analysis & Aggregation
+
+**What you'll do:**
+
+- Create `total_price` column (`quantity` × `price_per_item`)
+- Group by `product_category` and sum revenue with `.groupby()`
+- Find top 5 products by quantity using `.nlargest()` or `.sort_values()`
+- Save analysis to `output/analysis_results.csv`
+
+**Skills:** Calculated columns, groupby aggregation, sorting
+
+**Output:** `output/analysis_results.csv`
+
+**Note:** Each question builds on the previous one. Complete in order!
+
+## Assignment Structure
+
+```
+04/assignment/
+├── README.md                      # This file - assignment instructions
+├── assignment.md                  # Notebook source (for jupytext)
+├── assignment.ipynb              # Completed notebook (you work here)
+├── data_generator.ipynb          # Run once to create dataset
+├── data/
+│   └── customer_purchases.csv    # Generated dataset (150 records)
+├── output/                       # Your saved results (created by your code)
+│   ├── exploration_summary.csv   # Q1 output
+│   ├── cleaned_data.csv          # Q2 output
+│   └── analysis_results.csv      # Q3 output
+└── .github/
+    └── test/
+        ├── test_assignment.py    # Auto-grading tests
+        └── requirements.txt      # Test dependencies
 ```
 
-## Grading
+## Dataset Schema
 
-- **Part 1:** 33% - Data loading and exploration
-- **Part 2:** 33% - Data cleaning and filtering
-- **Part 3:** 34% - Analysis and insights
+`data/customer_purchases.csv` contains:
 
-**Pass threshold:** All 3 parts must pass their tests
+| Column | Type | Description |
+|--------|------|-------------|
+| `purchase_id` | string | Unique purchase ID (P0001, P0002, ...) |
+| `customer_id` | string | Customer ID (C001, C002, ...) |
+| `product_category` | string | Electronics, Clothing, Home & Garden, Books, Sports |
+| `product_name` | string | Specific product name |
+| `quantity` | float | Number of items (has missing values) |
+| `price_per_item` | float | Price per item in dollars |
+| `purchase_date` | string | Date in YYYY-MM-DD format |
+| `customer_state` | string | US state code (CA, NY, TX, FL, WA, IL) |
+| `shipping_method` | string | Standard, Express, or Overnight (has missing values) |
 
-## Tips
+**Note:** The dataset has intentional missing values in `quantity` and `shipping_method` columns.
 
-1. **Part 1:**
-   - Use `pd.read_csv()` to load the file
-   - Use `.shape` for dimensions
-   - Use `.head()` to preview data
+## Need Help?
 
-2. **Part 2:**
-   - Chain multiple filtering operations
-   - Remember: `df[df['column'] != 'value']` removes rows
-   - Use `.fillna()` for missing values
-   - `.isin()` is useful for multiple values
+**See [TIPS.md](TIPS.md) for:**
 
-3. **Part 3:**
-   - Create column before grouping: `df['total'] = df['a'] * df['b']`
-   - Use `.groupby()` with `.sum()` for aggregation
-   - Use `.nlargest(3)` or `.sort_values()` + `.head(3)` for top 3
-
-## Common Errors
-
-- **FileNotFoundError:** Make sure `orders.csv` is in the same directory as `main.py`
-- **KeyError:** Check column names are exactly as specified (case-sensitive!)
-- **AssertionError in tests:** Your return values don't match expected format - check data types
-- **AttributeError:** Make sure you're returning DataFrames/Series, not lists or dicts
-
-## Submission
-
-Your repository should contain:
-- `main.py` - Your completed solution
-- `orders.csv` - Provided data file (don't modify)
-- `test_assignment.py` - Test file (don't modify)
-
-Push to GitHub and verify the auto-grading passes (green checkmark).
+- Step-by-step walkthrough of each question
+- Code examples and common patterns
+- Solutions to common error messages
+- Debugging strategies
+- Final submission checklist

@@ -1,106 +1,118 @@
 import pytest
 import pandas as pd
 import numpy as np
-from main import load_and_explore, clean_and_filter, analyze_orders
+import os
+from pathlib import Path
 
-# Test data fixture
+# Test fixtures
 @pytest.fixture
-def sample_df():
-    """Create sample test data"""
-    data = {
-        'order_id': ['O001', 'O002', 'O003', 'O004', 'O005', 'O006'],
-        'customer_id': ['C001', 'C002', 'C003', 'C001', 'C004', 'C002'],
-        'product': ['Widget A', 'Widget B', 'Widget A', 'Widget C', 'Widget B', 'Widget A'],
-        'quantity': [2, np.nan, 3, 1, 4, 2],
-        'price': [29.99, 49.99, 29.99, 19.99, 49.99, 29.99],
-        'order_date': ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06'],
-        # Region "Cancelled" demonstrates that only North/South rows remain once the cleaning filters are applied.
-        'region': ['North', 'South', 'North', 'East', 'South', 'Cancelled'],
-        'status': ['Complete', 'Complete', 'Complete', 'Complete', 'Cancelled', 'Complete']
-    }
-    return pd.DataFrame(data)
+def output_dir():
+    """Expected output directory"""
+    return Path("output")
 
-def test_load_and_explore(tmp_path, capsys):
-    """Test Part 1: Data loading and exploration"""
-    # Create test CSV
-    test_csv = tmp_path / "orders.csv"
-    test_data = """order_id,customer_id,product,quantity,price,order_date,region,status
-O001,C001,Widget A,2,29.99,2024-01-01,North,Complete
-O002,C002,Widget B,3,49.99,2024-01-02,South,Complete"""
-    test_csv.write_text(test_data)
+@pytest.fixture
+def data_dir():
+    """Expected data directory"""
+    return Path("data")
 
-    # Change to temp directory
-    import os
-    original_dir = os.getcwd()
-    os.chdir(tmp_path)
+def test_q1_exploration(output_dir):
+    """Test Question 1: Data exploration and summary statistics"""
+    output_file = output_dir / "exploration_summary.csv"
 
-    try:
-        df = load_and_explore()
+    # Check file exists
+    assert output_file.exists(), f"Output file not found: {output_file}"
 
-        # Check return type
-        assert isinstance(df, pd.DataFrame), "Function must return a DataFrame"
+    # Load the summary statistics
+    summary = pd.read_csv(output_file, index_col=0)
 
-        # Check shape
-        assert df.shape == (2, 8), f"Expected shape (2, 8), got {df.shape}"
+    # Check it's the output of .describe()
+    assert 'count' in summary.index, "Summary should include 'count' row"
+    assert 'mean' in summary.index, "Summary should include 'mean' row"
+    assert 'std' in summary.index, "Summary should include 'std' row"
+    assert 'min' in summary.index, "Summary should include 'min' row"
+    assert 'max' in summary.index, "Summary should include 'max' row"
 
-        # Check columns
-        expected_cols = ['order_id', 'customer_id', 'product', 'quantity', 'price', 'order_date', 'region', 'status']
-        assert list(df.columns) == expected_cols, "Column names don't match"
+    # Should have numeric columns only
+    expected_numeric_cols = ['quantity', 'price_per_item']
+    for col in expected_numeric_cols:
+        assert col in summary.columns, f"Expected numeric column '{col}' in summary"
 
-    finally:
-        os.chdir(original_dir)
+    print("✓ Question 1 passed: Summary statistics generated correctly")
 
-def test_clean_and_filter(sample_df):
-    """Test Part 2: Data cleaning and filtering"""
-    df_clean = clean_and_filter(sample_df.copy())
+def test_q2_cleaning(output_dir, data_dir):
+    """Test Question 2: Data cleaning and filtering"""
+    output_file = output_dir / "cleaned_data.csv"
 
-    # Check return type
-    assert isinstance(df_clean, pd.DataFrame), "Function must return a DataFrame"
+    # Check file exists
+    assert output_file.exists(), f"Output file not found: {output_file}"
 
-    # Check no cancelled orders
-    assert 'Cancelled' not in df_clean['status'].values, "Cancelled orders should be removed"
+    # Load cleaned data
+    df_clean = pd.read_csv(output_file)
 
-    # Check no missing quantity values
-    assert df_clean['quantity'].isnull().sum() == 0, "Missing quantity values should be filled"
+    # Check no missing values in quantity and shipping_method
+    assert df_clean['quantity'].isnull().sum() == 0, "quantity column should have no missing values"
+    assert df_clean['shipping_method'].isnull().sum() == 0, "shipping_method column should have no missing values"
 
-    # Check only North and South regions
-    assert set(df_clean['region'].unique()) <= {'North', 'South'}, "Should only have North and South regions"
+    # Check quantity is integer type (will be int64 after read_csv)
+    assert pd.api.types.is_integer_dtype(df_clean['quantity']), "quantity should be integer type"
 
-    # Check the filled value
-    # Original had NaN at index 1, after filling should be 1
-    original_nan_indices = sample_df[sample_df['quantity'].isnull()].index
-    for idx in original_nan_indices:
-        if idx in df_clean.index:
-            assert df_clean.loc[idx, 'quantity'] == 1, "Missing quantity should be filled with 1"
+    # Check purchase_date can be converted to datetime (string is OK in CSV)
+    # The datetime conversion would have been done before saving, but CSV saves as string
+    pd.to_datetime(df_clean['purchase_date'])  # This should not raise an error
 
-def test_analyze_orders(sample_df):
-    """Test Part 3: Analysis and insights"""
-    # Clean the data first
-    df_clean = sample_df[sample_df['status'] != 'Cancelled'].copy()
-    df_clean['quantity'] = df_clean['quantity'].fillna(1)
-    df_clean = df_clean[df_clean['region'].isin(['North', 'South'])]
+    # Check only CA and NY states
+    assert set(df_clean['customer_state'].unique()) <= {'CA', 'NY'}, "Should only contain CA and NY states"
 
-    # Analyze
-    results = analyze_orders(df_clean)
+    # Check quantity >= 2
+    assert (df_clean['quantity'] >= 2).all(), "All quantity values should be >= 2"
 
-    # total_price should exist after analysis
-    assert 'total_price' in df_clean.columns, "DataFrame should include total_price column after analyze_orders"
+    # Check we have reasonable amount of data left
+    assert len(df_clean) > 0, "Cleaned data should not be empty"
+    assert len(df_clean) < 150, "Cleaned data should be filtered (less than original 150 rows)"
 
-    # Check return type
-    assert isinstance(results, dict), "Function must return a dictionary"
-    assert 'revenue_by_region' in results, "Dictionary must have 'revenue_by_region' key"
-    assert 'top_3_products' in results, "Dictionary must have 'top_3_products' key"
+    print(f"✓ Question 2 passed: Data cleaned correctly ({len(df_clean)} rows)")
 
-    # Check revenue_by_region
-    revenue = results['revenue_by_region']
-    assert isinstance(revenue, pd.Series), "revenue_by_region must be a Series"
-    assert revenue.index.name == 'region' or 'region' in str(revenue.index), "Index should be regions"
+def test_q3_analysis(output_dir):
+    """Test Question 3: Analysis and aggregation"""
+    output_file = output_dir / "analysis_results.csv"
 
-    # Check top_3_products
-    top_products = results['top_3_products']
-    assert isinstance(top_products, pd.Series), "top_3_products must be a Series"
-    assert len(top_products) <= 3, "Should return at most 3 products"
-    assert top_products.index.name == 'product' or 'product' in str(top_products.index), "Index should be products"
+    # Check file exists
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Load analysis results
+    analysis = pd.read_csv(output_file)
+
+    # Check it has product_category and total_revenue columns
+    # (Students might structure this differently, so we're flexible)
+    assert 'product_category' in analysis.columns or 'category' in str(analysis.columns).lower(), \
+        "Analysis should include product category information"
+
+    # Check there's aggregated revenue data
+    revenue_cols = [col for col in analysis.columns if 'revenue' in col.lower() or 'total' in col.lower()]
+    assert len(revenue_cols) > 0, "Analysis should include revenue/total information"
+
+    # Check we have multiple categories (from the data generator, we have 5 categories)
+    assert len(analysis) >= 3, "Analysis should include at least 3 product categories or products"
+
+    # Check numeric values are reasonable (should be positive)
+    numeric_col = revenue_cols[0] if revenue_cols else analysis.select_dtypes(include=['number']).columns[0]
+    assert (analysis[numeric_col] > 0).all(), "Revenue values should be positive"
+
+    print("✓ Question 3 passed: Analysis results generated correctly")
+
+def test_all_outputs_exist(output_dir):
+    """Meta-test: Check all three output files exist"""
+    expected_files = [
+        "exploration_summary.csv",
+        "cleaned_data.csv",
+        "analysis_results.csv"
+    ]
+
+    for filename in expected_files:
+        filepath = output_dir / filename
+        assert filepath.exists(), f"Missing required output file: {filename}"
+
+    print("✓ All output files present")
 
 if __name__ == "__main__":
     pytest.main([__file__, '-v'])
