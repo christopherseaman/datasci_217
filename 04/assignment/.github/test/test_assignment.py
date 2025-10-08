@@ -10,11 +10,6 @@ def output_dir():
     """Expected output directory"""
     return Path("output")
 
-@pytest.fixture
-def data_dir():
-    """Expected data directory"""
-    return Path("data")
-
 def test_q1_exploration(output_dir):
     """Test Question 1: Data exploration and summary statistics"""
     output_file = output_dir / "exploration_summary.csv"
@@ -39,7 +34,7 @@ def test_q1_exploration(output_dir):
 
     print("✓ Question 1 passed: Summary statistics generated correctly")
 
-def test_q2_cleaning(output_dir, data_dir):
+def test_q2_cleaning(output_dir):
     """Test Question 2: Data cleaning and filtering"""
     output_file = output_dir / "cleaned_data.csv"
 
@@ -68,7 +63,7 @@ def test_q2_cleaning(output_dir, data_dir):
 
     # Check we have reasonable amount of data left
     assert len(df_clean) > 0, "Cleaned data should not be empty"
-    assert len(df_clean) < 150, "Cleaned data should be filtered (less than original 150 rows)"
+    assert len(df_clean) < 15000, "Cleaned data should be filtered (less than original 15,000 rows)"
 
     print(f"✓ Question 2 passed: Data cleaned correctly ({len(df_clean)} rows)")
 

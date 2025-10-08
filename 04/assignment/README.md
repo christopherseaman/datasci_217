@@ -69,7 +69,7 @@ Open `assignment.ipynb` and work through the three questions.
 ├── assignment.ipynb              # Completed notebook (you work here)
 ├── data_generator.ipynb          # Run once to create dataset
 ├── data/
-│   └── customer_purchases.csv    # Generated dataset (150 records)
+│   └── customer_purchases.csv    # Generated dataset (15,000 records)
 ├── output/                       # Your saved results (created by your code)
 │   ├── exploration_summary.csv   # Q1 output
 │   ├── cleaned_data.csv          # Q2 output
