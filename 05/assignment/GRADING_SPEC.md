@@ -1,14 +1,18 @@
 # Assignment 5 Midterm: Grading Specification
 
-**Total: 108 points across ~93 behavioral tests**
-**Max per test: 4 points (most are 1-2 pts)**
+**Total: 125 points**
 **Philosophy: Test behavior, not implementation**
+
+## Structure
+- **Scripts (Q1-Q2, Q8):** Test functions via imports and file outputs
+- **Q3 Utility Library:** Test functions via imports
+- **Notebooks (Q4-Q7):** Test via execution and output validation
 
 ---
 
 ## Q1: Project Setup Script (10 points)
 
-**Deliverable:** `setup_project.sh` (executable shell script)
+**Deliverable:** `q1_setup_project.sh` (executable shell script)
 
 **Tests:**
 1. Script is executable (`chmod +x`) - 2 pts
@@ -22,7 +26,7 @@
 
 ## Q2: Python Data Processing (25 points)
 
-**Deliverable:** `process_metadata.py` (executable script)
+**Deliverable:** `q2_process_metadata.py` (executable script)
 
 **Structural (5 pts):**
 1. Script is executable - 1 pt
@@ -40,13 +44,13 @@ result = parse_config('config.txt')
 
 **Function: `validate_config(config: dict) -> dict` (4 pts):**
 ```python
-config = {'threshold': '100', 'status': 'active'}
+config = {'min_age': '18', 'max_age': '85', 'target_enrollment': '10000', 'sites': '5'}
 result = validate_config(config)
 ```
 1. Returns dict - 1 pt
-2. Validation logic correct for 'threshold' - 1 pt
-3. Validation logic correct for 'status' - 1 pt
-4. All validations work - 1 pt
+2. Validates min_age >= 18 - 1 pt
+3. Validates max_age <= 100 - 1 pt
+4. Validates target_enrollment > 0 and sites >= 1 - 1 pt
 
 **Function: `process_files(file_list: list) -> list` (4 pts):**
 ```python
@@ -75,167 +79,118 @@ result = calculate_statistics(data)
 
 ---
 
-## Q3: Data Loading & Exploration (10 points)
+## Q3: Data Utilities Library (20 points)
 
-**Deliverable:** `exploration.py`
+**Deliverable:** `q3_data_utils.py` - Core reusable pandas functions
 
 **Function: `load_data(filepath: str) -> pd.DataFrame` (2 pts):**
 1. Returns DataFrame - 1 pt
 2. Correct shape - 1 pt
 
-**Function: `get_summary_stats(df: pd.DataFrame) -> pd.DataFrame` (4 pts):**
-1. Returns DataFrame from .describe() - 1 pt
-2. Has 8 rows (count, mean, std, min, 25%, 50%, 75%, max) - 2 pts
-3. Values are correct - 1 pt
-
-**Function: `get_value_counts(df: pd.DataFrame, column: str) -> pd.Series` (2 pts):**
-1. Returns Series - 1 pt
-2. Counts are correct - 1 pt
-
-**Outputs (2 pts):**
-1. `output/summary_stats.csv` exists - 1 pt
-2. `output/value_counts.csv` exists - 1 pt
-
----
-
-## Q4: Data Selection & Filtering (10 points)
-
-**Deliverable:** `selection.py`
-
-**Function: `select_numeric_columns(df) -> pd.DataFrame` (2 pts):**
-1. Returns only numeric columns - 1 pt
-2. All numeric columns present - 1 pt
-
-**Function: `select_by_loc(df, rows: list, cols: list) -> pd.DataFrame` (2 pts):**
-1. Correct shape - 1 pt
-2. Correct rows and columns - 1 pt
-
-**Function: `select_by_iloc(df, row_start: int, row_end: int, col_indices: list) -> pd.DataFrame` (1 pt):**
-1. Correct subset - 1 pt
-
-**Function: `filter_single_condition(df, column: str, threshold: float) -> pd.DataFrame` (2 pts):**
-1. Filters correctly - 1 pt
-2. Correct row count - 1 pt
-
-**Function: `filter_multiple_conditions(df, col1: str, val1, col2: str, val2) -> pd.DataFrame` (2 pts):**
-1. Both conditions applied - 1 pt
-2. Correct result - 1 pt
-
-**Function: `filter_by_category(df, column: str, categories: list) -> pd.DataFrame` (1 pt):**
-1. Filters to categories - 1 pt
-
----
-
-## Q5: Missing Data Handling (15 points)
-
-**Deliverable:** `missing_data.py`
+**Function: `clean_data(df, remove_duplicates, sentinel_value) -> pd.DataFrame` (3 pts):**
+1. Returns DataFrame - 1 pt
+2. Removes duplicates if requested - 1 pt
+3. Replaces sentinel values with NaN - 1 pt
 
 **Function: `detect_missing(df) -> pd.Series` (2 pts):**
 1. Returns Series - 1 pt
 2. Counts correct - 1 pt
 
-**Function: `fill_with_mean(df, column: str) -> pd.DataFrame` (3 pts):**
-1. Returns DataFrame - 1 pt
-2. No missing values in column - 1 pt
-3. Filled with correct mean - 1 pt
+**Function: `fill_missing(df, column, strategy) -> pd.DataFrame` (3 pts):**
+1. Handles 'mean' strategy - 1 pt
+2. Handles 'median' strategy - 1 pt
+3. Handles 'ffill' strategy - 1 pt
 
-**Function: `fill_with_median(df, column: str) -> pd.DataFrame` (3 pts):**
-1. Returns DataFrame - 1 pt
-2. No missing values - 1 pt
-3. Filled with correct median - 1 pt
+**Function: `filter_data(df, column, **conditions) -> pd.DataFrame` (3 pts):**
+1. Exact value filtering works - 1 pt
+2. Range filtering works - 1 pt
+3. List filtering (.isin) works - 1 pt
 
-**Function: `forward_fill(df, column: str) -> pd.DataFrame` (3 pts):**
-1. Returns DataFrame - 1 pt
-2. No gaps in data - 1 pt
-3. Values propagated correctly - 1 pt
+**Function: `transform_types(df, type_map) -> pd.DataFrame` (3 pts):**
+1. Converts to datetime - 1 pt
+2. Converts to numeric - 1 pt
+3. Converts to category - 1 pt
 
-**Function: `drop_missing_rows(df, subset: list) -> pd.DataFrame` (4 pts):**
-1. Returns DataFrame - 1 pt
-2. Rows with missing in subset dropped - 2 pts
-3. Correct row count - 1 pt
+**Function: `create_bins(df, column, bins, labels) -> pd.DataFrame` (2 pts):**
+1. Creates binned column - 1 pt
+2. Bins applied correctly - 1 pt
 
----
-
-## Q6: Data Transformation (23 points)
-
-**Deliverable:** `transform.py`
-
-**Function: `convert_to_datetime(df, column: str) -> pd.DataFrame` (2 pts):**
-1. Column dtype is datetime64 - 1 pt
-2. Values are valid - 1 pt
-
-**Function: `convert_to_numeric(df, column: str) -> pd.DataFrame` (2 pts):**
-1. Column dtype is numeric - 1 pt
-2. Invalid values became NaN - 1 pt
-
-**Function: `convert_to_category(df, column: str) -> pd.DataFrame` (2 pts):**
-1. Column dtype is category - 1 pt
-2. Categories correct - 1 pt
-
-**Function: `replace_sentinels(df, column: str, sentinel) -> pd.DataFrame` (2 pts):**
-1. Sentinel values gone - 1 pt
-2. NaN in their place - 1 pt
-
-**Function: `apply_custom_function(df, column: str, func) -> pd.DataFrame` (2 pts):**
-1. Function applied - 1 pt
-2. Results correct - 1 pt
-
-**Function: `map_values(df, column: str, mapping: dict) -> pd.DataFrame` (2 pts):**
-1. Values mapped - 1 pt
-2. Mapping correct - 1 pt
-
-**Function: `clean_strings(df, column: str) -> pd.DataFrame` (1 pt):**
-1. Strings lowercase and stripped - 1 pt
-
-**Function: `add_calculated_column(df, new_col: str, col1: str, col2: str) -> pd.DataFrame` (2 pts):**
-1. New column exists - 1 pt
-2. Calculation correct - 1 pt
-
-**Function: `remove_duplicates(df, subset: list = None) -> pd.DataFrame` (2 pts):**
-1. Returns DataFrame - 1 pt
-2. Duplicates removed correctly (respects subset parameter) - 1 pt
-
-**Function: `create_age_bins(df, column: str, bins: list, labels: list) -> pd.DataFrame` (2 pts):**
-1. New binned column created - 1 pt
-2. Bins and labels applied correctly - 1 pt
-
-**Function: `encode_categorical(df, column: str) -> pd.DataFrame` (2 pts):**
-1. Dummy columns created - 1 pt
-2. Original column removed - 1 pt
-
-**Function: `detect_outliers_iqr(df, column: str) -> pd.Series` (2 pts):**
-1. Returns boolean Series - 1 pt
-2. IQR method correctly identifies outliers - 1 pt
+**Function: `summarize_by_group(df, group_col, agg_dict) -> pd.DataFrame` (2 pts):**
+1. Groups correctly - 1 pt
+2. Aggregations correct - 1 pt
 
 ---
 
-## Q7: Groupby & Aggregation (10 points)
+## Q4: Data Exploration Notebook (15 points)
 
-**Deliverable:** `aggregation.py`
+**Deliverable:** `q4_exploration.ipynb`
 
-**Function: `group_and_sum(df, group_col: str, sum_col: str) -> pd.DataFrame` (3 pts):**
-1. Returns DataFrame/Series - 1 pt
-2. Groups correct - 1 pt
-3. Sums correct - 1 pt
+**Required Output:**
+- `output/q4_site_counts.csv` - Value counts for 'site' column (5 rows, 2 columns)
 
-**Function: `group_and_aggregate_multiple(df, group_col: str, agg_dict: dict) -> pd.DataFrame` (3 pts):**
-1. Returns DataFrame - 1 pt
-2. Multiple aggregations present - 1 pt
-3. Values correct - 1 pt
+**Grading (points awarded for notebook execution + output validation):**
+1. Notebook executes without errors - 5 pts
+2. `output/q4_site_counts.csv` exists - 3 pts
+3. CSV has correct structure (5 rows for 5 sites) - 3 pts
+4. CSV contains expected columns (site, count) - 2 pts
+5. Counts sum to 10000 - 2 pts
 
-**Function: `get_top_n(df, column: str, n: int) -> pd.DataFrame` (2 pts):**
-1. Correct number of rows - 1 pt
-2. Top values correct - 1 pt
+---
 
-**Function: `group_and_sort(df, group_col: str, agg_col: str) -> pd.DataFrame` (2 pts):**
-1. Sorted correctly - 1 pt
-2. Aggregation correct - 1 pt
+## Q5: Missing Data Analysis Notebook (15 points)
+
+**Deliverable:** `q5_missing_data.ipynb`
+
+**Required Outputs:**
+- `output/q5_cleaned_data.csv` - Cleaned dataset with missing data handled
+- `output/q5_missing_report.txt` - Text report on missing data
+
+**Grading:**
+1. Notebook executes without errors - 5 pts
+2. `output/q5_cleaned_data.csv` exists - 3 pts
+3. Cleaned data has fewer/no missing values than original - 3 pts
+4. `output/q5_missing_report.txt` exists - 2 pts
+5. Report contains missing value counts - 2 pts
+
+---
+
+## Q6: Data Transformation Notebook (20 points)
+
+**Deliverable:** `q6_transformation.ipynb`
+
+**Required Output:**
+- `output/q6_transformed_data.csv` - Transformed dataset with new features
+
+**Grading:**
+1. Notebook executes without errors - 5 pts
+2. `output/q6_transformed_data.csv` exists - 3 pts
+3. Output has more columns than input (new features added) - 4 pts
+4. Contains binned/categorical columns (e.g., age_group, bmi_category) - 4 pts
+5. Contains calculated columns (e.g., cholesterol_ratio) - 4 pts
+
+---
+
+## Q7: Aggregation & Analysis Notebook (15 points)
+
+**Deliverable:** `q7_aggregation.ipynb`
+
+**Required Outputs:**
+- `output/q7_site_summary.csv` - Summary statistics by site
+- `output/q7_intervention_comparison.csv` - Comparison across intervention groups
+- `output/q7_analysis_report.txt` - Analysis findings
+
+**Grading:**
+1. Notebook executes without errors - 5 pts
+2. `output/q7_site_summary.csv` exists with 5 rows (one per site) - 3 pts
+3. `output/q7_intervention_comparison.csv` exists - 3 pts
+4. `output/q7_analysis_report.txt` exists with text content - 2 pts
+5. Summary files contain aggregated/grouped data (not raw data) - 2 pts
 
 ---
 
 ## Q8: Pipeline Automation (5 points)
 
-**Deliverable:** `run_pipeline.sh` (executable)
+**Deliverable:** `q8_run_pipeline.sh` (executable)
 
 **Tests:**
 1. Script is executable - 1 pt
@@ -248,67 +203,136 @@ result = calculate_statistics(data)
 
 ## Testing Implementation
 
-### Import and Test Functions
+### Test Q2 Functions
 ```python
-from process_metadata import parse_config, validate_config
-from exploration import load_data, get_summary_stats
-from selection import select_numeric_columns, filter_by_category
-from missing_data import fill_with_mean, drop_missing_rows
-from transform import convert_to_datetime, apply_custom_function
-from aggregation import group_and_sum, get_top_n
+from q2_process_metadata import parse_config, validate_config, process_files, calculate_statistics
 
-# Test with known inputs
-config = parse_config('test_config.txt')
-assert config['project_name'] == 'DataAnalysis'
+# Test parse_config
+config = parse_config('config.txt')
+assert isinstance(config, dict)
+assert 'study_name' in config
+assert config['min_age'] == '18'
 
-df = load_data('test_data.csv')
-assert df.shape == (100, 10)
+# Test validate_config
+test_config = {'min_age': '18', 'max_age': '85', 'target_enrollment': '10000', 'sites': '5'}
+validation = validate_config(test_config)
+assert isinstance(validation, dict)
+assert validation['min_age'] == True  # 18 >= 18
+
+# Test process_files
+files = ['data1.csv', 'script.py', 'data2.csv']
+csv_files = process_files(files)
+assert len(csv_files) == 2
+assert 'script.py' not in csv_files
+
+# Test calculate_statistics
+stats = calculate_statistics([10, 20, 30, 40, 50])
+assert stats['mean'] == 30.0
+assert stats['median'] == 30.0
 ```
 
-### Check File Outputs
+### Test Q3 Functions
+```python
+from q3_data_utils import load_data, detect_missing, fill_missing, filter_data
+
+# Test load_data
+df = load_data('data/clinical_trial_raw.csv')
+assert isinstance(df, pd.DataFrame)
+assert df.shape == (10000, 18)
+
+# Test detect_missing
+missing = detect_missing(df)
+assert isinstance(missing, pd.Series)
+assert len(missing) == 18  # One count per column
+
+# Test fill_missing with test data
+test_df = pd.DataFrame({'col': [1, np.nan, 3]})
+filled = fill_missing(test_df, 'col', 'mean')
+assert filled['col'].isnull().sum() == 0
+
+# Test filter_data
+filtered = filter_data(df, 'age', min_value=65, max_value=100)
+assert all(filtered['age'] >= 65)
+assert all(filtered['age'] <= 100)
+```
+
+### Test Notebook Outputs
 ```python
 import os
 import pandas as pd
 
-# Files exist
-assert os.path.exists('output/summary_stats.csv')
+# Q4 outputs
+assert os.path.exists('output/q4_site_counts.csv')
+df = pd.read_csv('output/q4_site_counts.csv')
+assert len(df) == 5  # 5 sites
+assert df.iloc[:, 1].sum() == 10000  # Counts sum to total
 
-# Files have correct content
-df = pd.read_csv('output/summary_stats.csv')
-assert df.shape[0] == 8  # describe() has 8 rows
+# Q5 outputs
+assert os.path.exists('output/q5_cleaned_data.csv')
+assert os.path.exists('output/q5_missing_report.txt')
+
+# Q6 outputs
+assert os.path.exists('output/q6_transformed_data.csv')
+original = pd.read_csv('data/clinical_trial_raw.csv')
+transformed = pd.read_csv('output/q6_transformed_data.csv')
+assert len(transformed.columns) > len(original.columns)
+
+# Q7 outputs
+assert os.path.exists('output/q7_site_summary.csv')
+summary = pd.read_csv('output/q7_site_summary.csv')
+assert len(summary) == 5  # One row per site
 ```
 
-### Check Executables
+### Test Shell Scripts
 ```python
-# Script is executable
-assert os.access('setup_project.sh', os.X_OK)
+import os
 
-# Has shebang
-with open('setup_project.sh') as f:
+# Q1 executable check
+assert os.access('q1_setup_project.sh', os.X_OK)
+with open('q1_setup_project.sh') as f:
     assert f.readline().startswith('#!/bin/bash')
+
+# Q1 outputs
+assert os.path.exists('data/')
+assert os.path.exists('output/')
+assert os.path.exists('reports/')
+assert os.path.exists('reports/directory_structure.txt')
+
+# Q8 outputs
+assert os.path.exists('reports/pipeline_log.txt')
+assert os.path.exists('output/final_clean_data.csv')
 ```
 
 ---
 
 ## Grading Summary
 
-**Total: 108 points**
+**Total: 125 points**
 - Q1: 10 pts (shell script, directories, files)
-- Q2: 25 pts (Python fundamentals, functions, control flow)
-- Q3: 10 pts (pandas loading, exploration)
-- Q4: 10 pts (pandas selection, filtering)
-- Q5: 15 pts (missing data handling)
-- Q6: 23 pts (data transformation, duplicates, binning, encoding, outliers)
-- Q7: 10 pts (groupby, aggregation)
+- Q2: 25 pts (Python fundamentals, 4 functions)
+- Q3: 20 pts (pandas utility library, 8 functions)
+- Q4: 15 pts (exploration notebook + outputs)
+- Q5: 15 pts (missing data notebook + outputs)
+- Q6: 20 pts (transformation notebook + outputs)
+- Q7: 15 pts (aggregation notebook + outputs)
 - Q8: 5 pts (pipeline automation)
 
 **Grading Scale:**
-- 97-108: A (90%+)
-- 86-96: B (80%+)
-- 76-85: C (70%+)
-- 65-75: D (60%+)
-- <65: F
+- 113-125: A (90%+)
+- 100-112: B (80%+)
+- 88-99: C (70%+)
+- 75-87: D (60%+)
+- <75: F
 
-**Robustness:** Students can miss 11 points (~10%) and still get an A!
+**Testing Approach:**
+- **Scripts (Q1-Q2, Q8):** Import functions and test directly with known inputs
+- **Q3 Utility Library:** Import and test functions with sample data
+- **Notebooks (Q4-Q7):** Execute notebooks + validate output artifacts
 
-**All tests are behavioral - we test WHAT the code does, not HOW it's written.**
+**Artifact-Based Grading:**
+All notebook questions graded primarily on:
+1. Notebook executes without errors (proves code works)
+2. Required output files exist (fixed filenames)
+3. Output files have expected structure/content (objective validation)
+
+This approach is non-fragile - we test deliverables, not implementation details.

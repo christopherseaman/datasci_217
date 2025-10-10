@@ -1,6 +1,6 @@
 # Assignment 5: Midterm Exam - Clinical Trial Data Analysis
 
-**Total: 100 points**
+**Total: 125 points**
 
 ## Scenario
 
@@ -12,6 +12,40 @@ You're analyzing data from a multi-site cardiovascular health clinical trial. Th
 
 **Configuration:** `config.txt` (trial parameters)
 
+---
+
+## File Organization
+
+**You will work with these files:**
+
+**Scripts (complete the code):**
+1. `q1_setup_project.sh` - Shell script to create directories (Q1)
+2. `q2_process_metadata.py` - Python fundamentals and config processing (Q2)
+3. `q3_data_utils.py` - **Core data utilities library** - 8 reusable functions (Q3)
+8. `q8_run_pipeline.sh` - Pipeline automation script (Q8)
+
+**Notebooks (complete the analysis):**
+4. `q4_exploration.ipynb` - Data exploration using Q3 utilities (Q4)
+5. `q5_missing_data.ipynb` - Missing data analysis (Q5)
+6. `q6_transformation.ipynb` - Data transformation and feature engineering (Q6)
+7. `q7_aggregation.ipynb` - Grouped analysis and reporting (Q7)
+
+**Key Design:**
+- **Q3 is your utility library** - Write 8 reusable pandas functions here
+- **Q4-Q7 import from Q3** - Use your utilities in notebooks for real analysis
+- This mirrors professional data science workflows: utilities → analysis
+
+**Output structure:**
+```
+output/           # Data artifacts (CSV, TXT files with results)
+reports/          # Logs and metadata (pipeline execution info)
+data/             # Input data (provided)
+```
+
+See the Submission Checklist at the end for specific output files required.
+
+---
+
 **Variables:**
 - **Demographics:** patient_id, age, sex, bmi, enrollment_date
 - **Clinical measurements:** systolic_bp, diastolic_bp, cholesterol_total, cholesterol_hdl, cholesterol_ldl, glucose_fasting
@@ -22,7 +56,7 @@ You're analyzing data from a multi-site cardiovascular health clinical trial. Th
 
 ## Question 1: Project Setup Script (10 points)
 
-**File:** `setup_project.sh`
+**File:** `q1_setup_project.sh`
 
 Create an executable shell script that sets up the project structure.
 
@@ -59,7 +93,7 @@ cat reports/directory_structure.txt
 
 ## Question 2: Python Data Processing (25 points)
 
-**File:** `process_metadata.py`
+**File:** `q2_process_metadata.py`
 
 Create an executable Python script that processes the trial configuration file (`config.txt`).
 
@@ -163,260 +197,260 @@ if __name__ == '__main__':
 
 ---
 
-## Question 3: Data Loading & Exploration (10 points)
+## Question 3: Data Utilities Library (20 points)
 
-**File:** `exploration.py`
+**File:** `q3_data_utils.py`
 
-Create a module to load and explore the clinical trial data.
+Create a reusable library of pandas functions. These will be imported and used in Q4-Q7 notebooks.
 
 ### Required Functions:
 
 ```python
-"""Data loading and exploration functions."""
+"""Core data utilities for clinical trial analysis."""
 
 import pandas as pd
+import numpy as np
 
 def load_data(filepath: str) -> pd.DataFrame:
     """Load CSV file into DataFrame."""
     pass
 
-def get_summary_stats(df: pd.DataFrame) -> pd.DataFrame:
-    """Return df.describe() for numeric columns."""
+def clean_data(df: pd.DataFrame, remove_duplicates: bool = True, sentinel_value=-999) -> pd.DataFrame:
+    """
+    Clean data by removing duplicates and replacing sentinel values.
+
+    Args:
+        df: DataFrame to clean
+        remove_duplicates: Whether to remove duplicate rows
+        sentinel_value: Value to replace with NaN (default: -999)
+
+    Returns:
+        Cleaned DataFrame
+    """
     pass
-
-def get_value_counts(df: pd.DataFrame, column: str) -> pd.Series:
-    """Return value_counts for specified column."""
-    pass
-```
-
-### Save these outputs:
-- `output/summary_stats.csv` (from .describe())
-- `output/value_counts_site.csv` (value_counts for 'site' column)
-
-### Grading (10 pts):
-- `load_data()` returns DataFrame - 2 pts
-- `get_summary_stats()` correct - 4 pts
-- `get_value_counts()` correct - 2 pts
-- Output files exist - 2 pts
-
----
-
-## Question 4: Data Selection & Filtering (10 points)
-
-**File:** `selection.py`
-
-Create functions demonstrating different pandas selection methods.
-
-### Required Functions:
-
-```python
-"""Data selection and filtering functions."""
-
-import pandas as pd
-
-def select_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Return only numeric columns using .select_dtypes()."""
-    pass
-
-def select_by_loc(df: pd.DataFrame, rows: list, cols: list) -> pd.DataFrame:
-    """Use .loc[] to select specific rows and columns."""
-    pass
-
-def select_by_iloc(df: pd.DataFrame, row_start: int, row_end: int, col_indices: list) -> pd.DataFrame:
-    """Use .iloc[] for position-based selection."""
-    pass
-
-def filter_single_condition(df: pd.DataFrame, column: str, threshold: float) -> pd.DataFrame:
-    """Filter using single boolean condition (e.g., age > threshold)."""
-    pass
-
-def filter_multiple_conditions(df: pd.DataFrame, col1: str, val1, col2: str, val2) -> pd.DataFrame:
-    """Filter using multiple conditions with & operator."""
-    pass
-
-def filter_by_category(df: pd.DataFrame, column: str, categories: list) -> pd.DataFrame:
-    """Filter using .isin() for categorical values."""
-    pass
-```
-
-### Grading (10 pts):
-- `select_numeric_columns()` - 2 pts
-- `select_by_loc()` - 2 pts
-- `select_by_iloc()` - 1 pt
-- `filter_single_condition()` - 2 pts
-- `filter_multiple_conditions()` - 2 pts
-- `filter_by_category()` - 1 pt
-
----
-
-## Question 5: Missing Data Handling (15 points)
-
-**File:** `missing_data.py`
-
-Implement multiple strategies for handling missing data.
-
-### Required Functions:
-
-```python
-"""Missing data detection and handling."""
-
-import pandas as pd
-import numpy as np
 
 def detect_missing(df: pd.DataFrame) -> pd.Series:
-    """Return .isnull().sum() for all columns."""
+    """Return count of missing values per column."""
     pass
 
-def fill_with_mean(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Fill missing values in column with mean using .fillna()."""
+def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.DataFrame:
+    """
+    Fill missing values using specified strategy.
+
+    Args:
+        df: DataFrame
+        column: Column name to fill
+        strategy: 'mean', 'median', or 'ffill'
+
+    Returns:
+        DataFrame with filled values
+    """
     pass
 
-def fill_with_median(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Fill missing values in column with median."""
+def filter_data(df: pd.DataFrame, column: str, **conditions) -> pd.DataFrame:
+    """
+    Filter DataFrame by various conditions.
+
+    Args:
+        df: DataFrame to filter
+        column: Column to filter on
+        **conditions: Can include 'value', 'min_value', 'max_value', or 'values' (list for .isin())
+
+    Returns:
+        Filtered DataFrame
+    """
     pass
 
-def forward_fill(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Forward fill missing values using .fillna(method='ffill')."""
+def transform_types(df: pd.DataFrame, type_map: dict) -> pd.DataFrame:
+    """
+    Convert column types based on mapping.
+
+    Args:
+        df: DataFrame
+        type_map: Dict mapping column names to types ('datetime', 'numeric', 'category')
+
+    Returns:
+        DataFrame with converted types
+    """
     pass
 
-def drop_missing_rows(df: pd.DataFrame, subset: list) -> pd.DataFrame:
-    """Drop rows with missing values in specified subset of columns."""
+def create_bins(df: pd.DataFrame, column: str, bins: list, labels: list) -> pd.DataFrame:
+    """Create categorical bins from continuous column using pd.cut()."""
+    pass
+
+def summarize_by_group(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.DataFrame:
+    """
+    Group and aggregate using multiple functions.
+
+    Args:
+        df: DataFrame
+        group_col: Column to group by
+        agg_dict: Dict of {column: function} or {column: [function1, function2]}
+
+    Returns:
+        Grouped and aggregated DataFrame
+    """
     pass
 ```
+
+### Grading (20 pts):
+- `load_data()` - 2 pts
+- `clean_data()` - 3 pts
+- `detect_missing()` - 2 pts
+- `fill_missing()` - 3 pts
+- `filter_data()` - 3 pts
+- `transform_types()` - 3 pts
+- `create_bins()` - 2 pts
+- `summarize_by_group()` - 2 pts
+
+---
+
+## Question 4: Data Exploration (15 points)
+
+**File:** `q4_exploration.ipynb`
+
+Complete the notebook to explore the clinical trial data using your Q3 utilities.
+
+### Tasks:
+
+1. **Load and inspect data** (3 pts)
+   - Import your `q3_data_utils` module
+   - Load `data/clinical_trial_raw.csv`
+   - Display basic info (shape, dtypes, first few rows)
+
+2. **Generate site distribution** (5 pts)
+   - Calculate value counts for the 'site' column
+   - Save to `output/q4_site_counts.csv`
+
+3. **Explore numeric variables** (4 pts)
+   - Display summary statistics for numeric columns
+   - Identify columns with outliers
+
+4. **Categorical analysis** (3 pts)
+   - Show distribution of intervention groups
+   - Display sex distribution
+
+### Required Output:
+- `output/q4_site_counts.csv`
 
 ### Grading (15 pts):
-- `detect_missing()` - 2 pts
-- `fill_with_mean()` - 3 pts
-- `fill_with_median()` - 3 pts
-- `forward_fill()` - 3 pts
-- `drop_missing_rows()` - 4 pts
+- Notebook executes without errors - 5 pts
+- Site counts CSV exists and is correct - 5 pts
+- Analysis cells present and meaningful - 5 pts
 
 ---
 
-## Question 6: Data Transformation (23 points)
+## Question 5: Missing Data Analysis (15 points)
 
-**File:** `transform.py`
+**File:** `q5_missing_data.ipynb`
 
-Implement data cleaning and transformation functions.
+Complete the notebook to analyze and handle missing data.
 
-### Required Functions:
+### Tasks:
 
-```python
-"""Data transformation functions."""
+1. **Detect missing data** (3 pts)
+   - Use your utility function to find missing values
+   - Display counts and percentages
 
-import pandas as pd
-import numpy as np
+2. **Apply filling strategies** (6 pts)
+   - Fill numeric columns with appropriate methods (mean/median)
+   - Use forward fill for time-series columns
+   - Document your choices
 
-def convert_to_datetime(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Convert column to datetime using pd.to_datetime()."""
-    pass
+3. **Handle critical missing values** (3 pts)
+   - Drop rows with missing values in critical columns (patient_id, outcome variables)
 
-def convert_to_numeric(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Convert to numeric using pd.to_numeric(errors='coerce')."""
-    pass
+4. **Save cleaned data** (3 pts)
+   - Save to `output/q5_cleaned_data.csv`
+   - Generate missing data report to `output/q5_missing_report.txt`
 
-def convert_to_category(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Convert column to category type using .astype('category')."""
-    pass
+### Required Outputs:
+- `output/q5_cleaned_data.csv`
+- `output/q5_missing_report.txt`
 
-def replace_sentinels(df: pd.DataFrame, column: str, sentinel_value) -> pd.DataFrame:
-    """Replace sentinel values (e.g., -999) with NaN using .replace()."""
-    pass
-
-def apply_custom_function(df: pd.DataFrame, column: str, func) -> pd.DataFrame:
-    """Apply custom function to column using .apply()."""
-    pass
-
-def map_values(df: pd.DataFrame, column: str, mapping: dict) -> pd.DataFrame:
-    """Map values using dictionary with .map()."""
-    pass
-
-def clean_strings(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Clean strings using .str.lower() and .str.strip()."""
-    pass
-
-def add_calculated_column(df: pd.DataFrame, new_col: str, col1: str, col2: str) -> pd.DataFrame:
-    """Create new column from calculation (e.g., LDL/HDL ratio)."""
-    pass
-
-def remove_duplicates(df: pd.DataFrame, subset: list = None) -> pd.DataFrame:
-    """Remove duplicate rows using .drop_duplicates(subset=...)."""
-    pass
-
-def create_age_bins(df: pd.DataFrame, column: str, bins: list, labels: list) -> pd.DataFrame:
-    """Create categorical bins from continuous data using pd.cut()."""
-    pass
-
-def encode_categorical(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Create dummy variables using pd.get_dummies(), drop original column."""
-    pass
-
-def detect_outliers_iqr(df: pd.DataFrame, column: str) -> pd.Series:
-    """Detect outliers using IQR method, return boolean Series."""
-    pass
-```
-
-### Grading (23 pts):
-- `convert_to_datetime()` - 2 pts
-- `convert_to_numeric()` - 2 pts
-- `convert_to_category()` - 2 pts
-- `replace_sentinels()` - 2 pts
-- `apply_custom_function()` - 2 pts
-- `map_values()` - 2 pts
-- `clean_strings()` - 1 pt
-- `add_calculated_column()` - 2 pts
-- `remove_duplicates()` - 2 pts
-- `create_age_bins()` - 2 pts
-- `encode_categorical()` - 2 pts
-- `detect_outliers_iqr()` - 2 pts
+### Grading (15 pts):
+- Notebook executes without errors - 5 pts
+- Cleaned data has fewer missing values - 5 pts
+- Output files exist with correct content - 5 pts
 
 ---
 
-## Question 7: Groupby & Aggregation (10 points)
+## Question 6: Data Transformation (20 points)
 
-**File:** `aggregation.py`
+**File:** `q6_transformation.ipynb`
 
-Implement groupby and aggregation functions.
+Complete the notebook to transform and engineer features.
 
-### Required Functions:
+### Tasks:
 
-```python
-"""Groupby and aggregation functions."""
+1. **Type conversions** (4 pts)
+   - Convert enrollment_date to datetime
+   - Convert categorical columns to category dtype
+   - Convert any string numbers to numeric
 
-import pandas as pd
+2. **Feature engineering** (8 pts)
+   - Create cholesterol ratio (LDL/HDL)
+   - Create age groups using bins: [0, 40, 60, 100] → ['Young', 'Middle', 'Senior']
+   - Create BMI categories: [0, 18.5, 25, 30, 100] → ['Underweight', 'Normal', 'Overweight', 'Obese']
 
-def group_and_sum(df: pd.DataFrame, group_col: str, sum_col: str) -> pd.DataFrame:
-    """Group by column and sum another column."""
-    pass
+3. **Clean and encode** (5 pts)
+   - Remove any remaining duplicates
+   - Create dummy variables for intervention_group
 
-def group_and_aggregate_multiple(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.DataFrame:
-    """
-    Group and apply multiple aggregations using .agg().
+4. **Save transformed data** (3 pts)
+   - Save to `output/q6_transformed_data.csv`
 
-    Example agg_dict: {'age': 'mean', 'bmi': ['mean', 'std']}
-    """
-    pass
+### Required Output:
+- `output/q6_transformed_data.csv`
 
-def get_top_n(df: pd.DataFrame, column: str, n: int) -> pd.DataFrame:
-    """Get top N rows using .nlargest()."""
-    pass
+### Grading (20 pts):
+- Notebook executes without errors - 5 pts
+- New feature columns exist - 8 pts
+- Transformed data saved correctly - 7 pts
 
-def group_and_sort(df: pd.DataFrame, group_col: str, agg_col: str) -> pd.DataFrame:
-    """Group, aggregate, and sort results."""
-    pass
-```
+---
 
-### Grading (10 pts):
-- `group_and_sum()` - 3 pts
-- `group_and_aggregate_multiple()` - 3 pts
-- `get_top_n()` - 2 pts
-- `group_and_sort()` - 2 pts
+## Question 7: Aggregation & Analysis (15 points)
+
+**File:** `q7_aggregation.ipynb`
+
+Complete the notebook to perform grouped analysis.
+
+### Tasks:
+
+1. **Site-level summary** (5 pts)
+   - Group by site
+   - Calculate mean age, BMI, and patient count per site
+   - Save to `output/q7_site_summary.csv`
+
+2. **Intervention comparison** (5 pts)
+   - Group by intervention_group
+   - Compare outcome rates, adverse events, adherence
+   - Save to `output/q7_intervention_comparison.csv`
+
+3. **Advanced analysis** (3 pts)
+   - Find top 10 patients by cholesterol_total
+   - Calculate statistics by age_group (if created in Q6)
+
+4. **Generate report** (2 pts)
+   - Save key findings to `output/q7_analysis_report.txt`
+
+### Required Outputs:
+- `output/q7_site_summary.csv`
+- `output/q7_intervention_comparison.csv`
+- `output/q7_analysis_report.txt`
+
+### Grading (15 pts):
+- Notebook executes without errors - 5 pts
+- Site summary exists with correct structure - 4 pts
+- Intervention comparison exists - 3 pts
+- Analysis report has meaningful content - 3 pts
 
 ---
 
 ## Question 8: Pipeline Automation Script (5 points)
 
-**File:** `run_pipeline.sh`
+**File:** `q8_run_pipeline.sh`
 
 Create an executable shell script that runs the entire analysis pipeline.
 
@@ -432,7 +466,7 @@ Create an executable shell script that runs the entire analysis pipeline.
 echo "Starting clinical trial data pipeline..." > reports/pipeline_log.txt
 
 # Example structure:
-python process_metadata.py
+python q2_process_metadata.py
 if [ $? -ne 0 ]; then
     echo "ERROR: Metadata processing failed" >> reports/pipeline_log.txt
     exit 1
@@ -454,20 +488,30 @@ fi
 
 ## Submission Checklist
 
-**Scripts (8 files):**
-- [ ] `setup_project.sh` (executable)
-- [ ] `process_metadata.py` (executable)
-- [ ] `exploration.py`
-- [ ] `selection.py`
-- [ ] `missing_data.py`
-- [ ] `transform.py`
-- [ ] `aggregation.py`
-- [ ] `run_pipeline.sh` (executable)
+**Scripts (4 files):**
+- [ ] `q1_setup_project.sh` (executable)
+- [ ] `q2_process_metadata.py` (executable)
+- [ ] `q3_data_utils.py` (importable module)
+- [ ] `q8_run_pipeline.sh` (executable)
 
-**Directories:**
+**Notebooks (4 files):**
+- [ ] `q4_exploration.ipynb`
+- [ ] `q5_missing_data.ipynb`
+- [ ] `q6_transformation.ipynb`
+- [ ] `q7_aggregation.ipynb`
+
+**Directories and Outputs:**
 - [ ] `data/` (contains clinical_trial_raw.csv)
-- [ ] `output/` (contains CSV outputs)
-- [ ] `reports/` (contains text reports)
+- [ ] `output/` (data artifacts created by your scripts/notebooks)
+  - Q2: `config_summary.txt`, `validation_report.txt`, `file_manifest.txt`, `statistics.txt`
+  - Q4: `q4_site_counts.csv`
+  - Q5: `q5_cleaned_data.csv`, `q5_missing_report.txt`
+  - Q6: `q6_transformed_data.csv`
+  - Q7: `q7_site_summary.csv`, `q7_intervention_comparison.csv`, `q7_analysis_report.txt`
+  - Q8: `final_clean_data.csv`
+- [ ] `reports/` (pipeline logs and process metadata)
+  - Q1: `directory_structure.txt`
+  - Q8: `pipeline_log.txt`, `quality_report.txt`
 
 ---
 
@@ -477,20 +521,20 @@ fi
 |----------|-------|--------|
 | Q1 | Project Setup (Shell) | 10 |
 | Q2 | Python Fundamentals | 25 |
-| Q3 | Data Loading | 10 |
-| Q4 | Selection & Filtering | 10 |
-| Q5 | Missing Data | 15 |
-| Q6 | Transformation | 23 |
-| Q7 | Aggregation | 10 |
+| Q3 | Data Utilities Library | 20 |
+| Q4 | Data Exploration (Notebook) | 15 |
+| Q5 | Missing Data Analysis (Notebook) | 15 |
+| Q6 | Data Transformation (Notebook) | 20 |
+| Q7 | Aggregation & Analysis (Notebook) | 15 |
 | Q8 | Pipeline Automation | 5 |
-| **TOTAL** | | **108** |
+| **TOTAL** | | **125** |
 
 **Grading Scale:**
-- 97-108: A (90%+)
-- 86-96: B (80%+)
-- 76-85: C (70%+)
-- 65-75: D (60%+)
-- <65: F
+- 113-125: A (90%+)
+- 100-112: B (80%+)
+- 88-99: C (70%+)
+- 75-87: D (60%+)
+- <75: F
 
 ---
 

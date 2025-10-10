@@ -9,14 +9,14 @@ Quick reference for common patterns and helpful code snippets.
 **Directory structure:**
 ```
 05/assignment/
-├── setup_project.sh          # Q1: Your setup script
-├── process_metadata.py        # Q2: Metadata processing
-├── exploration.py             # Q3: Data loading
-├── selection.py               # Q4: Selection & filtering
-├── missing_data.py            # Q5: Missing data handling
-├── transform.py               # Q6: Transformations
-├── aggregation.py             # Q7: Groupby operations
-├── run_pipeline.sh            # Q8: Pipeline automation
+├── q1_setup_project.sh        # Q1: Your setup script
+├── q2_process_metadata.py     # Q2: Metadata processing
+├── q3_data_utils.py           # Q3: Reusable utility library
+├── q4_exploration.ipynb       # Q4: Data exploration notebook
+├── q5_missing_data.ipynb      # Q5: Missing data analysis notebook
+├── q6_transformation.ipynb    # Q6: Data transformation notebook
+├── q7_aggregation.ipynb       # Q7: Aggregation analysis notebook
+├── q8_run_pipeline.sh         # Q8: Pipeline automation
 ├── config.txt                 # Input: Trial configuration
 ├── data/
 │   └── clinical_trial_raw.csv # Input: Raw data
@@ -126,39 +126,84 @@ with open('output/summary.txt', 'w') as f:
 
 ---
 
-## Q3: Pandas Loading & Exploration
+## Q3: Building the Data Utilities Library
 
-**Loading data:**
+**This is your reusable function library - Q4-Q7 notebooks will import from here.**
+
+**Basic loading:**
 ```python
 import pandas as pd
+import numpy as np
 
 def load_data(filepath: str) -> pd.DataFrame:
+    """Load CSV file into DataFrame."""
     return pd.read_csv(filepath)
 ```
 
-**Summary statistics:**
+**Cleaning with options:**
 ```python
-def get_summary_stats(df: pd.DataFrame) -> pd.DataFrame:
-    return df.describe()
+def clean_data(df: pd.DataFrame, remove_duplicates: bool = True, sentinel_value=-999) -> pd.DataFrame:
+    """Clean data by removing duplicates and replacing sentinel values."""
+    df_clean = df.copy()
 
-# Save to CSV
-summary = df.describe()
-summary.to_csv('output/summary_stats.csv')
+    if remove_duplicates:
+        df_clean = df_clean.drop_duplicates()
+
+    # Replace sentinel values with NaN
+    df_clean = df_clean.replace(sentinel_value, np.nan)
+
+    return df_clean
 ```
 
-**Value counts:**
+**Flexible missing data handling:**
 ```python
-def get_value_counts(df: pd.DataFrame, column: str) -> pd.Series:
-    return df[column].value_counts()
+def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.DataFrame:
+    """Fill missing values using specified strategy."""
+    df_filled = df.copy()
 
-# Save to CSV
-counts = df['site'].value_counts()
-counts.to_csv('output/value_counts_site.csv')
+    if strategy == 'mean':
+        df_filled[column] = df_filled[column].fillna(df_filled[column].mean())
+    elif strategy == 'median':
+        df_filled[column] = df_filled[column].fillna(df_filled[column].median())
+    elif strategy == 'ffill':
+        df_filled[column] = df_filled[column].fillna(method='ffill')
+
+    return df_filled
+```
+
+**Type conversion with mapping:**
+```python
+def transform_types(df: pd.DataFrame, type_map: dict) -> pd.DataFrame:
+    """Convert column types based on mapping."""
+    df_transformed = df.copy()
+
+    for col, dtype in type_map.items():
+        if dtype == 'datetime':
+            df_transformed[col] = pd.to_datetime(df_transformed[col])
+        elif dtype == 'numeric':
+            df_transformed[col] = pd.to_numeric(df_transformed[col], errors='coerce')
+        elif dtype == 'category':
+            df_transformed[col] = df_transformed[col].astype('category')
+
+    return df_transformed
 ```
 
 ---
 
-## Q4: Selection & Filtering
+## Q4-Q7: Working in Notebooks
+
+**Import your utilities:**
+```python
+# At the top of your notebook
+import pandas as pd
+import numpy as np
+from q3_data_utils import load_data, clean_data, fill_missing, filter_data
+
+# Load data using your utility
+df = load_data('data/clinical_trial_raw.csv')
+```
+
+**Q4: Selection & Filtering Patterns
 
 **Selecting by data type:**
 ```python
@@ -198,7 +243,7 @@ sites_subset = df[df['site'].isin(['Site A', 'Site B'])]
 
 ---
 
-## Q5: Missing Data
+## Q5: Missing Data Analysis (Notebook)
 
 **Detecting missing data:**
 ```python
@@ -240,7 +285,7 @@ df_subset = df.dropna(subset=['blood_pressure', 'cholesterol'], how='all')
 
 ---
 
-## Q6: Data Transformation
+## Q6: Data Transformation (Notebook)
 
 **Removing duplicates:**
 ```python
@@ -369,7 +414,7 @@ df_clean = df[~outliers]
 
 ---
 
-## Q7: Groupby & Aggregation
+## Q7: Groupby & Aggregation (Notebook)
 
 **Basic groupby:**
 ```python
@@ -423,23 +468,22 @@ site_summary = df.groupby('site')['age'].mean().reset_index()
 echo "Starting pipeline..." > reports/pipeline_log.txt
 date >> reports/pipeline_log.txt
 
-# Run step 1
+# Run step 1: Metadata processing
 echo "Step 1: Processing metadata..." >> reports/pipeline_log.txt
-python process_metadata.py
+python q2_process_metadata.py
 if [ $? -ne 0 ]; then
     echo "ERROR: Metadata processing failed" >> reports/pipeline_log.txt
     exit 1
 fi
 
-# Run step 2
-echo "Step 2: Loading data..." >> reports/pipeline_log.txt
-python exploration.py
-if [ $? -ne 0 ]; then
-    echo "ERROR: Data loading failed" >> reports/pipeline_log.txt
-    exit 1
-fi
+# Run step 2: Execute notebooks
+echo "Step 2: Running analysis notebooks..." >> reports/pipeline_log.txt
+jupyter nbconvert --to notebook --execute q4_exploration.ipynb
+jupyter nbconvert --to notebook --execute q5_missing_data.ipynb
+jupyter nbconvert --to notebook --execute q6_transformation.ipynb
+jupyter nbconvert --to notebook --execute q7_aggregation.ipynb
 
-# Continue for other scripts...
+# Continue for other steps...
 
 echo "Pipeline complete!" >> reports/pipeline_log.txt
 date >> reports/pipeline_log.txt
@@ -562,20 +606,26 @@ ls -la *.sh
 **Test functions by importing:**
 ```python
 # Create test_my_work.py
-from process_metadata import parse_config, validate_config
+from q2_process_metadata import parse_config, validate_config
+from q3_data_utils import load_data, clean_data
 
 config = parse_config('config.txt')
 print("Config loaded:", config)
 
 validation = validate_config(config)
 print("Validation results:", validation)
+
+# Test your utilities
+df = load_data('data/clinical_trial_raw.csv')
+print("Data shape:", df.shape)
 ```
 
 **Run individual scripts:**
 ```bash
-python process_metadata.py
-python exploration.py
-python selection.py
+python q2_process_metadata.py
+
+# Test notebooks
+jupyter nbconvert --to notebook --execute q4_exploration.ipynb
 # etc.
 ```
 
@@ -584,13 +634,21 @@ python selection.py
 # Quick checks
 import pandas as pd
 
-# Should be a DataFrame with summary stats
-summary = pd.read_csv('output/summary_stats.csv')
-print(summary.shape)
+# Q4 outputs
+site_counts = pd.read_csv('output/q4_site_counts.csv')
+print(site_counts)
 
-# Should have site names and counts
-counts = pd.read_csv('output/value_counts_site.csv')
-print(counts.head())
+# Q5 outputs
+cleaned = pd.read_csv('output/q5_cleaned_data.csv')
+print(f"Cleaned data shape: {cleaned.shape}")
+
+# Q6 outputs
+transformed = pd.read_csv('output/q6_transformed_data.csv')
+print(f"New columns: {set(transformed.columns) - set(cleaned.columns)}")
+
+# Q7 outputs
+site_summary = pd.read_csv('output/q7_site_summary.csv')
+print(site_summary)
 ```
 
 ---

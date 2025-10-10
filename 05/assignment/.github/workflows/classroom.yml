@@ -48,7 +48,18 @@ jobs:
     - name: Verify required files exist
       run: |
         echo "Checking for required files..."
-        required_files=("main.py" "employees_raw.csv")
+        required_files=(
+          "q1_setup_project.sh"
+          "q2_process_metadata.py"
+          "q3_data_utils.py"
+          "q4_exploration.ipynb"
+          "q5_missing_data.ipynb"
+          "q6_transformation.ipynb"
+          "q7_aggregation.ipynb"
+          "q8_run_pipeline.sh"
+          "config.txt"
+          "data/clinical_trial_raw.csv"
+        )
         missing_files=""
 
         for file in "${required_files[@]}"; do
@@ -68,12 +79,25 @@ jobs:
     - name: Run syntax check
       if: env.MISSING_FILES == 'false'
       run: |
-        echo "Running syntax check..."
-        python -m py_compile main.py || {
-          echo "❌ Syntax errors found in main.py"
+        echo "Running syntax check on Python files..."
+        python_files=(
+          "q2_process_metadata.py"
+          "q3_data_utils.py"
+        )
+
+        syntax_errors=0
+        for file in "${python_files[@]}"; do
+          if ! python -m py_compile "$file"; then
+            echo "❌ Syntax errors found in $file"
+            syntax_errors=1
+          fi
+        done
+
+        if [ $syntax_errors -eq 1 ]; then
           echo "SYNTAX_ERRORS=true" >> $GITHUB_ENV
           exit 1
-        }
+        fi
+
         echo "✅ No syntax errors found"
         echo "SYNTAX_ERRORS=false" >> $GITHUB_ENV
 

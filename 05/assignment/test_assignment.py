@@ -1,23 +1,35 @@
 #!/usr/bin/env python3
 """
-Assignment 5: Data Cleaning Exam - Test Suite
-Tests for all four functions with partial credit scoring.
+Assignment 5: Midterm Exam - Test Suite
+Tests for clinical trial data processing pipeline.
+Total: 108 points across ~93 behavioral tests
 """
 
 import pytest
 import pandas as pd
 import numpy as np
+import os
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from main import audit_data, clean_data, transform_data, analyze_data
+# Import functions from numbered modules
+from q2_process_metadata import parse_config, validate_config, process_files, calculate_statistics
+from q3_exploration import load_data, get_summary_stats, get_value_counts
+from q4_selection import (select_numeric_columns, select_by_loc, select_by_iloc,
+                          filter_single_condition, filter_multiple_conditions, filter_by_category)
+from q5_missing_data import detect_missing, fill_with_mean, fill_with_median, forward_fill, drop_missing_rows
+from q6_transform import (convert_to_datetime, convert_to_numeric, convert_to_category, replace_sentinels,
+                           apply_custom_function, map_values, clean_strings, add_calculated_column,
+                           remove_duplicates, create_age_bins, encode_categorical, detect_outliers_iqr)
+from q7_aggregation import group_and_sum, group_and_aggregate_multiple, get_top_n, group_and_sort
+
 
 @pytest.fixture
-def raw_data():
-    """Load raw employee data"""
-    return pd.read_csv('employees_raw.csv')
+def clinical_data():
+    """Load clinical trial data"""
+    return pd.read_csv('data/clinical_trial_raw.csv')
 
 # ============================================================================
 # Part 1: Data Audit Tests (20 points)
