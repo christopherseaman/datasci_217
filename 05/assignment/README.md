@@ -10,7 +10,7 @@ You're analyzing data from a multi-site cardiovascular health clinical trial. Th
 
 **Dataset:** `data/clinical_trial_raw.csv` (10,000 patients, 18 variables)
 
-**Configuration:** `config.txt` (trial parameters)
+**Configuration:** `config/config.txt` (trial parameters)
 
 ---
 
@@ -33,13 +33,15 @@ You're analyzing data from a multi-site cardiovascular health clinical trial. Th
 **Key Design:**
 - **Q3 is your utility library** - Write 8 reusable pandas functions here
 - **Q4-Q7 import from Q3** - Use your utilities in notebooks for real analysis
-- This mirrors professional data science workflows: utilities → analysis
+- **Q8 runs the pipeline** - Executes Q2 script and Q4-Q7 notebooks (Q3 is imported, not run directly)
+- This mirrors professional data science workflows: utilities → analysis → automation
 
 **Output structure:**
 ```
 output/           # Data artifacts (CSV, TXT files with results)
 reports/          # Logs and metadata (pipeline execution info)
 data/             # Input data (provided)
+config/           # Configuration files (trial params, filter examples)
 ```
 
 See the Submission Checklist at the end for specific output files required.
@@ -95,16 +97,19 @@ cat reports/directory_structure.txt
 
 **File:** `q2_process_metadata.py`
 
-Create an executable Python script that processes the trial configuration file (`config.txt`).
+Create an executable Python script that processes the trial configuration file (`config/config.txt`).
 
 The config file format is:
 ```
 study_name=CardioHealth Trial 2023
 primary_investigator=Dr. Sarah Chen
+enrollment_start=2022-01-01
+enrollment_end=2023-12-31
 min_age=18
 max_age=85
 target_enrollment=10000
 sites=5
+intervention_groups=3
 ```
 
 ### Required Functions:
@@ -135,6 +140,8 @@ def validate_config(config: dict) -> dict:
     - max_age must be <= 100
     - target_enrollment must be > 0
     - sites must be >= 1
+    - intervention_groups must be >= 1
+    - enrollment_start must be before enrollment_end (if both present)
 
     Args:
         config: Configuration dictionary
@@ -143,6 +150,7 @@ def validate_config(config: dict) -> dict:
         dict: Validation results {key: True/False}
     """
     # TODO: Implement with if/elif/else
+    # TODO: Add error checking for date format and logical consistency
     pass
 
 def process_files(file_list: list) -> list:
@@ -247,17 +255,42 @@ def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.Da
     """
     pass
 
-def filter_data(df: pd.DataFrame, column: str, **conditions) -> pd.DataFrame:
+def load_filters(filepath: str) -> list:
     """
-    Filter DataFrame by various conditions.
+    Load filter configuration from YAML file.
+    
+    Args:
+        filepath: Path to YAML file containing filter list
+        
+    Returns:
+        list: List of filter dictionaries
+    """
+    pass
+
+def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
+    """
+    Apply a list of filters to DataFrame in sequence.
 
     Args:
-        df: DataFrame to filter
-        column: Column to filter on
-        **conditions: Can include 'value', 'min_value', 'max_value', or 'values' (list for .isin())
+        df: Input DataFrame
+        filters: List of filter dictionaries, each with keys:
+                'column', 'condition', 'value'
+                Conditions: 'equals', 'greater_than', 'less_than', 'in_range', 'in_list'
 
     Returns:
-        Filtered DataFrame
+        pd.DataFrame: Filtered data
+
+    Examples:
+        >>> # Load filters from file
+        >>> filters = load_filters('config/filters.yaml')
+        >>> df_filtered = filter_data(df, filters)
+        >>>
+        >>> # Or define filters directly
+        >>> filters = [
+        ...     {'column': 'age', 'condition': 'greater_than', 'value': 18},
+        ...     {'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}
+        ... ]
+        >>> df_filtered = filter_data(df, filters)
     """
     pass
 
@@ -298,10 +331,11 @@ def summarize_by_group(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.D
 - `clean_data()` - 3 pts
 - `detect_missing()` - 2 pts
 - `fill_missing()` - 3 pts
+- `load_filters()` - 2 pts
 - `filter_data()` - 3 pts
 - `transform_types()` - 3 pts
-- `create_bins()` - 2 pts
-- `summarize_by_group()` - 2 pts
+- `create_bins()` - 1 pt
+- `summarize_by_group()` - 1 pt
 
 ---
 
@@ -390,7 +424,7 @@ Complete the notebook to transform and engineer features.
 
 2. **Feature engineering** (8 pts)
    - Create cholesterol ratio (LDL/HDL)
-   - Create age groups using bins: [0, 40, 60, 100] → ['Young', 'Middle', 'Senior']
+   - Create age groups using bins: [0, 40, 55, 70, 100] → ['<40', '40-54', '55-69', '70+']
    - Create BMI categories: [0, 18.5, 25, 30, 100] → ['Underweight', 'Normal', 'Overweight', 'Obese']
 
 3. **Clean and encode** (5 pts)
@@ -502,6 +536,7 @@ fi
 
 **Directories and Outputs:**
 - [ ] `data/` (contains clinical_trial_raw.csv)
+- [ ] `config/` (contains config.txt and example_filters.yaml)
 - [ ] `output/` (data artifacts created by your scripts/notebooks)
   - Q2: `config_summary.txt`, `validation_report.txt`, `file_manifest.txt`, `statistics.txt`
   - Q4: `q4_site_counts.csv`

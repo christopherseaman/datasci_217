@@ -77,41 +77,47 @@ Students work through messy survey data with multiple quality issues:
 
 ---
 
-# Demo 3: Complete Data Cleaning Workflow
+# Demo 3: Complete Data Cleaning Workflow with YAML Configuration
 
 **File:** [demo3_workflow.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
-**Objective**: Put it all together - a realistic, end-to-end cleaning pipeline.
+**Objective**: Put it all together - a realistic, end-to-end cleaning pipeline with configuration-driven processing.
 
-**Key Concepts**: Detect → Handle → Validate → Transform → Save
+**Key Concepts**: Detect → Handle → Validate → Transform → Save, YAML configuration
 
 ## Demo Flow
 
-Students work through e-commerce order data with multiple simultaneous issues:
+Students work through e-commerce order data with multiple simultaneous issues using YAML configuration:
 
 1. **Load dirty data** - E-commerce orders with inconsistent names, negative prices, missing values, invalid dates
-2. **Detect issues** - Systematically audit: missing values, duplicates, negative prices, invalid dates
-3. **Handle systematically** - Apply cleaning steps in sequence:
+2. **Load YAML configuration** - Read filter rules and cleaning parameters from config file
+3. **Detect issues** - Systematically audit: missing values, duplicates, negative prices, invalid dates
+4. **Handle systematically** - Apply cleaning steps in sequence using configuration:
    - Standardize customer/product names
    - Replace negative prices with NaN, fill with median
    - Fill missing quantities with 1
    - Convert dates with `errors='coerce'`
    - Standardize status values
-4. **Validate cleaning** - Verify each issue was resolved, check data types
-5. **Transform for analysis** - Add calculated fields (total_price), extract time periods
-6. **Detect outliers** - IQR method for finding unusual transactions
-7. **Save results** - Cleaned data, summaries, and data quality report
+5. **Apply configuration-driven filters** - Use YAML-defined filter rules to clean data
+6. **Validate cleaning** - Verify each issue was resolved, check data types
+7. **Transform for analysis** - Add calculated fields (total_price), extract time periods
+8. **Detect outliers** - IQR method for finding unusual transactions
+9. **Save results** - Cleaned data, summaries, data quality report, and configuration log
 
 **Key Teaching Points**:
 - Always copy original data before modifying (`.copy()`)
 - Systematic approach: detect before handling, validate after
 - `.loc[]` for conditional replacement is powerful
+- YAML configuration separates logic from parameters
+- Configuration-driven processing is more maintainable
 - Document decisions in a data quality report
 - Save intermediate results and final outputs
 - The workflow is iterative: detect → handle → validate → repeat
 
 **Expected Outcomes**:
 - Students can build end-to-end cleaning pipeline
+- Students can work with YAML configuration files
+- Students understand configuration-driven data processing
 - Students validate that cleaning achieved its goals
 - Students document their cleaning decisions
 - Students save cleaned data and create audit trails
@@ -161,3 +167,4 @@ Students work through e-commerce order data with multiple simultaneous issues:
 - Build reusable cleaning functions
 - Create data quality checklists
 - Develop validation test suites
+

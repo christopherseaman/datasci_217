@@ -691,4 +691,34 @@ print(df.dtypes)
 df.to_csv('clean_data.csv', index=False)
 ```
 
-**LIVE DEMO!** (Demo 3: Complete Workflow - end-to-end data cleaning pipeline)
+## Configuration-Driven Processing
+
+Configuration files make data cleaning pipelines more maintainable and reproducible. YAML (YAML Ain't Markup Language) is a human-readable format perfect for storing filter rules, cleaning parameters, and processing steps.
+
+*Pro tip: YAML is like the friendly cousin of JSON - it's easier to read and write, supports comments, and doesn't require quotes around strings (most of the time). It's perfect for configuration files that humans need to edit.*
+
+**Reference:**
+
+- `import yaml` - Import YAML library
+- `yaml.safe_load(file)` - Load YAML file into Python dict/list
+- `yaml.dump(data, file)` - Write Python data to YAML file
+- Indentation matters (use spaces, not tabs)
+- Comments start with `#`
+- Lists use `-` for each item
+- Dictionaries use `key: value` pairs
+
+**Example:**
+
+```python
+# Load YAML configuration
+import yaml
+
+with open('config/filters.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+
+# Access nested data
+filters = config['filters']
+print(filters[0]['column'])  # 'age'
+```
+
+**LIVE DEMO!** (Demo 3: Complete Workflow - end-to-end data cleaning pipeline with YAML configuration)

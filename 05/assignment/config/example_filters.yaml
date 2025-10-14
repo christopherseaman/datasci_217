@@ -1,0 +1,29 @@
+# Example filter configurations for clinical trial data
+# This file demonstrates all available filter types
+# DO NOT use these exact filters in your assignment - create your own!
+
+filters:
+  # Exact match filter
+  - column: "sex"
+    condition: "equals"
+    value: "Female"
+  
+  # Greater than filter
+  - column: "cholesterol_total"
+    condition: "greater_than"
+    value: 200
+  
+  # Less than filter
+  - column: "glucose_fasting"
+    condition: "less_than"
+    value: 100
+  
+  # Range filter (min, max)
+  - column: "bmi"
+    condition: "in_range"
+    value: [18.5, 30.0]
+  
+  # Multiple values filter
+  - column: "intervention_group"
+    condition: "in_list"
+    value: ["Control", "Treatment A"]

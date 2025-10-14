@@ -8,6 +8,7 @@ These utilities will be imported and used in Q4-Q7 notebooks.
 
 import pandas as pd
 import numpy as np
+import yaml
 
 
 def load_data(filepath: str) -> pd.DataFrame:
@@ -83,32 +84,59 @@ def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.Da
     pass
 
 
-def filter_data(df: pd.DataFrame, column: str, value=None,
-                min_value=None, max_value=None,
-                values: list = None) -> pd.DataFrame:
+def load_filters(filepath: str) -> list:
     """
-    Filter DataFrame based on flexible conditions.
+    Load filter configuration from YAML file.
+    
+    Args:
+        filepath: Path to YAML file containing filter list
+        
+    Returns:
+        list: List of filter dictionaries
+        
+    Example file format (filters.yaml):
+    filters:
+      - column: "age"
+        condition: "greater_than"
+        value: 18
+      - column: "age"
+        condition: "less_than"
+        value: 65
+      - column: "site"
+        condition: "in_list"
+        value: ["Site A", "Site B"]
+    """
+    pass
+
+
+def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
+    """
+    Apply a list of filters to DataFrame in sequence.
+    
+    This mirrors real-world data pipelines where filters are stored in config files
+    and applied in order to create clean datasets.
 
     Args:
         df: Input DataFrame
-        column: Column to filter on
-        value: Exact value to match (optional)
-        min_value: Minimum value (inclusive, optional)
-        max_value: Maximum value (inclusive, optional)
-        values: List of values to match (uses .isin(), optional)
+        filters: List of filter dictionaries, each with keys:
+                'column', 'condition', 'value'
+                Conditions: 'equals', 'greater_than', 'less_than', 'in_range', 'in_list'
 
     Returns:
         pd.DataFrame: Filtered data
 
     Examples:
-        >>> # Exact match
-        >>> df_filtered = filter_data(df, 'site', value='Site A')
+        >>> # Single filter
+        >>> filters = [{'column': 'site', 'condition': 'equals', 'value': 'Site A'}]
+        >>> df_filtered = filter_data(df, filters)
         >>>
-        >>> # Range filter
-        >>> df_filtered = filter_data(df, 'age', min_value=18, max_value=65)
-        >>>
-        >>> # Category list
-        >>> df_filtered = filter_data(df, 'site', values=['Site A', 'Site B'])
+        >>> # Multiple filters applied in order
+        >>> filters = [
+        ...     {'column': 'age', 'condition': 'greater_than', 'value': 18},
+        ...     {'column': 'age', 'condition': 'less_than', 'value': 65},
+        ...     {'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}
+        ... ]
+        >>> df_filtered = filter_data(df, filters)
     """
     pass
 
@@ -198,7 +226,14 @@ if __name__ == '__main__':
     print("  - clean_data()")
     print("  - detect_missing()")
     print("  - fill_missing()")
+    print("  - load_filters()")
     print("  - filter_data()")
     print("  - transform_types()")
     print("  - create_bins()")
     print("  - summarize_by_group()")
+    
+    # TODO: Add simple test example here
+    # Example:
+    # test_df = pd.DataFrame({'age': [25, 30, 35], 'bmi': [22, 25, 28]})
+    # print("Test DataFrame created:", test_df.shape)
+    # print("Test detect_missing:", detect_missing(test_df))
