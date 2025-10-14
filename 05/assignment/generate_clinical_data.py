@@ -224,16 +224,8 @@ df.loc[sentinel_age, 'age'] = -999
 sentinel_bmi = df[df['bmi'].isna()].sample(frac=0.3).index
 df.loc[sentinel_bmi, 'bmi'] = -1
 
-# 3. DATA ENTRY ERRORS
-print("Injecting data entry errors...")
-
-# Swapped BP values (diastolic > systolic)
-swap_bp = np.random.choice(df[df['systolic_bp'].notna()].index, size=int(N * 0.01), replace=False)
-df.loc[swap_bp, ['systolic_bp', 'diastolic_bp']] = df.loc[swap_bp, ['diastolic_bp', 'systolic_bp']].values
-
-# BMI entered as weight in kg instead of BMI
-weight_as_bmi = np.random.choice(df[df['bmi'].notna()].index, size=int(N * 0.005), replace=False)
-df.loc[weight_as_bmi, 'bmi'] = df.loc[weight_as_bmi, 'bmi'] * 3.5  # Makes it 60-150 range
+# 3. DATA ENTRY ERRORS (removed - not covered in assignment)
+# Note: BP swaps and BMI as weight errors removed as they're not part of the assignment scope
 
 # 4. TEXT INCONSISTENCIES
 print("Injecting text inconsistencies...")
@@ -313,7 +305,6 @@ print(f"  Columns: {len(df.columns)}")
 print(f"\nData quality issues injected:")
 print(f"  - Missing data: varies by site (5-15%)")
 print(f"  - Sentinel values: ~2% of age as -999")
-print(f"  - Data entry errors: BP swaps, BMI as weight")
 print(f"  - Text inconsistencies: capitalization, typos, spacing")
 print(f"  - Date formats: 3 different formats")
 print(f"  - Whitespace: ~10% of text fields")

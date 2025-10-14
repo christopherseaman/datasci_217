@@ -168,3 +168,58 @@ Students work through e-commerce order data with multiple simultaneous issues us
 - Create data quality checklists
 - Develop validation test suites
 
+---
+
+# Running Notebooks from Command Line
+
+For automated pipelines and batch processing, you can execute Jupyter notebooks from the command line without opening the Jupyter interface.
+
+## Basic Execution
+
+```bash
+# Execute a single notebook
+jupyter nbconvert --execute --to notebook your_notebook.ipynb
+
+# Execute and save output to a new file
+jupyter nbconvert --execute --to notebook --output executed_notebook your_notebook.ipynb
+
+# Execute and overwrite the original file
+jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
+```
+
+## Pipeline Automation
+
+```bash
+#!/bin/bash
+# Example pipeline script
+
+echo "Starting data analysis pipeline..."
+
+# Run notebooks in sequence
+jupyter nbconvert --execute --to notebook q4_exploration.ipynb
+if [ $? -ne 0 ]; then
+    echo "ERROR: Q4 exploration failed"
+    exit 1
+fi
+
+jupyter nbconvert --execute --to notebook q5_missing_data.ipynb
+if [ $? -ne 0 ]; then
+    echo "ERROR: Q5 missing data analysis failed"
+    exit 1
+fi
+
+echo "Pipeline completed successfully!"
+```
+
+## Key Parameters
+
+- `--execute`: Run all cells in the notebook
+- `--to notebook`: Keep output as notebook format
+- `--inplace`: Overwrite the original file
+- `--output filename`: Save to a new file
+- `--allow-errors`: Continue execution even if cells fail
+
+## Error Handling
+
+Always check exit codes (`$?`) after notebook execution to ensure your pipeline stops if any step fails. This is crucial for automated data processing workflows.
+

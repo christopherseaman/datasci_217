@@ -590,7 +590,7 @@ fi
 ## Tips
 
 See `TIPS.md` for:
-- Code scaffolding and starter templates
+
 - Common pandas patterns
 - Debugging strategies
 
