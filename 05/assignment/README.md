@@ -22,7 +22,7 @@ You're analyzing data from a multi-site cardiovascular health clinical trial. Th
 1. `q1_setup_project.sh` - Shell script to create directories (Q1)
 2. `q2_process_metadata.py` - Python fundamentals and config processing (Q2)
 3. `q3_data_utils.py` - **Core data utilities library** - 8 reusable functions (Q3)
-8. `q8_run_pipeline.sh` - Pipeline automation script (Q8)
+4. `q8_run_pipeline.sh` - Pipeline automation script (Q8)
 
 **Notebooks (complete the analysis):**
 4. `q4_exploration.ipynb` - Data exploration using Q3 utilities (Q4)
@@ -49,10 +49,32 @@ See the Submission Checklist at the end for specific output files required.
 ---
 
 **Variables:**
-- **Demographics:** patient_id, age, sex, bmi, enrollment_date
-- **Clinical measurements:** systolic_bp, diastolic_bp, cholesterol_total, cholesterol_hdl, cholesterol_ldl, glucose_fasting
-- **Trial info:** site, intervention_group, follow_up_months, adverse_events
-- **Outcomes:** outcome_cvd, adherence_pct, dropout
+
+**Demographics:**
+- `patient_id`: Unique patient identifier (P00001, P00002, ...)
+- `age`: Patient age in years (18-85)
+- `sex`: Patient sex (M/F)
+- `bmi`: Body Mass Index (kg/m²)
+- `enrollment_date`: Date patient enrolled in trial (YYYY-MM-DD)
+
+**Clinical Measurements:**
+- `systolic_bp`: Systolic blood pressure (mmHg)
+- `diastolic_bp`: Diastolic blood pressure (mmHg)
+- `cholesterol_total`: Total cholesterol (mg/dL)
+- `cholesterol_hdl`: HDL ("good") cholesterol (mg/dL)
+- `cholesterol_ldl`: LDL ("bad") cholesterol (mg/dL)
+- `glucose_fasting`: Fasting blood glucose (mg/dL)
+
+**Trial Information:**
+- `site`: Hospital site (Site A, Site B, Site C, Site D, Site E)
+- `intervention_group`: Treatment group (control, Treatment A, Treatment B)
+- `follow_up_months`: Months of follow-up (0-24)
+- `adverse_events`: Number of adverse events (0+)
+
+**Outcomes:**
+- `outcome_cvd`: Cardiovascular disease outcome (Yes/No)
+- `adherence_pct`: Medication adherence percentage (0-100)
+- `dropout`: Whether patient dropped out (Yes/No)
 
 ---
 
