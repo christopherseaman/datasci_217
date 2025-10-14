@@ -8,7 +8,6 @@ These utilities will be imported and used in Q4-Q7 notebooks.
 
 import pandas as pd
 import numpy as np
-import yaml
 
 
 def load_data(filepath: str) -> pd.DataFrame:
@@ -84,37 +83,9 @@ def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.Da
     pass
 
 
-def load_filters(filepath: str) -> list:
-    """
-    Load filter configuration from YAML file.
-    
-    Args:
-        filepath: Path to YAML file containing filter list
-        
-    Returns:
-        list: List of filter dictionaries
-        
-    Example file format (filters.yaml):
-    filters:
-      - column: "age"
-        condition: "greater_than"
-        value: 18
-      - column: "age"
-        condition: "less_than"
-        value: 65
-      - column: "site"
-        condition: "in_list"
-        value: ["Site A", "Site B"]
-    """
-    pass
-
-
 def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
     """
     Apply a list of filters to DataFrame in sequence.
-    
-    This mirrors real-world data pipelines where filters are stored in config files
-    and applied in order to create clean datasets.
 
     Args:
         df: Input DataFrame
@@ -136,6 +107,10 @@ def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
         ...     {'column': 'age', 'condition': 'less_than', 'value': 65},
         ...     {'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}
         ... ]
+        >>> df_filtered = filter_data(df, filters)
+        >>>
+        >>> # Range filter example
+        >>> filters = [{'column': 'age', 'condition': 'in_range', 'value': [18, 65]}]
         >>> df_filtered = filter_data(df, filters)
     """
     pass
@@ -218,6 +193,8 @@ def summarize_by_group(df: pd.DataFrame, group_col: str,
     pass
 
 
+
+
 if __name__ == '__main__':
     # Optional: Test your utilities here
     print("Data utilities loaded successfully!")
@@ -226,7 +203,6 @@ if __name__ == '__main__':
     print("  - clean_data()")
     print("  - detect_missing()")
     print("  - fill_missing()")
-    print("  - load_filters()")
     print("  - filter_data()")
     print("  - transform_types()")
     print("  - create_bins()")

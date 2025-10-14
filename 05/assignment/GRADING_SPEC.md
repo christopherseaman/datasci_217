@@ -101,19 +101,19 @@ result = calculate_statistics(data)
 2. Handles 'median' strategy - 1 pt
 3. Handles 'ffill' strategy - 1 pt
 
-**Function: `filter_data(df, column, **conditions) -> pd.DataFrame` (3 pts):**
-1. Exact value filtering works - 1 pt
-2. Range filtering works - 1 pt
-3. List filtering (.isin) works - 1 pt
+**Function: `filter_data(df, filters) -> pd.DataFrame` (4 pts):**
+1. Applies single filter correctly - 1 pt
+2. Applies multiple filters in sequence - 1 pt
+3. Handles different condition types (equals, greater_than, in_list) - 1 pt
+4. Returns correct filtered DataFrame - 1 pt
 
 **Function: `transform_types(df, type_map) -> pd.DataFrame` (3 pts):**
 1. Converts to datetime - 1 pt
 2. Converts to numeric - 1 pt
 3. Converts to category - 1 pt
 
-**Function: `create_bins(df, column, bins, labels) -> pd.DataFrame` (2 pts):**
+**Function: `create_bins(df, column, bins, labels) -> pd.DataFrame` (1 pt):**
 1. Creates binned column - 1 pt
-2. Bins applied correctly - 1 pt
 
 **Function: `summarize_by_group(df, group_col, agg_dict) -> pd.DataFrame` (2 pts):**
 1. Groups correctly - 1 pt
@@ -233,12 +233,16 @@ assert stats['median'] == 30.0
 
 ### Test Q3 Functions
 ```python
-from q3_data_utils import load_data, detect_missing, fill_missing, filter_data
+from q3_data_utils import load_data, clean_data, detect_missing, fill_missing, filter_data, transform_types, create_bins, summarize_by_group
 
 # Test load_data
 df = load_data('data/clinical_trial_raw.csv')
 assert isinstance(df, pd.DataFrame)
 assert df.shape == (10000, 18)
+
+# Test clean_data
+cleaned = clean_data(df, remove_duplicates=True, sentinel_value=-999)
+assert isinstance(cleaned, pd.DataFrame)
 
 # Test detect_missing
 missing = detect_missing(df)
@@ -251,9 +255,42 @@ filled = fill_missing(test_df, 'col', 'mean')
 assert filled['col'].isnull().sum() == 0
 
 # Test filter_data
-filtered = filter_data(df, 'age', min_value=65, max_value=100)
-assert all(filtered['age'] >= 65)
-assert all(filtered['age'] <= 100)
+filters = [{'column': 'age', 'condition': 'greater_than', 'value': 65}]
+filtered = filter_data(df, filters)
+assert all(filtered['age'] > 65)
+
+# Test multiple filters
+filters = [
+    {'column': 'age', 'condition': 'greater_than', 'value': 18},
+    {'column': 'site', 'condition': 'equals', 'value': 'Site A'}
+]
+filtered = filter_data(df, filters)
+assert all(filtered['age'] > 18)
+assert all(filtered['site'] == 'Site A')
+
+# Test in_list condition
+filters = [{'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}]
+filtered = filter_data(df, filters)
+assert all(filtered['site'].isin(['Site A', 'Site B']))
+
+# Test in_range condition
+filters = [{'column': 'age', 'condition': 'in_range', 'value': [18, 65]}]
+filtered = filter_data(df, filters)
+assert all(filtered['age'] >= 18)
+assert all(filtered['age'] <= 65)
+
+# Test transform_types
+type_map = {'enrollment_date': 'datetime', 'site': 'category'}
+typed = transform_types(df, type_map)
+assert isinstance(typed, pd.DataFrame)
+
+# Test create_bins
+binned = create_bins(df, 'age', [0, 40, 60, 100], ['<40', '40-59', '60+'])
+assert isinstance(binned, pd.DataFrame)
+
+# Test summarize_by_group
+summary = summarize_by_group(df, 'site', {'age': 'mean'})
+assert isinstance(summary, pd.DataFrame)
 ```
 
 ### Test Notebook Outputs

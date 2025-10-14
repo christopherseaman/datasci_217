@@ -201,6 +201,23 @@ from q3_data_utils import load_data, clean_data, fill_missing, filter_data
 
 # Load data using your utility
 df = load_data('data/clinical_trial_raw.csv')
+
+# Example filter_data usage
+# Single filter
+filters = [{'column': 'site', 'condition': 'equals', 'value': 'Site A'}]
+site_a_patients = filter_data(df, filters)
+
+# Multiple filters
+filters = [
+    {'column': 'age', 'condition': 'greater_than', 'value': 18},
+    {'column': 'age', 'condition': 'less_than', 'value': 65},
+    {'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}
+]
+filtered_patients = filter_data(df, filters)
+
+# Range filter
+filters = [{'column': 'age', 'condition': 'in_range', 'value': [18, 65]}]
+age_range_patients = filter_data(df, filters)
 ```
 
 **Q4: Selection & Filtering Patterns

@@ -255,18 +255,6 @@ def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.Da
     """
     pass
 
-def load_filters(filepath: str) -> list:
-    """
-    Load filter configuration from YAML file.
-    
-    Args:
-        filepath: Path to YAML file containing filter list
-        
-    Returns:
-        list: List of filter dictionaries
-    """
-    pass
-
 def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
     """
     Apply a list of filters to DataFrame in sequence.
@@ -281,15 +269,20 @@ def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
         pd.DataFrame: Filtered data
 
     Examples:
-        >>> # Load filters from file
-        >>> filters = load_filters('config/filters.yaml')
+        >>> # Single filter
+        >>> filters = [{'column': 'site', 'condition': 'equals', 'value': 'Site A'}]
         >>> df_filtered = filter_data(df, filters)
         >>>
-        >>> # Or define filters directly
+        >>> # Multiple filters applied in order
         >>> filters = [
         ...     {'column': 'age', 'condition': 'greater_than', 'value': 18},
+        ...     {'column': 'age', 'condition': 'less_than', 'value': 65},
         ...     {'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}
         ... ]
+        >>> df_filtered = filter_data(df, filters)
+        >>>
+        >>> # Range filter example
+        >>> filters = [{'column': 'age', 'condition': 'in_range', 'value': [18, 65]}]
         >>> df_filtered = filter_data(df, filters)
     """
     pass
@@ -331,11 +324,10 @@ def summarize_by_group(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.D
 - `clean_data()` - 3 pts
 - `detect_missing()` - 2 pts
 - `fill_missing()` - 3 pts
-- `load_filters()` - 2 pts
-- `filter_data()` - 3 pts
+- `filter_data()` - 4 pts
 - `transform_types()` - 3 pts
 - `create_bins()` - 1 pt
-- `summarize_by_group()` - 1 pt
+- `summarize_by_group()` - 2 pts
 
 ---
 
@@ -536,7 +528,7 @@ fi
 
 **Directories and Outputs:**
 - [ ] `data/` (contains clinical_trial_raw.csv)
-- [ ] `config/` (contains config.txt and example_filters.yaml)
+- [ ] `config/` (contains config.txt)
 - [ ] `output/` (data artifacts created by your scripts/notebooks)
   - Q2: `config_summary.txt`, `validation_report.txt`, `file_manifest.txt`, `statistics.txt`
   - Q4: `q4_site_counts.csv`

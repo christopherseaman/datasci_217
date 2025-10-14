@@ -693,32 +693,39 @@ df.to_csv('clean_data.csv', index=False)
 
 ## Configuration-Driven Processing
 
-Configuration files make data cleaning pipelines more maintainable and reproducible. YAML (YAML Ain't Markup Language) is a human-readable format perfect for storing filter rules, cleaning parameters, and processing steps.
+Configuration files make data cleaning pipelines more maintainable and reproducible. Simple text files or Python dictionaries can store filter rules, cleaning parameters, and processing steps.
 
-*Pro tip: YAML is like the friendly cousin of JSON - it's easier to read and write, supports comments, and doesn't require quotes around strings (most of the time). It's perfect for configuration files that humans need to edit.*
+*Pro tip: Keep your data cleaning logic separate from your parameters. This makes your code more maintainable and your pipelines more reproducible.*
 
 **Reference:**
 
-- `import yaml` - Import YAML library
-- `yaml.safe_load(file)` - Load YAML file into Python dict/list
-- `yaml.dump(data, file)` - Write Python data to YAML file
-- Indentation matters (use spaces, not tabs)
-- Comments start with `#`
-- Lists use `-` for each item
-- Dictionaries use `key: value` pairs
+- Use Python dictionaries for simple configurations
+- Store parameters in separate files (CSV, JSON, or simple text)
+- Keep cleaning logic in functions
+- Document your cleaning decisions
 
 **Example:**
 
 ```python
-# Load YAML configuration
-import yaml
+# Simple configuration dictionary
+cleaning_config = {
+    'missing_strategies': {
+        'age': 'median',
+        'income': 'mean', 
+        'date': 'ffill'
+    },
+    'outlier_threshold': 3.0,
+    'drop_columns': ['temp_id', 'notes']
+}
 
-with open('config/filters.yaml', 'r') as file:
-    config = yaml.safe_load(file)
-
-# Access nested data
-filters = config['filters']
-print(filters[0]['column'])  # 'age'
+# Apply configuration
+for column, strategy in cleaning_config['missing_strategies'].items():
+    if strategy == 'median':
+        df[column].fillna(df[column].median(), inplace=True)
+    elif strategy == 'mean':
+        df[column].fillna(df[column].mean(), inplace=True)
+    elif strategy == 'ffill':
+        df[column].fillna(method='ffill', inplace=True)
 ```
 
-**LIVE DEMO!** (Demo 3: Complete Workflow - end-to-end data cleaning pipeline with YAML configuration)
+**LIVE DEMO!** (Demo 3: Complete Workflow - end-to-end data cleaning pipeline)
