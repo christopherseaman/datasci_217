@@ -47,9 +47,10 @@ engagement = np.random.beta(3, 2, N)  # Skewed toward engaged
 # PATIENT DEMOGRAPHICS
 # ============================================================================
 
-# Age: realistic distribution for CVD trial (40-80, peak ~60)
+# Age: realistic distribution for CVD trial (0-100, peak ~60)
+# Students will filter to 18-85 using filter_data() utility
 age = np.random.gamma(8, 6, N) + 35
-age = np.clip(age, 40, 85).astype(int)
+age = np.clip(age, 0, 100).astype(int)
 
 # Sex: roughly balanced
 sex = np.random.choice(['M', 'F'], N, p=[0.48, 0.52])

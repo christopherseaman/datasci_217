@@ -52,7 +52,7 @@ q2_config.txt     # Configuration file (Q2 data generation parameters)
 #### Demographics:
 
 - `patient_id`: Unique patient identifier (P00001, P00002, ...)
-- `age`: Patient age in years (18-85)
+- `age`: Patient age in years (0-100, filter to 18-85 for analysis)
 - `sex`: Patient sex (M/F)
 - `bmi`: Body Mass Index (kg/m²)
 - `enrollment_date`: Date patient enrolled in trial (YYYY-MM-DD)
@@ -78,6 +78,16 @@ q2_config.txt     # Configuration file (Q2 data generation parameters)
 - `outcome_cvd`: Cardiovascular disease outcome (Yes/No)
 - `adherence_pct`: Medication adherence percentage (0-100)
 - `dropout`: Whether patient dropped out (Yes/No)
+
+## Data Quality Issues
+
+The generated dataset contains realistic clinical trial data quality issues that you'll need to handle:
+
+- **Missing data**: 5-15% missing values (varies by site quality)
+- **Sentinel values**: -999 for age, -1 for BMI (data entry system codes)
+- **Text inconsistencies**: Mixed capitalization, typos, spacing issues
+- **Date formats**: Multiple formats (YYYY-MM-DD, MM/DD/YYYY, DD-MM-YYYY)
+- **Whitespace**: Leading/trailing spaces in text fields
 
 ## Getting Started
 
