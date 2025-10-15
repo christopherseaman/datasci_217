@@ -21,8 +21,11 @@ mkdir -p data
 mkdir -p output  
 mkdir -p reports
 
+# Generate the dataset
+python3 generate_data.py
+
 # Save directory structure to file
-ls -la > reports/directory_structure.txt
+tree . > reports/directory_structure.txt
 ```
 
 ### Testing
@@ -72,26 +75,33 @@ def validate_config(config: dict) -> dict:
     validation = {}
     
     # Convert string values to numbers for comparison
-    min_age = int(config.get('min_age', 0))
-    max_age = int(config.get('max_age', 0))
-    target_enrollment = int(config.get('target_enrollment', 0))
-    sites = int(config.get('sites', 0))
-    intervention_groups = int(config.get('intervention_groups', 0))
+    sample_data_rows = int(config.get('sample_data_rows', 0))
+    sample_data_min = int(config.get('sample_data_min', 0))
+    sample_data_max = int(config.get('sample_data_max', 0))
     
     # Validation rules
-    validation['min_age'] = min_age >= 18
-    validation['max_age'] = max_age <= 100
-    validation['target_enrollment'] = target_enrollment > 0
-    validation['sites'] = sites >= 1
-    validation['intervention_groups'] = intervention_groups >= 1
+    validation['sample_data_rows'] = sample_data_rows > 0
+    validation['sample_data_min'] = sample_data_min >= 1
+    validation['sample_data_max'] = sample_data_max > sample_data_min
     
     return validation
 ```
 
-**process_files():**
+**generate_sample_data():**
 ```python
-def process_files(file_list: list) -> list:
-    return [f for f in file_list if f.endswith('.csv')]
+def generate_sample_data(filename: str, config: dict) -> None:
+    import random
+    
+    # Parse config values
+    rows = int(config['sample_data_rows'])
+    min_val = int(config['sample_data_min'])
+    max_val = int(config['sample_data_max'])
+    
+    # Generate random numbers and save to file
+    with open(filename, 'w') as f:
+        for _ in range(rows):
+            random_num = random.randint(min_val, max_val)
+            f.write(f"{random_num}\n")
 ```
 
 **calculate_statistics():**
@@ -111,32 +121,21 @@ import statistics
 ```python
 if __name__ == '__main__':
     # Load config
-    config = parse_config('config.txt')
+    config = parse_config('q2_config.txt')
     
     # Validate config
     validation = validate_config(config)
     
-    # Process some sample files
-    sample_files = ['data.csv', 'script.py', 'output.csv']
-    csv_files = process_files(sample_files)
+    # Generate sample data
+    generate_sample_data('data/sample_data.csv', config)
     
-    # Calculate statistics on sample data
-    sample_data = [10, 20, 30, 40, 50]
-    stats = calculate_statistics(sample_data)
+    # Read the generated file and calculate statistics
+    with open('data/sample_data.csv', 'r') as f:
+        data = [int(line.strip()) for line in f]
     
-    # Save outputs
-    with open('output/config_summary.txt', 'w') as f:
-        for key, value in config.items():
-            f.write(f"{key}: {value}\n")
+    stats = calculate_statistics(data)
     
-    with open('output/validation_report.txt', 'w') as f:
-        for key, value in validation.items():
-            f.write(f"{key}: {'PASS' if value else 'FAIL'}\n")
-    
-    with open('output/file_manifest.txt', 'w') as f:
-        for file in csv_files:
-            f.write(f"{file}\n")
-    
+    # Save statistics to output
     with open('output/statistics.txt', 'w') as f:
         for key, value in stats.items():
             f.write(f"{key}: {value}\n")
@@ -603,16 +602,6 @@ with open('output/q7_analysis_report.txt', 'w') as f:
 echo "Starting clinical trial data pipeline..." > reports/pipeline_log.txt
 echo "Pipeline started at: $(date)" >> reports/pipeline_log.txt
 
-# Run Q2: Process metadata
-echo "Running metadata processing..." >> reports/pipeline_log.txt
-python q2_process_metadata.py
-if [ $? -ne 0 ]; then
-    echo "ERROR: Metadata processing failed" >> reports/pipeline_log.txt
-    exit 1
-else
-    echo "SUCCESS: Metadata processing completed" >> reports/pipeline_log.txt
-fi
-
 # Run Q4: Data exploration
 echo "Running data exploration..." >> reports/pipeline_log.txt
 jupyter nbconvert --execute --to notebook q4_exploration.ipynb
@@ -660,7 +649,6 @@ Clinical Trial Data Pipeline Quality Report
 ==========================================
 
 Pipeline Execution Summary:
-- Metadata processing: COMPLETED
 - Data exploration: COMPLETED  
 - Missing data analysis: COMPLETED
 - Data transformation: COMPLETED
@@ -716,18 +704,14 @@ def validate_config(config: dict) -> dict:
     
     try:
         # Convert string values to integers for comparison
-        min_age = int(config.get('min_age', 0))
-        max_age = int(config.get('max_age', 0))
-        target_enrollment = int(config.get('target_enrollment', 0))
-        sites = int(config.get('sites', 0))
-        intervention_groups = int(config.get('intervention_groups', 0))
+        sample_data_rows = int(config.get('sample_data_rows', 0))
+        sample_data_min = int(config.get('sample_data_min', 0))
+        sample_data_max = int(config.get('sample_data_max', 0))
         
         # Validation rules
-        validation['min_age'] = min_age >= 18
-        validation['max_age'] = max_age <= 100
-        validation['target_enrollment'] = target_enrollment > 0
-        validation['sites'] = sites >= 1
-        validation['intervention_groups'] = intervention_groups >= 1
+        validation['sample_data_rows'] = sample_data_rows > 0
+        validation['sample_data_min'] = sample_data_min >= 1
+        validation['sample_data_max'] = sample_data_max > sample_data_min
         
         # Date validation (if both dates present)
         if 'enrollment_start' in config and 'enrollment_end' in config:
@@ -744,25 +728,31 @@ def validate_config(config: dict) -> dict:
     except (ValueError, TypeError) as e:
         print(f"Error validating config: {e}")
         # Set all validations to False if conversion fails
-        for key in ['min_age', 'max_age', 'target_enrollment', 'sites', 'intervention_groups']:
+        for key in ['sample_data_rows', 'sample_data_min', 'sample_data_max']:
             validation[key] = False
     
     return validation
 ```
 
-**process_files() - Complete Implementation:**
+**generate_sample_data() - Complete Implementation:**
 ```python
-def process_files(file_list: list) -> list:
-    """Filter file list to only .csv files."""
-    if not isinstance(file_list, list):
-        return []
+def generate_sample_data(filename: str, config: dict) -> None:
+    """Generate a file with random numbers for testing."""
+    import random
     
-    csv_files = []
-    for filename in file_list:
-        if isinstance(filename, str) and filename.lower().endswith('.csv'):
-            csv_files.append(filename)
-    
-    return csv_files
+    try:
+        # Parse config values
+        rows = int(config['sample_data_rows'])
+        min_val = int(config['sample_data_min'])
+        max_val = int(config['sample_data_max'])
+        
+        # Generate random numbers and save to file
+        with open(filename, 'w') as f:
+            for _ in range(rows):
+                random_num = random.randint(min_val, max_val)
+                f.write(f"{random_num}\n")
+    except (KeyError, ValueError, TypeError) as e:
+        print(f"Error generating sample data: {e}")
 ```
 
 **calculate_statistics() - Complete Implementation:**
