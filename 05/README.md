@@ -1,12 +1,13 @@
 Data: Care & Feeding
 
+Mid-term: [#FIXME:URL]
+
+[Live Demo!](demo/DEMO_GUIDE.md)
+
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 
-<!-- FIXME: xkcd 2054 "Data Pipeline"
-     Shows the reality that data cleaning is most of the work
-     Perfect intro to data cleaning lecture - sets expectations
-     https://xkcd.com/2054/
-     File: media/xkcd_2054.png -->
+![Data Pipeline Intro](media/data_pipeline_intro.png)
+*Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
 Data cleaning follows a systematic workflow: **detect → handle → validate → transform**. We'll cover each technique individually, then bring it all together in a complete pipeline at the end.
 
@@ -16,14 +17,10 @@ Missing data is a common problem in real-world datasets. Understanding how to id
 
 *Fun fact: Missing data has its own Wikipedia page with 47 different types of missingness. The most common? "I forgot to fill this out" and "The system crashed again."*
 
-<!-- FIXME: Add diagram showing common missing data patterns:
-     - MCAR (Missing Completely At Random)
-     - MAR (Missing At Random)
-     - MNAR (Missing Not At Random)
-     - Visual examples of each pattern
-     File: media/missing_data_patterns.png -->
+![Missing Data Patterns](media/missing_data_patterns_diagram.png)
+*Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
 
-![Data Cleaning Workflow](media/diagram2.svg)
+![Data Cleaning Workflow](media/data_cleaning_workflow.png)
 
 ## Missing Data Detection
 
@@ -181,11 +178,8 @@ print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
 
 ## Applying Custom Functions
 
-<!-- FIXME: xkcd 1205 "Is It Worth the Time?"
-     Classic time-saving calculation chart
-     Perfect for .apply() section - when is automation worth it?
-     https://xkcd.com/1205/
-     File: media/xkcd_1205.png -->
+![xkcd 1205 "Is It Worth the Time?"](media/xkcd_1205_apply.png)
+*Classic time-saving calculation chart - perfect for .apply() section*
 
 Sometimes built-in methods aren't enough - you need to apply custom logic to transform your data. The `.apply()` and `.map()` methods let you use any function (built-in or custom) to transform data.
 
@@ -362,12 +356,8 @@ Working with categorical data is common in data analysis. Pandas provides two ma
 
 The categorical type is incredibly powerful for memory optimization, especially when you have repeated string values.
 
-<!-- FIXME: Add visual showing categorical encoding:
-     - Original: ['red', 'blue', 'red', 'green', 'blue']
-     - Categories: ['blue', 'green', 'red']
-     - Codes: [2, 0, 2, 1, 0]
-     - Memory savings comparison (object vs category)
-     File: media/categorical_encoding.png -->
+![Categorical Encoding](media/categorical_encoding_diagram.png)
+*Visual showing categorical encoding: Original values → Categories → Codes with memory savings comparison*
 
 **Reference:**
 
@@ -432,18 +422,11 @@ print(dummies)  # Only color_green and color_red (blue is the reference)
 
 String operations are essential for cleaning text data. Pandas provides easy-to-use string methods that work on Series containing text.
 
-<!-- FIXME: Add visual reference card for common string operations:
-     - .upper() / .lower() with examples
-     - .strip() / .replace() with examples
-     - .split() / .contains() with examples
-     - Quick lookup table format
-     File: media/string_operations_reference.png -->
+![String Operations Reference](media/string_operations_reference.png)
+*Quick reference card for common string operations: .upper()/.lower(), .strip()/.replace(), .split()/.contains()*
 
-<!-- FIXME: xkcd 1171 "Perl Problems"
-     "I got 99 problems, so I used regex. Now I have 100 problems."
-     Perfect humor for string manipulation complexity
-     https://xkcd.com/1171/
-     File: media/xkcd_1171.png -->
+![xkcd 1171 "Perl Problems"](media/xkcd_1171.png)
+*"I got 99 problems, so I used regex. Now I have 100 problems." - Perfect humor for string manipulation complexity*
 
 **Reference:**
 
@@ -550,11 +533,8 @@ print(len(bootstrap))  # 4 (same length, but with replacement)
 
 # Data Validation and Quality Assessment
 
-<!-- FIXME: xkcd 2239 "Database"
-     Shows data errors invalidating research - perfect for validation section
-     About discovering data errors that invalidate analysis
-     https://xkcd.com/2239/
-     File: media/xkcd_2239.png -->
+![xkcd 2239 "Database"](media/xkcd_2239.png)
+*Shows data errors invalidating research - perfect for validation section*
 
 ## Data Quality Checks
 
@@ -728,9 +708,6 @@ for column, strategy in cleaning_config['missing_strategies'].items():
         df[column].fillna(method='ffill', inplace=True)
 ```
 
-**LIVE DEMO!** (Demo 3: Complete Workflow - end-to-end data cleaning pipeline)
-
----
 
 # Running Notebooks from Command Line
 
@@ -749,7 +726,9 @@ jupyter nbconvert --execute --to notebook --output executed_notebook your_notebo
 jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
 ```
 
-## Pipeline Automation
+## Notebook Pipeline Automation
+
+Always check exit codes (`$?`) after notebook execution to ensure your pipeline stops if any step fails. This is crucial for automated data processing workflows.
 
 ```bash
 #!/bin/bash
@@ -773,7 +752,7 @@ fi
 echo "Pipeline completed successfully!"
 ```
 
-## Key Parameters
+**Key Parameters**
 
 - `--execute`: Run all cells in the notebook
 - `--to notebook`: Keep output as notebook format
@@ -781,6 +760,7 @@ echo "Pipeline completed successfully!"
 - `--output filename`: Save to a new file
 - `--allow-errors`: Continue execution even if cells fail
 
-## Error Handling
 
-Always check exit codes (`$?`) after notebook execution to ensure your pipeline stops if any step fails. This is crucial for automated data processing workflows.
+
+# **LIVE DEMO!**
+(Demo 3: Complete Workflow - end-to-end data cleaning pipeline)

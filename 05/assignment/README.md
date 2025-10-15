@@ -99,16 +99,16 @@ mkdir -p reports
 ```
 
 **Your script must:**
-1. Be executable (`chmod +x setup_project.sh`) - **2 pts**
-2. Have shebang `#!/bin/bash` - **1 pt**
-3. Create `data/` directory - **2 pts**
-4. Create `output/` directory - **2 pts**
-5. Create `reports/` directory - **2 pts**
-6. Save directory listing to `reports/directory_structure.txt` - **1 pt**
+1. Be executable (`chmod +x q1_setup_project.sh`)
+2. Have shebang `#!/bin/bash`
+3. Create `data/` directory
+4. Create `output/` directory
+5. Create `reports/` directory
+6. Save directory listing to `reports/directory_structure.txt`
 
 **Test it:**
 ```bash
-./setup_project.sh
+./q1_setup_project.sh
 ls -la
 cat reports/directory_structure.txt
 ```
@@ -208,22 +208,22 @@ if __name__ == '__main__':
 
 ### Grading:
 
-**Structure (5 pts):**
-- Executable with shebang - 2 pts
-- Has `if __name__ == '__main__':` - 1 pt
-- Functions importable - 2 pts
+**Structure:**
+- Executable with shebang
+- Has `if __name__ == '__main__':`
+- Functions importable
 
-**Functions (16 pts):**
-- `parse_config()` works correctly - 4 pts
-- `validate_config()` logic correct - 4 pts
-- `process_files()` filters correctly - 4 pts
-- `calculate_statistics()` returns correct stats - 4 pts
+**Functions:**
+- `parse_config()` works correctly
+- `validate_config()` logic correct
+- `process_files()` filters correctly
+- `calculate_statistics()` returns correct stats
 
-**Outputs (4 pts):**
-- `output/config_summary.txt` - 1 pt
-- `output/validation_report.txt` - 1 pt
-- `output/file_manifest.txt` - 1 pt
-- `output/statistics.txt` - 1 pt
+**Outputs:**
+- `output/config_summary.txt`
+- `output/validation_report.txt`
+- `output/file_manifest.txt`
+- `output/statistics.txt`
 
 ---
 
@@ -322,11 +322,11 @@ def transform_types(df: pd.DataFrame, type_map: dict) -> pd.DataFrame:
     """
     pass
 
-def create_bins(df: pd.DataFrame, column: str, bins: list, labels: list) -> pd.DataFrame:
+def create_bins(df: pd.DataFrame, column: str, bins: list, labels: list, new_column: str = None) -> pd.DataFrame:
     """Create categorical bins from continuous column using pd.cut()."""
     pass
 
-def summarize_by_group(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.DataFrame:
+def summarize_by_group(df: pd.DataFrame, group_col: str, agg_dict: dict = None) -> pd.DataFrame:
     """
     Group and aggregate using multiple functions.
 
@@ -341,15 +341,15 @@ def summarize_by_group(df: pd.DataFrame, group_col: str, agg_dict: dict) -> pd.D
     pass
 ```
 
-### Grading (20 pts):
-- `load_data()` - 2 pts
-- `clean_data()` - 3 pts
-- `detect_missing()` - 2 pts
-- `fill_missing()` - 3 pts
-- `filter_data()` - 4 pts
-- `transform_types()` - 3 pts
-- `create_bins()` - 1 pt
-- `summarize_by_group()` - 2 pts
+### Grading:
+- `load_data()`
+- `clean_data()`
+- `detect_missing()`
+- `fill_missing()`
+- `filter_data()`
+- `transform_types()`
+- `create_bins()`
+- `summarize_by_group()`
 
 ---
 
@@ -361,30 +361,30 @@ Complete the notebook to explore the clinical trial data using your Q3 utilities
 
 ### Tasks:
 
-1. **Load and inspect data** (3 pts)
+1. **Load and inspect data**
    - Import your `q3_data_utils` module
    - Load `data/clinical_trial_raw.csv`
    - Display basic info (shape, dtypes, first few rows)
 
-2. **Generate site distribution** (5 pts)
+2. **Generate site distribution**
    - Calculate value counts for the 'site' column
    - Save to `output/q4_site_counts.csv`
 
-3. **Explore numeric variables** (4 pts)
+3. **Explore numeric variables**
    - Display summary statistics for numeric columns
    - Identify columns with outliers
 
-4. **Categorical analysis** (3 pts)
+4. **Categorical analysis**
    - Show distribution of intervention groups
    - Display sex distribution
 
 ### Required Output:
 - `output/q4_site_counts.csv`
 
-### Grading (15 pts):
-- Notebook executes without errors - 5 pts
-- Site counts CSV exists and is correct - 5 pts
-- Analysis cells present and meaningful - 5 pts
+### Grading:
+- Notebook executes without errors
+- Site counts CSV exists and is correct
+- Analysis cells present and meaningful
 
 ---
 
@@ -396,19 +396,19 @@ Complete the notebook to analyze and handle missing data.
 
 ### Tasks:
 
-1. **Detect missing data** (3 pts)
+1. **Detect missing data**
    - Use your utility function to find missing values
    - Display counts and percentages
 
-2. **Apply filling strategies** (6 pts)
+2. **Apply filling strategies**
    - Fill numeric columns with appropriate methods (mean/median)
    - Use forward fill for time-series columns
    - Document your choices
 
-3. **Handle critical missing values** (3 pts)
+3. **Handle critical missing values**
    - Drop rows with missing values in critical columns (patient_id, outcome variables)
 
-4. **Save cleaned data** (3 pts)
+4. **Save cleaned data**
    - Save to `output/q5_cleaned_data.csv`
    - Generate missing data report to `output/q5_missing_report.txt`
 
@@ -416,10 +416,10 @@ Complete the notebook to analyze and handle missing data.
 - `output/q5_cleaned_data.csv`
 - `output/q5_missing_report.txt`
 
-### Grading (15 pts):
-- Notebook executes without errors - 5 pts
-- Cleaned data has fewer missing values - 5 pts
-- Output files exist with correct content - 5 pts
+### Grading:
+- Notebook executes without errors
+- Cleaned data has fewer missing values
+- Output files exist with correct content
 
 ---
 
@@ -431,30 +431,30 @@ Complete the notebook to transform and engineer features.
 
 ### Tasks:
 
-1. **Type conversions** (4 pts)
+1. **Type conversions**
    - Convert enrollment_date to datetime
    - Convert categorical columns to category dtype
    - Convert any string numbers to numeric
 
-2. **Feature engineering** (8 pts)
+2. **Feature engineering**
    - Create cholesterol ratio (LDL/HDL)
    - Create age groups using bins: [0, 40, 55, 70, 100] → ['<40', '40-54', '55-69', '70+']
    - Create BMI categories: [0, 18.5, 25, 30, 100] → ['Underweight', 'Normal', 'Overweight', 'Obese']
 
-3. **Clean and encode** (5 pts)
+3. **Clean and encode**
    - Remove any remaining duplicates
    - Create dummy variables for intervention_group
 
-4. **Save transformed data** (3 pts)
+4. **Save transformed data**
    - Save to `output/q6_transformed_data.csv`
 
 ### Required Output:
 - `output/q6_transformed_data.csv`
 
-### Grading (20 pts):
-- Notebook executes without errors - 5 pts
-- New feature columns exist - 8 pts
-- Transformed data saved correctly - 7 pts
+### Grading:
+- Notebook executes without errors
+- New feature columns exist
+- Transformed data saved correctly
 
 ---
 
@@ -466,21 +466,21 @@ Complete the notebook to perform grouped analysis.
 
 ### Tasks:
 
-1. **Site-level summary** (5 pts)
+1. **Site-level summary**
    - Group by site
    - Calculate mean age, BMI, and patient count per site
    - Save to `output/q7_site_summary.csv`
 
-2. **Intervention comparison** (5 pts)
+2. **Intervention comparison**
    - Group by intervention_group
    - Compare outcome rates, adverse events, adherence
    - Save to `output/q7_intervention_comparison.csv`
 
-3. **Advanced analysis** (3 pts)
+3. **Advanced analysis**
    - Find top 10 patients by cholesterol_total
    - Calculate statistics by age_group (if created in Q6)
 
-4. **Generate report** (2 pts)
+4. **Generate report**
    - Save key findings to `output/q7_analysis_report.txt`
 
 ### Required Outputs:
@@ -488,11 +488,11 @@ Complete the notebook to perform grouped analysis.
 - `output/q7_intervention_comparison.csv`
 - `output/q7_analysis_report.txt`
 
-### Grading (15 pts):
-- Notebook executes without errors - 5 pts
-- Site summary exists with correct structure - 4 pts
-- Intervention comparison exists - 3 pts
-- Analysis report has meaningful content - 3 pts
+### Grading:
+- Notebook executes without errors
+- Site summary exists with correct structure
+- Intervention comparison exists
+- Analysis report has meaningful content
 
 ---
 
@@ -525,12 +525,12 @@ fi
 # TODO: Save output/final_clean_data.csv
 ```
 
-### Grading (5 pts):
-- Script is executable - 1 pt
-- Has shebang - 1 pt
-- `reports/pipeline_log.txt` exists - 1 pt
-- `reports/quality_report.txt` exists - 1 pt
-- `output/final_clean_data.csv` exists - 1 pt
+### Grading:
+- Script is executable
+- Has shebang
+- `reports/pipeline_log.txt` exists
+- `reports/quality_report.txt` exists
+- `output/final_clean_data.csv` exists
 
 ---
 

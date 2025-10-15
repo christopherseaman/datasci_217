@@ -1,75 +1,59 @@
-# Assignment 5 Tips & Scaffolding
+# Assignment 5 Tips & Help
 
-Quick reference for common patterns and helpful code snippets.
+This guide provides step-by-step help for each question in the clinical trial data analysis assignment.
 
----
+## Q1: Project Setup Script
 
-## General Tips
+**Goal:** Create a shell script that sets up the project directory structure.
 
-**Directory structure:**
-```
-05/assignment/
-├── q1_setup_project.sh        # Q1: Your setup script
-├── q2_process_metadata.py     # Q2: Metadata processing
-├── q3_data_utils.py           # Q3: Reusable utility library
-├── q4_exploration.ipynb       # Q4: Data exploration notebook
-├── q5_missing_data.ipynb      # Q5: Missing data analysis notebook
-├── q6_transformation.ipynb    # Q6: Data transformation notebook
-├── q7_aggregation.ipynb       # Q7: Aggregation analysis notebook
-├── q8_run_pipeline.sh         # Q8: Pipeline automation
-├── config.txt                 # Input: Trial configuration
-├── data/
-│   └── clinical_trial_raw.csv # Input: Raw data
-├── output/                    # Your CSV/text outputs go here
-└── reports/                   # Your report files go here
-```
+### Key Concepts
+- Shell scripts need a shebang (`#!/bin/bash`) to specify the interpreter
+- Use `mkdir -p` to create directories (the `-p` flag creates parent directories if needed)
+- Use `ls -la` to get a detailed directory listing
+- Redirect output with `>` to save to a file
 
-**Working with the data:**
-```python
-import pandas as pd
-
-# Load the data
-df = pd.read_csv('data/clinical_trial_raw.csv')
-
-# Quick exploration
-print(df.shape)           # (10000, 18)
-print(df.columns.tolist())
-print(df.head())
-print(df.dtypes)
-```
-
----
-
-## Q1: Shell Script Patterns
-
-**Basic script structure:**
+### Implementation Tips
 ```bash
 #!/bin/bash
 
 # Create directories
-mkdir -p directory_name
+mkdir -p data
+mkdir -p output  
+mkdir -p reports
 
-# Check if command succeeded
-if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to create directory"
-    exit 1
-fi
-
-# Save directory tree to file
-ls -R > reports/directory_structure.txt
+# Save directory structure to file
+ls -la > reports/directory_structure.txt
 ```
 
-**Make script executable:**
+### Testing
 ```bash
-chmod +x setup_project.sh
-./setup_project.sh
+# Make executable
+chmod +x q1_setup_project.sh
+
+# Run the script
+./q1_setup_project.sh
+
+# Verify directories were created
+ls -la
+
+# Check the output file
+cat reports/directory_structure.txt
 ```
 
----
+## Q2: Python Data Processing
 
-## Q2: Python Fundamentals
+**Goal:** Create functions to process configuration files and demonstrate Python fundamentals.
 
-**Reading key=value config files:**
+### Key Concepts
+- File I/O: `open()`, `read()`, `close()` or use `with` statement
+- String methods: `.split()`, `.strip()`
+- Dictionary operations: `dict[key] = value`
+- List comprehensions for filtering
+- Basic statistics: mean, median, sum, count
+
+### Implementation Tips
+
+**parse_config():**
 ```python
 def parse_config(filepath: str) -> dict:
     config = {}
@@ -77,603 +61,861 @@ def parse_config(filepath: str) -> dict:
         for line in f:
             line = line.strip()
             if '=' in line:
-                key, value = line.split('=')
+                key, value = line.split('=', 1)
                 config[key] = value
     return config
 ```
 
-**Validation with if/elif/else:**
+**validate_config():**
 ```python
-def validate_value(value, min_val, max_val):
-    if value < min_val:
-        return False
-    elif value > max_val:
-        return False
-    else:
-        return True
+def validate_config(config: dict) -> dict:
+    validation = {}
+    
+    # Convert string values to numbers for comparison
+    min_age = int(config.get('min_age', 0))
+    max_age = int(config.get('max_age', 0))
+    target_enrollment = int(config.get('target_enrollment', 0))
+    sites = int(config.get('sites', 0))
+    intervention_groups = int(config.get('intervention_groups', 0))
+    
+    # Validation rules
+    validation['min_age'] = min_age >= 18
+    validation['max_age'] = max_age <= 100
+    validation['target_enrollment'] = target_enrollment > 0
+    validation['sites'] = sites >= 1
+    validation['intervention_groups'] = intervention_groups >= 1
+    
+    return validation
 ```
 
-**Filtering lists:**
+**process_files():**
 ```python
-# List comprehension
-csv_files = [f for f in file_list if f.endswith('.csv')]
-
-# Filter function
-def is_csv(filename):
-    return filename.endswith('.csv')
-
-csv_files = list(filter(is_csv, file_list))
+def process_files(file_list: list) -> list:
+    return [f for f in file_list if f.endswith('.csv')]
 ```
 
-**Basic statistics:**
+**calculate_statistics():**
 ```python
-import statistics
-
-data = [1, 2, 3, 4, 5]
-mean_val = statistics.mean(data)
-median_val = statistics.median(data)
-sum_val = sum(data)
-count = len(data)
+def calculate_statistics(data: list) -> dict:
+    import statistics
+    
+    return {
+        'mean': statistics.mean(data),
+        'median': statistics.median(data),
+        'sum': sum(data),
+        'count': len(data)
+    }
 ```
 
-**Saving text outputs:**
+### Main Section
 ```python
-# Save simple text file
-with open('output/summary.txt', 'w') as f:
-    f.write(f"Study: {config['study_name']}\n")
-    f.write(f"PI: {config['primary_investigator']}\n")
+if __name__ == '__main__':
+    # Load config
+    config = parse_config('config/config.txt')
+    
+    # Validate config
+    validation = validate_config(config)
+    
+    # Process some sample files
+    sample_files = ['data.csv', 'script.py', 'output.csv']
+    csv_files = process_files(sample_files)
+    
+    # Calculate statistics on sample data
+    sample_data = [10, 20, 30, 40, 50]
+    stats = calculate_statistics(sample_data)
+    
+    # Save outputs
+    with open('output/config_summary.txt', 'w') as f:
+        for key, value in config.items():
+            f.write(f"{key}: {value}\n")
+    
+    with open('output/validation_report.txt', 'w') as f:
+        for key, value in validation.items():
+            f.write(f"{key}: {'PASS' if value else 'FAIL'}\n")
+    
+    with open('output/file_manifest.txt', 'w') as f:
+        for file in csv_files:
+            f.write(f"{file}\n")
+    
+    with open('output/statistics.txt', 'w') as f:
+        for key, value in stats.items():
+            f.write(f"{key}: {value}\n")
 ```
 
----
+## Q3: Data Utilities Library
 
-## Q3: Building the Data Utilities Library
+**Goal:** Create reusable pandas functions that will be imported by Q4-Q7 notebooks.
 
-**This is your reusable function library - Q4-Q7 notebooks will import from here.**
+### Key Concepts
+- Pandas DataFrame operations
+- Missing value handling
+- Data type conversions
+- Filtering and grouping
+- Function design for reusability
 
-**Basic loading:**
+### Implementation Tips
+
+**load_data():**
 ```python
-import pandas as pd
-import numpy as np
-
 def load_data(filepath: str) -> pd.DataFrame:
-    """Load CSV file into DataFrame."""
     return pd.read_csv(filepath)
 ```
 
-**Cleaning with options:**
+**clean_data():**
 ```python
-def clean_data(df: pd.DataFrame, remove_duplicates: bool = True, sentinel_value=-999) -> pd.DataFrame:
-    """Clean data by removing duplicates and replacing sentinel values."""
+def clean_data(df: pd.DataFrame, remove_duplicates: bool = True, 
+               sentinel_value: float = -999) -> pd.DataFrame:
     df_clean = df.copy()
-
-    if remove_duplicates:
-        df_clean = df_clean.drop_duplicates()
-
+    
     # Replace sentinel values with NaN
     df_clean = df_clean.replace(sentinel_value, np.nan)
-
+    
+    # Remove duplicates if requested
+    if remove_duplicates:
+        df_clean = df_clean.drop_duplicates()
+    
     return df_clean
 ```
 
-**Flexible missing data handling:**
+**detect_missing():**
+```python
+def detect_missing(df: pd.DataFrame) -> pd.Series:
+    return df.isnull().sum()
+```
+
+**fill_missing():**
 ```python
 def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.DataFrame:
-    """Fill missing values using specified strategy."""
     df_filled = df.copy()
-
+    
     if strategy == 'mean':
         df_filled[column] = df_filled[column].fillna(df_filled[column].mean())
     elif strategy == 'median':
         df_filled[column] = df_filled[column].fillna(df_filled[column].median())
     elif strategy == 'ffill':
         df_filled[column] = df_filled[column].fillna(method='ffill')
-
+    
     return df_filled
 ```
 
-**Type conversion with mapping:**
+**filter_data():**
+```python
+def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
+    df_filtered = df.copy()
+    
+    for filter_dict in filters:
+        column = filter_dict['column']
+        condition = filter_dict['condition']
+        value = filter_dict['value']
+        
+        if condition == 'equals':
+            df_filtered = df_filtered[df_filtered[column] == value]
+        elif condition == 'greater_than':
+            df_filtered = df_filtered[df_filtered[column] > value]
+        elif condition == 'less_than':
+            df_filtered = df_filtered[df_filtered[column] < value]
+        elif condition == 'in_list':
+            df_filtered = df_filtered[df_filtered[column].isin(value)]
+        elif condition == 'in_range':
+            df_filtered = df_filtered[
+                (df_filtered[column] >= value[0]) & 
+                (df_filtered[column] <= value[1])
+            ]
+    
+    return df_filtered
+```
+
+**transform_types():**
 ```python
 def transform_types(df: pd.DataFrame, type_map: dict) -> pd.DataFrame:
-    """Convert column types based on mapping."""
-    df_transformed = df.copy()
-
-    for col, dtype in type_map.items():
-        if dtype == 'datetime':
-            df_transformed[col] = pd.to_datetime(df_transformed[col])
-        elif dtype == 'numeric':
-            df_transformed[col] = pd.to_numeric(df_transformed[col], errors='coerce')
-        elif dtype == 'category':
-            df_transformed[col] = df_transformed[col].astype('category')
-
-    return df_transformed
+    df_typed = df.copy()
+    
+    for column, target_type in type_map.items():
+        if target_type == 'datetime':
+            df_typed[column] = pd.to_datetime(df_typed[column])
+        elif target_type == 'numeric':
+            df_typed[column] = pd.to_numeric(df_typed[column], errors='coerce')
+        elif target_type == 'category':
+            df_typed[column] = df_typed[column].astype('category')
+        elif target_type == 'string':
+            df_typed[column] = df_typed[column].astype('string')
+    
+    return df_typed
 ```
 
----
-
-## Q4-Q7: Working in Notebooks
-
-**Import your utilities:**
+**create_bins():**
 ```python
-# At the top of your notebook
-import pandas as pd
-import numpy as np
-from q3_data_utils import load_data, clean_data, fill_missing, filter_data
+def create_bins(df: pd.DataFrame, column: str, bins: list, 
+                labels: list, new_column: str = None) -> pd.DataFrame:
+    df_binned = df.copy()
+    
+    if new_column is None:
+        new_column = f"{column}_binned"
+    
+    df_binned[new_column] = pd.cut(df_binned[column], bins=bins, labels=labels)
+    
+    return df_binned
+```
 
-# Load data using your utility
+**summarize_by_group():**
+```python
+def summarize_by_group(df: pd.DataFrame, group_col: str, 
+                       agg_dict: dict = None) -> pd.DataFrame:
+    if agg_dict is None:
+        # Default: describe numeric columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        agg_dict = {col: ['mean', 'std', 'min', 'max'] for col in numeric_cols}
+    
+    return df.groupby(group_col).agg(agg_dict)
+```
+
+## Q4: Data Exploration
+
+**Goal:** Explore the clinical trial dataset using your Q3 utilities.
+
+### Key Concepts
+- DataFrame inspection: `.shape`, `.dtypes`, `.head()`, `.describe()`
+- Value counts: `.value_counts()`
+- Column selection: `.select_dtypes()`, `.loc[]`
+- Using your utility functions
+
+### Implementation Tips
+
+**Load and inspect:**
+```python
+from q3_data_utils import load_data, detect_missing, filter_data
+
+# Load data
 df = load_data('data/clinical_trial_raw.csv')
 
-# Example filter_data usage
-# Single filter
-filters = [{'column': 'site', 'condition': 'equals', 'value': 'Site A'}]
-site_a_patients = filter_data(df, filters)
-
-# Multiple filters
-filters = [
-    {'column': 'age', 'condition': 'greater_than', 'value': 18},
-    {'column': 'age', 'condition': 'less_than', 'value': 65},
-    {'column': 'site', 'condition': 'in_list', 'value': ['Site A', 'Site B']}
-]
-filtered_patients = filter_data(df, filters)
-
-# Range filter
-filters = [{'column': 'age', 'condition': 'in_range', 'value': [18, 65]}]
-age_range_patients = filter_data(df, filters)
+# Basic info
+print(f"Shape: {df.shape}")
+print(f"Columns: {df.columns.tolist()}")
+print(f"Data types:\n{df.dtypes}")
+print(f"First 5 rows:\n{df.head()}")
+print(f"Summary statistics:\n{df.describe()}")
 ```
 
-**Q4: Selection & Filtering Patterns
-
-**Selecting by data type:**
+**Site distribution:**
 ```python
-numeric_df = df.select_dtypes(include=['number'])
-text_df = df.select_dtypes(include=['object'])
+# Calculate site value counts
+site_counts = df['site'].value_counts().reset_index()
+site_counts.columns = ['site', 'count']
+
+# Save to CSV
+site_counts.to_csv('output/q4_site_counts.csv', index=False)
 ```
 
-**Label-based selection (.loc):**
+**Numeric exploration:**
 ```python
-# Rows by index labels, columns by name
-subset = df.loc[0:10, ['patient_id', 'age', 'bmi']]
+# Select only numeric columns
+numeric_cols = df.select_dtypes(include=[np.number])
+print("Numeric columns summary:")
+print(numeric_cols.describe())
 
-# Boolean indexing with .loc
-adults = df.loc[df['age'] >= 18]
+# Check for outliers (values > 3 standard deviations from mean)
+for col in numeric_cols.columns:
+    mean = numeric_cols[col].mean()
+    std = numeric_cols[col].std()
+    outliers = numeric_cols[(numeric_cols[col] - mean).abs() > 3 * std]
+    if len(outliers) > 0:
+        print(f"Outliers in {col}: {len(outliers)} values")
 ```
 
-**Position-based selection (.iloc):**
+**Categorical analysis:**
 ```python
-# First 100 rows, first 5 columns
-subset = df.iloc[0:100, 0:5]
+# Intervention group distribution
+print("Intervention groups:")
+print(df['intervention_group'].value_counts())
 
-# Specific column indices
-subset = df.iloc[:, [0, 2, 4, 6]]
+# Sex distribution
+print("Sex distribution:")
+print(df['sex'].value_counts())
 ```
 
-**Boolean filtering:**
+## Q5: Missing Data Analysis
+
+**Goal:** Analyze and handle missing data in the clinical trial dataset.
+
+### Key Concepts
+- Missing value detection and visualization
+- Imputation strategies: mean, median, forward fill
+- Dropping missing data
+- Documenting decisions
+
+### Implementation Tips
+
+**Detect missing data:**
 ```python
-# Single condition
-high_bp = df[df['systolic_bp'] > 140]
+from q3_data_utils import load_data, detect_missing, fill_missing
 
-# Multiple conditions (use & and |, wrap each condition in parentheses)
-at_risk = df[(df['systolic_bp'] > 140) & (df['cholesterol_total'] > 200)]
+# Load data
+df = load_data('data/clinical_trial_raw.csv')
 
-# .isin() for categorical filtering
-sites_subset = df[df['site'].isin(['Site A', 'Site B'])]
+# Detect missing values
+missing_counts = detect_missing(df)
+missing_pct = (missing_counts / len(df)) * 100
+
+print("Missing value analysis:")
+for col in missing_counts.index:
+    if missing_counts[col] > 0:
+        print(f"{col}: {missing_counts[col]} ({missing_pct[col]:.1f}%)")
 ```
 
----
-
-## Q5: Missing Data Analysis (Notebook)
-
-**Detecting missing data:**
+**Compare imputation strategies:**
 ```python
-# Count missing per column
-missing_counts = df.isnull().sum()
+# Test on a column with missing values (e.g., cholesterol_total)
+test_col = 'cholesterol_total'
 
-# Percentage missing
-missing_pct = df.isnull().sum() / len(df) * 100
-```
-
-**Filling strategies:**
-```python
-import numpy as np
+# Original statistics
+original_mean = df[test_col].mean()
+original_median = df[test_col].median()
 
 # Fill with mean
-df['age_filled'] = df['age'].fillna(df['age'].mean())
+df_mean = fill_missing(df, test_col, 'mean')
+mean_filled_mean = df_mean[test_col].mean()
 
 # Fill with median
-df['bmi_filled'] = df['bmi'].fillna(df['bmi'].median())
+df_median = fill_missing(df, test_col, 'median')
+median_filled_median = df_median[test_col].median()
 
 # Forward fill
-df['date_filled'] = df['enrollment_date'].fillna(method='ffill')
+df_ffill = fill_missing(df, test_col, 'ffill')
 
-# Backward fill
-df['date_filled'] = df['enrollment_date'].fillna(method='bfill')
+print(f"Original mean: {original_mean:.2f}")
+print(f"After mean imputation: {mean_filled_mean:.2f}")
+print(f"Original median: {original_median:.2f}")
+print(f"After median imputation: {median_filled_median:.2f}")
 ```
 
-**Dropping missing data:**
+**Create clean dataset:**
 ```python
-# Drop rows with any missing values
-df_complete = df.dropna()
+# Apply your chosen strategy
+df_clean = df.copy()
 
-# Drop rows with missing values in specific columns
-df_subset = df.dropna(subset=['age', 'bmi'])
+# Fill numeric columns with median (more robust to outliers)
+numeric_cols = df_clean.select_dtypes(include=[np.number]).columns
+for col in numeric_cols:
+    if df_clean[col].isnull().sum() > 0:
+        df_clean = fill_missing(df_clean, col, 'median')
 
-# Drop rows with ALL values missing in subset
-df_subset = df.dropna(subset=['blood_pressure', 'cholesterol'], how='all')
+# Drop rows with missing critical values
+critical_cols = ['patient_id', 'age', 'outcome_cvd']
+df_clean = df_clean.dropna(subset=critical_cols)
+
+# Save cleaned data
+df_clean.to_csv('output/q5_cleaned_data.csv', index=False)
+
+# Generate missing data report
+with open('output/q5_missing_report.txt', 'w') as f:
+    f.write("Missing Data Analysis Report\n")
+    f.write("=" * 30 + "\n\n")
+    f.write(f"Original dataset: {len(df)} rows\n")
+    f.write(f"Cleaned dataset: {len(df_clean)} rows\n")
+    f.write(f"Rows removed: {len(df) - len(df_clean)}\n\n")
+    
+    f.write("Missing values by column (original):\n")
+    for col in missing_counts.index:
+        if missing_counts[col] > 0:
+            f.write(f"  {col}: {missing_counts[col]} ({missing_pct[col]:.1f}%)\n")
 ```
 
----
+## Q6: Data Transformation
 
-## Q6: Data Transformation (Notebook)
+**Goal:** Transform and engineer features from the clinical trial dataset.
 
-**Removing duplicates:**
-```python
-# Remove duplicate rows
-df_unique = df.drop_duplicates()
+### Key Concepts
+- Data type conversions
+- Feature engineering: ratios, categories, bins
+- One-hot encoding
+- String cleaning
 
-# Remove duplicates based on specific columns
-df_unique = df.drop_duplicates(subset=['patient_id'])
-
-# Keep last occurrence instead of first
-df_unique = df.drop_duplicates(subset=['patient_id'], keep='last')
-```
+### Implementation Tips
 
 **Type conversions:**
 ```python
-# Convert to datetime
-df['enrollment_date'] = pd.to_datetime(df['enrollment_date'])
+from q3_data_utils import load_data, transform_types
 
-# Convert to numeric (coerce errors to NaN)
-df['age'] = pd.to_numeric(df['age'], errors='coerce')
+# Load data
+df = load_data('data/clinical_trial_raw.csv')
 
-# Convert to category
-df['site'] = df['site'].astype('category')
-```
-
-**Replacing values:**
-```python
-# Replace sentinel values with NaN
-df['income'] = df['income'].replace(-999, np.nan)
-
-# Replace using dictionary
-df['status'] = df['status'].replace({'Y': 'Yes', 'N': 'No'})
-```
-
-**Applying functions:**
-```python
-# .apply() with custom function
-def bmi_category(bmi):
-    if bmi < 18.5:
-        return 'Underweight'
-    elif bmi < 25:
-        return 'Normal'
-    elif bmi < 30:
-        return 'Overweight'
-    else:
-        return 'Obese'
-
-df['bmi_category'] = df['bmi'].apply(bmi_category)
-
-# .apply() with lambda
-df['age_squared'] = df['age'].apply(lambda x: x ** 2)
-```
-
-**Mapping values:**
-```python
-# .map() with dictionary
-education_map = {'HS': 'High School', 'BA': 'Bachelors', 'MA': 'Masters'}
-df['education_full'] = df['education'].map(education_map)
-```
-
-**String operations:**
-```python
-# Clean strings
-df['site_clean'] = df['site'].str.strip().str.lower()
-
-# String methods chaining
-df['name'] = df['name'].str.strip().str.title()
-```
-
-**Calculated columns:**
-```python
-# Create new column from calculation
-df['cholesterol_ratio'] = df['cholesterol_ldl'] / df['cholesterol_hdl']
-df['bmi_calc'] = df['weight_kg'] / (df['height_m'] ** 2)
-```
-
-**Creating categorical bins:**
-```python
-# Equal-width bins with pd.cut()
-df['age_group'] = pd.cut(df['age'],
-                         bins=[0, 30, 50, 100],
-                         labels=['Young', 'Middle', 'Senior'])
-
-# Or specify bin edges and labels
-bins = [0, 18, 65, 120]
-labels = ['Child', 'Adult', 'Senior']
-df['age_category'] = pd.cut(df['age'], bins=bins, labels=labels)
-
-# Equal-frequency bins with pd.qcut()
-df['bmi_quartile'] = pd.qcut(df['bmi'], q=4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
-```
-
-**Dummy variable encoding:**
-```python
-# Create dummy variables from categorical column
-dummies = pd.get_dummies(df['intervention_group'], prefix='treatment')
-
-# Join with original DataFrame and drop original column
-df = pd.concat([df, dummies], axis=1)
-df = df.drop('intervention_group', axis=1)
-
-# Or in one step
-df = pd.get_dummies(df, columns=['intervention_group'], drop_first=False)
-```
-
-**Outlier detection with IQR:**
-```python
-# Calculate IQR (Interquartile Range)
-Q1 = df['cholesterol_total'].quantile(0.25)
-Q3 = df['cholesterol_total'].quantile(0.75)
-IQR = Q3 - Q1
-
-# Define outlier bounds
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-
-# Detect outliers (boolean Series)
-outliers = (df['cholesterol_total'] < lower_bound) | (df['cholesterol_total'] > upper_bound)
-
-# Filter to only outliers
-outlier_rows = df[outliers]
-
-# Remove outliers
-df_clean = df[~outliers]
-```
-
----
-
-## Q7: Groupby & Aggregation (Notebook)
-
-**Basic groupby:**
-```python
-# Group and sum
-site_totals = df.groupby('site')['adverse_events'].sum()
-
-# Group and mean
-site_avg_age = df.groupby('site')['age'].mean()
-```
-
-**Multiple aggregations:**
-```python
-# Multiple functions on one column
-stats = df.groupby('site')['age'].agg(['mean', 'std', 'count'])
-
-# Different functions on different columns
-agg_dict = {
-    'age': 'mean',
-    'bmi': ['mean', 'std'],
-    'patient_id': 'count'
+# Define type mapping
+type_map = {
+    'enrollment_date': 'datetime',
+    'site': 'category',
+    'intervention_group': 'category',
+    'sex': 'category',
+    'outcome_cvd': 'category',
+    'dropout': 'category'
 }
-summary = df.groupby('site').agg(agg_dict)
+
+# Apply type conversions
+df = transform_types(df, type_map)
+
+# Check updated types
+print("Updated data types:")
+print(df.dtypes)
 ```
 
-**Top N values:**
+**Feature engineering:**
 ```python
-# Get top 10 by column
-top_10 = df.nlargest(10, 'cholesterol_total')
+# Cholesterol ratio
+df['cholesterol_ratio'] = df['cholesterol_ldl'] / df['cholesterol_hdl']
 
-# Get bottom 5
-bottom_5 = df.nsmallest(5, 'bmi')
+# Blood pressure categories
+df['bp_category'] = pd.cut(df['systolic_bp'], 
+                          bins=[0, 120, 130, 200], 
+                          labels=['Normal', 'Elevated', 'High'])
+
+# Age groups using utility function
+from q3_data_utils import create_bins
+df = create_bins(df, 'age', [0, 40, 55, 70, 100], 
+                 ['<40', '40-54', '55-69', '70+'], 'age_group')
+
+# BMI categories
+df['bmi_category'] = pd.cut(df['bmi'], 
+                           bins=[0, 18.5, 25, 30, 100], 
+                           labels=['Underweight', 'Normal', 'Overweight', 'Obese'])
 ```
 
-**Group, aggregate, and sort:**
+**One-hot encoding:**
 ```python
-# Group by site, count patients, sort by count
-site_counts = df.groupby('site')['patient_id'].count().sort_values(ascending=False)
+# Create dummy variables
+intervention_dummies = pd.get_dummies(df['intervention_group'], prefix='intervention')
+site_dummies = pd.get_dummies(df['site'], prefix='site')
 
-# Reset index to make groupby column a regular column
-site_summary = df.groupby('site')['age'].mean().reset_index()
+# Combine with original data
+df_transformed = pd.concat([df, intervention_dummies, site_dummies], axis=1)
+
+# Drop original categorical columns
+df_transformed = df_transformed.drop(['intervention_group', 'site'], axis=1)
+
+# Save transformed data
+df_transformed.to_csv('output/q6_transformed_data.csv', index=False)
+
+print(f"Original columns: {len(df.columns)}")
+print(f"Transformed columns: {len(df_transformed.columns)}")
 ```
 
----
+## Q7: Aggregation & Analysis
 
-## Q8: Shell Pipeline Script
+**Goal:** Perform grouped analysis and create summary reports.
 
-**Script structure with error checking:**
+### Key Concepts
+- Groupby operations
+- Multiple aggregations
+- Cross-tabulations
+- Summary statistics
+
+### Implementation Tips
+
+**Site-level summary:**
+```python
+from q3_data_utils import load_data, summarize_by_group
+
+# Load data
+df = load_data('data/clinical_trial_raw.csv')
+
+# Group by site and calculate statistics
+site_summary = df.groupby('site').agg({
+    'age': ['mean', 'std'],
+    'bmi': ['mean', 'std'],
+    'patient_id': 'count'  # Count patients per site
+}).round(2)
+
+# Flatten column names
+site_summary.columns = ['age_mean', 'age_std', 'bmi_mean', 'bmi_std', 'patient_count']
+site_summary = site_summary.reset_index()
+
+# Save site summary
+site_summary.to_csv('output/q7_site_summary.csv', index=False)
+```
+
+**Intervention comparison:**
+```python
+# Group by intervention and compare outcomes
+intervention_summary = df.groupby('intervention_group').agg({
+    'outcome_cvd': lambda x: (x == 'Yes').mean(),  # Outcome rate
+    'adverse_events': 'mean',
+    'adherence_pct': 'mean',
+    'patient_id': 'count'
+}).round(3)
+
+# Rename columns
+intervention_summary.columns = ['outcome_rate', 'avg_adverse_events', 'avg_adherence', 'patient_count']
+intervention_summary = intervention_summary.reset_index()
+
+# Save intervention comparison
+intervention_summary.to_csv('output/q7_intervention_comparison.csv', index=False)
+```
+
+**Advanced analysis:**
+```python
+# Top 10 patients by cholesterol
+top_cholesterol = df.nlargest(10, 'cholesterol_total')[['patient_id', 'cholesterol_total', 'age', 'site']]
+
+# Statistics by age group (if created in Q6)
+if 'age_group' in df.columns:
+    age_stats = df.groupby('age_group')['cholesterol_total'].agg(['mean', 'std', 'count']).round(2)
+    print("Cholesterol statistics by age group:")
+    print(age_stats)
+```
+
+**Generate analysis report:**
+```python
+with open('output/q7_analysis_report.txt', 'w') as f:
+    f.write("Clinical Trial Analysis Report\n")
+    f.write("=" * 30 + "\n\n")
+    
+    f.write("Dataset Overview:\n")
+    f.write(f"  Total patients: {len(df)}\n")
+    f.write(f"  Sites: {df['site'].nunique()}\n")
+    f.write(f"  Intervention groups: {df['intervention_group'].nunique()}\n\n")
+    
+    f.write("Key Findings:\n")
+    f.write(f"  1. Average age: {df['age'].mean():.1f} years\n")
+    f.write(f"  2. Average BMI: {df['bmi'].mean():.1f}\n")
+    f.write(f"  3. Overall outcome rate: {(df['outcome_cvd'] == 'Yes').mean():.1%}\n")
+    f.write(f"  4. Average adherence: {df['adherence_pct'].mean():.1f}%\n")
+    
+    f.write("\nSite Performance:\n")
+    for site in df['site'].unique():
+        site_data = df[df['site'] == site]
+        outcome_rate = (site_data['outcome_cvd'] == 'Yes').mean()
+        f.write(f"  {site}: {outcome_rate:.1%} outcome rate\n")
+```
+
+## Q8: Pipeline Automation
+
+**Goal:** Create a shell script that runs the entire analysis pipeline.
+
+### Key Concepts
+- Shell script automation
+- Exit code checking (`$?`)
+- Error handling and logging
+- Pipeline orchestration
+
+### Implementation Tips
+
 ```bash
 #!/bin/bash
 
-echo "Starting pipeline..." > reports/pipeline_log.txt
-date >> reports/pipeline_log.txt
+echo "Starting clinical trial data pipeline..." > reports/pipeline_log.txt
+echo "Pipeline started at: $(date)" >> reports/pipeline_log.txt
 
-# Run step 1: Metadata processing
-echo "Step 1: Processing metadata..." >> reports/pipeline_log.txt
+# Run Q2: Process metadata
+echo "Running metadata processing..." >> reports/pipeline_log.txt
 python q2_process_metadata.py
 if [ $? -ne 0 ]; then
     echo "ERROR: Metadata processing failed" >> reports/pipeline_log.txt
     exit 1
+else
+    echo "SUCCESS: Metadata processing completed" >> reports/pipeline_log.txt
 fi
 
-# Run step 2: Execute notebooks
-echo "Step 2: Running analysis notebooks..." >> reports/pipeline_log.txt
-jupyter nbconvert --to notebook --execute q4_exploration.ipynb
-jupyter nbconvert --to notebook --execute q5_missing_data.ipynb
-jupyter nbconvert --to notebook --execute q6_transformation.ipynb
-jupyter nbconvert --to notebook --execute q7_aggregation.ipynb
+# Run Q4: Data exploration
+echo "Running data exploration..." >> reports/pipeline_log.txt
+jupyter nbconvert --execute --to notebook q4_exploration.ipynb
+if [ $? -ne 0 ]; then
+    echo "ERROR: Data exploration failed" >> reports/pipeline_log.txt
+    exit 1
+else
+    echo "SUCCESS: Data exploration completed" >> reports/pipeline_log.txt
+fi
 
-# Continue for other steps...
+# Run Q5: Missing data analysis
+echo "Running missing data analysis..." >> reports/pipeline_log.txt
+jupyter nbconvert --execute --to notebook q5_missing_data.ipynb
+if [ $? -ne 0 ]; then
+    echo "ERROR: Missing data analysis failed" >> reports/pipeline_log.txt
+    exit 1
+else
+    echo "SUCCESS: Missing data analysis completed" >> reports/pipeline_log.txt
+fi
 
-echo "Pipeline complete!" >> reports/pipeline_log.txt
-date >> reports/pipeline_log.txt
+# Run Q6: Data transformation
+echo "Running data transformation..." >> reports/pipeline_log.txt
+jupyter nbconvert --execute --to notebook q6_transformation.ipynb
+if [ $? -ne 0 ]; then
+    echo "ERROR: Data transformation failed" >> reports/pipeline_log.txt
+    exit 1
+else
+    echo "SUCCESS: Data transformation completed" >> reports/pipeline_log.txt
+fi
+
+# Run Q7: Aggregation analysis
+echo "Running aggregation analysis..." >> reports/pipeline_log.txt
+jupyter nbconvert --execute --to notebook q7_aggregation.ipynb
+if [ $? -ne 0 ]; then
+    echo "ERROR: Aggregation analysis failed" >> reports/pipeline_log.txt
+    exit 1
+else
+    echo "SUCCESS: Aggregation analysis completed" >> reports/pipeline_log.txt
+fi
+
+# Generate quality report
+echo "Generating quality report..." >> reports/pipeline_log.txt
+cat > reports/quality_report.txt << EOF
+Clinical Trial Data Pipeline Quality Report
+==========================================
+
+Pipeline Execution Summary:
+- Metadata processing: COMPLETED
+- Data exploration: COMPLETED  
+- Missing data analysis: COMPLETED
+- Data transformation: COMPLETED
+- Aggregation analysis: COMPLETED
+
+Output Files Generated:
+$(ls -la output/)
+
+Pipeline completed successfully at: $(date)
+EOF
+
+# Copy final cleaned data
+if [ -f "output/q5_cleaned_data.csv" ]; then
+    cp output/q5_cleaned_data.csv output/final_clean_data.csv
+    echo "Final clean data saved to output/final_clean_data.csv" >> reports/pipeline_log.txt
+else
+    echo "WARNING: No cleaned data found" >> reports/pipeline_log.txt
+fi
+
+echo "Pipeline completed at: $(date)" >> reports/pipeline_log.txt
+echo "All tasks completed successfully!"
 ```
 
-**Generating reports:**
-```bash
-# Count files in output/
-echo "Output files generated: $(ls output/ | wc -l)" >> reports/quality_report.txt
+## Explicit Function Scaffolds
 
-# Check for missing values in final data
-echo "Data quality checks:" >> reports/quality_report.txt
-python -c "import pandas as pd; df = pd.read_csv('output/final_clean_data.csv'); print(f'Missing values: {df.isnull().sum().sum()}')" >> reports/quality_report.txt
-```
+If you need more detailed help with specific functions, here are complete implementations:
 
----
+### Q2 Function Scaffolds
 
-## Common Pandas Patterns
-
-**Chaining operations:**
+**parse_config() - Complete Implementation:**
 ```python
-# Read, filter, select, save
-(pd.read_csv('data/clinical_trial_raw.csv')
-   .loc[lambda df: df['age'] > 50]
-   [['patient_id', 'age', 'bmi']]
-   .to_csv('output/seniors.csv', index=False))
+def parse_config(filepath: str) -> dict:
+    """Parse config file (key=value format) into dictionary."""
+    config = {}
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and '=' in line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    config[key.strip()] = value.strip()
+    except FileNotFoundError:
+        print(f"Error: Config file {filepath} not found")
+        return {}
+    return config
 ```
 
-**Handling dates:**
+**validate_config() - Complete Implementation:**
 ```python
-df['enrollment_date'] = pd.to_datetime(df['enrollment_date'])
-df['year'] = df['enrollment_date'].dt.year
-df['month'] = df['enrollment_date'].dt.month
-df['day_of_week'] = df['enrollment_date'].dt.day_name()
+def validate_config(config: dict) -> dict:
+    """Validate configuration values using if/elif/else logic."""
+    validation = {}
+    
+    try:
+        # Convert string values to integers for comparison
+        min_age = int(config.get('min_age', 0))
+        max_age = int(config.get('max_age', 0))
+        target_enrollment = int(config.get('target_enrollment', 0))
+        sites = int(config.get('sites', 0))
+        intervention_groups = int(config.get('intervention_groups', 0))
+        
+        # Validation rules
+        validation['min_age'] = min_age >= 18
+        validation['max_age'] = max_age <= 100
+        validation['target_enrollment'] = target_enrollment > 0
+        validation['sites'] = sites >= 1
+        validation['intervention_groups'] = intervention_groups >= 1
+        
+        # Date validation (if both dates present)
+        if 'enrollment_start' in config and 'enrollment_end' in config:
+            try:
+                from datetime import datetime
+                start_date = datetime.strptime(config['enrollment_start'], '%Y-%m-%d')
+                end_date = datetime.strptime(config['enrollment_end'], '%Y-%m-%d')
+                validation['date_order'] = start_date < end_date
+            except ValueError:
+                validation['date_order'] = False
+        else:
+            validation['date_order'] = True  # Skip if dates not present
+            
+    except (ValueError, TypeError) as e:
+        print(f"Error validating config: {e}")
+        # Set all validations to False if conversion fails
+        for key in ['min_age', 'max_age', 'target_enrollment', 'sites', 'intervention_groups']:
+            validation[key] = False
+    
+    return validation
 ```
 
-**Creating categories from continuous data:**
+**process_files() - Complete Implementation:**
 ```python
-# Equal-width bins
-df['age_group'] = pd.cut(df['age'], bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior'])
-
-# Equal-frequency bins (quantiles)
-df['bmi_quartile'] = pd.qcut(df['bmi'], q=4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
+def process_files(file_list: list) -> list:
+    """Filter file list to only .csv files."""
+    if not isinstance(file_list, list):
+        return []
+    
+    csv_files = []
+    for filename in file_list:
+        if isinstance(filename, str) and filename.lower().endswith('.csv'):
+            csv_files.append(filename)
+    
+    return csv_files
 ```
 
-**Saving outputs:**
+**calculate_statistics() - Complete Implementation:**
 ```python
-# DataFrame to CSV
-df.to_csv('output/result.csv', index=False)
-
-# Series to CSV
-df['site'].value_counts().to_csv('output/site_counts.csv')
-
-# Text file
-with open('output/summary.txt', 'w') as f:
-    f.write(f"Total patients: {len(df)}\n")
-    f.write(f"Average age: {df['age'].mean():.1f}\n")
+def calculate_statistics(data: list) -> dict:
+    """Calculate basic statistics."""
+    if not data or len(data) == 0:
+        return {'mean': 0, 'median': 0, 'sum': 0, 'count': 0}
+    
+    try:
+        # Convert to numbers, filtering out non-numeric values
+        numeric_data = []
+        for item in data:
+            try:
+                numeric_data.append(float(item))
+            except (ValueError, TypeError):
+                continue
+        
+        if len(numeric_data) == 0:
+            return {'mean': 0, 'median': 0, 'sum': 0, 'count': 0}
+        
+        import statistics
+        
+        return {
+            'mean': statistics.mean(numeric_data),
+            'median': statistics.median(numeric_data),
+            'sum': sum(numeric_data),
+            'count': len(numeric_data)
+        }
+    except Exception as e:
+        print(f"Error calculating statistics: {e}")
+        return {'mean': 0, 'median': 0, 'sum': 0, 'count': 0}
 ```
 
----
+### Q3 Function Scaffolds
 
-## Debugging Tips
-
-**Check data types:**
+**filter_data() - Complete Implementation:**
 ```python
-print(df.dtypes)
-print(df.info())
+def filter_data(df: pd.DataFrame, filters: list) -> pd.DataFrame:
+    """Apply a list of filters to DataFrame in sequence."""
+    if not isinstance(filters, list) or len(filters) == 0:
+        return df.copy()
+    
+    df_filtered = df.copy()
+    
+    for filter_dict in filters:
+        if not isinstance(filter_dict, dict):
+            continue
+            
+        column = filter_dict.get('column')
+        condition = filter_dict.get('condition')
+        value = filter_dict.get('value')
+        
+        if not all([column, condition, value is not None]):
+            continue
+            
+        if column not in df_filtered.columns:
+            continue
+        
+        try:
+            if condition == 'equals':
+                df_filtered = df_filtered[df_filtered[column] == value]
+            elif condition == 'greater_than':
+                df_filtered = df_filtered[df_filtered[column] > value]
+            elif condition == 'less_than':
+                df_filtered = df_filtered[df_filtered[column] < value]
+            elif condition == 'in_list':
+                if isinstance(value, list):
+                    df_filtered = df_filtered[df_filtered[column].isin(value)]
+            elif condition == 'in_range':
+                if isinstance(value, list) and len(value) == 2:
+                    df_filtered = df_filtered[
+                        (df_filtered[column] >= value[0]) & 
+                        (df_filtered[column] <= value[1])
+                    ]
+        except Exception as e:
+            print(f"Error applying filter {condition} on column {column}: {e}")
+            continue
+    
+    return df_filtered
 ```
 
-**Inspect specific values:**
+**transform_types() - Complete Implementation:**
 ```python
-print(df['column_name'].unique())
-print(df['column_name'].value_counts())
-print(df['column_name'].describe())
+def transform_types(df: pd.DataFrame, type_map: dict) -> pd.DataFrame:
+    """Convert column types based on mapping."""
+    df_typed = df.copy()
+    
+    for column, target_type in type_map.items():
+        if column not in df_typed.columns:
+            continue
+            
+        try:
+            if target_type == 'datetime':
+                df_typed[column] = pd.to_datetime(df_typed[column], errors='coerce')
+            elif target_type == 'numeric':
+                df_typed[column] = pd.to_numeric(df_typed[column], errors='coerce')
+            elif target_type == 'category':
+                df_typed[column] = df_typed[column].astype('category')
+            elif target_type == 'string':
+                df_typed[column] = df_typed[column].astype('string')
+            elif target_type == 'int':
+                df_typed[column] = pd.to_numeric(df_typed[column], errors='coerce').astype('Int64')
+            elif target_type == 'float':
+                df_typed[column] = pd.to_numeric(df_typed[column], errors='coerce')
+        except Exception as e:
+            print(f"Error converting column {column} to {target_type}: {e}")
+            continue
+    
+    return df_typed
 ```
 
-**Find problematic rows:**
+**summarize_by_group() - Complete Implementation:**
 ```python
-# Rows with missing age
-print(df[df['age'].isnull()])
-
-# Rows with negative values
-print(df[df['systolic_bp'] < 0])
-
-# Duplicates
-print(df[df.duplicated()])
+def summarize_by_group(df: pd.DataFrame, group_col: str, 
+                       agg_dict: dict = None) -> pd.DataFrame:
+    """Group data and apply aggregations."""
+    if group_col not in df.columns:
+        print(f"Error: Column {group_col} not found in DataFrame")
+        return pd.DataFrame()
+    
+    if agg_dict is None:
+        # Default: describe numeric columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) == 0:
+            return pd.DataFrame()
+        agg_dict = {col: ['mean', 'std', 'min', 'max'] for col in numeric_cols}
+    
+    try:
+        result = df.groupby(group_col).agg(agg_dict)
+        
+        # Flatten multi-level column names
+        if isinstance(result.columns, pd.MultiIndex):
+            result.columns = ['_'.join(col).strip() for col in result.columns.values]
+        
+        return result.reset_index()
+    except Exception as e:
+        print(f"Error in groupby operation: {e}")
+        return pd.DataFrame()
 ```
 
-**Test functions interactively:**
-```python
-# In Python interpreter or Jupyter
-from process_metadata import parse_config
+## Common Debugging Tips
 
-config = parse_config('config.txt')
-print(config)
-```
+1. **Import Errors:** Make sure your Q3 functions are in the same directory as your notebooks
+2. **File Not Found:** Check that you've run Q1 to create the directory structure
+3. **Data Type Errors:** Use `.dtypes` to check column types before operations
+4. **Missing Values:** Always check for missing values with `.isnull().sum()`
+5. **Memory Issues:** Use `.copy()` when modifying DataFrames to avoid warnings
+6. **Path Issues:** Use relative paths like `'data/clinical_trial_raw.csv'` not absolute paths
 
-**Common errors:**
-- `KeyError`: Column name doesn't exist (check spelling, spaces)
-- `ValueError`: Type conversion failed (check for invalid values)
-- `FileNotFoundError`: Wrong file path (check relative paths)
-- `SettingWithCopyWarning`: Use `.copy()` when creating subset DataFrames
+## Getting Help
 
----
-
-## Testing Your Work
-
-**Check file existence:**
-```bash
-ls output/
-ls reports/
-```
-
-**Verify script executability:**
-```bash
-ls -la *.sh
-# Should show -rwxr-xr-x (x = executable)
-```
-
-**Test functions by importing:**
-```python
-# Create test_my_work.py
-from q2_process_metadata import parse_config, validate_config
-from q3_data_utils import load_data, clean_data
-
-config = parse_config('config.txt')
-print("Config loaded:", config)
-
-validation = validate_config(config)
-print("Validation results:", validation)
-
-# Test your utilities
-df = load_data('data/clinical_trial_raw.csv')
-print("Data shape:", df.shape)
-```
-
-**Run individual scripts:**
-```bash
-python q2_process_metadata.py
-
-# Test notebooks
-jupyter nbconvert --to notebook --execute q4_exploration.ipynb
-# etc.
-```
-
-**Check outputs match expected format:**
-```python
-# Quick checks
-import pandas as pd
-
-# Q4 outputs
-site_counts = pd.read_csv('output/q4_site_counts.csv')
-print(site_counts)
-
-# Q5 outputs
-cleaned = pd.read_csv('output/q5_cleaned_data.csv')
-print(f"Cleaned data shape: {cleaned.shape}")
-
-# Q6 outputs
-transformed = pd.read_csv('output/q6_transformed_data.csv')
-print(f"New columns: {set(transformed.columns) - set(cleaned.columns)}")
-
-# Q7 outputs
-site_summary = pd.read_csv('output/q7_site_summary.csv')
-print(site_summary)
-```
-
----
-
-## Good Luck!
-
-Remember:
-- Read error messages carefully
-- Test functions individually before running full pipeline
-- Check intermediate outputs to verify correctness
-- Use `df.head()` and `df.info()` frequently while developing
+- Check the error messages carefully - they often tell you exactly what's wrong
+- Use `print()` statements to debug your code and see intermediate results
+- Test your functions with small sample data before using the full dataset
+- Make sure all required output files are being created in the `output/` directory

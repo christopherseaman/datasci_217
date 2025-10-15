@@ -33,6 +33,7 @@ def validate_config(config: dict) -> dict:
     - max_age must be <= 100
     - target_enrollment must be > 0
     - sites must be >= 1
+    - intervention_groups must be >= 1
 
     Args:
         config: Configuration dictionary
