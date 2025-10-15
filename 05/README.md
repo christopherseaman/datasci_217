@@ -88,8 +88,8 @@ Missing data imputation fills in missing values using various strategies. The ch
 **Reference:**
 
 - `df.fillna(value)` - Fill missing values with constant
-- `df.fillna(method='ffill')` - Forward fill (use previous value)
-- `df.fillna(method='bfill')` - Backward fill (use next value)
+- `df.ffill()` / `df.fillna(method='ffill')` - Forward fill (use previous value; method= deprecated in pandas 3.0)
+- `df.bfill()` / `df.fillna(method='bfill')` - Backward fill (use next value; method= deprecated in pandas 3.0)
 - `df.fillna(df.mean())` - Fill with column mean
 - `df.fillna(df.median())` - Fill with column median
 - `df.fillna(df.mode().iloc[0])` - Fill with column mode
@@ -109,9 +109,23 @@ print(df_filled)  # Missing values replaced with 0
 df_mean = df.fillna(df.mean())
 print(df_mean)  # Missing values replaced with column mean
 
-# Forward fill
-df_ffill = df.fillna(method='ffill')
+# Forward fill - modern syntax (pandas 1.4+)
+df_ffill = df.ffill()
 print(df_ffill)  # Missing values replaced with previous value
+
+# Deprecated syntax (still works in pandas 2.x, removed in 3.0)
+df_ffill_old = df.fillna(method='ffill')  # Avoid this in new code
+```
+
+```
+Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
+  Index Value           Index Value                     Index Value
+    0     10              0     10 ─┐                     0     10
+    1   [NaN]             1     10 ←┤ fills down          1     15 ←┐
+    2   [NaN]             2     10 ←┘ from 10             2     15 ←┤ fills up
+    3     15              3     15 ─┐                     3     15 ─┘ from 15
+    4   [NaN]             4     15 ←┤ fills down          4   [NaN] (can't fill - no later rows)
+    5   [NaN]             5     15 ←┘ from 15             5   [NaN] (can't fill - no later rows)
 ```
 
 **LIVE DEMO!** (Demo 1: Missing Data - detection, analysis, and imputation strategies)
@@ -184,6 +198,8 @@ print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
 Sometimes built-in methods aren't enough - you need to apply custom logic to transform your data. The `.apply()` and `.map()` methods let you use any function (built-in or custom) to transform data.
 
 *Think of `.apply()` as your data transformation Swiss Army knife - when pandas doesn't have a built-in method for what you need, you can just write your own function and apply it to every row, column, or value.*
+
+**Quick lambda primer**: A `lambda` is a one-line anonymous function, perfect for simple transformations: `lambda x: x * 2` is equivalent to `def double(x): return x * 2`, just more concise for one-time use.
 
 **Reference:**
 
@@ -317,6 +333,8 @@ print(age_groups)  # [Young, Young, Middle, Senior, Senior]
 
 Outliers are extreme values that may represent errors or important anomalies. Detecting and handling them appropriately is crucial for reliable analysis.
 
+![IQR Method for Outlier Detection](https://upload.wikimedia.org/wikipedia/commons/1/1a/Boxplot_vs_PDF.svg)
+
 **Reference:**
 
 - `df[df['col'] > threshold]` - Filter by threshold
@@ -392,14 +410,14 @@ Indicator variables convert categories into binary (0/1) columns, which is essen
 - `pd.get_dummies(series)` - Create dummy variables
 - `prefix='category'` - Add prefix to column names
 - `drop_first=True` - Avoid multicollinearity (drop first category)
-- `dtype='int64'` - Specify data type for dummies
+- `dtype='int64'` - Specify data type for dummies (use int64 not bool - booleans can't represent missing values)
 
 **Example:**
 
 ```python
 # Create dummy variables
 df = pd.DataFrame({'color': ['red', 'blue', 'red', 'green']})
-dummies = pd.get_dummies(df['color'], prefix='color')
+dummies = pd.get_dummies(df['color'], prefix='color', dtype='int64')
 print(dummies)
 # Creates: color_blue, color_green, color_red columns with 0/1 values
 
@@ -408,7 +426,7 @@ df_with_dummies = pd.concat([df, dummies], axis=1)
 print(df_with_dummies)
 
 # Drop first category to avoid multicollinearity
-dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True)
+dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64')
 print(dummies)  # Only color_green and color_red (blue is the reference)
 ```
 
@@ -424,6 +442,22 @@ String operations are essential for cleaning text data. Pandas provides easy-to-
 
 ![String Operations Reference](media/string_operations_reference.png)
 *Quick reference card for common string operations: .upper()/.lower(), .strip()/.replace(), .split()/.contains()*
+
+```
+Input: "  Alice Smith  "
+   │
+   ├─ .strip() ────────────► "Alice Smith"
+   │                              │
+   │                              ├─ .lower() ────────► "alice smith"
+   │                              │                          │
+   │                              │                          └─ .replace(' ', '_') ──► "alice_smith"
+   │                              │
+   │                              └─ .split(' ') ────────► ['Alice', 'Smith']
+   │                                     │
+   │                                     └─ [0] ──────────► 'Alice'
+   │
+   └─ .title() ────────────► "Alice Smith"
+```
 
 ![xkcd 1171 "Perl Problems"](media/xkcd_1171.png)
 *"I got 99 problems, so I used regex. Now I have 100 problems." - Perfect humor for string manipulation complexity*
@@ -535,6 +569,14 @@ print(len(bootstrap))  # 4 (same length, but with replacement)
 
 ![xkcd 2239 "Database"](media/xkcd_2239.png)
 *Shows data errors invalidating research - perfect for validation section*
+
+| Issue | Detection | Solution |
+|-------|-----------|----------|
+| Missing Values | `df.isnull().sum()` | • Impute (mean/median)<br>• Forward/backward fill<br>• Drop if <5% missing |
+| Duplicates | `df.duplicated()` | • `drop_duplicates()`<br>• Keep first or last |
+| Wrong Data Type | `df.dtypes` | • `astype('int64')`<br>• `pd.to_datetime()` |
+| Outliers | `df.describe()`<br>Box plots | • IQR method filter<br>• Clip extreme values<br>• Keep if valid (verify) |
+| Inconsistent Categories | `df['col'].unique()` | • `str.lower().strip()`<br>• `replace()` mapping |
 
 ## Data Quality Checks
 
