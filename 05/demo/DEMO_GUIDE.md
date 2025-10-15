@@ -19,13 +19,15 @@ Students work through patient data with various missing values:
    - Forward fill for test dates (temporal/sequential data)
    - Drop rows missing both BP and cholesterol (critical data)
 
-**Key Teaching Points**:
+## Key Teaching Points
+
 - Missing data is normal in real-world datasets
 - Visualization reveals patterns (random vs systematic missingness)
 - Different strategies for different data types and contexts
 - Document why you chose each strategy
 
-**Expected Outcomes**:
+## Expected Outcomes
+
 - Students can quantify missingness (count and percentage)
 - Students understand when to fill vs drop
 - Students recognize that one strategy doesn't fit all columns
@@ -59,7 +61,8 @@ Students work through messy survey data with multiple quality issues:
    - Access categories with `.cat.categories`
    - Access codes with `.cat.codes`
 
-**Key Teaching Points**:
+## Key Teaching Points
+
 - `.apply()` enables custom transformation logic
 - `.map()` is perfect for categorical mappings (like scoring or ranking)
 - Lambda functions great for one-liners, named functions better for complex logic
@@ -68,7 +71,8 @@ Students work through messy survey data with multiple quality issues:
 - Categorical dtype saves memory when you have repeated string values
 - The `.get()` method in dictionaries prevents KeyErrors with defaults
 
-**Expected Outcomes**:
+## Expected Outcomes
+
 - Students can apply custom functions to transform data
 - Students understand difference between .apply() and .map()
 - Students can create categorical variables for analysis
@@ -104,7 +108,8 @@ Students work through e-commerce order data with multiple simultaneous issues us
 8. **Detect outliers** - IQR method for finding unusual transactions
 9. **Save results** - Cleaned data, summaries, data quality report, and configuration log
 
-**Key Teaching Points**:
+## Key Teaching Points
+
 - Always copy original data before modifying (`.copy()`)
 - Systematic approach: detect before handling, validate after
 - `.loc[]` for conditional replacement is powerful
@@ -114,7 +119,8 @@ Students work through e-commerce order data with multiple simultaneous issues us
 - Save intermediate results and final outputs
 - The workflow is iterative: detect → handle → validate → repeat
 
-**Expected Outcomes**:
+## Expected Outcomes
+
 - Students can build end-to-end cleaning pipeline
 - Students can work with configuration dictionaries
 - Students understand configuration-driven data processing
@@ -126,12 +132,14 @@ Students work through e-commerce order data with multiple simultaneous issues us
 
 # Key Takeaways Across All Demos
 
-**Demo 1 - Missing Data**:
+## Demo 1 - Missing Data
+
 - Quantify and visualize missing patterns first
 - Different fill strategies: median (numerical), forward fill (temporal), drop (critical missing)
 - Always understand WHY data is missing before deciding how to handle it
 
-**Demo 2 - Transformations**:
+## Demo 2 - Transformations
+
 - Clean column names first (lowercase, no spaces)
 - Handle sentinel values (-999, "N/A") before analysis
 - `.apply()` and `.map()` enable custom transformations
@@ -140,21 +148,24 @@ Students work through e-commerce order data with multiple simultaneous issues us
 - Dummy variables prepare data for modeling
 - Categorical dtype saves memory for repeated values
 
-**Demo 3 - Complete Workflow**:
+## Demo 3 - Complete Workflow
+
 - Systematic process: detect → handle → validate → transform → save
 - Always validate cleaning worked
 - Calculate derived fields after cleaning
 - Detect outliers with IQR method
 - Save cleaned data, summaries, and reports
 
-**Best Practices Across All Demos**:
+## Best Practices Across All Demos
+
 1. Never modify original data - always use `.copy()`
 2. Document every cleaning decision
 3. Validate at each step
 4. Save intermediate results
 5. Create audit trails (reports, logs)
 
-**Common Student Mistakes to Watch For**:
+## Common Student Mistakes to Watch For
+
 - Forgetting to use `.copy()` and modifying original data
 - Filling all missing values the same way (median for everything)
 - Not validating that cleaning actually worked
@@ -162,7 +173,8 @@ Students work through e-commerce order data with multiple simultaneous issues us
 - Forgetting that `cut()` uses explicit bins while `qcut()` uses quantiles
 - Not understanding categorical dtype vs dummy variables (when to use each)
 
-**Next Steps for Students**:
+## Next Steps for Students
+
 - Practice with their own messy datasets
 - Build reusable cleaning functions
 - Create data quality checklists
@@ -187,7 +199,13 @@ jupyter nbconvert --execute --to notebook --output executed_notebook your_notebo
 jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
 ```
 
-## Pipeline Automation
+## Notebook Pipeline Automation
+
+Always check "exit codes" after notebook execution to ensure your pipeline stops if any step fails. When a command runs successfully it returns an exit code of 0, other values (usually 1) indicate an error.
+
+You may check exit codes using the special variable `$?`, which contains exit code for the previous command. Alternatively, we can use an OR operator (`||`) to instruct the shell to do something when a command fails.
+
+**Note:** The `||` operator means "OR" - if the command fails (non-zero exit code), execute the code block in curly braces `{}`. This is more concise than checking `$?` explicitly.
 
 ```bash
 #!/bin/bash
@@ -202,11 +220,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-jupyter nbconvert --execute --to notebook q5_missing_data.ipynb
-if [ $? -ne 0 ]; then
+jupyter nbconvert --execute --to notebook q5_missing_data.ipynb || {
     echo "ERROR: Q5 missing data analysis failed"
     exit 1
-fi
+}
 
 echo "Pipeline completed successfully!"
 ```
@@ -218,8 +235,3 @@ echo "Pipeline completed successfully!"
 - `--inplace`: Overwrite the original file
 - `--output filename`: Save to a new file
 - `--allow-errors`: Continue execution even if cells fail
-
-## Error Handling
-
-Always check exit codes (`$?`) after notebook execution to ensure your pipeline stops if any step fails. This is crucial for automated data processing workflows.
-

@@ -97,8 +97,8 @@ def process_files(file_list: list) -> list:
 **calculate_statistics():**
 ```python
 def calculate_statistics(data: list) -> dict:
-    import statistics
-    
+import statistics
+
     return {
         'mean': statistics.mean(data),
         'median': statistics.median(data),
@@ -111,7 +111,7 @@ def calculate_statistics(data: list) -> dict:
 ```python
 if __name__ == '__main__':
     # Load config
-    config = parse_config('config/config.txt')
+    config = parse_config('config.txt')
     
     # Validate config
     validation = validate_config(config)
@@ -166,10 +166,10 @@ def load_data(filepath: str) -> pd.DataFrame:
 def clean_data(df: pd.DataFrame, remove_duplicates: bool = True, 
                sentinel_value: float = -999) -> pd.DataFrame:
     df_clean = df.copy()
-    
+
     # Replace sentinel values with NaN
     df_clean = df_clean.replace(sentinel_value, np.nan)
-    
+
     # Remove duplicates if requested
     if remove_duplicates:
         df_clean = df_clean.drop_duplicates()
@@ -187,14 +187,14 @@ def detect_missing(df: pd.DataFrame) -> pd.Series:
 ```python
 def fill_missing(df: pd.DataFrame, column: str, strategy: str = 'mean') -> pd.DataFrame:
     df_filled = df.copy()
-    
+
     if strategy == 'mean':
         df_filled[column] = df_filled[column].fillna(df_filled[column].mean())
     elif strategy == 'median':
         df_filled[column] = df_filled[column].fillna(df_filled[column].median())
     elif strategy == 'ffill':
         df_filled[column] = df_filled[column].fillna(method='ffill')
-    
+
     return df_filled
 ```
 

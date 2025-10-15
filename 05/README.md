@@ -546,7 +546,9 @@ Data quality checks identify issues like missing values, duplicates, outliers, a
 - `df.duplicated().sum()` - Count duplicate rows
 - `df.nunique()` - Count unique values per column
 - `df.dtypes` - Data types per column
-- `df.describe()` - Summary statistics
+- `df.describe()` - Summary statistics (numeric columns only by default)
+- `df.describe(include='all')` - Summary statistics for all columns (numeric + categorical)
+- `df.describe(include=['object'])` - Summary statistics for categorical columns only
 - `df.info()` - Detailed information
 - `df.memory_usage()` - Memory usage per column
 
@@ -728,7 +730,11 @@ jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
 
 ## Notebook Pipeline Automation
 
-Always check exit codes (`$?`) after notebook execution to ensure your pipeline stops if any step fails. This is crucial for automated data processing workflows.
+Always check "exit codes" after notebook execution to ensure your pipeline stops if any step fails. When a command runs successfully it returns an exit code of 0, other values (usually 1) indicate an error.
+
+You may check exit codes using the special variable `$?`, which contains exit code for the previous command. Alternatively, we can use an OR operator (`||`) to instruct the shell to do something when a command fails.
+
+**Note:** The `||` operator means "OR" - if the command fails (non-zero exit code), execute the code block in curly braces `{}`. This is more concise than checking `$?` explicitly.
 
 ```bash
 #!/bin/bash
@@ -743,16 +749,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-jupyter nbconvert --execute --to notebook q5_missing_data.ipynb
-if [ $? -ne 0 ]; then
+jupyter nbconvert --execute --to notebook q5_missing_data.ipynb || {
     echo "ERROR: Q5 missing data analysis failed"
     exit 1
-fi
+}
 
 echo "Pipeline completed successfully!"
 ```
 
-**Key Parameters**
+## Key Parameters
 
 - `--execute`: Run all cells in the notebook
 - `--to notebook`: Keep output as notebook format

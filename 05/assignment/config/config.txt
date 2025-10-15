@@ -1,9 +1,0 @@
-study_name=CardioHealth Trial 2023
-primary_investigator=Dr. Sarah Chen
-enrollment_start=2022-01-01
-enrollment_end=2023-12-31
-min_age=18
-max_age=85
-target_enrollment=10000
-sites=5
-intervention_groups=3
