@@ -124,8 +124,8 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
     1   [NaN]             1     10 ←┤ fills down          1     15 ←┐
     2   [NaN]             2     10 ←┘ from 10             2     15 ←┤ fills up
     3     15              3     15 ─┐                     3     15 ─┘ from 15
-    4   [NaN]             4     15 ←┤ fills down          4   [NaN] (can't fill - no later rows)
-    5   [NaN]             5     15 ←┘ from 15             5   [NaN] (can't fill - no later rows)
+    4   [NaN]             4     15 ←┤ fills down          4   [NaN] can't fill
+    5   [NaN]             5     15 ←┘ from 15             5   [NaN] no later rows
 ```
 
 **LIVE DEMO!** (Demo 1: Missing Data - detection, analysis, and imputation strategies)
