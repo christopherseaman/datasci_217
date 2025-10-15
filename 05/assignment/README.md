@@ -128,7 +128,9 @@ Your script must:
 
 File: `q2_process_metadata.py`
 
-Create an executable python3 script that processes a configuration file (`q2_config.txt`) for data generation. Note that this script focuses on `python` methods WITHOUT using `pandas`. It is separate from the data pipeline we will be building in Q3 -> Q7.
+Create an executable python3 script that processes a configuration file (`q2_config.txt`) for data generation. Note that this script focuses on `python` methods WITHOUT using `pandas`. 
+
+**Important:** While Q2 is a standalone Python fundamentals exercise (not part of the main data pipeline Q3→Q7), it still produces required outputs that are used in grading.
 
 The config file format is:
 

@@ -28,7 +28,7 @@ jobs:
         # This ensures students always run against the latest tests
         # Download test file
         if curl -o .github/test/test_assignment.py \
-          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw05/main/.github/test/test_assignment.py; then
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_midterm/main/.github/test/test_assignment.py; then
           echo "✅ Successfully updated test file from upstream"
         else
           echo "⚠️ Failed to download test file from upstream, using local version"
@@ -37,7 +37,7 @@ jobs:
 
         # Download requirements.txt for tests
         if curl -o .github/test/requirements.txt \
-          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw05/main/.github/test/requirements.txt; then
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_midterm/main/.github/test/requirements.txt; then
           echo "✅ Successfully updated requirements.txt from upstream"
         else
           echo "⚠️ Failed to download requirements.txt from upstream, using local version"

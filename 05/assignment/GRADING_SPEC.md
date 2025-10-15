@@ -78,6 +78,24 @@ result = validate_config(config)
 2. Correctly validates sample_data_rows > 0 - 1 pt
 3. Correctly validates sample_data_min >= 1 and sample_data_max > sample_data_min - 1 pt
 
+**Function: `generate_sample_data(filename: str, config: dict) -> None` (3 pts):**
+
+1. Creates file with correct number of rows - 1 pt
+2. Generates numbers within specified range - 1 pt
+3. File format is correct (one number per row, no header) - 1 pt
+
+**Function: `calculate_statistics(data: list) -> dict` (3 pts):**
+
+1. Returns dict with mean, median, sum, count keys - 1 pt
+2. Calculates mean correctly - 1 pt
+3. Calculates median correctly - 1 pt
+
+**Q2 Required Outputs (9 pts):**
+
+1. `data/sample_data.csv` exists - 3 pts
+2. `output/statistics.txt` exists - 3 pts
+3. Output files contain expected content - 3 pts
+
 ## Q3: Data Utilities Library (20 points)
 
 **Deliverable:** `q3_data_utils.py` - Core reusable pandas functions
@@ -331,6 +349,10 @@ assert len(df) >= 1  # Has at least one site
 assert len(df.columns) >= 2  # Has site and count columns
 assert df.iloc[:, 1].sum() > 0  # Counts sum to positive number
 
+# Q2 outputs
+assert os.path.exists('data/sample_data.csv')
+assert os.path.exists('output/statistics.txt')
+
 # Q5 outputs
 assert os.path.exists('output/q5_cleaned_data.csv')
 assert os.path.exists('output/q5_missing_report.txt')
@@ -365,7 +387,6 @@ assert os.path.exists('reports/directory_structure.txt')
 
 # Q8 outputs
 assert os.path.exists('reports/pipeline_log.txt')
-assert os.path.exists('output/final_clean_data.csv')
 ```
 
 
