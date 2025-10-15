@@ -333,7 +333,7 @@ print(age_groups)  # [Young, Young, Middle, Senior, Senior]
 
 Outliers are extreme values that may represent errors or important anomalies. Detecting and handling them appropriately is crucial for reliable analysis.
 
-![IQR Method for Outlier Detection](https://upload.wikimedia.org/wikipedia/commons/1/1a/Boxplot_vs_PDF.svg)
+![IQR Method for Outlier Detection](https://upload.wikimedia.org/wikipedia/commons/8/89/Boxplot_vs_PDF.png)
 
 **Reference:**
 
