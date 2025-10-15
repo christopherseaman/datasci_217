@@ -14,18 +14,18 @@ This document shows **example partial credit breakdowns** for each question. Ins
 **Question Breakdown:**
 
 - **Q1:** 10 points - Project setup and shell scripting
-- **Q2:** 20 points - Python fundamentals and file processing
-- **Q3:** 15 points - Pandas utility library development
-- **Q4:** 10 points - Data exploration and basic analysis
-- **Q5:** 10 points - Missing data analysis and cleaning
-- **Q6:** 15 points - Data transformation and feature engineering
-- **Q7:** 10 points - Aggregation and statistical analysis
+- **Q2:** 25 points - Python fundamentals and file processing
+- **Q3:** 20 points - Pandas utility library development
+- **Q4:** 15 points - Data exploration and basic analysis
+- **Q5:** 15 points - Missing data analysis and cleaning
+- **Q6:** 20 points - Data transformation and feature engineering
+- **Q7:** 15 points - Aggregation and statistical analysis
 - **Q8:** 5 points - Pipeline automation and orchestration
 
 ## Testing Structure
 
 1. **Git Artifacts:** Check for committed files and outputs first
-2. **Pipeline Execution:** Run scripts/notebooks in order (data generator → Q1 → Q4 → Q5 → Q6 → Q7 → Q8)
+2. **Pipeline Execution:** Run scripts/notebooks in order (data generator → Q1 → Q2 → Q3 → Q4 → Q5 → Q6 → Q7 → Q8)
 3. **Re-Check Artifacts** Check for outputs missing from git commit
 4. **Function Testing:** Import Q3 functions and test with sample data
 5. **Output Validation:** Verify all required output files exist and contain expected data
@@ -39,13 +39,14 @@ This document shows **example partial credit breakdowns** for each question. Ins
 
 1. Script is executable (`chmod +x`) - 2 pts
 2. Has shebang (`#!/bin/bash` or `#!/bin/sh`) - 1 pt
-3. Directory `data/` exists - 2 pts
-4. Directory `output/` exists - 2 pts
-5. Directory `reports/` exists - 2 pts
-6. File `reports/directory_structure.txt` exists with content - 1 pt
+3. Directory `data/` exists - 1 pt
+4. Directory `output/` exists - 1 pt
+5. Directory `reports/` exists - 1 pt
+6. File `data/clinical_trial_raw.csv` exists (dataset generated) - 2 pts
+7. File `reports/directory_structure.txt` exists with content - 2 pts
 
 
-## Q2: Python Data Processing (20 points)
+## Q2: Python Data Processing (25 points)
 
 **Deliverable:** `q2_process_metadata.py` (executable script)
 
@@ -63,19 +64,19 @@ result = parse_config('config.txt')
 ```
 
 1. Parses key=value format correctly - 1 pt
-2. Contains study_name, min_age, max_age keys - 1 pt
+2. Contains sample_data_rows, sample_data_min, sample_data_max keys - 1 pt
 3. Values match config.txt content - 1 pt
 
 **Function: `validate_config(config: dict) -> dict` (3 pts):**
 
 ```python
-config = {'min_age': '18', 'max_age': '85', 'target_enrollment': '10000', 'sites': '5', 'intervention_groups': '3'}
+config = {'sample_data_rows': '100', 'sample_data_min': '18', 'sample_data_max': '75'}
 result = validate_config(config)
 ```
 
 1. Returns validation results dict - 1 pt
-2. Correctly validates min_age >= 18 - 1 pt
-3. Correctly validates max_age <= 100, target_enrollment > 0, sites >= 1, and intervention_groups >= 1 - 1 pt
+2. Correctly validates sample_data_rows > 0 - 1 pt
+3. Correctly validates sample_data_min >= 1 and sample_data_max > sample_data_min - 1 pt
 
 ## Q3: Data Utilities Library (20 points)
 
@@ -126,7 +127,7 @@ result = validate_config(config)
 3. Handles custom agg_dict parameter - 1 pt
 
 
-## Q4: Data Exploration Notebook (10 points)
+## Q4: Data Exploration Notebook (15 points)
 
 **Deliverable:** `q4_exploration.ipynb`
 
@@ -143,7 +144,7 @@ result = validate_config(config)
 5. Counts sum to 10000 - 1 pt
 
 
-## Q5: Missing Data Analysis Notebook (10 points)
+## Q5: Missing Data Analysis Notebook (15 points)
 
 **Deliverable:** `q5_missing_data.ipynb`
 
@@ -161,7 +162,7 @@ result = validate_config(config)
 5. Report contains missing value counts - 1 pt
 
 
-## Q6: Data Transformation Notebook (15 points)
+## Q6: Data Transformation Notebook (20 points)
 
 **Deliverable:** `q6_transformation.ipynb`
 
@@ -178,7 +179,7 @@ result = validate_config(config)
 5. Contains calculated columns (e.g., cholesterol_ratio) - 3 pts
 
 
-## Q7: Aggregation & Analysis Notebook (10 points)
+## Q7: Aggregation & Analysis Notebook (15 points)
 
 **Deliverable:** `q7_aggregation.ipynb`
 
@@ -206,7 +207,7 @@ result = validate_config(config)
 1. Script is executable - 1 pt
 2. Has shebang (`#!/bin/bash` or `#!/bin/sh`) - 1 pt
 3. `reports/pipeline_log.txt` exists - 1 pt
-4. Script runs Q4-Q7 notebooks in order - 1 pt
+4. Script runs Q4-Q7 notebooks in order (assumes Q1 already run, Q2 and Q3 are not run directly) - 1 pt
 5. Pipeline log shows successful execution - 1 pt
 
 
@@ -215,26 +216,28 @@ result = validate_config(config)
 ### Test Q2 Functions
 
 ```python
-from q2_process_metadata import parse_config, validate_config, process_files, calculate_statistics
+from q2_process_metadata import parse_config, validate_config, generate_sample_data, calculate_statistics
 
 # Test parse_config
-config = parse_config('config.txt')
+config = parse_config('q2_config.txt')
 assert isinstance(config, dict)
-assert 'study_name' in config
-assert config['min_age'] == '18'
+assert 'sample_data_rows' in config
+assert config['sample_data_min'] == '18'
 
 # Test validate_config
-test_config = {'min_age': '18', 'max_age': '85', 'target_enrollment': '10000', 'sites': '5', 'intervention_groups': '3'}
+test_config = {'sample_data_rows': '100', 'sample_data_min': '18', 'sample_data_max': '75'}
 validation = validate_config(test_config)
 assert isinstance(validation, dict)
-assert validation['min_age'] == True  # 18 >= 18
-assert validation['intervention_groups'] == True  # 3 >= 1
+assert validation['sample_data_rows'] == True  # 100 > 0
+assert validation['sample_data_min'] == True  # 18 >= 1
 
-# Test process_files
-files = ['data1.csv', 'script.py', 'data2.csv']
-csv_files = process_files(files)
-assert len(csv_files) == 2
-assert 'script.py' not in csv_files
+# Test generate_sample_data
+config = {'sample_data_rows': '10', 'sample_data_min': '18', 'sample_data_max': '75'}
+generate_sample_data('test_sample.csv', config)
+# Verify file was created and has correct number of lines
+with open('test_sample.csv') as f:
+    lines = f.readlines()
+    assert len(lines) == 10  # 10 rows as specified
 
 # Test calculate_statistics
 stats = calculate_statistics([10, 20, 30, 40, 50])
@@ -371,12 +374,12 @@ assert os.path.exists('output/final_clean_data.csv')
 **Total: 100 points**
 
 - Q1: 10 pts (shell script, directories, files)
-- Q2: 20 pts (Python fundamentals, 4 functions)
-- Q3: 15 pts (pandas utility library, 8 functions)
-- Q4: 10 pts (exploration notebook + outputs)
-- Q5: 10 pts (missing data notebook + outputs)
-- Q6: 15 pts (transformation notebook + outputs)
-- Q7: 10 pts (aggregation notebook + outputs)
+- Q2: 25 pts (Python fundamentals, 4 functions)
+- Q3: 20 pts (pandas utility library, 8 functions)
+- Q4: 15 pts (exploration notebook + outputs)
+- Q5: 15 pts (missing data notebook + outputs)
+- Q6: 20 pts (transformation notebook + outputs)
+- Q7: 15 pts (aggregation notebook + outputs)
 - Q8: 5 pts (pipeline automation)
 
 **Grading Scale:**

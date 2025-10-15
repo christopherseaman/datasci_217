@@ -1,220 +1,59 @@
-name: DataSci 217 - Lecture 05 Assignment Grader
+name: Assignment 4 - Pandas Data Analysis
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allow manual triggering
-
-env:
-  PYTHON_VERSION: '3.11'
+    branches: [ main ]
 
 jobs:
-  autograder:
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
 
     steps:
-    - name: Checkout student code
+    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: '3.12'
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    - name: Download latest test files from upstream
+      run: |
+        # Create the target directory if it doesn't exist
+        mkdir -p .github/test
+
+        # Download the latest test files from the upstream repository
+        # This ensures students always run against the latest tests
+        # Download test file
+        if curl -o .github/test/test_assignment.py \
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw05/main/.github/test/test_assignment.py; then
+          echo "✅ Successfully updated test file from upstream"
+        else
+          echo "⚠️ Failed to download test file from upstream, using local version"
+          git checkout .github/test/test_assignment.py 2>/dev/null || echo "No local test file to restore"
+        fi
+
+        # Download requirements.txt for tests
+        if curl -o .github/test/requirements.txt \
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw05/main/.github/test/requirements.txt; then
+          echo "✅ Successfully updated requirements.txt from upstream"
+        else
+          echo "⚠️ Failed to download requirements.txt from upstream, using local version"
+          git checkout .github/test/requirements.txt 2>/dev/null || echo "No local requirements.txt to restore"
+        fi
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pytest-html pytest-json-report pytest-timeout
+        pip install pytest
+        # Install test requirements
+        if [ -f .github/test/requirements.txt ]; then pip install -r .github/test/requirements.txt; fi
+        # Install assignment requirements if they exist
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-        # Install student requirements if they exist
-        if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
-        fi
-
-        # Install lecture-specific dependencies
-        pip install pandas numpy matplotlib
-
-    - name: Verify required files exist
+    - name: Run tests
       run: |
-        echo "Checking for required files..."
-        required_files=(
-          "q1_setup_project.sh"
-          "q2_process_metadata.py"
-          "q3_data_utils.py"
-          "q4_exploration.ipynb"
-          "q5_missing_data.ipynb"
-          "q6_transformation.ipynb"
-          "q7_aggregation.ipynb"
-          "q8_run_pipeline.sh"
-          "config.txt"
-          "data/clinical_trial_raw.csv"
-        )
-        missing_files=""
-
-        for file in "${required_files[@]}"; do
-          if [[ ! -f "$file" ]]; then
-            missing_files="$missing_files $file"
-          fi
-        done
-
-        if [[ -n "$missing_files" ]]; then
-          echo "❌ Missing required files:$missing_files"
-          echo "MISSING_FILES=true" >> $GITHUB_ENV
-        else
-          echo "✅ All required files present"
-          echo "MISSING_FILES=false" >> $GITHUB_ENV
-        fi
-
-    - name: Run syntax check
-      if: env.MISSING_FILES == 'false'
-      run: |
-        echo "Running syntax check on Python files..."
-        python_files=(
-          "q2_process_metadata.py"
-          "q3_data_utils.py"
-        )
-
-        syntax_errors=0
-        for file in "${python_files[@]}"; do
-          if ! python -m py_compile "$file"; then
-            echo "❌ Syntax errors found in $file"
-            syntax_errors=1
-          fi
-        done
-
-        if [ $syntax_errors -eq 1 ]; then
-          echo "SYNTAX_ERRORS=true" >> $GITHUB_ENV
-          exit 1
-        fi
-
-        echo "✅ No syntax errors found"
-        echo "SYNTAX_ERRORS=false" >> $GITHUB_ENV
-
-    - name: Run tests with grading
-      if: env.MISSING_FILES == 'false' && env.SYNTAX_ERRORS == 'false'
-      run: |
-        echo "Running automated tests..."
-        pytest test_assignment.py -v \
-          --html=test_report.html --self-contained-html \
-          --json-report --json-report-file=test_results.json \
-          --tb=short \
-          --timeout=30 \
-          -x  # Stop on first failure for faster feedback
-
-    - name: Generate grade report
-      if: always() && env.MISSING_FILES == 'false'
-      run: |
-        python -c "
-        import json
-        import os
-
-        def generate_grade_report():
-            total_score = 0
-            max_score = 100
-            details = []
-
-            try:
-                if os.path.exists('test_results.json'):
-                    with open('test_results.json', 'r') as f:
-                        results = json.load(f)
-
-                    passed = results['summary']['passed']
-                    failed = results['summary']['failed']
-                    total_tests = passed + failed
-
-                    if total_tests > 0:
-                        total_score = int((passed / total_tests) * 100)
-
-                    details.append(f'Tests passed: {passed}/{total_tests}')
-                    details.append(f'Test success rate: {total_score}%')
-                else:
-                    details.append('No test results found')
-
-            except Exception as e:
-                details.append(f'Error reading test results: {e}')
-
-            # Apply penalties
-            penalties = []
-            if os.getenv('MISSING_FILES') == 'true':
-                penalties.append('Missing required files: -50 points')
-                total_score = max(0, total_score - 50)
-
-            if os.getenv('SYNTAX_ERRORS') == 'true':
-                penalties.append('Syntax errors: -25 points')
-                total_score = max(0, total_score - 25)
-
-            # Generate report
-            report = []
-            report.append('# Lecture 05 Assignment - Grade Report')
-            report.append('')
-            report.append('## Topic: Data Cleaning Exam')
-            report.append('')
-            report.append(f'## Final Score: {total_score}/{max_score}')
-
-            if total_score >= 90:
-                report.append('🎉 Excellent work!')
-            elif total_score >= 80:
-                report.append('👍 Good job!')
-            elif total_score >= 70:
-                report.append('✅ Meets requirements')
-            else:
-                report.append('❌ Please review and resubmit')
-
-            report.append('')
-            report.append('## Details')
-            for detail in details:
-                report.append(f'- {detail}')
-
-            if penalties:
-                report.append('')
-                report.append('## Penalties Applied')
-                for penalty in penalties:
-                    report.append(f'- {penalty}')
-
-            return '\\n'.join(report), total_score
-
-        report_content, final_score = generate_grade_report()
-
-        with open('GRADE_REPORT.md', 'w') as f:
-            f.write(report_content)
-
-        print('GRADE REPORT')
-        print('=' * 50)
-        print(report_content)
-
-        with open(os.environ['GITHUB_ENV'], 'a') as f:
-            f.write(f'FINAL_SCORE={final_score}\\n')
-        "
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results-lecture-05
-        path: |
-          test_report.html
-          test_results.json
-          GRADE_REPORT.md
-        retention-days: 30
-
-    - name: Fail job if score too low
-      if: always()
-      run: |
-        final_score=${FINAL_SCORE:-0}
-        if [ "$final_score" -lt 70 ]; then
-          echo "❌ Assignment score ($final_score/100) is below the passing threshold (70/100)"
-          exit 1
-        else
-          echo "✅ Assignment passed with score: $final_score/100"
-        fi
+        # Run the test suite with detailed output
+        pytest .github/test/test_assignment.py -v --tb=short --color=yes

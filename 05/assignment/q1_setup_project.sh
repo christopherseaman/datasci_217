@@ -9,5 +9,9 @@
 #   - output/
 #   - reports/
 
+# TODO: Generate the dataset
+#       Run: python3 generate_data.py
+#       This creates data/clinical_trial_raw.csv with 10,000 patients
+
 # TODO: Save the directory structure to reports/directory_structure.txt
 #       Hint: Use 'ls -la' or 'tree' command
