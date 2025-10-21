@@ -154,11 +154,12 @@ Open `assignment.ipynb` and work through the three questions.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `purchase_id` | string | Unique purchase ID (PUR0001, PUR0002, ...) |
+| `purchase_id` | string | Unique purchase ID (T0001, T0002, ...) |
 | `customer_id` | string | Customer ID (links to customers.csv) |
 | `product_id` | string | Product ID (links to products.csv) |
 | `quantity` | int | Number of items purchased |
 | `purchase_date` | string | Purchase date (YYYY-MM-DD) |
+| `store` | string | Store location (Store A, B, or C) |
 | `total_price` | float | Total purchase amount in dollars |
 
 ## Submission Checklist
