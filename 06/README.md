@@ -36,23 +36,35 @@ Joining (or merging) DataFrames combines data from multiple sources by linking r
 **Visual Guide - Join Types:**
 
 ```
-INNER JOIN (default)          LEFT JOIN
-┌─────────┐  ┌─────────┐     ┌─────────┐  ┌─────────┐
-│   A     │  │   B     │     │   A     │  │   B     │
-│ ┌─────┐ │  │ ┌─────┐ │     │ ┌─────┐ │  │ ┌─────┐ │
-│ │ 1,2 │ │  │ │ 2,3 │ │     │ │ 1,2 │ │  │ │ 2,3 │ │
-│ └─────┘ │  │ └─────┘ │     │ └─────┘ │  │ └─────┘ │
-└─────────┘  └─────────┘     └─────────┘  └─────────┘
-Result: 2                   Result: 1,2,3 (A dominates)
+Table A: customers          Table B: purchases
+┌─────────────┬─────────┐   ┌─────────────┬─────────┐
+│ customer_id │  name   │   │ customer_id │ amount  │
+├─────────────┼─────────┤   ├─────────────┼─────────┤
+│     1       │  Alice  │   │     1       │   $50   │
+│     2       │   Bob   │   │     2       │   $30   │
+│     3       │ Charlie │   │     4       │   $25   │
+└─────────────┴─────────┘   └─────────────┴─────────┘
 
-RIGHT JOIN                   OUTER JOIN
-┌─────────┐  ┌─────────┐     ┌─────────┐  ┌─────────┐
-│   A     │  │   B     │     │   A     │  │   B     │
-│ ┌─────┐ │  │ ┌─────┐ │     │ ┌─────┐ │  │ ┌─────┐ │
-│ │ 1,2 │ │  │ │ 2,3 │ │     │ │ 1,2 │ │  │ │ 2,3 │ │
-│ └─────┘ │  │ └─────┘ │     │ └─────┘ │  │ └─────┘ │
-└─────────┘  └─────────┘     └─────────┘  └─────────┘
-Result: 2,3 (B dominates)    Result: 1,2,3 (everything)
+INNER JOIN (how='inner')     LEFT JOIN (how='left')
+┌─────────────┬─────────┬─────────┐  ┌─────────────┬─────────┬─────────┐
+│ customer_id│  name     │ amount  │  │ customer_id │  name   │ amount  │
+├─────────────┼─────────┼─────────┤  ├─────────────┼─────────┼─────────┤
+│     1       │  Alice  │   $50   │  │     1       │  Alice  │   $50   │
+│     2       │   Bob   │   $30   │  │     2       │   Bob   │   $30   │
+└─────────────┴─────────┴─────────┘  │     3       │Charlie  │   NaN   │
+(Only matching rows)                └─────────────┴─────────┴─────────┘
+                                    (All from A, missing from B = NaN)
+
+RIGHT JOIN (how='right')     OUTER JOIN (how='outer')
+┌─────────────┬─────────┬─────────┐  ┌─────────────┬─────────┬─────────┐
+│ customer_id │  name   │ amount  │  │ customer_id │  name   │ amount  │
+├─────────────┼─────────┼─────────┤  ├─────────────┼─────────┼─────────┤
+│     1       │  Alice  │   $50   │  │     1       │  Alice  │   $50   │
+│     2       │   Bob   │   $30   │  │     2       │   Bob   │   $30   │
+│     4       │   NaN   │   $25   │  │     3       │Charlie  │   NaN   │
+└─────────────┴─────────┴─────────┘  │     4       │   NaN   │   $25   │
+(All from B, missing from A = NaN)  └─────────────┴─────────┴─────────┘
+                                    (Everything from both tables)
 ```
 
 ## The Basics of pd.merge()
