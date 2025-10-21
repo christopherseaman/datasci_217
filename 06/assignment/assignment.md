@@ -40,6 +40,8 @@ print("✓ All data files found")
 
 ## Dataset Column Reference
 
+Use this reference when writing merge operations and selecting columns. Each dataset's columns are listed below with their data types and descriptions.
+
 **`customers.csv` columns:**
 - `customer_id` - Unique ID (C001, C002, ...)
 - `name` - Customer full name
