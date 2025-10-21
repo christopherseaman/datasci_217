@@ -38,7 +38,7 @@ def test_data_files_exist(data_dir):
         assert len(df) > 0, f"Data file is empty: {filepath}"
 
 
-def test_q1_merged_data(output_dir):
+def test_q1_merged_data(output_dir, data_dir):
     """Test Question 1: Merged data output."""
     output_file = output_dir / "q1_merged_data.csv"
     assert output_file.exists(), f"Output file not found: {output_file}"
@@ -61,6 +61,23 @@ def test_q1_merged_data(output_dir):
     # From products
     assert 'product_name' in merged.columns or 'category' in merged.columns, \
         "Missing product columns"
+
+    # Check that total_price was calculated
+    assert 'total_price' in merged.columns, \
+        "Missing total_price column - should be calculated as quantity * price"
+
+    # Verify total_price calculation is correct (within rounding tolerance)
+    if 'quantity' in merged.columns and 'price' in merged.columns:
+        expected = (merged['quantity'] * merged['price']).round(2)
+        actual = merged['total_price'].round(2)
+
+        # Check that at least 95% of values match (allowing for edge cases)
+        matches = (expected == actual).sum()
+        total = len(merged)
+        match_rate = matches / total
+
+        assert match_rate >= 0.95, \
+            f"total_price calculation incorrect: only {match_rate:.1%} of values match quantity * price"
 
 
 def test_q1_validation_report(output_dir):

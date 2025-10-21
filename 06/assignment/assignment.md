@@ -75,6 +75,15 @@ full_data = None
 display(full_data.head(10))
 ```
 
+```python
+# TODO: Calculate total_price for each purchase
+# Multiply quantity by price to get the total cost
+# Round to 2 decimal places
+# Hint: full_data['total_price'] = (full_data['quantity'] * full_data['price']).round(2)
+
+display(full_data.head(10))
+```
+
 ### Part B: Join Type Analysis
 
 Compare different join types to understand data relationships.
@@ -265,14 +274,15 @@ print("✓ Saved output/q2_combined_data.csv")
 Transform data to analyze patterns.
 
 ```python
-# Merge purchases with products to get categories
-purchases_categorized = pd.merge(purchases, products[['product_id', 'category']],
-                                  on='product_id')
+# TODO: Load the merged data from Question 1
+# This already has purchases merged with customers and products (and total_price calculated)
+# Hint: pd.read_csv('output/q1_merged_data.csv')
+full_data = None
 
 # Add month column for grouping
-purchases_categorized['month'] = pd.to_datetime(purchases_categorized['purchase_date']).dt.to_period('M')
+full_data['month'] = pd.to_datetime(full_data['purchase_date']).dt.to_period('M')
 
-display(purchases_categorized.head())
+display(full_data.head())
 ```
 
 ```python
@@ -325,9 +335,9 @@ Sales by Category (Total):
 {category_summary.to_string()}
 
 Time Period:
-  - Start: {purchases['purchase_date'].min()}
-  - End: {purchases['purchase_date'].max()}
-  - Months: {purchases_categorized['month'].nunique()}
+  - Start: {full_data['purchase_date'].min()}
+  - End: {full_data['purchase_date'].max()}
+  - Months: {full_data['month'].nunique()}
 
 Top Category: {category_summary.index[0]}
 Bottom Category: {category_summary.index[-1]}

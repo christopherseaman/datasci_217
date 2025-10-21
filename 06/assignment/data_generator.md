@@ -148,11 +148,6 @@ purchases = pd.DataFrame({
     'store': np.random.choice(['Store A', 'Store B', 'Store C'], size=num_purchases)
 })
 
-# Add total_price by merging with products
-purchases = purchases.merge(products[['product_id', 'price']], on='product_id')
-purchases['total_price'] = (purchases['quantity'] * purchases['price']).round(2)
-purchases = purchases.drop('price', axis=1)  # Remove intermediate price column
-
 print(f"✓ Generated {len(purchases)} purchase transactions")
 purchases.head(10)
 ```

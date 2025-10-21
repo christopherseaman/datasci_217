@@ -160,7 +160,8 @@ Open `assignment.ipynb` and work through the three questions.
 | `quantity` | int | Number of items purchased |
 | `purchase_date` | string | Purchase date (YYYY-MM-DD) |
 | `store` | string | Store location (Store A, B, or C) |
-| `total_price` | float | Total purchase amount in dollars |
+
+**Note:** You'll calculate `total_price` in Question 1 by merging with products and multiplying `quantity * price`.
 
 ## Submission Checklist
 
