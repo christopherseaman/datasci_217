@@ -1,0 +1,174 @@
+================================================================================
+ASSIGNMENT 5 - QUESTION 4: EXPLORATORY DATA ANALYSIS - COMPLETION REPORT
+================================================================================
+
+DATE: 2025-10-15
+NOTEBOOK: q4_exploration.ipynb
+STATUS: COMPLETE ✓
+
+================================================================================
+REQUIREMENTS COMPLETED (15 POINTS)
+================================================================================
+
+PART 1: BASIC EXPLORATION (3 points) ✓
+- Dataset shape: 10,000 rows × 18 columns
+- Column names and types displayed
+- First 10 rows examined
+- Summary statistics generated (.describe())
+
+PART 2: COLUMN SELECTION (3 points) ✓
+- Numeric columns selected using .select_dtypes() (11 columns identified)
+- Specific demographic columns selected by name
+- Subset rows and columns using .loc[] (first 20 patients)
+
+PART 3: FILTERING (4 points) ✓
+- Patients over 65: 8,326 (83.3%)
+- High BP (>140): 538 (5.4%)
+- Both conditions (AND): 464 patients (4.6%)
+- Site A or B using .isin(): 4,661 patients (46.6%)
+
+PART 4: VALUE COUNTS AND GROUPING (5 points) ✓
+- Site distribution value counts
+- Intervention group value counts
+- Crosstab: site vs intervention group
+- Mean age by site calculated
+- Output saved: output/q4_site_counts.csv
+
+================================================================================
+BONUS: ADVANCED EXPLORATION COMPLETED
+================================================================================
+
+ADDITIONAL ANALYSES:
+1. Missing data patterns by site
+   - Missing BP: 414 observations
+   - Missing cholesterol: 554 observations
+   - Missing adherence: 1,467 observations
+   
+2. Correlation analysis
+   - Correlation matrix for 8 clinical variables
+   - Heatmap visualization created
+   - Strongest correlations identified (|r| > 0.3)
+   
+3. Distribution analysis
+   - Histograms for 6 key clinical variables
+   - Summary statistics (excluding sentinel values)
+   - Visual assessment of normality
+   
+4. Outcome analysis
+   - CVD outcome rates by intervention group
+   - Adverse events analysis by group
+   - Stacked bar charts for outcomes
+
+================================================================================
+VISUALIZATIONS CREATED
+================================================================================
+
+1. Site distribution bar chart
+2. Intervention group distribution bar chart  
+3. Site vs Intervention heatmap (crosstab)
+4. Correlation matrix heatmap (8×8)
+5. Distribution histograms (2×3 grid)
+6. CVD outcomes by intervention bar chart
+
+All visualizations use seaborn styling and proper labels.
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+DATA CHARACTERISTICS:
+- 10,000 patients across 5 primary sites (A-E)
+- 11 numeric variables, 7 categorical variables
+- Patient population: 83.3% over age 65 (appropriate for CVD prevention)
+- Three intervention groups with roughly balanced distribution
+
+DATA QUALITY ISSUES IDENTIFIED:
+1. Inconsistent text formatting
+   - 7 unique site values (should be 5): spacing/case variations
+   - 7 unique intervention values (should be 3): multiple spellings
+   
+2. Sentinel values requiring conversion
+   - Age: -999 sentinel value (17 observations)
+   - BMI: -1 sentinel value (438 observations)
+   
+3. Missing data patterns
+   - Blood pressure: 4.1% missing (414 obs)
+   - Cholesterol: 5.5% missing (554 obs)
+   - Adherence: 14.7% missing (1,467 obs)
+   
+4. Randomization verification
+   - Crosstab shows balanced distribution across sites
+   - Suggests proper randomization despite text inconsistencies
+
+CLINICAL INSIGHTS:
+- Baseline systolic BP well-controlled (mean: 117.5 mmHg)
+- Only 5.4% have high BP (>140 mmHg) at baseline
+- BMI distribution shows slight overweight tendency (mean: 25.7)
+- Cholesterol levels within normal range for this population
+
+================================================================================
+TECHNIQUES USED
+================================================================================
+
+CORE PANDAS (LECTURES 1-5):
+- DataFrame operations (.head, .shape, .dtypes, .describe)
+- Column selection (.select_dtypes, .loc[])
+- Boolean filtering (>, <, .isin())
+- Value counts (.value_counts())
+- Groupby operations (.groupby(), .mean())
+- Crosstabs (pd.crosstab())
+- Missing data detection (.isnull(), .isna())
+- String methods (.str.strip(), .str.lower(), .str.title())
+- Basic matplotlib (.plot(), .hist())
+
+ADVANCED TECHNIQUES (DOCUMENTED):
+- Seaborn heatmaps (correlation visualization)
+- Complex aggregations (.agg() with lambda functions)
+- Correlation matrices (.corr())
+- Multi-panel visualizations (plt.subplots())
+- Normalized crosstabs (normalize='index')
+- Method chaining for data cleaning
+
+================================================================================
+OUTPUT FILES
+================================================================================
+
+GENERATED:
+- output/q4_site_counts.csv (site distribution summary)
+
+NOTEBOOK:
+- q4_exploration.ipynb (fully executed with outputs)
+  - 19 code cells executed successfully
+  - All visualizations rendered
+  - Summary and insights documented
+
+================================================================================
+UTILITY FUNCTIONS USED FROM Q3
+================================================================================
+
+- load_data() - CSV loading
+- filter_data() - Multi-condition filtering with various operators
+- detect_missing() - Missing value detection
+
+================================================================================
+COMPLETION NOTES
+================================================================================
+
+✓ All required sections completed (15 points)
+✓ Bonus advanced analysis included
+✓ Output file created and verified
+✓ Comprehensive summary and insights documented
+✓ Visualizations properly labeled and styled
+✓ Analysis techniques clearly documented and categorized
+✓ Data quality issues thoroughly identified
+✓ No numpy used in main analysis (pandas only as required)
+✓ Seaborn used for enhanced visualizations
+
+The exploratory data analysis provides a solid foundation for:
+- Q5: Missing data imputation strategies
+- Q6: Statistical analysis and hypothesis testing
+- Q7: Advanced analytics and modeling
+
+================================================================================
+END OF REPORT
+================================================================================

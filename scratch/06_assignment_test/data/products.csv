@@ -1,0 +1,101 @@
+product_id,product_name,category,price,stock
+P0001,Speaker Deluxe,Electronics,93.63,148
+P0002,Headphones Deluxe,Electronics,97.11,143
+P0003,Novel Standard,Books,320.26,39
+P0004,Smartwatch Standard,Electronics,160.06,51
+P0005,Textbook Plus,Books,74.05,115
+P0006,Yoga Mat Deluxe,Sports,212.92,13
+P0007,Bike Basic,Sports,15.41,129
+P0008,Rug Basic,Home & Garden,382.54,57
+P0009,Basketball Basic,Sports,15.94,180
+P0010,Shoes Basic,Clothing,30.89,187
+P0011,Vase Basic,Home & Garden,423.73,182
+P0012,Tennis Racket Standard,Sports,433.68,111
+P0013,Cookbook Deluxe,Books,194.19,179
+P0014,Helmet Plus,Sports,394.66,140
+P0015,Laptop Pro,Electronics,332.76,168
+P0016,Smartphone Standard,Electronics,47.44,96
+P0017,Jeans Plus,Clothing,134.0,20
+P0018,Biography Plus,Books,199.31,199
+P0019,Speaker Pro,Electronics,42.66,87
+P0020,Yoga Mat Basic,Sports,371.34,192
+P0021,Bike Pro,Sports,375.64,128
+P0022,Yoga Mat Deluxe,Sports,15.93,132
+P0023,Comic Plus,Books,236.35,138
+P0024,Guide Deluxe,Books,334.07,27
+P0025,Table Plus,Home & Garden,58.21,93
+P0026,Hat Standard,Clothing,450.46,135
+P0027,Laptop Plus,Electronics,337.0,194
+P0028,Headphones Standard,Electronics,389.57,168
+P0029,Smartphone Plus,Electronics,167.89,163
+P0030,Biography Plus,Books,304.92,180
+P0031,Cookbook Deluxe,Books,31.43,16
+P0032,Sweater Pro,Clothing,192.36,58
+P0033,Cookbook Pro,Books,90.21,157
+P0034,Comic Standard,Books,106.76,173
+P0035,Smartwatch Deluxe,Electronics,339.01,118
+P0036,Headphones Pro,Electronics,276.57,148
+P0037,Helmet Basic,Sports,489.41,45
+P0038,Biography Deluxe,Books,141.97,91
+P0039,Bike Plus,Sports,62.89,179
+P0040,Chair Deluxe,Home & Garden,83.83,43
+P0041,Helmet Deluxe,Sports,381.51,96
+P0042,Vase Deluxe,Home & Garden,84.27,29
+P0043,Guide Pro,Books,382.95,110
+P0044,Jeans Pro,Clothing,373.44,2
+P0045,Headphones Deluxe,Electronics,206.73,105
+P0046,Jacket Pro,Clothing,281.99,127
+P0047,Table Plus,Home & Garden,184.14,12
+P0048,Headphones Standard,Electronics,12.56,89
+P0049,Hat Standard,Clothing,375.41,13
+P0050,Smartphone Basic,Electronics,190.29,74
+P0051,Vase Deluxe,Home & Garden,498.2,131
+P0052,Dumbbells Standard,Sports,392.4,153
+P0053,Helmet Basic,Sports,10.92,102
+P0054,Tennis Racket Standard,Sports,98.85,172
+P0055,Novel Standard,Books,259.95,2
+P0056,Tennis Racket Standard,Sports,284.72,23
+P0057,Hat Plus,Clothing,305.05,187
+P0058,Biography Pro,Books,321.88,149
+P0059,Dumbbells Plus,Sports,356.76,158
+P0060,Biography Basic,Books,82.25,182
+P0061,Speaker Pro,Electronics,53.41,115
+P0062,Tablet Standard,Electronics,370.47,56
+P0063,Magazine Basic,Books,95.01,197
+P0064,Textbook Deluxe,Books,346.1,46
+P0065,Biography Pro,Books,475.65,68
+P0066,Headphones Basic,Electronics,490.03,2
+P0067,Yoga Mat Pro,Sports,297.05,117
+P0068,Helmet Pro,Sports,465.51,50
+P0069,Yoga Mat Plus,Sports,427.84,153
+P0070,Rug Basic,Home & Garden,236.25,48
+P0071,Tennis Racket Basic,Sports,355.95,89
+P0072,Magazine Plus,Books,455.6,23
+P0073,Headphones Pro,Electronics,87.87,59
+P0074,Textbook Pro,Books,378.17,151
+P0075,Headphones Basic,Electronics,43.79,107
+P0076,Hat Standard,Clothing,145.1,182
+P0077,Magazine Plus,Books,143.26,181
+P0078,T-Shirt Basic,Clothing,141.39,72
+P0079,Dumbbells Deluxe,Sports,40.7,106
+P0080,Smartwatch Standard,Electronics,164.44,6
+P0081,Jacket Standard,Clothing,72.71,175
+P0082,Tennis Racket Plus,Sports,215.21,127
+P0083,Smartwatch Plus,Electronics,489.98,68
+P0084,Vase Plus,Home & Garden,103.68,48
+P0085,Table Pro,Home & Garden,474.05,139
+P0086,Smartwatch Pro,Electronics,20.8,116
+P0087,Guide Plus,Books,53.53,85
+P0088,Laptop Basic,Electronics,121.43,27
+P0089,Jacket Pro,Clothing,397.93,176
+P0090,Smartphone Plus,Electronics,247.5,84
+P0091,Tennis Racket Pro,Sports,337.82,97
+P0092,Rug Standard,Home & Garden,40.51,167
+P0093,Biography Plus,Books,489.25,62
+P0094,Speaker Basic,Electronics,90.71,126
+P0095,Magazine Standard,Books,264.5,119
+P0096,Sneakers Standard,Sports,436.58,154
+P0097,Basketball Plus,Sports,377.86,112
+P0098,T-Shirt Deluxe,Clothing,455.52,96
+P0099,Dress Deluxe,Clothing,61.68,179
+P0100,Tablet Plus,Electronics,55.77,196

@@ -1,0 +1,601 @@
+product_id,product_name,month,sales,category
+P0084,Vase Plus,Jan,5832.11,Home & Garden
+P0054,Tennis Racket Standard,Jan,6049.48,Sports
+P0071,Tennis Racket Basic,Jan,4455.45,Sports
+P0046,Jacket Pro,Jan,3418.55,Clothing
+P0045,Headphones Deluxe,Jan,6868.54,Electronics
+P0040,Chair Deluxe,Jan,2211.93,Home & Garden
+P0023,Comic Plus,Jan,5667.54,Books
+P0081,Jacket Standard,Jan,7912.67,Clothing
+P0011,Vase Basic,Jan,2478.68,Home & Garden
+P0001,Speaker Deluxe,Jan,7779.34,Electronics
+P0019,Speaker Pro,Jan,7847.15,Electronics
+P0031,Cookbook Deluxe,Jan,1539.34,Books
+P0074,Textbook Pro,Jan,1169.06,Books
+P0034,Comic Standard,Jan,9765.42,Books
+P0091,Tennis Racket Pro,Jan,2740.44,Sports
+P0005,Textbook Plus,Jan,8399.25,Books
+P0077,Magazine Plus,Jan,6056.66,Books
+P0078,T-Shirt Basic,Jan,3380.25,Clothing
+P0013,Cookbook Deluxe,Jan,2169.73,Books
+P0032,Sweater Pro,Jan,5470.1,Clothing
+P0056,Tennis Racket Standard,Jan,4666.19,Sports
+P0089,Jacket Pro,Jan,7289.97,Clothing
+P0027,Laptop Plus,Jan,9137.52,Electronics
+P0043,Guide Pro,Jan,8247.23,Books
+P0070,Rug Basic,Jan,3470.07,Home & Garden
+P0016,Smartphone Standard,Jan,8910.4,Electronics
+P0041,Helmet Deluxe,Jan,8500.52,Sports
+P0097,Basketball Plus,Jan,9362.23,Sports
+P0010,Shoes Basic,Jan,5127.95,Clothing
+P0073,Headphones Pro,Jan,7917.18,Electronics
+P0012,Tennis Racket Standard,Jan,6324.92,Sports
+P0048,Headphones Standard,Jan,3794.52,Electronics
+P0086,Smartwatch Pro,Jan,9949.88,Electronics
+P0029,Smartphone Plus,Jan,1344.77,Electronics
+P0094,Speaker Basic,Jan,2460.45,Electronics
+P0006,Yoga Mat Deluxe,Jan,9032.88,Sports
+P0067,Yoga Mat Pro,Jan,1545.07,Sports
+P0066,Headphones Basic,Jan,8981.39,Electronics
+P0036,Headphones Pro,Jan,7436.99,Electronics
+P0017,Jeans Plus,Jan,1330.16,Clothing
+P0050,Smartphone Basic,Jan,4863.88,Electronics
+P0035,Smartwatch Deluxe,Jan,7790.24,Electronics
+P0008,Rug Basic,Jan,6247.9,Home & Garden
+P0096,Sneakers Standard,Jan,9422.84,Sports
+P0028,Headphones Standard,Jan,8808.8,Electronics
+P0020,Yoga Mat Basic,Jan,3993.83,Sports
+P0082,Tennis Racket Plus,Jan,1761.64,Sports
+P0026,Hat Standard,Jan,9498.31,Clothing
+P0063,Magazine Basic,Jan,5655.58,Books
+P0014,Helmet Plus,Jan,1669.58,Sports
+P0084,Vase Plus,Feb,8349.18,Home & Garden
+P0054,Tennis Racket Standard,Feb,8816.56,Sports
+P0071,Tennis Racket Basic,Feb,6754.82,Sports
+P0046,Jacket Pro,Feb,5027.58,Clothing
+P0045,Headphones Deluxe,Feb,6959.56,Electronics
+P0040,Chair Deluxe,Feb,7360.15,Home & Garden
+P0023,Comic Plus,Feb,9037.27,Books
+P0081,Jacket Standard,Feb,9602.76,Clothing
+P0011,Vase Basic,Feb,5628.89,Home & Garden
+P0001,Speaker Deluxe,Feb,8186.45,Electronics
+P0019,Speaker Pro,Feb,9680.59,Electronics
+P0031,Cookbook Deluxe,Feb,2361.19,Books
+P0074,Textbook Pro,Feb,1164.41,Books
+P0034,Comic Standard,Feb,8820.67,Books
+P0091,Tennis Racket Pro,Feb,2757.46,Sports
+P0005,Textbook Plus,Feb,1382.31,Books
+P0077,Magazine Plus,Feb,2440.87,Books
+P0078,T-Shirt Basic,Feb,4457.03,Clothing
+P0013,Cookbook Deluxe,Feb,2973.39,Books
+P0032,Sweater Pro,Feb,3747.28,Clothing
+P0056,Tennis Racket Standard,Feb,9777.65,Sports
+P0089,Jacket Pro,Feb,7339.65,Clothing
+P0027,Laptop Plus,Feb,7409.73,Electronics
+P0043,Guide Pro,Feb,1852.17,Books
+P0070,Rug Basic,Feb,7588.89,Home & Garden
+P0016,Smartphone Standard,Feb,7654.1,Electronics
+P0041,Helmet Deluxe,Feb,6937.71,Sports
+P0097,Basketball Plus,Feb,3055.93,Sports
+P0010,Shoes Basic,Feb,4807.33,Clothing
+P0073,Headphones Pro,Feb,8616.49,Electronics
+P0012,Tennis Racket Standard,Feb,7031.81,Sports
+P0048,Headphones Standard,Feb,7594.92,Electronics
+P0086,Smartwatch Pro,Feb,6286.37,Electronics
+P0029,Smartphone Plus,Feb,5046.28,Electronics
+P0094,Speaker Basic,Feb,7831.47,Electronics
+P0006,Yoga Mat Deluxe,Feb,1611.33,Sports
+P0067,Yoga Mat Pro,Feb,7058.45,Sports
+P0066,Headphones Basic,Feb,9974.84,Electronics
+P0036,Headphones Pro,Feb,8021.73,Electronics
+P0017,Jeans Plus,Feb,3615.07,Clothing
+P0050,Smartphone Basic,Feb,3500.38,Electronics
+P0035,Smartwatch Deluxe,Feb,7004.97,Electronics
+P0008,Rug Basic,Feb,9062.69,Home & Garden
+P0096,Sneakers Standard,Feb,6201.55,Sports
+P0028,Headphones Standard,Feb,5746.62,Electronics
+P0020,Yoga Mat Basic,Feb,2443.46,Sports
+P0082,Tennis Racket Plus,Feb,7439.11,Sports
+P0026,Hat Standard,Feb,7320.69,Clothing
+P0063,Magazine Basic,Feb,9702.56,Books
+P0014,Helmet Plus,Feb,3701.73,Sports
+P0084,Vase Plus,Mar,7808.01,Home & Garden
+P0054,Tennis Racket Standard,Mar,4906.59,Sports
+P0071,Tennis Racket Basic,Mar,6026.26,Sports
+P0046,Jacket Pro,Mar,8348.08,Clothing
+P0045,Headphones Deluxe,Mar,2997.96,Electronics
+P0040,Chair Deluxe,Mar,4085.82,Home & Garden
+P0023,Comic Plus,Mar,7959.78,Books
+P0081,Jacket Standard,Mar,6134.12,Clothing
+P0011,Vase Basic,Mar,1831.81,Home & Garden
+P0001,Speaker Deluxe,Mar,4871.67,Electronics
+P0019,Speaker Pro,Mar,6279.7,Electronics
+P0031,Cookbook Deluxe,Mar,9185.66,Books
+P0074,Textbook Pro,Mar,2696.39,Books
+P0034,Comic Standard,Mar,8253.58,Books
+P0091,Tennis Racket Pro,Mar,2175.62,Sports
+P0005,Textbook Plus,Mar,3180.12,Books
+P0077,Magazine Plus,Mar,3190.09,Books
+P0078,T-Shirt Basic,Mar,8897.31,Clothing
+P0013,Cookbook Deluxe,Mar,2791.16,Books
+P0032,Sweater Pro,Mar,8082.65,Clothing
+P0056,Tennis Racket Standard,Mar,5156.26,Sports
+P0089,Jacket Pro,Mar,9991.82,Clothing
+P0027,Laptop Plus,Mar,8551.82,Electronics
+P0043,Guide Pro,Mar,7657.33,Books
+P0070,Rug Basic,Mar,8836.54,Home & Garden
+P0016,Smartphone Standard,Mar,6706.27,Electronics
+P0041,Helmet Deluxe,Mar,8592.87,Sports
+P0097,Basketball Plus,Mar,3350.14,Sports
+P0010,Shoes Basic,Mar,1879.33,Clothing
+P0073,Headphones Pro,Mar,6543.39,Electronics
+P0012,Tennis Racket Standard,Mar,4912.21,Sports
+P0048,Headphones Standard,Mar,4837.97,Electronics
+P0086,Smartwatch Pro,Mar,5740.73,Electronics
+P0029,Smartphone Plus,Mar,4252.44,Electronics
+P0094,Speaker Basic,Mar,6634.54,Electronics
+P0006,Yoga Mat Deluxe,Mar,1275.12,Sports
+P0067,Yoga Mat Pro,Mar,9729.02,Sports
+P0066,Headphones Basic,Mar,9322.38,Electronics
+P0036,Headphones Pro,Mar,9417.43,Electronics
+P0017,Jeans Plus,Mar,4285.03,Clothing
+P0050,Smartphone Basic,Mar,5787.02,Electronics
+P0035,Smartwatch Deluxe,Mar,9587.18,Electronics
+P0008,Rug Basic,Mar,9121.11,Home & Garden
+P0096,Sneakers Standard,Mar,8112.2,Sports
+P0028,Headphones Standard,Mar,4665.98,Electronics
+P0020,Yoga Mat Basic,Mar,6079.05,Sports
+P0082,Tennis Racket Plus,Mar,8136.21,Sports
+P0026,Hat Standard,Mar,3457.11,Clothing
+P0063,Magazine Basic,Mar,6638.04,Books
+P0014,Helmet Plus,Mar,8451.41,Sports
+P0084,Vase Plus,Apr,7367.09,Home & Garden
+P0054,Tennis Racket Standard,Apr,5315.33,Sports
+P0071,Tennis Racket Basic,Apr,6261.48,Sports
+P0046,Jacket Pro,Apr,9898.08,Clothing
+P0045,Headphones Deluxe,Apr,6417.89,Electronics
+P0040,Chair Deluxe,Apr,8070.56,Home & Garden
+P0023,Comic Plus,Apr,7539.44,Books
+P0081,Jacket Standard,Apr,7313.42,Clothing
+P0011,Vase Basic,Apr,7447.32,Home & Garden
+P0001,Speaker Deluxe,Apr,5089.69,Electronics
+P0019,Speaker Pro,Apr,5267.44,Electronics
+P0031,Cookbook Deluxe,Apr,5210.76,Books
+P0074,Textbook Pro,Apr,1299.29,Books
+P0034,Comic Standard,Apr,3169.59,Books
+P0091,Tennis Racket Pro,Apr,2391.08,Sports
+P0005,Textbook Plus,Apr,8978.01,Books
+P0077,Magazine Plus,Apr,3474.72,Books
+P0078,T-Shirt Basic,Apr,2245.98,Clothing
+P0013,Cookbook Deluxe,Apr,2077.9,Books
+P0032,Sweater Pro,Apr,7299.91,Clothing
+P0056,Tennis Racket Standard,Apr,1054.75,Sports
+P0089,Jacket Pro,Apr,5241.74,Clothing
+P0027,Laptop Plus,Apr,2069.84,Electronics
+P0043,Guide Pro,Apr,8646.97,Books
+P0070,Rug Basic,Apr,9626.05,Home & Garden
+P0016,Smartphone Standard,Apr,9628.79,Electronics
+P0041,Helmet Deluxe,Apr,4977.68,Sports
+P0097,Basketball Plus,Apr,6800.63,Sports
+P0010,Shoes Basic,Apr,6397.34,Clothing
+P0073,Headphones Pro,Apr,4150.35,Electronics
+P0012,Tennis Racket Standard,Apr,4996.58,Sports
+P0048,Headphones Standard,Apr,1578.91,Electronics
+P0086,Smartwatch Pro,Apr,8161.29,Electronics
+P0029,Smartphone Plus,Apr,3167.23,Electronics
+P0094,Speaker Basic,Apr,5144.75,Electronics
+P0006,Yoga Mat Deluxe,Apr,5325.59,Sports
+P0067,Yoga Mat Pro,Apr,6046.41,Sports
+P0066,Headphones Basic,Apr,8360.89,Electronics
+P0036,Headphones Pro,Apr,7226.93,Electronics
+P0017,Jeans Plus,Apr,6967.57,Clothing
+P0050,Smartphone Basic,Apr,5740.71,Electronics
+P0035,Smartwatch Deluxe,Apr,1863.6,Electronics
+P0008,Rug Basic,Apr,4618.08,Home & Garden
+P0096,Sneakers Standard,Apr,9615.85,Sports
+P0028,Headphones Standard,Apr,9959.93,Electronics
+P0020,Yoga Mat Basic,Apr,7574.48,Sports
+P0082,Tennis Racket Plus,Apr,3047.63,Sports
+P0026,Hat Standard,Apr,1917.02,Clothing
+P0063,Magazine Basic,Apr,4732.88,Books
+P0014,Helmet Plus,Apr,8709.15,Sports
+P0084,Vase Plus,May,7496.78,Home & Garden
+P0054,Tennis Racket Standard,May,8955.03,Sports
+P0071,Tennis Racket Basic,May,6541.99,Sports
+P0046,Jacket Pro,May,2172.96,Clothing
+P0045,Headphones Deluxe,May,2033.16,Electronics
+P0040,Chair Deluxe,May,1432.02,Home & Garden
+P0023,Comic Plus,May,6103.72,Books
+P0081,Jacket Standard,May,3185.98,Clothing
+P0011,Vase Basic,May,7609.45,Home & Garden
+P0001,Speaker Deluxe,May,7176.25,Electronics
+P0019,Speaker Pro,May,3863.0,Electronics
+P0031,Cookbook Deluxe,May,2591.21,Books
+P0074,Textbook Pro,May,1921.6,Books
+P0034,Comic Standard,May,7635.84,Books
+P0091,Tennis Racket Pro,May,5053.97,Sports
+P0005,Textbook Plus,May,3911.77,Books
+P0077,Magazine Plus,May,8709.88,Books
+P0078,T-Shirt Basic,May,6342.52,Clothing
+P0013,Cookbook Deluxe,May,5662.02,Books
+P0032,Sweater Pro,May,7690.41,Clothing
+P0056,Tennis Racket Standard,May,8340.25,Sports
+P0089,Jacket Pro,May,7174.66,Clothing
+P0027,Laptop Plus,May,4960.06,Electronics
+P0043,Guide Pro,May,4413.69,Books
+P0070,Rug Basic,May,7944.98,Home & Garden
+P0016,Smartphone Standard,May,5661.16,Electronics
+P0041,Helmet Deluxe,May,7339.47,Sports
+P0097,Basketball Plus,May,9013.59,Sports
+P0010,Shoes Basic,May,9243.02,Clothing
+P0073,Headphones Pro,May,3499.44,Electronics
+P0012,Tennis Racket Standard,May,2691.01,Sports
+P0048,Headphones Standard,May,3351.59,Electronics
+P0086,Smartwatch Pro,May,7762.35,Electronics
+P0029,Smartphone Plus,May,4330.52,Electronics
+P0094,Speaker Basic,May,2560.5,Electronics
+P0006,Yoga Mat Deluxe,May,1885.47,Sports
+P0067,Yoga Mat Pro,May,3945.82,Sports
+P0066,Headphones Basic,May,2225.23,Electronics
+P0036,Headphones Pro,May,2407.36,Electronics
+P0017,Jeans Plus,May,7154.96,Clothing
+P0050,Smartphone Basic,May,1177.59,Electronics
+P0035,Smartwatch Deluxe,May,2057.98,Electronics
+P0008,Rug Basic,May,8599.29,Home & Garden
+P0096,Sneakers Standard,May,8604.23,Sports
+P0028,Headphones Standard,May,3963.19,Electronics
+P0020,Yoga Mat Basic,May,1791.58,Sports
+P0082,Tennis Racket Plus,May,7344.73,Sports
+P0026,Hat Standard,May,4241.19,Clothing
+P0063,Magazine Basic,May,1409.18,Books
+P0014,Helmet Plus,May,2420.44,Sports
+P0084,Vase Plus,Jun,2234.93,Home & Garden
+P0054,Tennis Racket Standard,Jun,6302.05,Sports
+P0071,Tennis Racket Basic,Jun,9083.06,Sports
+P0046,Jacket Pro,Jun,8137.65,Clothing
+P0045,Headphones Deluxe,Jun,5918.64,Electronics
+P0040,Chair Deluxe,Jun,4799.4,Home & Garden
+P0023,Comic Plus,Jun,6568.09,Books
+P0081,Jacket Standard,Jun,4994.31,Clothing
+P0011,Vase Basic,Jun,3214.89,Home & Garden
+P0001,Speaker Deluxe,Jun,7112.78,Electronics
+P0019,Speaker Pro,Jun,8859.2,Electronics
+P0031,Cookbook Deluxe,Jun,4355.83,Books
+P0074,Textbook Pro,Jun,8573.85,Books
+P0034,Comic Standard,Jun,4879.74,Books
+P0091,Tennis Racket Pro,Jun,4612.02,Sports
+P0005,Textbook Plus,Jun,1254.92,Books
+P0077,Magazine Plus,Jun,7257.51,Books
+P0078,T-Shirt Basic,Jun,8267.52,Clothing
+P0013,Cookbook Deluxe,Jun,6972.01,Books
+P0032,Sweater Pro,Jun,2362.25,Clothing
+P0056,Tennis Racket Standard,Jun,1929.64,Sports
+P0089,Jacket Pro,Jun,6155.73,Clothing
+P0027,Laptop Plus,Jun,4613.65,Electronics
+P0043,Guide Pro,Jun,4861.88,Books
+P0070,Rug Basic,Jun,9710.2,Home & Garden
+P0016,Smartphone Standard,Jun,7515.3,Electronics
+P0041,Helmet Deluxe,Jun,4706.09,Sports
+P0097,Basketball Plus,Jun,1171.89,Sports
+P0010,Shoes Basic,Jun,1306.86,Clothing
+P0073,Headphones Pro,Jun,7163.23,Electronics
+P0012,Tennis Racket Standard,Jun,8539.65,Sports
+P0048,Headphones Standard,Jun,7369.32,Electronics
+P0086,Smartwatch Pro,Jun,4652.99,Electronics
+P0029,Smartphone Plus,Jun,1280.22,Electronics
+P0094,Speaker Basic,Jun,9706.61,Electronics
+P0006,Yoga Mat Deluxe,Jun,9877.02,Sports
+P0067,Yoga Mat Pro,Jun,5944.28,Sports
+P0066,Headphones Basic,Jun,1636.04,Electronics
+P0036,Headphones Pro,Jun,5868.75,Electronics
+P0017,Jeans Plus,Jun,9031.05,Clothing
+P0050,Smartphone Basic,Jun,7119.87,Electronics
+P0035,Smartwatch Deluxe,Jun,7479.9,Electronics
+P0008,Rug Basic,Jun,1764.73,Home & Garden
+P0096,Sneakers Standard,Jun,1958.6,Sports
+P0028,Headphones Standard,Jun,2146.14,Electronics
+P0020,Yoga Mat Basic,Jun,9139.39,Sports
+P0082,Tennis Racket Plus,Jun,5732.65,Sports
+P0026,Hat Standard,Jun,8124.18,Clothing
+P0063,Magazine Basic,Jun,2037.62,Books
+P0014,Helmet Plus,Jun,9348.78,Sports
+P0084,Vase Plus,Jul,8390.28,Home & Garden
+P0054,Tennis Racket Standard,Jul,3022.88,Sports
+P0071,Tennis Racket Basic,Jul,8867.64,Sports
+P0046,Jacket Pro,Jul,3370.98,Clothing
+P0045,Headphones Deluxe,Jul,2848.06,Electronics
+P0040,Chair Deluxe,Jul,3378.2,Home & Garden
+P0023,Comic Plus,Jul,9189.6,Books
+P0081,Jacket Standard,Jul,9240.33,Clothing
+P0011,Vase Basic,Jul,3960.96,Home & Garden
+P0001,Speaker Deluxe,Jul,7348.91,Electronics
+P0019,Speaker Pro,Jul,7081.71,Electronics
+P0031,Cookbook Deluxe,Jul,8259.06,Books
+P0074,Textbook Pro,Jul,3668.59,Books
+P0034,Comic Standard,Jul,5591.25,Books
+P0091,Tennis Racket Pro,Jul,7009.07,Sports
+P0005,Textbook Plus,Jul,1236.31,Books
+P0077,Magazine Plus,Jul,4390.65,Books
+P0078,T-Shirt Basic,Jul,7263.0,Clothing
+P0013,Cookbook Deluxe,Jul,3273.36,Books
+P0032,Sweater Pro,Jul,9619.34,Clothing
+P0056,Tennis Racket Standard,Jul,1271.45,Sports
+P0089,Jacket Pro,Jul,9622.78,Clothing
+P0027,Laptop Plus,Jul,2950.87,Electronics
+P0043,Guide Pro,Jul,1439.4,Books
+P0070,Rug Basic,Jul,3632.27,Home & Garden
+P0016,Smartphone Standard,Jul,8076.54,Electronics
+P0041,Helmet Deluxe,Jul,7771.98,Sports
+P0097,Basketball Plus,Jul,2879.56,Sports
+P0010,Shoes Basic,Jul,2771.11,Clothing
+P0073,Headphones Pro,Jul,6783.22,Electronics
+P0012,Tennis Racket Standard,Jul,5122.74,Sports
+P0048,Headphones Standard,Jul,8130.61,Electronics
+P0086,Smartwatch Pro,Jul,1217.2,Electronics
+P0029,Smartphone Plus,Jul,6493.71,Electronics
+P0094,Speaker Basic,Jul,7576.05,Electronics
+P0006,Yoga Mat Deluxe,Jul,9940.48,Sports
+P0067,Yoga Mat Pro,Jul,7109.04,Sports
+P0066,Headphones Basic,Jul,3086.61,Electronics
+P0036,Headphones Pro,Jul,1973.68,Electronics
+P0017,Jeans Plus,Jul,6768.25,Clothing
+P0050,Smartphone Basic,Jul,5708.65,Electronics
+P0035,Smartwatch Deluxe,Jul,9092.31,Electronics
+P0008,Rug Basic,Jul,7539.47,Home & Garden
+P0096,Sneakers Standard,Jul,5587.68,Sports
+P0028,Headphones Standard,Jul,4632.31,Electronics
+P0020,Yoga Mat Basic,Jul,4639.37,Sports
+P0082,Tennis Racket Plus,Jul,3036.74,Sports
+P0026,Hat Standard,Jul,1155.93,Clothing
+P0063,Magazine Basic,Jul,6174.2,Books
+P0014,Helmet Plus,Jul,2911.73,Sports
+P0084,Vase Plus,Aug,2874.94,Home & Garden
+P0054,Tennis Racket Standard,Aug,2128.43,Sports
+P0071,Tennis Racket Basic,Aug,2706.36,Sports
+P0046,Jacket Pro,Aug,1286.1,Clothing
+P0045,Headphones Deluxe,Aug,7068.08,Electronics
+P0040,Chair Deluxe,Aug,4612.57,Home & Garden
+P0023,Comic Plus,Aug,6053.72,Books
+P0081,Jacket Standard,Aug,6732.62,Clothing
+P0011,Vase Basic,Aug,9752.36,Home & Garden
+P0001,Speaker Deluxe,Aug,1614.39,Electronics
+P0019,Speaker Pro,Aug,4761.26,Electronics
+P0031,Cookbook Deluxe,Aug,3213.08,Books
+P0074,Textbook Pro,Aug,5290.41,Books
+P0034,Comic Standard,Aug,9284.25,Books
+P0091,Tennis Racket Pro,Aug,7515.86,Sports
+P0005,Textbook Plus,Aug,6957.55,Books
+P0077,Magazine Plus,Aug,4971.21,Books
+P0078,T-Shirt Basic,Aug,7040.01,Clothing
+P0013,Cookbook Deluxe,Aug,1291.38,Books
+P0032,Sweater Pro,Aug,6276.15,Clothing
+P0056,Tennis Racket Standard,Aug,5983.99,Sports
+P0089,Jacket Pro,Aug,4119.76,Clothing
+P0027,Laptop Plus,Aug,2813.63,Electronics
+P0043,Guide Pro,Aug,8268.0,Books
+P0070,Rug Basic,Aug,1484.76,Home & Garden
+P0016,Smartphone Standard,Aug,1627.06,Electronics
+P0041,Helmet Deluxe,Aug,4964.7,Sports
+P0097,Basketball Plus,Aug,3272.99,Sports
+P0010,Shoes Basic,Aug,7709.07,Clothing
+P0073,Headphones Pro,Aug,6707.71,Electronics
+P0012,Tennis Racket Standard,Aug,7952.81,Sports
+P0048,Headphones Standard,Aug,3922.11,Electronics
+P0086,Smartwatch Pro,Aug,7664.67,Electronics
+P0029,Smartphone Plus,Aug,8760.73,Electronics
+P0094,Speaker Basic,Aug,4107.47,Electronics
+P0006,Yoga Mat Deluxe,Aug,4059.06,Sports
+P0067,Yoga Mat Pro,Aug,9099.56,Sports
+P0066,Headphones Basic,Aug,1448.11,Electronics
+P0036,Headphones Pro,Aug,4151.7,Electronics
+P0017,Jeans Plus,Aug,2068.05,Clothing
+P0050,Smartphone Basic,Aug,1260.83,Electronics
+P0035,Smartwatch Deluxe,Aug,2015.82,Electronics
+P0008,Rug Basic,Aug,4881.21,Home & Garden
+P0096,Sneakers Standard,Aug,7182.6,Sports
+P0028,Headphones Standard,Aug,3603.54,Electronics
+P0020,Yoga Mat Basic,Aug,8647.08,Sports
+P0082,Tennis Racket Plus,Aug,4938.54,Sports
+P0026,Hat Standard,Aug,9714.05,Clothing
+P0063,Magazine Basic,Aug,9587.4,Books
+P0014,Helmet Plus,Aug,7959.49,Sports
+P0084,Vase Plus,Sep,9391.65,Home & Garden
+P0054,Tennis Racket Standard,Sep,7363.86,Sports
+P0071,Tennis Racket Basic,Sep,9060.25,Sports
+P0046,Jacket Pro,Sep,3128.26,Clothing
+P0045,Headphones Deluxe,Sep,4108.78,Electronics
+P0040,Chair Deluxe,Sep,7776.37,Home & Garden
+P0023,Comic Plus,Sep,4821.05,Books
+P0081,Jacket Standard,Sep,8535.95,Clothing
+P0011,Vase Basic,Sep,8898.75,Home & Garden
+P0001,Speaker Deluxe,Sep,3697.57,Electronics
+P0019,Speaker Pro,Sep,8411.06,Electronics
+P0031,Cookbook Deluxe,Sep,2388.38,Books
+P0074,Textbook Pro,Sep,4007.77,Books
+P0034,Comic Standard,Sep,5661.68,Books
+P0091,Tennis Racket Pro,Sep,3037.99,Sports
+P0005,Textbook Plus,Sep,6213.41,Books
+P0077,Magazine Plus,Sep,6208.26,Books
+P0078,T-Shirt Basic,Sep,2862.13,Clothing
+P0013,Cookbook Deluxe,Sep,8160.77,Books
+P0032,Sweater Pro,Sep,6684.8,Clothing
+P0056,Tennis Racket Standard,Sep,3859.84,Sports
+P0089,Jacket Pro,Sep,3089.66,Clothing
+P0027,Laptop Plus,Sep,8908.75,Electronics
+P0043,Guide Pro,Sep,8521.68,Books
+P0070,Rug Basic,Sep,3067.85,Home & Garden
+P0016,Smartphone Standard,Sep,1320.45,Electronics
+P0041,Helmet Deluxe,Sep,8240.79,Sports
+P0097,Basketball Plus,Sep,6539.58,Sports
+P0010,Shoes Basic,Sep,1907.94,Clothing
+P0073,Headphones Pro,Sep,6286.22,Electronics
+P0012,Tennis Racket Standard,Sep,5069.64,Sports
+P0048,Headphones Standard,Sep,7970.95,Electronics
+P0086,Smartwatch Pro,Sep,2881.76,Electronics
+P0029,Smartphone Plus,Sep,5078.41,Electronics
+P0094,Speaker Basic,Sep,2406.2,Electronics
+P0006,Yoga Mat Deluxe,Sep,9617.75,Sports
+P0067,Yoga Mat Pro,Sep,8008.64,Sports
+P0066,Headphones Basic,Sep,7630.5,Electronics
+P0036,Headphones Pro,Sep,7211.86,Electronics
+P0017,Jeans Plus,Sep,4810.03,Clothing
+P0050,Smartphone Basic,Sep,9309.54,Electronics
+P0035,Smartwatch Deluxe,Sep,1656.25,Electronics
+P0008,Rug Basic,Sep,8229.33,Home & Garden
+P0096,Sneakers Standard,Sep,2937.09,Sports
+P0028,Headphones Standard,Sep,3916.25,Electronics
+P0020,Yoga Mat Basic,Sep,5674.87,Sports
+P0082,Tennis Racket Plus,Sep,8043.9,Sports
+P0026,Hat Standard,Sep,8546.81,Clothing
+P0063,Magazine Basic,Sep,6253.59,Books
+P0014,Helmet Plus,Sep,4627.32,Sports
+P0084,Vase Plus,Oct,9518.52,Home & Garden
+P0054,Tennis Racket Standard,Oct,3218.69,Sports
+P0071,Tennis Racket Basic,Oct,8227.85,Sports
+P0046,Jacket Pro,Oct,6508.45,Clothing
+P0045,Headphones Deluxe,Oct,4392.06,Electronics
+P0040,Chair Deluxe,Oct,1012.31,Home & Garden
+P0023,Comic Plus,Oct,5019.39,Books
+P0081,Jacket Standard,Oct,3490.48,Clothing
+P0011,Vase Basic,Oct,1939.12,Home & Garden
+P0001,Speaker Deluxe,Oct,1676.43,Electronics
+P0019,Speaker Pro,Oct,4128.02,Electronics
+P0031,Cookbook Deluxe,Oct,6532.82,Books
+P0074,Textbook Pro,Oct,8537.67,Books
+P0034,Comic Standard,Oct,2652.07,Books
+P0091,Tennis Racket Pro,Oct,4821.8,Sports
+P0005,Textbook Plus,Oct,4527.61,Books
+P0077,Magazine Plus,Oct,5620.55,Books
+P0078,T-Shirt Basic,Oct,8286.29,Clothing
+P0013,Cookbook Deluxe,Oct,5982.81,Books
+P0032,Sweater Pro,Oct,8619.89,Clothing
+P0056,Tennis Racket Standard,Oct,5666.97,Sports
+P0089,Jacket Pro,Oct,6434.63,Clothing
+P0027,Laptop Plus,Oct,4936.45,Electronics
+P0043,Guide Pro,Oct,8407.86,Books
+P0070,Rug Basic,Oct,9314.44,Home & Garden
+P0016,Smartphone Standard,Oct,6752.3,Electronics
+P0041,Helmet Deluxe,Oct,8387.04,Sports
+P0097,Basketball Plus,Oct,1531.03,Sports
+P0010,Shoes Basic,Oct,9155.01,Clothing
+P0073,Headphones Pro,Oct,2700.33,Electronics
+P0012,Tennis Racket Standard,Oct,3308.68,Sports
+P0048,Headphones Standard,Oct,1479.97,Electronics
+P0086,Smartwatch Pro,Oct,9688.6,Electronics
+P0029,Smartphone Plus,Oct,8668.1,Electronics
+P0094,Speaker Basic,Oct,9218.66,Electronics
+P0006,Yoga Mat Deluxe,Oct,8624.95,Sports
+P0067,Yoga Mat Pro,Oct,5315.77,Sports
+P0066,Headphones Basic,Oct,9316.74,Electronics
+P0036,Headphones Pro,Oct,9725.26,Electronics
+P0017,Jeans Plus,Oct,5523.1,Clothing
+P0050,Smartphone Basic,Oct,2580.62,Electronics
+P0035,Smartwatch Deluxe,Oct,6927.6,Electronics
+P0008,Rug Basic,Oct,9778.94,Home & Garden
+P0096,Sneakers Standard,Oct,8849.32,Sports
+P0028,Headphones Standard,Oct,8756.34,Electronics
+P0020,Yoga Mat Basic,Oct,9404.36,Sports
+P0082,Tennis Racket Plus,Oct,9045.57,Sports
+P0026,Hat Standard,Oct,7986.53,Clothing
+P0063,Magazine Basic,Oct,7464.46,Books
+P0014,Helmet Plus,Oct,3382.9,Sports
+P0084,Vase Plus,Nov,6592.06,Home & Garden
+P0054,Tennis Racket Standard,Nov,5693.4,Sports
+P0071,Tennis Racket Basic,Nov,8757.5,Sports
+P0046,Jacket Pro,Nov,5425.41,Clothing
+P0045,Headphones Deluxe,Nov,2149.68,Electronics
+P0040,Chair Deluxe,Nov,1044.75,Home & Garden
+P0023,Comic Plus,Nov,7100.86,Books
+P0081,Jacket Standard,Nov,5949.18,Clothing
+P0011,Vase Basic,Nov,3978.67,Home & Garden
+P0001,Speaker Deluxe,Nov,2520.75,Electronics
+P0019,Speaker Pro,Nov,5200.44,Electronics
+P0031,Cookbook Deluxe,Nov,1902.58,Books
+P0074,Textbook Pro,Nov,4024.98,Books
+P0034,Comic Standard,Nov,4412.91,Books
+P0091,Tennis Racket Pro,Nov,5190.57,Sports
+P0005,Textbook Plus,Nov,5199.59,Books
+P0077,Magazine Plus,Nov,3313.05,Books
+P0078,T-Shirt Basic,Nov,8651.9,Clothing
+P0013,Cookbook Deluxe,Nov,4199.89,Books
+P0032,Sweater Pro,Nov,3066.29,Clothing
+P0056,Tennis Racket Standard,Nov,2582.29,Sports
+P0089,Jacket Pro,Nov,3903.21,Clothing
+P0027,Laptop Plus,Nov,1607.98,Electronics
+P0043,Guide Pro,Nov,1296.17,Books
+P0070,Rug Basic,Nov,6446.28,Home & Garden
+P0016,Smartphone Standard,Nov,6572.32,Electronics
+P0041,Helmet Deluxe,Nov,5766.29,Sports
+P0097,Basketball Plus,Nov,7860.57,Sports
+P0010,Shoes Basic,Nov,1352.35,Clothing
+P0073,Headphones Pro,Nov,9423.76,Electronics
+P0012,Tennis Racket Standard,Nov,1855.59,Sports
+P0048,Headphones Standard,Nov,7066.21,Electronics
+P0086,Smartwatch Pro,Nov,2200.57,Electronics
+P0029,Smartphone Plus,Nov,8919.15,Electronics
+P0094,Speaker Basic,Nov,5596.42,Electronics
+P0006,Yoga Mat Deluxe,Nov,1740.64,Sports
+P0067,Yoga Mat Pro,Nov,6550.52,Sports
+P0066,Headphones Basic,Nov,1081.99,Electronics
+P0036,Headphones Pro,Nov,7984.2,Electronics
+P0017,Jeans Plus,Nov,6855.26,Clothing
+P0050,Smartphone Basic,Nov,2913.62,Electronics
+P0035,Smartwatch Deluxe,Nov,4372.76,Electronics
+P0008,Rug Basic,Nov,1070.26,Home & Garden
+P0096,Sneakers Standard,Nov,7243.15,Sports
+P0028,Headphones Standard,Nov,3904.01,Electronics
+P0020,Yoga Mat Basic,Nov,6144.3,Sports
+P0082,Tennis Racket Plus,Nov,9610.55,Sports
+P0026,Hat Standard,Nov,3695.2,Clothing
+P0063,Magazine Basic,Nov,9912.14,Books
+P0014,Helmet Plus,Nov,6694.56,Sports
+P0084,Vase Plus,Dec,3178.8,Home & Garden
+P0054,Tennis Racket Standard,Dec,4931.0,Sports
+P0071,Tennis Racket Basic,Dec,7664.08,Sports
+P0046,Jacket Pro,Dec,5018.3,Clothing
+P0045,Headphones Deluxe,Dec,1616.57,Electronics
+P0040,Chair Deluxe,Dec,2517.43,Home & Garden
+P0023,Comic Plus,Dec,8121.68,Books
+P0081,Jacket Standard,Dec,6835.36,Clothing
+P0011,Vase Basic,Dec,6128.43,Home & Garden
+P0001,Speaker Deluxe,Dec,2508.6,Electronics
+P0019,Speaker Pro,Dec,8539.82,Electronics
+P0031,Cookbook Deluxe,Dec,9646.66,Books
+P0074,Textbook Pro,Dec,1367.98,Books
+P0034,Comic Standard,Dec,1702.29,Books
+P0091,Tennis Racket Pro,Dec,8962.52,Sports
+P0005,Textbook Plus,Dec,8339.97,Books
+P0077,Magazine Plus,Dec,6561.41,Books
+P0078,T-Shirt Basic,Dec,9504.69,Clothing
+P0013,Cookbook Deluxe,Dec,6817.88,Books
+P0032,Sweater Pro,Dec,2943.87,Clothing
+P0056,Tennis Racket Standard,Dec,7557.78,Sports
+P0089,Jacket Pro,Dec,6811.39,Clothing
+P0027,Laptop Plus,Dec,9871.7,Electronics
+P0043,Guide Pro,Dec,2925.06,Books
+P0070,Rug Basic,Dec,6380.96,Home & Garden
+P0016,Smartphone Standard,Dec,8021.51,Electronics
+P0041,Helmet Deluxe,Dec,4050.85,Sports
+P0097,Basketball Plus,Dec,4417.12,Sports
+P0010,Shoes Basic,Dec,8991.12,Clothing
+P0073,Headphones Pro,Dec,4637.75,Electronics
+P0012,Tennis Racket Standard,Dec,6622.6,Sports
+P0048,Headphones Standard,Dec,9003.14,Electronics
+P0086,Smartwatch Pro,Dec,2888.44,Electronics
+P0029,Smartphone Plus,Dec,9836.9,Electronics
+P0094,Speaker Basic,Dec,7317.58,Electronics
+P0006,Yoga Mat Deluxe,Dec,5465.1,Sports
+P0067,Yoga Mat Pro,Dec,4878.29,Sports
+P0066,Headphones Basic,Dec,9589.28,Electronics
+P0036,Headphones Pro,Dec,2851.52,Electronics
+P0017,Jeans Plus,Dec,3805.15,Clothing
+P0050,Smartphone Basic,Dec,3770.13,Electronics
+P0035,Smartwatch Deluxe,Dec,3601.06,Electronics
+P0008,Rug Basic,Dec,5216.84,Home & Garden
+P0096,Sneakers Standard,Dec,9902.61,Sports
+P0028,Headphones Standard,Dec,8999.08,Electronics
+P0020,Yoga Mat Basic,Dec,3951.55,Sports
+P0082,Tennis Racket Plus,Dec,4805.83,Sports
+P0026,Hat Standard,Dec,7025.33,Clothing
+P0063,Magazine Basic,Dec,1154.37,Books
+P0014,Helmet Plus,Dec,8381.38,Sports

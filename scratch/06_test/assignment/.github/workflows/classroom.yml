@@ -1,0 +1,60 @@
+name: Assignment 6 Autograding
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pandas numpy jupyter nbconvert
+
+    - name: Download latest tests from upstream
+      run: |
+        mkdir -p .github/test
+        curl -o .github/test/test_assignment.py \
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw06/main/.github/test/test_assignment.py
+        curl -o .github/test/requirements.txt \
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw06/main/.github/test/requirements.txt
+
+    - name: Install test requirements
+      run: |
+        pip install -r .github/test/requirements.txt
+
+    - name: Generate data
+      run: |
+        jupyter nbconvert --to notebook --execute data_generator.ipynb
+
+    - name: Execute assignment notebook
+      run: |
+        jupyter nbconvert --to notebook --execute assignment.ipynb
+
+    - name: Run tests
+      run: |
+        pytest .github/test/test_assignment.py -v
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          output/
+          .pytest_cache/

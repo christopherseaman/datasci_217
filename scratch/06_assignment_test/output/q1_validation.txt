@@ -1,0 +1,8 @@
+Question 1: Merging DataFrames - Validation Report
+============================================================
+
+Total merged rows: 2000
+Total columns: 15
+Orders with customer data: 1905
+Orders with product data: 1918
+Complete records (all data): 1828

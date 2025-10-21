@@ -1,0 +1,501 @@
+customer_id,name,email,city,state,join_date
+C0001,Robert Martin,customer1@email.com,Houston,FL,2022-08-25
+C0002,Charles Hernandez,customer2@email.com,Portland,TX,2023-06-14
+C0003,Lisa Lee,customer3@email.com,Los Angeles,TX,2023-07-06
+C0004,Robert Sanchez,customer4@email.com,Seattle,FL,2022-01-21
+C0005,Thomas Thompson,customer5@email.com,Austin,TX,2023-06-04
+C0006,William Hernandez,customer6@email.com,San Diego,CA,2022-04-10
+C0007,Jessica Lee,customer7@email.com,San Diego,TX,2023-04-23
+C0008,Emily Davis,customer8@email.com,Orlando,WA,2023-08-22
+C0009,Jessica Williams,customer9@email.com,Houston,TX,2022-10-25
+C0010,Susan Lee,customer10@email.com,Brooklyn,NY,2023-06-10
+C0011,Jane White,customer11@email.com,Seattle,CA,2022-11-30
+C0012,Patricia Garcia,customer12@email.com,Houston,NY,2022-01-02
+C0013,Jane Lee,customer13@email.com,Orlando,NY,2023-01-10
+C0014,John Lopez,customer14@email.com,San Francisco,WA,2022-10-20
+C0015,Karen Perez,customer15@email.com,Houston,CA,2023-07-07
+C0016,Patricia Harris,customer16@email.com,Austin,CA,2022-11-14
+C0017,Joseph Martinez,customer17@email.com,Seattle,CA,2023-05-17
+C0018,Linda Anderson,customer18@email.com,Orlando,CA,2023-01-16
+C0019,Charles Jackson,customer19@email.com,San Francisco,CA,2023-09-15
+C0020,Patricia Thompson,customer20@email.com,New York,WA,2022-01-14
+C0021,Barbara Harris,customer21@email.com,Orlando,TX,2023-05-19
+C0022,Michael Jones,customer22@email.com,New York,NY,2022-08-19
+C0023,Thomas Miller,customer23@email.com,Seattle,CA,2022-03-25
+C0024,Christopher Rodriguez,customer24@email.com,San Diego,TX,2022-05-10
+C0025,Robert Moore,customer25@email.com,Orlando,TX,2022-05-25
+C0026,Emily Harris,customer26@email.com,Los Angeles,NY,2022-01-28
+C0027,Jennifer Moore,customer27@email.com,New York,WA,2022-03-07
+C0028,Karen Rodriguez,customer28@email.com,Austin,FL,2022-06-12
+C0029,Karen Lee,customer29@email.com,Los Angeles,FL,2022-08-17
+C0030,Jane Martin,customer30@email.com,Miami,TX,2022-09-18
+C0031,Charles Miller,customer31@email.com,Miami,NY,2023-03-25
+C0032,Patricia Davis,customer32@email.com,San Francisco,FL,2023-02-28
+C0033,Charles Williams,customer33@email.com,San Diego,TX,2023-04-05
+C0034,Jennifer Taylor,customer34@email.com,Seattle,WA,2023-11-07
+C0035,Emily Moore,customer35@email.com,Orlando,FL,2022-10-28
+C0036,Lisa Brown,customer36@email.com,Brooklyn,TX,2022-10-30
+C0037,Jane Garcia,customer37@email.com,Austin,TX,2022-10-14
+C0038,Susan Martinez,customer38@email.com,New York,CA,2023-01-30
+C0039,Emily Perez,customer39@email.com,Seattle,WA,2022-01-10
+C0040,Elizabeth Sanchez,customer40@email.com,Los Angeles,CA,2023-12-08
+C0041,Patricia Johnson,customer41@email.com,Portland,NY,2023-09-22
+C0042,Mary Brown,customer42@email.com,Miami,CA,2022-09-27
+C0043,Jennifer Thomas,customer43@email.com,Portland,CA,2023-08-15
+C0044,Charles Davis,customer44@email.com,Austin,FL,2023-08-28
+C0045,Jennifer Thompson,customer45@email.com,Brooklyn,TX,2022-12-27
+C0046,Matthew Davis,customer46@email.com,Orlando,WA,2022-09-14
+C0047,Christopher Thomas,customer47@email.com,San Francisco,CA,2022-05-13
+C0048,Richard Moore,customer48@email.com,Brooklyn,WA,2022-10-03
+C0049,Charles Lee,customer49@email.com,Austin,CA,2023-11-14
+C0050,Jessica Sanchez,customer50@email.com,Brooklyn,NY,2023-05-28
+C0051,Matthew Gonzalez,customer51@email.com,Austin,CA,2022-11-09
+C0052,James Anderson,customer52@email.com,Austin,FL,2023-07-30
+C0053,Richard Smith,customer53@email.com,Houston,TX,2022-10-11
+C0054,Matthew Miller,customer54@email.com,New York,NY,2022-05-01
+C0055,James White,customer55@email.com,Portland,CA,2022-04-17
+C0056,John Lopez,customer56@email.com,Miami,WA,2023-11-18
+C0057,Lisa White,customer57@email.com,Houston,NY,2022-07-23
+C0058,William Jackson,customer58@email.com,Orlando,NY,2022-06-14
+C0059,Joseph Davis,customer59@email.com,Houston,CA,2022-11-01
+C0060,Michael Williams,customer60@email.com,San Diego,NY,2023-05-12
+C0061,John Jones,customer61@email.com,San Diego,WA,2023-09-24
+C0062,Mary Miller,customer62@email.com,Miami,NY,2023-07-10
+C0063,Karen Rodriguez,customer63@email.com,Brooklyn,WA,2022-06-05
+C0064,Robert Rodriguez,customer64@email.com,New York,CA,2023-01-02
+C0065,Lisa Lopez,customer65@email.com,Miami,TX,2023-12-20
+C0066,Jane Smith,customer66@email.com,Austin,NY,2023-09-12
+C0067,Linda Thompson,customer67@email.com,Los Angeles,TX,2022-09-08
+C0068,Daniel White,customer68@email.com,New York,WA,2022-11-30
+C0069,David Williams,customer69@email.com,Portland,NY,2023-10-04
+C0070,Patricia Davis,customer70@email.com,New York,FL,2023-05-26
+C0071,Susan Williams,customer71@email.com,Austin,TX,2022-10-20
+C0072,John Williams,customer72@email.com,Austin,NY,2022-01-20
+C0073,David Anderson,customer73@email.com,San Francisco,TX,2022-10-09
+C0074,Jennifer Williams,customer74@email.com,Miami,NY,2022-01-01
+C0075,John Jones,customer75@email.com,Austin,CA,2022-04-29
+C0076,Karen Thompson,customer76@email.com,San Diego,TX,2022-02-04
+C0077,Jennifer Miller,customer77@email.com,Orlando,FL,2022-07-17
+C0078,James Anderson,customer78@email.com,Los Angeles,FL,2023-04-30
+C0079,Charles Sanchez,customer79@email.com,Portland,WA,2022-02-28
+C0080,Mary Gonzalez,customer80@email.com,Miami,NY,2022-06-10
+C0081,Thomas Miller,customer81@email.com,Seattle,TX,2023-11-22
+C0082,Joseph Martin,customer82@email.com,San Diego,WA,2022-07-25
+C0083,Emily Jones,customer83@email.com,Brooklyn,TX,2022-01-12
+C0084,Daniel Miller,customer84@email.com,Austin,NY,2023-05-05
+C0085,Richard Anderson,customer85@email.com,Seattle,FL,2022-10-03
+C0086,William Brown,customer86@email.com,Austin,CA,2023-11-24
+C0087,Richard Miller,customer87@email.com,New York,FL,2022-08-30
+C0088,Thomas Perez,customer88@email.com,San Diego,WA,2022-08-04
+C0089,Jane Martinez,customer89@email.com,New York,CA,2022-09-08
+C0090,Richard Harris,customer90@email.com,San Francisco,WA,2022-05-06
+C0091,Christopher Garcia,customer91@email.com,New York,NY,2022-08-05
+C0092,Patricia Lopez,customer92@email.com,San Francisco,CA,2022-11-02
+C0093,Barbara Hernandez,customer93@email.com,San Francisco,WA,2022-07-04
+C0094,Karen Thompson,customer94@email.com,Seattle,NY,2022-02-08
+C0095,Matthew Miller,customer95@email.com,Austin,FL,2022-08-11
+C0096,John Smith,customer96@email.com,Brooklyn,NY,2022-07-03
+C0097,Matthew Harris,customer97@email.com,Portland,TX,2023-05-10
+C0098,Barbara Gonzalez,customer98@email.com,New York,NY,2023-03-03
+C0099,James Williams,customer99@email.com,Portland,NY,2022-06-27
+C0100,Robert Garcia,customer100@email.com,San Diego,TX,2023-03-04
+C0101,Lisa Rodriguez,customer101@email.com,San Francisco,WA,2022-10-21
+C0102,David Smith,customer102@email.com,Austin,WA,2022-05-31
+C0103,Thomas Martinez,customer103@email.com,Los Angeles,NY,2023-01-19
+C0104,Patricia White,customer104@email.com,Miami,TX,2023-09-30
+C0105,Charles Perez,customer105@email.com,Seattle,TX,2022-11-04
+C0106,Jessica Rodriguez,customer106@email.com,Brooklyn,FL,2022-12-02
+C0107,Barbara Taylor,customer107@email.com,Houston,WA,2023-01-10
+C0108,Joseph Sanchez,customer108@email.com,Seattle,CA,2022-01-08
+C0109,Barbara Lopez,customer109@email.com,Los Angeles,WA,2022-12-07
+C0110,Robert Johnson,customer110@email.com,Miami,WA,2022-05-09
+C0111,Michael Taylor,customer111@email.com,Los Angeles,FL,2023-10-31
+C0112,David Taylor,customer112@email.com,New York,CA,2022-12-18
+C0113,Jessica Taylor,customer113@email.com,San Francisco,FL,2022-12-24
+C0114,Joseph Johnson,customer114@email.com,Brooklyn,CA,2023-06-01
+C0115,Jane Perez,customer115@email.com,Orlando,NY,2023-05-10
+C0116,Daniel Jones,customer116@email.com,San Francisco,CA,2022-03-27
+C0117,John Smith,customer117@email.com,Orlando,FL,2022-06-24
+C0118,Thomas Johnson,customer118@email.com,Portland,WA,2022-07-12
+C0119,Christopher Lopez,customer119@email.com,Miami,CA,2022-11-07
+C0120,Karen Garcia,customer120@email.com,Austin,CA,2022-04-29
+C0121,Daniel Brown,customer121@email.com,Houston,TX,2022-08-06
+C0122,Daniel Hernandez,customer122@email.com,San Diego,WA,2023-03-03
+C0123,Jessica Taylor,customer123@email.com,San Francisco,NY,2023-02-18
+C0124,Sarah White,customer124@email.com,Brooklyn,FL,2022-04-24
+C0125,David Martin,customer125@email.com,Los Angeles,NY,2022-05-25
+C0126,Jane Garcia,customer126@email.com,Brooklyn,WA,2023-06-22
+C0127,Susan Hernandez,customer127@email.com,Miami,CA,2023-10-10
+C0128,Linda Thomas,customer128@email.com,Portland,CA,2022-10-30
+C0129,John Rodriguez,customer129@email.com,Orlando,WA,2023-08-11
+C0130,Sarah Thomas,customer130@email.com,Los Angeles,CA,2022-12-11
+C0131,Michael Martin,customer131@email.com,San Diego,CA,2022-01-01
+C0132,Emily Jackson,customer132@email.com,San Diego,CA,2022-05-27
+C0133,Karen Williams,customer133@email.com,San Francisco,FL,2022-10-14
+C0134,Thomas Martin,customer134@email.com,Miami,FL,2023-10-16
+C0135,Robert Martin,customer135@email.com,Austin,TX,2022-02-22
+C0136,James Smith,customer136@email.com,Miami,NY,2022-10-31
+C0137,Lisa Miller,customer137@email.com,Portland,WA,2022-03-10
+C0138,Elizabeth Davis,customer138@email.com,Orlando,WA,2022-12-27
+C0139,John Hernandez,customer139@email.com,Brooklyn,WA,2023-08-25
+C0140,Matthew Harris,customer140@email.com,San Diego,TX,2022-08-08
+C0141,Elizabeth Thompson,customer141@email.com,Brooklyn,FL,2023-12-05
+C0142,Mary Williams,customer142@email.com,Brooklyn,TX,2023-07-29
+C0143,Robert Thomas,customer143@email.com,Brooklyn,WA,2023-08-08
+C0144,Karen Thomas,customer144@email.com,San Diego,NY,2022-06-10
+C0145,Matthew Martin,customer145@email.com,Portland,CA,2023-11-12
+C0146,Joseph Johnson,customer146@email.com,Seattle,FL,2022-03-30
+C0147,John Thomas,customer147@email.com,New York,FL,2023-11-19
+C0148,Patricia Jones,customer148@email.com,Orlando,TX,2023-08-08
+C0149,David Thompson,customer149@email.com,Seattle,FL,2023-08-12
+C0150,James Rodriguez,customer150@email.com,Orlando,WA,2022-06-08
+C0151,Michael Jackson,customer151@email.com,Los Angeles,WA,2023-05-04
+C0152,Linda Thomas,customer152@email.com,Miami,TX,2022-11-20
+C0153,Michael Martin,customer153@email.com,Miami,WA,2023-09-02
+C0154,Jessica Perez,customer154@email.com,Houston,NY,2023-01-16
+C0155,Jessica Smith,customer155@email.com,Miami,TX,2022-04-12
+C0156,Jessica Martin,customer156@email.com,San Diego,NY,2023-05-09
+C0157,William Taylor,customer157@email.com,Austin,CA,2023-10-06
+C0158,Lisa Brown,customer158@email.com,San Francisco,NY,2023-09-06
+C0159,Sarah Davis,customer159@email.com,Houston,CA,2022-01-19
+C0160,Barbara Williams,customer160@email.com,San Francisco,CA,2023-03-30
+C0161,Linda Harris,customer161@email.com,Orlando,NY,2023-04-27
+C0162,Michael Harris,customer162@email.com,San Francisco,TX,2023-08-17
+C0163,Elizabeth Wilson,customer163@email.com,San Francisco,WA,2023-02-01
+C0164,Elizabeth Johnson,customer164@email.com,Houston,WA,2022-10-06
+C0165,Susan Williams,customer165@email.com,Los Angeles,CA,2022-12-31
+C0166,Linda Rodriguez,customer166@email.com,Brooklyn,CA,2022-11-27
+C0167,Emily Smith,customer167@email.com,Miami,TX,2023-10-03
+C0168,Emily Smith,customer168@email.com,Miami,FL,2022-12-10
+C0169,Jennifer Lee,customer169@email.com,San Diego,NY,2023-03-31
+C0170,Linda Martin,customer170@email.com,Houston,CA,2023-08-24
+C0171,Jessica Davis,customer171@email.com,San Diego,WA,2023-12-26
+C0172,Robert Williams,customer172@email.com,Austin,TX,2023-10-17
+C0173,Joseph Smith,customer173@email.com,Austin,NY,2022-03-06
+C0174,Linda Lopez,customer174@email.com,San Diego,TX,2022-03-17
+C0175,Thomas Perez,customer175@email.com,Houston,NY,2023-12-12
+C0176,Daniel Perez,customer176@email.com,San Diego,NY,2022-05-23
+C0177,Jennifer Garcia,customer177@email.com,Miami,CA,2023-08-28
+C0178,Sarah Gonzalez,customer178@email.com,Seattle,TX,2023-04-18
+C0179,Thomas Perez,customer179@email.com,New York,TX,2023-02-21
+C0180,Lisa Johnson,customer180@email.com,San Francisco,WA,2022-11-01
+C0181,Christopher Smith,customer181@email.com,New York,WA,2023-05-12
+C0182,Charles Smith,customer182@email.com,Houston,CA,2022-10-18
+C0183,David Thomas,customer183@email.com,Portland,CA,2022-04-12
+C0184,Thomas Brown,customer184@email.com,New York,FL,2022-09-24
+C0185,Michael Taylor,customer185@email.com,Austin,WA,2023-09-14
+C0186,Joseph Lopez,customer186@email.com,Orlando,NY,2022-01-03
+C0187,Jennifer Lee,customer187@email.com,San Francisco,TX,2022-03-26
+C0188,Sarah Williams,customer188@email.com,Brooklyn,CA,2022-11-24
+C0189,James Jones,customer189@email.com,Portland,TX,2023-03-26
+C0190,Jessica Taylor,customer190@email.com,Houston,TX,2023-03-30
+C0191,Jennifer Lee,customer191@email.com,San Francisco,FL,2023-09-21
+C0192,Michael Smith,customer192@email.com,New York,WA,2022-08-09
+C0193,Barbara Lee,customer193@email.com,Austin,CA,2022-06-03
+C0194,Daniel Smith,customer194@email.com,Los Angeles,TX,2023-10-27
+C0195,Michael Moore,customer195@email.com,Seattle,CA,2022-01-12
+C0196,Matthew Martinez,customer196@email.com,Brooklyn,NY,2022-05-13
+C0197,Susan Sanchez,customer197@email.com,Portland,FL,2022-10-31
+C0198,Michael Davis,customer198@email.com,Seattle,NY,2022-10-20
+C0199,Jennifer White,customer199@email.com,San Francisco,CA,2022-10-27
+C0200,Elizabeth Anderson,customer200@email.com,Austin,CA,2022-02-12
+C0201,Susan Thompson,customer201@email.com,Austin,WA,2022-12-09
+C0202,Jane Martinez,customer202@email.com,New York,TX,2022-11-22
+C0203,Jane Sanchez,customer203@email.com,Miami,TX,2023-05-13
+C0204,Joseph Davis,customer204@email.com,New York,NY,2022-12-30
+C0205,John Rodriguez,customer205@email.com,Miami,FL,2023-03-03
+C0206,William Perez,customer206@email.com,Miami,TX,2022-01-21
+C0207,Linda Miller,customer207@email.com,Brooklyn,WA,2023-02-11
+C0208,Mary Thompson,customer208@email.com,New York,NY,2023-09-11
+C0209,Karen Williams,customer209@email.com,Los Angeles,NY,2022-12-02
+C0210,Elizabeth Harris,customer210@email.com,Portland,WA,2022-04-27
+C0211,Jessica Gonzalez,customer211@email.com,San Diego,FL,2022-05-04
+C0212,Karen Miller,customer212@email.com,San Diego,WA,2023-02-03
+C0213,Matthew Brown,customer213@email.com,New York,FL,2023-12-16
+C0214,Richard Martin,customer214@email.com,New York,WA,2022-02-20
+C0215,John Davis,customer215@email.com,Seattle,WA,2022-11-20
+C0216,Jennifer Thomas,customer216@email.com,Portland,CA,2022-05-21
+C0217,Jennifer Lopez,customer217@email.com,Portland,NY,2023-04-15
+C0218,Thomas Thompson,customer218@email.com,Brooklyn,WA,2022-11-30
+C0219,Charles Johnson,customer219@email.com,New York,WA,2023-01-08
+C0220,Jane Thompson,customer220@email.com,Portland,TX,2023-07-18
+C0221,Susan Jackson,customer221@email.com,Seattle,NY,2023-05-09
+C0222,Matthew Sanchez,customer222@email.com,Miami,TX,2023-06-23
+C0223,Susan Sanchez,customer223@email.com,Austin,NY,2023-10-31
+C0224,Karen Perez,customer224@email.com,Austin,TX,2022-06-05
+C0225,Joseph Martin,customer225@email.com,Miami,WA,2022-10-18
+C0226,Mary Garcia,customer226@email.com,Houston,WA,2023-10-10
+C0227,Charles Perez,customer227@email.com,Seattle,CA,2022-05-24
+C0228,William Jones,customer228@email.com,Portland,TX,2022-04-16
+C0229,John Davis,customer229@email.com,Seattle,FL,2023-02-24
+C0230,Christopher Lopez,customer230@email.com,Miami,CA,2023-11-01
+C0231,Patricia Jones,customer231@email.com,Los Angeles,TX,2023-10-20
+C0232,Robert Brown,customer232@email.com,Orlando,TX,2022-01-02
+C0233,Sarah Gonzalez,customer233@email.com,San Francisco,CA,2023-08-12
+C0234,Barbara Anderson,customer234@email.com,Miami,WA,2023-10-06
+C0235,Michael Thompson,customer235@email.com,Portland,TX,2022-03-31
+C0236,Lisa Martin,customer236@email.com,New York,WA,2022-12-11
+C0237,Linda Gonzalez,customer237@email.com,New York,CA,2022-12-16
+C0238,Elizabeth Martinez,customer238@email.com,Brooklyn,WA,2023-04-04
+C0239,Thomas Taylor,customer239@email.com,Miami,NY,2022-09-20
+C0240,Jessica Jackson,customer240@email.com,Brooklyn,FL,2022-12-17
+C0241,Karen Thompson,customer241@email.com,Miami,TX,2022-04-18
+C0242,Karen Jones,customer242@email.com,Seattle,FL,2023-08-09
+C0243,Karen Lee,customer243@email.com,San Francisco,WA,2022-02-08
+C0244,Daniel Rodriguez,customer244@email.com,Seattle,TX,2022-06-08
+C0245,Patricia Lee,customer245@email.com,Orlando,WA,2023-08-06
+C0246,John Sanchez,customer246@email.com,Austin,NY,2022-11-08
+C0247,Karen Smith,customer247@email.com,San Diego,CA,2022-08-29
+C0248,Charles Johnson,customer248@email.com,Miami,TX,2023-03-21
+C0249,Susan Thomas,customer249@email.com,Orlando,NY,2022-10-25
+C0250,Matthew Davis,customer250@email.com,Austin,NY,2022-02-05
+C0251,Richard Lee,customer251@email.com,Portland,TX,2022-03-25
+C0252,John Thomas,customer252@email.com,Houston,WA,2023-03-28
+C0253,Robert Jones,customer253@email.com,San Francisco,NY,2023-01-20
+C0254,Susan Thompson,customer254@email.com,Brooklyn,FL,2022-06-21
+C0255,Michael Lopez,customer255@email.com,Brooklyn,NY,2023-01-11
+C0256,Karen Thomas,customer256@email.com,Seattle,WA,2023-11-16
+C0257,Thomas Jones,customer257@email.com,New York,WA,2022-12-28
+C0258,Susan Harris,customer258@email.com,Austin,FL,2023-07-13
+C0259,Jennifer Jones,customer259@email.com,Houston,NY,2022-05-21
+C0260,Charles Taylor,customer260@email.com,Orlando,WA,2022-04-28
+C0261,Jennifer Martin,customer261@email.com,San Francisco,TX,2022-10-04
+C0262,David Lopez,customer262@email.com,Austin,CA,2023-12-27
+C0263,Linda Sanchez,customer263@email.com,Houston,CA,2022-08-08
+C0264,Karen Thomas,customer264@email.com,San Diego,CA,2022-01-26
+C0265,Christopher Miller,customer265@email.com,Miami,NY,2023-06-05
+C0266,Emily Smith,customer266@email.com,Brooklyn,FL,2022-01-10
+C0267,David Thompson,customer267@email.com,Orlando,WA,2023-01-13
+C0268,Karen Martinez,customer268@email.com,Brooklyn,TX,2023-09-25
+C0269,Susan Jones,customer269@email.com,Orlando,TX,2023-09-29
+C0270,Emily Johnson,customer270@email.com,Seattle,NY,2023-11-13
+C0271,Barbara Martinez,customer271@email.com,New York,CA,2023-08-07
+C0272,Karen Jackson,customer272@email.com,Orlando,NY,2022-06-01
+C0273,Karen Smith,customer273@email.com,Brooklyn,FL,2023-12-21
+C0274,Jessica Jones,customer274@email.com,Seattle,FL,2022-02-18
+C0275,Richard Brown,customer275@email.com,Orlando,WA,2022-06-03
+C0276,Linda White,customer276@email.com,San Diego,WA,2022-10-20
+C0277,Linda Thompson,customer277@email.com,New York,FL,2023-08-03
+C0278,Jane Taylor,customer278@email.com,Orlando,FL,2022-02-19
+C0279,Barbara White,customer279@email.com,Seattle,FL,2023-10-26
+C0280,Patricia Moore,customer280@email.com,Portland,NY,2023-06-15
+C0281,Michael Smith,customer281@email.com,Austin,FL,2023-09-04
+C0282,John Jackson,customer282@email.com,Los Angeles,TX,2022-03-01
+C0283,William Jones,customer283@email.com,Houston,CA,2022-06-16
+C0284,Patricia Williams,customer284@email.com,Los Angeles,FL,2022-07-21
+C0285,John Smith,customer285@email.com,Portland,CA,2022-05-26
+C0286,Lisa Martinez,customer286@email.com,Los Angeles,NY,2023-11-07
+C0287,William Lopez,customer287@email.com,Portland,CA,2023-03-15
+C0288,Richard Lopez,customer288@email.com,San Francisco,NY,2022-08-30
+C0289,Jennifer Johnson,customer289@email.com,Portland,TX,2023-08-04
+C0290,Thomas Moore,customer290@email.com,Portland,NY,2023-11-18
+C0291,Michael Thompson,customer291@email.com,Portland,NY,2023-07-15
+C0292,Joseph Sanchez,customer292@email.com,San Diego,WA,2023-04-28
+C0293,Lisa Sanchez,customer293@email.com,Austin,FL,2022-04-18
+C0294,Mary Sanchez,customer294@email.com,Miami,FL,2022-08-14
+C0295,Jane Jackson,customer295@email.com,Orlando,TX,2023-11-04
+C0296,James Miller,customer296@email.com,Houston,TX,2023-09-23
+C0297,Emily Sanchez,customer297@email.com,New York,FL,2023-10-23
+C0298,Christopher Moore,customer298@email.com,Austin,WA,2023-10-24
+C0299,Richard Hernandez,customer299@email.com,Brooklyn,FL,2023-03-08
+C0300,Jessica Brown,customer300@email.com,Miami,WA,2023-10-17
+C0301,Matthew Lee,customer301@email.com,San Francisco,TX,2023-02-23
+C0302,Matthew Brown,customer302@email.com,San Francisco,CA,2023-03-31
+C0303,Mary Jones,customer303@email.com,Portland,TX,2022-06-09
+C0304,James White,customer304@email.com,Austin,TX,2023-06-07
+C0305,Michael Taylor,customer305@email.com,Seattle,NY,2023-10-12
+C0306,Michael Thomas,customer306@email.com,Los Angeles,NY,2023-08-13
+C0307,Emily Moore,customer307@email.com,Brooklyn,NY,2022-03-18
+C0308,Joseph Miller,customer308@email.com,San Francisco,NY,2023-05-24
+C0309,Jessica Thompson,customer309@email.com,Houston,WA,2023-03-17
+C0310,David Lopez,customer310@email.com,San Francisco,FL,2022-09-11
+C0311,Joseph Thompson,customer311@email.com,New York,CA,2022-11-16
+C0312,Richard Thompson,customer312@email.com,Orlando,TX,2022-09-20
+C0313,Matthew Williams,customer313@email.com,San Francisco,WA,2023-08-20
+C0314,James Taylor,customer314@email.com,New York,CA,2023-10-20
+C0315,Joseph Martin,customer315@email.com,Austin,WA,2023-07-08
+C0316,Linda Harris,customer316@email.com,Austin,WA,2023-01-09
+C0317,Susan Gonzalez,customer317@email.com,Miami,TX,2023-09-29
+C0318,Thomas Taylor,customer318@email.com,San Francisco,FL,2022-06-16
+C0319,Emily Lopez,customer319@email.com,Houston,NY,2023-04-04
+C0320,James Jackson,customer320@email.com,San Francisco,FL,2022-10-07
+C0321,Patricia Rodriguez,customer321@email.com,Houston,TX,2023-12-01
+C0322,Robert Wilson,customer322@email.com,San Diego,TX,2022-10-29
+C0323,Barbara Jackson,customer323@email.com,Portland,TX,2023-06-15
+C0324,Karen Anderson,customer324@email.com,Miami,CA,2023-08-03
+C0325,Linda Lee,customer325@email.com,San Diego,FL,2022-08-06
+C0326,David Williams,customer326@email.com,San Francisco,FL,2022-04-12
+C0327,Patricia Harris,customer327@email.com,Miami,WA,2023-07-08
+C0328,Barbara Lee,customer328@email.com,San Diego,WA,2022-10-15
+C0329,Emily Lee,customer329@email.com,Los Angeles,WA,2022-06-16
+C0330,Daniel Thomas,customer330@email.com,San Francisco,TX,2023-09-13
+C0331,Matthew Miller,customer331@email.com,San Diego,FL,2022-02-05
+C0332,Richard Lee,customer332@email.com,Los Angeles,TX,2022-12-19
+C0333,Mary Sanchez,customer333@email.com,Los Angeles,CA,2023-11-07
+C0334,Robert Wilson,customer334@email.com,Austin,WA,2022-03-14
+C0335,Karen Jones,customer335@email.com,San Francisco,TX,2023-10-10
+C0336,Michael Thompson,customer336@email.com,Los Angeles,TX,2022-12-19
+C0337,William Hernandez,customer337@email.com,Austin,CA,2022-03-11
+C0338,Elizabeth Anderson,customer338@email.com,San Diego,NY,2023-03-01
+C0339,Patricia Rodriguez,customer339@email.com,New York,FL,2023-12-09
+C0340,Mary Sanchez,customer340@email.com,San Francisco,NY,2023-07-15
+C0341,Patricia Taylor,customer341@email.com,Miami,WA,2023-10-04
+C0342,Sarah Miller,customer342@email.com,Houston,TX,2023-06-01
+C0343,Jennifer Gonzalez,customer343@email.com,Houston,CA,2023-03-04
+C0344,Lisa Martinez,customer344@email.com,San Diego,CA,2023-06-23
+C0345,James Moore,customer345@email.com,Seattle,FL,2022-06-09
+C0346,Karen Johnson,customer346@email.com,Seattle,NY,2022-05-29
+C0347,David Jones,customer347@email.com,San Diego,FL,2022-08-18
+C0348,Sarah Jackson,customer348@email.com,Los Angeles,TX,2023-12-13
+C0349,Lisa Thomas,customer349@email.com,San Francisco,FL,2023-07-16
+C0350,Richard Smith,customer350@email.com,Houston,CA,2022-03-08
+C0351,Susan Martin,customer351@email.com,Houston,CA,2023-01-16
+C0352,Joseph Miller,customer352@email.com,Los Angeles,WA,2022-02-27
+C0353,Matthew Gonzalez,customer353@email.com,Houston,WA,2022-09-16
+C0354,Emily Brown,customer354@email.com,Miami,TX,2022-12-08
+C0355,Sarah Jackson,customer355@email.com,San Francisco,NY,2022-05-10
+C0356,Patricia Perez,customer356@email.com,Orlando,FL,2023-12-28
+C0357,Robert Martinez,customer357@email.com,Houston,TX,2022-06-21
+C0358,Karen Jackson,customer358@email.com,San Diego,WA,2023-09-06
+C0359,Robert Williams,customer359@email.com,Miami,FL,2022-07-28
+C0360,Richard Gonzalez,customer360@email.com,Houston,WA,2022-12-20
+C0361,Elizabeth Sanchez,customer361@email.com,Portland,FL,2023-04-16
+C0362,Barbara Davis,customer362@email.com,Miami,NY,2022-04-26
+C0363,James Miller,customer363@email.com,Austin,TX,2022-09-21
+C0364,John Williams,customer364@email.com,Orlando,FL,2023-10-24
+C0365,Richard Harris,customer365@email.com,Brooklyn,CA,2023-03-18
+C0366,Joseph Harris,customer366@email.com,San Diego,CA,2023-07-02
+C0367,Jessica Smith,customer367@email.com,San Diego,FL,2023-03-29
+C0368,Sarah Lee,customer368@email.com,San Francisco,FL,2023-04-22
+C0369,Sarah Sanchez,customer369@email.com,Miami,FL,2022-10-14
+C0370,Patricia Gonzalez,customer370@email.com,Los Angeles,CA,2022-10-30
+C0371,Richard Anderson,customer371@email.com,San Diego,CA,2022-11-07
+C0372,Christopher Thomas,customer372@email.com,Miami,FL,2022-07-27
+C0373,Susan Lee,customer373@email.com,Miami,WA,2023-09-10
+C0374,William Jones,customer374@email.com,Portland,WA,2023-03-22
+C0375,Emily Williams,customer375@email.com,New York,NY,2023-11-01
+C0376,Thomas Martin,customer376@email.com,New York,TX,2023-09-25
+C0377,Matthew Moore,customer377@email.com,Brooklyn,WA,2022-02-24
+C0378,Charles Rodriguez,customer378@email.com,Austin,CA,2022-01-12
+C0379,Joseph Wilson,customer379@email.com,Brooklyn,WA,2023-10-19
+C0380,Charles Smith,customer380@email.com,Houston,NY,2023-02-04
+C0381,Christopher Perez,customer381@email.com,Los Angeles,NY,2023-10-10
+C0382,Susan Williams,customer382@email.com,Houston,TX,2023-05-30
+C0383,Linda Thompson,customer383@email.com,Seattle,WA,2023-10-18
+C0384,Matthew Hernandez,customer384@email.com,Houston,CA,2023-06-26
+C0385,Patricia Martinez,customer385@email.com,San Francisco,CA,2022-08-25
+C0386,Linda Davis,customer386@email.com,Houston,FL,2022-10-06
+C0387,Sarah Lopez,customer387@email.com,Brooklyn,CA,2022-12-14
+C0388,Jessica Lee,customer388@email.com,San Diego,TX,2023-09-19
+C0389,Lisa Sanchez,customer389@email.com,San Diego,TX,2022-04-14
+C0390,Emily Sanchez,customer390@email.com,New York,CA,2023-09-22
+C0391,Lisa Sanchez,customer391@email.com,Los Angeles,CA,2023-06-01
+C0392,Elizabeth Jones,customer392@email.com,Los Angeles,FL,2022-09-05
+C0393,James Brown,customer393@email.com,San Francisco,CA,2022-12-30
+C0394,Susan Taylor,customer394@email.com,Brooklyn,FL,2022-11-17
+C0395,James Smith,customer395@email.com,New York,FL,2023-09-25
+C0396,Christopher Martin,customer396@email.com,Portland,CA,2022-10-13
+C0397,Richard Thomas,customer397@email.com,Seattle,NY,2022-05-29
+C0398,Richard Wilson,customer398@email.com,Los Angeles,NY,2022-03-25
+C0399,Michael Garcia,customer399@email.com,San Diego,FL,2023-02-10
+C0400,Elizabeth Jackson,customer400@email.com,Houston,CA,2023-04-01
+C0401,David Anderson,customer401@email.com,Houston,NY,2022-06-10
+C0402,Matthew Johnson,customer402@email.com,New York,CA,2023-04-05
+C0403,Mary White,customer403@email.com,Brooklyn,CA,2023-07-04
+C0404,Elizabeth Gonzalez,customer404@email.com,Brooklyn,CA,2023-05-15
+C0405,David Thompson,customer405@email.com,Austin,WA,2023-05-24
+C0406,Jessica Smith,customer406@email.com,Orlando,CA,2023-10-16
+C0407,Susan Smith,customer407@email.com,Los Angeles,WA,2023-04-26
+C0408,Elizabeth Anderson,customer408@email.com,Brooklyn,FL,2023-10-25
+C0409,Joseph Hernandez,customer409@email.com,San Diego,NY,2022-04-24
+C0410,Christopher Sanchez,customer410@email.com,New York,NY,2023-08-01
+C0411,Matthew Perez,customer411@email.com,Seattle,NY,2022-12-27
+C0412,Joseph Gonzalez,customer412@email.com,Austin,NY,2022-12-07
+C0413,John Johnson,customer413@email.com,Miami,NY,2023-03-25
+C0414,James Williams,customer414@email.com,San Francisco,NY,2022-06-29
+C0415,John Lee,customer415@email.com,Seattle,NY,2023-12-03
+C0416,Linda Thompson,customer416@email.com,Miami,FL,2023-02-11
+C0417,Sarah Taylor,customer417@email.com,Portland,CA,2023-10-28
+C0418,David Jones,customer418@email.com,Houston,TX,2022-07-15
+C0419,Sarah Williams,customer419@email.com,San Francisco,WA,2023-04-11
+C0420,Christopher Thompson,customer420@email.com,Los Angeles,TX,2022-11-07
+C0421,David Lee,customer421@email.com,San Diego,TX,2022-09-19
+C0422,David Martinez,customer422@email.com,San Francisco,CA,2023-02-23
+C0423,Mary Jackson,customer423@email.com,Orlando,CA,2023-02-10
+C0424,Joseph Lee,customer424@email.com,Miami,CA,2022-05-23
+C0425,Jennifer Rodriguez,customer425@email.com,Los Angeles,NY,2022-12-08
+C0426,Jennifer Smith,customer426@email.com,Orlando,FL,2022-11-12
+C0427,Thomas Gonzalez,customer427@email.com,Houston,NY,2022-04-11
+C0428,Richard Brown,customer428@email.com,Orlando,FL,2022-09-01
+C0429,John Taylor,customer429@email.com,Austin,FL,2023-05-05
+C0430,Lisa Johnson,customer430@email.com,Austin,TX,2022-01-12
+C0431,Lisa Miller,customer431@email.com,Portland,TX,2022-08-27
+C0432,Karen Sanchez,customer432@email.com,New York,FL,2023-07-15
+C0433,Jane Perez,customer433@email.com,Seattle,FL,2022-02-11
+C0434,Susan Williams,customer434@email.com,Seattle,NY,2023-11-09
+C0435,Elizabeth Lopez,customer435@email.com,Los Angeles,NY,2023-08-17
+C0436,John Perez,customer436@email.com,Houston,TX,2023-03-05
+C0437,Patricia Jones,customer437@email.com,Brooklyn,CA,2022-06-07
+C0438,Matthew Taylor,customer438@email.com,Portland,FL,2022-08-04
+C0439,Linda Anderson,customer439@email.com,Austin,NY,2023-11-01
+C0440,Daniel Anderson,customer440@email.com,Los Angeles,TX,2023-04-07
+C0441,David Lee,customer441@email.com,Brooklyn,NY,2022-05-14
+C0442,Jennifer Johnson,customer442@email.com,Seattle,FL,2022-03-08
+C0443,William Jackson,customer443@email.com,New York,FL,2022-01-07
+C0444,Robert Garcia,customer444@email.com,Orlando,WA,2023-06-10
+C0445,Jane Garcia,customer445@email.com,Austin,CA,2022-03-14
+C0446,Elizabeth Johnson,customer446@email.com,Los Angeles,WA,2023-02-03
+C0447,Elizabeth Anderson,customer447@email.com,San Francisco,TX,2023-02-09
+C0448,Thomas Johnson,customer448@email.com,Brooklyn,NY,2023-11-06
+C0449,Barbara Harris,customer449@email.com,Orlando,TX,2023-08-01
+C0450,Sarah Smith,customer450@email.com,Austin,FL,2022-05-10
+C0451,Jessica Anderson,customer451@email.com,Seattle,WA,2023-04-11
+C0452,Daniel Martinez,customer452@email.com,Houston,WA,2022-07-25
+C0453,Thomas Taylor,customer453@email.com,Brooklyn,WA,2022-09-23
+C0454,David Brown,customer454@email.com,Seattle,TX,2023-06-21
+C0455,Mary White,customer455@email.com,Austin,FL,2022-09-10
+C0456,Joseph Martinez,customer456@email.com,Brooklyn,NY,2022-10-16
+C0457,Joseph Martin,customer457@email.com,Portland,NY,2022-06-13
+C0458,Jessica Jones,customer458@email.com,Orlando,TX,2022-04-05
+C0459,Jane Garcia,customer459@email.com,Austin,WA,2022-04-20
+C0460,Christopher Johnson,customer460@email.com,Portland,CA,2022-12-02
+C0461,Richard Hernandez,customer461@email.com,Miami,TX,2022-08-26
+C0462,William Thomas,customer462@email.com,Los Angeles,TX,2023-01-16
+C0463,William Jackson,customer463@email.com,Orlando,FL,2023-03-12
+C0464,Charles Harris,customer464@email.com,Brooklyn,NY,2023-04-28
+C0465,Daniel Thompson,customer465@email.com,Houston,TX,2022-01-25
+C0466,Linda Hernandez,customer466@email.com,Seattle,TX,2023-10-15
+C0467,Susan Thomas,customer467@email.com,San Francisco,WA,2022-04-27
+C0468,Lisa Brown,customer468@email.com,Seattle,WA,2023-04-27
+C0469,Lisa Brown,customer469@email.com,Brooklyn,CA,2023-01-27
+C0470,Jessica Harris,customer470@email.com,Seattle,FL,2023-06-21
+C0471,Michael Williams,customer471@email.com,Los Angeles,CA,2022-03-20
+C0472,Elizabeth Sanchez,customer472@email.com,Austin,WA,2023-08-03
+C0473,Thomas Jackson,customer473@email.com,Portland,NY,2022-06-22
+C0474,Christopher Jones,customer474@email.com,San Francisco,WA,2022-01-12
+C0475,Elizabeth Martinez,customer475@email.com,San Diego,FL,2022-05-08
+C0476,Susan Lee,customer476@email.com,Brooklyn,WA,2023-08-31
+C0477,Sarah Smith,customer477@email.com,New York,FL,2022-04-02
+C0478,David Rodriguez,customer478@email.com,San Diego,FL,2023-10-15
+C0479,Patricia Sanchez,customer479@email.com,Seattle,FL,2023-06-27
+C0480,Jennifer Johnson,customer480@email.com,Brooklyn,FL,2023-06-16
+C0481,Joseph Wilson,customer481@email.com,Portland,FL,2023-10-20
+C0482,Karen Gonzalez,customer482@email.com,Miami,NY,2023-03-23
+C0483,James Sanchez,customer483@email.com,Portland,CA,2023-01-25
+C0484,Matthew Anderson,customer484@email.com,New York,TX,2023-11-03
+C0485,Matthew Perez,customer485@email.com,San Francisco,CA,2022-02-12
+C0486,Charles White,customer486@email.com,Portland,FL,2022-09-11
+C0487,William Thomas,customer487@email.com,Houston,NY,2022-05-10
+C0488,Joseph Sanchez,customer488@email.com,Miami,WA,2022-03-01
+C0489,Emily Smith,customer489@email.com,San Diego,NY,2023-10-25
+C0490,Lisa Taylor,customer490@email.com,Austin,FL,2023-04-12
+C0491,Michael Martin,customer491@email.com,Los Angeles,NY,2022-10-14
+C0492,Charles Anderson,customer492@email.com,Houston,NY,2023-06-01
+C0493,Jessica Perez,customer493@email.com,Miami,FL,2023-04-12
+C0494,Jennifer Sanchez,customer494@email.com,Austin,NY,2022-12-11
+C0495,Daniel Wilson,customer495@email.com,Austin,TX,2023-10-04
+C0496,Jessica Johnson,customer496@email.com,Brooklyn,TX,2023-01-17
+C0497,Richard Sanchez,customer497@email.com,Miami,NY,2023-11-21
+C0498,Jennifer White,customer498@email.com,San Francisco,WA,2022-09-10
+C0499,Thomas Miller,customer499@email.com,Seattle,FL,2022-02-25
+C0500,Michael Anderson,customer500@email.com,New York,TX,2023-04-08

@@ -25,6 +25,10 @@ exams/09-second-exam-scores.tsv
 
 
 
+
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json

@@ -1,0 +1,52 @@
+MISSING DATA ANALYSIS REPORT
+============================================================
+
+Original Dataset:
+  Total rows: 10000
+  Total columns: 18
+
+Missing Data Summary:
+  bmi: 438 (4.4%)
+  systolic_bp: 414 (4.1%)
+  diastolic_bp: 414 (4.1%)
+  cholesterol_total: 554 (5.5%)
+  cholesterol_hdl: 554 (5.5%)
+  cholesterol_ldl: 554 (5.5%)
+  glucose_fasting: 369 (3.7%)
+  adherence_pct: 1467 (14.7%)
+
+Cleaning Strategy Applied:
+  1. Dropped rows with missing critical columns: ['patient_id', 'age', 'sex']
+     Rows removed: 200
+
+  2. Imputed numeric columns with MEDIAN (robust to outliers):
+     - bmi: 612 values imputed
+     - systolic_bp: 411 values imputed
+     - diastolic_bp: 411 values imputed
+     - cholesterol_total: 541 values imputed
+     - cholesterol_hdl: 541 values imputed
+     - cholesterol_ldl: 541 values imputed
+     - glucose_fasting: 366 values imputed
+     - adherence_pct: 1446 values imputed
+
+Final Clean Dataset:
+  Total rows: 9800
+  Rows retained: 98.0%
+  Remaining missing values: 0
+
+Rationale:
+  - Used median imputation (robust to outliers) for clinical measurements
+  - Preserved maximum data while ensuring critical fields are complete
+  - Median preferred over mean for medical data with potential outliers
+  - Acceptable data retention rate (98.0%) for analysis
+
+Recommendation:
+  For this clinical trial dataset, a hybrid strategy is optimal:
+  1. DROP rows with missing critical demographic/identifier fields
+  2. IMPUTE clinical measurements using MEDIAN (robust to outliers)
+  3. AVOID forward fill (inappropriate for cross-sectional data)
+
+  This balances data retention with data quality, ensuring critical
+  fields are complete while using statistically sound imputation for
+  secondary measurements. For production, consider adding missing-
+  indicator variables to flag imputed values for sensitivity analyses.

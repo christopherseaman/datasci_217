@@ -1,354 +1,352 @@
-# CLAUDE.md
+# Claude Code Configuration - SPARC Development Environment
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
-## Repository Overview
+**ABSOLUTE RULES**:
+1. ALL operations MUST be concurrent/parallel in a single message
+2. **NEVER save working files, text/mds and tests to the root folder**
+3. ALWAYS organize files in appropriate subdirectories
+4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
 
-This is **DataSci 217** - an "Introduction" to Python & Data Science Tools course. The repository contains an 11-lecture sequence teaching practical data science skills centered around Python, following McKinney's "Python for Data Analysis" (3rd Ed) as the primary reference, supplemented with command line and development workflow content.
+### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
 
-**Core Philosophy:**
-- CLI-first approach (Jupyter delayed until Lecture 4/Pandas)
-- GUI-based Git/VS Code workflows (not command-line git)
-- Practical utility over theoretical depth
-- Advanced content reserved for "bonus" or "DLC" material
-- Focus on daily data science tools and workflows
+**MANDATORY PATTERNS:**
+- **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)
+- **Task tool (Claude Code)**: ALWAYS spawn ALL agents in ONE message with full instructions
+- **File operations**: ALWAYS batch ALL reads/writes/edits in ONE message
+- **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
+- **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
 
-**Course Structure:**
-- Lectures 1-5: Foundational toolkit (1-unit completion option)
-- Lectures 6-11: Advanced mastery and professional skills (2-unit completion)
+### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
 
-## Directory Structure
-
-```
-datasci_217/
-├── 01-11/                    # Lecture directories (numbered 01 through 11)
-│   ├── XX/
-│   │   ├── README.md         # Notion-formatted lecture content
-│   │   ├── BONUS.md          # Advanced/theoretical "DLC" content (optional)
-│   │   ├── assignment/       # GitHub Classroom compatible assignment
-│   │   │   ├── README.md     # Assignment instructions
-│   │   │   ├── main.py       # Student implementation file
-│   │   │   ├── test_assignment.py  # Local test file (for student use)
-│   │   │   ├── requirements.txt
-│   │   │   ├── starter_code.py (optional)
-│   │   │   └── .github/
-│   │   │       ├── workflows/classroom.yml  # Auto-grading workflow
-│   │   │       └── tests/
-│   │   │           ├── test_assignment.py   # Remote test (updated independently)
-│   │   │           └── requirements.txt     # Remote test dependencies
-│   │   ├── demo/             # Hands-on demos (2-3 per lecture)
-│   │   │   ├── DEMO_GUIDE.md # Instructor guide for demos
-│   │   │   ├── demo1_*.py or .ipynb
-│   │   │   └── requirements.txt
-│   │   └── media/            # Images, xkcd comics, etc.
-├── work/                     # Source materials and planning docs
-│   ├── mckinney_content/                # Markdown versions of McKinney chapters
-│   │   ├── ch01_preliminaries_extracted.md
-│   │   ├── ch02_python_basics_extracted.md
-│   │   ├── ch03_builtin_extracted.md
-│   │   ├── ch04_numpy_extracted.md
-│   │   ├── ch05_pandas_extracted.md
-│   │   ├── ch06_data_loading_extracted.md
-│   │   ├── ch07_data_cleaning_extracted.md
-│   │   ├── ch08_data_wrangling_extracted.md
-│   │   ├── ch09_visualization_extracted.md
-│   │   ├── ch10_aggregation_extracted.md
-│   │   ├── ch11_time_series_extracted.md
-│   │   ├── ch12_modeling_extracted.md
-│   │   └── ch13_examples_extracted.md
-│   ├── mckinney_topics_summary.md      # McKinney content organization
-│   ├── missing_semester_topics.md      # CLI/dev workflow content
-│   ├── missing-semester-master/        # Missing Semester source materials
-│   ├── tlcl_topics.md                  # Linux command line reference
-│   ├── implementation_plan.md          # Course design guidelines
-│   ├── prerequisites_mapping.md        # Skill dependency tracking
-│   ├── lectures_bkp/                   # Previous year's lectures
-│   └── example_assignment_with_github_actions/  # Assignment structure template
-├── README.md                # Course overview with lecture-to-chapter mapping
-├── index.html              # Course website navigation
-└── nav-config.js           # Website configuration
+**Claude Code's Task tool is the PRIMARY way to spawn agents:**
+```javascript
+// ✅ CORRECT: Use Claude Code's Task tool for parallel agent execution
+[Single Message]:
+  Task("Research agent", "Analyze requirements and patterns...", "researcher")
+  Task("Coder agent", "Implement core features...", "coder")
+  Task("Tester agent", "Create comprehensive tests...", "tester")
+  Task("Reviewer agent", "Review code quality...", "reviewer")
+  Task("Architect agent", "Design system architecture...", "system-architect")
 ```
 
-## Commands
+**MCP tools are ONLY for coordination setup:**
+- `mcp__claude-flow__swarm_init` - Initialize coordination topology
+- `mcp__claude-flow__agent_spawn` - Define agent types for coordination
+- `mcp__claude-flow__task_orchestrate` - Orchestrate high-level workflows
 
-### Running Tests
+### 📁 File Organization Rules
 
-**Local testing (student workflow):**
+**NEVER save to root folder. Use these directories:**
+- `/src` - Source code files
+- `/tests` - Test files
+- `/docs` - Documentation and markdown files
+- `/config` - Configuration files
+- `/scripts` - Utility scripts
+- `/examples` - Example code
+
+## Project Overview
+
+This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
+
+## SPARC Commands
+
+### Core Commands
+- `npx claude-flow sparc modes` - List available modes
+- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
+- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
+- `npx claude-flow sparc info <mode>` - Get mode details
+
+### Batchtools Commands
+- `npx claude-flow sparc batch <modes> "<task>"` - Parallel execution
+- `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
+- `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
+
+### Build Commands
+- `npm run build` - Build project
+- `npm run test` - Run tests
+- `npm run lint` - Linting
+- `npm run typecheck` - Type checking
+
+## SPARC Workflow Phases
+
+1. **Specification** - Requirements analysis (`sparc run spec-pseudocode`)
+2. **Pseudocode** - Algorithm design (`sparc run spec-pseudocode`)
+3. **Architecture** - System design (`sparc run architect`)
+4. **Refinement** - TDD implementation (`sparc tdd`)
+5. **Completion** - Integration (`sparc run integration`)
+
+## Code Style & Best Practices
+
+- **Modular Design**: Files under 500 lines
+- **Environment Safety**: Never hardcode secrets
+- **Test-First**: Write tests before implementation
+- **Clean Architecture**: Separate concerns
+- **Documentation**: Keep updated
+
+## 🚀 Available Agents (54 Total)
+
+### Core Development
+`coder`, `reviewer`, `tester`, `planner`, `researcher`
+
+### Swarm Coordination
+`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`, `collective-intelligence-coordinator`, `swarm-memory-manager`
+
+### Consensus & Distributed
+`byzantine-coordinator`, `raft-manager`, `gossip-coordinator`, `consensus-builder`, `crdt-synchronizer`, `quorum-manager`, `security-manager`
+
+### Performance & Optimization
+`perf-analyzer`, `performance-benchmarker`, `task-orchestrator`, `memory-coordinator`, `smart-agent`
+
+### GitHub & Repository
+`github-modes`, `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`, `workflow-automation`, `project-board-sync`, `repo-architect`, `multi-repo-swarm`
+
+### SPARC Methodology
+`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`, `refinement`
+
+### Specialized Development
+`backend-dev`, `mobile-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`, `base-template-generator`
+
+### Testing & Validation
+`tdd-london-swarm`, `production-validator`
+
+### Migration & Planning
+`migration-planner`, `swarm-init`
+
+## 🎯 Claude Code vs MCP Tools
+
+### Claude Code Handles ALL EXECUTION:
+- **Task tool**: Spawn and run agents concurrently for actual work
+- File operations (Read, Write, Edit, MultiEdit, Glob, Grep)
+- Code generation and programming
+- Bash commands and system operations
+- Implementation work
+- Project navigation and analysis
+- TodoWrite and task management
+- Git operations
+- Package management
+- Testing and debugging
+
+### MCP Tools ONLY COORDINATE:
+- Swarm initialization (topology setup)
+- Agent type definitions (coordination patterns)
+- Task orchestration (high-level planning)
+- Memory management
+- Neural features
+- Performance tracking
+- GitHub integration
+
+**KEY**: MCP coordinates the strategy, Claude Code's Task tool executes with real agents.
+
+## 🚀 Quick Setup
+
 ```bash
-# From assignment directory
-python -m pytest test_assignment.py -v
+# Add MCP servers (Claude Flow required, others optional)
+claude mcp add claude-flow npx claude-flow@alpha mcp start
+claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
+claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
 ```
 
-**GitHub Actions (auto-grading):**
-- Tests run automatically on push to main branch
-- Remote tests downloaded from source repository during workflow
-- See `.github/workflows/classroom.yml` for configuration
+## MCP Tool Categories
 
-### Virtual Environments
+### Coordination
+`swarm_init`, `agent_spawn`, `task_orchestrate`
 
-**Using venv (recommended in lectures):**
+### Monitoring
+`swarm_status`, `agent_list`, `agent_metrics`, `task_status`, `task_results`
+
+### Memory & Neural
+`memory_usage`, `neural_status`, `neural_train`, `neural_patterns`
+
+### GitHub Integration
+`github_swarm`, `repo_analyze`, `pr_enhance`, `issue_triage`, `code_review`
+
+### System
+`benchmark_run`, `features_detect`, `swarm_monitor`
+
+### Flow-Nexus MCP Tools (Optional Advanced Features)
+Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
+
+**Key MCP Tool Categories:**
+- **Swarm & Agents**: `swarm_init`, `swarm_scale`, `agent_spawn`, `task_orchestrate`
+- **Sandboxes**: `sandbox_create`, `sandbox_execute`, `sandbox_upload` (cloud execution)
+- **Templates**: `template_list`, `template_deploy` (pre-built project templates)
+- **Neural AI**: `neural_train`, `neural_patterns`, `seraphina_chat` (AI assistant)
+- **GitHub**: `github_repo_analyze`, `github_pr_manage` (repository management)
+- **Real-time**: `execution_stream_subscribe`, `realtime_subscribe` (live monitoring)
+- **Storage**: `storage_upload`, `storage_list` (cloud file management)
+
+**Authentication Required:**
+- Register: `mcp__flow-nexus__user_register` or `npx flow-nexus@latest register`
+- Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
+- Access 70+ specialized MCP tools for advanced orchestration
+
+## 🚀 Agent Execution Flow with Claude Code
+
+### The Correct Pattern:
+
+1. **Optional**: Use MCP tools to set up coordination topology
+2. **REQUIRED**: Use Claude Code's Task tool to spawn agents that do actual work
+3. **REQUIRED**: Each agent runs hooks for coordination
+4. **REQUIRED**: Batch all operations in single messages
+
+### Example Full-Stack Development:
+
+```javascript
+// Single message with all agent spawning via Claude Code's Task tool
+[Parallel Agent Execution]:
+  Task("Backend Developer", "Build REST API with Express. Use hooks for coordination.", "backend-dev")
+  Task("Frontend Developer", "Create React UI. Coordinate with backend via memory.", "coder")
+  Task("Database Architect", "Design PostgreSQL schema. Store schema in memory.", "code-analyzer")
+  Task("Test Engineer", "Write Jest tests. Check memory for API contracts.", "tester")
+  Task("DevOps Engineer", "Setup Docker and CI/CD. Document in memory.", "cicd-engineer")
+  Task("Security Auditor", "Review authentication. Report findings via hooks.", "reviewer")
+  
+  // All todos batched together
+  TodoWrite { todos: [...8-10 todos...] }
+  
+  // All file operations together
+  Write "backend/server.js"
+  Write "frontend/App.jsx"
+  Write "database/schema.sql"
+```
+
+## 📋 Agent Coordination Protocol
+
+### Every Agent Spawned via Task Tool MUST:
+
+**1️⃣ BEFORE Work:**
 ```bash
-# Create environment
-python3 -m venv .venv
-
-# Activate (Mac/Linux/WSL)
-source .venv/bin/activate
-
-# Activate (Windows)
-.venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+npx claude-flow@alpha hooks pre-task --description "[task]"
+npx claude-flow@alpha hooks session-restore --session-id "swarm-[id]"
 ```
 
-**Using uv (modern alternative):**
+**2️⃣ DURING Work:**
 ```bash
-uv venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-uv pip install -r requirements.txt
+npx claude-flow@alpha hooks post-edit --file "[file]" --memory-key "swarm/[agent]/[step]"
+npx claude-flow@alpha hooks notify --message "[what was done]"
 ```
 
-### Data Processing (CLI tools emphasized in early lectures)
-
+**3️⃣ AFTER Work:**
 ```bash
-# Extract columns from CSV
-cut -d',' -f1,3 data.csv
-
-# Count unique values
-cut -d',' -f1 data.csv | tail -n +2 | sort | uniq | wc -l
-
-# Filter and count
-awk -F',' '$3 > 130' data.csv | wc -l
-
-# Calculate averages
-cut -d',' -f5 data.csv | tail -n +2 | awk '{sum+=$1} END {printf "%.2f\n", sum/NR}'
+npx claude-flow@alpha hooks post-task --task-id "[task]"
+npx claude-flow@alpha hooks session-end --export-metrics true
 ```
 
-## Architecture & Content Guidelines
+## 🎯 Concurrent Execution Examples
 
-### Lecture Content Structure
+### ✅ CORRECT WORKFLOW: MCP Coordinates, Claude Code Executes
 
-**README.md Format (Notion-compatible):**
-- First line: Plain text title (no # prefix for Notion import)
-- Headings: Use one less # than standard markdown
-  - Section headings: `# Section` (instead of `##`)
-  - Subsections: `## Subsection` (instead of `###`)
-- Include 2-3 "LIVE DEMO!" callouts to hands-on demos
-- Long-form narrative with practical focus
-- Include xkcd comics and relevant memes for tone
+```javascript
+// Step 1: MCP tools set up coordination (optional, for complex tasks)
+[Single Message - Coordination Setup]:
+  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
+  mcp__claude-flow__agent_spawn { type: "researcher" }
+  mcp__claude-flow__agent_spawn { type: "coder" }
+  mcp__claude-flow__agent_spawn { type: "tester" }
 
-**Topic Organization:**
-1. Brief conceptual description (what it is)
-2. Reference section (syntax, parameters, usage)
-3. Visual content (1-2 pieces max for visual learners)
-4. VERY brief usage example (detailed examples in demos)
-
-**Content Triage (CRITICAL):**
-- **Main lecture (README.md):** Essential daily data science tools ONLY - stick to core/practical material
-- **BONUS.md (or "DLC"):** Advanced topics, theoretical deep-dives, specialized use cases, material beyond daily tool usage
-- When in doubt, move advanced content to BONUS.md - lectures should be lean and practical
-
-### McKinney Content Progression
-
-The course follows McKinney's "Python for Data Analysis" 3rd Ed organization. **See README.md for the definitive lecture-to-chapter mapping.**
-
-Key McKinney chapter resources:
-- **Summary:** `work/mckinney_topics_summary.md` - organized by difficulty and practical utility
-- **Full chapters:** `work/mckinney_content/chXX_*_extracted.md` - complete markdown versions of chapters 1-13
-
-**General progression (see README.md for exact mapping):**
-
-**Weeks 1-3 (Beginner):**
-- Python basics, control flow (Ch 2)
-- Built-in data structures (Ch 3)
-- Virtual environments and setup (Ch 1)
-- NumPy fundamentals begin (Ch 4)
-
-**Weeks 4-8 (Intermediate):**
-- NumPy continued (Ch 4)
-- Pandas basics (Ch 5)
-- File I/O (Ch 6)
-- Data cleaning (Ch 7)
-- Visualization (Ch 9)
-
-**Weeks 9-11 (Advanced):**
-- Data reshaping/merging (Ch 8)
-- Group operations (Ch 10)
-- Time series (Ch 11)
-
-**Note:** Chapters 12-13 contain capstone/example content that is generally excluded from core lectures but may inform bonus material.
-
-### Assignment Design Principles
-
-**CRITICAL: Create demos and assignments ONLY AFTER lecture content is firmly decided.**
-
-**Structure Requirements:**
-- **Regular assignments (Lectures 1-4, 6-10):** Pass/fail auto-gradable via pytest
-- **Exam assignments (Lectures 5 and 11):** Larger scope, 0-100 scale, ideally auto-gradable
-- Focus on **competence** (can you use the tool?) not **excellence** (did you do it perfectly?)
-- Use **incrementally revealed complexity:** Usually 3 questions, each building on previous questions
-
-**GitHub Classroom Integration:**
-- `.github/workflows/classroom.yml` auto-grading workflow
-- `.github/tests/` directory with remotely-updatable tests
-- Remote tests downloaded from source repo during workflow (see example in `work/example_assignment_with_github_actions/`)
-- Assignment instructions in `assignment/README.md`
-- Student code in `main.py` or similar (NOT in README.md)
-
-**Incremental Complexity Pattern:**
-```python
-# Question 1: Basic operation (foundation)
-# Question 2: Build on Q1 with filtering/transformation
-# Question 3: Combine Q1+Q2 concepts with analysis/reporting
+// Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
+[Single Message - Parallel Agent Execution]:
+  // Claude Code's Task tool spawns real agents concurrently
+  Task("Research agent", "Analyze API requirements and best practices. Check memory for prior decisions.", "researcher")
+  Task("Coder agent", "Implement REST endpoints with authentication. Coordinate via hooks.", "coder")
+  Task("Database agent", "Design and implement database schema. Store decisions in memory.", "code-analyzer")
+  Task("Tester agent", "Create comprehensive test suite with 90% coverage.", "tester")
+  Task("Reviewer agent", "Review code quality and security. Document findings.", "reviewer")
+  
+  // Batch ALL todos in ONE call
+  TodoWrite { todos: [
+    {id: "1", content: "Research API patterns", status: "in_progress", priority: "high"},
+    {id: "2", content: "Design database schema", status: "in_progress", priority: "high"},
+    {id: "3", content: "Implement authentication", status: "pending", priority: "high"},
+    {id: "4", content: "Build REST endpoints", status: "pending", priority: "high"},
+    {id: "5", content: "Write unit tests", status: "pending", priority: "medium"},
+    {id: "6", content: "Integration tests", status: "pending", priority: "medium"},
+    {id: "7", content: "API documentation", status: "pending", priority: "low"},
+    {id: "8", content: "Performance optimization", status: "pending", priority: "low"}
+  ]}
+  
+  // Parallel file operations
+  Bash "mkdir -p app/{src,tests,docs,config}"
+  Write "app/package.json"
+  Write "app/src/server.js"
+  Write "app/tests/server.test.js"
+  Write "app/docs/API.md"
 ```
 
-**Example from Assignment 3:**
-1. CLI data tools (foundation: cut, sort, uniq, wc)
-2. Virtual environment setup (builds: install packages)
-3. NumPy analysis (combines: use installed packages on data)
-
-### Demo Design
-
-**Create demos AFTER lecture content is finalized**
-- 2-3 hands-on demos per lecture
-- Practical/hands-on review of lecture concepts
-- Real-world scenarios with minimal context (lecture provides theory)
-- Can be `.py` files (early lectures) or `.ipynb` (Lecture 4+)
-
-**DEMO_GUIDE.md Requirements:**
-- Contains ALL steps for ALL demos in the lecture
-- Instructive and informative - directly actionable
-- **NO instructor talking points** (like "Describe X" or "Explain Y")
-- **NO meta-instructions** (like "Now discuss..." or "Tell students about...")
-- Instead: Include short explanations directly (bullet lists often work best)
-- Integrate explanations with demo steps - show AND explain in one
-- Focus: What to do, what it demonstrates, why it matters (concisely)
-
-### Content Sources Integration
-
-**Primary Source (AUTHORITATIVE for Python):**
-
-- McKinney's "Python for Data Analysis" 3rd Ed
-- Summary: `work/mckinney_topics_summary.md`
-- Full chapters: `work/mckinney_content/chXX_*_extracted.md`
-- **McKinney is THE reference** for all Python content organization and progression
-
-**Supplementary Sources:**
-
-- **Command line/shell:** `work/tlcl_topics.md` (The Linux Command Line book)
-- **Dev workflows:** `work/missing_semester_topics.md` and `work/missing-semester-master/`
-- **Prior patterns:** `work/lectures_bkp/` for established teaching approaches
-- **Current best practices:** Web research as needed for tools/workflows
-
-**Integration Strategy:**
-
-- Draw from multiple sources to create cohesive lecture materials
-- Integrate CLI and development tools with Python content from McKinney
-- See `work/implementation_plan.md` for detailed content standards
-
-**Prerequisite Planning:**
-
-- Follow dependency mapping in `work/prerequisites_mapping.md` (if exists)
-- Ensure no skill gaps in lecture sequence
-- Each lecture should build on prior knowledge without unexplained jumps
-
-## Key Patterns & Conventions
-
-### Lecture Tone
-- Highly knowledgeable with nerdy humor
-- Include xkcd comics where relevant
-- Occasional appropriate memes
-- Approachable but technically rigorous
-
-### Testing Patterns
-
-**Pytest structure for assignments:**
-```python
-# .github/tests/test_assignment.py (remote, updatable)
-import pytest
-from pathlib import Path
-
-def test_output_exists():
-    assert Path("output/result.txt").exists()
-
-def test_output_content():
-    with open("output/result.txt") as f:
-        content = f.read()
-    assert "expected_value" in content
+### ❌ WRONG (Multiple Messages):
+```javascript
+Message 1: mcp__claude-flow__swarm_init
+Message 2: Task("agent 1")
+Message 3: TodoWrite { todos: [single todo] }
+Message 4: Write "file.js"
+// This breaks parallel coordination!
 ```
 
-**Local vs Remote Tests:**
-- Local `test_assignment.py`: Student reference for development
-- `.github/tests/test_assignment.py`: Downloaded fresh each run, can be updated without student repo changes
+## Performance Benefits
 
-### Virtual Environment Management
-- Use `.venv` as standard name (gitignored)
-- Include `requirements.txt` in all assignment and demo directories
-- Emphasize activation verification: `which python`
-- Teach deactivation for switching projects
+- **84.8% SWE-Bench solve rate**
+- **32.3% token reduction**
+- **2.8-4.4x speed improvement**
+- **27+ neural models**
 
-### Data File Conventions
-- Sample data generation scripts provided where applicable
-- CSV format preferred for tabular data
-- Include schema documentation in assignment README
-- Expected outputs in `expected_outputs/` or `output/` directories
+## Hooks Integration
 
-## Development Workflow
+### Pre-Operation
+- Auto-assign agents by file type
+- Validate commands for safety
+- Prepare resources automatically
+- Optimize topology by complexity
+- Cache searches
 
-### When Creating New Lectures
-1. **Plan content** using McKinney progression and prerequisites
-2. **Write README.md** with core concepts (Notion format)
-3. **Create BONUS.md** for advanced topics
-4. **Design assignment** with incremental complexity after lecture is stable
-5. **Build demos** that reinforce lecture + assignment concepts
-6. **Test auto-grading** workflow
+### Post-Operation
+- Auto-format code
+- Train neural patterns
+- Update memory
+- Analyze performance
+- Track token usage
 
-### When Updating Assignments
-1. **Modify remote tests** in `.github/tests/` first
-2. **Update local tests** in assignment root for student reference
-3. **Verify requirements.txt** has all needed dependencies
-4. **Test workflow** by pushing to test repository
+### Session Management
+- Generate summaries
+- Persist state
+- Track metrics
+- Restore context
+- Export workflows
 
-### When Working with Git (GUI-focused)
-- Students use VS Code Source Control panel, not command line git
-- GitHub Desktop is acceptable alternative
-- Focus on: commit, push, pull, branch creation via GUI
-- Command-line git reserved for BONUS content
+## Advanced Features (v2.0.0)
 
-### Git Commit Messages
-- **NO Co-authored-by tags** - Never add "Co-Authored-By: Claude" or similar AI attribution
-- **NO cutesy messages** - Keep commits professional and technical
-- **Clean commit messages** - Focus on technical changes and impact
-- **Standard format** - Use conventional commit format when appropriate (feat:, fix:, docs:, etc.)
+- 🚀 Automatic Topology Selection
+- ⚡ Parallel Execution (2.8-4.4x speed)
+- 🧠 Neural Training
+- 📊 Bottleneck Analysis
+- 🤖 Smart Auto-Spawning
+- 🛡️ Self-Healing Workflows
+- 💾 Cross-Session Memory
+- 🔗 GitHub Integration
 
-## Important Notes & Course-Specific Rules
+## Integration Tips
 
-### Critical Development Rules
-1. **No premature content creation:** Don't create demos/assignments before lecture content is firmly decided and stable
-2. **Demos and assignments:** Only create AFTER lecture content is finalized
-3. **Content focus:** Advanced content → BONUS.md; core/practical material → README.md
+1. Start with basic swarm init
+2. Scale agents gradually
+3. Use memory for context
+4. Monitor progress regularly
+5. Train patterns from success
+6. Enable hooks automation
+7. Use GitHub tools first
 
-### Assignment Rules
-4. **Regular assignments (1-4, 6-10):** Pass/fail, pytest auto-gradable, competence-focused
-5. **Exam assignments (5, 11):** Larger scope, 0-100 scale, ideally auto-gradable
-6. **Question structure:** Usually 3 questions with incrementally revealed complexity (each builds on previous)
-7. **Grading philosophy:** Test "can you do it?" NOT "did you do it perfectly?"
+## Support
 
-### Technology & Workflow Rules
-8. **Jupyter delayed:** Not introduced until Lecture 4 (Pandas). Use `.py` files for Lectures 1-3.
-9. **CLI emphasis:** Command-line data processing is core skill through Lecture 3
-10. **Git workflow:** GUI-based (VS Code/GitHub Desktop), NOT command-line git
-11. **VS Code focus:** Development primarily in VS Code, GUI-oriented
+- Documentation: https://github.com/ruvnet/claude-flow
+- Issues: https://github.com/ruvnet/claude-flow/issues
+- Flow-Nexus Platform: https://flow-nexus.ruv.io (registration required for cloud features)
 
-### Content Sources
-12. **McKinney is authoritative:** For Python content organization and progression
-13. **Lecture mapping:** README.md contains definitive lecture-to-chapter mapping
-14. **Chapter resources:** Full chapters in `work/mckinney_content/chXX_*_extracted.md`
+---
 
-## External Resources
+Remember: **Claude Flow coordinates, Claude Code creates!**
 
-- Main textbook: [Python for Data Analysis (McKinney)](https://wesmckinney.com/book/)
-- Command line: [The Missing Semester](https://missing.csail.mit.edu/)
-- Shell reference: [The Linux Command Line](http://linuxcommand.org/tlcl.php)
-- Course site: https://not.badmath.org/ds217
-- GitHub repo: https://github.com/christopherseaman/datasci_217
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+Never save working files, text/mds and tests to the root folder.

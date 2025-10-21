@@ -1,0 +1,16 @@
+Question 3: Reshaping & Analysis - Report
+============================================================
+
+Total sales records: 600
+Products analyzed: 50
+Months covered: 12
+Categories: 5
+
+Category Summary:
+               total_sales  avg_monthly_sales  min_sales  max_sales  count
+category                                                                  
+Books            567327.44        5253.031852    1154.37    9912.14    108
+Clothing         563448.61        5869.256354    1155.93    9991.82     96
+Electronics     1019738.81        5665.215611    1081.99    9974.84    180
+Home & Garden    343838.33        5730.638833    1012.31    9778.94     60
+Sports           909133.86        5827.781154    1054.75    9940.48    156

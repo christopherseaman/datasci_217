@@ -1,0 +1,37 @@
+.
+├── GRADING_SPEC.md
+├── README.md
+├── TIPS.md
+├── __pycache__
+│   ├── q2_process_metadata.cpython-313.pyc
+│   ├── q3_data_utils.cpython-313.pyc
+│   ├── q3_exploration.cpython-313.pyc
+│   ├── q4_selection.cpython-313.pyc
+│   ├── q5_missing_data.cpython-313.pyc
+│   ├── q6_transform.cpython-313.pyc
+│   └── q7_aggregation.cpython-313.pyc
+├── data
+│   └── clinical_trial_raw.csv
+├── docs
+│   └── q2_implementation_notes.md
+├── generate_data.py
+├── output
+├── q1_setup_project.sh
+├── q2_config.txt
+├── q2_process_metadata.py
+├── q3_data_utils.py
+├── q4_exploration.ipynb
+├── q5_missing_data.ipynb
+├── q6_transformation.ipynb
+├── q7_aggregation.ipynb
+├── q8_run_pipeline.sh
+├── reports
+│   └── directory_structure.txt
+├── requirements.txt
+├── run_q5_analysis.py
+├── test_q3.py
+└── tests
+    ├── test_q2_process_metadata.py
+    └── test_q3_comprehensive.py
+
+7 directories, 28 files
