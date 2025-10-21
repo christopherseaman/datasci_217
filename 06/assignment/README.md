@@ -68,11 +68,25 @@ Open `assignment.ipynb` and work through the three questions.
 - Perform outer join between purchases and products
 - Merge on multiple columns (composite keys)
 - Handle duplicate keys and validate merge results
+- **NEW:** Validate join results and explain relationship types
 - Save merged output to `output/q1_merged_data.csv`
 
 **Skills:** Database-style joins (inner, left, right, outer), merge validation, handling duplicate keys, multi-column merges
 
 **Output:** `output/q1_merged_data.csv`, `output/q1_validation.txt`
+
+### Question 1.5: Join Validation (NEW)
+
+**What you'll do:**
+- Print shape of each DataFrame before merging
+- Print shape of result after each merge operation
+- Explain why row counts changed (or didn't change)
+- Identify the relationship type (one-to-one, one-to-many, many-to-many)
+- Document any unexpected results and their causes
+
+**Skills:** Merge validation, relationship identification, debugging merge operations
+
+**Output:** `output/q1_validation_report.txt`
 
 ### Question 2: Concatenation & Index Management
 
@@ -83,11 +97,25 @@ Open `assignment.ipynb` and work through the three questions.
 - Use `keys` parameter for source tracking
 - Concatenate horizontally with index alignment
 - Handle misaligned indexes during concatenation
+- **NEW:** Demonstrate when to use ignore_index vs preserving indexes
 - Save concatenated output to `output/q2_combined_data.csv`
 
 **Skills:** Vertical/horizontal concatenation, index management, handling misaligned data
 
 **Output:** `output/q2_combined_data.csv`
+
+### Question 2.5: Index Management (NEW)
+
+**What you'll do:**
+- Demonstrate when to use `ignore_index=True` vs preserving indexes
+- Show the difference between vertical and horizontal concatenation
+- Explain why horizontal concat might produce NaN values
+- Use `set_index()` to create meaningful row labels
+- Practice `reset_index()` to flatten hierarchical structures
+
+**Skills:** Index management strategies, understanding concatenation behavior
+
+**Output:** `output/q2_index_analysis.txt`
 
 ### Question 3: Reshaping & Analysis
 
@@ -97,11 +125,25 @@ Open `assignment.ipynb` and work through the three questions.
 - Save pivoted data (wide format)
 - Transform wide format back to long using `pd.melt()`
 - Calculate summary statistics by category
+- **NEW:** Demonstrate when to use wide vs long format
 - Save analysis report
 
 **Skills:** Pivot tables, wide ↔ long format conversion, aggregation
 
 **Output:** `output/q3_category_sales_wide.csv`, `output/q3_analysis_report.txt`
+
+### Question 3.5: Format Choice Analysis (NEW)
+
+**What you'll do:**
+- Demonstrate when to use wide format vs long format
+- Show how to perform groupby operations on long data
+- Create visualizations that require long format
+- Generate summary tables that require wide format
+- Explain the trade-offs between formats
+
+**Skills:** Format selection, groupby operations, visualization preparation
+
+**Output:** `output/q3_format_analysis.txt`
 
 ## Assignment Structure
 

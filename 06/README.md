@@ -1,4 +1,4 @@
-Data Wrangling: Join, Combine, and Reshape
+# Data Wrangling: Join, Combine, and Reshape
 
 See [BONUS.md](BONUS.md) for advanced topics:
 
@@ -10,7 +10,12 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Stack/unstack with dropna parameter
 - Hierarchical columns from pivot operations
 
-*Fun fact: Data scientists spend 80% of their time wrangling data - merging datasets, reshaping tables, and combining sources. The remaining 20% is spent wondering why their join returned 10x more rows than expected (yes, that's 100% - data wrangling is just that intense!)*
+*Fun fact: The word "wrangling" comes from the Old English "wranglian" meaning "to dispute or argue." This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
+
+<!-- FIXME: Add xkcd 1667 "Algorithms" image
+     https://xkcd.com/1667/
+     File: media/xkcd_1667.png
+     Caption: When manual data sorting meets the reality of data wrangling - sometimes the "human algorithm" is all you have! -->
 
 Data wrangling is the art of transforming messy, disconnected datasets into clean, analysis-ready structures. This lecture focuses on the three fundamental operations you'll use every single day: **merging datasets**, **concatenating DataFrames**, and **reshaping data formats**.
 
@@ -28,7 +33,27 @@ Data wrangling is the art of transforming messy, disconnected datasets into clea
 
 Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you've worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
 
-#FIXME: Add diagram showing "Inner vs Outer Join Venn Diagram" - visual representation of how different join types include/exclude rows
+**Visual Guide - Join Types:**
+
+```
+INNER JOIN (default)          LEFT JOIN
+┌─────────┐  ┌─────────┐     ┌─────────┐  ┌─────────┐
+│   A     │  │   B     │     │   A     │  │   B     │
+│ ┌─────┐ │  │ ┌─────┐ │     │ ┌─────┐ │  │ ┌─────┐ │
+│ │ 1,2 │ │  │ │ 2,3 │ │     │ │ 1,2 │ │  │ │ 2,3 │ │
+│ └─────┘ │  │ └─────┘ │     │ └─────┘ │  │ └─────┘ │
+└─────────┘  └─────────┘     └─────────┘  └─────────┘
+Result: 2                   Result: 1,2,3 (A dominates)
+
+RIGHT JOIN                   OUTER JOIN
+┌─────────┐  ┌─────────┐     ┌─────────┐  ┌─────────┐
+│   A     │  │   B     │     │   A     │  │   B     │
+│ ┌─────┐ │  │ ┌─────┐ │     │ ┌─────┐ │  │ ┌─────┐ │
+│ │ 1,2 │ │  │ │ 2,3 │ │     │ │ 1,2 │ │  │ │ 2,3 │ │
+│ └─────┘ │  │ └─────┘ │     │ └─────┘ │  │ └─────┘ │
+└─────────┘  └─────────┘     └─────────┘  └─────────┘
+Result: 2,3 (B dominates)    Result: 1,2,3 (everything)
+```
 
 ## The Basics of pd.merge()
 
@@ -118,6 +143,8 @@ display(outer)
 ```
 
 **Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your "master" list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides.
+
+**Why this matters:** Choosing the wrong join type can silently drop important data. If you're analyzing customer behavior, you need ALL customers (left join), not just those who made purchases (inner join). The difference between 1,000 customers and 500 customers could completely change your business insights!
 
 **LIVE DEMO!** (Demo 1: Customer Purchase Analysis)
 - Merge customer data with purchase records
@@ -251,7 +278,34 @@ display(merged)
 
 Concatenation combines DataFrames by stacking them together, either adding rows (vertical) or columns (horizontal). Unlike merging, concatenation doesn't use keys - it simply glues DataFrames together.
 
-#FIXME: Add diagram showing "Vertical vs Horizontal Concatenation" - visual showing axis=0 (rows) vs axis=1 (columns)
+**Visual Guide - Concatenation Types:**
+```
+VERTICAL CONCATENATION (axis=0)     HORIZONTAL CONCATENATION (axis=1)
+DataFrame A:                       DataFrame A:    DataFrame B:
+┌─────────┐                        ┌─────────┐    ┌─────────┐
+│ A │ B   │                        │ A │ B   │    │ C │ D   │
+├─────────┤                        ├─────────┤    ├─────────┤
+│ 1 │ 2   │                        │ 1 │ 2   │    │ 5 │ 6   │
+│ 3 │ 4   │                        │ 3 │ 4   │    │ 7 │ 8   │
+└─────────┘                        └─────────┘    └─────────┘
+         +                         
+DataFrame B:                               =
+┌─────────┐                        ┌─────────────────┐
+│ A │ B   │                        │ A │ B │ C │ D   │
+├─────────┤                        ├─────────────────┤
+│ 5 │ 6   │                        │ 1 │ 2 │ 5 │ 6   │
+│ 7 │ 8   │                        │ 3 │ 4 │ 7 │ 8   │
+└─────────┘                        └─────────────────┘
+         =
+┌─────────┐
+│ A │ B   │
+├─────────┤
+│ 1 │ 2   │  ← Stacked vertically
+│ 3 │ 4   │
+│ 5 │ 6   │
+│ 7 │ 8   │
+└─────────┘
+```
 
 ## Vertical Concatenation: Adding More Rows
 
@@ -307,6 +361,8 @@ display(combined)
 **When to use concat vs merge:**
 - Use **concat** when stacking similar datasets (same columns, different rows)
 - Use **merge** when joining related datasets (shared keys, different information)
+
+**Why this matters:** Using the wrong tool leads to data loss or incorrect results. Concat doesn't understand relationships - it just stacks data. If you have customer data in one file and purchase data in another, concat will create a mess, but merge will properly link customers to their purchases.
 
 ## Horizontal Concatenation: Adding More Columns
 
@@ -410,7 +466,26 @@ display(inner)
 
 Data can be organized in two fundamental formats: **wide** (one row per entity, many columns) and **long** (multiple rows per entity, fewer columns). Different analyses and visualizations require different formats.
 
-#FIXME: Add table comparing "Wide vs Long Format Examples" - side-by-side comparison showing same data in both formats
+**Visual Guide - Wide vs Long Format:**
+```
+WIDE FORMAT (Easy to Read)          LONG FORMAT (Easy to Analyze)
+┌─────────┬──────┬─────────┬────────┐  ┌─────────┬─────────┬───────┐
+│ student │ math │ english │ science│  │ student │ subject │ score │
+├─────────┼──────┼─────────┼────────┤  ├─────────┼─────────┼───────┤
+│ Alice   │  95  │   90    │   92   │  │ Alice   │ math    │  95   │
+│ Bob     │  88  │   85    │   90   │  │ Alice   │ english │ 90   │
+│ Charlie │  92  │   94    │   89   │  │ Alice   │ science │ 92   │
+└─────────┴──────┴─────────┴────────┘  │ Bob     │ math    │ 88   │
+                                      │ Bob     │ english │ 85   │
+                                      │ Bob     │ science │ 90   │
+                                      │ Charlie │ math    │ 92   │
+                                      │ Charlie │ english │ 94   │
+                                      │ Charlie │ science │ 89   │
+                                      └─────────┴─────────┴───────┘
+
+Wide: One row per student, multiple columns    Long: Multiple rows per student, fewer columns
+Good for: Reading, pivot tables               Good for: Groupby, plotting, modeling
+```
 
 ## Understanding Wide Format
 
@@ -548,6 +623,8 @@ long.groupby('subject')['score'].mean()
 
 **Real-world example:** Survey data often comes wide (Q1, Q2, Q3 columns) but needs to be long for analysis.
 
+**Why this matters:** Most statistical analysis and visualization tools expect long format. If you try to plot wide data, you'll struggle. If you try to run statistical tests on wide data, you'll get errors. Converting to long format unlocks the full power of pandas groupby, seaborn plotting, and scikit-learn modeling.
+
 **Visual guide - Wide to Long to Wide workflow:**
 ```
 WIDE FORMAT                           LONG FORMAT
@@ -562,6 +639,11 @@ Bob     |  88  |   85    |   90       Alice   | english |  90
 Wide: Easy to read            Long: Easy to analyze with groupby()
       Spreadsheet style              Ready for plotting (seaborn, plotly)
 ```
+
+<!-- FIXME: Add xkcd 1478 "P-Values" image
+     https://xkcd.com/1478/
+     File: media/xkcd_1478.png
+     Caption: When exploring grouped data, remember: correlation doesn't imply causation, and p-hacking is not a valid data science technique! -->
 
 **LIVE DEMO!** (Demo 2: Survey Data Reshaping)
 - Convert wide survey data (Q1, Q2, Q3 columns) to long format for analysis
@@ -621,6 +703,8 @@ display(indexed.loc['E002'])  # Bob's record
 - Makes .loc[] selection more meaningful (`indexed.loc['E002']` vs `employees[employees['emp_id'] == 'E002']`)
 - Required for some operations like merging on index
 - Common for time series (dates as index)
+- **Performance boost:** Index-based selection is much faster than filtering
+- **Cleaner code:** `df.loc['2023-01-01']` is more readable than `df[df['date'] == '2023-01-01']`
 
 ## reset_index(): Moving Index to Columns
 
@@ -655,11 +739,97 @@ indexed.reset_index(drop=True)
 
 **Common use case:** After a groupby operation, you often want to reset_index() to make the grouping columns regular columns again.
 
+## Patching Missing Data with combine_first()
+
+When you have overlapping data sources, combine_first() fills gaps intelligently - like having a backup copy that fills in the blanks.
+
+**Reference:**
+- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
+- Works by index alignment - matching index values are combined
+- Preserves non-null values from calling DataFrame
+- Fills NaN values with values from other DataFrame
+
+**Example:**
+```python
+# Two data sources with overlapping but incomplete data
+sales_q1 = pd.DataFrame({
+    'product': ['A', 'B', 'C'], 
+    'sales': [100, np.nan, 150]
+})
+
+sales_q2 = pd.DataFrame({
+    'product': ['A', 'B', 'C'], 
+    'sales': [120, 200, np.nan]
+})
+
+# Combine to get complete picture
+complete = sales_q1.combine_first(sales_q2)
+display(complete)
+#   product  sales
+# 0       A  100.0  # Kept original (non-null)
+# 1       B  200.0  # Filled from Q2
+# 2       C  150.0  # Kept original (non-null)
+
+# Why this matters: You get the best of both datasets!
+# Q1 had A and C, Q2 had B - now you have all three
+```
+
+**Real-world example:** Combining survey responses from different time periods, or merging partial datasets from different sources.
+
 **LIVE DEMO!** (Demo 3: Time Series Concatenation)
 - Combine quarterly data files into single dataset
 - Use set_index() to create datetime index
 - Handle index management during concatenation
 - Practice ignore_index vs preserving indexes
+
+# Hierarchical Indexing Fundamentals
+
+*Think of hierarchical indexing like nested folders - you can have folders within folders, and each level has meaning. It's not as scary as it looks once you understand the mental model!*
+
+Hierarchical indexing allows multiple levels of row labels, making complex data organization possible. You'll encounter it naturally when working with grouped data or pivot tables.
+
+## Understanding Hierarchical Indexing
+
+**Reference:**
+- `df.set_index(['level1', 'level2'])` - Create hierarchical index from columns
+- `df.stack()` - Rotate columns to rows (creates hierarchical index)
+- `df.unstack()` - Rotate rows to columns (flattens hierarchical index)
+- `df.reset_index()` - Convert hierarchical index back to columns
+
+**Example:**
+```python
+# Sales data with natural hierarchy
+sales = pd.DataFrame({
+    'region': ['West', 'West', 'East', 'East', 'West', 'East'],
+    'quarter': ['Q1', 'Q2', 'Q1', 'Q2', 'Q1', 'Q2'],
+    'sales': [100, 150, 120, 180, 110, 190]
+})
+
+# Create hierarchical index
+hierarchical = sales.set_index(['region', 'quarter'])
+display(hierarchical)
+#                    sales
+# region quarter          
+# West   Q1           100
+#        Q2           150
+# East   Q1           120
+#        Q2           180
+# West   Q1           110  # Note: West Q1 appears twice!
+# East   Q2           190
+
+# Why this matters: Now you can select by region easily
+display(hierarchical.loc['West'])
+# quarter
+# Q1    100
+# Q2    150
+# Q1    110  # Multiple Q1 entries for West
+```
+
+**Common use cases:**
+- **Groupby operations** - Automatically creates hierarchical index
+- **Pivot tables** - Often results in hierarchical structure
+- **Time series** - Year/Month/Day hierarchies
+- **Geographic data** - Country/State/City hierarchies
 
 # Understanding MultiIndex (Hierarchical Indexing)
 
