@@ -38,30 +38,6 @@ print("✓ All data files found")
 
 ---
 
-## Dataset Column Reference
-
-**`customers.csv` columns:**
-- `customer_id` - Unique ID (C001, C002, ...)
-- `name` - Customer full name
-- `city` - Customer city
-- `signup_date` - Registration date
-
-**`products.csv` columns:**
-- `product_id` - Unique ID (P001, P002, ...)
-- `product_name` - Product name
-- `category` - Product category (Electronics, Clothing, Home & Garden, Books, Sports)
-- `price` - Product price in dollars
-
-**`purchases.csv` columns:**
-- `purchase_id` - Unique ID (T0001, T0002, ...)
-- `customer_id` - Links to customers
-- `product_id` - Links to products
-- `quantity` - Number of items purchased
-- `purchase_date` - Purchase date
-- `store` - Store location (Store A, B, or C)
-
----
-
 ## Question 1: Merging Datasets
 
 ### Part A: Basic Merge Operations
@@ -130,8 +106,7 @@ display(left_result.head())
 
 ```python
 # TODO: Find customers who haven't made any purchases
-# Hint: Use left join result and check where purchase_id is NaN
-# Use .isna() to find NaN values: left_result[left_result['purchase_id'].isna()]
+# Hint: Use left join and check for NaN values in purchase columns
 no_purchases = None
 
 print(f"Customers with no purchases: {len(no_purchases)}")
@@ -229,7 +204,14 @@ all_purchases = None
 
 print(f"Total after concat: {len(all_purchases)} purchases")
 display(all_purchases.head())
-print(f"\nVerify total rows: {len(q1_purchases)} + {len(q2_purchases)} + {len(q3_purchases)} + {len(q4_purchases)} = {len(all_purchases)}")
+```
+
+```python
+# TODO: Concatenate with source tracking using keys parameter
+# Hint: pd.concat([q1, q2, q3, q4], keys=['Q1', 'Q2', 'Q3', 'Q4'])
+labeled_purchases = None
+
+display(labeled_purchases.head(10))
 ```
 
 ### Part B: Horizontal Concatenation
@@ -297,8 +279,8 @@ Transform data to analyze patterns.
 # Hint: pd.read_csv('output/q1_merged_data.csv')
 full_data = None
 
-# Add month column for grouping (YYYY-MM format like "2023-01")
-full_data['month'] = pd.to_datetime(full_data['purchase_date']).dt.strftime('%Y-%m')
+# Add month column for grouping
+full_data['month'] = pd.to_datetime(full_data['purchase_date']).dt.to_period('M')
 
 display(full_data.head())
 ```

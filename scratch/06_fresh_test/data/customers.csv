@@ -1,0 +1,101 @@
+customer_id,name,city,signup_date
+C001,George Chen,Portland,2023-01-01
+C002,Teresa Miller,Sacramento,2023-01-04
+C003,Diana Rodriguez,Los Angeles,2023-01-07
+C004,Eric Lee,San Francisco,2023-01-10
+C005,George Miller,Seattle,2023-01-13
+C006,Oscar Brown,Seattle,2023-01-16
+C007,Diana Miller,Seattle,2023-01-19
+C008,George Brown,San Diego,2023-01-22
+C009,Steve Garcia,San Francisco,2023-01-25
+C010,Bob Jackson,Los Angeles,2023-01-28
+C011,Michael Rodriguez,Seattle,2023-01-31
+C012,Fiona Davis,Sacramento,2023-02-03
+C013,Laura Davis,San Diego,2023-02-06
+C014,Teresa Rodriguez,Seattle,2023-02-09
+C015,Kevin Jackson,Seattle,2023-02-12
+C016,George Rodriguez,Seattle,2023-02-15
+C017,Alice Chen,Portland,2023-02-18
+C018,Teresa Miller,San Francisco,2023-02-21
+C019,Ian Kim,Portland,2023-02-24
+C020,George Garcia,Portland,2023-02-27
+C021,Hannah Brown,San Francisco,2023-03-02
+C022,Ian Rodriguez,Seattle,2023-03-05
+C023,Eric Chen,Portland,2023-03-08
+C024,Steve Jackson,Portland,2023-03-11
+C025,Laura Wilson,San Francisco,2023-03-14
+C026,Oscar Brown,Los Angeles,2023-03-17
+C027,Ian Patel,Seattle,2023-03-20
+C028,Quinn Rodriguez,San Francisco,2023-03-23
+C029,Quinn Jackson,San Francisco,2023-03-26
+C030,Teresa Davis,Seattle,2023-03-29
+C031,George Martinez,San Francisco,2023-04-01
+C032,Charlie Chen,Seattle,2023-04-04
+C033,Eric Chen,Seattle,2023-04-07
+C034,Quinn Brown,Sacramento,2023-04-10
+C035,Quinn Martinez,Sacramento,2023-04-13
+C036,Bob Davis,San Diego,2023-04-16
+C037,Eric Chen,Portland,2023-04-19
+C038,Alice Kim,Seattle,2023-04-22
+C039,Bob Thompson,Los Angeles,2023-04-25
+C040,Laura Jackson,Portland,2023-04-28
+C041,Fiona Lee,Seattle,2023-05-01
+C042,Diana Lee,San Francisco,2023-05-04
+C043,Kevin Wilson,Seattle,2023-05-07
+C044,Quinn Singh,Sacramento,2023-05-10
+C045,Fiona Wilson,Portland,2023-05-13
+C046,Eric Patel,Los Angeles,2023-05-16
+C047,Bob Garcia,Portland,2023-05-19
+C048,Kevin Singh,San Francisco,2023-05-22
+C049,Patricia Chen,San Francisco,2023-05-25
+C050,Ian Davis,Seattle,2023-05-28
+C051,Fiona Miller,Sacramento,2023-05-31
+C052,Charlie Patel,Los Angeles,2023-06-03
+C053,Diana Kim,Sacramento,2023-06-06
+C054,Charlie Singh,San Diego,2023-06-09
+C055,Steve Patel,San Francisco,2023-06-12
+C056,George Patel,Sacramento,2023-06-15
+C057,Ian Chen,Seattle,2023-06-18
+C058,Hannah Lee,Seattle,2023-06-21
+C059,Rachel Wilson,Seattle,2023-06-24
+C060,Alice Brown,Portland,2023-06-27
+C061,Rachel Lee,Portland,2023-06-30
+C062,Julia Kim,Portland,2023-07-03
+C063,George Davis,San Diego,2023-07-06
+C064,Patricia Jackson,Portland,2023-07-09
+C065,Patricia Anderson,Portland,2023-07-12
+C066,Teresa Davis,San Francisco,2023-07-15
+C067,Quinn Martinez,Seattle,2023-07-18
+C068,Alice Rodriguez,San Diego,2023-07-21
+C069,Laura Thompson,Seattle,2023-07-24
+C070,Eric Brown,Sacramento,2023-07-27
+C071,Ian Anderson,Los Angeles,2023-07-30
+C072,Charlie Kim,Seattle,2023-08-02
+C073,Patricia Kim,Seattle,2023-08-05
+C074,Teresa Wilson,San Diego,2023-08-08
+C075,Alice Wilson,Los Angeles,2023-08-11
+C076,Teresa Brown,Los Angeles,2023-08-14
+C077,Quinn Wilson,Los Angeles,2023-08-17
+C078,Diana Garcia,Seattle,2023-08-20
+C079,Hannah Patel,Portland,2023-08-23
+C080,Charlie Rodriguez,Seattle,2023-08-26
+C081,Charlie Anderson,San Diego,2023-08-29
+C082,Rachel Rodriguez,San Francisco,2023-09-01
+C083,Rachel Martinez,Portland,2023-09-04
+C084,Charlie Miller,Seattle,2023-09-07
+C085,Ian Patel,Portland,2023-09-10
+C086,Alice Patel,Portland,2023-09-13
+C087,Alice Rodriguez,Los Angeles,2023-09-16
+C088,Patricia Patel,San Francisco,2023-09-19
+C089,Hannah Lee,San Diego,2023-09-22
+C090,Charlie Chen,San Francisco,2023-09-25
+C091,Alice Davis,Seattle,2023-09-28
+C092,Steve Garcia,Los Angeles,2023-10-01
+C093,Nina Rodriguez,Los Angeles,2023-10-04
+C094,Fiona Garcia,San Francisco,2023-10-07
+C095,Michael Kim,Los Angeles,2023-10-10
+C096,Hannah Brown,San Francisco,2023-10-13
+C097,Bob Thompson,San Francisco,2023-10-16
+C098,Alice Davis,Portland,2023-10-19
+C099,Oscar Chen,Seattle,2023-10-22
+C100,Eric Davis,Seattle,2023-10-25

@@ -1,0 +1,7 @@
+# Assignment 6 Requirements
+# Data wrangling with pandas
+
+pandas>=2.0.0
+numpy>=1.24.0
+jupyter>=1.0.0
+jupytext>=1.16.0

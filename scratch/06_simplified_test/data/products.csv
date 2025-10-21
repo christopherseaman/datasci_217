@@ -1,0 +1,51 @@
+product_id,product_name,category,price
+P001,Laptop,Electronics,1097.56
+P002,Mouse,Electronics,457.12
+P003,Keyboard,Electronics,85.26
+P004,Monitor,Electronics,985.93
+P005,Tablet,Electronics,306.81
+P006,Smartphone,Electronics,1413.66
+P007,Headphones,Electronics,1433.2
+P008,Webcam,Electronics,1376.55
+P009,USB Cable,Electronics,586.73
+P010,Power Bank,Electronics,72.41
+P011,T-Shirt,Clothing,140.68
+P012,Jeans,Clothing,75.66
+P013,Sweater,Clothing,145.67
+P014,Jacket,Clothing,145.27
+P015,Shoes,Clothing,130.89
+P016,Hat,Clothing,58.28
+P017,Socks,Clothing,70.06
+P018,Dress,Clothing,130.65
+P019,Shorts,Clothing,61.2
+P020,Scarf,Clothing,42.03
+P021,Coffee Maker,Home & Garden,173.69
+P022,Blender,Home & Garden,281.8
+P023,Vacuum,Home & Garden,213.37
+P024,Lamp,Home & Garden,177.47
+P025,Plant Pot,Home & Garden,42.7
+P026,Rug,Home & Garden,190.28
+P027,Curtains,Home & Garden,297.17
+P028,Pillow,Home & Garden,54.92
+P029,Candle,Home & Garden,162.72
+P030,Picture Frame,Home & Garden,265.05
+P031,Fiction Novel,Books,39.63
+P032,Cookbook,Books,37.88
+P033,Biography,Books,38.1
+P034,Textbook,Books,24.38
+P035,Magazine,Books,21.74
+P036,Comic Book,Books,42.37
+P037,Travel Guide,Books,42.4
+P038,Self-Help,Books,44.68
+P039,Poetry,Books,46.53
+P040,Reference Book,Books,30.45
+P041,Yoga Mat,Sports,258.24
+P042,Dumbbells,Sports,402.17
+P043,Tennis Racket,Sports,330.23
+P044,Soccer Ball,Sports,355.45
+P045,Running Shoes,Sports,400.96
+P046,Water Bottle,Sports,446.65
+P047,Resistance Bands,Sports,178.93
+P048,Jump Rope,Sports,197.16
+P049,Bicycle,Sports,60.58
+P050,Skateboard,Sports,295.47
