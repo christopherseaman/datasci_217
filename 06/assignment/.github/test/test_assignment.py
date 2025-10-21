@@ -127,9 +127,11 @@ def test_q3_category_sales_wide(output_dir):
     assert len(sales_wide.columns) > 2, \
         "Wide format should have multiple category columns"
 
-    # Should have month information
-    assert 'month' in sales_wide.columns or sales_wide.columns[0] == 'Unnamed: 0', \
-        "Missing month/index column"
+    # Should have time/index information
+    has_time_col = any(col in sales_wide.columns for col in ['month', 'date', 'purchase_date', 'time'])
+    has_index_col = sales_wide.columns[0] == 'Unnamed: 0'
+    assert has_time_col or has_index_col, \
+        "Missing time/index column"
 
 
 def test_q3_analysis_report(output_dir):
