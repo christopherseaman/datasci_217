@@ -369,37 +369,3 @@ Bottom Category: {category_summary.index[-1]}
 print("✓ Saved output/q3_analysis_report.txt")
 ```
 
----
-
-## Submission Checklist
-
-Before submitting, verify you've created:
-
-- [ ] `output/q1_merged_data.csv` - Merged customer/product/purchase data
-- [ ] `output/q1_validation.txt` - Merge validation report
-- [ ] `output/q2_combined_data.csv` - Concatenated data with metrics
-- [ ] `output/q3_category_sales_wide.csv` - Pivoted category sales
-- [ ] `output/q3_analysis_report.txt` - Sales analysis report
-
-```python
-# Run this cell to check all outputs exist
-required_outputs = [
-    'output/q1_merged_data.csv',
-    'output/q1_validation.txt',
-    'output/q2_combined_data.csv',
-    'output/q3_category_sales_wide.csv',
-    'output/q3_analysis_report.txt'
-]
-
-print("Checking required outputs:")
-for file in required_outputs:
-    exists = os.path.exists(file)
-    status = "✓" if exists else "✗"
-    print(f"  {status} {file}")
-
-all_exist = all(os.path.exists(f) for f in required_outputs)
-if all_exist:
-    print("\n✓ All required files created! Ready to submit.")
-else:
-    print("\n✗ Some files are missing. Review the questions above.")
-```

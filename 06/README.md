@@ -619,7 +619,44 @@ display(wide)
 
 ```
 
-**Common error:** If your index/columns combinations aren't unique, pivot() will fail. Use `pivot_table()` instead (covered in [BONUS.md](http://bonus.md/)).
+**Common error:** If your index/columns combinations aren't unique, pivot() will fail. Use `pivot_table()` instead (see below).
+
+### pivot_table(): Handling Duplicates with Aggregation
+
+When your data has duplicate index/column combinations, `pivot()` fails. Use `pivot_table()` to aggregate those duplicates.
+
+**Reference:**
+
+- `pd.pivot_table(df, values='data', index='rows', columns='cols', aggfunc='sum')` - Pivot with aggregation
+- `aggfunc` - How to combine duplicates: 'sum', 'mean', 'count', etc.
+- All other parameters same as `pivot()`
+
+**Example:**
+
+```python
+# Sales data with multiple entries per month/category
+sales = pd.DataFrame({
+    'month': ['Jan', 'Jan', 'Feb', 'Feb', 'Jan'],
+    'category': ['Electronics', 'Electronics', 'Electronics', 'Clothing', 'Clothing'],
+    'amount': [100, 150, 200, 75, 50]
+})
+
+# pivot() would fail - duplicate Jan/Electronics entries
+# pivot_table() sums them automatically
+sales_pivot = pd.pivot_table(sales, values='amount',
+                             index='month', columns='category',
+                             aggfunc='sum')
+display(sales_pivot)
+# category    Clothing  Electronics
+# month
+# Feb             75.0        200.0
+# Jan             50.0        250.0  # 100 + 150 summed!
+```
+
+**When to use which:**
+
+- Use `pivot()` when index/columns are unique (cleaner, simpler)
+- Use `pivot_table()` when you have duplicates that need aggregation
 
 ## Melting Wide to Long with melt()
 

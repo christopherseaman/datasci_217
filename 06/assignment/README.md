@@ -64,6 +64,8 @@ Open `assignment.ipynb` and work through the three questions. The notebook provi
 - **Sample data** and examples to guide your work
 - **Validation checks** to ensure your outputs are correct
 
+**Prerequisites:** This assignment uses `groupby()` and `.agg()` from Lecture 05 (needed in Question 3 for summary statistics).
+
 **How to use the scaffold notebook:**
 1. Read each cell carefully - they contain detailed instructions
 2. Complete the TODO items by replacing `None` with your code
