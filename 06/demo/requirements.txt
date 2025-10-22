@@ -1,0 +1,12 @@
+# Demo Requirements for Data Wrangling (Lecture 06)
+# Core data science libraries
+
+pandas>=2.0.0
+numpy>=1.24.0
+jupyter>=1.0.0
+ipykernel>=7.0.1
+jupytext>=1.16.0
+
+# Optional but useful for demos
+matplotlib>=3.7.0
+seaborn>=0.12.0
