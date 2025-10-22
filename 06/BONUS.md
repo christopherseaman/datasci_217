@@ -857,3 +857,57 @@ You'll know it's time to come back to these advanced topics when you encounter:
 - Building sophisticated summary tables
 
 **Bottom Line:** If the basic operations in the main lecture feel limiting, come back here. These advanced topics solve real problems that emerge in complex data wrangling scenarios.
+
+## Patching Missing Data with combine_first()
+
+When you have overlapping data sources, combine_first() fills gaps intelligently - like having a backup copy that fills in the blanks.
+
+**Visual: Data Jigsaw Puzzle**
+
+```
+Puzzle Piece 1:        Puzzle Piece 2:        Completed Puzzle:
+┌─────────────┐        ┌─────────────┐        ┌─────────────┐
+│ A │ B │ NaN │        │NaN│ B │  C  │        │ A │ B │  C  │
+├───┼───┼─────┤        ├───┼───┼─────┤        ├───┼───┼─────┤
+│NaN│NaN│  C  │   +    │ D │NaN│ NaN │   =    │ D │ B │  C  │
+└───┴───┴─────┘        └───┴───┴─────┘        └───┴───┴─────┘
+  Has: A, B, C            Has: B, C, D            Has: A, B, C, D
+```
+
+`*combine_first()` is like completing a jigsaw puzzle - each piece fills in the missing parts!*
+
+**Reference:**
+
+- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
+- Works by index alignment - matching index values are combined
+- Preserves non-null values from calling DataFrame
+- Fills NaN values with values from other DataFrame
+
+**Example:**
+
+```python
+# Two data sources with overlapping but incomplete data
+sales_q1 = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'sales': [100, np.nan, 150]
+})
+
+sales_q2 = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'sales': [120, 200, np.nan]
+})
+
+# Combine to get complete picture
+complete = sales_q1.combine_first(sales_q2)
+display(complete)
+#   product  sales
+# 0       A  100.0  # Kept original (non-null)
+# 1       B  200.0  # Filled from Q2
+# 2       C  150.0  # Kept original (non-null)
+
+# Why this matters: You get the best of both datasets!
+# Q1 had A and C, Q2 had B - now you have all three
+
+```
+
+**Real-world example:** Combining survey responses from different time periods, or merging partial datasets from different sources.

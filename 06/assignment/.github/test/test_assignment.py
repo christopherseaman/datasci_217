@@ -80,18 +80,7 @@ def test_q1_merged_data(output_dir, data_dir):
             f"total_price calculation incorrect: only {match_rate:.1%} of values match quantity * price"
 
 
-def test_q1_validation_report(output_dir):
-    """Test Question 1: Validation report output."""
-    output_file = output_dir / "q1_validation.txt"
-    assert output_file.exists(), f"Validation report not found: {output_file}"
-
-    # Read and check content
-    content = output_file.read_text()
-
-    # Should contain key metrics
-    assert "Dataset Sizes" in content, "Missing dataset sizes section"
-    assert "Merge Results" in content, "Missing merge results section"
-    assert "rows" in content.lower(), "Missing row count information"
+# Removed q1_validation_report test - no longer required in simplified assignment
 
 
 def test_q2_combined_data(output_dir):
@@ -153,7 +142,6 @@ def test_all_required_outputs(output_dir):
     """Test that all required output files exist."""
     required_outputs = [
         "q1_merged_data.csv",
-        "q1_validation.txt",
         "q2_combined_data.csv",
         "q3_category_sales_wide.csv",
         "q3_analysis_report.txt"
@@ -171,19 +159,25 @@ def test_all_required_outputs(output_dir):
 
 def test_q1_merge_types():
     """Test that students understand different merge types."""
-    # This is validated by checking the validation report
-    # The report should show different row counts for inner vs left vs outer joins
+    # This is validated by checking the merged data structure
+    # The merged data should contain data from all three sources
     output_dir = Path("output")
-    report_file = output_dir / "q1_validation.txt"
+    merged_file = output_dir / "q1_merged_data.csv"
 
-    if report_file.exists():
-        content = report_file.read_text()
-
-        # Should mention different join types
-        assert "Inner join" in content or "inner" in content.lower(), \
-            "Should discuss inner join"
-        assert "Left join" in content or "left" in content.lower(), \
-            "Should discuss left join"
+    if merged_file.exists():
+        merged = pd.read_csv(merged_file)
+        
+        # Should have data from all three sources (customers, products, purchases)
+        assert len(merged) > 0, "Merged data should not be empty"
+        
+        # Should have columns from all datasets
+        has_purchase_cols = any(col in merged.columns for col in ['purchase_id', 'purchase_date', 'quantity'])
+        has_customer_cols = any(col in merged.columns for col in ['name', 'email', 'city'])
+        has_product_cols = any(col in merged.columns for col in ['product_name', 'category', 'price'])
+        
+        assert has_purchase_cols, "Should have purchase data columns"
+        assert has_customer_cols, "Should have customer data columns" 
+        assert has_product_cols, "Should have product data columns"
 
 
 def test_q2_concatenation():

@@ -57,93 +57,65 @@ Run all cells to create the CSV files in `data/`:
 
 ## Complete the Three Questions
 
-Open `assignment.ipynb` and work through the three questions.
+Open `assignment.ipynb` and work through the three questions. The notebook provides:
+
+- **Step-by-step instructions** with clear TODO items
+- **Helpful hints** for each operation
+- **Sample data** and examples to guide your work
+- **Validation checks** to ensure your outputs are correct
+
+**How to use the scaffold notebook:**
+1. Read each cell carefully - they contain detailed instructions
+2. Complete the TODO items by replacing `None` with your code
+3. Run each cell to see your progress
+4. Use the hints provided in comments
+5. Check the submission checklist at the end
 
 ### Question 1: Merging DataFrames
 
 **What you'll do:**
 - Load customer, product, and purchase datasets
-- Perform inner join between purchases and customers
-- Perform left join to keep all purchases
-- Perform outer join between purchases and products
-- Merge on multiple columns (composite keys)
-- Handle duplicate keys and validate merge results
-- **NEW:** Validate join results and explain relationship types
+- Merge purchases with customers (left join to keep all purchases)
+- Merge result with products to add product information
+- Calculate total_price for each purchase (quantity × price)
+- Compare different join types (inner, left, right, outer)
+- Perform multi-column merge with store-specific pricing
+- Create validation report with merge statistics
 - Save merged output to `output/q1_merged_data.csv`
 
-**Skills:** Database-style joins (inner, left, right, outer), merge validation, handling duplicate keys, multi-column merges
+**Skills:** Database-style joins (inner, left, right, outer), multi-column merges, data validation
 
 **Output:** `output/q1_merged_data.csv`, `output/q1_validation.txt`
-
-### Question 1.5: Join Validation (NEW)
-
-**What you'll do:**
-- Print shape of each DataFrame before merging
-- Print shape of result after each merge operation
-- Explain why row counts changed (or didn't change)
-- Identify the relationship type (one-to-one, one-to-many, many-to-many)
-- Document any unexpected results and their causes
-
-**Skills:** Merge validation, relationship identification, debugging merge operations
-
-**Output:** `output/q1_validation_report.txt`
 
 ### Question 2: Concatenation & Index Management
 
 **What you'll do:**
-- Split purchases into quarterly datasets
-- Concatenate DataFrames vertically using `pd.concat()`
-- Use `ignore_index=True` to reset row numbers
-- Use `keys` parameter for source tracking
-- Concatenate horizontally with index alignment
-- Handle misaligned indexes during concatenation
-- **NEW:** Demonstrate when to use ignore_index vs preserving indexes
+- Split purchases into quarterly datasets (Q1, Q2, Q3, Q4)
+- Concatenate DataFrames vertically using `pd.concat()` with `ignore_index=True`
+- Create customer satisfaction and loyalty datasets
+- Perform horizontal concatenation with index alignment
+- Handle misaligned indexes and NaN values
 - Save concatenated output to `output/q2_combined_data.csv`
 
 **Skills:** Vertical/horizontal concatenation, index management, handling misaligned data
 
 **Output:** `output/q2_combined_data.csv`
 
-### Question 2.5: Index Management (NEW)
-
-**What you'll do:**
-- Demonstrate when to use `ignore_index=True` vs preserving indexes
-- Show the difference between vertical and horizontal concatenation
-- Explain why horizontal concat might produce NaN values
-- Use `set_index()` to create meaningful row labels
-- Practice `reset_index()` to flatten hierarchical structures
-
-**Skills:** Index management strategies, understanding concatenation behavior
-
-**Output:** `output/q2_index_analysis.txt`
-
 ### Question 3: Reshaping & Analysis
 
 **What you'll do:**
-- Merge purchases with products to get categories
-- Create pivot table for sales by category and month
-- Save pivoted data (wide format)
-- Transform wide format back to long using `pd.melt()`
-- Calculate summary statistics by category
-- **NEW:** Demonstrate when to use wide vs long format
-- Save analysis report
+- Load merged data from Question 1 (already has customer, product, and purchase info)
+- Add month column for time-based grouping
+- Create pivot table for sales by category and month (wide format)
+- Save pivoted data to CSV
+- Convert wide format back to long using `pd.melt()`
+- Calculate summary statistics by category using groupby
+- Create comprehensive analysis report with top/bottom categories
+- Save analysis report to text file
 
-**Skills:** Pivot tables, wide ↔ long format conversion, aggregation
+**Skills:** Pivot tables, wide ↔ long format conversion, groupby operations, data analysis
 
 **Output:** `output/q3_category_sales_wide.csv`, `output/q3_analysis_report.txt`
-
-### Question 3.5: Format Choice Analysis (NEW)
-
-**What you'll do:**
-- Demonstrate when to use wide format vs long format
-- Show how to perform groupby operations on long data
-- Create visualizations that require long format
-- Generate summary tables that require wide format
-- Explain the trade-offs between formats
-
-**Skills:** Format selection, groupby operations, visualization preparation
-
-**Output:** `output/q3_format_analysis.txt`
 
 ## Assignment Structure
 
@@ -159,7 +131,6 @@ Open `assignment.ipynb` and work through the three questions.
 │   └── purchases.csv             # Purchase transactions (2,000 purchases)
 ├── output/                       # Your saved results (created by your code)
 │   ├── q1_merged_data.csv        # Q1 output
-│   ├── q1_validation.txt         # Q1 validation report
 │   ├── q2_combined_data.csv      # Q2 output
 │   ├── q3_category_sales_wide.csv  # Q3 output
 │   └── q3_analysis_report.txt    # Q3 analysis report
