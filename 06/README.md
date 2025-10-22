@@ -366,6 +366,54 @@ combined = pd.concat([jan_sales, feb_sales], ignore_index=True)
 
 **Why this matters:** Use concat for similar data, merge for related data.
 
+## Alternative Data Combination Methods
+
+### combine_first(): Patching Missing Data
+
+*When you have overlapping datasets with missing values, `combine_first()` fills gaps by taking values from the second DataFrame where the first has NaN.*
+
+**Reference:**
+- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
+- Works column by column, aligned by index
+- Result has union of all column names
+
+**Example:**
+```python
+# Sales data with missing values
+sales = pd.DataFrame({'product': ['A', 'B', 'C'], 'qty': [10, np.nan, 30]})
+inventory = pd.DataFrame({'product': ['A', 'B', 'C'], 'qty': [15, 25, np.nan]})
+
+# Fill missing sales with inventory data
+filled = sales.combine_first(inventory)
+#   product   qty
+# 0       A  10.0  # Kept from sales
+# 1       B  25.0  # Filled from inventory  
+# 2       C  30.0  # Kept from sales
+```
+
+### DataFrame.join(): Index-Based Merging
+
+*`join()` is a simpler alternative to `merge()` when working with indexes - it's like merge but defaults to left join on index.*
+
+**Reference:**
+- `df1.join(df2)` - Left join on index (default)
+- `df1.join(df2, how='outer')` - Outer join on index
+- `df1.join(df2, on='key')` - Join df2's index to df1's 'key' column
+
+**Example:**
+```python
+# Time series data
+prices = pd.DataFrame({'price': [100, 101, 102]}, index=['2023-01', '2023-02', '2023-03'])
+volumes = pd.DataFrame({'volume': [1000, 1100, 1200]}, index=['2023-01', '2023-02', '2023-03'])
+
+# Join on index
+combined = prices.join(volumes)
+#           price  volume
+# 2023-01     100    1000
+# 2023-02     101    1100  
+# 2023-03     102    1200
+```
+
 ## Horizontal Concatenation: Adding More Columns
 
 Less common but useful for adding related information side-by-side.
@@ -726,17 +774,52 @@ indexed.reset_index(drop=True)
 
 **Common use case:** After a groupby operation, you often want to reset_index() to make the grouping columns regular columns again.
 
-# LIVE DEMO! (Demo 3: Time Series Concatenation)
+## Basic MultiIndex Operations
 
-## Index Management and Concatenation
+*MultiIndex (hierarchical indexing) allows you to have multiple index levels on an axis - think of it as having "sub-categories" in your row labels.*
 
-- Combine quarterly data files into single dataset
-- Use set_index() to create datetime index
-- Handle index management during concatenation
-- Practice ignore_index vs preserving indexes
+**Reference:**
+
+- `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
+- `df.index.names = ['level1', 'level2']` - Name the index levels
+- `df.loc[('key1', 'key2')]` - Access specific MultiIndex values
+- `df.swaplevel(0, 1)` - Swap index levels
+- `df.sort_index(level=0)` - Sort by specific level
+
+**Example:**
+
+```python
+# Create MultiIndex from multiple columns
+employees = pd.DataFrame({
+    'department': ['Sales', 'Sales', 'IT', 'IT', 'HR'],
+    'employee_id': ['E001', 'E002', 'E003', 'E004', 'E005'],
+    'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
+    'salary': [95000, 75000, 88000, 92000, 65000]
+})
+
+# Set MultiIndex
+multi_emp = employees.set_index(['department', 'employee_id'])
+#                    name  salary
+# department employee_id
+# Sales      E001        Alice   95000
+#            E002        Bob     75000
+# IT         E003        Charlie 88000
+#            E004        Diana   92000
+# HR         E005        Eve     65000
+
+# Access by MultiIndex
+multi_emp.loc[('Sales', 'E001')]  # Alice's record
+multi_emp.loc['Sales']  # All Sales employees
+```
+
+**Why this matters:** MultiIndex is essential for hierarchical data and makes certain operations much more efficient.
+
 
 ![xkcd 2582: Data Analysis](media/xkcd_2582.png)
 
 *"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
 ![ironman.png](attachment:4616c450-499b-4d82-89ed-b64a820ef311:ironman.png)
+
+# LIVE DEMO! (Demo 3: Index Management and Concatenation)
+
