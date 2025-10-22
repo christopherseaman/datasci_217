@@ -1,19 +1,24 @@
+06) Data Wrangling: Join, Combine, and Reshape
+
+**Assignment 6:** https://classroom.github.com/a/vSeWVPn3
+
+[LIVE DEMO!](https://github.com/christopherseaman/datasci_217/blob/main/06/demo/DEMO_GUIDE.md)
+
 See [BONUS.md](https://www.notion.so/sqrlly/BONUS.md) for advanced topics:
 
 - Merging on index with left_index/right_index parameters
-- DataFrame.join() method as alternative to merge
 - Advanced concat options (keys, levels, names, verify_integrity)
 - Manual MultiIndex creation methods
 - Stack/unstack with dropna parameter
 - Hierarchical columns from pivot operations
 
-*Fun fact: The word "wrangling" comes from the Old English "wranglian" meaning "to dispute or argue." This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
+*Fun fact: The word “wrangling” comes from the Old English “wranglian” meaning “to dispute or argue.” This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
 
 ![There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.](attachment:6ef1b0d7-c31f-4b3b-ba3f-53dfd9be069e:image.png)
 
 There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.
 
-Data wrangling is the art of transforming messy, disconnected datasets into clean, analysis-ready structures. This lecture focuses on the three fundamental operations you'll use every single day: **merging datasets**, **concatenating DataFrames**, and **reshaping data formats**.
+Data wrangling is the art of transforming messy, disconnected datasets into clean, analysis-ready structures. This lecture focuses on the three fundamental operations you’ll use every single day: **merging datasets**, **concatenating DataFrames**, and **reshaping data formats**.
 
 **Learning Objectives:**
 
@@ -25,9 +30,9 @@ Data wrangling is the art of transforming messy, disconnected datasets into clea
 
 # Database-Style DataFrame Joins
 
-*Reality check: Merging datasets is the single most common data wrangling task you'll perform. Master pd.merge() and you'll save yourself countless hours of frustration.*
+*Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration.*
 
-Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you've worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
+Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you’ve worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
 
 **Visual Guide - Join Types:**
 
@@ -81,33 +86,20 @@ The `pd.merge()` function is your workhorse for combining datasets. At its simpl
 
 ```python
 import pandas as pd
-
-# Customer data
-customers = pd.DataFrame({
+# Customer datacustomers = pd.DataFrame({
     'customer_id': ['C001', 'C002', 'C003', 'C004'],
     'name': ['Alice', 'Bob', 'Charlie', 'Diana'],
     'city': ['Seattle', 'Portland', 'Seattle', 'Eugene']
 })
-
-# Purchase data
-purchases = pd.DataFrame({
+# Purchase datapurchases = pd.DataFrame({
     'customer_id': ['C001', 'C001', 'C002', 'C005'],
     'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
     'amount': [999.99, 25.99, 79.99, 299.99]
 })
-
-# Basic merge - combines on common column 'customer_id'
-merged = pd.merge(customers, purchases)
+# Basic merge - combines on common column 'customer_id'merged = pd.merge(customers, purchases)
 display(merged)
-#   customer_id     name      city  product  amount
-# 0        C001    Alice   Seattle   Laptop  999.99
-# 1        C001    Alice   Seattle    Mouse   25.99
-# 2        C002      Bob  Portland Keyboard   79.99
-
-# Explicit is better - specify the key
-merged = pd.merge(customers, purchases, on='customer_id')
+#   customer_id     name      city  product  amount# 0        C001    Alice   Seattle   Laptop  999.99# 1        C001    Alice   Seattle    Mouse   25.99# 2        C002      Bob  Portland Keyboard   79.99# Explicit is better - specify the keymerged = pd.merge(customers, purchases, on='customer_id')
 display(merged)  # Same result
-
 ```
 
 **Why this matters:** Inner join only keeps matching records - customers without purchases are dropped.
@@ -122,6 +114,10 @@ Understanding join types is crucial. Each type answers a different question abou
 - `how='left'` - ALL rows from left DataFrame, matching rows from right (left dominates)
 - `how='right'` - ALL rows from right DataFrame, matching rows from left (right dominates)
 - `how='outer'` - ALL rows from BOTH DataFrames (union)
+
+![1*DTET9ngrx2Gzu6ZJk0G9BQ.jpg](attachment:d22803f1-7fe4-4b22-a41c-9c4829dc6215:1DTET9ngrx2Gzu6ZJk0G9BQ.jpg)
+
+![image.png](attachment:89eafda4-c2c6-47a8-a88f-6b60886e728c:image.png)
 
 **Example:**
 
@@ -153,21 +149,17 @@ display(outer)
 
 ```
 
-**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your "master" list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides.
+**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your “master” list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides.
 
 **Why this matters:** Wrong join type = lost data. Use left join to keep all customers.
 
-# LIVE DEMO! (Demo 1: Customer Purchase Analysis)
+![image.png](attachment:6b921f05-f054-4215-a211-770b2afad0c9:image.png)
 
-## Merge Operations Practice
+# LIVE DEMO!
 
-- Merge customer data with purchase records
-- Practice different join types (inner, left, right, outer)
-- Handle duplicate keys and validation
+(Demo 1: Customer Purchase Analysis)
 
-![1*DTET9ngrx2Gzu6ZJk0G9BQ.jpg](attachment:d22803f1-7fe4-4b22-a41c-9c4829dc6215:1DTET9ngrx2Gzu6ZJk0G9BQ.jpg)
-
-![image.png](attachment:89eafda4-c2c6-47a8-a88f-6b60886e728c:image.png)
+![image.png](attachment:59815165-7b38-4684-9ebb-dad14fcd60fc:image.png)
 
 ## Many-to-One and Many-to-Many Merges
 
@@ -231,7 +223,7 @@ Result: 2 customers × 3 products = 6 rows!
 
 ## Merging on Multiple Columns
 
-Sometimes a single column isn't enough to uniquely identify matches - you need to match on multiple columns together (like matching on BOTH store_id AND date).
+Sometimes a single column isn’t enough to uniquely identify matches - you need to match on multiple columns together (like matching on BOTH store_id AND date).
 
 **Reference:**
 
@@ -282,23 +274,116 @@ When both DataFrames have columns with the same name (besides the merge key), pa
 **Example:**
 
 ```python
-# Both DataFrames have 'total' column - use suffixes to distinguish
-sales = pd.DataFrame({'product_id': ['P001', 'P002'], 'total': [100, 200]})
-inventory = pd.DataFrame({'product_id': ['P001', 'P002'], 'total': [50, 75]})
+# Both DataFrames have 'total' column
+sales = pd.DataFrame({
+    'product_id': ['P001', 'P002', 'P003'],
+    'total': [100, 200, 150]  # Sales total
+})
 
-merged = pd.merge(sales, inventory, on='product_id', suffixes=('_sales', '_inventory'))
+inventory = pd.DataFrame({
+    'product_id': ['P001', 'P002', 'P003'],
+    'total': [50, 75, 30]  # Inventory total
+})
+
+# Default suffixes (_x and _y)
+merged = pd.merge(sales, inventory, on='product_id')
+display(merged)
+#   product_id  total_x  total_y
+# 0       P001      100       50
+# 1       P002      200       75
+# 2       P003      150       30
+
+# Custom suffixes for clarity
+merged = pd.merge(sales, inventory, on='product_id',
+                  suffixes=('_sales', '_inventory'))
+display(merged)
 #   product_id  total_sales  total_inventory
 # 0       P001          100               50
 # 1       P002          200               75
+# 2       P003          150               30
+
 ```
 
 **Pro tip:** Always use descriptive suffixes! `_sales` and `_inventory` are much clearer than `_x` and `_y`.
+
+## Alternative Data Combination Methods
+
+### DataFrame.join(): Index-Based Merging
+
+`*join()` is a simpler alternative to `merge()` when working with indexes - it's like merge but defaults to left join on index.*
+
+**Reference:**
+- `df1.join(df2)` - Left join on index (default)
+- `df1.join(df2, how='outer')` - Outer join on index
+- `df1.join(df2, on='key')` - Join df2's index to df1's 'key' column
+
+**Example:**
+
+```python
+# Time series data with dates as index
+prices = pd.DataFrame({'price': [100, 101, 102]}, 
+                      index=pd.to_datetime(['2023-01', '2023-02', '2023-03']))
+volumes = pd.DataFrame({'volume': [1000, 1100, 1200]}, 
+                       index=pd.to_datetime(['2023-01', '2023-02', '2023-03']))
+
+# Join on index
+combined = prices.join(volumes)
+display(combined)
+#           price  volume
+# 2023-01     100    1000
+# 2023-02     101    1100  
+# 2023-03     102    1200
+```
+
+### Patching Missing Data with combine_first()
+
+When you have overlapping data sources, combine_first() fills gaps intelligently - like having a backup copy that fills in the blanks.
+
+**Reference:**
+
+- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
+- Works by index alignment - matching index values are combined
+- Preserves non-null values from calling DataFrame
+- Fills NaN values with values from other DataFrame
+
+**Example:**
+
+```python
+# Two data sources with overlapping but incomplete data
+sales_q1 = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'sales': [100, np.nan, 150]
+})
+
+sales_q2 = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'sales': [120, 200, np.nan]
+})
+
+# Combine to get complete picture
+complete = sales_q1.combine_first(sales_q2)
+display(complete)
+#   product  sales
+# 0       A  100.0  # Kept original (non-null)
+# 1       B  200.0  # Filled from Q2
+# 2       C  150.0  # Kept original (non-null)
+
+# Why this matters: You get the best of both datasets!
+# Q1 had A and C, Q2 had B - now you have all three
+
+```
+
+**Real-world example:** Combining survey responses from different time periods, or merging partial datasets from different sources.
+
+![It's important to make sure your analysis destroys as much information as it produces.](attachment:089f6174-3355-4beb-a524-7dce022b4502:image.png)
+
+It's important to make sure your analysis destroys as much information as it produces.
 
 # Concatenating DataFrames Along an Axis
 
 *Think of concatenation as stacking LEGO bricks - you can stack them vertically (add more rows) or horizontally (add more columns). Just make sure they fit together!*
 
-Concatenation combines DataFrames by stacking them together, either adding rows (vertical) or columns (horizontal). Unlike merging, concatenation doesn't use keys - it simply glues DataFrames together.
+Concatenation combines DataFrames by stacking them together, either adding rows (vertical) or columns (horizontal). Unlike merging, concatenation doesn’t use keys - it simply glues DataFrames together.
 
 **Visual Guide - Concatenation Types:**
 
@@ -339,24 +424,48 @@ The most common use case - combining datasets with the same columns.
 
 - `pd.concat([df1, df2, df3])` - Stack DataFrames vertically (default axis=0)
 - `pd.concat([df1, df2], axis=0)` - Explicit vertical stacking
-- `pd.concat([df1, df2], ignore_index=True)` - Reset index to 0, 1, 2, ...
+- `pd.concat([df1, df2], ignore_index=True)` - Reset index to 0, 1, 2, …
 - `pd.concat([df1, df2], join='outer')` - Union of columns (default)
 - `pd.concat([df1, df2], join='inner')` - Intersection of columns only
 
 **Example:**
 
 ```python
-# Combine monthly sales data
-jan_sales = pd.DataFrame({'product': ['Laptop', 'Mouse'], 'quantity': [5, 20]})
-feb_sales = pd.DataFrame({'product': ['Laptop', 'Monitor'], 'quantity': [8, 3]})
+# Sales data from different months
+jan_sales = pd.DataFrame({
+    'product': ['Laptop', 'Mouse', 'Keyboard'],
+    'quantity': [5, 20, 15],
+    'month': ['Jan', 'Jan', 'Jan']
+})
 
-# Stack vertically with clean index
+feb_sales = pd.DataFrame({
+    'product': ['Laptop', 'Monitor', 'Tablet'],
+    'quantity': [8, 3, 12],
+    'month': ['Feb', 'Feb', 'Feb']
+})
+
+# Stack them vertically - combines rows
+combined = pd.concat([jan_sales, feb_sales])
+display(combined)
+#    product  quantity month
+# 0   Laptop         5   Jan
+# 1    Mouse        20   Jan
+# 2 Keyboard        15   Jan
+# 0   Laptop         8   Feb  # Index repeats! (0, 1, 2 again)
+# 1  Monitor         3   Feb
+# 2   Tablet        12   Feb
+
+# Clean indexes with ignore_index=True
 combined = pd.concat([jan_sales, feb_sales], ignore_index=True)
-#    product  quantity
-# 0   Laptop         5
-# 1    Mouse        20
-# 2   Laptop         8
-# 3  Monitor         3
+display(combined)
+#    product  quantity month
+# 0   Laptop         5   Jan
+# 1    Mouse        20   Jan
+# 2 Keyboard        15   Jan
+# 3   Laptop         8   Feb  # Clean sequential index
+# 4  Monitor         3   Feb
+# 5   Tablet        12   Feb
+
 ```
 
 **When to use concat vs merge:**
@@ -365,54 +474,6 @@ combined = pd.concat([jan_sales, feb_sales], ignore_index=True)
 - Use **merge** when joining related datasets (shared keys, different information)
 
 **Why this matters:** Use concat for similar data, merge for related data.
-
-## Alternative Data Combination Methods
-
-### combine_first(): Patching Missing Data
-
-*When you have overlapping datasets with missing values, `combine_first()` fills gaps by taking values from the second DataFrame where the first has NaN.*
-
-**Reference:**
-- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
-- Works column by column, aligned by index
-- Result has union of all column names
-
-**Example:**
-```python
-# Sales data with missing values
-sales = pd.DataFrame({'product': ['A', 'B', 'C'], 'qty': [10, np.nan, 30]})
-inventory = pd.DataFrame({'product': ['A', 'B', 'C'], 'qty': [15, 25, np.nan]})
-
-# Fill missing sales with inventory data
-filled = sales.combine_first(inventory)
-#   product   qty
-# 0       A  10.0  # Kept from sales
-# 1       B  25.0  # Filled from inventory  
-# 2       C  30.0  # Kept from sales
-```
-
-### DataFrame.join(): Index-Based Merging
-
-*`join()` is a simpler alternative to `merge()` when working with indexes - it's like merge but defaults to left join on index.*
-
-**Reference:**
-- `df1.join(df2)` - Left join on index (default)
-- `df1.join(df2, how='outer')` - Outer join on index
-- `df1.join(df2, on='key')` - Join df2's index to df1's 'key' column
-
-**Example:**
-```python
-# Time series data
-prices = pd.DataFrame({'price': [100, 101, 102]}, index=['2023-01', '2023-02', '2023-03'])
-volumes = pd.DataFrame({'volume': [1000, 1100, 1200]}, index=['2023-01', '2023-02', '2023-03'])
-
-# Join on index
-combined = prices.join(volumes)
-#           price  volume
-# 2023-01     100    1000
-# 2023-02     101    1100  
-# 2023-03     102    1200
-```
 
 ## Horizontal Concatenation: Adding More Columns
 
@@ -428,17 +489,42 @@ Less common but useful for adding related information side-by-side.
 **Example:**
 
 ```python
-# Combine grades and attendance (different indexes)
-grades = pd.DataFrame({'name': ['Alice', 'Bob'], 'grade': [95, 88]}, index=[0, 1])
-attendance = pd.DataFrame({'days_present': [18, 20]}, index=[1, 2])
+# Student grades
+grades = pd.DataFrame({
+    'name': ['Alice', 'Bob', 'Charlie'],
+    'grade': [95, 88, 92]
+}, index=[0, 1, 2])
 
+# Student attendance (different students!)
+attendance = pd.DataFrame({
+    'days_present': [18, 20, 19],
+    'days_total': [20, 20, 20]
+}, index=[1, 2, 3])  # Different index!
+
+# Horizontal concatenation
 combined = pd.concat([grades, attendance], axis=1)
-#       name  grade  days_present
-# 0    Alice   95.0           NaN
-# 1      Bob   88.0          18.0
-# 2      NaN    NaN          20.0
+display(combined)
+#       name  grade  days_present  days_total
+# 0    Alice   95.0           NaN         NaN  # No attendance data
+# 1      Bob   88.0          18.0        20.0  # Match!
+# 2  Charlie   92.0          20.0        20.0  # Match!
+# 3      NaN    NaN          19.0        20.0  # No grade data
+
 ```
 
+```
+DataFrame 1: [0,1,2]     DataFrame 2: [1,2,3]
+     👤 0 ←→ A              👤 1 ←→ X
+     👤 1 ←→ B              👤 2 ←→ Y
+     👤 2 ←→ C              👤 3 ←→ Z
+
+Trying to dance together (axis=1):
+     👤 0 ←→ A    💃 (no partner) → NaN
+     👤 1 ←→ B ←→ X    💃 (perfect match!)
+     👤 2 ←→ C ←→ Y    💃 (perfect match!)
+     💃 (no partner) ←→ Z → NaN
+
+Result: Awkward dance with lots of empty spaces (NaN values)!
 "When your indexes don't match, it's like trying to dance with someone who's a beat behind!"
 
 ```
@@ -492,6 +578,8 @@ display(inner)
 
 ![image.png](attachment:e5ed5658-a0c1-437a-99a3-592950a55b20:image.png)
 
+image.png
+
 # Reshaping: Wide vs Long Format
 
 *Fun fact: 90% of data reshaping confusion comes from not understanding which format you have and which format you need. Once you know that, the solution is usually obvious!*
@@ -506,15 +594,15 @@ WIDE FORMAT (Easy to Read)          LONG FORMAT (Easy to Analyze)
 │ student │ math │ english │ science│  │ student │ subject │ score │
 ├─────────┼──────┼─────────┼────────┤  ├─────────┼─────────┼───────┤
 │ Alice   │  95  │   90    │   92   │  │ Alice   │ math    │  95   │
-│ Bob     │  88  │   85    │   90   │  │ Alice   │ english │ 90   │
-│ Charlie │  92  │   94    │   89   │  │ Alice   │ science │ 92   │
-└─────────┴──────┴─────────┴────────┘  │ Bob     │ math    │ 88   │
-                                      │ Bob     │ english │ 85   │
-                                      │ Bob     │ science │ 90   │
-                                      │ Charlie │ math    │ 92   │
-                                      │ Charlie │ english │ 94   │
-                                      │ Charlie │ science │ 89   │
-                                      └─────────┴─────────┴───────┘
+│ Bob     │  88  │   85    │   90   │  │ Alice   │ english │  90   │
+│ Charlie │  92  │   94    │   89   │  │ Alice   │ science │  92   │
+└─────────┴──────┴─────────┴────────┘  │ Bob     │ math    │  88   │
+                                       │ Bob     │ english │  85   │
+                                       │ Bob     │ science │  90   │
+                                       │ Charlie │ math    │  92   │
+                                       │ Charlie │ english │  94   │
+                                       │ Charlie │ science │  89   │
+                                       └─────────┴─────────┴───────┘
 
 Wide: One row per student, multiple columns    Long: Multiple rows per student, fewer columns
 Good for: Reading, pivot tables               Good for: Groupby, plotting, modeling
@@ -619,9 +707,11 @@ display(wide)
 
 ```
 
-**Common error:** If your index/columns combinations aren't unique, pivot() will fail. Use `pivot_table()` instead (see below).
+**Common error:** If your index/columns combinations aren’t unique, pivot() will fail. Use `pivot_table()` instead (covered more in [BONUS.md](http://bonus.md/)).
 
 ### pivot_table(): Handling Duplicates with Aggregation
+
+https://www.rilldata.com/blog/why-pivot-tables-never-die
 
 When your data has duplicate index/column combinations, `pivot()` fails. Use `pivot_table()` to aggregate those duplicates.
 
@@ -667,8 +757,8 @@ The `melt()` function converts wide format to long format - essential for analys
 - `pd.melt(df, id_vars=['id_col'], value_vars=['col1', 'col2'])` - Basic melt
 - `id_vars` - Columns to keep as identifier variables
 - `value_vars` - Columns to unpivot (if None, uses all columns except id_vars)
-- `var_name` - Name for the new 'variable' column (default: 'variable')
-- `value_name` - Name for the new 'value' column (default: 'value')
+- `var_name` - Name for the new ‘variable’ column (default: ‘variable’)
+- `value_name` - Name for the new ‘value’ column (default: ‘value’)
 
 **Example:**
 
@@ -721,23 +811,19 @@ Wide: Easy to read            Long: Easy to analyze with groupby()
 
 ```
 
-![If all else fails, use "significant at a p>0.05 level" and hope no one notices](attachment:28c0535b-363a-492d-8bbc-04acad6bfaef:image.png)
+![If all else fails, use “significant at a p>0.05 level” and hope no one notices](attachment:28c0535b-363a-492d-8bbc-04acad6bfaef:image.png)
 
-If all else fails, use "significant at a p>0.05 level" and hope no one notices
+If all else fails, use “significant at a p>0.05 level” and hope no one notices
 
-# LIVE DEMO! (Demo 2: Survey Data Reshaping)
+# LIVE DEMO!
 
-## Wide ↔ Long Format Conversion
-
-- Convert wide survey data (Q1, Q2, Q3 columns) to long format for analysis
-- Use groupby on long data to calculate summary statistics
-- Pivot back to wide for reporting
+(Demo 2: Survey Data Reshaping)
 
 # Working with DataFrame Indexes
 
-*Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it's all about what you need to access quickly!*
+*Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it’s all about what you need to access quickly!*
 
-The index is special in pandas - it's the "name" of each row. Moving columns to/from the index is a common operation that makes certain operations easier.
+The index is special in pandas - it’s the “name” of each row. Moving columns to/from the index is a common operation that makes certain operations easier.
 
 **Index Constraints:**
 
@@ -764,19 +850,30 @@ Converting columns to index labels makes certain operations faster and more intu
 employees = pd.DataFrame({
     'emp_id': ['E001', 'E002', 'E003'],
     'name': ['Alice', 'Bob', 'Charlie'],
+    'department': ['Engineering', 'Sales', 'Engineering'],
     'salary': [95000, 75000, 88000]
 })
+display(employees)
+#   emp_id     name   department  salary
+# 0   E001    Alice  Engineering   95000
+# 1   E002      Bob        Sales   75000
+# 2   E003  Charlie  Engineering   88000
 
 # Make emp_id the index
 indexed = employees.set_index('emp_id')
-#           name  salary
+display(indexed)
+#           name   department  salary
 # emp_id
-# E001     Alice   95000
-# E002       Bob   75000
-# E003   Charlie   88000
+# E001     Alice  Engineering   95000
+# E002       Bob        Sales   75000
+# E003   Charlie  Engineering   88000
 
-# Access by emp_id directly
-indexed.loc['E002']  # Bob's record
+# Now you can access by emp_id directly
+display(indexed.loc['E002'])  # Bob's record
+# name              Bob
+# department      Sales
+# salary          75000
+
 ```
 
 **Why this matters:** Makes .loc[] selection faster and more intuitive.
@@ -794,26 +891,30 @@ The opposite operation - converts index back to a regular column.
 **Example:**
 
 ```python
-# Move index back to column
+# Move index back to a column
 reset = indexed.reset_index()
-#   emp_id     name  salary
-# 0   E001    Alice   95000
-# 1   E002      Bob   75000
-# 2   E003  Charlie   88000
+display(reset)
+#   emp_id     name   department  salary
+# 0   E001    Alice  Engineering   95000
+# 1   E002      Bob        Sales   75000
+# 2   E003  Charlie  Engineering   88000
 
-# Or discard index entirely
+# Back to original structure with default numeric index
+
+# Discard index instead of converting
 indexed.reset_index(drop=True)
-#       name  salary
-# 0    Alice   95000
-# 1      Bob   75000
-# 2  Charlie   88000
+#       name   department  salary
+# 0    Alice  Engineering   95000
+# 1      Bob        Sales   75000
+# 2  Charlie  Engineering   88000
+
 ```
 
 **Common use case:** After a groupby operation, you often want to reset_index() to make the grouping columns regular columns again.
 
 ## Basic MultiIndex Operations
 
-*MultiIndex (hierarchical indexing) allows you to have multiple index levels on an axis - think of it as having "sub-categories" in your row labels.*
+*MultiIndex (hierarchical indexing) allows you to have multiple index levels on an axis - think of it as having “sub-categories” in your row labels.*
 
 **Reference:**
 
@@ -826,37 +927,54 @@ indexed.reset_index(drop=True)
 **Example:**
 
 ```python
-# Create MultiIndex from multiple columns
-employees = pd.DataFrame({
-    'department': ['Sales', 'Sales', 'IT', 'IT', 'HR'],
-    'employee_id': ['E001', 'E002', 'E003', 'E004', 'E005'],
-    'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
-    'salary': [95000, 75000, 88000, 92000, 65000]
+# Sales data
+sales = pd.DataFrame({
+    'region': ['West', 'West', 'East', 'East', 'West', 'East'],
+    'quarter': ['Q1', 'Q2', 'Q1', 'Q2', 'Q1', 'Q2'],
+    'sales': [100, 150, 120, 180, 110, 190]
 })
 
-# Set MultiIndex
-multi_emp = employees.set_index(['department', 'employee_id'])
-#                    name  salary
-# department employee_id
-# Sales      E001        Alice   95000
-#            E002        Bob     75000
-# IT         E003        Charlie 88000
-#            E004        Diana   92000
-# HR         E005        Eve     65000
+# Groupby creates MultiIndex automatically
+summary = sales.groupby(['region', 'quarter'])['sales'].sum()
+display(summary)
+# region  quarter
+# East    Q1         120  # MultiIndex! Two levels: region and quarter
+#         Q2         370  # (180 + 190)
+# West    Q1         210  # (100 + 110)
+#         Q2         150
 
-# Access by MultiIndex
-multi_emp.loc[('Sales', 'E001')]  # Alice's record
-multi_emp.loc['Sales']  # All Sales employees
+# Check the index
+display(summary.index)
+# MultiIndex([('East', 'Q1'),
+#             ('East', 'Q2'),
+#             ('West', 'Q1'),
+#             ('West', 'Q2')],
+#            names=['region', 'quarter'])
+
 ```
 
 **Why this matters:** MultiIndex is essential for hierarchical data and makes certain operations much more efficient.
 
+**Common pattern:** After groupby with MultiIndex, use `.reset_index()` to convert back to regular columns.
 
-![xkcd 2582: Data Analysis](media/xkcd_2582.png)
+```python
+# Convert MultiIndex back to regular columns
+flattened = summary.reset_index()
+display(flattened)
+#   region quarter  sales
+# 0   East      Q1    120
+# 1   East      Q2    370
+# 2   West      Q1    210
+# 3   West      Q2    150
 
-*"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
+# Now easier to work with for most people
 
-![ironman.png](attachment:4616c450-499b-4d82-89ed-b64a820ef311:ironman.png)
+```
+
+![image.png](attachment:7010bab1-a2c1-442b-9ca8-664bf2d71c8f:image.png)
+
+*“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”*
 
 # LIVE DEMO! (Demo 3: Index Management and Concatenation)
 
+![ironman.png](attachment:4616c450-499b-4d82-89ed-b64a820ef311:ironman.png)
