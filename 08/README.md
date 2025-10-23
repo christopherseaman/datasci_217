@@ -10,7 +10,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
 
-![xkcd 2456: Types of Scientific Paper](media/xkcd_2456.png)
+# FIXME: Add xkcd 2456: Types of Scientific Paper
 
 *"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 

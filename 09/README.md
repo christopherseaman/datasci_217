@@ -10,7 +10,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: Time series analysis is like being a detective for data - you're looking for patterns, trends, and clues that reveal the story of how things change over time. It's the difference between knowing what happened and understanding why it happened.*
 
-![xkcd 2048: Time](media/xkcd_2048.png)
+# FIXME: Add xkcd 2048: Time
 
 *"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 

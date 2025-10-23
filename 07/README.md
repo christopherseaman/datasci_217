@@ -10,7 +10,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
 
-![xkcd 1945: Scientific Paper Graph Quality](media/xkcd_1945.png)
+# FIXME: Add xkcd 1945: Scientific Paper Graph Quality
 
 *"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
