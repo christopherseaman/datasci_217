@@ -1,64 +1,204 @@
-# Assignment 07: Data Cleaning and Basic Visualization
+# Assignment 7: Data Visualization
 
-## Overview
-This assignment focuses on practical data cleaning workflows and creating effective visualizations for exploratory data analysis.
+**Deliverable:** Completed `assignment.ipynb` with output files in `output/`
 
-## Learning Objectives
-- Master systematic data cleaning approaches
-- Handle missing data, duplicates, and data type issues
-- Create effective exploratory visualizations
-- Apply visualization design principles
+## Environment Setup
+
+### Create Virtual Environment
+
+Create a virtual environment for this assignment:
+
+```bash
+# Create venv
+python3 -m venv .venv
+
+# Activate (Linux/Mac)
+source .venv/bin/activate
+
+# Activate (Windows)
+.venv\Scripts\activate
+```
+
+### Install Requirements
+
+You have two options to install the required packages:
+
+**Option 1: Using pip in terminal**
+```bash
+pip install -r requirements.txt
+```
+
+**Option 2: Using %pip magic in Jupyter**
+
+You can install packages directly from a Jupyter notebook cell using the `%pip` magic command:
+
+```python
+# Install single package
+%pip install matplotlib
+
+# Install from requirements.txt
+%pip install -r requirements.txt
+```
+
+**Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.
+
+## Generate the Dataset (Provided)
+
+Run the data generator notebook to create your dataset:
+
+```bash
+jupyter notebook data_generator.ipynb
+```
+
+Run all cells to create the CSV files in `data/`:
+- `data/sales_data.csv` (sales transactions)
+- `data/customer_data.csv` (customer information)
+- `data/product_data.csv` (product catalog)
+
+## Complete the Four Questions
+
+Open `assignment.ipynb` and work through the four questions. The notebook provides:
+
+- **Step-by-step instructions** with clear TODO items
+- **Helpful hints** for each operation
+- **Sample data** and examples to guide your work
+- **Validation checks** to ensure your outputs are correct
+
+**Prerequisites:** This assignment uses matplotlib, seaborn, and pandas plotting from Lecture 07.
+
+**How to use the scaffold notebook:**
+1. Read each cell carefully - they contain detailed instructions
+2. Complete the TODO items by replacing `None` with your code
+3. Run each cell to see your progress
+4. Use the hints provided in comments
+5. Check the submission checklist at the end
+
+### Question 1: matplotlib Fundamentals
+
+**What you'll do:**
+- Create figures and subplots with matplotlib
+- Customize plot appearance (colors, markers, styles)
+- Generate different plot types (line, bar, scatter, histogram)
+- Save plots in multiple formats
+- Create a multi-panel visualization
+
+**Skills:** matplotlib figures, subplots, customization, plot types, file export
+
+**Output:** `output/q1_matplotlib_plots.png`, `output/q1_multi_panel.png`
+
+### Question 2: seaborn Statistical Visualization
+
+**What you'll do:**
+- Create statistical plots with seaborn
+- Visualize relationships between variables
+- Analyze distributions and patterns
+- Apply seaborn styling and themes
+- Create correlation analysis
+
+**Skills:** seaborn statistical plots, relationship visualization, distribution analysis, styling
+
+**Output:** `output/q2_seaborn_plots.png`, `output/q2_correlation_heatmap.png`
+
+### Question 3: pandas Plotting and Data Exploration
+
+**What you'll do:**
+- Use pandas plotting for quick data exploration
+- Create time series visualizations
+- Generate multiple plot types with pandas
+- Apply visualization best practices
+- Create a comprehensive data overview
+
+**Skills:** pandas plotting, time series visualization, data exploration, best practices
+
+**Output:** `output/q3_pandas_plots.png`, `output/q3_data_overview.png`
+
+### Question 4: Modern Visualization and Best Practices
+
+**What you'll do:**
+- Apply visualization best practices
+- Choose appropriate chart types for different data
+- Create publication-quality plots
+- Implement good vs bad visualization examples
+- Generate a final comprehensive report
+
+**Skills:** chart selection, design principles, publication quality, comprehensive analysis
+
+**Output:** `output/q4_best_practices.png`, `output/q4_final_report.png`
 
 ## Assignment Structure
 
-### Part 1: Data Cleaning Workflows (60 points)
-Clean and prepare messy datasets for analysis.
+```
+07/assignment/
+├── README.md                      # This file - assignment instructions
+├── assignment.md                  # Notebook source (for jupytext)
+├── assignment.ipynb              # Completed notebook (you work here)
+├── data_generator.ipynb          # Run once to create datasets
+├── data/                         # Generated datasets
+│   ├── sales_data.csv            # Sales transactions (1,000 records)
+│   ├── customer_data.csv         # Customer information (200 customers)
+│   └── product_data.csv          # Product catalog (100 products)
+├── output/                       # Your saved results (created by your code)
+│   ├── q1_matplotlib_plots.png   # Q1 matplotlib output
+│   ├── q1_multi_panel.png        # Q1 multi-panel plot
+│   ├── q2_seaborn_plots.png      # Q2 seaborn output
+│   ├── q2_correlation_heatmap.png # Q2 correlation analysis
+│   ├── q3_pandas_plots.png       # Q3 pandas output
+│   ├── q3_data_overview.png      # Q3 data overview
+│   ├── q4_best_practices.png     # Q4 best practices
+│   └── q4_final_report.png        # Q4 final report
+└── .github/
+    └── test/
+        ├── test_assignment.py    # Auto-grading tests
+        └── requirements.txt      # Test dependencies
+```
 
-**Tasks:**
-1. **Missing data handling** (20 points)
-   - Identify missing data patterns
-   - Choose appropriate imputation strategies
-   - Document cleaning decisions
+## Dataset Schemas
 
-2. **String cleaning and standardization** (20 points)
-   - Normalize text data
-   - Handle inconsistent categories
-   - Extract information from unstructured text
+### `data/sales_data.csv`
 
-3. **Data validation and quality checks** (20 points)
-   - Identify and handle duplicates
-   - Validate data types and ranges
-   - Create data quality reports
+| Column | Type | Description |
+|--------|------|-------------|
+| `transaction_id` | string | Unique transaction ID (T0001, T0002, ...) |
+| `customer_id` | string | Customer ID (links to customer_data.csv) |
+| `product_id` | string | Product ID (links to product_data.csv) |
+| `quantity` | int | Number of items purchased |
+| `unit_price` | float | Price per unit |
+| `total_amount` | float | Total transaction amount |
+| `transaction_date` | string | Transaction date (YYYY-MM-DD) |
+| `store_location` | string | Store location (North, South, East, West) |
 
-### Part 2: Data Visualization (40 points)
-Create visualizations to explore and communicate findings.
+### `data/customer_data.csv`
 
-**Tasks:**
-1. **Exploratory visualization** (20 points)
-   - Distribution plots for numerical data
-   - Category analysis for categorical data
-   - Relationship exploration between variables
+| Column | Type | Description |
+|--------|------|-------------|
+| `customer_id` | string | Unique customer ID (C0001, C0002, ...) |
+| `customer_name` | string | Customer full name |
+| `age` | int | Customer age |
+| `gender` | string | Customer gender (M, F) |
+| `city` | string | Customer city |
+| `state` | string | Customer state |
+| `registration_date` | string | Customer registration date (YYYY-MM-DD) |
 
-2. **Professional visualization** (20 points)
-   - Apply design principles for clarity
-   - Create publication-ready plots
-   - Tell data stories effectively
+### `data/product_data.csv`
 
-## Files Provided
-- `data/messy_dataset.csv`: Dataset requiring extensive cleaning
-- `cleaning_template.py`: Template for systematic cleaning workflow
-- `visualization_examples.ipynb`: Example plots and techniques
+| Column | Type | Description |
+|--------|------|-------------|
+| `product_id` | string | Unique product ID (P001, P002, ...) |
+| `product_name` | string | Product name |
+| `category` | string | Product category (Electronics, Clothing, Home & Garden, Books, Sports) |
+| `brand` | string | Product brand |
+| `unit_price` | float | Product price |
+| `stock_quantity` | int | Current inventory level |
 
-## Submission Requirements
-- Completed cleaning script with documented functions
-- Jupyter notebook with visualization analysis
-- Data quality report documenting all cleaning steps
-- Final cleaned dataset
+## Submission Checklist
 
-## Grading Criteria
-- **Data Cleaning** (60%): Thorough and appropriate cleaning methods
-- **Visualization Quality** (25%): Clear, informative, well-designed plots
-- **Documentation** (15%): Clear explanation of decisions and methods
+Before submitting, verify you've created:
 
-## Due Date
-See course calendar for submission deadline.
+- [ ] `output/q1_matplotlib_plots.png` - matplotlib fundamentals
+- [ ] `output/q1_multi_panel.png` - multi-panel visualization
+- [ ] `output/q2_seaborn_plots.png` - seaborn statistical plots
+- [ ] `output/q2_correlation_heatmap.png` - correlation analysis
+- [ ] `output/q3_pandas_plots.png` - pandas plotting
+- [ ] `output/q3_data_overview.png` - data exploration
+- [ ] `output/q4_best_practices.png` - visualization best practices
+- [ ] `output/q4_final_report.png` - comprehensive report
