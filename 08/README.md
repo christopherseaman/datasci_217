@@ -1,643 +1,539 @@
-Data Analysis and Debugging Techniques
+Data Aggregation and Group Operations
 
-Welcome to week 8! Now that you have solid foundations in data manipulation and visualization, it's time to develop systematic approaches for analyzing complex datasets and debugging data analysis code. You'll learn professional techniques for exploring data patterns, identifying issues, and writing robust analysis workflows.
+See [BONUS.md](BONUS.md) for advanced topics:
 
-By the end of today, you'll have a toolkit for approaching any data analysis problem methodically and debugging issues that inevitably arise in real-world data work.
+- Advanced groupby operations with custom functions
+- Hierarchical grouping and MultiIndex operations
+- Performance optimization for large datasets
+- Custom aggregation functions and transformations
+- Advanced pivot table operations
 
-![xkcd 1845: Data](media/xkcd_1845.png)
+*Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
 
-Don't worry - systematic analysis techniques make data insights much clearer!
+![xkcd 2456: Types of Scientific Paper](media/xkcd_2456.png)
 
-Systematic Data Analysis Workflow
+*"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
-The Analysis Mindset
+Data aggregation is the process of summarizing and grouping data to extract meaningful insights. This lecture covers the essential tools for data aggregation: **groupby operations**, **pivot tables**, and **remote computing** for handling large datasets.
 
-**Professional Approach:**
-1. **Start with questions** - What are you trying to learn?
-2. **Understand the data** - Where did it come from? What do columns represent?
-3. **Check data quality** - Missing values, outliers, inconsistencies
-4. **Explore systematically** - Use consistent patterns to examine different aspects
-5. **Document findings** - Keep track of insights and decisions
-6. **Validate results** - Double-check surprising findings
+**Learning Objectives:**
 
-**Analysis Questions Framework:**
-- **Descriptive:** What happened? (summary statistics, distributions)
-- **Diagnostic:** Why did it happen? (correlations, comparisons)
-- **Predictive:** What might happen? (trends, patterns)
-- **Prescriptive:** What should we do? (recommendations based on data)
+- Master the split-apply-combine paradigm with groupby
+- Create pivot tables and cross-tabulations
+- Apply aggregation functions and transformations
+- Handle hierarchical grouping and MultiIndex operations
+- Use SSH and remote computing for large datasets
+- Understand performance considerations for aggregation
 
-Building Analysis Habits
+# The Split-Apply-Combine Paradigm
+
+*Reality check: GroupBy operations are the bread and butter of data analysis. Master this concept and you'll be able to answer almost any "what if we group by..." question that comes your way.*
+
+The split-apply-combine paradigm is the foundation of data aggregation. You split data into groups, apply a function to each group, and combine the results.
+
+**Visual Guide - GroupBy Operations:**
+
+```
+BEFORE GROUPBY                    AFTER GROUPBY
+┌─────────┬─────────┬─────────┐   ┌─────────┬─────────┐
+│ Category│ Value   │ Other   │   │ Category│ Mean    │
+├─────────┼─────────┼─────────┤   ├─────────┼─────────┤
+│ A       │ 10      │ X       │   │ A       │ 10.0    │
+│ A       │ 15      │ Y       │   │ B       │ 25.0    │
+│ B       │ 20      │ Z       │   └─────────┴─────────┘
+│ B       │ 25      │ W       │
+│ A       │ 5       │ V       │
+│ B       │ 30      │ U       │
+└─────────┴─────────┴─────────┘
+```
+
+**Visual Guide - Split-Apply-Combine:**
+
+```
+ORIGINAL DATA                    SPLIT BY CATEGORY
+┌─────────┬─────────┬─────────┐   ┌─────────┬─────────┐
+│ Category│ Value   │ Other   │   │ Group A │ Group B │
+├─────────┼─────────┼─────────┤   ├─────────┼─────────┤
+│ A       │ 10      │ X       │   │ A, 10   │ B, 20   │
+│ A       │ 15      │ Y       │   │ A, 15   │ B, 25   │
+│ B       │ 20      │ Z       │   │ A, 5    │ B, 30   │
+│ B       │ 25      │ W       │   └─────────┴─────────┘
+│ A       │ 5       │ V       │
+│ B       │ 30      │ U       │
+└─────────┴─────────┴─────────┘
+
+APPLY FUNCTION (e.g., mean)      COMBINE RESULTS
+┌─────────┬─────────┐            ┌─────────┬─────────┐
+│ Group A │ Group B │            │ Category│ Mean    │
+├─────────┼─────────┤            ├─────────┼─────────┤
+│ mean(10,│ mean(20,│            │ A       │ 10.0    │
+│ 15, 5)  │ 25, 30)│            │ B       │ 25.0    │
+│ = 10.0  │ = 25.0 │            └─────────┴─────────┘
+└─────────┴─────────┘
+```
+
+## Basic GroupBy Operations
 
 **Reference:**
+
+- `df.groupby('column')` - Group by single column
+- `df.groupby(['col1', 'col2'])` - Group by multiple columns
+- `grouped.mean()` - Calculate mean for each group
+- `grouped.sum()` - Calculate sum for each group
+- `grouped.count()` - Count non-null values
+- `grouped.size()` - Count all values (including nulls)
+- `grouped.agg(['mean', 'sum', 'count'])` - Multiple aggregations
+
+**Example:**
+
 ```python
-Standard analysis template
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
-def analyze_dataset(df, target_column=None):
-    """
-    Systematic dataset analysis template
-    """
-    print("=== DATASET OVERVIEW ===")
-    print(f"Shape: {df.shape}")
-    print(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
-    
-    print("\n=== DATA TYPES ===")
-    print(df.dtypes.value_counts())
-    
-    print("\n=== MISSING VALUES ===")
-    missing = df.isnull().sum()
-    if missing.any():
-        print(missing[missing > 0])
-    else:
-        print("No missing values found")
-    
-    print("\n=== NUMERIC COLUMNS SUMMARY ===")
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    if len(numeric_cols) > 0:
-        print(df[numeric_cols].describe())
-    
-    print("\n=== CATEGORICAL COLUMNS SUMMARY ===")
-    categorical_cols = df.select_dtypes(include=['object']).columns
-    for col in categorical_cols:
-        print(f"\n{col}:")
-        print(df[col].value_counts().head())
+# Create sample data
+np.random.seed(42)
+df = pd.DataFrame({
+    'Department': ['Sales', 'Sales', 'Engineering', 'Engineering', 'Marketing', 'Marketing'],
+    'Employee': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'],
+    'Salary': [50000, 55000, 80000, 85000, 60000, 65000],
+    'Experience': [2, 3, 5, 7, 4, 6]
+})
+
+# Basic groupby operations
+print("Group by Department:")
+print(df.groupby('Department')['Salary'].mean())
+
+print("\nMultiple aggregations:")
+print(df.groupby('Department').agg({
+    'Salary': ['mean', 'sum', 'count'],
+    'Experience': 'mean'
+}))
 ```
 
-Exploratory Data Analysis (EDA) Techniques
+## Advanced GroupBy Operations
 
-Understanding Distributions
+### Transform Operations
+
+Transform operations apply a function to each group and return a result with the same shape as the original data.
 
 **Reference:**
+
+- `grouped.transform('mean')` - Apply mean to each group
+- `grouped.transform('std')` - Apply standard deviation to each group
+- `grouped.transform(lambda x: x - x.mean())` - Custom transform function
+- `grouped.transform(['mean', 'std'])` - Multiple transforms
+
+**Example:**
+
 ```python
-def explore_distribution(series, name):
-    """
-    Comprehensive distribution analysis for a single column
-    """
-    print(f"=== {name.upper()} DISTRIBUTION ===")
-    
-    # Basic statistics
-    print(f"Count: {series.count()}")
-    print(f"Missing: {series.isnull().sum()}")
-    print(f"Mean: {series.mean():.2f}")
-    print(f"Median: {series.median():.2f}")
-    print(f"Std Dev: {series.std():.2f}")
-    print(f"Min: {series.min():.2f}")
-    print(f"Max: {series.max():.2f}")
-    
-    # Distribution characteristics
-    skewness = series.skew()
-    print(f"Skewness: {skewness:.2f} {'(right-skewed)' if skewness > 0 else '(left-skewed)' if skewness < 0 else '(symmetric)'}")
-    
-    # Outlier detection using IQR method
-    Q1 = series.quantile(0.25)
-    Q3 = series.quantile(0.75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    
-    outliers = series[(series < lower_bound) | (series > upper_bound)]
-    print(f"Potential outliers: {len(outliers)} values outside [{lower_bound:.1f}, {upper_bound:.1f}]")
-    
-    return {
-        'mean': series.mean(),
-        'median': series.median(),
-        'std': series.std(),
-        'skewness': skewness,
-        'outlier_count': len(outliers)
-    }
+# Transform: Add group means as new column
+df['Salary_Mean'] = df.groupby('Department')['Salary'].transform('mean')
+df['Salary_Std'] = df.groupby('Department')['Salary'].transform('std')
+df['Salary_Normalized'] = df.groupby('Department')['Salary'].transform(lambda x: (x - x.mean()) / x.std())
+
+print("Data with group statistics:")
+print(df[['Department', 'Employee', 'Salary', 'Salary_Mean', 'Salary_Std', 'Salary_Normalized']])
 ```
 
-Relationship Analysis
+### Filter Operations
+
+Filter operations remove entire groups based on a condition.
 
 **Reference:**
+
+- `grouped.filter(lambda x: len(x) > n)` - Keep groups with more than n rows
+- `grouped.filter(lambda x: x['col'].sum() > threshold)` - Keep groups meeting condition
+- `grouped.filter(lambda x: x['col'].mean() > threshold)` - Filter by group statistics
+
+**Example:**
+
 ```python
-def analyze_relationships(df, target_col, max_categories=10):
-    """
-    Analyze relationships between variables and a target column
-    """
-    results = {}
-    
-    # Numeric columns - correlation analysis
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    numeric_cols = numeric_cols.drop(target_col, errors='ignore')
-    
-    if len(numeric_cols) > 0:
-        correlations = df[numeric_cols].corrwith(df[target_col]).sort_values(key=abs, ascending=False)
-        print(f"=== CORRELATIONS WITH {target_col.upper()} ===")
-        for col, corr in correlations.head(5).items():
-            print(f"{col}: {corr:.3f}")
-        results['correlations'] = correlations
-    
-    # Categorical columns - group analysis
-    categorical_cols = df.select_dtypes(include=['object']).columns
-    
-    for col in categorical_cols:
-        unique_count = df[col].nunique()
-        if unique_count <= max_categories:
-            print(f"\n=== {col.upper()} GROUP ANALYSIS ===")
-            group_stats = df.groupby(col)[target_col].agg(['count', 'mean', 'median', 'std'])
-            print(group_stats)
-            results[f'{col}_groups'] = group_stats
-    
-    return results
+# Filter: Keep only departments with more than 1 employee
+filtered = df.groupby('Department').filter(lambda x: len(x) > 1)
+print("Departments with multiple employees:")
+print(filtered)
+
+# Filter: Keep only departments with average salary > 60000
+high_salary_depts = df.groupby('Department').filter(lambda x: x['Salary'].mean() > 60000)
+print("\nHigh-salary departments:")
+print(high_salary_depts)
 ```
 
-**Brief Example:**
-```python
-Load sales data for analysis
-sales_data = pd.read_csv('monthly_sales.csv')
+### Apply Operations
 
-Systematic exploration
-print("Starting systematic analysis of sales data...")
-analyze_dataset(sales_data, target_column='revenue')
-
-Focus on key metric
-revenue_analysis = explore_distribution(sales_data['revenue'], 'Monthly Revenue')
-
-Understand what drives revenue
-relationship_analysis = analyze_relationships(sales_data, 'revenue')
-```
-
-Data Quality Assessment
-
-Identifying Data Issues
-
-Common Data Problems
+Apply operations let you use custom functions on each group.
 
 **Reference:**
-```python
-def comprehensive_data_quality_check(df):
-    """
-    Comprehensive data quality assessment
-    """
-    issues = {}
-    
-    print("=== DATA QUALITY ASSESSMENT ===")
-    
-    # 1. Missing values analysis
-    missing_data = df.isnull().sum()
-    missing_percent = (missing_data / len(df)) * 100
-    
-    if missing_data.any():
-        print("\nMISSING VALUES:")
-        for col, count in missing_data[missing_data > 0].items():
-            print(f"  {col}: {count} ({missing_percent[col]:.1f}%)")
-        issues['missing_values'] = missing_data[missing_data > 0]
-    
-    # 2. Duplicate rows
-    duplicate_count = df.duplicated().sum()
-    if duplicate_count > 0:
-        print(f"\nDUPLICATE ROWS: {duplicate_count}")
-        issues['duplicates'] = duplicate_count
-    
-    # 3. Data type inconsistencies
-    print("\nDATA TYPE ANALYSIS:")
-    for col in df.columns:
-        col_type = df[col].dtype
-        print(f"  {col}: {col_type}")
-        
-        # Check for mixed types in object columns
-        if col_type == 'object':
-            try:
-                # Try to convert to numeric
-                numeric_version = pd.to_numeric(df[col], errors='coerce')
-                if not numeric_version.isnull().all():
-                    non_numeric_count = numeric_version.isnull().sum() - df[col].isnull().sum()
-                    if non_numeric_count > 0:
-                        print(f"    WARNING: {non_numeric_count} non-numeric values in potentially numeric column")
-                        issues[f'{col}_mixed_types'] = non_numeric_count
-            except:
-                pass
-    
-    # 4. Outlier detection for numeric columns
-    numeric_columns = df.select_dtypes(include=[np.number]).columns
-    
-    if len(numeric_columns) > 0:
-        print("\nOUTLIER ANALYSIS:")
-        for col in numeric_columns:
-            Q1 = df[col].quantile(0.25)
-            Q3 = df[col].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-            
-            outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
-            if len(outliers) > 0:
-                print(f"  {col}: {len(outliers)} outliers ({len(outliers)/len(df)*100:.1f}%)")
-                issues[f'{col}_outliers'] = len(outliers)
-    
-    # 5. Consistency checks
-    print("\nCONSISTENCY CHECKS:")
-    
-    # Check for leading/trailing whitespace in string columns
-    object_cols = df.select_dtypes(include=['object']).columns
-    for col in object_cols:
-        whitespace_issues = df[col].str.strip() != df[col]
-        whitespace_count = whitespace_issues.sum()
-        if whitespace_count > 0:
-            print(f"  {col}: {whitespace_count} values with leading/trailing whitespace")
-            issues[f'{col}_whitespace'] = whitespace_count
-    
-    return issues
 
-def create_quality_report(df, output_file='data_quality_report.txt'):
-    """
-    Generate a comprehensive data quality report
-    """
-    with open(output_file, 'w') as f:
-        f.write("DATA QUALITY REPORT\n")
-        f.write("=" * 50 + "\n\n")
-        
-        f.write(f"Dataset: {df.shape[0]} rows, {df.shape[1]} columns\n")
-        f.write(f"Generated: {pd.Timestamp.now()}\n\n")
-        
-        # Capture quality issues
-        import io
-        import sys
-        
-        old_stdout = sys.stdout
-        sys.stdout = captured_output = io.StringIO()
-        
-        issues = comprehensive_data_quality_check(df)
-        
-        sys.stdout = old_stdout
-        f.write(captured_output.getvalue())
-        
-        f.write(f"\n\nSUMMARY: Found {len(issues)} types of data quality issues\n")
-        for issue_type, count in issues.items():
-            f.write(f"  - {issue_type}: {count}\n")
-    
-    print(f"Data quality report saved to {output_file}")
-    return issues
+- `grouped.apply(func)` - Apply custom function to each group
+- `grouped.apply(lambda x: x.sort_values('col'))` - Sort each group
+- `grouped.apply(lambda x: x.nlargest(2, 'col'))` - Get top 2 from each group
+
+**Example:**
+
+```python
+# Apply: Custom function for salary statistics
+def salary_stats(group):
+    return pd.Series({
+        'count': len(group),
+        'mean': group['Salary'].mean(),
+        'std': group['Salary'].std(),
+        'min': group['Salary'].min(),
+        'max': group['Salary'].max(),
+        'range': group['Salary'].max() - group['Salary'].min()
+    })
+
+print("Custom statistics by department:")
+print(df.groupby('Department').apply(salary_stats))
+
+# Apply: Get top 2 earners in each department
+top_earners = df.groupby('Department').apply(lambda x: x.nlargest(2, 'Salary'))
+print("\nTop 2 earners per department:")
+print(top_earners)
 ```
 
-Debugging Data Analysis Code
+# LIVE DEMO!
 
-Systematic Debugging Approach
+### Hierarchical Grouping
 
 **Reference:**
+
+- `df.groupby(['level1', 'level2'])` - Multi-level grouping
+- `grouped.unstack()` - Convert to wide format
+- `grouped.stack()` - Convert to long format
+- `grouped.swaplevel(0, 1)` - Swap grouping levels
+
+**Example:**
+
 ```python
-def debug_analysis_step(func, data, step_name, save_intermediate=True):
-    """
-    Wrapper for debugging analysis steps
-    """
-    print(f"\n=== DEBUGGING: {step_name} ===")
-    
-    # Check input data
-    print("INPUT CHECK:")
-    print(f"  Shape: {data.shape}")
-    print(f"  Columns: {list(data.columns)}")
-    print(f"  Memory: {data.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
-    
-    try:
-        # Execute the analysis step
-        result = func(data)
-        
-        print("EXECUTION: SUCCESS")
-        print(f"  Result shape: {result.shape if hasattr(result, 'shape') else type(result)}")
-        
-        # Save intermediate results if requested
-        if save_intermediate:
-            timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"debug_{step_name}_{timestamp}.csv"
-            if hasattr(result, 'to_csv'):
-                result.to_csv(filename, index=False)
-                print(f"  Saved intermediate result: {filename}")
-        
-        return result
-        
-    except Exception as e:
-        print(f"EXECUTION: FAILED")
-        print(f"  Error: {str(e)}")
-        print(f"  Error type: {type(e).__name__}")
-        
-        # Additional debugging info
-        if hasattr(data, 'dtypes'):
-            print("  Data types at failure:")
-            for col, dtype in data.dtypes.items():
-                print(f"    {col}: {dtype}")
-        
-        raise  # Re-raise the exception after logging
+# Create hierarchical data
+hierarchical_df = pd.DataFrame({
+    'Region': ['North', 'North', 'South', 'South', 'North', 'South'],
+    'Department': ['Sales', 'Engineering', 'Sales', 'Engineering', 'Marketing', 'Marketing'],
+    'Revenue': [100000, 150000, 120000, 180000, 80000, 90000],
+    'Employees': [5, 8, 6, 10, 4, 5]
+})
+
+# Hierarchical grouping
+hierarchical_grouped = hierarchical_df.groupby(['Region', 'Department']).sum()
+print("Hierarchical grouping:")
+print(hierarchical_grouped)
+
+# Unstack to wide format
+wide_format = hierarchical_grouped.unstack()
+print("\nWide format:")
+print(wide_format)
 ```
 
-Common Debugging Patterns
+# Pivot Tables and Cross-Tabulations
+
+*Think of pivot tables as the data analyst's Swiss Army knife - they can reshape, summarize, and analyze data in ways that would take dozens of lines of code to accomplish manually.*
+
+Pivot tables are powerful tools for summarizing and analyzing data across multiple dimensions.
+
+**Visual Guide - Pivot Table Transformation:**
+
+```
+LONG FORMAT (Original)              WIDE FORMAT (Pivoted)
+┌─────────┬─────────┬─────────┐     ┌─────────┬─────────┬─────────┐
+│ Product │ Region  │ Sales   │     │ Product │ North   │ South   │
+├─────────┼─────────┼─────────┤     ├─────────┼─────────┼─────────┤
+│ A       │ North   │ 1000    │     │ A       │ 1000    │ 1500    │
+│ A       │ South   │ 1500    │     │ B       │ 2000    │ 1200    │
+│ B       │ North   │ 2000    │     └─────────┴─────────┴─────────┘
+│ B       │ South   │ 1200    │
+└─────────┴─────────┴─────────┘
+```
+
+## Basic Pivot Tables
 
 **Reference:**
+
+- `pd.pivot_table(df, values='col', index='row', columns='col')` - Basic pivot
+- `pd.pivot_table(df, aggfunc='mean')` - Specify aggregation function
+- `pd.pivot_table(df, fill_value=0)` - Fill missing values
+- `pd.pivot_table(df, margins=True)` - Add totals
+- `pd.crosstab(index, columns)` - Cross-tabulation
+
+**Example:**
+
 ```python
-Pattern 1: Check data at each step
-def safe_data_processing(df):
-    """
-    Process data with built-in checks
-    """
-    print(f"Starting with {len(df)} rows")
-    
-    # Step 1: Remove missing values
-    df_clean = df.dropna()
-    print(f"After removing NaN: {len(df_clean)} rows")
-    
-    # Step 2: Filter outliers
-    numeric_cols = df_clean.select_dtypes(include=[np.number]).columns
-    for col in numeric_cols:
-        q1 = df_clean[col].quantile(0.25)
-        q3 = df_clean[col].quantile(0.75)
-        iqr = q3 - q1
-        lower = q1 - 1.5 * iqr
-        upper = q3 + 1.5 * iqr
-        
-        before_count = len(df_clean)
-        df_clean = df_clean[(df_clean[col] >= lower) & (df_clean[col] <= upper)]
-        after_count = len(df_clean)
-        print(f"After removing {col} outliers: {after_count} rows ({before_count - after_count} removed)")
-    
-    return df_clean
+# Create sample sales data
+sales_data = pd.DataFrame({
+    'Date': pd.date_range('2023-01-01', periods=100, freq='D'),
+    'Product': np.random.choice(['A', 'B', 'C'], 100),
+    'Region': np.random.choice(['North', 'South', 'East', 'West'], 100),
+    'Sales': np.random.randint(1000, 10000, 100),
+    'Quantity': np.random.randint(1, 100, 100)
+})
 
-Pattern 2: Validation functions
-def validate_analysis_assumptions(df, assumptions):
-    """
-    Validate key assumptions before analysis
-    """
-    validation_results = {}
-    
-    for assumption, check_func in assumptions.items():
-        try:
-            result = check_func(df)
-            validation_results[assumption] = {'passed': True, 'result': result}
-            print(f"✓ {assumption}: PASSED")
-        except Exception as e:
-            validation_results[assumption] = {'passed': False, 'error': str(e)}
-            print(f"✗ {assumption}: FAILED - {str(e)}")
-    
-    return validation_results
+# Basic pivot table
+pivot = pd.pivot_table(sales_data, 
+                      values='Sales', 
+                      index='Product', 
+                      columns='Region', 
+                      aggfunc='sum')
+print("Sales by Product and Region:")
+print(pivot)
 
-Pattern 3: Checkpoints in long analysis
-def analysis_with_checkpoints(df, checkpoint_dir='checkpoints'):
-    """
-    Long analysis with save points
-    """
-    import os
-    os.makedirs(checkpoint_dir, exist_ok=True)
-    
-    # Checkpoint 1: After data cleaning
-    df_clean = clean_data(df)
-    df_clean.to_csv(f'{checkpoint_dir}/01_cleaned_data.csv', index=False)
-    print("Checkpoint 1: Data cleaning complete")
-    
-    # Checkpoint 2: After feature engineering
-    df_features = create_features(df_clean)
-    df_features.to_csv(f'{checkpoint_dir}/02_with_features.csv', index=False)
-    print("Checkpoint 2: Feature engineering complete")
-    
-    # Checkpoint 3: After analysis
-    results = perform_analysis(df_features)
-    results.to_csv(f'{checkpoint_dir}/03_analysis_results.csv', index=False)
-    print("Checkpoint 3: Analysis complete")
-    
-    return results
+# Pivot with multiple aggregations
+pivot_multi = pd.pivot_table(sales_data,
+                            values=['Sales', 'Quantity'],
+                            index='Product',
+                            columns='Region',
+                            aggfunc={'Sales': 'sum', 'Quantity': 'mean'})
+print("\nMultiple aggregations:")
+print(pivot_multi)
 ```
 
-**Brief Example:**
-```python
-Debug a problematic analysis
-def analyze_customer_churn(customers_df):
-    """Example analysis function with debugging built in"""
-    
-    # Validation assumptions
-    assumptions = {
-        'has_customer_id': lambda df: 'customer_id' in df.columns,
-        'no_duplicate_customers': lambda df: df['customer_id'].nunique() == len(df),
-        'has_required_columns': lambda df: all(col in df.columns for col in ['last_purchase', 'total_spent'])
-    }
-    
-    # Validate before proceeding
-    validation_results = validate_analysis_assumptions(customers_df, assumptions)
-    
-    if not all(result['passed'] for result in validation_results.values()):
-        print("Cannot proceed - validation failed")
-        return None
-    
-    # Process with checkpoints
-    return debug_analysis_step(
-        lambda df: df.groupby('customer_segment')['total_spent'].agg(['mean', 'median', 'count']),
-        customers_df,
-        'customer_segment_analysis'
-    )
-```
-
-LIVE DEMO!
-*Systematic analysis of a complex dataset, demonstrating debugging techniques, quality assessment, and relationship analysis*
-
-Advanced Analysis Patterns
-
-Time Series Analysis Basics
+## Advanced Pivot Operations
 
 **Reference:**
-```python
-def analyze_time_series(df, date_col, value_col):
-    """
-    Basic time series analysis pattern
-    """
-    # Ensure proper date format
-    df[date_col] = pd.to_datetime(df[date_col])
-    df = df.sort_values(date_col)
-    
-    print(f"=== TIME SERIES ANALYSIS: {value_col} ===")
-    print(f"Date range: {df[date_col].min()} to {df[date_col].max()}")
-    
-    # Basic trend analysis
-    df['trend'] = df[value_col].rolling(window=7, center=True).mean()
-    
-    # Seasonal patterns (if monthly data)
-    df['month'] = df[date_col].dt.month
-    monthly_pattern = df.groupby('month')[value_col].mean()
-    
-    print("Monthly averages:")
-    for month, avg in monthly_pattern.items():
-        print(f"  Month {month}: {avg:.2f}")
-    
-    # Growth rate calculation
-    df['pct_change'] = df[value_col].pct_change() * 100
-    avg_growth = df['pct_change'].mean()
-    print(f"Average period-over-period growth: {avg_growth:.1f}%")
-    
-    return df
 
-def detect_anomalies(series, method='iqr'):
-    """
-    Detect anomalies in time series data
-    """
-    if method == 'iqr':
-        Q1 = series.quantile(0.25)
-        Q3 = series.quantile(0.75)
-        IQR = Q3 - Q1
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-        anomalies = series[(series < lower_bound) | (series > upper_bound)]
-    
-    elif method == 'zscore':
-        z_scores = np.abs((series - series.mean()) / series.std())
-        anomalies = series[z_scores > 3]
-    
-    return anomalies.index
+- `pivot_table(..., margins=True, margins_name='Total')` - Add totals
+- `pivot_table(..., fill_value=0)` - Fill missing values
+- `pivot_table(..., dropna=False)` - Keep missing combinations
+- `pivot_table(..., observed=True)` - Include all category combinations
+
+**Example:**
+
+```python
+# Advanced pivot with totals and missing value handling
+advanced_pivot = pd.pivot_table(sales_data,
+                               values='Sales',
+                               index='Product',
+                               columns='Region',
+                               aggfunc='sum',
+                               margins=True,
+                               margins_name='Total',
+                               fill_value=0)
+print("Advanced pivot with totals:")
+print(advanced_pivot)
+
+# Cross-tabulation
+crosstab = pd.crosstab(sales_data['Product'], 
+                      sales_data['Region'], 
+                      margins=True)
+print("\nCross-tabulation:")
+print(crosstab)
 ```
 
-Cohort Analysis Pattern
+# LIVE DEMO!
+
+# Remote Computing and SSH
+
+*When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
+
+Remote computing allows you to leverage powerful servers for data analysis that would be impossible on your local machine.
+
+## SSH Fundamentals
 
 **Reference:**
-```python
-def cohort_analysis(df, customer_col, date_col, value_col):
-    """
-    Basic cohort analysis for customer behavior
-    """
-    # Create period columns
-    df[date_col] = pd.to_datetime(df[date_col])
-    df['order_period'] = df[date_col].dt.to_period('M')
-    
-    # Get customer's first order period
-    df['cohort_group'] = df.groupby(customer_col)[date_col].transform('min').dt.to_period('M')
-    
-    # Calculate period number
-    def get_period_number(df):
-        return (df['order_period'] - df['cohort_group']).apply(attrgetter('n'))
-    
-    df['period_number'] = get_period_number(df)
-    
-    # Create cohort table
-    cohort_data = df.groupby(['cohort_group', 'period_number'])[customer_col].nunique().reset_index()
-    cohort_table = cohort_data.pivot(index='cohort_group', columns='period_number', values=customer_col)
-    
-    # Calculate retention rates
-    cohort_sizes = df.groupby('cohort_group')[customer_col].nunique()
-    retention_table = cohort_table.divide(cohort_sizes, axis=0)
-    
-    print("COHORT RETENTION ANALYSIS")
-    print("=" * 40)
-    print("Retention rates by cohort and period:")
-    print(retention_table.round(3))
-    
-    return cohort_table, retention_table
+
+- `ssh username@hostname` - Connect to remote server
+- `ssh -p port username@hostname` - Connect on specific port
+- `ssh-keygen -t rsa` - Generate SSH key pair
+- `ssh-copy-id username@hostname` - Copy public key to server
+- `scp file username@hostname:path` - Copy file to server
+- `scp username@hostname:file path` - Copy file from server
+
+**Example:**
+
+```bash
+# Generate SSH key pair
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# Copy public key to server
+ssh-copy-id username@server.com
+
+# Connect to server
+ssh username@server.com
+
+# Copy files to server
+scp data.csv username@server.com:~/data/
+
+# Copy files from server
+scp username@server.com:~/results/analysis.ipynb ./
 ```
 
-Professional Analysis Documentation
-
-Creating Analysis Reports
+## Remote Data Analysis
 
 **Reference:**
-```python
-def generate_analysis_report(df, analysis_results, output_file='analysis_report.md'):
-    """
-    Generate a professional analysis report
-    """
-    with open(output_file, 'w') as f:
-        f.write("# Data Analysis Report\n\n")
-        f.write(f"**Generated:** {pd.Timestamp.now()}\n")
-        f.write(f"**Dataset:** {df.shape[0]} rows, {df.shape[1]} columns\n\n")
-        
-        f.write("## Executive Summary\n\n")
-        f.write("Key findings from the analysis:\n\n")
-        
-        # Data overview
-        f.write("## Data Overview\n\n")
-        f.write(f"- **Size:** {df.shape[0]:,} records with {df.shape[1]} variables\n")
-        f.write(f"- **Memory usage:** {df.memory_usage(deep=True).sum() / 1024**2:.1f} MB\n")
-        f.write(f"- **Missing values:** {df.isnull().sum().sum()} total\n\n")
-        
-        # Statistical summary
-        f.write("## Statistical Summary\n\n")
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
-        if len(numeric_cols) > 0:
-            f.write("### Numeric Variables\n\n")
-            summary = df[numeric_cols].describe()
-            f.write(summary.round(2).to_string())
-            f.write("\n\n")
-        
-        # Analysis results
-        f.write("## Analysis Results\n\n")
-        for analysis_name, results in analysis_results.items():
-            f.write(f"### {analysis_name.title().replace('_', ' ')}\n\n")
-            if isinstance(results, dict):
-                for key, value in results.items():
-                    f.write(f"- **{key}:** {value}\n")
-            else:
-                f.write(f"{results}\n")
-            f.write("\n")
-        
-        f.write("## Methodology\n\n")
-        f.write("This analysis was conducted using:\n")
-        f.write("- Python pandas for data manipulation\n")
-        f.write("- Systematic exploratory data analysis\n")
-        f.write("- Statistical validation of assumptions\n")
-        f.write("- Quality checks and outlier detection\n\n")
-        
-        f.write("## Recommendations\n\n")
-        f.write("Based on the analysis results:\n\n")
-        f.write("1. [Add specific recommendations based on findings]\n")
-        f.write("2. [Include actionable insights]\n")
-        f.write("3. [Note any data quality concerns]\n\n")
-    
-    print(f"Analysis report generated: {output_file}")
+
+```bash
+# Start Jupyter notebook on remote server
+jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+
+# Forward port to local machine
+ssh -L 8888:localhost:8888 username@server.com
+
+# Access Jupyter at http://localhost:8888
 ```
 
-**Brief Example:**
+**Example:**
+
 ```python
-Complete analysis workflow with documentation
-def complete_analysis_workflow(data_file):
-    """
-    End-to-end analysis with documentation
-    """
-    # Load and validate data
-    df = pd.read_csv(data_file)
-    issues = create_quality_report(df)
-    
-    # Perform systematic analysis
-    analysis_results = {}
-    
-    # Distribution analysis
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    for col in numeric_cols[:3]:  # Top 3 numeric columns
-        analysis_results[f'{col}_distribution'] = explore_distribution(df[col], col)
-    
-    # Relationship analysis if target column exists
-    if 'target' in df.columns:
-        analysis_results['relationships'] = analyze_relationships(df, 'target')
-    
-    # Generate comprehensive report
-    generate_analysis_report(df, analysis_results, 'final_analysis_report.md')
-    
-    return df, analysis_results
+# Remote data analysis workflow
+import pandas as pd
+import numpy as np
+
+# Load large dataset on remote server
+df = pd.read_csv('/path/to/large_dataset.csv')
+
+# Perform aggregation on remote server
+result = df.groupby('category').agg({
+    'value': ['mean', 'std', 'count'],
+    'other_col': 'sum'
+})
+
+# Save results
+result.to_csv('aggregated_results.csv')
+
+# Download results to local machine
+# scp username@server.com:~/aggregated_results.csv ./
 ```
 
-Key Takeaways
+## Screen and tmux for Persistent Sessions
 
-1. **Systematic approach** beats random exploration - follow consistent analysis patterns
-2. **Quality assessment first** - understand your data before analyzing it
-3. **Debug proactively** - build checks and validations into your analysis code
-4. **Document everything** - your future self will thank you
-5. **Save intermediate results** - checkpoints prevent losing work from errors
-6. **Validate assumptions** - check that your data meets analysis requirements
-7. **Professional reporting** - clear documentation makes analysis actionable
+**Reference:**
 
-You now have professional techniques for approaching complex data analysis problems systematically. These debugging and quality assessment skills will serve you well in real-world data science projects.
+```bash
+# tmux commands
+tmux new-session -s analysis
+tmux list-sessions
+tmux attach-session -t analysis
+tmux kill-session -t analysis
 
-Next week: We'll explore advanced data manipulation with pandas and prepare for our final projects!
+# Inside tmux
+Ctrl+b d  # Detach from session
+Ctrl+b c  # Create new window
+Ctrl+b n  # Next window
+Ctrl+b p  # Previous window
+```
+
+**Example:**
+
+```bash
+# Start persistent analysis session
+tmux new-session -s data_analysis
+
+# Inside tmux, start your analysis
+conda activate datasci_217
+jupyter notebook --ip=0.0.0.0 --port=8888
+
+# Detach from session (Ctrl+b, then d)
+# Session continues running on server
+
+# Reattach later
+tmux attach-session -t data_analysis
+```
+
+# Performance Optimization
+
+*When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
+
+# FIXME: Add performance comparison chart showing groupby vs pivot_table vs manual aggregation speed
+
+# FIXME: Add memory usage visualization for different aggregation methods
+
+## Efficient GroupBy Operations
+
+**Reference:**
+
+```python
+# Optimize groupby operations
+def efficient_groupby(df, group_cols, agg_cols):
+    """Efficient groupby with optimized operations"""
+    
+    # Use categorical data types for grouping columns
+    for col in group_cols:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype('category')
+    
+    # Use specific aggregation functions
+    result = df.groupby(group_cols)[agg_cols].agg({
+        'numeric_col': ['mean', 'sum'],
+        'other_col': 'count'
+    })
+    
+    return result
+
+# Memory-efficient operations
+def memory_efficient_analysis(df):
+    """Analyze large dataset with memory optimization"""
+    
+    # Process in chunks
+    chunk_size = 10000
+    results = []
+    
+    for chunk in pd.read_csv('large_file.csv', chunksize=chunk_size):
+        # Process chunk
+        chunk_result = chunk.groupby('category').sum()
+        results.append(chunk_result)
+    
+    # Combine results
+    final_result = pd.concat(results).groupby(level=0).sum()
+    return final_result
+```
+
+## Parallel Processing
+
+**Reference:**
+
+```python
+from multiprocessing import Pool
+import pandas as pd
+
+def process_chunk(chunk):
+    """Process a single chunk of data"""
+    return chunk.groupby('category').sum()
+
+def parallel_groupby(df, n_processes=4):
+    """Parallel groupby processing"""
+    
+    # Split data into chunks
+    chunk_size = len(df) // n_processes
+    chunks = [df.iloc[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
+    
+    # Process in parallel
+    with Pool(n_processes) as pool:
+        results = pool.map(process_chunk, chunks)
+    
+    # Combine results
+    return pd.concat(results).groupby(level=0).sum()
+```
+
+# LIVE DEMO!
+
+# Key Takeaways
+
+1. **Master split-apply-combine** - the foundation of data aggregation
+2. **Use pivot tables** for multi-dimensional analysis
+3. **Leverage remote computing** for large datasets
+4. **Optimize performance** with efficient operations
+5. **Use persistent sessions** for long-running analysis
+6. **Understand hierarchical grouping** for complex data structures
+
+You now have the skills to aggregate and summarize data effectively, even with large datasets that require remote computing resources.
+
+Next week: We'll dive into time series analysis and temporal data!
 
 Practice Challenge
 
 Before next class:
-1. **Analysis Practice:**
-   - Find a dataset with at least 5 columns and 1000+ rows
-   - Apply the systematic analysis workflow
-   - Create a comprehensive quality report
+1. **Practice groupby operations:**
+   - Use different aggregation functions
+   - Try hierarchical grouping
+   - Experiment with transform and filter
    
-2. **Debugging Skills:**
-   - Intentionally break some analysis code and practice debugging
-   - Use the checkpoint pattern on a multi-step analysis
-   - Validate assumptions before proceeding with analysis
+2. **Create pivot tables:**
+   - Summarize data across multiple dimensions
+   - Use different aggregation functions
+   - Add totals and handle missing values
    
-3. **Professional Documentation:**
-   - Generate an analysis report following the template
-   - Include visualizations and clear recommendations
-   - Practice explaining technical findings clearly
+3. **Set up remote computing:**
+   - Generate SSH keys
+   - Connect to a remote server
+   - Start a persistent session with tmux
 
-Remember: Good analysis is systematic, documented, and validated - develop these professional habits now!
+Remember: Data aggregation is about finding patterns and insights in your data - group wisely!

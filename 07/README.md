@@ -1,676 +1,690 @@
-Data Cleaning and Basic Visualization
+Data Visualization: From Exploration to Communication
 
-Welcome to week 7! Now that you're comfortable with pandas DataFrames, it's time to master data cleaning - the most important (and time-consuming) part of any data science project. You'll also create your first visualizations to understand and communicate your data insights.
+See [BONUS.md](BONUS.md) for advanced topics:
 
-By the end of today, you'll know how to handle messy real-world data and create clear, informative plots that tell compelling stories.
+- Advanced matplotlib customization and publication-quality plots
+- Interactive visualization with Bokeh and Plotly
+- Statistical visualization with seaborn advanced features
+- Custom color palettes and themes
+- Animation and dynamic plots
 
-![xkcd 2054: Data Quality](media/xkcd_2054.png)
+*Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
 
-That's actually pretty accurate - but we'll make the cleaning part less painful!
+![xkcd 1945: Scientific Paper Graph Quality](media/xkcd_1945.png)
 
-![Visualization Philosophy](media/nixcraft.png)
+*"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
-Why Data Cleaning Matters
+Data visualization is the art and science of turning data into insights. This lecture covers the essential tools for creating effective visualizations: **matplotlib for customization**, **seaborn for statistical plots**, and **modern alternatives** for interactive and grammar-of-graphics approaches.
 
-The Reality of Real Data
+**Learning Objectives:**
 
-In textbooks, data looks like this:
+- Master matplotlib fundamentals (figures, subplots, customization)
+- Create statistical visualizations with seaborn
+- Use pandas plotting for quick data exploration
+- Understand visualization principles and best practices
+- Explore modern visualization libraries (altair, plotnine)
+- Manage persistent computing sessions with tmux
+
+# The Visualization Ecosystem
+
+*Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart. But don't worry - we'll focus on the essential tools that actually matter for daily data science work.*
+
+Python's visualization landscape has evolved dramatically. While matplotlib remains the foundation, modern tools like seaborn, altair, and plotnine offer more intuitive interfaces for common tasks.
+
+**Visual Guide - Python Visualization Stack:**
+
 ```
-name,age,grade,major
-Alice Smith,20,85,Biology
-Bob Jones,21,92,Chemistry
+FOUNDATION LAYER
+┌─────────────────────────────────────┐
+│           matplotlib                │  ← Low-level, highly customizable
+│     (The foundation of everything)   │
+└─────────────────────────────────────┘
+                    ↑
+                    │
+            PANDAS LAYER
+┌─────────────────────────────────────┐
+│         pandas.plot()              │  ← Quick exploration, built on matplotlib
+│     (DataFrame/Series plotting)     │
+└─────────────────────────────────────┘
+                    ↑
+                    │
+            STATISTICAL LAYER
+┌─────────────────────────────────────┐
+│           seaborn                   │  ← Statistical plots, beautiful defaults
+│     (Built on matplotlib)           │
+└─────────────────────────────────────┘
+                    ↑
+                    │
+            MODERN LAYER
+┌─────────────────────────────────────┐
+│    altair (vega-lite)               │  ← Grammar of graphics, interactive
+│    plotnine (ggplot2)               │  ← R's ggplot2 in Python
+└─────────────────────────────────────┘
 ```
 
-In the real world, data looks like this:
-```
-NAME,age,grade,Major
-  Alice Smith  ,20,85,biology
-BOB JONES,21,,Chemistry
-charlie brown,19,78.5,BIOLOGY
-Diana Wilson,, 96,chemistry
-Eve Chen,22,92,Phys ics
-```
+## Choosing the Right Tool
 
-**Common data quality issues:**
-- Inconsistent capitalization and formatting
-- Extra whitespace and special characters
-- Missing values in critical columns
-- Inconsistent categorical values
-- Mixed data types in single columns
-- Duplicate records with slight variations
+**When to use what:**
 
-The Cost of Dirty Data
+- **pandas.plot()** - Quick exploration, basic charts
+- **matplotlib** - Custom plots, publication quality, fine control
+- **seaborn** - Statistical plots, beautiful defaults, relationship analysis
+- **altair** - Interactive plots, grammar of graphics, web-ready
+- **plotnine** - If you know ggplot2, consistent API
 
-Dirty data leads to:
-- **Incorrect analysis results** - Garbage in, garbage out
-- **Failed joins and merges** - Inconsistent keys prevent combining datasets  
-- **Visualization problems** - Charts become unreadable with inconsistent categories
-- **Model failures** - Machine learning algorithms require clean, consistent data
-- **Lost credibility** - Stakeholders lose trust when results are obviously wrong
+**Pro tip:** Start with pandas for exploration, seaborn for analysis, matplotlib for customization, and modern tools for interactive/sharing needs.
 
-**Brief Example:**
-If "Biology", "biology", "BIOLOGY", and "Bio" are all the same major, but your analysis treats them as different categories, you'll get completely wrong results about major distributions.
+# LIVE DEMO!
 
-Advanced Missing Data Handling
+# matplotlib Fundamentals
 
-Understanding Missing Data Patterns
+*Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures.*
+
+matplotlib is the bedrock of Python visualization. While it can be verbose, understanding its core concepts gives you the power to create any visualization you can imagine.
+
+## Figures and Subplots
+
+Every matplotlib plot lives within a `Figure` object, which can contain multiple `subplots` (individual plot areas).
 
 **Reference:**
+
+- `plt.figure(figsize=(width, height))` - Create a new figure
+- `fig.add_subplot(rows, cols, position)` - Add subplot to figure
+- `plt.subplots(rows, cols)` - Create figure with multiple subplots
+- `fig.savefig('filename.png', dpi=300)` - Save figure to file
+- `plt.show()` - Display the plot
+
+**Example:**
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Create a figure with 2x2 subplots
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+
+# Plot on each subplot
+axes[0, 0].plot([1, 2, 3, 4], [1, 4, 2, 3])
+axes[0, 0].set_title('Line Plot')
+
+axes[0, 1].hist(np.random.normal(0, 1, 1000), bins=30)
+axes[0, 1].set_title('Histogram')
+
+axes[1, 0].scatter(np.random.randn(100), np.random.randn(100))
+axes[1, 0].set_title('Scatter Plot')
+
+axes[1, 1].bar(['A', 'B', 'C'], [3, 7, 2])
+axes[1, 1].set_title('Bar Chart')
+
+plt.tight_layout()  # Adjust spacing between subplots
+plt.show()
+```
+
+## Customizing Plots
+
+matplotlib's power comes from its extensive customization options.
+
+**Reference:**
+
+- `ax.set_title('Title')` - Set plot title
+- `ax.set_xlabel('X Label')` - Set x-axis label
+- `ax.set_ylabel('Y Label')` - Set y-axis label
+- `ax.set_xlim(min, max)` - Set x-axis limits
+- `ax.set_ylim(min, max)` - Set y-axis limits
+- `ax.grid(True)` - Add grid lines
+- `ax.legend()` - Add legend
+- `ax.set_style('seaborn')` - Change plot style
+
+**Example:**
+
+```python
+# Create a customized plot
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Generate sample data
+x = np.linspace(0, 10, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+
+# Plot with customization
+ax.plot(x, y1, label='sin(x)', color='blue', linewidth=2, linestyle='-')
+ax.plot(x, y2, label='cos(x)', color='red', linewidth=2, linestyle='--')
+
+# Customize appearance
+ax.set_title('Trigonometric Functions', fontsize=16, fontweight='bold')
+ax.set_xlabel('X values', fontsize=12)
+ax.set_ylabel('Y values', fontsize=12)
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=10)
+ax.set_xlim(0, 10)
+ax.set_ylim(-1.5, 1.5)
+
+plt.tight_layout()
+plt.show()
+```
+
+## Colors, Markers, and Line Styles
+
+matplotlib offers extensive control over visual elements.
+
+**Reference:**
+
+**Colors:**
+- Named colors: `'red'`, `'blue'`, `'green'`
+- Hex colors: `'#FF5733'`, `'#2E8B57'`
+- RGB tuples: `(0.1, 0.2, 0.5)`
+
+**Line Styles:**
+- `'-'` solid, `'--'` dashed, `'-.'` dash-dot, `':'` dotted
+
+**Markers:**
+- `'o'` circle, `'s'` square, `'^'` triangle, `'*'` star
+
+**Example:**
+
+```python
+# Demonstrate different styles
+fig, ax = plt.subplots(figsize=(10, 6))
+
+x = np.linspace(0, 10, 20)
+
+# Different line styles and markers
+ax.plot(x, x, 'o-', label='circles', color='blue', markersize=8)
+ax.plot(x, x**0.5, 's--', label='squares', color='red', markersize=6)
+ax.plot(x, np.log(x+1), '^-.', label='triangles', color='green', markersize=8)
+ax.plot(x, np.sin(x), '*:', label='stars', color='purple', markersize=10)
+
+ax.set_title('Different Line Styles and Markers')
+ax.legend()
+ax.grid(True, alpha=0.3)
+plt.show()
+```
+
+# pandas Plotting: Quick Exploration
+
+*Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
+
+pandas provides convenient plotting methods that build on matplotlib, perfect for quick data exploration.
+
+**Reference:**
+
+- `df.plot()` - Line plot (default)
+- `df.plot(kind='bar')` - Bar chart
+- `df.plot(kind='hist')` - Histogram
+- `df.plot(kind='scatter', x='col1', y='col2')` - Scatter plot
+- `df.plot(kind='box')` - Box plot
+- `df.plot(kind='pie')` - Pie chart
+
+**Example:**
+
 ```python
 import pandas as pd
 import numpy as np
 
-Check missing data patterns
-df.isna().sum()                    # Count missing per column
-df.isna().sum() / len(df) * 100    # Percentage missing per column
-
-Visualize missing data patterns
-missing_matrix = df.isna()
-print("Missing data by row:")
-print(missing_matrix.sum(axis=1).value_counts().sort_index())
-
-Find rows with most missing data
-rows_missing = df.isna().sum(axis=1)
-print("Rows with missing data:")
-print(df[rows_missing > 0][['name'] + list(df.columns[df.isna().any()])])
-```
-
-Strategic Missing Data Decisions
-
-**Reference:**
-```python
-Different strategies for different situations
-
-Strategy 1: Drop if too much missing data
-threshold = 0.5  # Drop columns missing >50% of data
-df_cleaned = df.dropna(thresh=len(df) * threshold, axis=1)
-
-Strategy 2: Drop specific problematic rows
-df_cleaned = df.dropna(subset=['critical_column'])
-
-Strategy 3: Fill with appropriate values
-For categorical data
-df['major'] = df['major'].fillna('Unknown')
-df['status'] = df['status'].fillna(df['status'].mode()[0])  # Most common value
-
-For numerical data  
-df['age'] = df['age'].fillna(df['age'].median())            # Median for skewed data
-df['grade'] = df['grade'].fillna(df['grade'].mean())        # Mean for normal data
-
-Strategy 4: Fill based on other columns
-df['grade'] = df.groupby('major')['grade'].transform(
-    lambda x: x.fillna(x.mean())
-)  # Fill with mean grade for that major
-```
-
-Advanced Filling Techniques
-
-**Reference:**
-```python
-Forward and backward filling (for time series data)
-df['temperature'] = df['temperature'].fillna(method='forward')
-df['sales'] = df['sales'].fillna(method='backward')
-
-Interpolation for numeric data
-df['score'] = df['score'].interpolate(method='linear')
-
-Fill with calculated values based on conditions
-mask_seniors = df['year'] == 2023
-mask_juniors = df['year'] == 2024
-
-df.loc[mask_seniors, 'expected_grade'] = df.loc[mask_seniors, 'expected_grade'].fillna(85)
-df.loc[mask_juniors, 'expected_grade'] = df.loc[mask_juniors, 'expected_grade'].fillna(82)
-```
-
-**Brief Example:**
-```python
-Real-world missing data handling
-print("Missing data analysis:")
-print("-" * 25)
-
-Check patterns
-missing_counts = df.isna().sum()
-missing_pct = (missing_counts / len(df) * 100).round(1)
-
-missing_summary = pd.DataFrame({
-    'Missing_Count': missing_counts,
-    'Missing_Percent': missing_pct
+# Create sample data
+np.random.seed(42)
+df = pd.DataFrame({
+    'A': np.random.randn(100),
+    'B': np.random.randn(100),
+    'C': np.random.randn(100)
 })
-print(missing_summary[missing_summary['Missing_Count'] > 0])
 
-Apply appropriate strategies
-if missing_summary.loc['grade', 'Missing_Percent'] < 10:
-    # Few missing grades - fill with median by major
-    df['grade'] = df.groupby('major')['grade'].transform(
-        lambda x: x.fillna(x.median())
-    )
-    print("Filled missing grades with major-specific median")
-else:
-    # Too many missing - might need to drop or investigate further
-    print("Too many missing grades - investigate data collection issues")
-```
-
-String Data Cleaning
-
-Standardizing Text Data
-
-**Reference:**
-```python
-Common text cleaning operations
-df['name'] = df['name'].str.strip()              # Remove leading/trailing whitespace
-df['name'] = df['name'].str.title()              # Proper case: "Alice Smith"
-df['major'] = df['major'].str.upper()            # All uppercase: "BIOLOGY" 
-df['email'] = df['email'].str.lower()            # All lowercase for emails
-
-Replace multiple whitespace with single space
-df['name'] = df['name'].str.replace(r'\s+', ' ', regex=True)
-
-Remove special characters
-df['phone'] = df['phone'].str.replace(r'[^\d]', '', regex=True)  # Keep only digits
-
-Standardize categorical values
-major_mapping = {
-    'bio': 'Biology',
-    'biology': 'Biology', 
-    'BIOLOGY': 'Biology',
-    'chem': 'Chemistry',
-    'chemistry': 'Chemistry',
-    'CHEMISTRY': 'Chemistry',
-    'phys': 'Physics',
-    'physics': 'Physics',
-    'PHYSICS': 'Physics'
-}
-df['major'] = df['major'].str.lower().replace(major_mapping)
-```
-
-Advanced String Operations
-
-**Reference:**
-```python
-Extract parts of strings
-df['first_name'] = df['name'].str.split(' ').str[0]
-df['last_name'] = df['name'].str.split(' ').str[-1]
-df['domain'] = df['email'].str.split('@').str[1]
-
-Check string patterns
-df['valid_email'] = df['email'].str.contains(r'^[^@]+@[^@]+\.[^@]+$', regex=True)
-df['has_number'] = df['student_id'].str.contains(r'\d', regex=True)
-
-String length checks
-df['name_length'] = df['name'].str.len()
-short_names = df[df['name_length'] < 3]  # Possibly problematic entries
-
-Handle encoding issues
-df['comments'] = df['comments'].str.encode('ascii', errors='ignore').str.decode('ascii')
-```
-
-**Brief Example:**
-```python
-Clean student names and majors
-print("String cleaning example:")
-print("Before cleaning:")
-print(df[['name', 'major']].head())
-
-Standardize names
-df['name'] = df['name'].str.strip().str.title()
-
-Standardize majors using mapping
-major_cleanup = {
-    'bio': 'Biology',
-    'biology': 'Biology',
-    'chem': 'Chemistry', 
-    'chemistry': 'Chemistry',
-    'phys': 'Physics',
-    'physics': 'Physics'
-}
-
-df['major'] = df['major'].str.lower().str.strip()
-df['major'] = df['major'].replace(major_cleanup)
-
-print("\nAfter cleaning:")
-print(df[['name', 'major']].head())
-
-print(f"\nUnique majors: {df['major'].unique()}")
-```
-
-LIVE DEMO!
-*Loading messy real-world dataset, identifying quality issues, applying systematic cleaning approaches*
-
-Duplicate Detection and Removal
-
-Finding Duplicates
-
-**Reference:**
-```python
-Check for exact duplicates
-duplicates = df.duplicated()
-print(f"Number of duplicate rows: {duplicates.sum()}")
-
-Check specific columns for duplicates
-name_duplicates = df.duplicated(subset=['name'])
-id_duplicates = df.duplicated(subset=['student_id'])
-
-Find duplicate rows (not just count them)
-duplicate_rows = df[df.duplicated()]
-print("Duplicate rows:")
-print(duplicate_rows)
-
-Find all copies of duplicated rows (including originals)
-all_duplicates = df[df.duplicated(keep=False)]
-```
-
-Strategic Duplicate Removal
-
-**Reference:**
-```python
-Remove exact duplicates (keep first occurrence)
-df_no_dupes = df.drop_duplicates()
-
-Remove duplicates based on specific columns
-df_unique_students = df.drop_duplicates(subset=['student_id'])
-df_unique_names = df.drop_duplicates(subset=['name'])
-
-Keep last occurrence instead of first
-df_latest = df.drop_duplicates(subset=['student_id'], keep='last')
-
-Handle "fuzzy" duplicates (similar but not identical)
-Group by similar names and choose best record
-def choose_best_record(group):
-    # Logic: keep record with most complete data
-    completeness = group.isna().sum(axis=1)  # Count missing values per row
-    return group.loc[completeness.idxmin()]   # Keep row with fewest missing values
-
-df_deduped = df.groupby('student_id').apply(choose_best_record).reset_index(drop=True)
-```
-
-**Brief Example:**
-```python
-Handle duplicates systematically
-print("Duplicate analysis:")
-print(f"Total rows: {len(df)}")
-print(f"Duplicate rows: {df.duplicated().sum()}")
-
-Check for student ID duplicates (more concerning)
-id_dupes = df.duplicated(subset=['student_id'], keep=False)
-if id_dupes.sum() > 0:
-    print(f"Students with duplicate IDs: {id_dupes.sum()}")
-    print("Duplicate ID records:")
-    print(df[id_dupes].sort_values('student_id'))
-    
-    # Keep record with most recent data or most complete information
-    df_cleaned = df.drop_duplicates(subset=['student_id'], keep='last')
-    print(f"After removing duplicates: {len(df_cleaned)} rows")
-```
-
-Introduction to Data Visualization
-
-Why Visualization Matters
-
-Visualizations help you:
-- **Spot patterns** that are invisible in raw numbers
-- **Identify outliers** and data quality issues quickly
-- **Communicate findings** to both technical and non-technical audiences
-- **Validate assumptions** about your data
-- **Guide further analysis** by revealing interesting relationships
-
-The Right Chart for the Job
-
-**Distribution of single variable:** Histogram, box plot
-**Comparison across categories:** Bar chart, violin plot  
-**Relationship between variables:** Scatter plot, line chart
-**Part-of-whole relationships:** Pie chart (use sparingly!)
-**Time series:** Line chart with time on x-axis
-
-pandas Plotting Basics
-
-pandas has built-in plotting powered by matplotlib - perfect for quick exploration.
-
-Simple Plotting
-
-**Reference:**
-```python
-import matplotlib.pyplot as plt
-
-Set up for inline plots (Jupyter)
-%matplotlib inline
-
-Basic plots using pandas
-df['grade'].plot(kind='hist')                    # Histogram
-plt.title('Grade Distribution')
-plt.xlabel('Grade')
-plt.show()
-
-df['major'].value_counts().plot(kind='bar')      # Bar chart  
-plt.title('Students by Major')
-plt.ylabel('Number of Students')
-plt.show()
-
-Box plot for comparing groups
-df.boxplot(column='grade', by='major')
-plt.title('Grade Distribution by Major')
-plt.show()
-```
-
-Scatter Plots and Correlations
-
-**Reference:**
-```python
-Scatter plot to show relationships
-df.plot.scatter(x='study_hours', y='grade')
-plt.title('Study Hours vs Grade')
-plt.show()
-
-Multiple scatter plots
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
-df.plot.scatter(x='study_hours', y='grade', ax=axes[0])
-axes[0].set_title('Study Hours vs Grade')
-
-df.plot.scatter(x='attendance', y='grade', ax=axes[1])  
-axes[1].set_title('Attendance vs Grade')
-plt.tight_layout()
-plt.show()
-```
-
-![Florence Nightingale's Mortality Chart](media/Nightingale-mortality.jpg)
-
-![Napoleon's March Visualization](media/napoleon.webp)
-
-![Johns Hopkins COVID-19 Dashboard](media/jhu-covid.png)
-
-Introduction to matplotlib
-
-For more control over your plots, use matplotlib directly.
-
-**Reference:**
-```python
-import matplotlib.pyplot as plt
-
-Create figure and axis
-fig, ax = plt.subplots(figsize=(10, 6))
-
-Plot data
-ax.hist(df['grade'], bins=15, alpha=0.7, color='skyblue', edgecolor='black')
-
-Customize the plot
-ax.set_title('Student Grade Distribution', fontsize=16, fontweight='bold')
-ax.set_xlabel('Grade', fontsize=12)
-ax.set_ylabel('Number of Students', fontsize=12)
-ax.grid(True, alpha=0.3)
-
-Add statistical information
-mean_grade = df['grade'].mean()
-ax.axvline(mean_grade, color='red', linestyle='--', 
-           label=f'Mean: {mean_grade:.1f}')
-ax.legend()
-
-plt.tight_layout()
-plt.show()
-```
-
-Subplots for Multiple Visualizations
-
-**Reference:**
-```python
-Create multiple subplots
+# Quick exploration with pandas
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-Plot 1: Grade histogram
-axes[0,0].hist(df['grade'], bins=10, alpha=0.7)
-axes[0,0].set_title('Grade Distribution')
-axes[0,0].set_xlabel('Grade')
+# Line plot
+df.plot(ax=axes[0, 0], title='Line Plot')
 
-Plot 2: Major counts
-major_counts = df['major'].value_counts()
-axes[0,1].bar(major_counts.index, major_counts.values)
-axes[0,1].set_title('Students by Major')
-axes[0,1].tick_params(axis='x', rotation=45)
+# Histogram
+df.plot(kind='hist', ax=axes[0, 1], alpha=0.7, title='Histogram')
 
-Plot 3: Box plot by major
-df.boxplot(column='grade', by='major', ax=axes[1,0])
-axes[1,0].set_title('Grades by Major')
+# Scatter plot
+df.plot(kind='scatter', x='A', y='B', ax=axes[1, 0], title='Scatter Plot')
 
-Plot 4: Scatter plot (if you have another numeric column)
-if 'study_hours' in df.columns:
-    axes[1,1].scatter(df['study_hours'], df['grade'], alpha=0.6)
-    axes[1,1].set_xlabel('Study Hours')
-    axes[1,1].set_ylabel('Grade')
-    axes[1,1].set_title('Study Hours vs Grade')
+# Box plot
+df.plot(kind='box', ax=axes[1, 1], title='Box Plot')
 
 plt.tight_layout()
 plt.show()
 ```
 
-**Brief Example:**
+## DataFrame Plotting Options
+
+**Reference:**
+
+- `subplots=True` - Create separate subplots for each column
+- `figsize=(width, height)` - Set figure size
+- `title='Title'` - Set plot title
+- `xlabel='X Label'` - Set x-axis label
+- `ylabel='Y Label'` - Set y-axis label
+- `legend=True` - Show legend
+- `grid=True` - Add grid lines
+
+**Example:**
+
 ```python
-Create a comprehensive data overview visualization
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+# Sales data example
+sales_data = pd.DataFrame({
+    'Month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    'Product_A': [100, 120, 110, 130, 140, 135],
+    'Product_B': [80, 90, 95, 105, 110, 115],
+    'Product_C': [60, 70, 75, 80, 85, 90]
+})
 
-Grade distribution
-axes[0,0].hist(df['grade'], bins=15, alpha=0.7, color='lightblue', edgecolor='black')
-axes[0,0].set_title('Grade Distribution')
-axes[0,0].set_xlabel('Grade')
-axes[0,0].axvline(df['grade'].mean(), color='red', linestyle='--', alpha=0.8)
+# Set Month as index for better plotting
+sales_data.set_index('Month', inplace=True)
 
-Major distribution
-major_counts = df['major'].value_counts()
-axes[0,1].bar(major_counts.index, major_counts.values, color='lightgreen')
-axes[0,1].set_title('Students by Major')
-axes[0,1].tick_params(axis='x', rotation=45)
+# Create subplots for each product
+sales_data.plot(subplots=True, figsize=(10, 8), 
+                title='Sales by Product Over Time',
+                grid=True, legend=True)
+plt.tight_layout()
+plt.show()
+```
 
-Grade by major (box plot)
-majors = df['major'].unique()
-grade_by_major = [df[df['major'] == major]['grade'] for major in majors]
-axes[1,0].boxplot(grade_by_major, labels=majors)
-axes[1,0].set_title('Grade Distribution by Major')
-axes[1,0].tick_params(axis='x', rotation=45)
+# LIVE DEMO!
 
-Summary statistics table (as text)
-stats_text = f"""Summary Statistics:
-Total Students: {len(df)}
-Average Grade: {df['grade'].mean():.1f}
-Median Grade: {df['grade'].median():.1f}
-Grade Std Dev: {df['grade'].std():.1f}
+# seaborn: Statistical Visualization
 
-Missing Data:
-{df.isna().sum().to_string()}
-"""
-axes[1,1].text(0.1, 0.5, stats_text, fontfamily='monospace', fontsize=10)
-axes[1,1].axis('off')
-axes[1,1].set_title('Dataset Summary')
+*seaborn is like having a data visualization expert sitting next to you, automatically choosing the right colors, styles, and statistical methods to make your plots look professional and informative.*
+
+seaborn builds on matplotlib to provide beautiful statistical visualizations with minimal code. It's the go-to choice for most data analysis tasks.
+
+**Reference:**
+
+- `sns.set_style('whitegrid')` - Set plot style
+- `sns.set_palette('husl')` - Set color palette
+- `sns.scatterplot(x='col1', y='col2', data=df)` - Scatter plot
+- `sns.lineplot(x='col1', y='col2', data=df)` - Line plot
+- `sns.histplot(data=df, x='col')` - Histogram
+- `sns.boxplot(data=df, x='col1', y='col2')` - Box plot
+- `sns.heatmap(data=df)` - Heatmap
+
+**Example:**
+
+```python
+import seaborn as sns
+
+# Set seaborn style
+sns.set_style('whitegrid')
+sns.set_palette('husl')
+
+# Create sample dataset
+tips = sns.load_dataset('tips')
+
+# Create multiple plots
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+# Scatter plot with regression line
+sns.scatterplot(data=tips, x='total_bill', y='tip', 
+                hue='time', ax=axes[0, 0])
+axes[0, 0].set_title('Total Bill vs Tip by Time')
+
+# Box plot
+sns.boxplot(data=tips, x='day', y='tip', ax=axes[0, 1])
+axes[0, 1].set_title('Tip Distribution by Day')
+
+# Histogram
+sns.histplot(data=tips, x='total_bill', hue='time', 
+             alpha=0.7, ax=axes[1, 0])
+axes[1, 0].set_title('Total Bill Distribution by Time')
+
+# Heatmap
+pivot_data = tips.pivot_table(values='tip', index='day', columns='time')
+sns.heatmap(pivot_data, annot=True, cmap='YlOrRd', ax=axes[1, 1])
+axes[1, 1].set_title('Average Tip by Day and Time')
 
 plt.tight_layout()
 plt.show()
 ```
 
-#FIXME: IMAGE - 3d-junk.jpg (Bad visualization example - 3D chart that distorts perception and adds no information)
-
-#FIXME: IMAGE - animal-junk.jpg (Bad visualization example - Pictures distract from data, inconsistent scale)
-
-#FIXME: IMAGE - line-ink.png (Good visualization example - Clean, clear design with essential grid lines only)
-
-#FIXME: IMAGE - greenhouse-junk.webp (Bad visualization example - 3D obscures trends, colors fight for attention)
-
-#FIXME: IMAGE - greenhouse-ink.webp (Good visualization example - Flat design shows trends, colors support message)
-
-#FIXME: IMAGE - complicated-ink.png (Good visualization example - Complex but clear, each element has purpose)
-
-#FIXME: IMAGE - minimal-boxplot.png (Good visualization example - Shows distribution clearly with minimal decoration)
-
-#FIXME: IMAGE - bookdown.png (Bad visualization example - Unclear axis labels, poor color choices, missing title)
-
-#FIXME: IMAGE - car_crime.jpeg (Bad visualization example - Misleading scale, poor color contrast, confusing layout)
-
-#FIXME: IMAGE - social_media.png (Bad visualization example - Circular layout hard to read, colors don't add meaning)
-
-#FIXME: IMAGE - gold.jpg (Bad visualization example - Misleading perspective, scale distortion, unnecessary decoration)
-
-#FIXME: IMAGE - mermaid.png (Good visualization example - Clear decision points, logical flow shown)
-
-LIVE DEMO!
-*Creating a complete data cleaning and visualization workflow: load messy data, clean systematically, create informative plots*
-
-Debugging Data Issues
-
-Systematic Data Investigation
+## Advanced seaborn Features
 
 **Reference:**
+
+- `sns.pairplot(df)` - Pairwise relationships
+- `sns.jointplot(x='col1', y='col2', data=df)` - Joint distribution
+- `sns.violinplot(data=df, x='col1', y='col2')` - Violin plot
+- `sns.stripplot(data=df, x='col1', y='col2')` - Strip plot
+- `sns.catplot(kind='box', data=df, x='col1', y='col2')` - Categorical plot
+
+**Example:**
+
 ```python
-def investigate_data_quality(df, column=None):
-    """Comprehensive data quality investigation"""
-    print("DATA QUALITY REPORT")
-    print("=" * 40)
-    
-    # Overall info
-    print(f"Dataset shape: {df.shape}")
-    print(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
-    
-    # Missing data
-    print("\nMISSING DATA:")
-    missing = df.isna().sum()
-    missing_pct = (missing / len(df) * 100).round(1)
-    missing_report = pd.DataFrame({
-        'Missing_Count': missing,
-        'Missing_Percent': missing_pct
-    })
-    print(missing_report[missing_report['Missing_Count'] > 0])
-    
-    # Data types
-    print("\nDATA TYPES:")
-    print(df.dtypes)
-    
-    # Duplicates
-    print(f"\nDUPLICATES:")
-    print(f"Exact duplicates: {df.duplicated().sum()}")
-    
-    # For specific column investigation
-    if column and column in df.columns:
-        print(f"\nCOLUMN ANALYSIS: {column}")
-        print(f"Unique values: {df[column].nunique()}")
-        print(f"Value counts:")
-        print(df[column].value_counts().head(10))
-        
-        if df[column].dtype in ['object', 'string']:
-            # String analysis
-            print(f"Average length: {df[column].str.len().mean():.1f}")
-            print(f"Contains whitespace: {df[column].str.contains(r'^\s|\s$').sum()}")
+# Advanced seaborn visualizations
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+# Pair plot (shows all pairwise relationships)
+# Note: This creates its own figure, so we'll use a subset
+sample_data = tips.sample(50)
+sns.pairplot(sample_data, hue='time', height=3)
+
+# Joint plot (scatter + histograms)
+sns.jointplot(data=tips, x='total_bill', y='tip', kind='hex')
+
+# Violin plot (shows distribution shape)
+sns.violinplot(data=tips, x='day', y='tip', ax=axes[0, 0])
+axes[0, 0].set_title('Tip Distribution by Day (Violin Plot)')
+
+# Strip plot (shows individual points)
+sns.stripplot(data=tips, x='day', y='tip', hue='time', ax=axes[0, 1])
+axes[0, 1].set_title('Individual Tips by Day and Time')
+
+plt.tight_layout()
+plt.show()
 ```
 
-Common Debugging Patterns
+# Density Plots and Distribution Visualization
+
+*Density plots show the shape of your data distribution - they're like histograms but smoother, revealing patterns that might be hidden in discrete bins.*
+
+Density plots (also called KDE - Kernel Density Estimation) provide a smooth representation of data distribution.
 
 **Reference:**
+
+- `df.plot.density()` - Create density plot
+- `sns.histplot(data=df, x='col', kde=True)` - Histogram with density overlay
+- `sns.kdeplot(data=df, x='col')` - Pure density plot
+- `sns.distplot(data=df, x='col')` - Combined histogram and density
+
+**Example:**
+
 ```python
-Find outliers
-def find_outliers(df, column):
-    Q1 = df[column].quantile(0.25)
-    Q3 = df[column].quantile(0.75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    
-    outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
-    print(f"Outliers in {column}: {len(outliers)}")
-    return outliers
+# Create sample data with different distributions
+np.random.seed(42)
+normal_data = np.random.normal(0, 1, 1000)
+bimodal_data = np.concatenate([
+    np.random.normal(-2, 0.5, 500),
+    np.random.normal(2, 0.5, 500)
+])
 
-Check for impossible values
-def validate_ranges(df):
-    """Check for values outside reasonable ranges"""
-    issues = []
-    
-    if 'age' in df.columns:
-        invalid_ages = df[(df['age'] < 0) | (df['age'] > 120)]
-        if len(invalid_ages) > 0:
-            issues.append(f"Invalid ages: {len(invalid_ages)} records")
-    
-    if 'grade' in df.columns:
-        invalid_grades = df[(df['grade'] < 0) | (df['grade'] > 100)]
-        if len(invalid_grades) > 0:
-            issues.append(f"Invalid grades: {len(invalid_grades)} records")
-    
-    return issues
+# Density plots
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-Check categorical consistency  
-def check_categories(df, column):
-    """Find similar categorical values that might be the same"""
-    values = df[column].dropna().astype(str).str.lower().unique()
-    
-    print(f"Unique values in {column}:")
-    for value in sorted(values):
-        count = df[df[column].str.lower() == value].shape[0]
-        print(f"  {value}: {count}")
-    
-    # Look for similar values
-    from difflib import get_close_matches
-    potential_dupes = []
-    for value in values:
-        matches = get_close_matches(value, values, n=3, cutoff=0.8)
-        if len(matches) > 1:
-            potential_dupes.append(matches)
-    
-    if potential_dupes:
-        print(f"\nPotential duplicate categories:")
-        for group in potential_dupes:
-            print(f"  {group}")
+# pandas density plot
+pd.Series(normal_data).plot.density(ax=axes[0, 0], title='Normal Distribution')
+axes[0, 0].grid(True, alpha=0.3)
+
+# seaborn density plot
+sns.kdeplot(data=normal_data, ax=axes[0, 1], title='Normal Distribution (seaborn)')
+axes[0, 1].grid(True, alpha=0.3)
+
+# Bimodal distribution
+sns.kdeplot(data=bimodal_data, ax=axes[1, 0], title='Bimodal Distribution')
+axes[1, 0].grid(True, alpha=0.3)
+
+# Combined histogram and density
+sns.histplot(data=normal_data, kde=True, ax=axes[1, 1], title='Histogram + Density')
+axes[1, 1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
-**Brief Example:**
+# Modern Visualization Libraries
+
+*The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
+
+## vega-altair: Grammar of Graphics
+
+altair implements the grammar of graphics (like ggplot2 in R), making it intuitive to build complex visualizations.
+
+**Reference:**
+
 ```python
-Complete data debugging workflow
-print("Starting data quality investigation...")
+import altair as alt
 
-Run comprehensive check
-investigate_data_quality(df)
-
-Check specific columns
-if 'grade' in df.columns:
-    grade_outliers = find_outliers(df, 'grade')
-    if len(grade_outliers) > 0:
-        print("Grade outliers found:")
-        print(grade_outliers[['name', 'grade']])
-
-Check for validation issues
-validation_issues = validate_ranges(df)
-if validation_issues:
-    print("Data validation issues:")
-    for issue in validation_issues:
-        print(f"  - {issue}")
-
-Check categorical consistency
-if 'major' in df.columns:
-    check_categories(df, 'major')
-
-print("\nData quality investigation complete.")
+# Basic altair syntax
+alt.Chart(df).mark_point().encode(
+    x='column1',
+    y='column2',
+    color='category'
+)
 ```
 
-Key Takeaways
+**Example:**
 
-1. **Data cleaning is iterative** - expect to cycle through multiple cleaning steps
-2. **Understand your missing data** before deciding how to handle it
-3. **String standardization** is crucial for categorical data consistency
-4. **Duplicate detection** requires strategic thinking about what constitutes a "duplicate"
-5. **Visualization reveals patterns** that are invisible in raw data
-6. **pandas plotting** is perfect for quick exploration; matplotlib for publication-quality plots
-7. **Systematic debugging** prevents overlooking critical data quality issues
+```python
+# altair example (if installed)
+try:
+    import altair as alt
+    
+    # Create interactive scatter plot
+    chart = alt.Chart(tips).mark_circle().encode(
+        x='total_bill:Q',
+        y='tip:Q',
+        color='time:N',
+        size='size:O'
+    ).interactive()
+    
+    # Display (requires Jupyter or altair viewer)
+    chart.show()
+    
+except ImportError:
+    print("altair not installed. Install with: pip install altair")
+```
 
-You now have the skills to handle messy real-world data and create meaningful visualizations. These are fundamental skills you'll use in every data science project.
+## Other Modern Tools: plotnine, Bokeh, and Plotly
 
-Next week: We'll dive deeper into data analysis patterns and debugging techniques!
+**plotnine** brings R's ggplot2 syntax to Python, perfect for those familiar with R.
+
+**Bokeh** and **Plotly** create interactive web-based visualizations.
+
+**Example:**
+
+```python
+# plotnine example (if installed)
+try:
+    from plotnine import ggplot, aes, geom_point, geom_smooth, theme_minimal
+    
+    # Create ggplot2-style plot
+    p = (ggplot(tips, aes(x='total_bill', y='tip', color='time')) 
+         + geom_point(alpha=0.6)
+         + geom_smooth(method='lm')
+         + theme_minimal())
+    
+    print(p)
+    
+except ImportError:
+    print("plotnine not installed. Install with: pip install plotnine")
+
+# Bokeh and Plotly for interactive plots
+# These require separate installation and are great for web dashboards
+```
+
+# Command Line: Persistent Sessions with tmux
+
+*When you're working on long-running data analysis or remote servers, you need sessions that survive network hiccups and accidental terminal closures. tmux is your friend.*
+
+tmux (terminal multiplexer) allows you to create persistent terminal sessions that survive disconnections and can be shared between multiple terminal windows.
+
+**Reference:**
+
+- `tmux` - Start new session
+- `tmux new-session -s session_name` - Start named session
+- `tmux list-sessions` - List all sessions
+- `tmux attach-session -t session_name` - Attach to session
+- `tmux kill-session -t session_name` - Kill session
+- `Ctrl+b d` - Detach from session (keeps it running)
+- `Ctrl+b c` - Create new window
+- `Ctrl+b n` - Next window
+- `Ctrl+b p` - Previous window
+
+**Example:**
+
+```bash
+# Start a new tmux session for data analysis
+tmux new-session -s data_analysis
+
+# Inside tmux, start your Python environment
+conda activate datasci_217
+jupyter notebook
+
+# Detach from session (Ctrl+b, then d)
+# Session keeps running in background
+
+# Later, reattach to the same session
+tmux attach-session -t data_analysis
+
+# Your Jupyter notebook is still running!
+```
+
+## tmux Configuration
+
+**Reference:**
+
+Create `~/.tmux.conf` for custom settings:
+
+```bash
+# Enable mouse support
+set -g mouse on
+
+# Set default terminal
+set -g default-terminal "screen-256color"
+
+# Start windows and panes at 1
+set -g base-index 1
+setw -g pane-base-index 1
+
+# Reload config file
+bind r source-file ~/.tmux.conf \; display "Config reloaded!"
+```
+
+# Visualization Best Practices
+
+*Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first.*
+
+# FIXME: Add before/after visualization examples showing good vs bad design
+
+# FIXME: Add color palette examples for different data types
+
+## The Right Chart for the Job
+
+**Chart Selection Guide:**
+
+- **Line charts**: Time series, trends over time
+- **Bar charts**: Categories, comparisons
+- **Scatter plots**: Relationships between two variables
+- **Histograms**: Distribution of single variable
+- **Box plots**: Distribution with outliers
+- **Heatmaps**: Patterns in 2D data
+- **Pie charts**: Parts of a whole (use sparingly!)
+
+**Example:**
+
+```python
+# Demonstrate chart selection
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+
+# Line chart - time series
+dates = pd.date_range('2023-01-01', periods=100, freq='D')
+values = np.cumsum(np.random.randn(100))
+axes[0, 0].plot(dates, values)
+axes[0, 0].set_title('Line Chart: Time Series')
+axes[0, 0].tick_params(axis='x', rotation=45)
+
+# Bar chart - categories
+categories = ['A', 'B', 'C', 'D']
+counts = [23, 45, 56, 12]
+axes[0, 1].bar(categories, counts)
+axes[0, 1].set_title('Bar Chart: Categories')
+
+# Scatter plot - relationships
+x = np.random.randn(100)
+y = 2 * x + np.random.randn(100)
+axes[0, 2].scatter(x, y, alpha=0.6)
+axes[0, 2].set_title('Scatter Plot: Relationships')
+
+# Histogram - distribution
+data = np.random.normal(0, 1, 1000)
+axes[1, 0].hist(data, bins=30, alpha=0.7)
+axes[1, 0].set_title('Histogram: Distribution')
+
+# Box plot - distribution with outliers
+data_by_group = [np.random.normal(i, 1, 50) for i in range(3)]
+axes[1, 1].boxplot(data_by_group)
+axes[1, 1].set_title('Box Plot: Distribution + Outliers')
+
+# Heatmap - 2D patterns
+heatmap_data = np.random.randn(10, 10)
+im = axes[1, 2].imshow(heatmap_data, cmap='coolwarm')
+axes[1, 2].set_title('Heatmap: 2D Patterns')
+plt.colorbar(im, ax=axes[1, 2])
+
+plt.tight_layout()
+plt.show()
+```
+
+## Design Principles
+
+**Key Principles:**
+
+1. **Clarity**: Make your message obvious
+2. **Honesty**: Don't mislead with scale or design
+3. **Simplicity**: Remove unnecessary elements
+4. **Consistency**: Use consistent colors, fonts, styles
+5. **Accessibility**: Consider colorblind users, use patterns/textures
+
+**Example:**
+
+```python
+# Good vs Bad visualization example
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+# BAD: Misleading scale, poor colors, no labels
+data = [10, 20, 30, 40]
+ax1.bar(['A', 'B', 'C', 'D'], data, color=['red', 'blue', 'green', 'yellow'])
+ax1.set_title('Sales by Region')
+ax1.set_ylim(0, 50)  # Misleading scale
+
+# GOOD: Clear scale, good colors, proper labels
+ax2.bar(['A', 'B', 'C', 'D'], data, color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'])
+ax2.set_title('Sales by Region (in thousands)', fontsize=14, fontweight='bold')
+ax2.set_ylabel('Sales (thousands)', fontsize=12)
+ax2.set_xlabel('Region', fontsize=12)
+ax2.set_ylim(0, 45)  # Appropriate scale
+ax2.grid(True, alpha=0.3)
+
+# Add value labels on bars
+for i, v in enumerate(data):
+    ax2.text(i, v + 1, str(v), ha='center', va='bottom', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+```
+
+# LIVE DEMO!
+
+# Key Takeaways
+
+1. **Start with pandas** for quick exploration
+2. **Use seaborn** for statistical visualizations
+3. **Customize with matplotlib** when needed
+4. **Choose the right chart** for your data and message
+5. **Follow design principles** for effective communication
+6. **Use tmux** for persistent computing sessions
+7. **Explore modern tools** like altair and plotnine for specific needs
+
+You now have the skills to create effective visualizations that tell compelling data stories. These are essential skills for any data scientist.
+
+Next week: We'll dive into data aggregation and group operations!
 
 Practice Challenge
 
 Before next class:
-1. **Find messy data:**
-   - Download a real-world dataset (Kaggle, government data, etc.)
-   - Or create artificially messy data from clean data
+1. **Create visualizations:**
+   - Use pandas.plot() for quick exploration
+   - Use seaborn for statistical plots
+   - Customize with matplotlib
    
-2. **Complete cleaning workflow:**
-   - Investigate data quality issues systematically
-   - Apply appropriate cleaning techniques for each issue
-   - Document your decisions and rationale
+2. **Practice tmux:**
+   - Start a persistent session
+   - Run Jupyter notebook in tmux
+   - Detach and reattach
    
-3. **Create informative visualizations:**
-   - Use both pandas plotting and matplotlib
-   - Create at least 3 different plot types
-   - Include proper titles, labels, and legends
+3. **Follow best practices:**
+   - Choose appropriate chart types
+   - Use clear labels and titles
+   - Consider your audience
 
-Remember: Real data is always messy - learning to clean it efficiently is what separates beginners from practitioners!
+Remember: Good visualization is about communication - make your data tell a story!

@@ -1,1022 +1,825 @@
-Automation and Advanced Data Manipulation
+Time Series Analysis: Temporal Data and Trends
 
-Welcome to week 9! You've mastered data analysis fundamentals, and now it's time to automate your workflows and tackle complex data manipulation tasks. You'll learn to create reusable analysis scripts, process multiple datasets efficiently, and perform advanced pandas operations that handle real-world data complexity.
+See [BONUS.md](BONUS.md) for advanced topics:
 
-By the end of today, you'll build automated analysis pipelines that can process multiple datasets with a single command, and master advanced pandas techniques for combining and reshaping data.
+- Advanced time series decomposition and seasonal analysis
+- Time series forecasting with ARIMA and exponential smoothing
+- Time zone handling and international data
+- High-frequency data analysis and tick data
+- Time series visualization and interactive dashboards
 
-![xkcd 1319: Automation](media/xkcd_1319.png)
+*Fun fact: Time series analysis is like being a detective for data - you're looking for patterns, trends, and clues that reveal the story of how things change over time. It's the difference between knowing what happened and understanding why it happened.*
 
-Today you'll learn when and how to automate - and actually save time doing it!
+![xkcd 2048: Time](media/xkcd_2048.png)
 
-Workflow Automation
+*"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
-Building Reusable Analysis Scripts
+Time series analysis is the art of understanding temporal patterns in data. This lecture covers the essential tools for time series analysis: **datetime handling**, **resampling and frequency conversion**, **rolling window operations**, and **automation** for handling time-based data.
 
-**The Automation Mindset:**
-- **DRY Principle** - Don't Repeat Yourself with analysis workflows
-- **Parameterize everything** - Make scripts work with different inputs
-- **Error handling** - Scripts should fail gracefully and give helpful messages
-- **Documentation** - Future you will thank present you
-- **Modularity** - Break complex tasks into smaller, reusable functions
+**Learning Objectives:**
 
-#FIXME: IMAGE - debug_start.png (VS Code debugging interface - Visual representation of debugging workflow and key UI elements)
+- Master datetime data types and parsing
+- Perform time series indexing and selection
+- Use resampling and frequency conversion
+- Apply rolling window operations
+- Handle time zones and temporal data
+- Automate time-based tasks with cron jobs
 
-#FIXME: IMAGE - debug_vscode.png (Detailed debugging process - Inspect variables and call stack, learn interactive debugging techniques)
+# Understanding Time Series Data
 
-Creating Professional Analysis Scripts
+*Reality check: Time series data is everywhere - stock prices, weather data, website traffic, sensor readings. Understanding how to work with temporal data is essential for any data scientist.*
+
+Time series data is characterized by observations collected over time, where the order and timing of observations matter. Unlike cross-sectional data, time series data has a natural temporal structure that we can exploit for analysis.
+
+**Visual Guide - Time Series Characteristics:**
+
+```
+TIME SERIES DATA STRUCTURE
+┌─────────────┬─────────────┬─────────────┐
+│ Timestamp   │ Value       │ Context     │
+├─────────────┼─────────────┼─────────────┤
+│ 2023-01-01  │ 100.5       │ Stock Price │
+│ 2023-01-02  │ 102.3       │ Stock Price │
+│ 2023-01-03  │ 98.7        │ Stock Price │
+│ 2023-01-04  │ 105.2       │ Stock Price │
+│ 2023-01-05  │ 103.8       │ Stock Price │
+└─────────────┴─────────────┴─────────────┘
+
+KEY CHARACTERISTICS:
+- Temporal ordering matters
+- Observations are dependent
+- Patterns may repeat (seasonality)
+- Trends may exist
+- Noise and outliers are common
+```
+
+## Types of Time Series
 
 **Reference:**
+
+- **Regular time series**: Fixed intervals (daily, hourly, monthly)
+- **Irregular time series**: Variable intervals (event-based)
+- **Seasonal time series**: Patterns repeat over time
+- **Trending time series**: Long-term direction
+- **Stationary time series**: Statistical properties don't change
+
+**Example:**
+
+```python
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+# Create regular time series
+dates = pd.date_range('2023-01-01', periods=100, freq='D')
+values = np.cumsum(np.random.randn(100)) + 100
+
+ts_regular = pd.Series(values, index=dates)
+print("Regular time series:")
+print(ts_regular.head())
+
+# Create irregular time series
+irregular_dates = pd.to_datetime([
+    '2023-01-01', '2023-01-03', '2023-01-07', '2023-01-10'
+])
+irregular_values = [100, 105, 98, 102]
+ts_irregular = pd.Series(irregular_values, index=irregular_dates)
+print("\nIrregular time series:")
+print(ts_irregular)
+```
+
+# Date and Time Data Types
+
+*Think of datetime objects as the Swiss Army knife of temporal data - they can represent any moment in time with precision down to microseconds, and pandas makes them incredibly powerful for analysis.*
+
+## Python datetime Module
+
+**Reference:**
+
+- `datetime.now()` - Current date and time
+- `datetime(year, month, day)` - Create specific date
+- `datetime.strptime(string, format)` - Parse string to datetime
+- `datetime.strftime(format)` - Format datetime to string
+- `timedelta(days=1)` - Time differences
+
+**Example:**
+
+```python
+from datetime import datetime, timedelta
+
+# Current time
+now = datetime.now()
+print(f"Current time: {now}")
+
+# Specific date
+birthday = datetime(1990, 5, 15)
+print(f"Birthday: {birthday}")
+
+# String parsing
+date_str = "2023-12-25 14:30:00"
+parsed_date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+print(f"Parsed date: {parsed_date}")
+
+# String formatting
+formatted = parsed_date.strftime("%B %d, %Y at %I:%M %p")
+print(f"Formatted: {formatted}")
+
+# Time differences
+time_diff = now - birthday
+print(f"Age in days: {time_diff.days}")
+```
+
+## pandas DatetimeIndex
+
+**Reference:**
+
+- `pd.to_datetime()` - Convert to datetime
+- `pd.date_range()` - Create date range
+- `pd.DatetimeIndex()` - Create datetime index
+- `df.set_index('date')` - Set datetime index
+- `df.index` - Access datetime index
+
+**Example:**
+
+```python
+# Convert to datetime
+date_strings = ['2023-01-01', '2023-01-02', '2023-01-03']
+dates = pd.to_datetime(date_strings)
+print("Converted dates:")
+print(dates)
+
+# Create date range
+date_range = pd.date_range('2023-01-01', periods=10, freq='D')
+print("\nDate range:")
+print(date_range)
+
+# Create DataFrame with datetime index
+df = pd.DataFrame({
+    'value': np.random.randn(10)
+}, index=date_range)
+print("\nDataFrame with datetime index:")
+print(df.head())
+```
+
+## Date Range Generation
+
+**Reference:**
+
+- `pd.date_range(start, end, freq='D')` - Create date range
+- `pd.bdate_range(start, end)` - Business days only
+- `pd.date_range(freq='B')` - Business frequency
+- `pd.date_range(freq='W-MON')` - Weekly on Monday
+- `pd.date_range(freq='MS')` - Month start
+- `pd.date_range(freq='QS')` - Quarter start
+
+**Example:**
+
+```python
+# Different date range types
+print("Daily range:")
+daily = pd.date_range('2023-01-01', '2023-01-10', freq='D')
+print(daily)
+
+print("\nBusiness days only:")
+business = pd.bdate_range('2023-01-01', '2023-01-10')
+print(business)
+
+print("\nWeekly range (Mondays):")
+weekly = pd.date_range('2023-01-01', '2023-03-01', freq='W-MON')
+print(weekly)
+
+print("\nMonthly range:")
+monthly = pd.date_range('2023-01-01', '2023-12-01', freq='MS')
+print(monthly)
+```
+
+## Frequency Inference
+
+**Reference:**
+
+- `pd.infer_freq(ts.index)` - Infer frequency from time series
+- `ts.asfreq(freq)` - Convert to specific frequency
+- `ts.resample(freq).asfreq()` - Resample and convert frequency
+
+**Example:**
+
+```python
+# Create time series with inferred frequency
+dates = pd.date_range('2023-01-01', periods=100, freq='D')
+ts = pd.Series(np.random.randn(100), index=dates)
+
+# Infer frequency
+freq = pd.infer_freq(ts.index)
+print(f"Inferred frequency: {freq}")
+
+# Convert to different frequency
+ts_weekly = ts.asfreq('W')
+print(f"Weekly frequency: {pd.infer_freq(ts_weekly.index)}")
+```
+
+## Shifting and Lagging
+
+**Reference:**
+
+- `ts.shift(1)` - Shift by 1 period (lag)
+- `ts.shift(-1)` - Shift by -1 period (lead)
+- `ts.diff()` - First difference
+- `ts.pct_change()` - Percentage change
+- `ts.shift(1, freq='D')` - Shift by 1 day
+
+**Example:**
+
+```python
+# Create sample time series
+dates = pd.date_range('2023-01-01', periods=10, freq='D')
+ts = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], index=dates)
+
+# Shifting operations
+ts['lag_1'] = ts.shift(1)  # Previous day
+ts['lead_1'] = ts.shift(-1)  # Next day
+ts['diff'] = ts.diff()  # First difference
+ts['pct_change'] = ts.pct_change()  # Percentage change
+
+print("Time series with shifts:")
+print(ts)
+```
+
+## Exponentially Weighted Functions
+
+**Reference:**
+
+- `ts.ewm(span=5).mean()` - Exponentially weighted moving average
+- `ts.ewm(alpha=0.3).mean()` - EWM with alpha parameter
+- `ts.ewm(halflife=2).mean()` - EWM with half-life
+- `ts.ewm(span=5).std()` - Exponentially weighted standard deviation
+
+**Example:**
+
+```python
+# Create sample time series
+dates = pd.date_range('2023-01-01', periods=50, freq='D')
+ts = pd.Series(np.cumsum(np.random.randn(50)) + 100, index=dates)
+
+# Exponentially weighted functions
+ts['ewm_mean'] = ts.ewm(span=5).mean()
+ts['ewm_std'] = ts.ewm(span=5).std()
+ts['ewm_alpha'] = ts.ewm(alpha=0.3).mean()
+
+print("Time series with EWM functions:")
+print(ts[['value', 'ewm_mean', 'ewm_std']].head(10))
+```
+
+## Time Zone Handling
+
+**Reference:**
+
+- `pd.to_datetime().dt.tz_localize()` - Add timezone
+- `pd.to_datetime().dt.tz_convert()` - Convert timezone
+- `pd.Timestamp.now(tz='UTC')` - Current time in timezone
+- `df.index.tz_localize('UTC')` - Localize index
+- `df.index.tz_convert('US/Eastern')` - Convert timezone
+
+**Example:**
+
+```python
+# Create timezone-aware datetime
+utc_time = pd.Timestamp.now(tz='UTC')
+print(f"UTC time: {utc_time}")
+
+# Convert to different timezone
+eastern_time = utc_time.tz_convert('US/Eastern')
+print(f"Eastern time: {eastern_time}")
+
+# Create timezone-aware DataFrame
+df_tz = pd.DataFrame({
+    'value': np.random.randn(5)
+}, index=pd.date_range('2023-01-01', periods=5, freq='D'))
+
+# Localize to UTC
+df_tz.index = df_tz.index.tz_localize('UTC')
+print("\nUTC DataFrame:")
+print(df_tz)
+
+# Convert to Eastern time
+df_tz.index = df_tz.index.tz_convert('US/Eastern')
+print("\nEastern DataFrame:")
+print(df_tz)
+```
+
+## Business Day Handling
+
+**Reference:**
+
+- `pd.bdate_range(start, end)` - Business date range
+- `pd.date_range(freq='B')` - Business frequency
+- `ts.resample('B').mean()` - Resample to business days
+- `ts.asfreq('B')` - Convert to business frequency
+
+**Example:**
+
+```python
+# Business day operations
+business_dates = pd.bdate_range('2023-01-01', '2023-01-31')
+print("Business days in January 2023:")
+print(business_dates)
+
+# Create business day time series
+ts_business = pd.Series(np.random.randn(len(business_dates)), index=business_dates)
+print(f"\nBusiness day time series shape: {ts_business.shape}")
+
+# Convert daily to business days
+daily_ts = pd.Series(np.random.randn(31), index=pd.date_range('2023-01-01', periods=31, freq='D'))
+business_ts = daily_ts.asfreq('B')
+print(f"Converted to business days: {business_ts.shape}")
+```
+
+# LIVE DEMO!
+
+# Time Series Indexing and Selection
+
+*Time series indexing is like having a time machine for your data - you can jump to any point in time, slice through time periods, and even travel backwards to see how things were.*
+
+## Basic Time Series Selection
+
+**Reference:**
+
+- `ts['2023-01-01']` - Select specific date
+- `ts['2023-01-01':'2023-01-31']` - Select date range
+- `ts['2023']` - Select entire year
+- `ts['2023-01']` - Select specific month
+- `ts.loc['2023-01-01']` - Label-based selection
+- `ts.iloc[0:10]` - Position-based selection
+
+**Example:**
+
+```python
+# Create sample time series
+dates = pd.date_range('2023-01-01', periods=365, freq='D')
+values = np.cumsum(np.random.randn(365)) + 100
+ts = pd.Series(values, index=dates)
+
+# Select specific date
+print("January 1, 2023:")
+print(ts['2023-01-01'])
+
+# Select date range
+print("\nJanuary 2023:")
+print(ts['2023-01-01':'2023-01-31'].head())
+
+# Select entire year
+print("\n2023 data shape:")
+print(ts['2023'].shape)
+
+# Select specific month
+print("\nJanuary 2023:")
+print(ts['2023-01'].head())
+```
+
+## Advanced Time Series Selection
+
+**Reference:**
+
+- `ts.between_time('09:00', '17:00')` - Select time range
+- `ts.at_time('12:00')` - Select specific time
+- `ts.first('10D')` - First 10 days
+- `ts.last('10D')` - Last 10 days
+- `ts.truncate(before='2023-06-01')` - Truncate before date
+- `ts.truncate(after='2023-06-30')` - Truncate after date
+
+**Example:**
+
+```python
+# Create hourly time series
+hourly_dates = pd.date_range('2023-01-01', periods=24*7, freq='H')
+hourly_values = np.random.randn(24*7)
+ts_hourly = pd.Series(hourly_values, index=hourly_dates)
+
+# Select business hours (9 AM to 5 PM)
+business_hours = ts_hourly.between_time('09:00', '17:00')
+print("Business hours data:")
+print(business_hours.head())
+
+# Select specific time
+noon_data = ts_hourly.at_time('12:00')
+print("\nNoon data:")
+print(noon_data.head())
+
+# Select first and last periods
+print("\nFirst 3 days:")
+print(ts_hourly.first('3D').head())
+
+print("\nLast 3 days:")
+print(ts_hourly.last('3D').head())
+```
+
+# Resampling and Frequency Conversion
+
+*Resampling is like changing the lens on your camera - you can zoom in to see more detail (higher frequency) or zoom out to see the big picture (lower frequency).*
+
+**Visual Guide - Frequency Conversion:**
+
+```
+HIGH FREQUENCY (Daily)              LOW FREQUENCY (Monthly)
+┌─────────────┬─────────┐           ┌─────────────┬─────────┐
+│ Date        │ Value   │           │ Date        │ Value   │
+├─────────────┼─────────┤           ├─────────────┼─────────┤
+│ 2023-01-01  │ 100     │           │ 2023-01-01  │ 105.2   │
+│ 2023-01-02  │ 102     │    →      │ 2023-02-01  │ 108.7   │
+│ 2023-01-03  │ 98      │           │ 2023-03-01  │ 112.3   │
+│ 2023-01-04  │ 105     │           │ 2023-04-01  │ 115.8   │
+│ 2023-01-05  │ 110     │           └─────────────┴─────────┘
+│ ...         │ ...     │
+└─────────────┴─────────┘
+```
+
+## Basic Resampling
+
+**Reference:**
+
+- `ts.resample('D')` - Daily resampling
+- `ts.resample('W')` - Weekly resampling
+- `ts.resample('M')` - Monthly resampling
+- `ts.resample('Q')` - Quarterly resampling
+- `ts.resample('A')` - Annual resampling
+- `ts.resample('H')` - Hourly resampling
+
+**Example:**
+
+```python
+# Create daily time series
+daily_dates = pd.date_range('2023-01-01', periods=365, freq='D')
+daily_values = np.cumsum(np.random.randn(365)) + 100
+ts_daily = pd.Series(daily_values, index=daily_dates)
+
+# Resample to different frequencies
+print("Original daily data shape:", ts_daily.shape)
+
+# Weekly resampling
+weekly = ts_daily.resample('W').mean()
+print("Weekly resampled shape:", weekly.shape)
+print("Weekly data:")
+print(weekly.head())
+
+# Monthly resampling
+monthly = ts_daily.resample('M').mean()
+print("\nMonthly resampled shape:", monthly.shape)
+print("Monthly data:")
+print(monthly.head())
+```
+
+## Resampling with Different Aggregations
+
+**Reference:**
+
+- `ts.resample('D').mean()` - Mean aggregation
+- `ts.resample('D').sum()` - Sum aggregation
+- `ts.resample('D').max()` - Maximum aggregation
+- `ts.resample('D').min()` - Minimum aggregation
+- `ts.resample('D').std()` - Standard deviation
+- `ts.resample('D').agg(['mean', 'std', 'min', 'max'])` - Multiple aggregations
+
+**Example:**
+
+```python
+# Create sample data with multiple columns
+df = pd.DataFrame({
+    'value': np.random.randn(365),
+    'volume': np.random.randint(100, 1000, 365)
+}, index=pd.date_range('2023-01-01', periods=365, freq='D'))
+
+# Different resampling methods
+print("Daily to weekly resampling:")
+weekly_stats = df.resample('W').agg({
+    'value': ['mean', 'std', 'min', 'max'],
+    'volume': 'sum'
+})
+print(weekly_stats.head())
+
+# Custom resampling function
+def custom_agg(series):
+    return pd.Series({
+        'mean': series.mean(),
+        'std': series.std(),
+        'range': series.max() - series.min(),
+        'count': len(series)
+    })
+
+print("\nCustom aggregation:")
+custom_stats = df['value'].resample('M').apply(custom_agg)
+print(custom_stats.head())
+```
+
+# LIVE DEMO!
+
+# Rolling Window Operations
+
+*Rolling windows are like looking through a moving frame - you can see how things change over time by examining a sliding window of observations.*
+
+**Visual Guide - Rolling Window:**
+
+```
+ROLLING WINDOW (size=3)
+┌─────────────┬─────────┬─────────┐
+│ Date        │ Value   │ Rolling │
+├─────────────┼─────────┼─────────┤
+│ 2023-01-01  │ 100     │ NaN     │
+│ 2023-01-02  │ 102     │ NaN     │
+│ 2023-01-03  │ 98      │ 100.0   │ ← mean(100,102,98)
+│ 2023-01-04  │ 105     │ 101.7   │ ← mean(102,98,105)
+│ 2023-01-05  │ 110     │ 101.0   │ ← mean(98,105,110)
+│ 2023-01-06  │ 108     │ 107.7   │ ← mean(105,110,108)
+└─────────────┴─────────┴─────────┘
+```
+
+## Basic Rolling Operations
+
+**Reference:**
+
+- `ts.rolling(window=5)` - 5-period rolling window
+- `ts.rolling(window=5).mean()` - Rolling mean
+- `ts.rolling(window=5).std()` - Rolling standard deviation
+- `ts.rolling(window=5).sum()` - Rolling sum
+- `ts.rolling(window=5).min()` - Rolling minimum
+- `ts.rolling(window=5).max()` - Rolling maximum
+
+**Example:**
+
+```python
+# Create sample time series
+dates = pd.date_range('2023-01-01', periods=100, freq='D')
+values = np.cumsum(np.random.randn(100)) + 100
+ts = pd.Series(values, index=dates)
+
+# Rolling statistics
+ts['rolling_mean'] = ts.rolling(window=7).mean()
+ts['rolling_std'] = ts.rolling(window=7).std()
+ts['rolling_min'] = ts.rolling(window=7).min()
+ts['rolling_max'] = ts.rolling(window=7).max()
+
+print("Time series with rolling statistics:")
+print(ts[['value', 'rolling_mean', 'rolling_std']].head(10))
+```
+
+## Advanced Rolling Operations
+
+**Reference:**
+
+- `ts.rolling(window=5, center=True)` - Centered rolling window
+- `ts.rolling(window=5, min_periods=3)` - Minimum periods required
+- `ts.rolling(window=5).quantile(0.5)` - Rolling median
+- `ts.rolling(window=5).apply(custom_func)` - Custom rolling function
+- `ts.expanding()` - Expanding window
+- `ts.ewm(span=5)` - Exponentially weighted moving average
+
+**Example:**
+
+```python
+# Advanced rolling operations
+ts['centered_mean'] = ts.rolling(window=7, center=True).mean()
+ts['expanding_mean'] = ts.expanding().mean()
+ts['ewm_mean'] = ts.ewm(span=7).mean()
+
+# Custom rolling function
+def rolling_range(series):
+    return series.max() - series.min()
+
+ts['rolling_range'] = ts.rolling(window=7).apply(rolling_range)
+
+print("Advanced rolling statistics:")
+print(ts[['value', 'centered_mean', 'expanding_mean', 'ewm_mean']].head(10))
+```
+
+# Command Line: Automation with Cron Jobs
+
+*When you need to run time-based analysis automatically, cron jobs are your best friend. They're like having a reliable assistant that never forgets to run your analysis at the right time.*
+
+## Cron Job Basics
+
+**Reference:**
+
+- `crontab -e` - Edit crontab
+- `crontab -l` - List cron jobs
+- `crontab -r` - Remove all cron jobs
+- `crontab -u username -e` - Edit user's crontab
+
+**Cron Schedule Format:**
+```
+* * * * * command
+│ │ │ │ │
+│ │ │ │ └─── Day of week (0-7, 0=Sunday)
+│ │ │ └───── Month (1-12)
+│ │ └─────── Day of month (1-31)
+│ └───────── Hour (0-23)
+└─────────── Minute (0-59)
+```
+
+**Example:**
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add cron jobs
+# Run every day at 2 AM
+0 2 * * * /path/to/script.sh
+
+# Run every Monday at 9 AM
+0 9 * * 1 /path/to/script.sh
+
+# Run every 15 minutes
+*/15 * * * * /path/to/script.sh
+
+# Run at specific times
+0 9,17 * * * /path/to/script.sh  # 9 AM and 5 PM
+```
+
+## Python Scripts for Cron Jobs
+
+**Reference:**
+
 ```python
 #!/usr/bin/env python3
 """
-Sales Analysis Automation Script
-
-This script processes sales data files and generates standardized reports.
-Usage: python sales_analysis.py --input data.csv --output report.html
+Time series analysis script for cron job
 """
 
 import pandas as pd
 import numpy as np
-import argparse
-import sys
-from pathlib import Path
+from datetime import datetime
 import logging
 
-Setup logging for script execution
+# Set up logging
 logging.basicConfig(
- level=logging.INFO,
- format='%(asctime)s - %(levelname)s - %(message)s',
- handlers=[
- logging.FileHandler('analysis.log'),
- logging.StreamHandler(sys.stdout)
- ]
+    filename='/path/to/logs/analysis.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
 
-def load_and_validate_data(file_path):
- """
- Load data file and perform basic validation
- 
- Args:
- file_path (str): Path to data file
- 
- Returns:
- pandas.DataFrame: Validated data
- 
- Raises:
- FileNotFoundError: If file doesn't exist
- ValueError: If data validation fails
- """
- logger.info(f"Loading data from {file_path}")
- 
- # Check file exists
- if not Path(file_path).exists():
- raise FileNotFoundError(f"Data file not found: {file_path}")
- 
- # Load data
- try:
- df = pd.read_csv(file_path)
- logger.info(f"Data loaded: {df.shape[0]} rows, {df.shape[1]} columns")
- except Exception as e:
- logger.error(f"Failed to load data: {str(e)}")
- raise
- 
- # Basic validation
- required_columns = ['date', 'product', 'revenue']
- missing_cols = [col for col in required_columns if col not in df.columns]
- 
- if missing_cols:
- raise ValueError(f"Missing required columns: {missing_cols}")
- 
- # Check for completely empty data
- if df.empty:
- raise ValueError("Data file is empty")
- 
- logger.info("Data validation passed")
- return df
-
-def analyze_sales_data(df):
- """
- Perform standard sales data analysis
- 
- Args:
- df (pandas.DataFrame): Sales data
- 
- Returns:
- dict: Analysis results
- """
- logger.info("Starting sales analysis")
- 
- results = {}
- 
- # Overall metrics
- results['total_revenue'] = df['revenue'].sum()
- results['total_transactions'] = len(df)
- results['average_transaction'] = df['revenue'].mean()
- results['date_range'] = f"{df['date'].min()} to {df['date'].max()}"
- 
- # Product analysis
- product_summary = df.groupby('product')['revenue'].agg(['count', 'sum', 'mean'])
- product_summary.columns = ['transactions', 'total_revenue', 'avg_revenue']
- product_summary = product_summary.sort_values('total_revenue', ascending=False)
- 
- results['top_products'] = product_summary.head(10)
- 
- # Time-based analysis
- if 'date' in df.columns:
- df['date'] = pd.to_datetime(df['date'])
- df['month'] = df['date'].dt.to_period('M')
- monthly_revenue = df.groupby('month')['revenue'].sum()
- results['monthly_trend'] = monthly_revenue
- 
- logger.info("Analysis completed")
- return results
-
-def generate_report(results, output_file):
- """
- Generate HTML report from analysis results
- 
- Args:
- results (dict): Analysis results
- output_file (str): Output file path
- """
- logger.info(f"Generating report: {output_file}")
- 
- html_content = f"""
- <!DOCTYPE html>
- <html>
- <head>
- <title>Sales Analysis Report</title>
- <style>
- body {{ font-family: Arial, sans-serif; margin: 40px; }}
- h1, h2 {{ color: #333; }}
- table {{ border-collapse: collapse; width: 100%; }}
- th, td {{ border: 1px solid #ddd; padding: 8px; text-align: right; }}
- th {{ background-color: #f2f2f2; }}
- .metric {{ background-color: #e7f3ff; padding: 10px; margin: 10px 0; }}
- </style>
- </head>
- <body>
- <h1>Sales Analysis Report</h1>
- <p>Generated on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
- 
- <h2>Summary Metrics</h2>
- <div class="metric">Total Revenue: ${results['total_revenue']:,.2f}</div>
- <div class="metric">Total Transactions: {results['total_transactions']:,}</div>
- <div class="metric">Average Transaction: ${results['average_transaction']:,.2f}</div>
- <div class="metric">Date Range: {results['date_range']}</div>
- 
- <h2>Top Products by Revenue</h2>
- {results['top_products'].to_html()}
- 
- <h2>Monthly Revenue Trend</h2>
- {results['monthly_trend'].to_frame('revenue').to_html()}
- </body>
- </html>
- """
- 
- with open(output_file, 'w') as f:
- f.write(html_content)
- 
- logger.info(f"Report saved to {output_file}")
-
-def main():
- """
- Main script execution function
- """
- # Setup command line argument parsing
- parser = argparse.ArgumentParser(description='Automated sales data analysis')
- 
- parser.add_argument('--input', '-i', required=True,
- help='Input CSV file path')
- parser.add_argument('--output', '-o', default='sales_report.html',
- help='Output report file path')
- parser.add_argument('--verbose', '-v', action='store_true',
- help='Enable verbose logging')
- 
- args = parser.parse_args()
- 
- # Set logging level
- if args.verbose:
- logging.getLogger().setLevel(logging.DEBUG)
- 
- logger.info("=== Sales Analysis Automation Starting ===")
- 
- try:
- # Execute analysis pipeline
- df = load_and_validate_data(args.input)
- results = analyze_sales_data(df)
- generate_report(results, args.output)
- 
- logger.info("=== Analysis completed successfully ===")
- 
- except Exception as e:
- logger.error(f"Analysis failed: {str(e)}")
- sys.exit(1)
+def run_daily_analysis():
+    """Run daily time series analysis"""
+    try:
+        # Load data
+        df = pd.read_csv('/path/to/data/daily_data.csv')
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+        
+        # Perform analysis
+        daily_stats = df.resample('D').agg({
+            'value': ['mean', 'std', 'min', 'max'],
+            'volume': 'sum'
+        })
+        
+        # Save results
+        daily_stats.to_csv('/path/to/results/daily_stats.csv')
+        
+        logging.info("Daily analysis completed successfully")
+        
+    except Exception as e:
+        logging.error(f"Error in daily analysis: {e}")
 
 if __name__ == "__main__":
- main()
+    run_daily_analysis()
 ```
 
-Command Line Arguments and Script Organization
+## Advanced Cron Job Management
 
 **Reference:**
-```python
-Basic argparse patterns
-import argparse
 
-def setup_argument_parser():
- """Setup command line argument parsing"""
- parser = argparse.ArgumentParser(
- description='Process data files with specified parameters',
- formatter_class=argparse.RawDescriptionHelpFormatter,
- epilog="""
-Examples:
- python script.py --input data.csv
- python script.py --input data/ --recursive --output results/
- python script.py --config analysis_config.json
- """
- )
- 
- # Required arguments
- parser.add_argument('--input', '-i', required=True,
- help='Input file or directory path')
- 
- # Optional arguments with defaults
- parser.add_argument('--output', '-o', default='output',
- help='Output directory (default: output)')
- parser.add_argument('--format', choices=['csv', 'json', 'excel'],
- default='csv', help='Output format')
- 
- # Boolean flags
- parser.add_argument('--recursive', '-r', action='store_true',
- help='Process files recursively')
- parser.add_argument('--verbose', '-v', action='store_true',
- help='Enable verbose output')
- parser.add_argument('--dry-run', action='store_true',
- help='Show what would be done without executing')
- 
- # Numeric arguments with validation
- parser.add_argument('--batch-size', type=int, default=1000,
- help='Batch size for processing (default: 1000)')
- parser.add_argument('--threshold', type=float, default=0.05,
- help='Analysis threshold (default: 0.05)')
- 
- return parser
-
-def validate_arguments(args):
- """Validate parsed arguments"""
- errors = []
- 
- # Check input path exists
- if not Path(args.input).exists():
- errors.append(f"Input path does not exist: {args.input}")
- 
- # Validate numeric ranges
- if args.batch_size <= 0:
- errors.append("Batch size must be positive")
- 
- if not 0 <= args.threshold <= 1:
- errors.append("Threshold must be between 0 and 1")
- 
- if errors:
- raise ValueError("Argument validation failed:\n" + "\n".join(f" - {error}" for error in errors))
- 
- return True
-
-Usage in main function
-def main():
- parser = setup_argument_parser()
- args = parser.parse_args()
- 
- try:
- validate_arguments(args)
- except ValueError as e:
- sys.exit(1)
- 
- # Continue with script execution...
-```
-
-**Brief Example:**
-```python
-Simple batch processing script
-import pandas as pd
-from pathlib import Path
-
-def process_csv_files(input_dir, output_dir):
- """
- Process all CSV files in a directory
- """
- input_path = Path(input_dir)
- output_path = Path(output_dir)
- output_path.mkdir(exist_ok=True)
- 
- csv_files = list(input_path.glob("*.csv"))
- 
- for csv_file in csv_files:
- 
- # Load and process each file
- df = pd.read_csv(csv_file)
- 
- # Example processing: calculate summary statistics
- summary = df.describe()
- 
- # Save processed results
- output_file = output_path / f"{csv_file.stem}_summary.csv"
- summary.to_csv(output_file)
- 
- 
-
-Command line usage:
-python batch_processor.py --input data/ --output summaries/
-```
-
-Shell Scripting for Data Tasks
-
-Basic Bash Scripts for Data Workflows
-
-**Reference:**
 ```bash
+# Create cron job script
+cat > /path/to/scripts/time_series_analysis.sh << 'EOF'
 #!/bin/bash
-data_pipeline.sh - Complete data processing pipeline
 
-Script configuration
-DATA_DIR="data"
-OUTPUT_DIR="output"
-LOG_FILE="pipeline.log"
+# Set environment variables
+export PATH="/path/to/conda/bin:$PATH"
+export PYTHONPATH="/path/to/project:$PYTHONPATH"
 
-Create output directory
-mkdir -p "$OUTPUT_DIR"
+# Activate conda environment
+source /path/to/conda/bin/activate datasci_217
 
-Function to log messages
-log_message() {
- echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
+# Run Python script
+cd /path/to/project
+python scripts/time_series_analysis.py
 
-Function to check if command succeeded
-check_success() {
- if [ $? -eq 0 ]; then
- log_message "SUCCESS: $1"
- else
- log_message "ERROR: $1 failed"
- exit 1
- fi
-}
+# Log completion
+echo "$(date): Time series analysis completed" >> /path/to/logs/cron.log
+EOF
 
-log_message "Starting data processing pipeline"
+# Make script executable
+chmod +x /path/to/scripts/time_series_analysis.sh
 
-Step 1: Data validation
-log_message "Step 1: Validating data files"
-python validate_data.py --input "$DATA_DIR"
-check_success "Data validation"
-
-Step 2: Data processing
-log_message "Step 2: Processing data files"
-for file in "$DATA_DIR"/*.csv; do
- if [ -f "$file" ]; then
- log_message "Processing $(basename "$file")"
- python process_data.py --input "$file" --output "$OUTPUT_DIR"
- check_success "Processing $(basename "$file")"
- fi
-done
-
-Step 3: Generate reports
-log_message "Step 3: Generating final reports"
-python generate_reports.py --input "$OUTPUT_DIR" --format html
-check_success "Report generation"
-
-Step 4: Archive results
-log_message "Step 4: Archiving results"
-timestamp=$(date '+%Y%m%d_%H%M%S')
-tar -czf "results_$timestamp.tar.gz" "$OUTPUT_DIR"
-check_success "Results archiving"
-
-log_message "Pipeline completed successfully"
-log_message "Results archived as: results_$timestamp.tar.gz"
+# Add to crontab
+echo "0 2 * * * /path/to/scripts/time_series_analysis.sh" | crontab -
 ```
 
-Combining Shell and Python
+# Time Series Visualization
+
+*Visualizing time series data is like creating a movie of your data - you can see how things change over time, spot patterns, and identify trends that would be invisible in static snapshots.*
+
+# FIXME: Add time series plot examples showing trend, seasonality, and noise components
+
+# FIXME: Add seasonal decomposition visualization
+
+# FIXME: Add correlation heatmap for time series data
+
+## Basic Time Series Plots
 
 **Reference:**
+
 ```python
-run_analysis_pipeline.py - Python wrapper for complex workflows
-import subprocess
-import sys
-import os
-from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-def run_shell_command(command, description):
- """
- Run shell command and handle errors
- """
- 
- try:
- result = subprocess.run(
- command,
- shell=True,
- check=True,
- capture_output=True,
- text=True
- )
- if result.stdout:
- return result
- 
- except subprocess.CalledProcessError as e:
- sys.exit(1)
+# Basic time series plot
+fig, ax = plt.subplots(figsize=(12, 6))
+ts.plot(ax=ax, title='Time Series Plot')
+ax.set_xlabel('Date')
+ax.set_ylabel('Value')
+plt.show()
 
-def main():
- """
- Run complete analysis pipeline
- """
- 
- # Step 1: Prepare environment
- run_shell_command(
- "mkdir -p data processed results",
- "Creating directories"
- )
- 
- # Step 2: Download/prepare data (if needed)
- if not Path("data").exists() or not any(Path("data").iterdir()):
- run_shell_command(
- "python download_data.py --output data/",
- "Downloading data"
- )
- 
- # Step 3: Run Python analysis
- run_shell_command(
- "python analyze_data.py --input data/ --output processed/",
- "Data analysis"
- )
- 
- # Step 4: Generate visualizations
- run_shell_command(
- "python create_visualizations.py --input processed/ --output results/",
- "Creating visualizations"
- )
- 
- # Step 5: Create final report
- run_shell_command(
- "python generate_report.py --input results/ --output final_report.html",
- "Generating final report"
- )
- 
+# Multiple time series
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
-if __name__ == "__main__":
- main()
+# Line plot
+ts.plot(ax=axes[0, 0], title='Line Plot')
+axes[0, 0].grid(True, alpha=0.3)
+
+# Rolling mean
+ts.rolling(window=7).mean().plot(ax=axes[0, 1], title='Rolling Mean (7 days)')
+axes[0, 1].grid(True, alpha=0.3)
+
+# Histogram
+ts.hist(ax=axes[1, 0], bins=30, title='Distribution')
+axes[1, 0].grid(True, alpha=0.3)
+
+# Box plot by month
+ts.groupby(ts.index.month).plot(kind='box', ax=axes[1, 1], title='Monthly Distribution')
+axes[1, 1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
-Advanced pandas Operations
-
-Merging and Joining Datasets
-
-Understanding Different Join Types
+## Advanced Time Series Visualization
 
 **Reference:**
+
 ```python
-import pandas as pd
+# Seasonal decomposition
+from statsmodels.tsa.seasonal import seasonal_decompose
 
-Sample datasets for demonstration
-customers = pd.DataFrame({
- 'customer_id': [1, 2, 3, 4, 5],
- 'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
- 'city': ['New York', 'London', 'Paris', 'Tokyo', 'Sydney']
-})
+# Decompose time series
+decomposition = seasonal_decompose(ts, model='additive', period=7)
 
-orders = pd.DataFrame({
- 'order_id': [101, 102, 103, 104, 105, 106],
- 'customer_id': [1, 2, 2, 3, 3, 6], # Note: customer 6 doesn't exist in customers
- 'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Tablet', 'Phone'],
- 'amount': [1200, 25, 75, 300, 500, 800]
-})
+# Plot decomposition
+fig, axes = plt.subplots(4, 1, figsize=(15, 12))
+decomposition.observed.plot(ax=axes[0], title='Original')
+decomposition.trend.plot(ax=axes[1], title='Trend')
+decomposition.seasonal.plot(ax=axes[2], title='Seasonal')
+decomposition.resid.plot(ax=axes[3], title='Residual')
+plt.tight_layout()
+plt.show()
 
-Inner join - only matching records
-inner_result = pd.merge(customers, orders, on='customer_id', how='inner')
-
-Left join - all customers, matching orders
-left_result = pd.merge(customers, orders, on='customer_id', how='left')
-
-Right join - all orders, matching customers
-right_result = pd.merge(customers, orders, on='customer_id', how='right')
-
-Outer join - all records from both tables
-outer_result = pd.merge(customers, orders, on='customer_id', how='outer')
+# Correlation analysis
+fig, ax = plt.subplots(figsize=(10, 8))
+correlation_matrix = ts.to_frame().corr()
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', ax=ax)
+ax.set_title('Time Series Correlation Matrix')
+plt.show()
 ```
 
-Advanced Merge Techniques
+# LIVE DEMO!
 
-**Reference:**
-```python
-Merging on multiple columns
-sales_data = pd.DataFrame({
- 'date': ['2024-01-01', '2024-01-01', '2024-01-02', '2024-01-02'],
- 'store_id': [1, 2, 1, 2],
- 'revenue': [1000, 1500, 1200, 1300]
-})
+# Key Takeaways
 
-store_info = pd.DataFrame({
- 'store_id': [1, 2, 3],
- 'store_name': ['Downtown', 'Mall', 'Airport'],
- 'manager': ['Alice', 'Bob', 'Charlie']
-})
+1. **Master datetime handling** - the foundation of time series analysis
+2. **Use resampling** to change data frequency
+3. **Apply rolling windows** to see trends and patterns
+4. **Automate analysis** with cron jobs
+5. **Visualize time series** to identify patterns
+6. **Handle time zones** for global data
+7. **Understand temporal patterns** in your data
 
-Simple merge on single column
-merged = pd.merge(sales_data, store_info, on='store_id', how='left')
+You now have the skills to analyze temporal data effectively and automate time-based analysis tasks.
 
-Merging with different column names
-products = pd.DataFrame({
- 'prod_id': [1, 2, 3, 4],
- 'product_name': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
- 'category': ['Electronics', 'Accessories', 'Accessories', 'Electronics']
-})
-
-sales_detailed = pd.DataFrame({
- 'sale_id': [1001, 1002, 1003],
- 'product_id': [1, 2, 1], # Different column name
- 'quantity': [2, 5, 1],
- 'sale_date': ['2024-01-15', '2024-01-16', '2024-01-17']
-})
-
-Merge with different column names
-detailed_sales = pd.merge(
- sales_detailed, 
- products, 
- left_on='product_id', 
- right_on='prod_id', 
- how='left'
-).drop('prod_id', axis=1) # Remove duplicate column
-Merge with suffixes for overlapping column names
-team_a = pd.DataFrame({
- 'player_id': [1, 2, 3],
- 'name': ['Alice', 'Bob', 'Charlie'],
- 'score': [95, 87, 92]
-})
-
-team_b = pd.DataFrame({
- 'player_id': [1, 2, 4],
- 'name': ['Alice', 'Bob', 'Diana'], # Same names, different players
- 'score': [88, 94, 89]
-})
-
-Merge with suffixes to distinguish columns
-team_comparison = pd.merge(
- team_a, 
- team_b, 
- on='player_id', 
- how='outer',
- suffixes=('_team_a', '_team_b')
-)
-
-```
-
-Data Reshaping with Pivot and Melt
-
-Pivot Operations - Wide Format
-
-**Reference:**
-```python
-Sample long-format data
-sales_long = pd.DataFrame({
- 'date': ['2024-01-01', '2024-01-01', '2024-01-02', '2024-01-02', 
- '2024-01-01', '2024-01-01', '2024-01-02', '2024-01-02'],
- 'product': ['Laptop', 'Mouse', 'Laptop', 'Mouse', 
- 'Laptop', 'Mouse', 'Laptop', 'Mouse'],
- 'metric': ['revenue', 'revenue', 'revenue', 'revenue',
- 'units', 'units', 'units', 'units'],
- 'value': [1200, 25, 1300, 30, 2, 5, 3, 6]
-})
-Basic pivot - products as columns, dates as rows
-revenue_pivot = sales_long[sales_long['metric'] == 'revenue'].pivot(
- index='date', 
- columns='product', 
- values='value'
-)
-Pivot with multiple values
-full_pivot = sales_long.pivot(
- index='date',
- columns=['product', 'metric'],
- values='value'
-)
-Pivot table with aggregation
-sales_with_duplicates = pd.DataFrame({
- 'date': ['2024-01-01', '2024-01-01', '2024-01-01', '2024-01-02'],
- 'product': ['Laptop', 'Laptop', 'Mouse', 'Laptop'],
- 'store': ['A', 'B', 'A', 'A'],
- 'revenue': [1200, 1100, 25, 1300]
-})
-
-pivot_table_result = pd.pivot_table(
- sales_with_duplicates,
- index='date',
- columns='product',
- values='revenue',
- aggfunc='sum', # Aggregate function for duplicates
- fill_value=0 # Fill missing values
-)
-
-```
-
-Melt Operations - Long Format
-
-**Reference:**
-```python
-Sample wide-format data
-sales_wide = pd.DataFrame({
- 'date': ['2024-01-01', '2024-01-02', '2024-01-03'],
- 'Laptop': [1200, 1300, 1400],
- 'Mouse': [25, 30, 28],
- 'Keyboard': [75, 80, 85],
- 'Monitor': [300, 320, 310]
-})
-Basic melt - convert to long format
-sales_melted = pd.melt(
- sales_wide,
- id_vars=['date'], # Columns to keep as identifiers
- var_name='product', # Name for the variable column
- value_name='revenue' # Name for the value column
-)
-Melt with multiple ID variables
-detailed_wide = pd.DataFrame({
- 'date': ['2024-01-01', '2024-01-02'],
- 'store': ['Downtown', 'Mall'],
- 'Laptop_revenue': [1200, 1100],
- 'Laptop_units': [2, 2],
- 'Mouse_revenue': [25, 30],
- 'Mouse_units': [5, 6]
-})
-Advanced melt for complex reshaping
-detailed_melted = pd.melt(
- detailed_wide,
- id_vars=['date', 'store'],
- var_name='product_metric',
- value_name='value'
-)
-
-Split the product_metric column
-detailed_melted[['product', 'metric']] = detailed_melted['product_metric'].str.split('_', expand=True)
-detailed_melted = detailed_melted.drop('product_metric', axis=1)
-Pivot back to get clean format
-final_format = detailed_melted.pivot_table(
- index=['date', 'store', 'product'],
- columns='metric',
- values='value',
- aggfunc='first'
-).reset_index()
-
-```
-
-Time Series Basics
-
-Working with Dates and Times
-
-**Reference:**
-```python
-Creating datetime data
-date_strings = ['2024-01-01', '2024-01-15', '2024-02-01', '2024-02-15']
-dates = pd.to_datetime(date_strings)
-Creating a time series DataFrame
-ts_data = pd.DataFrame({
- 'date': pd.date_range('2024-01-01', periods=90, freq='D'),
- 'sales': np.random.normal(1000, 200, 90),
- 'customers': np.random.poisson(50, 90)
-})
-
-Set date as index for time series operations
-ts_data.set_index('date', inplace=True)
-Date-based selection
-january_data = ts_data['2024-01']
-
-Date range selection
-first_two_weeks = ts_data['2024-01-01':'2024-01-14']
-
-Resampling - aggregate to different time periods
-weekly_data = ts_data.resample('W').agg({
- 'sales': 'sum',
- 'customers': 'mean'
-})
-
-monthly_data = ts_data.resample('M').agg({
- 'sales': ['sum', 'mean'],
- 'customers': ['sum', 'mean']
-})
-
-Rolling calculations
-ts_data['sales_7day_avg'] = ts_data['sales'].rolling(window=7).mean()
-ts_data['sales_7day_sum'] = ts_data['sales'].rolling(window=7).sum()
-
-```
-
-**Brief Example:**
-```python
-Complete workflow: Load, merge, reshape, and analyze
-def analyze_multi_dataset_workflow():
- """
- Demonstrate complete workflow with multiple datasets
- """
- # Load multiple datasets
- customers = pd.read_csv('customers.csv')
- orders = pd.read_csv('orders.csv')
- products = pd.read_csv('products.csv')
- 
- 
- # Step 1: Merge datasets
- # First merge orders with customers
- orders_with_customers = pd.merge(orders, customers, on='customer_id', how='left')
- 
- # Then merge with products
- full_dataset = pd.merge(orders_with_customers, products, on='product_id', how='left')
- 
- 
- # Step 2: Reshape for analysis
- # Create pivot table for analysis
- customer_product_summary = pd.pivot_table(
- full_dataset,
- index='customer_name',
- columns='product_category',
- values='order_amount',
- aggfunc='sum',
- fill_value=0
- )
- 
- 
- # Step 3: Time-based analysis
- full_dataset['order_date'] = pd.to_datetime(full_dataset['order_date'])
- daily_sales = full_dataset.groupby('order_date')['order_amount'].sum()
- 
- # Calculate 7-day moving average
- daily_sales_ma = daily_sales.rolling(window=7).mean()
- 
- 
- return full_dataset, customer_product_summary, daily_sales_ma
-
-This function could be called from command line script
-```
-
-LIVE DEMO!
-*Building a complete automated analysis pipeline: from script creation to batch processing multiple datasets*
-
-Professional Code Organization
-
-Functions and Modularity
-
-**Reference:**
-```python
-analysis_utils.py - Shared utility functions
-import pandas as pd
-import numpy as np
-from pathlib import Path
-
-def load_and_validate_csv(file_path, required_columns=None):
- """
- Load CSV with validation
- 
- Args:
- file_path (str): Path to CSV file
- required_columns (list): List of required column names
- 
- Returns:
- pandas.DataFrame: Validated data
- """
- if not Path(file_path).exists():
- raise FileNotFoundError(f"File not found: {file_path}")
- 
- df = pd.read_csv(file_path)
- 
- if required_columns:
- missing_cols = [col for col in required_columns if col not in df.columns]
- if missing_cols:
- raise ValueError(f"Missing required columns: {missing_cols}")
- 
- return df
-
-def calculate_summary_statistics(df, numeric_columns=None):
- """
- Calculate comprehensive summary statistics
- 
- Args:
- df (pandas.DataFrame): Input data
- numeric_columns (list): Specific columns to analyze
- 
- Returns:
- dict: Summary statistics
- """
- if numeric_columns is None:
- numeric_columns = df.select_dtypes(include=[np.number]).columns
- 
- summary = {}
- 
- for col in numeric_columns:
- summary[col] = {
- 'count': df[col].count(),
- 'mean': df[col].mean(),
- 'median': df[col].median(),
- 'std': df[col].std(),
- 'min': df[col].min(),
- 'max': df[col].max(),
- 'missing': df[col].isnull().sum()
- }
- 
- return summary
-
-def export_results(data, output_path, format='csv'):
- """
- Export results in specified format
- 
- Args:
- data: Data to export (DataFrame, dict, etc.)
- output_path (str): Output file path
- format (str): Export format ('csv', 'json', 'excel')
- """
- output_path = Path(output_path)
- output_path.parent.mkdir(parents=True, exist_ok=True)
- 
- if format == 'csv' and hasattr(data, 'to_csv'):
- data.to_csv(output_path, index=False)
- elif format == 'json' and hasattr(data, 'to_json'):
- data.to_json(output_path, orient='records', indent=2)
- elif format == 'excel' and hasattr(data, 'to_excel'):
- data.to_excel(output_path, index=False)
- else:
- raise ValueError(f"Unsupported format: {format}")
- 
-```
-
-Documentation and Comments
-
-**Reference:**
-```python
-def advanced_data_processor(df, config=None):
- """
- Process dataset with configurable transformations and analysis.
- 
- This function performs a comprehensive analysis pipeline including
- data cleaning, feature engineering, statistical analysis, and 
- results export. It's designed to be flexible and handle various
- data quality issues automatically.
- 
- Args:
- df (pandas.DataFrame): Input dataset to process
- config (dict, optional): Configuration parameters including:
- - 'remove_outliers' (bool): Whether to remove statistical outliers
- - 'fill_missing' (str): Method for handling missing values 
- ('mean', 'median', 'drop', 'forward_fill')
- - 'normalize_text' (bool): Whether to normalize text columns
- - 'date_columns' (list): Columns to parse as dates
- - 'output_format' (str): Export format ('csv', 'json', 'excel')
- 
- Returns:
- tuple: (processed_dataframe, analysis_results, metadata)
- - processed_dataframe: Cleaned and transformed data
- - analysis_results: Dictionary of statistical results
- - metadata: Processing information and data quality metrics
- 
- Raises:
- ValueError: If required columns are missing or config is invalid
- TypeError: If input data is not a pandas DataFrame
- 
- Examples:
- Basic usage:
- >>> df = pd.read_csv('data.csv')
- >>> processed_df, results, meta = advanced_data_processor(df)
- 
- With configuration:
- >>> config = {'remove_outliers': True, 'fill_missing': 'median'}
- >>> processed_df, results, meta = advanced_data_processor(df, config)
- 
- Note:
- This function modifies numeric data types for memory efficiency
- and logs all processing steps for reproducibility.
- """
- 
- # Input validation
- if not isinstance(df, pd.DataFrame):
- raise TypeError("Input must be a pandas DataFrame")
- 
- if df.empty:
- raise ValueError("Input DataFrame is empty")
- 
- # Set default configuration
- default_config = {
- 'remove_outliers': False,
- 'fill_missing': 'drop',
- 'normalize_text': True,
- 'date_columns': [],
- 'output_format': 'csv'
- }
- 
- # Merge with user config
- if config is None:
- config = {}
- 
- processing_config = {**default_config, **config}
- 
- # Initialize tracking variables
- processing_steps = []
- original_shape = df.shape
- 
- # Start processing pipeline
- processed_df = df.copy()
- 
- # Step 1: Handle missing values
- if processing_config['fill_missing'] == 'drop':
- # Remove rows with any missing values
- processed_df = processed_df.dropna()
- processing_steps.append(f"Removed {original_shape[0] - len(processed_df)} rows with missing values")
- 
- elif processing_config['fill_missing'] in ['mean', 'median']:
- # Fill numeric columns with specified statistic
- numeric_cols = processed_df.select_dtypes(include=[np.number]).columns
- 
- for col in numeric_cols:
- if processed_df[col].isnull().any():
- fill_value = processed_df[col].mean() if processing_config['fill_missing'] == 'mean' else processed_df[col].median()
- processed_df[col].fillna(fill_value, inplace=True)
- processing_steps.append(f"Filled missing values in {col} with {processing_config['fill_missing']}")
- 
- # Step 2: Text normalization
- if processing_config['normalize_text']:
- text_cols = processed_df.select_dtypes(include=['object']).columns
- 
- for col in text_cols:
- # Convert to lowercase and strip whitespace
- processed_df[col] = processed_df[col].astype(str).str.lower().str.strip()
- processing_steps.append(f"Normalized text in {col}")
- 
- # Step 3: Date parsing
- for col in processing_config['date_columns']:
- if col in processed_df.columns:
- processed_df[col] = pd.to_datetime(processed_df[col], errors='coerce')
- processing_steps.append(f"Parsed {col} as datetime")
- 
- # Step 4: Outlier removal (if requested)
- if processing_config['remove_outliers']:
- numeric_cols = processed_df.select_dtypes(include=[np.number]).columns
- outliers_removed = 0
- 
- for col in numeric_cols:
- # Use IQR method for outlier detection
- Q1 = processed_df[col].quantile(0.25)
- Q3 = processed_df[col].quantile(0.75)
- IQR = Q3 - Q1
- 
- lower_bound = Q1 - 1.5 * IQR
- upper_bound = Q3 + 1.5 * IQR
- 
- before_count = len(processed_df)
- processed_df = processed_df[(processed_df[col] >= lower_bound) & (processed_df[col] <= upper_bound)]
- after_count = len(processed_df)
- 
- outliers_removed += (before_count - after_count)
- 
- if outliers_removed > 0:
- processing_steps.append(f"Removed {outliers_removed} outlier rows")
- 
- # Generate analysis results
- analysis_results = calculate_summary_statistics(processed_df)
- 
- # Create metadata
- metadata = {
- 'original_shape': original_shape,
- 'processed_shape': processed_df.shape,
- 'processing_steps': processing_steps,
- 'config_used': processing_config,
- 'data_types': dict(processed_df.dtypes),
- 'memory_usage_mb': processed_df.memory_usage(deep=True).sum() / (1024**2)
- }
- 
- return processed_df, analysis_results, metadata
-```
-
-Key Takeaways
-
-1. **Automation saves time** - invest upfront in reusable scripts and workflows
-2. **Command line arguments** make scripts flexible and professional
-3. **Error handling and logging** are essential for production workflows
-4. **pandas merging** handles complex data relationships efficiently
-5. **Pivot and melt** convert between wide and long formats as needed
-6. **Time series operations** unlock temporal analysis capabilities
-7. **Modular code organization** makes analysis reproducible and maintainable
-8. **Documentation** is crucial for future maintainability
-
-You now have the skills to create automated analysis workflows that can process multiple datasets efficiently and handle complex data manipulation tasks professionally.
-
-Next week: We'll explore statistical analysis and hypothesis testing techniques!
+Next week: We'll dive into advanced data science topics and project work!
 
 Practice Challenge
 
 Before next class:
-1. **Automation Practice:**
- - Create a command-line script that processes multiple CSV files
- - Add error handling and logging to your script
- - Use shell scripting to automate a multi-step workflow
- 
-2. **Advanced pandas:**
- - Practice merging datasets with different join types
- - Convert data between wide and long formats using pivot/melt
- - Work with time series data and calculate rolling statistics
- 
-3. **Professional Practices:**
- - Organize your analysis code into reusable functions
- - Add comprehensive documentation to your functions
- - Create a complete automated pipeline for a multi-dataset analysis
+1. **Practice time series analysis:**
+   - Load time series data
+   - Perform resampling operations
+   - Calculate rolling statistics
+   
+2. **Set up automation:**
+   - Create a cron job
+   - Write a Python script for time series analysis
+   - Test the automation
+   
+3. **Visualize temporal patterns:**
+   - Create time series plots
+   - Identify trends and seasonality
+   - Use appropriate chart types
 
-Remember: Good automation is about creating reliable, reusable workflows that save time in the long run!
+Remember: Time series analysis is about understanding how things change over time - look for patterns, trends, and cycles!
