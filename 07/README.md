@@ -116,7 +116,7 @@ axes[1, 0].set_title('Scatter Plot')
 axes[1, 1].bar(['A', 'B', 'C'], [3, 7, 2])
 axes[1, 1].set_title('Bar Chart')
 
-plt.tight_layout()  # Adjust spacing between subplots
+plt.tight_layout()
 plt.show()
 ```
 
@@ -147,17 +147,15 @@ y1 = np.sin(x)
 y2 = np.cos(x)
 
 # Plot with customization
-ax.plot(x, y1, label='sin(x)', color='blue', linewidth=2, linestyle='-')
+ax.plot(x, y1, label='sin(x)', color='blue', linewidth=2)
 ax.plot(x, y2, label='cos(x)', color='red', linewidth=2, linestyle='--')
 
 # Customize appearance
-ax.set_title('Trigonometric Functions', fontsize=16, fontweight='bold')
-ax.set_xlabel('X values', fontsize=12)
-ax.set_ylabel('Y values', fontsize=12)
+ax.set_title('Trigonometric Functions')
+ax.set_xlabel('X values')
+ax.set_ylabel('Y values')
 ax.grid(True, alpha=0.3)
-ax.legend(fontsize=10)
-ax.set_xlim(0, 10)
-ax.set_ylim(-1.5, 1.5)
+ax.legend()
 
 plt.tight_layout()
 plt.show()
@@ -307,32 +305,24 @@ import seaborn as sns
 
 # Set seaborn style
 sns.set_style('whitegrid')
-sns.set_palette('husl')
-
-# Create sample dataset
 tips = sns.load_dataset('tips')
 
 # Create multiple plots
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 
-# Scatter plot with regression line
+# Scatter plot
 sns.scatterplot(data=tips, x='total_bill', y='tip', 
                 hue='time', ax=axes[0, 0])
-axes[0, 0].set_title('Total Bill vs Tip by Time')
+axes[0, 0].set_title('Total Bill vs Tip')
 
 # Box plot
 sns.boxplot(data=tips, x='day', y='tip', ax=axes[0, 1])
-axes[0, 1].set_title('Tip Distribution by Day')
+axes[0, 1].set_title('Tip by Day')
 
 # Histogram
 sns.histplot(data=tips, x='total_bill', hue='time', 
              alpha=0.7, ax=axes[1, 0])
-axes[1, 0].set_title('Total Bill Distribution by Time')
-
-# Heatmap
-pivot_data = tips.pivot_table(values='tip', index='day', columns='time')
-sns.heatmap(pivot_data, annot=True, cmap='YlOrRd', ax=axes[1, 1])
-axes[1, 1].set_title('Average Tip by Day and Time')
+axes[1, 0].set_title('Bill Distribution')
 
 plt.tight_layout()
 plt.show()

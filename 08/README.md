@@ -91,12 +91,11 @@ import pandas as pd
 import numpy as np
 
 # Create sample data
-np.random.seed(42)
 df = pd.DataFrame({
-    'Department': ['Sales', 'Sales', 'Engineering', 'Engineering', 'Marketing', 'Marketing'],
-    'Employee': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'],
-    'Salary': [50000, 55000, 80000, 85000, 60000, 65000],
-    'Experience': [2, 3, 5, 7, 4, 6]
+    'Department': ['Sales', 'Sales', 'Engineering', 'Engineering'],
+    'Employee': ['Alice', 'Bob', 'Charlie', 'Diana'],
+    'Salary': [50000, 55000, 80000, 85000],
+    'Experience': [2, 3, 5, 7]
 })
 
 # Basic groupby operations
@@ -105,7 +104,7 @@ print(df.groupby('Department')['Salary'].mean())
 
 print("\nMultiple aggregations:")
 print(df.groupby('Department').agg({
-    'Salary': ['mean', 'sum', 'count'],
+    'Salary': ['mean', 'sum'],
     'Experience': 'mean'
 }))
 ```
@@ -178,17 +177,15 @@ def salary_stats(group):
         'count': len(group),
         'mean': group['Salary'].mean(),
         'std': group['Salary'].std(),
-        'min': group['Salary'].min(),
-        'max': group['Salary'].max(),
         'range': group['Salary'].max() - group['Salary'].min()
     })
 
 print("Custom statistics by department:")
 print(df.groupby('Department').apply(salary_stats))
 
-# Apply: Get top 2 earners in each department
-top_earners = df.groupby('Department').apply(lambda x: x.nlargest(2, 'Salary'))
-print("\nTop 2 earners per department:")
+# Apply: Get top earners in each department
+top_earners = df.groupby('Department').apply(lambda x: x.nlargest(1, 'Salary'))
+print("\nTop earners per department:")
 print(top_earners)
 ```
 
@@ -260,28 +257,26 @@ LONG FORMAT (Original)              WIDE FORMAT (Pivoted)
 ```python
 # Create sample sales data
 sales_data = pd.DataFrame({
-    'Date': pd.date_range('2023-01-01', periods=100, freq='D'),
-    'Product': np.random.choice(['A', 'B', 'C'], 100),
-    'Region': np.random.choice(['North', 'South', 'East', 'West'], 100),
-    'Sales': np.random.randint(1000, 10000, 100),
-    'Quantity': np.random.randint(1, 100, 100)
+    'Product': ['A', 'A', 'B', 'B', 'C', 'C'],
+    'Region': ['North', 'South', 'North', 'South', 'North', 'South'],
+    'Sales': [1000, 1500, 2000, 1200, 800, 900]
 })
 
 # Basic pivot table
 pivot = pd.pivot_table(sales_data, 
-                      values='Sales', 
-                      index='Product', 
-                      columns='Region', 
-                      aggfunc='sum')
+                    values='Sales', 
+                    index='Product', 
+                    columns='Region', 
+                    aggfunc='sum')
 print("Sales by Product and Region:")
 print(pivot)
 
 # Pivot with multiple aggregations
 pivot_multi = pd.pivot_table(sales_data,
-                            values=['Sales', 'Quantity'],
+                            values='Sales',
                             index='Product',
                             columns='Region',
-                            aggfunc={'Sales': 'sum', 'Quantity': 'mean'})
+                            aggfunc=['sum', 'mean'])
 print("\nMultiple aggregations:")
 print(pivot_multi)
 ```

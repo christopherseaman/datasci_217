@@ -71,18 +71,15 @@ import numpy as np
 from datetime import datetime, timedelta
 
 # Create regular time series
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-values = np.cumsum(np.random.randn(100)) + 100
-
+dates = pd.date_range('2023-01-01', periods=10, freq='D')
+values = np.cumsum(np.random.randn(10)) + 100
 ts_regular = pd.Series(values, index=dates)
 print("Regular time series:")
 print(ts_regular.head())
 
 # Create irregular time series
-irregular_dates = pd.to_datetime([
-    '2023-01-01', '2023-01-03', '2023-01-07', '2023-01-10'
-])
-irregular_values = [100, 105, 98, 102]
+irregular_dates = pd.to_datetime(['2023-01-01', '2023-01-03', '2023-01-07'])
+irregular_values = [100, 105, 98]
 ts_irregular = pd.Series(irregular_values, index=irregular_dates)
 print("\nIrregular time series:")
 print(ts_irregular)
@@ -292,8 +289,8 @@ print(f"Eastern time: {eastern_time}")
 
 # Create timezone-aware DataFrame
 df_tz = pd.DataFrame({
-    'value': np.random.randn(5)
-}, index=pd.date_range('2023-01-01', periods=5, freq='D'))
+    'value': np.random.randn(3)
+}, index=pd.date_range('2023-01-01', periods=3, freq='D'))
 
 # Localize to UTC
 df_tz.index = df_tz.index.tz_localize('UTC')
@@ -447,8 +444,8 @@ HIGH FREQUENCY (Daily)              LOW FREQUENCY (Monthly)
 
 ```python
 # Create daily time series
-daily_dates = pd.date_range('2023-01-01', periods=365, freq='D')
-daily_values = np.cumsum(np.random.randn(365)) + 100
+daily_dates = pd.date_range('2023-01-01', periods=30, freq='D')
+daily_values = np.cumsum(np.random.randn(30)) + 100
 ts_daily = pd.Series(daily_values, index=daily_dates)
 
 # Resample to different frequencies

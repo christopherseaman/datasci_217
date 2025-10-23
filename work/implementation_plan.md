@@ -48,7 +48,7 @@ Reorganize DataSci 217 from existing content into a coherent 11-lecture sequence
      * Brief conceptual description (what the method/tool is)
      * Reference section (function/method structure, inputs/outputs, params)
      * Visual content (at most 1-2 pieces for visual learners)
-     * VERY brief usage example (context covered in demos)
+     * Brief usage example (15 lines maximum, context covered in demos)
    - **Content Triage**:
      * **Main lecture**: Essential daily data science tools only
      * **Bonus content**: Advanced topics, theoretical deep-dives, 
