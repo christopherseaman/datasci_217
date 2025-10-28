@@ -5,3 +5,4 @@ seaborn>=0.11.0
 jupyter>=1.0.0
 jupytext>=1.13.0
 psutil>=5.8.0
+multiprocessing-logging>=0.3.0

@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+# Set inline plotting for Jupyter
+%matplotlib inline
+
 # Set seaborn style
 sns.set_style('whitegrid')
 ```
@@ -146,7 +149,9 @@ plt.show()
 
 ```python
 # Create correlation heatmap
-correlation_matrix = tips.corr()
+# Select only numeric columns for correlation
+numeric_tips = tips.select_dtypes(include=[np.number])
+correlation_matrix = numeric_tips.corr()
 sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
 plt.title('Correlation Heatmap')
 plt.show()

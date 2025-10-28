@@ -1,10 +1,11 @@
 """
-Assignment 6 Tests - Data Wrangling with Merge, Concat, and Reshape
+Assignment 8 Tests - Data Aggregation and Group Operations
 
 Tests verify that students correctly:
-- Merge datasets using different join types
-- Concatenate DataFrames vertically and horizontally
-- Reshape data using pivot and melt operations
+- Perform groupby operations with aggregation functions
+- Use transform, filter, and apply operations
+- Create pivot tables and cross-tabulations
+- Optimize performance for large datasets
 - Save required output files
 """
 
@@ -27,7 +28,7 @@ def data_dir():
 
 def test_data_files_exist(data_dir):
     """Test that required data files were generated."""
-    required_files = ["customers.csv", "products.csv", "purchases.csv"]
+    required_files = ["employee_data.csv", "department_data.csv", "sales_data.csv"]
 
     for filename in required_files:
         filepath = data_dir / filename
@@ -38,113 +39,122 @@ def test_data_files_exist(data_dir):
         assert len(df) > 0, f"Data file is empty: {filepath}"
 
 
-def test_q1_merged_data(output_dir, data_dir):
-    """Test Question 1: Merged data output."""
-    output_file = output_dir / "q1_merged_data.csv"
+def test_q1_groupby_analysis(output_dir):
+    """Test Question 1: GroupBy analysis output."""
+    output_file = output_dir / "q1_groupby_analysis.csv"
     assert output_file.exists(), f"Output file not found: {output_file}"
 
     # Load and validate structure
-    merged = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
+    assert len(df) > 0, "GroupBy analysis data is empty"
 
-    # Should have data from all three sources
-    assert len(merged) > 0, "Merged data is empty"
-
-    # Check for key columns from each dataset
-    # From purchases
-    assert 'purchase_id' in merged.columns or 'purchase_date' in merged.columns, \
-        "Missing purchase columns"
-
-    # From customers
-    assert 'name' in merged.columns or 'email' in merged.columns, \
-        "Missing customer columns"
-
-    # From products
-    assert 'product_name' in merged.columns or 'category' in merged.columns, \
-        "Missing product columns"
-
-    # Check that total_price was calculated
-    assert 'total_price' in merged.columns, \
-        "Missing total_price column - should be calculated as quantity * price"
-
-    # Verify total_price calculation is correct (within rounding tolerance)
-    if 'quantity' in merged.columns and 'price' in merged.columns:
-        expected = (merged['quantity'] * merged['price']).round(2)
-        actual = merged['total_price'].round(2)
-
-        # Check that at least 95% of values match (allowing for edge cases)
-        matches = (expected == actual).sum()
-        total = len(merged)
-        match_rate = matches / total
-
-        assert match_rate >= 0.95, \
-            f"total_price calculation incorrect: only {match_rate:.1%} of values match quantity * price"
+    # Should have department-related columns
+    assert any('department' in col.lower() for col in df.columns), \
+        "Missing department-related columns"
 
 
-# Removed q1_validation_report test - no longer required in simplified assignment
-
-
-def test_q2_combined_data(output_dir):
-    """Test Question 2: Concatenated data output."""
-    output_file = output_dir / "q2_combined_data.csv"
+def test_q1_aggregation_report(output_dir):
+    """Test Question 1: Aggregation report output."""
+    output_file = output_dir / "q1_aggregation_report.txt"
     assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Load and validate
-    combined = pd.read_csv(output_file)
-    assert len(combined) > 0, "Combined data is empty"
-
-    # Should have customer_id column (used as index)
-    assert 'customer_id' in combined.columns, "Missing customer_id column"
-
-    # Should have satisfaction and/or loyalty data
-    has_satisfaction = 'satisfaction_score' in combined.columns
-    has_loyalty = 'tier' in combined.columns or 'points' in combined.columns
-
-    assert has_satisfaction or has_loyalty, \
-        "Missing satisfaction or loyalty columns"
-
-
-def test_q3_category_sales_wide(output_dir):
-    """Test Question 3: Pivoted sales data (wide format)."""
-    output_file = output_dir / "q3_category_sales_wide.csv"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Load and validate
-    sales_wide = pd.read_csv(output_file)
-    assert len(sales_wide) > 0, "Sales data is empty"
-
-    # Should have multiple columns (wide format)
-    assert len(sales_wide.columns) > 2, \
-        "Wide format should have multiple category columns"
-
-    # Should have time/index information
-    has_time_col = any(col in sales_wide.columns for col in ['month', 'date', 'purchase_date', 'time'])
-    has_index_col = sales_wide.columns[0] == 'Unnamed: 0'
-    assert has_time_col or has_index_col, \
-        "Missing time/index column"
-
-
-def test_q3_analysis_report(output_dir):
-    """Test Question 3: Analysis report output."""
-    output_file = output_dir / "q3_analysis_report.txt"
-    assert output_file.exists(), f"Analysis report not found: {output_file}"
 
     # Read and check content
     content = output_file.read_text()
+    assert len(content) > 0, "Aggregation report is empty"
 
     # Should contain key analysis sections
-    assert "Sales by Category" in content, "Missing sales by category section"
-    assert "Time Period" in content, "Missing time period section"
-    assert "Top Category" in content, "Missing top category"
-    assert "Bottom Category" in content, "Missing bottom category"
+    assert any(keyword in content.lower() for keyword in ['department', 'salary', 'analysis']), \
+        "Missing key analysis content"
+
+
+def test_q2_hierarchical_analysis(output_dir):
+    """Test Question 2: Hierarchical analysis output."""
+    output_file = output_dir / "q2_hierarchical_analysis.csv"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Load and validate structure
+    df = pd.read_csv(output_file)
+    assert len(df) > 0, "Hierarchical analysis data is empty"
+
+
+def test_q2_performance_report(output_dir):
+    """Test Question 2: Performance report output."""
+    output_file = output_dir / "q2_performance_report.txt"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Read and check content
+    content = output_file.read_text()
+    assert len(content) > 0, "Performance report is empty"
+
+
+def test_q3_pivot_analysis(output_dir):
+    """Test Question 3: Pivot table analysis output."""
+    output_file = output_dir / "q3_pivot_analysis.csv"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Load and validate structure
+    df = pd.read_csv(output_file)
+    assert len(df) > 0, "Pivot analysis data is empty"
+
+    # Should have multiple columns (pivot table format)
+    assert len(df.columns) > 2, "Pivot table should have multiple columns"
+
+
+def test_q3_crosstab_analysis(output_dir):
+    """Test Question 3: Cross-tabulation analysis output."""
+    output_file = output_dir / "q3_crosstab_analysis.csv"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Load and validate structure
+    df = pd.read_csv(output_file)
+    assert len(df) > 0, "Crosstab analysis data is empty"
+
+
+def test_q3_pivot_visualization(output_dir):
+    """Test Question 3: Pivot visualization output."""
+    output_file = output_dir / "q3_pivot_visualization.png"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Verify file is not empty
+    assert output_file.stat().st_size > 0, "Visualization file is empty"
+
+
+def test_q4_performance_optimization(output_dir):
+    """Test Question 4: Performance optimization output."""
+    output_file = output_dir / "q4_performance_optimization.txt"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Read and check content
+    content = output_file.read_text()
+    assert len(content) > 0, "Performance optimization report is empty"
+
+    # Should contain performance-related content
+    assert any(keyword in content.lower() for keyword in ['performance', 'optimization', 'time', 'memory']), \
+        "Missing performance analysis content"
+
+
+def test_q4_remote_computing_report(output_dir):
+    """Test Question 4: Remote computing report output."""
+    output_file = output_dir / "q4_remote_computing_report.txt"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Read and check content
+    content = output_file.read_text()
+    assert len(content) > 0, "Remote computing report is empty"
 
 
 def test_all_required_outputs(output_dir):
     """Test that all required output files exist."""
     required_outputs = [
-        "q1_merged_data.csv",
-        "q2_combined_data.csv",
-        "q3_category_sales_wide.csv",
-        "q3_analysis_report.txt"
+        "q1_groupby_analysis.csv",
+        "q1_aggregation_report.txt",
+        "q2_hierarchical_analysis.csv",
+        "q2_performance_report.txt",
+        "q3_pivot_analysis.csv",
+        "q3_crosstab_analysis.csv",
+        "q3_pivot_visualization.png",
+        "q4_performance_optimization.txt",
+        "q4_remote_computing_report.txt"
     ]
 
     missing_files = []
@@ -157,66 +167,37 @@ def test_all_required_outputs(output_dir):
         f"Missing required output files: {', '.join(missing_files)}"
 
 
-def test_q1_merge_types():
-    """Test that students understand different merge types."""
-    # This is validated by checking the merged data structure
-    # The merged data should contain data from all three sources
-    output_dir = Path("output")
-    merged_file = output_dir / "q1_merged_data.csv"
+def test_csv_file_validation(output_dir):
+    """Test that CSV files are properly formatted."""
+    csv_files = [
+        "q1_groupby_analysis.csv",
+        "q2_hierarchical_analysis.csv",
+        "q3_pivot_analysis.csv",
+        "q3_crosstab_analysis.csv"
+    ]
 
-    if merged_file.exists():
-        merged = pd.read_csv(merged_file)
-        
-        # Should have data from all three sources (customers, products, purchases)
-        assert len(merged) > 0, "Merged data should not be empty"
-        
-        # Should have columns from all datasets
-        has_purchase_cols = any(col in merged.columns for col in ['purchase_id', 'purchase_date', 'quantity'])
-        has_customer_cols = any(col in merged.columns for col in ['name', 'email', 'city'])
-        has_product_cols = any(col in merged.columns for col in ['product_name', 'category', 'price'])
-        
-        assert has_purchase_cols, "Should have purchase data columns"
-        assert has_customer_cols, "Should have customer data columns" 
-        assert has_product_cols, "Should have product data columns"
+    for filename in csv_files:
+        filepath = output_dir / filename
+        if filepath.exists():
+            # Try to read the CSV file
+            try:
+                df = pd.read_csv(filepath)
+                assert len(df) > 0, f"CSV file {filename} is empty"
+            except Exception as e:
+                pytest.fail(f"Error reading CSV file {filename}: {e}")
 
 
-def test_q2_concatenation():
-    """Test that concatenation was performed correctly."""
-    output_dir = Path("output")
-    output_file = output_dir / "q2_combined_data.csv"
+def test_text_file_validation(output_dir):
+    """Test that text files contain meaningful content."""
+    text_files = [
+        "q1_aggregation_report.txt",
+        "q2_performance_report.txt",
+        "q4_performance_optimization.txt",
+        "q4_remote_computing_report.txt"
+    ]
 
-    if output_file.exists():
-        combined = pd.read_csv(output_file)
-
-        # Horizontal concat should create some NaN values from misalignment
-        # Check if there are any NaN values (indicates proper concatenation)
-        has_nan = combined.isna().any().any()
-
-        # Note: This test is lenient - we just check structure
-        assert len(combined) > 0, "Combined data should not be empty"
-
-
-def test_q3_reshape_operations():
-    """Test that reshape operations were performed correctly."""
-    output_dir = Path("output")
-
-    # Wide format should exist
-    wide_file = output_dir / "q3_category_sales_wide.csv"
-    if wide_file.exists():
-        wide_data = pd.read_csv(wide_file)
-
-        # Wide format has categories as columns
-        assert len(wide_data.columns) >= 3, \
-            "Wide format should have multiple category columns"
-
-    # Analysis report should show category summaries
-    report_file = output_dir / "q3_analysis_report.txt"
-    if report_file.exists():
-        content = report_file.read_text()
-
-        # Should contain actual category names
-        categories = ["Electronics", "Clothing", "Home & Garden", "Books", "Sports"]
-        found_categories = sum(1 for cat in categories if cat in content)
-
-        assert found_categories >= 1, \
-            "Report should mention at least one product category"
+    for filename in text_files:
+        filepath = output_dir / filename
+        if filepath.exists():
+            content = filepath.read_text()
+            assert len(content.strip()) > 50, f"Text file {filename} is too short or empty"

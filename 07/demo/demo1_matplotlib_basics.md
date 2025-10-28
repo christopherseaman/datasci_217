@@ -12,6 +12,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+# Set inline plotting for Jupyter
+%matplotlib inline
 ```
 
 ## Part 1: Figures and Subplots

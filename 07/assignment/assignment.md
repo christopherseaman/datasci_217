@@ -1,3 +1,17 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.16.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+---
+
 # Assignment 7: Data Visualization
 
 ## Overview
@@ -87,63 +101,42 @@ categories = ['A', 'B', 'C', 'D', 'E']
 values = [23, 45, 56, 12, 78]
 x_scatter = np.random.randn(100)
 y_scatter = 2 * x_scatter + np.random.randn(100)
-data_hist = np.random.normal(0, 1, 1000)
+hist_data = np.random.normal(0, 1, 1000)
 
 # TODO: Create a 2x2 subplot grid
 fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
-# TODO: Bar chart (top-left)
-# TODO: Scatter plot (top-right)
-# TODO: Histogram (bottom-left)
-# TODO: Box plot (bottom-right)
+# TODO: Top-left: Bar chart
+# TODO: Top-right: Scatter plot
+# TODO: Bottom-left: Histogram
+# TODO: Bottom-right: Pie chart
 
-# TODO: Add titles and labels to each subplot
-# TODO: Use tight_layout()
+# TODO: Add appropriate titles and labels
+# TODO: Customize colors and styles
+# TODO: Save the plot as 'output/q1_matplotlib_plots.png'
 
+plt.tight_layout()
+plt.savefig('output/q1_matplotlib_plots.png', dpi=300, bbox_inches='tight')
 plt.show()
-```
-
-### Part 1.4: Save Plots
-
-**TODO: Create and save a publication-quality plot**
-
-```python
-# Create sample data
-x = np.linspace(0, 10, 100)
-y = np.sin(x) * np.exp(-x/5)
-
-# TODO: Create a high-quality figure
-fig, ax = plt.subplots(figsize=(10, 6))
-
-# TODO: Plot the data with custom styling
-# TODO: Add title, labels, grid
-# TODO: Save as PNG with high DPI
-# TODO: Save as PDF
-# TODO: Save as SVG
-
-plt.show()
-print("Plots saved successfully!")
 ```
 
 ## Question 2: seaborn Statistical Visualization
 
 ### Part 2.1: Load and Explore Data
 
-**TODO: Load the sales data and create basic seaborn plots**
-
 ```python
 # Load the sales data
-sales_data = pd.read_csv('data/sales_data.csv')
-customer_data = pd.read_csv('data/customer_data.csv')
-product_data = pd.read_csv('data/product_data.csv')
+sales_df = pd.read_csv('data/sales_data.csv')
+customer_df = pd.read_csv('data/customer_data.csv')
+product_df = pd.read_csv('data/product_data.csv')
 
-# TODO: Merge the datasets
-# Merge sales with customer data
-# Merge result with product data
-# TODO: Add calculated columns (age_group, price_category)
+# Merge data for analysis
+merged_df = sales_df.merge(customer_df, on='customer_id').merge(product_df, on='product_id')
 
-print("Data shape:", merged_data.shape)
-print("Columns:", merged_data.columns.tolist())
+print("Data shape:", merged_df.shape)
+print("\nColumns:", merged_df.columns.tolist())
+print("\nFirst few rows:")
+print(merged_df.head())
 ```
 
 ### Part 2.2: Statistical Plots
@@ -151,163 +144,141 @@ print("Columns:", merged_data.columns.tolist())
 **TODO: Create statistical visualizations with seaborn**
 
 ```python
-# TODO: Create a 2x2 subplot grid
+# TODO: Create a figure with 2x2 subplots
 fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
-# TODO: Box plot of total_amount by store_location
-# TODO: Violin plot of total_amount by age_group
-# TODO: Histogram of total_amount with KDE
-# TODO: Scatter plot of quantity vs total_amount
+# TODO: Top-left: Box plot of total_amount by store_location
+# TODO: Top-right: Violin plot of total_amount by category
+# TODO: Bottom-left: Scatter plot of quantity vs total_amount with hue by gender
+# TODO: Bottom-right: Histogram of total_amount with kde overlay
 
-# TODO: Add titles and labels
+# TODO: Add appropriate titles and labels
+# TODO: Customize colors and styling
+# TODO: Save the plot as 'output/q2_seaborn_plots.png'
+
 plt.tight_layout()
-plt.show()
-```
-
-### Part 2.3: Relationship Analysis
-
-**TODO: Create relationship visualizations**
-
-```python
-# TODO: Create correlation heatmap
-# TODO: Create pair plot for numerical columns
-# TODO: Create joint plot for quantity vs total_amount
-
-# TODO: Save the correlation heatmap
-plt.savefig('output/q2_correlation_heatmap.png', dpi=300, bbox_inches='tight')
-plt.show()
-```
-
-### Part 2.4: Advanced seaborn Features
-
-**TODO: Create advanced statistical plots**
-
-```python
-# TODO: Create faceted plots
-# TODO: Create categorical plots
-# TODO: Create distribution plots
-# TODO: Apply seaborn styling
-
-# TODO: Save the plots
 plt.savefig('output/q2_seaborn_plots.png', dpi=300, bbox_inches='tight')
+plt.show()
+```
+
+### Part 2.3: Correlation Analysis
+
+**TODO: Create a correlation heatmap**
+
+```python
+# TODO: Select numeric columns for correlation analysis
+# First, explore the merged data to see what columns are available
+print("Available columns:", merged_df.columns.tolist())
+print("Data types:")
+print(merged_df.dtypes)
+
+# TODO: Select only the numeric columns that exist for correlation analysis
+# Hint: After merging, some column names might have changed (e.g., unit_price_x, unit_price_y)
+numeric_cols = []  # Fill this with the appropriate column names
+
+# TODO: Calculate correlation matrix
+# correlation_matrix = ...
+
+# TODO: Create heatmap with seaborn
+# TODO: Add title and customize appearance
+# TODO: Save the plot as 'output/q2_correlation_heatmap.png'
+
+plt.tight_layout()
+plt.savefig('output/q2_correlation_heatmap.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
 
 ## Question 3: pandas Plotting and Data Exploration
 
-### Part 3.1: Quick Data Exploration
+### Part 3.1: Time Series Visualization
 
-**TODO: Use pandas plotting for quick exploration**
+**TODO: Create time series plots with pandas**
 
 ```python
-# TODO: Create time series plot of sales over time
-# TODO: Create histogram of total_amount
-# TODO: Create box plot by category
-# TODO: Create scatter plot of quantity vs total_amount
+# TODO: Convert transaction_date to datetime
+# merged_df['transaction_date'] = pd.to_datetime(merged_df['transaction_date'])
 
-# TODO: Save the plots
+# TODO: Create daily sales aggregation
+# daily_sales = merged_df.groupby('transaction_date')['total_amount'].sum()
+
+# TODO: Create a figure with 2x2 subplots
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+# TODO: Top-left: Line plot of daily sales
+# TODO: Top-right: Rolling 7-day average
+# TODO: Bottom-left: Monthly sales bar chart
+# TODO: Bottom-right: Sales distribution histogram
+
+# TODO: Add titles and labels
+# TODO: Save the plot as 'output/q3_pandas_plots.png'
+
+plt.tight_layout()
 plt.savefig('output/q3_pandas_plots.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
 
-### Part 3.2: Time Series Analysis
+### Part 3.2: Data Overview Dashboard
 
-**TODO: Create time series visualizations**
-
-```python
-# TODO: Convert transaction_date to datetime
-# TODO: Set transaction_date as index
-# TODO: Create daily sales aggregation
-# TODO: Plot daily sales with moving average
-# TODO: Create seasonal analysis
-
-# TODO: Save the time series plot
-plt.savefig('output/q3_data_overview.png', dpi=300, bbox_inches='tight')
-plt.show()
-```
-
-### Part 3.3: Data Overview
-
-**TODO: Create comprehensive data overview**
+**TODO: Create a comprehensive data overview**
 
 ```python
-# TODO: Create summary statistics
-# TODO: Create distribution plots
-# TODO: Create correlation analysis
-# TODO: Create categorical analysis
+# TODO: Create a figure with multiple subplots
+fig, axes = plt.subplots(2, 3, figsize=(18, 12))
 
-# TODO: Save the comprehensive overview
+# TODO: Plot 1: Sales by category (bar chart)
+# TODO: Plot 2: Sales by store location (pie chart)
+# TODO: Plot 3: Age distribution (histogram)
+# TODO: Plot 4: Quantity vs total_amount scatter
+# TODO: Plot 5: Sales over time (line plot)
+# TODO: Plot 6: Top 10 products by sales (horizontal bar)
+
+# TODO: Add titles and customize appearance
+# TODO: Save the plot as 'output/q3_data_overview.png'
+
+plt.tight_layout()
 plt.savefig('output/q3_data_overview.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
 
 ## Question 4: Modern Visualization and Best Practices
 
-### Part 4.1: Chart Selection
+### Part 4.1: Good vs Bad Visualization
 
-**TODO: Create appropriate charts for different data types**
+**TODO: Create examples of good and bad visualization practices**
 
 ```python
-# TODO: Create line chart for time series data
-# TODO: Create bar chart for categorical data
-# TODO: Create scatter plot for relationship data
-# TODO: Create histogram for distribution data
+# TODO: Create a figure with 2x2 subplots
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
-# TODO: Apply best practices for each chart type
-# TODO: Use appropriate colors and styling
-# TODO: Add clear titles and labels
+# TODO: Top-left: BAD - 3D pie chart (avoid 3D for data)
+# TODO: Top-right: GOOD - Simple bar chart
+# TODO: Bottom-left: BAD - Misleading y-axis scale
+# TODO: Bottom-right: GOOD - Proper scale and clear labels
+
+# TODO: Add titles indicating "BAD" and "GOOD" examples
+# TODO: Save the plot as 'output/q4_best_practices.png'
 
 plt.tight_layout()
-plt.show()
-```
-
-### Part 4.2: Good vs Bad Visualization
-
-**TODO: Create examples of good and bad visualization**
-
-```python
-# Create sample data
-data = [10, 20, 30, 40]
-categories = ['A', 'B', 'C', 'D']
-
-# TODO: Create comparison plot
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-
-# TODO: BAD visualization (misleading scale, poor colors)
-# TODO: GOOD visualization (clear scale, good colors, labels)
-
-# TODO: Add value labels on bars
-# TODO: Save the comparison
 plt.savefig('output/q4_best_practices.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
 
-### Part 4.3: Publication Quality
+### Part 4.2: Final Comprehensive Report
 
-**TODO: Create publication-quality visualizations**
-
-```python
-# TODO: Create a comprehensive analysis plot
-# TODO: Use consistent styling
-# TODO: Apply design principles
-# TODO: Create clear legends and annotations
-
-# TODO: Save the final report
-plt.savefig('output/q4_final_report.png', dpi=300, bbox_inches='tight')
-plt.show()
-```
-
-### Part 4.4: Final Report
-
-**TODO: Create a comprehensive visualization report**
+**TODO: Create a publication-quality final visualization**
 
 ```python
-# TODO: Create a multi-panel analysis
-# TODO: Include summary statistics
-# TODO: Add insights and conclusions
-# TODO: Use professional styling
+# TODO: Create a comprehensive dashboard
+fig = plt.figure(figsize=(20, 16))
 
-# TODO: Save the final report
+# TODO: Create a complex subplot layout
+# TODO: Include multiple visualization types
+# TODO: Apply professional styling
+# TODO: Add comprehensive titles and annotations
+# TODO: Use consistent color scheme
+# TODO: Save the plot as 'output/q4_final_report.png'
+
+plt.tight_layout()
 plt.savefig('output/q4_final_report.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
@@ -317,7 +288,7 @@ plt.show()
 Before submitting, verify you've created:
 
 - [ ] `output/q1_matplotlib_plots.png` - matplotlib fundamentals
-- [ ] `output/q1_multi_panel.png` - multi-panel visualization
+- [ ] `output/q1_multi_panel.png` - multi-panel visualization  
 - [ ] `output/q2_seaborn_plots.png` - seaborn statistical plots
 - [ ] `output/q2_correlation_heatmap.png` - correlation analysis
 - [ ] `output/q3_pandas_plots.png` - pandas plotting
@@ -327,16 +298,9 @@ Before submitting, verify you've created:
 
 ## Key Learning Objectives
 
-1. **matplotlib Fundamentals**: Create figures, subplots, and customize plots
-2. **seaborn Statistical Plots**: Visualize relationships and distributions
-3. **pandas Plotting**: Quick data exploration and time series analysis
-4. **Best Practices**: Choose appropriate charts and apply design principles
-
-## Tips for Success
-
-- Read each TODO item carefully
-- Use the hints provided in comments
-- Test your code incrementally
-- Save your plots with descriptive filenames
-- Apply consistent styling throughout
-- Choose appropriate chart types for your data
+- Master matplotlib fundamentals for custom plots
+- Create statistical visualizations with seaborn
+- Use pandas plotting for quick exploration
+- Apply visualization best practices
+- Choose appropriate chart types for different data
+- Create publication-quality visualizations

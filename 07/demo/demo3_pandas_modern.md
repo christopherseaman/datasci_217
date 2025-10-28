@@ -14,6 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Set inline plotting for Jupyter
+%matplotlib inline
+
 # Set style
 plt.style.use('default')
 sns.set_style('whitegrid')
