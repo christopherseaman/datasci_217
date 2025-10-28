@@ -10,20 +10,139 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
 
-# FIXME: Add xkcd 1945: Scientific Paper Graph Quality
+# Outline
+
+- matplotlib fundamentals (figures, subplots, customization)
+- Statistical visualizations with seaborn
+- pandas plotting for quick data exploration
+- Visualization principles and best practices
+- Tufte's principles for effective data visualization
+- Modern visualization libraries (altair, plotnine)
+
+
+![xkcd 1945: Scientific Paper Graph Quality](https://imgs.xkcd.com/comics/scientific_paper_graph_quality.png)
 
 *"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
-Data visualization is the art and science of turning data into insights. This lecture covers the essential tools for creating effective visualizations: **matplotlib for customization**, **seaborn for statistical plots**, and **modern alternatives** for interactive and grammar-of-graphics approaches.
+# Edward Tufte's Principles of Data Visualization
 
-**Learning Objectives:**
+*Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first.*
 
-- Master matplotlib fundamentals (figures, subplots, customization)
-- Create statistical visualizations with seaborn
-- Use pandas plotting for quick data exploration
-- Understand visualization principles and best practices
-- Explore modern visualization libraries (altair, plotnine)
-- Manage persistent computing sessions with tmux
+**"Above all else, show the data."** - Edward Tufte
+
+Edward Tufte, the pioneer of information design, established fundamental principles that remain essential for effective data visualization.
+
+**Essential Reading:**
+
+- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi) - Tufte's seminal work
+- [Envisioning Information](https://www.edwardtufte.com/tufte/books_ei) - Color, layering, and detail
+- [Tufte's website](https://www.edwardtufte.com/) - Essays and resources
+
+**1. Data-Ink Ratio: Maximize the Data-Ink**
+
+The **data-ink ratio** is the proportion of ink (or pixels) used to present actual data compared to the total ink used in the entire display.
+
+```
+Data-Ink Ratio = Data-Ink / Total Ink Used
+```
+
+**Tufte's Goal:** Maximize this ratio by eliminating non-data ink (chartjunk).
+
+**Key Practices:**
+- Remove unnecessary gridlines (or make them subtle)
+- Eliminate decorative elements that don't convey information
+- Use direct labeling instead of legends when possible
+- Avoid 3D effects and shadows that distort perception
+- Remove redundant labels and tick marks
+
+![Data-Ink Ratio Comparison](media/tufte_data_ink_ratio.png)
+
+*Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.*
+
+**2. Chartjunk: Eliminate Visual Noise**
+
+**Chartjunk** includes any visual elements that do not convey information:
+- Unnecessary 3D effects
+- Heavy grid lines
+- Decorative fills and patterns
+- Excessive colors
+- Redundant labels
+
+**3. Lie Factor: Maintain Visual Integrity**
+
+The **lie factor** measures how much a visualization distorts the data:
+
+```
+Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
+```
+
+**Ideal Lie Factor:** Close to 1.0 (no distortion)
+
+**Common distortions to avoid:**
+- Truncated y-axes that exaggerate differences
+- 3D perspective that distorts area/volume comparisons
+- Inconsistent scales
+- Cherry-picked time ranges
+
+**4. Small Multiples: Show Comparisons**
+
+Use small, repeated charts with the same scale to enable easy comparison across categories or time.
+
+![Small Multiples Example](media/tufte_small_multiples.png)
+
+*Small multiples enable quick visual comparison across multiple dimensions while maintaining consistent scales.*
+
+**5. High-Resolution Data Graphics**
+
+Show as much detail as the data allows - don't oversimplify or aggregate unnecessarily.
+
+## Before/After Examples: Applying Tufte's Principles
+
+### Example 1: Bar Chart Redesign
+
+![Bar Chart Comparison](media/tufte_bar_comparison.png)
+
+*Before (left): Excessive colors, patterns, and heavy gridlines distract from the data. After (right): Clean design with direct labeling maximizes data-ink ratio.*
+
+### Example 2: Line Chart with Truncated Axis (Lie Factor)
+
+![Lie Factor Example](media/tufte_lie_factor.png)
+
+*Before (left): Truncated y-axis creates a high lie factor, exaggerating modest growth. After (right): Honest scale starting at zero shows true magnitude of change.*
+
+## Color Palette Best Practices
+
+Different data types require different color strategies:
+
+![Color Palette Guide](media/color_palettes.png)
+
+**Color Selection Guidelines:**
+- **Sequential:** Use for ordered data (temperature, age, income) - single hue gradient
+- **Diverging:** Use for data with meaningful zero/midpoint (profit/loss, correlation) - two contrasting hues
+- **Qualitative:** Use for categories with no inherent order - distinct, unrelated colors
+- **Accessibility:** Always test for colorblind accessibility using tools like [ColorBrewer](https://colorbrewer2.org/)
+
+**Additional Resources:**
+- [ColorBrewer 2.0](https://colorbrewer2.org/) - Interactive color advice for maps and visualizations
+- [Colorblind-Safe Palettes](https://personal.sron.nl/~pault/) - Paul Tol's color schemes
+- [Adobe Color](https://color.adobe.com/) - Create and explore color schemes
+
+## The Right Chart for the Job
+
+**Chart Selection Guide:**
+
+- **Line charts**: Time series, trends over time
+- **Bar charts**: Categories, comparisons
+- **Scatter plots**: Relationships between two variables
+- **Histograms**: Distribution of single variable
+- **Box plots**: Distribution with outliers
+- **Heatmaps**: Patterns in 2D data
+- **Pie charts**: Parts of a whole (use sparingly!)
+
+![Chart Selection Guide](media/chart_selection.png)
+
+*Different chart types are optimized for different data relationships and questions. Choose the right chart for your message.*
+
 
 # The Visualization Ecosystem
 
@@ -120,6 +239,10 @@ plt.tight_layout()
 plt.show()
 ```
 
+![Matplotlib Subplots Example](media/matplotlib_subplots.png)
+
+*Creating multiple subplots in a single figure allows for easy comparison across different visualization types.*
+
 ## Customizing Plots
 
 matplotlib's power comes from its extensive customization options.
@@ -161,6 +284,10 @@ plt.tight_layout()
 plt.show()
 ```
 
+![Matplotlib Customization Example](media/matplotlib_customization.png)
+
+*Customization allows you to create publication-quality plots with precise control over every visual element.*
+
 ## Colors, Markers, and Line Styles
 
 matplotlib offers extensive control over visual elements.
@@ -197,6 +324,14 @@ ax.legend()
 ax.grid(True, alpha=0.3)
 plt.show()
 ```
+
+![Matplotlib Colors and Styles](media/matplotlib_styles.png)
+
+*matplotlib provides extensive options for colors, markers, and line styles to create visually distinct data series.*
+
+![xkcd 833: Convincing](https://imgs.xkcd.com/comics/convincing.png)
+
+*"And if you don't label your axes, I'm leaving you." - The importance of proper chart labeling, illustrated.*
 
 # pandas Plotting: Quick Exploration
 
@@ -245,6 +380,10 @@ df.plot(kind='box', ax=axes[1, 1], title='Box Plot')
 plt.tight_layout()
 plt.show()
 ```
+
+![Pandas Plotting Examples](media/pandas_plotting.png)
+
+*pandas plotting methods provide quick, convenient visualization for data exploration with minimal code.*
 
 ## DataFrame Plotting Options
 
@@ -327,6 +466,10 @@ axes[1, 0].set_title('Bill Distribution')
 plt.tight_layout()
 plt.show()
 ```
+
+![Seaborn Statistical Plots](media/seaborn_statistical.png)
+
+*seaborn excels at creating beautiful statistical visualizations with automatic styling and color choices.*
 
 ## Advanced seaborn Features
 
@@ -415,9 +558,16 @@ plt.show()
 
 *The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
 
-## vega-altair: Grammar of Graphics
+## vega-altair: Grammar of Graphics with Vega-Lite
 
-altair implements the grammar of graphics (like ggplot2 in R), making it intuitive to build complex visualizations.
+altair implements the Vega-Lite grammar of graphics, providing a declarative approach to creating statistical visualizations. Unlike ggplot2, altair is specifically designed for interactive web-based visualizations and supports multiple output formats.
+
+**Key Features:**
+- **Declarative syntax**: Describe what you want, not how to draw it
+- **Interactive by default**: Zooming, panning, and brushing work automatically
+- **Multiple output formats**: Static images (PNG, SVG) and interactive HTML
+- **Web-native**: Built for modern web browsers and Jupyter notebooks
+- **Grammar of Graphics**: Based on Vega-Lite, not ggplot2
 
 **Reference:**
 
@@ -430,6 +580,11 @@ alt.Chart(df).mark_point().encode(
     y='column2',
     color='category'
 )
+
+# Export formats
+chart.save('plot.png')      # Static bitmap
+chart.save('plot.svg')      # Static vector
+chart.save('plot.html')     # Interactive HTML
 ```
 
 **Example:**
@@ -444,11 +599,17 @@ try:
         x='total_bill:Q',
         y='tip:Q',
         color='time:N',
-        size='size:O'
+        size='size:O',
+        tooltip=['total_bill', 'tip', 'time', 'size']
     ).interactive()
     
-    # Display (requires Jupyter or altair viewer)
+    # Display in Jupyter (interactive)
     chart.show()
+    
+    # Export to different formats
+    chart.save('scatter.png')    # Static bitmap
+    chart.save('scatter.svg')    # Static vector  
+    chart.save('scatter.html')   # Interactive HTML
     
 except ImportError:
     print("altair not installed. Install with: pip install altair")
@@ -482,199 +643,9 @@ except ImportError:
 # These require separate installation and are great for web dashboards
 ```
 
-# Command Line: Persistent Sessions with tmux
+![xkcd 1138: Heatmap](https://imgs.xkcd.com/comics/heatmap.png)
 
-*When you're working on long-running data analysis or remote servers, you need sessions that survive network hiccups and accidental terminal closures. tmux is your friend.*
+*"Every single map of the United States looks the same because it's just a population density map." - A reminder that your visualization should show meaningful patterns, not just expected distributions.*
 
-tmux (terminal multiplexer) allows you to create persistent terminal sessions that survive disconnections and can be shared between multiple terminal windows.
-
-**Reference:**
-
-- `tmux` - Start new session
-- `tmux new-session -s session_name` - Start named session
-- `tmux list-sessions` - List all sessions
-- `tmux attach-session -t session_name` - Attach to session
-- `tmux kill-session -t session_name` - Kill session
-- `Ctrl+b d` - Detach from session (keeps it running)
-- `Ctrl+b c` - Create new window
-- `Ctrl+b n` - Next window
-- `Ctrl+b p` - Previous window
-
-**Example:**
-
-```bash
-# Start a new tmux session for data analysis
-tmux new-session -s data_analysis
-
-# Inside tmux, start your Python environment
-conda activate datasci_217
-jupyter notebook
-
-# Detach from session (Ctrl+b, then d)
-# Session keeps running in background
-
-# Later, reattach to the same session
-tmux attach-session -t data_analysis
-
-# Your Jupyter notebook is still running!
-```
-
-## tmux Configuration
-
-**Reference:**
-
-Create `~/.tmux.conf` for custom settings:
-
-```bash
-# Enable mouse support
-set -g mouse on
-
-# Set default terminal
-set -g default-terminal "screen-256color"
-
-# Start windows and panes at 1
-set -g base-index 1
-setw -g pane-base-index 1
-
-# Reload config file
-bind r source-file ~/.tmux.conf \; display "Config reloaded!"
-```
-
-# Visualization Best Practices
-
-*Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first.*
-
-# FIXME: Add before/after visualization examples showing good vs bad design
-
-# FIXME: Add color palette examples for different data types
-
-## The Right Chart for the Job
-
-**Chart Selection Guide:**
-
-- **Line charts**: Time series, trends over time
-- **Bar charts**: Categories, comparisons
-- **Scatter plots**: Relationships between two variables
-- **Histograms**: Distribution of single variable
-- **Box plots**: Distribution with outliers
-- **Heatmaps**: Patterns in 2D data
-- **Pie charts**: Parts of a whole (use sparingly!)
-
-**Example:**
-
-```python
-# Demonstrate chart selection
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-
-# Line chart - time series
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-values = np.cumsum(np.random.randn(100))
-axes[0, 0].plot(dates, values)
-axes[0, 0].set_title('Line Chart: Time Series')
-axes[0, 0].tick_params(axis='x', rotation=45)
-
-# Bar chart - categories
-categories = ['A', 'B', 'C', 'D']
-counts = [23, 45, 56, 12]
-axes[0, 1].bar(categories, counts)
-axes[0, 1].set_title('Bar Chart: Categories')
-
-# Scatter plot - relationships
-x = np.random.randn(100)
-y = 2 * x + np.random.randn(100)
-axes[0, 2].scatter(x, y, alpha=0.6)
-axes[0, 2].set_title('Scatter Plot: Relationships')
-
-# Histogram - distribution
-data = np.random.normal(0, 1, 1000)
-axes[1, 0].hist(data, bins=30, alpha=0.7)
-axes[1, 0].set_title('Histogram: Distribution')
-
-# Box plot - distribution with outliers
-data_by_group = [np.random.normal(i, 1, 50) for i in range(3)]
-axes[1, 1].boxplot(data_by_group)
-axes[1, 1].set_title('Box Plot: Distribution + Outliers')
-
-# Heatmap - 2D patterns
-heatmap_data = np.random.randn(10, 10)
-im = axes[1, 2].imshow(heatmap_data, cmap='coolwarm')
-axes[1, 2].set_title('Heatmap: 2D Patterns')
-plt.colorbar(im, ax=axes[1, 2])
-
-plt.tight_layout()
-plt.show()
-```
-
-## Design Principles
-
-**Key Principles:**
-
-1. **Clarity**: Make your message obvious
-2. **Honesty**: Don't mislead with scale or design
-3. **Simplicity**: Remove unnecessary elements
-4. **Consistency**: Use consistent colors, fonts, styles
-5. **Accessibility**: Consider colorblind users, use patterns/textures
-
-**Example:**
-
-```python
-# Good vs Bad visualization example
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-
-# BAD: Misleading scale, poor colors, no labels
-data = [10, 20, 30, 40]
-ax1.bar(['A', 'B', 'C', 'D'], data, color=['red', 'blue', 'green', 'yellow'])
-ax1.set_title('Sales by Region')
-ax1.set_ylim(0, 50)  # Misleading scale
-
-# GOOD: Clear scale, good colors, proper labels
-ax2.bar(['A', 'B', 'C', 'D'], data, color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'])
-ax2.set_title('Sales by Region (in thousands)', fontsize=14, fontweight='bold')
-ax2.set_ylabel('Sales (thousands)', fontsize=12)
-ax2.set_xlabel('Region', fontsize=12)
-ax2.set_ylim(0, 45)  # Appropriate scale
-ax2.grid(True, alpha=0.3)
-
-# Add value labels on bars
-for i, v in enumerate(data):
-    ax2.text(i, v + 1, str(v), ha='center', va='bottom', fontweight='bold')
-
-plt.tight_layout()
-plt.show()
-```
 
 # LIVE DEMO!
-
-# Key Takeaways
-
-1. **Start with pandas** for quick exploration
-2. **Use seaborn** for statistical visualizations
-3. **Customize with matplotlib** when needed
-4. **Choose the right chart** for your data and message
-5. **Follow design principles** for effective communication
-6. **Use tmux** for persistent computing sessions
-7. **Explore modern tools** like altair and plotnine for specific needs
-
-You now have the skills to create effective visualizations that tell compelling data stories. These are essential skills for any data scientist.
-
-Next week: We'll dive into data aggregation and group operations!
-
-Practice Challenge
-
-Before next class:
-1. **Create visualizations:**
-   - Use pandas.plot() for quick exploration
-   - Use seaborn for statistical plots
-   - Customize with matplotlib
-   
-2. **Practice tmux:**
-   - Start a persistent session
-   - Run Jupyter notebook in tmux
-   - Detach and reattach
-   
-3. **Follow best practices:**
-   - Choose appropriate chart types
-   - Use clear labels and titles
-   - Consider your audience
-
-Remember: Good visualization is about communication - make your data tell a story!
