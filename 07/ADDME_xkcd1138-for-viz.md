@@ -1,1 +1,0 @@
-xkcd 1138: "The Data So Far" - A humorous bar chart about data interpretation. Perfect for data visualization discussions

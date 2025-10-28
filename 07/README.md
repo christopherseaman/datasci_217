@@ -764,21 +764,10 @@ chart.save('interactive.html') # Interactive HTML
 **Example:**
 
 ```python
-# plotnine example (if installed)
-try:
-    from plotnine import ggplot, aes, geom_point, geom_smooth, theme_minimal, facet_wrap
-    
-    # Create ggplot2-style plot
-    p = (ggplot(tips, aes(x='total_bill', y='tip', color='time')) 
-         + geom_point(alpha=0.6)
-         + geom_smooth(method='lm')
-         + facet_wrap('~day')
-         + theme_minimal())
-    
-    print(p)
-    
-except ImportError:
-    print("plotnine not installed. Install with: pip install plotnine")
+# Simple scatter plot with ggplot2 syntax
+(ggplot(tips, aes(x='total_bill', y='tip', color='time'))
+ + geom_point()
+ + theme_minimal())
 ```
 
 ### Bokeh: Interactive Web Visualizations
@@ -816,22 +805,12 @@ except ImportError:
 **Example:**
 
 ```python
-# Plotly example (if installed)
-try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    
-    # Express API
-    fig = px.scatter(tips, x='total_bill', y='tip', color='time', 
-                     title="Interactive Scatter Plot")
-    fig.show()
-    
-    # Graph objects API
-    fig2 = go.Figure(data=go.Scatter(x=tips['total_bill'], y=tips['tip']))
-    fig2.show()
-    
-except ImportError:
-    print("Plotly not installed. Install with: pip install plotly")
+import plotly.express as px
+
+# Simple interactive scatter plot
+fig = px.scatter(tips, x='total_bill', y='tip', color='time',
+                 title="Interactive Scatter Plot")
+fig.show()
 ```
 
 ## Tool Selection Guide
