@@ -115,37 +115,6 @@ def test_q3_trend_analysis(output_dir):
     assert output_file.stat().st_size > 0, "Trend analysis visualization is empty"
 
 
-def test_q4_visualization(output_dir):
-    """Test Question 4: time series visualization output."""
-    output_file = output_dir / "q4_visualization.png"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Verify file is not empty
-    assert output_file.stat().st_size > 0, "Time series visualization is empty"
-
-
-def test_q4_seasonal_analysis(output_dir):
-    """Test Question 4: seasonal analysis output."""
-    output_file = output_dir / "q4_seasonal_analysis.csv"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Load and validate structure
-    df = pd.read_csv(output_file)
-    assert len(df) > 0, "Seasonal analysis data is empty"
-
-
-def test_q4_automation_report(output_dir):
-    """Test Question 4: automation report output."""
-    output_file = output_dir / "q4_automation_report.txt"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Read and check content
-    content = output_file.read_text()
-    assert len(content) > 0, "Automation report is empty"
-
-    # Should contain automation-related content
-    assert any(keyword in content.lower() for keyword in ['automation', 'cron', 'schedule', 'workflow']), \
-        "Missing automation analysis content"
 
 
 def test_all_required_outputs(output_dir):
@@ -156,10 +125,7 @@ def test_all_required_outputs(output_dir):
         "q2_resampling_analysis.csv",
         "q2_missing_data_report.txt",
         "q3_rolling_analysis.csv",
-        "q3_trend_analysis.png",
-        "q4_visualization.png",
-        "q4_seasonal_analysis.csv",
-        "q4_automation_report.txt"
+        "q3_trend_analysis.png"
     ]
 
     missing_files = []
@@ -177,8 +143,7 @@ def test_csv_file_validation(output_dir):
     csv_files = [
         "q1_datetime_analysis.csv",
         "q2_resampling_analysis.csv",
-        "q3_rolling_analysis.csv",
-        "q4_seasonal_analysis.csv"
+        "q3_rolling_analysis.csv"
     ]
 
     for filename in csv_files:
@@ -196,8 +161,7 @@ def test_text_file_validation(output_dir):
     """Test that text files contain meaningful content."""
     text_files = [
         "q1_timezone_report.txt",
-        "q2_missing_data_report.txt",
-        "q4_automation_report.txt"
+        "q2_missing_data_report.txt"
     ]
 
     for filename in text_files:
@@ -210,8 +174,7 @@ def test_text_file_validation(output_dir):
 def test_plot_file_sizes(output_dir):
     """Test that plot files are reasonable sizes."""
     plot_files = [
-        "q3_trend_analysis.png",
-        "q4_visualization.png"
+        "q3_trend_analysis.png"
     ]
 
     for filename in plot_files:

@@ -119,28 +119,6 @@ def test_q3_pivot_visualization(output_dir):
     assert output_file.stat().st_size > 0, "Visualization file is empty"
 
 
-def test_q4_performance_optimization(output_dir):
-    """Test Question 4: Performance optimization output."""
-    output_file = output_dir / "q4_performance_optimization.txt"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Read and check content
-    content = output_file.read_text()
-    assert len(content) > 0, "Performance optimization report is empty"
-
-    # Should contain performance-related content
-    assert any(keyword in content.lower() for keyword in ['performance', 'optimization', 'time', 'memory']), \
-        "Missing performance analysis content"
-
-
-def test_q4_remote_computing_report(output_dir):
-    """Test Question 4: Remote computing report output."""
-    output_file = output_dir / "q4_remote_computing_report.txt"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Read and check content
-    content = output_file.read_text()
-    assert len(content) > 0, "Remote computing report is empty"
 
 
 def test_all_required_outputs(output_dir):
@@ -152,9 +130,7 @@ def test_all_required_outputs(output_dir):
         "q2_performance_report.txt",
         "q3_pivot_analysis.csv",
         "q3_crosstab_analysis.csv",
-        "q3_pivot_visualization.png",
-        "q4_performance_optimization.txt",
-        "q4_remote_computing_report.txt"
+        "q3_pivot_visualization.png"
     ]
 
     missing_files = []
@@ -191,9 +167,7 @@ def test_text_file_validation(output_dir):
     """Test that text files contain meaningful content."""
     text_files = [
         "q1_aggregation_report.txt",
-        "q2_performance_report.txt",
-        "q4_performance_optimization.txt",
-        "q4_remote_computing_report.txt"
+        "q2_performance_report.txt"
     ]
 
     for filename in text_files:

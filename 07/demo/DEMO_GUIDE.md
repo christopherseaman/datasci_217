@@ -15,35 +15,37 @@ Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals
 - Plot customization (colors, markers, styles)
 - Multiple plot types (line, bar, scatter, histogram)
 
-### Demo 2: seaborn Statistical Visualization
+### Demo 2: pandas Plotting and seaborn Statistical Visualization
 **File**: `demo2_seaborn_statistical.ipynb`
 **Duration**: 25 minutes
-**Focus**: Statistical plots and relationship visualization
-
-**Key Activities**:
-- Statistical plot types (box plots, violin plots, pair plots)
-- Relationship visualization (scatter plots, heatmaps)
-- Distribution analysis (histograms, density plots)
-
-### Demo 3: pandas Plotting and Modern Tools
-**File**: `demo3_pandas_modern.ipynb`
-**Duration**: 25 minutes
-**Focus**: Quick exploration and modern visualization libraries
+**Focus**: Quick exploration and statistical plots
 
 **Key Activities**:
 - pandas plotting for data exploration
-- vega-altair grammar of graphics
-- Visualization best practices and chart selection
+- seaborn statistical plots (box plots, violin plots, pair plots)
+- Relationship visualization (scatter plots, heatmaps)
+- Styling and themes
+
+### Demo 3: Modern Visualization Tools
+**File**: `demo3_pandas_altair.ipynb`
+**Duration**: 25 minutes
+**Focus**: Modern visualization libraries and interactivity
+
+**Key Activities**:
+- vega-altair grammar of graphics (chart creation, data encoding, interactivity)
+- vega-lite specifications and export formats
+- plotnine ggplot2-style plotting
+- Bokeh and Plotly for interactive dashboards
+- Tool comparison and selection criteria
 
 ## Learning Objectives
 - Master matplotlib fundamentals for custom plots
 - Create statistical visualizations with seaborn
-- Use pandas plotting for quick exploration
-- Apply visualization best practices
-- Explore modern visualization tools
+- Explore modern visualization tools (vega-altair, plotnine)
+- Understand when to use different visualization approaches
 
 ## Required Materials
-- Python environment with matplotlib, seaborn, pandas
+- Python environment with matplotlib, seaborn, pandas, altair, plotnine
 - Sample datasets (tips, iris, stock data)
 - Jupyter notebook interface
 

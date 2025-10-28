@@ -19,7 +19,11 @@ import pandas as pd
 
 ## Part 1: Figures and Subplots
 
+Every matplotlib plot requires a Figure object. The Figure contains one or more subplots (Axes objects) where the actual plotting occurs.
+
 ### Create a Basic Figure
+
+The basic matplotlib workflow: create data, create figure, plot data, customize, display.
 
 ```python
 # Create a simple line plot
@@ -36,6 +40,8 @@ plt.show()
 ```
 
 ### Create Multiple Subplots
+
+Use `plt.subplots()` to create a grid of subplots. Access individual subplots using array indexing: `axes[row, col]`.
 
 ```python
 # Create a 2x2 subplot grid
@@ -73,7 +79,11 @@ plt.show()
 
 ## Part 2: Plot Customization
 
+Control plot appearance through color, marker, and line style parameters.
+
 ### Colors, Markers, and Line Styles
+
+Format string syntax: `'markerstyle-linestyle-color'` (e.g., `'o-', 's--', '^-.'`).
 
 ```python
 # Create sample data
@@ -104,6 +114,8 @@ plt.show()
 ```
 
 ### Advanced Customization
+
+Set font sizes, colors, and annotations for publication-quality output.
 
 ```python
 # Create a more sophisticated plot
@@ -147,7 +159,11 @@ plt.show()
 
 ## Part 3: Different Plot Types
 
+Common plot types: line plots, bar charts, histograms, scatter plots, box plots.
+
 ### Bar Charts and Histograms
+
+Bar charts: categorical data. Histograms: numerical data distribution.
 
 ```python
 # Create sample data
@@ -181,6 +197,8 @@ plt.show()
 ```
 
 ### Scatter Plots and Box Plots
+
+Scatter plots: relationships between two variables. Box plots: distribution and outliers.
 
 ```python
 # Create sample data
@@ -217,6 +235,8 @@ plt.show()
 
 ### Save Figures
 
+Use `plt.savefig()` with appropriate format and DPI settings.
+
 ```python
 # Create a publication-quality figure
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -249,9 +269,3 @@ print("Figures saved as PNG, PDF, and SVG")
 4. **Export**: Save figures in high quality for presentations and publications
 5. **Best Practices**: Use clear labels, appropriate colors, and good contrast
 
-## Next Steps
-
-- Practice creating different plot types with your own data
-- Experiment with color palettes and styling
-- Learn about seaborn for statistical plots
-- Explore pandas plotting for quick data exploration

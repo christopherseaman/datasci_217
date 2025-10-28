@@ -94,22 +94,6 @@ def test_q3_data_overview(output_dir):
     assert output_file.stat().st_size > 0, "Plot file is empty"
 
 
-def test_q4_best_practices(output_dir):
-    """Test Question 4: Best practices visualization output."""
-    output_file = output_dir / "q4_best_practices.png"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Verify file is not empty
-    assert output_file.stat().st_size > 0, "Plot file is empty"
-
-
-def test_q4_final_report(output_dir):
-    """Test Question 4: Final report visualization output."""
-    output_file = output_dir / "q4_final_report.png"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Verify file is not empty
-    assert output_file.stat().st_size > 0, "Plot file is empty"
 
 
 def test_all_required_outputs(output_dir):
@@ -120,9 +104,7 @@ def test_all_required_outputs(output_dir):
         "q2_seaborn_plots.png",
         "q2_correlation_heatmap.png",
         "q3_pandas_plots.png",
-        "q3_data_overview.png",
-        "q4_best_practices.png",
-        "q4_final_report.png"
+        "q3_data_overview.png"
     ]
 
     missing_files = []
@@ -143,9 +125,7 @@ def test_plot_file_sizes(output_dir):
         "q2_seaborn_plots.png",
         "q2_correlation_heatmap.png",
         "q3_pandas_plots.png",
-        "q3_data_overview.png",
-        "q4_best_practices.png",
-        "q4_final_report.png"
+        "q3_data_overview.png"
     ]
 
     for filename in plot_files:

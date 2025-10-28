@@ -178,52 +178,6 @@ print("Sales data columns:", sales_df.columns.tolist())
 # TODO: Save the plot as 'output/q3_trend_analysis.png'
 ```
 
-## Question 4: Time Series Visualization and Automation
-
-### Part 4.1: Time Series Visualization
-
-**TODO: Create comprehensive time series visualizations**
-
-```python
-# TODO: Create multiple subplot layout
-# TODO: Plot original time series
-# TODO: Plot seasonal decomposition
-# TODO: Plot correlation analysis
-# TODO: Plot distribution analysis
-# TODO: Add professional styling
-
-# TODO: Save the plot as 'output/q4_visualization.png'
-```
-
-### Part 4.2: Seasonal Decomposition
-
-**TODO: Perform seasonal decomposition analysis**
-
-```python
-# TODO: Use statsmodels for seasonal decomposition
-# TODO: Separate trend, seasonal, and residual components
-# TODO: Analyze seasonal patterns
-# TODO: Calculate seasonal statistics
-# TODO: Create decomposition visualization
-
-# TODO: Save results as 'output/q4_seasonal_analysis.csv'
-```
-
-### Part 4.3: Automation Setup
-
-**TODO: Set up automated analysis workflow**
-
-```python
-# TODO: Create function for daily analysis
-# TODO: Create function for weekly analysis
-# TODO: Create function for monthly analysis
-# TODO: Create logging system
-# TODO: Create error handling
-# TODO: Document automation workflow
-
-# TODO: Save results as 'output/q4_automation_report.txt'
-```
-
 ## Submission Checklist
 
 Before submitting, verify you've created:
@@ -234,9 +188,6 @@ Before submitting, verify you've created:
 - [ ] `output/q2_missing_data_report.txt` - missing data report
 - [ ] `output/q3_rolling_analysis.csv` - rolling analysis
 - [ ] `output/q3_trend_analysis.png` - trend analysis plot
-- [ ] `output/q4_visualization.png` - time series visualization
-- [ ] `output/q4_seasonal_analysis.csv` - seasonal analysis
-- [ ] `output/q4_automation_report.txt` - automation report
 
 ## Key Learning Objectives
 
@@ -245,5 +196,3 @@ Before submitting, verify you've created:
 - Use resampling and frequency conversion
 - Apply rolling window operations
 - Handle time zones and temporal data
-- Automate time-based tasks
-- Create effective time series visualizations

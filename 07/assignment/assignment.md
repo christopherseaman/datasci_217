@@ -240,49 +240,6 @@ plt.savefig('output/q3_data_overview.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
 
-## Question 4: Modern Visualization and Best Practices
-
-### Part 4.1: Good vs Bad Visualization
-
-**TODO: Create examples of good and bad visualization practices**
-
-```python
-# TODO: Create a figure with 2x2 subplots
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-
-# TODO: Top-left: BAD - 3D pie chart (avoid 3D for data)
-# TODO: Top-right: GOOD - Simple bar chart
-# TODO: Bottom-left: BAD - Misleading y-axis scale
-# TODO: Bottom-right: GOOD - Proper scale and clear labels
-
-# TODO: Add titles indicating "BAD" and "GOOD" examples
-# TODO: Save the plot as 'output/q4_best_practices.png'
-
-plt.tight_layout()
-plt.savefig('output/q4_best_practices.png', dpi=300, bbox_inches='tight')
-plt.show()
-```
-
-### Part 4.2: Final Comprehensive Report
-
-**TODO: Create a publication-quality final visualization**
-
-```python
-# TODO: Create a comprehensive dashboard
-fig = plt.figure(figsize=(20, 16))
-
-# TODO: Create a complex subplot layout
-# TODO: Include multiple visualization types
-# TODO: Apply professional styling
-# TODO: Add comprehensive titles and annotations
-# TODO: Use consistent color scheme
-# TODO: Save the plot as 'output/q4_final_report.png'
-
-plt.tight_layout()
-plt.savefig('output/q4_final_report.png', dpi=300, bbox_inches='tight')
-plt.show()
-```
-
 ## Submission Checklist
 
 Before submitting, verify you've created:
@@ -293,8 +250,6 @@ Before submitting, verify you've created:
 - [ ] `output/q2_correlation_heatmap.png` - correlation analysis
 - [ ] `output/q3_pandas_plots.png` - pandas plotting
 - [ ] `output/q3_data_overview.png` - data exploration
-- [ ] `output/q4_best_practices.png` - visualization best practices
-- [ ] `output/q4_final_report.png` - comprehensive report
 
 ## Key Learning Objectives
 
@@ -303,4 +258,3 @@ Before submitting, verify you've created:
 - Use pandas plotting for quick exploration
 - Apply visualization best practices
 - Choose appropriate chart types for different data
-- Create publication-quality visualizations

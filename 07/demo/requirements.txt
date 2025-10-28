@@ -6,3 +6,6 @@ jupyter>=1.0.0
 jupytext>=1.13.0
 altair>=4.0.0
 plotnine>=0.8.0
+vl-convert-python>=1.0.0
+bokeh>=3.0.0
+plotly>=5.0.0

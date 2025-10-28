@@ -170,50 +170,6 @@ def salary_stats(group):
 # TODO: Save the plot as 'output/q3_pivot_visualization.png'
 ```
 
-## Question 4: Performance Optimization and Remote Computing
-
-### Part 4.1: Performance Analysis
-
-**TODO: Analyze and optimize performance**
-
-```python
-# TODO: Measure performance of different aggregation methods
-# TODO: Compare single groupby vs multiple groupby operations
-# TODO: Optimize data types for better performance
-# TODO: Test memory usage of different operations
-
-# TODO: Create performance comparison report
-# TODO: Save results as 'output/q4_performance_optimization.txt'
-```
-
-### Part 4.2: Remote Computing Simulation
-
-**TODO: Simulate remote computing workflow**
-
-```python
-# TODO: Create function to simulate remote data loading
-# TODO: Create function to simulate remote analysis
-# TODO: Create function to simulate result saving
-# TODO: Create function to simulate file transfer
-
-# TODO: Document the remote computing workflow
-# TODO: Save results as 'output/q4_remote_computing_report.txt'
-```
-
-### Part 4.3: Parallel Processing
-
-**TODO: Implement parallel processing techniques**
-
-```python
-# TODO: Create chunked processing function
-# TODO: Implement parallel groupby operations
-# TODO: Compare sequential vs parallel performance
-# TODO: Monitor memory usage during processing
-
-# TODO: Document parallel processing results
-# TODO: Save results as 'output/q4_remote_computing_report.txt'
-```
-
 ## Submission Checklist
 
 Before submitting, verify you've created:
@@ -225,14 +181,10 @@ Before submitting, verify you've created:
 - [ ] `output/q3_pivot_analysis.csv` - Pivot table analysis
 - [ ] `output/q3_crosstab_analysis.csv` - Cross-tabulation analysis
 - [ ] `output/q3_pivot_visualization.png` - Pivot visualization
-- [ ] `output/q4_performance_optimization.txt` - Performance optimization
-- [ ] `output/q4_remote_computing_report.txt` - Remote computing report
 
 ## Key Learning Objectives
 
 - Master the split-apply-combine paradigm
 - Apply aggregation functions and transformations
 - Create pivot tables for multi-dimensional analysis
-- Use remote computing for large datasets
-- Optimize performance for aggregation operations
 - Apply advanced groupby techniques
