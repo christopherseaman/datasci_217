@@ -193,7 +193,7 @@ FOUNDATION LAYER
 
 **Pro tip:** Start with pandas for exploration, seaborn for analysis, matplotlib for customization, and modern tools for interactive/sharing needs.
 
-# matplotlib Fundamentals
+# matplotlib: Foundation Layer
 
 *Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures.*
 
@@ -333,7 +333,7 @@ plt.show()
 
 # LIVE DEMO!
 
-# pandas Plotting: Quick Exploration
+# pandas: Quick Data Exploration
 
 *Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
 
@@ -419,7 +419,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-# seaborn: Statistical Visualization
+# seaborn: Statistical Graphics
 
 *seaborn is like having a data visualization expert sitting next to you, automatically choosing the right colors, styles, and statistical methods to make your plots look professional and informative.*
 
