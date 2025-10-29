@@ -825,6 +825,17 @@ fig.show()
 - **Bokeh**: High-performance web visualizations, custom interactions
 - **Plotly**: Dashboards, web applications, easy interactivity
 
+| Tool | Best For | Learning Curve | Interactivity | Output Formats | Grammar |
+|------|----------|----------------|---------------|----------------|---------|
+| matplotlib | Custom plots, publication quality | High | None | PNG/SVG/PDF | Imperative |
+| seaborn | Statistical plots, beautiful defaults | Low | None | PNG/SVG/PDF | Imperative |
+| pandas | Quick exploration, basic charts | Very Low | None | PNG/SVG/PDF | Imperative |
+| altair | Interactive plots, grammar of graphics | Medium | Built-in | PNG/SVG/HTML/JSON | Declarative |
+| plotnine | R users, layered approach | Medium | None | PNG/SVG/PDF | Declarative |
+| bokeh | Interactive web visualizations | High | High | HTML/JS | Imperative |
+| plotly | Dashboards, web applications | Medium | High | HTML/JS | Declarative |
+
+
 ![xkcd 1138: Heatmap](https://imgs.xkcd.com/comics/heatmap.png)
 
 *"Every single map of the United States looks the same because it's just a population density map." - A reminder that your visualization should show meaningful patterns, not just expected distributions.*
