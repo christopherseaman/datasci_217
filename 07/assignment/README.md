@@ -112,19 +112,6 @@ Open `assignment.ipynb` and work through the four questions. The notebook provid
 
 **Output:** `output/q3_pandas_plots.png`, `output/q3_data_overview.png`
 
-### Question 4: Modern Visualization and Best Practices
-
-**What you'll do:**
-- Apply visualization best practices
-- Choose appropriate chart types for different data
-- Create publication-quality plots
-- Implement good vs bad visualization examples
-- Generate a final comprehensive report
-
-**Skills:** chart selection, design principles, publication quality, comprehensive analysis
-
-**Output:** `output/q4_best_practices.png`, `output/q4_final_report.png`
-
 ## Assignment Structure
 
 ```
@@ -143,9 +130,7 @@ Open `assignment.ipynb` and work through the four questions. The notebook provid
 │   ├── q2_seaborn_plots.png      # Q2 seaborn output
 │   ├── q2_correlation_heatmap.png # Q2 correlation analysis
 │   ├── q3_pandas_plots.png       # Q3 pandas output
-│   ├── q3_data_overview.png      # Q3 data overview
-│   ├── q4_best_practices.png     # Q4 best practices
-│   └── q4_final_report.png        # Q4 final report
+│   └── q3_data_overview.png      # Q3 data overview
 └── .github/
     └── test/
         ├── test_assignment.py    # Auto-grading tests
@@ -200,5 +185,3 @@ Before submitting, verify you've created:
 - [ ] `output/q2_correlation_heatmap.png` - correlation analysis
 - [ ] `output/q3_pandas_plots.png` - pandas plotting
 - [ ] `output/q3_data_overview.png` - data exploration
-- [ ] `output/q4_best_practices.png` - visualization best practices
-- [ ] `output/q4_final_report.png` - comprehensive report

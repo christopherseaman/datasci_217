@@ -173,7 +173,7 @@ print("Data types:")
 print(merged_df.dtypes)
 
 # TODO: Select only the numeric columns that exist for correlation analysis
-# Hint: After merging, some column names might have changed (e.g., unit_price_x, unit_price_y)
+# Hint: After merging, pandas adds _x and _y suffixes to duplicate column names
 numeric_cols = []  # Fill this with the appropriate column names
 
 # TODO: Calculate correlation matrix
@@ -206,7 +206,7 @@ fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
 # TODO: Top-left: Line plot of daily sales
 # TODO: Top-right: Rolling 7-day average
-# TODO: Bottom-left: Monthly sales bar chart
+# TODO: Bottom-left: Monthly sales bar chart (use resample('ME') for month-end frequency)
 # TODO: Bottom-right: Sales distribution histogram
 
 # TODO: Add titles and labels
