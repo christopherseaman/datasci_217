@@ -192,24 +192,17 @@ plt.show()
 #### Joint Plots
 
 ```python
-# Different types of joint plots
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-
 # Scatter + histograms
-sns.jointplot(data=tips, x='total_bill', y='tip', ax=axes[0, 0])
-axes[0, 0].set_title('Scatter + Histograms')
+sns.jointplot(data=tips, x='total_bill', y='tip')
 
 # Hexbin plot
-sns.jointplot(data=tips, x='total_bill', y='tip', kind='hex', ax=axes[0, 1])
-axes[0, 1].set_title('Hexbin Plot')
+sns.jointplot(data=tips, x='total_bill', y='tip', kind='hex')
 
 # Regression plot
-sns.jointplot(data=tips, x='total_bill', y='tip', kind='reg', ax=axes[1, 0])
-axes[1, 0].set_title('Regression Plot')
+sns.jointplot(data=tips, x='total_bill', y='tip', kind='reg')
 
 # KDE plot
-sns.jointplot(data=tips, x='total_bill', y='tip', kind='kde', ax=axes[1, 1])
-axes[1, 1].set_title('KDE Plot')
+sns.jointplot(data=tips, x='total_bill', y='tip', kind='kde')
 
 plt.tight_layout()
 plt.show()
