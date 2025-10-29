@@ -409,7 +409,7 @@ fig2.show()
 
 ## Part 6: Tool Comparison and Selection
 
-### Comprehensive Tool Comparison
+### Tool Comparison
 
 | Tool | Best For | Learning Curve | Interactivity | Output Formats | Grammar |
 |------|----------|----------------|---------------|----------------|---------|
