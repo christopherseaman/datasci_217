@@ -28,7 +28,11 @@ def data_dir():
 
 def test_data_files_exist(data_dir):
     """Test that required data files were generated."""
-    required_files = ["employee_data.csv", "department_data.csv", "sales_data.csv"]
+    required_files = [
+        "employee_data.csv",
+        "department_data.csv",
+        "sales_data.csv",
+    ]
 
     for filename in required_files:
         filepath = data_dir / filename
@@ -49,8 +53,9 @@ def test_q1_groupby_analysis(output_dir):
     assert len(df) > 0, "GroupBy analysis data is empty"
 
     # Should have department-related columns
-    assert any('department' in col.lower() for col in df.columns), \
+    assert any("department" in col.lower() for col in df.columns), (
         "Missing department-related columns"
+    )
 
 
 def test_q1_aggregation_report(output_dir):
@@ -63,8 +68,10 @@ def test_q1_aggregation_report(output_dir):
     assert len(content) > 0, "Aggregation report is empty"
 
     # Should contain key analysis sections
-    assert any(keyword in content.lower() for keyword in ['department', 'salary', 'analysis']), \
-        "Missing key analysis content"
+    assert any(
+        keyword in content.lower()
+        for keyword in ["department", "salary", "analysis"]
+    ), "Missing key analysis content"
 
 
 def test_q2_hierarchical_analysis(output_dir):
@@ -119,8 +126,6 @@ def test_q3_pivot_visualization(output_dir):
     assert output_file.stat().st_size > 0, "Visualization file is empty"
 
 
-
-
 def test_all_required_outputs(output_dir):
     """Test that all required output files exist."""
     required_outputs = [
@@ -130,7 +135,7 @@ def test_all_required_outputs(output_dir):
         "q2_performance_report.txt",
         "q3_pivot_analysis.csv",
         "q3_crosstab_analysis.csv",
-        "q3_pivot_visualization.png"
+        "q3_pivot_visualization.png",
     ]
 
     missing_files = []
@@ -139,8 +144,9 @@ def test_all_required_outputs(output_dir):
         if not filepath.exists():
             missing_files.append(str(filepath))
 
-    assert len(missing_files) == 0, \
+    assert len(missing_files) == 0, (
         f"Missing required output files: {', '.join(missing_files)}"
+    )
 
 
 def test_csv_file_validation(output_dir):
@@ -149,7 +155,7 @@ def test_csv_file_validation(output_dir):
         "q1_groupby_analysis.csv",
         "q2_hierarchical_analysis.csv",
         "q3_pivot_analysis.csv",
-        "q3_crosstab_analysis.csv"
+        "q3_crosstab_analysis.csv",
     ]
 
     for filename in csv_files:
@@ -165,13 +171,12 @@ def test_csv_file_validation(output_dir):
 
 def test_text_file_validation(output_dir):
     """Test that text files contain meaningful content."""
-    text_files = [
-        "q1_aggregation_report.txt",
-        "q2_performance_report.txt"
-    ]
+    text_files = ["q1_aggregation_report.txt", "q2_performance_report.txt"]
 
     for filename in text_files:
         filepath = output_dir / filename
         if filepath.exists():
             content = filepath.read_text()
-            assert len(content.strip()) > 50, f"Text file {filename} is too short or empty"
+            assert len(content.strip()) > 50, (
+                f"Text file {filename} is too short or empty"
+            )

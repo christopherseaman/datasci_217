@@ -15,7 +15,7 @@ jupyter:
 # Assignment 8: Data Aggregation and Group Operations
 
 ## Overview
-This assignment covers data aggregation and group operations using real-world healthcare data including Electronic Health Records (EHR), clinical trials, and medical sensor data.
+This assignment covers data aggregation and group operations using a health data lens (think EHR-like tables for departments, staff, regions, and activity). We’ll use the existing `department`, `employee`, and `sales` columns as proxies for clinical departments, clinicians, and encounters to keep the provided dataset and tests unchanged.
 
 ## Setup
 
@@ -56,28 +56,28 @@ print("\nFirst few rows:")
 print(merged_df.head())
 ```
 
-### Part 1.2: Basic Aggregation
+### Part 1.2: Basic Aggregation (health context)
 
 **TODO: Perform basic groupby operations**
 
 ```python
-# TODO: Group by department and calculate basic statistics
+# TODO: Group by department (treat as clinical department) and calculate basic stats
 # TODO: Calculate mean, sum, count for salary and experience by department
-# TODO: Calculate total sales by department
-# TODO: Find the top-performing department by total sales
+# TODO: Calculate total sales by department (treat sales as encounter totals)
+# TODO: Find the top-performing department by total sales (encounter volume)
 
 # TODO: Save results as 'output/q1_groupby_analysis.csv'
 ```
 
-### Part 1.3: Transform Operations
+### Part 1.3: Transform Operations (within-department norms)
 
 **TODO: Use transform operations to add group statistics**
 
 ```python
-# TODO: Add department mean salary as new column
+# TODO: Add department (clinical unit) mean salary as new column
 # TODO: Add department standard deviation of salary
 # TODO: Create normalized salary (z-score within department)
-# TODO: Add department total sales as new column
+# TODO: Add department total sales (encounters) as new column
 
 # TODO: Display the enhanced dataframe
 # TODO: Save results as 'output/q1_aggregation_report.txt'
@@ -85,14 +85,14 @@ print(merged_df.head())
 
 ## Question 2: Advanced GroupBy Operations
 
-### Part 2.1: Filter Operations
+### Part 2.1: Filter Operations (quality/scale gates)
 
 **TODO: Use filter operations to remove groups**
 
 ```python
-# TODO: Filter departments with more than 5 employees
-# TODO: Filter departments with average salary > 60000
-# TODO: Filter departments with total sales > 100000
+# TODO: Filter departments with more than 5 employees (sufficient staffing)
+# TODO: Filter departments with average salary > 60000 (seniority proxy)
+# TODO: Filter departments with total sales > 100000 (high encounter volume)
 
 # TODO: Create a summary of filtered results
 # TODO: Save results as 'output/q2_hierarchical_analysis.csv'
@@ -115,12 +115,12 @@ def salary_stats(group):
 # TODO: Save results as 'output/q2_performance_report.txt'
 ```
 
-### Part 2.3: Hierarchical Grouping
+### Part 2.3: Hierarchical Grouping (dept × region)
 
 **TODO: Perform multi-level grouping**
 
 ```python
-# TODO: Group by department and region
+# TODO: Group by department (clinical unit) and region
 # TODO: Calculate statistics for each department-region combination
 # TODO: Use unstack to convert to wide format
 # TODO: Use stack to convert back to long format
@@ -131,12 +131,12 @@ def salary_stats(group):
 
 ## Question 3: Pivot Tables and Cross-Tabulations
 
-### Part 3.1: Basic Pivot Tables
+### Part 3.1: Basic Pivot Tables (health service mix)
 
 **TODO: Create pivot tables for multi-dimensional analysis**
 
 ```python
-# TODO: Create pivot table: sales by product and region
+# TODO: Create pivot table: sales (encounters) by product (service) and region
 # TODO: Create pivot table with multiple aggregations (sum, mean, count)
 # TODO: Add totals (margins) to pivot table
 # TODO: Handle missing values with fill_value
@@ -144,7 +144,7 @@ def salary_stats(group):
 # TODO: Save results as 'output/q3_pivot_analysis.csv'
 ```
 
-### Part 3.2: Cross-Tabulations
+### Part 3.2: Cross-Tabulations (caseload distribution)
 
 **TODO: Create cross-tabulations for categorical analysis**
 

@@ -10,9 +10,14 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
 
-# FIXME: Add xkcd 2456: Types of Scientific Paper
+# Outline
 
-*"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
+- groupby split-apply-combine essentials
+- pivot tables and crosstab basics
+- remote workflows: ssh, screen, tmux
+- performance-minded patterns beginners should know
+
+ 
 
 Data aggregation is the process of summarizing and grouping data to extract meaningful insights. This lecture covers the essential tools for data aggregation: **groupby operations**, **pivot tables**, and **remote computing** for handling large datasets.
 
@@ -72,7 +77,7 @@ APPLY FUNCTION (e.g., mean)      COMBINE RESULTS
 └─────────┴─────────┘
 ```
 
-## Basic GroupBy Operations
+# Basic GroupBy Operations
 
 **Reference:**
 
@@ -109,9 +114,9 @@ print(df.groupby('Department').agg({
 }))
 ```
 
-## Advanced GroupBy Operations
+# Advanced GroupBy Operations
 
-### Transform Operations
+## Transform Operations
 
 Transform operations apply a function to each group and return a result with the same shape as the original data.
 
@@ -134,7 +139,7 @@ print("Data with group statistics:")
 print(df[['Department', 'Employee', 'Salary', 'Salary_Mean', 'Salary_Std', 'Salary_Normalized']])
 ```
 
-### Filter Operations
+## Filter Operations
 
 Filter operations remove entire groups based on a condition.
 
@@ -158,7 +163,7 @@ print("\nHigh-salary departments:")
 print(high_salary_depts)
 ```
 
-### Apply Operations
+## Apply Operations
 
 Apply operations let you use custom functions on each group.
 
@@ -191,7 +196,7 @@ print(top_earners)
 
 # LIVE DEMO!
 
-### Hierarchical Grouping
+# Hierarchical Grouping
 
 **Reference:**
 
@@ -223,6 +228,10 @@ print(wide_format)
 ```
 
 # Pivot Tables and Cross-Tabulations
+![xkcd 2582: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
+
+![Research vs. Practical](media/research.png)
+
 
 *Think of pivot tables as the data analyst's Swiss Army knife - they can reshape, summarize, and analyze data in ways that would take dozens of lines of code to accomplish manually.*
 
@@ -316,6 +325,8 @@ print(crosstab)
 # LIVE DEMO!
 
 # Remote Computing and SSH
+![xkcd 1845: Endangered Data](https://imgs.xkcd.com/comics/endangered_data.png)
+
 
 *When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
 
@@ -388,7 +399,29 @@ result.to_csv('aggregated_results.csv')
 # scp username@server.com:~/aggregated_results.csv ./
 ```
 
-## Screen and tmux for Persistent Sessions
+## screen and tmux for Persistent Sessions
+![Punk vs. Process](media/punk.png)
+
+
+Screen lets you detach and reattach long-running jobs; tmux is a more modern, scriptable alternative. Use whichever your server offers.
+
+Screen quickstart:
+
+```bash
+# Create a named screen session
+screen -S analysis
+
+# Detach (Ctrl+a d) and list sessions
+screen -ls
+
+# Reattach later
+screen -r analysis
+
+# Kill session from inside
+exit
+```
+
+tmux quickstart:
 
 **Reference:**
 
@@ -423,7 +456,7 @@ jupyter notebook --ip=0.0.0.0 --port=8888
 tmux attach-session -t data_analysis
 ```
 
-# Performance Optimization
+# Performance Optimization (essentials only)
 
 *When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
 
@@ -471,7 +504,7 @@ def memory_efficient_analysis(df):
     return final_result
 ```
 
-## Parallel Processing
+## Parallel Processing (optional)
 
 **Reference:**
 

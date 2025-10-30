@@ -1,6 +1,8 @@
 # Assignment 8: Data Aggregation and Group Operations
 
-**Deliverable:** Completed `assignment.ipynb` with output files in `output/`
+**Deliverable:**
+
+- Pass all auto-grading tests by generating the required output files from `assignment.ipynb`/`assignment.md`
 
 ## Environment Setup
 
@@ -73,6 +75,22 @@ Open `assignment.ipynb` and work through the four questions. The notebook provid
 4. Use the hints provided in comments
 5. Check the submission checklist at the end
 
+### Auto-Grading (Required)
+
+Run all required cells in `assignment.ipynb` so that the following files are created in `output/`:
+
+- `q1_groupby_analysis.csv`, `q1_aggregation_report.txt`
+- `q2_hierarchical_analysis.csv`, `q2_performance_report.txt`
+- `q3_pivot_analysis.csv`, `q3_crosstab_analysis.csv`, `q3_pivot_visualization.png`
+
+Run tests locally:
+
+```bash
+pytest -q 08/assignment/.github/test/test_assignment.py
+```
+
+GitHub Classroom will run the same tests on push.
+
 ### Question 1: Basic GroupBy Operations
 
 **What you'll do:**
@@ -112,18 +130,7 @@ Open `assignment.ipynb` and work through the four questions. The notebook provid
 
 **Output:** `output/q3_pivot_analysis.csv`, `output/q3_crosstab_analysis.csv`, `output/q3_pivot_visualization.png`
 
-### Question 4: Performance Optimization and Remote Computing
-
-**What you'll do:**
-- Optimize data types for better performance
-- Implement chunked processing for large datasets
-- Use parallel processing techniques
-- Simulate remote computing workflows
-- Create performance comparison reports
-
-**Skills:** performance optimization, parallel processing, remote computing, memory management
-
-**Output:** `output/q4_performance_optimization.txt`, `output/q4_remote_computing_report.txt`
+ 
 
 ## Assignment Structure
 
@@ -145,12 +152,10 @@ Open `assignment.ipynb` and work through the four questions. The notebook provid
 │   ├── q3_pivot_analysis.csv     # Q3 pivot table analysis
 │   ├── q3_crosstab_analysis.csv  # Q3 cross-tabulation analysis
 │   ├── q3_pivot_visualization.png # Q3 pivot visualization
-│   ├── q4_performance_optimization.txt # Q4 performance optimization
-│   └── q4_remote_computing_report.txt # Q4 remote computing report
+ 
 └── .github/
     └── test/
-        ├── test_assignment.py    # Auto-grading tests
-        └── requirements.txt      # Test dependencies
+        └── test_assignment.py    # Auto-grading tests
 ```
 
 ## Dataset Schemas
@@ -202,5 +207,4 @@ Before submitting, verify you've created:
 - [ ] `output/q3_pivot_analysis.csv` - Pivot table analysis
 - [ ] `output/q3_crosstab_analysis.csv` - Cross-tabulation analysis
 - [ ] `output/q3_pivot_visualization.png` - Pivot visualization
-- [ ] `output/q4_performance_optimization.txt` - Performance optimization
-- [ ] `output/q4_remote_computing_report.txt` - Remote computing report
+ 
