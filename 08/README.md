@@ -460,9 +460,13 @@ tmux attach-session -t data_analysis
 
 *When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
 
-# FIXME: Add performance comparison chart showing groupby vs pivot_table vs manual aggregation speed
+![GroupBy Methods Performance](media/perf_groupby_methods.png)
 
-# FIXME: Add memory usage visualization for different aggregation methods
+![apply vs transform](media/perf_apply_vs_transform.png)
+
+![Memory optimization (categorical dtypes)](media/perf_memory_optimization.png)
+
+![Chunked vs full aggregation](media/perf_chunking.png)
 
 ## Efficient GroupBy Operations
 
