@@ -1,0 +1,11 @@
+department_id,department_name,manager_id,budget,location
+D001,Cardiology,E0001,10618101.78,South
+D002,Oncology,E0002,19260714.6,North
+D003,Neurology,E0003,15979909.13,South
+D004,Pediatrics,E0004,13979877.26,West
+D005,Orthopedics,E0005,7340279.61,West
+D006,Dermatology,E0006,7339917.81,South
+D007,Emergency,E0007,5871254.18,South
+D008,Radiology,E0008,17992642.19,South
+D009,Psychiatry,E0009,14016725.18,West
+D010,Endocrinology,E0010,15621088.67,West

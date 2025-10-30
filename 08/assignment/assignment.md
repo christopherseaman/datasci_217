@@ -61,12 +61,40 @@ print(merged_df.head())
 **TODO: Perform basic groupby operations**
 
 ```python
-# TODO: Group by department (treat as clinical department) and calculate basic stats
-# TODO: Calculate mean, sum, count for salary and experience by department
-# TODO: Calculate total sales by department (treat sales as encounter totals)
-# TODO: Find the top-performing department by total sales (encounter volume)
+# Group by department (clinical department proxy) and calculate basic stats
+dept_stats = merged_df.groupby('department_name').agg({
+    'salary': ['mean', 'sum', 'count'],
+    'performance_score': 'mean'
+})
 
-# TODO: Save results as 'output/q1_groupby_analysis.csv'
+# Flatten multi-level columns for safe joins
+dept_stats.columns = [
+    '_'.join([str(c) for c in col if c is not None]).replace('salary_', 'salary_')
+    if isinstance(col, tuple) else str(col)
+    for col in dept_stats.columns.values
+]
+
+# Total encounters by department
+if 'total_amount' in merged_df.columns:
+    merged_df['_encounters'] = merged_df['total_amount']
+elif {'quantity', 'unit_price'}.issubset(merged_df.columns):
+    merged_df['_encounters'] = merged_df['quantity'] * merged_df['unit_price']
+else:
+    merged_df['_encounters'] = 1
+
+dept_encounters = merged_df.groupby('department_name')['_encounters'].sum().to_frame('total_encounters')
+
+# Combine and write
+q1_df = dept_stats.join(dept_encounters)
+q1_df.to_csv('output/q1_groupby_analysis.csv', index=True)
+
+# Top-performing department by encounter volume
+top_dept = dept_encounters['total_encounters'].idxmax()
+with open('output/q1_aggregation_report.txt', 'w') as f:
+    f.write('Q1 Aggregation Report\n')
+    f.write(f"Top department by encounters: {top_dept}\n")
+    f.write(f"Departments: {len(dept_encounters)}\n")
+    f.write(q1_df.head().to_string())
 ```
 
 ### Part 1.3: Transform Operations (within-department norms)
@@ -74,13 +102,17 @@ print(merged_df.head())
 **TODO: Use transform operations to add group statistics**
 
 ```python
-# TODO: Add department (clinical unit) mean salary as new column
-# TODO: Add department standard deviation of salary
-# TODO: Create normalized salary (z-score within department)
-# TODO: Add department total sales (encounters) as new column
+# Add department (clinical unit) mean/std salary and normalized salary (z-score within department)
+merged_df['dept_salary_mean'] = merged_df.groupby('department_name')['salary'].transform('mean')
+merged_df['dept_salary_std'] = merged_df.groupby('department_name')['salary'].transform('std')
+merged_df['salary_z'] = (merged_df['salary'] - merged_df['dept_salary_mean']) / merged_df['dept_salary_std']
 
-# TODO: Display the enhanced dataframe
-# TODO: Save results as 'output/q1_aggregation_report.txt'
+# Add department total encounters as new column
+dept_total_map = dept_encounters['total_encounters']
+merged_df['dept_total_encounters'] = merged_df['department_name'].map(dept_total_map)
+
+# Preview
+merged_df[['department_name','employee_id','salary','dept_salary_mean','dept_salary_std','salary_z','dept_total_encounters']].head()
 ```
 
 ## Question 2: Advanced GroupBy Operations
@@ -90,12 +122,28 @@ print(merged_df.head())
 **TODO: Use filter operations to remove groups**
 
 ```python
-# TODO: Filter departments with more than 5 employees (sufficient staffing)
-# TODO: Filter departments with average salary > 60000 (seniority proxy)
-# TODO: Filter departments with total sales > 100000 (high encounter volume)
+dept_counts = merged_df.groupby('department_name')['employee_id'].nunique()
+dept_salary_mean = merged_df.groupby('department_name')['salary'].mean()
+threshold_encounters = max(merged_df.get('_encounters', pd.Series([0])).sum() * 0.05, 10000)
 
-# TODO: Create a summary of filtered results
-# TODO: Save results as 'output/q2_hierarchical_analysis.csv'
+keepers = (
+    (dept_counts > 5) &
+    (dept_salary_mean > 60000) &
+    (dept_encounters['total_encounters'] > threshold_encounters)
+)
+
+filtered_depts = dept_encounters.loc[keepers.index[keepers]].copy()
+filtered_depts['num_employees'] = dept_counts.loc[filtered_depts.index]
+filtered_depts['avg_salary'] = dept_salary_mean.loc[filtered_depts.index]
+
+# Save summary
+filtered_depts.to_csv('output/q2_hierarchical_analysis.csv')
+
+# Write a simple selection report
+with open('output/q2_performance_report.txt','w') as f:
+    f.write('Q2 Filter Summary\n')
+    f.write(f"Kept departments: {len(filtered_depts)} / {dept_counts.size}\n")
+    f.write(filtered_depts.head().to_string())
 ```
 
 ### Part 2.2: Apply Operations
@@ -103,16 +151,20 @@ print(merged_df.head())
 **TODO: Use apply operations with custom functions**
 
 ```python
-# TODO: Create custom function to calculate salary statistics
 def salary_stats(group):
-    # TODO: Return mean, std, min, max, range for salary
-    pass
+    return pd.Series({
+        'count': len(group),
+        'mean': group['salary'].mean(),
+        'std': group['salary'].std(),
+        'min': group['salary'].min(),
+        'max': group['salary'].max(),
+        'range': group['salary'].max() - group['salary'].min()
+    })
 
-# TODO: Apply custom function to each department
-# TODO: Create function to find top earners in each department
-# TODO: Apply function to get top 2 earners per department
+dept_salary_summary = merged_df.groupby('department_name').apply(salary_stats)
 
-# TODO: Save results as 'output/q2_performance_report.txt'
+top2_earners = merged_df.sort_values('salary', ascending=False).groupby('department_name').head(2)
+top2_earners[['department_name','employee_id','salary']].head()
 ```
 
 ### Part 2.3: Hierarchical Grouping (dept × region)
@@ -120,13 +172,13 @@ def salary_stats(group):
 **TODO: Perform multi-level grouping**
 
 ```python
-# TODO: Group by department (clinical unit) and region
-# TODO: Calculate statistics for each department-region combination
-# TODO: Use unstack to convert to wide format
-# TODO: Use stack to convert back to long format
-
-# TODO: Analyze the hierarchical structure
-# TODO: Save results as 'output/q2_hierarchical_analysis.csv'
+hier_stats = merged_df.groupby(['department_name','region']).agg({
+    '_encounters':'sum',
+    'salary':'mean'
+})
+hier_stats_wide = hier_stats.unstack(fill_value=0)
+hier_stats_wide.to_csv('output/q2_hierarchical_analysis.csv')
+hier_stats.head()
 ```
 
 ## Question 3: Pivot Tables and Cross-Tabulations
@@ -136,12 +188,28 @@ def salary_stats(group):
 **TODO: Create pivot tables for multi-dimensional analysis**
 
 ```python
-# TODO: Create pivot table: sales (encounters) by product (service) and region
-# TODO: Create pivot table with multiple aggregations (sum, mean, count)
-# TODO: Add totals (margins) to pivot table
-# TODO: Handle missing values with fill_value
+product_col = 'product_id' if 'product_id' in sales_df.columns else ('Product' if 'Product' in sales_df.columns else None)
+region_col = 'region' if 'region' in sales_df.columns else ('Region' if 'Region' in sales_df.columns else None)
 
-# TODO: Save results as 'output/q3_pivot_analysis.csv'
+if 'total_amount' in sales_df.columns:
+    measure = sales_df['total_amount']
+elif {'quantity','unit_price'}.issubset(sales_df.columns):
+    measure = sales_df['quantity'] * sales_df['unit_price']
+else:
+    measure = pd.Series(1, index=sales_df.index)
+
+df_pvt = sales_df.copy()
+df_pvt['_measure'] = measure
+
+pivot = pd.pivot_table(df_pvt,
+                       values='_measure',
+                       index=product_col,
+                       columns=region_col,
+                       aggfunc='sum',
+                       fill_value=0,
+                       margins=True)
+pivot.to_csv('output/q3_pivot_analysis.csv')
+pivot.head()
 ```
 
 ### Part 3.2: Cross-Tabulations (caseload distribution)
@@ -149,12 +217,9 @@ def salary_stats(group):
 **TODO: Create cross-tabulations for categorical analysis**
 
 ```python
-# TODO: Create crosstab of department vs region
-# TODO: Create crosstab with margins
-# TODO: Create multi-dimensional crosstab
-
-# TODO: Analyze the cross-tabulation results
-# TODO: Save results as 'output/q3_crosstab_analysis.csv'
+dept_region_xtab = pd.crosstab(merged_df['department_name'], merged_df['region'], margins=True)
+dept_region_xtab.to_csv('output/q3_crosstab_analysis.csv')
+dept_region_xtab.head()
 ```
 
 ### Part 3.3: Pivot Table Visualization
@@ -162,12 +227,21 @@ def salary_stats(group):
 **TODO: Create visualizations from pivot tables**
 
 ```python
-# TODO: Create heatmap from pivot table
-# TODO: Create bar chart from pivot table
-# TODO: Customize colors and styling
-# TODO: Add appropriate titles and labels
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# TODO: Save the plot as 'output/q3_pivot_visualization.png'
+pivot_viz = pd.read_csv('output/q3_pivot_analysis.csv', index_col=0)
+if 'All' in pivot_viz.columns:
+    pivot_viz = pivot_viz.drop(columns=['All'])
+if 'All' in pivot_viz.index:
+    pivot_viz = pivot_viz.drop(index=['All'])
+
+plt.figure(figsize=(8, 5))
+sns.heatmap(pivot_viz, annot=False, cmap='Blues')
+plt.title('Encounters by Product and Region')
+plt.tight_layout()
+plt.savefig('output/q3_pivot_visualization.png', dpi=150)
+plt.close()
 ```
 
 ## Submission Checklist

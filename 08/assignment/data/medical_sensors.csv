@@ -1,0 +1,201 @@
+sensor_id,sensor_type,location,manufacturer,installation_date
+S0001,Heart Rate Monitor,General Ward,MedTech Inc,2023-01-01
+S0002,Temperature Sensor,Outpatient,MediDevice,2023-01-02
+S0003,Blood Pressure Cuff,ICU,MedTech Inc,2023-01-03
+S0004,Temperature Sensor,General Ward,MediDevice,2023-01-04
+S0005,Temperature Sensor,Outpatient,HealthCorp,2023-01-05
+S0006,Blood Pressure Cuff,Operating Room,HealthCorp,2023-01-06
+S0007,ECG Monitor,Emergency,MediDevice,2023-01-07
+S0008,Temperature Sensor,General Ward,MedTech Inc,2023-01-08
+S0009,ECG Monitor,ICU,HealthCorp,2023-01-09
+S0010,Pulse Oximeter,ICU,MedTech Inc,2023-01-10
+S0011,ECG Monitor,Operating Room,HealthCorp,2023-01-11
+S0012,Pulse Oximeter,Emergency,MedTech Inc,2023-01-12
+S0013,Heart Rate Monitor,Emergency,MediDevice,2023-01-13
+S0014,Blood Pressure Cuff,Outpatient,MediDevice,2023-01-14
+S0015,ECG Monitor,Emergency,HealthCorp,2023-01-15
+S0016,Blood Pressure Cuff,General Ward,BioSensors Ltd,2023-01-16
+S0017,ECG Monitor,Emergency,MedTech Inc,2023-01-17
+S0018,Heart Rate Monitor,Outpatient,MedTech Inc,2023-01-18
+S0019,Heart Rate Monitor,ICU,MedTech Inc,2023-01-19
+S0020,Pulse Oximeter,Emergency,MedTech Inc,2023-01-20
+S0021,Blood Pressure Cuff,Outpatient,MediDevice,2023-01-21
+S0022,Temperature Sensor,Outpatient,MedTech Inc,2023-01-22
+S0023,Pulse Oximeter,Operating Room,HealthCorp,2023-01-23
+S0024,Pulse Oximeter,Emergency,HealthCorp,2023-01-24
+S0025,Heart Rate Monitor,ICU,BioSensors Ltd,2023-01-25
+S0026,Heart Rate Monitor,Outpatient,BioSensors Ltd,2023-01-26
+S0027,Temperature Sensor,Emergency,BioSensors Ltd,2023-01-27
+S0028,Pulse Oximeter,General Ward,BioSensors Ltd,2023-01-28
+S0029,Blood Pressure Cuff,General Ward,HealthCorp,2023-01-29
+S0030,Pulse Oximeter,ICU,MediDevice,2023-01-30
+S0031,Heart Rate Monitor,General Ward,HealthCorp,2023-01-31
+S0032,Heart Rate Monitor,Outpatient,BioSensors Ltd,2023-02-01
+S0033,ECG Monitor,Operating Room,MediDevice,2023-02-02
+S0034,Blood Pressure Cuff,Outpatient,MediDevice,2023-02-03
+S0035,Pulse Oximeter,General Ward,MediDevice,2023-02-04
+S0036,Pulse Oximeter,Operating Room,BioSensors Ltd,2023-02-05
+S0037,Temperature Sensor,Emergency,HealthCorp,2023-02-06
+S0038,Blood Pressure Cuff,Outpatient,MedTech Inc,2023-02-07
+S0039,Heart Rate Monitor,ICU,MediDevice,2023-02-08
+S0040,Blood Pressure Cuff,ICU,MediDevice,2023-02-09
+S0041,Blood Pressure Cuff,Operating Room,MediDevice,2023-02-10
+S0042,Temperature Sensor,General Ward,HealthCorp,2023-02-11
+S0043,Temperature Sensor,Operating Room,MedTech Inc,2023-02-12
+S0044,ECG Monitor,General Ward,MedTech Inc,2023-02-13
+S0045,Heart Rate Monitor,ICU,HealthCorp,2023-02-14
+S0046,Temperature Sensor,General Ward,HealthCorp,2023-02-15
+S0047,Heart Rate Monitor,General Ward,HealthCorp,2023-02-16
+S0048,Temperature Sensor,General Ward,BioSensors Ltd,2023-02-17
+S0049,ECG Monitor,Operating Room,BioSensors Ltd,2023-02-18
+S0050,Pulse Oximeter,Emergency,MediDevice,2023-02-19
+S0051,ECG Monitor,Outpatient,HealthCorp,2023-02-20
+S0052,Blood Pressure Cuff,Outpatient,HealthCorp,2023-02-21
+S0053,Temperature Sensor,Outpatient,HealthCorp,2023-02-22
+S0054,Blood Pressure Cuff,Outpatient,MediDevice,2023-02-23
+S0055,Blood Pressure Cuff,General Ward,BioSensors Ltd,2023-02-24
+S0056,ECG Monitor,Outpatient,MedTech Inc,2023-02-25
+S0057,Pulse Oximeter,General Ward,HealthCorp,2023-02-26
+S0058,ECG Monitor,Emergency,BioSensors Ltd,2023-02-27
+S0059,Temperature Sensor,Emergency,HealthCorp,2023-02-28
+S0060,Pulse Oximeter,Operating Room,HealthCorp,2023-03-01
+S0061,Blood Pressure Cuff,Outpatient,BioSensors Ltd,2023-03-02
+S0062,Blood Pressure Cuff,Emergency,MediDevice,2023-03-03
+S0063,Heart Rate Monitor,Outpatient,MediDevice,2023-03-04
+S0064,Heart Rate Monitor,Emergency,BioSensors Ltd,2023-03-05
+S0065,Blood Pressure Cuff,Emergency,MediDevice,2023-03-06
+S0066,Blood Pressure Cuff,ICU,MedTech Inc,2023-03-07
+S0067,Pulse Oximeter,ICU,BioSensors Ltd,2023-03-08
+S0068,Heart Rate Monitor,Emergency,MedTech Inc,2023-03-09
+S0069,ECG Monitor,General Ward,MedTech Inc,2023-03-10
+S0070,Blood Pressure Cuff,Outpatient,MedTech Inc,2023-03-11
+S0071,ECG Monitor,ICU,MedTech Inc,2023-03-12
+S0072,Pulse Oximeter,Emergency,MediDevice,2023-03-13
+S0073,Temperature Sensor,ICU,MediDevice,2023-03-14
+S0074,Blood Pressure Cuff,ICU,BioSensors Ltd,2023-03-15
+S0075,Pulse Oximeter,Emergency,HealthCorp,2023-03-16
+S0076,Blood Pressure Cuff,Outpatient,MedTech Inc,2023-03-17
+S0077,Pulse Oximeter,Emergency,HealthCorp,2023-03-18
+S0078,Temperature Sensor,Outpatient,HealthCorp,2023-03-19
+S0079,Blood Pressure Cuff,Operating Room,MediDevice,2023-03-20
+S0080,Blood Pressure Cuff,General Ward,HealthCorp,2023-03-21
+S0081,Temperature Sensor,Operating Room,MedTech Inc,2023-03-22
+S0082,Pulse Oximeter,Outpatient,MedTech Inc,2023-03-23
+S0083,Blood Pressure Cuff,Outpatient,HealthCorp,2023-03-24
+S0084,Pulse Oximeter,ICU,MedTech Inc,2023-03-25
+S0085,Temperature Sensor,General Ward,BioSensors Ltd,2023-03-26
+S0086,Temperature Sensor,ICU,BioSensors Ltd,2023-03-27
+S0087,Pulse Oximeter,Outpatient,MedTech Inc,2023-03-28
+S0088,Pulse Oximeter,Emergency,HealthCorp,2023-03-29
+S0089,Pulse Oximeter,General Ward,MedTech Inc,2023-03-30
+S0090,Temperature Sensor,General Ward,BioSensors Ltd,2023-03-31
+S0091,Temperature Sensor,Operating Room,MediDevice,2023-04-01
+S0092,Pulse Oximeter,Operating Room,HealthCorp,2023-04-02
+S0093,Pulse Oximeter,Operating Room,HealthCorp,2023-04-03
+S0094,Pulse Oximeter,ICU,BioSensors Ltd,2023-04-04
+S0095,Blood Pressure Cuff,General Ward,MedTech Inc,2023-04-05
+S0096,Temperature Sensor,Outpatient,MedTech Inc,2023-04-06
+S0097,Blood Pressure Cuff,ICU,MediDevice,2023-04-07
+S0098,Temperature Sensor,Operating Room,MediDevice,2023-04-08
+S0099,ECG Monitor,ICU,MediDevice,2023-04-09
+S0100,Blood Pressure Cuff,General Ward,MediDevice,2023-04-10
+S0101,Pulse Oximeter,General Ward,HealthCorp,2023-04-11
+S0102,Temperature Sensor,Operating Room,MediDevice,2023-04-12
+S0103,ECG Monitor,ICU,HealthCorp,2023-04-13
+S0104,Pulse Oximeter,General Ward,BioSensors Ltd,2023-04-14
+S0105,Temperature Sensor,Emergency,MediDevice,2023-04-15
+S0106,Heart Rate Monitor,Outpatient,MedTech Inc,2023-04-16
+S0107,Heart Rate Monitor,ICU,MediDevice,2023-04-17
+S0108,ECG Monitor,General Ward,MediDevice,2023-04-18
+S0109,Blood Pressure Cuff,Operating Room,BioSensors Ltd,2023-04-19
+S0110,ECG Monitor,Emergency,MedTech Inc,2023-04-20
+S0111,Pulse Oximeter,Outpatient,MedTech Inc,2023-04-21
+S0112,Blood Pressure Cuff,ICU,MedTech Inc,2023-04-22
+S0113,ECG Monitor,Emergency,MedTech Inc,2023-04-23
+S0114,ECG Monitor,Outpatient,MedTech Inc,2023-04-24
+S0115,Heart Rate Monitor,ICU,MedTech Inc,2023-04-25
+S0116,Pulse Oximeter,Outpatient,MediDevice,2023-04-26
+S0117,Blood Pressure Cuff,ICU,BioSensors Ltd,2023-04-27
+S0118,Heart Rate Monitor,Emergency,MedTech Inc,2023-04-28
+S0119,Heart Rate Monitor,Outpatient,MedTech Inc,2023-04-29
+S0120,Temperature Sensor,ICU,MediDevice,2023-04-30
+S0121,Pulse Oximeter,General Ward,MedTech Inc,2023-05-01
+S0122,Heart Rate Monitor,General Ward,BioSensors Ltd,2023-05-02
+S0123,Temperature Sensor,Emergency,MedTech Inc,2023-05-03
+S0124,Pulse Oximeter,Operating Room,MediDevice,2023-05-04
+S0125,Pulse Oximeter,Emergency,MediDevice,2023-05-05
+S0126,Blood Pressure Cuff,Outpatient,MediDevice,2023-05-06
+S0127,Pulse Oximeter,Operating Room,HealthCorp,2023-05-07
+S0128,ECG Monitor,General Ward,MediDevice,2023-05-08
+S0129,Pulse Oximeter,General Ward,HealthCorp,2023-05-09
+S0130,Heart Rate Monitor,Emergency,MediDevice,2023-05-10
+S0131,ECG Monitor,Emergency,MediDevice,2023-05-11
+S0132,Heart Rate Monitor,General Ward,MediDevice,2023-05-12
+S0133,Heart Rate Monitor,Emergency,MedTech Inc,2023-05-13
+S0134,Heart Rate Monitor,ICU,MediDevice,2023-05-14
+S0135,Temperature Sensor,Emergency,HealthCorp,2023-05-15
+S0136,Blood Pressure Cuff,Operating Room,MedTech Inc,2023-05-16
+S0137,Temperature Sensor,General Ward,HealthCorp,2023-05-17
+S0138,Heart Rate Monitor,Outpatient,BioSensors Ltd,2023-05-18
+S0139,Pulse Oximeter,General Ward,MediDevice,2023-05-19
+S0140,Pulse Oximeter,Operating Room,MediDevice,2023-05-20
+S0141,Heart Rate Monitor,Emergency,HealthCorp,2023-05-21
+S0142,Pulse Oximeter,Outpatient,MediDevice,2023-05-22
+S0143,Temperature Sensor,General Ward,MedTech Inc,2023-05-23
+S0144,Pulse Oximeter,ICU,MediDevice,2023-05-24
+S0145,Blood Pressure Cuff,ICU,HealthCorp,2023-05-25
+S0146,Heart Rate Monitor,General Ward,MedTech Inc,2023-05-26
+S0147,ECG Monitor,Emergency,BioSensors Ltd,2023-05-27
+S0148,Blood Pressure Cuff,ICU,MedTech Inc,2023-05-28
+S0149,Pulse Oximeter,ICU,MedTech Inc,2023-05-29
+S0150,Heart Rate Monitor,Outpatient,MedTech Inc,2023-05-30
+S0151,ECG Monitor,ICU,BioSensors Ltd,2023-05-31
+S0152,Blood Pressure Cuff,Emergency,MedTech Inc,2023-06-01
+S0153,Pulse Oximeter,General Ward,MediDevice,2023-06-02
+S0154,Pulse Oximeter,ICU,MedTech Inc,2023-06-03
+S0155,Heart Rate Monitor,ICU,MedTech Inc,2023-06-04
+S0156,Pulse Oximeter,Emergency,BioSensors Ltd,2023-06-05
+S0157,Heart Rate Monitor,Operating Room,MedTech Inc,2023-06-06
+S0158,ECG Monitor,ICU,MediDevice,2023-06-07
+S0159,Temperature Sensor,Emergency,BioSensors Ltd,2023-06-08
+S0160,Heart Rate Monitor,Operating Room,BioSensors Ltd,2023-06-09
+S0161,Blood Pressure Cuff,Outpatient,MediDevice,2023-06-10
+S0162,Temperature Sensor,ICU,BioSensors Ltd,2023-06-11
+S0163,Temperature Sensor,Outpatient,MedTech Inc,2023-06-12
+S0164,Blood Pressure Cuff,Emergency,MediDevice,2023-06-13
+S0165,Temperature Sensor,General Ward,BioSensors Ltd,2023-06-14
+S0166,Temperature Sensor,Outpatient,MediDevice,2023-06-15
+S0167,Blood Pressure Cuff,ICU,HealthCorp,2023-06-16
+S0168,Blood Pressure Cuff,Operating Room,HealthCorp,2023-06-17
+S0169,Heart Rate Monitor,ICU,MediDevice,2023-06-18
+S0170,Heart Rate Monitor,Outpatient,HealthCorp,2023-06-19
+S0171,Heart Rate Monitor,ICU,BioSensors Ltd,2023-06-20
+S0172,Temperature Sensor,General Ward,MediDevice,2023-06-21
+S0173,Heart Rate Monitor,Operating Room,BioSensors Ltd,2023-06-22
+S0174,Temperature Sensor,Outpatient,MedTech Inc,2023-06-23
+S0175,Temperature Sensor,ICU,MediDevice,2023-06-24
+S0176,Temperature Sensor,Outpatient,MediDevice,2023-06-25
+S0177,Blood Pressure Cuff,Operating Room,BioSensors Ltd,2023-06-26
+S0178,ECG Monitor,General Ward,MedTech Inc,2023-06-27
+S0179,ECG Monitor,General Ward,MedTech Inc,2023-06-28
+S0180,Pulse Oximeter,Emergency,MedTech Inc,2023-06-29
+S0181,Temperature Sensor,General Ward,MedTech Inc,2023-06-30
+S0182,Temperature Sensor,Operating Room,HealthCorp,2023-07-01
+S0183,Heart Rate Monitor,Outpatient,BioSensors Ltd,2023-07-02
+S0184,Temperature Sensor,General Ward,MediDevice,2023-07-03
+S0185,Heart Rate Monitor,General Ward,HealthCorp,2023-07-04
+S0186,Heart Rate Monitor,General Ward,MediDevice,2023-07-05
+S0187,ECG Monitor,ICU,MediDevice,2023-07-06
+S0188,Temperature Sensor,Emergency,HealthCorp,2023-07-07
+S0189,Heart Rate Monitor,General Ward,MediDevice,2023-07-08
+S0190,Temperature Sensor,General Ward,MediDevice,2023-07-09
+S0191,Heart Rate Monitor,Emergency,BioSensors Ltd,2023-07-10
+S0192,Blood Pressure Cuff,General Ward,MediDevice,2023-07-11
+S0193,Pulse Oximeter,Outpatient,MedTech Inc,2023-07-12
+S0194,ECG Monitor,Operating Room,HealthCorp,2023-07-13
+S0195,Blood Pressure Cuff,ICU,MedTech Inc,2023-07-14
+S0196,ECG Monitor,General Ward,HealthCorp,2023-07-15
+S0197,ECG Monitor,Outpatient,HealthCorp,2023-07-16
+S0198,ECG Monitor,General Ward,MedTech Inc,2023-07-17
+S0199,ECG Monitor,General Ward,BioSensors Ltd,2023-07-18
+S0200,ECG Monitor,Outpatient,HealthCorp,2023-07-19

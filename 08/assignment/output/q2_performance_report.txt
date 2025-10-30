@@ -1,0 +1,9 @@
+Q2 Filter Summary
+Kept departments: 10 / 10
+                 total_encounters  num_employees    avg_salary
+department_name                                               
+Cardiology              811967.22             54  81842.770173
+Dermatology             752275.40             44  84853.345767
+Emergency               816199.39             52  86725.283968
+Endocrinology           801152.06             50  82470.735157
+Neurology               775567.61             51  85535.795336
