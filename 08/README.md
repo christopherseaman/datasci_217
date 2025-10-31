@@ -456,7 +456,7 @@ jupyter notebook --ip=0.0.0.0 --port=8888
 tmux attach-session -t data_analysis
 ```
 
-# Performance Optimization (essentials only)
+# Performance Optimization
 
 *When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
 
@@ -485,6 +485,8 @@ def efficient_groupby(df, group_cols, agg_cols):
     return result
 
 # Memory-efficient operations
+## Note: chunking manually for larger-than-memory data should be a last resort.
+## It is usually faster to rely on package-provided options.
 def memory_efficient_analysis(df):
     """Analyze large dataset with memory optimization"""
     
