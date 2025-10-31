@@ -325,7 +325,7 @@ print(crosstab)
 # LIVE DEMO!
 
 # Remote Computing and SSH
-![xkcd 1845: Endangered Data](https://imgs.xkcd.com/comics/endangered_data.png)
+![xkcd 2523: Endangered Data](https://imgs.xkcd.com/comics/endangered_2x.png)
 
 
 *When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
@@ -488,7 +488,7 @@ def efficient_groupby(df, group_cols, agg_cols):
 ## Note: chunking manually for larger-than-memory data should be a last resort.
 ## It is usually faster to rely on package-provided options.
 def memory_efficient_analysis(df):
-    """Analyze large dataset with memory optimization"""
+    """Analyze large dataset with chunking"""
     
     # Process in chunks
     chunk_size = 10000
