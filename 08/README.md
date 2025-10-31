@@ -460,13 +460,7 @@ tmux attach-session -t data_analysis
 
 *When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
 
-![GroupBy Methods Performance](media/perf_groupby_methods.png)
-
-![apply vs transform](media/perf_apply_vs_transform.png)
-
-![Memory optimization (categorical dtypes)](media/perf_memory_optimization.png)
-
-![Chunked vs full aggregation](media/perf_chunking.png)
+![Performance Benchmarks - All comparisons on 10M rows (lower is better)](media/perf_combined.png)
 
 ## Efficient GroupBy Operations
 

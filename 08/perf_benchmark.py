@@ -5,16 +5,13 @@ Performance Benchmarks for Lecture 08
 Generates clear, high-resolution visuals comparing:
 - Multiple groupby calls vs single groupby with multiple aggregations
 - apply vs transform for vectorizable operations
-- Effect of categorical dtype optimization on speed and memory
-- Full-table aggregation vs chunked processing
+- Effect of categorical dtype optimization on memory usage
 
 Outputs (saved next to the lecture media for easy embedding):
-- 08/media/perf_groupby_methods.png
-- 08/media/perf_memory_optimization.png
-- 08/media/perf_chunking.png
+- 08/media/perf_combined.png (combined visualization)
 
 Usage:
-  uv run python 08/demo/perf_benchmark.py --rows 1_000_000 --groups 5_000
+  uv run python 08/perf_benchmark.py --rows 100_000_000 --groups 5_000
 """
 
 from __future__ import annotations
@@ -126,36 +123,6 @@ def benchmark_memory_and_dtypes(df: pd.DataFrame) -> Dict[str, int]:
     return {"before": int(before), "after": int(after)}
 
 
-def benchmark_chunking(
-    df: pd.DataFrame, chunk_size: int = 50_000
-) -> List[BenchResult]:
-    results: List[BenchResult] = []
-
-    def full():
-        return df.groupby("group").agg({
-            "value1": "sum",
-            "value2": "sum",
-            "value3": "sum",
-        })
-
-    def chunked():
-        parts = []
-        for i in range(0, len(df), chunk_size):
-            part = df.iloc[i : i + chunk_size]
-            parts.append(
-                part.groupby("group").agg({
-                    "value1": "sum",
-                    "value2": "sum",
-                    "value3": "sum",
-                })
-            )
-        return pd.concat(parts).groupby(level=0).sum()
-
-    results.append(time_op("Full table aggregation", full))
-    results.append(time_op(f"Chunked (size={chunk_size:,})", chunked))
-    return results
-
-
 def plot_bars(pairs: List[BenchResult], title: str, outfile: str):
     labels = [p.label for p in pairs]
     secs = [p.seconds for p in pairs]
@@ -207,21 +174,87 @@ def plot_memory(before_after: Dict[str, int], title: str, outfile: str):
     plt.close()
 
 
+def plot_combined(
+    grp_results: List[BenchResult],
+    at_results: List[BenchResult],
+    mem_stats: Dict[str, int],
+    outfile: str,
+):
+    """Create a combined 1x3 subplot visualization of all benchmarks."""
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6), dpi=150)
+    fig.suptitle("Performance Benchmarks (Lower is Better)", fontsize=16, fontweight="bold")
+
+    # Left: GroupBy methods
+    ax = axes[0]
+    labels = [p.label for p in grp_results]
+    secs = [p.seconds for p in grp_results]
+    bars = ax.bar(labels, secs, color=["#1f77b4", "#ff7f0e"])
+    ax.set_ylabel("Seconds")
+    ax.set_title("GroupBy: Multiple Calls vs Single agg")
+    ax.grid(axis="y", alpha=0.3)
+    for bar, s in zip(bars, secs):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() * 1.01,
+            f"{s:.3f}s",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+    ax.tick_params(axis="x", labelsize=9)
+
+    # Middle: apply vs transform
+    ax = axes[1]
+    labels = [p.label for p in at_results]
+    secs = [p.seconds for p in at_results]
+    bars = ax.bar(labels, secs, color=["#2ca02c", "#d62728"])
+    ax.set_ylabel("Seconds")
+    ax.set_title("apply vs transform (z-score per group)")
+    ax.grid(axis="y", alpha=0.3)
+    for bar, s in zip(bars, secs):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() * 1.01,
+            f"{s:.3f}s",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+    ax.tick_params(axis="x", labelsize=9)
+
+    # Right: Memory optimization
+    ax = axes[2]
+    labels = ["Before", "After (categorical)"]
+    sizes = [mem_stats["before"], mem_stats["after"]]
+    human = [human_bytes(x) for x in sizes]
+    bars = ax.bar(labels, [s / (1024**2) for s in sizes], color=["#9467bd", "#8c564b"])
+    ax.set_ylabel("Memory (MB)")
+    ax.set_title("Memory Impact of Categorical Dtypes")
+    ax.grid(axis="y", alpha=0.3)
+    for bar, h in zip(bars, human):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() * 1.01,
+            h,
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    plt.tight_layout()
+    plt.savefig(outfile)
+    plt.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Render performance comparisons for Lecture 08"
     )
     parser.add_argument(
-        "--rows", type=int, default=1_000_000, help="Number of rows to generate"
+        "--rows", type=int, default=100_000_000, help="Number of rows to generate"
     )
     parser.add_argument(
         "--groups", type=int, default=5_000, help="Number of groups"
-    )
-    parser.add_argument(
-        "--chunk",
-        type=int,
-        default=50_000,
-        help="Chunk size for chunked benchmark",
     )
     parser.add_argument(
         "--media-dir",
@@ -239,22 +272,12 @@ def main():
     grp_results = benchmark_groupby(df)
     for r in grp_results:
         print(f"  {r.label}: {r.seconds:.3f}s")
-    plot_bars(
-        grp_results,
-        "GroupBy Methods: Multiple Calls vs Single agg",
-        f"{args.media_dir}/perf_groupby_methods.png",
-    )
 
     # apply vs transform
     print("Benchmarking apply vs transform...")
     at_results = benchmark_apply_vs_transform(df)
     for r in at_results:
         print(f"  {r.label}: {r.seconds:.3f}s")
-    plot_bars(
-        at_results,
-        "apply vs transform for z-score per group",
-        f"{args.media_dir}/perf_apply_vs_transform.png",
-    )
 
     # Memory & dtype optimization
     print("Benchmarking memory optimizations...")
@@ -262,28 +285,18 @@ def main():
     print(
         f"  Before: {human_bytes(mem_stats['before'])}, After: {human_bytes(mem_stats['after'])}"
     )
-    plot_memory(
+
+    # Create combined visualization
+    print("Creating combined visualization...")
+    plot_combined(
+        grp_results,
+        at_results,
         mem_stats,
-        "Memory Impact of Categorical Dtypes",
-        f"{args.media_dir}/perf_memory_optimization.png",
+        f"{args.media_dir}/perf_combined.png",
     )
 
-    # Chunked processing
-    print("Benchmarking chunked aggregation...")
-    chunk_results = benchmark_chunking(df, chunk_size=args.chunk)
-    for r in chunk_results:
-        print(f"  {r.label}: {r.seconds:.3f}s")
-    plot_bars(
-        chunk_results,
-        f"Chunked vs Full Aggregation (chunk={args.chunk:,})",
-        f"{args.media_dir}/perf_chunking.png",
-    )
-
-    print("Done. Images written to:")
-    print(f"  - {args.media_dir}/perf_groupby_methods.png")
-    print(f"  - {args.media_dir}/perf_apply_vs_transform.png")
-    print(f"  - {args.media_dir}/perf_memory_optimization.png")
-    print(f"  - {args.media_dir}/perf_chunking.png")
+    print("Done. Combined image written to:")
+    print(f"  - {args.media_dir}/perf_combined.png")
 
 
 if __name__ == "__main__":
