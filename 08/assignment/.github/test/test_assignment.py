@@ -29,9 +29,9 @@ def data_dir():
 def test_data_files_exist(data_dir):
     """Test that required data files were generated."""
     required_files = [
-        "employee_data.csv",
-        "department_data.csv",
-        "sales_data.csv",
+        "provider_data.csv",
+        "facility_data.csv",
+        "encounter_data.csv",
     ]
 
     for filename in required_files:
@@ -52,10 +52,13 @@ def test_q1_groupby_analysis(output_dir):
     df = pd.read_csv(output_file)
     assert len(df) > 0, "GroupBy analysis data is empty"
 
-    # Should have department-related columns
-    assert any("department" in col.lower() for col in df.columns), (
-        "Missing department-related columns"
+    # Should have facility-related columns
+    assert any("facility" in col.lower() for col in df.columns), (
+        "Missing facility-related columns"
     )
+    
+    # Should have aggregation results (mean, sum, count, etc.)
+    assert len(df.columns) >= 3, "GroupBy analysis should have multiple aggregated columns"
 
 
 def test_q1_aggregation_report(output_dir):
@@ -70,8 +73,22 @@ def test_q1_aggregation_report(output_dir):
     # Should contain key analysis sections
     assert any(
         keyword in content.lower()
-        for keyword in ["department", "salary", "analysis"]
+        for keyword in ["facility", "provider", "encounter", "analysis", "transform"]
     ), "Missing key analysis content"
+
+
+def test_q2_filter_analysis(output_dir):
+    """Test Question 2: Filter operations analysis output."""
+    output_file = output_dir / "q2_filter_analysis.csv"
+    assert output_file.exists(), f"Output file not found: {output_file}"
+
+    # Load and validate structure
+    df = pd.read_csv(output_file)
+    assert len(df) > 0, "Filter analysis data is empty"
+    
+    # Should have filtered results (fewer facilities than original)
+    # This is a basic check - filtered data should exist
+    assert len(df) > 0, "Filter operations should produce some results"
 
 
 def test_q2_hierarchical_analysis(output_dir):
@@ -82,6 +99,14 @@ def test_q2_hierarchical_analysis(output_dir):
     # Load and validate structure
     df = pd.read_csv(output_file)
     assert len(df) > 0, "Hierarchical analysis data is empty"
+    
+    # Hierarchical grouping should have facility and region columns
+    assert any("facility" in col.lower() for col in df.columns), (
+        "Missing facility column in hierarchical analysis"
+    )
+    assert any("region" in col.lower() for col in df.columns), (
+        "Missing region column in hierarchical analysis"
+    )
 
 
 def test_q2_performance_report(output_dir):
@@ -92,6 +117,12 @@ def test_q2_performance_report(output_dir):
     # Read and check content
     content = output_file.read_text()
     assert len(content) > 0, "Performance report is empty"
+    
+    # Should contain apply operation results
+    assert any(
+        keyword in content.lower()
+        for keyword in ["provider", "statistics", "facility", "apply", "encounter"]
+    ), "Missing key content in performance report (should contain apply operation results)"
 
 
 def test_q3_pivot_analysis(output_dir):
@@ -105,6 +136,11 @@ def test_q3_pivot_analysis(output_dir):
 
     # Should have multiple columns (pivot table format)
     assert len(df.columns) > 2, "Pivot table should have multiple columns"
+    
+    # Should have index column (procedure/diagnosis) and region columns
+    assert any("procedure" in col.lower() or "diagnosis" in col.lower() or "encounter" in col.lower() for col in df.columns) or len(df.index) > 0, (
+        "Pivot table should have procedure/diagnosis/encounter information"
+    )
 
 
 def test_q3_crosstab_analysis(output_dir):
@@ -131,6 +167,7 @@ def test_all_required_outputs(output_dir):
     required_outputs = [
         "q1_groupby_analysis.csv",
         "q1_aggregation_report.txt",
+        "q2_filter_analysis.csv",
         "q2_hierarchical_analysis.csv",
         "q2_performance_report.txt",
         "q3_pivot_analysis.csv",
@@ -153,6 +190,7 @@ def test_csv_file_validation(output_dir):
     """Test that CSV files are properly formatted."""
     csv_files = [
         "q1_groupby_analysis.csv",
+        "q2_filter_analysis.csv",
         "q2_hierarchical_analysis.csv",
         "q3_pivot_analysis.csv",
         "q3_crosstab_analysis.csv",
