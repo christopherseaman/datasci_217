@@ -3,6 +3,8 @@
 ## Overview
 Hands-on practice with time series analysis using health and medical research data. These demos correspond to the three LIVE DEMO sections in the lecture, providing practical application of datetime handling, resampling, rolling windows, and time series visualization.
 
+**Note**: All demos include comprehensive pedagogical context with Introduction sections and explanatory paragraphs throughout, making them suitable for independent student study. Each demo explains concepts before code, includes "Why this matters" sections, and provides clinical/analytical context for understanding.
+
 ## Demo Structure
 
 ### Demo 1: datetime Fundamentals and Time Series Indexing
@@ -17,6 +19,7 @@ Hands-on practice with time series analysis using health and medical research da
 - Date range generation for patient monitoring schedules
 - Time series indexing and selection with patient data
 - Time zone handling for multi-site clinical trials
+- Using diff() and pct_change() to analyze changes over time
 
 **Dataset**: Daily patient vital signs data (temperature, heart rate, blood pressure) over 1 year
 
@@ -59,9 +62,10 @@ Hands-on practice with time series analysis using health and medical research da
 - Integrate time series concepts with visualization tools
 
 ## Required Materials
-- Python environment with pandas, numpy, matplotlib, seaborn, altair
+- Python environment with pandas, numpy, matplotlib, seaborn
 - Jupyter notebook interface
 - All demo notebooks are generated from markdown files using jupytext
+- **Note**: altair is optional (commented out in Demo 3) - uncomment if you want interactive visualizations
 
 ## Setup Instructions
 
@@ -108,18 +112,24 @@ jupytext --to notebook demo1_datetime_fundamentals.md
 - Show how datetime indexing makes time series selection intuitive
 - Use real clinical scenarios (patient visit schedules, lab test dates)
 - Highlight time zone issues that arise in multi-site studies
+- Demonstrate diff() and pct_change() for analyzing temporal changes
+- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently
 
 ### Demo 2: Resampling and Rolling Windows
 - Connect resampling to the `groupby()` concepts from Lecture 5
 - Demonstrate how rolling windows smooth noisy medical data
 - Show practical applications: detecting trends in patient outcomes
 - Compare different window sizes and their effects
+- Explain EWM parameters (span, alpha, halflife) and when to use them
+- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently
 
 ### Demo 3: Visualization and Integration
 - Combine time series concepts with visualization from Lecture 07
 - Show how different visualization libraries work with time series
 - Demonstrate seasonal pattern identification
 - Create publication-quality plots for medical research
+- Integrate resampling, rolling windows, and visualization techniques
+- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently. Altair is optional (commented out) to avoid dependency issues.
 
 ## Common Pitfalls to Address
 - **Timezone confusion**: Show how to properly localize and convert timezones

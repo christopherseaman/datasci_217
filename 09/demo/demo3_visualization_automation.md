@@ -11,14 +11,27 @@
 - Identify seasonal patterns in health data
 - Create publication-quality plots for medical research
 
+## Introduction
+
+In this final demo, we'll combine everything we've learned about time series analysis with visualization techniques from Lecture 07. Visualization is crucial for time series analysis because it helps identify patterns, trends, and anomalies that might not be obvious from summary statistics.
+
+Think of this demo as learning to tell the story of your data. We'll work with multi-year disease surveillance data and demonstrate how to create effective visualizations that reveal seasonal patterns, trends, and relationships. We'll use matplotlib for basic plots, seaborn for statistical visualizations, and altair for interactive visualizations.
+
+This demo integrates concepts from earlier lectures:
+- **Time series indexing** (Demo 1) for selecting data by date ranges
+- **Resampling** (Demo 2) for creating summaries at different frequencies
+- **Rolling windows** (Demo 2) for smoothing and trend detection
+- **Visualization** (Lecture 07) for creating effective plots
+
 ## Setup
+
+Let's set up our environment with the necessary libraries for visualization and analysis.
 
 ```python
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import altair as alt
 from datetime import datetime, timedelta
 
 # Set random seed for reproducibility
@@ -29,13 +42,29 @@ sns.set_style('whitegrid')
 plt.rcParams['figure.figsize'] = (14, 8)
 plt.rcParams['font.size'] = 10
 
-# Enable altair for Jupyter
-alt.renderers.enable('default')
+# Note: altair is optional - uncomment if you want interactive visualizations
+# import altair as alt
+# alt.renderers.enable('default')
 ```
+
+**Library choices**: matplotlib provides the foundation for all plotting, seaborn adds statistical visualizations and better defaults, and altair (optional) provides interactive web-based visualizations. Choose based on your needs - matplotlib for basic plots, seaborn for statistical analysis, altair for interactive dashboards.
 
 ## Part 1: Multi-Year Disease Surveillance Data
 
+We'll work with realistic disease surveillance data that has trend, seasonality, and noise - typical characteristics of real-world medical time series data.
+
+### Understanding the Data Structure
+
+Disease surveillance data often has multiple components:
+- **Trend**: Long-term direction (e.g., increasing cases over years)
+- **Seasonality**: Repeating patterns (e.g., flu season peaks in winter)
+- **Noise**: Random fluctuations around the pattern
+
+Understanding these components helps you choose appropriate visualization and analysis techniques.
+
 ### Load and Prepare Data
+
+Let's create realistic disease surveillance data with trend, seasonality, and noise. This simulates multi-year monthly case counts with seasonal patterns.
 
 ```python
 # Simulate multi-year disease surveillance data (3 years, monthly)
@@ -88,17 +117,30 @@ print(f"\nSample data:")
 print(surveillance_data.head(10))
 ```
 
+**Data understanding**: Notice how we've created data with multiple components:
+- **Trend**: Gradual increase from 100 to 120 cases
+- **Seasonality**: Sine wave pattern peaking in winter months
+- **Noise**: Random fluctuations around the pattern
+
+This structure is typical of real-world medical data where long-term trends, seasonal patterns, and random variation all contribute to observations.
+
 ## Part 2: Time Series Visualization with matplotlib
 
-### Basic Time Series Plots (from Lecture 07)
+matplotlib provides the foundation for time series visualization. It's flexible and powerful, though it requires more code for polished plots than seaborn.
+
+### Basic Time Series Plots
+
+Basic time series plots reveal patterns that summary statistics miss. Line plots show trends over time, while histograms and box plots show distributions.
 
 ```python
 # Create comprehensive time series visualization with matplotlib
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 fig.suptitle('Disease Surveillance Data - Time Series Analysis', fontsize=16, fontweight='bold')
 
-# Line plot (basic time series)
+# Extract Site A data for plotting
 site_a = surveillance_data[surveillance_data['site'] == 'Site_A']
+
+# Line plot (basic time series)
 axes[0, 0].plot(site_a.index, site_a['cases'], 
                 marker='o', markersize=4, linewidth=2, label='Site A', color='blue')
 axes[0, 0].set_title('Case Counts Over Time', fontsize=12, fontweight='bold')
@@ -139,9 +181,19 @@ plt.tight_layout()
 plt.show()
 ```
 
+**Visualization insight**: Each plot reveals different aspects of the data:
+- **Line plot**: Shows trends and patterns over time
+- **Rolling mean**: Smooths out noise to reveal underlying trends
+- **Histogram**: Shows the distribution of case counts
+- **Box plot**: Reveals seasonal patterns by comparing distributions across months
+
 ## Part 3: Statistical Visualization with seaborn
 
-### Multi-Variable Time Series with seaborn (from Lecture 07)
+seaborn builds on matplotlib to provide statistical visualizations with better defaults. It's particularly useful for comparing groups and identifying relationships.
+
+### Multi-Variable Time Series with seaborn
+
+seaborn excels at visualizing relationships between variables and comparing groups. This is especially useful for time series with multiple variables or sites.
 
 ```python
 # Use seaborn for statistical visualizations
@@ -194,87 +246,19 @@ plt.tight_layout()
 plt.show()
 ```
 
-## Part 4: Interactive Visualization with altair
+**Statistical insight**: 
+- **Scatter plot**: Reveals relationships between temperature and cases, colored by month to show seasonal patterns
+- **Dual-axis plot**: Allows comparison of two variables with different scales on the same plot
+- **Violin plot**: Shows distribution shapes, revealing how case distributions vary by month
+- **Heatmap**: Provides a comprehensive view of patterns across years and months, making seasonal trends obvious
 
-### Interactive Time Series with altair (from Lecture 07)
+## Part 4: Seasonal Pattern Analysis
 
-```python
-# Create interactive time series visualization with altair
-print("=== Interactive Time Series with altair ===\n")
-
-# Prepare data for altair
-chart_data = site_a.reset_index()
-chart_data = chart_data.rename(columns={'date': 'Date', 'cases': 'Cases', 
-                                       'temperature': 'Temperature', 'humidity': 'Humidity'})
-
-# Basic interactive line chart
-chart = alt.Chart(chart_data).mark_line(point=True).encode(
-    x=alt.X('Date:T', title='Date'),
-    y=alt.Y('Cases:Q', title='Cases'),
-    tooltip=['Date', 'Cases', 'Temperature']
-).properties(
-    width=700,
-    height=400,
-    title='Disease Surveillance - Interactive Time Series'
-).interactive()
-
-chart.save('media/interactive_time_series.html')
-print("✓ Saved interactive chart: media/interactive_time_series.html")
-
-# Multi-line chart: Cases and Temperature
-base = alt.Chart(chart_data).encode(x='Date:T')
-
-line1 = base.mark_line(color='blue', strokeWidth=2).encode(
-    y=alt.Y('Cases:Q', title='Cases', axis=alt.Axis(titleColor='blue'))
-)
-
-line2 = base.mark_line(color='red', strokeWidth=2, strokeDash=[5, 5]).encode(
-    y=alt.Y('Temperature:Q', title='Temperature (°F)', axis=alt.Axis(titleColor='red'))
-)
-
-multi_line = alt.layer(line1, line2).resolve_scale(
-    y='independent'
-).properties(
-    width=700,
-    height=400,
-    title='Cases and Temperature Over Time'
-).interactive()
-
-multi_line.save('media/multi_line_interactive.html')
-print("✓ Saved multi-line chart: media/multi_line_interactive.html")
-```
-
-### Faceted Time Series (Small Multiples)
-
-```python
-# Create faceted charts for multiple sites (small multiples)
-print("=== Faceted Charts for Multiple Sites ===\n")
-
-# Prepare data for faceting
-all_sites = surveillance_data.reset_index()
-all_sites = all_sites.rename(columns={'date': 'Date', 'cases': 'Cases', 'site': 'Site'})
-
-# Faceted line chart
-faceted = alt.Chart(all_sites).mark_line(point=True).encode(
-    x='Date:T',
-    y='Cases:Q',
-    color='Site:N',
-    tooltip=['Date', 'Cases', 'Site']
-).facet(
-    column='Site:N'
-).properties(
-    width=300,
-    height=300,
-    title='Disease Surveillance by Site'
-)
-
-faceted.save('media/faceted_sites.html')
-print("✓ Saved faceted chart: media/faceted_sites.html")
-```
-
-## Part 5: Seasonal Pattern Analysis
+Seasonal patterns are common in medical data - flu season peaks in winter, allergies peak in spring, etc. Identifying and visualizing these patterns is crucial for understanding disease dynamics.
 
 ### Identifying Seasonal Patterns
+
+Grouping by month and analyzing patterns helps identify seasonal trends that might not be obvious from raw time series plots.
 
 ```python
 # Analyze seasonal patterns
@@ -318,9 +302,15 @@ plt.tight_layout()
 plt.show()
 ```
 
-## Part 6: Integration with Earlier Concepts
+**Pattern identification**: The monthly averages reveal seasonal patterns - notice how some months consistently have higher or lower case counts. The trend component shows the long-term direction after removing seasonal effects. This decomposition helps you understand what's driving changes in case counts.
+
+## Part 5: Integration with Earlier Concepts
+
+Let's combine all the concepts we've learned - indexing, resampling, rolling windows, and visualization - into a comprehensive analysis.
 
 ### Combining Resampling, Rolling Windows, and Visualization
+
+Real-world analysis requires combining multiple techniques. Let's create daily data, resample to different frequencies, apply rolling windows, and visualize everything together.
 
 ```python
 # Integrate all concepts: resampling, rolling windows, and visualization
@@ -382,18 +372,31 @@ plt.tight_layout()
 plt.show()
 ```
 
+**Integration insight**: This comprehensive visualization demonstrates how different techniques reveal different aspects of the data:
+- **Daily with rolling windows**: Shows short-term fluctuations and multiple time scales of trends
+- **Weekly resampled**: Smooths out daily noise while preserving weekly patterns
+- **Monthly resampled**: Shows long-term trends and seasonal patterns
+
+Each view serves a different purpose - use daily views for detailed analysis, weekly for trend identification, and monthly for long-term patterns.
+
 ## Key Takeaways
 
-1. **matplotlib**: Basic time series plots with customization
-2. **seaborn**: Statistical visualizations for time series (violin plots, heatmaps)
-3. **altair**: Interactive time series visualizations for web
-4. **Seasonal Patterns**: Identify and visualize seasonal trends
-5. **Integration**: Combine resampling, rolling windows, and visualization
-6. **Publication Quality**: Create professional plots for medical research
+1. **matplotlib**: Foundation for time series plots with full customization control. Use for basic line plots, histograms, and box plots.
+
+2. **seaborn**: Statistical visualizations with better defaults. Use for scatter plots, violin plots, heatmaps, and group comparisons.
+
+3. **Visualization Strategy**: Choose visualization techniques based on what you want to reveal - line plots for trends, box plots for distributions, heatmaps for patterns.
+
+4. **Seasonal Patterns**: Identify and visualize seasonal trends using groupby operations and specialized plots.
+
+5. **Integration**: Combine indexing, resampling, rolling windows, and visualization for comprehensive time series analysis.
+
+6. **Publication Quality**: Create professional plots with proper labels, legends, and formatting for medical research presentations.
 
 ## Next Steps
 
 - Practice with your own health/medical time series data
-- Explore advanced visualization techniques
+- Explore advanced visualization techniques (interactive dashboards, animated plots)
 - Set up automated visualization pipelines
 - Integrate with dashboard tools for monitoring
+
