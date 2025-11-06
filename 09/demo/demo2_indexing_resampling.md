@@ -1,10 +1,15 @@
-# Demo 2: Time Series Indexing and Resampling
+# Demo 2: Resampling and Rolling Window Operations
+
+**Placement**: After "Resampling" section (~2/3 through lecture)  
+**Duration**: 25 minutes  
+**Focus**: Resampling operations, rolling windows, and exponentially weighted functions with ICU monitoring data
 
 ## Learning Objectives
-- Master time series indexing and selection
-- Use resampling for frequency conversion
-- Apply rolling window operations
+- Use resampling for frequency conversion with ICU data
+- Apply rolling window operations for trend detection
+- Calculate exponentially weighted moving averages
 - Handle missing data in time series
+- Combine resampling with visualization
 
 ## Setup
 
@@ -12,229 +17,267 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import datetime, timedelta
 
 # Set random seed for reproducibility
 np.random.seed(42)
+
+# Set plotting style
+sns.set_style('whitegrid')
+plt.rcParams['figure.figsize'] = (14, 8)
 ```
 
-## Part 1: Time Series Indexing
+## Part 1: ICU Monitoring Data - Resampling
 
-### Create Sample Time Series
+### Load and Prepare ICU Data
 
 ```python
-# Create sample time series data
-dates = pd.date_range('2023-01-01', periods=365, freq='D')
-values = np.cumsum(np.random.randn(365)) + 100
-ts = pd.Series(values, index=dates)
+# Simulate hourly ICU patient monitoring data (6 months)
+print("=== ICU Patient Monitoring Data ===\n")
 
-print("=== Time Series Data ===")
-print(f"Data shape: {ts.shape}")
-print(f"Date range: {ts.index.min()} to {ts.index.max()}")
-print(f"Value range: {ts.min():.2f} to {ts.max():.2f}")
-print("\nSample data:")
-print(ts.head())
+# Create hourly dates for 6 months
+hourly_dates = pd.date_range('2023-01-01', periods=24*30*6, freq='H')
+
+# Generate realistic ICU monitoring data
+np.random.seed(42)
+icu_data = pd.DataFrame({
+    'heart_rate': np.random.randint(60, 100, len(hourly_dates)),
+    'blood_pressure_systolic': np.random.randint(110, 140, len(hourly_dates)),
+    'blood_pressure_diastolic': np.random.randint(70, 90, len(hourly_dates)),
+    'oxygen_saturation': np.random.randint(95, 100, len(hourly_dates)),
+    'temperature': np.random.normal(98.6, 0.5, len(hourly_dates))
+}, index=hourly_dates)
+
+print(f"ICU data shape: {icu_data.shape}")
+print(f"Date range: {icu_data.index.min()} to {icu_data.index.max()}")
+print(f"\nSample data:")
+print(icu_data.head())
+print(f"\nData summary:")
+print(icu_data.describe())
 ```
 
-### Basic Time Series Selection
+### Basic Resampling - Hourly to Daily
 
 ```python
-# Select specific date
-print("=== Basic Time Series Selection ===")
-print("January 1, 2023:")
-print(ts['2023-01-01'])
+# Resample hourly data to daily (aggregate to daily summaries)
+print("=== Resampling: Hourly to Daily ===\n")
 
-# Select date range
-print("\nJanuary 2023:")
-print(ts['2023-01-01':'2023-01-31'].head())
-
-# Select entire year
-print("\n2023 data shape:")
-print(ts['2023'].shape)
-
-# Select specific month
-print("\nJanuary 2023:")
-print(ts['2023-01'].head())
-```
-
-### Advanced Time Series Selection
-
-```python
-# Create hourly time series for advanced selection
-hourly_dates = pd.date_range('2023-01-01', periods=24*7, freq='H')
-hourly_values = np.random.randn(24*7)
-ts_hourly = pd.Series(hourly_values, index=hourly_dates)
-
-print("=== Advanced Time Series Selection ===")
-print("Hourly data shape:", ts_hourly.shape)
-
-# Select business hours (9 AM to 5 PM)
-business_hours = ts_hourly.between_time('09:00', '17:00')
-print("Business hours data:")
-print(business_hours.head())
-
-# Select specific time
-noon_data = ts_hourly.at_time('12:00')
-print("\nNoon data:")
-print(noon_data.head())
-
-# Select first and last periods
-print("\nFirst 3 days:")
-print(ts_hourly.first('3D').head())
-
-print("\nLast 3 days:")
-print(ts_hourly.last('3D').head())
-```
-
-## Part 2: Resampling and Frequency Conversion
-
-### Basic Resampling
-
-```python
-# Create daily time series
-daily_dates = pd.date_range('2023-01-01', periods=30, freq='D')
-daily_values = np.cumsum(np.random.randn(30)) + 100
-ts_daily = pd.Series(daily_values, index=daily_dates)
-
-print("=== Basic Resampling ===")
-print("Original daily data shape:", ts_daily.shape)
-
-# Weekly resampling
-weekly = ts_daily.resample('W').mean()
-print("Weekly resampled shape:", weekly.shape)
-print("Weekly data:")
-print(weekly.head())
-
-# Monthly resampling
-monthly = ts_daily.resample('M').mean()
-print("\nMonthly resampled shape:", monthly.shape)
-print("Monthly data:")
-print(monthly.head())
-```
-
-### Resampling with Different Aggregations
-
-```python
-# Create sample data with multiple columns
-df = pd.DataFrame({
-    'value': np.random.randn(365),
-    'volume': np.random.randint(100, 1000, 365)
-}, index=pd.date_range('2023-01-01', periods=365, freq='D'))
-
-print("=== Resampling with Different Aggregations ===")
-print("Daily to weekly resampling:")
-weekly_stats = df.resample('W').agg({
-    'value': ['mean', 'std', 'min', 'max'],
-    'volume': 'sum'
+# Daily resampling with different aggregations
+daily_icu = pd.DataFrame({
+    'heart_rate_mean': icu_data['heart_rate'].resample('D').mean(),
+    'heart_rate_max': icu_data['heart_rate'].resample('D').max(),
+    'heart_rate_min': icu_data['heart_rate'].resample('D').min(),
+    'blood_pressure_systolic_mean': icu_data['blood_pressure_systolic'].resample('D').mean(),
+    'oxygen_saturation_mean': icu_data['oxygen_saturation'].resample('D').mean(),
+    'temperature_mean': icu_data['temperature'].resample('D').mean(),
+    'observation_count': icu_data['heart_rate'].resample('D').count()  # Count of hourly readings
 })
+
+print(f"Daily resampled shape: {daily_icu.shape}")
+print(f"Original hourly shape: {icu_data.shape}")
+print(f"Reduction: {icu_data.shape[0] / daily_icu.shape[0]:.1f}x fewer rows")
+print(f"\nDaily summary:")
+print(daily_icu.head())
+```
+
+### Resampling with Multiple Aggregations
+
+```python
+# Resample with multiple aggregations (like groupby from Lecture 5)
+print("=== Resampling with Multiple Aggregations ===\n")
+
+# Resample to weekly with multiple statistics
+weekly_stats = icu_data.resample('W').agg({
+    'heart_rate': ['mean', 'std', 'min', 'max'],
+    'blood_pressure_systolic': ['mean', 'std'],
+    'oxygen_saturation': ['mean', 'min'],
+    'temperature': ['mean', 'std']
+})
+
+print(f"Weekly stats shape: {weekly_stats.shape}")
+print(f"\nWeekly statistics:")
 print(weekly_stats.head())
 
-# Custom resampling function
-def custom_agg(series):
-    return pd.Series({
-        'mean': series.mean(),
-        'std': series.std(),
-        'range': series.max() - series.min(),
-        'count': len(series)
-    })
+# Resample to monthly
+monthly_stats = icu_data.resample('ME').agg({
+    'heart_rate': 'mean',
+    'blood_pressure_systolic': 'mean',
+    'oxygen_saturation': 'mean',
+    'temperature': 'mean'
+})
 
-print("\nCustom aggregation:")
-custom_stats = df['value'].resample('M').apply(custom_agg)
-print(custom_stats.head())
+print(f"\nMonthly averages:")
+print(monthly_stats.head())
 ```
 
-### Frequency Conversion
+### Handling Missing Data in Resampling
 
 ```python
-# Convert between frequencies
-print("=== Frequency Conversion ===")
+# Demonstrate handling missing data (upsampling)
+print("=== Handling Missing Data in Resampling ===\n")
 
-# Daily to business days
-daily_ts = pd.Series(np.random.randn(31), index=pd.date_range('2023-01-01', periods=31, freq='D'))
-business_ts = daily_ts.asfreq('B')
-print(f"Daily to business days: {daily_ts.shape} -> {business_ts.shape}")
+# Create daily summary (some days missing)
+daily_summary = icu_data['heart_rate'].resample('D').mean()
 
-# Daily to weekly
-weekly_ts = daily_ts.asfreq('W')
-print(f"Daily to weekly: {daily_ts.shape} -> {weekly_ts.shape}")
+# Upsample to hourly (creates missing values)
+hourly_upsampled = daily_summary.resample('H').asfreq()
+print(f"Upsampled data - missing values: {hourly_upsampled.isna().sum()}")
+print(f"Missing percentage: {hourly_upsampled.isna().sum() / len(hourly_upsampled) * 100:.1f}%")
 
-# Handle missing values
-print("\nHandling missing values:")
-print("Original data:")
-print(daily_ts.head(10))
-print("\nBusiness days (with NaN for weekends):")
-print(business_ts.head(10))
+# Forward fill missing values
+hourly_filled = daily_summary.resample('H').ffill()
+print(f"\nAfter forward fill - missing values: {hourly_filled.isna().sum()}")
+
+# Interpolate missing values
+hourly_interpolated = daily_summary.resample('H').interpolate(method='linear')
+print(f"After interpolation - missing values: {hourly_interpolated.isna().sum()}")
 ```
 
-## Part 3: Rolling Window Operations
+## Part 2: Rolling Window Operations
 
-### Basic Rolling Operations
+### Basic Rolling Window Statistics
 
 ```python
-# Create sample time series
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-values = np.cumsum(np.random.randn(100)) + 100
-ts = pd.Series(values, index=dates)
+# Apply rolling windows to ICU data
+print("=== Rolling Window Operations ===\n")
 
-print("=== Basic Rolling Operations ===")
-print("Original time series:")
-print(ts.head())
+# Calculate rolling statistics for heart rate
+daily_heart_rate = icu_data['heart_rate'].resample('D').mean()
 
-# Rolling statistics
-ts['rolling_mean'] = ts.rolling(window=7).mean()
-ts['rolling_std'] = ts.rolling(window=7).std()
-ts['rolling_min'] = ts.rolling(window=7).min()
-ts['rolling_max'] = ts.rolling(window=7).max()
+# 7-day rolling window (1 week)
+daily_heart_rate['rolling_7d_mean'] = daily_heart_rate.rolling(window=7).mean()
+daily_heart_rate['rolling_7d_std'] = daily_heart_rate.rolling(window=7).std()
+daily_heart_rate['rolling_7d_min'] = daily_heart_rate.rolling(window=7).min()
+daily_heart_rate['rolling_7d_max'] = daily_heart_rate.rolling(window=7).max()
 
-print("\nTime series with rolling statistics:")
-print(ts[['value', 'rolling_mean', 'rolling_std']].head(10))
+# 30-day rolling window (1 month)
+daily_heart_rate['rolling_30d_mean'] = daily_heart_rate.rolling(window=30).mean()
+
+print("Daily heart rate with rolling statistics:")
+print(daily_heart_rate.head(10))
+print(f"\nRolling statistics summary:")
+print(daily_heart_rate[['rolling_7d_mean', 'rolling_30d_mean']].describe())
 ```
 
 ### Advanced Rolling Operations
 
 ```python
 # Advanced rolling operations
-print("=== Advanced Rolling Operations ===")
+print("=== Advanced Rolling Operations ===\n")
 
-# Centered rolling window
-ts['centered_mean'] = ts.rolling(window=7, center=True).mean()
+# Centered rolling window (looks both forward and backward)
+daily_heart_rate['rolling_7d_centered'] = daily_heart_rate['heart_rate'].rolling(
+    window=7, center=True
+).mean()
 
-# Expanding window
-ts['expanding_mean'] = ts.expanding().mean()
+# Expanding window (from start to current)
+daily_heart_rate['expanding_mean'] = daily_heart_rate['heart_rate'].expanding().mean()
 
-# Exponentially weighted moving average
-ts['ewm_mean'] = ts.ewm(span=7).mean()
+# Rolling with minimum periods (starts calculating earlier)
+daily_heart_rate['rolling_7d_min_periods'] = daily_heart_rate['heart_rate'].rolling(
+    window=7, min_periods=3
+).mean()
 
-# Custom rolling function
-def rolling_range(series):
-    return series.max() - series.min()
-
-ts['rolling_range'] = ts.rolling(window=7).apply(rolling_range)
-
-print("Advanced rolling statistics:")
-print(ts[['value', 'centered_mean', 'expanding_mean', 'ewm_mean']].head(10))
+print("Advanced rolling operations:")
+print(daily_heart_rate[['heart_rate', 'rolling_7d_centered', 'expanding_mean']].head(10))
 ```
 
-### Rolling Window Visualization
+### Exponentially Weighted Moving Average
 
 ```python
-# Visualize rolling windows
-fig, axes = plt.subplots(2, 1, figsize=(12, 10))
+# Exponentially weighted moving average (more responsive to recent changes)
+print("=== Exponentially Weighted Moving Average ===\n")
 
-# Original data with rolling mean
-axes[0].plot(ts.index, ts['value'], label='Original', alpha=0.7)
-axes[0].plot(ts.index, ts['rolling_mean'], label='7-day Rolling Mean', linewidth=2)
-axes[0].plot(ts.index, ts['ewm_mean'], label='7-day EWM', linewidth=2)
-axes[0].set_title('Time Series with Rolling Averages')
-axes[0].set_ylabel('Value')
+# Calculate EWM with different spans
+daily_heart_rate['ewm_span_7'] = daily_heart_rate['heart_rate'].ewm(span=7).mean()
+daily_heart_rate['ewm_span_30'] = daily_heart_rate['heart_rate'].ewm(span=30).mean()
+
+# Compare with simple moving average
+print("Comparison: Simple MA vs EWM")
+print(daily_heart_rate[['heart_rate', 'rolling_7d_mean', 'ewm_span_7']].head(10))
+
+# EWM with different parameters
+daily_heart_rate['ewm_alpha_0.3'] = daily_heart_rate['heart_rate'].ewm(alpha=0.3).mean()
+daily_heart_rate['ewm_halflife_7'] = daily_heart_rate['heart_rate'].ewm(halflife=7).mean()
+
+print(f"\nEWM comparison:")
+print(daily_heart_rate[['ewm_span_7', 'ewm_alpha_0.3', 'ewm_halflife_7']].head(10))
+```
+
+## Part 3: Visualization with Resampling and Rolling Windows
+
+### Visualizing Resampling Effects
+
+```python
+# Visualize resampling effects
+fig, axes = plt.subplots(3, 1, figsize=(14, 12))
+
+# Original hourly data (sample of first week)
+hourly_sample = icu_data['heart_rate']['2023-01-01':'2023-01-07']
+axes[0].plot(hourly_sample.index, hourly_sample.values, 
+             marker='o', markersize=3, alpha=0.7, linewidth=1, label='Hourly')
+axes[0].set_title('High Frequency: Hourly Heart Rate (First Week)', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Heart Rate (bpm)')
 axes[0].legend()
 axes[0].grid(True, alpha=0.3)
 
-# Rolling standard deviation
-axes[1].plot(ts.index, ts['rolling_std'], label='7-day Rolling Std', color='red')
-axes[1].set_title('Rolling Standard Deviation')
+# Daily resampled
+daily_sample = daily_heart_rate['2023-01-01':'2023-01-31']
+axes[1].plot(daily_sample.index, daily_sample['heart_rate'], 
+             marker='o', markersize=5, linewidth=2, label='Daily Mean', color='red')
+axes[1].set_title('Medium Frequency: Daily Heart Rate (January)', fontsize=14, fontweight='bold')
+axes[1].set_ylabel('Heart Rate (bpm)')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+
+# Weekly resampled
+weekly_sample = daily_heart_rate['heart_rate'].resample('W').mean()['2023-01-01':'2023-01-31']
+axes[2].plot(weekly_sample.index, weekly_sample.values, 
+             marker='o', markersize=8, linewidth=2, label='Weekly Mean', color='green')
+axes[2].set_title('Low Frequency: Weekly Heart Rate (January)', fontsize=14, fontweight='bold')
+axes[2].set_xlabel('Date')
+axes[2].set_ylabel('Heart Rate (bpm)')
+axes[2].legend()
+axes[2].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Visualizing Rolling Windows
+
+```python
+# Visualize rolling window effects
+fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+
+# Rolling mean comparison
+sample_data = daily_heart_rate['2023-01-01':'2023-03-31']
+axes[0].plot(sample_data.index, sample_data['heart_rate'], 
+             alpha=0.5, linewidth=1, label='Daily Heart Rate', color='gray')
+axes[0].plot(sample_data.index, sample_data['rolling_7d_mean'], 
+             linewidth=2, label='7-Day Rolling Mean', color='blue')
+axes[0].plot(sample_data.index, sample_data['rolling_30d_mean'], 
+             linewidth=2, label='30-Day Rolling Mean', color='red')
+axes[0].fill_between(sample_data.index,
+                     sample_data['rolling_7d_mean'] - sample_data['rolling_7d_std'],
+                     sample_data['rolling_7d_mean'] + sample_data['rolling_7d_std'],
+                     alpha=0.2, color='blue', label='±1 Std Dev')
+axes[0].set_title('Rolling Window Comparison', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Heart Rate (bpm)')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+
+# EWM vs Simple MA
+axes[1].plot(sample_data.index, sample_data['heart_rate'], 
+             alpha=0.3, linewidth=1, label='Daily Heart Rate', color='gray')
+axes[1].plot(sample_data.index, sample_data['rolling_7d_mean'], 
+             linewidth=2, label='7-Day Simple MA', color='blue', linestyle='--')
+axes[1].plot(sample_data.index, sample_data['ewm_span_7'], 
+             linewidth=2, label='7-Day EWM', color='red')
+axes[1].set_title('Simple Moving Average vs Exponentially Weighted', fontsize=14, fontweight='bold')
 axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Standard Deviation')
+axes[1].set_ylabel('Heart Rate (bpm)')
 axes[1].legend()
 axes[1].grid(True, alpha=0.3)
 
@@ -242,137 +285,102 @@ plt.tight_layout()
 plt.show()
 ```
 
-## Part 4: Missing Data Handling
+## Part 4: Combining Concepts - Multi-Variable Analysis
 
-### Create Data with Missing Values
-
-```python
-# Create time series with missing values
-print("=== Missing Data Handling ===")
-
-# Create regular time series
-regular_ts = pd.Series(np.random.randn(30), index=pd.date_range('2023-01-01', periods=30, freq='D'))
-
-# Introduce missing values
-missing_ts = regular_ts.copy()
-missing_ts.iloc[5:8] = np.nan  # Missing values for 3 days
-missing_ts.iloc[15:17] = np.nan  # Missing values for 2 days
-
-print("Time series with missing values:")
-print(missing_ts.head(20))
-print(f"Missing values: {missing_ts.isnull().sum()}")
-```
-
-### Missing Data Imputation
+### Multi-Variable Rolling Analysis
 
 ```python
-# Different imputation methods
-print("=== Missing Data Imputation ===")
+# Analyze multiple variables with rolling windows
+print("=== Multi-Variable Rolling Analysis ===\n")
 
-# Forward fill
-forward_fill = missing_ts.fillna(method='ffill')
-print("Forward fill:")
-print(forward_fill.head(20))
-
-# Backward fill
-backward_fill = missing_ts.fillna(method='bfill')
-print("\nBackward fill:")
-print(backward_fill.head(20))
-
-# Interpolation
-interpolated = missing_ts.interpolate()
-print("\nInterpolated:")
-print(interpolated.head(20))
-
-# Rolling mean imputation
-rolling_mean = missing_ts.fillna(missing_ts.rolling(window=5, min_periods=1).mean())
-print("\nRolling mean imputation:")
-print(rolling_mean.head(20))
-```
-
-## Part 5: Real-world Example
-
-### Stock Market Analysis
-
-```python
-# Create realistic stock market data
-print("=== Stock Market Analysis ===")
-
-# Generate stock price data
-np.random.seed(42)
-n_days = 252  # Trading days in a year
-dates = pd.bdate_range('2023-01-01', periods=n_days)
-returns = np.random.normal(0.001, 0.02, n_days)
-prices = 100 * np.exp(np.cumsum(returns))
-
-# Create stock data
-stock_data = pd.Series(prices, index=dates)
-stock_data.name = 'Stock Price'
-
-print(f"Stock data shape: {stock_data.shape}")
-print(f"Date range: {stock_data.index.min()} to {stock_data.index.max()}")
-print(f"Price range: ${stock_data.min():.2f} to ${stock_data.max():.2f}")
-```
-
-### Technical Analysis
-
-```python
-# Technical analysis indicators
-print("=== Technical Analysis ===")
-
-# Moving averages
-stock_data['MA_5'] = stock_data.rolling(window=5).mean()
-stock_data['MA_20'] = stock_data.rolling(window=20).mean()
-stock_data['MA_50'] = stock_data.rolling(window=50).mean()
-
-# Volatility (rolling standard deviation of returns)
-returns = stock_data.pct_change()
-stock_data['Volatility'] = returns.rolling(window=20).std()
-
-# Bollinger Bands
-stock_data['BB_Upper'] = stock_data['MA_20'] + 2 * stock_data['Volatility']
-stock_data['BB_Lower'] = stock_data['MA_20'] - 2 * stock_data['Volatility']
-
-print("Stock data with technical indicators:")
-print(stock_data.tail())
-```
-
-### Monthly Analysis
-
-```python
-# Monthly analysis
-print("=== Monthly Analysis ===")
-
-# Monthly returns
-monthly_returns = stock_data.resample('M').last().pct_change()
-print("Monthly returns:")
-print(monthly_returns.head())
-
-# Monthly volatility
-monthly_volatility = returns.resample('M').std()
-print("\nMonthly volatility:")
-print(monthly_volatility.head())
-
-# Monthly statistics
-monthly_stats = stock_data.resample('M').agg({
-    'Stock Price': ['mean', 'std', 'min', 'max']
+# Create daily summary for all variables
+daily_summary = icu_data.resample('D').agg({
+    'heart_rate': 'mean',
+    'blood_pressure_systolic': 'mean',
+    'oxygen_saturation': 'mean',
+    'temperature': 'mean'
 })
-print("\nMonthly statistics:")
-print(monthly_stats.head())
+
+# Calculate rolling correlations (7-day window)
+rolling_corr = daily_summary['heart_rate'].rolling(window=7).corr(
+    daily_summary['blood_pressure_systolic']
+)
+
+print("Rolling correlation (7-day window) between heart rate and blood pressure:")
+print(rolling_corr.head(10))
+
+# Multiple rolling statistics
+daily_summary['hr_rolling_mean'] = daily_summary['heart_rate'].rolling(window=7).mean()
+daily_summary['bp_rolling_mean'] = daily_summary['blood_pressure_systolic'].rolling(window=7).mean()
+daily_summary['temp_rolling_mean'] = daily_summary['temperature'].rolling(window=7).mean()
+
+print(f"\nDaily summary with rolling statistics:")
+print(daily_summary.head(10))
+```
+
+### Visualization with Multiple Variables
+
+```python
+# Create comprehensive multi-variable visualization
+fig, axes = plt.subplots(4, 1, figsize=(14, 14))
+
+# Heart rate
+axes[0].plot(daily_summary.index, daily_summary['heart_rate'], 
+             alpha=0.5, linewidth=1, label='Daily', color='gray')
+axes[0].plot(daily_summary.index, daily_summary['hr_rolling_mean'], 
+             linewidth=2, label='7-Day Rolling Mean', color='blue')
+axes[0].set_title('Heart Rate with Rolling Mean', fontsize=12, fontweight='bold')
+axes[0].set_ylabel('Heart Rate (bpm)')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+
+# Blood pressure
+axes[1].plot(daily_summary.index, daily_summary['blood_pressure_systolic'], 
+             alpha=0.5, linewidth=1, label='Daily', color='gray')
+axes[1].plot(daily_summary.index, daily_summary['bp_rolling_mean'], 
+             linewidth=2, label='7-Day Rolling Mean', color='red')
+axes[1].set_title('Blood Pressure (Systolic) with Rolling Mean', fontsize=12, fontweight='bold')
+axes[1].set_ylabel('BP Systolic (mmHg)')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+
+# Oxygen saturation
+axes[2].plot(daily_summary.index, daily_summary['oxygen_saturation'], 
+             alpha=0.5, linewidth=1, label='Daily', color='gray')
+axes[2].axhline(y=95, color='red', linestyle='--', label='Critical Threshold (95%)')
+axes[2].set_title('Oxygen Saturation', fontsize=12, fontweight='bold')
+axes[2].set_ylabel('O2 Sat (%)')
+axes[2].legend()
+axes[2].grid(True, alpha=0.3)
+
+# Temperature
+axes[3].plot(daily_summary.index, daily_summary['temperature'], 
+             alpha=0.5, linewidth=1, label='Daily', color='gray')
+axes[3].plot(daily_summary.index, daily_summary['temp_rolling_mean'], 
+             linewidth=2, label='7-Day Rolling Mean', color='orange')
+axes[3].axhline(y=98.6, color='red', linestyle='--', label='Normal (98.6°F)')
+axes[3].set_title('Temperature with Rolling Mean', fontsize=12, fontweight='bold')
+axes[3].set_xlabel('Date')
+axes[3].set_ylabel('Temperature (°F)')
+axes[3].legend()
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Key Takeaways
 
-1. **Time Series Indexing**: Select data by date ranges, specific dates, and time periods
-2. **Resampling**: Convert between different time frequencies
-3. **Rolling Windows**: Calculate moving statistics and trends
-4. **Missing Data**: Handle gaps in time series data
-5. **Real-world Application**: Apply techniques to financial data analysis
-6. **Technical Analysis**: Create indicators for time series analysis
+1. **Resampling**: Convert between frequencies (hourly → daily → weekly → monthly)
+2. **Rolling Windows**: Smooth noisy data and identify trends
+3. **Exponentially Weighted**: More responsive to recent changes
+4. **Missing Data**: Handle gaps in time series with forward fill, interpolation
+5. **Multi-Variable Analysis**: Apply rolling operations to multiple variables simultaneously
+6. **Visualization**: Combine resampling and rolling windows with plots
 
 ## Next Steps
 
 - Practice with your own time series data
-- Learn about seasonal decomposition
-- Explore time series visualization techniques
-- Set up automated time series analysis
+- Integrate with visualization tools from Lecture 07 (Demo 3)
+- Explore seasonal decomposition for pattern identification
+- Set up automated analysis workflows

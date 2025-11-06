@@ -1,10 +1,15 @@
-# Demo 3: Time Series Visualization and Automation
+# Demo 3: Time Series Visualization and Integration
+
+**Placement**: After "Time Zone Handling" section (end of lecture)  
+**Duration**: 25 minutes  
+**Focus**: Time series visualization using matplotlib, seaborn, and altair; combining concepts from earlier lectures
 
 ## Learning Objectives
-- Create effective time series visualizations
-- Perform seasonal decomposition
-- Set up automated analysis with cron jobs
-- Monitor time series performance
+- Create effective time series visualizations with multiple libraries
+- Integrate pandas, matplotlib, and seaborn for time series plots
+- Use altair for interactive time series visualizations
+- Identify seasonal patterns in health data
+- Create publication-quality plots for medical research
 
 ## Setup
 
@@ -13,500 +18,382 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import altair as alt
 from datetime import datetime, timedelta
-import os
-
-# Set style
-plt.style.use('default')
-sns.set_style('whitegrid')
 
 # Set random seed for reproducibility
 np.random.seed(42)
+
+# Set plotting style
+sns.set_style('whitegrid')
+plt.rcParams['figure.figsize'] = (14, 8)
+plt.rcParams['font.size'] = 10
+
+# Enable altair for Jupyter
+alt.renderers.enable('default')
 ```
 
-## Part 1: Time Series Visualization
+## Part 1: Multi-Year Disease Surveillance Data
 
-### Create Sample Time Series
+### Load and Prepare Data
 
 ```python
-# Create realistic time series data
-print("=== Creating Sample Time Series ===")
+# Simulate multi-year disease surveillance data (3 years, monthly)
+print("=== Disease Surveillance Data ===\n")
 
-# Generate time series with trend, seasonality, and noise
-dates = pd.date_range('2020-01-01', periods=365*3, freq='D')
-n = len(dates)
+# Create monthly dates for 3 years
+monthly_dates = pd.date_range('2020-01-01', periods=36, freq='ME')
 
-# Trend component
-trend = np.linspace(100, 150, n)
+# Generate realistic disease surveillance data with seasonality
+n = len(monthly_dates)
 
-# Seasonal component (annual cycle)
-seasonal = 10 * np.sin(2 * np.pi * np.arange(n) / 365.25)
+# Base trend (slight increase over time)
+trend = np.linspace(100, 120, n)
+
+# Seasonal component (flu season peaks in winter)
+seasonal = 20 * np.sin(2 * np.pi * np.arange(n) / 12) + 10
 
 # Noise component
 noise = np.random.normal(0, 5, n)
 
 # Combine components
-values = trend + seasonal + noise
-ts = pd.Series(values, index=dates)
-ts.name = 'Time Series'
+case_counts = trend + seasonal + noise
+case_counts = np.maximum(case_counts, 0)  # No negative cases
 
-print(f"Time series shape: {ts.shape}")
-print(f"Date range: {ts.index.min()} to {ts.index.max()}")
-print(f"Value range: {ts.min():.2f} to {ts.max():.2f}")
+# Create DataFrame with multiple sites
+surveillance_data = pd.DataFrame({
+    'cases': case_counts,
+    'temperature': 60 + 30 * np.sin(2 * np.pi * np.arange(n) / 12) + np.random.normal(0, 2, n),
+    'humidity': 50 + 20 * np.sin(2 * np.pi * np.arange(n) / 12 + np.pi) + np.random.normal(0, 3, n),
+    'site': 'Site_A'
+}, index=monthly_dates)
+
+# Add second site
+site_b_cases = case_counts * 0.8 + np.random.normal(0, 3, n)
+site_b_cases = np.maximum(site_b_cases, 0)
+
+site_b_data = pd.DataFrame({
+    'cases': site_b_cases,
+    'temperature': surveillance_data['temperature'] + np.random.normal(0, 1, n),
+    'humidity': surveillance_data['humidity'] + np.random.normal(0, 2, n),
+    'site': 'Site_B'
+}, index=monthly_dates)
+
+# Combine sites
+surveillance_data = pd.concat([surveillance_data, site_b_data]).sort_index()
+
+print(f"Surveillance data shape: {surveillance_data.shape}")
+print(f"Date range: {surveillance_data.index.min()} to {surveillance_data.index.max()}")
+print(f"\nSample data:")
+print(surveillance_data.head(10))
 ```
 
-### Basic Time Series Plots
+## Part 2: Time Series Visualization with matplotlib
+
+### Basic Time Series Plots (from Lecture 07)
 
 ```python
-# Create basic time series plot
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+# Create comprehensive time series visualization with matplotlib
+fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+fig.suptitle('Disease Surveillance Data - Time Series Analysis', fontsize=16, fontweight='bold')
 
-# Line plot
-axes[0, 0].plot(ts.index, ts.values, linewidth=1)
-axes[0, 0].set_title('Time Series Line Plot')
-axes[0, 0].set_ylabel('Value')
+# Line plot (basic time series)
+site_a = surveillance_data[surveillance_data['site'] == 'Site_A']
+axes[0, 0].plot(site_a.index, site_a['cases'], 
+                marker='o', markersize=4, linewidth=2, label='Site A', color='blue')
+axes[0, 0].set_title('Case Counts Over Time', fontsize=12, fontweight='bold')
+axes[0, 0].set_ylabel('Cases')
+axes[0, 0].legend()
 axes[0, 0].grid(True, alpha=0.3)
+axes[0, 0].tick_params(axis='x', rotation=45)
 
-# Rolling mean
-rolling_mean = ts.rolling(window=30).mean()
-axes[0, 1].plot(ts.index, ts.values, alpha=0.7, label='Original')
-axes[0, 1].plot(rolling_mean.index, rolling_mean.values, linewidth=2, label='30-day MA')
-axes[0, 1].set_title('Time Series with Rolling Mean')
-axes[0, 1].set_ylabel('Value')
+# Time series with rolling mean
+rolling_mean = site_a['cases'].rolling(window=6).mean()
+axes[0, 1].plot(site_a.index, site_a['cases'], 
+                alpha=0.5, linewidth=1, label='Monthly Cases', color='gray')
+axes[0, 1].plot(rolling_mean.index, rolling_mean.values, 
+                linewidth=2, label='6-Month Rolling Mean', color='red')
+axes[0, 1].set_title('Cases with Rolling Mean', fontsize=12, fontweight='bold')
+axes[0, 1].set_ylabel('Cases')
 axes[0, 1].legend()
 axes[0, 1].grid(True, alpha=0.3)
+axes[0, 1].tick_params(axis='x', rotation=45)
 
-# Histogram
-axes[1, 0].hist(ts.values, bins=50, alpha=0.7, edgecolor='black')
-axes[1, 0].set_title('Value Distribution')
-axes[1, 0].set_xlabel('Value')
+# Distribution
+axes[1, 0].hist(site_a['cases'], bins=15, alpha=0.7, edgecolor='black', color='blue')
+axes[1, 0].set_title('Case Count Distribution', fontsize=12, fontweight='bold')
+axes[1, 0].set_xlabel('Cases')
 axes[1, 0].set_ylabel('Frequency')
 axes[1, 0].grid(True, alpha=0.3)
 
-# Box plot by month
-monthly_data = [ts[ts.index.month == i].values for i in range(1, 13)]
+# Box plot by month (seasonal pattern)
+monthly_data = [site_a[site_a.index.month == i]['cases'].values for i in range(1, 13)]
 axes[1, 1].boxplot(monthly_data, labels=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-axes[1, 1].set_title('Monthly Distribution')
+axes[1, 1].set_title('Monthly Distribution (Seasonal Pattern)', fontsize=12, fontweight='bold')
 axes[1, 1].set_xlabel('Month')
-axes[1, 1].set_ylabel('Value')
+axes[1, 1].set_ylabel('Cases')
 axes[1, 1].grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-### Advanced Time Series Visualization
+## Part 3: Statistical Visualization with seaborn
+
+### Multi-Variable Time Series with seaborn (from Lecture 07)
 
 ```python
-# Create advanced visualizations
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+# Use seaborn for statistical visualizations
+fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+fig.suptitle('Disease Surveillance - Statistical Analysis', fontsize=16, fontweight='bold')
 
-# Multiple time series
-ts_ma5 = ts.rolling(window=5).mean()
-ts_ma20 = ts.rolling(window=20).mean()
-ts_ma50 = ts.rolling(window=50).mean()
+# Prepare data for seaborn
+site_a_long = site_a.reset_index()
+site_a_long['month'] = site_a_long['date'].dt.month
+site_a_long['year'] = site_a_long['date'].dt.year
 
-axes[0, 0].plot(ts.index, ts.values, alpha=0.7, label='Original')
-axes[0, 0].plot(ts_ma5.index, ts_ma5.values, label='5-day MA')
-axes[0, 0].plot(ts_ma20.index, ts_ma20.values, label='20-day MA')
-axes[0, 0].plot(ts_ma50.index, ts_ma50.values, label='50-day MA')
-axes[0, 0].set_title('Multiple Moving Averages')
-axes[0, 0].set_ylabel('Value')
-axes[0, 0].legend()
+# Scatter plot: Cases vs Temperature
+sns.scatterplot(data=site_a_long, x='temperature', y='cases', 
+                hue='month', palette='viridis', ax=axes[0, 0], s=100)
+axes[0, 0].set_title('Cases vs Temperature (colored by month)', fontsize=12, fontweight='bold')
+axes[0, 0].set_xlabel('Temperature (°F)')
+axes[0, 0].set_ylabel('Cases')
 axes[0, 0].grid(True, alpha=0.3)
 
-# Volatility analysis
-returns = ts.pct_change()
-volatility = returns.rolling(window=20).std()
-
-axes[0, 1].plot(ts.index, ts.values, alpha=0.7, label='Price')
-axes[0, 1].set_ylabel('Price', color='blue')
+# Line plot with multiple variables
+ax_twin = axes[0, 1].twinx()
+line1 = axes[0, 1].plot(site_a.index, site_a['cases'], 
+                        color='blue', linewidth=2, label='Cases', marker='o', markersize=4)
+line2 = ax_twin.plot(site_a.index, site_a['temperature'], 
+                     color='red', linewidth=2, label='Temperature', linestyle='--')
+axes[0, 1].set_title('Cases and Temperature Over Time', fontsize=12, fontweight='bold')
+axes[0, 1].set_xlabel('Date')
+axes[0, 1].set_ylabel('Cases', color='blue')
+ax_twin.set_ylabel('Temperature (°F)', color='red')
 axes[0, 1].tick_params(axis='y', labelcolor='blue')
-
-ax2 = axes[0, 1].twinx()
-ax2.plot(volatility.index, volatility.values, color='red', alpha=0.7, label='Volatility')
-ax2.set_ylabel('Volatility', color='red')
-ax2.tick_params(axis='y', labelcolor='red')
-
-axes[0, 1].set_title('Price and Volatility')
+ax_twin.tick_params(axis='y', labelcolor='red')
+axes[0, 1].tick_params(axis='x', rotation=45)
 axes[0, 1].grid(True, alpha=0.3)
 
-# Seasonal analysis
-monthly_means = ts.groupby(ts.index.month).mean()
-axes[1, 0].plot(monthly_means.index, monthly_means.values, marker='o', linewidth=2)
-axes[1, 0].set_title('Seasonal Pattern (Monthly Means)')
+# Violin plot by month (distribution shape)
+sns.violinplot(data=site_a_long, x='month', y='cases', ax=axes[1, 0])
+axes[1, 0].set_title('Monthly Case Distribution (Violin Plot)', fontsize=12, fontweight='bold')
 axes[1, 0].set_xlabel('Month')
-axes[1, 0].set_ylabel('Average Value')
-axes[1, 0].set_xticks(range(1, 13))
+axes[1, 0].set_ylabel('Cases')
 axes[1, 0].grid(True, alpha=0.3)
 
-# Correlation analysis
-ts_df = ts.to_frame()
-ts_df['lag_1'] = ts.shift(1)
-ts_df['lag_7'] = ts.shift(7)
-ts_df['lag_30'] = ts.shift(30)
-
-correlation_matrix = ts_df.corr()
-im = axes[1, 1].imshow(correlation_matrix, cmap='coolwarm', aspect='auto')
-axes[1, 1].set_title('Autocorrelation Matrix')
-axes[1, 1].set_xticks(range(len(correlation_matrix.columns)))
-axes[1, 1].set_yticks(range(len(correlation_matrix.index)))
-axes[1, 1].set_xticklabels(correlation_matrix.columns, rotation=45)
-axes[1, 1].set_yticklabels(correlation_matrix.index)
-
-# Add colorbar
-plt.colorbar(im, ax=axes[1, 1])
+# Heatmap: Cases by month and year
+heatmap_data = site_a_long.pivot(index='year', columns='month', values='cases')
+sns.heatmap(heatmap_data, annot=True, fmt='.0f', cmap='YlOrRd', ax=axes[1, 1])
+axes[1, 1].set_title('Cases Heatmap: Year vs Month', fontsize=12, fontweight='bold')
+axes[1, 1].set_xlabel('Month')
+axes[1, 1].set_ylabel('Year')
 
 plt.tight_layout()
 plt.show()
 ```
 
-## Part 2: Seasonal Decomposition
+## Part 4: Interactive Visualization with altair
 
-### Basic Seasonal Decomposition
-
-```python
-# Perform seasonal decomposition
-print("=== Seasonal Decomposition ===")
-
-# Use statsmodels for decomposition
-try:
-    from statsmodels.tsa.seasonal import seasonal_decompose
-    
-    # Decompose time series
-    decomposition = seasonal_decompose(ts, model='additive', period=365)
-    
-    # Plot decomposition
-    fig, axes = plt.subplots(4, 1, figsize=(15, 12))
-    
-    decomposition.observed.plot(ax=axes[0], title='Original')
-    decomposition.trend.plot(ax=axes[1], title='Trend')
-    decomposition.seasonal.plot(ax=axes[2], title='Seasonal')
-    decomposition.resid.plot(ax=axes[3], title='Residual')
-    
-    plt.tight_layout()
-    plt.show()
-    
-    # Print decomposition statistics
-    print("Decomposition Statistics:")
-    print(f"Trend range: {decomposition.trend.min():.2f} to {decomposition.trend.max():.2f}")
-    print(f"Seasonal range: {decomposition.seasonal.min():.2f} to {decomposition.seasonal.max():.2f}")
-    print(f"Residual range: {decomposition.resid.min():.2f} to {decomposition.resid.max():.2f}")
-    
-except ImportError:
-    print("statsmodels not available. Install with: pip install statsmodels")
-```
-
-### Manual Seasonal Analysis
+### Interactive Time Series with altair (from Lecture 07)
 
 ```python
-# Manual seasonal analysis
-print("=== Manual Seasonal Analysis ===")
+# Create interactive time series visualization with altair
+print("=== Interactive Time Series with altair ===\n")
 
-# Calculate seasonal components
-ts_df = ts.to_frame()
-ts_df['year'] = ts_df.index.year
-ts_df['month'] = ts_df.index.month
-ts_df['day_of_year'] = ts_df.index.dayofyear
+# Prepare data for altair
+chart_data = site_a.reset_index()
+chart_data = chart_data.rename(columns={'date': 'Date', 'cases': 'Cases', 
+                                       'temperature': 'Temperature', 'humidity': 'Humidity'})
 
-# Monthly seasonal pattern
-monthly_pattern = ts_df.groupby('month')['Time Series'].mean()
-print("Monthly seasonal pattern:")
-print(monthly_pattern)
+# Basic interactive line chart
+chart = alt.Chart(chart_data).mark_line(point=True).encode(
+    x=alt.X('Date:T', title='Date'),
+    y=alt.Y('Cases:Q', title='Cases'),
+    tooltip=['Date', 'Cases', 'Temperature']
+).properties(
+    width=700,
+    height=400,
+    title='Disease Surveillance - Interactive Time Series'
+).interactive()
 
-# Plot seasonal patterns
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+chart.save('media/interactive_time_series.html')
+print("✓ Saved interactive chart: media/interactive_time_series.html")
 
-# Monthly pattern
-monthly_pattern.plot(kind='bar', ax=axes[0, 0])
-axes[0, 0].set_title('Monthly Seasonal Pattern')
-axes[0, 0].set_xlabel('Month')
-axes[0, 0].set_ylabel('Average Value')
-axes[0, 0].tick_params(axis='x', rotation=45)
+# Multi-line chart: Cases and Temperature
+base = alt.Chart(chart_data).encode(x='Date:T')
 
-# Day of year pattern
-daily_pattern = ts_df.groupby('day_of_year')['Time Series'].mean()
-axes[0, 1].plot(daily_pattern.index, daily_pattern.values)
-axes[0, 1].set_title('Daily Seasonal Pattern')
-axes[0, 1].set_xlabel('Day of Year')
-axes[0, 1].set_ylabel('Average Value')
-axes[0, 1].grid(True, alpha=0.3)
-
-# Yearly comparison
-yearly_data = ts_df.groupby('year')['Time Series'].mean()
-axes[1, 0].plot(yearly_data.index, yearly_data.values, marker='o')
-axes[1, 0].set_title('Yearly Averages')
-axes[1, 0].set_xlabel('Year')
-axes[1, 0].set_ylabel('Average Value')
-axes[1, 0].grid(True, alpha=0.3)
-
-# Heatmap of seasonal patterns
-pivot_data = ts_df.pivot_table(values='Time Series', index='month', columns='year', aggfunc='mean')
-sns.heatmap(pivot_data, annot=True, fmt='.1f', cmap='YlOrRd', ax=axes[1, 1])
-axes[1, 1].set_title('Seasonal Heatmap (Month vs Year)')
-
-plt.tight_layout()
-plt.show()
-```
-
-## Part 3: Automation with Cron Jobs
-
-### Cron Job Setup
-
-```python
-# Simulate cron job setup
-print("=== Cron Job Setup ===")
-print("In a real scenario, you would:")
-print("1. Create a Python script for time series analysis")
-print("2. Set up cron job to run the script automatically")
-print("3. Configure logging and error handling")
-print("4. Set up monitoring and alerts")
-```
-
-### Time Series Analysis Script
-
-```python
-# Create time series analysis script
-def create_analysis_script():
-    """Create a time series analysis script for cron job"""
-    
-    script_content = '''#!/usr/bin/env python3
-"""
-Time series analysis script for cron job
-"""
-
-import pandas as pd
-import numpy as np
-from datetime import datetime
-import logging
-import os
-
-# Set up logging
-logging.basicConfig(
-    filename='/path/to/logs/time_series_analysis.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+line1 = base.mark_line(color='blue', strokeWidth=2).encode(
+    y=alt.Y('Cases:Q', title='Cases', axis=alt.Axis(titleColor='blue'))
 )
 
-def run_time_series_analysis():
-    """Run daily time series analysis"""
-    try:
-        # Load data
-        df = pd.read_csv('/path/to/data/time_series_data.csv')
-        df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
-        
-        # Perform analysis
-        daily_stats = df.resample('D').agg({
-            'value': ['mean', 'std', 'min', 'max'],
-            'volume': 'sum'
-        })
-        
-        # Calculate moving averages
-        df['ma_7'] = df['value'].rolling(window=7).mean()
-        df['ma_30'] = df['value'].rolling(window=30).mean()
-        
-        # Detect anomalies
-        df['anomaly'] = abs(df['value'] - df['ma_7']) > 2 * df['value'].rolling(window=30).std()
-        
-        # Save results
-        daily_stats.to_csv('/path/to/results/daily_stats.csv')
-        df.to_csv('/path/to/results/analysis_results.csv')
-        
-        # Log completion
-        logging.info("Time series analysis completed successfully")
-        
-    except Exception as e:
-        logging.error(f"Error in time series analysis: {e}")
+line2 = base.mark_line(color='red', strokeWidth=2, strokeDash=[5, 5]).encode(
+    y=alt.Y('Temperature:Q', title='Temperature (°F)', axis=alt.Axis(titleColor='red'))
+)
 
-if __name__ == "__main__":
-    run_time_series_analysis()
-'''
-    
-    return script_content
+multi_line = alt.layer(line1, line2).resolve_scale(
+    y='independent'
+).properties(
+    width=700,
+    height=400,
+    title='Cases and Temperature Over Time'
+).interactive()
 
-# Display the script
-print("=== Time Series Analysis Script ===")
-script = create_analysis_script()
-print(script)
+multi_line.save('media/multi_line_interactive.html')
+print("✓ Saved multi-line chart: media/multi_line_interactive.html")
 ```
 
-### Cron Job Configuration
+### Faceted Time Series (Small Multiples)
 
 ```python
-# Cron job configuration
-def create_cron_config():
-    """Create cron job configuration"""
-    
-    cron_config = '''
-# Time series analysis cron jobs
-# Run every day at 2 AM
-0 2 * * * /path/to/scripts/time_series_analysis.sh
+# Create faceted charts for multiple sites (small multiples)
+print("=== Faceted Charts for Multiple Sites ===\n")
 
-# Run every Monday at 9 AM
-0 9 * * 1 /path/to/scripts/weekly_analysis.sh
+# Prepare data for faceting
+all_sites = surveillance_data.reset_index()
+all_sites = all_sites.rename(columns={'date': 'Date', 'cases': 'Cases', 'site': 'Site'})
 
-# Run every 15 minutes during business hours
-*/15 9-17 * * 1-5 /path/to/scripts/realtime_analysis.sh
+# Faceted line chart
+faceted = alt.Chart(all_sites).mark_line(point=True).encode(
+    x='Date:T',
+    y='Cases:Q',
+    color='Site:N',
+    tooltip=['Date', 'Cases', 'Site']
+).facet(
+    column='Site:N'
+).properties(
+    width=300,
+    height=300,
+    title='Disease Surveillance by Site'
+)
 
-# Run at specific times
-0 9,17 * * * /path/to/scripts/business_hours_analysis.sh
-'''
-    
-    return cron_config
-
-print("=== Cron Job Configuration ===")
-config = create_cron_config()
-print(config)
+faceted.save('media/faceted_sites.html')
+print("✓ Saved faceted chart: media/faceted_sites.html")
 ```
 
-## Part 4: Performance Monitoring
+## Part 5: Seasonal Pattern Analysis
 
-### Performance Metrics
+### Identifying Seasonal Patterns
 
 ```python
-# Create performance monitoring
-def monitor_performance():
-    """Monitor time series analysis performance"""
-    
-    print("=== Performance Monitoring ===")
-    
-    # Simulate performance metrics
-    metrics = {
-        'data_size': '1M records',
-        'processing_time': '2.5 seconds',
-        'memory_usage': '512 MB',
-        'cpu_usage': '45%',
-        'disk_usage': '2.1 GB',
-        'error_rate': '0.1%'
-    }
-    
-    print("Performance Metrics:")
-    for metric, value in metrics.items():
-        print(f"  {metric}: {value}")
-    
-    # Create performance report
-    report = f"""
-Time Series Analysis Performance Report
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# Analyze seasonal patterns
+print("=== Seasonal Pattern Analysis ===\n")
 
-Data Processing:
-- Data size: {metrics['data_size']}
-- Processing time: {metrics['processing_time']}
-- Memory usage: {metrics['memory_usage']}
-- CPU usage: {metrics['cpu_usage']}
+# Group by month to identify seasonal pattern
+monthly_avg = site_a.groupby(site_a.index.month)['cases'].mean()
+monthly_std = site_a.groupby(site_a.index.month)['cases'].std()
 
-Storage:
-- Disk usage: {metrics['disk_usage']}
+print("Average cases by month:")
+for month, avg in monthly_avg.items():
+    print(f"Month {month:2d}: {avg:6.1f} cases (std: {monthly_std[month]:.1f})")
 
-Quality:
-- Error rate: {metrics['error_rate']}
+# Visualize seasonal pattern
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-Status: All systems operational
-"""
-    
-    return report
+# Monthly average bar chart
+month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+axes[0].bar(month_names, monthly_avg.values, yerr=monthly_std.values, 
+           alpha=0.7, color='steelblue', edgecolor='black')
+axes[0].set_title('Average Cases by Month (Seasonal Pattern)', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Average Cases')
+axes[0].grid(True, alpha=0.3, axis='y')
 
-# Generate performance report
-performance_report = monitor_performance()
-print(performance_report)
+# Seasonal decomposition visualization
+trend = site_a['cases'].rolling(window=12, center=True).mean()
+seasonal = site_a['cases'] - trend
+residual = seasonal - site_a['cases'].groupby(site_a.index.month).transform('mean')
+
+axes[1].plot(site_a.index, site_a['cases'], alpha=0.5, label='Original', color='gray')
+axes[1].plot(site_a.index, trend, linewidth=2, label='Trend (12-month)', color='blue')
+axes[1].set_title('Trend Component Extraction', fontsize=14, fontweight='bold')
+axes[1].set_xlabel('Date')
+axes[1].set_ylabel('Cases')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+plt.show()
 ```
 
-### Automated Monitoring
+## Part 6: Integration with Earlier Concepts
+
+### Combining Resampling, Rolling Windows, and Visualization
 
 ```python
-# Automated monitoring system
-def create_monitoring_system():
-    """Create automated monitoring system"""
-    
-    monitoring_script = '''#!/usr/bin/env python3
-"""
-Automated monitoring system for time series analysis
-"""
+# Integrate all concepts: resampling, rolling windows, and visualization
+print("=== Integration: Resampling + Rolling + Visualization ===\n")
 
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import logging
-import smtplib
-from email.mime.text import MIMEText
+# Create daily data and resample to different frequencies
+daily_dates = pd.date_range('2020-01-01', periods=365*3, freq='D')
+daily_cases = 100 + 20 * np.sin(2 * np.pi * np.arange(len(daily_dates)) / 365.25) + np.random.normal(0, 5, len(daily_dates))
+daily_cases = np.maximum(daily_cases, 0)
+daily_ts = pd.Series(daily_cases, index=daily_dates)
 
-def check_data_quality(df):
-    """Check data quality metrics"""
-    quality_metrics = {
-        'missing_values': df.isnull().sum().sum(),
-        'duplicate_rows': df.duplicated().sum(),
-        'data_range': (df.max() - df.min()).mean(),
-        'outlier_count': len(df[(df - df.mean()).abs() > 3 * df.std()])
-    }
-    return quality_metrics
+# Resample to different frequencies
+weekly_ts = daily_ts.resample('W').mean()
+monthly_ts = daily_ts.resample('ME').mean()
 
-def check_performance_metrics():
-    """Check performance metrics"""
-    # Simulate performance monitoring
-    return {
-        'processing_time': 2.5,
-        'memory_usage': 512,
-        'cpu_usage': 45,
-        'error_count': 0
-    }
+# Calculate rolling statistics
+daily_ts['rolling_7d'] = daily_ts.rolling(window=7).mean()
+daily_ts['rolling_30d'] = daily_ts.rolling(window=30).mean()
+daily_ts['rolling_90d'] = daily_ts.rolling(window=90).mean()
 
-def send_alert(message):
-    """Send alert notification"""
-    # Simulate alert sending
-    print(f"ALERT: {message}")
-    logging.warning(f"Alert sent: {message}")
+# Create comprehensive visualization
+fig, axes = plt.subplots(3, 1, figsize=(16, 14))
 
-def run_monitoring():
-    """Run automated monitoring"""
-    try:
-        # Load data
-        df = pd.read_csv('/path/to/data/time_series_data.csv')
-        
-        # Check data quality
-        quality = check_data_quality(df)
-        if quality['missing_values'] > 100:
-            send_alert("High number of missing values detected")
-        
-        # Check performance
-        performance = check_performance_metrics()
-        if performance['processing_time'] > 10:
-            send_alert("Processing time exceeded threshold")
-        
-        if performance['memory_usage'] > 1000:
-            send_alert("Memory usage exceeded threshold")
-        
-        # Log monitoring results
-        logging.info(f"Monitoring completed - Quality: {quality}, Performance: {performance}")
-        
-    except Exception as e:
-        logging.error(f"Monitoring error: {e}")
-        send_alert(f"Monitoring system error: {e}")
+# Original daily with rolling windows
+sample_data = daily_ts['2021-01-01':'2021-12-31']
+axes[0].plot(sample_data.index, sample_data.values, 
+             alpha=0.3, linewidth=1, label='Daily', color='gray')
+axes[0].plot(sample_data.index, sample_data['rolling_7d'], 
+             linewidth=2, label='7-Day Rolling', color='blue')
+axes[0].plot(sample_data.index, sample_data['rolling_30d'], 
+             linewidth=2, label='30-Day Rolling', color='green')
+axes[0].plot(sample_data.index, sample_data['rolling_90d'], 
+             linewidth=2, label='90-Day Rolling', color='red')
+axes[0].set_title('Daily Data with Rolling Windows', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Cases')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
 
-if __name__ == "__main__":
-    run_monitoring()
-'''
-    
-    return monitoring_script
+# Weekly resampled
+weekly_sample = weekly_ts['2021-01-01':'2021-12-31']
+axes[1].plot(weekly_sample.index, weekly_sample.values, 
+             marker='o', markersize=6, linewidth=2, label='Weekly Mean', color='blue')
+axes[1].set_title('Weekly Resampled Data', fontsize=14, fontweight='bold')
+axes[1].set_ylabel('Cases')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
 
-print("=== Automated Monitoring System ===")
-monitoring_script = create_monitoring_system()
-print(monitoring_script)
+# Monthly resampled
+monthly_sample = monthly_ts['2021-01-01':'2021-12-31']
+axes[2].plot(monthly_sample.index, monthly_sample.values, 
+             marker='s', markersize=8, linewidth=2, label='Monthly Mean', color='red')
+axes[2].set_title('Monthly Resampled Data', fontsize=14, fontweight='bold')
+axes[2].set_xlabel('Date')
+axes[2].set_ylabel('Cases')
+axes[2].legend()
+axes[2].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Key Takeaways
 
-1. **Time Series Visualization**: Create effective plots for trend, seasonality, and patterns
-2. **Seasonal Decomposition**: Separate trend, seasonal, and residual components
-3. **Automation**: Set up cron jobs for automated time series analysis
-4. **Monitoring**: Track performance and data quality metrics
-5. **Real-world Application**: Apply techniques to production time series systems
-6. **Best Practices**: Use logging, error handling, and alerting for robust systems
+1. **matplotlib**: Basic time series plots with customization
+2. **seaborn**: Statistical visualizations for time series (violin plots, heatmaps)
+3. **altair**: Interactive time series visualizations for web
+4. **Seasonal Patterns**: Identify and visualize seasonal trends
+5. **Integration**: Combine resampling, rolling windows, and visualization
+6. **Publication Quality**: Create professional plots for medical research
 
 ## Next Steps
 
-- Practice with your own time series data
-- Set up automated analysis pipelines
-- Learn about time series forecasting
-- Explore advanced time series techniques
+- Practice with your own health/medical time series data
+- Explore advanced visualization techniques
+- Set up automated visualization pipelines
+- Integrate with dashboard tools for monitoring
