@@ -93,8 +93,15 @@ print(patient_vitals.head())
 # monthly_range = None  # Monthly checkup schedule
 
 # TODO: Save results as 'output/q1_datetime_analysis.csv'
-# datetime_analysis = None  # Combine your datetime operations results
-# datetime_analysis.to_csv('output/q1_datetime_analysis.csv')
+# Create a DataFrame with datetime analysis results including:
+# - date (datetime index or column)
+# - year, month, day (extracted from datetime)
+# - days_since_start (calculated time differences)
+# - patient_id (if working with patient data)
+# - At least one original column (e.g., temperature, heart_rate)
+# Example structure:
+# datetime_analysis = patient_vitals[['patient_id', 'year', 'month', 'day', 'days_since_start', 'temperature']].copy()
+# datetime_analysis.to_csv('output/q1_datetime_analysis.csv', index=False)
 ```
 
 ### Part 1.3: Time Zone Handling
@@ -117,13 +124,20 @@ print(patient_vitals.head())
 # dst_time_utc = None  # Localize and convert
 
 # TODO: Document timezone operations
-# Create a report string
+# Create a report string with the following sections:
+# 1. Original timezone: Describe what timezone your original data was in (or if it was naive)
+# 2. Localization method: Explain how you localized the data (e.g., tz_localize('UTC'))
+# 3. Conversion: Describe what timezone you converted to (e.g., 'US/Eastern')
+# 4. DST handling: Document any issues or observations about daylight saving time transitions
+# 5. Example: Show at least one example of a datetime before and after conversion
+# Minimum length: 200 words
 timezone_report = """
 TODO: Document your timezone operations:
 - What timezone was your original data in?
 - How did you localize the data?
 - What timezone did you convert to?
 - What issues did you encounter with DST?
+- Include at least one example showing a datetime before and after conversion
 """
 
 # TODO: Save results as 'output/q1_timezone_report.txt'
@@ -170,10 +184,18 @@ TODO: Document your timezone operations:
 # noon_data = None  # Use at_time('12:00')
 
 # TODO: Demonstrate different selection methods
-# selection_results = None  # Combine your selection results
+# Create a DataFrame showing examples of different selection methods
+# Include columns: selection_type, date_range, row_count, sample_data
+# Example structure:
+# selection_results = pd.DataFrame({
+#     'selection_type': ['specific_date', 'date_range', 'first_week', 'last_week', 'business_hours', 'noon_readings'],
+#     'date_range': ['2023-01-01', '2023-01-01 to 2023-01-31', 'First 7 days', 'Last 7 days', '09:00-17:00', '12:00'],
+#     'row_count': [len(january_first), len(january_data), len(first_week), len(last_week), len(business_hours), len(noon_data)],
+#     'sample_data': [str(january_first.iloc[0]) if len(january_first) > 0 else 'N/A', ...]
+# })
 
 # TODO: Save results as 'output/q2_resampling_analysis.csv'
-# selection_results.to_csv('output/q2_resampling_analysis.csv')
+# selection_results.to_csv('output/q2_resampling_analysis.csv', index=False)
 ```
 
 ### Part 2.2: Resampling Operations
@@ -206,11 +228,20 @@ TODO: Document your timezone operations:
 # print("Missing values after upsampling:", monthly_to_daily.isna().sum())
 
 # TODO: Compare different resampling frequencies
-# Compare daily, weekly, monthly, quarterly resampling
-# resampling_comparison = None  # DataFrame with different frequencies
+# Create a DataFrame comparing resampling results at different frequencies
+# Include columns: frequency, date_range, row_count, mean_value, std_value
+# Use the same metric (e.g., temperature or heart_rate) across all frequencies
+# Example structure:
+# resampling_comparison = pd.DataFrame({
+#     'frequency': ['daily', 'weekly', 'monthly', 'quarterly'],
+#     'date_range': [str(patient_vitals.index.min()) + ' to ' + str(patient_vitals.index.max()), ...],
+#     'row_count': [len(patient_vitals), len(patient_vitals_weekly), len(patient_vitals_monthly), ...],
+#     'mean_temperature': [patient_vitals['temperature'].mean(), patient_vitals_weekly['temperature'].mean(), ...],
+#     'std_temperature': [patient_vitals['temperature'].std(), patient_vitals_weekly['temperature'].std(), ...]
+# })
 
 # TODO: Save results as 'output/q2_resampling_analysis.csv'
-# resampling_comparison.to_csv('output/q2_resampling_analysis.csv')
+# resampling_comparison.to_csv('output/q2_resampling_analysis.csv', index=False)
 ```
 
 ### Part 2.3: Missing Data Handling
@@ -237,6 +268,14 @@ TODO: Document your timezone operations:
 # ts_rolling_imputed = None  # Fill missing with rolling mean
 
 # TODO: Create missing data report
+# Document your missing data handling with the following sections:
+# 1. Missing value summary: Total count and percentage
+# 2. Missing data patterns: When/why data is missing (by month, day of week, etc.)
+# 3. Imputation method: Which method you used (forward fill, backward fill, interpolation, rolling mean)
+# 4. Rationale: Why you chose that method
+# 5. Pros and cons: Advantages and limitations of your approach
+# 6. Example: Show at least one example of missing data before and after imputation
+# Minimum length: 300 words
 missing_data_report = """
 TODO: Document your missing data handling:
 - How many missing values did you find?
@@ -244,17 +283,19 @@ TODO: Document your missing data handling:
 - Which method did you use to fill missing values?
 - Why did you choose that method?
 - What are the pros/cons of your approach?
+- Include examples showing missing data patterns
 """
 
 # TODO: Document missing data patterns
-# missing_patterns = None  # Analyze when/why data is missing
-# missing_by_month = None  # Missing values by month
-# missing_by_day = None  # Missing values by day of week
+# Analyze when/why data is missing
+# missing_by_month = ts_with_missing.groupby(ts_with_missing.index.month).apply(lambda x: x.isna().sum())
+# missing_by_day = ts_with_missing.groupby(ts_with_missing.index.dayofweek).apply(lambda x: x.isna().sum())
+# missing_patterns = f"Missing by month:\n{missing_by_month}\n\nMissing by day of week:\n{missing_by_day}"
 
 # TODO: Save results as 'output/q2_missing_data_report.txt'
 # with open('output/q2_missing_data_report.txt', 'w') as f:
 #     f.write(missing_data_report)
-#     f.write(f"\nMissing patterns:\n{missing_patterns}")
+#     f.write(f"\n\nMissing patterns:\n{missing_patterns}")
 ```
 
 ## Question 3: Rolling Window Operations and Visualization
@@ -283,10 +324,19 @@ TODO: Document your missing data handling:
 # patient_vitals['rolling_14d_mean'] = None  # 14-day rolling mean
 
 # TODO: Create rolling statistics dataframe
-# rolling_stats = None  # DataFrame with rolling statistics
+# Create a DataFrame with rolling statistics for at least one metric (e.g., temperature or heart_rate)
+# Include columns: date (index), original_value, rolling_7d_mean, rolling_7d_std, rolling_30d_mean, rolling_30d_min, rolling_30d_max
+# Example structure:
+# rolling_stats = patient_vitals[['temperature']].copy()
+# rolling_stats['rolling_7d_mean'] = patient_vitals['rolling_7d_mean']
+# rolling_stats['rolling_7d_std'] = patient_vitals['rolling_7d_std']
+# rolling_stats['rolling_30d_mean'] = patient_vitals['rolling_30d_mean']
+# rolling_stats['rolling_30d_min'] = patient_vitals['rolling_30d_min']
+# rolling_stats['rolling_30d_max'] = patient_vitals['rolling_30d_max']
+# rolling_stats = rolling_stats.reset_index()  # Convert index to column if needed
 
 # TODO: Save results as 'output/q3_rolling_analysis.csv'
-# rolling_stats.to_csv('output/q3_rolling_analysis.csv')
+# rolling_stats.to_csv('output/q3_rolling_analysis.csv', index=False)
 ```
 
 ### Part 3.2: Advanced Rolling Operations
@@ -317,10 +367,21 @@ def rolling_range(series):
 # patient_vitals['rolling_7d_min_periods'] = None  # Rolling with min_periods=3
 
 # TODO: Compare different rolling methods
-# rolling_comparison = None  # DataFrame comparing different methods
+# Create a DataFrame comparing different rolling window methods
+# Include columns: date, original_value, rolling_7d_mean, rolling_30d_mean, ewm_span_7, expanding_mean
+# Use the same metric (e.g., temperature) for all comparisons
+# Example structure:
+# rolling_comparison = pd.DataFrame({
+#     'date': patient_vitals.index,
+#     'original_value': patient_vitals['temperature'],
+#     'rolling_7d_mean': patient_vitals['rolling_7d_mean'],
+#     'rolling_30d_mean': patient_vitals['rolling_30d_mean'],
+#     'ewm_span_7': patient_vitals['ewm_span_7'],
+#     'expanding_mean': patient_vitals['expanding_mean']
+# })
 
 # TODO: Save results as 'output/q3_rolling_analysis.csv'
-# rolling_comparison.to_csv('output/q3_rolling_analysis.csv')
+# rolling_comparison.to_csv('output/q3_rolling_analysis.csv', index=False)
 ```
 
 ### Part 3.3: Trend Analysis Visualization
@@ -331,20 +392,29 @@ def rolling_range(series):
 # Use patient_vitals with rolling statistics from Part 3.1
 
 # TODO: Create time series plot with original data
+# Requirements for the plot:
+# - Two subplots (2 rows, 1 column)
+# - Top subplot: Original data + rolling mean + std bands + EWM
+# - Bottom subplot: Comparison of different rolling methods (7-day, 30-day, EWM)
+# - Include titles, axis labels, legends, and grid
+# - Save as PNG with dpi=150
 fig, axes = plt.subplots(2, 1, figsize=(14, 10))
 
 # TODO: Plot original data (e.g., temperature or heart_rate)
-# axes[0].plot(None, None, alpha=0.5, label='Daily', color='gray')  # Original data
+# Select one metric (temperature or heart_rate) and plot it
+# axes[0].plot(patient_vitals.index, patient_vitals['temperature'], alpha=0.5, label='Daily', color='gray')
 
 # TODO: Add rolling mean overlay
-# axes[0].plot(None, None, linewidth=2, label='7-Day Rolling Mean', color='blue')
+# axes[0].plot(patient_vitals.index, patient_vitals['rolling_7d_mean'], linewidth=2, label='7-Day Rolling Mean', color='blue')
 
 # TODO: Add rolling standard deviation bands
-# axes[0].fill_between(None, None, None, alpha=0.2, color='blue', 
-#                     label='±1 Std Dev')  # Rolling mean ± std
+# Create upper and lower bounds: rolling_mean ± rolling_std
+# upper_bound = patient_vitals['rolling_7d_mean'] + patient_vitals['rolling_7d_std']
+# lower_bound = patient_vitals['rolling_7d_mean'] - patient_vitals['rolling_7d_std']
+# axes[0].fill_between(patient_vitals.index, lower_bound, upper_bound, alpha=0.2, color='blue', label='±1 Std Dev')
 
 # TODO: Add exponentially weighted moving average
-# axes[0].plot(None, None, linewidth=2, label='7-Day EWM', color='red', linestyle='--')
+# axes[0].plot(patient_vitals.index, patient_vitals['ewm_span_7'], linewidth=2, label='7-Day EWM', color='red', linestyle='--')
 
 # TODO: Customize colors and styling
 # axes[0].set_title('Patient Temperature with Rolling Statistics', fontsize=14, fontweight='bold')
@@ -355,9 +425,9 @@ fig, axes = plt.subplots(2, 1, figsize=(14, 10))
 # axes[0].tick_params(axis='x', rotation=45)
 
 # TODO: Create second subplot showing rolling statistics comparison
-# axes[1].plot(None, None, label='7-Day Rolling', color='blue')
-# axes[1].plot(None, None, label='30-Day Rolling', color='green')
-# axes[1].plot(None, None, label='EWM (span=7)', color='red', linestyle='--')
+# axes[1].plot(patient_vitals.index, patient_vitals['rolling_7d_mean'], label='7-Day Rolling', color='blue')
+# axes[1].plot(patient_vitals.index, patient_vitals['rolling_30d_mean'], label='30-Day Rolling', color='green')
+# axes[1].plot(patient_vitals.index, patient_vitals['ewm_span_7'], label='EWM (span=7)', color='red', linestyle='--')
 # axes[1].set_title('Rolling Window Comparison', fontsize=14, fontweight='bold')
 # axes[1].set_xlabel('Date')
 # axes[1].set_ylabel('Value')
@@ -368,6 +438,7 @@ fig, axes = plt.subplots(2, 1, figsize=(14, 10))
 plt.tight_layout()
 
 # TODO: Save the plot as 'output/q3_trend_analysis.png'
+# Requirements: PNG format, dpi=150, bbox_inches='tight'
 # plt.savefig('output/q3_trend_analysis.png', dpi=150, bbox_inches='tight')
 plt.show()
 ```
@@ -378,19 +449,52 @@ plt.show()
 
 ```python
 # TODO: Create visualization with multiple variables
-# Use patient_vitals DataFrame with multiple columns (temperature, heart_rate, etc.)
+# Requirements for the plot:
+# - Three subplots (3 rows, 1 column) showing temperature, heart_rate, and weight
+# - Each subplot should show original data + rolling mean (7-day or 30-day)
+# - Include titles, axis labels, legends, and grid for each subplot
+# - Save as PNG with dpi=150
+# Use patient_vitals DataFrame with multiple columns (temperature, heart_rate, weight)
 
 fig, axes = plt.subplots(3, 1, figsize=(14, 12))
 
 # TODO: Plot temperature with rolling mean
-# TODO: Plot heart rate with rolling mean
-# TODO: Plot weight with rolling mean
+# Top subplot: temperature
+# axes[0].plot(patient_vitals.index, patient_vitals['temperature'], alpha=0.5, label='Daily Temperature', color='gray')
+# axes[0].plot(patient_vitals.index, patient_vitals['rolling_7d_mean'], linewidth=2, label='7-Day Rolling Mean', color='blue')
+# axes[0].set_title('Patient Temperature Over Time', fontsize=12, fontweight='bold')
+# axes[0].set_xlabel('Date')
+# axes[0].set_ylabel('Temperature (°F)')
+# axes[0].legend()
+# axes[0].grid(True, alpha=0.3)
+# axes[0].tick_params(axis='x', rotation=45)
 
-# Customize each subplot with titles, labels, legends, grids
+# TODO: Plot heart rate with rolling mean
+# Middle subplot: heart_rate
+# axes[1].plot(patient_vitals.index, patient_vitals['heart_rate'], alpha=0.5, label='Daily Heart Rate', color='gray')
+# axes[1].plot(patient_vitals.index, patient_vitals['rolling_7d_mean'], linewidth=2, label='7-Day Rolling Mean', color='green')
+# axes[1].set_title('Patient Heart Rate Over Time', fontsize=12, fontweight='bold')
+# axes[1].set_xlabel('Date')
+# axes[1].set_ylabel('Heart Rate (bpm)')
+# axes[1].legend()
+# axes[1].grid(True, alpha=0.3)
+# axes[1].tick_params(axis='x', rotation=45)
+
+# TODO: Plot weight with rolling mean
+# Bottom subplot: weight
+# axes[2].plot(patient_vitals.index, patient_vitals['weight'], alpha=0.5, label='Daily Weight', color='gray')
+# axes[2].plot(patient_vitals.index, patient_vitals['rolling_7d_mean'], linewidth=2, label='7-Day Rolling Mean', color='purple')
+# axes[2].set_title('Patient Weight Over Time', fontsize=12, fontweight='bold')
+# axes[2].set_xlabel('Date')
+# axes[2].set_ylabel('Weight (kg)')
+# axes[2].legend()
+# axes[2].grid(True, alpha=0.3)
+# axes[2].tick_params(axis='x', rotation=45)
 
 plt.tight_layout()
 
 # TODO: Save the plot as 'output/q3_visualization.png'
+# Requirements: PNG format, dpi=150, bbox_inches='tight'
 # plt.savefig('output/q3_visualization.png', dpi=150, bbox_inches='tight')
 plt.show()
 ```
