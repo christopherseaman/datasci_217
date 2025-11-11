@@ -373,7 +373,8 @@ jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
 # Forward port to local machine
 ssh -L 8888:localhost:8888 username@server.com
 
-# Access Jupyter at http://localhost:8888
+# Access Jupyter at http://localhost:8888 
+# As if it were running on your local machine
 ```
 
 **Example:**
