@@ -1,182 +1,157 @@
+#!/usr/bin/env python3
 """
-Assignment 8 Tests - Data Aggregation and Group Operations
+DataSci 217 - Assignment 8 Test Suite
+Data Aggregation and Group Operations
 
-Tests verify that students correctly:
-- Perform groupby operations with aggregation functions
-- Use transform, filter, and apply operations
-- Create pivot tables and cross-tabulations
-- Optimize performance for large datasets
-- Save required output files
+Tests for validating assignment completion by checking output files.
 """
 
 import pytest
 import pandas as pd
+import numpy as np
 from pathlib import Path
+import os
 
+# Define base directory
+BASE_DIR = Path(__file__).parent.parent.parent
+OUTPUT_DIR = BASE_DIR / "output"
 
-@pytest.fixture
-def output_dir():
-    """Fixture that returns the output directory path."""
-    return Path("output")
-
-
-@pytest.fixture
-def data_dir():
-    """Fixture that returns the data directory path."""
-    return Path("data")
-
-
-def test_data_files_exist(data_dir):
-    """Test that required data files were generated."""
-    required_files = [
-        "employee_data.csv",
-        "department_data.csv",
-        "sales_data.csv",
-    ]
-
-    for filename in required_files:
-        filepath = data_dir / filename
-        assert filepath.exists(), f"Data file not found: {filepath}"
-
-        # Verify not empty
+class TestQuestion1:
+    """Test Question 1: Basic GroupBy Operations"""
+    
+    def test_q1_groupby_analysis_exists(self):
+        """Test that q1_groupby_analysis.csv exists"""
+        filepath = OUTPUT_DIR / "q1_groupby_analysis.csv"
+        assert filepath.exists(), f"q1_groupby_analysis.csv not found at {filepath}"
+    
+    def test_q1_groupby_analysis_readable(self):
+        """Test that q1_groupby_analysis.csv is readable and has data"""
+        filepath = OUTPUT_DIR / "q1_groupby_analysis.csv"
         df = pd.read_csv(filepath)
-        assert len(df) > 0, f"Data file is empty: {filepath}"
+        assert len(df) > 0, "q1_groupby_analysis.csv is empty"
+        assert 'facility_name' in df.columns, "q1_groupby_analysis.csv missing 'facility_name' column"
+    
+    def test_q1_aggregation_report_exists(self):
+        """Test that q1_aggregation_report.txt exists"""
+        filepath = OUTPUT_DIR / "q1_aggregation_report.txt"
+        assert filepath.exists(), f"q1_aggregation_report.txt not found at {filepath}"
+    
+    def test_q1_aggregation_report_has_content(self):
+        """Test that q1_aggregation_report.txt has content"""
+        filepath = OUTPUT_DIR / "q1_aggregation_report.txt"
+        with open(filepath, 'r') as f:
+            content = f.read()
+        assert len(content) > 0, "q1_aggregation_report.txt is empty"
+        assert "Assignment 8" in content or "Question 1" in content, "q1_aggregation_report.txt missing expected content"
 
+class TestQuestion2:
+    """Test Question 2: Advanced GroupBy Operations"""
+    
+    def test_q2_filter_analysis_exists(self):
+        """Test that q2_filter_analysis.csv exists"""
+        filepath = OUTPUT_DIR / "q2_filter_analysis.csv"
+        assert filepath.exists(), f"q2_filter_analysis.csv not found at {filepath}"
+    
+    def test_q2_filter_analysis_readable(self):
+        """Test that q2_filter_analysis.csv is readable and has data"""
+        filepath = OUTPUT_DIR / "q2_filter_analysis.csv"
+        df = pd.read_csv(filepath)
+        assert len(df) > 0, "q2_filter_analysis.csv is empty"
+    
+    def test_q2_hierarchical_analysis_exists(self):
+        """Test that q2_hierarchical_analysis.csv exists"""
+        filepath = OUTPUT_DIR / "q2_hierarchical_analysis.csv"
+        assert filepath.exists(), f"q2_hierarchical_analysis.csv not found at {filepath}"
+    
+    def test_q2_hierarchical_analysis_readable(self):
+        """Test that q2_hierarchical_analysis.csv is readable and has data"""
+        filepath = OUTPUT_DIR / "q2_hierarchical_analysis.csv"
+        df = pd.read_csv(filepath)
+        assert len(df) > 0, "q2_hierarchical_analysis.csv is empty"
+        # Should have facility_type and region columns for hierarchical grouping
+        assert 'facility_type' in df.columns or 'region' in df.columns, \
+            "q2_hierarchical_analysis.csv missing expected hierarchical columns"
+    
+    def test_q2_performance_report_exists(self):
+        """Test that q2_performance_report.txt exists"""
+        filepath = OUTPUT_DIR / "q2_performance_report.txt"
+        assert filepath.exists(), f"q2_performance_report.txt not found at {filepath}"
+    
+    def test_q2_performance_report_has_content(self):
+        """Test that q2_performance_report.txt has content"""
+        filepath = OUTPUT_DIR / "q2_performance_report.txt"
+        with open(filepath, 'r') as f:
+            content = f.read()
+        assert len(content) > 0, "q2_performance_report.txt is empty"
+        assert "Assignment 8" in content or "Question 2" in content, \
+            "q2_performance_report.txt missing expected content"
 
-def test_q1_groupby_analysis(output_dir):
-    """Test Question 1: GroupBy analysis output."""
-    output_file = output_dir / "q1_groupby_analysis.csv"
-    assert output_file.exists(), f"Output file not found: {output_file}"
+class TestQuestion3:
+    """Test Question 3: Pivot Tables and Cross-Tabulations"""
+    
+    def test_q3_pivot_analysis_exists(self):
+        """Test that q3_pivot_analysis.csv exists"""
+        filepath = OUTPUT_DIR / "q3_pivot_analysis.csv"
+        assert filepath.exists(), f"q3_pivot_analysis.csv not found at {filepath}"
+    
+    def test_q3_pivot_analysis_readable(self):
+        """Test that q3_pivot_analysis.csv is readable and has data"""
+        filepath = OUTPUT_DIR / "q3_pivot_analysis.csv"
+        df = pd.read_csv(filepath, index_col=0)  # Pivot tables often have index
+        assert len(df) > 0, "q3_pivot_analysis.csv is empty"
+        assert len(df.columns) > 0, "q3_pivot_analysis.csv has no columns"
+    
+    def test_q3_crosstab_analysis_exists(self):
+        """Test that q3_crosstab_analysis.csv exists"""
+        filepath = OUTPUT_DIR / "q3_crosstab_analysis.csv"
+        assert filepath.exists(), f"q3_crosstab_analysis.csv not found at {filepath}"
+    
+    def test_q3_crosstab_analysis_readable(self):
+        """Test that q3_crosstab_analysis.csv is readable and has data"""
+        filepath = OUTPUT_DIR / "q3_crosstab_analysis.csv"
+        df = pd.read_csv(filepath, index_col=0)  # Crosstab often has index
+        assert len(df) > 0, "q3_crosstab_analysis.csv is empty"
+        assert len(df.columns) > 0, "q3_crosstab_analysis.csv has no columns"
+    
+    def test_q3_pivot_visualization_exists(self):
+        """Test that q3_pivot_visualization.png exists"""
+        filepath = OUTPUT_DIR / "q3_pivot_visualization.png"
+        assert filepath.exists(), f"q3_pivot_visualization.png not found at {filepath}"
+    
+    def test_q3_pivot_visualization_not_empty(self):
+        """Test that q3_pivot_visualization.png is not empty"""
+        filepath = OUTPUT_DIR / "q3_pivot_visualization.png"
+        assert filepath.stat().st_size > 0, "q3_pivot_visualization.png is empty"
 
-    # Load and validate structure
-    df = pd.read_csv(output_file)
-    assert len(df) > 0, "GroupBy analysis data is empty"
+class TestOutputDirectory:
+    """Test that output directory structure is correct"""
+    
+    def test_output_directory_exists(self):
+        """Test that output directory exists"""
+        assert OUTPUT_DIR.exists(), f"output directory not found at {OUTPUT_DIR}"
+        assert OUTPUT_DIR.is_dir(), f"{OUTPUT_DIR} is not a directory"
+    
+    def test_all_required_files_exist(self):
+        """Test that all required output files exist"""
+        required_files = [
+            "q1_groupby_analysis.csv",
+            "q1_aggregation_report.txt",
+            "q2_filter_analysis.csv",
+            "q2_hierarchical_analysis.csv",
+            "q2_performance_report.txt",
+            "q3_pivot_analysis.csv",
+            "q3_crosstab_analysis.csv",
+            "q3_pivot_visualization.png",
+        ]
+        
+        missing_files = []
+        for filename in required_files:
+            filepath = OUTPUT_DIR / filename
+            if not filepath.exists():
+                missing_files.append(filename)
+        
+        assert len(missing_files) == 0, \
+            f"Missing required files: {', '.join(missing_files)}"
 
-    # Should have department-related columns
-    assert any("department" in col.lower() for col in df.columns), (
-        "Missing department-related columns"
-    )
-
-
-def test_q1_aggregation_report(output_dir):
-    """Test Question 1: Aggregation report output."""
-    output_file = output_dir / "q1_aggregation_report.txt"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Read and check content
-    content = output_file.read_text()
-    assert len(content) > 0, "Aggregation report is empty"
-
-    # Should contain key analysis sections
-    assert any(
-        keyword in content.lower()
-        for keyword in ["department", "salary", "analysis"]
-    ), "Missing key analysis content"
-
-
-def test_q2_hierarchical_analysis(output_dir):
-    """Test Question 2: Hierarchical analysis output."""
-    output_file = output_dir / "q2_hierarchical_analysis.csv"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Load and validate structure
-    df = pd.read_csv(output_file)
-    assert len(df) > 0, "Hierarchical analysis data is empty"
-
-
-def test_q2_performance_report(output_dir):
-    """Test Question 2: Performance report output."""
-    output_file = output_dir / "q2_performance_report.txt"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Read and check content
-    content = output_file.read_text()
-    assert len(content) > 0, "Performance report is empty"
-
-
-def test_q3_pivot_analysis(output_dir):
-    """Test Question 3: Pivot table analysis output."""
-    output_file = output_dir / "q3_pivot_analysis.csv"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Load and validate structure
-    df = pd.read_csv(output_file)
-    assert len(df) > 0, "Pivot analysis data is empty"
-
-    # Should have multiple columns (pivot table format)
-    assert len(df.columns) > 2, "Pivot table should have multiple columns"
-
-
-def test_q3_crosstab_analysis(output_dir):
-    """Test Question 3: Cross-tabulation analysis output."""
-    output_file = output_dir / "q3_crosstab_analysis.csv"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Load and validate structure
-    df = pd.read_csv(output_file)
-    assert len(df) > 0, "Crosstab analysis data is empty"
-
-
-def test_q3_pivot_visualization(output_dir):
-    """Test Question 3: Pivot visualization output."""
-    output_file = output_dir / "q3_pivot_visualization.png"
-    assert output_file.exists(), f"Output file not found: {output_file}"
-
-    # Verify file is not empty
-    assert output_file.stat().st_size > 0, "Visualization file is empty"
-
-
-def test_all_required_outputs(output_dir):
-    """Test that all required output files exist."""
-    required_outputs = [
-        "q1_groupby_analysis.csv",
-        "q1_aggregation_report.txt",
-        "q2_hierarchical_analysis.csv",
-        "q2_performance_report.txt",
-        "q3_pivot_analysis.csv",
-        "q3_crosstab_analysis.csv",
-        "q3_pivot_visualization.png",
-    ]
-
-    missing_files = []
-    for filename in required_outputs:
-        filepath = output_dir / filename
-        if not filepath.exists():
-            missing_files.append(str(filepath))
-
-    assert len(missing_files) == 0, (
-        f"Missing required output files: {', '.join(missing_files)}"
-    )
-
-
-def test_csv_file_validation(output_dir):
-    """Test that CSV files are properly formatted."""
-    csv_files = [
-        "q1_groupby_analysis.csv",
-        "q2_hierarchical_analysis.csv",
-        "q3_pivot_analysis.csv",
-        "q3_crosstab_analysis.csv",
-    ]
-
-    for filename in csv_files:
-        filepath = output_dir / filename
-        if filepath.exists():
-            # Try to read the CSV file
-            try:
-                df = pd.read_csv(filepath)
-                assert len(df) > 0, f"CSV file {filename} is empty"
-            except Exception as e:
-                pytest.fail(f"Error reading CSV file {filename}: {e}")
-
-
-def test_text_file_validation(output_dir):
-    """Test that text files contain meaningful content."""
-    text_files = ["q1_aggregation_report.txt", "q2_performance_report.txt"]
-
-    for filename in text_files:
-        filepath = output_dir / filename
-        if filepath.exists():
-            content = filepath.read_text()
-            assert len(content.strip()) > 50, (
-                f"Text file {filename} is too short or empty"
-            )
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

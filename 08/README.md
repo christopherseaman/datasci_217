@@ -8,8 +8,6 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Custom aggregation functions and transformations
 - Advanced pivot table operations
 
-*Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
-
 # Outline
 
 - groupby split-apply-combine essentials
@@ -17,18 +15,9 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - remote workflows: ssh, screen, tmux
 - performance-minded patterns beginners should know
 
- 
+*Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
 
 Data aggregation is the process of summarizing and grouping data to extract meaningful insights. This lecture covers the essential tools for data aggregation: **groupby operations**, **pivot tables**, and **remote computing** for handling large datasets.
-
-**Learning Objectives:**
-
-- Master the split-apply-combine paradigm with groupby
-- Create pivot tables and cross-tabulations
-- Apply aggregation functions and transformations
-- Handle hierarchical grouping and MultiIndex operations
-- Use SSH and remote computing for large datasets
-- Understand performance considerations for aggregation
 
 # The Split-Apply-Combine Paradigm
 
@@ -228,8 +217,6 @@ print(wide_format)
 ```
 
 # Pivot Tables and Cross-Tabulations
-![xkcd 2582: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
-
 ![Research vs. Practical](media/research.png)
 
 
@@ -458,6 +445,7 @@ tmux attach-session -t data_analysis
 ```
 
 # Performance Optimization
+![xkcd 2582: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
 
 *When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
 
@@ -533,36 +521,3 @@ def parallel_groupby(df, n_processes=4):
 ```
 
 # LIVE DEMO!
-
-# Key Takeaways
-
-1. **Master split-apply-combine** - the foundation of data aggregation
-2. **Use pivot tables** for multi-dimensional analysis
-3. **Leverage remote computing** for large datasets
-4. **Optimize performance** with efficient operations
-5. **Use persistent sessions** for long-running analysis
-6. **Understand hierarchical grouping** for complex data structures
-
-You now have the skills to aggregate and summarize data effectively, even with large datasets that require remote computing resources.
-
-Next week: We'll dive into time series analysis and temporal data!
-
-Practice Challenge
-
-Before next class:
-1. **Practice groupby operations:**
-   - Use different aggregation functions
-   - Try hierarchical grouping
-   - Experiment with transform and filter
-   
-2. **Create pivot tables:**
-   - Summarize data across multiple dimensions
-   - Use different aggregation functions
-   - Add totals and handle missing values
-   
-3. **Set up remote computing:**
-   - Generate SSH keys
-   - Connect to a remote server
-   - Start a persistent session with tmux
-
-Remember: Data aggregation is about finding patterns and insights in your data - group wisely!

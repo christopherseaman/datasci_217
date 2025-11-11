@@ -53,13 +53,13 @@ jupyter notebook data_generator.ipynb
 ```
 
 Run all cells to create the CSV files in `data/`:
-- `data/employee_data.csv` (employee information)
-- `data/department_data.csv` (department information)
-- `data/sales_data.csv` (sales transactions)
+- `data/provider_data.csv` (healthcare provider information)
+- `data/facility_data.csv` (healthcare facility information)
+- `data/encounter_data.csv` (patient encounters/insurance claims)
 
-## Complete the Four Questions
+## Complete the Three Questions
 
-Open `assignment.ipynb` and work through the four questions. The notebook provides:
+Open `assignment.ipynb` and work through the three questions. The notebook provides:
 
 - **Step-by-step instructions** with clear TODO items
 - **Helpful hints** for each operation
@@ -80,7 +80,7 @@ Open `assignment.ipynb` and work through the four questions. The notebook provid
 Run all required cells in `assignment.ipynb` so that the following files are created in `output/`:
 
 - `q1_groupby_analysis.csv`, `q1_aggregation_report.txt`
-- `q2_hierarchical_analysis.csv`, `q2_performance_report.txt`
+- `q2_filter_analysis.csv`, `q2_hierarchical_analysis.csv`, `q2_performance_report.txt`
 - `q3_pivot_analysis.csv`, `q3_crosstab_analysis.csv`, `q3_pivot_visualization.png`
 
 Run tests locally:
@@ -94,28 +94,25 @@ GitHub Classroom will run the same tests on push.
 ### Question 1: Basic GroupBy Operations
 
 **What you'll do:**
-- Load and merge employee, department, and sales data
+- Load and merge provider, facility, and encounter data
 - Perform basic groupby operations with aggregation functions
 - Use transform operations to add group statistics
-- Apply filter operations to remove groups
-- Create custom aggregation functions
 
-**Skills:** groupby operations, aggregation functions, transform, filter, apply
+**Skills:** groupby operations, aggregation functions, transform
 
 **Output:** `output/q1_groupby_analysis.csv`, `output/q1_aggregation_report.txt`
 
 ### Question 2: Advanced GroupBy Operations
 
 **What you'll do:**
-- Perform hierarchical grouping with multiple columns
+- Apply filter operations to remove groups based on conditions
 - Use apply operations with custom functions
+- Perform hierarchical grouping with multiple columns
 - Handle MultiIndex structures
-- Create group-level statistics and rankings
-- Analyze performance differences between methods
 
-**Skills:** hierarchical grouping, MultiIndex, custom functions, performance analysis
+**Skills:** filter operations, apply operations, hierarchical grouping, MultiIndex
 
-**Output:** `output/q2_hierarchical_analysis.csv`, `output/q2_performance_report.txt`
+**Output:** `output/q2_filter_analysis.csv`, `output/q2_performance_report.txt`, `output/q2_hierarchical_analysis.csv`
 
 ### Question 3: Pivot Tables and Cross-Tabulations
 
@@ -141,12 +138,13 @@ GitHub Classroom will run the same tests on push.
 ├── assignment.ipynb              # Completed notebook (you work here)
 ├── data_generator.ipynb          # Run once to create datasets
 ├── data/                         # Generated datasets
-│   ├── employee_data.csv         # Employee information (500 employees)
-│   ├── department_data.csv       # Department information (20 departments)
-│   └── sales_data.csv            # Sales transactions (5,000 transactions)
+│   ├── provider_data.csv         # Healthcare provider information (500 providers)
+│   ├── facility_data.csv         # Healthcare facility information (10 facilities)
+│   └── encounter_data.csv       # Patient encounters/claims (5,000 encounters)
 ├── output/                       # Your saved results (created by your code)
 │   ├── q1_groupby_analysis.csv   # Q1 groupby analysis
 │   ├── q1_aggregation_report.txt # Q1 aggregation report
+│   ├── q2_filter_analysis.csv       # Q2 filter operations analysis
 │   ├── q2_hierarchical_analysis.csv # Q2 hierarchical analysis
 │   ├── q2_performance_report.txt # Q2 performance report
 │   ├── q3_pivot_analysis.csv     # Q3 pivot table analysis
@@ -160,41 +158,45 @@ GitHub Classroom will run the same tests on push.
 
 ## Dataset Schemas
 
-### `data/employee_data.csv`
+### `data/provider_data.csv`
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `employee_id` | string | Unique employee ID (E0001, E0002, ...) |
-| `name` | string | Employee full name |
-| `department_id` | string | Department ID (links to department_data.csv) |
-| `position` | string | Employee position |
-| `salary` | float | Employee salary |
-| `hire_date` | string | Employee hire date (YYYY-MM-DD) |
-| `performance_score` | float | Employee performance score (1-10) |
+| `provider_id` | string | Unique provider ID (PR0001, PR0002, ...) |
+| `provider_name` | string | Provider full name |
+| `provider_type` | string | Provider type (Physician, Nurse Practitioner, etc.) |
+| `facility_id` | string | Facility ID (links to facility_data.csv) |
+| `specialty` | string | Medical specialty (Cardiology, Oncology, etc.) |
+| `years_experience` | int | Years of experience |
+| `license_number` | string | License number |
 
-### `data/department_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `department_id` | string | Unique department ID (D001, D002, ...) |
-| `department_name` | string | Department name |
-| `manager_id` | string | Manager employee ID |
-| `budget` | float | Department budget |
-| `location` | string | Department location |
-
-### `data/sales_data.csv`
+### `data/facility_data.csv`
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `transaction_id` | string | Unique transaction ID (T0001, T0002, ...) |
-| `employee_id` | string | Employee ID (links to employee_data.csv) |
-| `customer_id` | string | Customer ID |
-| `product_id` | string | Product ID |
-| `quantity` | int | Number of items sold |
-| `unit_price` | float | Price per unit |
-| `total_amount` | float | Total transaction amount |
-| `transaction_date` | string | Transaction date (YYYY-MM-DD) |
-| `region` | string | Sales region (North, South, East, West) |
+| `facility_id` | string | Unique facility ID (FAC001, FAC002, ...) |
+| `facility_name` | string | Facility name |
+| `facility_type` | string | Facility type (Hospital, Clinic, Urgent Care, etc.) |
+| `region` | string | Geographic region (North, South, East, West) |
+| `beds` | int | Number of beds (if applicable) |
+| `established_date` | string | Date facility was established (YYYY-MM-DD) |
+
+### `data/encounter_data.csv`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `encounter_id` | string | Unique encounter ID (ENC00001, ENC00002, ...) |
+| `patient_id` | string | Patient ID |
+| `provider_id` | string | Provider ID (links to provider_data.csv) |
+| `facility_id` | string | Facility ID (links to facility_data.csv) |
+| `encounter_date` | string | Encounter date (YYYY-MM-DD) |
+| `encounter_type` | string | Type of encounter (Office Visit, Emergency, Inpatient, etc.) |
+| `diagnosis_code` | string | ICD-10 diagnosis code |
+| `procedure_code` | string | CPT procedure code |
+| `service_charge` | float | Total service charge |
+| `insurance_paid` | float | Amount insurance covered |
+| `patient_paid` | float | Amount patient paid |
+| `region` | string | Geographic region (North, South, East, West) |
 
 ## Submission Checklist
 
@@ -202,6 +204,7 @@ Before submitting, verify you've created:
 
 - [ ] `output/q1_groupby_analysis.csv` - Basic groupby analysis
 - [ ] `output/q1_aggregation_report.txt` - Aggregation report
+- [ ] `output/q2_filter_analysis.csv` - Filter operations analysis
 - [ ] `output/q2_hierarchical_analysis.csv` - Hierarchical analysis
 - [ ] `output/q2_performance_report.txt` - Performance report
 - [ ] `output/q3_pivot_analysis.csv` - Pivot table analysis

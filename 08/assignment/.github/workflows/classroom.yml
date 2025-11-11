@@ -30,9 +30,9 @@ jobs:
       run: |
         mkdir -p .github/test
         curl -o .github/test/test_assignment.py \
-          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw08/main/.github/test/test_assignment.py
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw08/refs/heads/main/.github/test/test_assignment.py
         curl -o .github/test/requirements.txt \
-          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw08/main/.github/test/requirements.txt
+          https://raw.githubusercontent.com/UCSF-DataSci/ds217_25f_hw08/refs/heads/main/.github/test/requirements.txt
 
     - name: Install test requirements
       run: |
