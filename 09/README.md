@@ -1,5 +1,3 @@
-Time Series Analysis: Temporal Data and Trends
-
 See [BONUS.md](BONUS.md) for advanced topics:
 
 - Advanced time series decomposition and seasonal analysis
@@ -7,6 +5,8 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Period arithmetic and fiscal year handling
 - High-frequency data analysis and tick data
 - Custom frequency classes and time zone complexities
+
+# Time Series Analysis: Temporal Data and Trends
 
 *Fun fact: Time series analysis is like being a detective for data - you're looking for patterns, trends, and clues that reveal the story of how things change over time. It's the difference between knowing what happened and understanding why it happened.*
 
@@ -49,38 +49,6 @@ Time series data is characterized by observations collected over time, where the
 | **Trending** | Long-term direction | Long-term blood pressure trends |
 | **Stationary** | Statistical properties don't change | Laboratory control measurements |
 | **Combined** | Multiple components (trend + seasonal + noise) | Real-world medical data with all patterns |
-
-**Example:**
-
-```python
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-
-# Create regular time series (daily patient measurements)
-dates = pd.date_range('2023-01-01', periods=10, freq='D')
-values = np.cumsum(np.random.randn(10)) + 100
-ts_regular = pd.Series(values, index=dates)
-print("Regular time series:")
-print(ts_regular.head())
-
-# Create irregular time series (clinical visit dates)
-irregular_dates = pd.to_datetime(['2023-01-01', '2023-01-03', '2023-01-07'])
-irregular_values = [98.6, 99.2, 98.4]
-ts_irregular = pd.Series(irregular_values, index=irregular_dates)
-print("\nIrregular time series:")
-print(ts_irregular)
-
-# Create combined time series (trend + seasonal + noise)
-dates_combined = pd.date_range('2023-01-01', periods=365, freq='D')
-trend_component = np.linspace(100, 120, 365)  # Long-term trend
-seasonal_component = 10 * np.sin(2 * np.pi * np.arange(365) / 365.25)  # Seasonal pattern
-noise_component = np.random.randn(365) * 3  # Random noise
-combined_values = trend_component + seasonal_component + noise_component
-ts_combined = pd.Series(combined_values, index=dates_combined)
-print("\nCombined time series (trend + seasonal + noise):")
-print(ts_combined.head())
-```
 
 # Date and Time Data Types
 
