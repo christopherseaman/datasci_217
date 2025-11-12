@@ -1,66 +1,5 @@
 # Assignment 9: Time Series Analysis
 
-**Deliverable:** Completed `assignment.ipynb` with output files in `output/`
-
-## Overview
-
-This assignment focuses on time series analysis using health and medical research data. You'll work with patient monitoring data, clinical trial results, and disease surveillance data to practice datetime handling, resampling, rolling windows, and time series visualization.
-
-**Prerequisites:** This assignment uses concepts from:
-- Lecture 05 (GroupBy) - for aggregations in resampling
-- Lecture 07 (Visualization) - for time series plots
-- Lecture 09 (Time Series) - all core concepts
-
-## Environment Setup
-
-### Using uv venv (Recommended)
-
-```bash
-# Create virtual environment
-uv venv
-
-# Activate environment
-source .venv/bin/activate  # On macOS/Linux
-# or
-.venv\Scripts\activate  # On Windows
-
-# Install dependencies
-uv pip install -r requirements.txt
-```
-
-### Using Standard venv
-
-```bash
-# Create virtual environment
-python3 -m venv .venv
-
-# Activate (Linux/Mac)
-source .venv/bin/activate
-
-# Activate (Windows)
-.venv\Scripts\activate
-
-# Install requirements
-pip install -r requirements.txt
-```
-
-### Generate Notebooks from Markdown
-
-This assignment uses **jupytext** to pair markdown files with notebooks. Edit the markdown files, then generate notebooks:
-
-```bash
-# Install jupytext if needed
-uv pip install jupytext
-# or
-pip install jupytext
-
-# Generate notebooks from markdown
-jupytext --to notebook assignment.md
-jupytext --to notebook data_generator.md
-```
-
-**Note:** You can edit either the `.md` or `.ipynb` files - changes sync automatically with jupytext.
-
 ## Generate the Dataset
 
 Run the data generator to create your health/medical datasets:
@@ -75,53 +14,63 @@ jupyter notebook data_generator.ipynb
 ```
 
 Run all cells to create the CSV files in `data/`:
-- `data/patient_vitals.csv` - Daily patient vital signs (1 year)
-- `data/icu_monitoring.csv` - Hourly ICU patient data (6 months)
-- `data/disease_surveillance.csv` - Monthly disease case counts by site (3 years)
+- `data/patient_vitals.csv` - Daily patient vital signs (200 patients, 1 year, ~69,000 records)
+- `data/icu_monitoring.csv` - Hourly ICU patient data (75 patients, 6 months, variable stay lengths)
+- `data/disease_surveillance.csv` - Monthly disease case counts by site (6 sites, 5 years, 360 records)
 
 ## Complete the Three Questions
 
-Open `assignment.ipynb` (or `assignment.md`) and work through the three questions. The notebook provides:
+This assignment consists of three separate notebooks, each focusing on different datasets and concepts:
 
-- **Step-by-step instructions** with clear TODO items
-- **Helpful hints** for each operation
-- **Sample data** and examples to guide your work
-- **Validation checks** to ensure your outputs are correct
+- **Question 1** (`q1_datetime.md`) - Uses `patient_vitals.csv` (daily data)
+- **Question 2** (`q2_resampling.md`) - Uses `icu_monitoring.csv` (hourly data) and `patient_vitals.csv` (daily data)
+- **Question 3** (`q3_rolling.md`) - Uses `disease_surveillance.csv` (monthly data) and `patient_vitals.csv` (daily data)
 
-**How to use the scaffold:**
-1. Read each cell carefully - they contain detailed instructions
-2. Complete the TODO items by replacing `None` with your code
-3. Run each cell to see your progress
-4. Use the hints provided in comments
-5. Check the submission checklist at the end
+**How to use the notebooks:**
+1. Generate notebooks from markdown files using jupytext:
+   ```bash
+   jupytext --to notebook q1_datetime.md
+   jupytext --to notebook q2_resampling.md
+   jupytext --to notebook q3_rolling.md
+   ```
+2. Open each notebook and work through it sequentially
+3. Read each cell carefully - they contain detailed instructions
+4. Complete the TODO items by replacing `None` with your code
+5. Run each cell to see your progress
+6. Use the hints provided in comments
+7. Check the submission checklist at the end of each notebook
 
 ### Question 1: datetime Fundamentals and Time Series Indexing
+**File:** `q1_datetime.md` / `q1_datetime.ipynb`  
+**Dataset:** `patient_vitals.csv` (daily patient vital signs)
 
 **What you'll do:**
 - Load and parse patient vital signs data with datetime indexing
 - Perform basic datetime operations (calculate patient age, visit intervals)
 - Create date ranges for clinical monitoring schedules
-- Perform time series indexing and selection (select by month, date range)
 - Handle time zones for multi-site clinical trials
 
-**Skills:** datetime module, DatetimeIndex, date range generation, time series indexing, time zones
+**Skills:** datetime module, DatetimeIndex, date range generation, time zones
 
 **Output:** `output/q1_datetime_analysis.csv`, `output/q1_timezone_report.txt`
 
 ### Question 2: Resampling and Frequency Conversion
+**File:** `q2_resampling.md` / `q2_resampling.ipynb`  
+**Dataset:** `icu_monitoring.csv` (hourly ICU data), `patient_vitals.csv` (daily data)
 
 **What you'll do:**
 - Resample hourly ICU data to daily summaries
 - Resample daily patient data to weekly and monthly aggregations
 - Handle missing data in time series (forward fill, interpolation)
-- Apply shifting and lagging operations to detect changes
 - Use multiple aggregation functions in resampling
 
-**Skills:** resampling, frequency conversion, missing data handling, shifting/lagging, multiple aggregations
+**Skills:** resampling, frequency conversion, missing data handling, multiple aggregations
 
 **Output:** `output/q2_resampling_analysis.csv`, `output/q2_missing_data_report.txt`
 
 ### Question 3: Rolling Windows and Visualization
+**File:** `q3_rolling.md` / `q3_rolling.ipynb`  
+**Dataset:** `disease_surveillance.csv` (monthly data), `patient_vitals.csv` (daily data)
 
 **What you'll do:**
 - Apply rolling window operations for trend detection (7-day, 30-day windows)
@@ -139,15 +88,19 @@ Open `assignment.ipynb` (or `assignment.md`) and work through the three question
 ```
 09/assignment/
 ├── README.md                      # This file - assignment instructions
-├── assignment.md                  # Notebook source (edit this, generate .ipynb)
-├── assignment.ipynb               # Generated notebook (or edit directly)
+├── q1_datetime.md                 # Question 1 notebook source (markdown)
+├── q1_datetime.ipynb              # Question 1 notebook (generated)
+├── q2_resampling.md               # Question 2 notebook source (markdown)
+├── q2_resampling.ipynb            # Question 2 notebook (generated)
+├── q3_rolling.md                  # Question 3 notebook source (markdown)
+├── q3_rolling.ipynb               # Question 3 notebook (generated)
 ├── data_generator.md              # Data generator source (markdown)
 ├── data_generator.ipynb          # Generated data generator notebook
 ├── requirements.txt               # Python dependencies
 ├── data/                          # Generated datasets (created by data_generator)
-│   ├── patient_vitals.csv        # Daily patient vital signs (365 days)
-│   ├── icu_monitoring.csv        # Hourly ICU data (6 months)
-│   └── disease_surveillance.csv  # Monthly disease cases by site (36 months)
+│   ├── patient_vitals.csv        # Daily patient vital signs (200 patients, ~69k records)
+│   ├── icu_monitoring.csv        # Hourly ICU data (75 patients, variable stay lengths)
+│   └── disease_surveillance.csv  # Monthly disease cases by site (6 sites, 5 years, 360 records)
 ├── output/                        # Your saved results (create this directory)
 │   ├── q1_datetime_analysis.csv  # Q1 datetime analysis
 │   ├── q1_timezone_report.txt   # Q1 timezone report
@@ -176,7 +129,7 @@ Open `assignment.ipynb` (or `assignment.md`) and work through the three question
 | `blood_pressure_diastolic` | int | Diastolic blood pressure (mmHg) |
 | `weight` | float | Patient weight in kg |
 
-**Use case:** Daily monitoring, resampling to weekly/monthly, trend analysis
+**Use case:** Daily monitoring, resampling to weekly/monthly, trend analysis, missing data patterns
 
 ### `data/icu_monitoring.csv`
 
@@ -190,19 +143,19 @@ Open `assignment.ipynb` (or `assignment.md`) and work through the three question
 | `oxygen_saturation` | int | Oxygen saturation (%) |
 | `temperature` | float | Body temperature (°F) |
 
-**Use case:** High-frequency data, resampling hourly to daily, rolling windows
+**Use case:** High-frequency data, resampling hourly to daily, rolling windows, patient trajectories, recovery patterns
 
 ### `data/disease_surveillance.csv`
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `date` | string | Month-end date (YYYY-MM-DD) |
-| `site` | string | Surveillance site (Site_A, Site_B, Site_C) |
+| `site` | string | Surveillance site (Site_A through Site_F, 6 sites total) |
 | `cases` | int | Number of disease cases |
 | `temperature` | float | Average monthly temperature (°F) |
 | `humidity` | float | Average monthly humidity (%) |
 
-**Use case:** Multi-site analysis, seasonal patterns, monthly aggregations
+**Use case:** Multi-site analysis, seasonal patterns, monthly aggregations, climate effects, outbreak detection
 
 ## Submission Checklist
 

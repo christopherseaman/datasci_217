@@ -42,9 +42,11 @@ jobs:
       run: |
         jupyter nbconvert --to notebook --execute data_generator.ipynb
 
-    - name: Execute assignment notebook
+    - name: Execute assignment notebooks
       run: |
-        jupyter nbconvert --to notebook --execute assignment.ipynb
+        jupyter nbconvert --to notebook --execute q1_datetime.ipynb
+        jupyter nbconvert --to notebook --execute q2_resampling.ipynb
+        jupyter nbconvert --to notebook --execute q3_rolling.ipynb
 
     - name: Run tests
       run: |

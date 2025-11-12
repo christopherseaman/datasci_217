@@ -248,44 +248,26 @@ Advanced cron job management includes environment setup, logging, and monitoring
 
 Time series visualization is essential for understanding temporal patterns in your data. Different visualization techniques reveal different aspects of your time series data.
 
-# FIXME: Add time series plot examples showing trend, seasonality, and noise components
-
-# FIXME: Add seasonal decomposition visualization
-
-# FIXME: Add correlation heatmap for time series data
-
 ## Basic Time Series Plots
 
 Basic time series plots show how your data changes over time, revealing trends, seasonality, and anomalies. These plots are the foundation of time series analysis.
 
-- Line plots show the overall trend and pattern of your time series data - this is the most common visualization
-- Rolling mean plots smooth out noise to reveal underlying trends - this helps identify long-term patterns
-- Histograms show the distribution of your time series values - this reveals skewness and outliers
-- Box plots by time period show how distributions change over time - this reveals seasonal patterns
-- Use multiple plot types to understand different aspects of your time series data
+- `ts.plot()` creates basic line plots of time series data - this is the most common visualization
+- Customize plots with `figsize`, `title`, `xlabel`, `ylabel` parameters - essential for publication-quality figures
+- Overlay rolling means on raw data to smooth noise and reveal underlying trends - this helps identify long-term patterns
+- Use `ax = ts.plot()` to get axes for further customization - this enables advanced plot modifications
+- Basic plots reveal patterns that summary statistics miss - visualization is essential for understanding time series data
 
-## Advanced Time Series Visualization
+## Visualizing Time Series Components
 
-Advanced time series visualization includes seasonal decomposition, correlation analysis, and interactive plots. These techniques reveal complex patterns in your time series data.
+Real-world time series data often contains multiple components: trend, seasonality, and noise. Visualizing these components separately helps understand the underlying patterns.
 
-- Seasonal decomposition separates trend, seasonal, and residual components - this reveals the underlying structure
-- Correlation heatmaps show relationships between different time series - this reveals dependencies and patterns
-- Interactive plots allow you to zoom and explore your data - this is essential for large time series datasets
-- Use advanced visualization techniques to understand complex patterns in your time series data
-- Always combine multiple visualization techniques for comprehensive analysis
+- Real-world data combines trend, seasonal, and noise components - understanding each component is crucial for analysis
+- Create separate plots for each component to see how they contribute to the overall pattern - this reveals the underlying structure
+- Trend component shows long-term direction - use `np.linspace()` or rolling means to extract trends
+- Seasonal component shows repeating patterns - use sine/cosine functions or seasonal decomposition to identify
+- Noise component shows random variation - this is what remains after removing trend and seasonal patterns
+- Visualizing components separately helps identify which patterns are meaningful and which are just noise
+- For advanced seasonal decomposition techniques (STL, ARIMA), see BONUS.md - the main lecture covers basic component visualization
 
 # LIVE DEMO!
-
-# Key Takeaways
-
-Time series analysis is a crucial skill for any data scientist working with temporal data. The key is understanding the temporal structure of your data and choosing appropriate analysis methods.
-
-- Master datetime handling - this is the foundation of time series analysis
-- Use resampling to change data frequency and create summaries at different time scales
-- Apply rolling windows to smooth data and identify trends and patterns
-- Automate analysis with cron jobs for regular time series analysis
-- Visualize time series data to identify trends, seasonality, and anomalies
-- Handle time zones properly for global data analysis
-- Understand temporal patterns in your data to make better decisions
-
-You now have the skills to analyze temporal data effectively and automate time-based analysis tasks.

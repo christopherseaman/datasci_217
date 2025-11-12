@@ -29,7 +29,7 @@ class TestQuestion1:
         filepath = OUTPUT_DIR / "q1_datetime_analysis.csv"
         df = pd.read_csv(filepath)
         assert len(df) > 0, "q1_datetime_analysis.csv is empty"
-    # Should have datetime-related columns
+        # Should have datetime-related columns
         assert len(df.columns) > 0, "q1_datetime_analysis.csv has no columns"
     
     def test_q1_timezone_report_exists(self):
@@ -121,22 +121,22 @@ class TestOutputDirectory:
     def test_all_required_files_exist(self):
         """Test that all required output files exist"""
         required_files = [
-        "q1_datetime_analysis.csv",
-        "q1_timezone_report.txt",
-        "q2_resampling_analysis.csv",
-        "q2_missing_data_report.txt",
-        "q3_rolling_analysis.csv",
+            "q1_datetime_analysis.csv",
+            "q1_timezone_report.txt",
+            "q2_resampling_analysis.csv",
+            "q2_missing_data_report.txt",
+            "q3_rolling_analysis.csv",
             "q3_trend_analysis.png",
             "q3_visualization.png",  # Bonus but included in checklist
-    ]
+        ]
 
-    missing_files = []
+        missing_files = []
         for filename in required_files:
             filepath = OUTPUT_DIR / filename
-        if not filepath.exists():
+            if not filepath.exists():
                 missing_files.append(filename)
 
-    assert len(missing_files) == 0, \
+        assert len(missing_files) == 0, \
             f"Missing required files: {', '.join(missing_files)}"
 
 if __name__ == "__main__":

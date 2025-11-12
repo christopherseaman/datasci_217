@@ -252,16 +252,62 @@ plt.show()
 - **Violin plot**: Shows distribution shapes, revealing how case distributions vary by month
 - **Heatmap**: Provides a comprehensive view of patterns across years and months, making seasonal trends obvious
 
-## Part 4: Seasonal Pattern Analysis
+## Part 4: Visualizing Time Series Components
+
+Real-world time series data often contains multiple components: trend, seasonality, and noise. Visualizing these components separately helps understand the underlying patterns and is a fundamental skill in time series analysis.
+
+### Understanding Time Series Components
+
+Before we can decompose a time series, it's helpful to see how components combine. Let's create a synthetic time series with known components and visualize them separately.
+
+```python
+# Visualize time series components separately
+print("=== Visualizing Time Series Components ===\n")
+
+# Create time series with known components
+dates = pd.date_range('2020-01-01', periods=365, freq='D')
+trend_component = np.linspace(100, 120, 365)  # Long-term trend
+seasonal_component = 10 * np.sin(2 * np.pi * np.arange(365) / 365.25)  # Seasonal pattern
+noise_component = np.random.randn(365) * 3  # Random noise
+combined = trend_component + seasonal_component + noise_component
+ts_combined = pd.Series(combined, index=dates)
+
+# Visualize components separately
+fig, axes = plt.subplots(4, 1, figsize=(14, 12), sharex=True)
+
+# Original combined series
+ts_combined.plot(ax=axes[0], title='Original (Trend + Seasonal + Noise)', color='black', linewidth=2)
+axes[0].set_ylabel('Value')
+axes[0].grid(True, alpha=0.3)
+
+# Trend component
+pd.Series(trend_component, index=dates).plot(ax=axes[1], title='Trend Component', color='blue', linewidth=2)
+axes[1].set_ylabel('Value')
+axes[1].grid(True, alpha=0.3)
+
+# Seasonal component
+pd.Series(seasonal_component, index=dates).plot(ax=axes[2], title='Seasonal Component', color='green', linewidth=2)
+axes[2].set_ylabel('Value')
+axes[2].grid(True, alpha=0.3)
+
+# Noise component
+pd.Series(noise_component, index=dates).plot(ax=axes[3], title='Noise Component', color='red', alpha=0.7, linewidth=1)
+axes[3].set_ylabel('Value')
+axes[3].set_xlabel('Date')
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+**Component visualization insight**: Seeing each component separately helps you understand how they contribute to the overall pattern. The trend shows long-term direction, the seasonal component shows repeating patterns, and the noise shows random variation. This visualization is essential for understanding real-world time series data.
+
+### Seasonal Pattern Analysis
 
 Seasonal patterns are common in medical data - flu season peaks in winter, allergies peak in spring, etc. Identifying and visualizing these patterns is crucial for understanding disease dynamics.
 
-### Identifying Seasonal Patterns
-
-Grouping by month and analyzing patterns helps identify seasonal trends that might not be obvious from raw time series plots.
-
 ```python
-# Analyze seasonal patterns
+# Analyze seasonal patterns in real data
 print("=== Seasonal Pattern Analysis ===\n")
 
 # Group by month to identify seasonal pattern
@@ -284,7 +330,7 @@ axes[0].set_title('Average Cases by Month (Seasonal Pattern)', fontsize=14, font
 axes[0].set_ylabel('Average Cases')
 axes[0].grid(True, alpha=0.3, axis='y')
 
-# Seasonal decomposition visualization
+# Trend extraction from real data
 trend = site_a['cases'].rolling(window=12, center=True).mean()
 seasonal = site_a['cases'] - trend
 residual = seasonal - site_a['cases'].groupby(site_a.index.month).transform('mean')
@@ -303,6 +349,8 @@ plt.show()
 ```
 
 **Pattern identification**: The monthly averages reveal seasonal patterns - notice how some months consistently have higher or lower case counts. The trend component shows the long-term direction after removing seasonal effects. This decomposition helps you understand what's driving changes in case counts.
+
+*Note: For advanced seasonal decomposition techniques (like STL decomposition), see the BONUS.md section on advanced time series decomposition.*
 
 ## Part 5: Integration with Earlier Concepts
 
