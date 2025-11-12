@@ -1,28 +1,3 @@
-# Demo 2: Resampling and Rolling Window Operations
-
-**Placement**: After "Resampling" section (~2/3 through lecture)  
-**Duration**: 25 minutes  
-**Focus**: Resampling operations, rolling windows, and exponentially weighted functions with ICU monitoring data
-
-## Learning Objectives
-- Use resampling for frequency conversion with ICU data
-- Apply rolling window operations for trend detection
-- Calculate exponentially weighted moving averages
-- Handle missing data in time series
-- Combine resampling with visualization
-
-## Introduction
-
-In this demo, we'll explore two powerful techniques for analyzing time series data: resampling and rolling windows. These operations are essential for transforming high-frequency data (like hourly ICU monitoring) into more manageable summaries (like daily averages) and for identifying trends in noisy medical data.
-
-Resampling is like changing the lens on your camera - you can zoom out to see the big picture (downsampling from hourly to daily) or zoom in to see more detail (upsampling from daily to hourly). Rolling windows are like looking through a moving frame - they smooth out noise while preserving trends, making it easier to identify patterns in patient vital signs.
-
-Think of this demo as learning to summarize and smooth your data. We'll work with realistic ICU monitoring data (hourly vital signs) and demonstrate how to convert it to daily summaries, identify trends with rolling windows, and use exponentially weighted functions for more responsive analysis.
-
-## Setup
-
-Let's set up our environment with the necessary libraries. These libraries provide the tools for resampling, rolling operations, and visualization.
-
 ```python
 import pandas as pd
 import numpy as np
@@ -55,7 +30,7 @@ Let's create realistic ICU monitoring data to work with. This simulates hourly m
 print("=== ICU Patient Monitoring Data ===\n")
 
 # Create hourly dates for 6 months
-hourly_dates = pd.date_range('2023-01-01', periods=24*30*6, freq='H')
+hourly_dates = pd.date_range('2023-01-01', periods=24*30*6, freq='h')
 
 # Generate realistic ICU monitoring data
 np.random.seed(42)
@@ -75,11 +50,13 @@ print(f"\nData summary:")
 print(icu_data.describe())
 ```
 
-**Data context**: Notice we have over 4,000 hourly measurements. This volume of data is common in medical monitoring but can be overwhelming for analysis. Resampling helps us create manageable summaries while preserving important information.
+Notice we have over 4,000 hourly measurements. This volume of data is common in medical monitoring but can be overwhelming for analysis. Resampling helps us create manageable summaries while preserving important information.
 
 ### Basic Resampling - Hourly to Daily
 
 Downsampling from hourly to daily data reduces complexity while preserving important patterns. We can aggregate using mean, max, min, or other functions depending on what's clinically relevant.
+
+**Note:** When resampling DataFrames (not Series) that contain non-numeric columns like patient IDs, you'll need to either select only numeric columns first using `df.select_dtypes(include=[np.number])`, or specify which columns to aggregate in `.agg()`. In this demo, we're working with Series (single columns), so this isn't an issue, but keep it in mind for DataFrames.
 
 ```python
 # Resample hourly data to daily (aggregate to daily summaries)
@@ -103,7 +80,40 @@ print(f"\nDaily summary:")
 print(daily_icu.head())
 ```
 
-**Why this matters**: For clinical reporting, daily summaries are often more useful than hourly data. The mean provides the average, while max/min can identify critical events. The observation count helps identify days with missing data.
+Daily summaries are often more useful than hourly data for reporting. The mean provides the average, while max/min can identify critical events. The observation count helps identify days with missing data.
+
+```python
+# Visualize resampling effect: hourly vs daily
+fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+
+# Sample of hourly data (first week)
+hourly_sample = icu_data['heart_rate']['2023-01-01':'2023-01-07']
+axes[0].plot(hourly_sample.index, hourly_sample.values, 
+             marker='o', markersize=3, alpha=0.7, linewidth=1, color='blue', label='Hourly')
+axes[0].set_title('Original Hourly Data (First Week)', fontsize=12, fontweight='bold')
+axes[0].set_ylabel('Heart Rate (bpm)')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+axes[0].tick_params(axis='x', rotation=45)
+
+# Daily resampled (first month)
+daily_sample = daily_icu.loc['2023-01-01':'2023-01-31']
+axes[1].plot(daily_sample.index, daily_sample['heart_rate_mean'], 
+             marker='s', markersize=6, linewidth=2, color='red', label='Daily Mean')
+axes[1].fill_between(daily_sample.index,
+                     daily_sample['heart_rate_min'],
+                     daily_sample['heart_rate_max'],
+                     alpha=0.2, color='red', label='Daily Range (min-max)')
+axes[1].set_title('Daily Resampled Data (January)', fontsize=12, fontweight='bold')
+axes[1].set_xlabel('Date')
+axes[1].set_ylabel('Heart Rate (bpm)')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+plt.show()
+```
 
 ### Resampling with Multiple Aggregations
 
@@ -137,7 +147,7 @@ print(f"\nMonthly averages:")
 print(monthly_stats.head())
 ```
 
-**Powerful feature**: The ability to calculate multiple statistics simultaneously (mean, std, min, max) in one resampling operation is incredibly efficient. This creates a comprehensive view of patient vital signs at different time scales.
+The ability to calculate multiple statistics simultaneously (mean, std, min, max) in one resampling operation is incredibly efficient. This creates a comprehensive view of patient vital signs at different time scales.
 
 ### Handling Missing Data in Resampling
 
@@ -151,20 +161,20 @@ print("=== Handling Missing Data in Resampling ===\n")
 daily_summary = icu_data['heart_rate'].resample('D').mean()
 
 # Upsample to hourly (creates missing values)
-hourly_upsampled = daily_summary.resample('H').asfreq()
+hourly_upsampled = daily_summary.resample('h').asfreq()
 print(f"Upsampled data - missing values: {hourly_upsampled.isna().sum()}")
 print(f"Missing percentage: {hourly_upsampled.isna().sum() / len(hourly_upsampled) * 100:.1f}%")
 
 # Forward fill missing values
-hourly_filled = daily_summary.resample('H').ffill()
+hourly_filled = daily_summary.resample('h').ffill()
 print(f"\nAfter forward fill - missing values: {hourly_filled.isna().sum()}")
 
 # Interpolate missing values
-hourly_interpolated = daily_summary.resample('H').interpolate(method='linear')
+hourly_interpolated = daily_summary.resample('h').interpolate()
 print(f"After interpolation - missing values: {hourly_interpolated.isna().sum()}")
 ```
 
-**Important consideration**: When upsampling, you must choose how to handle missing values. Forward fill (`ffill`) carries the last value forward, while interpolation estimates intermediate values. The choice depends on your analysis needs - forward fill is simpler but less accurate, while interpolation is more sophisticated but may introduce artifacts.
+When upsampling, you must choose how to handle missing values. Forward fill (`ffill`) carries the last value forward, while interpolation estimates intermediate values. The choice depends on your analysis needs - forward fill is simpler but less accurate, while interpolation is more sophisticated but may introduce artifacts.
 
 ## Part 2: Rolling Window Operations
 
@@ -183,16 +193,18 @@ Let's apply rolling windows to our ICU data to identify trends in patient vital 
 print("=== Rolling Window Operations ===\n")
 
 # Calculate rolling statistics for heart rate
-daily_heart_rate = icu_data['heart_rate'].resample('D').mean()
+daily_heart_rate = pd.DataFrame({
+    'heart_rate': icu_data['heart_rate'].resample('D').mean()
+})
 
 # 7-day rolling window (1 week)
-daily_heart_rate['rolling_7d_mean'] = daily_heart_rate.rolling(window=7).mean()
-daily_heart_rate['rolling_7d_std'] = daily_heart_rate.rolling(window=7).std()
-daily_heart_rate['rolling_7d_min'] = daily_heart_rate.rolling(window=7).min()
-daily_heart_rate['rolling_7d_max'] = daily_heart_rate.rolling(window=7).max()
+daily_heart_rate['rolling_7d_mean'] = daily_heart_rate['heart_rate'].rolling(window=7).mean()
+daily_heart_rate['rolling_7d_std'] = daily_heart_rate['heart_rate'].rolling(window=7).std()
+daily_heart_rate['rolling_7d_min'] = daily_heart_rate['heart_rate'].rolling(window=7).min()
+daily_heart_rate['rolling_7d_max'] = daily_heart_rate['heart_rate'].rolling(window=7).max()
 
 # 30-day rolling window (1 month)
-daily_heart_rate['rolling_30d_mean'] = daily_heart_rate.rolling(window=30).mean()
+daily_heart_rate['rolling_30d_mean'] = daily_heart_rate['heart_rate'].rolling(window=30).mean()
 
 print("Daily heart rate with rolling statistics:")
 print(daily_heart_rate.head(10))
@@ -200,7 +212,7 @@ print(f"\nRolling statistics summary:")
 print(daily_heart_rate[['rolling_7d_mean', 'rolling_30d_mean']].describe())
 ```
 
-**Clinical application**: Rolling windows help identify trends in patient vital signs. A 7-day rolling mean smooths out daily fluctuations while preserving weekly patterns, while a 30-day rolling mean identifies longer-term trends. The rolling standard deviation helps identify periods of increased variability.
+Rolling windows help identify trends in patient vital signs. A 7-day rolling mean smooths out daily fluctuations while preserving weekly patterns, while a 30-day rolling mean identifies longer-term trends. The rolling standard deviation helps identify periods of increased variability.
 
 ### Advanced Rolling Operations
 
@@ -227,10 +239,42 @@ print("Advanced rolling operations:")
 print(daily_heart_rate[['heart_rate', 'rolling_7d_centered', 'expanding_mean']].head(10))
 ```
 
-**Key distinctions**: 
-- **Centered windows** (`center=True`) look both forward and backward, which is useful for smoothing but introduces a delay
-- **Expanding windows** use all data from the start, creating a cumulative average that's useful for tracking overall trends
-- **Minimum periods** (`min_periods=3`) allow calculations even when the window isn't full, providing earlier results at the cost of less stability
+Centered windows (`center=True`) look both forward and backward, which is useful for smoothing but introduces a delay. Expanding windows use all data from the start, creating a cumulative average that's useful for tracking overall trends. Minimum periods (`min_periods=3`) allow calculations even when the window isn't full, providing earlier results at the cost of less stability.
+
+```python
+# Visualize advanced rolling operations
+fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+
+# Sample data for visualization
+sample_period = daily_heart_rate['2023-01-01':'2023-03-31']
+
+# Centered vs trailing window
+axes[0].plot(sample_period.index, sample_period['heart_rate'], 
+             alpha=0.4, linewidth=1, label='Daily Heart Rate', color='gray')
+axes[0].plot(sample_period.index, sample_period['rolling_7d_mean'], 
+             linewidth=2, label='7-Day Trailing Mean', color='blue')
+axes[0].plot(sample_period.index, sample_period['rolling_7d_centered'], 
+             linewidth=2, label='7-Day Centered Mean', color='red', linestyle='--')
+axes[0].set_title('Trailing vs Centered Rolling Windows', fontsize=12, fontweight='bold')
+axes[0].set_ylabel('Heart Rate (bpm)')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+
+# Expanding window
+axes[1].plot(sample_period.index, sample_period['heart_rate'], 
+             alpha=0.4, linewidth=1, label='Daily Heart Rate', color='gray')
+axes[1].plot(sample_period.index, sample_period['expanding_mean'], 
+             linewidth=2, label='Expanding Mean (Cumulative)', color='green')
+axes[1].set_title('Expanding Window (Cumulative Average)', fontsize=12, fontweight='bold')
+axes[1].set_xlabel('Date')
+axes[1].set_ylabel('Heart Rate (bpm)')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+plt.show()
+```
 
 ### Exponentially Weighted Moving Average
 
@@ -256,7 +300,7 @@ print(f"\nEWM comparison:")
 print(daily_heart_rate[['ewm_span_7', 'ewm_alpha_0.3', 'ewm_halflife_7']].head(10))
 ```
 
-**Why EWM matters**: In clinical settings, recent trends are often more important than historical averages. EWM responds faster to recent changes while still incorporating historical data. The `span` parameter controls how much weight to give recent observations - smaller spans are more responsive, larger spans are more stable.
+In clinical settings, recent trends are often more important than historical averages. EWM responds faster to recent changes while still incorporating historical data. The `span` parameter controls how much weight to give recent observations - smaller spans are more responsive, larger spans are more stable.
 
 **Parameter choices**:
 - **span**: Roughly equivalent to a simple moving average window size
@@ -307,7 +351,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Visualization insight**: Notice how higher frequency data (hourly) shows more variability and noise, while lower frequency data (weekly) shows smoother trends. The choice of frequency depends on your analysis goals - use higher frequency for detailed analysis, lower frequency for trend identification.
+Notice how higher frequency data (hourly) shows more variability and noise, while lower frequency data (weekly) shows smoother trends. The choice of frequency depends on your analysis goals - use higher frequency for detailed analysis, lower frequency for trend identification.
 
 ### Visualizing Rolling Windows
 
@@ -351,7 +395,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Comparison insight**: Notice how the 7-day rolling mean is smoother than daily data but still responsive, while the 30-day rolling mean shows longer-term trends. The EWM follows recent changes more closely than the simple moving average, making it more responsive to recent trends.
+Notice how the 7-day rolling mean is smoother than daily data but still responsive, while the 30-day rolling mean shows longer-term trends. The EWM follows recent changes more closely than the simple moving average, making it more responsive to recent trends.
 
 ## Part 4: Combining Concepts - Multi-Variable Analysis
 
@@ -390,7 +434,7 @@ print(f"\nDaily summary with rolling statistics:")
 print(daily_summary.head(10))
 ```
 
-**Clinical insight**: Rolling correlations help identify relationships that change over time. For example, the relationship between heart rate and blood pressure might vary during different phases of patient recovery. This temporal analysis is crucial for understanding dynamic clinical patterns.
+Rolling correlations help identify relationships that change over time. For example, the relationship between heart rate and blood pressure might vary during different phases of patient recovery. This temporal analysis is crucial for understanding dynamic patterns.
 
 ### Visualization with Multiple Variables
 
@@ -445,26 +489,5 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Comprehensive view**: This multi-variable visualization allows you to compare trends across different vital signs simultaneously. Notice how rolling means help identify underlying trends despite daily fluctuations, and how reference lines (like the critical oxygen saturation threshold) provide clinical context.
-
-## Key Takeaways
-
-1. **Resampling**: Convert between frequencies (hourly → daily → weekly → monthly) to create manageable summaries while preserving important information.
-
-2. **Rolling Windows**: Smooth noisy data and identify trends by calculating statistics over moving windows. Different window sizes reveal different time scales.
-
-3. **Exponentially Weighted**: More responsive to recent changes than simple moving averages, making them ideal for tracking recent trends in medical data.
-
-4. **Missing Data**: Handle gaps in time series with forward fill, interpolation, or other methods depending on your analysis needs.
-
-5. **Multi-Variable Analysis**: Apply rolling operations to multiple variables simultaneously to identify relationships and patterns.
-
-6. **Visualization**: Combine resampling and rolling windows with plots to understand their effects and choose appropriate parameters.
-
-## Next Steps
-
-- Practice with your own time series data
-- Integrate with visualization tools from Lecture 07 (Demo 3)
-- Explore seasonal decomposition for pattern identification
-- Set up automated analysis workflows
+This multi-variable visualization allows you to compare trends across different vital signs simultaneously. Notice how rolling means help identify underlying trends despite daily fluctuations, and how reference lines (like the critical oxygen saturation threshold) provide clinical context.
 

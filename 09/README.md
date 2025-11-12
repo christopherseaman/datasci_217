@@ -50,15 +50,6 @@ Time series data is characterized by observations collected over time, where the
 | **Stationary** | Statistical properties don't change | Laboratory control measurements |
 | **Combined** | Multiple components (trend + seasonal + noise) | Real-world medical data with all patterns |
 
-**Reference:**
-
-- Regular time series: Fixed intervals (daily, hourly, monthly)
-- Irregular time series: Variable intervals (event-based)
-- Seasonal time series: Patterns repeat over time
-- Trending time series: Long-term direction
-- Stationary time series: Statistical properties don't change
-- Combined time series: Real-world data often contains multiple components - a long-term trend, seasonal patterns, and random noise all combined together
-
 **Example:**
 
 ```python
@@ -138,7 +129,7 @@ print(f"Age in days: {time_diff.days}")
 
 ## pandas DatetimeIndex
 
-`pandas` provides powerful datetime functionality through `DatetimeIndex`, which is optimized for time series operations. *This is where `pandas` goes from "useful library" to "time series wizard" - it's like having a Swiss Army knife specifically designed for temporal data. Every method is optimized, every operation is fast, and every feature is designed to make your life easier.*
+`pandas` provides powerful datetime functionality through `DatetimeIndex`, which is optimized for time series operations.
 
 **Reference:**
 
@@ -173,6 +164,18 @@ print("\nDataFrame with datetime index:")
 print(df.head())
 ```
 
+**Important Note:** When setting a datetime column as the index for DataFrames with multiple rows per date (e.g., multiple patients measured on the same date), pandas may have trouble with date range selection using `.loc`. 
+
+**Prerequisites:** First, convert your date column to datetime and set it as the index:
+```python
+df['date'] = pd.to_datetime(df['date'])  # Convert to datetime
+df = df.set_index('date')  # Set as index
+```
+
+**The Problem:** If your DataFrame has multiple patients with measurements on the same date, the index might look like `[2023-01-01, 2023-01-02, 2023-01-01, 2023-01-03, ...]` - notice dates aren't in order. Pandas can't reliably slice date ranges on non-monotonic indexes.
+
+**The Solution:** Sort the index: `df = df.sort_index()`. This makes the index monotonic (non-decreasing), so all rows with the same date are grouped together: `[2023-01-01, 2023-01-01, 2023-01-02, 2023-01-03, ...]`. Now date range selection like `df.loc['2023-01':'2023-03']` works correctly.
+
 ## Date Range Generation
 
 `pandas` provides flexible date range generation for creating regular time series. *Want every Monday? Got it. Business days only? No problem. Last Friday of each month? Absolutely. Third Wednesday? Why not! `pandas` can generate pretty much any date pattern you can imagine - and some you probably can't.*
@@ -187,6 +190,8 @@ print(df.head())
 | `pd.date_range(freq='MS')` | `'MS'` | Month start |
 | `pd.date_range(freq='QS')` | `'QS'` | Quarter start |
 | `pd.date_range(freq='H')` | `'H'` | Hourly |
+
+*Note: Both 'H' and 'h' work for hourly frequency, but 'H' is the canonical form.*
 
 **Example:**
 
@@ -211,7 +216,7 @@ print(monthly)
 
 ## Frequency Inference
 
-You can infer the frequency of a time series and convert between frequencies. *`pandas` is like a detective that can look at your data and say "Ah, I see - this is daily data!" It's surprisingly good at figuring out patterns, though it gets confused if you have irregular data (which is fair - we all do).*
+You can infer the frequency of a time series and convert between frequencies.
 
 **Reference:**
 
@@ -239,7 +244,7 @@ print(f"Weekly frequency: {pd.infer_freq(ts_weekly.index)}")
 
 ## Shifting and Lagging
 
-Shifting allows you to create lagged or leading versions of your time series, essential for analyzing changes over time. *It's like having a time machine for your data - you can see what happened yesterday, predict what might happen tomorrow, or figure out what changed between them. Just don't try to use it to win the lottery - we've tested that, and it doesn't work.*
+Shifting allows you to create lagged or leading versions of your time series, essential for analyzing changes over time.
 
 ![Shifting and Lagging](media/shifting_lagging.png)
 
@@ -274,15 +279,11 @@ print(ts[['lag_1', 'diff', 'pct_change']].head())
 
 # LIVE DEMO!
 
-*"I'm going to show you how to actually use this stuff, because let's be honest - reading about it is one thing, but watching someone make mistakes in real-time is way more educational. Plus, I get to blame any bugs on the demo gods."*
-
 # Time Series Indexing and Selection
-
-*Time series indexing is like having a time machine for your data - you can jump to any point in time, slice through time periods, and even travel backwards to see how things were. Unlike actual time travel, this won't create paradoxes, break causality, or require explaining to your grandmother why you're suddenly 20 years younger.*
 
 ## Basic Time Series Selection
 
-`pandas` provides intuitive ways to select data from time series using string-based indexing. *It's so intuitive that you can literally write "2023" and `pandas` knows you mean "all of 2023" - it's like having a data assistant that actually understands human language!*
+`pandas` provides intuitive ways to select data from time series using string-based indexing. You can write "2023" and `pandas` knows you mean "all of 2023".
 
 ![Time Series Indexing](media/time_series_indexing.png)
 
@@ -326,7 +327,7 @@ print(ts['2023-01'].head())
 
 ## Advanced Time Series Selection
 
-For time series with time components, you can select based on time of day. *This is incredibly useful for things like "show me all the data from business hours" or "what happened at noon every day?" It's like having a time-based filter for your data - except this one actually works, unlike that time-travel app you downloaded that just showed you random cat videos.*
+For time series with time components, you can select based on time of day. This is useful for selecting data from business hours or specific times of day.
 
 **Reference:**
 
@@ -334,10 +335,10 @@ For time series with time components, you can select based on time of day. *This
 |----------|-------------|
 | `ts.between_time('09:00', '17:00')` | Select time range |
 | `ts.at_time('12:00')` | Select specific time |
-| `ts.first('10D')` | First 10 days |
-| `ts.last('10D')` | Last 10 days |
-| `ts.truncate(before='2023-06-01')` | Truncate before date |
-| `ts.truncate(after='2023-06-30')` | Truncate after date |
+| `ts.loc[:start_date + pd.Timedelta(days=9)]` | First 10 days |
+| `ts.loc[end_date - pd.Timedelta(days=9):]` | Last 10 days |
+| `ts.truncate(before='2023-06-01')` | Truncate before date (requires sorted index) |
+| `ts.truncate(after='2023-06-30')` | Truncate after date (requires sorted index) |
 
 **Example:**
 
@@ -357,19 +358,21 @@ noon_data = ts_hourly.at_time('12:00')
 print("\nNoon data:")
 print(noon_data.head())
 
-# Select first and last periods
+# Select first and last periods using .loc
 print("\nFirst 3 days:")
-print(ts_hourly.first('3D').head())
+first_3_days = ts_hourly.loc[:ts_hourly.index.min() + pd.Timedelta(days=2)]
+print(first_3_days.head())
 
 print("\nLast 3 days:")
-print(ts_hourly.last('3D').head())
+last_3_days = ts_hourly.loc[ts_hourly.index.max() - pd.Timedelta(days=2):]
+print(last_3_days.head())
 ```
 
 # Resampling and Frequency Conversion
 
 *Resampling is like changing the lens on your camera - you can zoom in to see more detail (higher frequency) or zoom out to see the big picture (lower frequency).*
 
-Resampling converts time series from one frequency to another. **Downsampling** aggregates higher frequency data to lower frequency (e.g., daily to monthly). **Upsampling** converts lower frequency to higher frequency (e.g., monthly to daily), often introducing missing values. *It's like converting a high-resolution photo to a thumbnail (downsampling) or blowing up a postage stamp to poster size (upsampling) - both have their uses, but one requires more guesswork.*
+Resampling converts time series from one frequency to another. **Downsampling** aggregates higher frequency data to lower frequency (e.g., daily to monthly). **Upsampling** converts lower frequency to higher frequency (e.g., monthly to daily), often introducing missing values.
 
 ![Resampling Example](media/resampling_example.png)
 
@@ -385,7 +388,7 @@ The `resample()` method is the workhorse for frequency conversion, similar to `g
 |----------------|-------------|
 | `ts.resample('D')` | Daily resampling |
 | `ts.resample('W')` | Weekly resampling |
-| `ts.resample('M')` | Monthly resampling |
+| `ts.resample('ME')` | Monthly resampling (Month End) |
 | `ts.resample('Q')` | Quarterly resampling |
 | `ts.resample('A')` | Annual resampling |
 | `ts.resample('H')` | Hourly resampling |
@@ -408,7 +411,7 @@ print("Weekly data:")
 print(weekly.head())
 
 # Monthly resampling (average monthly values)
-monthly = ts_daily.resample('M').mean()
+monthly = ts_daily.resample('ME').mean()  # 'ME' = Month End
 print("\nMonthly resampled shape:", monthly.shape)
 print("Monthly data:")
 print(monthly.head())
@@ -416,7 +419,9 @@ print(monthly.head())
 
 ## Resampling with Different Aggregations
 
-You can apply various aggregation functions when resampling, just like with `groupby()`. *If you've mastered `groupby()` from Lecture 5, this will feel like coming home - same syntax, same flexibility, just with time intervals instead of categories. It's like `groupby()` grew up and got a job as a time series analyst.*
+You can apply various aggregation functions when resampling, just like with `groupby()`. The syntax is the same, but instead of grouping by categories, you're grouping by time intervals.
+
+**Important Note:** When resampling DataFrames that contain non-numeric columns (like patient IDs or category labels), you'll get an error if you try to aggregate them with numeric functions like `mean()`. Use `df.select_dtypes(include=[np.number])` to select only numeric columns before resampling, or specify which columns to aggregate in `.agg()`.
 
 **Reference:**
 
@@ -456,23 +461,19 @@ def custom_agg(series):
     })
 
 print("\nCustom aggregation:")
-custom_stats = df['temperature'].resample('M').apply(custom_agg)
+custom_stats = df['temperature'].resample('ME').apply(custom_agg)
 print(custom_stats.head())
 ```
 
 # LIVE DEMO!
 
-*"Now we're going to combine everything we've learned - resampling, indexing, and rolling windows. This is where the magic happens. Or where we discover that our data has a weird gap in March 2020 that we didn't notice until now. Probably both."*
-
 # Rolling Window Operations
-
-*Rolling windows are like looking through a moving frame - you can see how things change over time by examining a sliding window of observations. It's like having a security camera that only remembers the last 7 days - perfect for smoothing out noise while keeping an eye on trends. Unless your trend is longer than 7 days, in which case you might want a bigger window.*
 
 Rolling window functions compute statistics over a fixed-size window that moves through the time series. This is useful for smoothing noisy data and identifying trends.
 
 ## Basic Rolling Operations
 
-The `rolling()` method creates a rolling window object that can be used with various aggregation functions. *Think of it as a sliding window that moves through your data, calculating statistics as it goes - like a security guard watching a surveillance feed, but instead of looking for suspicious activity, you're looking for trends.*
+The `rolling()` method creates a rolling window object that can be used with various aggregation functions.
 
 ![Rolling Window](media/rolling_window.png)
 
@@ -509,7 +510,7 @@ print(ts[['rolling_mean', 'rolling_std']].head(10))
 
 ## Advanced Rolling Operations
 
-Rolling windows can be centered, have minimum periods, and use custom functions. *Centered windows are like having hindsight and foresight at the same time - you can look backward AND forward from each point. Minimum periods let you start calculating statistics even before you have a full window - perfect for when you're impatient but still want accurate results.*
+Rolling windows can be centered, have minimum periods, and use custom functions. Centered windows look both backward and forward from each point. Minimum periods allow calculations even before you have a full window.
 
 **Reference:**
 
@@ -542,11 +543,11 @@ print(ts[['centered_mean', 'expanding_mean', 'ewm_mean']].head(10))
 
 ## Exponentially Weighted Functions
 
-Exponentially weighted functions give more weight to recent observations, making them more responsive to recent changes. *It's like having a memory that favors recent events - perfect for when you want to forget that embarrassing data entry error from last month but remember that important trend from last week.*
+Exponentially weighted functions give more weight to recent observations, making them more responsive to recent changes.
 
 ![EWM Comparison](media/ewm_comparison.png)
 
-*Comparison of exponentially weighted moving average (EWM) with simple moving average. Notice how EWM responds faster to recent changes - it's like having a more responsive data assistant that pays attention to what just happened.*
+*Comparison of exponentially weighted moving average (EWM) with simple moving average. Notice how EWM responds faster to recent changes.*
 
 **Reference:**
 
@@ -579,15 +580,15 @@ print(ts[['ewm_mean', 'ewm_std']].head(10))
 
 # Time Zone Handling
 
-*Working with time zones can be tricky, but it's essential for global health data and multi-site clinical trials. Time zones are like time series data - they seem simple until you realize that 2:00 AM on March 12th doesn't exist in some places (hello, daylight saving time!), and then suddenly you're debugging why your midnight UTC data became yesterday's afternoon data in Eastern time. Fun times!*
-
 ![xkcd 1883: Time Zones](https://imgs.xkcd.com/comics/time_zones.png)
 
 *"I find it hard to believe that a time zone can be a real thing." - A relatable sentiment when dealing with time zone conversions.*
 
 ## Basic Time Zone Operations
 
-`pandas` provides time zone localization and conversion for timezone-aware datetime objects. *Time zones are like time series data - they seem simple until you realize that 2:00 AM on March 12th doesn't exist in some places (daylight saving time strikes again!), and then suddenly you're debugging why your midnight UTC data became yesterday's afternoon data in Eastern time. But `pandas` handles most of this gracefully - most of the time.*
+`pandas` provides time zone localization and conversion for timezone-aware datetime objects.
+
+**Best Practice:** When working with time zones, use UTC (Coordinated Universal Time) as your base timezone. UTC has no daylight saving time, avoiding ambiguity issues. Store data in UTC, and convert to local timezones only when needed for display or analysis.
 
 **Reference:**
 
@@ -627,7 +628,7 @@ print(df_tz)
 
 # Time Series Visualization
 
-*Visualization is essential for understanding time series data. A good plot can reveal patterns, trends, and anomalies that summary statistics miss. It's like the difference between reading a weather report and looking at a weather map - both have information, but one shows you the big picture at a glance.*
+Visualization is essential for understanding time series data. A good plot can reveal patterns, trends, and anomalies that summary statistics miss.
 
 ## Basic Time Series Plots
 
@@ -724,16 +725,5 @@ plt.show()
 
 *Note: For advanced seasonal decomposition techniques (like STL decomposition), see [BONUS.md](BONUS.md).*
 
-## Generating Lecture Visualizations
-
-All visualizations in this lecture can be generated using the companion script `visualize_examples.py`. To generate all visualizations:
-
-```bash
-python3 visualize_examples.py
-```
-
-This script creates 6 visualizations covering types of time series, resampling, rolling windows, exponentially weighted functions, indexing, and shifting operations. Visualizations are saved to the `media/` directory.
 
 # LIVE DEMO!
-
-*"Final demo! We're going to put it all together - datetime parsing, resampling, rolling windows, and maybe even some time zone handling if we're feeling brave. This is where you'll see how all these pieces fit together in a real analysis. Or where we'll discover that real data is much messier than our examples. Again, probably both."*

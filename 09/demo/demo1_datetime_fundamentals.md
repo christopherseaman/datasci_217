@@ -1,27 +1,3 @@
-# Demo 1: datetime Fundamentals and Time Series Indexing
-
-**Placement**: After "Shifting and Lagging" section (~1/3 through lecture)  
-**Duration**: 25 minutes  
-**Focus**: Python datetime module, pandas DatetimeIndex, and time series indexing with health data
-
-## Learning Objectives
-- Master Python datetime module basics with clinical timestamps
-- Create and manipulate pandas DatetimeIndex for patient data
-- Generate date ranges for medical monitoring schedules
-- Perform time series indexing and selection with health data
-- Handle time zones for multi-site clinical trials
-- Use diff() and pct_change() to analyze changes over time
-
-## Introduction
-
-In this demo, we'll explore the fundamental building blocks of time series analysis using health and medical data. Understanding datetime objects is crucial because almost all medical data is timestamped - from patient vital signs to lab results to clinical trial measurements. The Python `datetime` module provides the foundation, but pandas' `DatetimeIndex` makes time series operations incredibly powerful and intuitive.
-
-Think of this demo as learning to tell time before you can analyze how things change over time. We'll start with basic datetime operations (like parsing timestamps from lab results), then move to pandas' powerful time series capabilities (like selecting all data from January or finding patterns in patient monitoring schedules).
-
-## Setup
-
-Before we begin, let's import the necessary libraries and set up our environment. These libraries are the workhorses of time series analysis in Python.
-
 ```python
 import pandas as pd
 import numpy as np
@@ -69,7 +45,7 @@ print(f"Patient age in days: {age_days.days}")
 print(f"Patient age in years: {age_days.days / 365.25:.1f}")
 ```
 
-**Why this matters**: In clinical data, you often receive timestamps as strings from databases or CSV files. The `strptime()` function converts these strings into datetime objects that Python can work with. Similarly, `strftime()` formats datetime objects for reports or displays.
+In clinical data, you often receive timestamps as strings from databases or CSV files. The `strptime()` function converts these strings into datetime objects that Python can work with. Similarly, `strftime()` formats datetime objects for reports or displays.
 
 ### datetime Arithmetic for Clinical Schedules
 
@@ -99,7 +75,7 @@ clinic_days = pd.bdate_range(trial_start, trial_end)
 print(f"\nClinic days in 2023: {len(clinic_days)}")
 ```
 
-**Clinical application**: When planning a clinical trial, you need to schedule follow-up visits at specific intervals (30 days, 90 days, etc.). The `timedelta` object makes this calculation straightforward and reduces human error in scheduling.
+The `timedelta` object makes calculating follow-up visit dates straightforward and reduces human error in scheduling.
 
 ## Part 2: pandas DatetimeIndex with Patient Data
 
@@ -136,7 +112,32 @@ print(vital_signs.head())
 print(f"\nDate range: {vital_signs.index.min()} to {vital_signs.index.max()}")
 ```
 
-**Key insight**: Notice how `pd.to_datetime()` automatically converts strings to datetime objects. The `pd.date_range()` function is incredibly powerful - it can generate regular sequences of dates with any frequency (daily, hourly, weekly, etc.), which is essential for creating time series data.
+Notice how `pd.to_datetime()` automatically converts strings to datetime objects. The `pd.date_range()` function is incredibly powerful - it can generate regular sequences of dates with any frequency (daily, hourly, weekly, etc.), which is essential for creating time series data.
+
+```python
+# Visualize the vital signs time series
+fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+
+# Temperature over time
+axes[0].plot(vital_signs.index, vital_signs['temperature'], 
+             marker='o', markersize=4, linewidth=1.5, color='red')
+axes[0].axhline(y=98.6, color='gray', linestyle='--', alpha=0.5, label='Normal (98.6°F)')
+axes[0].set_title('Patient Temperature Over 30 Days', fontsize=12, fontweight='bold')
+axes[0].set_ylabel('Temperature (°F)')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+
+# Heart rate over time
+axes[1].plot(vital_signs.index, vital_signs['heart_rate'], 
+             marker='s', markersize=4, linewidth=1.5, color='blue')
+axes[1].set_title('Patient Heart Rate Over 30 Days', fontsize=12, fontweight='bold')
+axes[1].set_xlabel('Date')
+axes[1].set_ylabel('Heart Rate (bpm)')
+axes[1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
 
 ### Date Range Generation for Medical Schedules
 
@@ -198,7 +199,7 @@ print(f"Monthly frequency: {pd.infer_freq(monthly_temperature.index)}")
 print(f"\nMonthly data shape: {monthly_temperature.shape}")
 ```
 
-**Why this matters**: When working with real-world data, you might not know the frequency upfront. The `infer_freq()` function helps you understand the data structure. The `asfreq()` method converts frequency without aggregation (often creating missing values), while `resample()` aggregates data to the new frequency.
+When working with real-world data, you might not know the frequency upfront. The `infer_freq()` function helps you understand the data structure. The `asfreq()` method converts frequency without aggregation (often creating missing values), while `resample()` aggregates data to the new frequency.
 
 ## Part 3: Time Series Indexing with Patient Data
 
@@ -233,7 +234,37 @@ print(f"2023 average weight: {year_data.mean():.2f} kg")
 print(f"2023 weight range: {year_data.min():.2f} - {year_data.max():.2f} kg")
 ```
 
-**Powerful feature**: Notice how pandas interprets natural date strings. `'2023-01'` selects all of January 2023, and `'2023'` selects the entire year. This intuitive syntax makes time series analysis much more readable than traditional indexing.
+Notice how pandas interprets natural date strings. `'2023-01'` selects all of January 2023, and `'2023'` selects the entire year. This intuitive syntax makes time series analysis much more readable than traditional indexing.
+
+```python
+# Visualize time series selection
+fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+
+# Full year with selected periods highlighted
+axes[0].plot(patient_weight.index, patient_weight.values, 
+             alpha=0.3, linewidth=1, color='gray', label='Full year')
+axes[0].plot(january_data.index, january_data.values, 
+             linewidth=2, color='blue', label='January 2023')
+axes[0].axvspan(january_data.index[0], january_data.index[-1], 
+                alpha=0.2, color='blue')
+axes[0].set_title('Patient Weight: Full Year with January Highlighted', fontsize=12, fontweight='bold')
+axes[0].set_ylabel('Weight (kg)')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+
+# First week detail
+first_week = patient_weight['2023-01-01':'2023-01-07']
+axes[1].plot(first_week.index, first_week.values, 
+             marker='o', markersize=6, linewidth=2, color='green')
+axes[1].set_title('First Week of January (Detail)', fontsize=12, fontweight='bold')
+axes[1].set_xlabel('Date')
+axes[1].set_ylabel('Weight (kg)')
+axes[1].grid(True, alpha=0.3)
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+plt.show()
+```
 
 ### Advanced Time Series Selection
 
@@ -241,7 +272,7 @@ For high-frequency data (like hourly ICU monitoring), you can select data based 
 
 ```python
 # Create hourly ICU monitoring data
-hourly_dates = pd.date_range('2023-01-01', periods=24*7, freq='H')
+hourly_dates = pd.date_range('2023-01-01', periods=24*7, freq='h')
 icu_data = pd.DataFrame({
     'heart_rate': np.random.randint(60, 100, 24*7),
     'blood_pressure': np.random.randint(90, 140, 24*7),
@@ -259,15 +290,17 @@ noon_readings = icu_data.at_time('12:00')
 print(f"\nNoon readings (7 days):")
 print(noon_readings)
 
-# Select first and last periods
+# Select first and last periods using .loc
 print(f"\nFirst 3 days:")
-print(icu_data.first('3D').head())
+first_3_days = icu_data.loc[:icu_data.index.min() + pd.Timedelta(days=2)]
+print(first_3_days.head())
 
 print(f"\nLast 3 days:")
-print(icu_data.last('3D').tail())
+last_3_days = icu_data.loc[icu_data.index.max() - pd.Timedelta(days=2):]
+print(last_3_days.tail())
 ```
 
-**Clinical application**: In ICU monitoring, you might want to compare nighttime vs. daytime vital signs, or analyze patterns during specific hours. The `between_time()` and `at_time()` methods make this straightforward.
+The `between_time()` and `at_time()` methods make it straightforward to compare nighttime vs. daytime vital signs or analyze patterns during specific hours.
 
 ## Part 4: Time Zone Handling for Multi-Site Studies
 
@@ -303,7 +336,7 @@ print("\nSite data (Eastern):")
 print(site_data)
 ```
 
-**Clinical importance**: When analyzing data from multiple clinical trial sites, you must standardize timestamps to a common timezone (typically UTC). The `tz_localize()` function adds timezone information to naive datetime objects, while `tz_convert()` converts between timezones.
+When analyzing data from multiple clinical trial sites, you must standardize timestamps to a common timezone (typically UTC). The `tz_localize()` function adds timezone information to naive datetime objects, while `tz_convert()` converts between timezones.
 
 ### Multiple Time Zones
 
@@ -327,7 +360,7 @@ for site_name, tz in sites.items():
     print(f"{site_name:12} ({tz:20}): {converted_time}")
 ```
 
-**Practical application**: When a patient in New York has an event at 2 PM Eastern time, and a patient in Tokyo has the same event at 2 PM Tokyo time, these are actually different moments in time. Converting everything to UTC ensures accurate temporal comparisons.
+When a patient in New York has an event at 2 PM Eastern time, and a patient in Tokyo has the same event at 2 PM Tokyo time, these are actually different moments in time. Converting everything to UTC ensures accurate temporal comparisons.
 
 ## Part 5: Real-World Example - Patient Monitoring Analysis
 
@@ -367,7 +400,7 @@ Using time series operations, we can calculate daily changes, identify trends, a
 print("=== Time Series Analysis ===\n")
 
 # Select specific periods
-january = patient_data['2023-01']
+january = patient_data.loc['2023-01']
 print(f"January statistics:")
 print(january[['temperature', 'heart_rate']].describe())
 
@@ -391,7 +424,7 @@ print(f"\nWeight percentage changes (sample):")
 print(patient_data[['weight', 'weight_change', 'weight_pct_change']].head(10))
 ```
 
-**Analysis insight**: The `diff()` function calculates day-over-day changes by comparing each value with the previous value (using `shift(1)` internally). This is essential for identifying trends and anomalies. When combined with threshold checks, this helps identify clinically significant changes in patient metrics. The `pct_change()` function calculates percentage changes, which is useful for understanding relative changes.
+The `diff()` function calculates day-over-day changes by comparing each value with the previous value (using `shift(1)` internally). This is essential for identifying trends and anomalies. When combined with threshold checks, this helps identify significant changes in patient metrics. The `pct_change()` function calculates percentage changes, which is useful for understanding relative changes.
 
 ### Visualization
 
@@ -437,26 +470,5 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Visualization value**: Time series plots reveal patterns that summary statistics miss - like seasonal trends, sudden changes, or gradual drifts. The visualization above combines raw data, reference lines, and highlighted significant changes to provide comprehensive insight.
-
-## Key Takeaways
-
-1. **datetime Module**: Essential for parsing clinical timestamps and calculating time differences. Master the basics before moving to pandas.
-
-2. **DatetimeIndex**: Powerful pandas feature for time series indexing and manipulation. Once your data has a DatetimeIndex, time-based operations become intuitive.
-
-3. **Date Ranges**: Generate medical schedules (daily, weekly, monthly, quarterly) programmatically. Business day ranges automatically exclude weekends.
-
-4. **Time Series Indexing**: Select data using natural date strings like `'2023-01'` for January or `'2023-01-01':'2023-01-31'` for date ranges.
-
-5. **Time Zones**: Critical for multi-site clinical trials and global health data. Always standardize to UTC before analysis.
-
-6. **Real-world Application**: Combine all these concepts for comprehensive patient monitoring and clinical analysis. Use `diff()` and `pct_change()` to analyze changes over time.
-
-## Next Steps
-
-- Practice with your own health/medical time series data
-- Learn about resampling and frequency conversion (Demo 2)
-- Explore rolling window operations for trend detection
-- Integrate with visualization tools from Lecture 07
+Time series plots reveal patterns that summary statistics miss - like seasonal trends, sudden changes, or gradual drifts. The visualization above combines raw data, reference lines, and highlighted significant changes to provide comprehensive insight.
 

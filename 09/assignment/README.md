@@ -110,7 +110,7 @@ This assignment consists of three separate notebooks, each focusing on different
 │   ├── q3_trend_analysis.png      # Q3 trend analysis plot
 │   └── q3_visualization.png      # Q3 time series visualization
 └── .github/
-    └── tests/
+    └── test/
         ├── test_assignment.py    # Auto-grading tests
         └── requirements.txt      # Test dependencies
 ```
@@ -186,6 +186,32 @@ Questions build progressively - each question uses concepts from earlier questio
 - **Test incrementally** - run cells as you complete them
 - **Check outputs** - verify your CSV files and plots look correct
 - **Read error messages** - they often point to the exact issue
+
+## Missing Data Handling (Question 2)
+
+When working with missing data in time series (Part 2.4), keep these guidelines in mind:
+
+1. **Understanding Missing Data Sources:**
+   - The `patient_vitals` dataset has naturally occurring missing data (~5% missing visits per patient)
+   - You can also create missing data by upsampling (e.g., monthly to daily) to practice different imputation methods
+   - For upsampling practice: aggregate `patient_vitals` by date first to create a single time series, then upsample monthly to daily
+
+2. **Creating a Time Series with Missing Values:**
+   - If using naturally occurring missing data: aggregate `patient_vitals` by date using `groupby('date')` and aggregate one column (e.g., `['temperature']`) with `.mean()` to create a single daily time series
+   - If creating missing data via upsampling: use the monthly resampled data from Part 2.3 and upsample to daily using `.resample('D').asfreq()`
+   - This creates a time series where missing values are clearly visible
+
+3. **Imputation Methods:**
+   - **Forward fill (`.ffill()`)**: Carries the last known value forward - good for stable measurements
+   - **Backward fill (`.bfill()`)**: Carries the next known value backward - useful when you have recent data
+   - **Interpolation (`.interpolate()`)**: Fills missing values using linear interpolation between known points - good for gradual changes
+   - **Time-based interpolation (`.interpolate(method='time')`)**: Uses time-aware interpolation - best for time series data
+   - **Rolling mean**: Fill missing values with rolling mean of surrounding values - smooths out noise
+
+4. **Choosing an Imputation Method:**
+   - Consider the nature of your data: temperature changes gradually (interpolation), while discrete counts might use forward fill
+   - For healthcare data, linear or time-based interpolation often works well for continuous measurements
+   - Document your choice and rationale in the missing data report
 
 ## Getting Help
 

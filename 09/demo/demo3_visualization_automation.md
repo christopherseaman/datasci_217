@@ -1,32 +1,3 @@
-# Demo 3: Time Series Visualization and Integration
-
-**Placement**: After "Time Zone Handling" section (end of lecture)  
-**Duration**: 25 minutes  
-**Focus**: Time series visualization using matplotlib, seaborn, and altair; combining concepts from earlier lectures
-
-## Learning Objectives
-- Create effective time series visualizations with multiple libraries
-- Integrate pandas, matplotlib, and seaborn for time series plots
-- Use altair for interactive time series visualizations
-- Identify seasonal patterns in health data
-- Create publication-quality plots for medical research
-
-## Introduction
-
-In this final demo, we'll combine everything we've learned about time series analysis with visualization techniques from Lecture 07. Visualization is crucial for time series analysis because it helps identify patterns, trends, and anomalies that might not be obvious from summary statistics.
-
-Think of this demo as learning to tell the story of your data. We'll work with multi-year disease surveillance data and demonstrate how to create effective visualizations that reveal seasonal patterns, trends, and relationships. We'll use matplotlib for basic plots, seaborn for statistical visualizations, and altair for interactive visualizations.
-
-This demo integrates concepts from earlier lectures:
-- **Time series indexing** (Demo 1) for selecting data by date ranges
-- **Resampling** (Demo 2) for creating summaries at different frequencies
-- **Rolling windows** (Demo 2) for smoothing and trend detection
-- **Visualization** (Lecture 07) for creating effective plots
-
-## Setup
-
-Let's set up our environment with the necessary libraries for visualization and analysis.
-
 ```python
 import pandas as pd
 import numpy as np
@@ -117,12 +88,41 @@ print(f"\nSample data:")
 print(surveillance_data.head(10))
 ```
 
-**Data understanding**: Notice how we've created data with multiple components:
-- **Trend**: Gradual increase from 100 to 120 cases
-- **Seasonality**: Sine wave pattern peaking in winter months
-- **Noise**: Random fluctuations around the pattern
+Notice how we've created data with multiple components: a gradual trend increase from 100 to 120 cases, a sine wave seasonal pattern peaking in winter months, and random noise fluctuations. This structure is typical of real-world medical data where long-term trends, seasonal patterns, and random variation all contribute to observations.
 
-This structure is typical of real-world medical data where long-term trends, seasonal patterns, and random variation all contribute to observations.
+```python
+# Initial visualization of surveillance data
+fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+
+# Extract Site A and Site B for comparison
+site_a = surveillance_data[surveillance_data['site'] == 'Site_A']
+site_b = surveillance_data[surveillance_data['site'] == 'Site_B']
+
+# Case counts over time for both sites
+axes[0].plot(site_a.index, site_a['cases'], 
+             marker='o', markersize=5, linewidth=2, label='Site A', color='blue')
+axes[0].plot(site_b.index, site_b['cases'], 
+             marker='s', markersize=5, linewidth=2, label='Site B', color='red')
+axes[0].set_title('Disease Surveillance: Case Counts by Site', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Cases')
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+axes[0].tick_params(axis='x', rotation=45)
+
+# Temperature and cases relationship
+axes[1].scatter(site_a['temperature'], site_a['cases'], 
+                alpha=0.6, s=80, label='Site A', color='blue')
+axes[1].scatter(site_b['temperature'], site_b['cases'], 
+                alpha=0.6, s=80, label='Site B', color='red')
+axes[1].set_title('Cases vs Temperature', fontsize=14, fontweight='bold')
+axes[1].set_xlabel('Temperature (°F)')
+axes[1].set_ylabel('Cases')
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
 
 ## Part 2: Time Series Visualization with matplotlib
 
@@ -181,7 +181,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Visualization insight**: Each plot reveals different aspects of the data:
+**Visualization**: Each plot reveals different aspects of the data:
 - **Line plot**: Shows trends and patterns over time
 - **Rolling mean**: Smooths out noise to reveal underlying trends
 - **Histogram**: Shows the distribution of case counts
@@ -202,6 +202,8 @@ fig.suptitle('Disease Surveillance - Statistical Analysis', fontsize=16, fontwei
 
 # Prepare data for seaborn
 site_a_long = site_a.reset_index()
+# Rename the index column to 'date' for clarity
+site_a_long = site_a_long.rename(columns={site_a_long.columns[0]: 'date'})
 site_a_long['month'] = site_a_long['date'].dt.month
 site_a_long['year'] = site_a_long['date'].dt.year
 
@@ -246,11 +248,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Statistical insight**: 
-- **Scatter plot**: Reveals relationships between temperature and cases, colored by month to show seasonal patterns
-- **Dual-axis plot**: Allows comparison of two variables with different scales on the same plot
-- **Violin plot**: Shows distribution shapes, revealing how case distributions vary by month
-- **Heatmap**: Provides a comprehensive view of patterns across years and months, making seasonal trends obvious
+The scatter plot reveals relationships between temperature and cases, colored by month to show seasonal patterns. The dual-axis plot allows comparison of two variables with different scales on the same plot. The violin plot shows distribution shapes, revealing how case distributions vary by month. The heatmap provides a comprehensive view of patterns across years and months, making seasonal trends obvious.
 
 ## Part 4: Visualizing Time Series Components
 
@@ -300,7 +298,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Component visualization insight**: Seeing each component separately helps you understand how they contribute to the overall pattern. The trend shows long-term direction, the seasonal component shows repeating patterns, and the noise shows random variation. This visualization is essential for understanding real-world time series data.
+**Component visualization**: Seeing each component separately helps you understand how they contribute to the overall pattern. The trend shows long-term direction, the seasonal component shows repeating patterns, and the noise shows random variation. This visualization is essential for understanding real-world time series data.
 
 ### Seasonal Pattern Analysis
 
@@ -348,7 +346,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Pattern identification**: The monthly averages reveal seasonal patterns - notice how some months consistently have higher or lower case counts. The trend component shows the long-term direction after removing seasonal effects. This decomposition helps you understand what's driving changes in case counts.
+The monthly averages reveal seasonal patterns - notice how some months consistently have higher or lower case counts. The trend component shows the long-term direction after removing seasonal effects. This decomposition helps you understand what's driving changes in case counts.
 
 *Note: For advanced seasonal decomposition techniques (like STL decomposition), see the BONUS.md section on advanced time series decomposition.*
 
@@ -368,23 +366,23 @@ print("=== Integration: Resampling + Rolling + Visualization ===\n")
 daily_dates = pd.date_range('2020-01-01', periods=365*3, freq='D')
 daily_cases = 100 + 20 * np.sin(2 * np.pi * np.arange(len(daily_dates)) / 365.25) + np.random.normal(0, 5, len(daily_dates))
 daily_cases = np.maximum(daily_cases, 0)
-daily_ts = pd.Series(daily_cases, index=daily_dates)
+daily_ts = pd.DataFrame({'cases': daily_cases}, index=daily_dates)
 
 # Resample to different frequencies
-weekly_ts = daily_ts.resample('W').mean()
-monthly_ts = daily_ts.resample('ME').mean()
+weekly_ts = daily_ts['cases'].resample('W').mean()
+monthly_ts = daily_ts['cases'].resample('ME').mean()
 
 # Calculate rolling statistics
-daily_ts['rolling_7d'] = daily_ts.rolling(window=7).mean()
-daily_ts['rolling_30d'] = daily_ts.rolling(window=30).mean()
-daily_ts['rolling_90d'] = daily_ts.rolling(window=90).mean()
+daily_ts['rolling_7d'] = daily_ts['cases'].rolling(window=7).mean()
+daily_ts['rolling_30d'] = daily_ts['cases'].rolling(window=30).mean()
+daily_ts['rolling_90d'] = daily_ts['cases'].rolling(window=90).mean()
 
 # Create comprehensive visualization
 fig, axes = plt.subplots(3, 1, figsize=(16, 14))
 
 # Original daily with rolling windows
-sample_data = daily_ts['2021-01-01':'2021-12-31']
-axes[0].plot(sample_data.index, sample_data.values, 
+sample_data = daily_ts.loc['2021-01-01':'2021-12-31']
+axes[0].plot(sample_data.index, sample_data['cases'], 
              alpha=0.3, linewidth=1, label='Daily', color='gray')
 axes[0].plot(sample_data.index, sample_data['rolling_7d'], 
              linewidth=2, label='7-Day Rolling', color='blue')
@@ -420,31 +418,5 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Integration insight**: This comprehensive visualization demonstrates how different techniques reveal different aspects of the data:
-- **Daily with rolling windows**: Shows short-term fluctuations and multiple time scales of trends
-- **Weekly resampled**: Smooths out daily noise while preserving weekly patterns
-- **Monthly resampled**: Shows long-term trends and seasonal patterns
-
-Each view serves a different purpose - use daily views for detailed analysis, weekly for trend identification, and monthly for long-term patterns.
-
-## Key Takeaways
-
-1. **matplotlib**: Foundation for time series plots with full customization control. Use for basic line plots, histograms, and box plots.
-
-2. **seaborn**: Statistical visualizations with better defaults. Use for scatter plots, violin plots, heatmaps, and group comparisons.
-
-3. **Visualization Strategy**: Choose visualization techniques based on what you want to reveal - line plots for trends, box plots for distributions, heatmaps for patterns.
-
-4. **Seasonal Patterns**: Identify and visualize seasonal trends using groupby operations and specialized plots.
-
-5. **Integration**: Combine indexing, resampling, rolling windows, and visualization for comprehensive time series analysis.
-
-6. **Publication Quality**: Create professional plots with proper labels, legends, and formatting for medical research presentations.
-
-## Next Steps
-
-- Practice with your own health/medical time series data
-- Explore advanced visualization techniques (interactive dashboards, animated plots)
-- Set up automated visualization pipelines
-- Integrate with dashboard tools for monitoring
+This comprehensive visualization demonstrates how different techniques reveal different aspects of the data. Daily data with rolling windows shows short-term fluctuations and multiple time scales of trends. Weekly resampled data smooths out daily noise while preserving weekly patterns. Monthly resampled data shows long-term trends and seasonal patterns. Each view serves a different purpose - use daily views for detailed analysis, weekly for trend identification, and monthly for long-term patterns.
 

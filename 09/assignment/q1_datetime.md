@@ -85,6 +85,15 @@ print(f"Missing visits: ~{200 * 365 - len(patient_vitals):,} records")
 # TODO: Calculate time differences (e.g., days since first measurement)
 # Note: Since patients start at different times, calculate days_since_start per patient
 # Hint: Use groupby('patient_id') and calculate from each patient's first date
+# Important: To use groupby on the 'date' column, you'll need to temporarily reset the index
+# (groupby requires the column to be a regular column, not the index). This is because pandas
+# groupby operates on DataFrame columns, not index values. When a column is set as the index,
+# it's no longer accessible as a regular column for groupby operations.
+# Steps:
+# 1. Reset the index: patient_vitals_reset = patient_vitals.reset_index()
+# 2. Calculate days_since_start using groupby on 'patient_id' and 'date' column
+# 3. Set the index back to 'date': patient_vitals = patient_vitals_reset.set_index('date')
+# After calculating days_since_start, set the index back to 'date'
 # patient_vitals['days_since_start'] = None  # Calculate from each patient's start date
 
 # TODO: Create business day ranges for clinic visit schedules
@@ -95,6 +104,16 @@ print(f"Missing visits: ~{200 * 365 - len(patient_vitals):,} records")
 # weekly_range = None  # Weekly lab test schedule (Mondays)
 # monthly_range = None  # Monthly checkup schedule
 
+# TODO: Use date ranges to analyze visit patterns
+# Check how many patient visits occurred on clinic business days vs weekends
+# patient_dates_set = set(patient_vitals.index.date)
+# clinic_dates_set = set(clinic_dates.date)
+# visits_on_clinic_days = len(patient_dates_set & clinic_dates_set)
+# visits_on_weekends = len(patient_dates_set) - visits_on_clinic_days
+# print(f"Visits on clinic business days: {visits_on_clinic_days}")
+# print(f"Visits on weekends: {visits_on_weekends}")
+# print(f"Total unique visit dates: {len(patient_dates_set)}")
+
 # TODO: Save results as 'output/q1_datetime_analysis.csv'
 # Create a DataFrame with datetime analysis results including:
 # - date (datetime index or column)
@@ -102,6 +121,7 @@ print(f"Missing visits: ~{200 * 365 - len(patient_vitals):,} records")
 # - days_since_start (calculated time differences)
 # - patient_id
 # - At least one original column (e.g., temperature, heart_rate)
+# Note: When saving to CSV with index=False, you'll need to convert the index to a column first
 # Example structure:
 # datetime_analysis = patient_vitals[['patient_id', 'year', 'month', 'day', 'days_since_start', 'temperature']].copy()
 # datetime_analysis.to_csv('output/q1_datetime_analysis.csv', index=False)
@@ -123,8 +143,10 @@ print(f"Missing visits: ~{200 * 365 - len(patient_vitals):,} records")
 
 # TODO: Handle daylight saving time transitions
 # Create datetime that spans DST transition
-# dst_date = None  # Date around DST transition
-# dst_time_utc = None  # Localize and convert
+# Note: Using UTC avoids DST ambiguity issues - UTC has no daylight saving time
+# Best practice: Store data in UTC, convert to local timezones only when needed
+# dst_date_utc = pd.Timestamp('2023-03-12 10:00:00', tz='UTC')  # UTC time avoids DST issues
+# dst_time_eastern = dst_date_utc.tz_convert('US/Eastern')  # Convert UTC to Eastern
 
 # TODO: Document timezone operations
 # Create a report string with the following sections:
@@ -132,6 +154,7 @@ print(f"Missing visits: ~{200 * 365 - len(patient_vitals):,} records")
 # 2. Localization method: Explain how you localized the data (e.g., tz_localize('UTC'))
 # 3. Conversion: Describe what timezone you converted to (e.g., 'US/Eastern')
 # 4. DST handling: Document any issues or observations about daylight saving time transitions
+#    Note: Explain why using UTC as the base timezone avoids DST ambiguity issues
 # 5. Example: Show at least one example of a datetime before and after conversion
 # Minimum length: 200 words
 timezone_report = """
@@ -139,8 +162,9 @@ TODO: Document your timezone operations:
 - What timezone was your original data in?
 - How did you localize the data?
 - What timezone did you convert to?
-- What issues did you encounter with DST?
+- What issues did you encounter with DST? (Note: Using UTC avoids DST ambiguity)
 - Include at least one example showing a datetime before and after conversion
+- Explain why UTC is recommended as the base timezone for storing temporal data
 """
 
 # TODO: Save results as 'output/q1_timezone_report.txt'
