@@ -435,6 +435,8 @@ print(custom_stats.head())
 
 # LIVE DEMO!
 
+![xkcd 2289: Scenario 4](https://imgs.xkcd.com/comics/scenario_4.png)
+
 # Rolling Window Operations
 
 Rolling window functions compute statistics over a fixed-size window that moves through the time series. This is useful for smoothing noisy data and identifying trends.
@@ -542,13 +544,11 @@ print("Time series with EWM functions:")
 print(ts[['ewm_mean', 'ewm_std']].head(10))
 ```
 
-![xkcd 2289: Scenario 4](https://imgs.xkcd.com/comics/scenario_4.png)
-
 *"You can't fall off the bell curve if there's no bell curve." - A reminder that time series forecasting, especially during unprecedented events, carries significant uncertainty. Always be honest about prediction intervals.*
 
 # Time Zone Handling
 
-![xkcd 1883: Time Zones](https://imgs.xkcd.com/comics/time_zones.png)
+![xkcd 1883: Time Zones](media/xkcd_time_zones.png)
 
 *"I find it hard to believe that a time zone can be a real thing." - A relatable sentiment when dealing with time zone conversions.*
 
