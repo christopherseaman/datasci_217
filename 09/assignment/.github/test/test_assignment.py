@@ -35,6 +35,31 @@ class TestQuestion1:
         # Should have datetime-related columns
         assert len(df.columns) > 0, "q1_datetime_analysis.csv has no columns"
 
+    def test_q1_datetime_analysis_has_required_columns(self):
+        """Test that q1_datetime_analysis.csv has required columns"""
+        filepath = OUTPUT_DIR / "q1_datetime_analysis.csv"
+        df = pd.read_csv(filepath)
+        required_columns = ['date', 'patient_id', 'year', 'month', 'day', 'days_since_start']
+        for col in required_columns:
+            assert col in df.columns, (
+                f"q1_datetime_analysis.csv missing required column '{col}'. "
+                f"Found columns: {df.columns.tolist()}"
+            )
+
+    def test_q1_datetime_analysis_data_validity(self):
+        """Test that q1_datetime_analysis.csv has valid data"""
+        filepath = OUTPUT_DIR / "q1_datetime_analysis.csv"
+        df = pd.read_csv(filepath)
+        # Check that days_since_start starts at 0 for each patient
+        grouped = df.groupby('patient_id')['days_since_start'].min()
+        assert all(grouped == 0), (
+            "days_since_start should start at 0 for each patient"
+        )
+        # Check that year, month, day are in reasonable ranges
+        assert df['year'].min() >= 2020, "Year values seem unreasonable"
+        assert df['month'].between(1, 12).all(), "Month values should be 1-12"
+        assert df['day'].between(1, 31).all(), "Day values should be 1-31"
+
     def test_q1_timezone_report_exists(self):
         """Test that q1_timezone_report.txt exists"""
         filepath = OUTPUT_DIR / "q1_timezone_report.txt"
@@ -71,6 +96,22 @@ class TestQuestion2:
         assert len(df) > 0, "q2_resampling_analysis.csv is empty"
         assert len(df.columns) > 0, "q2_resampling_analysis.csv has no columns"
 
+    def test_q2_resampling_analysis_has_required_columns(self):
+        """Test that q2_resampling_analysis.csv has required columns"""
+        filepath = OUTPUT_DIR / "q2_resampling_analysis.csv"
+        df = pd.read_csv(filepath)
+        required_columns = ['frequency', 'mean_temperature', 'std_temperature']
+        for col in required_columns:
+            assert col in df.columns, (
+                f"q2_resampling_analysis.csv missing required column '{col}'. "
+                f"Found columns: {df.columns.tolist()}"
+            )
+        # Should have at least daily, weekly, monthly frequencies
+        frequencies = df['frequency'].unique()
+        assert len(frequencies) >= 3, (
+            f"Should have at least 3 different frequencies, found: {frequencies}"
+        )
+
     def test_q2_missing_data_report_exists(self):
         """Test that q2_missing_data_report.txt exists"""
         filepath = OUTPUT_DIR / "q2_missing_data_report.txt"
@@ -106,6 +147,10 @@ class TestQuestion3:
         df = pd.read_csv(filepath)
         assert len(df) > 0, "q3_rolling_analysis.csv is empty"
         assert len(df.columns) > 0, "q3_rolling_analysis.csv has no columns"
+        # Should have 365 rows (one year of daily data)
+        assert len(df) == 365, (
+            f"Expected 365 rows (one year), found {len(df)}"
+        )
 
     def test_q3_rolling_analysis_has_required_columns(self):
         """Test that q3_rolling_analysis.csv has expected columns from Parts 3.2 and 3.3"""

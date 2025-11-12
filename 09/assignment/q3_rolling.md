@@ -80,16 +80,16 @@ print(f"\nDaily aggregated records: {len(patient_vitals_daily)} (covers full yea
 
 ## Part 3.2: Basic Rolling Operations
 
-**TODO: Apply rolling window operations**
+**💡 TIP: Rolling Windows Create NaN Values**
+Rolling window calculations create NaN (missing) values for the first N-1 observations, where N is the window size. For example, a 7-day rolling mean will have NaN for the first 6 days. This is expected and normal - there isn't enough data to fill the window yet!
 
-**Note:** In this part, you'll create rolling statistics for the `temperature` column. In Part 3.5, you'll need to create separate rolling means for `heart_rate` and `weight` columns as well. **Use consistent naming:** Use `temperature_rolling_7d_mean` for temperature, `heart_rate_rolling_7d_mean` for heart rate, and `weight_rolling_7d_mean` for weight to maintain clarity.
+**TODO: Apply rolling window operations**
 
 ```python
 # Use patient_vitals_daily (daily aggregated data)
 
 # TODO: Calculate 7-day rolling mean
-# Note: Create rolling statistics for 'temperature' column with consistent naming
-# In Part 3.5, you'll create similar rolling means for 'heart_rate' and 'weight' using the same naming pattern
+# Note: Use consistent naming pattern like 'temperature_rolling_7d_mean'
 # patient_vitals_daily['temperature_rolling_7d_mean'] = None  # 7-day rolling mean for temperature
 # patient_vitals_daily['temperature_rolling_7d_std'] = None  # 7-day rolling standard deviation
 

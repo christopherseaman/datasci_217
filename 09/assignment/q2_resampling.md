@@ -74,9 +74,14 @@ print(f"Patient vitals date range: {patient_vitals.index.min()} to {patient_vita
 
 ## Part 2.2: Time Series Selection
 
-**TODO: Perform time series indexing and selection**
+**⚠️ WARNING: Sort Index Before Date Selection!**
+Since multiple patients share the same date, the `patient_vitals` index is non-monotonic (not strictly increasing). **You MUST sort the index first** before using `.loc` with date ranges:
+```python
+patient_vitals = patient_vitals.sort_index()
+```
+Without sorting, pandas cannot reliably handle date range selections and may return unexpected results or errors.
 
-**Important Note:** Since multiple patients share the same date, the `patient_vitals` index is non-monotonic (not strictly increasing). For reliable date-based selection with `.loc`, you should sort the index first: `patient_vitals = patient_vitals.sort_index()`. This ensures pandas can properly handle date range selections.
+**TODO: Perform time series indexing and selection**
 
 ```python
 # TODO: Select data by specific dates
@@ -202,20 +207,19 @@ print(f"Patient vitals date range: {patient_vitals.index.min()} to {patient_vita
 
 ## Part 2.4: Missing Data Handling
 
-**Note:** We'll use upsampling to create missing values for practice. The patient_vitals dataset also contains some naturally occurring missing data (~5% missing visits), which you could use as an alternative approach in practice.
+**💡 TIP: High Percentage of Missing Data is Expected!**
+When upsampling from monthly to daily frequency, you'll create approximately 96% missing data (only 12 month-end dates have values out of 365 days). This is normal and expected for upsampling - don't be alarmed!
 
-**Important:** See the "Missing Data Handling" section in `assignment/README.md` for detailed guidance on creating time series with missing values and choosing imputation methods.
+**Approach:** Create missing values by upsampling monthly data to daily frequency. This creates a clear, structured pattern of missing data that's ideal for practicing imputation methods.
 
 **TODO: Handle missing data in time series**
 
 ```python
 # TODO: Identify missing values in time series
-# Recommended approach: Create missing values by upsampling (e.g., monthly to daily)
-#   - Use the monthly resampled data from Part 2.3: patient_vitals_monthly['temperature']
+# Use the monthly resampled data from Part 2.3 and upsample to daily:
+#   - Take patient_vitals_monthly['temperature']
 #   - Upsample to daily frequency using .resample('D').asfreq()
-#   - This creates missing values for all days except month-end dates
-# Alternative approach (for practice): You could also use naturally occurring missing data from patient_vitals
-#   by aggregating by date and using groupby('date'), but upsampling provides a clearer pattern for demonstration
+#   - This creates missing values for all days except month-end dates (~96% missing)
 # ts_with_missing = None  # Time series with missing values
 # print("Missing value count:", ts_with_missing.isna().sum())
 # print("Missing value percentage:", ts_with_missing.isna().sum() / len(ts_with_missing) * 100)

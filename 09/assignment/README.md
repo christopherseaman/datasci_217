@@ -22,9 +22,9 @@ Run all cells to create the CSV files in `data/`:
 
 This assignment consists of three separate notebooks, each focusing on different datasets and concepts:
 
-- **Question 1** (`q1_datetime.md`) - Uses `patient_vitals.csv` (daily data)
-- **Question 2** (`q2_resampling.md`) - Uses `icu_monitoring.csv` (hourly data) and `patient_vitals.csv` (daily data)
-- **Question 3** (`q3_rolling.md`) - Uses `disease_surveillance.csv` (monthly data) and `patient_vitals.csv` (daily data)
+- **Question 1** (`q1_datetime.ipynb`) - Uses `patient_vitals.csv` (daily data)
+- **Question 2** (`q2_resampling.ipynb`) - Uses `icu_monitoring.csv` (hourly data) and `patient_vitals.csv` (daily data)
+- **Question 3** (`q3_rolling.ipynb`) - Uses `disease_surveillance.csv` (monthly data) and `patient_vitals.csv` (daily data)
 
 **How to use the notebooks:**
 1. Generate notebooks from markdown files using jupytext:
@@ -41,7 +41,7 @@ This assignment consists of three separate notebooks, each focusing on different
 7. Check the submission checklist at the end of each notebook
 
 ### Question 1: datetime Fundamentals and Time Series Indexing
-**File:** `q1_datetime.md` / `q1_datetime.ipynb`  
+**File:** `q1_datetime.ipynb`  
 **Dataset:** `patient_vitals.csv` (daily patient vital signs)
 
 **What you'll do:**
@@ -55,7 +55,7 @@ This assignment consists of three separate notebooks, each focusing on different
 **Output:** `output/q1_datetime_analysis.csv`, `output/q1_timezone_report.txt`
 
 ### Question 2: Resampling and Frequency Conversion
-**File:** `q2_resampling.md` / `q2_resampling.ipynb`  
+**File:** `q2_resampling.ipynb`  
 **Dataset:** `icu_monitoring.csv` (hourly ICU data), `patient_vitals.csv` (daily data)
 
 **What you'll do:**
@@ -69,7 +69,7 @@ This assignment consists of three separate notebooks, each focusing on different
 **Output:** `output/q2_resampling_analysis.csv`, `output/q2_missing_data_report.txt`
 
 ### Question 3: Rolling Windows and Visualization
-**File:** `q3_rolling.md` / `q3_rolling.ipynb`  
+**File:** `q3_rolling.ipynb`  
 **Dataset:** `disease_surveillance.csv` (monthly data), `patient_vitals.csv` (daily data)
 
 **What you'll do:**
@@ -169,24 +169,6 @@ Before submitting, verify you've created:
 - [ ] `output/q3_trend_analysis.png` - trend analysis visualization
 - [ ] `output/q3_visualization.png` - comprehensive time series plot
 
-## Grading Criteria
-
-This assignment focuses on **practical competence** - demonstrating that you can use the time series tools correctly, not excellence or optimization.
-
-- **Question 1:** Correct datetime parsing, indexing, and time zone handling
-- **Question 2:** Proper resampling operations and missing data handling
-- **Question 3:** Accurate rolling window calculations and clear visualizations
-
-Questions build progressively - each question uses concepts from earlier questions.
-
-## Tips
-
-- **Start with the data generator** - understand your datasets before starting
-- **Use the hints** - each TODO has helpful comments
-- **Test incrementally** - run cells as you complete them
-- **Check outputs** - verify your CSV files and plots look correct
-- **Read error messages** - they often point to the exact issue
-
 ## Missing Data Handling (Question 2)
 
 When working with missing data in time series (Part 2.4), keep these guidelines in mind:
@@ -212,10 +194,3 @@ When working with missing data in time series (Part 2.4), keep these guidelines 
    - Consider the nature of your data: temperature changes gradually (interpolation), while discrete counts might use forward fill
    - For healthcare data, linear or time-based interpolation often works well for continuous measurements
    - Document your choice and rationale in the missing data report
-
-## Getting Help
-
-- Review the lecture README.md for examples
-- Check the demos for hands-on practice
-- Consult pandas documentation: https://pandas.pydata.org/docs/
-- Ask questions early - don't wait until the deadline!

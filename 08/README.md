@@ -161,12 +161,29 @@ Apply operations let you use custom functions on each group.
 - `grouped.apply(func)` - Apply custom function to each group
 - `grouped.apply(lambda x: x.sort_values('col'))` - Sort each group
 - `grouped.apply(lambda x: x.nlargest(2, 'col'))` - Get top 2 from each group
+- `grouped.apply(func, include_groups=False)` - Exclude grouping columns from function (pandas 2.2+)
+
+**Important: FutureWarning for `include_groups` Parameter**
+
+Starting in pandas 2.2, when using `.apply()` on a GroupBy object, pandas will include the grouping columns in the DataFrame passed to your function. This is a change from previous behavior where grouping columns were excluded. To maintain the old behavior (where grouping columns are excluded), you should explicitly set `include_groups=False`.
+
+**What's happening:**
+- **Old behavior (pandas < 2.2)**: When you call `df.groupby('Department').apply(func)`, the function receives only the non-grouping columns
+- **New behavior (pandas 2.2+)**: By default, the function receives all columns including the grouping columns
+- **Future behavior**: `include_groups=False` will become the default, but you should explicitly set it now to avoid warnings
+
+**Why this matters:**
+- If your function expects only non-grouping columns, you'll get unexpected behavior
+- The warning helps you prepare for future pandas versions
+- Setting `include_groups=False` explicitly makes your code future-proof
 
 **Example:**
 
 ```python
 # Apply: Custom function for salary statistics
 def salary_stats(group):
+    # With include_groups=False, 'group' contains only non-grouping columns
+    # Without it, 'group' also contains 'Department' column
     return pd.Series({
         'count': len(group),
         'mean': group['Salary'].mean(),
@@ -175,10 +192,14 @@ def salary_stats(group):
     })
 
 print("Custom statistics by department:")
-print(df.groupby('Department').apply(salary_stats))
+# Explicitly set include_groups=False to avoid FutureWarning
+print(df.groupby('Department').apply(salary_stats, include_groups=False))
 
 # Apply: Get top earners in each department
-top_earners = df.groupby('Department').apply(lambda x: x.nlargest(1, 'Salary'))
+top_earners = df.groupby('Department').apply(
+    lambda x: x.nlargest(1, 'Salary'), 
+    include_groups=False
+)
 print("\nTop earners per department:")
 print(top_earners)
 ```

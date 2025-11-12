@@ -84,16 +84,11 @@ print(f"Missing visits: ~{200 * 365 - len(patient_vitals):,} records")
 
 # TODO: Calculate time differences (e.g., days since first measurement)
 # Note: Since patients start at different times, calculate days_since_start per patient
-# Hint: Use groupby('patient_id') and calculate from each patient's first date
-# Important: To use groupby on the 'date' column, you'll need to temporarily reset the index
-# (groupby requires the column to be a regular column, not the index). This is because pandas
-# groupby operates on DataFrame columns, not index values. When a column is set as the index,
-# it's no longer accessible as a regular column for groupby operations.
-# Steps:
-# 1. Reset the index: patient_vitals_reset = patient_vitals.reset_index()
-# 2. Calculate days_since_start using groupby on 'patient_id' and 'date' column
-# 3. Set the index back to 'date': patient_vitals = patient_vitals_reset.set_index('date')
-# After calculating days_since_start, set the index back to 'date'
+# Hint: To use groupby on the 'date' column, temporarily reset the index, then set it back
+# Example: patient_vitals_reset = patient_vitals.reset_index()
+#          Use groupby('patient_id')['date'].transform(lambda x: (x - x.min()).dt.days)
+#          Or use groupby('patient_id').apply() to calculate days from each patient's first date
+#          Then: patient_vitals = patient_vitals_reset.set_index('date')
 # patient_vitals['days_since_start'] = None  # Calculate from each patient's start date
 
 # TODO: Create business day ranges for clinic visit schedules
