@@ -56,26 +56,26 @@ def test_q1_statistical_model_csv_format(setup_data):
     df = pd.read_csv('output/q1_statistical_model.csv')
     
     # Check required columns
-    required_cols = ['patient_id', 'actual_risk', 'predicted_risk']
+    required_cols = ['actual_value', 'predicted_value']
     assert all(col in df.columns for col in required_cols), \
         f"CSV must contain columns: {required_cols}"
     
     # Check data types
-    assert df['actual_risk'].dtype in [np.float64, np.float32, float], \
-        "actual_risk must be numeric"
-    assert df['predicted_risk'].dtype in [np.float64, np.float32, float], \
-        "predicted_risk must be numeric"
+    assert df['actual_value'].dtype in [np.float64, np.float32, float], \
+        "actual_value must be numeric"
+    assert df['predicted_value'].dtype in [np.float64, np.float32, float], \
+        "predicted_value must be numeric"
     
-    # Check reasonable number of rows (should be all patients)
-    assert len(df) >= 1800, f"Expected at least 1800 rows, got {len(df)}"
+    # Check reasonable number of rows (should be all housing records, ~20k)
+    assert len(df) >= 18000, f"Expected at least 18000 rows, got {len(df)}"
     
     # Check predictions are reasonable (not all zeros, not all same value)
-    assert df['predicted_risk'].nunique() > 1, \
+    assert df['predicted_value'].nunique() > 1, \
         "All predictions are the same value"
-    assert df['predicted_risk'].min() >= 0, \
+    assert df['predicted_value'].min() >= 0, \
         "Predictions should be non-negative"
-    assert df['predicted_risk'].max() <= 200, \
-        "Predictions seem unreasonably high"
+    assert df['predicted_value'].max() <= 10, \
+        "Predictions seem unreasonably high (house values in hundreds of thousands)"
 
 def test_q1_model_summary_exists(setup_data):
     """Test that Q1 model summary text file exists."""
@@ -103,21 +103,21 @@ def test_q2_ml_predictions_csv_format(setup_data):
     df = pd.read_csv('output/q2_ml_predictions.csv')
     
     # Check required columns
-    required_cols = ['patient_id', 'actual_risk', 'lr_predicted_risk', 'rf_predicted_risk']
+    required_cols = ['actual_value', 'lr_predicted_value', 'rf_predicted_value']
     assert all(col in df.columns for col in required_cols), \
         f"CSV must contain columns: {required_cols}"
     
     # Check data types
-    for col in ['actual_risk', 'lr_predicted_risk', 'rf_predicted_risk']:
+    for col in ['actual_value', 'lr_predicted_value', 'rf_predicted_value']:
         assert df[col].dtype in [np.float64, np.float32, float], \
             f"{col} must be numeric"
     
-    # Check reasonable number of rows (should be test set, ~400 rows)
-    assert 300 <= len(df) <= 500, \
-        f"Expected ~400 rows (test set), got {len(df)}"
+    # Check reasonable number of rows (should be test set, ~4k rows for California Housing)
+    assert 3000 <= len(df) <= 5000, \
+        f"Expected ~4000 rows (test set), got {len(df)}"
     
     # Check predictions are different between models
-    assert not np.allclose(df['lr_predicted_risk'], df['rf_predicted_risk']), \
+    assert not np.allclose(df['lr_predicted_value'], df['rf_predicted_value']), \
         "Linear regression and Random Forest predictions should differ"
 
 def test_q2_model_comparison_exists(setup_data):
@@ -150,19 +150,19 @@ def test_q3_xgboost_model_csv_format(setup_data):
     df = pd.read_csv('output/q3_xgboost_model.csv')
     
     # Check required columns
-    required_cols = ['patient_id', 'actual_risk', 'xgb_predicted_risk']
+    required_cols = ['actual_value', 'xgb_predicted_value']
     assert all(col in df.columns for col in required_cols), \
         f"CSV must contain columns: {required_cols}"
     
     # Check data types
-    assert df['actual_risk'].dtype in [np.float64, np.float32, float], \
-        "actual_risk must be numeric"
-    assert df['xgb_predicted_risk'].dtype in [np.float64, np.float32, float], \
-        "xgb_predicted_risk must be numeric"
+    assert df['actual_value'].dtype in [np.float64, np.float32, float], \
+        "actual_value must be numeric"
+    assert df['xgb_predicted_value'].dtype in [np.float64, np.float32, float], \
+        "xgb_predicted_value must be numeric"
     
-    # Check reasonable number of rows
-    assert 300 <= len(df) <= 500, \
-        f"Expected ~400 rows (test set), got {len(df)}"
+    # Check reasonable number of rows (should be test set, ~4k rows for California Housing)
+    assert 3000 <= len(df) <= 5000, \
+        f"Expected ~4000 rows (test set), got {len(df)}"
 
 def test_q3_feature_importance_exists(setup_data):
     """Test that Q3 feature importance text file exists."""
@@ -174,8 +174,8 @@ def test_q3_feature_importance_content(setup_data):
     with open('output/q3_feature_importance.txt', 'r') as f:
         content = f.read()
     
-    # Check for expected features
-    expected_features = ['age', 'bmi', 'chronic_conditions', 'medication_count', 'hospital_stay_days']
+    # Check for expected features from California Housing dataset
+    expected_features = ['medinc', 'houseage', 'averooms', 'avebedrms', 'population', 'aveoccup', 'latitude', 'longitude']
     found_features = sum(1 for feat in expected_features if feat in content.lower())
     
     assert found_features >= 3, \

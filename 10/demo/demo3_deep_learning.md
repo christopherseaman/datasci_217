@@ -34,41 +34,36 @@ print(f"TensorFlow version: {tf.__version__}")
 print(f"Keras version: {keras.__version__}")
 ```
 
-## Part 1: Generate Classification Dataset
+## Part 1: Load Real Classification Dataset
 
-For deep learning, we'll create a more complex classification problem that benefits from neural networks' ability to learn non-linear decision boundaries.
+For deep learning, we'll use the Wine Quality dataset - a real-world dataset containing chemical properties of wines and their quality ratings. We'll convert this to a binary classification problem.
 
 ```python
-# Generate a complex 2D classification dataset
-n_samples = 10000
-n_features = 20  # Higher dimensional for neural networks
+# Load Wine Quality dataset from scikit-learn
+from sklearn.datasets import load_wine
 
-np.random.seed(42)
+# Fetch the dataset
+wine_data = load_wine(as_frame=True)
+df = wine_data.frame
 
-# Create features with some structure
-X = np.random.randn(n_samples, n_features)
+# The dataset contains 13 features describing wine chemical properties:
+# - Alcohol, Malic acid, Ash, Alkalinity of ash, Magnesium
+# - Total phenols, Flavanoids, Nonflavanoid phenols, Proanthocyanins
+# - Color intensity, Hue, OD280/OD315, Proline
+# - Target: wine class (0, 1, or 2 - three types of wine)
 
-# Create complex non-linear target
-# Mix of linear and non-linear relationships
-y_linear = (X[:, 0] + X[:, 1] - X[:, 2] > 0).astype(int)
-y_nonlinear = ((X[:, 3]**2 + X[:, 4]**2) < 2).astype(int)
-y_interaction = ((X[:, 5] * X[:, 6]) > 0.5).astype(int)
-
-# Combine with some noise
-y = ((y_linear + y_nonlinear + y_interaction) >= 2).astype(int)
-
-# Add some random noise to make it more realistic
-flip_indices = np.random.choice(n_samples, size=int(0.1 * n_samples), replace=False)
-y[flip_indices] = 1 - y[flip_indices]
-
-# Convert to DataFrame for easier handling
-df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(n_features)])
-df['target'] = y
+# Convert to binary classification: class 0 vs others
+df['target'] = (wine_data.target == 0).astype(int)
 
 print("Dataset shape:", df.shape)
+print("\nFeature names:", wine_data.feature_names)
+print("\nFirst few rows:")
+print(df.head())
 print(f"\nTarget distribution:")
 print(df['target'].value_counts())
-print(f"\nClass balance: {df['target'].mean():.2%} positive class")
+print(f"\nClass balance: {df['target'].mean():.2%} positive class (wine type 0)")
+print("\nSummary statistics:")
+print(df.describe())
 ```
 
 ## Part 2: Data Preprocessing
@@ -85,7 +80,9 @@ Neural networks are sensitive to the scale of input features. Unlike tree-based 
 
 ```python
 # Split into features and target
-X = df.drop('target', axis=1).values
+# Use all wine chemical properties as features
+feature_cols = wine_data.feature_names
+X = df[feature_cols].values
 y = df['target'].values
 
 # Split into train and test sets
@@ -113,6 +110,8 @@ Let's create a simple neural network using Keras Sequential API.
 
 ```python
 # Build a simple neural network
+n_features = X_train.shape[1]  # Number of input features (13 for wine dataset)
+
 model = keras.Sequential([
     keras.layers.Dense(64, activation='relu', input_shape=(n_features,), name='hidden1'),
     keras.layers.Dense(32, activation='relu', name='hidden2'),

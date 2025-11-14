@@ -25,53 +25,34 @@ warnings.filterwarnings('ignore')
 np.random.seed(42)
 ```
 
-## Part 1: Generate Realistic Dataset
+## Part 1: Load Real Dataset
 
-Let's create a larger, more realistic dataset for machine learning. We'll simulate housing prices based on various features.
+Let's use the California Housing dataset - a real-world dataset from the 1990 US Census. This is the same dataset used in Demo 1, but now we'll apply machine learning techniques to it.
 
 ```python
-# Generate realistic housing data
-n_houses = 5000
+# Load California Housing dataset from scikit-learn
+from sklearn.datasets import fetch_california_housing
 
-np.random.seed(42)
-data = {
-    'house_id': [f'HOUSE_{i:05d}' for i in range(1, n_houses + 1)],
-    'sqft': np.random.normal(2000, 600, n_houses).astype(int),
-    'bedrooms': np.random.choice([2, 3, 4, 5], n_houses, p=[0.2, 0.4, 0.3, 0.1]),
-    'bathrooms': np.random.choice([1, 1.5, 2, 2.5, 3], n_houses, p=[0.1, 0.2, 0.4, 0.2, 0.1]),
-    'age': np.random.exponential(15, n_houses).astype(int),
-    'lot_size': np.random.lognormal(7, 0.5, n_houses).astype(int),
-    'neighborhood_score': np.random.uniform(1, 10, n_houses),  # School quality, safety, etc.
-    'distance_to_city': np.random.exponential(10, n_houses),  # miles
-    'has_garage': np.random.choice([0, 1], n_houses, p=[0.3, 0.7]),
-    'has_pool': np.random.choice([0, 1], n_houses, p=[0.8, 0.2])
-}
+# Fetch the dataset
+housing_data = fetch_california_housing(as_frame=True)
+df = housing_data.frame
 
-df = pd.DataFrame(data)
+# Rename target for clarity
+df = df.rename(columns={'MedHouseVal': 'price'})
 
-# Create target: house price (in thousands)
-# More complex relationship with some non-linearities
-df['price'] = (
-    100 +  # Base price
-    0.15 * df['sqft'] +  # $150 per sqft
-    20 * df['bedrooms'] +  # $20k per bedroom
-    25 * df['bathrooms'] +  # $25k per bathroom
-    -2 * df['age'] +  # -$2k per year old
-    0.05 * df['lot_size'] +  # $50 per sqft of lot
-    15 * df['neighborhood_score'] +  # $15k per point
-    -3 * df['distance_to_city'] +  # -$3k per mile
-    30 * df['has_garage'] +  # $30k for garage
-    50 * df['has_pool'] +  # $50k for pool
-    # Add some non-linear interactions
-    0.001 * df['sqft'] * df['neighborhood_score'] +  # Interaction
-    -0.0001 * df['age'] * df['sqft'] +  # Older large houses depreciate more
-    np.random.normal(0, 30, n_houses)  # Random noise
-)
-
-# Ensure positive prices
-df['price'] = df['price'].clip(50, 1000)
+# The dataset contains:
+# - MedInc: median income in block group
+# - HouseAge: median house age in block group
+# - AveRooms: average number of rooms per household
+# - AveBedrms: average number of bedrooms per household
+# - Population: block group population
+# - AveOccup: average number of household members
+# - Latitude: block group latitude
+# - Longitude: block group longitude
+# - price: median house value (target, in hundreds of thousands of dollars)
 
 print("Dataset shape:", df.shape)
+print("\nFeature names:", housing_data.feature_names)
 print("\nFirst few rows:")
 print(df.head())
 print("\nSummary statistics:")
@@ -86,8 +67,8 @@ Before we can train any machine learning model, we need to split our data. This 
 
 ```python
 # Prepare features and target
-feature_cols = ['sqft', 'bedrooms', 'bathrooms', 'age', 'lot_size', 
-                'neighborhood_score', 'distance_to_city', 'has_garage', 'has_pool']
+feature_cols = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 
+                'Population', 'AveOccup', 'Latitude', 'Longitude']
 X = df[feature_cols]
 y = df['price']
 

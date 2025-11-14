@@ -26,10 +26,22 @@ np.random.seed(42)
 ## Load Data
 
 ```python
-# Load the patient data
-df = pd.read_csv('data/patient_data.csv')
-print(f"Loaded {len(df)} patient records")
+# Load California Housing dataset from scikit-learn
+from sklearn.datasets import fetch_california_housing
+
+# Fetch the dataset
+housing_data = fetch_california_housing(as_frame=True)
+df = housing_data.frame
+
+# Rename target for clarity
+df = df.rename(columns={'MedHouseVal': 'house_value'})
+
+print(f"Loaded {len(df)} housing records")
+print("\nFeature names:", housing_data.feature_names)
+print("\nFirst few rows:")
 print(df.head())
+print("\nSummary statistics:")
+print(df.describe())
 ```
 
 ---
@@ -40,11 +52,11 @@ print(df.head())
 
 ### Part 1.1: Fit the Model
 
-Fit a linear regression model predicting `readmission_risk` from `age`, `bmi`, and `chronic_conditions` using the formula API.
+Fit a linear regression model predicting `house_value` from `MedInc`, `HouseAge`, and `AveRooms` using the formula API.
 
 ```python
 # TODO: Fit a linear regression model using statsmodels formula API
-# Use: smf.ols('readmission_risk ~ age + bmi + chronic_conditions', data=df)
+# Use: smf.ols('house_value ~ MedInc + HouseAge + AveRooms', data=df)
 # Hint: Don't forget to call .fit() on the model
 
 model = None  # Replace None with your code
@@ -73,20 +85,19 @@ with open('output/q1_model_summary.txt', 'w') as f:
 
 ### Part 1.3: Make Predictions
 
-Make predictions for all patients and save to CSV.
+Make predictions for all houses and save to CSV.
 
 ```python
 # TODO: Make predictions using the fitted model
-# Use: results.predict(df[['age', 'bmi', 'chronic_conditions']])
+# Use: results.predict(df[['MedInc', 'HouseAge', 'AveRooms']])
 # Save predictions along with actual values to CSV
 
 predictions = None  # Replace None with your code
 
 # Create DataFrame with predictions
 pred_df = pd.DataFrame({
-    'patient_id': df['patient_id'],
-    'actual_risk': df['readmission_risk'],
-    'predicted_risk': predictions
+    'actual_value': df['house_value'],
+    'predicted_value': predictions
 })
 
 # Save to CSV
@@ -106,10 +117,10 @@ Split the data into training and test sets.
 
 ```python
 # TODO: Prepare features and target
-# Features: ['age', 'bmi', 'chronic_conditions', 'medication_count', 'hospital_stay_days']
-# Target: 'readmission_risk'
+# Features: ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude']
+# Target: 'house_value'
 
-feature_cols = ['age', 'bmi', 'chronic_conditions', 'medication_count', 'hospital_stay_days']
+feature_cols = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude']
 X = None  # Replace None with your code
 y = None  # Replace None with your code
 
@@ -165,13 +176,12 @@ Save predictions and model comparison to files.
 
 ```python
 # TODO: Save predictions to CSV
-# Include: patient_id, actual_risk, lr_predicted_risk, rf_predicted_risk
+# Include: actual_value, lr_predicted_value, rf_predicted_value
 
 pred_df = pd.DataFrame({
-    'patient_id': df.loc[X_test.index, 'patient_id'].values,
-    'actual_risk': y_test.values,
-    'lr_predicted_risk': lr_pred,
-    'rf_predicted_risk': rf_pred
+    'actual_value': y_test.values,
+    'lr_predicted_value': lr_pred,
+    'rf_predicted_value': rf_pred
 })
 
 pred_df.to_csv('output/q2_ml_predictions.csv', index=False)
@@ -243,12 +253,11 @@ Save XGBoost predictions to CSV.
 
 ```python
 # TODO: Save predictions to CSV
-# Include: patient_id, actual_risk, xgb_predicted_risk
+# Include: actual_value, xgb_predicted_value
 
 pred_df = pd.DataFrame({
-    'patient_id': df.loc[X_test.index, 'patient_id'].values,
-    'actual_risk': y_test.values,
-    'xgb_predicted_risk': xgb_pred
+    'actual_value': y_test.values,
+    'xgb_predicted_value': xgb_pred
 })
 
 pred_df.to_csv('output/q3_xgboost_model.csv', index=False)

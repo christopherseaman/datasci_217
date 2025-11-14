@@ -22,59 +22,40 @@ warnings.filterwarnings('ignore')
 np.random.seed(42)
 ```
 
-## Part 1: Generating Realistic Data
+## Part 1: Load Real Dataset
 
-Let's create a realistic dataset for modeling. We'll simulate a healthcare scenario where we want to understand factors affecting patient readmission rates.
+Let's use the California Housing dataset - a real-world dataset from the 1990 US Census. This dataset contains information about housing prices in California districts and the factors that influence them.
 
 ```python
-# Generate realistic healthcare data
-n_patients = 2000
+# Load California Housing dataset from scikit-learn
+from sklearn.datasets import fetch_california_housing
 
-# Patient characteristics
-np.random.seed(42)
-data = {
-    'patient_id': [f'PAT_{i:04d}' for i in range(1, n_patients + 1)],
-    'age': np.random.normal(65, 15, n_patients).astype(int),
-    'bmi': np.random.normal(28, 6, n_patients),
-    'chronic_conditions': np.random.poisson(2, n_patients),
-    'medication_count': np.random.poisson(5, n_patients),
-    'hospital_stay_days': np.random.gamma(3, 2, n_patients).astype(int) + 1,
-    'insurance_type': np.random.choice(['Medicare', 'Medicaid', 'Private', 'Uninsured'], 
-                                       n_patients, p=[0.4, 0.3, 0.25, 0.05])
-}
+# Fetch the dataset
+housing_data = fetch_california_housing(as_frame=True)
+df = housing_data.frame
 
-df = pd.DataFrame(data)
+# Rename target for clarity
+df = df.rename(columns={'MedHouseVal': 'house_value'})
 
-# Create target variable: readmission risk score (0-100)
-# Higher scores indicate higher risk of readmission
-# Model: risk = 20 + 0.5*age + 1.2*bmi + 3*chronic_conditions + noise
-true_coefficients = {
-    'intercept': 20,
-    'age': 0.5,
-    'bmi': 1.2,
-    'chronic_conditions': 3.0,
-    'medication_count': 0.8,
-    'hospital_stay_days': 1.5
-}
-
-df['readmission_risk'] = (
-    true_coefficients['intercept'] +
-    true_coefficients['age'] * df['age'] +
-    true_coefficients['bmi'] * df['bmi'] +
-    true_coefficients['chronic_conditions'] * df['chronic_conditions'] +
-    true_coefficients['medication_count'] * df['medication_count'] +
-    true_coefficients['hospital_stay_days'] * df['hospital_stay_days'] +
-    np.random.normal(0, 10, n_patients)  # Add noise
-)
-
-# Clip to reasonable range
-df['readmission_risk'] = df['readmission_risk'].clip(0, 100)
+# The dataset contains:
+# - MedInc: median income in block group
+# - HouseAge: median house age in block group
+# - AveRooms: average number of rooms per household
+# - AveBedrms: average number of bedrooms per household
+# - Population: block group population
+# - AveOccup: average number of household members
+# - Latitude: block group latitude
+# - Longitude: block group longitude
+# - house_value: median house value (target, in hundreds of thousands of dollars)
 
 print("Dataset shape:", df.shape)
+print("\nFeature names:", housing_data.feature_names)
 print("\nFirst few rows:")
 print(df.head())
 print("\nSummary statistics:")
 print(df.describe())
+print("\nTarget variable (house_value) statistics:")
+print(df['house_value'].describe())
 ```
 
 ## Part 2: Formula API - R-like Syntax
@@ -84,7 +65,8 @@ The formula API is intuitive and works directly with DataFrames. It's similar to
 ```python
 # Formula API: Simple and intuitive
 # Syntax: 'target ~ feature1 + feature2 + ...'
-model_formula = smf.ols('readmission_risk ~ age + bmi + chronic_conditions', data=df)
+# Let's model house value based on income, house age, and average rooms
+model_formula = smf.ols('house_value ~ MedInc + HouseAge + AveRooms', data=df)
 results_formula = model_formula.fit()
 
 # Print comprehensive summary
@@ -127,8 +109,8 @@ The array API gives you more control and is useful when you need to manually con
 ```python
 # Array API: More control over design matrix
 # First, prepare the data
-y = df['readmission_risk'].values
-X = df[['age', 'bmi', 'chronic_conditions']].values
+y = df['house_value'].values
+X = df[['MedInc', 'HouseAge', 'AveRooms']].values
 
 # Add constant (intercept) term
 X_with_const = sm.add_constant(X)
@@ -191,35 +173,36 @@ print(coef_summary)
 - **P-values**: Probability of observing this result if the true coefficient were zero
 
 **Interpreting the results:**
-- **Age coefficient (0.5)**: For each additional year of age, readmission risk increases by 0.5 points (holding other factors constant)
-- **BMI coefficient (1.2)**: For each unit increase in BMI, risk increases by 1.2 points
-- **Chronic conditions (3.0)**: Each additional chronic condition increases risk by 3 points
-- All coefficients are statistically significant (p < 0.05)
+- **MedInc coefficient**: For each unit increase in median income, house value increases (holding other factors constant)
+- **HouseAge coefficient**: The effect of house age on value
+- **AveRooms coefficient**: The effect of average rooms per household on value
+- Check p-values to see which coefficients are statistically significant (p < 0.05)
 
 ## Part 5: Making Predictions
 
 Once we have a fitted model, we can make predictions on new data.
 
 ```python
-# Create new patient data for prediction
-new_patients = pd.DataFrame({
-    'age': [70, 55, 80],
-    'bmi': [30, 25, 32],
-    'chronic_conditions': [2, 1, 4]
+# Create new housing data for prediction
+new_houses = pd.DataFrame({
+    'MedInc': [3.0, 5.0, 8.0],  # Median income
+    'HouseAge': [20, 35, 10],   # House age in years
+    'AveRooms': [5.0, 6.5, 4.0]  # Average rooms
 })
 
 # Make predictions
-predictions = results_formula.predict(new_patients)
-print("=== Predictions for New Patients ===")
-new_patients['predicted_risk'] = predictions
-print(new_patients)
+predictions = results_formula.predict(new_houses)
+print("=== Predictions for New Houses ===")
+new_houses['predicted_value'] = predictions
+print(new_houses)
+print("\nNote: Values are in hundreds of thousands of dollars")
 
 # Get prediction intervals (confidence intervals for predictions)
-pred_intervals = results_formula.get_prediction(new_patients).conf_int()
-new_patients['pred_lower'] = pred_intervals[:, 0]
-new_patients['pred_upper'] = pred_intervals[:, 1]
+pred_intervals = results_formula.get_prediction(new_houses).conf_int()
+new_houses['pred_lower'] = pred_intervals[:, 0]
+new_houses['pred_upper'] = pred_intervals[:, 1]
 print("\nWith 95% prediction intervals:")
-print(new_patients)
+print(new_houses)
 ```
 
 ## Part 6: Visualization with Altair
@@ -230,11 +213,11 @@ Let's create informative visualizations of our model results.
 # Configure Altair to handle larger datasets
 alt.data_transformers.enable('default', max_rows=None)
 
-# Visualize the relationship between variables and readmission risk
+# Visualize the relationship between variables and house value
 # Create a long-form dataset for plotting
 plot_data = df.melt(
-    id_vars=['readmission_risk'],
-    value_vars=['age', 'bmi', 'chronic_conditions'],
+    id_vars=['house_value'],
+    value_vars=['MedInc', 'HouseAge', 'AveRooms'],
     var_name='variable',
     value_name='value'
 )
@@ -242,7 +225,7 @@ plot_data = df.melt(
 # Create scatter plots with regression lines
 base = alt.Chart(plot_data).mark_circle(opacity=0.3).encode(
     x=alt.X('value:Q', title='Variable Value'),
-    y=alt.Y('readmission_risk:Q', title='Readmission Risk Score'),
+    y=alt.Y('house_value:Q', title='House Value (hundreds of thousands)'),
     color=alt.Color('variable:N', title='Variable')
 ).properties(
     width=200,
@@ -251,7 +234,7 @@ base = alt.Chart(plot_data).mark_circle(opacity=0.3).encode(
 
 # Add regression lines
 regression = base.transform_regression(
-    'value', 'readmission_risk', groupby=['variable']
+    'value', 'house_value', groupby=['variable']
 ).mark_line(color='red', strokeWidth=2)
 
 # Combine and facet
@@ -305,10 +288,10 @@ Let's compare models with different sets of predictors to see which performs bet
 ```python
 # Compare different models
 models = {
-    'Model 1 (age only)': smf.ols('readmission_risk ~ age', data=df),
-    'Model 2 (age + bmi)': smf.ols('readmission_risk ~ age + bmi', data=df),
-    'Model 3 (age + bmi + chronic)': smf.ols('readmission_risk ~ age + bmi + chronic_conditions', data=df),
-    'Model 4 (all variables)': smf.ols('readmission_risk ~ age + bmi + chronic_conditions + medication_count + hospital_stay_days', data=df)
+    'Model 1 (income only)': smf.ols('house_value ~ MedInc', data=df),
+    'Model 2 (income + age)': smf.ols('house_value ~ MedInc + HouseAge', data=df),
+    'Model 3 (income + age + rooms)': smf.ols('house_value ~ MedInc + HouseAge + AveRooms', data=df),
+    'Model 4 (all features)': smf.ols('house_value ~ MedInc + HouseAge + AveRooms + AveBedrms + Population + AveOccup + Latitude + Longitude', data=df)
 }
 
 # Fit all models and compare
@@ -358,10 +341,14 @@ alt.Chart(comparison_long).mark_bar().encode(
 Real data often includes categorical variables. Let's see how `statsmodels` handles them.
 
 ```python
-# Add insurance type to the model
+# Create a categorical variable from continuous data for demonstration
+# Let's create income categories
+df['IncomeCategory'] = pd.cut(df['MedInc'], bins=[0, 2, 4, 6, 10], 
+                               labels=['Low', 'Medium', 'High', 'Very High'])
+
 # statsmodels automatically creates dummy variables for categorical variables
 model_with_categorical = smf.ols(
-    'readmission_risk ~ age + bmi + chronic_conditions + C(insurance_type)',
+    'house_value ~ HouseAge + AveRooms + C(IncomeCategory)',
     data=df
 )
 results_cat = model_with_categorical.fit()
@@ -371,16 +358,16 @@ print(results_cat.summary())
 
 # Check what dummy variables were created
 print("\n=== Dummy Variable Encoding ===")
-print("Reference category: Uninsured (omitted)")
-print("\nCoefficients for insurance types:")
-insurance_coefs = results_cat.params[results_cat.params.index.str.contains('insurance_type')]
-print(insurance_coefs)
+print("Reference category: Low (omitted)")
+print("\nCoefficients for income categories:")
+income_coefs = results_cat.params[results_cat.params.index.str.contains('IncomeCategory')]
+print(income_coefs)
 ```
 
 **Understanding categorical coefficients:**
-- The reference category (Uninsured) is omitted
+- The reference category (Low income) is omitted
 - Other coefficients show the difference from the reference
-- For example, Medicare patients have 5.2 points higher risk than Uninsured patients
+- For example, "Very High" income areas have higher house values than "Low" income areas
 
 ## Key Takeaways
 

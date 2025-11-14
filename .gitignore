@@ -58,3 +58,7 @@ hive-mind-prompt-*.txt
 
 # Scratch/temporary test directories
 scratch/
+11/demo/data/
+11/demo/output/
+11/output/
+11/output/*

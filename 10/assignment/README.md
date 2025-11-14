@@ -29,18 +29,18 @@ uv pip install -r requirements.txt
 
 **Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.
 
-## Generate the Dataset (Provided)
+## Load the Dataset
 
-Run the data generator notebook to create your dataset:
+The assignment uses the **California Housing** dataset from scikit-learn. This is a real-world dataset from the 1990 US Census containing information about housing prices in California districts.
 
-```bash
-# Convert markdown to notebook (if using jupytext)
-jupytext --to notebook data_generator.md
-jupyter notebook data_generator.ipynb
+The dataset is automatically loaded in the assignment notebook using:
+```python
+from sklearn.datasets import fetch_california_housing
+housing_data = fetch_california_housing(as_frame=True)
+df = housing_data.frame
 ```
 
-Run all cells to create the CSV files in `data/`:
-- `data/patient_data.csv` (patient characteristics and outcomes)
+No separate data generation step is required.
 
 ## Complete the Three Questions
 
@@ -79,7 +79,7 @@ GitHub Classroom will run the same tests on push.
 ### Question 1: Statistical Modeling with statsmodels
 
 **What you'll do:**
-- Load patient data
+- Load California Housing dataset
 - Fit a linear regression model using `statsmodels`
 - Extract and interpret model coefficients and p-values
 - Make predictions with confidence intervals
@@ -138,17 +138,19 @@ GitHub Classroom will run the same tests on push.
 
 ## Dataset Schema
 
-### `data/patient_data.csv`
+### California Housing Dataset
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `patient_id` | string | Unique patient identifier |
-| `age` | int | Patient age in years |
-| `bmi` | float | Body mass index |
-| `chronic_conditions` | int | Number of chronic conditions |
-| `medication_count` | int | Number of medications |
-| `hospital_stay_days` | int | Length of hospital stay in days |
-| `readmission_risk` | float | Target variable: readmission risk score (0-100) |
+| `MedInc` | float | Median income in block group |
+| `HouseAge` | float | Median house age in block group |
+| `AveRooms` | float | Average number of rooms per household |
+| `AveBedrms` | float | Average number of bedrooms per household |
+| `Population` | float | Block group population |
+| `AveOccup` | float | Average number of household members |
+| `Latitude` | float | Block group latitude |
+| `Longitude` | float | Block group longitude |
+| `house_value` | float | Target variable: median house value (in hundreds of thousands of dollars) |
 
 ## Submission Checklist
 
