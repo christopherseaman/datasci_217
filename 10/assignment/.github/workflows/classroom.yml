@@ -1,196 +1,48 @@
-name: DataSci 217 - Lecture 10 Assignment Grader
+name: Grading Workflow - Assignment 10
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allow manual triggering
-
-env:
-  PYTHON_VERSION: '3.11'
+    branches: [ main ]
 
 jobs:
-  autograder:
+  grade:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
 
     steps:
-    - name: Checkout student code
+    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: '3.10'
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    - name: Download latest test files
+      run: |
+        # Create the target directory if it doesn't exist
+        mkdir -p .github/tests
+        # Download the test script as test_assignment.py
+        curl -o .github/tests/test_assignment.py https://raw.githubusercontent.com/UCSF-DataSci/datasci217_assignment10/main/.github/tests/test_assignment.py
+        # Download the consolidated requirements file as requirements.txt
+        curl -o .github/tests/requirements.txt https://raw.githubusercontent.com/UCSF-DataSci/datasci217_assignment10/main/.github/tests/requirements.txt
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pytest-html pytest-json-report pytest-timeout
+        # Install dependencies from the downloaded requirements file
+        pip install -r .github/tests/requirements.txt
+        # Install repo requirements if they exist
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-        # Install student requirements if they exist
-        if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
-        fi
-
-        # Install lecture-specific dependencies
-        pip install pandas numpy matplotlib seaborn scikit-learn
-
-    - name: Verify required files exist
+    - name: Setup Jupyter Kernel
       run: |
-        echo "Checking for required files..."
-        required_files=("main.py")
-        missing_files=""
+        python -m ipykernel install --user --name=python3 --display-name="Python 3"
 
-        for file in "${required_files[@]}"; do
-          if [[ ! -f "$file" ]]; then
-            missing_files="$missing_files $file"
-          fi
-        done
-
-        if [[ -n "$missing_files" ]]; then
-          echo "❌ Missing required files:$missing_files"
-          echo "MISSING_FILES=true" >> $GITHUB_ENV
-        else
-          echo "✅ All required files present"
-          echo "MISSING_FILES=false" >> $GITHUB_ENV
-        fi
-
-    - name: Run syntax check
-      if: env.MISSING_FILES == 'false'
+    - name: Run tests
       run: |
-        echo "Running syntax check..."
-        python -m py_compile main.py || {
-          echo "❌ Syntax errors found in main.py"
-          echo "SYNTAX_ERRORS=true" >> $GITHUB_ENV
-          exit 1
-        }
-        echo "✅ No syntax errors found"
-        echo "SYNTAX_ERRORS=false" >> $GITHUB_ENV
+        # Data generation and notebook execution are now handled by pytest fixture
+        # Run the correct test script (downloaded as test_assignment.py)
+        pytest .github/tests/test_assignment.py -v
 
-    - name: Run tests with grading
-      if: env.MISSING_FILES == 'false' && env.SYNTAX_ERRORS == 'false'
-      run: |
-        echo "Running automated tests..."
-        pytest test_assignment.py -v \
-          --html=test_report.html --self-contained-html \
-          --json-report --json-report-file=test_results.json \
-          --tb=short \
-          --timeout=30 \
-          -x  # Stop on first failure for faster feedback
-
-    - name: Generate grade report
-      if: always() && env.MISSING_FILES == 'false'
-      run: |
-        python -c "
-        import json
-        import os
-
-        def generate_grade_report():
-            total_score = 0
-            max_score = 100
-            details = []
-
-            try:
-                if os.path.exists('test_results.json'):
-                    with open('test_results.json', 'r') as f:
-                        results = json.load(f)
-
-                    passed = results['summary']['passed']
-                    failed = results['summary']['failed']
-                    total_tests = passed + failed
-
-                    if total_tests > 0:
-                        total_score = int((passed / total_tests) * 100)
-
-                    details.append(f'Tests passed: {passed}/{total_tests}')
-                    details.append(f'Test success rate: {total_score}%')
-                else:
-                    details.append('No test results found')
-
-            except Exception as e:
-                details.append(f'Error reading test results: {e}')
-
-            # Apply penalties
-            penalties = []
-            if os.getenv('MISSING_FILES') == 'true':
-                penalties.append('Missing required files: -50 points')
-                total_score = max(0, total_score - 50)
-
-            if os.getenv('SYNTAX_ERRORS') == 'true':
-                penalties.append('Syntax errors: -25 points')
-                total_score = max(0, total_score - 25)
-
-            # Generate report
-            report = []
-            report.append('# Lecture 10 Assignment - Grade Report')
-            report.append('')
-            report.append('## Topic: Advanced Data Analysis and Integration')
-            report.append('')
-            report.append(f'## Final Score: {total_score}/{max_score}')
-
-            if total_score >= 90:
-                report.append('🎉 Excellent work!')
-            elif total_score >= 80:
-                report.append('👍 Good job!')
-            elif total_score >= 70:
-                report.append('✅ Meets requirements')
-            else:
-                report.append('❌ Please review and resubmit')
-
-            report.append('')
-            report.append('## Details')
-            for detail in details:
-                report.append(f'- {detail}')
-
-            if penalties:
-                report.append('')
-                report.append('## Penalties Applied')
-                for penalty in penalties:
-                    report.append(f'- {penalty}')
-
-            return '\\n'.join(report), total_score
-
-        report_content, final_score = generate_grade_report()
-
-        with open('GRADE_REPORT.md', 'w') as f:
-            f.write(report_content)
-
-        print('GRADE REPORT')
-        print('=' * 50)
-        print(report_content)
-
-        with open(os.environ['GITHUB_ENV'], 'a') as f:
-            f.write(f'FINAL_SCORE={final_score}\\n')
-        "
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results-lecture-10
-        path: |
-          test_report.html
-          test_results.json
-          GRADE_REPORT.md
-        retention-days: 30
-
-    - name: Fail job if score too low
-      if: always()
-      run: |
-        final_score=${FINAL_SCORE:-0}
-        if [ "$final_score" -lt 70 ]; then
-          echo "❌ Assignment score ($final_score/100) is below the passing threshold (70/100)"
-          exit 1
-        else
-          echo "✅ Assignment passed with score: $final_score/100"
-        fi
