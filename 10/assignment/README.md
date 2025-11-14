@@ -24,7 +24,7 @@ source .venv/bin/activate
 ### Install Requirements
 
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 **Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.

@@ -72,16 +72,21 @@ This guide provides an overview of the three demos for Lecture 10.
 
 ### Prerequisites
 
-1. Create a virtual environment:
+1. Create a virtual environment using `uv` with Python 3.13 (required for TensorFlow):
 ```bash
-uv venv
+# Specify Python 3.13 for TensorFlow compatibility
+uv venv --python python3.13
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 ```
 
+**Important:** TensorFlow requires Python 3.13 or earlier. If you use Python 3.14, Demo 3 (Deep Learning) will not work. The `--python python3.13` flag ensures compatibility.
+
 2. Install dependencies:
 ```bash
-pip install pandas numpy statsmodels scikit-learn xgboost tensorflow altair jupyter jupytext
+uv pip install -r requirements.txt
 ```
+
+This will install all packages including TensorFlow for Demo 3.
 
 ### Converting Markdown to Notebooks
 

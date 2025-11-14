@@ -98,6 +98,8 @@ print(results_formula.summary())
 - **P-values**: Statistical significance (p < 0.05 is typically significant)
 - **Confidence intervals**: Range of plausible values for coefficients
 
+Now let's extract the key statistics programmatically. This is useful when you want to use these values in further analysis or create custom reports.
+
 ```python
 # Extract key statistics
 print("\n=== Key Model Statistics ===")
@@ -110,6 +112,13 @@ print(results_formula.pvalues)
 print(f"\n95% Confidence Intervals:")
 print(results_formula.conf_int())
 ```
+
+**Understanding these statistics:**
+- **R-squared** tells us how much variance in the target is explained by the model
+- **Adjusted R-squared** penalizes for model complexity - use this when comparing models with different numbers of predictors
+- **Coefficients** show the estimated effect size of each variable
+- **P-values** indicate statistical significance - values < 0.05 suggest the variable has a real effect
+- **Confidence intervals** give us a range of plausible values for each coefficient
 
 ## Part 3: Array API - More Control
 
@@ -136,6 +145,8 @@ print(results_array.summary())
 - **Formula API**: Quick exploration, R-like syntax, works with DataFrames
 - **Array API**: More control, custom design matrices, integration with NumPy
 
+Both APIs should give identical results. Let's verify this to confirm they're equivalent approaches to the same problem.
+
 ```python
 # Verify both methods give same results
 print("\n=== Comparing Results ===")
@@ -143,12 +154,14 @@ print("Formula API coefficients:")
 print(results_formula.params)
 print("\nArray API coefficients:")
 print(results_array.params)
-print("\nAre they the same?", np.allclose(results_formula.params.values, results_array.params.values))
+print("\nAre they the same?", np.allclose(results_formula.params.values, results_array.params))
 ```
+
+As expected, both methods produce identical results. The choice between them depends on your workflow: use the formula API for quick exploration with DataFrames, and the array API when you need more control or are working with NumPy arrays.
 
 ## Part 4: Model Diagnostics and Interpretation
 
-Statistical models provide rich diagnostic information. Let's explore what we can learn.
+Statistical models provide comprehensive diagnostic information beyond just predictions. These diagnostics help us understand model quality and the reliability of our estimates.
 
 ```python
 # Model diagnostics
@@ -170,6 +183,12 @@ coef_summary = pd.DataFrame({
 coef_summary['significant'] = coef_summary['p_value'] < 0.05
 print(coef_summary)
 ```
+
+**What these diagnostics tell us:**
+- **F-statistic**: Tests whether the model as a whole is significant (better than just using the mean)
+- **Degrees of freedom**: Number of observations minus number of parameters - affects statistical tests
+- **Standard errors**: Measure of uncertainty in coefficient estimates
+- **P-values**: Probability of observing this result if the true coefficient were zero
 
 **Interpreting the results:**
 - **Age coefficient (0.5)**: For each additional year of age, readmission risk increases by 0.5 points (holding other factors constant)
@@ -208,6 +227,9 @@ print(new_patients)
 Let's create informative visualizations of our model results.
 
 ```python
+# Configure Altair to handle larger datasets
+alt.data_transformers.enable('default', max_rows=None)
+
 # Visualize the relationship between variables and readmission risk
 # Create a long-form dataset for plotting
 plot_data = df.melt(

@@ -578,7 +578,7 @@ The final exam will be graded using a combination of **automated testing (70%)**
 **Strengths:**
 - Logical progression from raw data to insights
 - All phases build on previous work
-- Time series emphasis throughout
+- Time series operations included as required component
 - Clear separation of automated vs. manual grading
 - Realistic scope for take-home exam
 

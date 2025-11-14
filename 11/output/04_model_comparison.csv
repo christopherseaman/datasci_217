@@ -1,0 +1,4 @@
+Model,Train RMSE,Test RMSE,Train R²,Test R²,Overfitting,RMSE_diff
+Linear Regression,5.5553,5.4445,0.7723,0.7798,-0.0075,0.11080000000000023
+Random Forest,0.2424,0.3356,0.9996,0.9992,0.0004,-0.0932
+XGBoost,0.5875,0.914,0.9975,0.9938,0.0037,-0.3265

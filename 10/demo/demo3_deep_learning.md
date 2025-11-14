@@ -10,6 +10,10 @@
 
 ## Setup
 
+**Important:** This demo requires Python 3.13 or earlier. When creating your virtual environment with `uv`, use: `uv venv --python python3.13`
+
+This ensures TensorFlow can be installed. If you're using Python 3.14, TensorFlow is not yet available.
+
 ```python
 import pandas as pd
 import numpy as np
@@ -71,6 +75,14 @@ print(f"\nClass balance: {df['target'].mean():.2%} positive class")
 
 Neural networks work best with scaled features. Let's prepare our data.
 
+Neural networks are sensitive to the scale of input features. Unlike tree-based models (Random Forest, XGBoost) which can handle different scales, neural networks use gradient descent optimization that works much better when all features are on a similar scale.
+
+**Why scaling matters:**
+- Features with larger values can dominate the learning process
+- Gradient descent converges faster with scaled features
+- Activation functions work better when inputs are in a reasonable range
+- Without scaling, some features might be ignored or cause training instability
+
 ```python
 # Split into features and target
 X = df.drop('target', axis=1).values
@@ -92,6 +104,8 @@ print(f"\nFeature statistics (after scaling):")
 print(f"Mean: {X_train_scaled.mean(axis=0)[:5]}")  # Should be ~0
 print(f"Std: {X_train_scaled.std(axis=0)[:5]}")    # Should be ~1
 ```
+
+**StandardScaler** transforms features to have mean=0 and standard deviation=1. Notice we fit the scaler on training data only, then transform both training and test data. This prevents data leakage - the test set statistics shouldn't influence the scaling.
 
 ## Part 3: Build Your First Neural Network
 
@@ -123,6 +137,12 @@ model.summary()
 
 Before training, we need to specify the optimizer, loss function, and metrics.
 
+Before training, we need to configure three key components:
+
+1. **Optimizer**: How the model updates its weights during training (Adam is a popular choice)
+2. **Loss function**: What the model tries to minimize (binary_crossentropy for classification)
+3. **Metrics**: What we track during training (accuracy tells us how often predictions are correct)
+
 ```python
 # Compile the model
 model.compile(
@@ -136,6 +156,11 @@ print(f"Optimizer: {model.optimizer.get_config()['name']}")
 print(f"Loss function: {model.loss}")
 print(f"Metrics: {[m.name for m in model.metrics]}")
 ```
+
+**Understanding these choices:**
+- **Adam optimizer**: Adapts the learning rate for each parameter, making training more efficient
+- **Binary crossentropy**: Appropriate for binary classification (two classes)
+- **Accuracy**: Simple metric - percentage of correct predictions. For imbalanced classes, you might also track precision/recall.
 
 ## Part 5: Train the Model
 

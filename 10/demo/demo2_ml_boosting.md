@@ -82,6 +82,8 @@ print(df.describe())
 
 The golden rule: never evaluate on data the model has seen during training!
 
+Before we can train any machine learning model, we need to split our data. This is critical: we must never evaluate a model on data it has seen during training. The test set acts as a "final exam" that the model hasn't studied for.
+
 ```python
 # Prepare features and target
 feature_cols = ['sqft', 'bedrooms', 'bathrooms', 'age', 'lot_size', 
@@ -102,9 +104,17 @@ print(f"\nTest target statistics:")
 print(y_test.describe())
 ```
 
+**Why split the data?**
+- **Training set**: Used to teach the model patterns in the data
+- **Test set**: Used to evaluate how well the model generalizes to new, unseen data
+- **80/20 split**: Common practice, but can vary based on dataset size
+- **random_state=42**: Ensures reproducible splits (same random seed = same split)
+
 ## Part 3: Linear Regression with scikit-learn
 
 scikit-learn's API is consistent across all models: create, fit, predict.
+
+The scikit-learn workflow is beautifully simple: create the model, fit it to training data, then make predictions. This same pattern works for almost every model in scikit-learn.
 
 ```python
 # Create and fit linear regression model
@@ -135,9 +145,19 @@ print(coef_df)
 print(f"\nIntercept: ${lr_model.intercept_:.2f}k")
 ```
 
+**Understanding the metrics:**
+- **R² (R-squared)**: Proportion of variance explained (0-1, higher is better). An R² of 0.85 means the model explains 85% of price variation.
+- **RMSE (Root Mean Squared Error)**: Average prediction error in the same units as the target. Lower is better.
+- **Training vs Test**: If training performance is much better than test, the model is overfitting (memorizing training data).
+- **Coefficients**: Show how much each feature contributes to the price prediction.
+
 ## Part 4: Regularized Linear Models
 
 Regularization helps prevent overfitting by penalizing large coefficients.
+
+Regularization is a technique to prevent overfitting by penalizing large coefficients. Think of it as adding a "simplicity penalty" - the model is rewarded for using smaller coefficients.
+
+**Ridge (L2) regularization** shrinks all coefficients toward zero but doesn't eliminate them. **Lasso (L1) regularization** can completely zero out coefficients, effectively performing automatic feature selection.
 
 ```python
 # Ridge Regression (L2 regularization)
@@ -170,6 +190,12 @@ print(coef_comparison)
 # Lasso can zero out features (feature selection)
 print(f"\nFeatures selected by Lasso (non-zero coefficients): {sum(lasso_model.coef_ != 0)}")
 ```
+
+**When to use regularization:**
+- **Many features**: Regularization helps when you have more features than observations
+- **Multicollinearity**: When features are highly correlated, regularization stabilizes estimates
+- **Feature selection**: Lasso automatically identifies the most important features
+- **Overfitting prevention**: Both methods help models generalize better to new data
 
 ## Part 5: Random Forest
 
@@ -325,7 +351,7 @@ scatter = alt.Chart(pred_df).mark_circle(opacity=0.5).encode(
 )
 
 # Add perfect prediction line (y=x)
-perfect_line = alt.Chart(pd.DataFrame({'x': [pred_df['actual'].min(), pred_df['actual'].max()})).mark_line(
+perfect_line = alt.Chart(pd.DataFrame({'x': [pred_df['actual'].min(), pred_df['actual'].max()]})).mark_line(
     color='red', strokeDash=[5, 5]
 ).encode(
     x='x:Q',
@@ -392,10 +418,12 @@ Early stopping prevents overfitting by stopping training when validation perform
 
 ```python
 # XGBoost with early stopping
+# Note: In XGBoost 2.0+, early_stopping_rounds is passed to the constructor
 xgb_early_stop = xgb.XGBRegressor(
     n_estimators=500,  # Set high, but early stopping will stop earlier
     max_depth=5,
     learning_rate=0.1,
+    early_stopping_rounds=10,  # Stop if no improvement for 10 rounds
     random_state=42,
     n_jobs=-1
 )
@@ -404,7 +432,6 @@ xgb_early_stop = xgb.XGBRegressor(
 xgb_early_stop.fit(
     X_train, y_train,
     eval_set=[(X_test, y_test)],
-    early_stopping_rounds=10,  # Stop if no improvement for 10 rounds
     verbose=False
 )
 
