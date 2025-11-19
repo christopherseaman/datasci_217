@@ -1,9 +1,5 @@
 The Complete Data Science Workflow: From Raw Data to Insights
 
-See [BONUS.md](BONUS.md) for advanced topics (if applicable).
-
-*Fun fact: This lecture represents the culmination of everything you've learned - taking raw, messy data and transforming it into actionable insights. It's like going from a pile of ingredients to a gourmet meal, except the ingredients are CSV files and the meal is a predictive model.*
-
 ![xkcd 1513: Automation](media/xkcd_1513.png)
 
 *"I used to be a data scientist, but then I automated myself out of a job. Now I'm just a script that runs every morning."*
