@@ -22,6 +22,15 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Deep learning with `TensorFlow`/`Keras` and `PyTorch` (the modern frontier)
 - When to use what: navigating the modeling ecosystem
 
+# Quick Reference
+
+| Tool | When to Use | Key Features | Best For |
+|------|-------------|--------------|----------|
+| **statsmodels** | Need p-values, confidence intervals, hypothesis testing | Statistical inference, model diagnostics | Understanding relationships, research |
+| **scikit-learn** | Tabular data, need predictions | Consistent API, many algorithms | General ML tasks, preprocessing |
+| **XGBoost** | Tabular data, need best performance | Gradient boosting, feature importance | Competitions, production tabular data |
+| **TensorFlow/Keras or PyTorch** | Images, text, audio, large datasets | High-level API, production-ready | Computer vision, NLP, deployment |
+
 # The Modeling Ecosystem: A Brief Tour
 
 *Reality check: There are more Python modeling libraries than there are ways to overfit a model. But don't worry - we'll focus on the essential tools that actually matter for daily data science work, from the bread-and-butter statistical methods to the cutting-edge deep learning frameworks.*
@@ -42,22 +51,12 @@ STATISTICAL MODELING          TRADITIONAL ML             DEEP LEARNING
 │                     │      │                  │      │ • RNNs       │
 └─────────────────────┘      └──────────────────┘      └──────────────┘
      ↑                            ↑                          ↑
-  "Why?"                      "What?"                    "How complex?"
+  "Why?"                      "What?"                    "How?"
 ```
 
 **Model Complexity vs Interpretability Trade-off:**
 
-```
-High Interpretability          Low Interpretability
-        ↑                                ↑
-        │                                │
-  Linear Regression              Deep Learning
-  (Easy to explain)            (Black box)
-        │                                │
-        └────────────────────────────────┘
-              Random Forest, XGBoost
-              (Middle ground)
-```
+![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
 
 *As models get more powerful, they often become harder to interpret. Choose based on what you need: understanding (interpretability) or performance (accuracy).*
 
@@ -215,12 +214,14 @@ print(results.pvalues)  # Statistical significance
 `statsmodels` provides many other statistical modeling tools beyond linear regression:
 
 **Generalized Linear Models (GLMs):**
+
 - Logistic regression for binary outcomes
 - Poisson regression for count data
 - Other exponential family distributions
 - Use when: You need statistical inference for non-normal data
 
 **Time Series Models:**
+
 - ARIMA models for time series forecasting
 - Seasonal decomposition
 - Use when: You have temporal dependencies in your data
@@ -239,7 +240,7 @@ print(results.pvalues)  # Statistical significance
 
 *"Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."*
 
-# LIVE DEMO!
+# LIVE DEMO
 
 # "Traditional" Machine Learning
 
@@ -436,20 +437,24 @@ print(f"Feature importance: {importance}")
 `scikit-learn` provides many other algorithms:
 
 **Classification:**
+
 - `LogisticRegression` - Logistic regression for classification
 - `SVC` - Support Vector Machines
 - Use when: You need different decision boundaries or have specific requirements
 
 **Regression:**
+
 - `Ridge`, `Lasso` - Regularized linear regression
 - Use when: You have many features or multicollinearity
 
 **Unsupervised Learning:**
+
 - `KMeans` - K-means clustering
 - `PCA` - Principal Component Analysis for dimensionality reduction
 - Use when: You don't have labels or want to reduce dimensions
 
 **Model Selection:**
+
 - `cross_val_score` - Cross-validation
 - `GridSearchCV` - Hyperparameter tuning
 - Use when: You need to evaluate models or tune hyperparameters
@@ -489,18 +494,21 @@ Gradient boosting has dominated machine learning competitions (Kaggle, etc.) for
 ## Why Gradient Boosting?
 
 **Performance on Tabular Data:**
+
 - Often outperforms deep learning on structured/tabular data
 - Handles mixed data types (numeric, categorical) well
 - Captures complex non-linear relationships
 - Provides feature importance
 
 **When to Choose Over Deep Learning:**
+
 - You have tabular/structured data (not images, text, sequences)
 - You want fast training and prediction
 - You need interpretability (feature importance)
 - You have limited data (deep learning needs lots of data)
 
 **Real-World Dominance:**
+
 - Used by winning teams in most Kaggle competitions
 - Industry standard for many production ML systems
 - Fast, accurate, and relatively easy to use
@@ -615,11 +623,13 @@ print(f"Feature importance: {importance}")
 Beyond `XGBoost`, there are other powerful gradient boosting libraries:
 
 **`LightGBM`:**
+
 - Faster training than XGBoost
 - Better memory efficiency
 - Use when: You have large datasets or need speed
 
 **`CatBoost`:**
+
 - Excellent handling of categorical features
 - Less hyperparameter tuning needed
 - Use when: You have many categorical variables
@@ -639,7 +649,7 @@ Gradient Boosting
 
 ![Fast & Furious Family](media/fast_furious_family.jpg)
 
-# LIVE DEMO!
+# LIVE DEMO
 
 # Deep Learning: The Modern Frontier
 
@@ -650,6 +660,7 @@ Deep learning uses neural networks with multiple layers to learn complex pattern
 ## Why Deep Learning?
 
 **When Neural Networks Excel:**
+
 - Image recognition and computer vision
 - Natural language processing (text)
 - Speech recognition and audio
@@ -659,16 +670,16 @@ Deep learning uses neural networks with multiple layers to learn complex pattern
 **The Deep Learning vs Traditional ML Decision:**
 
 - **Use Deep Learning when:**
-  - You have unstructured data (images, text, audio)
-  - You have massive datasets (millions of examples)
-  - You need to learn complex, hierarchical features
-  - Traditional ML isn't performing well enough
+    - You have unstructured data (images, text, audio)
+    - You have massive datasets (millions of examples)
+    - You need to learn complex, hierarchical features
+    - Traditional ML isn't performing well enough
 
 - **Use Traditional ML when:**
-  - You have tabular/structured data
-  - You have limited data
-  - You need fast training and prediction
-  - You need interpretability
+    - You have tabular/structured data
+    - You have limited data
+    - You need fast training and prediction
+    - You need interpretability
 
 **When NOT to Use Deep Learning:**
 
@@ -843,15 +854,15 @@ print(f"Accuracy: {accuracy:.3f}")
 Beyond `TensorFlow` and `PyTorch`, there are cutting-edge research frameworks:
 
 **`JAX`:**
+
 - NumPy with automatic differentiation and JIT compilation
 - Research tool for advanced experimentation
 - Use when: You're doing cutting-edge research or need maximum flexibility
 
 **Other Research Frameworks:**
+
 - Various specialized tools for specific domains
 - Use when: You have specific research needs beyond standard frameworks
-
-*Pro tip: Start with TensorFlow/Keras for learning. Once you understand the basics, explore PyTorch and other frameworks based on your needs.*
 
 **The Deep Learning Ecosystem:**
 
@@ -868,14 +879,13 @@ Deep Learning Frameworks
 
 | Model Type | Training Time | Accuracy | Interpretability | When to Use |
 |------------|---------------|----------|-------------------|-------------|
-| Linear Regression | ⚡ Fast | 📊 Good | ✅ High | Always start here |
+| Linear Regression | ⚡ Very Fast | 📊 Good | ✅ High | Always start here |
 | Random Forest | ⚡⚡ Fast | 📊📊 Very Good | ✅✅ Medium | Most problems |
-| XGBoost | ⚡⚡⚡ Fast | 📊📊📊 Excellent | ✅ Medium | Tabular data |
+| XGBoost | ⚡⚡ Fast | 📊📊📊 Excellent | ✅ Medium | Tabular data |
 | Deep Learning | 🐌 Slow | 📊📊📊📊 Excellent* | ❌ Low | Images/text/audio |
 
-*Only if you have enough data and time to tune it properly. Otherwise, it's just an expensive way to overfit.*
+*Note: Training time varies significantly with dataset size. XGBoost is often faster than Random Forest on large datasets, but both are much faster than deep learning for tabular data. Deep learning accuracy is excellent only if you have enough data and time to tune it properly. Otherwise, it's just an expensive way to overfit.*
 
 *"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"*
 
-# LIVE DEMO!
-
+# LIVE DEMO

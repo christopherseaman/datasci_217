@@ -1,0 +1,10 @@
+TRAIN/TEST SPLIT INFORMATION
+==================================================
+
+Split Method: Temporal (80/20 split by time)
+Training Set Size: 156,537 samples
+Test Set Size: 39,135 samples
+Training Date Range: 2015-04-25 09:00:00 to 2023-06-25 00:00:00
+Test Date Range: 2023-06-25 01:00:00 to 2025-11-18 16:00:00
+
+Number of Features: 27

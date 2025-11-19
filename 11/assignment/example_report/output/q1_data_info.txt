@@ -1,0 +1,54 @@
+Dataset Shape: 195,672 rows × 18 columns
+
+Column Names:
+  - Station Name
+  - Measurement Timestamp
+  - Air Temperature
+  - Wet Bulb Temperature
+  - Humidity
+  - Rain Intensity
+  - Interval Rain
+  - Total Rain
+  - Precipitation Type
+  - Wind Direction
+  - Wind Speed
+  - Maximum Wind Speed
+  - Barometric Pressure
+  - Solar Radiation
+  - Heading
+  - Battery Life
+  - Measurement Timestamp Label
+  - Measurement ID
+
+Data Types:
+  - Station Name: object
+  - Measurement Timestamp: datetime64[ns]
+  - Air Temperature: float64
+  - Wet Bulb Temperature: float64
+  - Humidity: int64
+  - Rain Intensity: float64
+  - Interval Rain: float64
+  - Total Rain: float64
+  - Precipitation Type: float64
+  - Wind Direction: int64
+  - Wind Speed: float64
+  - Maximum Wind Speed: float64
+  - Barometric Pressure: float64
+  - Solar Radiation: int64
+  - Heading: float64
+  - Battery Life: float64
+  - Measurement Timestamp Label: object
+  - Measurement ID: object
+
+Date Range:
+  - Start: 2015-04-25 09:00:00
+  - End: 2025-11-18 16:00:00
+
+Missing Values:
+  - Air Temperature: 75 (0.0%)
+  - Wet Bulb Temperature: 75,626 (38.6%)
+  - Rain Intensity: 75,626 (38.6%)
+  - Total Rain: 75,626 (38.6%)
+  - Precipitation Type: 75,626 (38.6%)
+  - Barometric Pressure: 146 (0.1%)
+  - Heading: 75,626 (38.6%)

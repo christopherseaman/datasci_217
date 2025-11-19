@@ -19,13 +19,35 @@ echo "Downloading: yellow_tripdata_2023-01.parquet"
 curl -L -o "$DATA_DIR/yellow_tripdata_2023-01.parquet" "$URL"
 
 if [ -f "$DATA_DIR/yellow_tripdata_2023-01.parquet" ]; then
-    echo "✅ Download complete!"
+    echo "✅ Taxi trip data download complete!"
     echo "File: $DATA_DIR/yellow_tripdata_2023-01.parquet"
     echo ""
-    echo "To convert to CSV (optional):"
-    echo "  python -c \"import pandas as pd; df = pd.read_parquet('$DATA_DIR/yellow_tripdata_2023-01.parquet'); df.to_csv('$DATA_DIR/yellow_tripdata_2023-01.csv', index=False)\""
+    echo "Note: Parquet files require pyarrow. Install with: pip install pyarrow"
 else
-    echo "❌ Download failed"
+    echo "❌ Taxi trip data download failed"
     exit 1
 fi
+
+# Download NYC Taxi Zone Lookup Table
+echo "Downloading NYC Taxi Zone Lookup Table..."
+echo "Source: https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+echo ""
+
+ZONE_URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+ZONE_FILE="taxi_zone_lookup.csv"
+
+echo "Downloading: $ZONE_FILE"
+curl -L -o "$DATA_DIR/$ZONE_FILE" "$ZONE_URL"
+
+if [ -f "$DATA_DIR/$ZONE_FILE" ]; then
+    echo "✅ Zone lookup download complete!"
+    echo "File: $DATA_DIR/$ZONE_FILE"
+    echo "Number of zones: $(tail -n +2 "$DATA_DIR/$ZONE_FILE" | wc -l)"
+    echo ""
+else
+    echo "❌ Zone lookup download failed"
+    exit 1
+fi
+
+echo "✅ All downloads complete!"
 

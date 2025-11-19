@@ -40,7 +40,7 @@ housing_data = fetch_california_housing(as_frame=True)
 df = housing_data.frame
 ```
 
-No separate data generation step is required.
+**Note:** The dataset is loaded directly from scikit-learn in the assignment notebook. No separate data generation step is required.
 
 ## Complete the Three Questions
 
@@ -80,9 +80,9 @@ GitHub Classroom will run the same tests on push.
 
 **What you'll do:**
 - Load California Housing dataset
-- Fit a linear regression model using `statsmodels`
-- Extract and interpret model coefficients and p-values
-- Make predictions with confidence intervals
+- Fit a linear regression model using `statsmodels` (predicting from `MedInc`, `AveBedrms`, `Population`)
+- Extract and save model statistics (R-squared, observations, AIC)
+- Make predictions and save to CSV
 
 **Skills:** `statsmodels`, statistical inference, model interpretation
 
@@ -119,11 +119,7 @@ GitHub Classroom will run the same tests on push.
 ├── README.md                      # This file - assignment instructions
 ├── assignment.md                  # Notebook source (for jupytext)
 ├── assignment.ipynb              # Completed notebook (you work here)
-├── data_generator.md              # Data generator source (markdown)
-├── data_generator.ipynb          # Generated data generator notebook
 ├── requirements.txt               # Python dependencies
-├── data/                          # Generated datasets
-│   └── patient_data.csv          # Patient characteristics and outcomes
 ├── output/                        # Your saved results (create this directory)
 │   ├── q1_statistical_model.csv  # Q1 model predictions
 │   ├── q1_model_summary.txt      # Q1 model summary
@@ -165,8 +161,8 @@ Before submitting, verify you've created:
 
 ## Tips
 
-- **Question 1**: Use `statsmodels.formula.api.ols()` for the formula API. Remember to call `.fit()` and use `.summary()` for the full output.
-- **Question 2**: Use `train_test_split()` from `sklearn.model_selection`. Set `random_state=42` for reproducibility.
-- **Question 3**: XGBoost models have `.feature_importances_` attribute similar to Random Forest.
+- **Question 1**: Use `statsmodels.formula.api.ols()` for the formula API. The model uses `MedInc`, `AveBedrms`, and `Population` as features. Remember to call `.fit()` and use `.summary()` for the full output. Access AIC with `results.aic`.
+- **Question 2**: Use `train_test_split()` from `sklearn.model_selection`. Set `random_state=42` for reproducibility. Random Forest uses `n_estimators=50, max_depth=8`.
+- **Question 3**: XGBoost uses `max_depth=3, learning_rate=0.15`. Models have `.feature_importances_` attribute similar to Random Forest.
 - **All questions**: Make sure to save your outputs to the `output/` directory with the exact filenames specified.
 

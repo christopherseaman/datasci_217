@@ -23,8 +23,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import altair as alt
-import warnings
-warnings.filterwarnings('ignore')
 
 # Set random seeds for reproducibility
 np.random.seed(42)
@@ -113,7 +111,8 @@ Let's create a simple neural network using Keras Sequential API.
 n_features = X_train.shape[1]  # Number of input features (13 for wine dataset)
 
 model = keras.Sequential([
-    keras.layers.Dense(64, activation='relu', input_shape=(n_features,), name='hidden1'),
+    keras.layers.Input(shape=(n_features,)),  # Explicit input layer
+    keras.layers.Dense(64, activation='relu', name='hidden1'),
     keras.layers.Dense(32, activation='relu', name='hidden2'),
     keras.layers.Dense(1, activation='sigmoid', name='output')  # Binary classification
 ])
@@ -127,7 +126,7 @@ model.summary()
 ```
 
 **Understanding the architecture:**
-- **Input layer**: 20 features (automatically created)
+- **Input layer**: 13 features (automatically created from wine dataset)
 - **Hidden layer 1**: 64 neurons with ReLU activation
 - **Hidden layer 2**: 32 neurons with ReLU activation
 - **Output layer**: 1 neuron with sigmoid activation (for binary classification)
@@ -321,7 +320,8 @@ Let's try different architectures to see how they affect performance.
 ```python
 # Build a deeper network
 model_deep = keras.Sequential([
-    keras.layers.Dense(128, activation='relu', input_shape=(n_features,)),
+    keras.layers.Input(shape=(n_features,)),  # Explicit input layer
+    keras.layers.Dense(128, activation='relu'),
     keras.layers.Dense(64, activation='relu'),
     keras.layers.Dense(32, activation='relu'),
     keras.layers.Dense(16, activation='relu'),
@@ -348,7 +348,8 @@ deep_test_loss, deep_test_acc = model_deep.evaluate(X_test_scaled, y_test, verbo
 
 # Build a wider network
 model_wide = keras.Sequential([
-    keras.layers.Dense(256, activation='relu', input_shape=(n_features,)),
+    keras.layers.Input(shape=(n_features,)),  # Explicit input layer
+    keras.layers.Dense(256, activation='relu'),
     keras.layers.Dense(128, activation='relu'),
     keras.layers.Dense(1, activation='sigmoid')
 ])
@@ -394,7 +395,8 @@ Let's add dropout and L2 regularization to prevent overfitting.
 ```python
 # Model with regularization
 model_regularized = keras.Sequential([
-    keras.layers.Dense(64, activation='relu', input_shape=(n_features,),
+    keras.layers.Input(shape=(n_features,)),  # Explicit input layer
+    keras.layers.Dense(64, activation='relu',
                        kernel_regularizer=keras.regularizers.l2(0.01)),
     keras.layers.Dropout(0.3),  # Drop 30% of neurons randomly
     keras.layers.Dense(32, activation='relu',

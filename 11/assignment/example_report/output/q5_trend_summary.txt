@@ -1,0 +1,15 @@
+KEY PATTERNS IDENTIFIED
+==================================================
+
+1. TEMPORAL TRENDS:
+   - Air temperature shows clear seasonal patterns
+   - Monthly air temp range: -2.6°C to 23.6°C
+
+2. DAILY PATTERNS:
+   - Temperature shows diurnal cycle
+   - Peak air temp typically at hour 16
+   - Minimum air temp typically at hour 6
+
+3. CORRELATIONS:
+   - Air Temp vs Wind Speed: -0.230
+   - Air Temp vs Humidity: 0.009

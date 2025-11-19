@@ -62,46 +62,36 @@ We'll use actual NYC Taxi Trip data downloaded from the NYC TLC website. The dat
 
 import os
 
-# Check for data file (adjust filename based on what you downloaded)
-data_files = [
-    'data/yellow_tripdata_2023-01.parquet',
-    'data/yellow_tripdata_2023-01.csv',
-    'data/nyc_taxi_trips.parquet',
-    'data/nyc_taxi_trips.csv'
-]
+# Check for data file (downloaded by download_data.sh)
+data_file = 'data/yellow_tripdata_2023-01.parquet'
 
-data_file = None
-for file in data_files:
-    if os.path.exists(file):
-        data_file = file
-        break
-
-if data_file is None:
+if not os.path.exists(data_file):
     print("⚠️  NYC Taxi data file not found!")
-    print("Please download NYC Taxi data from:")
-    print("https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page")
-    print("\nRecommended: Download one month of Yellow Taxi data (Parquet format)")
-    print("Place it in the data/ directory")
-    print("\nExample filenames:")
-    print("  - data/yellow_tripdata_2023-01.parquet")
-    print("  - data/yellow_tripdata_2023-01.csv")
-    raise FileNotFoundError("NYC Taxi data file not found. Please download from NYC TLC website.")
+    print("Please run download_data.sh to download the data:")
+    print("  chmod +x download_data.sh")
+    print("  ./download_data.sh")
+    raise FileNotFoundError(f"NYC Taxi data file not found: {data_file}. Run download_data.sh first.")
 
 print(f"Loading NYC Taxi Trip data from: {data_file}")
 
-# Load data - prefer Parquet for better performance
-if data_file.endswith('.parquet'):
+# Load data - Parquet format (downloaded by download_data.sh)
+# Parquet requires pyarrow: pip install pyarrow
+try:
     df = pd.read_parquet(data_file)
-else:
-    # For CSV, may need to load in chunks if file is large
-    try:
-        df = pd.read_csv(data_file, low_memory=False)
-    except MemoryError:
-        print("File too large, loading in chunks...")
-        chunk_list = []
-        for chunk in pd.read_csv(data_file, chunksize=100000, low_memory=False):
-            chunk_list.append(chunk)
-        df = pd.concat(chunk_list, ignore_index=True)
+    print(f"✅ Loaded Parquet file: {len(df):,} rows")
+except ImportError as e:
+    if 'pyarrow' in str(e).lower() or 'fastparquet' in str(e).lower():
+        print("❌ Parquet file requires pyarrow library")
+        print("Please install pyarrow:")
+        print("  pip install pyarrow")
+        print("Or use conda:")
+        print("  conda install pyarrow")
+        raise ImportError("pyarrow is required to read Parquet files. Install with: pip install pyarrow")
+    else:
+        raise
+except Exception as e:
+    print(f"❌ Error loading Parquet file: {e}")
+    raise
 
 # Standardize column names for consistency across all notebooks
 # NYC TLC data uses 'tpep_' prefix for Yellow taxis, 'lpep_' for Green taxis

@@ -1,0 +1,9 @@
+temp_difference
+temp_ratio
+wind_speed_squared
+comfort_index
+air_temp_rolling_7h
+air_temp_rolling_24h
+wind_speed_rolling_7h
+temp_category
+wind_category

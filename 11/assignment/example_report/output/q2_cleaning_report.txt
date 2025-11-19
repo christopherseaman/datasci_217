@@ -1,0 +1,28 @@
+DATA CLEANING REPORT
+==================================================
+Rows before cleaning: 195,672
+
+Air Temperature: 75 missing values → forward-filled/median-imputed → 0 missing
+
+Wet Bulb Temperature: 75,626 missing values → forward-filled/median-imputed → 0 missing
+
+Rain Intensity: 75,626 missing values → forward-filled/median-imputed → 0 missing
+
+Total Rain: 75,626 missing values → forward-filled/median-imputed → 0 missing
+
+Precipitation Type: 75,626 missing values → forward-filled/median-imputed → 0 missing
+
+Barometric Pressure: 146 missing values → forward-filled/median-imputed → 0 missing
+
+Heading: 75,626 missing values → forward-filled/median-imputed → 0 missing
+
+Wind Speed: Capped 2,574 outliers (IQR method, bounds: [-3.50, 8.40])
+
+Outliers handled: 2,574 values capped
+
+Duplicates removed: 0
+
+Data type validation:
+
+Rows after cleaning: 195,672
+Rows removed: 0

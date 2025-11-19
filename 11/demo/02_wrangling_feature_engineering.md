@@ -26,6 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from IPython.display import display
+import os
 
 # Set plotting style
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -36,6 +37,12 @@ sns.set_palette("husl")
 df = pd.read_csv('../output/01_cleaned_taxi_data.csv')
 print(f"Loaded {len(df):,} cleaned taxi trips")
 print(f"Date range: {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()}")
+
+# Check if location IDs are available (they should be if using real NYC TLC data)
+if 'PULocationID' in df.columns and 'DOLocationID' in df.columns:
+    print(f"✓ Location IDs found: {df['PULocationID'].nunique()} unique pickup zones, {df['DOLocationID'].nunique()} unique dropoff zones")
+else:
+    print("⚠️  Note: PULocationID/DOLocationID not found - zone lookup will be limited")
 ```
 
 ### Step 2: Convert to Datetime and Set Datetime Index
@@ -57,6 +64,17 @@ display(df_ts.head())
 ```
 
 ### Step 3: Extract Time-Based Features
+
+**Why extract time-based features?**
+- **Temporal patterns:** Hour, day of week, and month reveal important patterns (rush hours, weekends, seasons)
+- **Modeling:** Time features are often strong predictors (e.g., fare varies by time of day)
+- **Analysis:** Enable grouping and aggregation by time periods
+
+**What time features to extract?**
+- **Hour (0-23):** Captures daily patterns (morning rush, lunch, evening)
+- **Day of week (0-6):** Captures weekly patterns (weekdays vs weekends)
+- **Month (1-12):** Captures seasonal patterns
+- **Derived features:** Weekend flag, time-of-day categories, etc.
 
 ```python
 # Extract various time-based features from the datetime index
@@ -87,47 +105,80 @@ print(df_ts[['hour', 'day_of_week', 'day_name', 'month', 'is_weekend', 'time_of_
 
 ### Step 4: Merge with Additional Data (Zone Lookup Table)
 
+**Note:** NYC TLC data includes `PULocationID` and `DOLocationID` columns. We'll load the official NYC Taxi Zone lookup table (downloaded by `download_data.sh`) and merge it with the trip data to add zone names and boroughs.
+
 ```python
-# In practice, you'd load a real zone lookup table
-# For this demo, we'll create a simplified zone lookup based on coordinates
+# Verify that location IDs are present in the data
+# Real NYC TLC data includes PULocationID and DOLocationID columns
+if 'PULocationID' not in df_ts.columns or 'DOLocationID' not in df_ts.columns:
+    raise ValueError("PULocationID and DOLocationID columns not found in data. This is required for zone lookup merge.")
 
-# Create zone lookup table (simplified - in practice this would be a real NYC zone file)
-zone_lookup = pd.DataFrame({
-    'zone_id': range(1, 21),
-    'zone_name': [f'Zone_{i}' for i in range(1, 21)],
-    'borough': np.random.choice(['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'], 20)
-})
+# Load official NYC Taxi Zone Lookup Table
+# This file is downloaded by download_data.sh and contains all 265 zones with official names
+zone_lookup_file = 'data/taxi_zone_lookup.csv'
 
-# Create pickup and dropoff zones based on coordinates (simplified)
-# In practice, you'd use actual zone boundaries
-np.random.seed(42)
-df_ts['pickup_zone_id'] = np.random.choice(zone_lookup['zone_id'], len(df_ts))
-df_ts['dropoff_zone_id'] = np.random.choice(zone_lookup['zone_id'], len(df_ts))
+if not os.path.exists(zone_lookup_file):
+    print("❌ Zone lookup file not found!")
+    print("Please run download_data.sh to download the zone lookup file:")
+    print("  chmod +x download_data.sh")
+    print("  ./download_data.sh")
+    raise FileNotFoundError(f"Zone lookup file not found: {zone_lookup_file}. Run download_data.sh first.")
+
+# Load official zone lookup file
+zone_lookup = pd.read_csv(zone_lookup_file)
+# Rename columns to match our merge needs
+# Drop 'service_zone' to avoid duplicate columns when merging pickup and dropoff
+zone_lookup = zone_lookup.rename(columns={'Zone': 'zone_name'}).drop(columns=['service_zone'], errors='ignore')
+print(f"✅ Loaded official zone lookup: {len(zone_lookup)} zones")
+print(f"   Columns: {list(zone_lookup.columns)}")
+print(f"   Sample zones: {zone_lookup[['LocationID', 'Borough', 'zone_name']].head(5).to_string(index=False)}")
+
+# Use actual location IDs from the real NYC TLC data
+# Real data includes PULocationID and DOLocationID columns
+df_ts_reset = df_ts.reset_index()
+
+if 'PULocationID' in df_ts_reset.columns and 'DOLocationID' in df_ts_reset.columns:
+    # Rename to match zone_lookup column name for merging
+    df_ts_reset = df_ts_reset.rename(columns={'PULocationID': 'pickup_zone_id', 'DOLocationID': 'dropoff_zone_id'})
+    print("✓ Using real location IDs from NYC TLC data")
+    print(f"  Pickup zones: {df_ts_reset['pickup_zone_id'].nunique()} unique")
+    print(f"  Dropoff zones: {df_ts_reset['dropoff_zone_id'].nunique()} unique")
+else:
+    # This should never execute - we check for PULocationID/DOLocationID above and raise ValueError if missing
+    # If we somehow get here, we can't do zone assignment without location IDs
+    raise ValueError("PULocationID/DOLocationID columns are required but not found. This should not happen with real NYC TLC data.")
 
 # Merge pickup zone information using LEFT JOIN
 # LEFT JOIN keeps all rows from left DataFrame (df_ts), adds matching data from right (zone_lookup)
 # This is the most common join type - we want all trips, even if zone info is missing
 # IMPORTANT: Reset index before merge, then set it back to preserve DatetimeIndex
-df_ts_reset = df_ts.reset_index()
-df_ts_reset = df_ts_reset.merge(
-    zone_lookup.rename(columns={'zone_id': 'pickup_zone_id', 'zone_name': 'pickup_zone_name', 'borough': 'pickup_borough'}),
-    on='pickup_zone_id',
-    how='left'  # LEFT JOIN: keep all trips, add zone info where available
-)
 
-# Merge dropoff zone information
-df_ts_reset = df_ts_reset.merge(
-    zone_lookup.rename(columns={'zone_id': 'dropoff_zone_id', 'zone_name': 'dropoff_zone_name', 'borough': 'dropoff_borough'}),
-    on='dropoff_zone_id',
-    how='left'  # LEFT JOIN: keep all trips
-)
+if 'pickup_zone_id' in df_ts_reset.columns:
+    # Merge pickup zone information using LEFT JOIN
+    df_ts_reset = df_ts_reset.merge(
+        zone_lookup.rename(columns={'LocationID': 'pickup_zone_id', 'zone_name': 'pickup_zone_name', 'Borough': 'pickup_borough'}),
+        on='pickup_zone_id',
+        how='left'  # LEFT JOIN: keep all trips, add zone info where available
+    )
+    
+    # Merge dropoff zone information
+    df_ts_reset = df_ts_reset.merge(
+        zone_lookup.rename(columns={'LocationID': 'dropoff_zone_id', 'zone_name': 'dropoff_zone_name', 'Borough': 'dropoff_borough'}),
+        on='dropoff_zone_id',
+        how='left'  # LEFT JOIN: keep all trips
+    )
+    
+    print("\n✅ Zone information merged:")
+    print(f"   Total columns: {df_ts_reset.shape[1]}")
+    print(f"   Zones matched: {df_ts_reset['pickup_zone_name'].notna().sum():,} / {len(df_ts_reset):,} trips")
+    if 'pickup_zone_name' in df_ts_reset.columns:
+        print("\nSample zone information:")
+        display(df_ts_reset[['pickup_zone_name', 'pickup_borough', 'dropoff_zone_name', 'dropoff_borough']].head(10))
+else:
+    print("⚠️  Zone merge skipped - location IDs not available in data")
 
 # Set datetime index back
 df_ts = df_ts_reset.set_index('pickup_datetime').sort_index()
-
-print("Zone information merged:")
-print(f"Columns: {df_ts.shape[1]}")
-display(df_ts[['pickup_zone_name', 'pickup_borough', 'dropoff_zone_name', 'dropoff_borough']].head())
 
 # Demonstrate other join types (for educational purposes)
 print("\n" + "=" * 60)
@@ -262,6 +313,20 @@ print(df_ts[['speed_mph', 'fare_per_mile', 'tip_percentage', 'distance_category'
 
 ### Step 2: GroupBy Aggregations
 
+**What is GroupBy?**
+GroupBy splits data into groups, applies a function to each group, and combines the results. It's one of pandas' most powerful features for data analysis.
+
+**Why use GroupBy?**
+- **Summarize:** Calculate statistics for each group (e.g., average fare by day of week)
+- **Compare:** See how metrics differ across groups
+- **Aggregate:** Reduce data size while preserving important patterns
+- **Explore:** Discover relationships between categorical and numeric variables
+
+**Common GroupBy operations:**
+- **Single column:** `groupby('day_of_week')` - group by one variable
+- **Multiple columns:** `groupby(['day_of_week', 'time_of_day'])` - group by multiple variables
+- **Multiple functions:** `agg({'fare': 'mean', 'distance': 'sum'})` - different functions for different columns
+
 ```python
 # Aggregate by day of week
 daily_stats = df_ts.groupby('day_name').agg({
@@ -285,6 +350,25 @@ display(multi_agg.head(15))
 ```
 
 ### Step 3: Rolling Window Calculations
+
+**What are rolling windows?**
+Rolling windows calculate statistics over a sliding window of time periods. For example, a 7-day rolling mean calculates the average of the current day and the previous 6 days.
+
+**Why use rolling windows?**
+- **Smooth trends:** Remove daily noise to see underlying patterns
+- **Moving averages:** Common in time series analysis
+- **Trend detection:** Identify increasing/decreasing trends
+- **Anomaly detection:** Compare current values to rolling statistics
+
+**Common rolling window operations:**
+- **Rolling mean:** Average over window (smooths data)
+- **Rolling median:** Median over window (robust to outliers)
+- **Rolling std:** Standard deviation over window (measures volatility)
+- **Rolling min/max:** Min/max over window (identifies extremes)
+
+**Window size considerations:**
+- **Small windows (3-7 days):** Capture short-term patterns, more responsive to changes
+- **Large windows (30+ days):** Capture long-term trends, smoother but less responsive
 
 ```python
 # Resample to hourly for rolling calculations

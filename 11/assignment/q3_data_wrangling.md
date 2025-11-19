@@ -1,0 +1,160 @@
+# Q3: Data Wrangling
+
+**Phase 4:** Data Wrangling & Transformation  
+**Points: 9 points**
+
+**Focus:** Parse datetime columns, set datetime index, extract time-based features.
+
+**Lecture Reference:** See **Lecture 11, Notebook 2** (`11/demo/02_wrangling_feature_engineering.ipynb`), Phase 4 for examples of datetime parsing, setting datetime index, and extracting temporal features. Also see **Lecture 09** for time series operations.
+
+---
+
+## Setup
+
+```python
+# Import libraries
+import pandas as pd
+import numpy as np
+import os
+
+# Load cleaned data from Q2
+df = pd.read_csv('output/q2_cleaned_data.csv')
+print(f"Loaded {len(df):,} cleaned records")
+```
+
+---
+
+## Objective
+
+Parse datetime columns, set datetime index, and extract temporal features for time series analysis.
+
+**Time Series Note:** This dataset is time-series data (sensor readings over time), unlike the lecture's event-based taxi data. You'll work with a datetime index and extract temporal features (hour, day_of_week, month) that are essential for time series analysis. See **Lecture 09** for time series operations. Use pandas datetime index properties (`.hour`, `.dayofweek`, `.month`, etc.) to extract temporal features from your datetime index.
+
+---
+
+## Required Artifacts
+
+You must create exactly these 3 files in the `output/` directory:
+
+### 1. `output/q3_wrangled_data.csv`
+**Format:** CSV file
+**Content:** Dataset with datetime index set
+**Requirements:**
+- Datetime column parsed using `pd.to_datetime()`
+- Datetime column set as index using `df.set_index()`
+- Index sorted chronologically using `df.sort_index()`
+- **When saving:** Reset index to save datetime as column: `df.reset_index().to_csv(..., index=False)`
+- All original columns preserved
+- **No extra index column** (save with `index=False`)
+
+### 2. `output/q3_temporal_features.csv`
+**Format:** CSV file
+**Required Columns (exact names):** Must include at minimum:
+- Original datetime column (e.g., `Measurement Timestamp` or `datetime`)
+- `hour` (integer, 0-23)
+- `day_of_week` (integer, 0=Monday, 6=Sunday)
+- `month` (integer, 1-12)
+
+**Optional but recommended:**
+- `year` (integer)
+- `day_name` (string, e.g., "Monday")
+- `is_weekend` (integer, 0 or 1)
+
+**Content:** DataFrame with datetime column and extracted temporal features
+**Requirements:**
+- At minimum: datetime column, `hour`, `day_of_week`, `month`
+- All values must be valid (no NaN in required columns)
+- **No index column** (save with `index=False`)
+
+**Example columns:**
+```csv
+Measurement Timestamp,hour,day_of_week,month,year,day_name,is_weekend
+2022-01-01 00:00:00,0,5,1,2022,Saturday,1
+2022-01-01 01:00:00,1,5,1,2022,Saturday,1
+...
+```
+
+### 3. `output/q3_datetime_info.txt`
+**Format:** Plain text file
+**Content:** Date range information after datetime parsing
+**Required information:**
+- Start date (earliest datetime)
+- End date (latest datetime)
+- Total duration (optional but recommended)
+
+**Example format:**
+```
+Date Range After Datetime Parsing:
+Start: 2022-01-01 00:00:00
+End: 2027-09-15 07:00:00
+Total Duration: 5 years, 8 months, 14 days, 7 hours
+```
+
+---
+
+## Requirements Checklist
+
+- [ ] Datetime columns parsed correctly using `pd.to_datetime()`
+- [ ] Datetime index set using `df.set_index()`
+- [ ] Index sorted chronologically using `df.sort_index()`
+- [ ] Temporal features extracted: `hour`, `day_of_week`, `month` (minimum)
+- [ ] All 3 required artifacts saved with exact filenames
+
+---
+
+## Your Approach
+
+1. **Parse datetime:**
+   ```python
+   # Identify datetime column (likely 'Measurement Timestamp' or similar)
+   datetime_col = 'Measurement Timestamp'  # Adjust based on your data
+   df[datetime_col] = pd.to_datetime(df[datetime_col])
+   ```
+
+2. **Set datetime index:**
+   ```python
+   df = df.set_index(datetime_col)
+   df = df.sort_index()  # Important: sort by datetime
+   ```
+
+3. **Extract temporal features:**
+   ```python
+   # Required features
+   df['hour'] = df.index.hour
+   df['day_of_week'] = df.index.dayofweek  # 0=Monday, 6=Sunday
+   df['month'] = df.index.month
+   
+   # Optional features
+   df['year'] = df.index.year
+   df['day_name'] = df.index.day_name()
+   df['is_weekend'] = (df.index.dayofweek >= 5).astype(int)
+   ```
+
+4. **Save artifacts:**
+   - Reset index and save wrangled data: `df.reset_index().to_csv('output/q3_wrangled_data.csv', index=False)`
+     - **Important:** When saving CSVs with datetime index, use `reset_index()` to convert index to column, otherwise it will not be included in the output. Using `reset_index().to_csv(..., index=False)` ensures the datetime becomes a column rather than an index, making it easier to load in subsequent steps.
+   - Save temporal features: `df[['hour', 'day_of_week', 'month', ...]].reset_index().to_csv('output/q3_temporal_features.csv', index=False)`
+     - **Important:** Remember to use `reset_index()` before saving to include the datetime as a column.
+   - Write datetime info: `f"Start: {df.index.min()}\nEnd: {df.index.max()}"`
+
+---
+
+## Decision Points
+
+- **Datetime parsing:** What format is your datetime column? Use `pd.to_datetime()` with appropriate format string if needed: `pd.to_datetime(df[col], format='%Y-%m-%d %H:%M:%S')`
+- **Temporal features:** Extract at minimum: hour, day_of_week, month. Consider also: year, day_name, is_weekend, time_of_day categories. What makes sense for your analysis?
+
+---
+
+## Checkpoint
+
+After Q3, you should have:
+- [ ] Datetime columns parsed
+- [ ] Datetime index set and sorted
+- [ ] Temporal features extracted (at minimum: hour, day_of_week, month)
+- [ ] All 3 artifacts saved: `q3_wrangled_data.csv`, `q3_temporal_features.csv`, `q3_datetime_info.txt`
+
+---
+
+**Next:** Continue to `q4_feature_engineering.md` for Feature Engineering.
+

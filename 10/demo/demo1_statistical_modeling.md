@@ -15,8 +15,6 @@ import numpy as np
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import altair as alt
-import warnings
-warnings.filterwarnings('ignore')
 
 # Set random seed for reproducibility
 np.random.seed(42)

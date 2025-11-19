@@ -19,8 +19,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import xgboost as xgb
 import altair as alt
-import warnings
-warnings.filterwarnings('ignore')
 
 np.random.seed(42)
 ```
@@ -38,7 +36,7 @@ housing_data = fetch_california_housing(as_frame=True)
 df = housing_data.frame
 
 # Rename target for clarity
-df = df.rename(columns={'MedHouseVal': 'price'})
+df = df.rename(columns={'MedHouseVal': 'house_value'})
 
 # The dataset contains:
 # - MedInc: median income in block group
@@ -49,7 +47,7 @@ df = df.rename(columns={'MedHouseVal': 'price'})
 # - AveOccup: average number of household members
 # - Latitude: block group latitude
 # - Longitude: block group longitude
-# - price: median house value (target, in hundreds of thousands of dollars)
+# - house_value: median house value (target, in hundreds of thousands of dollars)
 
 print("Dataset shape:", df.shape)
 print("\nFeature names:", housing_data.feature_names)
@@ -70,7 +68,7 @@ Before we can train any machine learning model, we need to split our data. This 
 feature_cols = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 
                 'Population', 'AveOccup', 'Latitude', 'Longitude']
 X = df[feature_cols]
-y = df['price']
+y = df['house_value']
 
 # Split into training and test sets (80/20)
 X_train, X_test, y_train, y_test = train_test_split(
@@ -127,10 +125,10 @@ print(f"\nIntercept: ${lr_model.intercept_:.2f}k")
 ```
 
 **Understanding the metrics:**
-- **R² (R-squared)**: Proportion of variance explained (0-1, higher is better). An R² of 0.85 means the model explains 85% of price variation.
+- **R² (R-squared)**: Proportion of variance explained (0-1, higher is better). An R² of 0.85 means the model explains 85% of house value variation.
 - **RMSE (Root Mean Squared Error)**: Average prediction error in the same units as the target. Lower is better.
 - **Training vs Test**: If training performance is much better than test, the model is overfitting (memorizing training data).
-- **Coefficients**: Show how much each feature contributes to the price prediction.
+- **Coefficients**: Show how much each feature contributes to the house value prediction.
 
 ## Part 4: Regularized Linear Models
 
@@ -310,7 +308,7 @@ alt.Chart(comparison_long).mark_bar().encode(
 
 ## Part 8: Prediction Visualization
 
-Visualize how well our best model predicts house prices.
+Visualize how well our best model predicts house values.
 
 ```python
 # Use XGBoost predictions for visualization
@@ -322,8 +320,8 @@ pred_df = pd.DataFrame({
 
 # Scatter plot: actual vs predicted
 scatter = alt.Chart(pred_df).mark_circle(opacity=0.5).encode(
-    x=alt.X('actual:Q', title='Actual Price ($k)'),
-    y=alt.Y('predicted:Q', title='Predicted Price ($k)'),
+    x=alt.X('actual:Q', title='Actual House Value ($k)'),
+    y=alt.Y('predicted:Q', title='Predicted House Value ($k)'),
     color=alt.Color('error:Q', scale=alt.Scale(scheme='redblue', domainMid=0), 
                     title='Error ($k)')
 ).properties(
@@ -345,7 +343,7 @@ perfect_line = alt.Chart(pd.DataFrame({'x': [pred_df['actual'].min(), pred_df['a
 ```python
 # Residual plot (errors vs predicted)
 residual_chart = alt.Chart(pred_df).mark_circle(opacity=0.5).encode(
-    x=alt.X('predicted:Q', title='Predicted Price ($k)'),
+    x=alt.X('predicted:Q', title='Predicted House Value ($k)'),
     y=alt.Y('error:Q', title='Residual (Actual - Predicted)'),
     color=alt.Color('error:Q', scale=alt.Scale(scheme='redblue', domainMid=0))
 ).properties(

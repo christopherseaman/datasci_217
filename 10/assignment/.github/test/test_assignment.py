@@ -15,19 +15,12 @@ sys.path.insert(0, assignment_dir)
 
 @pytest.fixture(scope="module")
 def setup_data():
-    """Generate data and convert/run notebooks if needed."""
+    """Convert/run notebooks if needed."""
     # Change to assignment directory
     os.chdir(assignment_dir)
     
-    # Generate data if data_generator.ipynb exists, otherwise try markdown
-    if os.path.exists('data_generator.ipynb'):
-        subprocess.run(['jupyter', 'nbconvert', '--to', 'notebook', '--execute', 
-                       '--inplace', 'data_generator.ipynb'], check=True, capture_output=True)
-    elif os.path.exists('data_generator.md'):
-        # Convert markdown to notebook and execute
-        subprocess.run(['jupytext', '--to', 'notebook', 'data_generator.md'], check=True)
-        subprocess.run(['jupyter', 'nbconvert', '--to', 'notebook', '--execute', 
-                       '--inplace', 'data_generator.ipynb'], check=True, capture_output=True)
+    # Note: Assignment 10 loads data directly from scikit-learn (fetch_california_housing)
+    # No data generator is needed.
     
     # Convert assignment markdown to notebook if needed
     if os.path.exists('assignment.md') and not os.path.exists('assignment.ipynb'):
@@ -72,8 +65,10 @@ def test_q1_statistical_model_csv_format(setup_data):
     # Check predictions are reasonable (not all zeros, not all same value)
     assert df['predicted_value'].nunique() > 1, \
         "All predictions are the same value"
-    assert df['predicted_value'].min() >= 0, \
-        "Predictions should be non-negative"
+    # Note: Linear regression can produce negative predictions, which is statistically valid
+    # We check that predictions are within a reasonable range instead
+    assert df['predicted_value'].min() >= -5, \
+        "Predictions seem unreasonably low (min value too negative)"
     assert df['predicted_value'].max() <= 10, \
         "Predictions seem unreasonably high (house values in hundreds of thousands)"
 

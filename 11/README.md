@@ -61,6 +61,25 @@ This lecture is organized into **4 interactive notebooks** that you can follow a
    - Final visualizations
    - Results communication
 
+## Phase-to-Notebook Mapping
+
+**Notebook 1:** Phases 1-3 (Setup, Exploration, Cleaning)
+- Phase 1: Project Setup & Data Acquisition
+- Phase 2: Data Exploration & Understanding
+- Phase 3: Data Cleaning & Preprocessing
+
+**Notebook 2:** Phases 4-5 (Wrangling, Feature Engineering)
+- Phase 4: Data Wrangling & Transformation
+- Phase 5: Feature Engineering & Aggregation
+
+**Notebook 3:** Phases 6-7 (Pattern Analysis, Modeling Prep)
+- Phase 6: Pattern Analysis & Advanced Visualization
+- Phase 7: Modeling Preparation
+
+**Notebook 4:** Phases 8-9 (Modeling, Results)
+- Phase 8: Modeling
+- Phase 9: Results & Insights
+
 **How to Use:**
 - Each notebook can be run independently (after previous notebooks)
 - Follow along during lecture or work through them on your own
@@ -76,6 +95,65 @@ This lecture is organized into **4 interactive notebooks** that you can follow a
 - Time-based feature engineering
 
 You'll see datetime operations, resampling, rolling windows, and temporal modeling - applying the time series skills from Lecture 09 within a complete project workflow.
+
+## Workflow Requirements Checklist
+
+Use this checklist to ensure you complete all required components:
+
+**Phase 1-2 (Setup & Exploration):**
+- [ ] Data loaded successfully
+- [ ] Initial inspection completed (shape, info, describe)
+- [ ] Missing values identified
+- [ ] Basic visualizations created (distributions, time series if applicable)
+- [ ] Data quality issues documented
+
+**Phase 3 (Cleaning):**
+- [ ] Missing data handling strategy chosen and implemented
+- [ ] Outliers detected and handled
+- [ ] Data types validated and converted
+- [ ] Duplicates identified and removed
+- [ ] Cleaning decisions documented
+
+**Phase 4 (Wrangling):**
+- [ ] Datetime columns parsed correctly
+- [ ] Datetime index set
+- [ ] Temporal features extracted (hour, day_of_week, month minimum)
+- [ ] Multiple datasets merged (if applicable)
+- [ ] Data reshaped as needed
+
+**Phase 5 (Feature Engineering):**
+- [ ] Derived features created
+- [ ] Time-based aggregations performed
+- [ ] At least one rolling window calculation
+- [ ] Categorical features created (if applicable)
+- [ ] Feature list documented
+
+**Phase 6 (Pattern Analysis):**
+- [ ] Trends over time identified
+- [ ] Seasonal patterns analyzed
+- [ ] Correlation analysis completed
+- [ ] Advanced visualizations created
+- [ ] Key patterns documented
+
+**Phase 7 (Modeling Prep):**
+- [ ] Target variable selected
+- [ ] Temporal train/test split performed (NOT random split)
+- [ ] Features selected and prepared
+- [ ] Categorical variables handled (encoding if needed)
+- [ ] No data leakage (future data not in training set)
+
+**Phase 8 (Modeling):**
+- [ ] At least 2 different models trained
+- [ ] Performance evaluated on train and test sets
+- [ ] Models compared
+- [ ] Feature importance extracted (if applicable)
+- [ ] Model performance documented
+
+**Phase 9 (Results):**
+- [ ] Final visualizations created
+- [ ] Summary tables generated
+- [ ] Key findings documented
+- [ ] Results communicated clearly
 
 # Connection to Final Exam
 
