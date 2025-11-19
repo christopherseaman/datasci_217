@@ -11,3 +11,5 @@ If you're having issues getting `brew` commands workings after installing homebr
     echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/cseaman/.zprofile
     eval "$(/opt/homebrew/bin/brew shellenv)"
 ```
+
+More explicit hw instructions; e.g., 7.2 heatmap and unclear correlation
