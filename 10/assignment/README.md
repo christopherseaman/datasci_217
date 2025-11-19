@@ -1,34 +1,5 @@
 # Assignment 10: Modeling Fundamentals
 
-**Deliverable:**
-
-- Pass all auto-grading tests by completing the required tasks in `assignment.ipynb`/`assignment.md`
-
-## Environment Setup
-
-### Create Virtual Environment
-
-Create a virtual environment for this assignment:
-
-```bash
-# Using uv (recommended)
-uv venv
-
-# Activate (Linux/Mac)
-source .venv/bin/activate
-
-# Activate (Windows)
-.venv\Scripts\activate
-```
-
-### Install Requirements
-
-```bash
-uv pip install -r requirements.txt
-```
-
-**Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.
-
 ## Load the Dataset
 
 The assignment uses the **California Housing** dataset from scikit-learn. This is a real-world dataset from the 1990 US Census containing information about housing prices in California districts.
@@ -59,22 +30,6 @@ Open `assignment.ipynb` and work through the three questions. The notebook provi
 3. Run each cell to see your progress
 4. Use the hints provided in comments
 5. Check the submission checklist at the end
-
-### Auto-Grading (Required)
-
-Run all required cells in `assignment.ipynb` so that the following files are created in `output/`:
-
-- `q1_statistical_model.csv`, `q1_model_summary.txt`
-- `q2_ml_predictions.csv`, `q2_model_comparison.txt`
-- `q3_xgboost_model.csv`, `q3_feature_importance.txt`
-
-Run tests locally:
-
-```bash
-pytest -q 10/assignment/.github/test/test_assignment.py
-```
-
-GitHub Classroom will run the same tests on push.
 
 ### Question 1: Statistical Modeling with statsmodels
 
@@ -158,11 +113,4 @@ Before submitting, verify you've created:
 - [ ] `output/q2_model_comparison.txt` - Model comparison results
 - [ ] `output/q3_xgboost_model.csv` - XGBoost predictions
 - [ ] `output/q3_feature_importance.txt` - Feature importance results
-
-## Tips
-
-- **Question 1**: Use `statsmodels.formula.api.ols()` for the formula API. The model uses `MedInc`, `AveBedrms`, and `Population` as features. Remember to call `.fit()` and use `.summary()` for the full output. Access AIC with `results.aic`.
-- **Question 2**: Use `train_test_split()` from `sklearn.model_selection`. Set `random_state=42` for reproducibility. Random Forest uses `n_estimators=50, max_depth=8`.
-- **Question 3**: XGBoost uses `max_depth=3, learning_rate=0.15`. Models have `.feature_importances_` attribute similar to Random Forest.
-- **All questions**: Make sure to save your outputs to the `output/` directory with the exact filenames specified.
 

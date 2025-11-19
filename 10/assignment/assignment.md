@@ -1,9 +1,3 @@
-# Assignment 10: Modeling Fundamentals
-
-Complete the following three questions to demonstrate your understanding of statistical modeling, machine learning, and gradient boosting.
-
-## Setup
-
 ```python
 import pandas as pd
 import numpy as np
@@ -97,7 +91,6 @@ print("\n=== Coefficient Significance (p-values) ===")
 
 with open('output/q1_model_summary.txt', 'w') as f:
     # Your code here
-    pass
 ```
 
 ### Part 1.3: Make Predictions
