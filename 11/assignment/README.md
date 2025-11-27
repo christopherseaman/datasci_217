@@ -104,7 +104,6 @@ A 3-5 page report including:
 
 1. **Create virtual environment:**
    ```bash
-   cd 11/assignment
    uv venv
    source .venv/bin/activate  # Linux/macOS
    # .venv\Scripts\activate   # Windows
@@ -454,13 +453,13 @@ Use this structure for your `report.md`:
 ## Getting Help
 
 If you encounter technical issues:
-1. Check `TIPS.md` for common problems and solutions
+1. Check `HINTS.md` for common problems and solutions
 2. Review Lecture 11 notebooks for similar operations
 3. Check error messages carefully - they often tell you what's wrong
-4. Consult pandas documentation: https://pandas.pydata.org/docs/
-5. Contact instructor for clarification (not solutions)
+4. Consult the textbook or online documentation
+5. Contact instructor and EAs for assistance (clarification and nudges)
 
-**See `TIPS.md` for detailed troubleshooting guide covering:**
+**See `HINTS.md` for detailed troubleshooting guide covering:**
 - Data loading issues
 - Datetime parsing problems
 - Missing data handling

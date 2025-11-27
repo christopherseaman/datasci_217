@@ -5,7 +5,7 @@
 
 **Focus:** Generate final visualizations, create summary tables, document key findings.
 
-**Lecture Reference:** See **Lecture 11, Notebook 4** (`11/demo/04_modeling_results.ipynb`), Phase 9 for examples of final visualizations and results communication.
+**Lecture Reference:** Lecture 11, Notebook 4 ([`11/demo/04_modeling_results.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/04_modeling_results.ipynb)), Phase 9. Also see Lecture 07 (visualization).
 
 ---
 
@@ -120,32 +120,9 @@ DATA QUALITY:
 
 ## Your Approach
 
-1. **Create visualizations:**
-   ```python
-   fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-   
-   # Plot 1: Model performance comparison
-   # Plot 2: Predictions vs Actual
-   # Plot 3: Feature importance
-   # Plot 4: Residuals plot
-   
-   plt.savefig('output/q8_final_visualizations.png', dpi=150, bbox_inches='tight')
-   ```
-
-2. **Create summary table:**
-   ```python
-   summary_data = {
-       'Metric': ['R² Score', 'RMSE', 'MAE'],
-       'Linear Regression': [lr_r2, lr_rmse, lr_mae],
-       'Random Forest': [rf_r2, rf_rmse, rf_mae],
-       'XGBoost': [xgb_r2, xgb_rmse, xgb_mae]
-   }
-   summary_df = pd.DataFrame(summary_data)
-   summary_df.to_csv('output/q8_summary.csv', index=False)
-   ```
-
-3. **Document key findings:**
-   - Write summary to `output/q8_key_findings.txt`
+1. **Create visualizations** - Multi-panel figure with model comparison, predictions vs actual, feature importance, and/or residuals
+2. **Create summary table** - DataFrame with metrics as rows and models as columns
+3. **Document key findings** - Text summary covering model performance, feature importance insights, temporal patterns, and data quality notes
 
 ---
 

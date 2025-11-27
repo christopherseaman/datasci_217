@@ -5,7 +5,7 @@
 
 **Focus:** Load data, perform initial inspection, identify data quality issues.
 
-**Lecture Reference:** See **Lecture 11, Notebook 1** (`11/demo/01_setup_exploration_cleaning.ipynb`), Phases 1-2 for examples of data loading, inspection, and initial visualizations.
+**Lecture Reference:** Lecture 11, Notebook 1 ([`11/demo/01_setup_exploration_cleaning.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/01_setup_exploration_cleaning.ipynb)), Phases 1-2. Also see Lecture 04 (pandas I/O) and Lecture 07 (visualization).
 
 ---
 
@@ -38,6 +38,8 @@ pd.set_option('display.max_rows', 100)
 ## Objective
 
 Load the Chicago Beach Weather Sensors dataset, perform initial inspection, and identify data quality issues.
+
+**Note:** The datetime column in this dataset is named `Measurement Timestamp`.
 
 **Time Series Note:** Unlike the lecture's NYC Taxi data (event-based), this dataset is **time-series data** with continuous sensor readings. The data is already indexed by time, so you'll work with datetime-indexed dataframes throughout. See **Lecture 09** for time series operations. For time series visualizations, you may want to use pandas `resample()` to aggregate data (e.g., daily averages) for clearer visualization of long-term trends.
 
@@ -130,35 +132,11 @@ Wind Speed,6.78,4.56,0.1,25.3,0
 
 ## Your Approach
 
-1. **Load the dataset:**
-   ```python
-   df = pd.read_csv('data/beach_sensors.csv')
-   ```
-
-2. **Inspect the data:**
-   - Check shape: `df.shape`
-   - Check columns: `df.columns`
-   - Check data types: `df.dtypes`
-   - Check head: `df.head()`
-   - Check summary: `df.describe()`
-
-3. **Parse datetime (if applicable):**
-   - Identify datetime column(s)
-   - Parse using `pd.to_datetime()`
-   - Check date range
-
-4. **Identify missing values:**
-   - Count missing values per column: `df.isnull().sum()`
-   - Calculate percentages
-
-5. **Create visualizations:**
-   - Distribution plot (histogram or density)
-   - Time series plot (if temporal data)
-
-6. **Save artifacts:**
-   - Write data info to `output/q1_data_info.txt`
-   - Write exploration stats to `output/q1_exploration.csv`
-   - Save figure to `output/q1_visualizations.png`
+1. **Load and inspect the dataset** - Use standard pandas I/O and inspection methods
+2. **Parse datetime** - Identify and convert datetime column(s)
+3. **Identify missing values** - Count and calculate percentages per column
+4. **Create visualizations** - Distribution plot + time series plot (use subplots)
+5. **Save artifacts** - Write to the three required output files
 
 ---
 

@@ -31,7 +31,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         # Install dependencies from the downloaded requirements file
-        pip install -r .github/tests/requirements.txt
+        pip install -r .github/test/requirements.txt
         # Install repo requirements if they exist
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
@@ -43,5 +43,5 @@ jobs:
       run: |
         # Data generation and notebook execution are now handled by pytest fixture
         # Run the correct test script (downloaded as test_assignment.py)
-        pytest .github/tests/test_assignment.py -v
+        pytest .github/test/test_assignment.py -v
 

@@ -5,7 +5,7 @@
 
 **Focus:** Identify trends over time, analyze seasonal patterns, create correlation analysis.
 
-**Lecture Reference:** See **Lecture 11, Notebook 3** (`11/demo/03_pattern_analysis_modeling_prep.ipynb`), Phase 6 for examples of trend analysis, seasonal pattern identification, and advanced visualizations. Also see **Lecture 09** for time series pattern analysis.
+**Lecture Reference:** Lecture 11, Notebook 3 ([`11/demo/03_pattern_analysis_modeling_prep.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/03_pattern_analysis_modeling_prep.ipynb)), Phase 6. Also see Lecture 08 (groupby) and Lecture 07 (visualization).
 
 ---
 
@@ -121,50 +121,11 @@ CORRELATIONS:
 
 ## Your Approach
 
-1. **Identify trends:**
-   ```python
-   # Aggregate by time period (e.g., monthly)
-   monthly_avg = df.resample('ME').agg({
-       'Air Temperature': 'mean',
-       'Water Temperature': 'mean'
-   })
-   # Plot trends
-   ```
-
-2. **Analyze seasonal patterns:**
-   ```python
-   # By month
-   monthly_pattern = df.groupby('month').agg({
-       'Air Temperature': 'mean',
-       'Water Temperature': 'mean'
-   })
-   
-   # By hour
-   hourly_pattern = df.groupby('hour').agg({
-       'Air Temperature': 'mean'
-   })
-   ```
-
-3. **Create correlation analysis:**
-   ```python
-   # Select numeric columns
-   numeric_cols = df.select_dtypes(include=[np.number]).columns
-   corr_matrix = df[numeric_cols].corr()
-   corr_matrix.to_csv('output/q5_correlations.csv')
-   ```
-
-4. **Create visualizations:**
-   ```python
-   fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-   # Plot 1: Trends
-   # Plot 2: Seasonal patterns
-   # Plot 3: Correlation heatmap
-   # Plot 4: Additional pattern
-   plt.savefig('output/q5_patterns.png', dpi=150, bbox_inches='tight')
-   ```
-
-5. **Document patterns:**
-   - Write summary to `output/q5_trend_summary.txt`
+1. **Identify trends** - Use `.resample()` to aggregate by time period and visualize long-term patterns
+2. **Analyze seasonal patterns** - Use `.groupby()` with temporal features (hour, day_of_week, month)
+3. **Create correlation analysis** - Compute correlation matrix for numeric columns
+4. **Create visualizations** - Multi-panel plot showing trends, seasonal patterns, and correlations
+5. **Document patterns** - Summarize key findings in text file
 
 ---
 

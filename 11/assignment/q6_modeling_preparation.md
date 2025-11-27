@@ -5,7 +5,7 @@
 
 **Focus:** Perform temporal train/test split, select features, handle categorical variables.
 
-**Lecture Reference:** See **Lecture 11, Notebook 3** (`11/demo/03_pattern_analysis_modeling_prep.ipynb`), Phase 7 for examples of temporal train/test splitting and feature preparation. **CRITICAL:** The lecture emphasizes why temporal splitting is required (not random split) for time series data.
+**Lecture Reference:** Lecture 11, Notebook 3 ([`11/demo/03_pattern_analysis_modeling_prep.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/03_pattern_analysis_modeling_prep.ipynb)), Phase 7. This notebook demonstrates temporal train/test splitting (see "Your Approach" section below for the key code pattern).
 
 ---
 
@@ -127,71 +127,12 @@ Target Variable: Water Temperature
 
 ## Your Approach
 
-1. **Select target variable:**
-   ```python
-   target = 'Water Temperature'  # Choose a meaningful target
-   ```
-
-2. **Select features:**
-   ```python
-   # Exclude target and non-numeric columns
-   feature_cols = [col for col in df.columns 
-                   if col != target 
-                   and pd.api.types.is_numeric_dtype(df[col])]
-   
-   # CRITICAL: Exclude features derived from the target variable
-   # If predicting Air Temperature, exclude features that use Air Temperature
-   features_to_exclude = [
-       'temp_difference',  # Uses Air Temperature
-       'temp_ratio',  # Uses Air Temperature
-       'temp_category',  # Derived from Air Temperature
-       'comfort_index',  # Uses Air Temperature
-   ]
-   feature_cols = [col for col in feature_cols if col not in features_to_exclude]
-   ```
-
-3. **Handle categorical variables:**
-   ```python
-   # One-hot encode if needed
-   # Example: If you have 'Station Name' or 'temp_category' columns
-   categorical_cols = ['Station Name', 'temp_category', 'wind_category']  # Adjust based on your data
-   categorical_cols = [col for col in categorical_cols if col in df.columns]  # Only encode columns that exist
-   
-   if categorical_cols:
-       df_encoded = pd.get_dummies(df, columns=categorical_cols, prefix=categorical_cols, drop_first=True)
-       # Update feature_cols to include encoded columns
-       encoded_cols = [col for col in df_encoded.columns if any(cat in col for cat in categorical_cols)]
-       feature_cols = [col for col in feature_cols if col not in categorical_cols] + encoded_cols
-       df = df_encoded
-   ```
-
-4. **Perform temporal train/test split:**
-   ```python
-   # CRITICAL: Sort by datetime first
-   df = df.sort_index()
-   
-   # Split by time (e.g., 80/20)
-   split_idx = int(len(df) * 0.8)
-   
-   X_train = df[feature_cols].iloc[:split_idx]
-   X_test = df[feature_cols].iloc[split_idx:]
-   y_train = df[target].iloc[:split_idx]
-   y_test = df[target].iloc[split_idx:]
-   
-   # Verify no data leakage
-   assert df.index[split_idx-1] < df.index[split_idx], "Data leakage detected!"
-   ```
-
-5. **Save artifacts:**
-   ```python
-   X_train.to_csv('output/q6_X_train.csv', index=False)
-   X_test.to_csv('output/q6_X_test.csv', index=False)
-   y_train.to_csv('output/q6_y_train.csv', index=False, header=[target])
-   y_test.to_csv('output/q6_y_test.csv', index=False, header=[target])
-   ```
-
-6. **Document split:**
-   - Write split info to `output/q6_train_test_info.txt`
+1. **Select target variable** - Choose a meaningful numeric variable to predict
+2. **Select features** - Exclude target, non-numeric columns, and any features derived from the target (to avoid data leakage)
+3. **Handle categorical variables** - One-hot encode if needed
+4. **Perform temporal train/test split** - Sort by datetime, then split by index position (earlier data for training, later for testing)
+5. **Save artifacts** - Save X_train, X_test, y_train, y_test as separate CSVs
+6. **Document split** - Record split sizes, date ranges, and feature count
 
 ---
 

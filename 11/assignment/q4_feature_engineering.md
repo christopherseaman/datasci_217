@@ -5,7 +5,7 @@
 
 **Focus:** Create derived features, perform time-based aggregations, calculate rolling windows.
 
-**Lecture Reference:** See **Lecture 11, Notebook 2** (`11/demo/02_wrangling_feature_engineering.ipynb`), Phase 5 for examples of feature engineering, time-based aggregations, and rolling window calculations. Also see **Lecture 09** for time series rolling window operations.
+**Lecture Reference:** Lecture 11, Notebook 2 ([`11/demo/02_wrangling_feature_engineering.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/02_wrangling_feature_engineering.ipynb)), Phase 5. Also see Lecture 09 (rolling windows).
 
 ---
 
@@ -106,52 +106,14 @@ wind_category
 
 ## Your Approach
 
-1. **Create derived features:**
-   ```python
-   # Examples:
-   df['temp_difference'] = df['Air Temperature'] - df['Water Temperature']
-   df['temp_ratio'] = df['Air Temperature'] / (df['Water Temperature'] + 0.1)  # Avoid division by zero
-   df['wind_speed_squared'] = df['Wind Speed'] ** 2
-   df['comfort_index'] = (df['Air Temperature'] * 0.4 + 
-                         (100 - df['Humidity']) * 0.3 + 
-                         (20 - df['Wind Speed']) * 0.3)
-   ```
+1. **Create derived features** - Differences, ratios, interactions between variables (watch for division by zero)
+2. **Calculate rolling windows** - Use `.rolling()` on predictor variables to capture temporal patterns
 
-2. **Calculate rolling windows:**
-   ```python
-   # Ensure datetime index is set and sorted
-   df = df.sort_index()
-   
-   # Rolling windows (examples - use predictor variables only, not your target variable)
-   df['wind_speed_rolling_7h'] = df['Wind Speed'].rolling(window=7, min_periods=1).mean()
-   df['wind_speed_rolling_24h'] = df['Wind Speed'].rolling(window=24, min_periods=1).mean()
-   df['humidity_rolling_7h'] = df['Humidity'].rolling(window=7, min_periods=1).mean()
-   df['pressure_rolling_7h'] = df['Barometric Pressure'].rolling(window=7, min_periods=1).mean()
-   ```
-   
-   ⚠️ **Important:** Only create rolling windows of **predictor variables**, not your target variable. Creating rolling windows of the target variable causes data leakage (you'd be predicting the target from a smoothed version of itself). See Q6 and Q7 for more details on avoiding data leakage.
+   ⚠️ **Data Leakage Warning:** Do not create ANY features that use your target variable - this includes rolling windows, differences, ratios, or interactions involving the target. For example, if predicting Air Temperature, do not create `air_temp * humidity` or `air_temp - wet_bulb`. Only derive features from other predictor variables.
 
-3. **Create categorical features (optional):**
-   ```python
-   df['temp_category'] = pd.cut(df['Air Temperature'], 
-                                bins=[-np.inf, 10, 20, 30, np.inf],
-                                labels=['Cold', 'Cool', 'Warm', 'Hot'])
-   ```
-
-4. **Check for infinity values:**
-   - After creating derived features (especially ratios), check for infinity values:
-   ```python
-   # Replace infinity with NaN, then handle appropriately
-   df = df.replace([np.inf, -np.inf], np.nan)
-   # Fill or drop as needed based on your analysis
-   ```
-
-5. **Document and save:**
-   - Save all features: `df.reset_index().to_csv('output/q4_features.csv', index=False)`
-     - **Important:** When saving CSVs with datetime index, use `reset_index()` to convert index to column, otherwise it will not be included in the output.
-   - Save rolling features: `df[['rolling_col1', 'rolling_col2', ...]].reset_index().to_csv('output/q4_rolling_features.csv', index=False)`
-     - **Important:** Remember to use `reset_index()` before saving to include the datetime as a column.
-   - Write feature list: `with open('output/q4_feature_list.txt', 'w') as f: f.write('\n'.join(feature_names))`
+3. **Create categorical features** - Bin continuous variables if useful (optional)
+4. **Check for infinity values** - Ratios can produce infinity; replace with NaN and handle appropriately
+5. **Document and save** - Remember to `reset_index()` before saving CSVs
 
 ---
 

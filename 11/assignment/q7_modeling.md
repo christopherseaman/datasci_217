@@ -5,7 +5,7 @@
 
 **Focus:** Train multiple models, evaluate performance, compare models, extract feature importance.
 
-**Lecture Reference:** See **Lecture 11, Notebook 4** (`11/demo/04_modeling_results.ipynb`), Phase 8 for examples of model training, evaluation, and comparison.
+**Lecture Reference:** Lecture 11, Notebook 4 ([`11/demo/04_modeling_results.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/04_modeling_results.ipynb)), Phase 8. Also see Lecture 10 (modeling with sklearn and XGBoost).
 
 ---
 
@@ -106,17 +106,15 @@ actual,predicted_linear,predicted_xgboost
 **Content:** Performance metrics for each model
 **Required information for each model:**
 - Model name
-- At least one metric for both train and test sets
-  - **Suggested:** R² score (works for both Linear Regression and Random Forest)
-  - **Alternatives:** RMSE or MAE (also work for both models)
-- Additional metrics are optional but recommended
+- At least R² score for both train and test sets (additional metrics like RMSE, MAE recommended but optional)
 
 **Requirements:**
 - Clearly labeled (model name, metric name)
-- At minimum: one metric (e.g., R²) for train and test for each model
+- **At minimum:** R² (or R-squared or R^2) for train and test for each model
+- Additional metrics (RMSE, MAE) are recommended for a complete analysis
 - Format should be readable
 
-**Example format (minimum required - one metric, R² shown):**
+**Example format (minimum - R² only):**
 ```
 MODEL PERFORMANCE METRICS
 ========================
@@ -130,9 +128,7 @@ XGBOOST:
   Test R²:  0.7684
 ```
 
-**Note:** R² (R-squared) works for both Linear Regression and XGBoost. It's a universal regression metric that measures the proportion of variance explained. Alternative metrics like RMSE or MAE also work well for both models.
-
-**Example format (with additional metrics - recommended):**
+**Example format (recommended - with additional metrics):**
 ```
 MODEL PERFORMANCE METRICS
 ========================
@@ -165,7 +161,7 @@ XGBOOST:
 - Sorted by importance (descending)
 - **No index column** (save with `index=False`)
 
-**Note:** If using Linear Regression (which doesn't have feature importance), you can skip this file or use coefficient magnitudes as importance. However, tree-based models like XGBoost are preferred as they provide feature importance.
+**Note:** Tree-based models (XGBoost, Random Forest) provide feature importance directly via `.feature_importances_`. If using only Linear Regression, you can use the absolute values of coefficients as a proxy for importance.
 
 **Example:**
 ```csv
@@ -182,83 +178,26 @@ Water Temperature,0.0456
 ## Requirements Checklist
 
 - [ ] At least 2 different models trained
-  - **Suggested:** Linear Regression and XGBoost (these work well and demonstrate different modeling approaches)
-  - You may choose other models if appropriate (e.g., Random Forest, Gradient Boosting, etc.)
+  - **Suggested:** Linear Regression and XGBoost (or Random Forest)
+  - You may choose other models if appropriate
 - [ ] Performance evaluated on both train and test sets
 - [ ] Models compared
-- [ ] Feature importance extracted (if applicable - tree-based models)
-- [ ] Model performance documented with at least one metric
-  - **Suggested:** R² score (works for both Linear Regression and XGBoost, and all regression models)
-  - Alternative metrics that work for both: RMSE or MAE
-  - You may include additional metrics if relevant (e.g., MAPE, adjusted R²)
+- [ ] Feature importance extracted
+  - Tree-based models: use `.feature_importances_`
+  - Linear Regression: use absolute coefficient values
+- [ ] Model performance documented with **at least R²** (additional metrics like RMSE, MAE recommended)
 - [ ] All 3 required artifacts saved with exact filenames
 
 ---
 
 ## Your Approach
 
-1. **Train Model 1 (e.g., Linear Regression):**
-   ```python
-   lr_model = LinearRegression()
-   lr_model.fit(X_train, y_train)
-   lr_train_pred = lr_model.predict(X_train)
-   lr_test_pred = lr_model.predict(X_test)
-   ```
-
-2. **Train Model 2 (e.g., XGBoost):**
-   ```python
-   xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=6, random_state=42)
-   xgb_model.fit(X_train, y_train)
-   xgb_train_pred = xgb_model.predict(X_train)
-   xgb_test_pred = xgb_model.predict(X_test)
-   ```
-
-3. **Train Model 3 (optional, e.g., Random Forest):**
-   ```python
-   rf_model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-   rf_model.fit(X_train, y_train)
-   rf_train_pred = rf_model.predict(X_train)
-   rf_test_pred = rf_model.predict(X_test)
-   ```
-
-4. **Calculate metrics:**
-   ```python
-   # At minimum, calculate one metric for each model
-   # R² works for both Linear Regression and XGBoost (suggested)
-   train_r2 = r2_score(y_train, train_pred)
-   test_r2 = r2_score(y_test, test_pred)
-   
-   # Alternative metrics that also work for both models:
-   # RMSE (Root Mean Squared Error)
-   train_rmse = np.sqrt(mean_squared_error(y_train, train_pred))
-   test_rmse = np.sqrt(mean_squared_error(y_test, test_pred))
-   
-   # MAE (Mean Absolute Error)
-   train_mae = mean_absolute_error(y_train, train_pred)
-   test_mae = mean_absolute_error(y_test, test_pred)
-   ```
-
-5. **Extract feature importance (tree-based models):**
-   ```python
-   feature_importance = pd.DataFrame({
-       'feature': X_train.columns,
-       'importance': xgb_model.feature_importances_
-   }).sort_values('importance', ascending=False)
-   feature_importance.to_csv('output/q7_feature_importance.csv', index=False)
-   ```
-
-6. **Save predictions:**
-   ```python
-   predictions_df = pd.DataFrame({
-       'actual': y_test.values,
-       'predicted_linear': lr_test_pred,
-       'predicted_xgboost': xgb_test_pred
-   })
-   predictions_df.to_csv('output/q7_predictions.csv', index=False)
-   ```
-
-7. **Save metrics:**
-   - Write metrics to `output/q7_model_metrics.txt`
+1. **Check for data leakage** - Before training, compute correlations between features and target. Any feature with correlation > 0.95 should be investigated and considered for removal.
+2. **Train at least 2 models** - Fit models to training data, generate predictions for both train and test sets
+3. **Calculate metrics** - At minimum R² for train and test; RMSE and MAE recommended
+4. **Extract feature importance** - Use `.feature_importances_` for tree-based models, or coefficient magnitudes for linear models
+5. **Save predictions** - DataFrame with `actual` column plus `predicted_*` columns for each model
+6. **Save metrics** - Write clearly labeled metrics to text file
 
 ---
 

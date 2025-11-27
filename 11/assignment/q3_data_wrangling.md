@@ -5,7 +5,7 @@
 
 **Focus:** Parse datetime columns, set datetime index, extract time-based features.
 
-**Lecture Reference:** See **Lecture 11, Notebook 2** (`11/demo/02_wrangling_feature_engineering.ipynb`), Phase 4 for examples of datetime parsing, setting datetime index, and extracting temporal features. Also see **Lecture 09** for time series operations.
+**Lecture Reference:** Lecture 11, Notebook 2 ([`11/demo/02_wrangling_feature_engineering.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/02_wrangling_feature_engineering.ipynb)), Phase 4. Also see Lecture 09 (time series).
 
 ---
 
@@ -104,38 +104,10 @@ Total Duration: 5 years, 8 months, 14 days, 7 hours
 
 ## Your Approach
 
-1. **Parse datetime:**
-   ```python
-   # Identify datetime column (likely 'Measurement Timestamp' or similar)
-   datetime_col = 'Measurement Timestamp'  # Adjust based on your data
-   df[datetime_col] = pd.to_datetime(df[datetime_col])
-   ```
-
-2. **Set datetime index:**
-   ```python
-   df = df.set_index(datetime_col)
-   df = df.sort_index()  # Important: sort by datetime
-   ```
-
-3. **Extract temporal features:**
-   ```python
-   # Required features
-   df['hour'] = df.index.hour
-   df['day_of_week'] = df.index.dayofweek  # 0=Monday, 6=Sunday
-   df['month'] = df.index.month
-   
-   # Optional features
-   df['year'] = df.index.year
-   df['day_name'] = df.index.day_name()
-   df['is_weekend'] = (df.index.dayofweek >= 5).astype(int)
-   ```
-
-4. **Save artifacts:**
-   - Reset index and save wrangled data: `df.reset_index().to_csv('output/q3_wrangled_data.csv', index=False)`
-     - **Important:** When saving CSVs with datetime index, use `reset_index()` to convert index to column, otherwise it will not be included in the output. Using `reset_index().to_csv(..., index=False)` ensures the datetime becomes a column rather than an index, making it easier to load in subsequent steps.
-   - Save temporal features: `df[['hour', 'day_of_week', 'month', ...]].reset_index().to_csv('output/q3_temporal_features.csv', index=False)`
-     - **Important:** Remember to use `reset_index()` before saving to include the datetime as a column.
-   - Write datetime info: `f"Start: {df.index.min()}\nEnd: {df.index.max()}"`
+1. **Parse datetime** - Convert datetime column using `pd.to_datetime()`
+2. **Set datetime index** - Set as index and sort chronologically
+3. **Extract temporal features** - Use datetime index properties (`.hour`, `.dayofweek`, `.month`, etc.)
+4. **Save artifacts** - Remember to `reset_index()` before saving CSVs so the datetime becomes a column
 
 ---
 

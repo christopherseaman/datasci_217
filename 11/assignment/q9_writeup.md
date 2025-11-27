@@ -5,7 +5,7 @@
 
 **Focus:** Create a comprehensive written report documenting your analysis.
 
-**Lecture Reference:** See **Lecture 11, Notebook 4** (`11/demo/04_modeling_results.ipynb`), Phase 9 for examples of results communication.
+**Lecture Reference:** Lecture 11, Notebook 4 ([`11/demo/04_modeling_results.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/04_modeling_results.ipynb)), Phase 9. Also see `example_report/report.md` for structure and level of detail.
 
 ---
 

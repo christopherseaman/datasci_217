@@ -5,7 +5,7 @@
 
 **Focus:** Handle missing data, outliers, validate data types, remove duplicates.
 
-**Lecture Reference:** See **Lecture 11, Notebook 1** (`11/demo/01_setup_exploration_cleaning.ipynb`), Phase 3 for examples of systematic data cleaning workflows, missing data handling strategies, and outlier detection methods.
+**Lecture Reference:** Lecture 11, Notebook 1 ([`11/demo/01_setup_exploration_cleaning.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/01_setup_exploration_cleaning.ipynb)), Phase 3. Also see Lecture 05 (data cleaning).
 
 ---
 
@@ -48,6 +48,7 @@ You must create exactly these 3 files in the `output/` directory:
 - Outliers handled (removed, capped, or transformed)
 - Data types validated and converted
 - Duplicates removed
+- **Sanity check:** Dataset should retain most rows after cleaning (at least 1,000 rows). If you're removing more than 50% of data, reconsider your strategy—imputation is usually preferable to dropping rows for this dataset.
 - **No index column** (save with `index=False`)
 
 ### 2. `output/q2_cleaning_report.txt`
@@ -121,31 +122,11 @@ Rows after cleaning: 50000
 
 ## Your Approach
 
-1. **Handle missing data:**
-   - Count missing values: `df.isnull().sum()`
-   - Choose strategy: drop, forward-fill, impute, etc.
-   - For time series: consider `df.ffill()` (forward-fill is appropriate for continuous sensor readings)
-   - Implement strategy
-
-2. **Detect and handle outliers:**
-   - Use IQR method: `Q1 = df[col].quantile(0.25)`, `Q3 = df[col].quantile(0.75)`, `IQR = Q3 - Q1`
-   - Or use z-scores: `z_scores = np.abs((df[col] - df[col].mean()) / df[col].std())`
-   - Decide: remove, cap, or transform
-   - Document your reasoning
-
-3. **Validate data types:**
-   - Check data types: `df.dtypes`
-   - Convert as needed: `pd.to_datetime()`, `pd.to_numeric()`
-   - Ensure numeric columns are numeric, datetime columns are datetime
-
-4. **Remove duplicates:**
-   - Check: `df.duplicated().sum()`
-   - Remove: `df.drop_duplicates()`
-
-5. **Document and save:**
-   - Write cleaning report to `output/q2_cleaning_report.txt`
-   - Save cleaned data to `output/q2_cleaned_data.csv`
-   - Save row count to `output/q2_rows_cleaned.txt`
+1. **Handle missing data** - Choose appropriate strategy (drop, forward-fill, impute) based on data characteristics
+2. **Detect and handle outliers** - Use IQR method or z-scores; decide whether to remove, cap, or transform
+3. **Validate data types** - Ensure numeric and datetime columns are properly typed
+4. **Remove duplicates**
+5. **Document and save** - Write detailed cleaning report explaining your decisions
 
 ---
 
