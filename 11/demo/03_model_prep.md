@@ -1,3 +1,16 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+---
+
 # Notebook 3: Pattern Analysis & Modeling Prep
 
 **Phases 6-7:** Pattern Analysis & Advanced Visualization, Modeling Preparation
@@ -11,6 +24,7 @@
 ## Phase 6: Pattern Analysis & Advanced Visualization
 
 ### Learning Objectives
+
 - Create advanced multi-panel visualizations
 - Identify trends and seasonal patterns
 - Perform statistical analysis
@@ -24,7 +38,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from IPython.display import display
+from IPython.display import display, Markdown
 
 # Set plotting style
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -35,8 +49,14 @@ sns.set_palette("husl")
 df = pd.read_csv('../output/02_processed_taxi_data.csv')
 df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
 
-print(f"Loaded {len(df):,} processed trips")
-print(f"Date range: {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()}")
+display(Markdown(f"""
+### 📂 Data Loaded
+
+| Metric | Value |
+|--------|-------|
+| **Total trips** | {len(df):,} |
+| **Date range** | {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()} |
+"""))
 ```
 
 ### Step 2: Trends Analysis Over Time
@@ -158,7 +178,8 @@ plt.tight_layout()
 plt.show()
 
 # Identify strongest correlations
-print("Strongest Correlations (absolute value > 0.5):")
+display(Markdown("### 🔗 Strongest Correlations (|r| > 0.5)"))
+
 corr_pairs = []
 for i in range(len(corr_matrix.columns)):
     for j in range(i+1, len(corr_matrix.columns)):
@@ -166,8 +187,9 @@ for i in range(len(corr_matrix.columns)):
         if abs(corr_val) > 0.5:
             corr_pairs.append((corr_matrix.columns[i], corr_matrix.columns[j], corr_val))
 
-for feat1, feat2, corr in sorted(corr_pairs, key=lambda x: abs(x[2]), reverse=True):
-    print(f"  {feat1} ↔ {feat2}: {corr:.3f}")
+corr_list = "\n".join([f"- **{feat1}** ↔ **{feat2}**: `{corr:.3f}`"
+                       for feat1, feat2, corr in sorted(corr_pairs, key=lambda x: abs(x[2]), reverse=True)])
+display(Markdown(corr_list))
 ```
 
 ### Step 5: Multi-Dimensional Analysis
@@ -221,6 +243,7 @@ plt.show()
 ## Phase 7: Modeling Preparation
 
 ### Learning Objectives
+
 - Split data temporally for time series
 - Select and prepare features
 - Handle categorical variables
@@ -235,18 +258,27 @@ plt.show()
 # Sort by datetime to ensure temporal order
 df_model = df_ts.reset_index().sort_values('pickup_datetime').copy()
 
-# Define split point (e.g., 80% train, 20% test)
-split_date = df_model['pickup_datetime'].quantile(0.8)
-print(f"Split date: {split_date}")
-print(f"Train: {df_model[df_model['pickup_datetime'] < split_date].shape[0]:,} trips")
-print(f"Test: {df_model[df_model['pickup_datetime'] >= split_date].shape[0]:,} trips")
+# Train/test split configuration
+TRAIN_RATIO = 0.80  # 80% for training, 20% for testing
+
+# Define temporal split point
+# IMPORTANT: For time series, we split by time (not randomly) to prevent data leakage
+split_date = df_model['pickup_datetime'].quantile(TRAIN_RATIO)
 
 # Create train/test split
 train = df_model[df_model['pickup_datetime'] < split_date].copy()
 test = df_model[df_model['pickup_datetime'] >= split_date].copy()
 
-print(f"\nTrain date range: {train['pickup_datetime'].min()} to {train['pickup_datetime'].max()}")
-print(f"Test date range: {test['pickup_datetime'].min()} to {test['pickup_datetime'].max()}")
+display(Markdown(f"""
+### ✂️ Temporal Train/Test Split
+
+| Dataset | Trips | Date Range |
+|---------|-------|------------|
+| **Train** | {len(train):,} | {train['pickup_datetime'].min()} to {train['pickup_datetime'].max()} |
+| **Test** | {len(test):,} | {test['pickup_datetime'].min()} to {test['pickup_datetime'].max()} |
+
+**Split date:** {split_date}
+"""))
 
 # Visualize the split
 plt.figure(figsize=(14, 4))
@@ -286,9 +318,10 @@ feature_cols = [
 available_features = [f for f in feature_cols if f in df_model.columns]
 missing_features = [f for f in feature_cols if f not in df_model.columns]
 
-print("Available features:", available_features)
+display(Markdown("### 📋 Feature Availability"))
+display(Markdown(f"**Available features:** `{available_features}`"))
 if missing_features:
-    print("Missing features (will create or skip):", missing_features)
+    display(Markdown(f"⚠️ **Missing features** (will skip): `{missing_features}`"))
 
 # Select available features
 X_train = train[available_features].copy()
@@ -296,8 +329,12 @@ X_test = test[available_features].copy()
 y_train = train[target].copy()
 y_test = test[target].copy()
 
-print(f"\nTraining set: {X_train.shape}")
-print(f"Test set: {X_test.shape}")
+display(Markdown(f"""
+| Dataset | Shape |
+|---------|-------|
+| **X_train** | {X_train.shape[0]:,} × {X_train.shape[1]} |
+| **X_test** | {X_test.shape[0]:,} × {X_test.shape[1]} |
+"""))
 ```
 
 ### Step 3: Handle Categorical Variables
@@ -307,8 +344,9 @@ print(f"Test set: {X_test.shape}")
 categorical_cols = X_train.select_dtypes(include=['object', 'category']).columns.tolist()
 numeric_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
 
-print("Categorical features:", categorical_cols)
-print("Numeric features:", numeric_cols)
+display(Markdown("### 🏷️ Feature Types"))
+display(Markdown(f"**Categorical features:** `{categorical_cols}`"))
+display(Markdown(f"**Numeric features:** `{numeric_cols}`"))
 
 # For simplicity, we'll use pandas get_dummies for one-hot encoding
 # In practice, you might use sklearn's OneHotEncoder
@@ -324,18 +362,29 @@ for col in X_train_encoded.columns:
 
 X_test_encoded = X_test_encoded[X_train_encoded.columns]
 
-print(f"\nAfter encoding:")
-print(f"Training features: {X_train_encoded.shape}")
-print(f"Test features: {X_test_encoded.shape}")
-print(f"Feature names: {list(X_train_encoded.columns)}")
+display(Markdown(f"""
+### ✅ After One-Hot Encoding
+
+| Dataset | Shape |
+|---------|-------|
+| **Training features** | {X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]} |
+| **Test features** | {X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]} |
+
+**Feature names:** `{list(X_train_encoded.columns)[:10]}...` ({len(X_train_encoded.columns)} total)
+"""))
 ```
 
 ### Step 4: Handle Missing Values in Features
 
 ```python
 # Check for missing values
-print("Missing values in training set:")
-print(X_train_encoded.isnull().sum()[X_train_encoded.isnull().sum() > 0])
+display(Markdown("### 🔍 Missing Values in Training Set"))
+missing_in_train = X_train_encoded.isnull().sum()[X_train_encoded.isnull().sum() > 0]
+if len(missing_in_train) == 0:
+    display(Markdown("✅ **No missing values!**"))
+else:
+    missing_df = pd.DataFrame({'Column': missing_in_train.index, 'Missing Count': missing_in_train.values})
+    display(Markdown(missing_df.to_markdown(index=False)))
 
 # Fill missing values (using training set statistics)
 # For numeric columns, use median
@@ -345,9 +394,14 @@ for col in numeric_cols:
         X_train_encoded[col] = X_train_encoded[col].fillna(median_val)
         X_test_encoded[col] = X_test_encoded[col].fillna(median_val)
 
-print("\nMissing values after imputation:")
-print(f"Train: {X_train_encoded.isnull().sum().sum()}")
-print(f"Test: {X_test_encoded.isnull().sum().sum()}")
+display(Markdown(f"""
+### ✅ After Imputation
+
+| Dataset | Missing Values |
+|---------|----------------|
+| **Train** | {X_train_encoded.isnull().sum().sum()} |
+| **Test** | {X_test_encoded.isnull().sum().sum()} |
+"""))
 ```
 
 ### Step 5: Save Prepared Data
@@ -359,12 +413,18 @@ X_test_encoded.to_csv('../output/03_X_test.csv', index=False)
 y_train.to_csv('../output/03_y_train.csv', index=False)
 y_test.to_csv('../output/03_y_test.csv', index=False)
 
-print("Prepared datasets saved:")
-print(f"  X_train: {X_train_encoded.shape}")
-print(f"  X_test: {X_test_encoded.shape}")
-print(f"  y_train: {y_train.shape}")
-print(f"  y_test: {y_test.shape}")
-print("\nReady for next phase: Modeling & Results!")
+display(Markdown(f"""
+### 💾 Prepared Datasets Saved
+
+| File | Shape |
+|------|-------|
+| **X_train** | {X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]} |
+| **X_test** | {X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]} |
+| **y_train** | {len(y_train):,} |
+| **y_test** | {len(y_test):,} |
+
+✅ **Ready for next phase: Modeling & Results!**
+"""))
 ```
 
 ---
@@ -383,6 +443,7 @@ print("\nReady for next phase: Modeling & Results!")
 8. ✅ **Prepared final datasets** for modeling
 
 **Key Takeaways:**
+
 - Temporal splits prevent data leakage when data has time structure
 - Feature engineering creates predictive signals
 - Categorical encoding is essential for ML models
@@ -390,4 +451,3 @@ print("\nReady for next phase: Modeling & Results!")
 - Proper preparation ensures model quality
 
 **Next:** Notebook 4 will build and evaluate predictive models.
-

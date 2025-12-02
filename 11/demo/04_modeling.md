@@ -1,3 +1,16 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+---
+
 # Notebook 4: Modeling & Results
 
 **Phases 8-9:** Modeling, Results & Insights
@@ -11,6 +24,7 @@
 ## Phase 8: Modeling
 
 ### Learning Objectives
+
 - Train multiple model types
 - Evaluate model performance
 - Compare models
@@ -25,7 +39,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from IPython.display import display
+from IPython.display import display, Markdown
 
 # Modeling libraries
 from sklearn.linear_model import LinearRegression
@@ -44,18 +58,98 @@ X_test = pd.read_csv('../output/03_X_test.csv')
 y_train = pd.read_csv('../output/03_y_train.csv').squeeze()  # Convert to Series
 y_test = pd.read_csv('../output/03_y_test.csv').squeeze()
 
-print(f"Training set: {X_train.shape}")
-print(f"Test set: {X_test.shape}")
-print(f"Features: {list(X_train.columns[:5])}... ({len(X_train.columns)} total)")
+display(Markdown(f"""
+### 📂 Data Loaded
+
+| Dataset | Shape |
+|---------|-------|
+| **Training set** | {X_train.shape[0]:,} × {X_train.shape[1]} |
+| **Test set** | {X_test.shape[0]:,} × {X_test.shape[1]} |
+
+**Features:** `{list(X_train.columns[:5])}...` ({len(X_train.columns)} total)
+"""))
+```
+
+Let's define helper functions and constants for model evaluation:
+
+```python
+# Model evaluation helper functions
+def evaluate_model(y_true, y_pred, dataset_name="Dataset"):
+    """
+    Calculate standard regression metrics.
+
+    Demonstrates DRY principle: evaluation logic in one place.
+
+    Parameters:
+    -----------
+    y_true : array-like
+        True values
+    y_pred : array-like
+        Predicted values
+    dataset_name : str
+        Name for display purposes
+
+    Returns:
+    --------
+    dict : Dictionary containing RMSE, MAE, and R² scores
+    """
+    return {
+        'dataset': dataset_name,
+        'rmse': np.sqrt(mean_squared_error(y_true, y_pred)),
+        'mae': mean_absolute_error(y_true, y_pred),
+        'r2': r2_score(y_true, y_pred)
+    }
+
+def assess_overfitting(train_r2, test_r2):
+    """
+    Assess model overfitting by comparing train and test R² scores.
+
+    Overfitting gap = Train R² - Test R²
+    - < 5%: Excellent generalization
+    - 5-10%: Good generalization
+    - 10-20%: Some overfitting - consider regularization
+    - > 20%: Severe overfitting - model needs adjustment
+
+    Parameters:
+    -----------
+    train_r2 : float
+        R² score on training set
+    test_r2 : float
+        R² score on test set
+
+    Returns:
+    --------
+    tuple : (gap, status_message)
+    """
+    gap = train_r2 - test_r2
+
+    if gap < 0.05:
+        return gap, "✅ Excellent generalization"
+    elif gap < 0.10:
+        return gap, "✅ Good generalization"
+    elif gap < 0.20:
+        return gap, "⚠️ Some overfitting - consider regularization"
+    else:
+        return gap, "❌ Severe overfitting - model needs adjustment"
+
+# Model hyperparameters
+RANDOM_SEED = 42  # For reproducible results
+
+# Random Forest hyperparameters
+RF_N_ESTIMATORS = 100  # Number of trees (more = better but slower)
+RF_MAX_DEPTH = 10      # Max tree depth (lower = less overfitting)
+
+# XGBoost hyperparameters
+XGB_N_ESTIMATORS = 100    # Number of boosting rounds
+XGB_MAX_DEPTH = 6         # Max tree depth (XGBoost default, shallower than RF)
+XGB_LEARNING_RATE = 0.1   # Step size shrinkage (lower = more conservative)
 ```
 
 ### Step 2: Baseline Model - Linear Regression
 
 ```python
 # Train linear regression model
-print("=" * 60)
-print("MODEL 1: Linear Regression")
-print("=" * 60)
+display(Markdown("# 📊 Model 1: Linear Regression"))
 
 lr_model = LinearRegression()
 lr_model.fit(X_train, y_train)
@@ -64,46 +158,41 @@ lr_model.fit(X_train, y_train)
 y_train_pred_lr = lr_model.predict(X_train)
 y_test_pred_lr = lr_model.predict(X_test)
 
-# Evaluate
-train_rmse_lr = np.sqrt(mean_squared_error(y_train, y_train_pred_lr))
-test_rmse_lr = np.sqrt(mean_squared_error(y_test, y_test_pred_lr))
-train_mae_lr = mean_absolute_error(y_train, y_train_pred_lr)
-test_mae_lr = mean_absolute_error(y_test, y_test_pred_lr)
-train_r2_lr = r2_score(y_train, y_train_pred_lr)
-test_r2_lr = r2_score(y_test, y_test_pred_lr)
+# Evaluate using helper function
+train_metrics_lr = evaluate_model(y_train, y_train_pred_lr, "Training")
+test_metrics_lr = evaluate_model(y_test, y_test_pred_lr, "Test")
 
-print(f"\nTraining Performance:")
-print(f"  RMSE: ${train_rmse_lr:.2f}")
-print(f"  MAE: ${train_mae_lr:.2f}")
-print(f"  R²: {train_r2_lr:.4f}")
+# Check for overfitting using helper function
+overfit_lr, overfit_status = assess_overfitting(train_metrics_lr['r2'], test_metrics_lr['r2'])
 
-print(f"\nTest Performance:")
-print(f"  RMSE: ${test_rmse_lr:.2f}")
-print(f"  MAE: ${test_mae_lr:.2f}")
-print(f"  R²: {test_r2_lr:.4f}")
+display(Markdown(f"""
+### Performance Results
 
-# Check for overfitting
-overfit_lr = train_r2_lr - test_r2_lr
-print(f"\nOverfitting (R² difference): {overfit_lr:.4f}")
-if overfit_lr > 0.1:
-    print("  ⚠️  Warning: Significant overfitting detected")
-else:
-    print("  ✓ Model generalizes well")
+| Metric | Training | Test |
+|--------|----------|------|
+| **RMSE** | ${train_metrics_lr['rmse']:.2f} | ${test_metrics_lr['rmse']:.2f} |
+| **MAE** | ${train_metrics_lr['mae']:.2f} | ${test_metrics_lr['mae']:.2f} |
+| **R²** | {train_metrics_lr['r2']:.4f} | {test_metrics_lr['r2']:.4f} |
+
+**Overfitting (R² difference):** {overfit_lr:.4f} — {overfit_status}
+"""))
+
+# Store for comparison later
+train_rmse_lr, test_rmse_lr = train_metrics_lr['rmse'], test_metrics_lr['rmse']
+train_r2_lr, test_r2_lr = train_metrics_lr['r2'], test_metrics_lr['r2']
 ```
 
 ### Step 3: Random Forest Model
 
 ```python
 # Train Random Forest model
-print("\n" + "=" * 60)
-print("MODEL 2: Random Forest")
-print("=" * 60)
+display(Markdown("# 🌲 Model 2: Random Forest"))
 
 rf_model = RandomForestRegressor(
-    n_estimators=100,
-    max_depth=10,
-    random_state=42,
-    n_jobs=-1
+    n_estimators=RF_N_ESTIMATORS,
+    max_depth=RF_MAX_DEPTH,
+    random_state=RANDOM_SEED,
+    n_jobs=-1  # Use all CPU cores
 )
 rf_model.fit(X_train, y_train)
 
@@ -111,31 +200,28 @@ rf_model.fit(X_train, y_train)
 y_train_pred_rf = rf_model.predict(X_train)
 y_test_pred_rf = rf_model.predict(X_test)
 
-# Evaluate
-train_rmse_rf = np.sqrt(mean_squared_error(y_train, y_train_pred_rf))
-test_rmse_rf = np.sqrt(mean_squared_error(y_test, y_test_pred_rf))
-train_mae_rf = mean_absolute_error(y_train, y_train_pred_rf)
-test_mae_rf = mean_absolute_error(y_test, y_test_pred_rf)
-train_r2_rf = r2_score(y_train, y_train_pred_rf)
-test_r2_rf = r2_score(y_test, y_test_pred_rf)
+# Evaluate using helper function
+train_metrics_rf = evaluate_model(y_train, y_train_pred_rf, "Training")
+test_metrics_rf = evaluate_model(y_test, y_test_pred_rf, "Test")
 
-print(f"\nTraining Performance:")
-print(f"  RMSE: ${train_rmse_rf:.2f}")
-print(f"  MAE: ${train_mae_rf:.2f}")
-print(f"  R²: {train_r2_rf:.4f}")
+# Check for overfitting using helper function
+overfit_rf, overfit_status = assess_overfitting(train_metrics_rf['r2'], test_metrics_rf['r2'])
 
-print(f"\nTest Performance:")
-print(f"  RMSE: ${test_rmse_rf:.2f}")
-print(f"  MAE: ${test_mae_rf:.2f}")
-print(f"  R²: {test_r2_rf:.4f}")
+display(Markdown(f"""
+### Performance Results
 
-# Check for overfitting
-overfit_rf = train_r2_rf - test_r2_rf
-print(f"\nOverfitting (R² difference): {overfit_rf:.4f}")
-if overfit_rf > 0.1:
-    print("  ⚠️  Warning: Significant overfitting detected")
-else:
-    print("  ✓ Model generalizes well")
+| Metric | Training | Test |
+|--------|----------|------|
+| **RMSE** | ${train_metrics_rf['rmse']:.2f} | ${test_metrics_rf['rmse']:.2f} |
+| **MAE** | ${train_metrics_rf['mae']:.2f} | ${test_metrics_rf['mae']:.2f} |
+| **R²** | {train_metrics_rf['r2']:.4f} | {test_metrics_rf['r2']:.4f} |
+
+**Overfitting (R² difference):** {overfit_rf:.4f} — {overfit_status}
+"""))
+
+# Store for comparison later
+train_rmse_rf, test_rmse_rf = train_metrics_rf['rmse'], test_metrics_rf['rmse']
+train_r2_rf, test_r2_rf = train_metrics_rf['r2'], test_metrics_rf['r2']
 
 # Feature importance
 feature_importance = pd.DataFrame({
@@ -143,23 +229,21 @@ feature_importance = pd.DataFrame({
     'importance': rf_model.feature_importances_
 }).sort_values('importance', ascending=False)
 
-print(f"\nTop 10 Most Important Features:")
-display(feature_importance.head(10))
+display(Markdown("### 🔑 Top 10 Most Important Features"))
+display(Markdown(feature_importance.head(10).to_markdown(index=False)))
 ```
 
 ### Step 4: XGBoost Model
 
 ```python
 # Train XGBoost model
-print("\n" + "=" * 60)
-print("MODEL 3: XGBoost")
-print("=" * 60)
+display(Markdown("# 🚀 Model 3: XGBoost"))
 
 xgb_model = xgb.XGBRegressor(
-    n_estimators=100,
-    max_depth=6,
-    learning_rate=0.1,
-    random_state=42,
+    n_estimators=XGB_N_ESTIMATORS,
+    max_depth=XGB_MAX_DEPTH,
+    learning_rate=XGB_LEARNING_RATE,
+    random_state=RANDOM_SEED,
     n_jobs=-1
 )
 xgb_model.fit(X_train, y_train)
@@ -168,31 +252,28 @@ xgb_model.fit(X_train, y_train)
 y_train_pred_xgb = xgb_model.predict(X_train)
 y_test_pred_xgb = xgb_model.predict(X_test)
 
-# Evaluate
-train_rmse_xgb = np.sqrt(mean_squared_error(y_train, y_train_pred_xgb))
-test_rmse_xgb = np.sqrt(mean_squared_error(y_test, y_test_pred_xgb))
-train_mae_xgb = mean_absolute_error(y_train, y_train_pred_xgb)
-test_mae_xgb = mean_absolute_error(y_test, y_test_pred_xgb)
-train_r2_xgb = r2_score(y_train, y_train_pred_xgb)
-test_r2_xgb = r2_score(y_test, y_test_pred_xgb)
+# Evaluate using helper function
+train_metrics_xgb = evaluate_model(y_train, y_train_pred_xgb, "Training")
+test_metrics_xgb = evaluate_model(y_test, y_test_pred_xgb, "Test")
 
-print(f"\nTraining Performance:")
-print(f"  RMSE: ${train_rmse_xgb:.2f}")
-print(f"  MAE: ${train_mae_xgb:.2f}")
-print(f"  R²: {train_r2_xgb:.4f}")
+# Check for overfitting using helper function
+overfit_xgb, overfit_status = assess_overfitting(train_metrics_xgb['r2'], test_metrics_xgb['r2'])
 
-print(f"\nTest Performance:")
-print(f"  RMSE: ${test_rmse_xgb:.2f}")
-print(f"  MAE: ${test_mae_xgb:.2f}")
-print(f"  R²: {test_r2_xgb:.4f}")
+display(Markdown(f"""
+### Performance Results
 
-# Check for overfitting
-overfit_xgb = train_r2_xgb - test_r2_xgb
-print(f"\nOverfitting (R² difference): {overfit_xgb:.4f}")
-if overfit_xgb > 0.1:
-    print("  ⚠️  Warning: Significant overfitting detected")
-else:
-    print("  ✓ Model generalizes well")
+| Metric | Training | Test |
+|--------|----------|------|
+| **RMSE** | ${train_metrics_xgb['rmse']:.2f} | ${test_metrics_xgb['rmse']:.2f} |
+| **MAE** | ${train_metrics_xgb['mae']:.2f} | ${test_metrics_xgb['mae']:.2f} |
+| **R²** | {train_metrics_xgb['r2']:.4f} | {test_metrics_xgb['r2']:.4f} |
+
+**Overfitting (R² difference):** {overfit_xgb:.4f} — {overfit_status}
+"""))
+
+# Store for comparison later
+train_rmse_xgb, test_rmse_xgb = train_metrics_xgb['rmse'], test_metrics_xgb['rmse']
+train_r2_xgb, test_r2_xgb = train_metrics_xgb['r2'], test_metrics_xgb['r2']
 
 # Feature importance
 xgb_importance = pd.DataFrame({
@@ -200,8 +281,8 @@ xgb_importance = pd.DataFrame({
     'importance': xgb_model.feature_importances_
 }).sort_values('importance', ascending=False)
 
-print(f"\nTop 10 Most Important Features:")
-display(xgb_importance.head(10))
+display(Markdown("### 🔑 Top 10 Most Important Features"))
+display(Markdown(xgb_importance.head(10).to_markdown(index=False)))
 ```
 
 ### Step 5: Model Comparison
@@ -220,8 +301,8 @@ comparison = pd.DataFrame({
 comparison = comparison.round(4)
 comparison['RMSE_diff'] = comparison['Train RMSE'] - comparison['Test RMSE']
 
-print("Model Comparison:")
-display(comparison)
+display(Markdown("# 🏆 Model Comparison"))
+display(Markdown(comparison.to_markdown(index=False)))
 
 # Visualize model comparison
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -257,7 +338,13 @@ plt.show()
 # Select best model (lowest test RMSE)
 best_model_idx = comparison['Test RMSE'].idxmin()
 best_model_name = comparison.loc[best_model_idx, 'Model']
-print(f"\n🏆 Best Model: {best_model_name} (Test RMSE: ${comparison.loc[best_model_idx, 'Test RMSE']:.2f})")
+
+display(Markdown(f"""
+### 🏆 Best Model: **{best_model_name}**
+
+- **Test RMSE:** ${comparison.loc[best_model_idx, 'Test RMSE']:.2f}
+- **Test R²:** {comparison.loc[best_model_idx, 'Test R²']:.4f}
+"""))
 ```
 
 ### Step 6: Prediction Visualization
@@ -292,11 +379,16 @@ plt.tight_layout()
 plt.show()
 
 # Residuals statistics
-print(f"\nResiduals Statistics:")
-print(f"  Mean: ${residuals.mean():.2f}")
-print(f"  Std: ${residuals.std():.2f}")
-print(f"  Min: ${residuals.min():.2f}")
-print(f"  Max: ${residuals.max():.2f}")
+display(Markdown(f"""
+### 📊 Residuals Statistics
+
+| Statistic | Value |
+|-----------|-------|
+| **Mean** | ${residuals.mean():.2f} |
+| **Std** | ${residuals.std():.2f} |
+| **Min** | ${residuals.min():.2f} |
+| **Max** | ${residuals.max():.2f} |
+"""))
 ```
 
 ---
@@ -304,6 +396,7 @@ print(f"  Max: ${residuals.max():.2f}")
 ## Phase 9: Results & Insights
 
 ### Learning Objectives
+
 - Summarize key findings
 - Create final visualizations
 - Document results
@@ -312,23 +405,8 @@ print(f"  Max: ${residuals.max():.2f}")
 ### Step 1: Key Findings Summary
 
 ```python
-print("=" * 60)
-print("KEY FINDINGS SUMMARY")
-print("=" * 60)
+display(Markdown("# 📋 Key Findings Summary"))
 
-print("\n1. DATA OVERVIEW:")
-print(f"   - Total trips analyzed: {len(X_train) + len(X_test):,}")
-print(f"   - Training period: {pd.read_csv('../output/03_X_train.csv').shape[0]:,} trips")
-print(f"   - Test period: {len(X_test):,} trips")
-print(f"   - Features used: {len(X_train.columns)}")
-
-print("\n2. MODEL PERFORMANCE:")
-print(f"   - Best model: {best_model_name}")
-print(f"   - Test RMSE: ${comparison.loc[best_model_idx, 'Test RMSE']:.2f}")
-print(f"   - Test R²: {comparison.loc[best_model_idx, 'Test R²']:.4f}")
-print(f"   - Average prediction error: ${comparison.loc[best_model_idx, 'Test RMSE']:.2f}")
-
-print("\n3. KEY INSIGHTS:")
 # Get top features from best model
 if best_model_name == 'XGBoost':
     top_features = xgb_importance.head(5)
@@ -337,17 +415,40 @@ elif best_model_name == 'Random Forest':
 else:
     top_features = pd.DataFrame({'feature': ['trip_distance', 'trip_duration'], 'importance': [0.5, 0.3]})
 
-print("   Most important features for fare prediction:")
-for idx, row in top_features.iterrows():
-    print(f"   - {row['feature']}: {row['importance']:.4f}")
+top_features_list = "\n".join([f"- **{row['feature']}**: {row['importance']:.4f}" for idx, row in top_features.iterrows()])
 
-print("\n4. MODEL INTERPRETATION:")
-print(f"   - The model explains {comparison.loc[best_model_idx, 'Test R²']*100:.1f}% of fare variance")
-print(f"   - Predictions are within ${comparison.loc[best_model_idx, 'Test RMSE']:.2f} on average")
-if comparison.loc[best_model_idx, 'Overfitting'] < 0.05:
-    print("   - Model generalizes well to new data")
-else:
-    print("   - Some overfitting detected - model may need regularization")
+generalization_status = "✅ Model generalizes well to new data" if comparison.loc[best_model_idx, 'Overfitting'] < 0.05 else "⚠️ Some overfitting detected - model may need regularization"
+
+display(Markdown(f"""
+## 1. 📊 Data Overview
+
+| Metric | Value |
+|--------|-------|
+| **Total trips analyzed** | {len(X_train) + len(X_test):,} |
+| **Training set** | {len(X_train):,} trips |
+| **Test set** | {len(X_test):,} trips |
+| **Features used** | {len(X_train.columns)} |
+
+## 2. 🏆 Model Performance
+
+| Metric | Value |
+|--------|-------|
+| **Best model** | {best_model_name} |
+| **Test RMSE** | ${comparison.loc[best_model_idx, 'Test RMSE']:.2f} |
+| **Test R²** | {comparison.loc[best_model_idx, 'Test R²']:.4f} |
+
+## 3. 🔑 Key Insights
+
+**Most important features for fare prediction:**
+
+{top_features_list}
+
+## 4. 💡 Model Interpretation
+
+- The model explains **{comparison.loc[best_model_idx, 'Test R²']*100:.1f}%** of fare variance
+- Predictions are within **${comparison.loc[best_model_idx, 'Test RMSE']:.2f}** on average
+- {generalization_status}
+"""))
 ```
 
 ### Step 2: Final Visualizations
@@ -419,7 +520,8 @@ ax5.grid(True, alpha=0.3, axis='y')
 plt.tight_layout()
 plt.savefig('../output/04_final_results.png', dpi=150, bbox_inches='tight')
 plt.show()
-print("Final visualization saved to: ../output/04_final_results.png")
+
+display(Markdown("💾 **Final visualization saved to:** `../output/04_final_results.png`"))
 ```
 
 ### Step 3: Save Model Results
@@ -444,60 +546,68 @@ if best_model_name == 'XGBoost':
 elif best_model_name == 'Random Forest':
     feature_importance.to_csv('../output/04_feature_importance.csv', index=False)
 
-print("Results saved:")
-print("  - Model predictions: ../output/04_model_predictions.csv")
-print("  - Model comparison: ../output/04_model_comparison.csv")
-print("  - Feature importance: ../output/04_feature_importance.csv")
+display(Markdown("""
+### 💾 Results Saved
+
+| File | Description |
+|------|-------------|
+| `../output/04_model_predictions.csv` | Model predictions |
+| `../output/04_model_comparison.csv` | Model comparison |
+| `../output/04_feature_importance.csv` | Feature importance |
+"""))
 ```
 
 ### Step 4: Project Summary
 
 ```python
-print("=" * 60)
-print("PROJECT SUMMARY")
-print("=" * 60)
+display(Markdown("""
+# 📚 Project Summary
 
-print("""
 This complete data science project demonstrated:
 
-1. DATA CLEANING & EXPLORATION
-   - Handled missing values and outliers
-   - Explored distributions and relationships
-   - Identified data quality issues
+## 1. 🧹 Data Cleaning & Exploration
+- Handled missing values and outliers
+- Explored distributions and relationships
+- Identified data quality issues
 
-2. DATA WRANGLING & FEATURE ENGINEERING
-   - Merged multiple data sources
-   - Extracted temporal features
-   - Created derived variables
-   - Performed aggregations
+## 2. 🔧 Data Wrangling & Feature Engineering
+- Merged multiple data sources
+- Extracted temporal features
+- Created derived variables
+- Performed aggregations
 
-3. PATTERN ANALYSIS
-   - Identified trends and seasonality
-   - Analyzed correlations
-   - Created advanced visualizations
+## 3. 📊 Pattern Analysis
+- Identified trends and seasonality
+- Analyzed correlations
+- Created advanced visualizations
 
-4. MODELING
-   - Trained multiple model types
-   - Evaluated performance
-   - Selected best model
-   - Interpreted results
+## 4. 🤖 Modeling
+- Trained multiple model types
+- Evaluated performance
+- Selected best model
+- Interpreted results
 
-5. RESULTS COMMUNICATION
-   - Summarized key findings
-   - Created final visualizations
-   - Documented insights
+## 5. 📝 Results Communication
+- Summarized key findings
+- Created final visualizations
+- Documented insights
 
-KEY TAKEAWAYS:
-- Time series data requires temporal train/test splits
-- Feature engineering significantly improves model performance
-- Multiple models should be compared
-- Visualization is essential for understanding and communication
-- Proper workflow ensures reproducible and reliable results
-""")
+---
 
-print("=" * 60)
-print("PROJECT COMPLETE!")
-print("=" * 60)
+## 🔑 Key Takeaways
+
+- Time series data requires **temporal train/test splits**
+- Feature engineering **significantly improves** model performance
+- **Multiple models** should be compared
+- Visualization is **essential** for understanding and communication
+- Proper workflow ensures **reproducible and reliable** results
+
+---
+
+# 🎉 PROJECT COMPLETE!
+
+**Congratulations!** You've completed a full data science project from raw data to insights!
+"""))
 ```
 
 ---
@@ -516,6 +626,7 @@ print("=" * 60)
 8. ✅ **Documented results** for reproducibility
 
 **Key Takeaways:**
+
 - Multiple models should be tried and compared
 - Test performance is the true measure of model quality
 - Feature importance helps interpret model behavior
@@ -523,4 +634,3 @@ print("=" * 60)
 - Proper documentation enables reproducibility
 
 **Congratulations!** You've completed a full data science project from raw data to insights! 🎉
-
