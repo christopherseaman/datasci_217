@@ -13,11 +13,31 @@ jupyter:
 
 # Notebook 1: Setup, Exploration & Cleaning
 
+![Data Science Workflow Overview](../media/overview.jpeg)
+
 **Phases 1-3:** Project Setup, Data Exploration, and Data Cleaning
 
 **Dataset:** NYC Taxi Trip Dataset
 
 **Focus:** Getting data ready for analysis - loading, understanding, and cleaning messy real-world data.
+
+---
+
+**Where we are:** This is the foundation of our data science project. We're taking raw, messy data and making it ready for analysis. Everything that follows depends on getting this right.
+
+**What we'll accomplish:**
+- Load and inspect our dataset
+- Understand data quality issues
+- Clean the data systematically
+- Prepare for feature engineering (Notebook 2)
+
+**Why this matters:** Real-world data is never perfect. Learning to systematically identify and fix issues is 80% of data science work. The patterns we discover here will guide our entire analysis.
+
+**The big picture:**
+- **Notebook 1 (this one):** Make data clean
+- **Notebook 2:** Make data useful (add features, reshape, aggregate)
+- **Notebook 3:** Make data ready for modeling
+- **Notebook 4:** Build and evaluate models
 
 ---
 
@@ -68,12 +88,11 @@ display(Markdown(f"- numpy version: `{np.__version__}`"))
 
 We'll use actual NYC Taxi Trip data downloaded from the NYC TLC website. The data is available in Parquet or CSV format.
 
+**What is Parquet?** Parquet is a columnar storage format that's faster and more efficient than CSV for large datasets. It preserves data types and compresses data automatically. Think of it as a smarter CSV that pandas can read directly.
+
 ```python
 # Load actual NYC Taxi Trip data
 # Download from: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
-# NYC TLC provides trip record data in Parquet or CSV format
-# Place the downloaded file in the data/ directory
-
 import os
 
 # Check for data file (downloaded by download_data.sh)
@@ -92,78 +111,31 @@ chmod +x download_data.sh
 
 display(Markdown(f"Loading NYC Taxi Trip data from: `{data_file}`"))
 
-# Load data - Parquet format (downloaded by download_data.sh)
-# Parquet requires pyarrow: pip install pyarrow
-try:
-    df = pd.read_parquet(data_file)
-    display(Markdown(f"**Loaded Parquet file:** {len(df):,} rows"))
-except ImportError as e:
-    if 'pyarrow' in str(e).lower() or 'fastparquet' in str(e).lower():
-        display(Markdown("""
-### Missing Dependency: pyarrow
+# Load data - Parquet format (requires pyarrow, included in requirements.txt)
+df = pd.read_parquet(data_file)
+display(Markdown(f"**Loaded Parquet file:** {len(df):,} rows"))
+```
 
-Please install pyarrow:
-- **pip:** `pip install pyarrow`
-- **conda:** `conda install pyarrow`
-"""))
-        raise ImportError("pyarrow is required to read Parquet files. Install with: pip install pyarrow")
-    else:
-        raise
-except Exception as e:
-    display(Markdown(f"**Error loading Parquet file:** {e}"))
-    raise
+Now let's standardize the column names and parse datetime columns:
 
-# Standardize column names for consistency across all notebooks
-# NYC TLC data uses 'tpep_' prefix for Yellow taxis, 'lpep_' for Green taxis
-# We'll standardize to simpler names: pickup_datetime, dropoff_datetime, etc.
-
-column_mapping = {
-    # Datetime columns (most important - used throughout)
+```python
+# Standardize column names (NYC TLC uses 'tpep_' prefix for Yellow taxis)
+df = df.rename(columns={
     'tpep_pickup_datetime': 'pickup_datetime',
-    'tpep_dropoff_datetime': 'dropoff_datetime',
-    'lpep_pickup_datetime': 'pickup_datetime',  # Green taxi
-    'lpep_dropoff_datetime': 'dropoff_datetime',
-}
+    'tpep_dropoff_datetime': 'dropoff_datetime'
+})
 
-# Apply mapping
-for old_name, new_name in column_mapping.items():
-    if old_name in df.columns:
-        df = df.rename(columns={old_name: new_name})
+# Parse datetime columns immediately
+df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
+df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
 
-# Parse datetime columns immediately (needed for trip_duration calculation)
-if 'pickup_datetime' in df.columns:
-    df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
-if 'dropoff_datetime' in df.columns:
-    df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
-
-# Calculate total_amount if not present (NYC TLC has component columns)
+# Calculate total_amount if not present (sum of fare components)
 if 'total_amount' not in df.columns:
-    components = ['fare_amount']
-    if 'tip_amount' in df.columns:
-        components.append('tip_amount')
-    if 'tolls_amount' in df.columns:
-        components.append('tolls_amount')
-    if 'extra' in df.columns:
-        components.append('extra')
-    if 'mta_tax' in df.columns:
-        components.append('mta_tax')
-    if 'improvement_surcharge' in df.columns:
-        components.append('improvement_surcharge')
-    
-    if len(components) > 1:
-        df['total_amount'] = df[components].sum(axis=1)
-        display(Markdown(f"Calculated `total_amount` from: {', '.join(components)}"))
-
-# Verify essential columns exist
-essential_cols = ['pickup_datetime', 'dropoff_datetime', 'fare_amount', 'trip_distance', 'passenger_count']
-missing_essential = [col for col in essential_cols if col not in df.columns]
-
-if missing_essential:
-    display(Markdown(f"⚠️ **Warning:** Missing essential columns: `{missing_essential}`"))
-    display(Markdown(f"Available columns: `{list(df.columns)}`"))
-    display(Markdown("*Note: NYC TLC data structure may vary. Adjust column references as needed.*"))
-else:
-    display(Markdown("✅ **All essential columns found!**"))
+    fare_components = ['fare_amount', 'tip_amount', 'tolls_amount',
+                      'extra', 'mta_tax', 'improvement_surcharge']
+    available_components = [col for col in fare_components if col in df.columns]
+    df['total_amount'] = df[available_components].sum(axis=1)
+    display(Markdown(f"✅ Calculated `total_amount` from {len(available_components)} components"))
 
 display(Markdown(f"""
 ### ✅ Data Loaded Successfully
@@ -175,8 +147,24 @@ display(Markdown(f"""
 | **Sample columns** | {', '.join(list(df.columns)[:5])}... |
 | **Date range** | {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()} |
 """))
-
 ```
+
+### 🐛 Debugging Tips: Data Loading Issues
+
+If you encounter problems loading data, here are common issues and solutions:
+
+**Problem: FileNotFoundError**
+- Check file path: `os.path.exists('data/yellow_tripdata_2023-01.parquet')`
+- Run download script: `./download_data.sh`
+- Check current directory: `os.getcwd()` (should be in `11/demo/`)
+
+**Problem: ImportError for pyarrow**
+- Install pyarrow: `pip install pyarrow` or `uv pip install pyarrow`
+- Restart kernel after installation
+
+**Problem: MemoryError loading large file**
+- Sample data: `df = pd.read_parquet(file).sample(n=100000)`
+- Close other applications to free memory
 
 ### Step 3: Initial Data Inspection
 
@@ -198,32 +186,13 @@ display(Markdown("# 📊 Dataset Overview"))
 display(Markdown(f"**Shape:** {df.shape[0]:,} rows × {df.shape[1]} columns"))
 display(Markdown(f"**Memory usage:** {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"))
 
-# Build a summary table with column info and example values
-def get_example_value(series, n=2):
-    """Get up to n non-null example values from a series."""
-    non_null = series.dropna()
-    if len(non_null) == 0:
-        return "_empty_"
-    examples = non_null.head(n).tolist()
-    # Format examples nicely
-    formatted = []
-    for ex in examples:
-        if isinstance(ex, str) and len(ex) > 20:
-            formatted.append(f"{ex[:20]}...")
-        else:
-            formatted.append(str(ex))
-    return ", ".join(formatted)
-
-# Create column summary DataFrame
-column_info = pd.DataFrame({
-    'Column': df.columns,
-    'Type': df.dtypes.astype(str).values,
-    'Non-Null': df.notna().sum().values,
-    'Example Values': [get_example_value(df[col]) for col in df.columns]
-})
-
+# Show column information with data types and non-null counts
 display(Markdown("### 📋 Column Summary"))
-display(Markdown(column_info.to_markdown(index=False)))
+df.info()
+
+# Show example values for each column
+display(Markdown("### 👀 Example Values (First Row)"))
+display(Markdown(df.head(1).T.to_markdown()))
 ```
 
 **Interpreting the output:** The shape tells us how much data we're working with. Column names help us understand what information is available. Data types are crucial - we need to ensure datetime columns are properly parsed, and numeric columns are numeric (not strings). Memory usage helps us plan for processing - large datasets may require chunking or sampling.
@@ -240,6 +209,8 @@ display(Markdown(df.head().to_markdown()))
 
 Next, we'll compute summary statistics to understand the distributions of our numeric variables:
 
+**Why transpose?** When you have many columns, `describe()` creates a wide table that's hard to read. Transposing (`.T`) flips rows and columns, so each variable gets its own row. This makes it much easier to scan the statistics.
+
 ```python
 # Summary statistics - transpose for easier reading when many columns
 display(Markdown("# 📈 Summary Statistics"))
@@ -253,9 +224,12 @@ display(Markdown(stats_df.to_markdown()))
 **Key insights from summary statistics:**
 
 - **Mean vs Median:** Large differences suggest skewed distributions (common with trip distances, fares)
+  - *Why this matters:* If mean >> median, most values are small but a few are very large (right-skewed). This affects which models work well and whether we need transformations.
+  - *Example:* If mean fare is $15 but median is $12, a few expensive trips are pulling the average up. Most trips are cheaper than average.
 - **Min/Max values:** Extreme values may indicate outliers or data errors
+  - *Example:* A trip distance of -5 miles is clearly an error. A distance of 100 miles might be valid (airport trip) or an error.
 - **Standard deviation:** High std dev relative to mean suggests high variability
-- **25th/75th percentiles:** Help identify the range where most data falls
+- **25th/75th percentiles:** Help identify the range where most data falls (the "typical" range)
 
 Finally, we need to check for missing data, which is critical for data quality assessment:
 
@@ -287,6 +261,24 @@ else:
 ---
 
 ## Phase 2: Data Exploration & Understanding
+
+**What we're about to do:** Before cleaning, we need to understand our data deeply. This phase is like a detective investigation - we're looking for clues about data quality, patterns, and relationships.
+
+**Why this comes first:** 
+- We can't clean effectively without understanding what's normal vs. abnormal
+- Visualizations reveal patterns that summary statistics miss
+- Relationships between variables guide our cleaning strategy
+
+**What you'll learn:**
+- How to visualize distributions to spot skewness and outliers
+- How to identify temporal patterns (since our data has time structure)
+- How to discover relationships between variables
+- How to spot data quality issues visually
+
+**What to watch for:** 
+- Distributions that look "wrong" (e.g., negative distances)
+- Patterns that don't make sense (e.g., fares that don't correlate with distance)
+- Missing data patterns (random vs. systematic)
 
 ### Learning Objectives
 
@@ -496,6 +488,22 @@ plt.show()
 
 ## Phase 3: Data Cleaning & Preprocessing
 
+**What we're about to do:** Now that we understand our data, we'll systematically fix issues. This is where we transform messy real-world data into clean, analysis-ready data.
+
+**Why this matters:** 
+- Dirty data leads to wrong conclusions
+- Systematic cleaning is reproducible and defensible
+- The decisions we make here affect everything that follows
+
+**Our cleaning strategy:**
+1. **Handle missing data** - Decide: impute, drop, or flag?
+2. **Detect outliers** - Statistical methods + domain knowledge
+3. **Validate ranges** - Do values make sense? (e.g., no negative fares)
+4. **Remove duplicates** - Same trip recorded twice?
+5. **Fix data types** - Ensure datetime is datetime, numeric is numeric
+
+**Key principle:** Every cleaning decision should be defensible. We'll explain our reasoning for each choice.
+
 ### Learning Objectives
 
 - Identify and handle missing data
@@ -618,6 +626,21 @@ display(Markdown("✅ **Missing data handling complete!**"))
 
 **Why recalculate?** If we imputed tip_amount, the total_amount might have been calculated before imputation, so we need to update it. The `MTA_TAX` constant makes it clear what the `0.5` represents - this is domain knowledge from NYC taxi regulations.
 
+### 💡 Alternative Approach: Missing Data Strategies
+
+We used median imputation for `tip_amount`, but there are other valid approaches:
+
+| Method | When to Use | Pros | Cons |
+|--------|-------------|------|------|
+| **Fill with 0** | Missing = no tip (domain knowledge) | Simple, preserves meaning | Might underestimate |
+| **Median imputation** | General purpose (our choice) | Preserves distribution | Doesn't account for patterns |
+| **Mode imputation** | Categorical-like data | Simple | Might not represent missingness |
+| **KNN imputation** | Missingness correlates with other variables | Uses relationships | More complex, slower |
+
+**🔬 Try This:** Compare results using `fillna(0)` vs `fillna(median)`. How much does it affect downstream analysis?
+
+**Answer:** For `passenger_count`, **median is better** than 0. Why? Zero passengers is invalid (no trip without passengers), while median (~1-2) represents typical trips. Using 0 would skew averages and models. General rule: **use median for numeric data, mode for categorical, only use 0 if it's a valid value**.
+
 ### Step 3: Outlier Detection
 
 Outliers can significantly impact models and analysis. We need to identify them using statistical methods, then decide whether they're errors (remove) or valid extreme values (keep or transform).
@@ -634,7 +657,88 @@ Outliers can significantly impact models and analysis. We need to identify them 
 - **Z-score method:** Uses standard deviations (assumes normal distribution)
 - **Domain-based:** Use business rules (e.g., trips > 50 miles are errors)
 
-Let's use the IQR (Interquartile Range) method, which is robust and doesn't assume normality:
+Let's use the IQR (Interquartile Range) method, which is robust and doesn't assume normality.
+
+**🔬 Try This First: Experiment with Outlier Detection**
+
+Before we write the function, let's understand how outlier detection works by experimenting with different thresholds:
+
+```python
+# Quick experiment: See how different IQR multipliers affect outlier detection
+# Run this to understand the concept before using the function below
+
+# Calculate quartiles manually to see what's happening
+Q1 = df['trip_distance'].quantile(0.25)
+Q3 = df['trip_distance'].quantile(0.75)
+IQR = Q3 - Q1
+
+print(f"Q1 (25th percentile): {Q1:.2f} miles")
+print(f"Q3 (75th percentile): {Q3:.2f} miles")
+print(f"IQR (middle 50% range): {IQR:.2f} miles")
+print()
+
+# Try different multipliers
+for multiplier in [1.5, 2.0, 3.0]:
+    lower = Q1 - multiplier * IQR
+    upper = Q3 + multiplier * IQR
+    outliers = df[(df['trip_distance'] < lower) | (df['trip_distance'] > upper)]
+    print(f"IQR × {multiplier}: {len(outliers):,} outliers ({len(outliers)/len(df)*100:.2f}%)")
+    print(f"  Range: {lower:.2f} to {upper:.2f} miles")
+    print()
+
+# Question: Which threshold makes sense for NYC taxi data?
+# Consider: Airport trips to JFK are ~20 miles - are these outliers or valid trips?
+```
+
+**Answer:** For NYC taxi data, **1.5× IQR is too aggressive** - it flags airport trips (~15-20 miles) as outliers when they're actually valid. The **2.0× or 3.0× multiplier** is more appropriate, or better yet, use **domain knowledge** (e.g., max distance = 50 miles to include all NYC area airports). This is why we combine statistical methods with domain expertise.
+
+**Learning goal:** Understand that outlier detection isn't one-size-fits-all. The multiplier controls sensitivity - lower values catch more outliers (including valid extremes), higher values are more conservative.
+
+**Visualizing IQR Bounds:**
+
+Let's see what these bounds look like on actual data:
+
+```python
+# Visualize IQR outlier detection
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+fig.suptitle('IQR Outlier Detection Visualization', fontsize=16, fontweight='bold')
+
+# Left: Boxplot (shows IQR visually)
+axes[0].boxplot(df['trip_distance'].dropna(), vert=True)
+axes[0].axhline(Q1, color='green', linestyle='--', linewidth=2, label=f'Q1 (25%): {Q1:.1f}')
+axes[0].axhline(Q3, color='green', linestyle='--', linewidth=2, label=f'Q3 (75%): {Q3:.1f}')
+axes[0].axhline(Q1 - 1.5*IQR, color='red', linestyle='--', linewidth=2, label=f'Lower Bound: {Q1-1.5*IQR:.1f}')
+axes[0].axhline(Q3 + 1.5*IQR, color='red', linestyle='--', linewidth=2, label=f'Upper Bound: {Q3+1.5*IQR:.1f}')
+axes[0].set_ylabel('Trip Distance (miles)')
+axes[0].set_title('Box Plot with IQR Bounds')
+axes[0].legend(loc='upper right', fontsize=8)
+axes[0].grid(True, alpha=0.3, axis='y')
+
+# Right: Histogram with bounds
+axes[1].hist(df['trip_distance'], bins=100, alpha=0.7, edgecolor='black')
+axes[1].axvline(Q1, color='green', linestyle='--', linewidth=2, label=f'Q1: {Q1:.1f}')
+axes[1].axvline(Q3, color='green', linestyle='--', linewidth=2, label=f'Q3: {Q3:.1f}')
+axes[1].axvline(Q1 - 1.5*IQR, color='red', linestyle='--', linewidth=2, label=f'Lower: {Q1-1.5*IQR:.1f}')
+axes[1].axvline(Q3 + 1.5*IQR, color='red', linestyle='--', linewidth=2, label=f'Upper: {Q3+1.5*IQR:.1f}')
+axes[1].set_xlabel('Trip Distance (miles)')
+axes[1].set_ylabel('Frequency')
+axes[1].set_title('Distribution with IQR Bounds')
+axes[1].legend(loc='upper right', fontsize=8)
+axes[1].grid(True, alpha=0.3, axis='y')
+axes[1].set_xlim(0, 30)  # Zoom in to see pattern clearly
+
+plt.tight_layout()
+plt.show()
+
+display(Markdown("""
+**What you're seeing:**
+- **Box plot (left):** The box shows the IQR (Q1 to Q3). Whiskers extend to 1.5×IQR. Points beyond are outliers.
+- **Histogram (right):** Most data is between the green lines (Q1-Q3). Red lines show outlier boundaries.
+- **Key insight:** Values beyond red lines are statistical outliers, but they might be valid (e.g., airport trips).
+"""))
+```
+
+Now let's create a reusable function:
 
 ```python
 display(Markdown("# 🎯 Outlier Detection"))
@@ -930,6 +1034,33 @@ display(Markdown(f"""
 - **If <1%:** Very clean data, or thresholds too lenient
 - **Balance:** Remove errors while preserving valid extreme cases
 
+### 💡 Alternative Approach: Outlier Detection Methods
+
+We used IQR method, but other approaches exist:
+
+| Method | When to Use | Pros | Cons |
+|--------|-------------|------|------|
+| **IQR (our choice)** | Default, robust | No assumptions, robust | Might miss complex outliers |
+| **Z-Score** | Normal distributions | Simple | Assumes normality (rare!) |
+| **Domain rules** | Clear business logic | Interpretable | Requires expertise |
+| **Isolation Forest** | Complex patterns | Finds multi-dimensional outliers | Less interpretable |
+
+**🔬 Try This:** Compare outlier counts using IQR vs domain rules (e.g., `trip_distance > 50`). Which finds more meaningful outliers?
+
+**Answer:** **Domain rules are more meaningful** for taxi data. IQR flags valid 20-mile airport trips as outliers, while `trip_distance > 50` only catches impossible values. **Lesson: Combine statistical methods (IQR) with domain knowledge (max reasonable distance) for best results.** Use IQR as a starting point, then validate with your understanding of the data.
+
+### 🐛 Debugging Tips: Cleaning Issues
+
+**Problem: Cleaning removes too much data**
+- Check each step separately: Add `print(f"After step X: {len(df)}")` after each filter
+- Reconsider thresholds: Maybe 50 miles is too strict?
+- Use `.copy()` to avoid modifying original: `df_clean = df.copy()`
+
+**Problem: Outlier detection returns empty DataFrame**
+- Check data range: `df['column'].describe()`
+- Verify IQR calculation: `Q1, Q3 = df['column'].quantile([0.25, 0.75])`
+- Check for NaN: `df['column'].isna().sum()`
+
 ### Step 6: Data Type Validation and Conversion
 
 After cleaning, we need to ensure all data types are correct. This is crucial for:
@@ -1070,3 +1201,9 @@ For this project, CSV is a good choice for compatibility and ease of use.
 - Save intermediate results
 
 **Next:** Notebook 2 will focus on data wrangling, merging, and feature engineering.
+
+---
+
+![Pass the Salt](../media/pass_the_salt.png)
+
+*Keep it simple - don't over-engineer your data cleaning!*

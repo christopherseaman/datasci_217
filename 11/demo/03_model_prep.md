@@ -13,6 +13,8 @@ jupyter:
 
 # Notebook 3: Pattern Analysis & Modeling Prep
 
+![Over-Complicating Things](../media/over_complicating_things.jpg)
+
 **Phases 6-7:** Pattern Analysis & Advanced Visualization, Modeling Preparation
 
 **Dataset:** NYC Taxi Trip Dataset (continuing from Notebook 2)
@@ -21,7 +23,39 @@ jupyter:
 
 ---
 
+**Where we are:** We've cleaned our data (Notebook 1) and created features (Notebook 2). Now we need to understand patterns deeply and prepare data for modeling.
+
+**What we'll accomplish:**
+- Identify trends over time
+- Discover seasonal patterns (daily, weekly cycles)
+- Analyze correlations between variables
+- Split data temporally for modeling
+- Select and prepare features
+
+**Why this matters:** 
+- Pattern analysis guides feature selection and model interpretation
+- Temporal splits prevent data leakage (critical for time series!)
+- Proper preparation ensures model quality
+
+**The big picture:**
+- **Notebook 1:** Made data clean ✓
+- **Notebook 2:** Made data useful ✓
+- **Notebook 3 (this one):** Make data ready for modeling
+- **Notebook 4:** Build and evaluate models
+
+---
+
 ## Phase 6: Pattern Analysis & Advanced Visualization
+
+**What we're about to do:** Before we build models, we need to understand our data deeply. Pattern analysis helps us identify which features are most important, understand relationships between variables, and spot anomalies.
+
+**What we'll discover:**
+- Temporal patterns (hourly, daily, weekly cycles)
+- Relationships between variables (correlations)
+- Trends over time
+- Seasonal effects
+
+**How this informs modeling:** The patterns we find here will guide feature selection and help us interpret model results.
 
 ### Learning Objectives
 
@@ -139,6 +173,9 @@ axes[0, 1].set_xticks(monthly.index)
 axes[0, 1].grid(True, alpha=0.3)
 
 # Hourly pattern (heatmap by day of week)
+# What is .unstack()? It converts a multi-index Series into a DataFrame by moving
+# one index level to columns. Here, 'day_name' becomes column headers, making it
+# easy to create a heatmap where rows=hours, columns=days.
 hourly_dow = df_ts.groupby(['day_name', 'hour'])['fare_amount'].mean().unstack(level=0).reindex(columns=day_order)
 sns.heatmap(hourly_dow, annot=False, cmap='YlOrRd', ax=axes[1, 0], cbar_kws={'label': 'Avg Fare ($)'})
 axes[1, 0].set_title('Average Fare: Hour × Day of Week')
@@ -161,6 +198,15 @@ plt.show()
 ```
 
 ### Step 4: Correlation Analysis
+
+**What is correlation?** Correlation measures how two variables move together:
+- **+1.0:** Perfect positive relationship (when one goes up, the other always goes up)
+- **0.0:** No relationship (variables are independent)
+- **-1.0:** Perfect negative relationship (when one goes up, the other always goes down)
+
+**Important caveat:** Correlation ≠ Causation. Just because fare_amount and trip_distance are correlated doesn't mean distance causes fare - there could be other factors (tolls, time of day, etc.).
+
+**Why this matters for modeling:** Highly correlated features (|r| > 0.9) are redundant - we might only need one. Moderate correlations (0.3-0.7) suggest useful relationships we can exploit.
 
 ```python
 # Select numeric features for correlation
@@ -242,6 +288,22 @@ plt.show()
 
 ## Phase 7: Modeling Preparation
 
+**What we're about to do:** We'll prepare our data for modeling by splitting it properly and selecting features. This is critical - mistakes here can invalidate your entire analysis.
+
+**Why temporal split matters:** 
+
+If we randomly split time series data, we might train on future data and test on past data. This creates **data leakage** - the model "sees the future" during training, which inflates performance metrics.
+
+**Example of the problem:**
+- Random split: Train on Jan 15, Feb 3, Mar 10... Test on Jan 2, Feb 20, Mar 5...
+- The model learns patterns from February and March, then tests on January
+- This is unrealistic - in real life, we predict the future using only past data
+
+**Temporal split fixes this:**
+- Train on Jan 1-24, test on Jan 25-31
+- Model only uses past data to predict future
+- Performance metrics reflect real-world accuracy
+
 ### Learning Objectives
 
 - Split data temporally for time series
@@ -297,6 +359,50 @@ plt.show()
 
 ### Step 2: Feature Selection
 
+**What we're about to do:** We'll select which features (variables) to use for modeling. Not all features are useful - some are redundant, some are irrelevant, and some might cause problems.
+
+**Why feature selection matters:**
+- Too many features can cause overfitting
+- Some features might be highly correlated (redundant)
+- Simpler models are easier to interpret and often generalize better
+- Feature selection is iterative - we'll refine our choices
+
+**🔬 Try This First: Explore Feature Relationships**
+
+Before selecting features, let's understand what we have:
+
+```python
+# Quick exploration: Which features are correlated?
+# This helps us identify redundant features
+
+# First, define our target and potential features
+target = 'fare_amount'
+
+# List all numeric features we might use
+numeric_features = ['hour', 'day_of_week', 'month', 'is_weekend',
+                   'trip_distance', 'passenger_count', 'trip_duration',
+                   'speed_mph', 'fare_per_mile']
+
+# Check which features are actually available in the data
+available_numeric = [f for f in numeric_features if f in df_model.columns]
+
+# Calculate correlation with target
+if available_numeric:
+    correlation_with_target = df_model[available_numeric + [target]].corr()[target].sort_values(ascending=False)
+    print("Features correlated with fare_amount:")
+    print(correlation_with_target)
+    print()
+
+    # Question: Which features are most correlated with the target?
+    # Which features are highly correlated with each other (redundant)?
+```
+
+**Learning goal:** Understanding feature relationships helps you make informed selection decisions. Features with high correlation to the target are likely useful. Features highly correlated with each other (|r| > 0.9) might be redundant.
+
+Now let's select our features:
+
+> **⚠️ Note on `fare_per_mile`:** This feature is derived from `fare_amount` (our target), so including it could cause **feature leakage**. In practice, remove features derived from your target variable.
+
 ```python
 # Define target variable
 target = 'fare_amount'
@@ -309,7 +415,8 @@ feature_cols = [
     # Trip characteristics
     'trip_distance', 'passenger_count', 'trip_duration',
     # Derived features
-    'speed_mph', 'fare_per_mile',
+    'speed_mph',
+    'fare_per_mile',  # Derived from target - should we include this?
     # Categorical (will need encoding)
     'time_of_day', 'distance_category', 'pickup_borough'
 ]
@@ -404,6 +511,31 @@ display(Markdown(f"""
 """))
 ```
 
+### ⚠️ Common Pitfall: Random Split on Time Series Data
+
+**The mistake:** Using `train_test_split()` with `shuffle=True` on time series data
+
+```
+# ❌ Wrong for time series
+from sklearn.model_selection import train_test_split
+X_train, X_test = train_test_split(X, shuffle=True)  # DON'T DO THIS!
+
+# ✅ Correct for time series
+split_date = df['datetime'].quantile(0.8)
+train = df[df['datetime'] < split_date]
+test = df[df['datetime'] >= split_date]
+```
+
+### 🐛 Debugging Tips: Modeling Prep Issues
+
+**Problem: Train and test sets have different column counts**
+- Check for missing columns: `set(X_train.columns) - set(X_test.columns)`
+- Align columns: `X_test = X_test.reindex(columns=X_train.columns, fill_value=0)`
+
+**Problem: Categorical encoding creates different columns**
+- Use same categories: Fit encoder on training, transform both
+- Check for new categories: `set(X_test['col'].unique()) - set(X_train['col'].unique())`
+
 ### Step 5: Save Prepared Data
 
 ```python
@@ -451,3 +583,9 @@ display(Markdown(f"""
 - Proper preparation ensures model quality
 
 **Next:** Notebook 4 will build and evaluate predictive models.
+
+---
+
+![xkcd 1513](../media/xkcd_1513.png)
+
+*Data preparation is where the real work happens.*

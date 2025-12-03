@@ -13,11 +13,32 @@ jupyter:
 
 # Notebook 2: Wrangling & Feature Engineering
 
+![Don't Reinvent the Wheel](../media/reinvent_the_wheel.png)
+
 **Phases 4-5:** Data Wrangling & Transformation, Feature Engineering & Aggregation
 
 **Dataset:** NYC Taxi Trip Dataset (continuing from Notebook 1)
 
 **Focus:** Transforming and enriching data - merging datasets, working with datetime data, reshaping, and creating features for modeling.
+
+---
+
+**Where we are:** We've cleaned our data (Notebook 1). Now we're transforming it into a format that's ready for analysis and modeling. This is where we create the features that will help us understand patterns and make predictions.
+
+**What we'll accomplish:**
+- Merge additional data sources (zone lookup)
+- Extract temporal features from datetime columns
+- Create derived features (speed, fare per mile, etc.)
+- Perform aggregations to understand patterns
+- Calculate rolling windows for trend analysis
+
+**Why this matters:** Raw data rarely has the features we need. Feature engineering is where domain knowledge meets data science - we create variables that capture meaningful patterns in our data.
+
+**The big picture:**
+- **Notebook 1:** Made data clean ✓
+- **Notebook 2 (this one):** Make data useful (add features, reshape, aggregate)
+- **Notebook 3:** Make data ready for modeling
+- **Notebook 4:** Build and evaluate models
 
 ---
 
@@ -118,7 +139,12 @@ df_ts['year'] = df_ts.index.year
 df_ts['is_weekend'] = df_ts['day_of_week'].isin([5, 6]).astype(int)
 
 # Time-of-day categorization constants
-# These boundaries capture typical NYC activity patterns
+# Why these specific hours? Based on NYC transportation patterns:
+# - 5 AM: Morning rush begins (commuters start traveling)
+# - 12 PM: Lunch period, midday activity peaks
+# - 5 PM (17): Evening rush begins (work day ends)
+# - 9 PM (21): Late night starts (dinner service ends, bars/nightlife)
+# These capture distinct fare and volume patterns in taxi data
 MORNING_START = 5    # Rush hour begins
 AFTERNOON_START = 12  # Lunch and midday
 EVENING_START = 17   # Evening rush hour begins
@@ -238,66 +264,38 @@ else:
 
 # Set datetime index back
 df_ts = df_ts_reset.set_index('pickup_datetime').sort_index()
-
-# Demonstrate other join types (for educational purposes)
-display(Markdown("# 🔗 Join Type Examples (Educational)"))
-
-# Create example DataFrames to demonstrate join types
-left_df = pd.DataFrame({'key': [1, 2, 3, 4], 'left_value': ['A', 'B', 'C', 'D']})
-right_df = pd.DataFrame({'key': [2, 3, 4, 5], 'right_value': ['X', 'Y', 'Z', 'W']})
-
-display(Markdown(f"""
-**Left DataFrame:**
-
-{left_df.to_markdown(index=False)}
-
-**Right DataFrame:**
-
-{right_df.to_markdown(index=False)}
-"""))
-
-# INNER JOIN: Only rows with matching keys in both DataFrames
-inner_result = pd.merge(left_df, right_df, on='key', how='inner')
-display(Markdown(f"""
-### INNER JOIN *(only matching keys)*
-
-{inner_result.to_markdown(index=False)}
-
-> Keys 2, 3, 4 exist in **both** tables → 3 rows returned
-"""))
-
-# LEFT JOIN: All rows from left, matching from right
-left_result = pd.merge(left_df, right_df, on='key', how='left')
-display(Markdown(f"""
-### LEFT JOIN *(all from left, matching from right)*
-
-{left_result.to_markdown(index=False)}
-
-> All 4 keys from left table kept; key 1 has no match → `NaN` for right_value
-"""))
-
-# RIGHT JOIN: All rows from right, matching from left
-right_result = pd.merge(left_df, right_df, on='key', how='right')
-display(Markdown(f"""
-### RIGHT JOIN *(all from right, matching from left)*
-
-{right_result.to_markdown(index=False)}
-
-> All 4 keys from right table kept; key 5 has no match → `NaN` for left_value
-"""))
-
-# OUTER JOIN: All rows from both DataFrames
-outer_result = pd.merge(left_df, right_df, on='key', how='outer')
-display(Markdown(f"""
-### OUTER JOIN *(all rows from both)*
-
-{outer_result.to_markdown(index=False)}
-
-> All keys from both tables: 1-5. Keys 1 and 5 have `NaN` where no match exists
-"""))
 ```
 
+**💡 Understanding Join Types:** We used LEFT JOIN above (keep all trips, add zone info where available). Here are all four types:
+
+| Join Type | What it Returns | When to Use |
+|-----------|-----------------|-------------|
+| **INNER** | Only matching rows from both tables | When you only want records that exist in both |
+| **LEFT** *(we used)* | All from left + matching from right | Keep all main records, add supplementary info |
+| **RIGHT** | All from right + matching from left | Rarely used (just swap tables and use LEFT) |
+| **OUTER** | All rows from both tables | When you need everything, even non-matches |
+
+**Example:**
+```python
+# Quick demonstration with simple data
+left = pd.DataFrame({'key': [1, 2, 3], 'val': ['A', 'B', 'C']})
+right = pd.DataFrame({'key': [2, 3, 4], 'val': ['X', 'Y', 'Z']})
+
+inner = pd.merge(left, right, on='key', how='inner')   # → keys [2, 3] only
+left_j = pd.merge(left, right, on='key', how='left')   # → keys [1, 2, 3] (all from left)
+outer = pd.merge(left, right, on='key', how='outer')   # → keys [1, 2, 3, 4] (all)
+```
+
+For taxi data, LEFT JOIN makes sense: we keep all trips and add zone names where they exist.
+
 ### Step 5: Reshape Data - Pivot Table Example
+
+**What is a pivot table?** A pivot table reshapes data to show relationships between categorical variables. Here, we're creating a 2D table where:
+- Rows = days of week
+- Columns = times of day  
+- Values = average fare amount
+
+This makes it easy to see patterns like "Friday evenings have higher fares" at a glance. It's like Excel pivot tables, but in pandas.
 
 ```python
 # Create a pivot table: Average fare by day of week and time of day
@@ -352,6 +350,22 @@ display(Markdown(hourly_long.head(10).round(2).to_markdown(index=False)))
 ---
 
 ## Phase 5: Feature Engineering & Aggregation
+
+**What we're about to do:** We'll create new features from existing data. This is where domain knowledge becomes code - we create variables that capture meaningful patterns.
+
+**Why create new features?** The raw data has trip_distance and trip_duration, but combining them gives us speed - a feature that might be more predictive than either alone. Feature engineering is about creating variables that capture meaningful relationships.
+
+**Features we'll create:**
+- **Speed (mph):** Traffic patterns affect fares
+- **Fare per mile:** Pricing efficiency
+- **Tip percentage:** Customer satisfaction proxy
+- **Distance categories:** Short/medium/long trips
+
+**What you'll learn:**
+- How to derive new features from existing columns
+- How GroupBy aggregations reveal patterns
+- How rolling windows smooth trends
+- How to think about what features might be predictive
 
 ### Learning Objectives
 
@@ -429,6 +443,32 @@ GroupBy splits data into groups, applies a function to each group, and combines 
 - **Multiple columns:** `groupby(['day_of_week', 'time_of_day'])` - group by multiple variables
 - **Multiple functions:** `agg({'fare': 'mean', 'distance': 'sum'})` - different functions for different columns
 
+**🔬 Try This First: Experiment with Simple GroupBy**
+
+Before we do complex aggregations, let's understand GroupBy with a simple example:
+
+```python
+# Simple experiment: Group by day of week and see what we get
+simple_groupby = df_ts.groupby('day_name')['fare_amount'].mean()
+print("Average fare by day:")
+print(simple_groupby)
+print()
+
+# Try different aggregations on the same grouping
+experiments = df_ts.groupby('day_name')['fare_amount'].agg(['mean', 'median', 'std', 'count'])
+print("Multiple statistics by day:")
+print(experiments)
+print()
+
+# Question: What patterns do you notice?
+# - Which day has the highest average fare? Why might that be?
+# - How does mean compare to median? What does that tell you about the distribution?
+```
+
+**Learning goal:** GroupBy is about asking "what's the average/median/count of X for each value of Y?" Experimenting helps you understand the power of this operation.
+
+Now let's do more complex aggregations:
+
 ```python
 # Aggregate by day of week
 daily_stats = df_ts.groupby('day_name').agg({
@@ -497,24 +537,21 @@ LONG_WINDOW_HOURS = LONG_WINDOW_DAYS * HOURS_PER_DAY    # 720 hours
 
 # Calculate rolling averages
 hourly_trips['fare_7d_avg'] = hourly_trips['fare_amount'].rolling(
-    window=SHORT_WINDOW_HOURS,
-    min_periods=1
-).mean()
-
+    window=SHORT_WINDOW_HOURS, min_periods=1).mean()
 hourly_trips['fare_30d_avg'] = hourly_trips['fare_amount'].rolling(
-    window=LONG_WINDOW_HOURS,
-    min_periods=1
-).mean()
+    window=LONG_WINDOW_HOURS, min_periods=1).mean()
 
 # Exponentially weighted moving average (gives more weight to recent data)
 hourly_trips['fare_ewm'] = hourly_trips['fare_amount'].ewm(
-    span=SHORT_WINDOW_HOURS,
-    adjust=False  # Use recursive calculation
-).mean()
+    span=SHORT_WINDOW_HOURS, adjust=False).mean()
 
 display(Markdown("### 📈 Rolling Window Calculations"))
 display(Markdown(hourly_trips[['fare_amount', 'fare_7d_avg', 'fare_30d_avg', 'fare_ewm']].head(20).round(2).to_markdown()))
+```
 
+Now let's visualize how rolling averages smooth the raw data:
+
+```python
 # Visualize rolling averages
 plt.figure(figsize=(14, 6))
 plt.plot(hourly_trips.index, hourly_trips['fare_amount'], alpha=0.3, label='Hourly Average', linewidth=1)
@@ -530,6 +567,187 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 ```
+
+### Step 3b: Time-Series Specific Operations
+
+**Important distinction:** The NYC Taxi data is **event-based** (discrete trips), but many real-world datasets are **continuous time-series** (sensor readings, weather data, stock prices). If your data is time-series, you'll need additional techniques.
+
+**When you need time-series techniques:**
+- Sensor data (temperature, pressure, flow)
+- Financial data (stock prices, trading volume)
+- IoT/telemetry data (device metrics)
+- Continuous monitoring data
+
+**Key difference:**
+- **Event-based (taxi trips):** Each row is a discrete event with a timestamp
+- **Time-series (sensors):** Continuous measurements at (possibly irregular) intervals
+
+#### Handling Irregular Sampling
+
+Time-series data often has irregular sampling - sensors may report at inconsistent intervals due to connectivity issues, power saving, or variable conditions.
+
+```python
+# Example: Resample irregular sensor data to regular intervals
+
+# Our taxi data is already fairly regular (trips happen continuously)
+# But let's demonstrate resampling for time-series data
+
+# Resample to hourly intervals (useful for irregular data)
+hourly_regular = df_ts.resample('h').agg({
+    'fare_amount': 'mean',      # Average fare per hour
+    'trip_distance': 'sum',     # Total distance per hour
+    'passenger_count': 'sum'    # Total passengers per hour
+})
+
+display(Markdown("### 📊 Resampled to Hourly Intervals"))
+display(Markdown(hourly_regular.head(10).round(2).to_markdown()))
+
+# Common resampling frequencies:
+# 'h' = hourly, 'D' = daily, 'W' = weekly, 'ME' = month end
+# 'min' = minute, '15min' = 15 minutes, '6h' = 6 hours
+```
+
+**Why resample?**
+- **Regularize irregular data:** Sensors may report every 5 min, 7 min, 12 min → resample to consistent 15 min
+- **Reduce noise:** High-frequency data can be noisy → aggregate to lower frequency
+- **Match granularity:** Align different data sources to same time intervals
+
+#### Creating Lag Features for Time-Series Prediction
+
+In time-series data, **past values often predict future values**. Lag features shift data backward in time to capture temporal dependencies.
+
+```python
+# Create lag features for trip volume prediction
+# These are useful when predicting future volume based on past patterns
+
+# Calculate hourly trip counts first
+hourly_counts = df_ts.resample('h').size().to_frame(name='trip_count')
+
+# Create lag features (shift data backward)
+hourly_counts['trips_lag_1h'] = hourly_counts['trip_count'].shift(1)      # 1 hour ago
+hourly_counts['trips_lag_6h'] = hourly_counts['trip_count'].shift(6)      # 6 hours ago
+hourly_counts['trips_lag_24h'] = hourly_counts['trip_count'].shift(24)    # Same hour yesterday
+hourly_counts['trips_lag_168h'] = hourly_counts['trip_count'].shift(168)  # Same hour last week
+
+display(Markdown("### 🕐 Lag Features (Past Values as Predictors)"))
+display(Markdown(hourly_counts.head(25).to_markdown()))
+```
+
+**When to use lag features:**
+- Predicting future temperature based on recent temperatures
+- Forecasting demand based on historical patterns
+- Predicting sensor failures based on previous readings
+
+**⚠️ Important:** Lag features create NaN values at the beginning (no past data exists). Handle with `.dropna()` or forward-fill if appropriate.
+
+#### Time-Series Decomposition (Advanced)
+
+For continuous time-series, you can separate the signal into components: **Trend + Seasonal + Residual**
+
+```python
+# Demonstrate time-series decomposition with daily trip counts
+daily_counts = df_ts.resample('D').size()
+
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+# Decompose the time series (requires at least 2 full cycles)
+# For taxi data with weekly patterns, we need at least 14 days
+decomposition = seasonal_decompose(
+    daily_counts,
+    model='additive',    # Additive: components add up (Trend + Seasonal + Residual)
+    period=7             # Weekly seasonality (7 days)
+)
+```
+
+Now let's visualize the decomposition components:
+
+```python
+# Visualize decomposition components
+fig, axes = plt.subplots(4, 1, figsize=(14, 10))
+fig.suptitle('Time-Series Decomposition: Daily Trip Counts', fontsize=16, fontweight='bold')
+
+# Original data
+axes[0].plot(daily_counts.index, daily_counts.values, linewidth=2)
+axes[0].set_ylabel('Trips')
+axes[0].set_title('Original')
+axes[0].grid(True, alpha=0.3)
+
+# Trend component
+axes[1].plot(decomposition.trend.index, decomposition.trend.values, linewidth=2, color='green')
+axes[1].set_ylabel('Trips')
+axes[1].set_title('Trend (Long-term Pattern)')
+axes[1].grid(True, alpha=0.3)
+
+# Seasonal component
+axes[2].plot(decomposition.seasonal.index, decomposition.seasonal.values, linewidth=2, color='orange')
+axes[2].set_ylabel('Trips')
+axes[2].set_title('Seasonal (Weekly Cycle)')
+axes[2].grid(True, alpha=0.3)
+
+# Residual (random noise)
+axes[3].plot(decomposition.resid.index, decomposition.resid.values, linewidth=1, color='red', alpha=0.7)
+axes[3].set_ylabel('Trips')
+axes[3].set_title('Residual (Random Noise)')
+axes[3].set_xlabel('Date')
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+display(Markdown("""
+### 📈 Understanding Decomposition Components
+
+- **Trend:** Long-term increase/decrease (e.g., growing demand over months)
+- **Seasonal:** Repeating patterns (e.g., weekday vs weekend, or hourly cycles)
+- **Residual:** Random noise after removing trend and seasonality
+
+**Why decompose?**
+- Understand what drives patterns (is variation due to trend, seasonality, or noise?)
+- Remove seasonality to see underlying trends
+- Forecast by modeling each component separately
+"""))
+```
+
+#### Autocorrelation (Brief Introduction)
+
+**Autocorrelation** measures how a time series correlates with itself at different time lags. High autocorrelation at lag 24 (for hourly data) means "values 24 hours apart are similar."
+
+```python
+# Quick autocorrelation check (visual)
+# This helps identify temporal patterns
+
+from pandas.plotting import autocorrelation_plot
+
+fig, ax = plt.subplots(figsize=(12, 6))
+autocorrelation_plot(daily_counts, ax=ax)
+ax.set_title('Autocorrelation Plot: Daily Trip Counts', fontsize=14, fontweight='bold')
+ax.set_xlabel('Lag (days)')
+ax.set_ylabel('Autocorrelation')
+ax.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+display(Markdown("""
+### 🔗 Interpreting Autocorrelation
+
+- **High correlation at lag 7:** Strong weekly pattern (same day of week)
+- **Gradual decay:** Persistent trends
+- **Quick drop to zero:** Data is mostly random
+
+**Why it matters:**
+- Helps identify seasonality periods
+- Tells us if lag features will be useful
+- Informs model choice (some models assume low autocorrelation)
+"""))
+```
+
+**For your final assignment:** If you're working with continuous sensor data (like Chicago Beach Weather), use these time-series techniques to:
+1. Resample irregular readings to regular intervals
+2. Create lag features (e.g., temperature 1 hour ago, 24 hours ago)
+3. Identify trends and seasonality with decomposition
+4. Check autocorrelation to understand temporal dependencies
+
+---
 
 ### Step 4: Time-Based Aggregations
 
@@ -608,6 +826,87 @@ display(Markdown("### 💵 Average Fare: Day of Week × Time of Day"))
 display(Markdown(crosstab_fare.to_markdown()))
 ```
 
+### 💡 Alternative Approach: GroupBy vs. Pivot vs. Reshape
+
+We used GroupBy, but pandas offers multiple ways to aggregate:
+
+| Method | When to Use | Example |
+|--------|-------------|---------|
+| **GroupBy** | Most flexible, default choice | `df.groupby('day')['fare'].mean()` |
+| **Pivot Table** | 2D summary tables | `df.pivot_table(values='fare', index='day', columns='time')` |
+| **Crosstab** | Frequency/aggregate cross-tabs | `pd.crosstab(df['day'], df['time'], values=df['fare'], aggfunc='mean')` |
+| **stack/unstack** | Reshape long ↔ wide | `grouped.unstack(level='time')` |
+
+**🔬 Try This:** Recreate the same summary using different methods. Which feels most natural for your use case?
+
+**Answer:** For most cases, **GroupBy is the most flexible and readable**. Use **Pivot Table** when you want 2D summary tables (rows × columns), and **Crosstab** for frequency counts with optional aggregations. **Example:** `df.groupby(['day', 'time'])['fare'].mean()` gives same result as `df.pivot_table(values='fare', index='day', columns='time')`, but GroupBy syntax feels more explicit about what you're doing.
+
+### 🐛 Debugging Tips: Wrangling Issues
+
+**Problem: Merge creates unexpected NaN values**
+- Check join keys: `df1['key'].nunique()` vs `df2['key'].nunique()`
+- Check for mismatches: `df1[~df1['key'].isin(df2['key'])]`
+- Verify join type: Using `how='left'` vs `how='inner'`?
+
+**Problem: GroupBy returns unexpected results**
+- Check for NaN in groupby column: `df['group_col'].isna().sum()`
+- Verify grouping: `df.groupby('group_col').size()` (shows all groups)
+
+**Problem: Can't set datetime index**
+- Parse datetime first: `df['datetime'] = pd.to_datetime(df['datetime'])`
+- Check for invalid dates: `df[pd.to_datetime(df['datetime'], errors='coerce').isna()]`
+
+### ⚠️ Critical Warning: Feature Leakage
+
+**What is feature leakage?** Using information from the future or from the target variable itself to make predictions. This creates artificially high performance that doesn't work in real-world deployment.
+
+**Common mistakes that cause leakage:**
+
+#### 1. Using Target Variable in Features
+```
+# ❌ WRONG: Creating features from the target
+df['fare_per_mile'] = df['fare_amount'] / df['trip_distance']  # OK - uses predictors
+df['tip_percentage'] = df['tip_amount'] / df['fare_amount']     # DANGER if predicting fare_amount!
+
+# ✅ CORRECT: Only use predictor variables in features
+# If predicting fare_amount, don't use tip_amount (which depends on fare)
+```
+
+#### 2. Rolling Windows of Target Variable
+```
+# ❌ WRONG: Rolling average of what you're trying to predict
+df['fare_7d_avg'] = df['fare_amount'].rolling(7).mean()  # Uses future fares!
+
+# ✅ CORRECT: Rolling averages of predictor variables
+df['distance_7d_avg'] = df['trip_distance'].rolling(7).mean()  # Uses past trips
+```
+
+#### 3. Aggregations That Include Future Data
+```
+# ❌ WRONG: Group statistics that include the row itself
+df['zone_avg_fare'] = df.groupby('zone')['fare_amount'].transform('mean')  # Includes itself!
+
+# ✅ CORRECT: Use .shift() to only use past data
+df['zone_avg_fare_lag'] = df.groupby('zone')['fare_amount'].transform('mean').shift(1)
+```
+
+**How to detect feature leakage:**
+1. **Check correlations:** Features with r > 0.95 with target are suspicious
+2. **Think temporally:** "Would I have this information at prediction time?"
+3. **Test on future data:** If performance drops dramatically, you likely have leakage
+
+**Example of leakage in time-series:**
+```
+# Creating lag features (CORRECT)
+df['temp_lag_1h'] = df['temperature'].shift(1)  # Use past to predict future ✅
+
+# But be careful with aggregations
+df['daily_avg_temp'] = df.groupby(df.index.date)['temperature'].transform('mean')  # ❌
+# This includes the current hour's temperature in the daily average!
+```
+
+**Rule of thumb:** If a feature gives you "too good to be true" results (R² > 0.99), check for leakage.
+
 ### Step 6: Save Processed Data
 
 ```python
@@ -654,3 +953,9 @@ display(Markdown(f"""
 - GroupBy aggregations summarize data at different levels
 
 **Next:** Notebook 3 will focus on pattern analysis, advanced visualizations, and preparing data for modeling.
+
+---
+
+![Commuter Tree](../media/commuter_tree%20.png)
+
+*Feature engineering is about finding the right representation of your data.*

@@ -1,6 +1,6 @@
 The Complete Data Science Workflow: From Raw Data to Insights
 
-![xkcd 1513: Automation](media/xkcd_1513.png)
+![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
 
 *"I used to be a data scientist, but then I automated myself out of a job. Now I'm just a script that runs every morning."*
 
@@ -58,6 +58,8 @@ This lecture is organized into **4 interactive notebooks** that you can follow a
    - Results communication
 
 ## Phase-to-Notebook Mapping
+
+This is really only useful if you get stuck on the final and want to know where to look in today’s lecture.
 
 **Notebook 1:** Phases 1-3 (Setup, Exploration, Cleaning)
 - Phase 1: Project Setup & Data Acquisition
@@ -181,19 +183,39 @@ By the end of this lecture, you should be able to:
    cd 11/demo
    ```
 
-2. **Open the notebooks in order:**
-   - `01_setup_exploration_cleaning.ipynb`
-   - `02_wrangling_feature_engineering.ipynb`
-   - `03_pattern_analysis_modeling_prep.ipynb`
-   - `04_modeling_results.ipynb`
+2. **Set up the environment:**
+   ```bash
+   uv venv .venv
+   source .venv/bin/activate
+   uv pip install -r requirements.txt
+   ```
 
-3. **Follow along** with the instructor or work through them independently
+3. **Download the NYC Taxi Trip Dataset:**
+   ```bash
+   chmod +x download_data.sh
+   ./download_data.sh
+   ```
 
-4. **Run each cell** to see the results and understand the workflow
+4. **Open the notebooks in order:**
+   - `01_setup.ipynb` - Setup, Exploration & Cleaning
+   - `02_wrangling.ipynb` - Wrangling & Feature Engineering
+   - `03_model_prep.ipynb` - Pattern Analysis & Modeling Prep
+   - `04_modeling.ipynb` - Modeling & Results
 
-**Note:** You'll need the NYC Taxi Trip Dataset. See the first notebook for download instructions.
+5. **Follow along** with the instructor or work through them independently
+
+6. **Run each cell** to see the results and understand the workflow
 
 ---
 
 *"The best way to learn data science is to do data science. This lecture gives you a complete, real-world example of how it all fits together."*
+
+# Holiday fun…
+
+- [Advent of Code](https://adventofcode.com) - Get in the holiday spirit!
+- [GameShell](https://github.com/phyver/GameShell) - A game to learn the Unix shell
+
+![xkcd 1513: Code Quality](media/xkcd_1513.png)
+
+*"I honestly didn't think you could even USE emoji in variable names. Or that there were so many different crying ones."*
 
