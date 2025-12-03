@@ -202,7 +202,7 @@ By the end of this lecture, you should be able to:
    - `03_model_prep.ipynb` - Pattern Analysis & Modeling Prep
    - `04_modeling.ipynb` - Modeling & Results
 
-5. **Follow along** with the instructor or work through them independently
+5. **Follow along** or work through them independently
 
 6. **Run each cell** to see the results and understand the workflow
 
