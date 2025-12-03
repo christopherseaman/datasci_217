@@ -1,0 +1,27 @@
+# NYC TLC Yellow Taxi Data Dictionary
+# Source: https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf
+
+vendor:
+  1: Creative Mobile
+  2: VeriFone
+
+ratecode:
+  1: Standard
+  2: JFK
+  3: Newark
+  4: Nassau/Westchester
+  5: Negotiated
+  6: Group ride
+
+payment_type:
+  1: Credit card
+  2: Cash
+  3: No charge
+  4: Dispute
+  5: Unknown
+  6: Voided
+
+store_and_fwd_flag:
+  Y: Store and forward
+  N: Not store and forward
+

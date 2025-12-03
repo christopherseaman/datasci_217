@@ -26,6 +26,7 @@ jupyter:
 **Where we are:** We've cleaned our data (Notebook 1). Now we're transforming it into a format that's ready for analysis and modeling. This is where we create the features that will help us understand patterns and make predictions.
 
 **What we'll accomplish:**
+
 - Merge additional data sources (zone lookup)
 - Extract temporal features from datetime columns
 - Create derived features (speed, fare per mile, etc.)
@@ -35,6 +36,7 @@ jupyter:
 **Why this matters:** Raw data rarely has the features we need. Feature engineering is where domain knowledge meets data science - we create variables that capture meaningful patterns in our data.
 
 **The big picture:**
+
 - **Notebook 1:** Made data clean ✓
 - **Notebook 2 (this one):** Make data useful (add features, reshape, aggregate)
 - **Notebook 3:** Make data ready for modeling
@@ -71,14 +73,21 @@ sns.set_palette("husl")
 # Load cleaned data from Notebook 1
 df = pd.read_csv('../output/01_cleaned_taxi_data.csv')
 
-display(Markdown(f"""
-### 📂 Data Loaded
+# Filter to valid rows only (exclude=False)
+# The exclude column was set in Notebook 1 based on data quality rules
+if 'exclude' in df.columns:
+    n_excluded = df['exclude'].sum()
+    df = df[~df['exclude']].drop(columns=['exclude', 'exclude_reason'])
+    display(Markdown(f"**Filtered out {n_excluded:,} excluded rows from Notebook 1**"))
 
-| Metric | Value |
-|--------|-------|
-| **Total trips** | {len(df):,} |
-| **Date range** | {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()} |
-"""))
+display(Markdown("### 📂 Data Loaded"))
+display(pd.DataFrame({
+    'Metric': ['Total trips', 'Date range'],
+    'Value': [
+        f"{len(df):,}",
+        f"{df['pickup_datetime'].min()} to {df['pickup_datetime'].max()}"
+    ]
+}))
 
 # Check if location IDs are available (they should be if using real NYC TLC data)
 if 'PULocationID' in df.columns and 'DOLocationID' in df.columns:
@@ -100,17 +109,17 @@ df['trip_duration'] = (df['dropoff_datetime'] - df['pickup_datetime']).dt.total_
 # Set pickup_datetime as index for datetime-based operations
 df_ts = df.set_index('pickup_datetime').sort_index()
 
-display(Markdown(f"""
-### ✅ Datetime Index Set
-
-| Metric | Value |
-|--------|-------|
-| **Shape** | {df_ts.shape[0]:,} rows × {df_ts.shape[1]} columns |
-| **Index range** | {df_ts.index.min()} to {df_ts.index.max()} |
-"""))
+display(Markdown("### ✅ Datetime Index Set"))
+display(pd.DataFrame({
+    'Metric': ['Shape', 'Index range'],
+    'Value': [
+        f"{df_ts.shape[0]:,} rows × {df_ts.shape[1]} columns",
+        f"{df_ts.index.min()} to {df_ts.index.max()}"
+    ]
+}))
 
 display(Markdown("**Preview:**"))
-display(Markdown(df_ts.head().to_markdown()))
+display(df_ts.head())
 ```
 
 ### Step 3: Extract Time-Based Features
@@ -171,7 +180,7 @@ def get_time_of_day(hour):
 df_ts['time_of_day'] = df_ts['hour'].apply(get_time_of_day)
 
 display(Markdown("### ⏰ Time-Based Features Extracted"))
-display(Markdown(df_ts[['hour', 'day_of_week', 'day_name', 'month', 'is_weekend', 'time_of_day']].head(10).to_markdown()))
+display(df_ts[['hour', 'day_of_week', 'day_name', 'month', 'is_weekend', 'time_of_day']].head(10))
 ```
 
 ### Step 4: Merge with Additional Data (Zone Lookup Table)
@@ -197,22 +206,29 @@ Please run `download_data.sh` to download the zone lookup file:
 chmod +x download_data.sh
 ./download_data.sh
 ```
+
 """))
     raise FileNotFoundError(f"Zone lookup file not found: {zone_lookup_file}. Run download_data.sh first.")
 
 # Load official zone lookup file
+
 zone_lookup = pd.read_csv(zone_lookup_file)
+
 # Rename columns to match our merge needs
+
 # Drop 'service_zone' to avoid duplicate columns when merging pickup and dropoff
+
 zone_lookup = zone_lookup.rename(columns={'Zone': 'zone_name'}).drop(columns=['service_zone'], errors='ignore')
 
 display(Markdown(f"✅ **Loaded official zone lookup:** {len(zone_lookup)} zones"))
 display(Markdown(f"**Columns:** `{list(zone_lookup.columns)}`"))
 display(Markdown("**Sample zones:**"))
-display(Markdown(zone_lookup[['LocationID', 'Borough', 'zone_name']].head(5).to_markdown(index=False)))
+display(zone_lookup[['LocationID', 'Borough', 'zone_name']].head(5))
 
 # Use actual location IDs from the real NYC TLC data
+
 # Real data includes PULocationID and DOLocationID columns
+
 df_ts_reset = df_ts.reset_index()
 
 if 'PULocationID' in df_ts_reset.columns and 'DOLocationID' in df_ts_reset.columns:
@@ -220,17 +236,24 @@ if 'PULocationID' in df_ts_reset.columns and 'DOLocationID' in df_ts_reset.colum
     df_ts_reset = df_ts_reset.rename(columns={'PULocationID': 'pickup_zone_id', 'DOLocationID': 'dropoff_zone_id'})
     display(Markdown(f"""
 ✅ **Using real location IDs from NYC TLC data**
+
 - **Pickup zones:** {df_ts_reset['pickup_zone_id'].nunique()} unique
 - **Dropoff zones:** {df_ts_reset['dropoff_zone_id'].nunique()} unique
 """))
 else:
-    # This should never execute - we check for PULocationID/DOLocationID above and raise ValueError if missing
-    # If we somehow get here, we can't do zone assignment without location IDs
+
+  # This should never execute - we check for PULocationID/DOLocationID above and raise ValueError if missing
+
+  # If we somehow get here, we can't do zone assignment without location IDs
+
     raise ValueError("PULocationID/DOLocationID columns are required but not found. This should not happen with real NYC TLC data.")
 
 # Merge pickup zone information using LEFT JOIN
+
 # LEFT JOIN keeps all rows from left DataFrame (df_ts), adds matching data from right (zone_lookup)
+
 # This is the most common join type - we want all trips, even if zone info is missing
+
 # IMPORTANT: Reset index before merge, then set it back to preserve DatetimeIndex
 
 if 'pickup_zone_id' in df_ts_reset.columns:
@@ -240,7 +263,7 @@ if 'pickup_zone_id' in df_ts_reset.columns:
         on='pickup_zone_id',
         how='left'  # LEFT JOIN: keep all trips, add zone info where available
     )
-    
+
     # Merge dropoff zone information
     df_ts_reset = df_ts_reset.merge(
         zone_lookup.rename(columns={'LocationID': 'dropoff_zone_id', 'zone_name': 'dropoff_zone_name', 'Borough': 'dropoff_borough'}),
@@ -248,14 +271,14 @@ if 'pickup_zone_id' in df_ts_reset.columns:
         how='left'  # LEFT JOIN: keep all trips
     )
     
-    display(Markdown(f"""
-### ✅ Zone Information Merged
-
-| Metric | Value |
-|--------|-------|
-| **Total columns** | {df_ts_reset.shape[1]} |
-| **Zones matched** | {df_ts_reset['pickup_zone_name'].notna().sum():,} / {len(df_ts_reset):,} trips |
-"""))
+    display(Markdown("### ✅ Zone Information Merged"))
+    display(pd.DataFrame({
+        'Metric': ['Total columns', 'Zones matched'],
+        'Value': [
+            df_ts_reset.shape[1],
+            f"{df_ts_reset['pickup_zone_name'].notna().sum():,} / {len(df_ts_reset):,} trips"
+        ]
+    }))
     if 'pickup_zone_name' in df_ts_reset.columns:
         display(Markdown("**Sample zone information:**"))
         display(df_ts_reset[['pickup_zone_name', 'pickup_borough', 'dropoff_zone_name', 'dropoff_borough']].head(10))
@@ -263,7 +286,9 @@ else:
     display(Markdown("⚠️ *Zone merge skipped - location IDs not available in data*"))
 
 # Set datetime index back
+
 df_ts = df_ts_reset.set_index('pickup_datetime').sort_index()
+
 ```
 
 **💡 Understanding Join Types:** We used LEFT JOIN above (keep all trips, add zone info where available). Here are all four types:
@@ -291,6 +316,7 @@ For taxi data, LEFT JOIN makes sense: we keep all trips and add zone names where
 ### Step 5: Reshape Data - Pivot Table Example
 
 **What is a pivot table?** A pivot table reshapes data to show relationships between categorical variables. Here, we're creating a 2D table where:
+
 - Rows = days of week
 - Columns = times of day  
 - Values = average fare amount
@@ -307,7 +333,7 @@ pivot_fare = df_ts.pivot_table(
 )
 
 display(Markdown("### 📊 Average Fare by Day of Week and Time of Day"))
-display(Markdown(pivot_fare.round(2).to_markdown()))
+display(pivot_fare.round(2))
 
 # Visualize the pivot table
 plt.figure(figsize=(12, 6))
@@ -333,7 +359,7 @@ hourly_summary = df_ts.groupby('hour').agg({
 }).reset_index()
 
 display(Markdown("### 📋 Hourly Summary (Wide Format)"))
-display(Markdown(hourly_summary.head().round(2).to_markdown(index=False)))
+display(hourly_summary.head().round(2))
 
 # Melt to long format
 hourly_long = hourly_summary.melt(
@@ -344,7 +370,7 @@ hourly_long = hourly_summary.melt(
 )
 
 display(Markdown("### 📋 Hourly Summary (Long Format)"))
-display(Markdown(hourly_long.head(10).round(2).to_markdown(index=False)))
+display(hourly_long.head(10).round(2))
 ```
 
 ---
@@ -356,12 +382,14 @@ display(Markdown(hourly_long.head(10).round(2).to_markdown(index=False)))
 **Why create new features?** The raw data has trip_distance and trip_duration, but combining them gives us speed - a feature that might be more predictive than either alone. Feature engineering is about creating variables that capture meaningful relationships.
 
 **Features we'll create:**
+
 - **Speed (mph):** Traffic patterns affect fares
 - **Fare per mile:** Pricing efficiency
 - **Tip percentage:** Customer satisfaction proxy
 - **Distance categories:** Short/medium/long trips
 
 **What you'll learn:**
+
 - How to derive new features from existing columns
 - How GroupBy aggregations reveal patterns
 - How rolling windows smooth trends
@@ -422,7 +450,7 @@ def categorize_distance(dist):
 df_ts['distance_category'] = df_ts['trip_distance'].apply(categorize_distance)
 
 display(Markdown("### ✨ Derived Features Created"))
-display(Markdown(df_ts[['speed_mph', 'fare_per_mile', 'tip_percentage', 'distance_category']].head(10).round(2).to_markdown()))
+display(df_ts[['speed_mph', 'fare_per_mile', 'tip_percentage', 'distance_category']].head(10).round(2))
 ```
 
 ### Step 2: GroupBy Aggregations
@@ -481,7 +509,7 @@ daily_stats = df_ts.groupby('day_name').agg({
 # Flatten multi-level column names for cleaner display
 daily_stats.columns = ['_'.join(col).strip() for col in daily_stats.columns.values]
 display(Markdown("### 📅 Statistics by Day of Week"))
-display(Markdown(daily_stats.to_markdown()))
+display(daily_stats)
 
 # Aggregate by multiple dimensions: day of week and time of day
 multi_agg = df_ts.groupby(['day_name', 'time_of_day']).agg({
@@ -490,7 +518,7 @@ multi_agg = df_ts.groupby(['day_name', 'time_of_day']).agg({
 }).rename(columns={'fare_amount': 'avg_fare', 'trip_distance': 'trip_count'}).round(2)
 
 display(Markdown("### 📊 Average Fare by Day and Time"))
-display(Markdown(multi_agg.head(15).to_markdown()))
+display(multi_agg.head(15))
 ```
 
 ### Step 3: Rolling Window Calculations
@@ -546,7 +574,7 @@ hourly_trips['fare_ewm'] = hourly_trips['fare_amount'].ewm(
     span=SHORT_WINDOW_HOURS, adjust=False).mean()
 
 display(Markdown("### 📈 Rolling Window Calculations"))
-display(Markdown(hourly_trips[['fare_amount', 'fare_7d_avg', 'fare_30d_avg', 'fare_ewm']].head(20).round(2).to_markdown()))
+display(hourly_trips[['fare_amount', 'fare_7d_avg', 'fare_30d_avg', 'fare_ewm']].head(20).round(2))
 ```
 
 Now let's visualize how rolling averages smooth the raw data:
@@ -573,12 +601,14 @@ plt.show()
 **Important distinction:** The NYC Taxi data is **event-based** (discrete trips), but many real-world datasets are **continuous time-series** (sensor readings, weather data, stock prices). If your data is time-series, you'll need additional techniques.
 
 **When you need time-series techniques:**
+
 - Sensor data (temperature, pressure, flow)
 - Financial data (stock prices, trading volume)
 - IoT/telemetry data (device metrics)
 - Continuous monitoring data
 
 **Key difference:**
+
 - **Event-based (taxi trips):** Each row is a discrete event with a timestamp
 - **Time-series (sensors):** Continuous measurements at (possibly irregular) intervals
 
@@ -600,7 +630,7 @@ hourly_regular = df_ts.resample('h').agg({
 })
 
 display(Markdown("### 📊 Resampled to Hourly Intervals"))
-display(Markdown(hourly_regular.head(10).round(2).to_markdown()))
+display(hourly_regular.head(10).round(2))
 
 # Common resampling frequencies:
 # 'h' = hourly, 'D' = daily, 'W' = weekly, 'ME' = month end
@@ -608,6 +638,7 @@ display(Markdown(hourly_regular.head(10).round(2).to_markdown()))
 ```
 
 **Why resample?**
+
 - **Regularize irregular data:** Sensors may report every 5 min, 7 min, 12 min → resample to consistent 15 min
 - **Reduce noise:** High-frequency data can be noisy → aggregate to lower frequency
 - **Match granularity:** Align different data sources to same time intervals
@@ -630,10 +661,13 @@ hourly_counts['trips_lag_24h'] = hourly_counts['trip_count'].shift(24)    # Same
 hourly_counts['trips_lag_168h'] = hourly_counts['trip_count'].shift(168)  # Same hour last week
 
 display(Markdown("### 🕐 Lag Features (Past Values as Predictors)"))
-display(Markdown(hourly_counts.head(25).to_markdown()))
+
+# Show random set of rows in 2023
+display(hourly_counts[hourly_counts.index.year == 2023].sample(25))
 ```
 
 **When to use lag features:**
+
 - Predicting future temperature based on recent temperatures
 - Forecasting demand based on historical patterns
 - Predicting sensor failures based on previous readings
@@ -742,6 +776,7 @@ display(Markdown("""
 ```
 
 **For your final assignment:** If you're working with continuous sensor data (like Chicago Beach Weather), use these time-series techniques to:
+
 1. Resample irregular readings to regular intervals
 2. Create lag features (e.g., temperature 1 hour ago, 24 hours ago)
 3. Identify trends and seasonality with decomposition
@@ -762,7 +797,7 @@ hourly_pattern.columns = ['fare_amount', 'trip_count', 'trip_distance', 'total_a
 hourly_pattern = hourly_pattern[['fare_amount', 'trip_count', 'trip_distance', 'total_amount']]
 
 display(Markdown("### ⏰ Hourly Patterns (aggregated across all days)"))
-display(Markdown(hourly_pattern.head(10).round(2).to_markdown()))
+display(hourly_pattern.head(10).round(2))
 
 # Visualize hourly patterns
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -811,7 +846,7 @@ crosstab = pd.crosstab(
 )
 
 display(Markdown("### 📊 Trip Count: Day of Week × Time of Day"))
-display(Markdown(crosstab.to_markdown()))
+display(crosstab)
 
 # Cross-tabulation with aggregation
 crosstab_fare = pd.crosstab(
@@ -823,7 +858,7 @@ crosstab_fare = pd.crosstab(
 ).round(2)
 
 display(Markdown("### 💵 Average Fare: Day of Week × Time of Day"))
-display(Markdown(crosstab_fare.to_markdown()))
+display(crosstab_fare)
 ```
 
 ### 💡 Alternative Approach: GroupBy vs. Pivot vs. Reshape
@@ -844,15 +879,18 @@ We used GroupBy, but pandas offers multiple ways to aggregate:
 ### 🐛 Debugging Tips: Wrangling Issues
 
 **Problem: Merge creates unexpected NaN values**
+
 - Check join keys: `df1['key'].nunique()` vs `df2['key'].nunique()`
 - Check for mismatches: `df1[~df1['key'].isin(df2['key'])]`
 - Verify join type: Using `how='left'` vs `how='inner'`?
 
 **Problem: GroupBy returns unexpected results**
+
 - Check for NaN in groupby column: `df['group_col'].isna().sum()`
 - Verify grouping: `df.groupby('group_col').size()` (shows all groups)
 
 **Problem: Can't set datetime index**
+
 - Parse datetime first: `df['datetime'] = pd.to_datetime(df['datetime'])`
 - Check for invalid dates: `df[pd.to_datetime(df['datetime'], errors='coerce').isna()]`
 
@@ -863,6 +901,7 @@ We used GroupBy, but pandas offers multiple ways to aggregate:
 **Common mistakes that cause leakage:**
 
 #### 1. Using Target Variable in Features
+
 ```
 # ❌ WRONG: Creating features from the target
 df['fare_per_mile'] = df['fare_amount'] / df['trip_distance']  # OK - uses predictors
@@ -873,6 +912,7 @@ df['tip_percentage'] = df['tip_amount'] / df['fare_amount']     # DANGER if pred
 ```
 
 #### 2. Rolling Windows of Target Variable
+
 ```
 # ❌ WRONG: Rolling average of what you're trying to predict
 df['fare_7d_avg'] = df['fare_amount'].rolling(7).mean()  # Uses future fares!
@@ -882,6 +922,7 @@ df['distance_7d_avg'] = df['trip_distance'].rolling(7).mean()  # Uses past trips
 ```
 
 #### 3. Aggregations That Include Future Data
+
 ```
 # ❌ WRONG: Group statistics that include the row itself
 df['zone_avg_fare'] = df.groupby('zone')['fare_amount'].transform('mean')  # Includes itself!
@@ -891,11 +932,13 @@ df['zone_avg_fare_lag'] = df.groupby('zone')['fare_amount'].transform('mean').sh
 ```
 
 **How to detect feature leakage:**
+
 1. **Check correlations:** Features with r > 0.95 with target are suspicious
 2. **Think temporally:** "Would I have this information at prediction time?"
 3. **Test on future data:** If performance drops dramatically, you likely have leakage
 
 **Example of leakage in time-series:**
+
 ```
 # Creating lag features (CORRECT)
 df['temp_lag_1h'] = df['temperature'].shift(1)  # Use past to predict future ✅
@@ -916,17 +959,16 @@ df_processed = df_ts.reset_index()
 # Save processed dataset for next notebook
 df_processed.to_csv('../output/02_processed_taxi_data.csv', index=False)
 
-display(Markdown(f"""
-### 💾 Data Saved Successfully
-
-| Metric | Value |
-|--------|-------|
-| **Trips saved** | {len(df_processed):,} |
-| **Total columns** | {df_processed.shape[1]} |
-| **Output file** | `../output/02_processed_taxi_data.csv` |
-
-✅ **Ready for next phase: Pattern Analysis & Modeling Prep!**
-"""))
+display(Markdown("### 💾 Data Saved Successfully"))
+display(pd.DataFrame({
+    'Metric': ['Trips saved', 'Total columns', 'Output file'],
+    'Value': [
+        f"{len(df_processed):,}",
+        df_processed.shape[1],
+        '../output/02_processed_taxi_data.csv'
+    ]
+}))
+display(Markdown("✅ **Ready for next phase: Pattern Analysis & Modeling Prep!**"))
 ```
 
 ---

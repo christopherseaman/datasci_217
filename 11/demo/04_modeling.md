@@ -88,21 +88,21 @@ sns.set_palette("husl")
 %matplotlib inline
 
 # Load prepared data from Notebook 3
+# Note: Exclusion filtering was applied in Notebooks 1-2, so these are already clean
 X_train = pd.read_csv('../output/03_X_train.csv')
 X_test = pd.read_csv('../output/03_X_test.csv')
 y_train = pd.read_csv('../output/03_y_train.csv').squeeze()  # Convert to Series
 y_test = pd.read_csv('../output/03_y_test.csv').squeeze()
 
-display(Markdown(f"""
-### 📂 Data Loaded
-
-| Dataset | Shape |
-|---------|-------|
-| **Training set** | {X_train.shape[0]:,} × {X_train.shape[1]} |
-| **Test set** | {X_test.shape[0]:,} × {X_test.shape[1]} |
-
-**Features:** `{list(X_train.columns[:5])}...` ({len(X_train.columns)} total)
-"""))
+display(Markdown("### 📂 Data Loaded"))
+display(pd.DataFrame({
+    'Dataset': ['Training set', 'Test set'],
+    'Shape': [
+        f"{X_train.shape[0]:,} × {X_train.shape[1]}",
+        f"{X_test.shape[0]:,} × {X_test.shape[1]}"
+    ]
+}))
+display(Markdown(f"**Features:** `{list(X_train.columns[:5])}...` ({len(X_train.columns)} total)"))
 ```
 
 **Understanding Model Metrics:**
@@ -270,17 +270,21 @@ test_metrics_lr = evaluate_model(y_test, y_test_pred_lr, "Test")
 # Check for overfitting using helper function
 overfit_lr, overfit_status = assess_overfitting(train_metrics_lr['r2'], test_metrics_lr['r2'])
 
-display(Markdown(f"""
-### Performance Results
-
-| Metric | Training | Test |
-|--------|----------|------|
-| **RMSE** | ${train_metrics_lr['rmse']:.2f} | ${test_metrics_lr['rmse']:.2f} |
-| **MAE** | ${train_metrics_lr['mae']:.2f} | ${test_metrics_lr['mae']:.2f} |
-| **R²** | {train_metrics_lr['r2']:.4f} | {test_metrics_lr['r2']:.4f} |
-
-**Overfitting (R² difference):** {overfit_lr:.4f} — {overfit_status}
-"""))
+display(Markdown("### Performance Results"))
+display(pd.DataFrame({
+    'Metric': ['RMSE', 'MAE', 'R²'],
+    'Training': [
+        f"${train_metrics_lr['rmse']:.2f}",
+        f"${train_metrics_lr['mae']:.2f}",
+        f"{train_metrics_lr['r2']:.4f}"
+    ],
+    'Test': [
+        f"${test_metrics_lr['rmse']:.2f}",
+        f"${test_metrics_lr['mae']:.2f}",
+        f"{test_metrics_lr['r2']:.4f}"
+    ]
+}))
+display(Markdown(f"**Overfitting (R² difference):** {overfit_lr:.4f} — {overfit_status}"))
 
 # Store for comparison later
 train_rmse_lr, test_rmse_lr = train_metrics_lr['rmse'], test_metrics_lr['rmse']
@@ -312,17 +316,21 @@ test_metrics_rf = evaluate_model(y_test, y_test_pred_rf, "Test")
 # Check for overfitting using helper function
 overfit_rf, overfit_status = assess_overfitting(train_metrics_rf['r2'], test_metrics_rf['r2'])
 
-display(Markdown(f"""
-### Performance Results
-
-| Metric | Training | Test |
-|--------|----------|------|
-| **RMSE** | ${train_metrics_rf['rmse']:.2f} | ${test_metrics_rf['rmse']:.2f} |
-| **MAE** | ${train_metrics_rf['mae']:.2f} | ${test_metrics_rf['mae']:.2f} |
-| **R²** | {train_metrics_rf['r2']:.4f} | {test_metrics_rf['r2']:.4f} |
-
-**Overfitting (R² difference):** {overfit_rf:.4f} — {overfit_status}
-"""))
+display(Markdown("### Performance Results"))
+display(pd.DataFrame({
+    'Metric': ['RMSE', 'MAE', 'R²'],
+    'Training': [
+        f"${train_metrics_rf['rmse']:.2f}",
+        f"${train_metrics_rf['mae']:.2f}",
+        f"{train_metrics_rf['r2']:.4f}"
+    ],
+    'Test': [
+        f"${test_metrics_rf['rmse']:.2f}",
+        f"${test_metrics_rf['mae']:.2f}",
+        f"{test_metrics_rf['r2']:.4f}"
+    ]
+}))
+display(Markdown(f"**Overfitting (R² difference):** {overfit_rf:.4f} — {overfit_status}"))
 
 # Store for comparison later
 train_rmse_rf, test_rmse_rf = train_metrics_rf['rmse'], test_metrics_rf['rmse']
@@ -339,7 +347,7 @@ feature_importance = pd.DataFrame({
 }).sort_values('importance', ascending=False)
 
 display(Markdown("### 🔑 Top 10 Most Important Features"))
-display(Markdown(feature_importance.head(10).to_markdown(index=False)))
+display(feature_importance.head(10))
 ```
 
 **What is feature importance?**
@@ -379,17 +387,21 @@ test_metrics_xgb = evaluate_model(y_test, y_test_pred_xgb, "Test")
 # Check for overfitting using helper function
 overfit_xgb, overfit_status = assess_overfitting(train_metrics_xgb['r2'], test_metrics_xgb['r2'])
 
-display(Markdown(f"""
-### Performance Results
-
-| Metric | Training | Test |
-|--------|----------|------|
-| **RMSE** | ${train_metrics_xgb['rmse']:.2f} | ${test_metrics_xgb['rmse']:.2f} |
-| **MAE** | ${train_metrics_xgb['mae']:.2f} | ${test_metrics_xgb['mae']:.2f} |
-| **R²** | {train_metrics_xgb['r2']:.4f} | {test_metrics_xgb['r2']:.4f} |
-
-**Overfitting (R² difference):** {overfit_xgb:.4f} — {overfit_status}
-"""))
+display(Markdown("### Performance Results"))
+display(pd.DataFrame({
+    'Metric': ['RMSE', 'MAE', 'R²'],
+    'Training': [
+        f"${train_metrics_xgb['rmse']:.2f}",
+        f"${train_metrics_xgb['mae']:.2f}",
+        f"{train_metrics_xgb['r2']:.4f}"
+    ],
+    'Test': [
+        f"${test_metrics_xgb['rmse']:.2f}",
+        f"${test_metrics_xgb['mae']:.2f}",
+        f"{test_metrics_xgb['r2']:.4f}"
+    ]
+}))
+display(Markdown(f"**Overfitting (R² difference):** {overfit_xgb:.4f} — {overfit_status}"))
 
 # Store for comparison later
 train_rmse_xgb, test_rmse_xgb = train_metrics_xgb['rmse'], test_metrics_xgb['rmse']
@@ -406,7 +418,7 @@ xgb_importance = pd.DataFrame({
 }).sort_values('importance', ascending=False)
 
 display(Markdown("### 🔑 Top 10 Most Important Features"))
-display(Markdown(xgb_importance.head(10).to_markdown(index=False)))
+display(xgb_importance.head(10))
 ```
 
 ### Step 5: Model Comparison
@@ -426,7 +438,7 @@ comparison = comparison.round(4)
 comparison['RMSE_diff'] = comparison['Train RMSE'] - comparison['Test RMSE']
 
 display(Markdown("# 🏆 Model Comparison"))
-display(Markdown(comparison.to_markdown(index=False)))
+display(comparison)
 ```
 
 #### Visualize Model Comparison
@@ -541,16 +553,16 @@ plt.tight_layout()
 plt.show()
 
 # Residuals statistics
-display(Markdown(f"""
-### 📊 Residuals Statistics
-
-| Statistic | Value |
-|-----------|-------|
-| **Mean** | ${residuals.mean():.2f} |
-| **Std** | ${residuals.std():.2f} |
-| **Min** | ${residuals.min():.2f} |
-| **Max** | ${residuals.max():.2f} |
-"""))
+display(Markdown("### 📊 Residuals Statistics"))
+display(pd.DataFrame({
+    'Statistic': ['Mean', 'Std', 'Min', 'Max'],
+    'Value': [
+        f"${residuals.mean():.2f}",
+        f"${residuals.std():.2f}",
+        f"${residuals.min():.2f}",
+        f"${residuals.max():.2f}"
+    ]
+}))
 ```
 
 ---

@@ -129,6 +129,23 @@ df = df.rename(columns={
 df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
 df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
 
+# Load NYC TLC Data Dictionary from YAML
+import yaml
+
+with open('nyc_tlc_data_dict.yaml', 'r') as f:
+    tlc_dict = yaml.safe_load(f)
+
+# Convert categorical codes to labeled categories
+df['VendorID'] = df['VendorID'].map(tlc_dict['vendor']).astype('category')
+df['RatecodeID'] = df['RatecodeID'].map(tlc_dict['ratecode']).astype('category')
+df['payment_type'] = df['payment_type'].map(tlc_dict['payment_type']).astype('category')
+df['store_and_fwd_flag'] = df['store_and_fwd_flag'].map(tlc_dict['store_and_fwd_flag']).astype('category')
+
+# Location IDs are categorical zone codes (not numeric quantities)
+# Human-readable zone names/boroughs are added in Notebook 2 via taxi_zone_lookup.csv
+df['PULocationID'] = df['PULocationID'].astype('category')
+df['DOLocationID'] = df['DOLocationID'].astype('category')
+
 # Calculate total_amount if not present (sum of fare components)
 if 'total_amount' not in df.columns:
     fare_components = ['fare_amount', 'tip_amount', 'tolls_amount',
@@ -137,16 +154,16 @@ if 'total_amount' not in df.columns:
     df['total_amount'] = df[available_components].sum(axis=1)
     display(Markdown(f"✅ Calculated `total_amount` from {len(available_components)} components"))
 
-display(Markdown(f"""
-### ✅ Data Loaded Successfully
-
-| Metric | Value |
-|--------|-------|
-| **Total trips** | {len(df):,} |
-| **Columns** | {len(df.columns)} |
-| **Sample columns** | {', '.join(list(df.columns)[:5])}... |
-| **Date range** | {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()} |
-"""))
+display(Markdown("### ✅ Data Loaded Successfully"))
+display(pd.DataFrame({
+    'Metric': ['Total trips', 'Columns', 'Sample columns', 'Date range'],
+    'Value': [
+        f"{len(df):,}",
+        len(df.columns),
+        ', '.join(list(df.columns)[:5]) + '...',
+        f"{df['pickup_datetime'].min()} to {df['pickup_datetime'].max()}"
+    ]
+}))
 ```
 
 ### 🐛 Debugging Tips: Data Loading Issues
@@ -192,7 +209,7 @@ df.info()
 
 # Show example values for each column
 display(Markdown("### 👀 Example Values (First Row)"))
-display(Markdown(df.head(1).T.to_markdown()))
+display(df.head(1).T)
 ```
 
 **Interpreting the output:** The shape tells us how much data we're working with. Column names help us understand what information is available. Data types are crucial - we need to ensure datetime columns are properly parsed, and numeric columns are numeric (not strings). Memory usage helps us plan for processing - large datasets may require chunking or sampling.
@@ -200,9 +217,9 @@ display(Markdown(df.head(1).T.to_markdown()))
 Now let's look at actual data values to see what the records look like:
 
 ```python
-# First few rows - use to_markdown() for clean rendering
+# First few rows
 display(Markdown("# 👀 First 5 Rows"))
-display(Markdown(df.head().to_markdown()))
+display(df.head())
 ```
 
 **What to observe:** Look at the actual values - do they make sense? Are there any obvious data quality issues? Are the datetime columns properly formatted? Do numeric values seem reasonable?
@@ -215,10 +232,24 @@ Next, we'll compute summary statistics to understand the distributions of our nu
 # Summary statistics - transpose for easier reading when many columns
 display(Markdown("# 📈 Summary Statistics"))
 
+# Only include truly numeric columns (not categorical codes)
+# Categorical columns like VendorID, payment_type have been converted to category dtype
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
 # Transpose puts columns as rows, making it easier to read with many features
-stats_df = df.describe().T
+stats_df = df[numeric_cols].describe().T
 stats_df = stats_df.round(2)  # Round for readability
-display(Markdown(stats_df.to_markdown()))
+display(stats_df)
+```
+
+**Note on categorical columns:** Columns like `VendorID`, `payment_type`, `RatecodeID`, and location IDs are categorical codes, not quantities. We converted them to `category` dtype so they won't appear in numeric summaries. Use `.value_counts()` to explore these:
+
+```python
+# Explore categorical columns
+display(Markdown("### 🏷️ Categorical Column Distributions"))
+for col in ['VendorID', 'payment_type', 'RatecodeID']:
+    display(Markdown(f"**{col}:**"))
+    display(df[col].value_counts())
 ```
 
 **Key insights from summary statistics:**
@@ -248,7 +279,7 @@ missing_df = missing_df[missing_df['Missing Count'] > 0].sort_values('Missing Co
 if len(missing_df) == 0:
     display(Markdown("✅ **No missing values found!**"))
 else:
-    display(Markdown(missing_df.to_markdown()))
+    display(missing_df)
 ```
 
 **Missing data considerations:**
@@ -257,6 +288,60 @@ else:
 - **Low percentage (<5%):** Can often be handled with simple imputation or removal
 - **Patterns matter:** Is missingness random, or systematic (e.g., all missing on weekends)?
 - **Domain knowledge:** Some missing values may be meaningful (e.g., missing tip = no tip)
+
+**🔍 Notice identical missing counts?** If you see multiple columns with *exactly* the same number of missing values (e.g., `passenger_count`, `payment_type`, `store_and_fwd_flag` all at 71,743), that's not a coincidence! These values are missing from the **same rows** - likely a batch of incomplete records from a specific vendor, time period, or data collection issue. You can verify this:
+
+```python
+# Check if missing values occur in the same rows
+cols_with_same_missing = ['passenger_count', 'payment_type', 'store_and_fwd_flag']
+missing_mask = df[cols_with_same_missing].isnull()
+print(f"Rows where ALL are missing: {missing_mask.all(axis=1).sum():,}")
+print(f"Rows where ANY is missing: {missing_mask.any(axis=1).sum():,}")
+# If these numbers match, missingness is perfectly correlated
+```
+
+```python
+# Investigate: What characterizes the rows with missing data?
+cols_with_same_missing = ['passenger_count', 'payment_type', 'store_and_fwd_flag', 'congestion_surcharge', 'airport_fee']
+cols_available = [c for c in cols_with_same_missing if c in df.columns]
+missing_mask = df[cols_available].isnull()
+
+rows_with_missing = df[missing_mask.all(axis=1)]
+rows_complete = df[~missing_mask.any(axis=1)]
+
+display(Markdown("### 🔍 What's different about rows with missing data?"))
+display(Markdown(f"**Rows with ALL missing:** {len(rows_with_missing):,}"))
+display(Markdown(f"**Rows with NONE missing:** {len(rows_complete):,}"))
+
+# Check vendor distribution - is it one vendor's data?
+display(Markdown("**By Vendor:**"))
+vendor_comparison = pd.DataFrame({
+    'Missing rows %': rows_with_missing['VendorID'].value_counts(normalize=True).round(3) * 100,
+    'Complete rows %': rows_complete['VendorID'].value_counts(normalize=True).round(3) * 100
+})
+display(vendor_comparison)
+
+# Check time distribution - are missing rows from a specific period?
+display(Markdown("**By Date Range:**"))
+display(pd.DataFrame({
+    'Metric': ['Earliest pickup', 'Latest pickup', 'Count'],
+    'Missing rows': [
+        rows_with_missing['pickup_datetime'].min(), 
+        rows_with_missing['pickup_datetime'].max(),
+        f"{len(rows_with_missing):,}"
+    ],
+    'Complete rows': [
+        rows_complete['pickup_datetime'].min(), 
+        rows_complete['pickup_datetime'].max(),
+        f"{len(rows_complete):,}"
+    ]
+}))
+
+# Check if missing rows cluster on specific dates
+display(Markdown("**Missing rows by date (top 10 dates):**"))
+missing_by_date = rows_with_missing.groupby(rows_with_missing['pickup_datetime'].dt.date).size().sort_values(ascending=False)
+display(missing_by_date.head(10).to_frame('missing_count'))
+```
 
 ---
 
@@ -379,11 +464,22 @@ Let's aggregate trips by date and visualize the trend:
 
 ```python
 # Plot trips over time to see temporal patterns
-df['pickup_date'] = pd.to_datetime(df['pickup_datetime']).dt.date
+df['pickup_date'] = df['pickup_datetime'].dt.date
 trips_by_date = df.groupby('pickup_date').size()
 
+# Filter to dates with meaningful data (at least 1000 trips)
+# This handles outlier dates from data errors
+MIN_TRIPS_PER_DAY = 1000
+valid_dates = trips_by_date[trips_by_date >= MIN_TRIPS_PER_DAY]
+
+display(Markdown(f"**Raw date range:** {trips_by_date.index.min()} to {trips_by_date.index.max()} ({len(trips_by_date)} unique dates)"))
+display(Markdown(f"**Valid dates (≥{MIN_TRIPS_PER_DAY:,} trips):** {valid_dates.index.min()} to {valid_dates.index.max()} ({len(valid_dates)} days)"))
+
+if len(trips_by_date) != len(valid_dates):
+    display(Markdown(f"⚠️ **Filtered out {len(trips_by_date) - len(valid_dates)} dates with <{MIN_TRIPS_PER_DAY:,} trips (likely data errors)**"))
+
 plt.figure(figsize=(14, 6))
-plt.plot(trips_by_date.index, trips_by_date.values, linewidth=2)
+plt.plot(valid_dates.index, valid_dates.values, linewidth=2)
 plt.title('Number of Taxi Trips Over Time', fontsize=14, fontweight='bold')
 plt.xlabel('Date')
 plt.ylabel('Number of Trips')
@@ -392,15 +488,17 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-display(Markdown(f"""
-### 📅 Trip Volume Summary
-
-| Metric | Value |
-|--------|-------|
-| **Average trips/day** | {trips_by_date.mean():,.0f} |
-| **Peak day** | {trips_by_date.idxmax()} |
-| **Peak volume** | {trips_by_date.max():,} trips |
-"""))
+display(Markdown("### 📅 Trip Volume Summary"))
+display(pd.DataFrame({
+    'Metric': ['Average trips/day', 'Peak day', 'Peak volume', 'Low day', 'Low volume'],
+    'Value': [
+        f"{valid_dates.mean():,.0f}",
+        valid_dates.idxmax(),
+        f"{valid_dates.max():,} trips",
+        valid_dates.idxmin(),
+        f"{valid_dates.min():,} trips"
+    ]
+}))
 ```
 
 **Interpreting the time series plot:**
@@ -430,18 +528,33 @@ Understanding relationships between variables helps us identify which features m
 Let's start with a scatter plot to visualize the relationship between distance and fare:
 
 ```python
-# Scatter plot: Distance vs Fare
+# Scatter plot: Distance vs Fare (unfiltered - shows outliers)
 plt.figure(figsize=(10, 6))
 plt.scatter(df['trip_distance'], df['fare_amount'], alpha=0.3, s=10)
 plt.xlabel('Trip Distance (miles)')
 plt.ylabel('Fare Amount ($)')
-plt.title('Trip Distance vs Fare Amount', fontsize=14, fontweight='bold')
+plt.title('Trip Distance vs Fare Amount (Unfiltered - Note Outliers)', fontsize=14, fontweight='bold')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 ```
 
-**What to observe in the scatter plot:**
+```python
+# Scatter plot: Distance vs Fare (filtered to reasonable ranges)
+df_filtered = df[(df['fare_amount'] > 0) & (df['trip_distance'] < 50)]
+display(Markdown(f"**Filtered view:** {len(df_filtered):,} trips (fare > $0, distance < 50 mi)"))
+
+plt.figure(figsize=(10, 6))
+plt.scatter(df_filtered['trip_distance'], df_filtered['fare_amount'], alpha=0.3, s=10)
+plt.xlabel('Trip Distance (miles)')
+plt.ylabel('Fare Amount ($)')
+plt.title('Trip Distance vs Fare Amount (Filtered: fare > 0, distance < 50)', fontsize=14, fontweight='bold')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+**What to observe in the scatter plots:**
 
 - **Positive relationship:** Longer trips should cost more (expected)
 - **Linear vs non-linear:** Is the relationship linear or curved?
@@ -465,6 +578,19 @@ plt.figure(figsize=(10, 8))
 sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', center=0,
             square=True, linewidths=1, cbar_kws={"shrink": 0.8})
 plt.title('Correlation Matrix', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+```
+
+```python
+# Pairplot for visual inspection of relationships
+# Sample to avoid slow rendering with large dataset
+display(Markdown("### 📊 Pairplot: Relationships Between Key Variables"))
+sample_size = min(500000, len(df))
+df_sample = df[numeric_cols].sample(n=sample_size, random_state=42)
+
+sns.pairplot(df_sample, diag_kind='hist', plot_kws={'alpha': 0.3, 's': 10})
+plt.suptitle('Pairwise Relationships (sampled)', y=1.02, fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.show()
 ```
@@ -538,7 +664,7 @@ missing_analysis = missing_analysis[missing_analysis['Missing'] > 0].sort_values
 if len(missing_analysis) == 0:
     display(Markdown("✅ **No missing values found!**"))
 else:
-    display(Markdown(missing_analysis.to_markdown(index=False)))
+    display(missing_analysis)
 ```
 
 **Interpreting missing data:**
@@ -793,15 +919,15 @@ Now let's check for outliers in trip distance:
 # Check trip_distance outliers
 distance_outliers, dist_lower, dist_upper = detect_outliers_iqr(df, 'trip_distance')
 
-display(Markdown(f"""
-### 🚕 Trip Distance Outliers
-
-| Metric | Value |
-|--------|-------|
-| **Lower bound** | {dist_lower:.2f} miles |
-| **Upper bound** | {dist_upper:.2f} miles |
-| **Number of outliers** | {len(distance_outliers):,} ({len(distance_outliers)/len(df)*100:.2f}%) |
-"""))
+display(Markdown("### 🚕 Trip Distance Outliers"))
+display(pd.DataFrame({
+    'Metric': ['Lower bound', 'Upper bound', 'Number of outliers'],
+    'Value': [
+        f"{dist_lower:.2f} miles",
+        f"{dist_upper:.2f} miles",
+        f"{len(distance_outliers):,} ({len(distance_outliers)/len(df)*100:.2f}%)"
+    ]
+}))
 ```
 
 **Interpreting trip distance outliers:**
@@ -816,15 +942,15 @@ Next, let's check fare amount:
 # Check fare_amount outliers
 fare_outliers, fare_lower, fare_upper = detect_outliers_iqr(df, 'fare_amount')
 
-display(Markdown(f"""
-### 💵 Fare Amount Outliers
-
-| Metric | Value |
-|--------|-------|
-| **Lower bound** | ${fare_lower:.2f} |
-| **Upper bound** | ${fare_upper:.2f} |
-| **Number of outliers** | {len(fare_outliers):,} ({len(fare_outliers)/len(df)*100:.2f}%) |
-"""))
+display(Markdown("### 💵 Fare Amount Outliers"))
+display(pd.DataFrame({
+    'Metric': ['Lower bound', 'Upper bound', 'Number of outliers'],
+    'Value': [
+        f"${fare_lower:.2f}",
+        f"${fare_upper:.2f}",
+        f"{len(fare_outliers):,} ({len(fare_outliers)/len(df)*100:.2f}%)"
+    ]
+}))
 ```
 
 **Interpreting fare outliers:**
@@ -839,15 +965,15 @@ Finally, let's check trip duration:
 # Check trip_duration outliers (unrealistic trips)
 duration_outliers, dur_lower, dur_upper = detect_outliers_iqr(df, 'trip_duration')
 
-display(Markdown(f"""
-### ⏱️ Trip Duration Outliers
-
-| Metric | Value |
-|--------|-------|
-| **Lower bound** | {dur_lower:.2f} minutes |
-| **Upper bound** | {dur_upper:.2f} minutes |
-| **Number of outliers** | {len(duration_outliers):,} ({len(duration_outliers)/len(df)*100:.2f}%) |
-"""))
+display(Markdown("### ⏱️ Trip Duration Outliers"))
+display(pd.DataFrame({
+    'Metric': ['Lower bound', 'Upper bound', 'Number of outliers'],
+    'Value': [
+        f"{dur_lower:.2f} minutes",
+        f"{dur_upper:.2f} minutes",
+        f"{len(duration_outliers):,} ({len(duration_outliers)/len(df)*100:.2f}%)"
+    ]
+}))
 ```
 
 **Interpreting duration outliers:**
@@ -948,91 +1074,116 @@ Let's apply domain-specific cleaning rules:
 # Handle outliers based on domain knowledge
 display(Markdown("## 🧹 Handling Outliers"))
 
-# Remove unrealistic trip distances (> 50 miles in NYC is very unusual)
-# Or cap them at a reasonable maximum
+# Instead of dropping rows, we'll create an EXCLUSION FLAG
+# This approach is better because:
+# 1. Preserves original data for analysis
+# 2. Transparent about what's being filtered
+# 3. Can toggle exclusions on/off
+# 4. Easy to see WHY a row was excluded
+
 df_clean = df.copy()
+df_clean['exclude'] = False  # Start with no exclusions
+df_clean['exclude_reason'] = ''  # Track why rows are excluded
+
 display(Markdown(f"**Original shape:** {df_clean.shape[0]:,} rows × {df_clean.shape[1]} columns"))
 ```
 
-**Our cleaning strategy:**
+**Our cleaning strategy:** Flag rows for exclusion (don't drop them yet):
 
-1. Remove duplicates
-2. Cap extreme trip distances (NYC trips rarely exceed 50 miles)
-3. Remove negative or zero distances
-4. Remove unrealistic trip durations (>2 hours)
-5. Remove negative fares
-6. Remove unrealistic passenger counts
-
-Let's apply these rules step by step:
-
-```python
-# Remove duplicate rows (if any)
-df_clean = df_clean.drop_duplicates()
-display(Markdown(f"**After removing duplicates:** {df_clean.shape[0]:,} rows"))
-```
-
-**Why remove duplicates first?** Duplicates can inflate our counts and affect outlier detection.
+1. Duplicates
+2. Extreme trip distances (negative, zero, or >50 miles)
+3. Unrealistic trip durations (negative or >2 hours)
+4. Invalid fares (negative)
+5. Unrealistic passenger counts (0 or >6)
 
 ```python
 # Define data quality thresholds based on NYC taxi domain knowledge
 MAX_TRIP_DISTANCE_MILES = 50  # NYC is ~13 miles across; 50 includes airport trips
 MIN_TRIP_DISTANCE = 0.01  # Must be positive (exclude zero/negative)
-
-# Cap trip_distance at reasonable maximum
-df_clean['trip_distance'] = df_clean['trip_distance'].clip(upper=MAX_TRIP_DISTANCE_MILES)
-
-# Remove trips with negative or zero distance (data errors)
-df_clean = df_clean[df_clean['trip_distance'] > MIN_TRIP_DISTANCE]
-```
-
-**Distance cleaning rationale:**
-
-- **Cap at 50 miles:** Manhattan is ~13 miles long; 50 miles includes all airport trips (JFK, EWR, LGA)
-- **Remove ≤ 0:** These are clear data errors (impossible trips)
-
-```python
-# More domain-specific thresholds
-MAX_TRIP_DURATION_MINUTES = 120  # 2 hours; longer suggests data errors or forgotten meter
+MAX_TRIP_DURATION_MINUTES = 120  # 2 hours; longer suggests data errors
 MIN_FARE_AMOUNT = 0.01  # Fares must be positive
 MIN_PASSENGERS = 1  # At least one passenger
 MAX_PASSENGERS = 6  # Standard NYC taxi capacity
 
-# Apply temporal constraints
-df_clean = df_clean[df_clean['trip_duration'] <= MAX_TRIP_DURATION_MINUTES]
+# Date range validation - the data file is yellow_tripdata_2023-01.parquet
+# Rows outside January 2023 are clearly data errors
+EXPECTED_YEAR = 2023
+EXPECTED_MONTH = 1
+MIN_TRIPS_PER_DATE = 1000  # Dates with fewer trips than this are likely errors
 
-# Apply financial constraints
-df_clean = df_clean[df_clean['fare_amount'] >= MIN_FARE_AMOUNT]
+# Flag exclusions with reasons (using bitwise OR to accumulate flags)
+def flag_exclusion(df, condition, reason):
+    """Flag rows for exclusion and record the reason."""
+    mask = condition
+    df.loc[mask & ~df['exclude'], 'exclude_reason'] = reason  # First reason wins
+    df.loc[mask, 'exclude'] = True
+    return mask.sum()
 
-# Apply passenger constraints
-df_clean = df_clean[df_clean['passenger_count'].between(MIN_PASSENGERS, MAX_PASSENGERS)]
+# Date-based exclusions first (catches the 2008/2009 errors)
+wrong_year = df_clean['pickup_datetime'].dt.year != EXPECTED_YEAR
+wrong_month = df_clean['pickup_datetime'].dt.month != EXPECTED_MONTH
+n_wrong_date = flag_exclusion(df_clean, wrong_year | wrong_month, 'date_outside_expected_range')
+
+# Also exclude dates with too few trips (sparse dates are usually errors)
+trips_per_date = df_clean.groupby(df_clean['pickup_datetime'].dt.date).transform('size')
+n_sparse_date = flag_exclusion(df_clean, trips_per_date < MIN_TRIPS_PER_DATE, 'date_too_few_trips')
+
+# Apply exclusion rules
+n_distance_high = flag_exclusion(df_clean, df_clean['trip_distance'] > MAX_TRIP_DISTANCE_MILES, 'distance_too_high')
+n_distance_low = flag_exclusion(df_clean, df_clean['trip_distance'] <= MIN_TRIP_DISTANCE, 'distance_invalid')
+n_duration = flag_exclusion(df_clean, df_clean['trip_duration'] > MAX_TRIP_DURATION_MINUTES, 'duration_too_long')
+n_duration_neg = flag_exclusion(df_clean, df_clean['trip_duration'] < 0, 'duration_negative')
+n_fare = flag_exclusion(df_clean, df_clean['fare_amount'] < MIN_FARE_AMOUNT, 'fare_invalid')
+n_passengers = flag_exclusion(df_clean, ~df_clean['passenger_count'].between(MIN_PASSENGERS, MAX_PASSENGERS), 'passengers_invalid')
+
+# Mark duplicates
+duplicates = df_clean.duplicated(keep='first')
+n_duplicates = flag_exclusion(df_clean, duplicates, 'duplicate')
 ```
 
-**Additional cleaning rules:**
-
-- **Duration ≤ 120 min:** Very long trips unusual in NYC; likely forgotten meter or data error
-- **Fare ≥ $0.01:** Negative/zero fares are data errors (no free rides in this dataset)
-- **Passengers 1-6:** Standard yellow cab capacity; outside this range = data error
-
-Let's see the impact of our cleaning:
+**Why an exclusion flag?** Instead of silently dropping rows, we can see exactly what's being filtered and why. This is more transparent and lets us analyze the excluded data.
 
 ```python
-display(Markdown(f"""
-### 📊 Cleaning Results
+display(Markdown("### 📊 Exclusion Summary"))
 
-| Metric | Value |
-|--------|-------|
-| **Original rows** | {len(df):,} |
-| **Cleaned rows** | {df_clean.shape[0]:,} |
-| **Rows removed** | {len(df) - len(df_clean):,} ({(len(df) - len(df_clean))/len(df)*100:.2f}%) |
-"""))
+# Summary by reason
+exclusion_summary = df_clean[df_clean['exclude']]['exclude_reason'].value_counts()
+display(Markdown("**Rows flagged by reason:**"))
+display(exclusion_summary.to_frame('count'))
+
+# Overall summary
+n_excluded = df_clean['exclude'].sum()
+display(pd.DataFrame({
+    'Metric': ['Total rows', 'Rows to keep', 'Rows excluded'],
+    'Value': [
+        f"{len(df_clean):,}",
+        f"{(~df_clean['exclude']).sum():,}",
+        f"{n_excluded:,} ({n_excluded/len(df_clean)*100:.2f}%)"
+    ]
+}))
+```
+
+```python
+# Quick look at some excluded rows - what do they look like?
+display(Markdown("### 👀 Sample Excluded Rows"))
+display(df_clean[df_clean['exclude']][['trip_distance', 'trip_duration', 'fare_amount', 'passenger_count', 'exclude_reason']].head(10))
 ```
 
 **Interpreting the results:**
 
-- **Removal percentage:** How much data did we lose?
+- **Exclusion percentage:** How much data are we filtering?
 - **If >10%:** Might be too aggressive, reconsider thresholds
 - **If <1%:** Very clean data, or thresholds too lenient
-- **Balance:** Remove errors while preserving valid extreme cases
+- **Balance:** Exclude errors while preserving valid extreme cases
+
+**Using the exclusion flag going forward:**
+```python
+# To work with clean data only:
+df_valid = df_clean[~df_clean['exclude']]
+
+# To analyze what was excluded:
+df_excluded = df_clean[df_clean['exclude']]
+```
 
 ### 💡 Alternative Approach: Outlier Detection Methods
 
@@ -1081,6 +1232,7 @@ Let's validate and convert data types:
 # Ensure datetime columns are properly typed
 display(Markdown("## 🔧 Validating and Converting Data Types"))
 
+# Work with valid (non-excluded) rows for type validation
 df_clean['pickup_datetime'] = pd.to_datetime(df_clean['pickup_datetime'])
 df_clean['dropoff_datetime'] = pd.to_datetime(df_clean['dropoff_datetime'])
 ```
@@ -1121,16 +1273,19 @@ final_summary = pd.DataFrame({
     'Null': df_clean.isnull().sum().values
 })
 
-display(Markdown(f"""
-| Metric | Value |
-|--------|-------|
-| **Total rows** | {df_clean.shape[0]:,} |
-| **Total columns** | {df_clean.shape[1]} |
-| **Missing values** | {df_clean.isnull().sum().sum()} |
-"""))
+df_valid = df_clean[~df_clean['exclude']]
+display(pd.DataFrame({
+    'Metric': ['Total rows (all)', 'Valid rows (exclude=False)', 'Excluded rows', 'Total columns'],
+    'Value': [
+        f"{df_clean.shape[0]:,}",
+        f"{len(df_valid):,}",
+        f"{df_clean['exclude'].sum():,}",
+        df_clean.shape[1]
+    ]
+}))
 
 display(Markdown("### Column Types Summary"))
-display(Markdown(final_summary.to_markdown(index=False)))
+display(final_summary)
 ```
 
 **Final validation checklist:**
@@ -1165,7 +1320,11 @@ display(Markdown(f"""
 ### 💾 Data Saved Successfully
 
 - **File:** `{output_dir}/01_cleaned_taxi_data.csv`
-- **Rows:** {len(df_clean):,}
+- **Total rows:** {len(df_clean):,}
+- **Valid rows:** {(~df_clean['exclude']).sum():,}
+- **Excluded rows:** {df_clean['exclude'].sum():,}
+
+**Note:** The `exclude` column is preserved. Subsequent notebooks filter with `df[~df['exclude']]`.
 
 ✅ **Ready for next phase: Data Wrangling & Feature Engineering!**
 """))

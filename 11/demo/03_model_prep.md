@@ -26,18 +26,21 @@ jupyter:
 **Where we are:** We've cleaned our data (Notebook 1) and created features (Notebook 2). Now we need to understand patterns deeply and prepare data for modeling.
 
 **What we'll accomplish:**
+
 - Identify trends over time
 - Discover seasonal patterns (daily, weekly cycles)
 - Analyze correlations between variables
 - Split data temporally for modeling
 - Select and prepare features
 
-**Why this matters:** 
+**Why this matters:**
+
 - Pattern analysis guides feature selection and model interpretation
 - Temporal splits prevent data leakage (critical for time series!)
 - Proper preparation ensures model quality
 
 **The big picture:**
+
 - **Notebook 1:** Made data clean ✓
 - **Notebook 2:** Made data useful ✓
 - **Notebook 3 (this one):** Make data ready for modeling
@@ -50,6 +53,7 @@ jupyter:
 **What we're about to do:** Before we build models, we need to understand our data deeply. Pattern analysis helps us identify which features are most important, understand relationships between variables, and spot anomalies.
 
 **What we'll discover:**
+
 - Temporal patterns (hourly, daily, weekly cycles)
 - Relationships between variables (correlations)
 - Trends over time
@@ -83,14 +87,21 @@ sns.set_palette("husl")
 df = pd.read_csv('../output/02_processed_taxi_data.csv')
 df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
 
-display(Markdown(f"""
-### 📂 Data Loaded
+# Limit to 2023
+df = df[df['pickup_datetime'].dt.year == 2023].reset_index(drop=True)
 
-| Metric | Value |
-|--------|-------|
-| **Total trips** | {len(df):,} |
-| **Date range** | {df['pickup_datetime'].min()} to {df['pickup_datetime'].max()} |
-"""))
+# Filter to valid rows if exclude column exists (should already be filtered in NB2)
+if 'exclude' in df.columns:
+    df = df[~df['exclude']].drop(columns=['exclude', 'exclude_reason'], errors='ignore')
+
+display(Markdown("### 📂 Data Loaded"))
+display(pd.DataFrame({
+    'Metric': ['Total trips', 'Date range'],
+    'Value': [
+        f"{len(df):,}",
+        f"{df['pickup_datetime'].min()} to {df['pickup_datetime'].max()}"
+    ]
+}))
 ```
 
 ### Step 2: Trends Analysis Over Time
@@ -200,6 +211,7 @@ plt.show()
 ### Step 4: Correlation Analysis
 
 **What is correlation?** Correlation measures how two variables move together:
+
 - **+1.0:** Perfect positive relationship (when one goes up, the other always goes up)
 - **0.0:** No relationship (variables are independent)
 - **-1.0:** Perfect negative relationship (when one goes up, the other always goes down)
@@ -290,16 +302,18 @@ plt.show()
 
 **What we're about to do:** We'll prepare our data for modeling by splitting it properly and selecting features. This is critical - mistakes here can invalidate your entire analysis.
 
-**Why temporal split matters:** 
+**Why temporal split matters:**
 
 If we randomly split time series data, we might train on future data and test on past data. This creates **data leakage** - the model "sees the future" during training, which inflates performance metrics.
 
 **Example of the problem:**
+
 - Random split: Train on Jan 15, Feb 3, Mar 10... Test on Jan 2, Feb 20, Mar 5...
 - The model learns patterns from February and March, then tests on January
 - This is unrealistic - in real life, we predict the future using only past data
 
 **Temporal split fixes this:**
+
 - Train on Jan 1-24, test on Jan 25-31
 - Model only uses past data to predict future
 - Performance metrics reflect real-world accuracy
@@ -331,16 +345,16 @@ split_date = df_model['pickup_datetime'].quantile(TRAIN_RATIO)
 train = df_model[df_model['pickup_datetime'] < split_date].copy()
 test = df_model[df_model['pickup_datetime'] >= split_date].copy()
 
-display(Markdown(f"""
-### ✂️ Temporal Train/Test Split
-
-| Dataset | Trips | Date Range |
-|---------|-------|------------|
-| **Train** | {len(train):,} | {train['pickup_datetime'].min()} to {train['pickup_datetime'].max()} |
-| **Test** | {len(test):,} | {test['pickup_datetime'].min()} to {test['pickup_datetime'].max()} |
-
-**Split date:** {split_date}
-"""))
+display(Markdown("### ✂️ Temporal Train/Test Split"))
+display(pd.DataFrame({
+    'Dataset': ['Train', 'Test'],
+    'Trips': [f"{len(train):,}", f"{len(test):,}"],
+    'Date Range': [
+        f"{train['pickup_datetime'].min()} to {train['pickup_datetime'].max()}",
+        f"{test['pickup_datetime'].min()} to {test['pickup_datetime'].max()}"
+    ]
+}))
+display(Markdown(f"**Split date:** {split_date}"))
 
 # Visualize the split
 plt.figure(figsize=(14, 4))
@@ -362,6 +376,7 @@ plt.show()
 **What we're about to do:** We'll select which features (variables) to use for modeling. Not all features are useful - some are redundant, some are irrelevant, and some might cause problems.
 
 **Why feature selection matters:**
+
 - Too many features can cause overfitting
 - Some features might be highly correlated (redundant)
 - Simpler models are easier to interpret and often generalize better
@@ -436,12 +451,13 @@ X_test = test[available_features].copy()
 y_train = train[target].copy()
 y_test = test[target].copy()
 
-display(Markdown(f"""
-| Dataset | Shape |
-|---------|-------|
-| **X_train** | {X_train.shape[0]:,} × {X_train.shape[1]} |
-| **X_test** | {X_test.shape[0]:,} × {X_test.shape[1]} |
-"""))
+display(pd.DataFrame({
+    'Dataset': ['X_train', 'X_test'],
+    'Shape': [
+        f"{X_train.shape[0]:,} × {X_train.shape[1]}",
+        f"{X_test.shape[0]:,} × {X_test.shape[1]}"
+    ]
+}))
 ```
 
 ### Step 3: Handle Categorical Variables
@@ -469,16 +485,15 @@ for col in X_train_encoded.columns:
 
 X_test_encoded = X_test_encoded[X_train_encoded.columns]
 
-display(Markdown(f"""
-### ✅ After One-Hot Encoding
-
-| Dataset | Shape |
-|---------|-------|
-| **Training features** | {X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]} |
-| **Test features** | {X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]} |
-
-**Feature names:** `{list(X_train_encoded.columns)[:10]}...` ({len(X_train_encoded.columns)} total)
-"""))
+display(Markdown("### ✅ After One-Hot Encoding"))
+display(pd.DataFrame({
+    'Dataset': ['Training features', 'Test features'],
+    'Shape': [
+        f"{X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]}",
+        f"{X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]}"
+    ]
+}))
+display(Markdown(f"**Feature names:** `{list(X_train_encoded.columns)[:10]}...` ({len(X_train_encoded.columns)} total)"))
 ```
 
 ### Step 4: Handle Missing Values in Features
@@ -491,7 +506,7 @@ if len(missing_in_train) == 0:
     display(Markdown("✅ **No missing values!**"))
 else:
     missing_df = pd.DataFrame({'Column': missing_in_train.index, 'Missing Count': missing_in_train.values})
-    display(Markdown(missing_df.to_markdown(index=False)))
+    display(missing_df)
 
 # Fill missing values (using training set statistics)
 # For numeric columns, use median
@@ -501,14 +516,14 @@ for col in numeric_cols:
         X_train_encoded[col] = X_train_encoded[col].fillna(median_val)
         X_test_encoded[col] = X_test_encoded[col].fillna(median_val)
 
-display(Markdown(f"""
-### ✅ After Imputation
-
-| Dataset | Missing Values |
-|---------|----------------|
-| **Train** | {X_train_encoded.isnull().sum().sum()} |
-| **Test** | {X_test_encoded.isnull().sum().sum()} |
-"""))
+display(Markdown("### ✅ After Imputation"))
+display(pd.DataFrame({
+    'Dataset': ['Train', 'Test'],
+    'Missing Values': [
+        X_train_encoded.isnull().sum().sum(),
+        X_test_encoded.isnull().sum().sum()
+    ]
+}))
 ```
 
 ### ⚠️ Common Pitfall: Random Split on Time Series Data
@@ -529,10 +544,12 @@ test = df[df['datetime'] >= split_date]
 ### 🐛 Debugging Tips: Modeling Prep Issues
 
 **Problem: Train and test sets have different column counts**
+
 - Check for missing columns: `set(X_train.columns) - set(X_test.columns)`
 - Align columns: `X_test = X_test.reindex(columns=X_train.columns, fill_value=0)`
 
 **Problem: Categorical encoding creates different columns**
+
 - Use same categories: Fit encoder on training, transform both
 - Check for new categories: `set(X_test['col'].unique()) - set(X_train['col'].unique())`
 
@@ -545,18 +562,17 @@ X_test_encoded.to_csv('../output/03_X_test.csv', index=False)
 y_train.to_csv('../output/03_y_train.csv', index=False)
 y_test.to_csv('../output/03_y_test.csv', index=False)
 
-display(Markdown(f"""
-### 💾 Prepared Datasets Saved
-
-| File | Shape |
-|------|-------|
-| **X_train** | {X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]} |
-| **X_test** | {X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]} |
-| **y_train** | {len(y_train):,} |
-| **y_test** | {len(y_test):,} |
-
-✅ **Ready for next phase: Modeling & Results!**
-"""))
+display(Markdown("### 💾 Prepared Datasets Saved"))
+display(pd.DataFrame({
+    'File': ['X_train', 'X_test', 'y_train', 'y_test'],
+    'Shape': [
+        f"{X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]}",
+        f"{X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]}",
+        f"{len(y_train):,}",
+        f"{len(y_test):,}"
+    ]
+}))
+display(Markdown("✅ **Ready for next phase: Modeling & Results!**"))
 ```
 
 ---
