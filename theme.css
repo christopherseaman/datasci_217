@@ -111,6 +111,10 @@ body {
   padding: 2px 4px;
   border-radius: 3px;
 }
+.content img {
+  max-width: 100%;
+  height: auto;
+}
 .error {
   background: #f8d7da;
   color: #721c24;
