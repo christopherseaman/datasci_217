@@ -7,7 +7,7 @@
     <meta name="description" content="Introduction to Python and Data Science Tools - A comprehensive course covering command line, Python basics, NumPy, Pandas, and data analysis workflows.">
     <meta name="keywords" content="python, data science, pandas, numpy, programming, tutorial, course">
     <link rel="stylesheet" href="theme.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="nav-config.js"></script>
 </head>
 <body>
@@ -26,6 +26,12 @@
     </div>
     
     <script>
+        const md = window.markdownit({
+            html: true,
+            linkify: true,
+            typographer: true
+        });
+
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
@@ -60,10 +66,8 @@
                         linkEl.href = link.file;
                         linkEl.target = '_blank';
                     } else if (link.file.endsWith('/')) {
-                        // Directory links go directly to the directory
                         linkEl.href = link.file;
                     } else {
-                        // Other files use ?f= for dynamic loading
                         linkEl.href = `?f=${link.file}`;
                     }
                     
@@ -94,7 +98,6 @@
             
             updateActiveNav(filePath);
             
-            // Only add .md extension if it's not a directory link and doesn't already have an extension
             if (!filePath.endsWith('/') && !filePath.endsWith('.md') && !filePath.includes('.')) {
                 filePath += '.md';
             }
@@ -107,13 +110,7 @@
                     return response.text();
                 })
                 .then(text => {
-                    const converter = new showdown.Converter({
-                        indent: 4,
-                        tables: true,
-                        strikethrough: true,
-                        tasklists: true
-                    });
-                    contentDiv.innerHTML = converter.makeHtml(text);
+                    contentDiv.innerHTML = md.render(text);
                 })
                 .catch(error => {
                     contentDiv.innerHTML = `
@@ -127,7 +124,6 @@
                 });
         }
 
-        // Initialize
         buildNavigation();
         let filePath = getQueryParam('f') || 'README';
         loadContent(filePath);
