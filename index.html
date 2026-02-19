@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataSci-217: Introduction to Python & Data Science Tools</title>
+    <title>DataSci-217</title>
     <meta name="description" content="Introduction to Python and Data Science Tools - A comprehensive course covering command line, Python basics, NumPy, Pandas, and data analysis workflows.">
-    <meta name="keywords" content="python, data science, pandas, numpy, programming, tutorial, course">
     <link rel="stylesheet" href="theme.css">
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="nav-config.js"></script>
 </head>
 <body>
-    <button class="nav-toggle" onclick="toggleNav()">☰</button>
     <div class="container">
         <nav class="sidebar" id="sidebar">
-            <div class="logo" id="nav-logo"></div>
+            <div class="logo" id="nav-project"></div>
             <div id="nav-sections"></div>
         </nav>
         
@@ -32,101 +30,103 @@
             typographer: true
         });
 
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
+        function resolvePath(f) {
+            if (!f) return 'README.md';
+            if (f.endsWith('.md')) return f;
+            if (f.endsWith('/')) return f + 'README.md';
+            return f + '.md';
         }
 
-        function toggleNav() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('open');
+        function addNavSection(container, title, links) {
+            const section = document.createElement('div');
+            section.className = 'nav-section';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            section.appendChild(h3);
+            links.forEach(({ href, label, file, external }) => {
+                const a = document.createElement('a');
+                a.className = 'nav-link';
+                a.textContent = label;
+                a.href = href;
+                if (file != null) a.setAttribute('data-file', file);
+                if (external) a.target = '_blank';
+                section.appendChild(a);
+            });
+            container.appendChild(section);
         }
 
         function buildNavigation() {
-            document.getElementById('nav-logo').textContent = navConfig.logo;
-            
-            const navSections = document.getElementById('nav-sections');
-            navSections.innerHTML = '';
-            
-            navConfig.sections.forEach(section => {
-                const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'nav-section';
-                
-                const title = document.createElement('h3');
-                title.textContent = section.title;
-                sectionDiv.appendChild(title);
-                
-                section.links.forEach(link => {
-                    const linkEl = document.createElement('a');
-                    linkEl.className = 'nav-link';
-                    linkEl.textContent = link.label;
-                    linkEl.setAttribute('data-file', link.file);
-                    
-                    if (link.external) {
-                        linkEl.href = link.file;
-                        linkEl.target = '_blank';
-                    } else if (link.file.endsWith('/')) {
-                        linkEl.href = link.file;
-                    } else {
-                        linkEl.href = `?f=${link.file}`;
-                    }
-                    
-                    sectionDiv.appendChild(linkEl);
-                });
-                
-                navSections.appendChild(sectionDiv);
-            });
-        }
+            document.getElementById('nav-project').textContent = navConfig.project;
+            const nav = document.getElementById('nav-sections');
+            nav.innerHTML = '';
 
-        function updateActiveNav(filePath) {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
+            // Pages
+            addNavSection(nav, 'Course', navConfig.pages.map(p => ({
+                href: `?f=${p.file}`, label: p.label, file: p.file
+            })));
+
+            // Lectures grouped by track
+            const tracks = [...new Set(navConfig.lectures.map(l => l.track))];
+            tracks.forEach(track => {
+                const lectures = navConfig.lectures.filter(l => l.track === track);
+                addNavSection(nav, `${track} Track`, lectures.map(l => ({
+                    href: `?f=${l.id}/`, label: `${l.id}: ${l.label}`, file: `${l.id}/`
+                })));
             });
-            
-            const activeLink = document.querySelector(`[data-file="${filePath}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
+
+            // Assignments
+            if (navConfig.assignments.length) {
+                addNavSection(nav, 'Assignments', navConfig.assignments.map(a => ({
+                    href: a.url, label: a.label, external: true
+                })));
+            }
+
+            // Resources
+            if (navConfig.resources.length) {
+                addNavSection(nav, 'Resources', navConfig.resources.map(r => ({
+                    href: r.url, label: r.label, external: true
+                })));
             }
         }
 
-        function loadContent(filePath) {
+        function loadContent(file) {
             const contentDiv = document.getElementById('content');
             contentDiv.innerHTML = '<div class="loading">Loading content...</div>';
-            
-            document.title = navConfig.pageTitles[filePath] ? 
-                `${navConfig.pageTitles[filePath]} - DataSci-217` : 'DataSci-217';
-            
-            updateActiveNav(filePath);
-            
-            if (!filePath.endsWith('/') && !filePath.endsWith('.md') && !filePath.includes('.')) {
-                filePath += '.md';
-            }
 
-            fetch(filePath)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.text();
+            // Derive title
+            const page = navConfig.pages.find(p => p.file === file);
+            const lecture = navConfig.lectures.find(l => `${l.id}/` === file);
+            const label = page?.label || (lecture && `${lecture.id}: ${lecture.label}`);
+            document.title = label ? `${label} - ${navConfig.project}` : navConfig.project;
+
+            // Active nav
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            const active = document.querySelector(`[data-file="${file}"]`);
+            if (active) active.classList.add('active');
+
+            fetch(resolvePath(file))
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+                    return r.text();
                 })
                 .then(text => {
                     contentDiv.innerHTML = md.render(text);
                 })
-                .catch(error => {
+                .catch(err => {
                     contentDiv.innerHTML = `
                         <div class="error">
                             <h2>Error Loading Content</h2>
-                            <p>Could not load: <code>${filePath}</code></p>
-                            <p>Error: ${error.message}</p>
-                            <p><a href="?f=index">Return to course overview</a></p>
+                            <p>Could not load: <code>${resolvePath(file)}</code></p>
+                            <p>${err.message}</p>
+                            <p><a href="?f=">Return to course overview</a></p>
                         </div>
                     `;
                 });
         }
 
         buildNavigation();
-        let filePath = getQueryParam('f') || 'README';
-        loadContent(filePath);
+        const file = new URLSearchParams(window.location.search).get('f') || '';
+        loadContent(file);
     </script>
 </body>
 </html>
