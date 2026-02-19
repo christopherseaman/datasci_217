@@ -1,31 +1,31 @@
-"Introduction" to Python & Data Science Tools
+# Introduction to Python & Data Science Tools
 
-# Resources
+## Resources
 
 - Canonical URL - https://not.badmath.org/ds217
 - GitHub repo - https://github.com/christopherseaman/datasci_217
 
-## References
+#### References
 
 - [Python for Data Analysis](https://wesmckinney.com/book/) (rough basis for Python content)
 - [The Missing Semester](https://missing.csail.mit.edu/) (command line, git, data wrangling)
 - [The Linux Command Line book](http://linuxcommand.org/tlcl.php) (command line in-depth)
 - [Markdown Guide](https://www.markdownguide.org/) (you can probably figure this one out)
 
-## Development Tools (free!)
+#### Development Tools (free!)
 
 - [VS Code](https://code.visualstudio.com/) (it’s pretty good)
 - [Python](https://www.python.org/) (great docs & tutorials, too!)
 - [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh) (free IDE in a browser)
 - [Google Cloud Shell](https://cloud.google.com/free/docs/compute-getting-started) (practice command line anywhere)
 
-# Assignments
+## Assignments
 
 - **Assignment 1:** https://classroom.github.com/a/icjG3z9c
 - **Assignment 2:** https://classroom.github.com/a/wSmf0KE5
 - **Assignment 3:** https://classroom.github.com/a/xvMrhDAi
 
-# Lectures
+## Lectures
 
 1. [1. Python, the Command Line, and VS Code](https://www.notion.so/1-Python-the-Command-Line-and-VS-Code-271d9fdd1a1a805784e1fe68dc985696?pvs=21)
     - Command line navigation and file operations
