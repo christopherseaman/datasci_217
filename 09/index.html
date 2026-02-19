@@ -3,22 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataSci-217: Introduction to Python & Data Science Tools</title>
-    <meta name="description" content="Introduction to Python and Data Science Tools - A comprehensive course covering command line, Python basics, NumPy, Pandas, and data analysis workflows.">
-    <meta name="keywords" content="python, data science, pandas, numpy, programming, tutorial, course">
+    <title>DataSci-217</title>
     <link rel="stylesheet" href="../theme.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="../nav-config.js"></script>
 </head>
 <body>
-    <button class="nav-toggle" onclick="toggleNav()">☰</button>
-    <div class="container">
-        <nav class="sidebar" id="sidebar">
-            <div class="logo" id="nav-logo"></div>
-            <div id="nav-sections"></div>
-        </nav>
+    <div class="lecture-container">
+        <header class="lecture-header" id="lecture-header">
+            <div class="loading">Loading...</div>
+        </header>
         
-        <main class="main-content">
+        <main class="lecture-content">
             <div class="content" id="content">
                 <div class="loading">Loading content...</div>
             </div>
@@ -26,110 +22,46 @@
     </div>
     
     <script>
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
+        const md = window.markdownit({
+            html: true,
+            linkify: true,
+            typographer: true
+        });
 
-        function toggleNav() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('open');
-        }
+        const dirName = window.location.pathname.replace(/\/$/, '').split('/').pop();
+        const lecture = navConfig.lectures.find(l => l.id === dirName);
 
-        function buildNavigation() {
-            document.getElementById('nav-logo').textContent = navConfig.logo;
-            
-            const navSections = document.getElementById('nav-sections');
-            navSections.innerHTML = '';
-            
-            navConfig.sections.forEach(section => {
-                const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'nav-section';
-                
-                const title = document.createElement('h3');
-                title.textContent = section.title;
-                sectionDiv.appendChild(title);
-                
-                section.links.forEach(link => {
-                    const linkEl = document.createElement('a');
-                    linkEl.className = 'nav-link';
-                    linkEl.textContent = link.label;
-                    linkEl.setAttribute('data-file', link.file);
-                    
-                    if (link.external) {
-                        linkEl.href = link.file;
-                        linkEl.target = '_blank';
-                    } else if (link.file.endsWith('/')) {
-                        // Directory links go directly to the directory
-                        linkEl.href = link.file;
-                    } else {
-                        // Other files use ?f= for dynamic loading
-                        linkEl.href = `?f=${link.file}`;
-                    }
-                    
-                    sectionDiv.appendChild(linkEl);
-                });
-                
-                navSections.appendChild(sectionDiv);
+        // Build header
+        const header = document.getElementById('lecture-header');
+        header.innerHTML = `
+            <h1>${navConfig.project}: Lecture ${lecture?.id || dirName}</h1>
+            <p>${lecture?.label || ''}</p>
+            <nav class="lecture-nav">
+                <a href="../">← Back to Course</a>
+            </nav>
+        `;
+        document.title = lecture
+            ? `${lecture.id}: ${lecture.label} - ${navConfig.project}`
+            : navConfig.project;
+
+        // Load content
+        fetch('README.md')
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+                return r.text();
+            })
+            .then(text => {
+                document.getElementById('content').innerHTML = md.render(text);
+            })
+            .catch(err => {
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <h2>Error Loading Content</h2>
+                        <p>Could not load README.md</p>
+                        <p>${err.message}</p>
+                    </div>
+                `;
             });
-        }
-
-        function updateActiveNav(filePath) {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            const activeLink = document.querySelector(`[data-file="${filePath}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-            }
-        }
-
-        function loadContent(filePath) {
-            const contentDiv = document.getElementById('content');
-            contentDiv.innerHTML = '<div class="loading">Loading content...</div>';
-            
-            document.title = navConfig.pageTitles[filePath] ? 
-                `${navConfig.pageTitles[filePath]} - DataSci-217` : 'DataSci-217';
-            
-            updateActiveNav(filePath);
-            
-            if (!filePath.endsWith('.md')) {
-                filePath += '.md';
-            }
-
-            fetch(filePath)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.text();
-                })
-                .then(text => {
-                    const converter = new showdown.Converter({
-                        indent: 4,
-                        tables: true,
-                        strikethrough: true,
-                        tasklists: true
-                    });
-                    contentDiv.innerHTML = converter.makeHtml(text);
-                })
-                .catch(error => {
-                    contentDiv.innerHTML = `
-                        <div class="error">
-                            <h2>Error Loading Content</h2>
-                            <p>Could not load: <code>${filePath}</code></p>
-                            <p>Error: ${error.message}</p>
-                            <p><a href="?f=README">Return to course overview</a></p>
-                        </div>
-                    `;
-                });
-        }
-
-        // Initialize
-        buildNavigation();
-        let filePath = getQueryParam('f') || 'README';
-        loadContent(filePath);
     </script>
 </body>
 </html>
