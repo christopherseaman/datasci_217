@@ -29,6 +29,9 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+        env:
+          ASTRO_SITE: https://christopherseaman.github.io
+          ASTRO_BASE: /datasci_217
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
