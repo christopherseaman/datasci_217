@@ -7,12 +7,6 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'DataSci-217',
-      expressiveCode: {
-        styleOverrides: {
-          codeBackground: ({ theme }) =>
-            theme.type === 'dark' ? '#0d1117' : theme.colors['editor.background'],
-        },
-      },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/christopherseaman/datasci_217' }],
       customCss: [
         '@fontsource/fira-mono/400.css',
