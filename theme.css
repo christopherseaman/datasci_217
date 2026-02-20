@@ -1,14 +1,10 @@
 /* @theme sqrl */
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Fira+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet">
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap');
 
 section {
   font-family: "Source Serif 4", "EB Garamond", "Times New Roman", serif !important;
 }
 
-/* Apply EB Garamond to body and content areas */
 body, .content {
   font-family: "Source Serif 4", "EB Garamond", "Times New Roman", serif !important;
   font-optical-sizing: auto;
@@ -19,26 +15,28 @@ body, .content {
 }
 
 code {
-  font-family: "Fira Mono", monospace !important;
-  font-optical-sizing: auto;
+  font-family: "Source Code Pro", monospace !important;
   font-weight: 400;
   font-style: normal;
 }
 
 /* Course navigation styles */
 * { box-sizing: border-box; }
-body { 
-  line-height: 1.6; 
-  margin: 0; 
+
+body {
+  line-height: 1.6;
+  margin: 0;
   padding: 0;
   background-color: #f8f9fa;
 }
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
   min-height: 100vh;
 }
+
 .sidebar {
   width: 280px;
   background: #2c3e50;
@@ -49,6 +47,7 @@ body {
   height: 100vh;
   transition: transform 0.3s ease;
 }
+
 .main-content {
   flex: 1;
   margin-left: 280px;
@@ -56,6 +55,7 @@ body {
   background: white;
   min-height: 100vh;
 }
+
 .logo {
   font-size: 1.2em;
   font-weight: bold;
@@ -63,9 +63,11 @@ body {
   padding-bottom: 10px;
   border-bottom: 2px solid #3498db;
 }
+
 .nav-section {
   margin-bottom: 20px;
 }
+
 .nav-section h3 {
   color: #3498db;
   margin: 0 0 10px 0;
@@ -73,6 +75,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
 .nav-link {
   display: block;
   color: #ecf0f1;
@@ -82,25 +85,31 @@ body {
   border-radius: 4px;
   transition: background-color 0.2s;
 }
+
 .nav-link:hover {
   background-color: #34495e;
   color: white;
 }
+
 .nav-link.active {
   background-color: #3498db;
   color: white;
 }
+
 .content {
   max-width: 1000px;
   margin: 0 auto;
 }
-.content h1 { 
-  color: #2c3e50; 
+
+.content h1 {
+  color: #2c3e50;
   border-bottom: 3px solid #3498db;
   padding-bottom: 10px;
 }
+
 .content h2 { color: #34495e; }
 .content h3 { color: #7f8c8d; }
+
 .content pre {
   background: #f8f9fa;
   border: 1px solid #e9ecef;
@@ -108,15 +117,18 @@ body {
   padding: 15px;
   overflow-x: auto;
 }
+
 .content code {
   background: #f8f9fa;
   padding: 2px 4px;
   border-radius: 3px;
 }
+
 .content img {
   max-width: 100%;
   height: auto;
 }
+
 .error {
   background: #f8d7da;
   color: #721c24;
@@ -124,11 +136,13 @@ body {
   border-radius: 4px;
   border: 1px solid #f5c6cb;
 }
+
 .loading {
   text-align: center;
   padding: 40px;
   color: #6c757d;
 }
+
 .nav-toggle {
   display: none;
   position: fixed;
@@ -143,7 +157,8 @@ body {
   cursor: pointer;
   font-size: 16px;
 }
-/* Responsive - hide sidebar on smaller screens for presentations */
+
+/* Responsive */
 @media (max-width: 1024px) {
   .sidebar {
     transform: translateX(-100%);
@@ -160,6 +175,7 @@ body {
     transform: translateX(0);
   }
 }
+
 @media (max-width: 768px) {
   .sidebar {
     display: none;
@@ -173,7 +189,7 @@ body {
   }
 }
 
-/* Lecture page styles - simple layout without navigation */
+/* Lecture page styles */
 .lecture-container {
   max-width: 1200px;
   margin: 0 auto;
