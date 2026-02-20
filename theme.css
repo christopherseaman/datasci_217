@@ -195,13 +195,19 @@ body {
   text-align: center;
   margin-bottom: 40px;
   border-bottom: 2px solid #3498db;
+  padding-bottom: 20px;
+
+}
+
+.lecture-header h1,
+.lecture-header p {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .lecture-header h1 {
   font-size: 3em;
   margin: 0 0 10px 0;
-  border-bottom: none;
-  padding-bottom: none;
 }
 
 .lecture-header p {
