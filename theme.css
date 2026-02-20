@@ -57,11 +57,12 @@ body {
 }
 
 .logo {
-  font-size: 1.2em;
+  font-size: 1.5em;
   font-weight: bold;
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 2px solid #3498db;
+  text-align: center;
 }
 
 .nav-section {
@@ -177,15 +178,9 @@ body {
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
   .main-content {
     margin-left: 0;
     padding: 10px;
-  }
-  .nav-toggle {
-    display: none;
   }
 }
 
