@@ -120,6 +120,7 @@
                             </div>
                         `;
                     }
+                    contentDiv.innerHTML = header + md.render(text);
                 })
                 .catch(err => {
                     contentDiv.innerHTML = `
