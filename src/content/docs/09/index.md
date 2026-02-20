@@ -2,7 +2,7 @@
 title: "09: Visualization"
 ---
 
-See [BONUS.md](BONUS.md) for advanced topics:
+See [Bonus](bonus/) for advanced topics:
 
 - Advanced time series decomposition and seasonal analysis
 - Time series forecasting with ARIMA and exponential smoothing
@@ -694,7 +694,7 @@ plt.show()
 
 ![media/viz_components.png]
 
-*Note: For advanced seasonal decomposition techniques (like STL decomposition), see [BONUS.md](BONUS.md).*
+*Note: For advanced seasonal decomposition techniques (like STL decomposition), see [Bonus](bonus/).*
 
 
 # LIVE DEMO!

@@ -3,7 +3,7 @@ title: "07: Data Cleaning"
 ---
 
 
-See [BONUS.md](BONUS.md) for advanced topics:
+See [Bonus](bonus/) for advanced topics:
 
 - Advanced matplotlib customization and publication-quality plots
 - Interactive visualization with Bokeh and Plotly

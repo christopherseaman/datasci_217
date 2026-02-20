@@ -3,7 +3,7 @@ title: "04: NumPy"
 ---
 
 
-See [BONUS.md](BONUS.md) for advanced topics:
+See [Bonus](bonus/) for advanced topics:
 
 - Alignment and broadcasting tricks
 - Function application patterns and method chaining notes

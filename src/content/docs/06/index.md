@@ -6,7 +6,7 @@ title: "06: Data Loading"
 
 [LIVE DEMO!](https://github.com/christopherseaman/datasci_217/blob/main/06/demo/DEMO_GUIDE.md)
 
-See [BONUS.md](BONUS.md) for advanced topics:
+See [Bonus](bonus/) for advanced topics:
 
 - Merging on index with left_index/right_index parameters
 - Advanced concat options (keys, levels, names, verify_integrity)

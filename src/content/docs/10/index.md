@@ -3,7 +3,7 @@ title: "10: Aggregation"
 ---
 
 
-See [BONUS.md](BONUS.md) for advanced topics:
+See [Bonus](bonus/) for advanced topics:
 
 - Advanced statistical modeling techniques
 - Hyperparameter tuning strategies

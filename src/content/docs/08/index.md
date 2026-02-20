@@ -3,7 +3,7 @@ title: "08: Data Wrangling"
 ---
 
 
-See [BONUS.md](BONUS.md) for advanced topics:
+See [Bonus](bonus/) for advanced topics:
 
 - Advanced groupby operations with custom functions
 - Hierarchical grouping and MultiIndex operations

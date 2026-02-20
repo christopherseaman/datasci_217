@@ -8,6 +8,12 @@ export default defineConfig({
     starlight({
       title: 'DataSci-217',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/christopherseaman/datasci_217' }],
+      customCss: [
+        '@fontsource/fira-mono/400.css',
+        '@fontsource/fira-mono/500.css',
+        '@fontsource/fira-mono/700.css',
+        './src/styles/custom.css',
+      ],
       sidebar: [
         {
           label: 'Course',
