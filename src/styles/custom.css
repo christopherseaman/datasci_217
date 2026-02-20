@@ -4,4 +4,9 @@
 
 :root[data-theme='dark'] {
   --sl-color-black: #000;
+  --sl-color-bg-inline-code: #1a1a1a;
+}
+
+:root[data-theme='dark'] .expressive-code {
+  --ec-codeBg: #0d0d0d;
 }
