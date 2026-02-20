@@ -91,7 +91,7 @@ body {
   color: white;
 }
 .content {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 .content h1 { 
@@ -175,7 +175,7 @@ body {
 
 /* Lecture page styles - simple layout without navigation */
 .lecture-container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -188,13 +188,12 @@ body {
 }
 
 .lecture-header h1 {
-  color: #2c3e50;
+  font-size: 2em;
   margin: 0 0 10px 0;
 }
 
 .lecture-header p {
-  color: #7f8c8d;
-  font-size: 1.2em;
+  font-size: 2em;
   margin: 0 0 20px 0;
 }
 
