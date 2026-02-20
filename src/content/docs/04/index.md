@@ -21,7 +21,7 @@ Jupyter notebooks provide an interactive environment for data analysis, combinin
      - Run button and keyboard shortcuts
      - Kernel selector (Python 3.x)
      - Variable explorer panel
-     File: /ds217/media/04/jupyter_interface.png -->
+     File: media/jupyter_interface.png -->
 
 ## Jupyter Notebook Interface
 
@@ -31,7 +31,7 @@ Jupyter notebooks organize work into cells that can contain code or markdown. Th
      About learning curves and feeling like you're not making progress
      Great for students learning Jupyter - normalizes the learning process
      https://xkcd.com/1906/
-     File: /ds217/media/04/xkcd_1906.png -->
+     File: media/xkcd_1906.png -->
 
 **Reference:**
 
@@ -212,13 +212,13 @@ Pandas provides powerful data structures and tools for working with structured d
      - Series: 1D labeled array (index + values)
      - DataFrame: 2D table (row index + column names + data)
      - Visual comparison showing the relationship
-     File: /ds217/media/04/pandas_structures.png -->
+     File: media/pandas_structures.png -->
 
 <!-- FIXME: Alternative/Additional - xkcd 2180 "Spreadsheets"
      Shows why we need better tools than Excel for data
      Perfect for introducing DataFrames as "spreadsheets done right"
      https://xkcd.com/2180/
-     File: /ds217/media/04/xkcd_2180.png -->
+     File: media/xkcd_2180.png -->
 
 *Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
 
@@ -226,7 +226,7 @@ Pandas provides powerful data structures and tools for working with structured d
 
 *Think of pandas data structures like Russian nesting dolls - Series fit inside DataFrames, which can contain other DataFrames, which can contain... well, you get the idea. It's data structures all the way down!*
 
-<!-- FIXME: Add diagram showing Series vs DataFrame relationships (/ds217/media/04/pandas_structures.png) -->
+<!-- FIXME: Add diagram showing Series vs DataFrame relationships (media/pandas_structures.png) -->
 
 **Reference:**
 
@@ -369,7 +369,7 @@ Data selection in pandas uses label-based and position-based indexing. Understan
        * df.iloc[1, 0] → selects by position (same cell)
      - Highlight: loc uses labels, iloc uses positions
      - Include slicing behavior difference (loc is inclusive, iloc is exclusive)
-     File: /ds217/media/04/loc_vs_iloc.png -->
+     File: media/loc_vs_iloc.png -->
 
 *Warning: Indexing in pandas is like a choose-your-own-adventure book - there are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
 

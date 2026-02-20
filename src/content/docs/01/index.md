@@ -17,7 +17,7 @@ Before we dive into the technical content, let's make sure you have everything y
 
 ## Getting to the Command Line
 
-![learning to code is kind of like this](/ds217/media/01/rocket_packs.png)
+![learning to code is kind of like this](media/rocket_packs.png)
 
 The command line is your direct conversation with your computer. Here's how to access it on different systems:
 
@@ -98,7 +98,7 @@ You'll need a good text editor to write Python code. Here are your options:
 
 ## Why VS Code?
 
-![IDE Choice Guidance](/ds217/media/01/IDE_choice.png)
+![IDE Choice Guidance](media/IDE_choice.png)
 
 VS Code strikes the perfect balance between simplicity and power. It's what most professional data scientists use, and it's what we'll use in this course.
 
@@ -140,7 +140,7 @@ Git configuration (one-time setup):
 
 You don't want to put your email all over the public internet, so GitHub provides a proxy service. You can see the proxy email address in your [GitHub email settings https://github.com/settings/emails](https://github.com/settings/emails).
 
-![GitHub Email Setup](/ds217/media/01/github_email.png)
+![GitHub Email Setup](media/github_email.png)
 
 ### Setting up Git in the Command Line
 
@@ -169,7 +169,7 @@ The command line is your direct conversation with your computer. Instead of clic
 
 Think of it as texting your computer instead of playing charades with icons.
 
-![Unix System Reference](/ds217/media/01/its-a-unix-system.jpeg)
+![Unix System Reference](media/its-a-unix-system.jpeg)
 
 ## Navigation Commands
 
@@ -306,7 +306,7 @@ Sometimes you need to stop what you're doing:
 
 # Python Basics
 
-![xkcd_353.png](/ds217/media/01/xkcd_353.png)
+![xkcd_353.png](media/xkcd_353.png)
 
 ## Running Python
 
@@ -478,7 +478,7 @@ bmi = weight_kg / (height_m ** 2)
 print(f"BMI is {bmi:.1f}")
 ```
 
-![xkcd_1513.png](/ds217/media/01/xkcd_1513.png)
+![xkcd_1513.png](media/xkcd_1513.png)
 
 ## Control Structures
 
@@ -637,7 +637,7 @@ F-strings let you create clear, readable output that tells the story of your dat
 
 # Debugging and Error Handling Basics
 
-![Programming is doing something wrong over and over until you do something right](/ds217/media/01/it_works.png)
+![Programming is doing something wrong over and over until you do something right](media/it_works.png)
 
 **Reading Python Error Messages (Essential Skill!):**
 

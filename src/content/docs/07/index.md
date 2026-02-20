@@ -58,7 +58,7 @@ Data-Ink Ratio = Data-Ink / Total Ink Used
 - Avoid 3D effects and shadows that distort perception
 - Remove redundant labels and tick marks
 
-![Data-Ink Ratio Comparison](/ds217/media/07/tufte_data_ink_ratio.png)
+![Data-Ink Ratio Comparison](media/tufte_data_ink_ratio.png)
 
 *Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.*
 
@@ -91,7 +91,7 @@ Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
 
 Use small, repeated charts with the same scale to enable easy comparison across categories or time.
 
-![Small Multiples Example](/ds217/media/07/tufte_small_multiples.png)
+![Small Multiples Example](media/tufte_small_multiples.png)
 
 *Small multiples enable quick visual comparison across multiple dimensions while maintaining consistent scales.*
 
@@ -103,13 +103,13 @@ Show as much detail as the data allows - don't oversimplify or aggregate unneces
 
 ### Example 1: Bar Chart Redesign
 
-![Bar Chart Comparison](/ds217/media/07/tufte_bar_comparison.png)
+![Bar Chart Comparison](media/tufte_bar_comparison.png)
 
 *Before (left): Excessive colors, patterns, and heavy gridlines distract from the data. After (right): Clean design with direct labeling maximizes data-ink ratio.*
 
 ### Example 2: Line Chart with Truncated Axis (Lie Factor)
 
-![Lie Factor Example](/ds217/media/07/tufte_lie_factor.png)
+![Lie Factor Example](media/tufte_lie_factor.png)
 
 *Before (left): Truncated y-axis creates a high lie factor, exaggerating modest growth. After (right): Honest scale starting at zero shows true magnitude of change.*
 
@@ -117,7 +117,7 @@ Show as much detail as the data allows - don't oversimplify or aggregate unneces
 
 Different data types require different color strategies:
 
-![Color Palette Guide](/ds217/media/07/color_palettes.png)
+![Color Palette Guide](media/color_palettes.png)
 
 **Color Selection Guidelines:**
 - **Sequential:** Use for ordered data (temperature, age, income) - single hue gradient
@@ -142,7 +142,7 @@ Different data types require different color strategies:
 - **Heatmaps**: Patterns in 2D data
 - **Pie charts**: Parts of a whole (use sparingly!)
 
-![Chart Selection Guide](/ds217/media/07/chart_selection.png)
+![Chart Selection Guide](media/chart_selection.png)
 
 *Different chart types are optimized for different data relationships and questions. Choose the right chart for your message.*
 
@@ -240,7 +240,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Matplotlib Subplots Example](/ds217/media/07/matplotlib_subplots.png)
+![Matplotlib Subplots Example](media/matplotlib_subplots.png)
 
 *Creating multiple subplots in a single figure allows for easy comparison across different visualization types.*
 
@@ -285,7 +285,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Matplotlib Customization Example](/ds217/media/07/matplotlib_customization.png)
+![Matplotlib Customization Example](media/matplotlib_customization.png)
 
 *Customization allows you to create publication-quality plots with precise control over every visual element.*
 
@@ -326,7 +326,7 @@ ax.grid(True, alpha=0.3)
 plt.show()
 ```
 
-![Matplotlib Colors and Styles](/ds217/media/07/matplotlib_styles.png)
+![Matplotlib Colors and Styles](media/matplotlib_styles.png)
 
 *matplotlib provides extensive options for colors, markers, and line styles to create visually distinct data series.*
 
@@ -384,7 +384,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Pandas Plotting Examples](/ds217/media/07/pandas_plotting.png)
+![Pandas Plotting Examples](media/pandas_plotting.png)
 
 *pandas plotting methods provide quick, convenient visualization for data exploration with minimal code.*
 
@@ -468,7 +468,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Seaborn Statistical Plots](/ds217/media/07/seaborn_statistical.png)
+![Seaborn Statistical Plots](media/seaborn_statistical.png)
 
 *seaborn excels at creating beautiful statistical visualizations with automatic styling and color choices.*
 
@@ -611,7 +611,7 @@ combined = alt.hconcat(scatter, bar, line)
 combined.show()
 ```
 
-![Altair Basic Charts](/ds217/media/07/altair_all_three.png)
+![Altair Basic Charts](media/altair_all_three.png)
 
 *Combined altair charts: scatter plot (left), bar chart (middle), line plot (right)*
 
@@ -643,7 +643,7 @@ chart = alt.Chart(data).mark_circle().encode(
 chart.show()
 ```
 
-![Altair Encoded Chart](/ds217/media/07/altair_encoded.png)
+![Altair Encoded Chart](media/altair_encoded.png)
 
 *Enhanced scatter plot with color encoding by category and size encoding by y-value*
 

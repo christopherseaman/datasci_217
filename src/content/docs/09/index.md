@@ -40,7 +40,7 @@ Time series data is characterized by observations collected over time, where the
 
 *"Time series data comes in many flavors - some are as regular as a Swiss watch, others as unpredictable as a toddler's nap schedule. The key is knowing which one you're dealing with!"*
 
-![Types of Time Series](/ds217/media/09/types_of_time_series.png)
+![Types of Time Series](media/types_of_time_series.png)
 
 *Visual guide showing the different types of time series data. Notice how regular series tick along like clockwork, while irregular series jump around like a medical appointment schedule.*
 
@@ -217,7 +217,7 @@ print(f"Weekly frequency: {pd.infer_freq(ts_weekly.index)}")
 
 Shifting allows you to create lagged or leading versions of your time series, essential for analyzing changes over time.
 
-![Shifting and Lagging](/ds217/media/09/shifting_lagging.png)
+![Shifting and Lagging](media/shifting_lagging.png)
 
 *Visual demonstration of shifting operations showing lag (looking back), lead (looking ahead), and differences (day-to-day changes).*
 
@@ -256,7 +256,7 @@ print(ts[['lag_1', 'diff', 'pct_change']].head())
 
 `pandas` provides intuitive ways to select data from time series using string-based indexing. You can write "2023" and `pandas` knows you mean "all of 2023".
 
-![Time Series Indexing](/ds217/media/09/time_series_indexing.png)
+![Time Series Indexing](media/time_series_indexing.png)
 
 *Examples of time-based selection showing how to slice data by year, month, or date range. Notice how `pandas` interprets string dates like a human would.*
 
@@ -345,7 +345,7 @@ print(last_3_days.head())
 
 Resampling converts time series from one frequency to another. **Downsampling** aggregates higher frequency data to lower frequency (e.g., daily to monthly). **Upsampling** converts lower frequency to higher frequency (e.g., monthly to daily), often introducing missing values.
 
-![Resampling Example](/ds217/media/09/resampling_example.png)
+![Resampling Example](media/resampling_example.png)
 
 *Visual comparison showing daily data (high frequency, many points) being resampled to monthly data (low frequency, fewer points). Notice how the monthly view smooths out daily fluctuations.*
 
@@ -448,7 +448,7 @@ Rolling window functions compute statistics over a fixed-size window that moves 
 
 The `rolling()` method creates a rolling window object that can be used with various aggregation functions.
 
-![Rolling Window](/ds217/media/09/rolling_window.png)
+![Rolling Window](media/rolling_window.png)
 
 *Demonstration of rolling window operations showing how a 7-day window smooths out daily fluctuations while preserving the underlying trend. The shaded area shows the standard deviation - wider means more variability, narrower means more consistent.*
 
@@ -518,7 +518,7 @@ print(ts[['centered_mean', 'expanding_mean', 'ewm_mean']].head(10))
 
 Exponentially weighted functions give more weight to recent observations, making them more responsive to recent changes.
 
-![EWM Comparison](/ds217/media/09/ewm_comparison.png)
+![EWM Comparison](media/ewm_comparison.png)
 
 *Comparison of exponentially weighted moving average (EWM) with simple moving average. Notice how EWM responds faster to recent changes.*
 
@@ -551,7 +551,7 @@ print(ts[['ewm_mean', 'ewm_std']].head(10))
 
 # Time Zone Handling
 
-![xkcd 1883: Time Zones](/ds217/media/09/xkcd_time_zones.png)
+![xkcd 1883: Time Zones](media/xkcd_time_zones.png)
 
 *"I find it hard to believe that a time zone can be a real thing." - A relatable sentiment when dealing with time zone conversions.*
 
@@ -645,10 +645,10 @@ plt.tight_layout()
 plt.show()
 ```
 
-![/ds217/media/09/viz_temp.png]
+![media/viz_temp.png]
 
 
-![/ds217/media/09/viz_temp_rolling.png]
+![media/viz_temp_rolling.png]
 
 ## Visualizing Time Series Components
 
@@ -692,7 +692,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![/ds217/media/09/viz_components.png]
+![media/viz_components.png]
 
 *Note: For advanced seasonal decomposition techniques (like STL decomposition), see [BONUS.md](BONUS.md).*
 

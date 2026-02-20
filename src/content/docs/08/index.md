@@ -241,7 +241,7 @@ print(wide_format)
 ```
 
 # Pivot Tables and Cross-Tabulations
-![Research vs. Practical](/ds217/media/08/research.png)
+![Research vs. Practical](media/research.png)
 
 
 *Think of pivot tables as the data analyst's Swiss Army knife - they can reshape, summarize, and analyze data in ways that would take dozens of lines of code to accomplish manually.*
@@ -412,7 +412,7 @@ result.to_csv('aggregated_results.csv')
 ```
 
 ## screen and tmux for Persistent Sessions
-![Punk vs. Process](/ds217/media/08/punk.png)
+![Punk vs. Process](media/punk.png)
 
 
 Screen lets you detach and reattach long-running jobs; tmux is a more modern, scriptable alternative. Use whichever your server offers.
@@ -473,7 +473,7 @@ tmux attach-session -t data_analysis
 
 *When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
 
-![Performance Benchmarks - All comparisons on 10M rows (lower is better)](/ds217/media/08/perf_combined.png)
+![Performance Benchmarks - All comparisons on 10M rows (lower is better)](media/perf_combined.png)
 
 ## Efficient GroupBy Operations
 

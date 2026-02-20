@@ -6,7 +6,7 @@ title: "03: Data Structures"
 
 # Virtual Environments
 
-![xkcd 1987: Python Environment](/ds217/media/03/xkcd_1987.png)
+![xkcd 1987: Python Environment](media/xkcd_1987.png)
 
 *Virtual environments prevent package chaos*
 
@@ -133,7 +133,7 @@ print(f"Mean: {arr.mean():.2f}")
 ```
 
 
-![It's pronounced...](/ds217/media/03/numpy.webp)
+![It's pronounced...](media/numpy.webp)
 
 # Why NumPy Matters
 
@@ -161,7 +161,7 @@ result = my_array * 2  # 0.3 ms - 150x faster!
 
 ## NumPy Quick Reference
 
-![NumPy Cheatsheet](/ds217/media/03/nparray_cheatsheet.png)
+![NumPy Cheatsheet](media/nparray_cheatsheet.png)
 
 ## Creating Arrays
 
@@ -463,12 +463,12 @@ data = rng.random((3, 3))  # Same result every time
 
 ## NumPy Quick Reference
 
-![NumPy Cheatsheet](/ds217/media/03/nparray_cheatsheet.png)
+![NumPy Cheatsheet](media/nparray_cheatsheet.png)
 
 *Essential NumPy operations at a glance*
 
 
-![Learning to Code...](/ds217/media/03/learning_to_code.png)
+![Learning to Code...](media/learning_to_code.png)
 
 # Command Line Data Processing
 

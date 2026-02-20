@@ -59,7 +59,7 @@ STATISTICAL MODELING          TRADITIONAL ML             DEEP LEARNING
 
 **Model Complexity vs Interpretability Trade-off:**
 
-![Model Interpretability Trade-off](/ds217/media/10/interpretability_tradeoff.webp)
+![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
 
 *As models get more powerful, they often become harder to interpret. Choose based on what you need: understanding (interpretability) or performance (accuracy).*
 
@@ -466,7 +466,7 @@ print(f"Feature importance: {importance}")
 
 *"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
 
-![Really, really, really, ridiculously...](/ds217/media/10/really_really__really_ridiculously_good_looking.jpg)
+![Really, really, really, ridiculously...](media/really_really__really_ridiculously_good_looking.jpg)
 
 **The scikit-learn Workflow:**
 
@@ -650,7 +650,7 @@ Gradient Boosting
 
 *"It's all about family. And by family, I mean gradient boosting."*
 
-![Fast & Furious Family](/ds217/media/10/fast_furious_family.jpg)
+![Fast & Furious Family](media/fast_furious_family.jpg)
 
 # LIVE DEMO
 

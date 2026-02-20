@@ -3,8 +3,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
-  site: 'https://not.badmath.org',
-  base: '/ds217',
+  site: 'https://not.badmath.org/ds217',
   integrations: [
     starlight({
       title: 'DataSci-217',

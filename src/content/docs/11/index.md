@@ -3,7 +3,7 @@ title: "11: Time Series"
 ---
 
 
-![xkcd 3172: Fifteen Years](/ds217/media/11/fifteen_years_2x.png)
+![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
 
 *"I used to be a data scientist, but then I automated myself out of a job. Now I'm just a script that runs every morning."*
 
@@ -218,7 +218,7 @@ By the end of this lecture, you should be able to:
 - [Advent of Code](https://adventofcode.com) - Get in the holiday spirit!
 - [GameShell](https://github.com/phyver/GameShell) - A game to learn the Unix shell
 
-![xkcd 1513: Code Quality](/ds217/media/11/xkcd_1513.png)
+![xkcd 1513: Code Quality](media/xkcd_1513.png)
 
 *"I honestly didn't think you could even USE emoji in variable names. Or that there were so many different crying ones."*
 

@@ -16,7 +16,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: The word “wrangling” comes from the Old English “wranglian” meaning “to dispute or argue.” This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
 
-![There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.](/ds217/media/06/image.png)
+<!-- Missing Notion image: [There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.] -->
 
 There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.
 
@@ -117,9 +117,9 @@ Understanding join types is crucial. Each type answers a different question abou
 - `how='right'` - ALL rows from right DataFrame, matching rows from left (right dominates)
 - `how='outer'` - ALL rows from BOTH DataFrames (union)
 
-![1*DTET9ngrx2Gzu6ZJk0G9BQ.jpg](/ds217/media/06/1DTET9ngrx2Gzu6ZJk0G9BQ.jpg)
+<!-- Missing Notion image: [1*DTET9ngrx2Gzu6ZJk0G9BQ.jpg] -->
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 **Example:**
 
@@ -155,13 +155,13 @@ display(outer)
 
 **Why this matters:** Wrong join type = lost data. Use left join to keep all customers.
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 # LIVE DEMO!
 
 (Demo 1: Customer Purchase Analysis)
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 ## Many-to-One and Many-to-Many Merges
 
@@ -377,7 +377,7 @@ display(complete)
 
 **Real-world example:** Combining survey responses from different time periods, or merging partial datasets from different sources.
 
-![It's important to make sure your analysis destroys as much information as it produces.](/ds217/media/06/image.png)
+<!-- Missing Notion image: [It's important to make sure your analysis destroys as much information as it produces.] -->
 
 It's important to make sure your analysis destroys as much information as it produces.
 
@@ -578,7 +578,7 @@ display(inner)
 
 ```
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 image.png
 
@@ -611,7 +611,7 @@ Good for: Reading, pivot tables               Good for: Groupby, plotting, model
 
 ```
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 ## Understanding Wide Format
 
@@ -674,7 +674,7 @@ display(long_data)
 
 ```
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 ## Pivoting Long to Wide with pivot()
 
@@ -813,7 +813,7 @@ Wide: Easy to read            Long: Easy to analyze with groupby()
 
 ```
 
-![If all else fails, use “significant at a p>0.05 level” and hope no one notices](/ds217/media/06/image.png)
+<!-- Missing Notion image: [If all else fails, use “significant at a p>0.05 level” and hope no one notices] -->
 
 If all else fails, use “significant at a p>0.05 level” and hope no one notices
 
@@ -973,10 +973,10 @@ display(flattened)
 
 ```
 
-![image.png](/ds217/media/06/image.png)
+<!-- Missing Notion image: [image.png] -->
 
 *“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”*
 
 # LIVE DEMO! (Demo 3: Index Management and Concatenation)
 
-![ironman.png](/ds217/media/06/ironman.png)
+<!-- Missing Notion image: [ironman.png] -->

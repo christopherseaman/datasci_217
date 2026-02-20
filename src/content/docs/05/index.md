@@ -8,7 +8,7 @@ title: "05: Pandas"
 
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 
-![Data Pipeline Intro](/ds217/media/05/data_pipeline_intro.png)
+![Data Pipeline Intro](media/data_pipeline_intro.png)
 *Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
 Data cleaning follows a systematic workflow: **detect → handle → validate → transform**. We'll cover each technique individually, then bring it all together in a complete pipeline at the end.
@@ -19,10 +19,10 @@ Missing data is a common problem in real-world datasets. Understanding how to id
 
 *Fun fact: Missing data has its own Wikipedia page with 47 different types of missingness. The most common? "I forgot to fill this out" and "The system crashed again."*
 
-![Missing Data Patterns](/ds217/media/05/missing_data_patterns_diagram.png)
+![Missing Data Patterns](media/missing_data_patterns_diagram.png)
 *Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
 
-![Data Cleaning Workflow](/ds217/media/05/data_cleaning_workflow.png)
+![Data Cleaning Workflow](media/data_cleaning_workflow.png)
 
 ## Missing Data Detection
 
@@ -194,7 +194,7 @@ print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
 
 ## Applying Custom Functions
 
-![xkcd 1205 "Is It Worth the Time?"](/ds217/media/05/xkcd_1205_apply.png)
+![xkcd 1205 "Is It Worth the Time?"](media/xkcd_1205_apply.png)
 *Classic time-saving calculation chart - perfect for .apply() section*
 
 Sometimes built-in methods aren't enough - you need to apply custom logic to transform your data. The `.apply()` and `.map()` methods let you use any function (built-in or custom) to transform data.
@@ -376,7 +376,7 @@ Working with categorical data is common in data analysis. Pandas provides two ma
 
 The categorical type is incredibly powerful for memory optimization, especially when you have repeated string values.
 
-![Categorical Encoding](/ds217/media/05/categorical_encoding_diagram.png)
+![Categorical Encoding](media/categorical_encoding_diagram.png)
 *Visual showing categorical encoding: Original values → Categories → Codes with memory savings comparison*
 
 **Reference:**
@@ -442,7 +442,7 @@ print(dummies)  # Only color_green and color_red (blue is the reference)
 
 String operations are essential for cleaning text data. Pandas provides easy-to-use string methods that work on Series containing text.
 
-![String Operations Reference](/ds217/media/05/string_operations_reference.png)
+![String Operations Reference](media/string_operations_reference.png)
 *Quick reference card for common string operations: .upper()/.lower(), .strip()/.replace(), .split()/.contains()*
 
 ```
@@ -461,7 +461,7 @@ Input: "  Alice Smith  "
    └─ .title() ────────────► "Alice Smith"
 ```
 
-![xkcd 1171 "Perl Problems"](/ds217/media/05/xkcd_1171.png)
+![xkcd 1171 "Perl Problems"](media/xkcd_1171.png)
 *"I got 99 problems, so I used regex. Now I have 100 problems." - Perfect humor for string manipulation complexity*
 
 **Reference:**
@@ -569,7 +569,7 @@ print(len(bootstrap))  # 4 (same length, but with replacement)
 
 # Data Validation and Quality Assessment
 
-![xkcd 2239 "Database"](/ds217/media/05/xkcd_2239.png)
+![xkcd 2239 "Database"](media/xkcd_2239.png)
 *Shows data errors invalidating research - perfect for validation section*
 
 | Issue | Detection | Solution |

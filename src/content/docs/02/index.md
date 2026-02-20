@@ -68,7 +68,7 @@ We'll start in the editor so Git makes visual sense later. No JSON needed—just
 
 # Git Version Control
 
-![xkcd 1597: Git](/ds217/media/02/xkcd_1597.png)
+![xkcd 1597: Git](media/xkcd_1597.png)
 
 Don't worry - we're taking a different approach than that xkcd suggests!
 
@@ -129,7 +129,7 @@ Think: "I'm trying something new without risking the working version."
 - **Branch**: Movable reference to commit
 - **Remote**: Reference to repository on another machine
 
-![Git Branches](/ds217/media/02/git_branches.png)
+![Git Branches](media/git_branches.png)
 
 ## Essential Git Commands
 
@@ -174,7 +174,7 @@ git push origin main          # Push changes
 git pull origin main          # Pull updates
 ```
 
-![Git Clone](/ds217/media/02/git_clone.png)
+![Git Clone](media/git_clone.png)
 
 **Good vs. Bad Commit Messages**
 
@@ -192,7 +192,7 @@ Fixes issue #123"
 git commit -m "minor changes"
 ```
 
-![xkcd 1296: Git Commit](/ds217/media/02/xkcd_1296.png)
+![xkcd 1296: Git Commit](media/xkcd_1296.png)
 
 ## VS Code Git Integration
 
@@ -364,7 +364,7 @@ print(f"Correlation: {df['hours'].corr(df['grade']):.2f}")
 
 Python emphasizes readability for data analysis. Everything is an object, enabling consistent behavior. Focus is on practical data manipulation.
 
-![Python Import](/ds217/media/02/python_import.webp)
+![Python Import](media/python_import.webp)
 
 ## Language Semantics and Object Model
 
@@ -396,7 +396,7 @@ Object introspection examines objects at runtime—their type, attributes, and m
 
 Python uses **duck typing**: "If it walks like a duck and quacks like a duck, then it must be a duck." If an object supports the needed methods, you can use it—regardless of its actual type.
 
-![Duck Typing](/ds217/media/02/duck_typing.jpg)
+![Duck Typing](media/duck_typing.jpg)
 
 This means functions work with any object that behaves as expected, not just those of a specific type.
 
