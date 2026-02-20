@@ -111,7 +111,15 @@
                     return r.text();
                 })
                 .then(text => {
-                    contentDiv.innerHTML = md.render(text);
+                    let header = '';
+                    if (page) {
+                        header = `
+                            <div class="lecture-header">
+                            <h1>${navConfig.project}</h1>
+                            <p>${page.label}</p>
+                            </div>
+                        `;
+                    }
                 })
                 .catch(err => {
                     contentDiv.innerHTML = `
