@@ -62,7 +62,7 @@
             nav.innerHTML = '';
 
             // Pages
-            addNavSection(nav, 'Course', navConfig.pages.map(p => ({
+            addNavSection(nav, 'Overview', navConfig.pages.map(p => ({
                 href: `?f=${p.file}`, label: p.label, file: p.file
             })));
 
@@ -71,7 +71,7 @@
             tracks.forEach(track => {
                 const lectures = navConfig.lectures.filter(l => l.track === track);
                 addNavSection(nav, `${track} Track`, lectures.map(l => ({
-                    href: `?f=${l.id}/`, label: `${l.id}: ${l.label}`, file: `${l.id}/`
+                    href: l.id, label: `${l.id}: ${l.label}`, file: l.id
                 })));
             });
 
