@@ -1,14 +1,16 @@
 /* @theme sqrl */
 
-@import 'default';
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Fira+Code:wght@300..700&display=swap');
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Fira+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet">
+
 section {
-  font-family: "EB Garamond", "Times New Roman", serif !important;
+  font-family: "Source Serif 4", "EB Garamond", "Times New Roman", serif !important;
 }
 
 /* Apply EB Garamond to body and content areas */
 body, .content {
-  font-family: "EB Garamond", "Times New Roman", serif !important;
+  font-family: "Source Serif 4", "EB Garamond", "Times New Roman", serif !important;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -17,7 +19,7 @@ body, .content {
 }
 
 code {
-  font-family: "Fira Code", monospace !important;
+  font-family: "Fira Mono", monospace !important;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
