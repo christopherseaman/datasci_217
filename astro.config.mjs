@@ -8,6 +8,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'DataSci-217',
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/christopherseaman/datasci_217' }],
       sidebar: [
         {
           label: 'Course',
