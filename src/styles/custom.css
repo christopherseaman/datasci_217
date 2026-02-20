@@ -1,3 +1,7 @@
 :root {
   --sl-font-system-mono: 'Fira Mono', monospace;
 }
+
+:root[data-theme='dark'] {
+  --sl-color-black: #000;
+}
