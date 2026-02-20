@@ -1,5 +1,5 @@
 name = "ds217"
+pages_build_output_dir = "dist"
 
-[pages]
-build_command = "npm run build"
-build_output_dir = "dist"
+[pages.build]
+command = "npm run build"
