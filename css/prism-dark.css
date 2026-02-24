@@ -3,7 +3,7 @@ code[class*="language-"],
 pre[class*="language-"] {
   color: #ccc;
   background: none;
-  font-family: "Fira Mono", "Source Code Pro", Consolas, Monaco, "Andale Mono", monospace;
+  font-family: monospace;
   font-size: 0.85em;
   text-align: left;
   white-space: pre;

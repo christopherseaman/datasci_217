@@ -21,8 +21,6 @@
   "homepage": "https://github.com/christopherseaman/datasci_217#readme",
   "devDependencies": {
     "@11ty/eleventy": "^3.1.2",
-    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2",
-    "markdown-it": "^14.1.1",
-    "markdown-it-anchor": "^9.2.0"
+    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2"
   }
 }
