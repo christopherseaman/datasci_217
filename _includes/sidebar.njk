@@ -1,0 +1,36 @@
+<button class="nav-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle navigation">&#9776;</button>
+<nav class="sidebar">
+  <div class="logo">{{ nav.project }}</div>
+
+  <div class="nav-section">
+    <h3>Pages</h3>
+    {%- for p in nav.pages %}
+    <a class="nav-link{% if page.url == p.url %} active{% endif %}" href="{{ p.url | url }}">{{ p.label }}</a>
+    {%- endfor %}
+  </div>
+
+  <div class="nav-section">
+    <h3>Foundational</h3>
+    {%- for l in nav.lectures %}
+      {%- if l.track == "Foundational" %}
+    <a class="nav-link{% if page.url == '/' + l.id + '/' %} active{% endif %}" href="{{ ('/' + l.id + '/') | url }}">{{ l.id }}. {{ l.label }}</a>
+      {%- endif %}
+    {%- endfor %}
+  </div>
+
+  <div class="nav-section">
+    <h3>Extended</h3>
+    {%- for l in nav.lectures %}
+      {%- if l.track == "Extended" %}
+    <a class="nav-link{% if page.url == '/' + l.id + '/' %} active{% endif %}" href="{{ ('/' + l.id + '/') | url }}">{{ l.id }}. {{ l.label }}</a>
+      {%- endif %}
+    {%- endfor %}
+  </div>
+
+  <div class="nav-section">
+    <h3>Resources</h3>
+    {%- for r in nav.resources %}
+    <a class="nav-link" href="{{ r.url }}" target="_blank" rel="noopener">{{ r.label }}</a>
+    {%- endfor %}
+  </div>
+</nav>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or "Bonus" }} — DataSci 217</title>
+  <link rel="stylesheet" href="{{ '/css/theme.css' | url }}">
+  <link rel="stylesheet" href="{{ '/css/prism-dark.css' | url }}">
+</head>
+<body>
+  {% include "sidebar.njk" %}
+  <main class="main-content">
+    <div class="content">
+      {%- if lectureId %}
+      <div class="bonus-nav">
+        <a href="{{ ('/' + lectureId + '/') | url }}">&larr; Back to Lecture {{ lectureId }}</a>
+      </div>
+      {%- endif %}
+      <div class="lecture-content">
+        {{ content | safe }}
+      </div>
+    </div>
+  </main>
+</body>
+</html>

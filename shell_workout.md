@@ -1,3 +1,8 @@
+---
+title: Shell Workout
+permalink: /shell-workout/
+---
+
 # Command Line Workout
 
 ## Basic Exercises

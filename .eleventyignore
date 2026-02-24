@@ -1,0 +1,32 @@
+node_modules/
+_site/
+dist/
+.astro/
+src/
+work/
+
+# Per-lecture non-content
+*/assignment/
+*/demo/
+*/scripts/
+*/POINTS.md
+*/data_for_final.md
+*/addme_*.md
+
+# Other non-content
+README.md
+FIXME.md
+nav-config.js
+theme.css
+index.html
+lecture.html
+
+# Old per-lecture index.html files
+*/index.html
+
+# Dotfiles and misc
+.git/
+.github/
+.claude/
+.nojekyll
+*.py

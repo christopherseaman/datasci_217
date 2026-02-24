@@ -1,0 +1,28 @@
+{
+  "name": "datasci_217",
+  "version": "1.0.0",
+  "description": "DataSci 217 — Introduction to Python & Data Science Tools",
+  "scripts": {
+    "start": "npx @11ty/eleventy --serve",
+    "build": "npx @11ty/eleventy",
+    "build:ghpages": "npx @11ty/eleventy --pathprefix=/datasci_217"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christopherseaman/datasci_217.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/christopherseaman/datasci_217/issues"
+  },
+  "homepage": "https://github.com/christopherseaman/datasci_217#readme",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2",
+    "markdown-it": "^14.1.1",
+    "markdown-it-anchor": "^9.2.0"
+  }
+}
