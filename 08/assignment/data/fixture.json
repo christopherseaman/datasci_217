@@ -1,0 +1,27 @@
+{
+  "fixture_id": "a08-support-requests-v1",
+  "provenance": "Course-authored synthetic support-request records; no real, identifying, or customer data.",
+  "path": "support_requests.csv",
+  "row_grain": "one row per synthetic support request",
+  "row_count": 15,
+  "columns": [
+    "request_id",
+    "center",
+    "agent_id",
+    "channel",
+    "resolution_minutes",
+    "satisfaction_score"
+  ],
+  "sha256": "a9136161332c5da9f8f1251d869bbd014ed762751675fb757f81a79cff5352d6",
+  "center_levels": [
+    "Central",
+    "Harbor",
+    "Ridge",
+    "Valley"
+  ],
+  "channel_levels": [
+    "Email",
+    "Phone",
+    "Chat"
+  ]
+}

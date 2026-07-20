@@ -1,0 +1,13 @@
+record_id,full_name,site,status,age_text,visit_date
+R001, Alice Smith , North ,Active,34,2026-01-15
+R002,BOB JONES,north,active,unknown,2026-02-30
+R002,BOB JONES,north,active,unknown,2026-02-30
+R003, Carla Ruiz ,SOUTH,pending,-9,2026-03-01
+R004,,south,NA,45,
+R005,Evan Li,west,complete,52,2026-02-14
+R006,Fatima Noor,north,active,forty,2026-04-01
+R007,Grace Chen,south,active,40.5,2026-05-01
+R008,Hugo Diaz,west,pending,121,2026-06-01
+R009,Inez Park, north ,complete,39,2026-7-01
+R010,Jamie Okafor,West,Complete,28,2026-07-15
+R011,Kai Patel,south, pending ,0,2026-08-01

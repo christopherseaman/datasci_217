@@ -1,0 +1,48 @@
+{
+  "fixture_set_id": "a06-structural-wrangling-v1",
+  "provenance": "Course-authored synthetic specimen, station, review, and sensor records; no human-subject data.",
+  "files": [
+    {
+      "path": "specimens.csv",
+      "row_grain": "one row per specimen",
+      "row_count": 7,
+      "columns": ["specimen_id", "collector_id", "collection_number", "station_code", "material", "mass_g"],
+      "sha256": "26eeae8d64a2870dc94195a45f924058b777eb1c97f96d2310e86f06403ba605"
+    },
+    {
+      "path": "stations_history.csv",
+      "row_grain": "one row per station-history record",
+      "row_count": 5,
+      "columns": ["station_code", "station_name", "region", "record_status"],
+      "sha256": "dc6f75e588183d5291abd69b4d5aa856472a711f6ff546b015dd21610d55708c"
+    },
+    {
+      "path": "specimens_batch_a.csv",
+      "row_grain": "one row per specimen in source partition A",
+      "row_count": 4,
+      "columns": ["specimen_id", "collector_id", "collection_number", "station_code", "material", "mass_g"],
+      "sha256": "1aaa71d01d141bf45dd65ba1ec7c28286536c8ee8aa72834c18bcf0b54af2943"
+    },
+    {
+      "path": "specimens_batch_b.csv",
+      "row_grain": "one row per specimen in source partition B",
+      "row_count": 3,
+      "columns": ["specimen_id", "collector_id", "collection_number", "station_code", "material", "mass_g"],
+      "sha256": "8506512a4cef07d7918817e8d8dc15c7230f2923bd28d531326c997995dd58bc"
+    },
+    {
+      "path": "review_scores.csv",
+      "row_grain": "one row per reviewed specimen",
+      "row_count": 3,
+      "columns": ["specimen_id", "review_score"],
+      "sha256": "d7a1c9570d463a006cec838a4557581467ffb7459d315f57cbfb3cf73274ad22"
+    },
+    {
+      "path": "sensor_scores_wide.csv",
+      "row_grain": "one row per sensor and station pair",
+      "row_count": 4,
+      "columns": ["sensor_id", "station_code", "baseline_value", "followup_value"],
+      "sha256": "6eb9bfb9561fc7c55708bc0038b77b99e6d383f85843dff3e735c5962abe8701"
+    }
+  ]
+}

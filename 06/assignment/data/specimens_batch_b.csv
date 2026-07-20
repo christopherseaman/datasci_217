@@ -1,0 +1,4 @@
+specimen_id,collector_id,collection_number,station_code,material,mass_g
+SP105,C04,1,R,soil,11.5
+SP106,C05,1,X,air,4.0
+SP107,C06,1,S,water,7.5

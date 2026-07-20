@@ -1,894 +1,600 @@
-# `git gud` with Version Control
+# Version Control, Functions, and Reusable Python
 
+## Learning objectives
 
-# VS Code Basics (GUI-first)
+By the end of this lecture, you should be able to:
 
-We'll start in the editor so Git makes visual sense later. No JSON needed—just the VS Code interface.
+1. Distinguish a repository, working tree, diff, staging area, commit, local branch, and remote.
+2. Use VS Code Source Control to inspect a diff, stage selected changes, create a focused commit, and synchronize with GitHub.
+3. Create and merge one feature branch through the GUI, then resolve a prepared text conflict without losing either intended change.
+4. Define and call a function using parameters, arguments, a return value, local variables, a short docstring, and an empty-input guard.
+5. Build a two-file Python program whose reusable module can be imported without running the program or writing files.
 
-## Palette Cleanse: Command Palette & Quick Open
+## Starting point and execution boundary
 
-- Open Command Palette: View → Command Palette… (Cmd+Shift+P)
-- Quick Open files: (Cmd+P)
-- Search across files: View → Search (Cmd+Shift+F)
+Lecture 01 introduced working directories, relative paths, top-to-bottom Python scripts, scalar values, lists, conditions, loops, and tracebacks. Before continuing, make sure you can:
 
-## Themes and Schemes: Make it Py‑pretty
+- open a project folder in VS Code;
+- compare that folder with `pwd` in the integrated terminal;
+- run a `.py` file from the terminal;
+- use a list, one condition, and one `for` loop; and
+- read the final line and source location in a traceback.
 
-- Change Color Theme: Code → Settings → Theme → Color Theme (or Cmd+K, Cmd+T). I am a fan of:
-    - "Tomorrow Night Bright"
-    - "GitHub Dark High Contrast"
-- Toggle icons: Code → Settings → Theme → File Icon Theme
+For example, you should be able to save and run this short script:
 
-## Meet the Main Bars
+```python
+measurements = [18, 21, 24]
 
-- Activity Bar (left): Explorer, Search, Source Control, Run & Debug, Extensions
-- Side Bar: Toggle via View → Appearance → Show Side Bar
-- Panel (bottom): Problems, Output, Debug Console, Terminal (toggle: View → Appearance → Panel Position)
-- Secondary Side Bar (right): View → Appearance → Show Secondary Side Bar
-- Breadcrumbs: View → Appearance → Show Breadcrumbs
-- Zen Mode: View → Appearance → Zen Mode (Esc Esc to exit)
-
-## Core Panes You’ll Use
-
-- Explorer: View → Explorer (Cmd+Shift+E)
-- Source Control: View → Source Control (Cmd+Shift+G)
-- Run & Debug: Run → Start Debugging (F5) or View → Run (Ctrl+Shift+D)
-- Extensions: View → Extensions (Cmd+Shift+X)
-- Terminal: View → Terminal (Ctrl+`)
-- Split Editor: View → Editor Layout → Split Right (or Cmd+\)
-
-## Settings (GUI) you’ll toggle today
-
-- Format on Save: Code → Settings → Settings → Search “Format on Save” → check
-- Python Interpreter: Click bottom‑right “Python” status or Cmd+Shift+P → “Python: Select Interpreter”
-- Default Formatter (optional): Settings → Search “Default Formatter” → choose “Black” or “Ruff” if installed
-- Markdown Preview: Right‑click a .md → “Open Preview to the Side” (Cmd+K V)
-
-## Recommended Extensions (install via View → Extensions)
-
-- Python
-- Pylance (can help with debugging later, I prefer ruff)
-- Jupyter (we'll use this a lot later)
-- Markdown All in One
-- markdownlint
-- Markdown Checkboxes
-- GitHub Markdown Preview
-- Bonus mentions: Error Lens, YAML, indent‑rainbow, GitLens
-
-## Break(points) the Ice: 5‑minute hands‑on
-
-1) Change the Color Theme (Preferences: Color Theme)
-2) Install “Python” and “Markdown All in One”
-3) Turn on “Format on Save” in Settings (GUI)
-4) Open a `.py` file → add a breakpoint (click gutter) → Run → Start Debugging
-5) Open a `.md` file → right‑click → Open Preview to the Side
-6) Make a small edit → View → Source Control → stage, commit (GUI)
-
-# Git Version Control
-
-![xkcd 1597: Git](media/xkcd_1597.png)
-
-Don't worry - we're taking a different approach than that xkcd suggests!
-
-## Why Version Control Matters
-
-### The Problem Without Version Control
-
-Picture this: You're working on a data analysis. You create these files:
-
-- `analysis_v1.py`
-- `analysis_v2.py`
-- `analysis_v2_final.py`
-- `analysis_v2_final_ACTUALLY_FINAL.py`
-- `analysis_fixed_broken_computer_recovery.py`
-
-Sound familiar? Now imagine collaborating with teammates doing the same thing. Chaos!
-
-### The Git Solution
-
-Git tracks every change, letting you see what changed, restore versions, work in parallel, collaborate, and avoid losing work. Infinite undo plus collaboration.
-
-## Git Concepts - The Mental Model
-
-### Repository (Repo)
-
-Your project folder that Git tracks. Contains your files plus a hidden `.git` folder with all the version history.
-
-Think: "This entire folder is under Git management."
-
-### Commit
-
-A saved snapshot of your project at a specific point in time. Like saving a game - you can always come back to this exact state.
-
-Think: "I'm saving my progress with a description of what I accomplished."
-
-### Remote
-
-The version of your repository stored on GitHub (or similar service). Your local computer has a copy, GitHub has a copy, your teammates have copies.
-
-Think: "The shared version everyone can access."
-
-### Branch
-
-A parallel timeline for your project. The main branch contains your official version, feature branches contain experimental work.
-
-Think: "I'm trying something new without risking the working version."
-
-*We'll focus on the main branch today - branches come later!*
-
-**Reference:**
-
-- **Repository**: Collection of objects and references
-- **Commit**: Snapshot with metadata (author, message, parents)
-- **Blob**: File content
-- **Tree**: Directory structure
-- **Reference**: Human-readable name pointing to commit
-- **HEAD**: Current commit reference
-- **Branch**: Movable reference to commit
-- **Remote**: Reference to repository on another machine
-
-![Git Branches](media/git_branches.png)
-
-## Essential Git Commands
-
-Basic Git commands let you control what changes are committed using a three-stage workflow: working directory, staging area, repository.
-
-**Reference:**
-
-Essential:
-
-- `git init` - Initialize repository
-- `git clone [url]` - Copy remote repository
-- `git status` - Show working directory status
-- `git add [file]` - Stage changes
-- `git commit -m "message"` - Create commit
-- `git push [remote] [branch]` - Send commits to remote
-- `git pull [remote] [branch]` - Fetch and merge from remote
-
-Helpful but less essential:
-
-- `git remote add [name] [url]` - Add remote
-- `git fetch [remote]` - Download commits without merging
-- `git remote -v` - List remotes
-- `git log` - Show commit history
-- `git diff` - Show changes
-- `git checkout [commit/branch]` - Switch to commit or branch
-- `git branch [name]` - Create branch
-- `git merge [branch]` - Merge branch
-
-**Brief Example:**
-
-```bash
-# Local repository workflow
-git init                      # Start new repository
-git add analysis.py           # Stage file
-git commit -m "Add analysis script"  # Create commit
-git branch feature-analysis  # Create branch
-git checkout feature-analysis # Switch to branch
-
-# Remote repository workflow
-git clone https://github.com/user/repo.git  # Clone existing repo
-git push origin main          # Push changes
-git pull origin main          # Pull updates
+for measurement in measurements:
+    if measurement >= 20:
+        print(f"Review: {measurement}")
 ```
 
-![Git Clone](media/git_clone.png)
+Lectures 01–03 use Python scripts and the terminal. Jupyter notebooks and Google Colab begin in Lecture 04.
 
-**Good vs. Bad Commit Messages**
+The required Git interface in this lecture is **VS Code Source Control**. GitHub Desktop represents the same states and is an acceptable supported alternative, but we will not learn two sets of buttons. Command-line Git is optional bonus material and is not required here.
 
-```bash
-# Good commit message
-git commit -m "Add data validation to analysis script
+# Why version control?
 
-- Validate input file exists before processing
-- Check data format matches expected schema
-- Add error handling for malformed data
+Without version control, an evolving analysis often becomes a collection of ambiguous copies:
 
-Fixes issue #123"
-
-# Bad commit message
-git commit -m "minor changes"
+```text
+analysis.py
+analysis_v2.py
+analysis_final.py
+analysis_final_revised.py
 ```
 
-![xkcd 1296: Git Commit](media/xkcd_1296.png)
+Those filenames do not reliably answer important questions:
 
-## VS Code Git Integration
+- What changed between two versions?
+- Why was the change made?
+- Which version should another person use?
+- Can one change be reviewed without accepting every other change?
 
-### Setting Up Git in VS Code
+**Version control** records selected changes as an ordered project history. **Git** is the version-control system used in this course. **GitHub** stores a shared copy of a Git project and provides services around it.
 
-**Reference:**
+![A comic about the confusion Git can cause without a clear mental model](media/xkcd_1597.png)
 
-1. Install VS Code (if not already done)
-2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
-3. If first time: VS Code will prompt to configure Git username/email
+# The Git state model
 
-VS Code's Source Control panel makes version control accessible without memorizing command-line syntax. This integration streamlines daily staging, committing, and managing changes.
+Learn the states before learning the interface. The same model applies in VS Code, GitHub Desktop, and the optional command line.
 
-**Reference:**
+## Repository
 
-- **Source Control Panel**: `Ctrl+Shift+G` (Windows/Linux) or `Cmd+Shift+G` (Mac)
-- **Stage Changes**: Click `+` next to files in "Changes" section
-- **Commit**: Type message in text box, press `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac)
-- **View Differences**: Click on modified files to see changes
-- **Branch Management**: Click branch name in status bar to switch/create branches
-- **Push/Pull**: Use sync button or command palette (`Ctrl+Shift+P`)
+A **repository** is a project whose files and version history are managed by Git. A Classroom 50 assignment folder is already a repository; do not create a second repository inside it.
 
-**VS Code Git Workflow:**
+## Working tree
 
+The **working tree** is the set of project files from the current branch that you can currently edit. Changing `README.md` changes the working tree.
+
+The working tree is not the same as the shell's **working directory**:
+
+- the working tree is a Git concept describing the editable project files;
+- the working directory is the shell location from which a relative path is resolved.
+
+## Change and diff
+
+A **change** is a difference between a working-tree file and a recorded version. A **diff** is a line-by-line view of that change. In a typical diff, removed lines and added lines are shown separately.
+
+Inspect a diff before staging. It can reveal an accidental edit, generated output, a secret, or an unrelated change that does not belong in the next commit.
+
+## Staging area
+
+The **staging area** is the proposed content of the next commit. Staging a file selects its current change for that commit; it does not yet create a commit or send anything to GitHub.
+
+Selective staging lets one commit contain one coherent change even when the working tree contains other unfinished work.
+
+## Commit
+
+A **commit** is a recorded snapshot of the staged project changes, together with a message and other metadata. It belongs first to the local repository on your computer.
+
+A useful commit answers one question: “What coherent change did this commit make?”
+
+## Local branch
+
+A **local branch** is a named line of development in your local repository. `main` is the course's primary branch. A short-lived **feature branch** holds a focused change until it is ready to merge into `main`.
+
+A **merge** combines the changes from one branch into another. A **conflict** occurs when Git cannot safely decide how two changes should be combined.
+
+## Remote
+
+A **remote** is another copy of the repository, normally the course repository on GitHub. The local and remote repositories can each contain commits that the other does not yet have.
+
+- **Push** sends local commits to the remote.
+- **Pull** brings remote commits into the local repository and integrates them.
+- **Synchronize** is a GUI action that coordinates the needed pull and push.
+
+Synchronization moves commits. It is not a replacement for saving a file, staging a change, or creating a commit.
+
+The required daily cycle is:
+
+```text
+edit in working tree
+    → inspect diff
+    → stage selected change
+    → commit locally
+    → synchronize with remote
 ```
-1. Edit files (e.g., analysis.py)
-2. Ctrl+Shift+G → Open Source Control panel
-3. Click + next to changed files to stage
-4. Type commit message: "Add data validation to analysis script"
-5. Ctrl+Enter to commit
-6. Click sync button to push to GitHub
-```
 
-## Git Workflow: Branching and Merging
+# One VS Code Source Control workflow
 
-Git branching develops features in isolation before merging to main, enabling parallel development and safe experimentation.
+Use an instructor-provided disposable repository while learning this sequence.
 
-**Reference:**
+## 1. Open and orient
 
-- `git branch [name]` - Create new branch
-- `git checkout [branch]` - Switch to branch
-- `git checkout -b [name]` - Create and switch to new branch
-- `git merge [branch]` - Merge branch into current branch
-- `git branch -d [name]` - Delete branch
-- `git push origin [branch]` - Push branch to remote
+1. Open the repository folder in VS Code.
+2. Open the integrated terminal and check `pwd`.
+3. Select **Source Control** in the Activity Bar.
+4. Confirm that the branch indicator in the status bar says `main`.
+5. Synchronize before editing so the local repository starts from the current remote state.
 
-**Branching Workflow:**
+## 2. Edit and inspect
 
-```bash
-# Create feature branch
-git checkout -b feature/data-analysis
-# Make changes, commit
-git add .
-git commit -m "Add data analysis functionality"
-git push origin feature/data-analysis
+1. Make one small change to `README.md` and save it.
+2. In Source Control, find the file under **Changes**.
+3. Select the filename to open its diff.
+4. Read every changed line and confirm that it belongs to the intended task.
 
-# Switch back to main and merge
-git checkout main
-git merge feature/data-analysis
-git push origin main
+The file is changed but not staged. No commit has been created.
 
-# Clean up feature branch
-git branch -d feature/data-analysis
-```
+## 3. Stage deliberately
 
-**Merge Conflict Resolution:**
-When Git cannot automatically merge changes, it creates merge conflicts that must be resolved manually:
+1. Select the `+` beside `README.md`.
+2. Confirm that the file moves from **Changes** to **Staged Changes**.
+3. Inspect the staged diff once more.
 
-1. Open conflicted files in VS Code
-2. Choose which changes to keep
-3. Remove conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
-4. Stage resolved files: `git add [file]`
-5. Complete merge: `git commit`
+If a file should not be included, use the `−` beside it to unstage it. Unstaging preserves the working-tree edit; it only removes the change from the proposed commit.
 
-## GitHub Web Interface
+## 4. Commit locally
 
-GitHub's web interface manages repositories, enables collaboration, and organizes projects.
+1. Enter a focused message such as `Clarify project purpose`.
+2. Select **Commit**.
+3. Confirm that the staged change disappears from Source Control.
+4. Open the Source Control graph or history view and locate the new commit.
 
-**Reference:**
+Avoid messages such as `updates`, `stuff`, or `final`. They do not explain the change.
 
-- **Repository Creation**: "New repository" button, choose name and settings
-- **File Management**: "Add file" → "Create new file" or "Upload files"
-- **Commit via Web**: Edit files directly, add commit message, commit
-- **Pull Requests**: "Pull requests" tab → "New pull request"
-- **Issues**: "Issues" tab → "New issue" for bug reports and feature requests
-- **Project Settings**: Settings tab for permissions, branches, and integrations
-- **Code Review**: Comment on specific lines, approve/request changes
+## 5. Synchronize
 
-**Gitignore Files:**
-A `.gitignore` file specifies which files and directories Git should ignore when tracking changes. This is crucial for data science projects to avoid committing sensitive data, large datasets, or generated files.
+1. Select **Sync Changes**.
+2. If VS Code reports incoming changes, review and integrate them before sending your local work.
+3. Confirm on GitHub that the remote repository now shows the commit.
 
-**Reference:**
+Do not assume that a local commit has reached GitHub until synchronization succeeds.
 
-- `.gitignore` patterns use glob patterns
-- `#` for comments
-- `*` matches any characters
-- `?` matches single character
-- `[abc]` matches any character in brackets
-- `!` negates pattern
-- `**/` matches directories recursively
+# Keep commits and repositories focused
 
-**Brief Example:**
+## A focused commit
 
-```
-# Python cache files
+A focused commit contains one logical change. Before committing, ask:
+
+- Does every staged line support the commit message?
+- Did I accidentally include data, credentials, generated output, or editor files?
+- Could another person understand or reverse this change without also reversing unrelated work?
+
+Commit after a coherent improvement, not after an arbitrary number of edits.
+
+## A minimal `.gitignore`
+
+An **untracked file** is a working-tree file that Git has not yet staged or recorded in a commit. A `.gitignore` file names untracked files that Git should normally leave out of version control. A small Python project might begin with:
+
+In a `.gitignore` pattern, `*` matches a sequence of characters and a trailing `/` names a directory.
+
+```gitignore
 __pycache__/
 *.pyc
-
-# Data and secrets
-data/raw/*.csv
-.env
-*.key
-
-# IDE files
-.vscode/
-.idea/
-
-# Track important files
-!data/processed/important_results.csv
 ```
 
-This prevents accidentally committing sensitive information, large files, or generated content while preserving important project files.
+This example excludes cache files that Python may generate while it runs code. Lecture 03 adds an ignore pattern for its isolated environment after defining that concept. Add a pattern only when you understand what it matches. A `.gitignore` file does not remove a file that has already been committed, and it is not a privacy guarantee.
 
-**Brief Example:**
+## A useful `README.md`
 
-Create repository: github.com → "+" → "New repository" → Name, description, add README → Create.
+A **README** is the project's entry-point documentation. For a small course script, it needs only enough information to orient the next reader:
 
-Add files: "Add file" → "Create new file" → Name, add code, commit message → Commit.
+In the small Markdown example below, `#` begins a top-level heading, `##` begins a second-level heading, and backticks mark code within a sentence.
 
-# Markdown Documentation
+```markdown
+# Measurement summary
 
-Markdown is a lightweight markup language for formatted text, essential for documentation and project communication. Files are human-readable and render beautifully on GitHub.
+Summarizes two supplied groups of measurements.
 
-**Reference:**
+## Run
 
-- Headers: `# H1`, `## H2`, `### H3`
-- Bold: `**bold text**`
-- Italic: `*italic text*`
-- Code: `` `inline code` ``
-- Code blocks: ```language
-- Lists: `- item` or `1. item`
-- Links: `[text](url)`
-- Images: `![alt](url)`
-- Tables: `| col1 | col2 |`
-
-**Brief Example:**
-
-```
-# Data Analysis Report
-
-## Overview
-Analyzes study time vs. performance.
-
-## Key Findings
-- More hours → higher grades
-- Regular habits help
-
-## Code Example
-```python
-import pandas as pd
-df = pd.read_csv('study_data.csv')
-print(f"Correlation: {df['hours'].corr(df['grade']):.2f}")
+Open this repository in VS Code and run `python main.py` in the terminal.
 ```
 
-[Raw data](data/study_data.csv)
-```
+Keep run instructions consistent with the files that actually exist.
 
-# Python Fundamentals (McKinney Ch2+3)
+# One feature branch and one prepared conflict
 
-Python emphasizes readability for data analysis. Everything is an object, enabling consistent behavior. Focus is on practical data manipulation.
+Use a feature branch for a focused change that should be reviewed before it joins `main`.
 
-![Python Import](media/python_import.webp)
+## Create and merge a feature branch in VS Code
 
-## Language Semantics and Object Model
+1. Synchronize `main` and confirm that the working tree has no unfinished changes.
+2. Select the branch name in the VS Code status bar.
+3. Choose **Create new branch** and name it `feature/summary-label`.
+4. Edit the supplied summary label, inspect the diff, stage it, and commit it.
+5. Select the branch name again and switch to `main`.
+6. Synchronize `main`.
+7. Open the Command Palette, run **Git: Merge...**, and then select `feature/summary-label`.
+8. Inspect the resulting diff or history and synchronize `main`.
 
+Always notice which branch is active before editing or merging.
 
-Python uses indentation for code structure, creating clean code. Every value is an object with type information, enabling dynamic behavior.
+## Resolve a prepared text conflict
 
-**Reference:**
-- Indentation defines code blocks (4 spaces recommended)
-- `#` for comments
-- `type(object)` - Get object type
-- `isinstance(object, type)` - Type checking
-- `id(object)` - Get object identity
-- `dir(object)` - List object attributes
+For the prepared exercise, `main` and the feature branch change the same line differently. Git pauses the merge because choosing automatically could discard intended work.
 
-**Brief Example:**
-```python
-# Indentation matters
-if x > 0:
-    print("Positive")
-    y = x * 2
+1. Open the conflicted file from Source Control.
+2. Read the current and incoming versions in context.
+3. Decide what the final combined text should say. Do not choose a side merely because a button calls it “current” or “incoming.”
+4. Use the merge editor or edit the text manually so both intended ideas remain.
+5. Save the file and verify that no **conflict markers** remain. Conflict markers are the special separator lines Git inserts around unresolved versions of the text.
+6. Inspect the final diff, stage the resolved file, and complete the merge commit in Source Control.
+7. Run any relevant script, then synchronize.
 
-print(type(42))        # <class 'int'>
-print(isinstance("hello", str))  # True
-```
+The goal is a correct final file, not winning one side of the conflict.
 
-## Object Introspection and Dynamic Type Checking
+# LIVE DEMO!
 
-Object introspection examines objects at runtime—their type, attributes, and methods. Valuable for unknown datasets and flexible code.
+**One GUI Git state cycle:** in a disposable repository, edit one line, inspect its diff, stage only that file, commit, synchronize, create and merge a feature branch, and resolve a prepared simple conflict while naming each Git state.
 
-Python uses **duck typing**: "If it walks like a duck and quacks like a duck, then it must be a duck." If an object supports the needed methods, you can use it—regardless of its actual type.
+# From duplicated code to reusable code
 
-![Duck Typing](media/duck_typing.jpg)
+Lecture 01 scripts placed all instructions from top to bottom. That is appropriate for a small first program, but repetition makes changes harder to apply consistently.
 
-This means functions work with any object that behaves as expected, not just those of a specific type.
-
-**Reference:**
-
-- `type(object)` - Returns the object's type
-- `dir(object)` - Lists attributes and methods
-- `help(object)` - Shows documentation
+This script calculates the same kind of result twice:
 
 ```python
-# Duck typing: treat the same object as different types
-big_number = 12345
-print(f"As a number: {big_number} (type: {type(big_number).__name__})")
+morning_values = [18, 21, 24]
+morning_total = 0
 
-# Convert to string - now we can iterate through digits
-number_as_string = str(big_number)
-print(f"As a string: '{number_as_string}' (type: {type(number_as_string).__name__})")
+for value in morning_values:
+    morning_total = morning_total + value
 
-# Duck typing: if it acts like an iterable, treat it like one
-digit_sum = 0
-for digit_char in number_as_string:  # Treating string like a list
-    digit_sum += int(digit_char)     # Converting back to int
-    
-print(f"Sum of digits: {digit_sum}")
+morning_mean = morning_total / len(morning_values)
+print(f"Morning mean: {morning_mean:.1f}")
+
+evening_values = [20, 22, 26]
+evening_total = 0
+
+for value in evening_values:
+    evening_total = evening_total + value
+
+evening_mean = evening_total / len(evening_values)
+print(f"Evening mean: {evening_mean:.1f}")
 ```
 
-## Scalar Types and Operations
+If the calculation changes, both copies must change. A function gives the repeated calculation one name and one reusable definition.
 
-Scalar types represent single values. Python provides rich support for numeric operations, string manipulation, and boolean logic.
+# A minimal dictionary
 
-**Reference:**
-
-- `int` - Arbitrary precision integers
-- `float` - Double-precision floating-point
-- `str` - Unicode strings
-- `bool` - True/False values
-- `None` - Null value
-- Arithmetic: `+`, `-`, `*`, `/`, `//`, `%`, `**`
-- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
-- Logical: `and`, `or`, `not`
-
-**Brief Example:**
+A **dictionary** stores named associations. Each **key** identifies a corresponding **value**.
 
 ```python
-# Numeric operations
-count = 150
-average = 87.3
-population = 1.4e9  # Scientific notation
-
-# String operations
-name = "Alice Johnson"
-clean_name = "  Bob Smith  ".strip()
-
-# Boolean logic
-has_data = True
-analysis_ready = has_data and count > 0
+morning_record = {
+    "label": "Morning",
+    "values": [18, 21, 24],
+}
 ```
 
-## String Operations for Data Cleaning
+Here, `"label"` and `"values"` are keys. Their corresponding values are the string `"Morning"` and the list `[18, 21, 24]`.
 
-String operations are fundamental for data cleaning. Python provides built-in methods for transforming, cleaning, and validating text data.
-
-**Reference:**
-
-- `str.strip()` - Remove leading/trailing whitespace
-- `str.lower()`, `str.upper()` - Case conversion
-- `str.split(separator)` - Split into list
-- `str.replace(old, new)` - Replace substrings
-- `str.startswith()`, `str.endswith()` - Check prefixes/suffixes
-- `str.find()`, `str.index()` - Find substring positions
-- `str.isdigit()`, `str.isalpha()`, `str.isalnum()` - Type validation
-
-**Brief Example:**
+Select a value by its key:
 
 ```python
-# Data cleaning operations
-messy_data = "  Alice Johnson  "
-clean_name = messy_data.strip().title()
-
-# Text processing
-filename = "data_2023_report.csv"
-if filename.endswith(".csv"):
-    print("Processing CSV file")
-
-# Data validation
-user_input = "123abc"
-if user_input.isalnum():
-    print("Input contains only letters and numbers")
+print(morning_record["label"])
+print(morning_record["values"])
 ```
 
-## Print Statements and Output Formatting
+Expected output:
 
-Print statements communicate results and debug code. Understanding formatting options enables clear output.
+```text
+Morning
+[18, 21, 24]
+```
 
-**Reference:**
+Use a dictionary when names make a small record or result clearer. This lecture does not require nested dictionaries, dictionary comprehensions, or a survey of every dictionary method.
 
-- `print(value)` - Basic printing
-- `print(value1, value2, value3)` - Multiple values
-- `f"text {variable}"` - F-string formatting (preferred)
-- `"text {}".format(variable)` - Format method
-- `print(f"Debug: {var} = {value}")` - Debugging output
-- `print(f"Result: {result:.2f}")` - Number formatting
+# Functions: inputs, work, and results
 
-**Brief Example:**
+A **function** is a named block of code that performs one task. Defining a function does not run its body. A **call** runs the function.
+
+A function's **interface** is how a caller supplies inputs and receives a result. Its **implementation** is the code inside the function that produces that result.
+
+## Definition, parameter, argument, and return value
+
+The empty-list case needs an explicit contract. `None` is Python's value for “no value here.” An empty list is false in a condition, so `if not values` detects that case before division.
 
 ```python
-# Basic printing
-print("Analysis complete")
-print("Value:", 42)
+def mean(values):
+    """Return the arithmetic mean, or None for empty input."""
+    if not values:
+        return None
 
-# F-string formatting (preferred)
-name = "Alice"
-score = 87.3456
-print(f"Student: {name}")
-print(f"Score: {score:.1f}%")
+    total = 0
+    for value in values:
+        total = total + value
 
-# Debugging with print
-data = [1, 2, 3, 4, 5]
-print(f"Debug: data = {data}, length = {len(data)}")
+    return total / len(values)
 ```
 
-## Basic File I/O Operations
+Read the definition from the outside inward:
 
-File I/O operations are essential for data science. Python provides simple tools for reading and writing files.
+- `def` begins a function definition.
+- `mean` is the function name.
+- `values` is a **parameter**: a local name in the function definition.
+- The indented statements are the function body.
+- The first statement is a **docstring**: a short description placed first in the function body.
+- `total` and `value` are **local variables**. They exist for this call and are not used as names outside the function.
+- `return` sends a result back to the caller and ends the call.
 
-**Reference:**
-
-- `open(file, mode)` - Open file with specified mode
-- `'r'` - Read mode (default)
-- `'w'` - Write mode (overwrites existing files)
-- `'a'` - Append mode (adds to existing files)
-- `'x'` - Create mode (fails if file exists)
-- `file.read()` - Read entire file content
-- `file.readline()` - Read single line
-- `file.readlines()` - Read all lines into list
-- `file.write(string)` - Write string to file
-- `file.close()` - Close file handle
-
-**Brief Example:**
+Call the function with a list:
 
 ```python
-# Reading from a file
-with open('data.txt', 'r') as file:
-    content = file.read()
-    print(f"File content: {content}")
-
-# Writing to a file
-results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
-with open('grades.txt', 'w') as file:
-    for result in results:
-        file.write(f"{result}\n")
-
-# Appending to a file
-with open('log.txt', 'a') as file:
-    file.write("2023-12-01: Analysis completed\n")
-
-# Print to file examples
-with open('results.txt', 'w') as file:
-    print("Analysis Results", file=file)
-    print(f"Average score: {score:.1f}", file=file)
-
-# One-liner file output
-print("Debug info", file=open('debug.log', 'a'))
-
-# Multiple outputs to same file
-with open('report.txt', 'w') as report:
-    print("Data Science Report", file=report)
-    print("=" * 20, file=report)
-    print(f"Total samples: {len(data)}", file=report)
+measurements = [18, 21, 24]
+result = mean(measurements)
+print(result)
 ```
 
-## Control Flow Structures
+In `mean(measurements)`, `measurements` is the **argument** supplied by the caller. During this call, its list value is assigned to the parameter `values`. The returned number is then assigned to `result`.
 
-Control flow determines execution order through conditionals and loops. Python's syntax emphasizes readability and iteration.
+## Return is not print
 
-**Reference:**
-
-- `if condition: ... elif condition: ... else: ...`
-- `for variable in iterable: ...`
-- `while condition: ...`
-- `break` - Exit loop
-- `continue` - Skip to next iteration
-- `range(start, stop, step)` - Generate number sequences
-
-**Brief Example:**
+`return` gives a value to the caller. `print` writes text to the terminal and returns no useful analysis result.
 
 ```python
-# Conditional logic
-score = 85
-if score >= 90:
-    grade = "A"
-elif score >= 80:
-    grade = "B"
-else:
-    grade = "C"
+def doubled(value):
+    return value * 2
 
-# Iteration
-for i in range(5):
-    print(f"Count: {i}")
-
-# List iteration
-grades = [85, 92, 78, 96]
-for grade in grades:
-    if grade >= 90:
-        print(f"Excellent: {grade}")
+result = doubled(6)
+print(result)
 ```
 
-## Data Structures: Lists and Tuples
+Expected output:
 
-Lists provide mutable sequences for data. Tuples offer immutable sequences useful for fixed records.
+```text
+12
+```
 
-**Reference:**
+Returning values lets another function, script, or test use the result before deciding how to display it.
 
-- `list()` - Create list
-- `[item1, item2, ...]` - List literal
-- `list.append(item)` - Add to end
-- `list.insert(index, item)` - Insert at position
-- `list.remove(item)` - Remove first occurrence
-- `list.pop(index)` - Remove and return item
-- `tuple()` - Create tuple
-- `(item1, item2, ...)` - Tuple literal
+## Guard empty input explicitly
 
-**Brief Example:**
+The original duplicated script divides by `len(values)`. An empty list has length zero, so the division would fail.
 
 ```python
-# Lists - mutable sequences
-grades = [85, 92, 78, 96, 88]
-grades.append(90)
-grades.insert(1, 87)
-total = sum(grades)
-
-# Tuples - immutable sequences
-coordinates = (40.7128, -74.0060)
-name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
+empty_result = mean([])
+print(empty_result)
 ```
 
-## Data Structures: Dictionaries and Sets
+The function's docstring states that empty input returns `None`, making the edge-case contract visible to its callers.
 
-Dictionaries provide key-value storage for structured data. Sets offer unique collections with mathematical operations.
-
-**Reference:**
-
-- `dict()` - Create dictionary
-- `{key: value, ...}` - Dictionary literal
-- `dict[key]` - Access value
-- `dict.get(key, default)` - Safe access
-- `dict.keys()`, `dict.values()`, `dict.items()` - Iteration
-- `set()` - Create set
-- `{item1, item2, ...}` - Set literal
-- `set.union()`, `set.intersection()`, `set.difference()` - Set operations
-
-**Brief Example:**
+Test both the ordinary and edge cases:
 
 ```python
-# Dictionaries - key-value storage
-student = {"name": "Alice", "grade": 85, "major": "Data Science"}
-print(student["name"])  # "Alice"
-print(student.get("gpa", 0.0))  # Safe access
-
-# Sets - unique collections
-math_students = {"Alice", "Bob", "Charlie"}
-cs_students = {"Alice", "Diana", "Eve"}
-both_subjects = math_students & cs_students  # Intersection
+print(mean([18, 21, 24]))
+print(mean([]))
 ```
 
-## List Comprehensions and Sequence Functions
+Expected output:
 
-List comprehensions provide concise syntax for creating lists through transformation and filtering. Sequence functions offer efficient operations.
+```text
+21.0
+None
+```
 
-**Reference:**
+## Build a report line from a dictionary
 
-- `[expr for item in iterable if condition]` - List comprehension
-- `enumerate(iterable)` - Get index and value pairs
-- `zip(iterable1, iterable2)` - Combine sequences
-- `sorted(iterable)` - Create sorted list
-- `reversed(iterable)` - Reverse sequence
-- `sum()`, `min()`, `max()`, `len()` - Aggregation functions
-
-**Brief Example:**
+The identity check `is None` asks specifically whether a value is the no-value object. It does not treat zero as missing.
 
 ```python
-# List comprehensions
-grades = [85, 92, 78, 96, 88]
-passing_grades = [g for g in grades if g >= 80]
+def format_summary(record):
+    """Return a one-line summary for a measurement record."""
+    average = mean(record["values"])
 
-# Sequence functions
-for index, grade in enumerate(grades):
-    print(f"Student {index + 1}: {grade}")
+    if average is None:
+        return f'{record["label"]} mean: no measurements'
 
-names = ["Alice", "Bob", "Charlie"]
-scores = [85, 92, 78]
-for name, score in zip(names, scores):
-    print(f"{name}: {score}")
+    return f'{record["label"]} mean: {average:.1f}'
 ```
 
-## Functions
-
-Functions organize code into reusable units with clear interfaces. They enable reuse, testing, and modular design.
-
-**Reference:**
-
-- `def function_name(parameters): ...` - Function definition
-- `return value` - Return value
-- Function calls: `result = function_name(arguments)`
-- Default parameters: `def func(param=default_value):`
-
-**Brief Example:**
+The function returns text rather than printing it, so the caller can send that text to the terminal, a file, or a test.
 
 ```python
-# Function definition
-def calculate_average(grades):
-    """Calculate the average of a list of grades."""
-    if not grades:
-        return 0
-    return sum(grades) / len(grades)
+morning_record = {
+    "label": "Morning",
+    "values": [18, 21, 24],
+}
 
-### Function usage
-grades = [85, 92, 78, 96, 88]
-average = calculate_average(grades)
-print(f"Average grade: {average:.1f}")
+summary_line = format_summary(morning_record)
+print(summary_line)
 ```
 
-### `__main__` for script execution
+Expected output:
 
-if **name** == "**main**":
-    # This code runs when script is executed directly
-    grades = [85, 92, 78, 96, 88]
-    average = calculate_average(grades)
-    print(f"Average grade: {average:.1f}")
+```text
+Morning mean: 21.0
+```
 
-# Command Line Mastery (review)
+# LIVE DEMO!
 
-### Essential Navigation Commands
+**From duplication to functions:** refactor two repeated list calculations into `mean()` and `format_summary()`, map an argument to its parameter, trace a local variable and return value, add one-sentence docstrings, and verify the empty-list behavior.
 
-Navigation commands orient you within the file system.
+# Write one small text file
 
-**Reference:**
+A **driver script** is the file that coordinates a program's steps. File output is a **side effect**: it changes something outside a function's returned value. Keep side effects in the driver script rather than in a reusable calculation function.
 
-- `pwd` - Print working directory (shows current location)
-- `ls` - List directory contents
-- `ls -la` - List with detailed information (permissions, size, date)
-- `cd [path]` - Change directory
-- `cd ..` - Move up one directory level
-- `cd ~` - Navigate to home directory
-- `cd -` - Return to previous directory
+`open()` opens the file at a path. Mode `"w"` creates the file or replaces its existing contents. `encoding="utf-8"` selects a standard text encoding so the same characters are interpreted consistently across systems. The `with` statement closes the file automatically when its indented block finishes.
 
-**Brief Example:**
+```python
+summary_line = "Morning mean: 21.0"
+
+with open("report.txt", "w", encoding="utf-8") as report_file:
+    report_file.write(summary_line + "\n")
+```
+
+`write()` expects a string and does not add a newline automatically. The relative path `report.txt` is resolved from the terminal's working directory, just as in Lecture 01.
+
+Open the same file in read mode (`"r"`) to verify what was saved. `read()` returns the file's text as one string:
+
+```python
+with open("report.txt", "r", encoding="utf-8") as report_file:
+    saved_summary = report_file.read()
+
+print(saved_summary == summary_line + "\n")
+```
+
+Expected output:
+
+```text
+True
+```
+
+Use these small text patterns only; structured tabular input begins later.
+
+# Modules and imports
+
+A **module** is a `.py` file that can be loaded with `import`. A module is useful when it contains reusable definitions that another file needs.
+
+Suppose one project contains two files:
+
+```text
+measurement-summary/
+├── analysis_utils.py
+└── main.py
+```
+
+The **top level** of a Python file consists of statements that are not indented inside a function or another block. The reusable module `analysis_utils.py` contains definitions but does not print a report or write a file at top level:
+
+```python
+def mean(values):
+    """Return the arithmetic mean, or None for empty input."""
+    if not values:
+        return None
+
+    total = 0
+    for value in values:
+        total = total + value
+
+    return total / len(values)
+
+
+def format_summary(record):
+    """Return a one-line summary for a measurement record."""
+    average = mean(record["values"])
+
+    if average is None:
+        return f'{record["label"]} mean: no measurements'
+
+    return f'{record["label"]} mean: {average:.1f}'
+```
+
+An **import statement** loads a module. `from analysis_utils import format_summary` loads `analysis_utils.py` and makes its `format_summary` function available in the importing file.
+
+Python executes a module's top-level statements when it first imports that module. A top-level function definition creates the function but does not call it. A top-level `print()` or file-writing statement would run immediately and would be an unwanted import side effect.
+
+Python assigns a special module name to `__name__`:
+
+- when Python runs a file directly, that file's `__name__` is `"__main__"`;
+- when Python imports a file, `__name__` is the module's name, such as `"main"` or `"analysis_utils"`.
+
+`main()` is a conventional function that coordinates a program. The **main guard** is the condition `if __name__ == "__main__":`; its indented body calls `main()` only during direct script execution.
+
+The driver script `main.py` uses that exact pattern:
+
+```python
+from analysis_utils import format_summary
+
+
+def main():
+    """Create the measurement report."""
+    records = [
+        {"label": "Morning", "values": [18, 21, 24]},
+        {"label": "Evening", "values": [20, 22, 26]},
+        {"label": "Overnight", "values": []},
+    ]
+
+    with open("report.txt", "w", encoding="utf-8") as report_file:
+        for record in records:
+            summary_line = format_summary(record)
+            print(summary_line)
+            report_file.write(summary_line + "\n")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+# Why the main guard matters
+
+The guard in `main.py` keeps orchestration and file output behind an explicit function call. Importing `main` loads its definitions without creating `report.txt` or printing the report.
+
+# Run the two-file program from the terminal
+
+First, navigate to the project directory and confirm both files are present:
 
 ```bash
-pwd                    # /Users/username/Documents
-ls -la                 # Show all files with details
-cd projects/data_science
-pwd                    # /Users/username/Documents/projects/data_science
+pwd
+ls
 ```
 
-### File and Directory Operations
-
-File operations create and organize project structures.
-
-**Reference:**
-
-- `mkdir [name]` - Create directory
-- `mkdir -p [path/to/nested]` - Create nested directories
-- `touch [filename]` - Create empty file
-- `cp [source] [destination]` - Copy files or directories
-- `mv [source] [destination]` - Move or rename files
-- `rm [filename]` - Remove file
-- `rm -r [directory]` - Remove directory recursively
-- `rm -rf [directory]` - Force remove directory (use with caution)
-
-**Brief Example:**
+The `-c` option asks Python to execute the short code string that follows it. Check import safety before running the program:
 
 ```bash
-mkdir -p data/raw data/processed scripts
-touch scripts/analysis.py
-cp data/raw/dataset.csv data/processed/
+python -c "import main"
 ```
 
-### Text Processing and Search
+A safe import produces no terminal output and does not create `report.txt`.
 
-Text processing commands explore and manipulate text data.
-
-**Reference:**
-
-- `cat [filename]` - Display entire file
-- `head [filename]` - Show first 10 lines
-- `tail [filename]` - Show last 10 lines
-- `grep [pattern] [filename]` - Search for text patterns
-- `grep -r [pattern] [directory]` - Recursive search
-- `wc -l [filename]` - Count lines in file
-
-**Brief Example:**
+Run the driver script:
 
 ```bash
-head -20 data.csv              # Preview first 20 lines
-grep "error" logfile.txt       # Find error messages
+python main.py
 ```
 
-### Visual Directory Structure
+Expected terminal output:
 
-The `tree` command shows directory structure hierarchically.
-
-**Reference:**
-
-- `tree` - Show directory structure
-- `tree -L 2` - Limit depth to 2 levels
-- `tree -a` - Show hidden files
-- `tree -d` - Show directories only
-
-**Brief Example:**
-
-```bash
-tree                    # Show full directory structure
-tree -L 2              # Show only 2 levels deep
-tree -d                # Show only directories
+```text
+Morning mean: 21.0
+Evening mean: 22.7
+Overnight mean: no measurements
 ```
 
-### History Navigation and Shortcuts
+The same three lines should be written to `report.txt`. If the module cannot be found, check `pwd` and `ls` before changing the import statement. Both `.py` files should be in the same project directory; no import-path modification is needed.
 
-Shortcuts and history navigation improve command line efficiency.
+# LIVE DEMO!
 
-**Reference:**
+**From functions to an import-safe module:** move the reusable functions into `analysis_utils.py`, import them into `main.py`, verify that importing `main` produces no output or file, then run `python main.py` to create one deterministic report.
 
-- `Up arrow` - Previous command
-- `Down arrow` - Next command
-- `Ctrl+A` - Move to beginning of line
-- `Ctrl+E` - Move to end of line
-- `Ctrl+K` - Delete from cursor to end of line
-- `Ctrl+U` - Delete from cursor to beginning of line
-- `Tab` - Auto-complete commands, files, directories
-- `Ctrl+R` - Reverse search through history
-- `Ctrl+C` - Cancel current command
-- `Ctrl+D` - Exit shell
+# Handoff to Lecture 03
 
-**Brief Example:**
+You should now be able to:
 
-```bash
-# Use up arrow to recall previous commands
-# Use Tab to complete: cd pro<Tab> → cd projects/
-# Use Ctrl+R to search: Ctrl+R then type "git" to find git commands
-```
+- use VS Code Source Control to inspect, stage, commit, synchronize, branch, merge, and resolve a prepared conflict;
+- explain the Git states involved in that workflow;
+- use a minimal dictionary for a named record;
+- define and call a function with an explicit edge-case contract;
+- write and read back one small text file at a resolved path; and
+- import a local module without triggering its driver workflow.
 
-### Shell Scripting Fundamentals
+Lecture 03 adds isolated environments, direct dependencies, and NumPy arrays while preserving this terminal-and-script workflow.
 
-Shell scripting automates tasks and creates reusable command sequences.
+# Key takeaways
 
-**Reference:**
+- A working-tree edit becomes part of history only after you inspect it, stage it, and commit it.
+- Local commits reach GitHub only after successful synchronization.
+- A feature branch isolates a focused change; conflict resolution preserves the intended final content.
+- Parameters receive argument values, local variables support a call, and `return` gives a result back to the caller.
+- Reusable modules contain definitions; driver scripts contain orchestration and side effects.
+- A correct main guard keeps imports quiet and safe.
 
-- `#!/bin/bash` - Shebang line for bash scripts
-- `echo "text"` - Print text to terminal
-- `mkdir -p dirname` - Create directory (and parents if needed)
-- `chmod +x script.sh` - Make script executable
-- `$1, $2, $3...` - Command line arguments
-- `$@` - All arguments
-- `$#` - Number of arguments
-- `$?` - Exit code of last command
+# Optional bonus material
 
-**Brief Example:**
+These topics are not required for assignments or assumed by Lecture 03:
 
-```bash
-#!/bin/bash
-# Create project structure
-echo "Setting up project..."
-mkdir -p src data output
-echo "Directories created"
-
-# Make script executable
-chmod +x setup.sh
-
-# Create files using here-documents
-cat > data/sample.csv << 'EOF'
-name,age,grade
-Alice,20,85
-Bob,19,92
-EOF
-
-echo "Setup complete!"
-```
-
-### Command Chaining and Redirection
-
-Command chaining creates data processing pipelines. Redirection controls input and output.
-
-**Reference:**
-
-- `command1 | command2` - Pipe output to next command
-- `command1 && command2` - Run command2 only if command1 succeeds
-- `command1 || command2` - Run command2 only if command1 fails
-- `command > file` - Redirect output to file
-- `command >> file` - Append output to file
-- `command < file` - Use file as input
-
-**Brief Example:**
-
-```bash
-grep "error" logfile.txt | wc -l    # Count error lines
-ls *.csv | head -5 > filelist.txt   # Save first 5 CSV files to list
-```
+- [Command-line Git, Git internals, collaboration, and recovery](bonus/advanced_git.md)
+- [Advanced Python function and collection patterns](bonus/bonus_python_concepts.md)
+- [Optional shell automation](bonus/shell_automation.md)

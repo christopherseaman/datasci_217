@@ -1,0 +1,75 @@
+{
+  "fixture_id": "a10-bounded-modeling-v1",
+  "provenance": "Course-authored synthetic laboratory and batch records; no real, identifying, operational, or customer data.",
+  "files": [
+    {
+      "path": "mixing_runs.csv",
+      "row_grain": "one synthetic mixing run",
+      "row_count": 18,
+      "columns": [
+        "run_id",
+        "mix_minutes",
+        "initial_temp_c",
+        "finish_quality_score"
+      ],
+      "sha256": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957"
+    },
+    {
+      "path": "batch_strength.csv",
+      "row_grain": "one synthetic batch prediction case",
+      "row_count": 48,
+      "columns": [
+        "batch_id",
+        "prediction_timestamp",
+        "target_timestamp",
+        "batch_sequence",
+        "ambient_temp_c",
+        "pre_mix_moisture_pct",
+        "next_day_strength_mpa"
+      ],
+      "sha256": "f14faf7da64347dfc255aa84b14e79eef7f2d0de94b394c747323319d937baa3"
+    },
+    {
+      "path": "feature_availability.csv",
+      "row_grain": "one candidate feature availability claim",
+      "row_count": 5,
+      "columns": [
+        "candidate_feature",
+        "latest_required_offset_hours"
+      ],
+      "sha256": "a47b8df048607045640b9a6785b038fe1c70036f58d5b61ed20ec98860b556da"
+    },
+    {
+      "path": "supplied_binary_predictions.csv",
+      "row_grain": "one supplied binary prediction case",
+      "row_count": 12,
+      "columns": [
+        "case_id",
+        "actual_label",
+        "supplied_model_prediction",
+        "dummy_prediction"
+      ],
+      "sha256": "7a8809010fa94345cd04787c826ef86ee5fd13cbf0bd95953e2220c3294a239a"
+    }
+  ],
+  "inference_new_case": {
+    "mix_minutes": 26.0,
+    "initial_temp_c": 22.0
+  },
+  "prediction_contract": {
+    "unit": "one synthetic batch",
+    "prediction_time": "prediction_timestamp",
+    "target": "next_day_strength_mpa",
+    "target_time": "target_timestamp",
+    "feature_columns": [
+      "batch_sequence",
+      "ambient_temp_c",
+      "pre_mix_moisture_pct"
+    ]
+  },
+  "split_boundaries": {
+    "validation_start": "2026-05-01T00:00:00Z",
+    "test_start": "2026-05-09T00:00:00Z",
+    "split_on": "target_timestamp"
+  }
+}

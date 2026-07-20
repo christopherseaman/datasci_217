@@ -1,0 +1,7 @@
+{
+  "fixture_id": "a04-purchases-alt-v1",
+  "provenance": "course-authored synthetic teaching data",
+  "row_count": 10,
+  "columns": ["purchase_id", "item", "quantity", "unit_price"],
+  "sha256": "e33f6589902e3d4424bf31361e3eae12934efab4329afee1e1ff9d748a4de3a5"
+}

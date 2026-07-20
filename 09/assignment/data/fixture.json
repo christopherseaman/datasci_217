@@ -1,0 +1,14 @@
+{
+  "fixture_id": "a09-temporal-panel-v1",
+  "provenance": "Course-authored synthetic indoor-air sensor readings; no real, identifying, or occupant data.",
+  "path": "zone_co2_readings.csv",
+  "row_grain": "one recorded CO2 reading for one zone and local timestamp",
+  "row_count": 12,
+  "columns": [
+    "zone",
+    "recorded_at",
+    "co2_ppm"
+  ],
+  "sha256": "c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4",
+  "source_timezone": "America/New_York"
+}

@@ -1,0 +1,18 @@
+{
+  "fixture_id": "a05-people-cleaning-v1",
+  "provenance": "course-authored synthetic teaching data; no real people",
+  "row_meaning": "one submitted person record",
+  "candidate_identifier": [
+    "record_id"
+  ],
+  "row_count": 12,
+  "raw_columns": [
+    "record_id",
+    "full_name",
+    "site",
+    "status",
+    "age_text",
+    "visit_date"
+  ],
+  "sha256": "d13dc9676519c81729b33d53ffc2e8fec92e645c6978af7ebf325fcd7147753b"
+}

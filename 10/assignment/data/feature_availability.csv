@@ -1,0 +1,6 @@
+candidate_feature,latest_required_offset_hours
+batch_sequence,0
+ambient_temp_c,0
+pre_mix_moisture_pct,0
+early_24h_strength_mpa,24
+next_day_strength_mpa,24

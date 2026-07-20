@@ -1,213 +1,150 @@
-# Assignment 8: Data Aggregation and Group Operations
+# Assignment 08: Grouped Results with an Explicit Grain
 
-**Deliverable:**
+Build one reproducible pandas notebook that makes the grain of every grouped
+result explicit. You will choose among three counting operations, create flat
+named summaries, preserve source-row alignment with `transform`, and prove that
+one aggregating pivot agrees with its equivalent two-key GroupBy result.
 
-- Pass all auto-grading tests by generating the required output files from `assignment.ipynb`/`assignment.md`
+This assignment uses clean local Jupyter or the VS Code notebook interface. The
+single prepared table is course-authored synthetic support-request data; it has
+no real, identifying, or customer records. Assignment Colab is not supported.
+Do not use manual uploads, Drive mounts, network access, absolute paths, or
+`/content` paths. The supplied setup supports standalone Classroom50 and full
+course checkouts, including nested launch directories inside the assignment.
 
-## Environment Setup
+## Setup
 
-### Create Virtual Environment
-
-Create a virtual environment for this assignment:
+Use CPython 3.12.13. From this directory, create and activate a virtual
+environment, install the two exact dependency records, and open Jupyter or the
+VS Code notebook interface:
 
 ```bash
-# Create venv
-python3 -m venv .venv
-
-# Activate (Linux/Mac)
+python -m venv .venv
 source .venv/bin/activate
-
-# Activate (Windows)
-.venv\Scripts\activate
+python -m pip install -r requirements.txt
 ```
 
-### Install Requirements
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
+[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before editing the notebook. Jupyter is
+the host application; the selected notebook kernel must use the environment you
+checked.
 
-You have two options to install the required packages:
+## Deliverables
 
-**Option 1: Using pip in terminal**
-```bash
-pip install -r requirements.txt
-```
+Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all 25
+cells from top to bottom. Submit these six files through Classroom50:
 
-**Option 2: Using %pip magic in Jupyter**
+- `assignment.ipynb`
+- `output/center_count_summary.csv`
+- `output/center_summary.csv`
+- `output/requests_with_context.csv`
+- `output/center_channel_summary.csv`
+- `output/mean_resolution_pivot.csv`
 
-You can install packages directly from a Jupyter notebook cell using the `%pip` magic command:
+The five CSVs are intentionally visible in VS Code Source Control and GitHub
+Desktop. Commit them with the notebook. Do not edit `data/`, the supplied
+notebook cells, environment records, checker, or instructions. Stored notebook
+output is not execution evidence: the grader clears it, removes generated CSVs,
+and executes a disposable copy from fresh state.
 
-```python
-# Install single package
-%pip install pandas
-
-# Install from requirements.txt
-%pip install -r requirements.txt
-```
-
-**Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.
-
-## Generate the Dataset (Provided)
-
-Run the data generator notebook to create your dataset:
+After restart-and-run, use the discoverable student check:
 
 ```bash
-jupyter notebook data_generator.ipynb
+python check_assignment.py
 ```
 
-Run all cells to create the CSV files in `data/`:
-- `data/provider_data.csv` (healthcare provider information)
-- `data/facility_data.csv` (healthcare facility information)
-- `data/encounter_data.csv` (patient encounters/insurance claims)
+The checker reads files and notebook source but does not execute notebook code,
+award points, or judge the quality of your written explanations. Fix each
+`[FIX]` message, rerun the notebook from a fresh kernel, and check again.
 
-## Complete the Three Questions
+## Terms and data contract
 
-Open `assignment.ipynb` and work through the three questions. The notebook provides:
+- **Input row grain** says what one source row represents.
+- A **grouping key** is one column or bounded column combination whose values
+  determine group membership. A **group** is the input rows sharing one observed
+  key value or combination. The **grouping unit** is the real-world category or
+  entity represented by one group.
+- **Output row grain** says what one result row represents. An **aggregation**
+  reduces each group's rows to one or more summary values. A **GroupBy object**
+  records how rows are split; it is not itself a summary table.
+- The **observed-category policy** controls whether unused categorical levels or
+  combinations appear; use `observed=True`. The **missing-key policy** controls
+  whether missing grouping keys form a group; the supplied keys are complete and
+  use `dropna=True`. **Output order** is deliberate; use `sort=True` with the
+  declared ordered categories.
+- `size` counts input rows regardless of missing values elsewhere. Selected-
+  column `count` counts nonmissing values in that column. Selected-column
+  `nunique` counts distinct nonmissing values in that column.
+- A **named aggregation** pairs an output name with a source column and
+  calculation. `as_index=False` keeps grouping keys as ordinary flat columns.
+- `transform` performs a within-group calculation and returns one same-index
+  value per input row.
+- A **two-key group** contains rows sharing one observed combination of both
+  key values.
+- Lecture 06 structural `pivot` reshapes uniquely keyed values and performs no
+  aggregation. An aggregating `pivot_table` groups repeated combinations and
+  places their summaries across row and column axes.
+- An **absent combination** has no input row for its key combination. It is not
+  a measured zero.
 
-- **Step-by-step instructions** with clear TODO items
-- **Helpful hints** for each operation
-- **Sample data** and examples to guide your work
-- **Validation checks** to ensure your outputs are correct
+The fixture grain is one synthetic support request. `request_id` identifies a
+row; `center` is the first grouping key; `channel` is the second; `agent_id` may
+repeat; `resolution_minutes` is a complete measurement; and
+`satisfaction_score` is optional. Center order is Central, Harbor, Ridge,
+Valley; channel order is Email, Phone, Chat. Valley is an unused category.
+Harbor--Phone is absent, and three satisfaction scores are missing. These are
+prepared facts to analyze, not cleaning decisions.
 
-**Prerequisites:** This assignment uses groupby operations, pivot tables, and aggregation functions from Lecture 08.
+## Task 1: grain and count semantics
 
-**How to use the scaffold notebook:**
-1. Read each cell carefully - they contain detailed instructions
-2. Complete the TODO items by replacing `None` with your code
-3. Run each cell to see your progress
-4. Use the hints provided in comments
-5. Check the submission checklist at the end
+Before grouping, state the input grain, grouping key and unit, predicted observed
+groups, observed-category policy, and output grain. Choose the operation that
+answers each question:
 
-### Auto-Grading (Required)
+- How many support-request rows were recorded? Use `size`.
+- How many requests have a recorded satisfaction score? Use selected-column
+  `count`.
+- How many distinct agents appear? Use selected-column `nunique`.
 
-Run all required cells in `assignment.ipynb` so that the following files are created in `output/`:
+Implement `build_count_summary(request_table)` with explicit
+`observed=True`, `sort=True`, and `dropna=True`. Return one flat row per observed
+center and save/read back `center_count_summary.csv`.
 
-- `q1_groupby_analysis.csv`, `q1_aggregation_report.txt`
-- `q2_filter_analysis.csv`, `q2_hierarchical_analysis.csv`, `q2_performance_report.txt`
-- `q3_pivot_analysis.csv`, `q3_crosstab_analysis.csv`, `q3_pivot_visualization.png`
+## Task 2: aggregation, transform, and two keys
 
-Run tests locally:
+Implement `build_center_summary(request_table)` with flat named aggregation and
+deliberate `as_index=False`. Implement `add_center_context(request_table)` with
+selected-Series `transform("mean")`; its result must preserve the input row count
+and exact index. Implement `build_center_channel_summary(request_table)` as one
+bounded flat two-key summary. Do not mutate inputs or round results. Save and
+read back all three Task 2 outputs.
 
-```bash
-pytest -q 08/assignment/.github/test/test_assignment.py
-```
+## Task 3: one aggregating pivot and equivalence
 
-GitHub Classroom will run the same tests on push.
+Implement `build_resolution_pivot(request_table)` with the assignment's only
+`pd.pivot_table` call. Its five roles are `index="center"`,
+`columns="channel"`, `values="resolution_minutes"`, `aggfunc="mean"`, and
+`observed=True`; also use explicit `sort=True` and `dropna=True`. Compare every
+populated pivot cell with the equivalent GroupBy mean. Keep Harbor--Phone
+missing; do not replace it with zero. Save and read back
+`mean_resolution_pivot.csv`.
 
-### Question 1: Basic GroupBy Operations
+The grader publishes an alternate valid prepared table with different category
+labels, values, group sizes, row order, and a shuffled nondefault index. All five
+functions must derive their behavior from their argument rather than canonical
+literals, global data, or files.
 
-**What you'll do:**
-- Load and merge provider, facility, and encounter data
-- Perform basic groupby operations with aggregation functions
-- Use transform operations to add group statistics
+## Scope and assessment boundary
 
-**Skills:** groupby operations, aggregation functions, transform
+Required work does not clean, impute, join, structurally reshape, filter groups,
+use `GroupBy.apply`, manipulate MultiIndex, create crosstabs, visualize, analyze
+dates/time series, calculate statistics or models, access remote/performance
+tools, fetch network data, generate random data, or depend on a mutable date.
 
-**Output:** `output/q1_groupby_analysis.csv`, `output/q1_aggregation_report.txt`
-
-### Question 2: Advanced GroupBy Operations
-
-**What you'll do:**
-- Apply filter operations to remove groups based on conditions
-- Use apply operations with custom functions
-- Perform hierarchical grouping with multiple columns
-- Handle MultiIndex structures
-
-**Skills:** filter operations, apply operations, hierarchical grouping, MultiIndex
-
-**Output:** `output/q2_filter_analysis.csv`, `output/q2_performance_report.txt`, `output/q2_hierarchical_analysis.csv`
-
-### Question 3: Pivot Tables and Cross-Tabulations
-
-**What you'll do:**
-- Create pivot tables for multi-dimensional analysis
-- Use cross-tabulations for frequency analysis
-- Apply advanced pivot operations with totals
-- Handle missing values and custom aggregations
-- Create visualizations from pivot tables
-
-**Skills:** pivot tables, cross-tabulations, multi-dimensional analysis, visualization
-
-**Output:** `output/q3_pivot_analysis.csv`, `output/q3_crosstab_analysis.csv`, `output/q3_pivot_visualization.png`
-
- 
-
-## Assignment Structure
-
-```
-08/assignment/
-├── README.md                      # This file - assignment instructions
-├── assignment.md                  # Notebook source (for jupytext)
-├── assignment.ipynb              # Completed notebook (you work here)
-├── data_generator.ipynb          # Run once to create datasets
-├── data/                         # Generated datasets
-│   ├── provider_data.csv         # Healthcare provider information (500 providers)
-│   ├── facility_data.csv         # Healthcare facility information (10 facilities)
-│   └── encounter_data.csv       # Patient encounters/claims (5,000 encounters)
-├── output/                       # Your saved results (created by your code)
-│   ├── q1_groupby_analysis.csv   # Q1 groupby analysis
-│   ├── q1_aggregation_report.txt # Q1 aggregation report
-│   ├── q2_filter_analysis.csv       # Q2 filter operations analysis
-│   ├── q2_hierarchical_analysis.csv # Q2 hierarchical analysis
-│   ├── q2_performance_report.txt # Q2 performance report
-│   ├── q3_pivot_analysis.csv     # Q3 pivot table analysis
-│   ├── q3_crosstab_analysis.csv  # Q3 cross-tabulation analysis
-│   ├── q3_pivot_visualization.png # Q3 pivot visualization
- 
-└── .github/
-    └── test/
-        └── test_assignment.py    # Auto-grading tests
-```
-
-## Dataset Schemas
-
-### `data/provider_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `provider_id` | string | Unique provider ID (PR0001, PR0002, ...) |
-| `provider_name` | string | Provider full name |
-| `provider_type` | string | Provider type (Physician, Nurse Practitioner, etc.) |
-| `facility_id` | string | Facility ID (links to facility_data.csv) |
-| `specialty` | string | Medical specialty (Cardiology, Oncology, etc.) |
-| `years_experience` | int | Years of experience |
-| `license_number` | string | License number |
-
-### `data/facility_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `facility_id` | string | Unique facility ID (FAC001, FAC002, ...) |
-| `facility_name` | string | Facility name |
-| `facility_type` | string | Facility type (Hospital, Clinic, Urgent Care, etc.) |
-| `region` | string | Geographic region (North, South, East, West) |
-| `beds` | int | Number of beds (if applicable) |
-| `established_date` | string | Date facility was established (YYYY-MM-DD) |
-
-### `data/encounter_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `encounter_id` | string | Unique encounter ID (ENC00001, ENC00002, ...) |
-| `patient_id` | string | Patient ID |
-| `provider_id` | string | Provider ID (links to provider_data.csv) |
-| `facility_id` | string | Facility ID (links to facility_data.csv) |
-| `encounter_date` | string | Encounter date (YYYY-MM-DD) |
-| `encounter_type` | string | Type of encounter (Office Visit, Emergency, Inpatient, etc.) |
-| `diagnosis_code` | string | ICD-10 diagnosis code |
-| `procedure_code` | string | CPT procedure code |
-| `service_charge` | float | Total service charge |
-| `insurance_paid` | float | Amount insurance covered |
-| `patient_paid` | float | Amount patient paid |
-| `region` | string | Geographic region (North, South, East, West) |
-
-## Submission Checklist
-
-Before submitting, verify you've created:
-
-- [ ] `output/q1_groupby_analysis.csv` - Basic groupby analysis
-- [ ] `output/q1_aggregation_report.txt` - Aggregation report
-- [ ] `output/q2_filter_analysis.csv` - Filter operations analysis
-- [ ] `output/q2_hierarchical_analysis.csv` - Hierarchical analysis
-- [ ] `output/q2_performance_report.txt` - Performance report
-- [ ] `output/q3_pivot_analysis.csv` - Pivot table analysis
-- [ ] `output/q3_crosstab_analysis.csv` - Cross-tabulation analysis
-- [ ] `output/q3_pivot_visualization.png` - Pivot visualization
- 
+The provisional automated result has a maximum of 90: 20 for Task 1, 35 for
+Task 2, 20 for Task 3, and 15 for shared integrity and portability. A separate
+10-point human review covers only the grain/count, aggregate/transform, pivot,
+privacy, and readability reasoning in your Markdown. Classroom50 provides that
+review through its submission `review` link. The revised syllabus will decide
+how this diagnostic evidence maps to course pass/fail policy; this notebook and
+checker do not declare a threshold or grade conversion.

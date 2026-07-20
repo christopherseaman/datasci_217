@@ -1,265 +1,187 @@
-# Assignment 02: Git Workflow, CLI Automation, and Python Data Processing
+# Assignment 02: Reusable Measurement Summary
 
-**Due Date**: [To be set by instructor]
-**Points**: 20 total
-**Estimated Time**: 3-4 hours
+This assignment combines the Lecture 02 Git state model with a small function-to-module refactor. Work only in the Classroom 50 repository provisioned for you. Do not create a second repository.
 
-## Provided Files
+Complete the work with terminal-executed Python scripts. Use VS Code Source Control or GitHub Desktop for all required Git actions. The delivery sequence is in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md); it is required but graded separately from the files below.
 
-- `requirements.txt` - Python requirements file (no external packages needed)
-- `TIPS.md` - Troubleshooting guide for common issues
-- `.github/test/test_assignment.py` - Automated tests for grading
+## Project description
 
-## Learning Objectives
+TODO: Replace this line with a 30–300 character description of what this measurement-summary project does.
 
-By completing this assignment, you will demonstrate competence in:
+## Run
 
-1. **Git Version Control**: Branching, committing, merging, and collaboration workflows
-2. **Command Line Interface**: Shell scripting, file operations, and automation
-3. **Python Programming**: Functions, file I/O, data processing, and modular design
+TODO: Replace this line with the exact terminal command that runs the completed program.
 
-## Requirements
+## Starter files
 
-This assignment has **three progressive parts** that build upon each other. Each part focuses on one of the three main lecture topics while integrating with the others.
+- `GIT_STATE_CHECK.md`: Part 1 state-model answers; edit this file.
+- `.gitignore`: Part 1 cache patterns; edit this file.
+- `analysis_utils.py`: Part 2 reusable functions; edit this file.
+- `main.py`: Part 3 driver program; edit this file.
+- `PLATFORM_CHECK.md`: supplied GUI delivery checklist; do not edit it.
+- `check_assignment.py` and `_public_checks.py`: supplied dependency-free checker; do not edit them.
+- `test_assignment.py`: public managed-pytest contract; do not edit it. You do not need pytest locally.
 
-### Part 1: Git Workflow Mastery (7 points)
+The supplied checking files use later Python features internally. Run them, but do not treat their implementation as a model for your Lecture 02 code.
 
-**Objective**: Demonstrate Git branching, committing, and merging workflows.
+## Part 1: Repository state and documentation
 
-**Tasks**:
-1. Create a new repository named `datasci-week02-integration` (separate from this assignment folder)
-2. Set up the following branch structure:
-   - `main` branch (initial commit)
-   - `feature/project-scaffold` branch
-   - `feature/data-processing` branch
-3. Develop features on separate branches
-4. Merge branches back to main
-5. Create comprehensive documentation
+### Complete the state snapshots
 
-**Deliverables**:
-- Repository with proper branch structure
-- At least 3 commits per branch with meaningful messages
-- Successful merge of both feature branches to main
-- Professional README.md with project overview
+Open `GIT_STATE_CHECK.md`. For each scenario, replace only the `TODO` terms in the answer block. Use each defined Lecture 02 term where it describes the snapshot: working tree, diff, staging area, commit, local branch, remote, synchronize, merge, and conflict.
 
-**Git Workflow Requirements**:
-```bash
-# Your repository should have this structure:
-main
-├── feature/project-scaffold (merged)
-└── feature/data-processing (merged)
+### Complete the README
+
+Replace the two TODO lines near the top of this file:
+
+- Write a project description containing 30–300 non-whitespace characters and the word `measurement`.
+- Put the exact command `python main.py` in the Run section.
+
+Do not rewrite the rest of the assignment contract.
+
+### Complete `.gitignore`
+
+Replace its TODO comments so its complete contents are exactly:
+
+```gitignore
+__pycache__/
+*.pyc
 ```
 
-**Documentation Requirements** (README.md):
-```markdown
-# DataSci Week 02 Integration Project
+No environment pattern is required in this assignment.
 
-## Project Overview
-This project demonstrates integration of Git workflows, CLI automation, and Python data processing.
+The repository actions in `PLATFORM_CHECK.md` assess practical delivery separately. The Python checker does not infer GUI competence from commit counts, branch references, or history shape.
 
-## Project Structure
-```
-datasci-week02-integration/
-├── README.md
-├── .gitignore
-├── requirements.txt
-├── setup_project.sh
-├── src/
-│   ├── data_analysis.py
-│   └── data_analysis_functions.py
-├── data/
-│   ├── students.csv
-│   └── courses.json
-└── output/
-    └── analysis_report.txt
-```
+## Part 2: Reusable calculations
 
-## Features
-- **Project Scaffold**: Automated project setup with `setup_project.sh`
-- **Data Processing**: Python scripts for student grade analysis
-- **Git Workflow**: Feature branch development and merging
+Complete exactly two functions in `analysis_utils.py`.
 
-## Usage
-1. Run `./setup_project.sh` to create project structure
-2. Execute `python src/data_analysis.py` for basic analysis
-3. Run `python src/data_analysis_functions.py` for advanced analysis
+### `mean(values)`
 
-## Git Workflow
-| Branch | Purpose | Status |
-|--------|---------|--------|
-| main | Production code | Active |
-| feature/project-scaffold | CLI automation | Merged |
-| feature/data-processing | Python analysis | Merged |
-```
+Its interface and behavior are:
 
-### Part 2: CLI Project Scaffold Script (6 points)
+- Signature: `mean(values)` with no default value or annotation.
+- First statement: a one-line docstring without `TODO`.
+- Begin with `if not values:` and return `None` in that branch.
+- Next initialize the local accumulator with `total = 0`.
+- Use exactly one direct `for` loop over `values`. Its body must directly update `total` with the current loop value; do not put the required update in a nested or dead branch.
+- After that loop, return exactly `total / len(values)`.
+- Return the result; do not print it.
+- Do not mutate `values` or retain accumulated state between calls.
 
-**Objective**: Create a shell script that automates project setup.
+### `format_summary(record)`
 
-**Tasks**:
-1. Create `setup_project.sh` from scratch with the following functionality:
-   - Create directory structure (src, data, output)
-   - Generate initial files (.gitignore, requirements.txt)
-   - Create sample data files (students.csv with at least 8 records)
-   - Set up Python template files with TODO placeholders
-2. Make the script executable using chmod +x
-3. Test the script and verify all files are created
-4. Commit the script to the `feature/project-scaffold` branch
+Its interface and behavior are:
 
-**Script Requirements**:
-- Must start with `#!/bin/bash`
-- Use `echo` to provide user feedback
-- Use `mkdir -p` to create directories
-- Use here-documents (`cat > filename << 'EOF'`) to create files
-- Create a CSV file with student data (name,age,grade,subject)
-- Create Python templates with function stubs and TODO comments
-- Make the script executable: `chmod +x setup_project.sh`
+- Signature: `format_summary(record)` with no default value or annotation.
+- First statement: a one-line docstring without `TODO`.
+- Use only the dictionary keys `"label"` and `"values"`.
+- Assign one direct `mean(record["values"])` call to a local result. Do not loop, call `sum()`, or repeat arithmetic in this function.
+- Test that local result with `is None`; if true, return `<label> mean: no measurements`.
+- Otherwise build `<label> mean: <value>` with exactly one decimal place from that same local result.
+- Return the string; do not print it or mutate the record.
 
-**Expected Output Structure**:
-After running your script, the following files and directories should exist:
-```
-├── src/
-│   ├── data_analysis.py
-│   └── data_analysis_functions.py
-├── data/
-│   └── students.csv
-├── output/
-├── .gitignore
-└── requirements.txt
+Required examples:
+
+```text
+mean([18, 21, 24]) -> 21.0
+mean([]) -> None
+format_summary({"label": "Zero", "values": [0, 0]}) -> "Zero mean: 0.0"
+format_summary({"label": "Empty", "values": []}) -> "Empty mean: no measurements"
 ```
 
-### Part 3: Python Data Processing (7 points)
+Importing `analysis_utils` must be silent and must not create or change files.
 
-**Objective**: Implement Python scripts that process data and output results to files.
+## Part 3: Import-safe driver and report
 
-**Tasks**:
-1. Create and complete `src/data_analysis.py` with basic functionality
-2. Create and complete `src/data_analysis_functions.py` with modular design
-3. Ensure both scripts output results to `output/analysis_report.txt`
-4. Test your implementation thoroughly
+Complete `main.py` without changing the supplied import, three records, or main guard.
 
-**Python Requirements**:
+The completed file must:
 
-**Basic Analysis Script** (`src/data_analysis.py`):
+1. import `format_summary` with `from analysis_utils import format_summary`;
+2. define exactly `main()` with no parameters, defaults, or annotations and a one-line docstring without `TODO`;
+3. keep these supplied records in this order:
 
-Your script should:
-- Read the CSV file line by line using `open()` and `readlines()`
-- Split each line by commas to extract fields
-- Calculate basic statistics (total students, average grade)
-- Count students by subject
-- Write results to `output/analysis_report.txt`
-- Use f-strings with `.1f` formatting for decimal numbers
+   ```python
+   records = [
+       {"label": "Morning", "values": [18, 21, 24]},
+       {"label": "Evening", "values": [20, 22, 26]},
+       {"label": "Overnight", "values": []},
+   ]
+   ```
 
-**Required Functions**:
-- `load_students(filename)`: Read CSV and return list of student data
-- `calculate_average_grade(students)`: Calculate and return average
-- `count_math_students(students)`: Count students in Math
-- `generate_report()`: Create formatted report string
-- `save_report(report, filename)`: Write report to file
-- `main()`: Orchestrate the analysis
+4. call the imported `format_summary()` once per record, in order;
+5. build the three-line report in a local name `report_text`, with a newline after every line;
+6. use the exact context-manager form `with open("report.txt", "w", encoding="utf-8") as report_file:`, then write it with exactly `report_file.write(report_text)`—not `writelines()`;
+7. use a second block with the exact form `with open("report.txt", "r", encoding="utf-8") as report_file:`, then assign one no-argument `report_file.read()` result to a different local name;
+8. print the saved report, then print whether that read-back text equals `report_text`. Either print the equality comparison inline or first assign it to a local name such as `matches` and print that name; and
+9. keep the exact guard:
 
-**Hints**:
-- Skip the header line when reading CSV: `lines[1:]`
-- Split CSV lines: `line.strip().split(',')`
-- Convert strings to integers: `int(value)`
-- Format decimals: `f"{average:.1f}"`
-- Create output directory if needed before writing file
+   ```python
+   if __name__ == "__main__":
+       main()
+   ```
 
-**Advanced Analysis Script** (`src/data_analysis_functions.py`):
+Importing `main` must print nothing and must not create `report.txt`. Running `python main.py` must overwrite a stale report and print exactly:
 
-Your modular script should:
-- Separate data loading, processing, and saving into different functions
-- Load CSV data using the same technique as the basic script
-- Provide more detailed analysis (highest/lowest grades, grade distribution)
-- Generate a more comprehensive report
-- Demonstrate function reusability and modular design
+```text
+Morning mean: 21.0
+Evening mean: 22.7
+Overnight mean: no measurements
+Saved report matches: True
+```
 
-**Required Functions**:
-- `load_data(filename)`: Generic loader that checks file extension
-- `load_csv(filename)`: Load CSV data (same technique as basic script)
-- `analyze_data(students)`: Return dictionary with multiple statistics
-- `analyze_grade_distribution(grades)`: Count grades by letter grade ranges
-- `save_results(results, filename)`: Save detailed report
-- `main()`: Orchestrate the analysis using all functions
+The exact bytes in `report.txt` are:
 
-**Additional Requirements**:
-- Calculate highest and lowest grades using `max()` and `min()`
-- Count students by multiple subjects (Math, Science, etc.)
-- Create grade distribution (A: 90-100, B: 80-89, C: 70-79, D: 60-69, F: 0-59)
-- Calculate and display percentages with `.1f` formatting
-- Use dictionaries to store analysis results
+```text
+Morning mean: 21.0
+Evening mean: 22.7
+Overnight mean: no measurements
+```
 
-**Expected Output Format**:
-Both scripts should create `output/analysis_report.txt` with:
-- Total number of students
-- Average grade (formatted to 1 decimal place)
-- Subject counts
-- For advanced script: grade distribution with percentages
+There is one newline after the final report line. The `Saved report matches` status belongs only in terminal output, not in `report.txt`.
 
-## Submission Requirements
+## Check your work
 
-1. **Repository Structure**: Your repository must have the exact structure shown in the documentation
-2. **Git History**: At least 3 commits per branch with meaningful commit messages
-3. **Working Scripts**: Both Python scripts must run without errors
-4. **Output Files**: `output/analysis_report.txt` must be generated by both scripts
-5. **Documentation**: Professional README.md with project overview and usage instructions
-
-## Grading Rubric
-
-### Part 1: Git Workflow (7 points)
-- **Repository Setup** (2 points): Proper repository creation and initial commit
-- **Branch Management** (2 points): Correct branch creation and switching
-- **Merge Workflow** (2 points): Successful merging of feature branches
-- **Documentation** (1 point): Professional README.md with project overview
-
-### Part 2: CLI Automation (6 points)
-- **Script Functionality** (3 points): `setup_project.sh` creates all required files and directories
-- **Script Quality** (2 points): Proper error handling and user feedback
-- **Integration** (1 point): Script works with Git workflow
-
-### Part 3: Python Programming (7 points)
-- **Basic Script** (3 points): `data_analysis.py` processes data and outputs results
-- **Advanced Script** (3 points): `data_analysis_functions.py` demonstrates modular design
-- **File I/O** (1 point): Both scripts successfully write to `output/analysis_report.txt`
-
-## Testing Your Assignment
-
-Before submitting, test your implementation:
+Run each student script from the assignment directory:
 
 ```bash
-# Test the setup script
-./setup_project.sh
-
-# Test basic analysis
-python src/data_analysis.py
-
-# Test advanced analysis
-python src/data_analysis_functions.py
-
-# Verify output files
-ls -la output/
-cat output/analysis_report.txt
+python main.py
+python check_assignment.py
 ```
 
-## Common Issues to Avoid
+A complete submission ends with:
 
-1. **Git Issues**: Don't forget to commit and push your changes
-2. **File Paths**: Ensure all file paths are correct and relative
-3. **Python Errors**: Test your scripts before submitting
-4. **Documentation**: Make sure your README.md is comprehensive and professional
+```text
+All public checks passed.
+```
 
-## Getting Help
+If a check fails, use its message to revise the named student file, rerun `python main.py`, and run the checker again. The checker executes fresh temporary copies and does not trust a stored report as proof that the current program works.
 
-- Review the demo guide for detailed examples
-- Check the lecture content for theoretical background
-- Test your code incrementally as you develop it
-- Use Git to track your progress and revert if needed
+Classroom 50 may run the public `test_assignment.py` contract with managed pytest. Additional production checks, if used, independently enforce this same written contract from the centrally managed grader bundle; they do not import or trust the editable checker in a student repository. Published grader logic is discoverable and is not described as secret.
 
-## Due Date
+## Scope boundaries
 
-**Assignment due**: [To be set by instructor]  
-**Late submissions**: [Policy to be set by instructor]
+This is a competence-focused pass/fail assignment. Do not add a shell script, notebook, dependency file, third-party package, CSV/JSON input, second repository, command-line Git workflow, or forced merge conflict.
 
----
+In the two student Python files, do not add:
 
-**Remember**: This assignment focuses on **competence** rather than expertise. The goal is to demonstrate that you can use Git, CLI, and Python effectively for data science workflows.
+- comprehensions or generator expressions;
+- `lambda`, classes, async functions, decorators, type annotations, default parameters, keyword-only parameters, `*args`, or `**kwargs`;
+- `try`/`except`, `global`, or `nonlocal`;
+- imports other than the supplied `from analysis_utils import format_summary` line in `main.py`;
+- `sum()` in place of the required local total and plain `for` loop;
+- printing or file I/O in `analysis_utils.py`;
+- dictionary keys other than `"label"` and `"values"` in `format_summary()`; or
+- driver statements at module top level outside the exact main guard.
+
+The direct-call boundary is also part of the assignment:
+
+- `mean()` may directly call only `len()`;
+- `format_summary()` may directly call only `mean()`;
+- `main()` may directly call only the supplied `format_summary()`, `open()`, and `print()`, plus `write()` and `read()` on the matching report-file handles;
+- do not replace those call names, select a call indirectly or dynamically, or call through an assigned alias, an attribute lookup, a subscript, or `__builtins__[...]`;
+- do not use `exec()`, `eval()`, `compile()`, `__import__()`, or any other unapproved call; and
+- do not add an extra file open, use append mode, call `writelines()`, or perform file I/O through an indirect call. `main()` must contain exactly the two ordered `report.txt` opens described in items 6–7.
+
+These restrictions are explicit course boundaries, not hidden style rules. Every public structure check corresponds to an item above.

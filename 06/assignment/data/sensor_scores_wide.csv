@@ -1,0 +1,5 @@
+sensor_id,station_code,baseline_value,followup_value
+SN01,R,10.0,12.5
+SN02,S,8.5,9.0
+SN03,T,11.0,13.5
+SN04,R,9.5,10.5

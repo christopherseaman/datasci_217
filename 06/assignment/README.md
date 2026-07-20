@@ -1,189 +1,131 @@
-# Assignment 6: Data Wrangling - Join, Combine, and Reshape
+# Assignment 06: Validated Combination and Structural Reshaping
 
-**Deliverable:** Completed `assignment.ipynb` with output files in `output/`
+Build one reproducible pandas notebook that combines tables only after stating
+their grain, keys, cardinality, and preservation goal. Then examine vertical and
+horizontal alignment and complete a reversible wide/long reshape without
+aggregation.
 
-## Environment Setup
+This is a local Jupyter assignment. The supplied synthetic fixtures contain no
+human-subject data and are different from the Lecture 06 demo data. Do not use
+Colab, manual uploads, Drive mounts, network access, or `/content` paths. The
+portable setup supports both a standalone Classroom50 repository and this full
+course repository.
 
-### Create Virtual Environment
+## Setup
 
-Create a virtual environment for this assignment:
+Use CPython 3.12.13. From this directory, create and activate a virtual
+environment, install the two exact dependency records, and open Jupyter or the
+VS Code notebook interface:
 
 ```bash
-# Create venv
-python3 -m venv .venv
-
-# Activate (Linux/Mac)
+python -m venv .venv
 source .venv/bin/activate
-
-# Activate (Windows)
-.venv\Scripts\activate
+python -m pip install -r requirements.txt
 ```
 
-### Install Requirements
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
+[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before editing the notebook. Jupyter is
+the host application; the notebook kernel must use the environment you checked.
 
-You have two options to install the required packages:
+## Deliverables
 
-**Option 1: Using pip in terminal**
-```bash
-pip install -r requirements.txt
-```
+Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all 25
+cells from top to bottom. Submit these six files through Classroom50:
 
-**Option 2: Using %pip magic in Jupyter**
+- `assignment.ipynb`
+- `output/specimen_merge_audit.csv`
+- `output/combined_specimens.csv`
+- `output/aligned_features.csv`
+- `output/sensor_scores_long.csv`
+- `output/sensor_scores_round_trip.csv`
 
-You can install packages directly from a Jupyter notebook cell using the `%pip` magic command:
+The required CSVs are intentionally visible in VS Code Source Control and
+GitHub Desktop. Commit them with the notebook. Do not edit the six files in
+`data/`, `data/fixture.json`, the supplied notebook cells, environment records,
+checker, or instructions. Stored notebook output is not evidence that the code
+runs; the grader clears it and executes a disposable copy from fresh state.
 
-```python
-# Install single package
-%pip install pandas
-
-# Install from requirements.txt
-%pip install -r requirements.txt
-```
-
-**Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.
-
-## Generate the Dataset (Provided)
-
-Run the data generator notebook to create your dataset:
+After restart-and-run, use the discoverable student check:
 
 ```bash
-jupyter notebook data_generator.ipynb
+python check_assignment.py
 ```
 
-Run all cells to create the CSV files in `data/`:
-- `data/customers.csv` (customer information)
-- `data/products.csv` (product catalog)
-- `data/purchases.csv` (purchase transactions)
+The checker reads files and notebook source but does not execute notebook code.
+Fix each `[FIX]` message, rerun the notebook from a fresh kernel, and check again.
 
-## Complete the Three Questions
+## Task 1: contract-first validated merge
 
-Open `assignment.ipynb` and work through the three questions. The notebook provides:
+State the row grain, primary/candidate/foreign keys, predicted cardinality,
+preservation goal, join type, and predicted row count before combining tables.
+Verify that the specimen keys are nonmissing and unique. Make the duplicate `R`
+station-history key visible.
 
-- **Step-by-step instructions** with clear TODO items
-- **Helpful hints** for each operation
-- **Sample data** and examples to guide your work
-- **Validation checks** to ensure your outputs are correct
+Attempt the unfiltered left merge with explicit `on="station_code"` and
+`validate="many_to_one"`. Catch the pandas `MergeError` that the duplicated
+right key naturally causes. Do not manufacture the failure flag.
 
-**Prerequisites:** This assignment uses `groupby()` and `.agg()` from Lecture 05 (needed in Question 3 for summary statistics).
+Implement:
 
-**How to use the scaffold notebook:**
-1. Read each cell carefully - they contain detailed instructions
-2. Complete the TODO items by replacing `None` with your code
-3. Run each cell to see your progress
-4. Use the hints provided in comments
-5. Check the submission checklist at the end
+- `select_current_stations(history_table)`, which applies only the supplied
+  `record_status == "current"` rule and returns the three ordered lookup columns;
+- `validated_station_merge(specimen_table, station_table)`, which explicitly
+  performs a left, many-to-one validated merge with `indicator=True` and does
+  not mutate either input.
 
-### Question 1: Merging DataFrames
+The canonical result preserves all seven specimens. Its indicator counts are
+six `both`, one `left_only`, and zero `right_only`; `SP106`/`X` is the only
+orphan. Save and explicitly read back `specimen_merge_audit.csv`.
 
-**What you'll do:**
-- Load customer, product, and purchase datasets
-- Merge purchases with customers (left join to keep all purchases)
-- Merge result with products to add product information
-- Calculate total_price for each purchase (quantity × price)
-- Compare different join types (inner, left, right, outer)
-- Perform multi-column merge with store-specific pricing
-- Create validation report with merge statistics
-- Save merged output to `output/q1_merged_data.csv`
+## Task 2: concatenation and label alignment
 
-**Skills:** Database-style joins (inner, left, right, outer), multi-column merges, data validation
+Implement `stack_specimen_partitions(partition_map)`. For each insertion-ordered
+mapping entry, copy the table, add the source label as an ordinary string
+`source_partition` column, and concatenate rows with a fresh RangeIndex. Reject
+an input that already uses the reserved column. Preserve first-seen column order
+and do not mutate inputs or put provenance in a MultiIndex.
 
-**Output:** `output/q1_merged_data.csv`, `output/q1_validation.txt`
+Use the function to reproduce all seven specimen rows from batches A and B. On
+disposable copies, remove `mass_g` from batch B and add `review_note` only to
+batch B. The resulting three missing masses and four missing notes demonstrate
+column-label alignment; observe them without cleaning them.
 
-### Question 2: Concatenation & Index Management
+Implement `align_specimen_features(mass_table, review_table)`. Validate unique,
+nonmissing `specimen_id` keys, build named indexes, and concatenate the feature
+columns horizontally with outer label alignment. Preserve first-seen union order
+without resetting indexes before alignment. The canonical index is `SP101`,
+`SP102`, `SP103`, `SP108`. Save and read back `combined_specimens.csv` and
+`aligned_features.csv`; only the latter intentionally serializes its named
+index.
 
-**What you'll do:**
-- Split purchases into quarterly datasets (Q1, Q2, Q3, Q4)
-- Concatenate DataFrames vertically using `pd.concat()` with `ignore_index=True`
-- Create customer satisfaction and loyalty datasets
-- Perform horizontal concatenation with index alignment
-- Handle misaligned indexes and NaN values
-- Save concatenated output to `output/q2_combined_data.csv`
+## Task 3: reversible structural reshape
 
-**Skills:** Vertical/horizontal concatenation, index management, handling misaligned data
+Implement `wide_to_long_scores(wide_table)` with `melt` and
+`long_to_wide_scores(long_table, ordered_columns)` with `pivot`. Validate the
+wide (`sensor_id`, `station_code`) key and the long (`sensor_id`,
+`station_code`, `measurement_label`) key, preserve first-seen row order, and do
+not mutate inputs.
 
-**Output:** `output/q2_combined_data.csv`
+The canonical long table has eight rows: four `baseline_value` rows followed by
+four `followup_value` rows. Its structural key is unique, and pivoting it back
+must exactly reproduce the original values, dtypes, rows, and columns. On a
+disposable copy, append the first long row, show the two-row duplicate set, and
+catch the natural `ValueError` when the wide function rejects that ambiguity.
+Do not delete or aggregate the duplicate. Save and read back the long and
+round-trip artifacts.
 
-### Question 3: Reshaping & Analysis
+## Scope boundary
 
-**What you'll do:**
-- Load merged data from Question 1 (already has customer, product, and purchase info)
-- Add month column for time-based grouping
-- Create pivot table for sales by category and month (wide format)
-- Save pivoted data to CSV
-- Convert wide format back to long using `pd.melt()`
-- Calculate summary statistics by category using groupby
-- Create comprehensive analysis report with top/bottom categories
-- Save analysis report to text file
+Use explicit keys, merge validation and indicators, `concat`, `melt`, and
+structural `pivot`. General cleaning decisions, arbitrary deduplication,
+GroupBy, aggregation, `transform`, `pivot_table`, crosstabs, plotting, dates,
+time series, modeling, remote data, notebook magics, and shell commands are out
+of scope. GroupBy and aggregation begin in Lecture 08.
 
-**Skills:** Pivot tables, wide ↔ long format conversion, groupby operations, data analysis
+## Assessment boundary
 
-**Output:** `output/q3_category_sales_wide.csv`, `output/q3_analysis_report.txt`
-
-## Assignment Structure
-
-```
-06/assignment/
-├── README.md                      # This file - assignment instructions
-├── assignment.md                  # Notebook source (for jupytext)
-├── assignment.ipynb              # Completed notebook (you work here)
-├── data_generator.ipynb          # Run once to create datasets
-├── data/                         # Generated datasets
-│   ├── customers.csv             # Customer information (100 customers)
-│   ├── products.csv              # Product catalog (50 products)
-│   └── purchases.csv             # Purchase transactions (2,000 purchases)
-├── output/                       # Your saved results (created by your code)
-│   ├── q1_merged_data.csv        # Q1 output
-│   ├── q2_combined_data.csv      # Q2 output
-│   ├── q3_category_sales_wide.csv  # Q3 output
-│   └── q3_analysis_report.txt    # Q3 analysis report
-└── .github/
-    └── test/
-        ├── test_assignment.py    # Auto-grading tests
-        └── requirements.txt      # Test dependencies
-```
-
-## Dataset Schemas
-
-### `data/customers.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `customer_id` | string | Unique customer ID (C0001, C0002, ...) |
-| `name` | string | Customer full name |
-| `email` | string | Customer email address |
-| `city` | string | Customer city |
-| `state` | string | Customer state (CA, NY, TX, FL, WA) |
-| `join_date` | string | Customer registration date (YYYY-MM-DD) |
-
-### `data/products.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `product_id` | string | Unique product ID (P001, P002, ...) |
-| `product_name` | string | Product name |
-| `category` | string | Product category (Electronics, Clothing, Home & Garden, Books, Sports) |
-| `price` | float | Product price in dollars |
-| `stock` | int | Current inventory level |
-
-### `data/purchases.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `purchase_id` | string | Unique purchase ID (T0001, T0002, ...) |
-| `customer_id` | string | Customer ID (links to customers.csv) |
-| `product_id` | string | Product ID (links to products.csv) |
-| `quantity` | int | Number of items purchased |
-| `purchase_date` | string | Purchase date (YYYY-MM-DD) |
-| `store` | string | Store location (Store A, B, or C) |
-
-**Note:** You'll calculate `total_price` in Question 1 by merging with products and multiplying `quantity * price`.
-
-## Submission Checklist
-
-Before submitting, verify you've created:
-
-- [ ] `output/q1_merged_data.csv` - Merged customer/product/purchase data
-- [ ] `output/q1_validation.txt` - Merge validation report
-- [ ] `output/q2_combined_data.csv` - Concatenated data with metrics
-- [ ] `output/q3_category_sales_wide.csv` - Pivoted category sales
-- [ ] `output/q3_analysis_report.txt` - Sales analysis report
+The implementation has a provisional 90-point automated overlay: 40 points for
+Task 1, 27 for Task 2, and 23 for Task 3. Ten points of human review cover the
+four explanations, organization, and privacy. The revised syllabus will decide
+how that evidence maps to course policy; the notebook and public checker do not
+declare a pass threshold or grade.

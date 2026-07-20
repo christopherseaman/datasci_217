@@ -1,0 +1,7 @@
+record_id,full_name,site,status,age_text,visit_date
+R001, Alice Smith , north,Active,34,2026-01-15
+R002,BOB JONES,North,active,unknown,2026-02-30
+R002,BOB JONES,North,active,unknown,2026-02-30
+R003, Carla Ruiz ,SOUTH,pending,-9,2026-03-01
+R004,,south,NA,45,
+R005,Evan Li,west,complete,52,2026-02-14

@@ -1,0 +1,5 @@
+ipykernel==7.1.0
+nbclient==0.10.2
+nbformat==5.10.4
+numpy==2.0.2
+pandas==3.0.3

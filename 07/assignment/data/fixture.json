@@ -1,0 +1,27 @@
+{
+  "fixture_set_id": "a07-visualization-v1",
+  "provenance": "Course-authored synthetic learning-format, session, and pathway records; no real or identifying data.",
+  "files": [
+    {
+      "path": "format_completion.csv",
+      "row_grain": "one row per delivery format and stage",
+      "row_count": 4,
+      "columns": ["format", "stage", "completion_percent"],
+      "sha256": "20ad900633154f5f3a2c09cfbc2f890f8423da0897d6345841745332110be66a"
+    },
+    {
+      "path": "pathway_checkpoints.csv",
+      "row_grain": "one row per learning pathway and checkpoint",
+      "row_count": 8,
+      "columns": ["pathway", "checkpoint_number", "completion_percent"],
+      "sha256": "ec9a336b7fb97418a6f058704f2509c8cee6b13d744efb7a6e3e99224ef8c258"
+    },
+    {
+      "path": "session_observations.csv",
+      "row_grain": "one row per synthetic learning session",
+      "row_count": 12,
+      "columns": ["session_id", "pathway", "activities_completed", "reflection_score"],
+      "sha256": "fc4d69ab836288a2fe9c505c65c08413e137e51ab1914cd0e350f6e6636da096"
+    }
+  ]
+}

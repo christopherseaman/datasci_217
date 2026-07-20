@@ -5,7 +5,8 @@
   "scripts": {
     "start": "npx @11ty/eleventy --serve",
     "build": "npx @11ty/eleventy",
-    "build:ghpages": "npx @11ty/eleventy --pathprefix=/datasci_217"
+    "build:ghpages": "npx @11ty/eleventy --pathprefix=/datasci_217",
+    "audit:course": "python3 scripts/course_audit.py"
   },
   "repository": {
     "type": "git",

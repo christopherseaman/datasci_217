@@ -1,0 +1,13 @@
+case_id,actual_label,supplied_model_prediction,dummy_prediction
+C01,0,0,0
+C02,0,0,0
+C03,1,1,0
+C04,0,0,0
+C05,1,1,0
+C06,0,1,0
+C07,0,0,0
+C08,0,0,0
+C09,1,0,0
+C10,0,0,0
+C11,0,0,0
+C12,0,0,0

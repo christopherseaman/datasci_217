@@ -1,0 +1,13 @@
+session_id,pathway,activities_completed,reflection_score
+I01,Independent,1,52
+I02,Independent,2,58
+I03,Independent,2,61
+I04,Independent,3,65
+I05,Independent,4,69
+I06,Independent,5,73
+F01,Facilitated,1,55
+F02,Facilitated,2,62
+F03,Facilitated,3,67
+F04,Facilitated,3,70
+F05,Facilitated,4,75
+F06,Facilitated,5,81

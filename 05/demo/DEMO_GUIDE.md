@@ -1,237 +1,105 @@
-Demo Guide - Lecture 5: Data Cleaning and Preparation
+# Lecture 05 demo guide
 
-# Demo 1: Missing Data Detective Work
+These three demos use one invented, pinned six-row fixture to practice a documented cleaning sequence: raw → audit → decide → transform → validate → save. Colab is the default launch experience; the same notebooks run top-to-bottom in local Jupyter.
 
-**File:** [demo1_missing_data.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb)
+## Launch the demos
 
-**Objective**: Master missing data detection, analysis, and handling strategies.
+The development badges point to the `eleventy` branch. Work opened from GitHub in Colab is not automatically saved back to GitHub.
 
-**Key Concepts**: Missing data patterns, fillna strategies, dropna decisions
+| Demo | Colab | Local notebook | Purpose |
+|---|---|---|---|
+| 1. Audit before deciding | [![Open Demo 1 in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/eleventy/05/demo/demo1_audit_decisions.ipynb) | `demo1_audit_decisions.ipynb` | Measure source issues and record decisions without mutating raw data |
+| 2. Targeted transformations | [![Open Demo 2 in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/eleventy/05/demo/demo2_targeted_transformations.ipynb) | `demo2_targeted_transformations.ipynb` | Apply only the recorded sentinel, normalization, type, date, and duplicate rules |
+| 3. Validated pipeline | [![Open Demo 3 in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/eleventy/05/demo/demo3_validated_pipeline.ipynb) | `demo3_validated_pipeline.ipynb` | Reproduce and read back a clean artifact, issue audit, and decision log |
 
-## Demo Flow
+Before publication, replace `eleventy` in all three badge targets with one immutable release tag. Open and fresh-run every resulting URL before calling the demos certified.
 
-Students work through patient data with various missing values:
+## Environment candidate
 
-1. **Create messy dataset** - Patient data with missing ages, blood pressure, cholesterol, test dates
-2. **Detect and visualize** - Use `.isnull().sum()`, calculate percentages, create heatmap visualization
-3. **Strategic handling** - Apply different strategies:
-   - Median fill for age (numerical, robust to outliers)
-   - Forward fill for test dates (temporal/sequential data)
-   - Drop rows missing both BP and cholesterol (critical data)
+The compatibility candidate is Python 3.12.13, NumPy 2.0.2, and pandas 3.0.3. It is not the final course lock until both local-Jupyter and fresh-Colab certification are complete. Do not install pandas 3.0.4.
 
-## Key Teaching Points
+Each notebook begins with one supplied setup cell. It conditionally installs pandas 3.0.3 before the first pandas import and then prints the actual Python, NumPy, and pandas versions. It does not reinstall the complete Colab package collection.
 
-- Missing data is normal in real-world datasets
-- Visualization reveals patterns (random vs systematic missingness)
-- Different strategies for different data types and contexts
-- Document why you chose each strategy
+For local use, start from this directory, create a Python 3.12.13 environment, and install the two deliberate direct course dependencies from `requirements.txt`. Open the notebook with the course Jupyter or VS Code host and select that environment as the Python 3 kernel. Jupyter host and kernel-support packages are platform tooling rather than lecture imports; record their versions during certification.
 
-## Expected Outcomes
+The portable kernelspec is named `Python 3`, not after a local virtual environment. The notebook is the sole executable teaching source; there are no paired same-stem Markdown copies.
 
-- Students can quantify missingness (count and percentage)
-- Students understand when to fill vs drop
-- Students recognize that one strategy doesn't fit all columns
+## Pinned fixture and portable paths
 
----
+`data/supplied_people_raw.csv` is a course-authored synthetic fixture. Its SHA-256 checksum is:
 
-# Demo 2: Data Transformation and Cleaning Pipeline
-
-**File:** [demo2_transformations.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb)
-
-**Objective**: Build a complete data cleaning pipeline with transformations, custom functions, and categorical encoding.
-
-**Key Concepts**: Replace, rename, astype, apply/map, cut/qcut, categorical data, dummy variables
-
-## Demo Flow
-
-Students work through messy survey data with multiple quality issues:
-
-1. **Load messy survey data** - Inconsistent formatting, sentinel values (-999), encoding issues
-2. **Clean column names** - Lowercase, strip whitespace, replace spaces with underscores
-3. **Handle sentinel values** - Replace -999 with NaN, use `errors='coerce'` for invalid data, fill strategically
-4. **Standardize text** - Use `.str.strip()`, `.str.title()`, and mapping dictionaries
-5. **Apply custom functions**:
-   - `.apply()` with custom function to score satisfaction levels
-   - `.map()` with dictionary to rank education levels
-   - Lambda functions for quick calculations (income in thousands)
-6. **Create categories** - Use `pd.cut()` for age groups, `pd.qcut()` for income levels
-7. **Create dummy variables** - Use `pd.get_dummies()` for one-hot encoding regions
-8. **Categorical dtype**:
-   - Show memory usage before/after conversion to categorical
-   - Access categories with `.cat.categories`
-   - Access codes with `.cat.codes`
-
-## Key Teaching Points
-
-- `.apply()` enables custom transformation logic
-- `.map()` is perfect for categorical mappings (like scoring or ranking)
-- Lambda functions great for one-liners, named functions better for complex logic
-- `cut()` = equal-width bins, `qcut()` = equal-frequency bins
-- Dummy variables prepare categorical data for machine learning
-- Categorical dtype saves memory when you have repeated string values
-- The `.get()` method in dictionaries prevents KeyErrors with defaults
-
-## Expected Outcomes
-
-- Students can apply custom functions to transform data
-- Students understand difference between .apply() and .map()
-- Students can create categorical variables for analysis
-- Students can encode categorical data for modeling
-- Students recognize when categorical dtype is beneficial
-
----
-
-# Demo 3: Complete Data Cleaning Workflow
-
-**File:** [demo3_workflow.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
-
-**Objective**: Put it all together - a realistic, end-to-end cleaning pipeline with configuration-driven processing.
-
-**Key Concepts**: Detect → Handle → Validate → Transform → Save, configuration-driven processing
-
-## Demo Flow
-
-Students work through e-commerce order data with multiple simultaneous issues using configuration-driven processing:
-
-1. **Load dirty data** - E-commerce orders with inconsistent names, negative prices, missing values, invalid dates
-2. **Define cleaning configuration** - Set up cleaning parameters and rules in Python dictionaries
-3. **Detect issues** - Systematically audit: missing values, duplicates, negative prices, invalid dates
-4. **Handle systematically** - Apply cleaning steps in sequence using configuration:
-   - Standardize customer/product names
-   - Replace negative prices with NaN, fill with median
-   - Fill missing quantities with 1
-   - Convert dates with `errors='coerce'`
-   - Standardize status values
-5. **Apply configuration-driven filters** - Use defined filter rules to clean data
-6. **Validate cleaning** - Verify each issue was resolved, check data types
-7. **Transform for analysis** - Add calculated fields (total_price), extract time periods
-8. **Detect outliers** - IQR method for finding unusual transactions
-9. **Save results** - Cleaned data, summaries, data quality report, and configuration log
-
-## Key Teaching Points
-
-- Always copy original data before modifying (`.copy()`)
-- Systematic approach: detect before handling, validate after
-- `.loc[]` for conditional replacement is powerful
-- Configuration dictionaries separate logic from parameters
-- Configuration-driven processing is more maintainable
-- Document decisions in a data quality report
-- Save intermediate results and final outputs
-- The workflow is iterative: detect → handle → validate → repeat
-
-## Expected Outcomes
-
-- Students can build end-to-end cleaning pipeline
-- Students can work with configuration dictionaries
-- Students understand configuration-driven data processing
-- Students validate that cleaning achieved its goals
-- Students document their cleaning decisions
-- Students save cleaned data and create audit trails
-
----
-
-# Key Takeaways Across All Demos
-
-## Demo 1 - Missing Data
-
-- Quantify and visualize missing patterns first
-- Different fill strategies: median (numerical), forward fill (temporal), drop (critical missing)
-- Always understand WHY data is missing before deciding how to handle it
-
-## Demo 2 - Transformations
-
-- Clean column names first (lowercase, no spaces)
-- Handle sentinel values (-999, "N/A") before analysis
-- `.apply()` and `.map()` enable custom transformations
-- Standardize text data (capitalization, spelling)
-- Create categories with cut/qcut for analysis
-- Dummy variables prepare data for modeling
-- Categorical dtype saves memory for repeated values
-
-## Demo 3 - Complete Workflow
-
-- Systematic process: detect → handle → validate → transform → save
-- Always validate cleaning worked
-- Calculate derived fields after cleaning
-- Detect outliers with IQR method
-- Save cleaned data, summaries, and reports
-
-## Best Practices Across All Demos
-
-1. Never modify original data - always use `.copy()`
-2. Document every cleaning decision
-3. Validate at each step
-4. Save intermediate results
-5. Create audit trails (reports, logs)
-
-## Common Student Mistakes to Watch For
-
-- Forgetting to use `.copy()` and modifying original data
-- Filling all missing values the same way (median for everything)
-- Not validating that cleaning actually worked
-- Using `.apply()` when vectorized operations would be faster
-- Forgetting that `cut()` uses explicit bins while `qcut()` uses quantiles
-- Not understanding categorical dtype vs dummy variables (when to use each)
-
-## Next Steps for Students
-
-- Practice with their own messy datasets
-- Build reusable cleaning functions
-- Create data quality checklists
-- Develop validation test suites
-
----
-
-# Running Notebooks from Command Line
-
-For automated pipelines and batch processing, you can execute Jupyter notebooks from the command line without opening the Jupyter interface.
-
-## Basic Execution
-
-```bash
-# Execute a single notebook
-jupyter nbconvert --execute --to notebook your_notebook.ipynb
-
-# Execute and save output to a new file
-jupyter nbconvert --execute --to notebook --output executed_notebook your_notebook.ipynb
-
-# Execute and overwrite the original file
-jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
+```text
+7b3223154756aa59f2f00027ddbadaa225eeee51ad75d0df91de1fd8d14abe2d
 ```
 
-## Notebook Pipeline Automation
+Inside the course repository, each notebook searches upward for the committed fixture. When a Colab session or relocated notebook has no repository checkout, the notebook recreates the exact supplied bytes under a runtime-local `data/` directory. Both paths verify the checksum before pandas reads the file. This is deliberate supplied machinery, not a network download or manual upload.
 
-Always check "exit codes" after notebook execution to ensure your pipeline stops if any step fails. When a command runs successfully it returns an exit code of 0, other values (usually 1) indicate an error.
+Repository executions write generated files under `05/demo/output/`. Non-repository executions write under `output/` relative to the launch directory. Code creates the directory when needed, and `.gitignore` prevents generated files from becoming canonical teaching inputs.
 
-You may check exit codes using the special variable `$?`, which contains exit code for the previous command. Alternatively, we can use an OR operator (`||`) to instruct the shell to do something when a command fails.
+## Demo 1: audit and decision checkpoints
 
-**Note:** The `||` operator means "OR" - if the command fails (non-zero exit code), execute the code block in curly braces `{}`. This is more concise than checking `$?` explicitly.
+The raw table has six rows and six columns. One row represents one submitted person record; `record_id` is the candidate identifier. `keep_default_na=False` preserves the empty strings, `NA`, `unknown`, and `-9` tokens for source-aware auditing.
 
-```bash
-#!/bin/bash
-# Example pipeline script
+Rehearse these distinctions in order:
 
-echo "Starting data analysis pipeline..."
+- pandas initially recognizes zero missing values because the source-specific tokens remain text;
+- three age sentinel tokens and one status sentinel token are present;
+- two rows contain the invalid calendar date `2026-02-30`;
+- two rows belong to one exact-duplicate set and the same two rows repeat the candidate identifier;
+- four site values and one nonsentinel status value need format normalization; and
+- the six-row decision table rejects unsupported imputation and adjacent-row filling.
 
-# Run notebooks in sequence
-jupyter nbconvert --execute --to notebook q4_exploration.ipynb
-if [ $? -ne 0 ]; then
-    echo "ERROR: Q4 exploration failed"
-    exit 1
-fi
+The final cell asserts the observable counts and proves `raw.equals(raw_snapshot)`. Do not transform the raw table during this demo.
 
-jupyter nbconvert --execute --to notebook q5_missing_data.ipynb || {
-    echo "ERROR: Q5 missing data analysis failed"
-    exit 1
-}
+## Demo 2: transformation checkpoints
 
-echo "Pipeline completed successfully!"
-```
+Begin by previewing the failure of an adjacent-row forward fill. It would copy `R003`'s visit date into `R004`, even though the rows represent different people and there is no within-entity order. The preview is never assigned to the working table.
 
-## Key Parameters
+Then apply the recorded rules:
 
-- `--execute`: Run all cells in the notebook
-- `--to notebook`: Keep output as notebook format
-- `--inplace`: Overwrite the original file
-- `--output filename`: Save to a new file
-- `--allow-errors`: Continue execution even if cells fail
+- convert only the documented empty, `NA`, `unknown`, and `-9` sentinels to missing values;
+- strip and normalize the bounded name, site, and status fields;
+- retain only finite, integer-valued age parses as nullable `Int64` values;
+- require exact ASCII `YYYY-MM-DD` source text before calendar parsing;
+- use the raw-derived keep mask to remove one exact repeated submission; and
+- retain uncertain rows with `needs_review` rather than filling or dropping them.
+
+The final table has five unique record IDs. `R002` has missing age and visit date, `R004` keeps its missing visit date, and a separate `40.5` probe becomes missing without rounding.
+
+## Demo 3: pipeline and artifact checkpoints
+
+Run the complete notebook from a restarted runtime. The visible cells must reacquire and verify the source, create a nonmutating issue audit, record decisions, clean a copy, validate invariants, create the output directory, replace three CSVs, and read them back.
+
+Expected generated artifacts:
+
+| Artifact | Observable contract |
+|---|---|
+| `cleaned_people.csv` | five rows; exact clean columns and dtypes after schema-aware readback |
+| `issue_audit.csv` | fifteen explicitly labeled issue counts |
+| `decision_log.csv` | six decisions plus source checksum and before/after row counts |
+
+The normalization regression must retain two raw-distinct rows that become equal after normalization. The fractional-age regression must count `40.5`, convert it to missing without rounding, retain nullable `Int64`, and flag the row for review. The final cell verifies the readbacks and confirms that the raw fixture checksum is unchanged.
+
+Use disposable copies for destructive rehearsal. Corrupt the fixture in one copy and confirm that execution stops at the checksum assertion. Delete generated outputs and repeat a clean run to confirm deterministic replacement. Launch from the repository root, `05/demo/`, and a directory outside the repository to exercise both path branches.
+
+## Scope and privacy policy
+
+These required demos do not teach or use charting, joins, concatenation, reshape, GroupBy, aggregation, feature encoding, modeling, outlier rules, configuration frameworks, shell notebook automation, Drive mounts, or manual uploads. Bounded optional cleaning extensions live in `../BONUS.md`.
+
+- The synthetic fixture contains no real person or protected information.
+- Never put credentials, tokens, private records, or identifying data in notebook source or output.
+- Stored notebook output is never execution proof. Canonical notebooks have cleared outputs and null execution counts.
+- Executed certification copies and generated `output/` files are disposable.
+- GitHub source opened in Colab is not automatically updated by edits made in the Colab tab.
+
+## Certification record
+
+Do not mark a row as passing without independent evidence from that environment.
+
+| Notebook | Paired Markdown | Local candidate | Fresh Colab | Badge release ref |
+|---|---|---|---|---|
+| `demo1_audit_decisions.ipynb` | none — canonical notebook policy | pending | pending | development: `eleventy` |
+| `demo2_targeted_transformations.ipynb` | none — canonical notebook policy | pending | pending | development: `eleventy` |
+| `demo3_validated_pipeline.ipynb` | none — canonical notebook policy | pending | pending | development: `eleventy` |
+
+For each certification run, record the notebook path, environment, Python/NumPy/pandas versions, launch working directory, fixture path and checksum, generated files, final verification result, tester, date, and immutable release ref. Do not treat this guide or committed notebook output as independent certification.

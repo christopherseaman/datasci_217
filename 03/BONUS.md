@@ -1,263 +1,252 @@
-NumPy Bonus Content: Advanced Topics
+# Lecture 03 bonus: Additional NumPy Patterns
 
-This file contains advanced NumPy topics beyond daily data science operations.
+This is the single authoritative bonus route for Lecture 03. It assumes the core environment and ndarray model are already secure. None of these patterns is required for Assignment 03 or assumed by Lecture 04.
 
-# Advanced Universal Functions (ufuncs)
-
-**Reference:**
+Use the candidate environment from the main lecture:
 
 ```python
 import numpy as np
-
-arr = np.array([1, 4, 9, 16, 25])
-
-# Advanced mathematical functions
-sqrt_arr = np.sqrt(arr)              # Square root
-log_arr = np.log(arr)                # Natural log
-log10_arr = np.log10(arr)            # Base-10 log
-exp_arr = np.exp([1, 2, 3])          # Exponential
-sin_arr = np.sin(np.pi * arr)        # Trigonometric
 ```
 
-# Advanced Broadcasting
+# Advanced integer indexing
 
-**Reference:**
+Core basic slices return views. **Advanced indexing** selects with integer or boolean arrays and returns a copy.
 
 ```python
-# Broadcasting 1D to 2D
-row = np.array([1, 2, 3])
-col = np.array([[1], [2]])
-result = row + col          # Shape (2, 3)
+values = np.array([10, 20, 30, 40, 50])
+positions = np.array([4, 1, 3])
+selected = values[positions]
 
-# Broadcasting rules:
-# 1. If arrays have different dimensions, prepend 1s to smaller shape
-# 2. Arrays are compatible if dimensions are equal or one is 1
-# 3. After broadcasting, each array behaves as if it had shape equal to elementwise max
+selected[0] = 999
+print(values)
+print(selected)
 ```
 
-# Array Stacking and Concatenation
+Expected output:
 
-**Reference:**
+```text
+[10 20 30 40 50]
+[999  20  40]
+```
+
+The independent result is useful for reordering, but it has different view/copy behavior from a basic slice.
+
+# Multidimensional broadcasting
+
+Core broadcasting uses only a scalar and a 1D array. More generally, NumPy compares shapes from the right. Two compared dimensions are compatible when they are equal or one of them is `1`.
+
+A 1D offset with shape `(3,)` can align with the last dimension of a `(2, 3)` table:
 
 ```python
-arr1 = np.array([1, 2, 3])
-arr2 = np.array([4, 5, 6])
+table = np.array(
+    [
+        [10, 20, 30],
+        [40, 50, 60],
+    ]
+)
+column_offsets = np.array([1, 2, 3])
 
-# Stacking
-vstacked = np.vstack([arr1, arr2])   # Vertical: shape (2, 3)
-hstacked = np.hstack([arr1, arr2])   # Horizontal: shape (6,)
-dstacked = np.dstack([arr1, arr2])   # Depth: shape (1, 3, 2)
-
-# Concatenation with axis
-arr_2d1 = np.array([[1, 2], [3, 4]])
-arr_2d2 = np.array([[5, 6], [7, 8]])
-concatenated = np.concatenate([arr_2d1, arr_2d2], axis=0)  # Stack rows
+adjusted = table + column_offsets
+print(adjusted)
 ```
 
-# Linear Algebra Operations
+Expected output:
 
-**Reference:**
+```text
+[[11 22 33]
+ [41 52 63]]
+```
+
+Predict both input shapes and the output shape before using multidimensional broadcasting. A shorter expression is not an improvement when its alignment is unclear or it creates an unnecessarily large intermediate array.
+
+# Concatenation and stacking
+
+**Concatenation** joins arrays along an existing axis. **Stacking** joins arrays along a new axis.
 
 ```python
-A = np.array([[1, 2], [3, 4]])
-B = np.array([[5, 6], [7, 8]])
+first = np.array([1, 2, 3])
+second = np.array([4, 5, 6])
 
-# Matrix multiplication
-C = A @ B                   # or np.dot(A, B)
-C_alt = np.matmul(A, B)     # Alternative
+joined = np.concatenate([first, second])
+rows = np.stack([first, second], axis=0)
 
-# Matrix operations
-det = np.linalg.det(A)      # Determinant
-inv = np.linalg.inv(A)      # Matrix inverse
-rank = np.linalg.matrix_rank(A)  # Matrix rank
-
-# Eigenvalues and eigenvectors
-eigenvalues, eigenvectors = np.linalg.eig(A)
-
-# Solve linear system Ax = b
-b = np.array([1, 2])
-x = np.linalg.solve(A, b)
+print(joined)
+print(joined.shape)
+print(rows)
+print(rows.shape)
 ```
 
-# Advanced Indexing
+Expected output:
 
-**Reference:**
+```text
+[1 2 3 4 5 6]
+(6,)
+[[1 2 3]
+ [4 5 6]]
+(2, 3)
+```
+
+State the intended output shape first. Silent shape surprises become harder to diagnose in later data workflows.
+
+# Selected universal functions
+
+A NumPy **universal function**, or **ufunc**, applies an element-wise operation and follows NumPy's broadcasting rules.
 
 ```python
-# Using np.ix_ for outer indexing
-arr = np.arange(20).reshape(4, 5)
-rows = [0, 2]
-cols = [1, 3, 4]
-result = arr[np.ix_(rows, cols)]
+values = np.array([1.0, 4.0, 9.0, 16.0])
+roots = np.sqrt(values)
 
-# Using ellipsis for arbitrary dimensions
-arr_3d = np.random.randn(2, 3, 4)
-result = arr_3d[..., 0]  # Same as arr_3d[:, :, 0]
+left = np.array([1, 8, 3])
+right = np.array([4, 2, 6])
+pairwise_maximum = np.maximum(left, right)
+
+print(roots)
+print(pairwise_maximum)
 ```
 
-# Random Number Generation
+Expected output:
 
-**Reference:**
+```text
+[1. 2. 3. 4.]
+[4 8 6]
+```
+
+# Conditional selection
+
+`np.where(condition, when_true, when_false)` chooses element-wise results without changing the source:
 
 ```python
-# Modern random number generation (NumPy 1.17+)
-from numpy.random import default_rng
-rng = default_rng(seed=42)
+values = np.array([-2, 0, 5, -1])
+nonnegative = np.where(values >= 0, values, 0)
 
-# Generate random arrays
-uniform = rng.uniform(0, 1, size=(3, 3))       # Uniform [0, 1)
-normal = rng.normal(0, 1, size=(3, 3))         # Normal distribution
-integers = rng.integers(1, 10, size=(3, 3))    # Random integers
-
-# Random sampling
-choices = rng.choice([1, 2, 3, 4, 5], size=10, replace=True)
-shuffled = rng.permutation([1, 2, 3, 4, 5])
-
-# Legacy interface (still works)
-np.random.seed(42)
-old_style = np.random.randn(3, 3)
+print(nonnegative)
 ```
 
-# Set Operations
+Expected output:
 
-**Reference:**
+```text
+[0 0 5 0]
+```
+
+Boolean reductions answer whether any or all positions satisfy a condition:
 
 ```python
-arr1 = np.array([1, 2, 3, 4, 5])
-arr2 = np.array([3, 4, 5, 6, 7])
-
-# Set operations
-unique_vals = np.unique(arr1)                    # Unique values
-intersection = np.intersect1d(arr1, arr2)        # array([3, 4, 5])
-union = np.union1d(arr1, arr2)                   # array([1, 2, 3, 4, 5, 6, 7])
-difference = np.setdiff1d(arr1, arr2)            # array([1, 2]) - in arr1 not arr2
-symmetric_diff = np.setxor1d(arr1, arr2)         # Elements in one but not both
-
-# Test membership
-is_member = np.in1d(arr1, arr2)                  # Boolean array
+scores = np.array([18, 21, 24])
+print((scores >= 20).any())
+print((scores >= 15).all())
 ```
 
-# Advanced Sorting
+Expected output:
 
-**Reference:**
+```text
+True
+True
+```
+
+# Sorting and indirect ordering
+
+`np.sort()` returns sorted values. `np.argsort()` returns the positions that would put values in sorted order.
 
 ```python
-arr = np.array([3, 1, 4, 1, 5, 9, 2, 6])
+values = np.array([30, 10, 20])
+ordered_values = np.sort(values)
+order = np.argsort(values)
 
-# Sorting
-sorted_arr = np.sort(arr)                        # Returns sorted copy
-arr.sort()                                       # Sorts in place
-
-# Indirect sort (get indices)
-sorted_indices = np.argsort(arr)                 # Indices that would sort
-original_arr = arr[sorted_indices]               # Reconstruct sorted array
-
-# Partial sort (find k smallest/largest)
-k = 3
-partition_indices = np.argpartition(arr, k)      # k smallest at start
-k_smallest = np.sort(arr[partition_indices[:k]]) # Get k smallest, sorted
-
-# 2D sorting
-arr_2d = np.array([[3, 2, 1], [6, 5, 4]])
-sorted_2d = np.sort(arr_2d, axis=1)              # Sort each row
+print(ordered_values)
+print(order)
+print(values[order])
 ```
 
-# File I/O Operations
+Expected output:
 
-**Reference:**
+```text
+[10 20 30]
+[1 2 0]
+[10 20 30]
+```
+
+Indirect ordering is powerful, but the relationship between positions and values must remain explicit.
+
+# Reproducible random generation
+
+Use `np.random.default_rng()` rather than the legacy global random interface. A **seed** initializes a generator so a fresh generator produces the same sequence under the documented NumPy version.
 
 ```python
-# Save and load arrays
-arr = np.array([[1, 2, 3], [4, 5, 6]])
+rng = np.random.default_rng(seed=42)
+values = rng.integers(0, 10, size=5)
 
-# Binary format (fast, preserves dtype)
-np.save('data.npy', arr)
-loaded = np.load('data.npy')
-
-# Text format (human-readable)
-np.savetxt('data.txt', arr, fmt='%d')
-loaded_txt = np.loadtxt('data.txt', dtype=int)
-
-# CSV with header
-np.savetxt('data.csv', arr, delimiter=',', header='col1,col2,col3', comments='')
-loaded_csv = np.loadtxt('data.csv', delimiter=',', skiprows=1)
-
-# Multiple arrays in one file
-np.savez('arrays.npz', arr1=arr, arr2=arr*2)
-loaded_dict = np.load('arrays.npz')
-arr1 = loaded_dict['arr1']
-arr2 = loaded_dict['arr2']
-
-# Compressed format
-np.savez_compressed('arrays_compressed.npz', arr1=arr, arr2=arr*2)
+print(values)
 ```
 
-# Conditional Logic with np.where
+With NumPy 2.0.2, the expected output is:
 
-**Reference:**
+```text
+[0 7 6 4 4]
+```
+
+Pinned software and a recorded seed support reproduction, but a random generator is not a substitute for a small deterministic teaching fixture.
+
+# Set-like array operations
+
+`np.isin()` returns a boolean array with the same shape as its first input, marking elements found in the supplied test values:
 
 ```python
-arr = np.array([1, 5, 3, 8, 2, 9, 4])
+values = np.array([10, 20, 30, 40])
+allowed = np.array([20, 40])
+membership = np.isin(values, allowed)
 
-# np.where for conditional replacement
-result = np.where(arr > 5, arr, 0)               # Keep if >5, else 0
-result = np.where(arr > 5, 'high', 'low')        # String labels
-
-# Multiple conditions
-result = np.where(arr > 7, 'high',
-                 np.where(arr > 4, 'medium', 'low'))
-
-# Get indices where condition is true
-indices = np.where(arr > 5)[0]                   # Returns tuple of arrays
-
-# np.select for multiple conditions
-conditions = [arr < 3, arr < 6, arr >= 6]
-choices = ['low', 'medium', 'high']
-result = np.select(conditions, choices, default='unknown')
+print(membership)
+print(values[membership])
 ```
 
-# Structured Arrays
+Expected output:
 
-**Reference:**
+```text
+[False  True False  True]
+[20 40]
+```
+
+Other set-like helpers include `np.unique()`, `np.intersect1d()`, and `np.setdiff1d()`. They often sort their results, so check their documented ordering when order matters.
+
+# Structured arrays: recognize, do not require
+
+A **structured array** stores named fields in one ndarray dtype. It can be useful when a NumPy-only binary representation is required, but it is not the course's bridge to ordinary tabular analysis.
 
 ```python
-# Define structured array dtype
-dt = np.dtype([('name', 'U10'), ('age', 'i4'), ('score', 'f8')])
+record_dtype = np.dtype(
+    [
+        ("site", "U5"),
+        ("score", "f8"),
+    ]
+)
+records = np.array(
+    [
+        ("north", 18.0),
+        ("south", 21.0),
+    ],
+    dtype=record_dtype,
+)
 
-# Create structured array
-data = np.array([('Alice', 25, 92.5),
-                 ('Bob', 30, 87.3),
-                 ('Charlie', 28, 95.1)], dtype=dt)
-
-# Access fields
-names = data['name']
-ages = data['age']
-
-# Access individual records
-alice = data[0]
-alice_score = data[0]['score']
-
-# Sort by field
-sorted_data = np.sort(data, order='score')
+print(records["site"])
+print(records["score"])
 ```
 
-# Memory-Mapped Files
+Expected output:
 
-For working with arrays larger than RAM:
-
-**Reference:**
-
-```python
-# Create memory-mapped file
-shape = (1000000, 100)
-mmap_array = np.memmap('large_array.dat', dtype='float64', mode='w+', shape=shape)
-
-# Use like normal array (but stored on disk)
-mmap_array[0] = np.random.randn(100)
-mmap_array.flush()  # Write to disk
-
-# Load existing memory-mapped file
-loaded_mmap = np.memmap('large_array.dat', dtype='float64', mode='r', shape=shape)
+```text
+['north' 'south']
+[18. 21.]
 ```
 
-These advanced topics are useful for specialized applications but not required for daily data science work.
+Lecture 04's labeled pandas objects are the required course path for tables. Structured arrays remain optional and must not appear as an untaught assignment requirement.
+
+# Scope boundary and references
+
+This bonus deliberately omits a broad linear-algebra survey, memory-mapped files, terminal plotting, and alternative environment managers. Add those tools only for a project with a concrete need and its own tested dependency contract.
+
+Official references for the retained patterns:
+
+- [NumPy indexing](https://numpy.org/doc/2.0/user/basics.indexing.html)
+- [NumPy broadcasting](https://numpy.org/doc/2.0/user/basics.broadcasting.html)
+- [NumPy random Generator](https://numpy.org/doc/2.0/reference/random/generator.html)
+- [`numpy.isin`](https://numpy.org/doc/2.0/reference/generated/numpy.isin.html)

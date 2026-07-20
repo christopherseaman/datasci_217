@@ -1,0 +1,13 @@
+purchase_id,item,quantity,unit_price
+P001,USB Cable,2,8.00
+P002,Mouse Pad,1,12.00
+P003,Water Bottle,3,10.00
+P004,Desk Lamp,2,15.00
+P005,Keyboard,1,30.00
+P006,Headphones,4,7.50
+P007,Webcam Cover,5,3.00
+P008,Laptop Stand,2,20.00
+P009,Cable Tie,3,5.00
+P010,Screen Cloth,1,6.00
+P011,USB Hub,2,8.00
+P012,Notebook,3,5.00

@@ -1,0 +1,6 @@
+station_code,station_name,region,record_status
+R,River Station Old,north,retired
+R,River Station,north,current
+S,Shore Station,south,current
+T,Trail Station,west,current
+U,Upland Station,east,current

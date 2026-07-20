@@ -1,0 +1,4 @@
+participant_id,site_code,baseline_score,followup_score
+P01,N,10.0,12.0
+P02,S,8.5,9.5
+P03,W,11.0,13.0

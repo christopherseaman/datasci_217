@@ -1,891 +1,629 @@
-From Statistics to Deep Learning: The Modern Modeling Landscape
+# Honest Inference and Predictive Evaluation
 
-See [BONUS.md](BONUS.md) for advanced topics:
+A **model** is a simplified mathematical description of a relationship in data. A model can help answer a carefully framed question, but it cannot repair an unclear unit, unavailable information, or an invalid evaluation design. Lecture 10 therefore focuses on one bounded workflow: frame the claim, fit only what the question requires, and keep the final evaluation honest.
 
-- Advanced statistical modeling techniques
-- Hyperparameter tuning strategies
-- Model interpretability and explainability
-- Production deployment considerations
-- Advanced deep learning architectures
+Optional hypothesis testing, regularization, split-aware cross-validation, and one bounded tree-ensemble extension are collected in [BONUS.md](BONUS.md). Boosting, deep learning, framework surveys, deployment systems, and time-series forecasting are not required Lecture 10 capabilities.
 
-*Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*
+## Prerequisites
 
-![xkcd 1838: Machine Learning](https://imgs.xkcd.com/comics/machine_learning.png)
+Before starting this lecture, students should be able to:
 
-*"I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."*
+- build a validated analysis table with a stated row grain and stable row key;
+- inspect missingness, types, categories, and provenance without silently changing the unit;
+- create and critique a clearly labeled scatter or line chart;
+- distinguish a single temporal series from a panel and sort within entity;
+- create past-only lags or windows and state whether their inputs are available at a supplied prediction timestamp; and
+- restart and run a notebook from top to bottom in Colab or local Jupyter.
 
-# Outline
+Lecture 10 does not assume prior model fitting, statistical inference, causal inference, train/validation/test roles, preprocessing pipelines, or classification-model training.
 
-- Statistical modeling with `statsmodels` (inference and interpretation)
-- Traditional machine learning with `scikit-learn` (the workhorse)
-- Gradient boosting with `XGBoost` (the secret weapon)
-- Deep learning with `TensorFlow`/`Keras` and `PyTorch` (the modern frontier)
-- When to use what: navigating the modeling ecosystem
+## Learning objectives
 
-# Quick Reference
+By the end of Lecture 10, students should be able to:
 
-| Tool | When to Use | Key Features | Best For |
-|------|-------------|--------------|----------|
-| **statsmodels** | Need p-values, confidence intervals, hypothesis testing | Statistical inference, model diagnostics | Understanding relationships, research |
-| **scikit-learn** | Tabular data, need predictions | Consistent API, many algorithms | General ML tasks, preprocessing |
-| **XGBoost** | Tabular data, need best performance | Gradient boosting, feature importance | Competitions, production tabular data |
-| **TensorFlow/Keras or PyTorch** | Images, text, audio, large datasets | High-level API, production-ready | Computer vision, NLP, deployment |
+1. Classify a question as descriptive, inferential, or predictive; state the unit and intended claim; and distinguish an observed association from a causal claim.
+2. For an inferential question, state a population estimand, fit one OLS association model, interpret one coefficient and confidence interval conditionally, distinguish a mean-response confidence interval from an individual prediction interval, and name the assumptions and residual diagnostic that limit the claim.
+3. For a predictive question, define the target, target timestamp, prediction horizon, features, feature cutoff and availability, and a simple baseline before fitting.
+4. Create disjoint training, validation, and test partitions using a seeded random split for exchangeable rows or chronological cutoffs for future prediction; fit preprocessing only on training data in one scikit-learn `Pipeline`; and identify target, temporal, preprocessing, or test-set leakage.
+5. Use `fit` and `predict` to compare the `Pipeline` with its baseline using MAE, RMSE, and R²; interpret supplied binary-classification accuracy, precision, and recall against a baseline; evaluate the test set once; and report uncertainty and limitations.
 
-# The Modeling Ecosystem: A Brief Tour
+## Colab-first execution and evidence
 
-*Reality check: There are more Python modeling libraries than there are ways to overfit a model. But don't worry - we'll focus on the essential tools that actually matter for daily data science work, from the bread-and-butter statistical methods to the cutting-edge deep learning frameworks.*
+Required Lecture 10 demonstrations are Colab-first and must also run in clean local Jupyter or the VS Code notebook interface. The existing course candidates remain Python 3.12.13, NumPy 2.0.2, and pandas 3.0.3. Exact compatible versions of statsmodels, scikit-learn, Matplotlib, notebook execution tools, and their transitive dependencies are not a release lock until the complete local/Colab certification pass succeeds.
 
-The Python modeling landscape has evolved dramatically. From simple linear regression to complex neural networks, each tool has its place. Understanding when to use what is half the battle - the other half is actually getting your model to work (which, let's be honest, is usually the harder part).
+Required demonstrations use a pinned small dataset or deterministic supplied data. They do not fetch a dataset at runtime, mount Drive, require a manual upload, or use stored notebook output as evidence. Restart the runtime and run every cell in order. Changes made in a Colab notebook opened from GitHub are not automatically saved back to the repository.
 
-**The Modeling Spectrum:**
+Assignment notebooks must run cleanly in local Jupyter. Colab becomes an assignment submission path only after the repository-save and Classroom 50 pilot is approved.
 
-```
-STATISTICAL MODELING          TRADITIONAL ML             DEEP LEARNING
-┌─────────────────────┐      ┌──────────────────┐      ┌──────────────┐
-│   statsmodels       │      │  scikit-learn    │      │ TensorFlow   │
-│   (inference)       │      │  (predictions)   │      │ PyTorch      │
-│                     │      │                  │      │              │
-│ • Linear models     │      │ • Random Forest  │      │ • Neural     │
-│ • GLMs              │      │ • SVM            │      │   networks   │
-│ • Time series       │      │ • XGBoost        │      │ • CNNs       │
-│                     │      │                  │      │ • RNNs       │
-└─────────────────────┘      └──────────────────┘      └──────────────┘
-     ↑                            ↑                          ↑
-  "Why?"                      "What?"                    "How?"
-```
+## Start with the question and the unit
 
-**Model Complexity vs Interpretability Trade-off:**
+The first decision is not which library to import. It is what claim the analysis is supposed to support.
 
-![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
+- A **descriptive question** summarizes the rows actually observed. Example: “What was the median wait in this recorded sample?”
+- An **inferential question** uses a sample to learn about a broader population or process. Example: “In the intended participant population, what is the conditional association between study hours and assessment score?”
+- A **predictive question** asks for an unknown value for a new case or later time. Example: “Using information available now, how accurately can we predict tomorrow's temperature?”
 
-*As models get more powerful, they often become harder to interpret. Choose based on what you need: understanding (interpretability) or performance (accuracy).*
+A **sample** is the set of observed units. A **population** is the broader set or process the inferential claim concerns. An **estimand** is the exact population quantity to be estimated. A **prediction target** is the unknown value a predictive procedure will try to produce for each case.
 
-**Key Decision Points:**
+The same variables can support different questions, so every question contract states:
 
-- **Need statistical inference?** → `statsmodels` (p-values, confidence intervals, hypothesis testing)
-- **Tabular data, need predictions?** → `scikit-learn` or `XGBoost` (fast, interpretable, powerful)
-- **Images, text, sequences?** → Deep learning (`TensorFlow`/`Keras` or `PyTorch`)
-- **Research/prototyping?** → `PyTorch` (flexible, Pythonic)
-- **Production deployment?** → `TensorFlow`/`Keras` (mature, optimized)
+1. the unit represented by one row;
+2. the sample or cases in scope;
+3. the descriptive quantity, inferential estimand, or prediction target;
+4. the intended claim; and
+5. the decisions or uses that remain outside scope.
 
-*Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!*
+| Question type | Required contract | Bounded claim |
+|---|---|---|
+| Descriptive | observed rows, unit, summary | describes only the recorded data |
+| Inferential | sample, population, estimand, assumptions | estimates a population quantity under stated conditions |
+| Predictive | cases, target, issue time, horizon, available features, metric | estimates performance for the stated prediction setting |
 
-**Model Selection Decision Tree:**
+## Association is not causation
 
-```mermaid
-flowchart TD
-    A[What's your problem?] --> B{Need statistical<br/>inference?}
-    B -->|Yes| C[statsmodels]
-    B -->|No| D{What type of data?}
-    D -->|Tabular/Structured| E{How much data?}
-    D -->|Images/Text/Audio| F[Deep Learning<br/>TensorFlow/PyTorch]
-    E -->|Small dataset| G[scikit-learn<br/>Random Forest]
-    E -->|Large dataset| H[XGBoost]
-    C --> I[Linear Regression<br/>GLMs<br/>Time Series]
-    G --> J[Random Forest<br/>Linear Models]
-    H --> K[XGBoost<br/>LightGBM<br/>CatBoost]
-    F --> L[Neural Networks<br/>CNNs/RNNs]
-    
-    style C fill:#e1f5ff
-    style G fill:#fff4e1
-    style H fill:#ffe1f5
-    style F fill:#e1ffe1
+An **association** is a pattern in which values of one variable differ with values of another. A **causal claim** says that changing one variable would change an outcome. A fitted regression coefficient can describe a conditional association, but it does not become causal because it is precise, statistically unusual, or produced by sophisticated software.
+
+Causal interpretation requires a causal question plus a design and assumptions that justify the comparison. Randomized assignment can sometimes supply that design. Observational data usually require additional domain knowledge and defensible assumptions about common causes, selection, and measurement. Those topics belong to a dedicated causal-inference treatment.
+
+Lecture 10 uses noncausal language:
+
+- “is associated with,” not “causes”;
+- “holding the included variables fixed,” not “all else equal in the world”; and
+- “under this model and sampling process,” not “proven.”
+
+## A bounded OLS association model
+
+**Ordinary least squares**, abbreviated **OLS**, fits a linear conditional-mean relationship. A **conditional mean** is the population mean response among units with specified explanatory-variable values. The **response** is the numeric variable being modeled. An **explanatory variable** is an included variable used to describe how that response differs. The **intercept** is the fitted response when all explanatory variables equal zero, if that reference point is meaningful. A **coefficient** is the fitted change in the mean response associated with a one-unit change in one explanatory variable while the other included variables are held fixed.
+
+For two explanatory variables, the model is written:
+
+```text
+expected response = intercept
+                  + coefficient_1 × explanatory_variable_1
+                  + coefficient_2 × explanatory_variable_2
 ```
 
-*"But why models?" "Seriously? I just told you that a moment ago."*
+A **fitted value** is the model's value for one observed row. A **residual** is `observed response - fitted value` for that row. OLS selects coefficients that minimize the sum of squared residuals. An **error** is the unobserved difference between a response and its population conditional mean; a residual is the sample's fitted estimate of that difference.
 
-![xkcd 882: Significantly](https://imgs.xkcd.com/comics/significant.png)
-
-*"We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"*
-
-# The Foundation: Statistical Modeling
-
-*Think of statistical modeling as the foundation of your modeling house - you can build fancy additions on top, but you need to understand the basics first.*
-
-Statistical modeling focuses on understanding relationships and making inferences about populations. Unlike machine learning (which prioritizes prediction), statistical models help you understand *why* things happen, not just *what* will happen.
-
-## Introduction to `statsmodels`
-
-`statsmodels` is Python's comprehensive statistical modeling library. It provides tools for statistical inference, hypothesis testing, and model diagnostics - the bread and butter of statistical analysis.
-
-**When to use `statsmodels`:**
-
-- You need p-values, confidence intervals, or hypothesis tests
-- You want to understand *why* variables are related (not just predict)
-- You're doing traditional statistical analysis (regression, ANOVA, etc.)
-- You need model diagnostics and assumption checking
-
-**pandas compatibility:** Most `statsmodels` functions work directly with pandas DataFrames. You can pass DataFrames to model constructors, and results are often returned as pandas objects (Series, DataFrames).
-
-**Reference:**
-
-- `import statsmodels.api as sm` - Array-based API
-- `import statsmodels.formula.api as smf` - Formula-based API (R-like syntax)
-- `sm.OLS(y, X)` - Ordinary Least Squares regression
-- `smf.ols('y ~ x1 + x2', data=df)` - Formula-based OLS
-- `model.fit()` - Fit the model
-- `results.summary()` - Print model summary
-- `results.params` - Model coefficients
-- `results.pvalues` - P-values for coefficients
-
-## Linear Regression
-
-Linear regression is the workhorse of statistical modeling. It models the relationship between a dependent variable and one or more independent variables using a linear equation.
-
-*Think of linear regression as the Derek Zoolander of modeling - it's simple, it's reliable, and it can turn left (or right, or any direction really).*
-
-**Linear Regression: The Blue Steel of Modeling**
-
-Linear regression finds the best-fitting line through your data. It's like finding the perfect pose - simple, elegant, and it works every time (well, most of the time).
-
-```
-y = β₀ + β₁x₁ + β₂x₂ + ... + ε
-
-Where:
-- y = dependent variable (what you're predicting)
-- β₀ = intercept (where the line starts)
-- β₁, β₂, ... = coefficients (how much each x affects y)
-- ε = error term (the stuff we can't explain)
-```
-
-**Visual Example: Simple Linear Regression**
-
-```
-y (target)
-  ↑
-  |     ●
-  |   ●   ●
-  | ●       ●
-  |●         ●
-  |_____________→ x (feature)
-  
-Best-fit line: y = 2.0 + 1.5x
-```
-
-*The line minimizes the distance (errors) between all data points and the line itself. That's what "least squares" means!*
-
-*"I can turn left, I can turn right, I can even turn... statistically significant!"*
-
-**Reference:**
-
-- `sm.OLS(y, X)` - Create OLS model (array-based)
-- `smf.ols('y ~ x1 + x2', data=df)` - Create OLS model (formula-based)
-- `sm.add_constant(X)` - Add intercept column to design matrix
-- `results = model.fit()` - Fit the model
-- `results.summary()` - Comprehensive model summary
-- `results.params` - Coefficient estimates (Series)
-- `results.rsquared` - R-squared value
-- `results.pvalues` - P-values for coefficients
-- `results.conf_int()` - Confidence intervals
-- `results.predict(X_new)` - Make predictions
-
-**Example:**
+The deterministic teaching sample below has grain one synthetic workshop participant. Its inferential question is: in a hypothetical population represented by this sampling process, what is the conditional association between study hours and assessment score after accounting for prior score? The target estimand is the population coefficient on study hours in the stated linear model. Because these are teaching data rather than a probability sample from a real population, the example demonstrates mechanics, not a real-world population conclusion.
 
 ```python
-import statsmodels.api as sm
+import numpy as np
+import pandas as pd
 import statsmodels.formula.api as smf
-import pandas as pd
-import numpy as np
 
-# Create sample data
-np.random.seed(42)
-df = pd.DataFrame({
-    'x1': np.random.randn(100),
-    'x2': np.random.randn(100),
-    'y': 2 + 3 * np.random.randn(100) + 0.5 * np.random.randn(100)
-})
+inference_data = pd.DataFrame(
+    {
+        "study_hours": [1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8, 9],
+        "prior_score": [58, 61, 67, 63, 70, 74, 69, 76, 82, 79, 85, 88],
+        "assessment_score": [65, 69, 72, 71, 78, 80, 79, 86, 90, 88, 94, 98],
+    }
+)
 
-# Formula API (R-like, works with DataFrames)
-model = smf.ols('y ~ x1 + x2', data=df)
-results = model.fit()
-print(results.summary())
-
-# Access coefficients
-print(results.params)  # Intercept, x1, x2 coefficients
-print(results.pvalues)  # Statistical significance
+assert inference_data.shape == (12, 3)
 ```
 
-*The `summary()` method provides comprehensive output including R-squared, p-values, confidence intervals, and model diagnostics - all the statistical information you need for inference.*
+In the statsmodels formula interface, `response ~ variable_1 + variable_2` places the response to the left of `~` and included explanatory variables to the right. Calling `.fit()` estimates the coefficients from the supplied rows.
 
-![xkcd 539: Boyfriend](https://imgs.xkcd.com/comics/boyfriend.png)
+### Assumptions come before interpretation
 
-## Other Statistical Methods
+An **assumption** is a condition under which a method's calculation supports its intended interpretation. For the conventional OLS coefficient intervals used here, the important conditions include:
 
-`statsmodels` provides many other statistical modeling tools beyond linear regression:
+- the conditional mean is reasonably represented by the stated linear form;
+- observations are independent, or dependence has been handled by the design and uncertainty method;
+- the residual variance is reasonably stable for conventional standard errors;
+- no explanatory variable is an exact linear combination of the others;
+- the sample and measurement process are relevant to the intended population; and
+- a noncausal association is the intended claim.
 
-**Generalized Linear Models (GLMs):**
-
-- Logistic regression for binary outcomes
-- Poisson regression for count data
-- Other exponential family distributions
-- Use when: You need statistical inference for non-normal data
-
-**Time Series Models:**
-
-- ARIMA models for time series forecasting
-- Seasonal decomposition
-- Use when: You have temporal dependencies in your data
-
-**When Statistical Methods Beat ML:**
-
-- You need interpretable coefficients and p-values
-- You have strong theoretical reasons for model structure
-- You need confidence intervals for predictions
-- Sample size is small (statistical methods are more robust)
-- You're doing hypothesis testing, not just prediction
-
-*Remember: Statistical models answer "why?" Machine learning models answer "what?" Both are valuable, but for different questions.*
-
-![xkcd 1725: Correlation](https://imgs.xkcd.com/comics/correlation.png)
-
-*"Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."*
-
-# LIVE DEMO
-
-# "Traditional" Machine Learning
-
-*Think of `scikit-learn` as the Swiss Army knife of machine learning - it has a tool for almost everything, it's reliable, and it's been around long enough that everyone knows how to use it.*
-
-Machine learning focuses on prediction rather than inference. While statistical models help you understand relationships, ML models help you make accurate predictions on new data.
-
-## Introduction to `scikit-learn`
-
-`scikit-learn` is Python's standard machine learning library. It provides a consistent API across all models: fit, predict, transform. This consistency makes it easy to try different algorithms and build complex pipelines.
-
-**The `scikit-learn` API Pattern:**
+For exact small-sample conventional intervals, the error distribution also needs an appropriate shape. Large samples can make some calculations less sensitive to that condition, but they do not repair dependence, selection bias, measurement error, misspecified relationships, or causal overclaim.
 
 ```python
-# 1. Create model
-model = SomeModel()
+ols_result = smf.ols(
+    "assessment_score ~ study_hours + prior_score",
+    data=inference_data,
+).fit()
 
-# 2. Fit on training data
-model.fit(X_train, y_train)
-
-# 3. Make predictions
-predictions = model.predict(X_test)
+assert list(ols_result.params.index) == [
+    "Intercept",
+    "study_hours",
+    "prior_score",
+]
+assert np.isclose(ols_result.resid.mean(), 0.0, atol=1e-10)
 ```
 
-**Train/Test Split Visualization:**
+### Coefficient uncertainty
 
-```
-Original Dataset (1000 samples)
-├── Training Set (800 samples, 80%)
-│   └── Used to train the model
-└── Test Set (200 samples, 20%)
-    └── Used to evaluate model performance
-        (Never seen during training!)
-```
-
-*The golden rule: Never evaluate on data the model has seen during training. That's like giving a student the answers before the test and then being surprised they got 100%.*
-
-**Why `scikit-learn` is the ML standard:**
-
-- Consistent API across all models
-- Comprehensive documentation and examples
-- Well-tested and stable
-- Excellent preprocessing tools
-- Works seamlessly with pandas (accepts DataFrames)
-
-**pandas compatibility:** `scikit-learn` functions accept pandas DataFrames and Series directly. However, some operations (like `fit_transform`) may return NumPy arrays, so you may need to convert back to DataFrames if you want to preserve column names.
-
-**Reference:**
-
-- `from sklearn.model_selection import train_test_split` - Split data
-- `from sklearn.preprocessing import StandardScaler` - Scale features
-- `from sklearn.linear_model import LinearRegression` - Linear regression
-- `from sklearn.ensemble import RandomForestClassifier` - Random forest
-- `model.fit(X, y)` - Train model
-- `model.predict(X)` - Make predictions
-- `model.score(X, y)` - Calculate accuracy/R²
-
-## Linear Regression
-
-Linear regression in `scikit-learn` is optimized for prediction rather than inference. It's faster and simpler than `statsmodels` but doesn't provide p-values or detailed diagnostics.
-
-**`statsmodels` vs `scikit-learn` Linear Regression:**
-
-| Feature | `statsmodels` | `scikit-learn` |
-|---------|---------------|----------------|
-| Purpose | Statistical inference | Prediction |
-| P-values | ✅ Yes | ❌ No |
-| Confidence intervals | ✅ Yes | ❌ No |
-| Model diagnostics | ✅ Comprehensive | ❌ Basic |
-| Speed | Slower | Faster |
-| Use when | Need to understand relationships | Need predictions |
-
-*Think of it this way: `statsmodels` answers "why?" while `scikit-learn` answers "what?"*
-
-**Reference:**
-
-- `from sklearn.linear_model import LinearRegression` - Basic linear regression
-- `from sklearn.linear_model import Ridge` - Ridge regression (L2 regularization)
-- `from sklearn.linear_model import Lasso` - Lasso regression (L1 regularization)
-- `model = LinearRegression()` - Create model
-- `model.fit(X_train, y_train)` - Train model
-- `model.predict(X_test)` - Make predictions
-- `model.coef_` - Model coefficients
-- `model.intercept_` - Model intercept
-- `model.score(X, y)` - R² score
-
-**Regularization:** Ridge and Lasso add penalty terms to prevent overfitting. Ridge (L2) shrinks coefficients, Lasso (L1) can zero out coefficients (feature selection).
-
-**Regularization Comparison:**
-
-| Method | Penalty Type | Effect on Coefficients | Use When |
-|--------|--------------|------------------------|----------|
-| Linear Regression | None | No shrinkage | Simple problems, no overfitting |
-| Ridge (L2) | Sum of squares | Shrinks all coefficients | Many features, multicollinearity |
-| Lasso (L1) | Sum of absolute values | Can zero out coefficients | Feature selection needed |
-
-**Example:**
+A **standard error** estimates how much a coefficient estimate would vary across repeated samples under the model and sampling assumptions. A **95% confidence interval** comes from a procedure designed to contain the target coefficient in 95% of repeated samples under those assumptions. It is not the probability that this already-computed interval contains a fixed coefficient, and it does not measure causal credibility.
 
 ```python
+coefficient_intervals = ols_result.conf_int(alpha=0.05)
+coefficient_intervals.columns = ["lower", "upper"]
+
+study_hours_summary = pd.Series(
+    {
+        "estimate": ols_result.params["study_hours"],
+        "standard_error": ols_result.bse["study_hours"],
+        "lower": coefficient_intervals.loc["study_hours", "lower"],
+        "upper": coefficient_intervals.loc["study_hours", "upper"],
+    }
+)
+
+assert study_hours_summary["lower"] < study_hours_summary["estimate"]
+assert study_hours_summary["estimate"] < study_hours_summary["upper"]
+study_hours_summary
+```
+
+A bounded interpretation is: among units described by this model, and holding prior score fixed, one additional study hour is associated with an estimated `study_hours`-coefficient increase in mean assessment score. The interval describes coefficient uncertainty under the stated assumptions. It is not an intervention effect and should not be generalized beyond a relevant population and measurement process.
+
+### Residual diagnostic
+
+A **residual plot** places residuals against fitted values. Curvature can warn that the mean relationship is not adequately linear. A funnel shape can warn that residual spread changes with the fitted value. Isolated large residuals can identify rows needing a data or influence review. A quiet-looking plot cannot prove that the assumptions hold.
+
+```python
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots()
+ax.scatter(ols_result.fittedvalues, ols_result.resid)
+ax.axhline(0, color="black", linewidth=1)
+ax.set(
+    title="Residual check for the bounded OLS model",
+    xlabel="Fitted assessment score",
+    ylabel="Residual: observed minus fitted",
+)
+```
+
+### Mean-response confidence interval versus individual prediction interval
+
+For supplied explanatory values, a **mean-response confidence interval** describes uncertainty about the population mean response at those values. An **individual prediction interval** describes uncertainty for one new individual response at those values. The individual interval is wider because it includes both uncertainty about the mean and individual variation around that mean.
+
+```python
+new_case = pd.DataFrame(
+    {
+        "study_hours": [5.0],
+        "prior_score": [75.0],
+    }
+)
+
+intervals = ols_result.get_prediction(new_case).summary_frame(alpha=0.05)
+
+mean_response_width = (
+    intervals.loc[0, "mean_ci_upper"] - intervals.loc[0, "mean_ci_lower"]
+)
+individual_width = (
+    intervals.loc[0, "obs_ci_upper"] - intervals.loc[0, "obs_ci_lower"]
+)
+
+assert individual_width > mean_response_width
+intervals[
+    [
+        "mean",
+        "mean_ci_lower",
+        "mean_ci_upper",
+        "obs_ci_lower",
+        "obs_ci_upper",
+    ]
+]
+```
+
+Neither interval licenses extrapolation far outside the observed explanatory-variable range. Both remain conditional on the model, data process, and included variables.
+
+## LIVE DEMO 1: Frame a question and bounded inference
+
+[Open the Lecture 10 demo guide](demo/DEMO_GUIDE.md).
+
+The first required demonstration starts from a pinned dataset with a visible generating relationship. It states the unit, population estimand, and noncausal claim; defines coefficient, residual, standard error, confidence interval, and prediction interval; fits one OLS model; interprets one coefficient conditionally; checks one residual plot; and places the mean-response and individual intervals side by side.
+
+## Define a prediction contract before features
+
+A predictive workflow needs more than a target column:
+
+- The **prediction timestamp** is when the prediction is issued.
+- The **target** is the unknown value to be predicted.
+- The **target timestamp** is when that value is defined or measured.
+- The **prediction horizon** is the span between the prediction timestamp and target timestamp.
+- A **feature** is an input supplied to the prediction procedure.
+- The **feature cutoff** is the latest permitted time for feature inputs.
+- A feature is **available** only if every source value and processing step needed to compute it would exist by the cutoff.
+- A **metric** is a numeric rule for summarizing prediction errors or decisions; the primary metric is chosen before comparing candidates.
+
+The contract below predicts one station's next-day temperature. Its unit is one station at one daily prediction timestamp. The target is tomorrow's temperature, the horizon is one day, and only information known by today's timestamp is allowed.
+
+```python
+prediction_contract = pd.DataFrame(
+    {
+        "field": [
+            "unit",
+            "prediction timestamp",
+            "target",
+            "target timestamp",
+            "horizon",
+            "feature cutoff",
+            "primary metric",
+        ],
+        "definition": [
+            "one station at one daily issue time",
+            "current day at 00:00 UTC",
+            "next-day temperature in degrees C",
+            "prediction timestamp plus one day",
+            "one day",
+            "prediction timestamp",
+            "mean absolute error",
+        ],
+    }
+)
+
+assert prediction_contract.shape == (7, 2)
+```
+
+Calendar values, current measurements, and past-only lags can be candidates when they are available by the cutoff. A centered window, a measurement recorded after the cutoff, or a summary fit on the completed dataset is unavailable even if it appears in a historical table.
+
+The deterministic teaching table makes the time contract executable. It is synthetic and represents one station only; it is not evidence about a real forecasting system.
+
+```python
+all_timestamps = pd.date_range(
+    "2026-01-01",
+    periods=42,
+    freq="D",
+    tz="UTC",
+)
+all_day_numbers = np.arange(len(all_timestamps), dtype=float)
+all_temperatures = (
+    10
+    + 0.15 * all_day_numbers
+    + 2 * np.sin(all_day_numbers / 3)
+    + 0.4 * np.cos(all_day_numbers * 1.7)
+)
+
+prediction_data = pd.DataFrame(
+    {
+        "row_id": [
+            f"station-a-{timestamp:%Y%m%d}"
+            for timestamp in all_timestamps[1:-1]
+        ],
+        "prediction_timestamp": all_timestamps[1:-1],
+        "target_timestamp": all_timestamps[2:],
+        "day_number": all_day_numbers[1:-1],
+        "current_temperature_c": all_temperatures[1:-1],
+        "previous_temperature_c": all_temperatures[:-2],
+        "target_next_day_temperature_c": all_temperatures[2:],
+    }
+)
+
+assert prediction_data.shape == (40, 7)
+assert (
+    prediction_data["target_timestamp"]
+    - prediction_data["prediction_timestamp"]
+).eq(pd.Timedelta(days=1)).all()
+```
+
+## Assign training, validation, and test roles
+
+The three data roles are different:
+
+- **Training data** fit coefficients and preprocessing state.
+- **Validation data** compare candidate approaches or fixed settings during development.
+- **Test data** estimate final performance after all choices are fixed. They are evaluated once.
+
+Rows are **exchangeable** for a split when their ordering is not part of the intended prediction setting and no entity, family, location, or time dependence would make a random rearrangement change the problem. Independent one-time records from different units may support a seeded random split. Repeated entities, spatial clusters, or future prediction require a split that preserves those boundaries.
+
+A **random seed** is a fixed input to a pseudorandom procedure that makes the same split membership reproducible. In scikit-learn, `random_state=217` records that seed; it does not make an inappropriate random split valid.
+
+For 30 genuinely exchangeable row IDs, a reproducible two-stage split can create 18 training, 6 validation, and 6 test IDs:
+
+```python
+from sklearn.model_selection import train_test_split
+
+exchangeable_ids = np.arange(30)
+development_ids, random_test_ids = train_test_split(
+    exchangeable_ids,
+    test_size=0.20,
+    random_state=217,
+)
+random_train_ids, random_validation_ids = train_test_split(
+    development_ids,
+    test_size=0.25,
+    random_state=217,
+)
+
+assert len(random_train_ids) == 18
+assert len(random_validation_ids) == 6
+assert len(random_test_ids) == 6
+assert not (
+    set(random_train_ids)
+    & set(random_validation_ids)
+    | set(random_train_ids)
+    & set(random_test_ids)
+    | set(random_validation_ids)
+    & set(random_test_ids)
+)
+```
+
+The next-day station question is not exchangeable because the intended use predicts later dates. It uses fixed chronological cutoffs. Splitting on the target timestamp also prevents a training row whose label occurs inside the later evaluation period.
+
+```python
+validation_start = pd.Timestamp("2026-01-25", tz="UTC")
+test_start = pd.Timestamp("2026-02-01", tz="UTC")
+
+prediction_data["split"] = np.select(
+    [
+        prediction_data["target_timestamp"].lt(validation_start),
+        prediction_data["target_timestamp"].lt(test_start),
+    ],
+    ["train", "validation"],
+    default="test",
+)
+
+split_manifest = prediction_data[
+    ["row_id", "prediction_timestamp", "target_timestamp", "split"]
+].copy()
+
+assert split_manifest["row_id"].is_unique
+assert split_manifest["split"].value_counts().to_dict() == {
+    "train": 22,
+    "validation": 7,
+    "test": 11,
+}
+assert prediction_data.loc[
+    prediction_data["split"].eq("train"), "target_timestamp"
+].max() < prediction_data.loc[
+    prediction_data["split"].eq("validation"), "target_timestamp"
+].min()
+assert prediction_data.loc[
+    prediction_data["split"].eq("validation"), "target_timestamp"
+].max() < prediction_data.loc[
+    prediction_data["split"].eq("test"), "target_timestamp"
+].min()
+```
+
+A **split manifest** is a table that records the stable row ID and assigned role. It makes overlap, chronology, and accidental reassignment testable.
+
+## Recognize leakage before fitting
+
+**Leakage** occurs when training, model choice, or evaluation uses information that would not be available in the intended workflow.
+
+- **Target leakage:** a feature directly or indirectly contains the outcome being predicted.
+- **Temporal leakage:** a feature uses observations after its feature cutoff.
+- **Preprocessing leakage:** a transformation learns means, scales, categories, imputations, or other state from validation, test, or full data before evaluation.
+- **Test-set leakage:** test results influence feature choice, model choice, settings, stopping, or repeated revision.
+
+Low correlation does not prove that a feature is available. High correlation does not prove leakage. Availability comes from timestamps, source lineage, and the intended workflow.
+
+## LIVE DEMO 2: Choose a split and audit leakage
+
+[Open the Lecture 10 demo guide](demo/DEMO_GUIDE.md).
+
+The second required demonstration defines a target, prediction timestamp, horizon, feature cutoff, and availability inventory before fitting. It contrasts a seeded random split for genuinely exchangeable rows with fixed chronological cutoffs for future prediction, saves disjoint row IDs, and rejects one post-outcome feature and one full-data preprocessing path as explicit leakage cases.
+
+## Fit preprocessing and a model together
+
+An **estimator** is an object that learns from data. Calling `fit()` learns its state from supplied training rows. Calling `predict()` applies the already-fitted state to new rows. **Preprocessing** transforms inputs before model fitting, such as centering and scaling numeric features.
+
+A scikit-learn **Pipeline** chains preprocessing and an estimator so both receive the correct partitions in the correct order. Fitting the Pipeline on training rows makes `StandardScaler` learn only training means and standard deviations. Calling `transform()` separately on the full dataset before splitting would leak information.
+
+A **baseline** is a simple reference procedure that a learned model must improve on to justify its complexity. For this regression example, `DummyRegressor(strategy="mean")` predicts the training-target mean for every case.
+
+```python
+from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
-
-# Create sample data
-np.random.seed(42)
-X = np.random.randn(100, 3)
-y = 2 + 3 * X[:, 0] + 0.5 * X[:, 1] + np.random.randn(100)
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-# Fit model
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-# Predictions and evaluation
-predictions = model.predict(X_test)
-score = model.score(X_test, y_test)  # R²
-print(f"R² score: {score:.3f}")
-```
-
-## Random Forest
-
-Random Forest is an ensemble method that combines multiple decision trees. It's robust, handles non-linear relationships well, and provides feature importance scores.
-
-*Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works.*
-
-**How Random Forest Works:**
-
-```
-Training Data
-    ↓
-Create 100 Decision Trees (each sees random subset)
-    ↓
-Tree 1: Predicts Class A
-Tree 2: Predicts Class B
-Tree 3: Predicts Class A
-...
-Tree 100: Predicts Class A
-    ↓
-Final Prediction: Class A (majority vote)
-```
-
-*Each tree votes, and the most popular answer wins. It's like asking 100 people for directions - the majority is usually right!*
-
-**Why Random Forest?**
-
-- Handles non-linear relationships automatically
-- Robust to outliers and missing data
-- Provides feature importance
-- Works well out-of-the-box (few hyperparameters to tune)
-- Good for both classification and regression
-
-**Reference:**
-
-- `from sklearn.ensemble import RandomForestClassifier` - Classification
-- `from sklearn.ensemble import RandomForestRegressor` - Regression
-- `model = RandomForestClassifier(n_estimators=100)` - Create model
-- `model.fit(X_train, y_train)` - Train model
-- `model.predict(X_test)` - Class predictions
-- `model.predict_proba(X_test)` - Probability predictions
-- `model.feature_importances_` - Feature importance scores
-- `model.score(X, y)` - Accuracy/R² score
-
-**Example:**
-
-```python
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
-
-# Create sample data
-np.random.seed(42)
-X = np.random.randn(200, 4)
-y = (X[:, 0] + X[:, 1] > 0).astype(int)  # Binary classification
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-# Fit model
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
-
-# Predictions and feature importance
-predictions = model.predict(X_test)
-importance = model.feature_importances_
-print(f"Feature importance: {importance}")
-```
-
-## Other `scikit-learn` Methods
-
-`scikit-learn` provides many other algorithms:
-
-**Classification:**
-
-- `LogisticRegression` - Logistic regression for classification
-- `SVC` - Support Vector Machines
-- Use when: You need different decision boundaries or have specific requirements
-
-**Regression:**
-
-- `Ridge`, `Lasso` - Regularized linear regression
-- Use when: You have many features or multicollinearity
-
-**Unsupervised Learning:**
-
-- `KMeans` - K-means clustering
-- `PCA` - Principal Component Analysis for dimensionality reduction
-- Use when: You don't have labels or want to reduce dimensions
-
-**Model Selection:**
-
-- `cross_val_score` - Cross-validation
-- `GridSearchCV` - Hyperparameter tuning
-- Use when: You need to evaluate models or tune hyperparameters
-
-*Pro tip: Start with Random Forest for most problems. It's like the "blue steel" of machine learning - reliable, effective, and works in most situations.*
-
-*"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
-
-![Really, really, really, ridiculously...](media/really_really__really_ridiculously_good_looking.jpg)
-
-**The scikit-learn Workflow:**
-
-```mermaid
-flowchart LR
-    A[Raw Data] --> B[Preprocessing]
-    B --> C[Train/Test Split]
-    C --> D[Fit Model]
-    D --> E[Make Predictions]
-    E --> F[Evaluate]
-    F -->|Good enough?| G[Deploy]
-    F -->|Not good enough?| H[Tune Hyperparameters]
-    H --> D
-    
-    style D fill:#e1f5ff
-    style E fill:#fff4e1
-    style F fill:#ffe1f5
-```
-
-*"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"*
-
-# The Secret Weapon: Gradient Boosting
-
-*Gradient boosting is like the Magnum of machine learning - it's the secret weapon that wins competitions and makes you look like a modeling genius.*
-
-Gradient boosting has dominated machine learning competitions (Kaggle, etc.) for years. It's particularly powerful for tabular data - the kind of structured data you work with in pandas DataFrames.
-
-## Why Gradient Boosting?
-
-**Performance on Tabular Data:**
-
-- Often outperforms deep learning on structured/tabular data
-- Handles mixed data types (numeric, categorical) well
-- Captures complex non-linear relationships
-- Provides feature importance
-
-**When to Choose Over Deep Learning:**
-
-- You have tabular/structured data (not images, text, sequences)
-- You want fast training and prediction
-- You need interpretability (feature importance)
-- You have limited data (deep learning needs lots of data)
-
-**Real-World Dominance:**
-
-- Used by winning teams in most Kaggle competitions
-- Industry standard for many production ML systems
-- Fast, accurate, and relatively easy to use
-
-*Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind).*
-
-**Gradient Boosting: The Magnum of Machine Learning**
-
-Gradient boosting builds models sequentially, each one correcting the mistakes of the previous ones.
-
-```
-Model 1: Makes predictions (with errors)
-Model 2: Predicts the errors of Model 1
-Model 3: Predicts the errors of Model 2
-...
-Final: Combine all models (like a modeling ensemble)
-```
-
-**Gradient Boosting Step-by-Step:**
-
-| Step | What Happens | Example |
-|------|--------------|---------|
-| 1 | Initial model makes predictions | Predicts: [5.0, 3.0, 7.0] |
-| 2 | Calculate errors (residuals) | Actual: [5.5, 3.2, 6.8], Errors: [0.5, 0.2, -0.2] |
-| 3 | New model predicts the errors | Predicts errors: [0.4, 0.3, -0.1] |
-| 4 | Add error predictions to original | New predictions: [5.4, 3.3, 6.9] |
-| 5 | Repeat until errors are minimized | Continue for N rounds |
-
-*Each new model focuses on what the previous model got wrong. It's like having a tutor who only helps with your mistakes!*
-
-*"What is this? A model for ants? It needs to be at least... three times more accurate!"*
-
-![xkcd 2400: Machine Learning](https://imgs.xkcd.com/comics/machine_learning_2x.png)
-
-*"Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."*
-
-## `XGBoost` Basics
-
-`XGBoost` (Extreme Gradient Boosting) is the most popular gradient boosting library. It's fast, accurate, and handles many data types well.
-
-**Reference:**
-
-- `import xgboost as xgb` - Import XGBoost
-- `model = xgb.XGBClassifier()` - Classification model
-- `model = xgb.XGBRegressor()` - Regression model
-- `model.fit(X_train, y_train)` - Train model
-- `model.predict(X_test)` - Make predictions
-- `model.predict_proba(X_test)` - Probability predictions (classification)
-- `model.feature_importances_` - Feature importance
-- `early_stopping_rounds` - Early stopping to prevent overfitting
-
-**Key Hyperparameters:**
-
-- `n_estimators` - Number of boosting rounds (trees)
-- `max_depth` - Maximum tree depth
-- `learning_rate` - Step size shrinkage
-- `subsample` - Fraction of samples for each tree
-- `colsample_bytree` - Fraction of features for each tree
-
-**Hyperparameter Effects:**
-
-| Hyperparameter | Too Low | Too High | Sweet Spot |
-|----------------|---------|----------|------------|
-| `n_estimators` | Underfitting | Overfitting | 50-200 |
-| `max_depth` | Can't learn complex patterns | Overfitting | 3-6 |
-| `learning_rate` | Slow convergence | Unstable training | 0.01-0.3 |
-| `subsample` | Less robust | More variance | 0.8-1.0 |
-
-*Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash. The sweet spot is somewhere in between.*
-
-**Early Stopping:** Prevents overfitting by stopping training when validation performance stops improving.
-
-*Early stopping monitors validation performance during training. When validation metrics stop improving (or start getting worse), training stops automatically. This prevents overfitting by using the best model from earlier rounds rather than continuing to train.*
-
-**Example:**
-
-```python
-import xgboost as xgb
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
-
-# Create sample data
-np.random.seed(42)
-X = np.random.randn(200, 5)
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-# Fit XGBoost model
-model = xgb.XGBClassifier(
-    n_estimators=100,
-    max_depth=3,
-    learning_rate=0.1,
-    early_stopping_rounds=10
-)
-model.fit(X_train, y_train, 
-          eval_set=[(X_test, y_test)],
-          verbose=False)
-
-# Predictions and feature importance
-predictions = model.predict(X_test)
-importance = model.feature_importances_
-print(f"Feature importance: {importance}")
-```
-
-*Feature importance is returned as an array showing the relative importance of each feature. Higher values indicate more important features for making predictions.*
-
-## The Boosting Ecosystem
-
-Beyond `XGBoost`, there are other powerful gradient boosting libraries:
-
-**`LightGBM`:**
-
-- Faster training than XGBoost
-- Better memory efficiency
-- Use when: You have large datasets or need speed
-
-**`CatBoost`:**
-
-- Excellent handling of categorical features
-- Less hyperparameter tuning needed
-- Use when: You have many categorical variables
-
-*Pro tip: Start with XGBoost. If you need speed, try LightGBM. If you have lots of categories, try CatBoost. But remember: they're all really, really good. It's like choosing between blue steel, magnum, and le tigre - they're all amazing, just slightly different.*
-
-**The Boosting Family Tree:**
-
-```
-Gradient Boosting
-├── XGBoost (Extreme - the competition winner)
-├── LightGBM (Fast - the speed demon)
-└── CatBoost (Categorical - the category king)
-```
-
-*"It's all about family. And by family, I mean gradient boosting."*
-
-![Fast & Furious Family](media/fast_furious_family.jpg)
-
-# LIVE DEMO
-
-# Deep Learning: The Modern Frontier
-
-*Deep learning is like the "Derelicte" of modeling - it's cutting-edge, it's flashy, and everyone wants to use it even when they probably shouldn't.*
-
-Deep learning uses neural networks with multiple layers to learn complex patterns. It excels at unstructured data: images, text, audio, sequences.
-
-## Why Deep Learning?
-
-**When Neural Networks Excel:**
-
-- Image recognition and computer vision
-- Natural language processing (text)
-- Speech recognition and audio
-- Time series with complex patterns
-- When you have LOTS of data
-
-**The Deep Learning vs Traditional ML Decision:**
-
-- **Use Deep Learning when:**
-    - You have unstructured data (images, text, audio)
-    - You have massive datasets (millions of examples)
-    - You need to learn complex, hierarchical features
-    - Traditional ML isn't performing well enough
-
-- **Use Traditional ML when:**
-    - You have tabular/structured data
-    - You have limited data
-    - You need fast training and prediction
-    - You need interpretability
-
-**When NOT to Use Deep Learning:**
-
-- Small datasets (deep learning needs lots of data)
-- Simple problems (overkill)
-- Need for interpretability
-- Limited computational resources
-- Tabular data (often better with XGBoost)
-
-**Overfitting Visualization:**
-
-```
-Good Fit:                    Overfitting:
-Training Loss: 0.2          Training Loss: 0.05
-Test Loss: 0.22             Test Loss: 0.35
-                            ↑ Big gap = overfitting!
-
-The model learned patterns    The model memorized training
-that generalize well.        data but can't generalize.
-```
-
-*Overfitting is like memorizing answers to practice problems but failing the actual test. The model performs great on training data but poorly on new data.*
-
-*Remember: Deep learning is powerful, but it's not always the answer. Sometimes a simple model is the right model.*
-
-**When to Use Deep Learning: A Decision Framework**
-
-```mermaid
-flowchart TD
-    A[Your Problem] --> B{Data Type?}
-    B -->|Images| C[Use Deep Learning<br/>CNNs]
-    B -->|Text| D[Use Deep Learning<br/>RNNs/Transformers]
-    B -->|Audio| E[Use Deep Learning<br/>RNNs]
-    B -->|Tabular| F{How much data?}
-    F -->|Millions of rows| G{Consider Deep Learning}
-    F -->|Thousands of rows| H[Use XGBoost<br/>or Random Forest]
-    G -->|Complex patterns| I[Maybe Deep Learning]
-    G -->|Simple patterns| H
-    C --> J[Neural Networks]
-    D --> J
-    E --> J
-    I --> J
-    J --> K[Train for days<br/>Hope it works]
-    
-    style J fill:#e1ffe1
-    style H fill:#fff4e1
-    style K fill:#ffe1f5
-```
-
-*"But why deep learning models?" "Seriously? I just told you that a moment ago."*
-
-![xkcd 2169: Predictive Models](https://imgs.xkcd.com/comics/predictive_models_2x.png)
-
-*"Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."*
-
-## `TensorFlow`/`Keras`: The High-Level Approach
-
-`TensorFlow` is Google's deep learning framework. `Keras` (now integrated into TensorFlow) provides a high-level, user-friendly API for building neural networks.
-
-**Why TensorFlow/Keras?**
-
-- Mature and well-documented
-- Excellent for production deployment
-- High-level API makes it easy to get started
-- Extensive ecosystem and community support
-- Good performance optimizations
-
-**Reference:**
-
-- `import tensorflow as tf` - Import TensorFlow
-- `from tensorflow import keras` - Import Keras
-- `model = keras.Sequential([...])` - Sequential model (linear stack)
-- `model.add(keras.layers.Dense(units, activation))` - Add dense layer
-- `model.compile(optimizer, loss, metrics)` - Configure training
-- `model.fit(X_train, y_train, epochs, batch_size)` - Train model
-- `model.predict(X_test)` - Make predictions
-- `model.evaluate(X_test, y_test)` - Evaluate model
-
-**Basic Workflow:**
-
-1. **Build model** - Define architecture (layers)
-2. **Compile model** - Specify optimizer, loss function, metrics
-3. **Train model** - Fit on training data
-4. **Evaluate model** - Check performance on test data
-5. **Make predictions** - Use trained model
-
-*During training, you'll see loss decrease and accuracy (or other metrics) improve with each epoch. Monitor both training and validation metrics to detect overfitting.*
-
-**Neural Network Architecture (Simple Example):**
-
-```
-Input Layer (10 features)
-    ↓
-Hidden Layer 1 (64 neurons, ReLU)
-    ↓
-Hidden Layer 2 (32 neurons, ReLU)
-    ↓
-Output Layer (1 neuron, Sigmoid)
-```
-
-**What Each Layer Does:**
-
-| Layer | Purpose | Example |
-|-------|---------|---------|
-| Input | Receives raw features | 10 numeric features |
-| Hidden 1 | Learns complex patterns | 64 neurons find non-linear relationships |
-| Hidden 2 | Refines patterns | 32 neurons combine learned features |
-| Output | Makes final prediction | 1 neuron outputs probability (0-1) |
-
-*"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN backpropagate!"*
-
-**Example:**
-
-```python
-import tensorflow as tf
-from tensorflow import keras
-import numpy as np
-
-# Create sample data
-np.random.seed(42)
-X_train = np.random.randn(1000, 10)
-y_train = (X_train.sum(axis=1) > 0).astype(int)
-X_test = np.random.randn(200, 10)
-y_test = (X_test.sum(axis=1) > 0).astype(int)
-
-# Build model
-model = keras.Sequential([
-    keras.layers.Dense(64, activation='relu', input_shape=(10,)),
-    keras.layers.Dense(32, activation='relu'),
-    keras.layers.Dense(1, activation='sigmoid')
-])
-
-# Compile model
-model.compile(
-    optimizer='adam',
-    loss='binary_crossentropy',
-    metrics=['accuracy']
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+feature_columns = [
+    "day_number",
+    "current_temperature_c",
+    "previous_temperature_c",
+]
+target_column = "target_next_day_temperature_c"
+
+parts = {
+    name: prediction_data.loc[prediction_data["split"].eq(name)].copy()
+    for name in ["train", "validation", "test"]
+}
+
+baseline = DummyRegressor(strategy="mean")
+linear_pipeline = Pipeline(
+    steps=[
+        ("scale", StandardScaler()),
+        ("model", LinearRegression()),
+    ]
 )
 
-# Train model
-model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=0)
+baseline.fit(parts["train"][feature_columns], parts["train"][target_column])
+linear_pipeline.fit(
+    parts["train"][feature_columns],
+    parts["train"][target_column],
+)
 
-# Evaluate
-loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-print(f"Accuracy: {accuracy:.3f}")
+assert np.allclose(
+    linear_pipeline.named_steps["scale"].mean_,
+    parts["train"][feature_columns].mean().to_numpy(),
+)
 ```
 
-## `PyTorch`: The Research Standard
+## Compare on validation with named metrics
 
-`PyTorch` is Facebook's deep learning framework. It's popular in research because of its Pythonic, flexible design and dynamic computation graphs.
+**Mean absolute error**, or **MAE**, is the mean absolute difference between targets and predictions. It remains in target units and weights every absolute error linearly.
 
-**PyTorch vs TensorFlow Philosophy:**
+**Root mean squared error**, or **RMSE**, is the square root of the mean squared error. It remains in target units but gives larger errors more influence than MAE.
 
-- **PyTorch:** More Pythonic, dynamic, research-friendly
-- **TensorFlow:** More production-oriented, static graphs (though dynamic now too)
-- **When to choose PyTorch:** Research, prototyping, when you need flexibility
-- **When to choose TensorFlow:** Production, when you need deployment tools
+**R²** compares squared error with a constant reference based on the evaluation targets. `1` is exact prediction, `0` matches that evaluation-set mean reference, and negative values are possible when predictions are worse. R² is not “percent correct” and should not be the only metric.
 
-**Reference:**
+Choose a primary metric before comparing candidates. The prediction contract above names MAE.
 
-- `import torch` - Import PyTorch
-- `import torch.nn as nn` - Neural network modules
-- `model = nn.Sequential([...])` - Sequential model
-- `optimizer = torch.optim.Adam(model.parameters())` - Optimizer
-- `loss_fn = nn.BCELoss()` - Loss function
-- `model.train()` / `model.eval()` - Set training/evaluation mode
+```python
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-*Note: We're keeping PyTorch brief here since TensorFlow/Keras is more beginner-friendly. But PyTorch is excellent for research and when you need more control.*
 
-## Modern Frameworks
+def regression_metrics(actual, predicted):
+    """Return the three named regression metrics."""
+    return {
+        "mae": mean_absolute_error(actual, predicted),
+        "rmse": np.sqrt(mean_squared_error(actual, predicted)),
+        "r2": r2_score(actual, predicted),
+    }
 
-Beyond `TensorFlow` and `PyTorch`, there are cutting-edge research frameworks:
 
-**`JAX`:**
+candidates = {
+    "training_mean_baseline": baseline,
+    "linear_pipeline": linear_pipeline,
+}
+validation_metrics = {}
 
-- NumPy with automatic differentiation and JIT compilation
-- Research tool for advanced experimentation
-- Use when: You're doing cutting-edge research or need maximum flexibility
+for name, candidate in candidates.items():
+    validation_prediction = candidate.predict(
+        parts["validation"][feature_columns]
+    )
+    validation_metrics[name] = regression_metrics(
+        parts["validation"][target_column],
+        validation_prediction,
+    )
 
-**Other Research Frameworks:**
+validation_metrics = pd.DataFrame(validation_metrics).T
+chosen_name = validation_metrics["mae"].idxmin()
 
-- Various specialized tools for specific domains
-- Use when: You have specific research needs beyond standard frameworks
-
-**The Deep Learning Ecosystem:**
-
+assert chosen_name == "linear_pipeline"
+validation_metrics
 ```
-Deep Learning Frameworks
-├── TensorFlow/Keras (Production - the reliable one)
-├── PyTorch (Research - the flexible one)
-└── JAX (Cutting-edge - the experimental one)
+
+The selection is based on validation MAE. The test rows have not been predicted or inspected during this choice.
+
+## Evaluate the chosen approach on test once
+
+An **evaluation** applies fixed choices to data that were not used for fitting or selection. After the model, features, preprocessing, split, and metric are fixed, evaluate the chosen approach on the test set once.
+
+```python
+chosen_model = candidates[chosen_name]
+final_test_predictions = chosen_model.predict(parts["test"][feature_columns])
+final_test_metrics = pd.Series(
+    regression_metrics(
+        parts["test"][target_column],
+        final_test_predictions,
+    ),
+    name="test",
+)
+
+final_predictions = parts["test"][
+    ["row_id", "target_timestamp", target_column]
+].copy()
+final_predictions["prediction"] = final_test_predictions
+
+assert len(final_predictions) == len(parts["test"])
+assert final_predictions["row_id"].is_unique
+assert final_test_metrics["mae"] < 1.0
+final_test_metrics
 ```
 
-*"What is this? A learning rate for ants? It needs to be at least... three times smaller!"*
+Do not return to development and then report the same test result as if it were untouched. If the test result triggers a redesign, that result becomes development evidence; a new final evaluation requires a genuinely untouched test release.
 
-**Model Performance Comparison (Humorous):**
+## Interpret supplied binary metrics
 
-| Model Type | Training Time | Accuracy | Interpretability | When to Use |
-|------------|---------------|----------|-------------------|-------------|
-| Linear Regression | ⚡ Very Fast | 📊 Good | ✅ High | Always start here |
-| Random Forest | ⚡⚡ Fast | 📊📊 Very Good | ✅✅ Medium | Most problems |
-| XGBoost | ⚡⚡ Fast | 📊📊📊 Excellent | ✅ Medium | Tabular data |
-| Deep Learning | 🐌 Slow | 📊📊📊📊 Excellent* | ❌ Low | Images/text/audio |
+A **binary classification** assigns one of two labels. The **positive class** is the outcome whose detection is being counted. For positive label `1`:
 
-*Note: Training time varies significantly with dataset size. XGBoost is often faster than Random Forest on large datasets, but both are much faster than deep learning for tabular data. Deep learning accuracy is excellent only if you have enough data and time to tune it properly. Otherwise, it's just an expensive way to overfit.*
+- a **true positive** is an actual positive predicted positive;
+- a **false positive** is an actual negative predicted positive;
+- a **false negative** is an actual positive predicted negative;
+- **accuracy** is the proportion of all predictions that are correct;
+- **precision** is `true positives / all predicted positives`; and
+- **recall** is `true positives / all actual positives`.
 
-*"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"*
+The small table below is supplied prediction output. It is not a second model-fitting exercise. The dummy column represents output from a training-only most-frequent-class baseline.
 
-# LIVE DEMO
+```python
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+
+binary_predictions = pd.DataFrame(
+    {
+        "actual": [1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        "supplied_model_prediction": [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "supplied_dummy_prediction": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    }
+)
+
+
+def binary_metrics(actual, predicted):
+    """Return accuracy, precision, and recall for positive label 1."""
+    return {
+        "accuracy": accuracy_score(actual, predicted),
+        "precision": precision_score(actual, predicted, zero_division=0),
+        "recall": recall_score(actual, predicted, zero_division=0),
+    }
+
+
+binary_summary = pd.DataFrame(
+    {
+        "supplied_model": binary_metrics(
+            binary_predictions["actual"],
+            binary_predictions["supplied_model_prediction"],
+        ),
+        "dummy_baseline": binary_metrics(
+            binary_predictions["actual"],
+            binary_predictions["supplied_dummy_prediction"],
+        ),
+    }
+).T
+
+assert np.isclose(binary_summary.loc["supplied_model", "accuracy"], 0.8)
+assert np.isclose(binary_summary.loc["dummy_baseline", "accuracy"], 0.8)
+assert np.isclose(binary_summary.loc["supplied_model", "precision"], 0.5)
+assert np.isclose(binary_summary.loc["supplied_model", "recall"], 0.5)
+assert binary_summary.loc["dummy_baseline", "recall"] == 0.0
+binary_summary
+```
+
+Both approaches have accuracy `0.8`, but the dummy baseline detects none of the actual positives. The supplied model detects one of two positives and half of its positive predictions are correct. Which tradeoff matters depends on the intended decision and the relative consequences of false positives and false negatives.
+
+## LIVE DEMO 3: Compare a baseline and one train-only Pipeline
+
+[Open the Lecture 10 demo guide](demo/DEMO_GUIDE.md).
+
+The third required demonstration fits a training-mean baseline and one `Pipeline(StandardScaler, LinearRegression)` on training rows only. It selects by validation MAE, reports validation MAE/RMSE/R², evaluates test once, saves predictions and one familiar residual plot, and interprets supplied binary accuracy/precision/recall against a dummy baseline without fitting a second classifier.
+
+## Communicate uncertainty and limitations
+
+An honest result separates what was calculated from what remains uncertain.
+
+For bounded inference, report:
+
+- the unit, population, and estimand;
+- the coefficient and confidence interval;
+- the included variables and residual diagnostic;
+- the association-only interpretation; and
+- the sampling, measurement, model-form, and generalizability limitations.
+
+For prediction, report:
+
+- the target, target timestamp, horizon, cutoff, and available features;
+- the split design and baseline;
+- the primary validation metric and one final test result;
+- the unit and range of every metric;
+- where the evaluation sample differs from intended use; and
+- likely failure modes, subgroup or time-slice gaps, and possible distribution change.
+
+A coefficient confidence interval is not an interval for future model accuracy. One held-out metric is not a universal performance guarantee. Both are conditional on the data-generating and use conditions being relevant.
+
+## Handoff to Lecture 11
+
+After this lecture, students should be able to:
+
+- distinguish descriptive, inferential, and predictive questions;
+- state a unit and either a population estimand or prediction target;
+- use noncausal language for observational associations;
+- interpret one bounded OLS coefficient and confidence interval and inspect residuals;
+- distinguish mean-response and individual prediction intervals;
+- define a prediction timestamp, target timestamp, horizon, feature cutoff, and availability;
+- choose a seeded random split only for exchangeable rows and a chronological split for future prediction;
+- separate training, validation, and test roles;
+- fit preprocessing only on training data inside a Pipeline;
+- compare a training-derived baseline with one linear predictor using named metrics;
+- interpret supplied binary accuracy, precision, and recall against a baseline;
+- recognize target, temporal, preprocessing, and test-set leakage; and
+- evaluate test once and communicate limitations.
+
+Lecture 11 may apply this complete modeling vocabulary to a frozen end-to-end project. It must not introduce boosting, deep learning, hyperparameter-search breadth, or feature-importance theory as new required capabilities.
+
+## Core scope boundary
+
+Required Lecture 10 work is limited to question type and unit; estimand or prediction contract; association versus causation; one bounded OLS association model; coefficient, standard error, confidence interval, individual prediction interval, assumptions, and one residual diagnostic; seeded random versus chronological splitting; training/validation/test roles; availability and four leakage types; one training-mean baseline; one train-only linear Pipeline; MAE, RMSE, R²; supplied binary accuracy, precision, and recall; one final test evaluation; and limitations.
+
+Hypothesis testing and p-values, regularization, split-aware cross-validation, one tree ensemble, and held-out permutation importance are optional bonus material. Interactions, broad model-selection catalogues, XGBoost and other boosting libraries, deep learning frameworks, neural-network training, deployment platforms, automated feature engineering, time-series forecasting, and production monitoring are not required demos, assignment capabilities, or Lecture 11 prerequisites.

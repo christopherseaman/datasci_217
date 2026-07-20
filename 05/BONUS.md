@@ -1,276 +1,196 @@
-Bonus Content: Advanced Data Cleaning
+# Bonus: Bounded Data-Cleaning Extensions
 
-*These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!*
+This optional material extends Lecture 05's documented cleaning pipeline. None of it is required by the Lecture 05 demos, assignment, or Lecture 06.
 
-## Modern Pandas Extension Types
+Return to [README.md](README.md) for the required raw/clean contract, audit-before-mutation workflow, targeted transformations, validation invariants, decision log, and fresh-runtime pipeline.
 
-Pandas extension types solve longstanding issues with missing data and memory efficiency. While useful, these are advanced features that go beyond basic data cleaning workflows.
+## MCAR, MAR, and MNAR as analysis assumptions
 
-*Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
+A **missing-data mechanism** describes how the probability that a value is missing relates to observed and unobserved data:
 
-### Extension Types for Better Missing Data Handling
+- **Missing completely at random (MCAR):** missingness does not depend on observed or unobserved values.
+- **Missing at random (MAR):** after conditioning on observed information, missingness does not additionally depend on the unseen value.
+- **Missing not at random (MNAR):** missingness can still depend on the unseen value after accounting for observed information.
 
-Traditional NumPy-based types couldn't represent missing integers or booleans. Extension types provide proper NA support across all data types.
+These are assumptions about a data-generating process, not labels that a missing-value count can prove. They can guide an analysis plan, but they do not create an automatic rule to drop or impute values.
 
-**Reference:**
+The framework originates with Rubin's [Inference and Missing Data](https://www.ets.org/research/policy_research_reports/publications/article/1976/itce.html). The US Agency for Healthcare Research and Quality gives accessible definitions and applied examples in [Types of Missing Data](https://www.ncbi.nlm.nih.gov/books/NBK493614/).
 
-- `astype('Int64')` - Nullable integer (note capital I)
-- `astype('Float64')` - Nullable float
-- `astype('boolean')` - Nullable boolean
-- `astype('string')` - Efficient string type
-- `pd.NA` - Missing value marker for extension types
-- vs `np.nan` - Old-style missing value (float only)
+This lecture does not assess mechanism modeling, multiple imputation, or sensitivity analysis.
 
-**Brief Example:**
+## Nullable dtypes and pandas 3 strings
 
-```python
-# Old way: integers become floats with missing data
-s_old = pd.Series([1, 2, None])
-print(s_old.dtype)  # float64 (forced conversion!)
-
-# New way: integers stay integers
-s_new = pd.Series([1, 2, None], dtype='Int64')
-print(s_new.dtype)  # Int64
-print(s_new)  # [1, 2, <NA>]
-
-# Boolean with proper missing values
-bools = pd.Series([True, False, None], dtype='boolean')
-print(bools)  # [True, False, <NA>]
-```
-
-### Why Use Extension Types?
-
-Extension types provide better memory efficiency, faster operations, and proper missing data handling.
-
-**When to use:**
-- **Int64, Int32, Int16, Int8**: Integer data that might have missing values
-- **Float64, Float32**: When you need explicit control over precision
-- **boolean**: Boolean data with potential missing values
-- **string**: Large text datasets (uses less memory than object dtype)
-- **category**: Repeated string values (huge memory savings)
-
-**Brief Example:**
+A **nullable dtype** represents ordinary values and missing values without forcing every column into a generic object representation. Specify one when the schema needs a nullable integer, Boolean, or string:
 
 ```python
-# Convert existing DataFrame to extension types
-df = pd.DataFrame({
-    'age': [25, 30, None, 45],
-    'name': ['Alice', 'Bob', 'Charlie', None],
-    'is_member': [True, False, None, True]
-})
+import pandas as pd
 
-# Convert to extension types
-df['age'] = df['age'].astype('Int64')
-df['name'] = df['name'].astype('string')
-df['is_member'] = df['is_member'].astype('boolean')
+typed = pd.DataFrame(
+    {
+        "visit_count": pd.Series([1, None, 3], dtype="Int64"),
+        "consented": pd.Series([True, None, False], dtype="boolean"),
+        "site_label": pd.Series(["North", None, "South"], dtype="string"),
+    }
+)
 
-print(df.dtypes)
-print(df)
+print(typed)
+print(typed.dtypes)
 ```
 
-## Advanced Regular Expressions for Text Data
+The capitalized `Int64` name identifies pandas' nullable integer dtype. The explicit `string` dtype is a nullable `StringDtype`. pandas 3 also infers a default `str` dtype for ordinary string data; do not write validation that assumes every text column has legacy `object` dtype.
 
-Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks.
+See the pandas documentation for [nullable integer data](https://pandas.pydata.org/docs/user_guide/integer_na.html), [nullable Boolean data](https://pandas.pydata.org/docs/user_guide/boolean.html), and the [pandas 3 string migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html).
 
-*Warning: Regular expressions are write-only code - you write them once, and six months later you have no idea what they do. Comment generously!*
+## Advanced normalization with vectorized string methods
 
-**Reference:**
-
-- `\d` - Any digit (0-9)
-- `\w` - Any word character (letter, digit, underscore)
-- `\s` - Any whitespace
-- `+` - One or more of previous
-- `*` - Zero or more of previous
-- `{n,m}` - Between n and m of previous
-- `[abc]` - Any of a, b, or c
-- `^` - Start of string
-- `$` - End of string
-- `()` - Capture group
-
-**Brief Example:**
+Normalization should have a documented equivalence rule. Unicode normalization, whitespace collapsing, and case normalization can be composed with vectorized string methods:
 
 ```python
-# Extract phone numbers from text
-import re
-text = pd.Series(['Call me at 555-1234', 'My number is (555) 555-5678', 'No phone here'])
+normalization_input = pd.Series(
+    ["  São   Paulo ", "SÃO PAULO", None],
+    dtype="string",
+)
 
-# Pattern for phone numbers
-pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
-phones = text.str.extract(f'({pattern})')
-print(phones)
+normalized_text = (
+    normalization_input
+    .str.normalize("NFKC")
+    .str.strip()
+    .str.replace(r"\s+", " ", regex=True)
+    .str.casefold()
+)
 
-# Validate email addresses
-emails = pd.Series(['alice@test.com', 'invalid.email', 'bob@example.org'])
-email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-valid = emails.str.match(email_pattern)
-print(valid)  # [True, False, True]
+print(normalized_text)
 ```
 
-## Advanced Outlier Detection Methods
+Unicode normalization does not decide whether accents, punctuation, abbreviations, or alternate names represent the same domain value. Preserve the original field when the normalized representation may need review. Python's `unicodedata` behavior follows the [Unicode normalization forms](https://unicode.org/reports/tr15/).
 
-Beyond simple threshold-based outlier detection, statistical methods can identify unusual values.
+## A bounded custom transform after vectorization
 
-**Reference:**
+Use built-in vectorized operations first. A small custom function is appropriate when a documented domain rule cannot be stated clearly with those operations alone.
 
-- **IQR Method**: Values beyond Q1 - 1.5×IQR or Q3 + 1.5×IQR
-- **Z-Score Method**: Values with |z-score| > 3
-- **Modified Z-Score**: More robust for skewed data
-- **Isolation Forest**: Machine learning approach (sklearn)
-
-**Brief Example:**
+This example first performs vectorized whitespace and case normalization, then applies one bounded identifier rule:
 
 ```python
-# IQR-based outlier detection
-Q1 = df['value'].quantile(0.25)
-Q3 = df['value'].quantile(0.75)
-IQR = Q3 - Q1
+submitted_ids = pd.Series(
+    [" subject-7 ", "PARTICIPANT-42", "bad-id", None],
+    dtype="string",
+)
 
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
+prepared_ids = submitted_ids.str.strip().str.casefold()
 
-outliers = df[(df['value'] < lower_bound) | (df['value'] > upper_bound)]
-print(f"Found {len(outliers)} outliers")
 
-# Z-score method
-from scipy import stats
-z_scores = np.abs(stats.zscore(df['value']))
-outliers_z = df[z_scores > 3]
+def normalize_participant_id(value):
+    if pd.isna(value):
+        return pd.NA
+
+    prefix, separator, number = value.partition("-")
+    if separator and prefix in {"subject", "participant"} and number.isdigit():
+        return f"P{int(number):04d}"
+    return pd.NA
+
+
+normalized_ids = prepared_ids.map(normalize_participant_id).astype("string")
+print(normalized_ids)
 ```
 
-## Complex String Transformations
+The function has one input, one documented output form, and an explicit result for unsupported values. The decision log should record that unsupported values became missing and require review.
 
-Advanced string operations for specialized text cleaning tasks.
+## Domain-aware anomaly review
 
-**Reference:**
+An **anomaly** is a value that violates or challenges an expected domain rule. It is not automatically an error or a row to delete.
 
-- `str.extract(pattern, expand=True)` - Extract regex groups into columns
-- `str.extractall(pattern)` - Extract all matches (returns MultiIndex)
-- `str.normalize('NFKD')` - Unicode normalization
-- `str.translate(table)` - Character-level replacement
-- `str.encode()` / `str.decode()` - Character encoding conversion
-
-**Brief Example:**
+Use a supplied specification to flag values while preserving them for review:
 
 ```python
-# Extract multiple components from structured text
-addresses = pd.Series(['123 Main St, Boston, MA 02101',
-                       '456 Oak Ave, Cambridge, MA 02138'])
+measurements = pd.DataFrame(
+    {
+        "record_id": ["R1", "R2", "R3", "R4"],
+        "temperature_c": [36.8, 42.5, 34.0, 37.1],
+    }
+)
 
-# Pattern with multiple capture groups
-pattern = r'(\d+)\s+([A-Za-z\s]+),\s+([A-Za-z]+),\s+([A-Z]{2})\s+(\d{5})'
-components = addresses.str.extract(pattern)
-components.columns = ['number', 'street', 'city', 'state', 'zip']
-print(components)
+documented_min = 35.0
+documented_max = 42.0
 
-# Unicode normalization (remove accents)
-text = pd.Series(['café', 'naïve', 'résumé'])
-normalized = text.str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
-print(normalized)  # ['cafe', 'naive', 'resume']
+measurements["outside_documented_range"] = ~measurements[
+    "temperature_c"
+].between(documented_min, documented_max)
+
+anomaly_review = measurements.loc[
+    measurements["outside_documented_range"]
+].copy()
+
+anomaly_review
 ```
 
-## Advanced Duplicate Handling
+The next action might be source verification, correction from authoritative evidence, retention with a caveat, or exclusion for a stated purpose. The numeric rule alone cannot choose among them.
 
-More sophisticated approaches to finding and handling duplicates.
+## Same-index fallback with `combine_first`
 
-**Reference:**
-
-- `subset=['col1', 'col2']` - Check specific columns only
-- `keep='first'` - Keep first occurrence (default)
-- `keep='last'` - Keep last occurrence
-- `keep=False` - Mark all duplicates as True
-- Fuzzy matching for near-duplicates (requires `fuzzywuzzy` or similar)
-
-**Brief Example:**
+`combine_first()` fills missing positions in one object from nonmissing positions in another. Restrict this optional pattern to sources already proven to represent the same rows in the same index and columns.
 
 ```python
-# Find ALL duplicates (including first occurrence)
-df = pd.DataFrame({'name': ['Alice', 'Bob', 'Alice', 'Charlie', 'Bob'],
-                   'score': [85, 90, 88, 92, 90]})
+primary = pd.DataFrame(
+    {"status": ["active", pd.NA, "complete"]},
+    index=["R1", "R2", "R3"],
+)
+backup = pd.DataFrame(
+    {"status": [pd.NA, "pending", "complete"]},
+    index=["R1", "R2", "R3"],
+)
 
-all_dupes = df[df.duplicated(subset=['name'], keep=False)]
-print(all_dupes)  # Shows all Alice and Bob rows
+assert primary.index.equals(backup.index)
+assert primary.columns.equals(backup.columns)
 
-# Fuzzy string matching for near-duplicates
-from fuzzywuzzy import fuzz
-names = pd.Series(['John Smith', 'Jon Smith', 'Jane Doe'])
+filled_from_backup = primary.isna() & backup.notna()
+combined = primary.combine_first(backup)
 
-def find_similar(s, threshold=80):
-    for i, name1 in enumerate(s):
-        for j, name2 in enumerate(s[i+1:], i+1):
-            ratio = fuzz.ratio(name1, name2)
-            if ratio >= threshold:
-                print(f"Similar: '{name1}' and '{name2}' ({ratio}% match)")
-
-find_similar(names)
+print(combined)
+print(filled_from_backup)
 ```
 
-## Data Type Optimization
+The provenance log must identify the fallback source and affected cells. If row identity or alignment is not already established, stop; Lecture 06 teaches key-based combination. See the official [`DataFrame.combine_first` reference](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.combine_first.html).
 
-Reduce memory usage by choosing optimal data types.
+## A small in-notebook cleaning configuration
 
-**Reference:**
-
-- `pd.to_numeric(downcast='integer')` - Use smallest int type
-- `pd.to_numeric(downcast='float')` - Use smallest float type
-- `astype('category')` - For repeated string values
-- `astype('Int8')`, `astype('Int16')`, etc. - Specific sizes
-
-**Brief Example:**
+A small dictionary can keep repeated, already-decided rules visible in one notebook. It should not replace the audit or rationale.
 
 ```python
-# Before optimization
-df = pd.DataFrame({'A': range(1000), 'B': ['cat', 'dog', 'cat', 'dog'] * 250})
-print(f"Original memory: {df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+cleaning_config = {
+    "rename": {"Site Name": "site"},
+    "sentinels": {"site": {"": pd.NA, "N/A": pd.NA}},
+    "allowed_site": ["north", "south", "west"],
+}
 
-# Optimize numeric column
-df['A'] = pd.to_numeric(df['A'], downcast='integer')
+configured_input = pd.DataFrame(
+    {"Site Name": [" North ", "SOUTH", "N/A"]}
+)
 
-# Optimize string column
-df['B'] = df['B'].astype('category')
+configured = configured_input.rename(columns=cleaning_config["rename"])
+configured["site"] = configured["site"].replace(
+    cleaning_config["sentinels"]["site"]
+)
+configured["site"] = configured["site"].str.strip().str.lower()
 
-print(f"Optimized memory: {df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+assert configured["site"].dropna().isin(
+    cleaning_config["allowed_site"]
+).all()
+configured
 ```
 
-## Conditional Data Replacement
+Keep the configuration small, local, and directly connected to the decision log. External configuration files, dynamic dispatch, and general cleaning frameworks are outside this lecture.
 
-Use `np.where()` and `np.select()` for complex conditional replacements.
+## Explicitly deferred material
 
-**Reference:**
+The following topics are not Lecture 05 bonus prerequisites:
 
-- `np.where(condition, if_true, if_false)` - Simple if-else
-- `np.select(conditions_list, choices_list, default)` - Multiple conditions
-- `pd.Series.where(condition, other)` - Keep values where True
-- `pd.Series.mask(condition, other)` - Replace values where True
+- joins, concatenation, key alignment, and structural `melt`/`pivot` reshape — Lecture 06;
+- visualization and plotting design — Lecture 07;
+- GroupBy, named aggregation, and aggregating `pivot_table` — Lecture 08;
+- entity/time ordering, time-based filling, resampling, and rolling analysis — Lecture 09;
+- feature encodings, train/test splitting, and modeling — Lecture 10;
+- fuzzy record linkage, automatic anomaly deletion, and statistical outlier catalogs;
+- multiple imputation and missing-mechanism modeling; and
+- shell-driven notebook execution, large configuration systems, or performance tuning.
 
-**Brief Example:**
-
-```python
-# Simple conditional replacement
-df = pd.DataFrame({'score': [55, 65, 75, 85, 95]})
-df['grade'] = np.where(df['score'] >= 70, 'Pass', 'Fail')
-
-# Multiple conditions
-conditions = [
-    df['score'] >= 90,
-    df['score'] >= 80,
-    df['score'] >= 70,
-    df['score'] >= 60
-]
-choices = ['A', 'B', 'C', 'D']
-df['letter_grade'] = np.select(conditions, choices, default='F')
-print(df)
-```
-
-## When to Use These Techniques
-
-**Regular Expressions:** Email validation, phone number extraction, parsing log files, complex text cleaning.
-
-**Advanced Outlier Detection:** Financial data, scientific measurements, when IQR/percentile methods aren't appropriate.
-
-**Complex String Operations:** Parsing addresses, standardizing names, cleaning web-scraped data.
-
-**Fuzzy Matching:** Merging datasets with typos, de-duplicating user input, matching company names.
-
-**Memory Optimization:** Working with large datasets (>1GB), when speed is critical, preparing data for deployment.
-
-**Conditional Replacement:** Complex business logic, deriving new categories, data validation with multiple rules.
+Return to the required [Lecture 05 narrative](README.md) before proceeding to Lecture 06.

@@ -1,3 +1,0 @@
-sample_data_rows=100
-sample_data_min=18
-sample_data_max=75

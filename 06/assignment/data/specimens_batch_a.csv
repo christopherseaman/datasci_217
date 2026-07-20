@@ -1,0 +1,5 @@
+specimen_id,collector_id,collection_number,station_code,material,mass_g
+SP101,C01,1,R,soil,12.5
+SP102,C01,2,R,water,8.0
+SP103,C02,1,S,soil,10.5
+SP104,C03,1,T,water,9.0

@@ -1,0 +1,16 @@
+request_id,center,agent_id,channel,resolution_minutes,satisfaction_score
+Q001,Central,A01,Email,30,4
+Q002,Central,A01,Chat,20,5
+Q003,Central,A02,Email,45,
+Q004,Central,A02,Phone,60,4
+Q005,Central,A03,Chat,25,3
+Q006,Harbor,A04,Email,40,5
+Q007,Harbor,A04,Chat,35,
+Q008,Harbor,A05,Email,50,4
+Q009,Harbor,A05,Chat,45,
+Q010,Harbor,A04,Email,30,3
+Q011,Ridge,A06,Phone,55,4
+Q012,Ridge,A06,Chat,25,5
+Q013,Ridge,A07,Phone,65,4
+Q014,Ridge,A08,Email,35,3
+Q015,Ridge,A08,Chat,30,4

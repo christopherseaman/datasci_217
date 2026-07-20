@@ -1,537 +1,87 @@
-Demo Guide - Lecture 4: Pandas on Jupyter
+# Lecture 04 demo guide
 
-# Demo 1: Jupyter Notebooks Basics
+These three demos introduce notebooks, bridge the NumPy ideas from Lecture 03 to labeled pandas objects, and finish with a portable CSV round trip. Colab is the default launch experience; the same notebooks must also run top-to-bottom in local Jupyter.
 
-**File:** [demo1_jupyter_basics.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb)
+## Launch the demos
 
-**Objective**: Get comfortable with Jupyter notebooks in VS Code - creating, running, and managing notebooks.
+The development badges point to the `eleventy` branch. Work opened from GitHub in Colab is not automatically saved back to GitHub.
 
-**Key Concepts**: Notebook interface, cell execution, kernel management, git safety
+| Demo | Colab | Local notebook | Purpose |
+|---|---|---|---|
+| 1. Notebook runtime and state | [![Open Demo 1 in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/eleventy/04/demo/demo1_jupyter_basics.ipynb) | `demo1_jupyter_basics.ipynb` | Expose stale state, a real restart failure, and the repair |
+| 2. NumPy to labeled pandas | [![Open Demo 2 in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/eleventy/04/demo/demo2_pandas_basics.ipynb) | `demo2_pandas_basics.ipynb` | Construct, inspect, select, filter, derive, and sort |
+| 3. Portable CSV round trip | [![Open Demo 3 in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/eleventy/04/demo/demo3_data_io.ipynb) | `demo3_data_io.ipynb` | Read a pinned input and reproduce one verified output |
 
-## Step 1: Create Your First Notebook
+Before publication, replace `eleventy` in all three badge targets with one immutable release tag. Open and fresh-run every resulting URL before calling the demos certified.
 
-1. Open VS Code
-2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
-3. Type "Jupyter: Create New Jupyter Notebook"
-4. Save as `demo1_jupyter_basics.ipynb` in the demo folder
+## Environment candidate
 
-**What this demonstrates**: VS Code's Jupyter integration makes notebooks feel like native code files
+The compatibility candidate is Python 3.12.13, NumPy 2.0.2, and pandas 3.0.3. It is not the final course lock until both local-Jupyter and fresh-Colab certification are complete. Do not install pandas 3.0.4.
 
-## Step 2: Code and Markdown Cells
+Each notebook begins with one supplied setup cell. It conditionally installs pandas 3.0.3 before the first pandas import and then prints the actual Python, NumPy, and pandas versions. It does not reinstall the complete Colab package collection.
 
-Create a markdown cell (click `+ Markdown` or change cell type):
+For local use, start from this directory, create a Python 3.12.13 environment, and install the two direct course dependencies from `requirements.txt`. Open the notebook with the course Jupyter or VS Code host and select that environment as the Python 3 kernel. Jupyter host and kernel-support packages are platform tooling rather than lecture imports; record their versions during certification.
 
-```markdown
-# My First Data Analysis
+The portable kernelspec is intentionally named `Python 3`, not after a local `.venv`. Local Jupyter and Colab should therefore differ only in launch controls and runtime-local paths, not in teaching code.
 
-This notebook demonstrates:
-- Loading data
-- Basic exploration
-- Simple visualization
-```
+## Demo 1: live state failure and repair
 
-Create a code cell below it:
+Use a disposable Colab session or a working copy. Do not save the temporary edits over the canonical notebook.
 
-```python
-# Import libraries
-import pandas as pd
-import matplotlib.pyplot as plt
+1. Insert a Markdown cell containing a prediction and a code cell containing a harmless print statement. Run the code cell, observe its stored output, and remove both scratch cells.
+2. In the producer cell, temporarily change `rate` from `3` to `2`.
+3. Run the producer and dependent cells. The displayed total is `24`.
+4. Edit the visible producer source back to `rate = 3` without running it. The displayed total remains `24` because editing source does not update kernel state or stored output.
+5. Run only the producer, then run the observer. The kernel now reports `rate = 3`, while the previously computed `total` remains stale at `24`.
+6. Restart the runtime or kernel and run the dependent cell alone. This must produce a real `NameError` because the producer names do not exist in fresh state.
+7. Run all cells from the canonical top-to-bottom order. The final total is `36`, the runtime-local file is recreated, and the final verification message appears.
 
-print("Setup complete!")
-```
+Colab controls are **Runtime → Restart session** and **Runtime → Run all**. Use the equivalent restart-kernel and run-all controls in local Jupyter.
 
-Run the cell with `Shift+Enter`
+The committed notebook contains no intentionally failing cell: its canonical source always has `rate = 3`, so automated fresh execution succeeds. Reload the canonical source after the live mutation sequence.
 
-**What this demonstrates**: Notebooks mix documentation (markdown) with executable code, perfect for analysis storytelling
+## Demo 2: expected checkpoints
 
-## Step 3: Magic Commands in Action
+The first object is a three-value Series named `temperature_c`, labeled `north`, `south`, and `west`. The second begins as a four-row, two-column DataFrame whose index is named `record_id`.
 
-Create a new code cell:
+Check these observable results in order:
 
-```python
-# Display plots inline
-%matplotlib inline
+- `head(3)`, direct `info()`, and numeric `describe()` inspect a bounded table without making a cleaning decision;
+- bracket selection distinguishes a Series from a one-column DataFrame;
+- matching `.loc` and `.iloc` requests return the same values;
+- the one mask selects `obs-002` and `obs-003`;
+- the one derived column contains four values of `10`; and
+- the unique `record_id` tie-breaker orders the rows `obs-001`, `obs-002`, `obs-003`, `obs-004`.
 
-# Check working directory
-%pwd
-```
+The last cell asserts these results and prints the fresh-run verification message.
 
-Run it, then create another cell:
+## Demo 3: path and round-trip checkpoints
 
-```python
-# Install a package (if needed)
-%pip install pandas
+Inside the course repository, the notebook must find the committed `data/anscombe.csv` while launched from either the repository root or a nested directory. Outside the repository, it must fetch the same bytes from the immutable upstream commit into a runtime-local `data` directory. Both paths verify the same SHA-256 checksum before pandas reads the file.
 
-# List installed packages
-%pip list | grep pandas
-```
+Repository executions write `04/demo/output/selected_anscombe.csv`. Non-repository executions write `output/selected_anscombe.csv` under the current working directory. Code creates either output directory when needed.
 
-**What this demonstrates**: Magic commands give special notebook powers - inline plots, package management, system commands
+The input has shape `(44, 3)` and columns `dataset`, `x`, and `y`. Selecting `x >= 13` produces seven rows, preserves those three columns, and writes no DataFrame index column. Reading the file back must reach the final verification message without a manual upload, Drive mount, or previously defined name.
 
-## Step 4: Interactive Data Exploration
+For portability testing, use disposable repository copies. Confirm the committed-fixture case, remove the fixture only in a disposable copy to confirm the fallback, corrupt it only in another disposable copy to confirm the checksum failure, and repeat a clean run to confirm deterministic replacement.
 
-Create a code cell:
+## Output and privacy policy
 
-```python
-# Create sample data
-data = {
-    'name': ['Alice', 'Bob', 'Charlie', 'Diana'],
-    'age': [25, 30, 35, 28],
-    'salary': [50000, 60000, 75000, 55000]
-}
+- Runtime files are not durable course storage. Colab may discard them when its runtime is deleted; local temporary files may outlive a kernel but are still recreated by code.
+- Never put credentials, tokens, protected records, or identifying data in notebook source or output.
+- Clear sensitive output immediately. These demos use only non-sensitive teaching values.
+- Stored output is never proof that code runs. Certification and grading execute a fresh copy.
+- Canonical demo notebooks are committed with cleared outputs and null execution counts. Executed certification copies are disposable.
+- GitHub source opened in Colab is not automatically updated by edits made in the Colab tab.
 
-df = pd.DataFrame(data)
-df
-```
+## Certification record
 
-Run it - notice pandas displays the DataFrame nicely
+Do not mark a row as passing without independent evidence from that environment.
 
-Add another cell to explore:
+| Notebook | Paired Markdown | Local candidate | Fresh Colab | Badge release ref |
+|---|---|---|---|---|
+| `demo1_jupyter_basics.ipynb` | none — canonical notebook policy | pending | pending | development: `eleventy` |
+| `demo2_pandas_basics.ipynb` | none — canonical notebook policy | pending | pending | development: `eleventy` |
+| `demo3_data_io.ipynb` | none — canonical notebook policy | pending | pending | development: `eleventy` |
 
-```python
-# Summary statistics
-print(df.describe())
-
-# Quick visualization
-df.plot(x='name', y='salary', kind='bar')
-plt.title('Salaries by Person')
-plt.show()
-```
-
-**What this demonstrates**: Notebooks show results immediately - no need to print everything, DataFrames render as tables, plots appear inline
-
-## Step 5: Kernel Management
-
-1. Add a variable in a new cell: `test_var = "I'm in memory"`
-2. Run it with `Shift+Enter`
-3. In a new cell, reference it: `print(test_var)` - it works!
-4. Click the "Restart" button (or `Ctrl+Shift+P` → "Jupyter: Restart Kernel")
-5. Try running `print(test_var)` again - it fails! Variable is gone
-
-**What this demonstrates**:
-- Kernel holds all variables in memory
-- Restarting clears everything - useful for debugging
-- Good practice: "Restart & Run All" before sharing to ensure code works top-to-bottom
-
-## Step 6: Git Safety - The Critical Step
-
-Your notebook now has OUTPUT saved in it (that bar chart, the DataFrames, etc.)
-
-**Danger**: If that data was sensitive (patient records, financial data), it's now in your git history forever!
-
-**Safe workflow**:
-1. Click "Clear All Outputs" button (looks like an eraser)
-2. Save the notebook (`Ctrl+S`)
-3. Check the file - outputs are gone
-4. NOW it's safe to commit
-
-**What this demonstrates**:
-- Notebooks save code AND outputs
-- Always clear sensitive outputs before committing
-- This is the #1 security mistake with notebooks
-
----
-
-# Demo 2: Pandas DataFrames Exploration
-
-**File:** [demo2_pandas_basics.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb)
-
-**Objective**: Master pandas DataFrame basics - creation, selection, filtering, and exploration.
-
-**Key Concepts**: DataFrame creation, indexing (.loc/.iloc), boolean filtering, basic operations
-
-## Step 1: Create DataFrame from Dictionary
-
-Create `demo2_pandas_basics.md` (we'll convert to .ipynb later):
-
-```python
-import pandas as pd
-import numpy as np
-
-# Create from dictionary
-employee_data = {
-    'employee_id': ['E001', 'E002', 'E003', 'E004', 'E005'],
-    'name': ['Alice Johnson', 'Bob Smith', 'Charlie Davis', 'Diana Martinez', 'Eve Wilson'],
-    'department': ['Engineering', 'Sales', 'Engineering', 'Marketing', 'Sales'],
-    'salary': [85000, 65000, 92000, 58000, 71000],
-    'years_experience': [5, 3, 8, 2, 4]
-}
-
-df = pd.DataFrame(employee_data)
-print(df)
-print(f"\nShape: {df.shape}")
-print(f"\nData types:\n{df.dtypes}")
-```
-
-**What this demonstrates**:
-- Dictionaries → DataFrames (keys become column names)
-- `.shape` shows (rows, columns)
-- `.dtypes` shows column data types
-
-## Step 2: Column Selection (THE FIRST THING YOU DO!)
-
-```python
-# Single column (returns Series)
-names = df['name']
-print("Single column (Series):")
-print(type(names))
-print(names)
-
-# Multiple columns (returns DataFrame)
-basic_info = df[['name', 'department']]
-print("\nMultiple columns (DataFrame):")
-print(type(basic_info))
-print(basic_info)
-
-# Select only numeric columns
-numeric_cols = df.select_dtypes(include=['number'])
-print("\nNumeric columns only:")
-print(numeric_cols)
-```
-
-**What this demonstrates**:
-
-- **CRITICAL**: Column selection is the first operation after loading data
-- `df['col']` → Series, `df[['col1', 'col2']]` → DataFrame
-- `select_dtypes()` filters by data type (super useful!)
-
-## Step 3: DataFrame Inspection & Summary Statistics
-
-```python
-# First few rows
-print("First 3 rows:")
-print(df.head(3))
-
-# Summary statistics - THE most important exploration tool
-print("\nSummary statistics:")
-print(df.describe())
-
-# DataFrame structure and memory
-print("\nDataFrame info:")
-df.info()
-
-# Count values
-print(f"\nTotal rows: {len(df)}")
-print(f"\nNon-null counts per column:")
-print(df.count())
-
-# Unique values in categorical columns
-print(f"\nDepartments: {df['department'].unique()}")
-print(f"Number of unique departments: {df['department'].nunique()}")
-print(f"\nValue counts for department:")
-print(df['department'].value_counts())
-```
-
-**What this demonstrates**:
-
-- `.describe()` is your go-to for numeric column summaries
-- `.info()` shows data types, memory, and null counts
-- `.value_counts()` essential for categorical data exploration
-
-## Step 4: Label vs Position Selection (.loc vs .iloc)
-
-```python
-# .loc - label-based selection
-print("Using .loc (labels):")
-print(df.loc[0, 'name'])  # Row 0, column 'name'
-print(df.loc[0:2, ['name', 'salary']])  # Rows 0-2 (inclusive!), specific columns
-
-print("\nUsing .iloc (positions):")
-print(df.iloc[0, 1])  # Row 0, column 1 (position)
-print(df.iloc[0:2, [1, 3]])  # Rows 0-1 (exclusive!), columns at positions 1 and 3
-```
-
-**What this demonstrates**:
-- `.loc[]` uses labels (column names, index labels) - INCLUSIVE slicing
-- `.iloc[]` uses integer positions - EXCLUSIVE slicing (like Python lists)
-- This is the #1 confusion point for pandas beginners!
-
-## Step 5: Boolean Filtering & .query()
-
-```python
-# Single condition
-high_earners = df[df['salary'] > 70000]
-print("High earners (>$70k):")
-print(high_earners)
-
-# Multiple conditions (& = AND, | = OR, must use parentheses!)
-experienced_engineers = df[(df['department'] == 'Engineering') & (df['years_experience'] > 4)]
-print("\nExperienced engineers:")
-print(experienced_engineers)
-
-# Using .isin() for multiple values
-sales_or_marketing = df[df['department'].isin(['Sales', 'Marketing'])]
-print("\nSales or Marketing:")
-print(sales_or_marketing)
-
-# Using .query() for more readable filtering
-high_earner_query = df.query('salary > 70000')
-print("\nUsing .query() - more readable:")
-print(high_earner_query)
-
-# Complex query with multiple conditions
-complex_query = df.query('department == "Engineering" and years_experience > 4')
-print("\nComplex query:")
-print(complex_query)
-```
-
-**What this demonstrates**:
-
-- Boolean masks filter rows based on conditions
-- Use `&` (and), `|` (or), `~` (not) - MUST use parentheses
-- `.isin()` checks membership in a list
-- `.query()` provides SQL-like readable syntax (great for complex filters!)
-
-## Step 6: Column Operations
-
-```python
-# Create new column
-df['salary_per_year_exp'] = df['salary'] / df['years_experience']
-print("Added calculated column:")
-print(df[['name', 'salary_per_year_exp']])
-
-# Rename columns
-df_renamed = df.rename(columns={'years_experience': 'experience_yrs'})
-print("\nRenamed column:")
-print(df_renamed.columns)
-
-# Drop columns
-df_subset = df.drop(columns=['employee_id'])
-print("\nAfter dropping employee_id:")
-print(df_subset.columns)
-```
-
-**What this demonstrates**: DataFrames are mutable - add, rename, drop columns easily
-
-## Step 7: Sorting and Ranking
-
-```python
-# Sort by salary
-df_sorted = df.sort_values('salary', ascending=False)
-print("Sorted by salary (high to low):")
-print(df_sorted[['name', 'salary']])
-
-# Sort by multiple columns
-df_multi_sort = df.sort_values(['department', 'salary'], ascending=[True, False])
-print("\nSorted by department, then salary within each:")
-print(df_multi_sort[['name', 'department', 'salary']])
-
-# Sort by index
-df_sorted_index = df.sort_index()
-print("\nSorted by index:")
-print(df_sorted_index)
-```
-
-**What this demonstrates**: Sorting is crucial for finding patterns and top/bottom values
-
----
-
-# Demo 3: Data I/O and Real-World Workflow
-
-**File:** [demo3_data_io.ipynb](https://github.com/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)
-
-**Objective**: Load real data from files, handle missing values, and perform basic analysis.
-
-**Key Concepts**: CSV reading, missing data, value counts, groupby basics
-
-## Step 1: Create Sample CSV Data
-
-First, create a sample CSV file to work with:
-
-```python
-# Create sample sales data
-sales_data = """date,product,quantity,price,region
-2024-01-15,Widget A,5,29.99,North
-2024-01-16,Widget B,3,49.99,South
-2024-01-16,Widget A,2,29.99,East
-2024-01-17,Widget C,7,19.99,North
-2024-01-17,Widget B,,49.99,South
-2024-01-18,Widget A,4,29.99,West
-2024-01-18,Widget C,6,,North
-2024-01-19,Widget B,8,49.99,East"""
-
-# Write to file
-with open('sales_data.csv', 'w') as f:
-    f.write(sales_data)
-
-print("Created sales_data.csv")
-```
-
-**What this demonstrates**: Creating test data programmatically (useful for demos and testing)
-
-## Step 2: Load and Inspect Data
-
-```python
-# Read CSV
-df_sales = pd.read_csv('sales_data.csv')
-
-print("Data loaded:")
-print(df_sales)
-
-print("\nData types:")
-print(df_sales.dtypes)
-
-print("\nMissing values per column:")
-print(df_sales.isnull().sum())
-```
-
-**What this demonstrates**:
-- `read_csv()` infers data types automatically
-- Missing values appear as NaN
-- Always check for missing data after loading
-
-## Step 3: Data Quality Assessment
-
-```python
-# Check for missing values
-print("Missing values per column:")
-print(df_sales.isnull().sum())
-
-# See rows with missing values
-print("\nRows with missing values:")
-print(df_sales[df_sales.isnull().any(axis=1)])
-
-# Check for duplicates
-print(f"\nNumber of duplicate rows: {df_sales.duplicated().sum()}")
-
-# Check data types
-print("\nData types:")
-print(df_sales.dtypes)
-```
-
-**What this demonstrates**:
-
-- Always check for missing values, duplicates, and data types after loading
-- `.isnull().sum()` shows missing count per column
-- `.duplicated()` finds duplicate rows
-
-## Step 4: Handle Missing Data & Type Conversion
-
-```python
-# Fill missing quantity with 0
-df_sales['quantity'] = df_sales['quantity'].fillna(0)
-
-# Fill missing price with median price for that product
-df_sales['price'] = df_sales.groupby('product')['price'].transform(lambda x: x.fillna(x.median()))
-
-print("After handling missing values:")
-print(df_sales)
-
-# Convert quantity to integer (was float due to NaN)
-df_sales['quantity'] = df_sales['quantity'].astype('int64')
-
-# Convert date column to datetime
-df_sales['date'] = pd.to_datetime(df_sales['date'])
-
-print("\nAfter type conversion:")
-print(df_sales.dtypes)
-print(f"\nRemaining missing values: {df_sales.isnull().sum().sum()}")
-```
-
-**What this demonstrates**:
-
-- Different strategies for different columns (0 for quantity, median for price)
-- `groupby().transform()` fills within groups
-- `.astype()` converts data types (useful after filling NaN)
-- `pd.to_datetime()` converts strings to datetime objects
-- Real-world data is messy - always have a cleaning strategy!
-
-## Step 5: Basic Analysis
-
-```python
-# Add calculated column
-df_sales['total_sale'] = df_sales['quantity'] * df_sales['price']
-
-print("Sales with totals:")
-print(df_sales[['date', 'product', 'quantity', 'price', 'total_sale']])
-
-# Summary by product
-print("\nSales by product:")
-product_summary = df_sales.groupby('product').agg({
-    'quantity': 'sum',
-    'total_sale': 'sum'
-}).round(2)
-print(product_summary)
-
-# Summary by region
-print("\nSales by region:")
-region_summary = df_sales.groupby('region')['total_sale'].sum().sort_values(ascending=False)
-print(region_summary)
-```
-
-**What this demonstrates**:
-- Calculated columns enable analysis
-- `groupby().agg()` summarizes data
-- Multiple aggregations at once
-
-## Step 6: Value Counts and Quick Insights
-
-```python
-# Most common products
-print("Product frequencies:")
-print(df_sales['product'].value_counts())
-
-# Regions ranked by number of sales
-print("\nSales transactions by region:")
-print(df_sales['region'].value_counts())
-
-# Quick statistics
-print(f"\nTotal revenue: ${df_sales['total_sale'].sum():.2f}")
-print(f"Average transaction: ${df_sales['total_sale'].mean():.2f}")
-print(f"Largest sale: ${df_sales['total_sale'].max():.2f}")
-```
-
-**What this demonstrates**:
-- `.value_counts()` is your best friend for categorical data
-- Quick statistical summaries guide deeper analysis
-
-## Step 7: Save Results
-
-```python
-# Save cleaned data
-df_sales.to_csv('sales_data_clean.csv', index=False)
-print("Saved cleaned data to sales_data_clean.csv")
-
-# Save summary
-product_summary.to_csv('product_summary.csv')
-print("Saved product summary to product_summary.csv")
-
-print("\nFiles created:")
-import os
-for file in ['sales_data.csv', 'sales_data_clean.csv', 'product_summary.csv']:
-    if os.path.exists(file):
-        print(f"  ✓ {file}")
-```
-
-**What this demonstrates**:
-- `to_csv()` saves DataFrames
-- `index=False` prevents writing row numbers as a column
-- Always save cleaned data and analysis results
-
----
-
-# Key Takeaways
-
-**Demo 1 - Jupyter**:
-- Notebooks are perfect for interactive data analysis
-- Mix code and documentation
-- Magic commands provide special powers
-- Always clear outputs before committing to git
-
-**Demo 2 - DataFrames**:
-- DataFrames are like supercharged spreadsheets
-- `.loc[]` = labels (inclusive), `.iloc[]` = positions (exclusive)
-- Boolean filtering is powerful - use parentheses with `&`/`|`
-- Build new columns from existing data
-
-**Demo 3 - Real Workflow**:
-- Real data is messy - missing values are normal
-- Always inspect data after loading
-- Different missing value strategies for different situations
-- Save cleaned data and results
-
-**Next Steps for Students**:
-- Practice with their own CSV files
-- Try different missing value strategies
-- Explore groupby aggregations
-- Build a mini analysis pipeline
+For each certification run, record the notebook path, environment, Python/NumPy/pandas versions, launch working directory, fixture source, final verification result, tester, date, and immutable release ref. Do not treat this guide or stored notebook output as independent certification.
