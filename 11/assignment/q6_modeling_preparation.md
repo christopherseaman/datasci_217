@@ -1,186 +1,86 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
 # Q6: Modeling Preparation
 
-**Phase 7:** Modeling Preparation  
-**Points: 3 points**
+**12 points** | Phase 7
 
-**Focus:** Perform temporal train/test split, select features, handle categorical variables.
-
-**Lecture Reference:** Lecture 11, Notebook 3 ([`11/demo/03_pattern_analysis_modeling_prep.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/03_pattern_analysis_modeling_prep.ipynb)), Phase 7. This notebook demonstrates temporal train/test splitting (see "Your Approach" section below for the key code pattern).
-
----
+Random splitting would allow future weather into training. Keep only eligible forecast rows and create the fixed train, validation, and test periods from each target instant.
 
 ## Setup
 
 ```python
-# Import libraries
+from pathlib import Path
+
 import pandas as pd
-import numpy as np
-import os
 
-# Load feature-engineered data from Q4
-df = pd.read_csv('output/q4_features.csv', parse_dates=['Measurement Timestamp'], index_col='Measurement Timestamp')
-# Or if you saved without index:
-# df = pd.read_csv('output/q4_features.csv')
-# df['Measurement Timestamp'] = pd.to_datetime(df['Measurement Timestamp'])
-# df = df.set_index('Measurement Timestamp')
-print(f"Loaded {len(df):,} records with features")
+INPUT_PATH = Path("output/q4_features.csv")
+features = pd.read_csv(
+    INPUT_PATH,
+    parse_dates=["cutoff_timestamp_utc", "target_timestamp_utc"],
+)
+
+FIXED_PREDICTORS = [
+    "station_name", "air_temperature_c_t", "relative_humidity_pct_t",
+    "interval_rain_mm_t", "wind_speed_mps_t", "maximum_wind_speed_mps_t",
+    "barometric_pressure_hpa_t", "solar_radiation_w_m2_t",
+    "wind_direction_sin_t", "wind_direction_cos_t",
+    "air_temperature_lag_1h_c", "air_temperature_lag_24h_c",
+    "air_temperature_lag_168h_c", "air_temperature_mean_past_24h_c",
+    "air_temperature_change_1h_c", "target_hour_sin", "target_hour_cos",
+    "target_day_of_year_sin", "target_day_of_year_cos",
+]
+ID_COLUMNS = [
+    "row_id", "station_name", "cutoff_timestamp_utc", "target_timestamp_utc",
+]
+X_COLUMNS = ID_COLUMNS + FIXED_PREDICTORS[1:]
+Y_COLUMNS = ["row_id", "target_air_temperature_c"]
 ```
 
----
+## Fixed Chronological Splits
 
-## Objective
+Apply the contract boundaries to eligible rows by target instant. Keep missing predictor values; Q7's train-fitted imputer handles them.
 
-Prepare data for modeling by performing temporal train/test split, selecting features, and handling categorical variables.
-
-**CRITICAL - Temporal Split:** For time series data, you **MUST** use temporal splitting (earlier data for training, later data for testing). **DO NOT** use random split. Why? Time series data has temporal dependencies - using future data to predict the past would be data leakage.
-
----
-
-## Required Artifacts
-
-You must create exactly these 5 files in the `output/` directory:
-
-### 1. `output/q6_X_train.csv`
-**Format:** CSV file
-**Content:** Training features (X)
-**Requirements:**
-- All feature columns (no target variable)
-- Only training data (earlier time periods)
-- **No index column** (save with `index=False`)
-- **No datetime column** (unless it's a feature, not the index)
-
-### 2. `output/q6_X_test.csv`
-**Format:** CSV file
-**Content:** Test features (X)
-**Requirements:**
-- All feature columns (same as X_train)
-- Only test data (later time periods)
-- **No index column** (save with `index=False`)
-- **No datetime column** (unless it's a feature, not the index)
-
-### 3. `output/q6_y_train.csv`
-**Format:** CSV file
-**Content:** Training target variable (y)
-**Requirements:**
-- Single column with target variable name as header
-- Only training data (corresponding to X_train)
-- **No index column** (save with `index=False`)
-
-**Example:**
-```csv
-Water Temperature
-15.2
-15.3
-15.1
-...
+```python
+# TODO: Filter model_eligible rows and assign train, validation, or test from
+# the target instant corresponding to each America/Chicago boundary.
 ```
 
-### 4. `output/q6_y_test.csv`
-**Format:** CSV file
-**Content:** Test target variable (y)
-**Requirements:**
-- Single column with target variable name as header
-- Only test data (corresponding to X_test)
-- **No index column** (save with `index=False`)
+## Save X and y Handoffs
 
-### 5. `output/q6_train_test_info.txt`
-**Format:** Plain text file
-**Content:** Train/test split information
-**Required information:**
-- Split method: Temporal (80/20 or similar)
-- Training set size: [number] samples
-- Test set size: [number] samples
-- Training date range: [start] to [end]
-- Test date range: [start] to [end]
-- Number of features: [number]
-- Target variable: [name]
+For each split, sort by target UTC then station. X and y must use the same unique row IDs in the same order.
 
-**Example format:**
-```
-TRAIN/TEST SPLIT INFORMATION
-==========================
-
-Split Method: Temporal (80/20 split by time)
-
-Training Set Size: 40000 samples
-Test Set Size: 10000 samples
-
-Training Date Range: 2022-01-01 00:00:00 to 2026-09-15 07:00:00
-Test Date Range: 2026-09-15 08:00:00 to 2027-09-15 07:00:00
-
-Number of Features: 22
-Target Variable: Water Temperature
+```python
+# TODO: Save q6_X_train/validation/test.csv with X_COLUMNS.
+# TODO: Save q6_y_train/validation/test.csv with Y_COLUMNS.
 ```
 
----
+## Split Summary
 
-## Requirements Checklist
+```python
+SUMMARY_COLUMNS = ["split", "n_rows", "target_start", "target_end", "n_features"]
 
-- [ ] Target variable selected
-- [ ] Temporal train/test split performed (train on earlier data, test on later data - **NOT random split**)
-- [ ] Features selected and prepared
-- [ ] Categorical variables handled (encoding if needed)
-- [ ] No data leakage (future data not in training set)
-- [ ] All 5 required artifacts saved with exact filenames
-
----
-
-## Your Approach
-
-1. **Select target variable** - Choose a meaningful numeric variable to predict
-2. **Select features** - Exclude target, non-numeric columns, and any features derived from the target (to avoid data leakage)
-3. **Handle categorical variables** - One-hot encode if needed
-4. **Perform temporal train/test split** - Sort by datetime, then split by index position (earlier data for training, later for testing)
-5. **Save artifacts** - Save X_train, X_test, y_train, y_test as separate CSVs
-6. **Document split** - Record split sizes, date ranges, and feature count
-
----
-
-## Feature Selection Guidelines
-
-When selecting features for modeling, think critically about each feature:
-
-**Red Flags to Watch For:**
-- **Circular logic**: Does this feature use the target variable to predict the target?
-  - Example: Rolling mean of target, lag of target (if not handled carefully)
-  - Example: If predicting `Air Temperature`, using `air_temp_rolling_7h` is circular - you're predicting temperature from smoothed temperature
-- **Data leakage**: Does this feature contain information that wouldn't be available at prediction time?
-  - Example: Future values, aggregated statistics that include the current value
-- **Near-duplicates**: Is this feature nearly identical to the target?
-  - Check correlations - if correlation > 0.95, investigate whether it's legitimate
-  - Example: A feature with 99%+ correlation with the target is likely problematic
-
-**Good Practices:**
-- Use external predictors (other weather variables, temporal features)
-- Create rolling windows of **predictors**, not the target
-  - Good: `wind_speed_rolling_7h`, `humidity_rolling_24h`
-  - Bad: `air_temp_rolling_7h` when predicting Air Temperature
-- Use derived features that combine multiple predictors
-- Think: "Would I have this information when making a real prediction?"
-
-**Remember:** The goal is to predict the target from **other** information, not from the target itself.
-
----
-
-## Decision Points
-
-- **Target variable:** What do you want to predict? Temperature? Water conditions? Choose something meaningful and measurable.
-- **Temporal split:** **CRITICAL** - Use temporal split (earlier data for training, later data for testing), NOT random split. Why? Time series data has temporal dependencies. Typical split: 80/20 or 70/30.
-- **Feature selection:** Which features are most relevant? Consider correlations, domain knowledge, and feature importance from previous analysis.
-- **Categorical encoding:** If you have categorical variables, encode them (one-hot encoding, label encoding, etc.) before modeling.
-
----
+# TODO: Save output/q6_split_summary.csv in train, validation, test order.
+```
 
 ## Checkpoint
 
-After Q6, you should have:
-- [ ] Temporal train/test split completed (earlier → train, later → test)
-- [ ] Features prepared (no target, no datetime index)
-- [ ] Categorical variables encoded
-- [ ] No data leakage verified
-- [ ] All 5 artifacts saved: `q6_X_train.csv`, `q6_X_test.csv`, `q6_y_train.csv`, `q6_y_test.csv`, `q6_train_test_info.txt`
+- [ ] Only eligible Q4 rows enter Q6.
+- [ ] Splits use target instants and exact local boundaries.
+- [ ] Each X/y pair has identical unique IDs and row order.
+- [ ] X contains identifiers plus every fixed predictor in fixed order.
+- [ ] Predictor missingness is preserved for train-fitted preprocessing.
 
----
-
-**Next:** Continue to `q7_modeling.md` for Modeling.
-
+Next: [`q7_modeling.ipynb`](q7_modeling.ipynb)

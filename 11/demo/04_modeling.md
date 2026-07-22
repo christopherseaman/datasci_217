@@ -5,819 +5,286 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
 ---
 
-# Notebook 4: Modeling & Results
+# Demo 4: Compare, freeze, and report
 
-![Is It Worth the Time?](../media/is_it_worth_the_time_2x.png)
+**Assignment patterns:** Q7 modeling, Q8 results, and Q9 reporting.
 
-**Phases 8-9:** Modeling, Results & Insights
+We compare a fixed weekly baseline (`lag_168`) with one transparent scikit-learn
+pipeline. Validation MAE freezes the choice. Only then do we combine train and
+validation, refit the pipeline if selected, and evaluate June exactly once.
 
-**Dataset:** NYC Taxi Trip Dataset (continuing from Notebook 3)
+There is no performance threshold and no feature-importance requirement. Honest
+evaluation and clear evidence are the goals.
 
-**Focus:** Building predictive models, evaluating performance, interpreting results, and communicating insights.
-
----
-
-**Where we are:** We've cleaned our data (Notebook 1), created features (Notebook 2), and prepared for modeling (Notebook 3). Now we build and evaluate predictive models.
-
-**What we'll accomplish:**
-- Train multiple model types (Linear Regression, Random Forest, XGBoost)
-- Evaluate and compare model performance
-- Interpret feature importance
-- Communicate results effectively
-
-**Why this matters:** 
-- Different models make different assumptions - comparing them helps us understand our data
-- Performance metrics tell us if our model is useful in practice
-- Feature importance helps us understand what drives predictions
-
-**The big picture:**
-- **Notebook 1:** Made data clean ✓
-- **Notebook 2:** Made data useful ✓
-- **Notebook 3:** Made data ready for modeling ✓
-- **Notebook 4 (this one):** Build and evaluate models
-
----
-
-## Phase 8: Modeling
-
-**Why we train multiple models:** Different algorithms make different assumptions about the data:
-- **Linear Regression:** Assumes relationships are linear (fare = a × distance + b)
-- **Random Forest:** Can capture non-linear relationships and interactions
-- **XGBoost:** Gradient boosting that learns complex patterns
-
-**Our strategy:** Start simple (Linear Regression) as a baseline, then try more complex models. If complex models don't perform much better, the simple model is probably sufficient (Occam's Razor).
-
-**What we're looking for:**
-- Does the model generalize? (train vs test performance)
-- Which features matter most? (feature importance)
-- Are predictions reasonable? (visual inspection)
-
-### Learning Objectives
-
-- Train multiple model types
-- Evaluate model performance
-- Compare models
-- Interpret model results
-- Identify overfitting
-
-### Step 1: Load Prepared Data
+## One setup cell
 
 ```python
-# Import libraries
-import pandas as pd
-import numpy as np
+import importlib.metadata as metadata
+import importlib.util
+import subprocess
+import sys
+
+REQUIRED = {
+    "numpy": "2.0.2", "pandas": "3.0.3", "pyarrow": "25.0.0",
+    "scikit-learn": "1.9.0", "matplotlib": "3.11.1",
+}
+missing = []
+for package, version in REQUIRED.items():
+    try:
+        installed = metadata.version(package)
+    except metadata.PackageNotFoundError:
+        installed = None
+    if installed != version:
+        missing.append(f"{package}=={version}")
+if missing:
+    if importlib.util.find_spec("pip") is None:
+        subprocess.check_call([sys.executable, "-m", "ensurepip", "--upgrade"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", *missing])
+
+from pathlib import Path
+from urllib.request import urlretrieve
+
+import hashlib
+import json
 import matplotlib.pyplot as plt
-import seaborn as sns
-from IPython.display import display, Markdown
+import numpy as np
+import pandas as pd
+from IPython.display import display
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# Modeling libraries
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import xgboost as xgb
-
-# Set plotting style
-plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
-%matplotlib inline
-
-# Load prepared data from Notebook 3
-# Note: Exclusion filtering was applied in Notebooks 1-2, so these are already clean
-X_train = pd.read_csv('../output/03_X_train.csv')
-X_test = pd.read_csv('../output/03_X_test.csv')
-y_train = pd.read_csv('../output/03_y_train.csv').squeeze()  # Convert to Series
-y_test = pd.read_csv('../output/03_y_test.csv').squeeze()
-
-display(Markdown("### 📂 Data Loaded"))
-display(pd.DataFrame({
-    'Dataset': ['Training set', 'Test set'],
-    'Shape': [
-        f"{X_train.shape[0]:,} × {X_train.shape[1]}",
-        f"{X_test.shape[0]:,} × {X_test.shape[1]}"
-    ]
-}))
-display(Markdown(f"**Features:** `{list(X_train.columns[:5])}...` ({len(X_train.columns)} total)"))
+RANDOM_STATE = 217  # Ridge is deterministic and has no random_state parameter.
+print(f"Python {sys.version.split()[0]} | scikit-learn {metadata.version('scikit-learn')}")
 ```
 
-**Understanding Model Metrics:**
+## Independently rebuild the model table and split
 
-Before we train models, let's understand what our evaluation metrics mean:
-
-| Metric | What it Measures | Interpretation |
-|--------|------------------|----------------|
-| **RMSE** | Average prediction error (in dollars) | If RMSE = $3.50, predictions are off by $3.50 on average |
-| **MAE** | Average absolute error | Similar to RMSE but less sensitive to outliers |
-| **R²** | Proportion of variance explained | R² = 0.75 means model explains 75% of fare variability |
-
-**What's a "good" R²?** It depends on the domain. For complex real-world problems, R² = 0.5 might be excellent. For simple relationships, R² < 0.9 might indicate missing features.
-
-### ⚠️ Critical Check: Feature Leakage Before Modeling
-
-Before training models, verify you haven't introduced **feature leakage** (using information from the target or future data to make predictions).
-
-**Quick Leakage Checks:**
+Fresh Colab downloads only the compact frozen panel. Development URLs use `main`;
+immutable annual-tag replacement is pending release freeze.
 
 ```python
-# Check 1: Are any features too highly correlated with target?
-# High correlation (>0.95) suggests potential leakage
-print("Correlation with target (fare_amount):")
-correlations = X_train.corrwith(y_train).abs().sort_values(ascending=False)
-suspicious = correlations[correlations > 0.95]
-if len(suspicious) > 0:
-    print(f"⚠️ WARNING: {len(suspicious)} features have correlation > 0.95 with target:")
-    print(suspicious)
-else:
-    print("✅ No suspiciously high correlations")
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 
-# Check 2: Do any feature names suggest they depend on the target?
-target_related = [col for col in X_train.columns if 'fare' in col.lower() or 'total' in col.lower()]
-if target_related:
-    print(f"\n⚠️ WARNING: Features with 'fare' or 'total' in name: {target_related}")
-    print("Verify these don't leak target information!")
-else:
-    print("\n✅ No obviously problematic feature names")
+def acquire_authenticated_panel():
+    filenames = ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_counts.parquet"]
+    for directory in (Path("data"), Path("11/demo/data")):
+        if all((directory / filename).exists() for filename in filenames):
+            break
+    else:
+        directory = Path("data")
+        directory.mkdir(exist_ok=True)
+        for filename in filenames:
+            path = directory / filename
+            if not path.exists():
+                urlretrieve(f"{REPO_RAW}/{filename}", path)
+
+    manifest_path = directory / filenames[0]
+    panel_path = directory / filenames[1]
+    expected_manifest_sha256 = "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
+    expected_panel_sha256 = "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
+    assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
+        "Manifest hash mismatch"
+    )
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["artifacts"]["panel"]["sha256"] == expected_panel_sha256
+    assert hashlib.sha256(panel_path.read_bytes()).hexdigest() == expected_panel_sha256, (
+        "Panel hash mismatch"
+    )
+    print("Authenticated manifest and panel SHA-256 digests.")
+    return pd.read_parquet(panel_path)
+
+def build_model_table(panel):
+    table = panel.sort_values(["pickup_zone_id", "target_hour_utc"]).copy()
+    local = table["target_hour_utc"].dt.tz_convert("America/New_York")
+    table["target_hour_local"] = local
+    table["hour_of_day"] = local.dt.hour
+    table["day_of_week"] = local.dt.dayofweek
+    table["month"] = local.dt.month
+    table["is_weekend"] = local.dt.dayofweek.ge(5).astype("int8")
+    grouped = table.groupby("pickup_zone_id", sort=False)["pickup_count"]
+    for lag in (1, 24, 168):
+        table[f"lag_{lag}"] = grouped.shift(lag)
+    for window in (24, 168):
+        table[f"rolling_mean_{window}"] = grouped.transform(
+            lambda values: values.shift(1).rolling(window, min_periods=window).mean()
+        )
+    history = ["lag_1", "lag_24", "lag_168", "rolling_mean_24", "rolling_mean_168"]
+    return table.dropna(subset=history).sort_values(
+        ["target_hour_utc", "pickup_zone_id"]
+    ).reset_index(drop=True)
+
+table = build_model_table(acquire_authenticated_panel())
+local_naive = table["target_hour_local"].dt.tz_localize(None)
+train = table.loc[local_naive.lt("2023-05-01")].copy()
+validation = table.loc[local_naive.between("2023-05-01", "2023-06-01", inclusive="left")].copy()
+test = table.loc[local_naive.ge("2023-06-01")].copy()
+
+assert len(table) == 50_100
+assert len(train) + len(validation) + len(test) == len(table)
+print({"train": len(train), "validation": len(validation), "test": len(test)})
 ```
 
-**Common leakage sources:**
-- Features derived from the target variable (e.g., `tip_percentage = tip/fare` when predicting `fare`)
-- Rolling windows that include future data
-- Group statistics calculated on entire dataset (including test set)
-- Information that wouldn't be available at prediction time
+## Define metrics, baseline, and one pipeline
 
-**If you find leakage:** Remove the leaky features from your training data before proceeding.
-
----
-
-Let's define helper functions and constants for model evaluation:
+Zone is categorical. Numeric fields are standardized before Ridge regression. The
+pipeline keeps preprocessing learned from training attached to the estimator.
 
 ```python
-# Model evaluation helper functions
-def evaluate_model(y_true, y_pred, dataset_name="Dataset"):
-    """
-    Calculate standard regression metrics.
+CATEGORICAL = ["pickup_zone_id"]
+NUMERIC = [
+    "hour_of_day", "day_of_week", "month", "is_weekend",
+    "lag_1", "lag_24", "lag_168", "rolling_mean_24", "rolling_mean_168",
+]
+FEATURES = CATEGORICAL + NUMERIC
+TARGET = "pickup_count"
 
-    Demonstrates DRY principle: evaluation logic in one place.
+preprocessor = ColumnTransformer([
+    ("zone", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
+    ("numeric", StandardScaler(), NUMERIC),
+])
+ridge_pipeline = Pipeline([
+    ("preprocess", preprocessor),
+    ("model", Ridge(alpha=10.0)),
+])
 
-    Parameters:
-    -----------
-    y_true : array-like
-        True values
-    y_pred : array-like
-        Predicted values
-    dataset_name : str
-        Name for display purposes
+def clipped_predictions(values):
+    return np.clip(np.asarray(values, dtype=float), 0, None)
 
-    Returns:
-    --------
-    dict : Dictionary containing RMSE, MAE, and R² scores
-    """
+def metrics(y_true, y_pred):
     return {
-        'dataset': dataset_name,
-        'rmse': np.sqrt(mean_squared_error(y_true, y_pred)),
-        'mae': mean_absolute_error(y_true, y_pred),
-        'r2': r2_score(y_true, y_pred)
+        "MAE": mean_absolute_error(y_true, y_pred),
+        "RMSE": mean_squared_error(y_true, y_pred) ** 0.5,
     }
 
-def assess_overfitting(train_r2, test_r2):
-    """
-    Assess model overfitting by comparing train and test R² scores.
-
-    Overfitting gap = Train R² - Test R²
-    - < 5%: Excellent generalization
-    - 5-10%: Good generalization
-    - 10-20%: Some overfitting - consider regularization
-    - > 20%: Severe overfitting - model needs adjustment
-
-    Parameters:
-    -----------
-    train_r2 : float
-        R² score on training set
-    test_r2 : float
-        R² score on test set
-
-    Returns:
-    --------
-    tuple : (gap, status_message)
-    """
-    gap = train_r2 - test_r2
-
-    if gap < 0.05:
-        return gap, "✅ Excellent generalization"
-    elif gap < 0.10:
-        return gap, "✅ Good generalization"
-    elif gap < 0.20:
-        return gap, "⚠️ Some overfitting - consider regularization"
-    else:
-        return gap, "❌ Severe overfitting - model needs adjustment"
-
-# Model hyperparameters
-RANDOM_SEED = 42  # For reproducible results
-
-# Random Forest hyperparameters
-RF_N_ESTIMATORS = 100  # Number of trees (more = better but slower)
-RF_MAX_DEPTH = 10      # Max tree depth (lower = less overfitting)
-
-# XGBoost hyperparameters
-XGB_N_ESTIMATORS = 100    # Number of boosting rounds
-XGB_MAX_DEPTH = 6         # Max tree depth (XGBoost default, shallower than RF)
-XGB_LEARNING_RATE = 0.1   # Step size shrinkage (lower = more conservative)
+ridge_pipeline.fit(train[FEATURES], train[TARGET])
+validation_predictions = {
+    "lag_168_baseline": clipped_predictions(validation["lag_168"]),
+    "ridge_pipeline": clipped_predictions(ridge_pipeline.predict(validation[FEATURES])),
+}
+validation_scores = pd.DataFrame([
+    {"candidate": name, **metrics(validation[TARGET], predictions)}
+    for name, predictions in validation_predictions.items()
+]).sort_values(["MAE", "RMSE"]).reset_index(drop=True)
+display(validation_scores)
 ```
 
-**What is overfitting?**
+## Freeze the choice, then evaluate test once
 
-Overfitting happens when a model memorizes training data instead of learning general patterns. It's like a student who memorizes answers to practice problems but fails the real exam.
-
-**Signs of overfitting:**
-- Train R² much higher than test R² (>20% gap)
-- Model performs well on training data but poorly on new data
-- Model is too complex for the amount of data
-
-**How to fix:**
-- Simplify the model (fewer features, shallower trees)
-- Get more training data
-- Use regularization (penalize complexity)
-
-**🔬 Try This: Experiment with Hyperparameters**
-
-The constants above make it easy to experiment! After training, try changing one at a time:
-- `RF_MAX_DEPTH`: Lower (3) for simpler model, higher (20) for more complex
-- `RF_N_ESTIMATORS`: More trees = better but slower
-- `XGB_LEARNING_RATE`: Lower (0.01) for more conservative learning
-
-### Step 2: Baseline Model - Linear Regression
+The next line is the only selection step. After it runs, validation has done its
+job. Test predictions are made once and are not used to revise the decision.
 
 ```python
-# Train linear regression model
-display(Markdown("# 📊 Model 1: Linear Regression"))
-
-lr_model = LinearRegression()
-lr_model.fit(X_train, y_train)
-
-# Make predictions
-y_train_pred_lr = lr_model.predict(X_train)
-y_test_pred_lr = lr_model.predict(X_test)
-
-# Evaluate using helper function
-train_metrics_lr = evaluate_model(y_train, y_train_pred_lr, "Training")
-test_metrics_lr = evaluate_model(y_test, y_test_pred_lr, "Test")
-
-# Check for overfitting using helper function
-overfit_lr, overfit_status = assess_overfitting(train_metrics_lr['r2'], test_metrics_lr['r2'])
-
-display(Markdown("### Performance Results"))
-display(pd.DataFrame({
-    'Metric': ['RMSE', 'MAE', 'R²'],
-    'Training': [
-        f"${train_metrics_lr['rmse']:.2f}",
-        f"${train_metrics_lr['mae']:.2f}",
-        f"{train_metrics_lr['r2']:.4f}"
-    ],
-    'Test': [
-        f"${test_metrics_lr['rmse']:.2f}",
-        f"${test_metrics_lr['mae']:.2f}",
-        f"{test_metrics_lr['r2']:.4f}"
-    ]
-}))
-display(Markdown(f"**Overfitting (R² difference):** {overfit_lr:.4f} — {overfit_status}"))
-
-# Store for comparison later
-train_rmse_lr, test_rmse_lr = train_metrics_lr['rmse'], test_metrics_lr['rmse']
-train_r2_lr, test_r2_lr = train_metrics_lr['r2'], test_metrics_lr['r2']
-```
-
-### Step 3: Random Forest Model
-
-```python
-# Train Random Forest model
-display(Markdown("# 🌲 Model 2: Random Forest"))
-
-rf_model = RandomForestRegressor(
-    n_estimators=RF_N_ESTIMATORS,
-    max_depth=RF_MAX_DEPTH,
-    random_state=RANDOM_SEED,
-    n_jobs=-1  # Use all CPU cores
-)
-rf_model.fit(X_train, y_train)
-
-# Make predictions
-y_train_pred_rf = rf_model.predict(X_train)
-y_test_pred_rf = rf_model.predict(X_test)
-
-# Evaluate using helper function
-train_metrics_rf = evaluate_model(y_train, y_train_pred_rf, "Training")
-test_metrics_rf = evaluate_model(y_test, y_test_pred_rf, "Test")
-
-# Check for overfitting using helper function
-overfit_rf, overfit_status = assess_overfitting(train_metrics_rf['r2'], test_metrics_rf['r2'])
-
-display(Markdown("### Performance Results"))
-display(pd.DataFrame({
-    'Metric': ['RMSE', 'MAE', 'R²'],
-    'Training': [
-        f"${train_metrics_rf['rmse']:.2f}",
-        f"${train_metrics_rf['mae']:.2f}",
-        f"{train_metrics_rf['r2']:.4f}"
-    ],
-    'Test': [
-        f"${test_metrics_rf['rmse']:.2f}",
-        f"${test_metrics_rf['mae']:.2f}",
-        f"{test_metrics_rf['r2']:.4f}"
-    ]
-}))
-display(Markdown(f"**Overfitting (R² difference):** {overfit_rf:.4f} — {overfit_status}"))
-
-# Store for comparison later
-train_rmse_rf, test_rmse_rf = train_metrics_rf['rmse'], test_metrics_rf['rmse']
-train_r2_rf, test_r2_rf = train_metrics_rf['r2'], test_metrics_rf['r2']
-```
-
-#### Random Forest Feature Importance
-
-```python
-# Extract feature importance from the trained model
-feature_importance = pd.DataFrame({
-    'feature': X_train.columns,
-    'importance': rf_model.feature_importances_
-}).sort_values('importance', ascending=False)
-
-display(Markdown("### 🔑 Top 10 Most Important Features"))
-display(feature_importance.head(10))
-```
-
-**What is feature importance?**
-
-Feature importance tells us which variables the model relies on most for predictions. For tree-based models (Random Forest, XGBoost), importance is calculated based on how much each feature reduces prediction error across all trees.
-
-**How to interpret:**
-- **High importance (>0.1):** Feature strongly influences predictions
-- **Medium importance (0.01-0.1):** Feature contributes but isn't dominant
-- **Low importance (<0.01):** Feature might be redundant or irrelevant
-
-**Important caveat:** Importance doesn't tell us direction (positive or negative relationship) or causality. It just tells us what the model uses.
-
-### Step 4: XGBoost Model
-
-```python
-# Train XGBoost model
-display(Markdown("# 🚀 Model 3: XGBoost"))
-
-xgb_model = xgb.XGBRegressor(
-    n_estimators=XGB_N_ESTIMATORS,
-    max_depth=XGB_MAX_DEPTH,
-    learning_rate=XGB_LEARNING_RATE,
-    random_state=RANDOM_SEED,
-    n_jobs=-1
-)
-xgb_model.fit(X_train, y_train)
-
-# Make predictions
-y_train_pred_xgb = xgb_model.predict(X_train)
-y_test_pred_xgb = xgb_model.predict(X_test)
-
-# Evaluate using helper function
-train_metrics_xgb = evaluate_model(y_train, y_train_pred_xgb, "Training")
-test_metrics_xgb = evaluate_model(y_test, y_test_pred_xgb, "Test")
-
-# Check for overfitting using helper function
-overfit_xgb, overfit_status = assess_overfitting(train_metrics_xgb['r2'], test_metrics_xgb['r2'])
-
-display(Markdown("### Performance Results"))
-display(pd.DataFrame({
-    'Metric': ['RMSE', 'MAE', 'R²'],
-    'Training': [
-        f"${train_metrics_xgb['rmse']:.2f}",
-        f"${train_metrics_xgb['mae']:.2f}",
-        f"{train_metrics_xgb['r2']:.4f}"
-    ],
-    'Test': [
-        f"${test_metrics_xgb['rmse']:.2f}",
-        f"${test_metrics_xgb['mae']:.2f}",
-        f"{test_metrics_xgb['r2']:.4f}"
-    ]
-}))
-display(Markdown(f"**Overfitting (R² difference):** {overfit_xgb:.4f} — {overfit_status}"))
-
-# Store for comparison later
-train_rmse_xgb, test_rmse_xgb = train_metrics_xgb['rmse'], test_metrics_xgb['rmse']
-train_r2_xgb, test_r2_xgb = train_metrics_xgb['r2'], test_metrics_xgb['r2']
-```
-
-#### XGBoost Feature Importance
-
-```python
-# Extract feature importance from the trained model
-xgb_importance = pd.DataFrame({
-    'feature': X_train.columns,
-    'importance': xgb_model.feature_importances_
-}).sort_values('importance', ascending=False)
-
-display(Markdown("### 🔑 Top 10 Most Important Features"))
-display(xgb_importance.head(10))
-```
-
-### Step 5: Model Comparison
-
-```python
-# Compare all models
-comparison = pd.DataFrame({
-    'Model': ['Linear Regression', 'Random Forest', 'XGBoost'],
-    'Train RMSE': [train_rmse_lr, train_rmse_rf, train_rmse_xgb],
-    'Test RMSE': [test_rmse_lr, test_rmse_rf, test_rmse_xgb],
-    'Train R²': [train_r2_lr, train_r2_rf, train_r2_xgb],
-    'Test R²': [test_r2_lr, test_r2_rf, test_r2_xgb],
-    'Overfitting': [overfit_lr, overfit_rf, overfit_xgb]
-})
-
-comparison = comparison.round(4)
-comparison['RMSE_diff'] = comparison['Train RMSE'] - comparison['Test RMSE']
-
-display(Markdown("# 🏆 Model Comparison"))
-display(comparison)
-```
-
-#### Visualize Model Comparison
-
-```python
-# Visualize model comparison
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-fig.suptitle('Model Performance Comparison', fontsize=16, fontweight='bold')
-
-# RMSE comparison
-x_pos = np.arange(len(comparison))
-width = 0.35
-axes[0].bar(x_pos - width/2, comparison['Train RMSE'], width, label='Train', alpha=0.7)
-axes[0].bar(x_pos + width/2, comparison['Test RMSE'], width, label='Test', alpha=0.7)
-axes[0].set_xlabel('Model')
-axes[0].set_ylabel('RMSE ($)')
-axes[0].set_title('RMSE: Train vs Test')
-axes[0].set_xticks(x_pos)
-axes[0].set_xticklabels(comparison['Model'], rotation=45, ha='right')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3, axis='y')
-
-# R² comparison
-axes[1].bar(x_pos - width/2, comparison['Train R²'], width, label='Train', alpha=0.7)
-axes[1].bar(x_pos + width/2, comparison['Test R²'], width, label='Test', alpha=0.7)
-axes[1].set_xlabel('Model')
-axes[1].set_ylabel('R² Score')
-axes[1].set_title('R²: Train vs Test')
-axes[1].set_xticks(x_pos)
-axes[1].set_xticklabels(comparison['Model'], rotation=45, ha='right')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3, axis='y')
-
-plt.tight_layout()
-plt.show()
-```
-
-#### Select Best Model
-
-```python
-# Select best model (lowest test RMSE)
-best_model_idx = comparison['Test RMSE'].idxmin()
-best_model_name = comparison.loc[best_model_idx, 'Model']
-
-display(Markdown(f"""
-### 🏆 Best Model: **{best_model_name}**
-
-- **Test RMSE:** ${comparison.loc[best_model_idx, 'Test RMSE']:.2f}
-- **Test R²:** {comparison.loc[best_model_idx, 'Test R²']:.4f}
-"""))
-```
-
-### 💡 Alternative Approach: Model Selection Strategies
-
-We compared 3 models, but other strategies exist:
-
-| Strategy | When to Use | Pros | Cons |
-|----------|-------------|------|------|
-| **Multiple models (our approach)** | Want to understand trade-offs | Finds best model | Time-consuming |
-| **Start simple, add complexity** | Want speed | Faster, follows Occam's Razor | Might miss better models |
-| **Ensemble (combine models)** | Want best performance | Often better than individuals | Harder to interpret |
-
-**🔬 Try This:** Average predictions from Linear Regression and Random Forest. Does the ensemble perform better?
-
-**Answer:** **Often yes!** Simple averaging like `ensemble_pred = (lr_pred + rf_pred) / 2` frequently outperforms individual models because errors cancel out. Linear Regression might overpredict when RF underpredicts, and vice versa. **Try it:** Calculate RMSE for the ensemble - you'll likely see it falls between the two models or beats both. This is the foundation of advanced techniques like stacking.
-
-### 🐛 Debugging Tips: Modeling Issues
-
-**Problem: Model predictions are all the same value**
-- Check target variable: `y_train.describe()` (is it constant?)
-- Check features: `X_train.describe()` (any constant features?)
-- Verify model trained: `model.coef_` or `model.feature_importances_`
-
-**Problem: Model overfits severely (train R² >> test R²)**
-- Reduce complexity: Lower `max_depth`, fewer `n_estimators`
-- Remove features: Too many features can cause overfitting
-- Use cross-validation: `cross_val_score()` for better estimates
-
-**Problem: Feature importance shows unexpected results**
-- Check for constant features: `X_train.nunique()`
-- Verify feature is in model: `'feature_name' in X_train.columns`
-
-### Step 6: Prediction Visualization
-
-```python
-# Use best model for visualization (XGBoost typically performs best)
-y_test_pred_best = y_test_pred_xgb
-
-# Scatter plot: Actual vs Predicted
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-fig.suptitle('Model Predictions: Actual vs Predicted', fontsize=16, fontweight='bold')
-
-# Scatter plot
-axes[0].scatter(y_test, y_test_pred_best, alpha=0.3, s=10)
-axes[0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', linewidth=2, label='Perfect Prediction')
-axes[0].set_xlabel('Actual Fare ($)')
-axes[0].set_ylabel('Predicted Fare ($)')
-axes[0].set_title('Actual vs Predicted Fare')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
-
-# Residuals plot
-residuals = y_test - y_test_pred_best
-axes[1].scatter(y_test_pred_best, residuals, alpha=0.3, s=10)
-axes[1].axhline(y=0, color='r', linestyle='--', linewidth=2)
-axes[1].set_xlabel('Predicted Fare ($)')
-axes[1].set_ylabel('Residuals ($)')
-axes[1].set_title('Residuals Plot')
-axes[1].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-
-# Residuals statistics
-display(Markdown("### 📊 Residuals Statistics"))
-display(pd.DataFrame({
-    'Statistic': ['Mean', 'Std', 'Min', 'Max'],
-    'Value': [
-        f"${residuals.mean():.2f}",
-        f"${residuals.std():.2f}",
-        f"${residuals.min():.2f}",
-        f"${residuals.max():.2f}"
-    ]
-}))
-```
-
----
-
-## Phase 9: Results & Insights
-
-### Learning Objectives
-
-- Summarize key findings
-- Create final visualizations
-- Document results
-- Communicate insights effectively
-
-### Step 1: Key Findings Summary
-
-```python
-display(Markdown("# 📋 Key Findings Summary"))
-
-# Get top features from best model
-if best_model_name == 'XGBoost':
-    top_features = xgb_importance.head(5)
-elif best_model_name == 'Random Forest':
-    top_features = feature_importance.head(5)
+selected_candidate = validation_scores.loc[0, "candidate"]
+development = pd.concat([train, validation], ignore_index=True)
+
+if selected_candidate == "ridge_pipeline":
+    final_estimator = ridge_pipeline.fit(development[FEATURES], development[TARGET])
+    test_prediction = clipped_predictions(final_estimator.predict(test[FEATURES]))
 else:
-    top_features = pd.DataFrame({'feature': ['trip_distance', 'trip_duration'], 'importance': [0.5, 0.3]})
+    final_estimator = None
+    test_prediction = clipped_predictions(test["lag_168"])
 
-top_features_list = "\n".join([f"- **{row['feature']}**: {row['importance']:.4f}" for idx, row in top_features.iterrows()])
+test_scores = metrics(test[TARGET], test_prediction)
+metrics_table = pd.concat([
+    validation_scores.assign(split="validation", selected=lambda x: x["candidate"].eq(selected_candidate)),
+    pd.DataFrame([{
+        "candidate": selected_candidate, **test_scores, "split": "test", "selected": True,
+    }]),
+], ignore_index=True)
 
-generalization_status = "✅ Model generalizes well to new data" if comparison.loc[best_model_idx, 'Overfitting'] < 0.05 else "⚠️ Some overfitting detected - model may need regularization"
-
-display(Markdown(f"""
-## 1. 📊 Data Overview
-
-| Metric | Value |
-|--------|-------|
-| **Total trips analyzed** | {len(X_train) + len(X_test):,} |
-| **Training set** | {len(X_train):,} trips |
-| **Test set** | {len(X_test):,} trips |
-| **Features used** | {len(X_train.columns)} |
-
-## 2. 🏆 Model Performance
-
-| Metric | Value |
-|--------|-------|
-| **Best model** | {best_model_name} |
-| **Test RMSE** | ${comparison.loc[best_model_idx, 'Test RMSE']:.2f} |
-| **Test R²** | {comparison.loc[best_model_idx, 'Test R²']:.4f} |
-
-## 3. 🔑 Key Insights
-
-**Most important features for fare prediction:**
-
-{top_features_list}
-
-## 4. 💡 Model Interpretation
-
-- The model explains **{comparison.loc[best_model_idx, 'Test R²']*100:.1f}%** of fare variance
-- Predictions are within **${comparison.loc[best_model_idx, 'Test RMSE']:.2f}** on average
-- {generalization_status}
-"""))
+print("Frozen candidate:", selected_candidate)
+display(metrics_table)
+assert selected_candidate in validation_scores["candidate"].tolist()
+assert np.isfinite(test_prediction).all() and (test_prediction >= 0).all()
 ```
 
-### Step 2: Final Visualizations
+## Save predictions and useful error slices
 
-We'll create a comprehensive 5-panel dashboard showing all key results:
+Overall metrics can hide where errors occur. We report test errors by zone and by
+local hour. Small CSVs are evidence; the large reusable table remains Parquet.
 
 ```python
-# Create figure with GridSpec layout for 5 panels
-fig = plt.figure(figsize=(16, 10))
-gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
-fig.suptitle('Final Results: NYC Taxi Fare Prediction Analysis', fontsize=16, fontweight='bold')
+predictions = test[[
+    "pickup_zone_id", "target_hour_utc", "target_hour_local", "hour_of_day", "pickup_count"
+]].rename(columns={"pickup_count": "actual"})
+predictions["prediction"] = test_prediction
+predictions["absolute_error"] = (predictions["actual"] - predictions["prediction"]).abs()
+predictions["squared_error"] = (predictions["actual"] - predictions["prediction"]) ** 2
 
-# Panel 1: Model comparison (top-left)
-ax1 = fig.add_subplot(gs[0, 0])
-x_pos = np.arange(len(comparison))
-ax1.bar(x_pos, comparison['Test R²'], alpha=0.7, color=['#3498db', '#2ecc71', '#e74c3c'])
-ax1.set_xticks(x_pos)
-ax1.set_xticklabels(comparison['Model'], rotation=45, ha='right')
-ax1.set_ylabel('Test R² Score')
-ax1.set_title('Model Performance (Test R²)')
-ax1.grid(True, alpha=0.3, axis='y')
+def error_slice(frame, group_column):
+    result = frame.groupby(group_column, as_index=False).agg(
+        observations=("actual", "size"),
+        actual_mean=("actual", "mean"),
+        prediction_mean=("prediction", "mean"),
+        MAE=("absolute_error", "mean"),
+        mean_squared_error=("squared_error", "mean"),
+    )
+    result["RMSE"] = np.sqrt(result.pop("mean_squared_error"))
+    return result
 
-# Panel 2: Feature importance (top-right)
-ax2 = fig.add_subplot(gs[0, 1])
-if best_model_name == 'XGBoost':
-    top_10 = xgb_importance.head(10)
-elif best_model_name == 'Random Forest':
-    top_10 = feature_importance.head(10)
-else:
-    top_10 = pd.DataFrame({'feature': X_train.columns[:10], 'importance': [0.1]*10})
-ax2.barh(range(len(top_10)), top_10['importance'], alpha=0.7)
-ax2.set_yticks(range(len(top_10)))
-ax2.set_yticklabels(top_10['feature'])
-ax2.set_xlabel('Importance')
-ax2.set_title('Top 10 Feature Importance')
-ax2.grid(True, alpha=0.3, axis='x')
+zone_errors = error_slice(predictions, "pickup_zone_id")
+hour_errors = error_slice(predictions, "hour_of_day")
+display(zone_errors)
+display(hour_errors)
 
-# Panel 3: Actual vs Predicted (middle row, full width)
-ax3 = fig.add_subplot(gs[1, :])
-ax3.scatter(y_test, y_test_pred_best, alpha=0.3, s=10)
-ax3.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', linewidth=2)
-ax3.set_xlabel('Actual Fare ($)')
-ax3.set_ylabel('Predicted Fare ($)')
-ax3.set_title('Prediction Accuracy: Actual vs Predicted')
-ax3.grid(True, alpha=0.3)
+output_dir = Path("output")
+output_dir.mkdir(exist_ok=True)
+predictions.to_parquet(output_dir / "04_test_predictions.parquet", index=False)
+metrics_table.to_csv(output_dir / "04_metrics.csv", index=False)
+zone_errors.to_csv(output_dir / "04_zone_error_summary.csv", index=False)
+hour_errors.to_csv(output_dir / "04_hour_error_summary.csv", index=False)
 ```
 
-Now add the bottom row panels (residuals and error analysis):
+## Make two ordinary report figures
+
+These figures answer common reporting questions without adding decorative
+complexity: how predictions track actual counts over time, and where MAE is larger.
 
 ```python
-# Panel 4: Residuals distribution (bottom-left)
-ax4 = fig.add_subplot(gs[2, 0])
-ax4.hist(residuals, bins=50, alpha=0.7, edgecolor='black')
-ax4.axvline(residuals.mean(), color='r', linestyle='--', linewidth=2, label=f'Mean: ${residuals.mean():.2f}')
-ax4.set_xlabel('Residuals ($)')
-ax4.set_ylabel('Frequency')
-ax4.set_title('Residuals Distribution')
-ax4.legend()
-ax4.grid(True, alpha=0.3, axis='y')
-
-# Panel 5: Error by fare range (bottom-right)
-ax5 = fig.add_subplot(gs[2, 1])
-fare_bins = pd.cut(y_test, bins=5)
-error_by_fare = pd.DataFrame({
-    'fare_range': fare_bins,
-    'abs_error': np.abs(residuals)
-}).groupby('fare_range')['abs_error'].mean()
-ax5.bar(range(len(error_by_fare)), error_by_fare.values, alpha=0.7)
-ax5.set_xticks(range(len(error_by_fare)))
-ax5.set_xticklabels([str(x) for x in error_by_fare.index], rotation=45, ha='right')
-ax5.set_ylabel('Mean Absolute Error ($)')
-ax5.set_title('Prediction Error by Fare Range')
-ax5.grid(True, alpha=0.3, axis='y')
-
-# Save and display
-plt.tight_layout()
-plt.savefig('../output/04_final_results.png', dpi=150, bbox_inches='tight')
+hourly = predictions.groupby("target_hour_utc", as_index=False)[["actual", "prediction"]].sum()
+figure, axis = plt.subplots(figsize=(11, 4))
+axis.plot(hourly["target_hour_utc"], hourly["actual"], label="Actual", linewidth=1)
+axis.plot(hourly["target_hour_utc"], hourly["prediction"], label="Prediction", linewidth=1)
+axis.set(title="June hourly pickups across 12 zones", xlabel="Target hour (UTC)", ylabel="Pickups")
+axis.legend()
+figure.tight_layout()
+figure.savefig(output_dir / "04_actual_vs_predicted.png", dpi=150)
 plt.show()
 
-display(Markdown("💾 **Final visualization saved to:** `../output/04_final_results.png`"))
+figure, axis = plt.subplots(figsize=(10, 4))
+axis.bar(hour_errors["hour_of_day"], hour_errors["MAE"], color="#287271")
+axis.set(title="Test MAE by local hour", xlabel="Local hour", ylabel="MAE", xticks=range(24))
+figure.tight_layout()
+figure.savefig(output_dir / "04_mae_by_hour.png", dpi=150)
+plt.show()
 ```
 
-### Step 3: Save Model Results
+## Final checks
 
 ```python
-# Save predictions and results
-results_df = pd.DataFrame({
-    'actual_fare': y_test.values,
-    'predicted_fare': y_test_pred_best,
-    'residual': residuals.values,
-    'abs_error': np.abs(residuals.values)
-})
+assert len(predictions) == len(test)
+assert predictions[["actual", "prediction", "absolute_error"]].notna().all().all()
+assert len(zone_errors) == 12 and len(hour_errors) == 24
+assert np.isclose(test_scores["MAE"], predictions["absolute_error"].mean())
+assert np.isclose(test_scores["RMSE"], np.sqrt(predictions["squared_error"].mean()))
+for filename in (
+    "04_test_predictions.parquet", "04_metrics.csv", "04_zone_error_summary.csv",
+    "04_hour_error_summary.csv", "04_actual_vs_predicted.png", "04_mae_by_hour.png",
+):
+    assert (output_dir / filename).stat().st_size > 0
 
-results_df.to_csv('../output/04_model_predictions.csv', index=False)
-
-# Save model comparison
-comparison.to_csv('../output/04_model_comparison.csv', index=False)
-
-# Save feature importance
-if best_model_name == 'XGBoost':
-    xgb_importance.to_csv('../output/04_feature_importance.csv', index=False)
-elif best_model_name == 'Random Forest':
-    feature_importance.to_csv('../output/04_feature_importance.csv', index=False)
-
-display(Markdown("""
-### 💾 Results Saved
-
-| File | Description |
-|------|-------------|
-| `../output/04_model_predictions.csv` | Model predictions |
-| `../output/04_model_comparison.csv` | Model comparison |
-| `../output/04_feature_importance.csv` | Feature importance |
-"""))
+print(
+    f"Final checks passed: {selected_candidate} test MAE={test_scores['MAE']:.3f}, "
+    f"RMSE={test_scores['RMSE']:.3f}; six evidence files saved."
+)
 ```
-
-### Step 4: Project Summary
-
-```python
-display(Markdown("""
-# 📚 Project Summary
-
-This complete data science project demonstrated:
-
-## 1. 🧹 Data Cleaning & Exploration
-- Handled missing values and outliers
-- Explored distributions and relationships
-- Identified data quality issues
-
-## 2. 🔧 Data Wrangling & Feature Engineering
-- Merged multiple data sources
-- Extracted temporal features
-- Created derived variables
-- Performed aggregations
-
-## 3. 📊 Pattern Analysis
-- Identified trends and seasonality
-- Analyzed correlations
-- Created advanced visualizations
-
-## 4. 🤖 Modeling
-- Trained multiple model types
-- Evaluated performance
-- Selected best model
-- Interpreted results
-
-## 5. 📝 Results Communication
-- Summarized key findings
-- Created final visualizations
-- Documented insights
-
----
-
-## 🔑 Key Takeaways
-
-- Time series data requires **temporal train/test splits**
-- Feature engineering **significantly improves** model performance
-- **Multiple models** should be compared
-- Visualization is **essential** for understanding and communication
-- Proper workflow ensures **reproducible and reliable** results
-
----
-
-# 🎉 PROJECT COMPLETE!
-
-**Congratulations!** You've completed a full data science project from raw data to insights!
-"""))
-```
-
----
-
-## Summary
-
-**What we accomplished:**
-
-1. ✅ **Trained multiple models** (Linear Regression, Random Forest, XGBoost)
-2. ✅ **Evaluated model performance** using multiple metrics
-3. ✅ **Compared models** and selected the best
-4. ✅ **Analyzed feature importance** to understand drivers
-5. ✅ **Visualized predictions** and residuals
-6. ✅ **Summarized key findings** and insights
-7. ✅ **Created final visualizations** for communication
-8. ✅ **Documented results** for reproducibility
-
-**Key Takeaways:**
-
-- Multiple models should be tried and compared
-- Test performance is the true measure of model quality
-- Feature importance helps interpret model behavior
-- Visualizations are essential for understanding results
-- Proper documentation enables reproducibility
-
-**Congratulations!** You've completed a full data science project from raw data to insights! 🎉
-
----
-
-![CLI Stress](../media/cli-stress.png)
-
-*You've come a long way from your first terminal command!*

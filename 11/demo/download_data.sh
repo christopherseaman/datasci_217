@@ -1,53 +1,39 @@
 #!/bin/bash
-# Download actual NYC TLC Taxi Trip Data
-# Source: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 
-set -e
+set -euo pipefail
 
-DATA_DIR="data"
+# Development URLs use main until the immutable annual release tag is frozen.
+readonly BASE_URL="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
+readonly DATA_DIR="data"
+
 mkdir -p "$DATA_DIR"
 
-echo "Downloading NYC TLC Yellow Taxi Trip Data..."
-echo "Source: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page"
-echo ""
+download_and_verify() {
+    local filename="$1"
+    local expected_sha256="$2"
+    local destination="$DATA_DIR/$filename"
 
-# Download January 2023 Yellow Taxi data (Parquet format - smaller file)
-# This is a sample month - you can download other months as needed
-URL="https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-01.parquet"
+    if [[ ! -f "$destination" ]]; then
+        curl --fail --location --output "$destination" "$BASE_URL/$filename"
+    fi
 
-echo "Downloading: yellow_tripdata_2023-01.parquet"
-curl -L -o "$DATA_DIR/yellow_tripdata_2023-01.parquet" "$URL"
+    local actual_sha256
+    actual_sha256="$(sha256sum "$destination" | cut -d ' ' -f 1)"
+    if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+        printf 'Hash mismatch for %s\nExpected: %s\nActual:   %s\n' \
+            "$destination" "$expected_sha256" "$actual_sha256" >&2
+        exit 1
+    fi
+    printf 'Verified %s\n' "$destination"
+}
 
-if [ -f "$DATA_DIR/yellow_tripdata_2023-01.parquet" ]; then
-    echo "✅ Taxi trip data download complete!"
-    echo "File: $DATA_DIR/yellow_tripdata_2023-01.parquet"
-    echo ""
-    echo "Note: Parquet files require pyarrow. Install with: pip install pyarrow"
-else
-    echo "❌ Taxi trip data download failed"
-    exit 1
-fi
+download_and_verify "yellow_taxi_2023_h1_event_sample.parquet" \
+    "750bcc85f0267f9189dc9842ef44827168c384d4a7e5a8678e9a996348fc4b7d"
+download_and_verify "yellow_taxi_2023_h1_zone_hour_counts.parquet" \
+    "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
+download_and_verify "taxi_zone_lookup.csv" \
+    "1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed"
+download_and_verify "demo_release_manifest.json" \
+    "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
 
-# Download NYC Taxi Zone Lookup Table
-echo "Downloading NYC Taxi Zone Lookup Table..."
-echo "Source: https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
-echo ""
-
-ZONE_URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
-ZONE_FILE="taxi_zone_lookup.csv"
-
-echo "Downloading: $ZONE_FILE"
-curl -L -o "$DATA_DIR/$ZONE_FILE" "$ZONE_URL"
-
-if [ -f "$DATA_DIR/$ZONE_FILE" ]; then
-    echo "✅ Zone lookup download complete!"
-    echo "File: $DATA_DIR/$ZONE_FILE"
-    echo "Number of zones: $(tail -n +2 "$DATA_DIR/$ZONE_FILE" | wc -l)"
-    echo ""
-else
-    echo "❌ Zone lookup download failed"
-    exit 1
-fi
-
-echo "✅ All downloads complete!"
-
+printf 'Frozen Lecture 11 data are ready in %s/\n' "$DATA_DIR"

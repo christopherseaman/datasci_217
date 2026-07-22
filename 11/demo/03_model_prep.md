@@ -5,603 +5,235 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
 ---
 
-# Notebook 3: Pattern Analysis & Modeling Prep
+# Demo 3: Analyze training patterns and freeze the split
 
-![Over-Complicating Things](../media/over_complicating_things.jpg)
+**Assignment patterns:** Q5 pattern analysis and Q6 modeling preparation.
 
-**Phases 6-7:** Pattern Analysis & Advanced Visualization, Modeling Preparation
+We will explore patterns using training rows only. The fixed local-time split is:
 
-**Dataset:** NYC Taxi Trip Dataset (continuing from Notebook 2)
+- training: before May 2023
+- validation: May 2023
+- test: June 2023
 
-**Focus:** Deep analysis of patterns, advanced visualizations, and preparing data for predictive modeling.
+The test partition stays unopened here. Demo 4 will use validation to freeze the
+model choice, then evaluate test exactly once.
 
----
-
-**Where we are:** We've cleaned our data (Notebook 1) and created features (Notebook 2). Now we need to understand patterns deeply and prepare data for modeling.
-
-**What we'll accomplish:**
-
-- Identify trends over time
-- Discover seasonal patterns (daily, weekly cycles)
-- Analyze correlations between variables
-- Split data temporally for modeling
-- Select and prepare features
-
-**Why this matters:**
-
-- Pattern analysis guides feature selection and model interpretation
-- Temporal splits prevent data leakage (critical for time series!)
-- Proper preparation ensures model quality
-
-**The big picture:**
-
-- **Notebook 1:** Made data clean ✓
-- **Notebook 2:** Made data useful ✓
-- **Notebook 3 (this one):** Make data ready for modeling
-- **Notebook 4:** Build and evaluate models
-
----
-
-## Phase 6: Pattern Analysis & Advanced Visualization
-
-**What we're about to do:** Before we build models, we need to understand our data deeply. Pattern analysis helps us identify which features are most important, understand relationships between variables, and spot anomalies.
-
-**What we'll discover:**
-
-- Temporal patterns (hourly, daily, weekly cycles)
-- Relationships between variables (correlations)
-- Trends over time
-- Seasonal effects
-
-**How this informs modeling:** The patterns we find here will guide feature selection and help us interpret model results.
-
-### Learning Objectives
-
-- Create advanced multi-panel visualizations
-- Identify trends and seasonal patterns
-- Perform statistical analysis
-- Visualize relationships across multiple dimensions
-
-### Step 1: Load Processed Data
+## One setup cell
 
 ```python
-# Import libraries
-import pandas as pd
+import importlib.metadata as metadata
+import importlib.util
+import subprocess
+import sys
+
+REQUIRED = {
+    "numpy": "2.0.2", "pandas": "3.0.3", "pyarrow": "25.0.0",
+    "scikit-learn": "1.9.0", "matplotlib": "3.11.1",
+}
+missing = []
+for package, version in REQUIRED.items():
+    try:
+        installed = metadata.version(package)
+    except metadata.PackageNotFoundError:
+        installed = None
+    if installed != version:
+        missing.append(f"{package}=={version}")
+if missing:
+    if importlib.util.find_spec("pip") is None:
+        subprocess.check_call([sys.executable, "-m", "ensurepip", "--upgrade"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", *missing])
+
+import hashlib
+import json
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from IPython.display import display, Markdown
+import pandas as pd
+from IPython.display import display
 
-# Set plotting style
-plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
-%matplotlib inline
-
-# Load processed data from Notebook 2
-df = pd.read_csv('../output/02_processed_taxi_data.csv')
-df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
-
-# Limit to 2023
-df = df[df['pickup_datetime'].dt.year == 2023].reset_index(drop=True)
-
-# Filter to valid rows if exclude column exists (should already be filtered in NB2)
-if 'exclude' in df.columns:
-    df = df[~df['exclude']].drop(columns=['exclude', 'exclude_reason'], errors='ignore')
-
-display(Markdown("### 📂 Data Loaded"))
-display(pd.DataFrame({
-    'Metric': ['Total trips', 'Date range'],
-    'Value': [
-        f"{len(df):,}",
-        f"{df['pickup_datetime'].min()} to {df['pickup_datetime'].max()}"
-    ]
-}))
+print(f"Python {sys.version.split()[0]} | pandas {pd.__version__}")
 ```
 
-### Step 2: Trends Analysis Over Time
+## Rebuild the prerequisite deterministically
+
+If Demo 2's compact Parquet output exists locally, we load it. Otherwise, fresh
+Colab acquires the frozen panel and applies the same deterministic transformation.
+Development URLs use `main`; immutable annual-tag replacement is pending freeze.
 
 ```python
-# Set datetime index for time-based operations
-df_ts = df.set_index('pickup_datetime').sort_index()
-
-# Resample to daily for trend analysis
-daily = df_ts.resample('d').agg({
-    'fare_amount': 'mean',
-    'total_amount': 'sum',
-    'trip_distance': 'count'  # Count trips
-}).rename(columns={'trip_distance': 'trip_count'})
-
-# Calculate moving averages for trend detection
-daily['fare_7d_ma'] = daily['fare_amount'].rolling(window=7, min_periods=1).mean()
-daily['fare_30d_ma'] = daily['fare_amount'].rolling(window=30, min_periods=1).mean()
-
-# Visualize trends
-fig, axes = plt.subplots(3, 1, figsize=(14, 12))
-fig.suptitle('Trends Analysis Over Time', fontsize=16, fontweight='bold')
-
-# Average fare over time
-axes[0].plot(daily.index, daily['fare_amount'], alpha=0.5, label='Daily Average', linewidth=1)
-axes[0].plot(daily.index, daily['fare_7d_ma'], label='7-Day Moving Average', linewidth=2)
-axes[0].plot(daily.index, daily['fare_30d_ma'], label='30-Day Moving Average', linewidth=2)
-axes[0].set_title('Average Fare Amount Over Time')
-axes[0].set_ylabel('Fare Amount ($)')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
-
-# Total revenue over time
-axes[1].plot(daily.index, daily['total_amount'], linewidth=2, color='green')
-axes[1].set_title('Total Daily Revenue')
-axes[1].set_ylabel('Revenue ($)')
-axes[1].grid(True, alpha=0.3)
-
-# Trip count over time
-axes[2].bar(daily.index, daily['trip_count'], alpha=0.7, width=1)
-axes[2].set_title('Number of Trips per Day')
-axes[2].set_ylabel('Trip Count')
-axes[2].set_xlabel('Date')
-axes[2].grid(True, alpha=0.3, axis='y')
-
-plt.tight_layout()
-plt.show()
-```
-
-### Step 3: Seasonal Pattern Analysis
-
-```python
-# Analyze patterns by day of week
-day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-df_ts['day_name'] = df_ts.index.day_name()
-
-daily_by_dow = df_ts.groupby('day_name')['fare_amount'].agg(['mean', 'std', 'count']).reindex(day_order)
-
-# Analyze patterns by month
-monthly = df_ts.groupby('month')['fare_amount'].agg(['mean', 'std', 'count'])
-
-# Visualize seasonal patterns
-fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-fig.suptitle('Seasonal Pattern Analysis', fontsize=16, fontweight='bold')
-
-# Average fare by day of week
-axes[0, 0].bar(range(len(daily_by_dow)), daily_by_dow['mean'], alpha=0.7)
-axes[0, 0].set_xticks(range(len(daily_by_dow)))
-axes[0, 0].set_xticklabels(daily_by_dow.index, rotation=45, ha='right')
-axes[0, 0].set_title('Average Fare by Day of Week')
-axes[0, 0].set_ylabel('Average Fare ($)')
-axes[0, 0].grid(True, alpha=0.3, axis='y')
-
-# Average fare by month
-axes[0, 1].plot(monthly.index, monthly['mean'], marker='o', linewidth=2, markersize=8)
-axes[0, 1].set_title('Average Fare by Month')
-axes[0, 1].set_xlabel('Month')
-axes[0, 1].set_ylabel('Average Fare ($)')
-axes[0, 1].set_xticks(monthly.index)
-axes[0, 1].grid(True, alpha=0.3)
-
-# Hourly pattern (heatmap by day of week)
-# What is .unstack()? It converts a multi-index Series into a DataFrame by moving
-# one index level to columns. Here, 'day_name' becomes column headers, making it
-# easy to create a heatmap where rows=hours, columns=days.
-hourly_dow = df_ts.groupby(['day_name', 'hour'])['fare_amount'].mean().unstack(level=0).reindex(columns=day_order)
-sns.heatmap(hourly_dow, annot=False, cmap='YlOrRd', ax=axes[1, 0], cbar_kws={'label': 'Avg Fare ($)'})
-axes[1, 0].set_title('Average Fare: Hour × Day of Week')
-axes[1, 0].set_xlabel('Day of Week')
-axes[1, 0].set_ylabel('Hour of Day')
-
-# Weekend vs weekday comparison
-df_ts['is_weekend'] = df_ts['day_of_week'].isin([5, 6])
-weekend_comparison = df_ts.groupby(['is_weekend', 'hour'])['fare_amount'].mean().unstack(level=0)
-axes[1, 1].plot(weekend_comparison.index, weekend_comparison[False], label='Weekday', marker='o', linewidth=2)
-axes[1, 1].plot(weekend_comparison.index, weekend_comparison[True], label='Weekend', marker='s', linewidth=2)
-axes[1, 1].set_title('Average Fare: Weekday vs Weekend by Hour')
-axes[1, 1].set_xlabel('Hour of Day')
-axes[1, 1].set_ylabel('Average Fare ($)')
-axes[1, 1].legend()
-axes[1, 1].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-
-### Step 4: Correlation Analysis
-
-**What is correlation?** Correlation measures how two variables move together:
-
-- **+1.0:** Perfect positive relationship (when one goes up, the other always goes up)
-- **0.0:** No relationship (variables are independent)
-- **-1.0:** Perfect negative relationship (when one goes up, the other always goes down)
-
-**Important caveat:** Correlation ≠ Causation. Just because fare_amount and trip_distance are correlated doesn't mean distance causes fare - there could be other factors (tolls, time of day, etc.).
-
-**Why this matters for modeling:** Highly correlated features (|r| > 0.9) are redundant - we might only need one. Moderate correlations (0.3-0.7) suggest useful relationships we can exploit.
-
-```python
-# Select numeric features for correlation
-numeric_features = ['fare_amount', 'trip_distance', 'trip_duration', 'passenger_count', 
-                    'tip_amount', 'total_amount', 'speed_mph', 'fare_per_mile', 'tip_percentage']
-
-corr_matrix = df_ts[numeric_features].corr()
-
-# Visualize correlation matrix
-plt.figure(figsize=(12, 10))
-sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', center=0,
-            square=True, linewidths=1, cbar_kws={"shrink": 0.8})
-plt.title('Correlation Matrix: Key Features', fontsize=14, fontweight='bold')
-plt.tight_layout()
-plt.show()
-
-# Identify strongest correlations
-display(Markdown("### 🔗 Strongest Correlations (|r| > 0.5)"))
-
-corr_pairs = []
-for i in range(len(corr_matrix.columns)):
-    for j in range(i+1, len(corr_matrix.columns)):
-        corr_val = corr_matrix.iloc[i, j]
-        if abs(corr_val) > 0.5:
-            corr_pairs.append((corr_matrix.columns[i], corr_matrix.columns[j], corr_val))
-
-corr_list = "\n".join([f"- **{feat1}** ↔ **{feat2}**: `{corr:.3f}`"
-                       for feat1, feat2, corr in sorted(corr_pairs, key=lambda x: abs(x[2]), reverse=True)])
-display(Markdown(corr_list))
-```
-
-### Step 5: Multi-Dimensional Analysis
-
-```python
-# Analyze fare by multiple dimensions: distance category, time of day, day type
-multi_dim = df_ts.groupby(['distance_category', 'time_of_day', 'is_weekend'])['fare_amount'].mean().unstack(level=2)
-
-# Note: unstack converts boolean to int (False=0, True=1)
-# Visualize
-fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-fig.suptitle('Multi-Dimensional Fare Analysis', fontsize=16, fontweight='bold')
-
-# Distance category vs time of day (weekday, is_weekend=0)
-# Need to unstack the Series to create a 2D DataFrame for heatmap
-weekday_col = 0 if 0 in multi_dim.columns else multi_dim.columns[0]
-weekday_data = multi_dim[weekday_col].unstack(level=1)  # Unstack time_of_day to columns
-sns.heatmap(weekday_data, annot=True, fmt='.1f', cmap='YlOrRd', ax=axes[0, 0], cbar_kws={'label': 'Avg Fare ($)'})
-axes[0, 0].set_title('Weekday: Distance Category × Time of Day')
-axes[0, 0].set_xlabel('Time of Day')
-axes[0, 0].set_ylabel('Distance Category')
-
-# Distance category vs time of day (weekend, is_weekend=1)
-weekend_col = 1 if 1 in multi_dim.columns else multi_dim.columns[-1]
-weekend_data = multi_dim[weekend_col].unstack(level=1)  # Unstack time_of_day to columns
-sns.heatmap(weekend_data, annot=True, fmt='.1f', cmap='YlOrRd', ax=axes[0, 1], cbar_kws={'label': 'Avg Fare ($)'})
-axes[0, 1].set_title('Weekend: Distance Category × Time of Day')
-axes[0, 1].set_xlabel('Time of Day')
-axes[0, 1].set_ylabel('Distance Category')
-
-# Box plot: Fare by distance category
-sns.boxplot(data=df_ts, x='distance_category', y='fare_amount', ax=axes[1, 0])
-axes[1, 0].set_title('Fare Distribution by Distance Category')
-axes[1, 0].set_xlabel('Distance Category')
-axes[1, 0].set_ylabel('Fare Amount ($)')
-axes[1, 0].tick_params(axis='x', rotation=45)
-
-# Violin plot: Fare by time of day
-sns.violinplot(data=df_ts, x='time_of_day', y='fare_amount', ax=axes[1, 1])
-axes[1, 1].set_title('Fare Distribution by Time of Day')
-axes[1, 1].set_xlabel('Time of Day')
-axes[1, 1].set_ylabel('Fare Amount ($)')
-axes[1, 1].tick_params(axis='x', rotation=45)
-
-plt.tight_layout()
-plt.show()
-```
-
----
-
-## Phase 7: Modeling Preparation
-
-**What we're about to do:** We'll prepare our data for modeling by splitting it properly and selecting features. This is critical - mistakes here can invalidate your entire analysis.
-
-**Why temporal split matters:**
-
-If we randomly split time series data, we might train on future data and test on past data. This creates **data leakage** - the model "sees the future" during training, which inflates performance metrics.
-
-**Example of the problem:**
-
-- Random split: Train on Jan 15, Feb 3, Mar 10... Test on Jan 2, Feb 20, Mar 5...
-- The model learns patterns from February and March, then tests on January
-- This is unrealistic - in real life, we predict the future using only past data
-
-**Temporal split fixes this:**
-
-- Train on Jan 1-24, test on Jan 25-31
-- Model only uses past data to predict future
-- Performance metrics reflect real-world accuracy
-
-### Learning Objectives
-
-- Split data temporally for time series
-- Select and prepare features
-- Handle categorical variables
-- Create final modeling dataset
-
-### Step 1: Temporal Train/Test Split
-
-```python
-# For data with temporal structure, we must split by time (not randomly)
-# Train on earlier data, test on later data
-
-# Sort by datetime to ensure temporal order
-df_model = df_ts.reset_index().sort_values('pickup_datetime').copy()
-
-# Train/test split configuration
-TRAIN_RATIO = 0.80  # 80% for training, 20% for testing
-
-# Define temporal split point
-# IMPORTANT: For time series, we split by time (not randomly) to prevent data leakage
-split_date = df_model['pickup_datetime'].quantile(TRAIN_RATIO)
-
-# Create train/test split
-train = df_model[df_model['pickup_datetime'] < split_date].copy()
-test = df_model[df_model['pickup_datetime'] >= split_date].copy()
-
-display(Markdown("### ✂️ Temporal Train/Test Split"))
-display(pd.DataFrame({
-    'Dataset': ['Train', 'Test'],
-    'Trips': [f"{len(train):,}", f"{len(test):,}"],
-    'Date Range': [
-        f"{train['pickup_datetime'].min()} to {train['pickup_datetime'].max()}",
-        f"{test['pickup_datetime'].min()} to {test['pickup_datetime'].max()}"
-    ]
-}))
-display(Markdown(f"**Split date:** {split_date}"))
-
-# Visualize the split
-plt.figure(figsize=(14, 4))
-plt.plot(train['pickup_datetime'], train['fare_amount'], alpha=0.3, label='Train', linewidth=0.5)
-plt.plot(test['pickup_datetime'], test['fare_amount'], alpha=0.3, label='Test', linewidth=0.5, color='red')
-plt.axvline(split_date, color='black', linestyle='--', linewidth=2, label='Split Point')
-plt.title('Temporal Train/Test Split', fontsize=14, fontweight='bold')
-plt.xlabel('Date')
-plt.ylabel('Fare Amount ($)')
-plt.legend()
-plt.xticks(rotation=45)
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-```
-
-### Step 2: Feature Selection
-
-**What we're about to do:** We'll select which features (variables) to use for modeling. Not all features are useful - some are redundant, some are irrelevant, and some might cause problems.
-
-**Why feature selection matters:**
-
-- Too many features can cause overfitting
-- Some features might be highly correlated (redundant)
-- Simpler models are easier to interpret and often generalize better
-- Feature selection is iterative - we'll refine our choices
-
-**🔬 Try This First: Explore Feature Relationships**
-
-Before selecting features, let's understand what we have:
-
-```python
-# Quick exploration: Which features are correlated?
-# This helps us identify redundant features
-
-# First, define our target and potential features
-target = 'fare_amount'
-
-# List all numeric features we might use
-numeric_features = ['hour', 'day_of_week', 'month', 'is_weekend',
-                   'trip_distance', 'passenger_count', 'trip_duration',
-                   'speed_mph', 'fare_per_mile']
-
-# Check which features are actually available in the data
-available_numeric = [f for f in numeric_features if f in df_model.columns]
-
-# Calculate correlation with target
-if available_numeric:
-    correlation_with_target = df_model[available_numeric + [target]].corr()[target].sort_values(ascending=False)
-    print("Features correlated with fare_amount:")
-    print(correlation_with_target)
-    print()
-
-    # Question: Which features are most correlated with the target?
-    # Which features are highly correlated with each other (redundant)?
-```
-
-**Learning goal:** Understanding feature relationships helps you make informed selection decisions. Features with high correlation to the target are likely useful. Features highly correlated with each other (|r| > 0.9) might be redundant.
-
-Now let's select our features:
-
-> **⚠️ Note on `fare_per_mile`:** This feature is derived from `fare_amount` (our target), so including it could cause **feature leakage**. In practice, remove features derived from your target variable.
-
-```python
-# Define target variable
-target = 'fare_amount'
-
-# Select features for modeling
-# Include temporal, geographic, and trip characteristics
-feature_cols = [
-    # Temporal features
-    'hour', 'day_of_week', 'month', 'is_weekend',
-    # Trip characteristics
-    'trip_distance', 'passenger_count', 'trip_duration',
-    # Derived features
-    'speed_mph',
-    'fare_per_mile',  # Derived from target - should we include this?
-    # Categorical (will need encoding)
-    'time_of_day', 'distance_category', 'pickup_borough'
-]
-
-# Check feature availability
-available_features = [f for f in feature_cols if f in df_model.columns]
-missing_features = [f for f in feature_cols if f not in df_model.columns]
-
-display(Markdown("### 📋 Feature Availability"))
-display(Markdown(f"**Available features:** `{available_features}`"))
-if missing_features:
-    display(Markdown(f"⚠️ **Missing features** (will skip): `{missing_features}`"))
-
-# Select available features
-X_train = train[available_features].copy()
-X_test = test[available_features].copy()
-y_train = train[target].copy()
-y_test = test[target].copy()
-
-display(pd.DataFrame({
-    'Dataset': ['X_train', 'X_test'],
-    'Shape': [
-        f"{X_train.shape[0]:,} × {X_train.shape[1]}",
-        f"{X_test.shape[0]:,} × {X_test.shape[1]}"
-    ]
-}))
-```
-
-### Step 3: Handle Categorical Variables
-
-```python
-# Identify categorical variables
-categorical_cols = X_train.select_dtypes(include=['object', 'category']).columns.tolist()
-numeric_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
-
-display(Markdown("### 🏷️ Feature Types"))
-display(Markdown(f"**Categorical features:** `{categorical_cols}`"))
-display(Markdown(f"**Numeric features:** `{numeric_cols}`"))
-
-# For simplicity, we'll use pandas get_dummies for one-hot encoding
-# In practice, you might use sklearn's OneHotEncoder
-
-X_train_encoded = pd.get_dummies(X_train, columns=categorical_cols, prefix=categorical_cols, drop_first=True)
-X_test_encoded = pd.get_dummies(X_test, columns=categorical_cols, prefix=categorical_cols, drop_first=True)
-
-# Ensure test set has same columns as training set
-# Add missing columns (with 0s) and remove extra columns
-for col in X_train_encoded.columns:
-    if col not in X_test_encoded.columns:
-        X_test_encoded[col] = 0
-
-X_test_encoded = X_test_encoded[X_train_encoded.columns]
-
-display(Markdown("### ✅ After One-Hot Encoding"))
-display(pd.DataFrame({
-    'Dataset': ['Training features', 'Test features'],
-    'Shape': [
-        f"{X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]}",
-        f"{X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]}"
-    ]
-}))
-display(Markdown(f"**Feature names:** `{list(X_train_encoded.columns)[:10]}...` ({len(X_train_encoded.columns)} total)"))
-```
-
-### Step 4: Handle Missing Values in Features
-
-```python
-# Check for missing values
-display(Markdown("### 🔍 Missing Values in Training Set"))
-missing_in_train = X_train_encoded.isnull().sum()[X_train_encoded.isnull().sum() > 0]
-if len(missing_in_train) == 0:
-    display(Markdown("✅ **No missing values!**"))
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
+
+def acquire_authenticated_panel():
+    filenames = ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_counts.parquet"]
+    for directory in (Path("data"), Path("11/demo/data")):
+        if all((directory / filename).exists() for filename in filenames):
+            break
+    else:
+        directory = Path("data")
+        directory.mkdir(exist_ok=True)
+        for filename in filenames:
+            path = directory / filename
+            if not path.exists():
+                urlretrieve(f"{REPO_RAW}/{filename}", path)
+
+    manifest_path = directory / filenames[0]
+    panel_path = directory / filenames[1]
+    expected_manifest_sha256 = "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
+    expected_panel_sha256 = "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
+    assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
+        "Manifest hash mismatch"
+    )
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["artifacts"]["panel"]["sha256"] == expected_panel_sha256
+    assert hashlib.sha256(panel_path.read_bytes()).hexdigest() == expected_panel_sha256, (
+        "Panel hash mismatch"
+    )
+    print("Authenticated manifest and panel SHA-256 digests.")
+    return pd.read_parquet(panel_path)
+
+def build_model_table(panel):
+    table = panel.sort_values(["pickup_zone_id", "target_hour_utc"]).copy()
+    local = table["target_hour_utc"].dt.tz_convert("America/New_York")
+    table["target_hour_local"] = local
+    table["hour_of_day"] = local.dt.hour
+    table["day_of_week"] = local.dt.dayofweek
+    table["month"] = local.dt.month
+    table["is_weekend"] = local.dt.dayofweek.ge(5).astype("int8")
+    grouped = table.groupby("pickup_zone_id", sort=False)["pickup_count"]
+    for lag in (1, 24, 168):
+        table[f"lag_{lag}"] = grouped.shift(lag)
+    for window in (24, 168):
+        table[f"rolling_mean_{window}"] = grouped.transform(
+            lambda values: values.shift(1).rolling(window, min_periods=window).mean()
+        )
+    history = ["lag_1", "lag_24", "lag_168", "rolling_mean_24", "rolling_mean_168"]
+    return table.dropna(subset=history).sort_values(
+        ["target_hour_utc", "pickup_zone_id"]
+    ).reset_index(drop=True)
+
+local_model_path = Path("output/02_model_table.parquet")
+authenticated_panel = acquire_authenticated_panel()
+if local_model_path.exists():
+    model_table = pd.read_parquet(local_model_path)
+    source_used = str(local_model_path)
 else:
-    missing_df = pd.DataFrame({'Column': missing_in_train.index, 'Missing Count': missing_in_train.values})
-    display(missing_df)
+    model_table = build_model_table(authenticated_panel)
+    source_used = "rebuilt from frozen panel"
 
-# Fill missing values (using training set statistics)
-# For numeric columns, use median
-for col in numeric_cols:
-    if col in X_train_encoded.columns:
-        median_val = X_train_encoded[col].median()
-        X_train_encoded[col] = X_train_encoded[col].fillna(median_val)
-        X_test_encoded[col] = X_test_encoded[col].fillna(median_val)
-
-display(Markdown("### ✅ After Imputation"))
-display(pd.DataFrame({
-    'Dataset': ['Train', 'Test'],
-    'Missing Values': [
-        X_train_encoded.isnull().sum().sum(),
-        X_test_encoded.isnull().sum().sum()
-    ]
-}))
+assert len(model_table) == 50_100
+print("Model table source:", source_used)
+print("Model table rows:", f"{len(model_table):,}")
 ```
 
-### ⚠️ Common Pitfall: Random Split on Time Series Data
+## Split by target local time
 
-**The mistake:** Using `train_test_split()` with `shuffle=True` on time series data
-
-```
-# ❌ Wrong for time series
-from sklearn.model_selection import train_test_split
-X_train, X_test = train_test_split(X, shuffle=True)  # DON'T DO THIS!
-
-# ✅ Correct for time series
-split_date = df['datetime'].quantile(0.8)
-train = df[df['datetime'] < split_date]
-test = df[df['datetime'] >= split_date]
-```
-
-### 🐛 Debugging Tips: Modeling Prep Issues
-
-**Problem: Train and test sets have different column counts**
-
-- Check for missing columns: `set(X_train.columns) - set(X_test.columns)`
-- Align columns: `X_test = X_test.reindex(columns=X_train.columns, fill_value=0)`
-
-**Problem: Categorical encoding creates different columns**
-
-- Use same categories: Fit encoder on training, transform both
-- Check for new categories: `set(X_test['col'].unique()) - set(X_train['col'].unique())`
-
-### Step 5: Save Prepared Data
+UTC remains the unique key. Local timestamps express the project policy clearly:
+May is validation and June is test.
 
 ```python
-# Save prepared datasets for modeling
-X_train_encoded.to_csv('../output/03_X_train.csv', index=False)
-X_test_encoded.to_csv('../output/03_X_test.csv', index=False)
-y_train.to_csv('../output/03_y_train.csv', index=False)
-y_test.to_csv('../output/03_y_test.csv', index=False)
+local_naive = model_table["target_hour_local"].dt.tz_localize(None)
+train_mask = local_naive.lt(pd.Timestamp("2023-05-01"))
+validation_mask = local_naive.between(
+    pd.Timestamp("2023-05-01"), pd.Timestamp("2023-06-01"), inclusive="left"
+)
+test_mask = local_naive.ge(pd.Timestamp("2023-06-01"))
 
-display(Markdown("### 💾 Prepared Datasets Saved"))
-display(pd.DataFrame({
-    'File': ['X_train', 'X_test', 'y_train', 'y_test'],
-    'Shape': [
-        f"{X_train_encoded.shape[0]:,} × {X_train_encoded.shape[1]}",
-        f"{X_test_encoded.shape[0]:,} × {X_test_encoded.shape[1]}",
-        f"{len(y_train):,}",
-        f"{len(y_test):,}"
-    ]
-}))
-display(Markdown("✅ **Ready for next phase: Modeling & Results!**"))
+train = model_table.loc[train_mask].copy()
+validation = model_table.loc[validation_mask].copy()
+test = model_table.loc[test_mask].copy()
+
+assert (train_mask.astype(int) + validation_mask.astype(int) + test_mask.astype(int)).eq(1).all()
+assert train["target_hour_local"].max() < validation["target_hour_local"].min()
+assert validation["target_hour_local"].max() < test["target_hour_local"].min()
+
+split_summary = pd.DataFrame({
+    "split": ["train", "validation", "test"],
+    "rows": [len(train), len(validation), len(test)],
+    "first_local": [x["target_hour_local"].min().isoformat() for x in (train, validation, test)],
+    "last_local": [x["target_hour_local"].max().isoformat() for x in (train, validation, test)],
+})
+display(split_summary)
 ```
 
----
+## Look for patterns without peeking at test
 
-## Summary
+These summaries use `train` only. Hour-of-day behavior supports calendar features;
+zone variation supports treating zone ID as a category rather than a number.
 
-**What we accomplished:**
+```python
+train_hour_pattern = train.groupby("hour_of_day", as_index=False).agg(
+    mean_pickups=("pickup_count", "mean"),
+    median_pickups=("pickup_count", "median"),
+)
+train_zone_pattern = train.groupby("pickup_zone_id", as_index=False).agg(
+    mean_pickups=("pickup_count", "mean"),
+    total_pickups=("pickup_count", "sum"),
+)
 
-1. ✅ **Analyzed trends over time** with moving averages
-2. ✅ **Identified seasonal patterns** (day of week, month, hour)
-3. ✅ **Performed correlation analysis** to understand relationships
-4. ✅ **Created advanced visualizations** (heatmaps, multi-panel plots)
-5. ✅ **Split data temporally** to prevent data leakage
-6. ✅ **Selected and prepared features** for modeling
-7. ✅ **Handled categorical variables** with encoding
-8. ✅ **Prepared final datasets** for modeling
+display(train_hour_pattern)
+display(train_zone_pattern.sort_values("mean_pickups", ascending=False))
+print("Pattern-analysis rows used:", f"{len(train):,} train, 0 validation, 0 test")
+```
 
-**Key Takeaways:**
+## Check feature availability and leakage
 
-- Temporal splits prevent data leakage when data has time structure
-- Feature engineering creates predictive signals
-- Categorical encoding is essential for ML models
-- Advanced visualizations reveal hidden patterns
-- Proper preparation ensures model quality
+At the start of target hour *t*, zone and calendar fields are known. Lag and rolling
+features use timestamps before *t*. The current `pickup_count` is the target and
+must never appear in `X`.
 
-**Next:** Notebook 4 will build and evaluate predictive models.
+```python
+FEATURES = [
+    "pickup_zone_id", "hour_of_day", "day_of_week", "month", "is_weekend",
+    "lag_1", "lag_24", "lag_168", "rolling_mean_24", "rolling_mean_168",
+]
+TARGET = "pickup_count"
 
----
+availability = pd.DataFrame({
+    "feature": FEATURES,
+    "available_before_target_hour": True,
+    "reason": [
+        "known location", "calendar", "calendar", "calendar", "calendar",
+        "past count", "past count", "past count", "past-only window", "past-only window",
+    ],
+})
+display(availability)
 
-![xkcd 1513](../media/xkcd_1513.png)
+assert TARGET not in FEATURES
+assert "target_hour_local" not in FEATURES and "target_hour_utc" not in FEATURES
+assert model_table[FEATURES].notna().all().all()
+assert set(model_table.columns).isdisjoint({"fare_amount", "trip_distance", "tip_amount"})
+```
 
-*Data preparation is where the real work happens.*
+## Save a compact split manifest
+
+This JSON records policy and boundaries, not large duplicate CSV partitions.
+
+```python
+split_manifest = {
+    "grain": ["pickup_zone_id", "target_hour_utc"],
+    "target": TARGET,
+    "primary_metric": "MAE",
+    "secondary_metric": "RMSE",
+    "timezone": "America/New_York",
+    "boundaries": {"validation_start": "2023-05-01", "test_start": "2023-06-01"},
+    "features": FEATURES,
+    "rows": {"train": len(train), "validation": len(validation), "test": len(test)},
+}
+output_dir = Path("output")
+output_dir.mkdir(exist_ok=True)
+manifest_path = output_dir / "03_split_manifest.json"
+manifest_path.write_text(json.dumps(split_manifest, indent=2) + "\n")
+
+assert sum(split_manifest["rows"].values()) == len(model_table)
+assert manifest_path.exists()
+print(f"Saved {manifest_path}")
+print("Final checks passed: training-only analysis, fixed split, and leakage audit.")
+```

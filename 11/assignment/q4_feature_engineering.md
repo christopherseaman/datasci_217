@@ -1,139 +1,88 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
 # Q4: Feature Engineering
 
-**Phase 5:** Feature Engineering & Aggregation  
-**Points: 9 points**
+**16 points** | Phase 5
 
-**Focus:** Create derived features, perform time-based aggregations, calculate rolling windows.
-
-**Lecture Reference:** Lecture 11, Notebook 2 ([`11/demo/02_wrangling_feature_engineering.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/02_wrangling_feature_engineering.ipynb)), Phase 5. Also see Lecture 09 (rolling windows).
-
----
+At each cutoff, you may use measurements available at or before that hour. The answer is air temperature exactly one elapsed hour later. Build features on the complete panel so every lag has an exact temporal meaning.
 
 ## Setup
 
 ```python
-# Import libraries
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
-import os
+import pandas as pd
 
-# Load wrangled data from Q3
-df = pd.read_csv('output/q3_wrangled_data.csv', parse_dates=['Measurement Timestamp'], index_col='Measurement Timestamp')
-# Or if you saved without index:
-# df = pd.read_csv('output/q3_wrangled_data.csv')
-# df['Measurement Timestamp'] = pd.to_datetime(df['Measurement Timestamp'])
-# df = df.set_index('Measurement Timestamp')
-print(f"Loaded {len(df):,} records with datetime index")
+PANEL_PATH = Path("output/q3_hourly_panel.csv")
+panel = pd.read_csv(PANEL_PATH, parse_dates=["measurement_timestamp_utc"])
+panel = panel.sort_values(["station_name", "measurement_timestamp_utc"])
 ```
 
----
+## Forecast Rows and Features
 
-## Objective
+Use grouped shifts and rolling operations so station histories never mix. The 24-hour mean includes cutoff and its prior 23 rows, ignores missing values, and uses `min_periods=1`.
 
-Create derived features, perform time-based aggregations, and calculate rolling windows for time series analysis.
+Derive target calendar cycles after converting the target instant to `America/Chicago`. For target local integer `hour` (0-23), use `hour_angle = 2 * np.pi * hour / 24`, `target_hour_sin = np.sin(hour_angle)`, and `target_hour_cos = np.cos(hour_angle)`. For target local `dayofyear` (1-366), use `day_of_year_angle = 2 * np.pi * (dayofyear - 1) / 366`, `target_day_of_year_sin = np.sin(day_of_year_angle)`, and `target_day_of_year_cos = np.cos(day_of_year_angle)`. The denominator remains 366 for every year.
 
-**Time Series Note:** Rolling windows are essential for time series data. They capture temporal dependencies (e.g., 7-hour rolling mean captures short-term patterns). See **Lecture 09** for time series rolling window operations. For hourly data, common window sizes are 7-24 hours (capturing daily patterns). Use pandas `rolling()` method with `window` parameter to specify the number of periods.
+```python
+FEATURE_COLUMNS = [
+    "row_id", "station_name", "cutoff_timestamp_utc", "target_timestamp_utc",
+    "target_air_temperature_c", "model_eligible", "air_temperature_c_t",
+    "relative_humidity_pct_t", "interval_rain_mm_t", "wind_speed_mps_t",
+    "maximum_wind_speed_mps_t", "barometric_pressure_hpa_t",
+    "solar_radiation_w_m2_t", "wind_direction_sin_t", "wind_direction_cos_t",
+    "air_temperature_lag_1h_c", "air_temperature_lag_24h_c",
+    "air_temperature_lag_168h_c", "air_temperature_mean_past_24h_c",
+    "air_temperature_change_1h_c", "target_hour_sin", "target_hour_cos",
+    "target_day_of_year_sin", "target_day_of_year_cos",
+]
 
----
-
-## Required Artifacts
-
-You must create exactly these 3 files in the `output/` directory:
-
-### 1. `output/q4_features.csv`
-**Format:** CSV file
-**Content:** Dataset with all derived features added
-**Requirements:**
-- All original columns from Q3
-- All new derived features added as columns
-- **No index column** (save with `index=False`)
-
-### 2. `output/q4_rolling_features.csv`
-**Format:** CSV file
-**Content:** Dataset with rolling window features
-**Required Columns:**
-- Original datetime column
-- At least one rolling window calculation column (e.g., `water_temp_rolling_7h`, `air_temp_rolling_24h`)
-
-**Requirements:**
-- Must include at least one rolling window calculation
-- Rolling window names should be descriptive (e.g., `temp_rolling_7h` for 7-hour rolling mean)
-- **No index column** (save with `index=False`)
-
-**Example columns:**
-```csv
-Measurement Timestamp,wind_speed_rolling_7h,humidity_rolling_24h,pressure_rolling_7h
-2022-01-01 00:00:00,6.8,65.2,1013.5
-2022-01-01 01:00:00,6.9,65.3,1013.6
-...
+# TODO: Build exact next-hour targets and all fixed features within station.
+# TODO: Mark eligibility, construct row IDs, select FEATURE_COLUMNS, and save
+# output/q4_features.csv without dropping ineligible panel rows.
 ```
 
-**Note:** The example shows rolling windows of predictor variables (wind speed, humidity, pressure), not the target variable. If you're predicting Air Temperature, do NOT create rolling windows of Air Temperature - this causes data leakage.
+## Feature Manifest
 
-### 3. `output/q4_feature_list.txt`
-**Format:** Plain text file
-**Content:** List of new features created (one per line)
-**Requirements:**
-- One feature name per line
-- No extra text, just feature names
-- Include all derived features, rolling features, and categorical features created
+Document one row per fixed predictor. Offsets are relative to cutoff; predictors may use offset 0 or earlier but never later. The `source` field may contain any concise, nonblank student description. Feature names, row order, offsets, and roles are fixed; exact `source` prose is not.
 
-**Example format:**
-```
-temp_difference
-temp_ratio
-wind_speed_squared
-comfort_index
-water_temp_rolling_7h
-air_temp_rolling_24h
-wind_speed_rolling_7h
-temp_category
-wind_category
+```python
+MANIFEST_COLUMNS = [
+    "feature_name", "source", "earliest_offset_hours",
+    "latest_offset_hours", "role",
+]
+
+# TODO: Build the ordered fixed-predictor manifest and save
+# output/q4_feature_manifest.csv.
 ```
 
----
+## Timing Checks
 
-## Requirements Checklist
-
-- [ ] Derived features created (differences, ratios, interactions, etc.)
-- [ ] Time-based aggregations performed (by hour, day, month, etc.) - optional but recommended
-- [ ] At least one rolling window calculation (rolling mean, rolling median, etc.)
-- [ ] Categorical features created (if applicable)
-- [ ] Feature list documented
-- [ ] All 3 required artifacts saved with exact filenames
-
----
-
-## Your Approach
-
-1. **Create derived features** - Differences, ratios, interactions between variables (watch for division by zero)
-2. **Calculate rolling windows** - Use `.rolling()` on predictor variables to capture temporal patterns
-
-   ⚠️ **Data Leakage Warning:** Do not create ANY features that use your target variable - this includes rolling windows, differences, ratios, or interactions involving the target. For example, if predicting Air Temperature, do not create `air_temp * humidity` or `air_temp - wet_bulb`. Only derive features from other predictor variables.
-
-3. **Create categorical features** - Bin continuous variables if useful (optional)
-4. **Check for infinity values** - Ratios can produce infinity; replace with NaN and handle appropriately
-5. **Document and save** - Remember to `reset_index()` before saving CSVs
-
----
-
-## Decision Points
-
-- **Derived features:** What relationships might be useful? Temperature differences? Ratios? Interactions between variables?
-- **Rolling windows:** What window size makes sense? 7 hours? 24 hours? Consider the temporal scale of your data. For hourly data, 7-24 hours captures daily patterns.
-- **Time-based aggregations:** Aggregate by hour? Day? Week? What temporal granularity is useful for your analysis?
-
----
+```python
+# TODO: Assert at least one exact lag value, one exact next-hour target, and
+# that every manifest latest_offset_hours is <= 0.
+```
 
 ## Checkpoint
 
-After Q4, you should have:
-- [ ] Derived features created
-- [ ] At least one rolling window calculation
-- [ ] Feature list documented
-- [ ] All 3 artifacts saved: `q4_features.csv`, `q4_rolling_features.csv`, `q4_feature_list.txt`
+- [ ] Features and targets restart within station and use elapsed UTC hours.
+- [ ] Rolling mean timing and missing-value behavior match the contract.
+- [ ] Eligibility requires observed current and exact next-hour temperatures.
+- [ ] Row IDs are unique station slugs plus cutoff UTC hour.
+- [ ] The manifest includes all and only fixed predictors in fixed order.
 
----
-
-**Next:** Continue to `q5_pattern_analysis.md` for Pattern Analysis.
-
+Next: [`q5_pattern_analysis.ipynb`](q5_pattern_analysis.ipynb)

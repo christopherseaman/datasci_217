@@ -1,161 +1,68 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
 # Q9: Writeup
 
-**Phase 9:** Written Report  
-**Points: 40 points**
+**6 points**
 
-**Focus:** Create a comprehensive written report documenting your analysis.
+Complete root [`report.md`](report.md) using facts from your saved artifacts. This is a structural completeness check, not a subjective prose score. Concise, factual writing is welcome, and the student model does not need to beat persistence.
 
-**Lecture Reference:** Lecture 11, Notebook 4 ([`11/demo/04_modeling_results.ipynb`](https://github.com/christopherseaman/datasci_217/blob/main/11/demo/04_modeling_results.ipynb)), Phase 9. Also see `example_report/report.md` for structure and level of detail.
+## Required Structure
 
----
+Use exactly these level-two headings, in order:
 
-## Objective
+1. Executive Summary
+2. Data and Cleaning
+3. Patterns
+4. Forecast Design
+5. Model Results
+6. Limitations
 
-Create a comprehensive written report documenting your complete 9-phase data science workflow analysis.
+Include the accepted six-column Markdown table with columns `Evaluation set`, `Model`, `MAE`, `RMSE`, `R2`, and `n`. It must contain exactly four data rows: the two rows from `q7_validation_metrics.csv`, labeled Validation, followed by the two rows from `q8_test_metrics.csv`, labeled Test. Also include all three required image embeds:
 
----
+- `![Release exploration](output/q1_visualizations.png)`
+- `![Training patterns](output/q5_patterns.png)`
+- `![Final model results](output/q8_final_visualizations.png)`
 
-## Deliverable
+## Artifact Cross-Check
 
-**File:** `report.md` - A comprehensive markdown report
+```python
+from pathlib import Path
 
-**Location:** Save in the assignment root directory (same level as `q1_setup_exploration.md`, `q2_data_cleaning.md`, etc.)
+import pandas as pd
 
-**Note:** Focus on including all required sections (see below) and providing clear, comprehensive documentation. See the example report in `example_report/report.md` for structure and level of detail.
+release_audit = pd.read_csv("output/q1_release_audit.csv")
+cleaning_audit = pd.read_csv("output/q2_cleaning_audit.csv")
+validation_metrics = pd.read_csv("output/q7_validation_metrics.csv")
+test_metrics = pd.read_csv("output/q8_test_metrics.csv")
+station_metrics = pd.read_csv("output/q8_station_metrics.csv")
 
----
+display(release_audit)
+display(cleaning_audit)
+display(validation_metrics)
+display(test_metrics)
+display(station_metrics)
+```
 
-## Required Sections
+Use displayed artifact values rather than hand-recalculating results.
 
-Your report must include all of the following sections:
+## Final Checklist
 
-### 1. Executive Summary (1 paragraph)
-- What dataset was analyzed
-- Main goal/question
-- Key finding in one sentence
-
-### 2. Phase-by-Phase Findings
-Document findings for each of the 9 phases:
-- **Phase 1-2 (Q1):** Exploration findings, data quality issues
-- **Phase 3 (Q2):** What was cleaned, how missing data/outliers were handled
-- **Phase 4 (Q3):** Datetime parsing, temporal features extracted
-- **Phase 5 (Q4):** Derived features created, rolling windows calculated
-- **Phase 6 (Q5):** Trends identified, seasonal patterns, correlations
-- **Phase 7 (Q6):** Train/test split approach, features selected
-- **Phase 8 (Q7):** Models trained, performance metrics, feature importance
-- **Phase 9 (Q8):** Final visualizations, summary of key findings
-
-### 3. Visualizations (at least 5 figures with captions)
-- Embed visualizations from your analysis
-- Each figure must have:
-  - Image embedded using: `![Figure N: Description](output/filename.png)`
-  - Caption explaining what the figure shows
-- Required visualizations:
-  - At least 2 time series plots (from Q1, Q5, or Q8)
-  - At least 3 additional plots (distributions, correlations, model performance, etc.)
-
-### 4. Model Results
-- Performance metrics table (use markdown table format)
-- Feature importance discussion
-- Model interpretation (what do R², RMSE, MAE mean in context?)
-- Model comparison
-
-### 5. Time Series Patterns
-- Trends over time (increasing/decreasing/stable)
-- Seasonal patterns (daily, weekly, monthly cycles)
-- Temporal relationships between variables
-- Any anomalies or interesting temporal features
-
-### 6. Limitations & Next Steps
-- Data quality issues that couldn't be fully addressed
-- Model limitations
-- Additional features that could be created
-- Additional analysis that would be valuable
-- How results could be validated or extended
-
----
-
-## Format Requirements
-
-### File Format
-- Markdown (`.md`) with embedded images
-- Professional presentation
-- Error-free writing
-
-### Image Embedding
-- Save visualizations to `output/` directory
-- Embed using: `![Figure 1: Description](output/figure1.png)`
-- All images must have captions (either in alt text or as separate text)
-
-### Tables
-- Use markdown table format (recommended for model results)
-- Example:
-  ```markdown
-  | Model | R² | RMSE | MAE |
-  |-------|----|----|----|
-  | Linear Regression | 0.XX | X.XX | X.XX |
-  | Random Forest | 0.XX | X.XX | X.XX |
-  ```
-
-### Structure
-- Include all required sections (see Required Sections above)
-- Focus on quality over quantity
-- See `example_report/report.md` for structure and level of detail
-
----
-
-## Requirements Checklist
-
-- [ ] Executive summary written (1 paragraph)
-- [ ] Phase-by-phase findings documented (all 9 phases)
-- [ ] At least 5 visualizations included with captions
-- [ ] Model results presented (metrics, feature importance, interpretation)
-- [ ] Time series patterns identified and explained
-- [ ] Limitations and next steps discussed
-- [ ] Professional formatting and presentation
-- [ ] File saved as `report.md` in assignment root directory
-
----
-
-## Grading Rubric
-
-Your writeup will be evaluated on:
-
-**Documentation Quality (12 points)**
-- Process Explanation (4 points): Clear, step-by-step description of entire workflow
-- Decision Rationale (4 points): All major decisions explained with reasoning
-- Professional Presentation (4 points): Well-formatted markdown, error-free
-
-**Visualizations & Tables (14 points)**
-- Time Series Visualizations (5 points): At least 2 time series plots with clear labels
-- Other Visualizations (5 points): At least 3 additional plots with appropriate choices
-- Tables (2 points): Model results and key findings in well-formatted tables
-- Best Practices (2 points): All visualizations have titles, axis labels, legends, captions
-
-**Interpretation & Insights (14 points)**
-- EDA Findings (5 points): Key patterns from exploration phase clearly summarized
-- Time Series Patterns (5 points): Trends, seasonality, temporal relationships identified
-- Model Interpretation (2 points): Model performance metrics interpreted correctly
-- Limitations & Conclusions (2 points): Honest assessment of limitations and conclusions
-
----
-
-## Template
-
-See `README.md` for a detailed writeup template with example structure.
-
----
-
-## Checkpoint
-
-After Q9, you should have:
-- [ ] Complete written report (`report.md`)
-- [ ] All required sections included
-- [ ] At least 5 visualizations with captions
-- [ ] Professional formatting
-- [ ] Report saved in assignment root directory
-
----
-
-**Congratulations!** You've completed the full 9-phase data science workflow. Review the submission checklist in `README.md` before submitting.
-
+- [ ] The six required headings appear exactly and in order.
+- [ ] No bracketed starter placeholder remains.
+- [ ] The six-column, four-row metrics table agrees with the Q7 and Q8 artifacts.
+- [ ] All three required figure paths exist and render.
+- [ ] Limitations are tied to this dataset and evaluation design.
+- [ ] Submitted notebook outputs are cleared after the final end-to-end run.

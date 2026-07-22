@@ -1,0 +1,44 @@
+{
+  "schema": "datasci217/assignment11-release/v1",
+  "release_id": "chicago-beach-weather-2022-2024-v1",
+  "release_filename": "chicago_beach_sensors_2022_2024.csv",
+  "release_sha256": "7209cddd9b80e9475f9af17169b935e1ac2ef4a7a32fb72963ad0566b3474139",
+  "release_byte_size": 4731351,
+  "row_count": 50895,
+  "column_count": 15,
+  "columns": [
+    "station_name",
+    "measurement_timestamp",
+    "air_temperature_c",
+    "wet_bulb_temperature_c",
+    "relative_humidity_pct",
+    "rain_intensity_mm_per_hour",
+    "interval_rain_mm",
+    "total_rain_mm",
+    "precipitation_type_code",
+    "wind_direction_deg",
+    "wind_speed_mps",
+    "maximum_wind_speed_mps",
+    "barometric_pressure_hpa",
+    "solar_radiation_w_m2",
+    "battery_voltage_v"
+  ],
+  "stations": [
+    "Foster Weather Station",
+    "Oak Street Weather Station"
+  ],
+  "first_timestamp": "2022-01-01 00:00:00",
+  "last_timestamp": "2024-12-31 23:00:00",
+  "source_timezone": "America/Chicago",
+  "source_url": "https://data.cityofchicago.org/api/views/k7hf-8y75/rows.csv?accessType=DOWNLOAD",
+  "source_sha256": "0cf9912f0b5782022faef9da275c1099f0e90f46931eb9dc0d60e568202a3de8",
+  "source_row_count": 206793,
+  "source_page": "https://data.cityofchicago.org/Parks-Recreation/Beach-Weather-Stations-Automated-Sensors/k7hf-8y75/about_data",
+  "attribution": "City of Chicago Beach Weather Stations - Automated Sensors",
+  "published_at_utc": "2026-07-22T21:00:00Z",
+  "builder": {
+    "script": "scripts/build_assignment11_data.py",
+    "python": "3.12.13",
+    "pandas": "3.0.3"
+  }
+}

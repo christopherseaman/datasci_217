@@ -1,0 +1,104 @@
+{
+  "schema": "datasci217/lecture11-demo-release/v1",
+  "release_id": "yellow-taxi-2023-h1-demo-v1",
+  "published_at_utc": "2026-07-22T20:00:00Z",
+  "source_timezone": "America/New_York",
+  "source_page": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+  "attribution": "NYC Taxi and Limousine Commission Trip Record Data",
+  "source_disclaimer": "TLC states that technology providers supplied these records and that TLC does not represent their accuracy.",
+  "source_files": [
+    {
+      "month": "2023-01",
+      "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-01.parquet",
+      "filename": "yellow_tripdata_2023-01.parquet",
+      "sha256": "32df6f67578fa86c484a6b5ef23a5281992ff085521082340b0f9e5889e9a572",
+      "byte_size": 47673370,
+      "row_count": 3066766
+    },
+    {
+      "month": "2023-02",
+      "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-02.parquet",
+      "filename": "yellow_tripdata_2023-02.parquet",
+      "sha256": "4809e6aaac64f05a62d16a25d55713be1537ad64fc261e895eaf2d2120fe750a",
+      "byte_size": 47748012,
+      "row_count": 2913955
+    },
+    {
+      "month": "2023-03",
+      "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-03.parquet",
+      "filename": "yellow_tripdata_2023-03.parquet",
+      "sha256": "e7d44943111b007bf0e7084863511886e0db29f862f9a96239383a1f86c6c26e",
+      "byte_size": 56127762,
+      "row_count": 3403766
+    },
+    {
+      "month": "2023-04",
+      "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-04.parquet",
+      "filename": "yellow_tripdata_2023-04.parquet",
+      "sha256": "95c01c53c865e06489179bdecce3a59603697a1557c4d5d183c20ae13a144dc6",
+      "byte_size": 54222699,
+      "row_count": 3288250
+    },
+    {
+      "month": "2023-05",
+      "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-05.parquet",
+      "filename": "yellow_tripdata_2023-05.parquet",
+      "sha256": "9bd7d1c557bb9d0413619ba296b4828b884852a70bd07f2230b83f080d9a8591",
+      "byte_size": 58654627,
+      "row_count": 3513649
+    },
+    {
+      "month": "2023-06",
+      "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-06.parquet",
+      "filename": "yellow_tripdata_2023-06.parquet",
+      "sha256": "3e60e29b5df45683948b68acbfb503aa459d14162c610622585c6580fdbfc73a",
+      "byte_size": 54999465,
+      "row_count": 3307234
+    }
+  ],
+  "top_zone_selection": {
+    "source_period": "2023-01",
+    "zone_count": 12,
+    "zone_ids": [
+      132,
+      138,
+      142,
+      161,
+      162,
+      163,
+      170,
+      186,
+      230,
+      236,
+      237,
+      239
+    ],
+    "ranking": "pickup count descending, pickup zone ID ascending tie-break"
+  },
+  "artifacts": {
+    "sample": {
+      "filename": "yellow_taxi_2023_h1_event_sample.parquet",
+      "sha256": "750bcc85f0267f9189dc9842ef44827168c384d4a7e5a8678e9a996348fc4b7d",
+      "byte_size": 545541
+    },
+    "panel": {
+      "filename": "yellow_taxi_2023_h1_zone_hour_counts.parquet",
+      "sha256": "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574",
+      "byte_size": 138733
+    },
+    "lookup": {
+      "filename": "taxi_zone_lookup.csv",
+      "sha256": "1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed",
+      "byte_size": 12331
+    }
+  },
+  "sample_rows": 30000,
+  "panel_rows": 52116,
+  "builder": {
+    "script": "scripts/build_lecture11_demo_data.py",
+    "python": "3.12.13",
+    "numpy": "2.0.2",
+    "pandas": "3.0.3",
+    "pyarrow": "25.0.0"
+  }
+}
