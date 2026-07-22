@@ -1,218 +1,469 @@
-# Lecture 02 bonus: Advanced Python function and collection patterns
+# Bonus Python Concepts
 
-This material is optional and not required for assignments. It assumes that you can already define and call a function, distinguish parameters from arguments and return values, handle empty input, use a dictionary, import a local module, and protect driver code with a main guard.
+*This content is optional and not required for assignments. It's here for students who want to dive deeper into Python programming concepts.*
 
-The examples extend those core skills instead of replacing the straightforward patterns used in the lecture.
+## Functions
 
-# Default and keyword arguments
+**Conceptual Description:**
+Functions organize code into reusable units with clear interfaces. Lambda expressions provide concise syntax for simple function definitions, particularly useful with higher-order functions.
 
-A **default argument value** is used when a caller omits the corresponding argument:
+**Reference:**
 
-```python
-def format_measurement(value, digits=1):
-    """Return a measurement formatted to the requested precision."""
-    return f"{value:.{digits}f}"
+- `def function_name(parameters): ...` - Function definition
+- `return value` - Return value
+- `if __name__ == "__main__":` - Main guard for script execution
+- `import module` - Import functions from other modules (could be module.py)
 
-
-print(format_measurement(21.456))
-print(format_measurement(21.456, digits=2))
-```
-
-Expected output:
-
-```text
-21.5
-21.46
-```
-
-`digits=2` is a **keyword argument**. It names the parameter at the call site, which can make optional settings easier to read.
-
-Avoid mutable default values such as an empty list. The same default object can be reused across calls. Use `None` and create a new list inside the function instead:
+**Brief Example:**
 
 ```python
-def append_label(label, labels=None):
-    """Return a new label list containing label."""
-    if labels is None:
-        labels = []
+# Function definition
+def calculate_average(grades):
+    """Calculate the average of a list of grades."""
+    if not grades:
+        return 0
+    return sum(grades) / len(grades)
 
-    result = list(labels)
-    result.append(label)
-    return result
+# Main guard for script execution
+if __name__ == "__main__":
+    # This code runs when script is executed directly
+    grades = [85, 92, 78, 96, 88]
+    average = calculate_average(grades)
+    print(f"Average grade: {average:.1f}")
 ```
 
-# Type annotations
-
-**Type annotations** document the kinds of values an interface expects and returns. Python does not enforce them automatically at runtime.
+**Library Usage:**
 
 ```python
-def mean(values: list[float]) -> float | None:
-    """Return the arithmetic mean, or None for empty input."""
-    if not values:
+# Other scripts can import and use these functions, e.g., analysis.py
+from analysis import calculate_average
+result = calculate_average([90, 95, 87])
+```
+
+## Advanced Function Concepts
+
+### Lambda Functions
+
+Lambda functions provide concise anonymous function syntax for simple operations used once. They're particularly useful with higher-order functions like `sorted()`, `filter()`, and `map()` for data transformations and custom sorting logic.
+
+**Reference:**
+- `lambda parameters: expression` - Anonymous function syntax
+- `sorted(iterable, key=function)` - Sort with custom key function
+- `filter(function, iterable)` - Filter items based on condition
+- `map(function, iterable)` - Apply function to each item
+- `functools.reduce(function, iterable)` - Cumulative operations
+
+**Brief Example:**
+```python
+# Lambda with sorting
+students = [("Alice", 85), ("Bob", 92), ("Charlie", 78)]
+sorted_students = sorted(students, key=lambda x: x[1], reverse=True)
+
+# Lambda with filter and map
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+even_squares = list(map(lambda x: x**2, filter(lambda x: x % 2 == 0, numbers)))
+
+# Lambda with data processing
+data = ["  Alice  ", "  Bob", "Charlie   "]
+clean_names = list(map(lambda x: x.strip().title(), data))
+
+# Complex lambda for data analysis
+sales_data = [{"product": "A", "sales": 100}, {"product": "B", "sales": 200}]
+top_products = sorted(sales_data, key=lambda x: x["sales"], reverse=True)
+```
+
+### Module vs Script Execution
+
+Understanding the difference between importing a module and running a script directly is crucial for creating reusable code.
+
+**The `if __name__ == "__main__":` Pattern:**
+
+```python
+# mymodule.py
+def useful_function():
+    return "This function can be imported"
+
+def main():
+    """Main function for script execution"""
+    print("Running as a script")
+    result = useful_function()
+    print(result)
+
+# This only runs when script is executed directly, not when imported
+if __name__ == "__main__":
+    main()
+```
+
+**Usage Examples:**
+
+```python
+# As a script:
+# $ python mymodule.py
+# Output: Running as a script
+#         This function can be imported
+
+# As an import:
+# >>> import mymodule
+# >>> mymodule.useful_function()
+# 'This function can be imported'
+# (No "Running as a script" output)
+```
+
+**Benefits:**
+- **Code Reusability**: Functions can be imported without running script logic
+- **Testing**: Test functions individually without running main script
+- **Library Creation**: Turn any script into an importable module
+- **Command Line Tools**: Create scripts that work both as tools and libraries
+
+### Advanced Function Features
+
+**Default Parameters:**
+```python
+def greet(name, greeting="Hello"):
+    return f"{greeting}, {name}!"
+
+print(greet("Alice"))           # Hello, Alice!
+print(greet("Bob", "Hi"))       # Hi, Bob!
+```
+
+**Variable Arguments:**
+```python
+def calculate_stats(*numbers):
+    """Accept any number of arguments"""
+    if not numbers:
         return None
+    return {
+        'sum': sum(numbers),
+        'average': sum(numbers) / len(numbers),
+        'count': len(numbers)
+    }
 
-    return sum(values) / len(values)
+stats = calculate_stats(1, 2, 3, 4, 5)
+print(stats)  # {'sum': 15, 'average': 3.0, 'count': 5}
 ```
 
-Annotations help readers and static-analysis tools, but they do not replace tests or input validation.
-
-# Tuples and unpacking
-
-A **tuple** is an ordered collection that cannot be modified after creation. It can represent a small fixed result:
-
+**Keyword Arguments:**
 ```python
-def range_summary(values):
-    """Return the minimum and maximum, or None for empty input."""
-    if not values:
-        return None
+def create_profile(**details):
+    """Accept any number of keyword arguments"""
+    profile = {}
+    for key, value in details.items():
+        profile[key] = value
+    return profile
 
-    return min(values), max(values)
-
-
-result = range_summary([18, 21, 24])
-
-if result is not None:
-    minimum, maximum = result
-    print(f"Minimum: {minimum}")
-    print(f"Maximum: {maximum}")
+profile = create_profile(name="Alice", age=25, city="San Francisco")
+print(profile)  # {'name': 'Alice', 'age': 25, 'city': 'San Francisco'}
 ```
 
-Assigning the two tuple elements to `minimum` and `maximum` is **unpacking**.
+### Function Documentation
 
-# Comprehensions
-
-A **list comprehension** creates a list from an iterable. Keep it short enough to read without tracing several conditions at once:
-
+**Docstrings:**
 ```python
-measurements = [18, 21, 24, 19]
-review_values = [value for value in measurements if value >= 20]
-print(review_values)
+def analyze_data(data, method="mean"):
+    """
+    Analyze numerical data using specified method.
+    
+    Args:
+        data (list): List of numerical values
+        method (str): Analysis method ('mean', 'median', 'mode')
+    
+    Returns:
+        float: Analysis result
+    
+    Raises:
+        ValueError: If data is empty or method is invalid
+    
+    Example:
+        >>> analyze_data([1, 2, 3, 4, 5])
+        3.0
+    """
+    if not data:
+        raise ValueError("Data cannot be empty")
+    
+    if method == "mean":
+        return sum(data) / len(data)
+    elif method == "median":
+        sorted_data = sorted(data)
+        n = len(sorted_data)
+        return sorted_data[n // 2] if n % 2 else (sorted_data[n//2-1] + sorted_data[n//2]) / 2
+    else:
+        raise ValueError(f"Unknown method: {method}")
 ```
 
-A **dictionary comprehension** creates key-value associations:
+## When to Use These Concepts
+
+**Use Functions When:**
+- Code is repeated in multiple places
+- Logic is complex and benefits from organization
+- Testing individual components is important
+- Creating reusable utilities
+
+**Use Lambda Functions When:**
+- Simple, one-line operations
+- Sorting with custom keys
+- Quick transformations with map/filter
+- Callback functions for data processing
+
+**Use `if __name__ == "__main__"` When:**
+- Creating scripts that might be imported
+- Building command-line tools
+- Testing code interactively
+- Separating library code from execution code
+
+## Practice Exercises
+
+1. Create a data analysis module with functions that can be imported or run as a script
+2. Use lambda functions to sort complex data structures
+3. Build a utility module with the main guard pattern
+4. Practice writing comprehensive docstrings
+5. Create functions with default parameters and variable arguments
+
+## Ternary Expressions (Conditional Expressions)
+
+Ternary expressions provide a concise way to write simple conditional assignments in a single line. This syntax is particularly useful in data science for applying transformations, setting default values, and creating derived columns in datasets.
+
+**Reference:**
+
+- `value_if_true if condition else value_if_false` - Ternary expression syntax
+- Condition is evaluated first, then appropriate value is returned
+- Can be nested but should be kept simple for readability
+- Useful for data cleaning, default value assignment, and transformations
+- More concise than full if-else statements for simple cases
+
+**Brief Example:**
 
 ```python
-labels = ["morning", "evening", "overnight"]
-label_lengths = {label: len(label) for label in labels}
-print(label_lengths)
+# Basic ternary expressions
+age = 25
+status = "adult" if age >= 18 else "minor"
+
+score = 85
+grade = "pass" if score >= 70 else "fail"
+
+# Data science applications
+import pandas as pd
+data = pd.DataFrame({'temperature': [15, 25, 35, 5, 45]})
+
+# Create categorical variables
+data['temp_category'] = ['hot' if temp > 30 else 'cold' if temp < 10 else 'moderate'
+                        for temp in data['temperature']]
+
+# Handle missing data with defaults
+user_input = None
+default_value = 100
+result = user_input if user_input is not None else default_value
+
+# Data transformation
+prices = [19.99, 25.50, 12.00, 99.99]
+discounted = [price * 0.8 if price > 20 else price for price in prices]
+
+print(f"Status: {status}")           # adult
+print(f"Grade: {grade}")             # pass
+print(f"Result: {result}")           # 100
 ```
 
-When a comprehension needs nested loops, several branches, or side effects, write a normal loop instead.
+**When to Use Ternary Expressions:**
+- Simple conditional assignments
+- Data cleaning and transformation
+- Setting default values
+- Creating derived columns in datasets
+- Replacing short if-else statements
 
-# Functions as values and sort keys
+**When NOT to Use:**
+- Complex conditions with multiple clauses
+- When readability would be compromised
+- Nested ternary expressions (use regular if-else instead)
 
-Python functions are values, so a function can be passed to another function. `sorted()` accepts a `key` function that returns the value used for ordering:
+Remember: Good function design makes code more readable, testable, and reusable!
 
-```python
-records = [
-    {"label": "Morning", "mean": 21.0},
-    {"label": "Evening", "mean": 22.7},
-    {"label": "Overnight", "mean": 19.5},
-]
+## Python Object Model
 
+**Python Object Model:**
 
-def mean_value(record):
-    """Return the mean used to order a record."""
-    return record["mean"]
+(advanced)
 
+In Python, everything is an object with three fundamental properties:
 
-ordered_records = sorted(records, key=mean_value, reverse=True)
+```
+Every Python Object Has:
+┌─────────────────────────────────────┐
+│  Object Identity (id)               │
+│  └─ Memory address (never changes)  │
+├─────────────────────────────────────┤
+│  Object Type (type)                 │
+│  └─ Defines behavior and operations │
+├─────────────────────────────────────┤
+│  Object Value (value)               │
+│  └─ The actual data content         │
+└─────────────────────────────────────┘
 
-for record in ordered_records:
-    print(record["label"])
+Examples:
+- Integer 42: id=140712234567568, type=<class 'int'>, value=42
+- String "hello": id=140712234567712, type=<class 'str'>, value="hello"
+- List [1,2,3]: id=140712234567856, type=<class 'list'>, value=[1,2,3]
 ```
 
-For a very small one-use expression, a **lambda expression** creates an unnamed function:
+This unified object model means integers, strings, functions, and classes all share the same fundamental structure, enabling consistent behavior and introspection across all Python data types.
 
+## Mutable vs Immutable Objects
+
+**Mutable vs Immutable Objects:**
+
+(kind of advanced)
+
+| Aspect | Mutable (Lists) | Immutable (Tuples) |
+|--------|----------------|-------------------|
+| **Can Change After Creation?** | ✅ Yes | ❌ No |
+| **Add Items** | `list.append(item)` | ❌ Creates new tuple |
+| **Remove Items** | `list.remove(item)` | ❌ Creates new tuple |
+| **Modify Items** | `list[0] = new_value` | ❌ TypeError |
+| **Memory Usage** | Higher (flexible size) | Lower (fixed size) |
+| **Performance** | Slower access | Faster access |
+| **Use Cases** | Dynamic data, calculations | Fixed records, coordinates |
+
+**Examples:**
 ```python
-ordered_records = sorted(
-    records,
-    key=lambda record: record["mean"],
-    reverse=True,
-)
+# Mutable List Operations
+grades = [85, 92, 78]
+grades.append(96)         # ✅ Works: [85, 92, 78, 96]
+grades[0] = 90           # ✅ Works: [90, 92, 78, 96]
+
+# Immutable Tuple Operations
+coordinates = (40.7, -74.0)
+coordinates.append(100)  # ❌ AttributeError: no append method
+coordinates[0] = 41.0    # ❌ TypeError: doesn't support assignment
+
+# Converting between types
+list(coordinates)        # ✅ Creates new list: [40.7, -74.0]
+tuple(grades)           # ✅ Creates new tuple: (90, 92, 78, 96)
 ```
 
-Prefer a named function when the rule needs explanation, testing, or reuse.
+## Advanced Mutable vs Immutable Analysis
 
-# Exceptions as interface contracts
+**List vs Tuple Detailed Comparison:**
 
-Returning `None` is one reasonable empty-input contract. Another is to raise an exception when the caller has violated a requirement.
+| Feature | Lists `[]` | Tuples `()` |
+|---------|------------|-------------|
+| **Mutability** | Mutable (can change) | Immutable (cannot change) |
+| **Syntax** | `[1, 2, 3]` | `(1, 2, 3)` or `1, 2, 3` |
+| **Memory Usage** | More memory overhead | Less memory overhead |
+| **Performance** | Slower iteration | Faster iteration |
+| **Methods Available** | Many: append, remove, insert, etc. | Few: count, index |
+| **Use Case** | Dynamic collections | Fixed data records |
+| **Hashable** | ❌ No (can't be dict keys) | ✅ Yes (can be dict keys) |
+| **Best For** | Shopping carts, todo lists | Coordinates, RGB colors |
 
+**Performance Comparison:**
 ```python
-def require_mean(values):
-    """Return the arithmetic mean; reject empty input."""
-    if not values:
-        raise ValueError("values must contain at least one number")
+import timeit
 
-    return sum(values) / len(values)
+# Create large collections
+large_list = list(range(1000000))
+large_tuple = tuple(range(1000000))
+
+# Iteration speed test
+list_time = timeit.timeit(lambda: [x for x in large_list], number=10)
+tuple_time = timeit.timeit(lambda: [x for x in large_tuple], number=10)
+
+print(f"List iteration: {list_time:.4f}s")
+print(f"Tuple iteration: {tuple_time:.4f}s")  # Usually ~10% faster
 ```
 
-A caller can handle the specific failure:
+**When to Choose:**
+- **Lists**: When you need to add/remove/modify items frequently
+- **Tuples**: When data structure is fixed (coordinates, database records, function returns)
+
+## Advanced Error Handling Patterns
+
+Advanced error handling goes beyond basic try/except to include exception details, cleanup code, and complex exception management patterns essential for robust data science applications.
+
+**Reference:**
+
+- `except ExceptionType as e:` - Capture exception details for debugging
+- `else:` - Execute code only if no exception occurs
+- `finally:` - Always execute cleanup code (runs regardless of exceptions)
+- `raise Exception("message")` - Manually raise exceptions
+- Multiple exception handling in single try block
+- Custom exception classes for specific error conditions
+
+**Comprehensive Exception Handling:**
 
 ```python
+# Advanced error handling with multiple exception types
 try:
-    result = require_mean([])
-except ValueError as error:
-    print(f"Cannot calculate mean: {error}")
+    filename = input("Enter filename: ")
+    with open(filename, 'r') as file:
+        data = file.read()
+        number = int(data.strip())
+        result = 100 / number
+except FileNotFoundError as e:
+    print(f"File error: {e}")
+    result = None
+except ValueError as e:
+    print(f"Invalid number format: {e}")
+    result = None
+except ZeroDivisionError as e:
+    print(f"Math error: {e}")
+    result = None
 else:
-    print(f"Mean: {result:.1f}")
+    # Only runs if no exceptions occurred
+    print("All operations completed successfully")
+finally:
+    # Always runs for cleanup
+    print("Operation finished")
 ```
 
-Catch only exceptions you can handle meaningfully. Avoid a broad `except:` block that hides unexpected programming errors.
-
-# Mutability and aliases
-
-Lists and dictionaries are **mutable**: their contents can change. Two names can refer to the same mutable object, creating aliases:
-
+**File handling with comprehensive error management:**
 ```python
-original = [18, 21]
-alias = original
-alias.append(24)
-
-print(original)
+def process_data_file(filename):
+    """Process data file with comprehensive error handling."""
+    data = None
+    try:
+        with open(filename, 'r') as file:
+            data = file.read()
+            # Process the data
+            lines = data.split('\n')
+            numbers = [float(line) for line in lines if line.strip()]
+            return sum(numbers) / len(numbers)
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found")
+        return None
+    except ValueError as e:
+        print(f"Error: Invalid data format - {e}")
+        return None
+    except ZeroDivisionError:
+        print("Error: No valid numbers found in file")
+        return None
+    finally:
+        print(f"Finished processing {filename}")
 ```
 
-Expected output:
-
-```text
-[18, 21, 24]
-```
-
-Make a shallow copy when the outer list should change independently:
-
+**Custom Exception Classes:**
 ```python
-original = [18, 21]
-copied = list(original)
-copied.append(24)
+class DataValidationError(Exception):
+    """Custom exception for data validation errors."""
+    pass
 
-print(original)
-print(copied)
+def validate_grade(grade):
+    """Validate grade with custom exception."""
+    try:
+        grade_num = float(grade)
+        if grade_num < 0 or grade_num > 100:
+            raise DataValidationError(f"Grade {grade_num} is out of range (0-100)")
+        return grade_num
+    except ValueError:
+        raise DataValidationError(f"'{grade}' is not a valid number")
+
+# Usage with custom exceptions
+try:
+    user_grade = validate_grade("105")
+except DataValidationError as e:
+    print(f"Validation failed: {e}")
 ```
 
-Expected output:
-
-```text
-[18, 21]
-[18, 21, 24]
-```
-
-Nested mutable objects require more careful copying. Lecture 03 revisits shared data and copies in the context of NumPy array views.
-
-# Small assertions while developing
-
-An `assert` statement checks an assumption and raises `AssertionError` when the condition is false:
-
-```python
-assert mean([18, 21, 24]) == 21
-assert mean([]) is None
-```
-
-Assertions are useful for quick development checks. They are not a substitute for user-facing validation or a complete automated test suite.
-
-# Optional practice
-
-1. Add a keyword-only precision option to a formatting function.
-2. Return a fixed two-value tuple and unpack it at the call site.
-3. Replace one short transformation loop with a readable comprehension.
-4. Sort a list of dictionaries first with a named key function and then with a lambda.
-5. Compare a `None`-returning interface with a `ValueError`-raising interface.
-6. Demonstrate aliasing and copying with a list without changing the original accidentally.
+**Key Advanced Patterns:**
+- **`finally` blocks**: Code that always executes, regardless of exceptions
+- **Resource management**: Proper file handling with cleanup
+- **Graceful degradation**: Continuing execution with fallback values
+- **Exception chaining**: Preserving original error context
+- **Custom exceptions**: Domain-specific error types for better debugging

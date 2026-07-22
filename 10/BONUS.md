@@ -1,167 +1,604 @@
-# Optional Extensions for Honest Modeling
+# Advanced Modeling Topics
 
-This bonus material extends Lecture 10 only after the required question contract, bounded OLS interpretation, split roles, train-only preprocessing, baseline comparison, and untouched final evaluation are secure. None of these topics is a required demonstration, Assignment 10 capability, or Lecture 11 prerequisite.
+## Hyperparameter Tuning Strategies
 
-Treat every executable extension below as an alternative development branch chosen before final evaluation. Do not inspect a test result, return to model development, and then reuse that same test result as final evidence. A redesigned workflow needs a genuinely untouched final test release.
+### Grid Search and Random Search
 
-## Scope boundary
+**Reference:**
 
-The core lecture owns:
+- `from sklearn.model_selection import GridSearchCV` - Exhaustive grid search
+- `from sklearn.model_selection import RandomizedSearchCV` - Random search
+- `from sklearn.model_selection import cross_val_score` - Cross-validation scoring
 
-- descriptive, inferential, and predictive question contracts;
-- population estimand versus prediction target;
-- association versus causation;
-- one OLS association model with assumptions, coefficient uncertainty, residuals, and mean-response versus individual intervals;
-- target timestamp, horizon, cutoff, and information availability;
-- training, validation, and test roles;
-- train-only preprocessing in one linear Pipeline;
-- a baseline, regression metrics, supplied binary metrics, leakage checks, and one final test evaluation.
-
-This file adds bounded extensions:
-
-- null hypotheses and p-values as optional inferential vocabulary;
-- Ridge and Lasso regularization inside a Pipeline;
-- cross-validation whose folds match the deployment structure; and
-- one tree ensemble with held-out permutation importance.
-
-The former surveys of XGBoost, LightGBM, CatBoost, TensorFlow, Keras, PyTorch, JAX, stacking, Bayesian optimization, automated feature engineering, deployment frameworks, drift tests, and time-series forecasting are not retained. Each requires its own prerequisites, evaluation design, environment, and justified course purpose.
-
-## Hypothesis tests and p-values
-
-A **null hypothesis** is a precisely stated reference claim about a population quantity, such as a coefficient being zero in the specified model. A **test statistic** measures how far the sample estimate is from that reference relative to its estimated uncertainty. A **p-value** is the probability, under the null hypothesis and all test assumptions, of obtaining a test statistic at least as incompatible with the null as the observed one.
-
-A p-value is not:
-
-- the probability that the null hypothesis is true;
-- the probability that the result happened “by chance”;
-- the size or practical importance of an association;
-- evidence of causation; or
-- a substitute for data-quality, design, and assumption review.
-
-If a project uses a hypothesis test, define the estimand and null before examining the result. Report the coefficient, confidence interval, and context rather than reducing the conclusion to whether a universal threshold was crossed. Multiple testing, selective reporting, dependence, and model selection can invalidate a naive interpretation and require a more advanced design.
-
-The core OLS result exposes a coefficient p-value through `ols_result.pvalues["study_hours"]`, but no required work interprets or grades it.
-
-## Regularization inside a Pipeline
-
-**Regularization** adds a penalty that discourages large fitted coefficients. A **hyperparameter** is a setting chosen outside ordinary coefficient fitting. Ridge uses an L2 squared-coefficient penalty; Lasso uses an L1 absolute-coefficient penalty and can set some fitted coefficients to zero.
-
-Scaling and regularization must remain inside a Pipeline so each candidate learns preprocessing from training rows only. Choose the penalty strength with validation data or a split-aware cross-validation design, never with final test results.
+**Example:**
 
 ```python
-from sklearn.linear_model import Lasso, Ridge
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
 
-ridge_candidate = Pipeline(
-    steps=[
-        ("scale", StandardScaler()),
-        ("model", Ridge(alpha=1.0)),
-    ]
-)
-lasso_candidate = Pipeline(
-    steps=[
-        ("scale", StandardScaler()),
-        ("model", Lasso(alpha=0.05, max_iter=10_000)),
-    ]
-)
+# Define parameter grid
+param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [3, 5, 7, None],
+    'min_samples_split': [2, 5, 10]
+}
+
+# Grid search
+model = RandomForestClassifier()
+grid_search = GridSearchCV(model, param_grid, cv=5, scoring='accuracy')
+grid_search.fit(X_train, y_train)
+
+# Best parameters
+print(f"Best parameters: {grid_search.best_params_}")
+print(f"Best score: {grid_search.best_score_}")
 ```
 
-Coefficient shrinkage does not turn coefficients into causal effects. Lasso selecting a variable does not prove that the variable is important in the world; the selected set can change with correlated features, scaling, sampling, and penalty choice.
+### Bayesian Optimization
 
-## Split-aware cross-validation
+**Reference:**
 
-**Cross-validation** repeatedly divides development data into training and validation **folds** so performance is summarized across several held-out parts. It can reduce dependence on one validation split, but it does not replace a final untouched test set.
+- `from skopt import gp_minimize` - Gaussian process optimization
+- `from skopt.space import Real, Integer, Categorical` - Parameter spaces
 
-The fold rule must match the intended use:
-
-- `KFold` can be reasonable for independent exchangeable rows;
-- `GroupKFold` keeps every supplied entity group in only one fold; and
-- `TimeSeriesSplit` preserves order for a single ordered development sequence.
-
-These names are not interchangeable recipes. Repeated entities may require grouping and time order together; a simple built-in splitter may not express both. A gap may also be necessary when feature windows or delayed labels would otherwise cross a fold boundary.
+**Example:**
 
 ```python
-from sklearn.model_selection import GroupKFold, KFold, TimeSeriesSplit
+from skopt import gp_minimize
+from skopt.space import Real, Integer
+from skopt.utils import use_named_args
+from sklearn.model_selection import cross_val_score
+from xgboost import XGBClassifier
 
-exchangeable_folds = KFold(n_splits=5, shuffle=True, random_state=217)
-entity_folds = GroupKFold(n_splits=5)
-ordered_folds = TimeSeriesSplit(n_splits=5)
+# Define search space
+space = [
+    Integer(50, 300, name='n_estimators'),
+    Real(0.01, 0.3, name='learning_rate'),
+    Integer(3, 10, name='max_depth')
+]
+
+# Objective function
+@use_named_args(space=space)
+def objective(**params):
+    model = XGBClassifier(**params, random_state=42)
+    scores = cross_val_score(model, X_train, y_train, cv=5)
+    return -scores.mean()  # Minimize negative score
+
+# Optimize
+result = gp_minimize(objective, space, n_calls=20, random_state=42)
+print(f"Best parameters: {result.x}")
 ```
 
-Fit the complete Pipeline inside every fold. Fitting a scaler, imputer, feature selector, or encoder once on all development rows before cross-validation leaks fold information.
+## Model Interpretability and Explainability
 
-## One bounded tree-ensemble extension
+### SHAP Values
 
-A **tree ensemble** combines predictions from several decision trees. It can represent nonlinear relationships and interactions that a linear model does not. Optional exploration may fit one `RandomForestRegressor` as a validation candidate after the baseline and linear Pipeline are established.
+**Reference:**
 
-This extension is not permission to compare an open-ended model catalogue on the test set. The ensemble is fit on training rows, compared on validation rows with the predeclared primary metric, and considered only if its extra complexity serves the stated use.
+- `import shap` - SHAP library
+- `shap.Explainer(model)` - Create explainer
+- `explainer.shap_values(X)` - Calculate SHAP values
+- `shap.summary_plot(shap_values, X)` - Summary plot
+
+**Example:**
 
 ```python
+import shap
+import xgboost as xgb
+
+# Train model
+model = xgb.XGBClassifier()
+model.fit(X_train, y_train)
+
+# Create explainer
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_test)
+
+# Summary plot
+shap.summary_plot(shap_values, X_test)
+
+# Feature importance plot
+shap.plots.bar(shap_values)
+```
+
+### Partial Dependence Plots
+
+**Reference:**
+
+- `from sklearn.inspection import PartialDependenceDisplay` - Partial dependence
+- `PartialDependenceDisplay.from_estimator(model, X, features)` - Create plots
+
+**Example:**
+
+```python
+from sklearn.inspection import PartialDependenceDisplay
 from sklearn.ensemble import RandomForestRegressor
 
-forest_candidate = RandomForestRegressor(
-    n_estimators=200,
-    min_samples_leaf=5,
-    random_state=217,
-    n_jobs=1,
+# Train model
+model = RandomForestRegressor()
+model.fit(X_train, y_train)
+
+# Partial dependence plots
+features = [0, 1, (0, 1)]  # Individual and interaction
+PartialDependenceDisplay.from_estimator(
+    model, X_train, features, 
+    grid_resolution=20
 )
 ```
 
-### Held-out permutation importance
+## Advanced Statistical Modeling
 
-**Permutation importance** measures how much a fitted model's score worsens when one feature column is shuffled on held-out data. Shuffling breaks that feature's relationship with the target while leaving the fitted model unchanged.
+### Mixed Effects Models
+
+**Reference:**
+
+- `from statsmodels.regression.mixed_linear_model import MixedLM` - Mixed linear models
+- `MixedLM.from_formula(formula, data, groups)` - Create model
+
+**Example:**
 
 ```python
-from sklearn.inspection import permutation_importance
+from statsmodels.regression.mixed_linear_model import MixedLM
+import statsmodels.formula.api as smf
 
-# Fit only on training rows.
-forest_candidate.fit(
-    parts["train"][feature_columns],
-    parts["train"][target_column],
-)
-
-# Inspect only validation rows during development.
-permutation_result = permutation_importance(
-    forest_candidate,
-    parts["validation"][feature_columns],
-    parts["validation"][target_column],
-    scoring="neg_mean_absolute_error",
-    n_repeats=10,
-    random_state=217,
-)
-
-permutation_summary = pd.DataFrame(
-    {
-        "feature": feature_columns,
-        "mean_score_decrease": permutation_result.importances_mean,
-        "repeat_sd": permutation_result.importances_std,
-    }
-).sort_values("mean_score_decrease", ascending=False)
+# Mixed effects model
+model = MixedLM.from_formula('y ~ x1 + x2', data=df, groups=df['group'])
+result = model.fit()
+print(result.summary())
 ```
 
-Permutation importance is model-specific and data-specific. Correlated features can share or mask importance, and a feature can be useful for prediction without being causal. Use noncausal language such as “the validation score depended on this feature for this fitted model.”
+### Generalized Additive Models (GAMs)
 
-## Further study, not a framework checklist
+**Reference:**
 
-Boosting, neural networks, specialized generalized models, mixed-effects models, causal inference, forecasting, uncertainty quantification, deployment, and monitoring can all be valuable. They are not safe next steps merely because a library exposes a short `fit()` call.
+- `from pygam import LinearGAM` - Generalized additive models
+- `gam = LinearGAM().fit(X, y)` - Fit GAM
 
-Before adopting a specialized method, require:
+**Example:**
 
-1. a question and use case that the core baseline/linear workflow cannot answer adequately;
-2. the statistical and domain prerequisites for interpreting the method;
-3. a split and metric matching real use;
-4. a reproducible, certified environment and resource plan; and
-5. a communication plan that distinguishes prediction from explanation and association from causation.
+```python
+from pygam import LinearGAM
+import numpy as np
 
-That decision rule is more durable than memorizing a list of currently popular frameworks.
+# Create GAM
+gam = LinearGAM().fit(X_train, y_train)
 
-## Bonus completion check
+# Predictions
+predictions = gam.predict(X_test)
 
-Optional work still preserves the core evaluation contract:
+# Plot partial dependence
+for i in range(X_train.shape[1]):
+    XX = gam.generate_X_grid(term=i)
+    pdep, confi = gam.partial_dependence(term=i, X=XX, width=0.95)
+    plt.plot(XX[:, i], pdep)
+    plt.fill_between(XX[:, i], confi[:, 0], confi[:, 1], alpha=0.3)
+```
 
-- preprocessing is fit within each training split or fold;
-- validation or cross-validation chooses settings;
-- final test data do not guide the choice;
-- permutation importance is held-out and noncausal; and
-- no bonus method becomes a Lecture 11 prerequisite without a separate curriculum decision.
+## Advanced Deep Learning
+
+### Transfer Learning
+
+**Reference:**
+
+- `from tensorflow.keras.applications import VGG16` - Pre-trained models
+- `model = VGG16(weights='imagenet', include_top=False)` - Load pre-trained
+- `model.trainable = False` - Freeze layers
+
+**Example:**
+
+```python
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras import layers, models
+
+# Load pre-trained model
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+base_model.trainable = False  # Freeze base model
+
+# Add custom classifier
+model = models.Sequential([
+    base_model,
+    layers.GlobalAveragePooling2D(),
+    layers.Dense(128, activation='relu'),
+    layers.Dropout(0.5),
+    layers.Dense(10, activation='softmax')
+])
+
+# Compile and train
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
+```
+
+### Custom Layers and Models
+
+**Reference:**
+
+- `from tensorflow.keras import layers, Model` - Custom model building
+- `class CustomLayer(layers.Layer)` - Custom layer class
+- `class CustomModel(Model)` - Custom model class
+
+**Example:**
+
+```python
+from tensorflow.keras import layers, Model
+
+# Custom layer
+class AttentionLayer(layers.Layer):
+    def __init__(self, units):
+        super(AttentionLayer, self).__init__()
+        self.units = units
+    
+    def build(self, input_shape):
+        self.W = self.add_weight(shape=(input_shape[-1], self.units),
+                                initializer='random_normal',
+                                trainable=True)
+    
+    def call(self, inputs):
+        attention_weights = tf.nn.softmax(tf.matmul(inputs, self.W))
+        return tf.matmul(attention_weights, inputs)
+
+# Custom model
+class CustomModel(Model):
+    def __init__(self):
+        super(CustomModel, self).__init__()
+        self.attention = AttentionLayer(64)
+        self.dense1 = layers.Dense(128, activation='relu')
+        self.dense2 = layers.Dense(10, activation='softmax')
+    
+    def call(self, inputs):
+        x = self.attention(inputs)
+        x = self.dense1(x)
+        return self.dense2(x)
+```
+
+## Model Ensembling
+
+### Stacking
+
+**Reference:**
+
+- `from sklearn.ensemble import StackingClassifier` - Stacking ensemble
+- `StackingClassifier(estimators, final_estimator)` - Create stacker
+
+**Example:**
+
+```python
+from sklearn.ensemble import StackingClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
+# Base models
+base_models = [
+    ('rf', RandomForestClassifier(n_estimators=100)),
+    ('svm', SVC(probability=True))
+]
+
+# Meta-learner
+meta_learner = LogisticRegression()
+
+# Stacking ensemble
+stacker = StackingClassifier(
+    estimators=base_models,
+    final_estimator=meta_learner,
+    cv=5
+)
+
+stacker.fit(X_train, y_train)
+predictions = stacker.predict(X_test)
+```
+
+### Blending
+
+**Reference:**
+
+- Manual blending by training models separately and combining predictions
+
+**Example:**
+
+```python
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+
+# Train multiple models
+models = {
+    'rf': RandomForestClassifier().fit(X_train, y_train),
+    'gb': GradientBoostingClassifier().fit(X_train, y_train),
+    'lr': LogisticRegression().fit(X_train, y_train)
+}
+
+# Get predictions
+predictions = {}
+for name, model in models.items():
+    predictions[name] = model.predict_proba(X_test)
+
+# Blend (weighted average)
+weights = {'rf': 0.4, 'gb': 0.4, 'lr': 0.2}
+blended = sum(weights[name] * predictions[name] for name in weights.keys())
+final_predictions = np.argmax(blended, axis=1)
+```
+
+## Time Series Modeling
+
+### ARIMA Models
+
+**Reference:**
+
+- `from statsmodels.tsa.arima.model import ARIMA` - ARIMA models
+- `model = ARIMA(data, order=(p, d, q))` - Create ARIMA
+- `result = model.fit()` - Fit model
+- `result.forecast(steps)` - Forecast
+
+**Example:**
+
+```python
+from statsmodels.tsa.arima.model import ARIMA
+import pandas as pd
+
+# Create ARIMA model
+model = ARIMA(data, order=(1, 1, 1))  # AR(1), I(1), MA(1)
+result = model.fit()
+
+# Summary
+print(result.summary())
+
+# Forecast
+forecast = result.forecast(steps=10)
+conf_int = result.get_forecast(steps=10).conf_int()
+```
+
+### Prophet for Time Series
+
+**Reference:**
+
+- `from prophet import Prophet` - Facebook Prophet
+- `model = Prophet()` - Create model
+- `model.fit(df)` - Fit model
+- `model.predict(future)` - Make predictions
+
+**Example:**
+
+```python
+from prophet import Prophet
+import pandas as pd
+
+# Prepare data (columns: ds, y)
+df = pd.DataFrame({
+    'ds': pd.date_range('2020-01-01', periods=365),
+    'y': time_series_data
+})
+
+# Create and fit model
+model = Prophet()
+model.fit(df)
+
+# Create future dataframe
+future = model.make_future_dataframe(periods=30)
+forecast = model.predict(future)
+
+# Plot
+model.plot(forecast)
+```
+
+## Production Deployment Considerations
+
+### Model Serialization
+
+**Reference:**
+
+- `import joblib` - Joblib for scikit-learn models
+- `joblib.dump(model, 'model.pkl')` - Save model
+- `model = joblib.load('model.pkl')` - Load model
+- `tf.keras.models.save_model(model, 'path')` - Save TensorFlow model
+
+**Example:**
+
+```python
+import joblib
+import pickle
+
+# Save scikit-learn model
+joblib.dump(model, 'model.pkl')
+
+# Save with metadata
+model_package = {
+    'model': model,
+    'version': '1.0',
+    'features': feature_names,
+    'preprocessor': scaler
+}
+joblib.dump(model_package, 'model_package.pkl')
+
+# Load
+loaded = joblib.load('model_package.pkl')
+model = loaded['model']
+```
+
+### Model Versioning
+
+**Reference:**
+
+- Use MLflow or similar tools for model versioning
+- Track model metadata, parameters, and performance
+
+**Example:**
+
+```python
+import mlflow
+import mlflow.sklearn
+
+# Start MLflow run
+with mlflow.start_run():
+    # Log parameters
+    mlflow.log_param("n_estimators", 100)
+    mlflow.log_param("max_depth", 5)
+    
+    # Train model
+    model = RandomForestClassifier(n_estimators=100, max_depth=5)
+    model.fit(X_train, y_train)
+    
+    # Log metrics
+    accuracy = model.score(X_test, y_test)
+    mlflow.log_metric("accuracy", accuracy)
+    
+    # Log model
+    mlflow.sklearn.log_model(model, "model")
+```
+
+## Advanced Feature Engineering
+
+### Automated Feature Engineering
+
+**Reference:**
+
+- `from featuretools import dfs` - Automated feature engineering
+- `feature_matrix, feature_defs = dfs(entities, relationships)` - Generate features
+
+**Example:**
+
+```python
+import featuretools as ft
+
+# Create entity set
+es = ft.EntitySet(id='data')
+
+# Add entities
+es = es.entity_from_dataframe(
+    entity_id='customers',
+    dataframe=customer_df,
+    index='customer_id'
+)
+
+es = es.entity_from_dataframe(
+    entity_id='transactions',
+    dataframe=transaction_df,
+    index='transaction_id',
+    time_index='transaction_date'
+)
+
+# Define relationships
+es = es.add_relationship(
+    ft.Relationship(es['customers']['customer_id'],
+                   es['transactions']['customer_id'])
+)
+
+# Generate features
+feature_matrix, feature_defs = ft.dfs(
+    entityset=es,
+    target_entity='customers',
+    max_depth=2
+)
+```
+
+### Polynomial and Interaction Features
+
+**Reference:**
+
+- `from sklearn.preprocessing import PolynomialFeatures` - Polynomial features
+- `poly = PolynomialFeatures(degree=2, interaction_only=True)` - Create transformer
+
+**Example:**
+
+```python
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
+
+# Create polynomial features
+poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+X_poly = poly.fit_transform(X)
+
+# Use in pipeline
+pipeline = Pipeline([
+    ('poly', PolynomialFeatures(degree=2)),
+    ('model', LinearRegression())
+])
+pipeline.fit(X_train, y_train)
+```
+
+## Model Monitoring and Maintenance
+
+### Drift Detection
+
+**Reference:**
+
+- Monitor model performance over time
+- Detect data drift and concept drift
+
+**Example:**
+
+```python
+import numpy as np
+from scipy import stats
+
+def detect_drift(reference_data, new_data, threshold=0.05):
+    """Detect statistical drift between reference and new data"""
+    drift_detected = {}
+    
+    for col in reference_data.columns:
+        # Kolmogorov-Smirnov test
+        statistic, p_value = stats.ks_2samp(
+            reference_data[col], 
+            new_data[col]
+        )
+        
+        drift_detected[col] = {
+            'statistic': statistic,
+            'p_value': p_value,
+            'drift': p_value < threshold
+        }
+    
+    return drift_detected
+
+# Monitor over time
+for batch in data_batches:
+    drift = detect_drift(reference_data, batch)
+    if any(d['drift'] for d in drift.values()):
+        print("Drift detected! Retrain model.")
+```
+
+### A/B Testing for Models
+
+**Reference:**
+
+- Compare model performance in production
+- Statistical significance testing
+
+**Example:**
+
+```python
+from scipy import stats
+
+def compare_models(model_a_predictions, model_b_predictions, true_labels):
+    """Compare two models using statistical tests"""
+    
+    # Calculate accuracies
+    accuracy_a = (model_a_predictions == true_labels).mean()
+    accuracy_b = (model_b_predictions == true_labels).mean()
+    
+    # McNemar's test for paired comparisons
+    from statsmodels.stats.contingency_tables import mcnemar
+    
+    # Create contingency table
+    both_correct = ((model_a_predictions == true_labels) & 
+                   (model_b_predictions == true_labels)).sum()
+    a_correct_b_wrong = ((model_a_predictions == true_labels) & 
+                         (model_b_predictions != true_labels)).sum()
+    a_wrong_b_correct = ((model_a_predictions != true_labels) & 
+                         (model_b_predictions == true_labels)).sum()
+    both_wrong = ((model_a_predictions != true_labels) & 
+                 (model_b_predictions != true_labels)).sum()
+    
+    table = [[both_correct, a_correct_b_wrong],
+             [a_wrong_b_correct, both_wrong]]
+    
+    result = mcnemar(table, exact=False, correction=True)
+    
+    return {
+        'accuracy_a': accuracy_a,
+        'accuracy_b': accuracy_b,
+        'p_value': result.pvalue,
+        'significant': result.pvalue < 0.05
+    }
+```
+
+These advanced topics will help you build production-ready models, understand model behavior, and maintain models over time in real-world applications.
+

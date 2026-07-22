@@ -1,97 +1,177 @@
-# Lecture 01 demo guide
+# Live Demo!
 
-Run these three required demos in a POSIX-style terminal with Python 3.12. Use `python3` in place of `python` only when that is the working command established during onboarding.
+# Demo 1: GitHub & VS Code Setup
+**Guide:** `01_github_vscode_setup_guide.md` (Live walkthrough, no script)
 
-## 1. Project folder, paths, and first script
+**Key Steps:**
+1. GitHub account creation
+   - Professional identity in tech
+   - Username best practices
+   - Employers look at GitHub profiles
 
-From the course repository root:
+2. Email privacy and GitHub Education
+   - Noreply email setup
+   - Email privacy in commits
+   - GitHub Student Pack: https://education.github.com/students
+   - Free tools and resources available
 
-```bash
-mkdir lecture01-scratch
-cd lecture01-scratch
-pwd
-```
+3. VS Code setup
+   - Coding environment for students
+   - Python extension installation
+   - Widespread industry adoption
 
-In VS Code, select **File → Open Folder**, choose `lecture01-scratch`, and then select **Terminal → New Terminal**. Confirm that `pwd` ends in `lecture01-scratch`. In the Explorer, create `hello.py` and enter:
+4. Git configuration in VS Code
+   ```bash
+   git config --global user.name "Your Name"
+   git config --global user.email "noreply@users..."
+   ```
+   - Create and run hello.py
+   - Integration between tools
 
-```python
-print("Hello from DataSci 217!")
-```
+**Check Understanding:**
+- Verify students can see their noreply email
+- Confirm hello.py runs successfully
 
-Save and run it in the integrated terminal:
+# Demo 2: Command Line Navigation
+**Script:** `02_cli_navigation_demo.sh`
 
-```bash
-python hello.py
-```
+**Key Steps:**
+1. Basic navigation commands
+   - pwd (where am I?)
+   - ls (what's here?)
+   - mkdir (create directories)
+   - cd (change directories)
 
-Expected output:
+2. Quick project creation
+   ```bash
+   ./02_cli_navigation_demo.sh
+   ```
+   - Simple directory structure
+   - File creation with echo redirection
 
-```text
-Hello from DataSci 217!
-```
+3. File viewing
+   - cat command to display file contents
+   - Basic CSV data example
 
-Demonstrate that a relative path starts at the working directory:
+4. Path problem demonstration
+   - Script fails due to wrong file path
+   - Fix shown as commented line in script
+   - Teaches relative path concept
 
-```bash
-cd ..
-pwd
-python hello.py
-python lecture01-scratch/hello.py
-```
+**Discussion Points:**
+- Why the Python script couldn't find the file
+- How file paths work from different directories
 
-The first Python command should report that `hello.py` cannot be opened. The second should succeed because its relative path starts from the current directory. Keep the scratch folder for later Lecture 01 practice.
+# Demo 3: Python Basics with Debugging
+**Script:** `03_python_basics_demo.py`
 
-In VS Code, select **File → Open Folder** and reopen the course repository root. Then select **Terminal → New Terminal**, confirm that `pwd` ends at the course repository, and enter the demo directory:
+**Key Steps:**
+1. Set expectations
+   - Intentional mistakes in demo
+   - Learning exercise to spot and understand fixes
 
-```bash
-cd 01/demo
-```
+2. Variables and Types
+   ```bash
+   python3 03_python_basics_demo.py
+   ```
+   - Typo error shown: "student_naem" (commented out with fix)
+   - Error message explanations and debugging tips
 
-The prepared copy of the script is `01_project_paths_first_script.py`.
+3. F-strings
+   - Missing 'f' mistake (commented out with fix)
+   - Common error pattern
+   - Professional formatting
 
-## 2. Values, conversion, lists, a decision, and a loop
+4. Indentation and Lists
+   - Python's unique indentation-based syntax
+   - IndexError: lists start at 0, not 1 (commented out with fix)
 
-Run the script:
+5. Basic Operations and Error Handling
+   - Math operations and string handling
+   - Division by zero and off-by-one errors (commented out with fixes)
+   - Step-by-step debugging approach
+   - Data type checking importance
 
-```bash
-python 02_values_lists_decisions_loops.py
-```
+**Interactive Elements:**
+- Have students identify errors as they occur (now shown as commented-out code)
+- Discuss data types and their importance
+- Practice reading error messages and understanding fixes
 
-Before each section prints, identify the scalar values, the conversion from text to an integer, the first list element at index `0`, the calculation updated by the direct loop, and the boolean condition that selects the summary.
+# Demo 4: Control Structures
+**Script:** `04_control_structures_demo.py`
 
-Expected final lines:
+**Key Steps:**
+1. Comparisons and If Statements
+   ```bash
+   python3 04_control_structures_demo.py
+   ```
+   - = assigns, == compares (commented out with fix)
+   - Order-matters error in conditions (commented out with fix)
 
-```text
-Mean: 7.1 hours
-Summary: The study mean met the seven-hour threshold.
-```
+2. For Loops
+   - 0-based vs 1-based indexing confusion (commented out with fix)
+   - enumerate() as Python's elegant solution
 
-Change the list to `[5.0, 6.0, 6.5, 6.5]`, predict the new final lines, save, and rerun. Restore the original list before continuing.
+3. While Loops
+   - Commented-out infinite loop (commented out with fix)
+   - Ensuring loops can end
 
-## 3. Read a traceback, fix the source, and rerun
+4. Nested Loops and Comprehensions
+   - List comprehensions as Pythonic approach
+   - Data science application
 
-Open `03_traceback_fix_rerun.py` in VS Code. Run it from `01/demo`:
+5. Practical Example
+   - Real grading system
+   - Complete logic walkthrough
+   - Edge case handling for empty lists
 
-```bash
-python 03_traceback_fix_rerun.py
-```
+**Interactive Elements:**
+- Have students predict output before execution
+- Compare different coding approaches
+- Practice identifying logic errors in commented-out code
 
-For each run, read the final traceback line, locate the referenced source line, make only the listed correction, save, and rerun:
+# Demo 5: Complete Integration
+**Script:** `05_integration_workflow_demo.py`
 
-1. `IndentationError`: indent `print("Participant target reached")` by four spaces.
-2. `NameError`: change `participant_cout` to `participant_count`.
-3. `TypeError`: convert `age_text` with `int(age_text)` before adding `1`.
-4. `ValueError`: change `int("forty-two")` to `int("42")`.
-5. `IndexError`: change the requested list index from `3` to `2`, and change the label from `Fourth` to `Third`.
+**Key Steps:**
+1. Set the scene
+   - Everything comes together
+   - Day-in-the-life of a data scientist
 
-The final rerun should exit successfully with:
+2. Project Setup and Data Creation
+   ```bash
+   python3 05_integration_workflow_demo.py
+   ```
+   - Professional project structure
+   - Intentional bad data as realistic scenario
+   - Simplified linear workflow (no complex functions)
 
-```text
-Participant target reached
-Participants: 24
-Age next year: 43
-Baseline age: 42
-Third measurement: 24
-```
+3. Data Loading with Validation
+   - Validation catching problems
+   - Time savings in debugging
 
-Restore `03_traceback_fix_rerun.py` to its original intentionally broken state after the demo so the next run begins with the `IndentationError`.
+4. Analysis
+   - Simple but properly organized statistics
+   - Complete analysis for each student
+
+5. Saving Results
+   - Multiple output formats for different audiences
+   - Logging for reproducibility in research
+
+6. Organization and Automation
+   - Final directory tree
+   - Portfolio-worthy organization
+   - Automation as goal: write once, run many times
+
+**Discussion Points:**
+- Potential additions to the analysis
+- Scaling considerations for larger datasets
+
+# Take-away Message:
+
+1. **Errors are teachers** - "Every error message is a learning opportunity"
+2. **Organization matters** - "Start clean, stay clean"
+3. **Test small, build big** - "Always verify each piece works"
+4. **Debugging is detective work** - "Use print(), check types, read errors"
+5. **This is real** - "You've seen actual data science workflow"
+

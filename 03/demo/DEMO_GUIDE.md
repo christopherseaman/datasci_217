@@ -1,261 +1,956 @@
-# Lecture 03 demonstration guide
+Demo Guide - Lecture 3: NumPy Arrays and Data Science Tools
 
-Run these three required demonstrations from `03/demo` in the POSIX-style shell established in Lecture 01: Bash on Linux, WSL, or the supported cloud environment, and default zsh on macOS. Native PowerShell is not a second required command interface. All paths below use forward slashes.
+# Demo 1: Assignment 02 Walkthrough
 
-Start from a fresh copy in which `.venv/`, `recreation-check/`, and `site_counts.txt` do not exist. The candidate versions used here are Python 3.12.13 and NumPy 2.0.2; they are not yet the final course lock.
+## Part 1: Git Workflow Setup
 
-# Demo 1 — Reproduce the candidate environment
+2. Set up the following branch structure:
+   - `main` branch (initial commit)
+   - `feature/project-scaffold` branch
+   - `feature/data-processing` branch
+3. Develop features on separate branches
+4. Merge branches back to main
+5. Create comprehensive documentation
 
-Open `03/demo` as the project folder in VS Code. Start a new integrated terminal and confirm the working directory:
+**Deliverables**:
 
-```bash
-pwd
-ls
-```
+- Repository with proper branch structure
+- At least 3 commits per branch with meaningful messages
+- Successful merge of both feature branches to main
+- Professional README.md with project overview
 
-Inspect the interpreter used before activation:
-
-```bash
-python --version
-python -c "import sys; print(sys.executable)"
-```
-
-For only these two pre-environment checks, use `python3` instead if that was the working command established in Lectures 01–02. After activation, use `python` consistently.
-
-Confirm that uv is already installed. Installation belongs to course readiness and follows the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/); this demonstration does not run a downloaded installer pipeline.
+### 1a. Repository Setup
 
 ```bash
-uv --version
+# Create new repository (separate from assignment folder)
+mkdir datasci-week02-integration
+cd datasci-week02-integration
+git init
+
+# Create initial README
+# (Students can follow README template from assignment)
+git add README.md
+git commit -m "Initial commit: Add project README"
+
+# Verify first commit
+git log --oneline
 ```
 
-Inspect the deliberate project records:
+### 1b. Feature Branch for Project Scaffold
 
 ```bash
-cat .python-version
-cat requirements.txt
+# Create branch for Part 2 - CLI automation script
+git checkout -b feature/project-scaffold
 ```
 
-Their exact contents are:
+## Part 2: CLI Project Scaffold Script
 
-```text
-3.12.13
-numpy==2.0.2
+**Objective**: Create a shell script that automates project setup.
+
+**Tasks**:
+
+1. Create `setup_project.sh` from scratch with the following functionality:
+   - Create directory structure (src, data, output)
+   - Generate initial files (.gitignore, requirements.txt)
+   - Create sample data files (students.csv with at least 8 records)
+   - Set up Python template files with TODO placeholders
+2. Make the script executable using chmod +x
+3. Test the script and verify all files are created
+4. Commit the script to the `feature/project-scaffold` branch
+
+**Script Requirements**:
+
+- Must start with `#!/bin/bash`
+- Use `echo` to provide user feedback
+- Use `mkdir -p` to create directories
+- Use here-documents (`cat > filename << 'EOF'`) to create files
+- Create a CSV file with student data (name,age,grade,subject)
+- Create Python templates with function stubs and TODO comments
+- Make the script executable: `chmod +x setup_project.sh`
+
+**Expected Output Structure**:
+After running your script, the following files and directories should exist:
+
+```
+├── src/
+│   ├── data_analysis.py
+│   └── data_analysis_functions.py
+├── data/
+│   └── students.csv
+├── output/
+├── .gitignore
+└── requirements.txt
 ```
 
-Install and pin the exact candidate interpreter, then create the project environment:
+### _Create directory structure (src, data, output)_
+
+Start with shebang and user feedback:
 
 ```bash
-uv python install 3.12.13
-uv python pin 3.12.13
-uv venv --python 3.12.13 .venv
-source .venv/bin/activate
+#!/bin/bash
+echo "Creating project structure..."
 ```
 
-Verify the active interpreter before installing the direct requirement:
+Add directory creation (`mkdir -p` creates parent directories if needed):
 
 ```bash
-python --version
-python -c "import sys; print(sys.executable)"
+mkdir -p src data output
+echo "✓ Created directories: src, data, output"
 ```
 
-The version must be `Python 3.12.13`. The executable path depends on the project location, but it must end inside `03/demo/.venv/bin/python`.
+### _Generate initial files (.gitignore, requirements.txt)_
 
-Install only from the deliberate direct-dependency file and run the check program:
+Add .gitignore (heredoc with `'EOF'` prevents variable expansion):
 
 ```bash
-uv pip install -r requirements.txt
-python environment_check.py
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS files
+.DS_Store
+EOF
+echo "✓ Created .gitignore"
 ```
 
-Expected program output:
+### _Create sample data files (students.csv with at least 8 records)_
 
-```text
-Python: 3.12.13
-NumPy: 2.0.2
-```
-
-Leave the first environment:
+Add sample CSV (must have header row and at least 8 data rows):
 
 ```bash
-deactivate
+cat > data/students.csv << 'EOF'
+name,age,grade,subject
+Alice,20,92,Math
+Bob,21,85,Science
+Charlie,19,78,Math
+Diana,22,95,Science
+Eve,20,88,Math
+Frank,21,76,Science
+Grace,19,91,Math
+Henry,22,82,Science
+EOF
+echo "✓ Created data/students.csv with 8 records"
 ```
 
-Create a separate disposable project directory and copy only the records and check program needed to reproduce the environment:
+### _Set up Python template files with TODO placeholders_
+
+Add Python templates with function stubs (students fill in TODOs):
 
 ```bash
-mkdir recreation-check
-cp .python-version requirements.txt environment_check.py recreation-check/
-cd recreation-check
-uv venv --python 3.12.13 .venv
-source .venv/bin/activate
-uv pip install -r requirements.txt
-python --version
-python -c "import sys; print(sys.executable)"
-python environment_check.py
+cat > src/data_analysis.py << 'EOF'
+"""Basic student data analysis script."""
+
+def load_students(filename):
+    """Load student data from CSV file."""
+    # TODO: Implement CSV loading
+    pass
+
+def calculate_average_grade(students):
+    """Calculate average grade from student data."""
+    # TODO: Implement average calculation
+    pass
+
+def count_math_students(students):
+    """Count students in Math."""
+    # TODO: Implement counting
+    pass
+
+def generate_report(students):
+    """Generate formatted report."""
+    # TODO: Implement report generation
+    pass
+
+def save_report(report, filename):
+    """Save report to file."""
+    # TODO: Implement file saving
+    pass
+
+def main():
+    """Main execution function."""
+    # TODO: Orchestrate the analysis
+    pass
+
+if __name__ == "__main__":
+    main()
+EOF
+echo "✓ Created src/data_analysis.py with function stubs"
 ```
 
-The executable path must now point inside `recreation-check/.venv/bin/python`, and the check program must reproduce the same two exact output lines. Leave that environment and return to `03/demo`:
+Add requirements.txt:
 
 ```bash
-deactivate
-cd ..
+cat > requirements.txt << 'EOF'
+# No external packages required for basic functionality
+EOF
+echo "✓ Created requirements.txt"
 ```
 
-The `.venv/` directories are generated from the committed version and requirement records; they are not course source files. Before repeating the demonstration, confirm `pwd`, then remove only the generated `.venv/` and `recreation-check/` directories through the VS Code Explorer.
-
-## Standard-library fallback reference
-
-This is a reference for a machine where uv is unavailable and the candidate interpreter is already installed. It is not a second required demonstration. Confirm the exact interpreter before creating the environment:
+### Test and Commit
 
 ```bash
-python --version
+# Make executable
+chmod +x setup_project.sh
+
+# Test it
+./setup_project.sh
+
+# Verify structure
+ls -R
+
+# Commit to feature branch
+git add setup_project.sh
+git commit -m "Add project setup automation script"
+```
+
+### Merge to Main
+
+```bash
+git checkout main
+git merge feature/project-scaffold
+git log --oneline --graph --all
+```
+
+## Part 3: Python Data Processing
+
+**Objective**: Implement Python scripts that process data and output results to files.
+
+**Tasks**:
+
+1. Create and complete `src/data_analysis.py` with basic functionality
+2. Create and complete `src/data_analysis_functions.py` with modular design
+3. Ensure both scripts output results to `output/analysis_report.txt`
+4. Test your implementation thoroughly
+
+**Python Requirements**:
+
+**Basic Analysis Script** (`src/data_analysis.py`):
+
+Your script should:
+
+- Read the CSV file line by line using `open()` and `readlines()`
+- Split each line by commas to extract fields
+- Calculate basic statistics (total students, average grade)
+- Count students by subject
+- Write results to `output/analysis_report.txt`
+- Use f-strings with `.1f` formatting for decimal numbers
+
+**Required Functions**:
+
+- `load_students(filename)`: Read CSV and return list of student data
+- `calculate_average_grade(students)`: Calculate and return average
+- `count_math_students(students)`: Count students in Math
+- `generate_report()`: Create formatted report string
+- `save_report(report, filename)`: Write report to file
+- `main()`: Orchestrate the analysis
+
+### Create Feature Branch
+
+```bash
+# New feature = new branch
+git checkout -b feature/data-processing
+```
+
+**Note**: Part 3 focuses on the required `src/data_analysis.py` script. Part 3b (advanced analysis) is OPTIONAL.
+
+Edit `src/data_analysis.py` to add these implementations:
+
+### _Read CSV file line by line using `open()` and `readlines()`_
+
+Implement `load_students()` (`lines[1:]` skips header, `strip()` removes newlines, `split(',')` parses CSV):
+
+```python
+def load_students(filename):
+    """Load student data from CSV file."""
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    students = []
+    for line in lines[1:]:  # Skip header
+        line = line.strip()
+        if line:
+            name, age, grade, subject = line.split(',')
+            students.append({
+                'name': name,
+                'age': int(age),
+                'grade': int(grade),
+                'subject': subject
+            })
+
+    return students
+```
+
+### _Calculate basic statistics (total students, average grade)_
+
+Implement `calculate_average_grade()` (list comprehension with `sum()` is concise):
+
+```python
+def calculate_average_grade(students):
+    """Calculate average grade from student data."""
+    if not students:
+        return 0.0
+
+    total = sum(student['grade'] for student in students)
+    return total / len(students)
+```
+
+### _Count students by subject_
+
+Implement `count_math_students()` (generator expression for counting):
+
+```python
+def count_math_students(students):
+    """Count students enrolled in Math."""
+    return sum(1 for student in students if student['subject'] == 'Math')
+```
+
+### _Write results to `output/analysis_report.txt`_
+
+Implement `generate_report()` (f-strings with `.1f` for one decimal, triple-quotes for multi-line):
+
+```python
+def generate_report(students):
+    """Generate formatted analysis report."""
+    total = len(students)
+    avg = calculate_average_grade(students)
+    math_count = count_math_students(students)
+
+    report = f"""Student Analysis Report
+{'=' * 40}
+
+Total Students: {total}
+Average Grade: {avg:.1f}
+
+Subject Distribution:
+  Math: {math_count}
+  Science: {total - math_count}
+"""
+    return report
+```
+
+Implement `save_report()` and `main()` (`os.makedirs(..., exist_ok=True)` creates output directory if needed):
+
+```python
+import os
+
+def save_report(report, filename):
+    """Save report to file."""
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w') as f:
+        f.write(report)
+
+def main():
+    """Main execution function."""
+    students = load_students('data/students.csv')
+    report = generate_report(students)
+    save_report(report, 'output/analysis_report.txt')
+    print(report)
+```
+
+### Complete Basic Script
+
+For the complete implementation, see [demo1a_data_analysis.py](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo1a_data_analysis.py).
+
+### Test and Commit
+
+```bash
+# Test and verify output
+python src/data_analysis.py
+cat output/analysis_report.txt
+
+# Commit
+git add src/data_analysis.py
+git commit -m "Implement basic student data analysis"
+
+# Additional commits to meet "3 commits per branch" requirement
+# Make small improvements or add documentation
+git add README.md
+git commit -m "Update README with data analysis documentation"
+
+git add .gitignore
+git commit -m "Ensure output files are tracked appropriately"
+```
+
+## Part 3b: Advanced Analysis (OPTIONAL)
+
+**Note**: This section is OPTIONAL for students. It demonstrates more advanced modular design patterns.
+
+**Advanced Analysis Script** (`src/data_analysis_functions.py`):
+
+Your modular script should:
+
+- Separate data loading, processing, and saving into different functions
+- Load CSV data using the same technique as the basic script
+- Provide more detailed analysis (highest/lowest grades, grade distribution)
+- Generate a more comprehensive report
+- Demonstrate function reusability and modular design
+
+**Required Functions**:
+
+- `load_data(filename)`: Generic loader that checks file extension
+- `load_csv(filename)`: Load CSV data (same technique as basic script)
+- `analyze_data(students)`: Return dictionary with multiple statistics
+- `analyze_grade_distribution(grades)`: Count grades by letter grade ranges
+- `save_results(results, filename)`: Save detailed report
+- `main()`: Orchestrate the analysis using all functions
+
+**Additional Requirements**:
+
+- Calculate highest and lowest grades using `max()` and `min()`
+- Count students by multiple subjects (Math, Science, etc.)
+- Create grade distribution (A: 90-100, B: 80-89, C: 70-79, D: 60-69, F: 0-59)
+- Calculate and display percentages with `.1f` formatting
+- Use dictionaries to store analysis results
+
+**Expected Output Format**:
+Both scripts should create `output/analysis_report.txt` with:
+
+- Total number of students
+- Average grade (formatted to 1 decimal place)
+- Subject counts
+- For advanced script: grade distribution with percentages
+
+Edit `src/data_analysis_functions.py` to add these implementations:
+
+### _Modular design with separate functions_
+
+First, implement `load_data()` and `load_csv()` for flexible data loading:
+
+```python
+import os
+
+def load_data(filename):
+    """Generic loader that checks file extension."""
+    if filename.endswith('.csv'):
+        return load_csv(filename)
+    else:
+        raise ValueError(f"Unsupported file type: {filename}")
+
+def load_csv(filename):
+    """Load CSV data using manual parsing."""
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    students = []
+    for line in lines[1:]:  # Skip header
+        line = line.strip()
+        if line:
+            name, age, grade, subject = line.split(',')
+            students.append({
+                'name': name,
+                'age': int(age),
+                'grade': int(grade),
+                'subject': subject
+            })
+
+    return students
+```
+
+Implement `count_by_subject()` for multi-subject counting:
+
+```python
+def count_by_subject(students):
+    """Count students by all subjects."""
+    subjects = {}
+    for student in students:
+        subject = student['subject']
+        subjects[subject] = subjects.get(subject, 0) + 1
+    return subjects
+```
+
+Implement `analyze_data()` (return dictionary with all results for easy access):
+
+```python
+def analyze_data(students):
+    """Perform comprehensive analysis on student data."""
+    grades = [s['grade'] for s in students]
+
+    return {
+        'total_students': len(students),
+        'average_grade': sum(grades) / len(grades),
+        'highest_grade': max(grades),
+        'lowest_grade': min(grades),
+        'subjects': count_by_subject(students),
+        'distribution': analyze_grade_distribution(grades)
+    }
+```
+
+### _More detailed analysis (highest/lowest grades, grade distribution)_
+
+Implement `analyze_grade_distribution()` (dictionary comprehension for percentages):
+
+```python
+def analyze_grade_distribution(grades):
+    """Analyze grade distribution by letter grade."""
+    total = len(grades)
+    counts = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0}
+
+    for grade in grades:
+        if grade >= 90:
+            counts['A'] += 1
+        elif grade >= 80:
+            counts['B'] += 1
+        elif grade >= 70:
+            counts['C'] += 1
+        elif grade >= 60:
+            counts['D'] += 1
+        else:
+            counts['F'] += 1
+
+    percentages = {
+        letter: (count / total * 100)
+        for letter, count in counts.items()
+    }
+
+    return {'counts': counts, 'percentages': percentages}
+```
+
+### _Grade distribution by letter grade with percentages_
+
+Implement `save_results()` (accessing nested dictionaries, building string with `+=`):
+
+```python
+def save_results(results, filename):
+    """Save analysis results to file."""
+    report = f"""Advanced Student Analysis Report
+{'=' * 50}
+
+Total Students: {results['total_students']}
+Average Grade: {results['average_grade']:.1f}
+Highest: {results['highest_grade']} | Lowest: {results['lowest_grade']}
+
+Subject Distribution:
+"""
+
+    for subject, count in results['subjects'].items():
+        report += f"  {subject}: {count}\n"
+
+    report += "\nGrade Distribution:\n"
+
+    for letter in ['A', 'B', 'C', 'D', 'F']:
+        count = results['distribution']['counts'][letter]
+        pct = results['distribution']['percentages'][letter]
+        report += f"  {letter}: {count} students ({pct:.1f}%)\n"
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w') as f:
+        f.write(report)
+
+def main():
+    """Main execution function."""
+    # Load data using modular functions
+    students = load_data('data/students.csv')
+
+    # Perform analysis
+    results = analyze_data(students)
+
+    # Save results
+    save_results(results, 'output/analysis_report.txt')
+
+    # Also print to console
+    with open('output/analysis_report.txt', 'r') as f:
+        print(f.read())
+
+if __name__ == "__main__":
+    main()
+```
+
+### Complete Advanced Script
+
+For the complete implementation, see [demo1b_data_analysis_functions.py](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo1b_data_analysis_functions.py).
+
+### Test and Commit
+
+```bash
+# Test and verify enhanced output
+python src/data_analysis_functions.py
+cat output/analysis_report.txt
+
+# Commit
+git add src/data_analysis_functions.py
+git commit -m "Add advanced student data analysis with modular design (optional)"
+```
+
+### Merge and Tag
+
+```bash
+# Merge to main
+git checkout main
+git merge feature/data-processing
+
+# Verify merge was successful
+git log --oneline --graph --all
+
+# Create release tag
+git tag -a v1.0 -m "Release 1.0: Complete integration project"
+
+# View all tags
+git tag -l
+```
+
+**Note**: If you completed the optional Part 3b (advanced analysis), you should have additional commits on the `feature/data-processing` branch before merging.
+
+## Common Questions
+
+**Q: "What if I mess up a commit?"**
+A: `git commit --amend` for last commit, or `git revert` for older commits.
+
+**Q: "Do I need to use `csv` module?"**
+A: No - assignment requires manual parsing with `split()` to understand fundamentals.
+
+**Q: "What if the output directory doesn't exist?"**
+A: That's why we use `os.makedirs(..., exist_ok=True)` before writing files.
+
+**Q: "Is Part 3b (advanced analysis) required?"**
+A: No - Part 3b is OPTIONAL. The required script is `data_analysis.py` in Part 3. Part 3b demonstrates advanced modular design patterns for students who want additional practice.
+
+**Q: "How do I get 3 commits per branch?"**
+A: Break your work into logical steps. For example: (1) implement basic functions, (2) add report generation, (3) add documentation or error handling. Each meaningful change deserves its own commit.
+
+**Q: "Should both scripts write to the same file?"**
+A: Yes - both scripts write to `output/analysis_report.txt`. The basic script creates a simple report, while the advanced script (if completed) creates a more detailed report. They overwrite each other, which is expected.
+
+# Demo 2: Virtual Environments and Python Potpourri
+
+**Script** - [`demo2_python_potpourri.py`](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo2_python_potpourri.py)
+
+## Demo Flow
+
+### 2a. Virtual Environment Setup
+
+Show creating and activating a virtual environment:
+
+**Method 1: Using venv (built-in)**
+```bash
+# Create virtual environment in .venv (standard location)
 python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python environment_check.py
-deactivate
+
+# Activate it
+source .venv/bin/activate  # Mac/Linux
+# .venv\Scripts\activate   # Windows
+
+# Install required packages (from requirements.txt)
+pip install -r requirements.txt
+
+# Or install manually
+pip install numpy
 ```
 
-The first command must report Python 3.12.13, and the program output must match the two candidate-version lines above.
+**Method 2: Using uv (faster, optional)**
+```bash
+# Install uv first (one-time setup)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Demo 2 — Build the ndarray mental model
+# Create and activate environment
+uv venv .venv
+source .venv/bin/activate  # Mac/Linux
 
-Remain in `03/demo` with its primary `.venv` active. If it is no longer active, reactivate it:
+# Install packages (much faster than pip!)
+uv pip install -r requirements.txt
+
+# Or install manually
+uv pip install numpy
+```
+
+**Key Points:**
+- Both methods create the same `.venv` directory
+- `uv` is 10-100x faster for package installation
+- Use whichever you prefer - results are identical
+
+### 2b. Run Python Potpourri Demo
+
+Execute the demo script:
+
+```bash
+source .venv/bin/activate  # Activate the virtual environment first
+python demo2_python_potpourri.py
+```
+
+**Key Demonstrations**
+
+1. **Type Checking** - Show how to check types with `type()`
+2. **Type Conversions** - String → int, int → float, etc.
+3. **F-String Formatting** - Modern Python string formatting
+4. **Formatting Options** - Decimal places, alignment, padding
+
+## Common Questions
+
+**Q: "Can I have multiple virtual environments?"**
+A: Yes - one per project is standard practice. Each environment is isolated.
+
+**Q: "What's the difference between f-strings and .format()?"**
+A: F-strings (Python 3.6+) are faster and more concise than `.format()`.
+
+# Demo 3: NumPy Arrays and Operations
+
+**Scripts**
+
+- [`demo3_numpy_performance.py`](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo3_numpy_performance.py)
+- [`demo3_student_analysis.py`](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/demo3_student_analysis.py)
+
+## 3a. Performance Comparison
+
+Run the performance demo:
+
+```bash
+source .venv/bin/activate  # Activate the virtual environment first
+python demo3_numpy_performance.py
+```
+
+**Expected Output**
+
+- Python list operations: tens of milliseconds
+- NumPy array operations: single-digit milliseconds
+- **10-100x speedup** (exact speedup varies by system)
+
+## 3b. Student Grade Analysis
+
+Run the practical demo:
+
+```bash
+source .venv/bin/activate  # Activate the virtual environment first
+python demo3_student_analysis.py
+```
+
+**Key Demonstrations**
+
+1. **Array Creation**
+   - From lists - `np.array([[...]])`
+   - Properties - `shape`, `dtype`, `size`
+
+2. **Indexing and Slicing**
+   - Single elements - `grades[0, 1]`
+   - Rows/columns - `grades[0, :]`, `grades[:, 1]`
+   - Slices - `grades[1:3, :]`
+
+3. **Boolean Indexing** (most important!)
+   - Create mask - `grades > 85`
+   - Filter data - `grades[grades > 85]`
+   - Multiple conditions - `(grades > 80) & (grades < 90)`
+
+4. **Statistical Operations**
+   - Basic - `.mean()`, `.std()`, `.max()`, `.min()`
+   - Axis operations - `grades.mean(axis=0)` vs `grades.mean(axis=1)`
+   - "Axis 0 = down the rows (column stats), Axis 1 = across columns (row stats)"
+
+5. **Array Reshaping**
+   - `.reshape()` - Change dimensions
+   - `.flatten()` - 2D → 1D
+   - `.T` - Transpose
+
+**Points**
+
+- After boolean indexing - "How would you find students with grades between 80-90?"
+- After axis operations - "What's the difference between axis=0 and axis=1?"
+- After reshaping - "Why would you need to reshape an array?"
+
+## Common Questions
+
+**Q: "Why does slicing give a view, not a copy?"**
+A: NumPy uses views for memory efficiency. Use `.copy()` when you need independence.
+
+**Q: "What's the difference between `grades[grades > 85]` and `np.where(grades > 85)`?"**
+A: Boolean indexing returns values, `np.where()` returns indices.
+
+**Q: "Why do I get a 1D array when I slice a single row?"**
+A: NumPy reduces dimensions when possible. Use `grades[0:1, :]` to keep 2D.
+
+# Demo 4: Command Line Data Processing
+
+**Data file** - `students.csv` (1,500 students with name, age, grade, subject across 8 subjects)
+
+## Demo Setup
+
+First, navigate to the demo directory:
+```bash
+cd /path/to/datasci_217/03/demo
+```
+
+Verify the data file exists and preview it:
+```bash
+wc -l students.csv        # Should show 1501 lines (header + 1500 students)
+head -10 students.csv     # Preview first 10 lines
+tail -5 students.csv      # Preview last 5 lines
+```
+
+## Demo Flow
+
+Run these commands manually to demonstrate CLI data processing:
+
+**4a. `cut`** - Extract columns
+
+```bash
+cut -d',' -f1,3 students.csv | head -5
+```
+
+- `-d','` - Set delimiter to comma
+- `-f1,3` - Select fields 1 and 3
+- Use case - Quick column extraction from CSV
+
+**4b. `sort`** - Sort data
+
+```bash
+sort -t',' -k3 -n students.csv | head -5
+```
+
+- `-n` - Numerical sort (not alphabetical)
+- `-t','` - Set delimiter
+- `-k3` - Sort by field 3
+- Common mistake - Forgetting `-n` for numbers!
+
+**4c. `uniq`** - Count occurrences
+
+```bash
+cut -d',' -f4 students.csv | sort | uniq -c
+```
+
+- **Must sort first!** `uniq` only removes adjacent duplicates
+- `-c` - Count occurrences
+- Pattern - `sort | uniq -c` is very common
+
+**4d. `grep`** - Search and filter
+
+```bash
+grep "Math" students.csv
+```
+
+- Basic search - `grep "Math"`
+- `-v` - Inverse match (NOT)
+- `-i` - Case-insensitive
+- Use case - Quick filtering
+
+**4e. `tr`** - Transform characters
+```bash
+# Convert subject names to uppercase
+cut -d',' -f4 students.csv | head -5 | tr 'a-z' 'A-Z'
+```
+- Use case - Case conversion, character cleanup
+- Simple transformations only (use `sed` for complex patterns)
+
+**4f. `sed`** - Stream editor
+
+- Replace - `sed 's/old/new/g'`
+- Delete lines - `sed '1d'` (removes header!)
+- Use case - More powerful than `tr`
+
+**4g. `awk`** - Pattern processing
+
+```bash
+awk -F',' 'NR>1 {sum+=$3; count++} END {print "Average grade:", sum/count}' students.csv
+```
+
+- Print columns - `awk '{print $1, $3}'`
+- Filter rows - `awk '$3 > 85'`
+- Calculate - `awk '{sum+=$3} END {print sum/NR}'`
+- **Most powerful tool for structured data**
+
+**4h. Complex pipelines**
+How to chain commands:
+
+```bash
+grep "Math" students.csv | \
+  cut -d',' -f1,3 | \
+  sort -t',' -k2 -nr | \
+  head -n 3
+```
+
+Break down the pipeline step by step:
+
+1. Filter - What rows do we keep?
+2. Extract - What columns do we need?
+3. Sort - What order?
+4. Limit - How many results?
+
+**4i. Sparklines** - Inline graphs
+
+Install (in your venv):
 
 ```bash
 source .venv/bin/activate
+pip install sparklines
 ```
 
-Open `ndarray_mental_model.py`. Its operations follow the required sequence: metadata, positional selection, view/copy behavior, one mask, same-shape arithmetic, reductions, reshape/transpose, and one scalar-to-1D broadcast.
-
-Before running, record the predicted shape of each array result. Run the program:
+Basic usage:
 
 ```bash
-python ndarray_mental_model.py
+cut -d',' -f3 students.csv | tail -n +2 | sparklines
 ```
 
-Expected output:
-
-```text
-Metadata
-scores: [18. 21. 24. 19.]
-score table:
-[[18. 21. 24.]
- [20. 22. 26.]]
-scores metadata: shape=(4,), ndim=1, size=4, dtype=float64
-table metadata: shape=(2, 3), ndim=2, size=6, dtype=float64
-Selection
-first score: 18.0
-second row: [20. 22. 26.]
-third column value: 24.0
-middle scores: [21. 24.]
-second column: [21. 22.]
-View and copy
-source after view mutation: [10 99 30 40]
-source after copy mutation: [10 20 30 40]
-copy after mutation: [99 30]
-Mask
-mask: [False  True  True False]
-masked values: [21 24]
-Same-shape arithmetic
-change: [ 2 -1  3]
-Reductions
-overall mean: 25.0
-column means: [15. 25. 35.]
-column means shape: (3,)
-row means: [20. 30.]
-row means shape: (2,)
-Reshape and transpose
-grid:
-[[1 2 3]
- [4 5 6]]
-grid shape: (2, 3)
-transpose:
-[[1 4]
- [2 5]
- [3 6]]
-transpose shape: (3, 2)
-Scalar-to-1D broadcast
-adjusted scores: [19 22 25]
-adjusted shape: (3,)
-```
-
-The view mutation changes its source. The explicit copy mutation leaves its source unchanged. For reductions, the selected axis disappears from the result shape. The only broadcasting pattern taught here is a scalar combined with a 1D array.
-
-# Demo 3 — Run a bounded pipeline and terminal analysis
-
-The committed `observations.csv` fixture is deliberately small. Each field contains no comma, quoted newline, or other CSV complication. Preview its beginning and end:
+With statistics:
 
 ```bash
-head -n 3 observations.csv
-tail -n 2 observations.csv
+cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
 ```
 
-Select the site field after removing the one-line header, then order and count it:
+Note:
 
-```bash
-tail -n +2 observations.csv | cut -d',' -f1
-tail -n +2 observations.csv | cut -d',' -f1 | sort | uniq -c
-```
+- `tail -n +2` means "start at line 2" (skip header)
+- Shows inline graphs perfect for SSH sessions and remote work
+- Lightweight visualization without leaving the terminal
+- Great for quick data exploration
 
-Save the count result with overwrite redirection:
+# Common Mistakes and How to Address Them
 
-```bash
-tail -n +2 observations.csv | cut -d',' -f1 | sort | uniq -c > site_counts.txt
-cat site_counts.txt
-wc -l site_counts.txt
-```
+## Git Issues
 
-`uniq -c` may pad its count field differently across supported systems. The exact count/name pairs are:
+**Mistake** - Committing too much at once
 
-```text
-3 north
-2 south
-1 west
-```
+- **Fix** - Break into logical chunks
+- **Thought** - "If you can't write a concise commit message, it's too much"
 
-`wc -l` must report three lines in `site_counts.txt`. This is a bounded pipeline for the supplied fixture, not a general CSV parser.
+**Mistake** - Forgetting to add files
 
-`data_loader.py` is supplied infrastructure. Do not implement or modify its CSV parsing. Its teaching interface is `load_measurements("observations.csv")`, which returns a homogeneous float64 ndarray with shape `(6, 2)`.
+- **Fix** - Use `git status` before committing
+- **Thought** - Show `git status` output interpretation
 
-Verify that importing the supplied loader and analysis produces no terminal output or report:
+## Python Issues
 
-```bash
-python -c "import data_loader; import array_summary"
-```
+**Mistake** - Mixing string and numeric operations
 
-Check the supplied loader's return contract:
+- **Fix** - Use `type()` to check, convert with `int()`, `float()`, `str()`
+- **Thought** - "Python won't guess - you need to convert explicitly"
 
-```bash
-python -c "from data_loader import load_measurements; data = load_measurements('observations.csv'); print(data.shape); print(data.dtype)"
-```
+**Mistake** - F-string syntax errors
 
-Expected output:
+- **Fix** - Remember the `f` prefix - `f"..."` not `"..."`
+- **Thought** - Show the error message, explain how to read it
 
-```text
-(6, 2)
-float64
-```
+## NumPy Issues
 
-Run the import-safe terminal analysis:
+**Mistake** - Modifying a view thinking it's a copy
 
-```bash
-python array_summary.py
-```
+- **Fix** - Use `.copy()` when you need independence
+- **Thought** - Show how changes propagate through views
 
-Expected output:
+**Mistake** - Wrong axis specification
 
-```text
-Measurements shape: (6, 2)
-Measurements dtype: float64
-Overall mean: 25.0
-Column means: [20. 30.]
-Column means shape: (2,)
-Row means: [15. 25. 35. 15. 25. 35.]
-Row means shape: (6,)
-Values at or above 30: 6
-```
+- **Fix** - Remember "axis is what you're collapsing"
+- **Thought** - Show with small 2D array, visualize what each axis does
 
-The analysis receives a 2D array from the supplied loader. It calculates whole-array and axis reductions, reshapes the array to 1D, and only then applies the scalar mask. Run the program again; a fresh script process must produce the same exact output.
+**Mistake** - Boolean indexing without parentheses
 
-No notebook is created or executed in these demonstrations. Lecture 04 introduces notebook state and labeled pandas objects after this terminal workflow is secure.
+- **Fix** - `(grades > 80) & (grades < 90)` not `grades > 80 & grades < 90`
+- **Thought** - Show the error, explain operator precedence
+
+## CLI Issues
+
+**Mistake** - Forgetting to sort before `uniq`
+
+- **Fix** - Always `sort | uniq -c`
+- **Thought** - Show what happens without sort
+
+**Mistake** - Using alphabetical sort on numbers
+
+- **Fix** - Add `-n` flag for numerical sort
+- **Thought** - Show "10" sorting before "2" without `-n`
+
+**Mistake** - Not skipping CSV headers
+
+- **Fix** - Use `tail -n +2`, `sed '1d'`, or `awk 'NR>1'`
+- **Thought** - Show error when trying to do math on header text
+
+**Mistake** - Wrong field delimiter
+
+- **Fix** - Remember `-d','` for CSVs, `-t','` for sort
+- **Thought** - Show what happens with wrong delimiter (gets wrong columns)

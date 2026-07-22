@@ -1,232 +1,506 @@
-# Bonus: Optional Grouping and Index-Output Policies
+# Advanced Data Aggregation Topics
 
-This optional material extends Lecture 08 only where a grouping policy or indexed output needs to be made more explicit. It assumes the core grain, counting, named-aggregation, `transform`, and pivot workflow.
+## Advanced GroupBy Operations
 
-Return to [README.md](README.md) for the five required objectives and three demonstrations. Nothing here is required by the Lecture 08 assignment or by Lecture 09.
+### Custom Aggregation Functions
 
-## Prepare the bounded bonus fixture
-
-The bonus uses the same provisional Python 3.12.13, NumPy 2.0.2, and pandas 3.0.3 candidate as the core. The fixture is self-contained so this file can be executed independently in fresh Colab or local Jupyter.
+**Reference:**
 
 ```python
-import platform
-
+import pandas as pd
 import numpy as np
+
+# Custom aggregation function
+def custom_agg(series):
+    """Custom aggregation that returns multiple values"""
+    return pd.Series({
+        'mean': series.mean(),
+        'std': series.std(),
+        'min': series.min(),
+        'max': series.max(),
+        'range': series.max() - series.min(),
+        'iqr': series.quantile(0.75) - series.quantile(0.25)
+    })
+
+# Apply custom function
+df.groupby('category').agg(custom_agg)
+```
+
+### Lambda Functions in GroupBy
+
+**Reference:**
+
+```python
+# Lambda functions for complex operations
+df.groupby('category').agg({
+    'value': lambda x: x.quantile(0.95),  # 95th percentile
+    'other': lambda x: x.nunique(),       # Count unique values
+    'score': lambda x: (x > x.mean()).sum()  # Count above mean
+})
+
+# Multiple lambda functions
+df.groupby('category').agg({
+    'value': [
+        lambda x: x.mean(),
+        lambda x: x.std(),
+        lambda x: x.quantile(0.25),
+        lambda x: x.quantile(0.75)
+    ]
+})
+```
+
+### GroupBy with Time Windows
+
+**Reference:**
+
+```python
+# Time-based grouping
+df['date'] = pd.to_datetime(df['date'])
+df.set_index('date', inplace=True)
+
+# Group by time periods
+df.groupby(pd.Grouper(freq='M')).sum()  # Monthly
+df.groupby(pd.Grouper(freq='Q')).mean()  # Quarterly
+df.groupby(pd.Grouper(freq='A')).max()   # Annual
+
+# Custom time windows
+df.groupby(pd.Grouper(freq='7D')).agg({
+    'value': ['sum', 'mean', 'count']
+})
+```
+
+## Advanced Pivot Table Operations
+
+### Multi-Level Pivot Tables
+
+**Reference:**
+
+```python
+# Multi-level pivot tables
+pivot = pd.pivot_table(df,
+                      values=['sales', 'profit'],
+                      index=['region', 'product'],
+                      columns=['quarter', 'year'],
+                      aggfunc={'sales': 'sum', 'profit': 'mean'},
+                      fill_value=0,
+                      margins=True)
+
+# Flatten multi-level columns
+pivot.columns = ['_'.join(col).strip() for col in pivot.columns]
+```
+
+### Pivot Table with Custom Functions
+
+**Reference:**
+
+```python
+# Custom aggregation in pivot tables
+def weighted_average(group):
+    """Calculate weighted average"""
+    return np.average(group['value'], weights=group['weight'])
+
+pivot = pd.pivot_table(df,
+                      values='value',
+                      index='category',
+                      columns='region',
+                      aggfunc=weighted_average)
+```
+
+### Pivot Table with Missing Data Handling
+
+**Reference:**
+
+```python
+# Advanced missing data handling
+pivot = pd.pivot_table(df,
+                      values='value',
+                      index='category',
+                      columns='region',
+                      aggfunc='mean',
+                      fill_value=0,           # Fill missing with 0
+                      dropna=False,           # Keep missing combinations
+                      observed=True)          # Include all categories
+
+# Handle missing data in different ways
+pivot_filled = pivot.fillna(method='ffill')  # Forward fill
+pivot_interpolated = pivot.interpolate()     # Linear interpolation
+pivot_dropped = pivot.dropna()               # Drop missing rows
+```
+
+## Hierarchical Grouping and MultiIndex
+
+### MultiIndex Operations
+
+**Reference:**
+
+```python
+# Create MultiIndex
+df_multi = df.set_index(['level1', 'level2'])
+
+# Operations on MultiIndex
+df_multi.groupby(level=0).sum()  # Group by first level
+df_multi.groupby(level=1).mean()  # Group by second level
+df_multi.groupby(level=[0, 1]).max()  # Group by both levels
+
+# Swap levels
+df_multi.swaplevel(0, 1)
+
+# Sort by index
+df_multi.sort_index()
+
+# Access specific levels
+df_multi.loc[('A', 'X')]  # Access specific combination
+df_multi.xs('A', level=0)  # Cross-section
+```
+
+### Advanced MultiIndex Grouping
+
+**Reference:**
+
+```python
+# Complex MultiIndex operations
+def hierarchical_analysis(df):
+    """Perform hierarchical analysis"""
+    
+    # Group by multiple levels
+    grouped = df.groupby(['level1', 'level2', 'level3'])
+    
+    # Apply different functions to different columns
+    result = grouped.agg({
+        'numeric_col': ['mean', 'std', 'count'],
+        'categorical_col': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
+        'date_col': ['min', 'max']
+    })
+    
+    # Flatten column names
+    result.columns = ['_'.join(col).strip() for col in result.columns]
+    
+    return result
+```
+
+## Performance Optimization
+
+### Memory-Efficient GroupBy
+
+**Reference:**
+
+```python
+# Memory-efficient groupby operations
+def memory_efficient_groupby(df, group_cols, agg_cols):
+    """Optimize memory usage in groupby operations"""
+    
+    # Use categorical data types
+    for col in group_cols:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype('category')
+    
+    # Use specific data types
+    for col in agg_cols:
+        if df[col].dtype == 'float64':
+            df[col] = df[col].astype('float32')
+        elif df[col].dtype == 'int64':
+            df[col] = df[col].astype('int32')
+    
+    # Perform groupby
+    result = df.groupby(group_cols)[agg_cols].sum()
+    
+    return result
+```
+
+### Chunked Processing
+
+**Reference:**
+
+```python
+# Process large datasets in chunks
+def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
+    """Process large file in chunks"""
+    
+    results = []
+    
+    for chunk in pd.read_csv(file_path, chunksize=chunk_size):
+        # Process chunk
+        chunk_result = chunk.groupby(group_cols)[agg_cols].sum()
+        results.append(chunk_result)
+    
+    # Combine results
+    final_result = pd.concat(results).groupby(level=0).sum()
+    
+    return final_result
+```
+
+### Parallel Processing
+
+**Reference:**
+
+```python
+from multiprocessing import Pool
 import pandas as pd
 
-assert platform.python_version() == "3.12.13"
-assert np.__version__ == "2.0.2"
-assert pd.__version__ == "3.0.3"
+def process_chunk(chunk_data):
+    """Process a single chunk"""
+    return chunk_data.groupby('category').sum()
+
+def parallel_groupby(df, n_processes=4):
+    """Parallel groupby processing"""
+    
+    # Split data into chunks
+    chunk_size = len(df) // n_processes
+    chunks = [df.iloc[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
+    
+    # Process in parallel
+    with Pool(n_processes) as pool:
+        results = pool.map(process_chunk, chunks)
+    
+    # Combine results
+    return pd.concat(results).groupby(level=0).sum()
 ```
+
+## Advanced Statistical Aggregations
+
+### Rolling Statistics
+
+**Reference:**
 
 ```python
-FACILITY_LEVELS = ["North", "South", "West", "Remote"]
-SERVICE_LEVELS = ["Consult", "Follow-up", "Procedure"]
+# Rolling statistics within groups
+df['rolling_mean'] = df.groupby('category')['value'].rolling(window=5).mean()
+df['rolling_std'] = df.groupby('category')['value'].rolling(window=5).std()
 
-bonus_encounters = pd.DataFrame(
-    {
-        "encounter_id": [
-            "E001", "E002", "E003", "E004",
-            "E005", "E006", "E007", "E008",
-            "E009", "E010", "E011", "E012",
-        ],
-        "facility": [
-            "North", "North", "North", "North",
-            "South", "South", "South", "South",
-            "West", "West", "West", "West",
-        ],
-        "service": [
-            "Consult", "Follow-up", "Consult", "Procedure",
-            "Consult", "Consult", "Procedure", "Procedure",
-            "Consult", "Procedure", "Consult", "Follow-up",
-        ],
-        "charge": [
-            120, 80, 150, 210,
-            110, 90, 220, 125,
-            130, 200, 140, 75,
-        ],
-        "rating": [
-            4, pd.NA, 5, 5,
-            4, pd.NA, pd.NA, 4,
-            3, 4, 3, 4,
-        ],
-    }
-).astype(
-    {
-        "encounter_id": "string",
-        "rating": "Int64",
-    }
-)
-
-bonus_encounters["facility"] = pd.Categorical(
-    bonus_encounters["facility"],
-    categories=FACILITY_LEVELS,
-    ordered=True,
-)
-bonus_encounters["service"] = pd.Categorical(
-    bonus_encounters["service"],
-    categories=SERVICE_LEVELS,
-    ordered=True,
-)
-
-assert bonus_encounters.shape == (12, 5)
-assert bonus_encounters["encounter_id"].is_unique
+# Expanding statistics
+df['expanding_sum'] = df.groupby('category')['value'].expanding().sum()
+df['expanding_mean'] = df.groupby('category')['value'].expanding().mean()
 ```
 
-## Contrast observed and declared category levels
+### Percentile Aggregations
 
-The core uses `observed=True` because the question concerns groups represented by input rows. An analysis may instead need every declared category level, including levels with no rows. That is an output-design decision, not a performance switch.
+**Reference:**
 
 ```python
-observed_counts = (
-    bonus_encounters.groupby(
-        "facility",
-        observed=True,
-        sort=True,
-        dropna=True,
-    )
-    .size()
-    .rename("encounter_count")
-)
+# Custom percentile functions
+def percentile_agg(series):
+    """Calculate multiple percentiles"""
+    return pd.Series({
+        'p25': series.quantile(0.25),
+        'p50': series.quantile(0.50),
+        'p75': series.quantile(0.75),
+        'p90': series.quantile(0.90),
+        'p95': series.quantile(0.95),
+        'p99': series.quantile(0.99)
+    })
 
-all_level_counts = (
-    bonus_encounters.groupby(
-        "facility",
-        observed=False,
-        sort=True,
-        dropna=True,
-    )
-    .size()
-    .rename("encounter_count")
-)
-
-assert observed_counts.index.astype("string").tolist() == [
-    "North", "South", "West"
-]
-assert all_level_counts.index.astype("string").tolist() == [
-    "North", "South", "West", "Remote"
-]
-assert int(all_level_counts.loc["Remote"]) == 0
-
-print(pd.concat({"observed": observed_counts, "all_levels": all_level_counts}, axis="columns"))
+# Apply to groups
+df.groupby('category')['value'].apply(percentile_agg)
 ```
 
-The Remote count is zero because the declared category has no input rows. With several categorical keys, `observed=False` can expose many unused combinations, so state why those rows belong in the result before choosing it.
+### Statistical Tests in Groups
 
-## Decide whether a missing key forms a group
-
-`observed=` controls unused categorical levels. `dropna=` independently controls rows whose grouping key is missing. The next fixture removes one North facility label while preserving the encounter row.
+**Reference:**
 
 ```python
-missing_key_encounters = bonus_encounters.copy()
-missing_key_encounters.loc[0, "facility"] = pd.NA
+from scipy import stats
 
-drop_missing_key = missing_key_encounters.groupby(
-    "facility",
-    observed=True,
-    sort=True,
-    dropna=True,
-).size()
+def statistical_tests(group):
+    """Perform statistical tests on group"""
+    if len(group) < 3:
+        return pd.Series({'test_stat': np.nan, 'p_value': np.nan})
+    
+    # Normality test
+    stat, p_value = stats.normaltest(group['value'])
+    
+    return pd.Series({
+        'normality_stat': stat,
+        'normality_p': p_value,
+        'mean': group['value'].mean(),
+        'std': group['value'].std(),
+        'skewness': stats.skew(group['value']),
+        'kurtosis': stats.kurtosis(group['value'])
+    })
 
-keep_missing_key = missing_key_encounters.groupby(
-    "facility",
-    observed=True,
-    sort=True,
-    dropna=False,
-).size()
-
-assert int(drop_missing_key.sum()) == 11
-assert int(keep_missing_key.sum()) == 12
-assert keep_missing_key.index.isna().sum() == 1
-assert int(keep_missing_key.loc[pd.isna(keep_missing_key.index)].iloc[0]) == 1
-
-print(keep_missing_key)
+# Apply to groups
+df.groupby('category').apply(statistical_tests)
 ```
 
-Use `dropna=False` only when “missing facility” is a meaningful grouping unit to report. Otherwise repair, reject, or separately audit the missing key according to the data contract. Never confuse a missing key with a declared but unused category.
+## Advanced Pivot Table Features
 
-## Filter whole groups with a named rule
+### Pivot Table with Custom Index
 
-`GroupBy.filter()` evaluates a condition for each group and keeps or removes the group's input rows as a unit. It does not produce one summary row per group. That output behavior makes it bonus material: students must already be able to predict aggregation and transform shapes.
-
-The named rule below keeps facilities with at least three recorded ratings. North and West pass; every South encounter row is removed even though two South rows have ratings.
+**Reference:**
 
 ```python
-def has_at_least_three_recorded_ratings(group):
-    return group["rating"].count() >= 3
+# Custom index in pivot tables
+pivot = pd.pivot_table(df,
+                      values='value',
+                      index=pd.cut(df['numeric_col'], bins=5),
+                      columns='category',
+                      aggfunc='mean')
 
-
-filtered_encounters = (
-    bonus_encounters.groupby(
-        "facility",
-        observed=True,
-        sort=True,
-        dropna=True,
-    )
-    .filter(has_at_least_three_recorded_ratings)
-)
-
-assert len(filtered_encounters) == 8
-assert filtered_encounters.index.tolist() == [0, 1, 2, 3, 8, 9, 10, 11]
-assert filtered_encounters["facility"].astype("string").unique().tolist() == [
-    "North", "West"
-]
-
-print(filtered_encounters)
+# Multi-level index
+pivot = pd.pivot_table(df,
+                      values='value',
+                      index=['level1', 'level2'],
+                      columns='category',
+                      aggfunc='sum')
 ```
 
-The result retains the original encounter-row grain and original index labels for the groups that pass. A Boolean row filter answers a different question because it can keep only selected rows inside a group.
+### Pivot Table with Time Index
 
-## Inspect one bounded hierarchical result index
-
-When `as_index=True` is used with two grouping keys, the grouped result has a two-level index. This **hierarchical index**, also called a **MultiIndex**, stores each facility–service key combination in the result's row labels.
-
-The core avoids requiring MultiIndex manipulation by using `as_index=False`. This bonus shows only how to inspect the level names and flatten the result with `reset_index()`.
+**Reference:**
 
 ```python
-indexed_two_key_summary = (
-    bonus_encounters.groupby(
-        ["facility", "service"],
-        as_index=True,
-        observed=True,
-        sort=True,
-        dropna=True,
-    )
-    .agg(
-        encounter_count=("encounter_id", "size"),
-        mean_charge=("charge", "mean"),
-    )
-)
+# Time-based pivot tables
+df['date'] = pd.to_datetime(df['date'])
+df['month'] = df['date'].dt.month
+df['year'] = df['date'].dt.year
 
-assert indexed_two_key_summary.index.nlevels == 2
-assert indexed_two_key_summary.index.names == ["facility", "service"]
-assert indexed_two_key_summary.index.is_unique
-assert indexed_two_key_summary.shape == (8, 2)
-
-flat_two_key_summary = indexed_two_key_summary.reset_index()
-
-assert flat_two_key_summary.columns.tolist() == [
-    "facility",
-    "service",
-    "encounter_count",
-    "mean_charge",
-]
-assert flat_two_key_summary.shape == (8, 4)
-
-print(indexed_two_key_summary)
-print(flat_two_key_summary)
+pivot = pd.pivot_table(df,
+                      values='value',
+                      index=['year', 'month'],
+                      columns='category',
+                      aggfunc='sum',
+                      fill_value=0)
 ```
 
-Neither layout changes the summary's meaning: one row represents one observed facility–service combination. `reset_index()` changes where the keys are stored, not the grain or values.
+### Pivot Table with Custom Aggregation
 
-## Deferred local-terminal lab: SSH and tmux
+**Reference:**
 
-SSH and tmux are not part of this notebook bonus. A safe remote workflow depends on institution-specific hosts, account authorization, authentication or MFA policy, host-key verification, network restrictions, port-forwarding rules, and installed terminal tools. Generic commands would not constitute a reproducible or supportable course exercise.
+```python
+# Custom aggregation in pivot tables
+def weighted_mean(group):
+    """Calculate weighted mean"""
+    return np.average(group['value'], weights=group['weight'])
 
-If the instructor retains this material, it should be published as a separate optional local-terminal lab with an approved practice host, current security guidance, explicit cleanup/reconnection steps, and platform-tested instructions. It must not run in Colab, must not become a Lecture 08 or Lecture 09 prerequisite, and must not be mixed into an aggregation demonstration.
+pivot = pd.pivot_table(df,
+                      values='value',
+                      index='category',
+                      columns='region',
+                      aggfunc=weighted_mean,
+                      fill_value=0)
+```
 
-## Bonus scope boundary
+## Advanced GroupBy Transformations
 
-This bonus is limited to categorical `observed` policy, missing grouping-key policy, whole-group filtering, and one bounded two-level result-index layout.
+### Ranking Within Groups
 
-It does not teach `GroupBy.apply`, custom statistical functions, advanced MultiIndex manipulation, advanced pivots or crosstabs, periods, resampling, rolling windows, time-series analysis, hypothesis tests, plotting, chunking, parallelism, remote execution, or performance optimization.
+**Reference:**
+
+```python
+# Ranking within groups
+df['rank'] = df.groupby('category')['value'].rank(ascending=False)
+df['percentile'] = df.groupby('category')['value'].rank(pct=True)
+
+# Multiple ranking methods
+df['rank_dense'] = df.groupby('category')['value'].rank(method='dense')
+df['rank_min'] = df.groupby('category')['value'].rank(method='min')
+df['rank_max'] = df.groupby('category')['value'].rank(method='max')
+```
+
+### Lag and Lead Operations
+
+**Reference:**
+
+```python
+# Lag and lead operations within groups
+df['value_lag1'] = df.groupby('category')['value'].shift(1)
+df['value_lag2'] = df.groupby('category')['value'].shift(2)
+df['value_lead1'] = df.groupby('category')['value'].shift(-1)
+
+# Difference from previous value
+df['value_diff'] = df.groupby('category')['value'].diff()
+
+# Percentage change
+df['value_pct_change'] = df.groupby('category')['value'].pct_change()
+```
+
+### Window Functions
+
+**Reference:**
+
+```python
+# Window functions within groups
+df['rolling_mean'] = df.groupby('category')['value'].rolling(window=3).mean()
+df['rolling_std'] = df.groupby('category')['value'].rolling(window=3).std()
+df['expanding_sum'] = df.groupby('category')['value'].expanding().sum()
+df['expanding_mean'] = df.groupby('category')['value'].expanding().mean()
+```
+
+## Custom GroupBy Classes
+
+### Custom GroupBy Aggregator
+
+**Reference:**
+
+```python
+class CustomGroupBy:
+    """Custom groupby aggregator"""
+    
+    def __init__(self, df, group_cols):
+        self.df = df
+        self.group_cols = group_cols
+        self.grouped = df.groupby(group_cols)
+    
+    def custom_agg(self, agg_col, func):
+        """Apply custom aggregation function"""
+        return self.grouped[agg_col].apply(func)
+    
+    def multiple_aggs(self, agg_dict):
+        """Apply multiple aggregations"""
+        return self.grouped.agg(agg_dict)
+    
+    def filter_groups(self, condition):
+        """Filter groups based on condition"""
+        return self.grouped.filter(condition)
+    
+    def transform_groups(self, func):
+        """Transform groups"""
+        return self.grouped.transform(func)
+
+# Usage
+custom_gb = CustomGroupBy(df, ['category'])
+result = custom_gb.custom_agg('value', lambda x: x.quantile(0.95))
+```
+
+## Advanced Remote Computing
+
+### Distributed Computing
+
+**Reference:**
+
+```python
+# Distributed computing with Dask
+import dask.dataframe as dd
+
+# Read large dataset with Dask
+df = dd.read_csv('large_dataset.csv')
+
+# Perform groupby operations
+result = df.groupby('category').agg({
+    'value': ['sum', 'mean', 'count']
+}).compute()
+
+# Save results
+result.to_csv('distributed_results.csv')
+```
+
+### Cloud Computing
+
+**Reference:**
+
+```python
+# Cloud computing with AWS/GCP
+import boto3
+import pandas as pd
+
+# Read from S3
+s3 = boto3.client('s3')
+df = pd.read_csv('s3://bucket/data.csv')
+
+# Process data
+result = df.groupby('category').sum()
+
+# Save back to S3
+result.to_csv('s3://bucket/results.csv')
+```
+
+These advanced topics will help you handle complex aggregation scenarios and optimize performance for large datasets in your data science work.

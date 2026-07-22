@@ -1,516 +1,544 @@
-# Grouping and Aggregation with an Explicit Result Grain
+Data Aggregation and Group Operations
 
-Lecture 08 teaches how to change a table's row grain deliberately. The required workflow starts by stating what one input row represents and what defines a group, predicts the grouped result, and only then computes a summary or adds group context back to the original rows.
+See [BONUS.md](BONUS.md) for advanced topics:
 
-Optional categorical-grouping and index-layout extensions are collected in [BONUS.md](BONUS.md). They are not prerequisites for the required demos, assignment, or Lecture 09.
+- Advanced groupby operations with custom functions
+- Hierarchical grouping and MultiIndex operations
+- Performance optimization for large datasets
+- Custom aggregation functions and transformations
+- Advanced pivot table operations
 
-## Prerequisites
+# Outline
 
-Before starting this lecture, students should be able to:
+- groupby split-apply-combine essentials
+- pivot tables and crosstab basics
+- remote workflows: ssh, screen, tmux
+- performance-minded patterns beginners should know
 
-- select DataFrame rows and columns and distinguish the DataFrame index from ordinary columns;
-- recognize missing values and decide whether they should contribute to a calculation;
-- state row grain, identify keys, validate merge cardinality, and verify post-merge grain;
-- distinguish long and wide tabular forms; and
-- read a supplied summary and make or critique one honest chart from it.
+*Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
 
-Lecture 08 does not assume periods, frequency, resampling, rolling operations, statistical tests, modeling, remote-computing workflows, or performance engineering.
+Data aggregation is the process of summarizing and grouping data to extract meaningful insights. This lecture covers the essential tools for data aggregation: **groupby operations**, **pivot tables**, and **remote computing** for handling large datasets.
 
-## Learning objectives
+# The Split-Apply-Combine Paradigm
 
-By the end of Lecture 08, students should be able to:
+*Reality check: GroupBy operations are the bread and butter of data analysis. Master this concept and you'll be able to answer almost any "what if we group by..." question that comes your way.*
 
-1. State the input row grain and grouping key, predict the identity and number of groups and the output grain, and verify those predictions before interpreting a grouped result.
-2. Choose `size`, `count`, or `nunique` to match a counting question and produce a flat summary with named aggregation.
-3. Distinguish aggregation from `transform` by output grain and use `transform` to add one group statistic while preserving the input row count and index alignment.
-4. Produce grouped results with deliberate key columns, value columns, ordering, and index placement, including one bounded two-key summary with an explicit output grain.
-5. Build and interpret one aggregating `pivot_table` by naming its index, columns, values, aggregation function, observed-category policy, and missing combinations.
+The split-apply-combine paradigm is the foundation of data aggregation. You split data into groups, apply a function to each group, and combine the results.
 
-## Colab-first execution and evidence
+**Visual Guide - GroupBy Operations:**
 
-Required Lecture 08 demonstrations are Colab-first and also run in local Jupyter or the VS Code notebook interface. The 2026–27 compatibility candidate is Python 3.12.13, NumPy 2.0.2, and pandas 3.0.3. This is not the final release lock.
+```
+BEFORE GROUPBY                    AFTER GROUPBY
+┌─────────┬─────────┬─────────┐   ┌─────────┬─────────┐
+│ Category│ Value   │ Other   │   │ Category│ Mean    │
+├─────────┼─────────┼─────────┤   ├─────────┼─────────┤
+│ A       │ 10      │ X       │   │ A       │ 10.0    │
+│ A       │ 15      │ Y       │   │ B       │ 25.0    │
+│ B       │ 20      │ Z       │   └─────────┴─────────┘
+│ B       │ 25      │ W       │
+│ A       │ 5       │ V       │
+│ B       │ 30      │ U       │
+└─────────┴─────────┴─────────┘
+```
 
-In the pin-able Colab 2026.04 runtime, a setup cell must conditionally install pandas 3.0.3 before pandas is imported when the installed version differs. Do not install pandas 3.0.4; that release was yanked. Avoid reinstalling unrelated Colab packages. Every required notebook prints the versions actually in use and must pass both in a fresh Colab runtime and in clean local Jupyter before publication.
+**Visual Guide - Split-Apply-Combine:**
 
-Colab's filesystem is ephemeral. Required notebooks use fixed in-notebook data or reacquire a pinned source in code; manual upload and mounted Drive are not defaults. Changes made in a Colab notebook opened from GitHub are not automatically saved back to the repository.
+```
+ORIGINAL DATA                    SPLIT BY CATEGORY
+┌─────────┬─────────┬─────────┐   ┌─────────┬─────────┐
+│ Category│ Value   │ Other   │   │ Group A │ Group B │
+├─────────┼─────────┼─────────┤   ├─────────┼─────────┤
+│ A       │ 10      │ X       │   │ A, 10   │ B, 20   │
+│ A       │ 15      │ Y       │   │ A, 15   │ B, 25   │
+│ B       │ 20      │ Z       │   │ A, 5    │ B, 30   │
+│ B       │ 25      │ W       │   └─────────┴─────────┘
+│ A       │ 5       │ V       │
+│ B       │ 30      │ U       │
+└─────────┴─────────┴─────────┘
 
-Assignment notebooks remain runnable in clean local Jupyter. Colab becomes an assignment submission path only after the repository-save and Classroom 50 pilot is approved. Remove credentials, private records, and sensitive output before sharing. Stored cell output is not execution evidence: restart the runtime and run every cell in order.
+APPLY FUNCTION (e.g., mean)      COMBINE RESULTS
+┌─────────┬─────────┐            ┌─────────┬─────────┐
+│ Group A │ Group B │            │ Category│ Mean    │
+├─────────┼─────────┤            ├─────────┼─────────┤
+│ mean(10,│ mean(20,│            │ A       │ 10.0    │
+│ 15, 5)  │ 25, 30)│            │ B       │ 25.0    │
+│ = 10.0  │ = 25.0 │            └─────────┴─────────┘
+└─────────┴─────────┘
+```
 
-The examples begin with the candidate version check:
+# Basic GroupBy Operations
+
+**Reference:**
+
+- `df.groupby('column')` - Group by single column
+- `df.groupby(['col1', 'col2'])` - Group by multiple columns
+- `grouped.mean()` - Calculate mean for each group
+- `grouped.sum()` - Calculate sum for each group
+- `grouped.count()` - Count non-null values
+- `grouped.size()` - Count all values (including nulls)
+- `grouped.agg(['mean', 'sum', 'count'])` - Multiple aggregations
+
+**Example:**
 
 ```python
-import platform
-
+import pandas as pd
 import numpy as np
+
+# Create sample data
+df = pd.DataFrame({
+    'Department': ['Sales', 'Sales', 'Engineering', 'Engineering'],
+    'Employee': ['Alice', 'Bob', 'Charlie', 'Diana'],
+    'Salary': [50000, 55000, 80000, 85000],
+    'Experience': [2, 3, 5, 7]
+})
+
+# Basic groupby operations
+print("Group by Department:")
+print(df.groupby('Department')['Salary'].mean())
+
+print("\nMultiple aggregations:")
+print(df.groupby('Department').agg({
+    'Salary': ['mean', 'sum'],
+    'Experience': 'mean'
+}))
+```
+
+# Advanced GroupBy Operations
+
+## Transform Operations
+
+Transform operations apply a function to each group and return a result with the same shape as the original data.
+
+**Reference:**
+
+- `grouped.transform('mean')` - Apply mean to each group
+- `grouped.transform('std')` - Apply standard deviation to each group
+- `grouped.transform(lambda x: x - x.mean())` - Custom transform function
+- `grouped.transform(['mean', 'std'])` - Multiple transforms
+
+**Example:**
+
+```python
+# Transform: Add group means as new column
+df['Salary_Mean'] = df.groupby('Department')['Salary'].transform('mean')
+df['Salary_Std'] = df.groupby('Department')['Salary'].transform('std')
+df['Salary_Normalized'] = df.groupby('Department')['Salary'].transform(lambda x: (x - x.mean()) / x.std())
+
+print("Data with group statistics:")
+print(df[['Department', 'Employee', 'Salary', 'Salary_Mean', 'Salary_Std', 'Salary_Normalized']])
+```
+
+## Filter Operations
+
+Filter operations remove entire groups based on a condition.
+
+**Reference:**
+
+- `grouped.filter(lambda x: len(x) > n)` - Keep groups with more than n rows
+- `grouped.filter(lambda x: x['col'].sum() > threshold)` - Keep groups meeting condition
+- `grouped.filter(lambda x: x['col'].mean() > threshold)` - Filter by group statistics
+
+**Example:**
+
+```python
+# Filter: Keep only departments with more than 1 employee
+filtered = df.groupby('Department').filter(lambda x: len(x) > 1)
+print("Departments with multiple employees:")
+print(filtered)
+
+# Filter: Keep only departments with average salary > 60000
+high_salary_depts = df.groupby('Department').filter(lambda x: x['Salary'].mean() > 60000)
+print("\nHigh-salary departments:")
+print(high_salary_depts)
+```
+
+## Apply Operations
+
+Apply operations let you use custom functions on each group.
+
+**Reference:**
+
+- `grouped.apply(func)` - Apply custom function to each group
+- `grouped.apply(lambda x: x.sort_values('col'))` - Sort each group
+- `grouped.apply(lambda x: x.nlargest(2, 'col'))` - Get top 2 from each group
+- `grouped.apply(func, include_groups=False)` - Exclude grouping columns from function (pandas 2.2+)
+
+**Important: FutureWarning for `include_groups` Parameter**
+
+Starting in pandas 2.2, when using `.apply()` on a GroupBy object, pandas will include the grouping columns in the DataFrame passed to your function. This is a change from previous behavior where grouping columns were excluded. To maintain the old behavior (where grouping columns are excluded), you should explicitly set `include_groups=False`.
+
+**What's happening:**
+- **Old behavior (pandas < 2.2)**: When you call `df.groupby('Department').apply(func)`, the function receives only the non-grouping columns
+- **New behavior (pandas 2.2+)**: By default, the function receives all columns including the grouping columns
+- **Future behavior**: `include_groups=False` will become the default, but you should explicitly set it now to avoid warnings
+
+**Why this matters:**
+- If your function expects only non-grouping columns, you'll get unexpected behavior
+- The warning helps you prepare for future pandas versions
+- Setting `include_groups=False` explicitly makes your code future-proof
+
+**Example:**
+
+```python
+# Apply: Custom function for salary statistics
+def salary_stats(group):
+    # With include_groups=False, 'group' contains only non-grouping columns
+    # Without it, 'group' also contains 'Department' column
+    return pd.Series({
+        'count': len(group),
+        'mean': group['Salary'].mean(),
+        'std': group['Salary'].std(),
+        'range': group['Salary'].max() - group['Salary'].min()
+    })
+
+print("Custom statistics by department:")
+# Explicitly set include_groups=False to avoid FutureWarning
+print(df.groupby('Department').apply(salary_stats, include_groups=False))
+
+# Apply: Get top earners in each department
+top_earners = df.groupby('Department').apply(
+    lambda x: x.nlargest(1, 'Salary'), 
+    include_groups=False
+)
+print("\nTop earners per department:")
+print(top_earners)
+```
+
+# LIVE DEMO!
+
+# Hierarchical Grouping
+
+**Reference:**
+
+- `df.groupby(['level1', 'level2'])` - Multi-level grouping
+- `grouped.unstack()` - Convert to wide format
+- `grouped.stack()` - Convert to long format
+- `grouped.swaplevel(0, 1)` - Swap grouping levels
+
+**Example:**
+
+```python
+# Create hierarchical data
+hierarchical_df = pd.DataFrame({
+    'Region': ['North', 'North', 'South', 'South', 'North', 'South'],
+    'Department': ['Sales', 'Engineering', 'Sales', 'Engineering', 'Marketing', 'Marketing'],
+    'Revenue': [100000, 150000, 120000, 180000, 80000, 90000],
+    'Employees': [5, 8, 6, 10, 4, 5]
+})
+
+# Hierarchical grouping
+hierarchical_grouped = hierarchical_df.groupby(['Region', 'Department']).sum()
+print("Hierarchical grouping:")
+print(hierarchical_grouped)
+
+# Unstack to wide format
+wide_format = hierarchical_grouped.unstack()
+print("\nWide format:")
+print(wide_format)
+```
+
+# Pivot Tables and Cross-Tabulations
+![Research vs. Practical](media/research.png)
+
+
+*Think of pivot tables as the data analyst's Swiss Army knife - they can reshape, summarize, and analyze data in ways that would take dozens of lines of code to accomplish manually.*
+
+Pivot tables are powerful tools for summarizing and analyzing data across multiple dimensions.
+
+**Visual Guide - Pivot Table Transformation:**
+
+```
+LONG FORMAT (Original)              WIDE FORMAT (Pivoted)
+┌─────────┬─────────┬─────────┐     ┌─────────┬─────────┬─────────┐
+│ Product │ Region  │ Sales   │     │ Product │ North   │ South   │
+├─────────┼─────────┼─────────┤     ├─────────┼─────────┼─────────┤
+│ A       │ North   │ 1000    │     │ A       │ 1000    │ 1500    │
+│ A       │ South   │ 1500    │     │ B       │ 2000    │ 1200    │
+│ B       │ North   │ 2000    │     └─────────┴─────────┴─────────┘
+│ B       │ South   │ 1200    │
+└─────────┴─────────┴─────────┘
+```
+
+## Basic Pivot Tables
+
+**Reference:**
+
+- `pd.pivot_table(df, values='col', index='row', columns='col')` - Basic pivot
+- `pd.pivot_table(df, aggfunc='mean')` - Specify aggregation function
+- `pd.pivot_table(df, fill_value=0)` - Fill missing values
+- `pd.pivot_table(df, margins=True)` - Add totals
+- `pd.crosstab(index, columns)` - Cross-tabulation
+
+**Example:**
+
+```python
+# Create sample sales data
+sales_data = pd.DataFrame({
+    'Product': ['A', 'A', 'B', 'B', 'C', 'C'],
+    'Region': ['North', 'South', 'North', 'South', 'North', 'South'],
+    'Sales': [1000, 1500, 2000, 1200, 800, 900]
+})
+
+# Basic pivot table
+pivot = pd.pivot_table(sales_data, 
+                    values='Sales', 
+                    index='Product', 
+                    columns='Region', 
+                    aggfunc='sum')
+print("Sales by Product and Region:")
+print(pivot)
+
+# Pivot with multiple aggregations
+pivot_multi = pd.pivot_table(sales_data,
+                            values='Sales',
+                            index='Product',
+                            columns='Region',
+                            aggfunc=['sum', 'mean'])
+print("\nMultiple aggregations:")
+print(pivot_multi)
+```
+
+## Advanced Pivot Operations
+
+**Reference:**
+
+- `pivot_table(..., margins=True, margins_name='Total')` - Add totals
+- `pivot_table(..., fill_value=0)` - Fill missing values
+- `pivot_table(..., dropna=False)` - Keep missing combinations
+- `pivot_table(..., observed=True)` - Include all category combinations
+
+**Example:**
+
+```python
+# Advanced pivot with totals and missing value handling
+advanced_pivot = pd.pivot_table(sales_data,
+                               values='Sales',
+                               index='Product',
+                               columns='Region',
+                               aggfunc='sum',
+                               margins=True,
+                               margins_name='Total',
+                               fill_value=0)
+print("Advanced pivot with totals:")
+print(advanced_pivot)
+
+# Cross-tabulation
+crosstab = pd.crosstab(sales_data['Product'], 
+                      sales_data['Region'], 
+                      margins=True)
+print("\nCross-tabulation:")
+print(crosstab)
+```
+
+# LIVE DEMO!
+
+# Remote Computing and SSH
+![xkcd 2523: Endangered Data](https://imgs.xkcd.com/comics/endangered_2x.png)
+
+
+*When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
+
+Remote computing allows you to leverage powerful servers for data analysis that would be impossible on your local machine.
+
+## SSH Fundamentals
+
+**Reference:**
+
+- `ssh username@hostname` - Connect to remote server
+- `ssh -p port username@hostname` - Connect on specific port
+- `ssh-keygen -t rsa` - Generate SSH key pair
+- `ssh-copy-id username@hostname` - Copy public key to server
+- `scp file username@hostname:path` - Copy file to server
+- `scp username@hostname:file path` - Copy file from server
+
+**Example:**
+
+```bash
+# Generate SSH key pair
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# Copy public key to server
+ssh-copy-id username@server.com
+
+# Connect to server
+ssh username@server.com
+
+# Copy files to server
+scp data.csv username@server.com:~/data/
+
+# Copy files from server
+scp username@server.com:~/results/analysis.ipynb ./
+```
+
+## Remote Data Analysis
+
+**Reference:**
+
+```bash
+# Start Jupyter notebook on remote server
+jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+
+# Forward port to local machine
+ssh -L 8888:localhost:8888 username@server.com
+
+# Access Jupyter at http://localhost:8888 
+# As if it were running on your local machine
+```
+
+**Example:**
+
+```python
+# Remote data analysis workflow
+import pandas as pd
+import numpy as np
+
+# Load large dataset on remote server
+df = pd.read_csv('/path/to/large_dataset.csv')
+
+# Perform aggregation on remote server
+result = df.groupby('category').agg({
+    'value': ['mean', 'std', 'count'],
+    'other_col': 'sum'
+})
+
+# Save results
+result.to_csv('aggregated_results.csv')
+
+# Download results to local machine
+# scp username@server.com:~/aggregated_results.csv ./
+```
+
+## screen and tmux for Persistent Sessions
+![Punk vs. Process](media/punk.png)
+
+
+Screen lets you detach and reattach long-running jobs; tmux is a more modern, scriptable alternative. Use whichever your server offers.
+
+Screen quickstart:
+
+```bash
+# Create a named screen session
+screen -S analysis
+
+# Detach (Ctrl+a d) and list sessions
+screen -ls
+
+# Reattach later
+screen -r analysis
+
+# Kill session from inside
+exit
+```
+
+tmux quickstart:
+
+**Reference:**
+
+```bash
+# tmux commands
+tmux new-session -s analysis
+tmux list-sessions
+tmux attach-session -t analysis
+tmux kill-session -t analysis
+
+# Inside tmux
+Ctrl+b d  # Detach from session
+Ctrl+b c  # Create new window
+Ctrl+b n  # Next window
+Ctrl+b p  # Previous window
+```
+
+**Example:**
+
+```bash
+# Start persistent analysis session
+tmux new-session -s data_analysis
+
+# Inside tmux, start your analysis
+conda activate datasci_217
+jupyter notebook --ip=0.0.0.0 --port=8888
+
+# Detach from session (Ctrl+b, then d)
+# Session continues running on server
+
+# Reattach later
+tmux attach-session -t data_analysis
+```
+
+# Performance Optimization
+![xkcd 2582: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
+
+*When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
+
+![Performance Benchmarks - All comparisons on 10M rows (lower is better)](media/perf_combined.png)
+
+## Efficient GroupBy Operations
+
+**Reference:**
+
+```python
+# Optimize groupby operations
+def efficient_groupby(df, group_cols, agg_cols):
+    """Efficient groupby with optimized operations"""
+    
+    # Use categorical data types for grouping columns
+    for col in group_cols:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype('category')
+    
+    # Use specific aggregation functions
+    result = df.groupby(group_cols)[agg_cols].agg({
+        'numeric_col': ['mean', 'sum'],
+        'other_col': 'count'
+    })
+    
+    return result
+
+# Memory-efficient operations
+## Note: chunking manually for larger-than-memory data should be a last resort.
+## It is usually faster to rely on package-provided options.
+def memory_efficient_analysis(df):
+    """Analyze large dataset with chunking"""
+    
+    # Process in chunks
+    chunk_size = 10000
+    results = []
+    
+    for chunk in pd.read_csv('large_file.csv', chunksize=chunk_size):
+        # Process chunk
+        chunk_result = chunk.groupby('category').sum()
+        results.append(chunk_result)
+    
+    # Combine results
+    final_result = pd.concat(results).groupby(level=0).sum()
+    return final_result
+```
+
+## Parallel Processing (optional)
+
+**Reference:**
+
+```python
+from multiprocessing import Pool
 import pandas as pd
 
-assert platform.python_version() == "3.12.13"
-assert np.__version__ == "2.0.2"
-assert pd.__version__ == "3.0.3"
+def process_chunk(chunk):
+    """Process a single chunk of data"""
+    return chunk.groupby('category').sum()
 
-print("Python:", platform.python_version())
-print("NumPy:", np.__version__)
-print("pandas:", pd.__version__)
+def parallel_groupby(df, n_processes=4):
+    """Parallel groupby processing"""
+    
+    # Split data into chunks
+    chunk_size = len(df) // n_processes
+    chunks = [df.iloc[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
+    
+    # Process in parallel
+    with Pool(n_processes) as pool:
+        results = pool.map(process_chunk, chunks)
+    
+    # Combine results
+    return pd.concat(results).groupby(level=0).sum()
 ```
 
-## Start with rows, groups, and result grain
-
-**Input row grain** states what one row in the source table represents. A **grouping key** is the column, or bounded combination of columns, whose values determine which input rows belong together. A **group** is the set of input rows sharing one observed key value or key combination. The **grouping unit** is the real-world category or entity represented by that group.
-
-For example, if one input row represents one healthcare encounter and `facility` is the grouping key, one group contains all encounter rows for one facility. The grouping unit is one facility.
-
-**Output row grain** states what one row in a result represents. An **aggregation** reduces the rows in each group to one or more summary values. A one-key aggregation normally produces one result row per observed group, so it changes the grain from one encounter to one facility.
-
-`DataFrame.groupby()` creates a **GroupBy object**. That object records how rows are split but is not itself a summary table. A later operation such as `size()`, `mean()`, or `agg()` performs a calculation and combines the group results. This is the split–apply–combine pattern:
-
-1. split input rows according to the grouping key;
-2. apply a calculation inside each group; and
-3. combine the group results with a deliberate index and column layout.
-
-The pandas [`DataFrame.groupby()` reference](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.groupby.html) documents the grouping controls used below.
-
-### Use a deterministic encounter table
-
-**Deterministic data** have fixed, documented values, so a fresh execution produces the same groups and results. The running table has grain **one row per recorded encounter**. `encounter_id` identifies rows; a provider can appear in several encounters.
-
-```python
-FACILITY_LEVELS = ["North", "South", "West", "Remote"]
-SERVICE_LEVELS = ["Consult", "Follow-up", "Procedure"]
-
-encounters = pd.DataFrame(
-    {
-        "encounter_id": [
-            "E001", "E002", "E003", "E004",
-            "E005", "E006", "E007", "E008",
-            "E009", "E010", "E011", "E012",
-        ],
-        "facility": [
-            "North", "North", "North", "North",
-            "South", "South", "South", "South",
-            "West", "West", "West", "West",
-        ],
-        "provider_id": [
-            "P01", "P01", "P02", "P02",
-            "P03", "P03", "P04", "P04",
-            "P05", "P05", "P06", "P06",
-        ],
-        "service": [
-            "Consult", "Follow-up", "Consult", "Procedure",
-            "Consult", "Consult", "Procedure", "Procedure",
-            "Consult", "Procedure", "Consult", "Follow-up",
-        ],
-        "charge": [
-            120, 80, 150, 210,
-            110, 90, 220, 125,
-            130, 200, 140, 75,
-        ],
-        "wait_minutes": [
-            20, 12, 30, 50,
-            18, 16, 45, 25,
-            25, 40, 35, 15,
-        ],
-        "rating": [
-            4, pd.NA, 5, 5,
-            4, pd.NA, pd.NA, 4,
-            3, 4, 3, 4,
-        ],
-    }
-).astype(
-    {
-        "encounter_id": "string",
-        "provider_id": "string",
-        "rating": "Int64",
-    }
-)
-
-encounters["facility"] = pd.Categorical(
-    encounters["facility"],
-    categories=FACILITY_LEVELS,
-    ordered=True,
-)
-encounters["service"] = pd.Categorical(
-    encounters["service"],
-    categories=SERVICE_LEVELS,
-    ordered=True,
-)
-
-assert encounters.shape == (12, 7)
-assert encounters["encounter_id"].is_unique
-assert encounters[["facility", "service"]].notna().all().all()
-
-print(encounters)
-```
-
-`facility` declares four possible categorical levels, but only North, South, and West occur in the input rows. `service` declares three levels, and all three occur somewhere in the data. A declared category is not the same thing as an observed group.
-
-### Make categorical-group policy explicit
-
-The `observed=` parameter applies when any grouping key has pandas categorical dtype:
-
-- `observed=True` returns only category values or combinations that occur in the input;
-- `observed=False` can materialize declared but unused category values or combinations.
-
-pandas 3.0 changed the `groupby()` default to `observed=True`. Required Lecture 08 code still writes `observed=True` so the result policy remains visible to a reader and stable if code is moved between environments. The same policy is written explicitly in the pivot later.
-
-`dropna=` answers a different question: whether missing grouping-key values form a group. The required fixture has no missing grouping keys, so its calls use `dropna=True`. Optional missing-key and unused-category policies appear in [BONUS.md](BONUS.md).
-
-`sort=True` makes output ordering deliberate. For these ordered categorical keys, results follow the declared category order. With ordinary strings, `sort=True` orders the group labels.
-
-### Predict before computing
-
-Before executing `groupby()`, write the contract:
-
-- input row grain: one recorded encounter;
-- grouping key: `facility`;
-- grouping unit: one observed facility;
-- predicted group identities: North, South, and West;
-- predicted number of groups: three; and
-- after aggregation, output row grain: one observed facility.
-
-Now create the GroupBy object and verify the prediction with `ngroups` and `size()`.
-
-```python
-facility_groups = encounters.groupby(
-    "facility",
-    observed=True,
-    sort=True,
-    dropna=True,
-)
-
-facility_sizes = facility_groups.size().rename("encounter_count")
-
-assert facility_groups.ngroups == 3
-assert facility_sizes.index.astype("string").tolist() == [
-    "North", "South", "West"
-]
-assert facility_sizes.tolist() == [4, 4, 4]
-assert int(facility_sizes.sum()) == len(encounters)
-
-print(facility_sizes)
-```
-
-The result has three values because it has grain one observed facility. The input still has twelve rows; constructing a GroupBy object did not mutate it.
-
-## Match the count to the question
-
-Three operations called “counting” answer different questions:
-
-| Operation | What it counts | Missing-value behavior | Example question |
-|---|---|---|---|
-| `GroupBy.size()` | input rows in each group | counts the row even when another field is missing | How many encounters were recorded? |
-| `GroupBy["column"].count()` | nonmissing values in one selected column | excludes missing values in that column | How many encounters have a recorded rating? |
-| `GroupBy["column"].nunique()` | distinct values in one selected column | excludes missing values by default | How many distinct providers appear? |
-
-Choose the operation from the question and the source column's meaning. Counting `provider_id` with `count()` would count encounters with a provider value, not distinct providers.
-
-The three results below share the same facility-key index, so the already-learned `concat()` operation can align them as columns before `reset_index()` makes the key an ordinary column.
-
-```python
-count_comparison = pd.concat(
-    [
-        facility_groups.size().rename("encounter_count"),
-        facility_groups["rating"].count().rename("rating_count"),
-        facility_groups["provider_id"]
-        .nunique(dropna=True)
-        .rename("unique_provider_count"),
-    ],
-    axis="columns",
-).reset_index()
-
-assert count_comparison.columns.tolist() == [
-    "facility",
-    "encounter_count",
-    "rating_count",
-    "unique_provider_count",
-]
-assert count_comparison["encounter_count"].tolist() == [4, 4, 4]
-assert count_comparison["rating_count"].tolist() == [3, 2, 4]
-assert count_comparison["unique_provider_count"].tolist() == [2, 2, 2]
-
-print(count_comparison)
-```
-
-North has four encounter rows but only three nonmissing ratings. It has two distinct providers even though each provider occurs in two rows. Those are three correct answers to three different questions.
-
-## LIVE DEMO 1: Predict grouping grain and counts
-
-[Open the Lecture 08 demo guide](demo/DEMO_GUIDE.md).
-
-The first required demonstration starts from the fixed encounter table. Students state the input grain, grouping key, grouping unit, observed-category policy, group identities, group count, and aggregated output grain before executing code. They then use the missing rating and repeated provider to choose and verify `size`, `count`, and `nunique` from the question each operation answers.
-
-## Name each aggregation output
-
-`agg()` combines one or more aggregations. **Named aggregation** gives every result column a deliberate name while specifying both its source column and calculation:
-
-```text
-output_column_name=("input_column_name", "aggregation")
-```
-
-The keywords become flat output column names. This avoids ambiguous names and nested value-column labels. See the pandas [`DataFrameGroupBy.aggregate()` reference](https://pandas.pydata.org/docs/reference/api/pandas.api.typing.DataFrameGroupBy.aggregate.html).
-
-```python
-facility_summary = (
-    encounters.groupby(
-        "facility",
-        as_index=False,
-        observed=True,
-        sort=True,
-        dropna=True,
-    )
-    .agg(
-        encounter_count=("encounter_id", "size"),
-        rating_count=("rating", "count"),
-        unique_provider_count=("provider_id", "nunique"),
-        total_charge=("charge", "sum"),
-        mean_wait_minutes=("wait_minutes", "mean"),
-    )
-)
-
-assert facility_summary.columns.tolist() == [
-    "facility",
-    "encounter_count",
-    "rating_count",
-    "unique_provider_count",
-    "total_charge",
-    "mean_wait_minutes",
-]
-assert facility_summary["total_charge"].tolist() == [560, 545, 545]
-assert np.allclose(
-    facility_summary["mean_wait_minutes"],
-    [28.0, 26.0, 28.75],
-)
-assert int(facility_summary["encounter_count"].sum()) == len(encounters)
-
-print(facility_summary)
-```
-
-The result is flat because `as_index=False` keeps `facility` as a column and named aggregation creates one level of value-column names. Its output grain is one observed facility. The encounter count conserves the twelve input rows because every encounter belongs to exactly one nonmissing facility group.
-
-## Contrast aggregation with transform
-
-An aggregation produces one result row per group and therefore reduces or changes row grain. A GroupBy **transform** calculates within groups but returns one value aligned to every input row. For a selected Series, pandas defines `transform()` as producing a same-indexed Series; see the [`SeriesGroupBy.transform()` reference](https://pandas.pydata.org/docs/reference/api/pandas.api.typing.SeriesGroupBy.transform.html).
-
-The next operation computes each facility's mean charge and broadcasts that value to all encounter rows from the facility. It then calculates each encounter's difference from its facility mean.
-
-```python
-facility_mean_charge = (
-    encounters.groupby(
-        "facility",
-        observed=True,
-        sort=True,
-        dropna=True,
-    )["charge"]
-    .transform("mean")
-)
-
-encounters_with_context = encounters.assign(
-    facility_mean_charge=facility_mean_charge,
-    difference_from_facility_mean=(
-        encounters["charge"] - facility_mean_charge
-    ),
-)
-
-assert len(encounters_with_context) == len(encounters)
-pd.testing.assert_index_equal(
-    encounters_with_context.index,
-    encounters.index,
-)
-assert encounters_with_context.loc[0, "facility_mean_charge"] == 140.0
-assert encounters_with_context.loc[0, "difference_from_facility_mean"] == -20.0
-assert encounters_with_context.loc[4, "facility_mean_charge"] == 136.25
-
-print(
-    encounters_with_context[
-        [
-            "encounter_id",
-            "facility",
-            "charge",
-            "facility_mean_charge",
-            "difference_from_facility_mean",
-        ]
-    ]
-)
-```
-
-The result's grain remains one encounter. Repeating a facility mean beside encounter rows is intentional here because the new column provides group context for each encounter. `transform()` is not an aggregation result merely because it uses an aggregation-like calculation internally.
-
-Before assigning any group result back to source rows, verify both `len(result) == len(source)` and `result.index.equals(source.index)`. A three-row facility summary cannot be assigned positionally as though it were a twelve-row encounter-level transform.
-
-## Make columns, index, and ordering deliberate
-
-The DataFrame **index** labels result rows; it is not automatically a data variable. With `as_index=True`, the grouping key becomes the grouped result's index. With `as_index=False`, the key remains an ordinary result column.
-
-Both layouts can be valid. Choose one deliberately based on what consumes the table next, and state the output grain either way.
-
-```python
-indexed_charge_summary = (
-    encounters.groupby(
-        "facility",
-        as_index=True,
-        observed=True,
-        sort=True,
-        dropna=True,
-    )
-    .agg(mean_charge=("charge", "mean"))
-)
-
-assert indexed_charge_summary.index.name == "facility"
-assert indexed_charge_summary.columns.tolist() == ["mean_charge"]
-assert indexed_charge_summary.index.astype("string").tolist() == [
-    "North", "South", "West"
-]
-
-print(indexed_charge_summary)
-```
-
-A two-key grouping uses the combination of both key values to define one group. The next result uses `as_index=False` so both keys are explicit columns and the value columns remain flat. Its output grain is **one observed facility–service combination**.
-
-```python
-facility_service_summary = (
-    encounters.groupby(
-        ["facility", "service"],
-        as_index=False,
-        observed=True,
-        sort=True,
-        dropna=True,
-    )
-    .agg(
-        encounter_count=("encounter_id", "size"),
-        mean_charge=("charge", "mean"),
-    )
-)
-
-assert facility_service_summary.columns.tolist() == [
-    "facility",
-    "service",
-    "encounter_count",
-    "mean_charge",
-]
-assert len(facility_service_summary) == 8
-assert int(facility_service_summary["encounter_count"].sum()) == len(
-    encounters
-)
-assert not (
-    facility_service_summary["facility"].eq("South")
-    & facility_service_summary["service"].eq("Follow-up")
-).any()
-
-print(facility_service_summary)
-```
-
-There are eight output rows, not twelve and not the twelve possible combinations of four declared facilities and three services. `observed=True` omits the unused Remote level and the unobserved South–Follow-up combination. The grouping key, observed policy, output ordering, columns, and result grain are all explicit.
-
-## LIVE DEMO 2: Named aggregation and transform
-
-[Open the Lecture 08 demo guide](demo/DEMO_GUIDE.md).
-
-The second required demonstration uses the same key twice. Students first build a flat, named facility summary with one row per observed group. They then add a facility statistic to every encounter with `transform()`, prove that row count and index are unchanged, and diagnose why an aggregated three-row result has the wrong grain for direct encounter-row assignment. A bounded two-key summary makes key columns and ordering explicit without requiring hierarchical-index manipulation.
-
-## Build one aggregating pivot table
-
-A **pivot table** is an aggregated reshape. It groups long-form input rows and places the grouped result across two display axes. Before calling `pivot_table()`, name five parts:
-
-- `index`: the grouping key whose observed values become result rows;
-- `columns`: the grouping key whose observed values become result columns;
-- `values`: the numeric column being summarized;
-- `aggfunc`: the aggregation applied when several input rows occupy one cell; and
-- `observed`: whether unused categorical values or combinations may appear.
-
-For this table:
-
-- `index="facility"` makes one result row per observed facility;
-- `columns="service"` makes one result column per observed service;
-- `values="charge"` supplies the measurements;
-- `aggfunc="mean"` computes mean charge for each facility–service group; and
-- `observed=True` excludes unused categorical levels while preserving a missing cell for a combination absent within otherwise observed row and column levels.
-
-This is different from the structural `pivot()` taught in Lecture 06. Structural `pivot()` requires each row/column combination to be unique and does not aggregate. `pivot_table()` deliberately combines repeated combinations. See the pandas [`pivot_table()` reference](https://pandas.pydata.org/docs/reference/api/pandas.pivot_table.html).
-
-```python
-mean_charge_pivot = pd.pivot_table(
-    encounters,
-    index="facility",
-    columns="service",
-    values="charge",
-    aggfunc="mean",
-    observed=True,
-    sort=True,
-    dropna=True,
-)
-
-assert mean_charge_pivot.index.name == "facility"
-assert mean_charge_pivot.columns.name == "service"
-assert mean_charge_pivot.index.astype("string").tolist() == [
-    "North", "South", "West"
-]
-assert mean_charge_pivot.columns.astype("string").tolist() == [
-    "Consult", "Follow-up", "Procedure"
-]
-assert mean_charge_pivot.loc["North", "Consult"] == 135.0
-assert mean_charge_pivot.loc["South", "Procedure"] == 172.5
-assert pd.isna(mean_charge_pivot.loc["South", "Follow-up"])
-assert "Remote" not in mean_charge_pivot.index
-
-print(mean_charge_pivot)
-```
-
-Every populated pivot cell should agree with the equivalent row in the earlier two-key GroupBy summary. The loop below verifies that invariant without introducing another pivot.
-
-```python
-for grouped_row in facility_service_summary.itertuples(index=False):
-    pivot_value = mean_charge_pivot.loc[
-        grouped_row.facility,
-        grouped_row.service,
-    ]
-    assert np.isclose(pivot_value, grouped_row.mean_charge)
-```
-
-The South–Follow-up cell is missing because the input contains no encounter with that key combination. It means **no input row for this combination**, not a measured charge of zero. Replacing that missing value with zero would assert new domain meaning and requires separate justification.
-
-The pivot's displayed row grain is one observed facility, while each populated cell summarizes one observed facility–service group. Reading both levels prevents the wide display from hiding what was aggregated.
-
-### Finish with fresh-runtime invariants
-
-A fresh execution should prove the complete contract rather than trust stored output.
-
-```python
-assert encounters.shape == (12, 7)
-assert facility_groups.ngroups == 3
-assert facility_summary.shape == (3, 6)
-assert int(facility_summary["encounter_count"].sum()) == 12
-assert encounters_with_context.shape == (12, 9)
-pd.testing.assert_index_equal(
-    encounters_with_context.index,
-    encounters.index,
-)
-assert facility_service_summary.shape == (8, 4)
-assert mean_charge_pivot.shape == (3, 3)
-assert pd.isna(mean_charge_pivot.loc["South", "Follow-up"])
-
-print("Lecture 08 core verification passed.")
-```
-
-## LIVE DEMO 3: One aggregating pivot
-
-[Open the Lecture 08 demo guide](demo/DEMO_GUIDE.md).
-
-The third required demonstration predicts the pivot specification before execution, builds exactly one mean-charge pivot, compares every populated cell with the equivalent two-key GroupBy result, and interprets South–Follow-up as an absent input combination rather than zero. It may end with at most one already-familiar Lecture 07 chart if that chart clarifies the grouped table; plotting is not a new objective.
-
-## Handoff to Lecture 09
-
-After this lecture, students should be able to:
-
-- define a grouping key and the real-world unit represented by each group;
-- distinguish one input row from one aggregated output row;
-- distinguish aggregation, which reduces or changes grain, from `transform`, which preserves row count and index;
-- choose `size`, `count`, or `nunique` from the question being answered;
-- create grouped results with named columns and deliberate index placement; and
-- read one aggregating pivot without mistaking an absent combination for zero.
-
-Lecture 09 may use those grouping and result-grain skills after it separately defines timestamps, periods, frequency, entity boundaries, resampling, lags, and rolling windows. None of those time-series concepts is introduced by Lecture 08.
-
-## Core scope boundary
-
-Required Lecture 08 work is limited to grouping unit and key, input/output grain, observed group prediction, `size`/`count`/`nunique`, named aggregation, `transform`, deliberate grouped output columns/index, one bounded two-key summary, and one aggregating pivot table.
-
-Group filtering, categorical edge cases, and hierarchical result indexes are optional bonus material. `GroupBy.apply`, advanced MultiIndex manipulation, crosstabs, custom statistical tests, periods, resampling, rolling operations, time-series analysis, remote-computing tools, chunking, parallelism, performance optimization, and a new plotting objective are not core Lecture 08 requirements.
+# LIVE DEMO!

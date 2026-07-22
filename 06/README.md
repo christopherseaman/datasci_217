@@ -1,644 +1,980 @@
-# Combining and Reshaping Tables with Explicit Contracts
+06) Data Wrangling: Join, Combine, and Reshape
 
-Lecture 06 teaches a safe sequence for combining tables: state what a row represents, identify and test keys, predict the relationship between tables, choose which rows must be preserved, and then run a validated operation. The same attention to row meaning applies when stacking partitions or reshaping between wide and long forms.
+**Assignment 6:** https://classroom.github.com/a/vSeWVPn3
 
-Optional index-based combinations and advanced concatenation checks are collected in [BONUS.md](BONUS.md). They are not prerequisites for the required demos, assignment, or Lecture 07.
+[LIVE DEMO!](https://github.com/christopherseaman/datasci_217/blob/main/06/demo/DEMO_GUIDE.md)
 
-## Prerequisites
+See [BONUS.md](https://www.notion.so/sqrlly/BONUS.md) for advanced topics:
 
-Before starting this lecture, you should be able to:
+- Merging on index with left_index/right_index parameters
+- Advanced concat options (keys, levels, names, verify_integrity)
+- Manual MultiIndex creation methods
+- Stack/unstack with dropna parameter
+- Hierarchical columns from pivot operations
 
-- run a notebook from a clean runtime and use portable paths;
-- inspect DataFrame columns, shape, dtypes, index, missing values, and uniqueness;
-- select, filter, sort, and derive columns;
-- preserve raw versus cleaned data and validate explicit invariants; and
-- state what one row represents and identify candidate identifiers.
+*Fun fact: The word “wrangling” comes from the Old English “wranglian” meaning “to dispute or argue.” This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
 
-Lecture 06 does not assume grouping, aggregating pivot tables, hierarchical-index manipulation, datetime resampling, rolling analysis, or visualization design.
+![There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.](attachment:6ef1b0d7-c31f-4b3b-ba3f-53dfd9be069e:image.png)
 
-## Learning objectives
+There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.
 
-By the end of Lecture 06, students should be able to:
+Data wrangling is the art of transforming messy, disconnected datasets into clean, analysis-ready structures. This lecture focuses on the three fundamental operations you’ll use every single day: **merging datasets**, **concatenating DataFrames**, and **reshaping data formats**.
 
-1. State the row grain of each input table, identify candidate/foreign keys, and test whether the claimed keys are unique.
-2. Predict one-to-one, one-to-many, many-to-one, or many-to-many merge behavior and choose an appropriate join type for a stated preservation goal.
-3. Perform a merge with explicit keys, `validate=`, and `indicator=True`; inspect unmatched rows; and verify row-count/key invariants.
-4. Concatenate tables vertically when their schemas represent the same row grain and horizontally when index alignment is deliberate, explaining the resulting missing values.
-5. Convert a table between wide and long form with `melt()` and structural `pivot()`, explaining the uniqueness condition required for a lossless round trip.
+**Learning Objectives:**
 
-## Colab-first execution and evidence
+- Master pd.merge() for database-style joins (inner, outer, left, right)
+- Combine multiple DataFrames with pd.concat()
+- Transform between wide and long formats with pivot() and melt()
+- Manage DataFrame indexes with set_index() and reset_index()
+- Recognize and work with basic MultiIndex structures
 
-Required Lecture 06 demonstrations are Colab-first and also run in local Jupyter or the VS Code notebook interface. Colab's runtime is the kernel and temporary filesystem behind the notebook; local Jupyter uses a local kernel and filesystem, but the top-to-bottom execution contract is the same.
+# Database-Style DataFrame Joins
 
-The 2026–27 compatibility candidate is Python 3.12.13, NumPy 2.0.2, and pandas 3.0.3. This is not the final release lock. In the pin-able Colab 2026.04 runtime, run `%pip install --quiet pandas==3.0.3` only when pandas 3.0.3 is not already installed, and do so before importing pandas. Do not install pandas 3.0.4; that release was yanked. Avoid reinstalling unrelated packages.
+*Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration.*
 
-The examples below begin with the corresponding version check:
+Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you’ve worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
+
+**Visual Guide - Join Types:**
+
+```
+Table A: customers          Table B: purchases
+┌─────────────┬─────────┐   ┌─────────────┬─────────┐
+│ customer_id │  name   │   │ customer_id │ amount  │
+├─────────────┼─────────┤   ├─────────────┼─────────┤
+│     1       │  Alice  │   │     1       │   $50   │
+│     2       │   Bob   │   │     2       │   $30   │
+│     3       │ Charlie │   │     4       │   $25   │
+└─────────────┴─────────┘   └─────────────┴─────────┘
+
+INNER JOIN (how='inner')     LEFT JOIN (how='left')
+┌─────────────┬─────────┬─────────┐  ┌─────────────┬─────────┬─────────┐
+│ customer_id │  name   │ amount  │  │ customer_id │  name   │ amount  │
+├─────────────┼─────────┼─────────┤  ├─────────────┼─────────┼─────────┤
+│     1       │  Alice  │   $50   │  │     1       │  Alice  │   $50   │
+│     2       │   Bob   │   $30   │  │     2       │   Bob   │   $30   │
+└─────────────┴─────────┴─────────┘  │     3       │Charlie  │   NaN   │
+ (Only matching rows)                └─────────────┴─────────┴─────────┘
+                                      (All from A, missing from B = NaN)
+
+RIGHT JOIN (how='right')     OUTER JOIN (how='outer')
+┌─────────────┬─────────┬─────────┐  ┌─────────────┬─────────┬─────────┐
+│ customer_id │  name   │ amount  │  │ customer_id │  name   │ amount  │
+├─────────────┼─────────┼─────────┤  ├─────────────┼─────────┼─────────┤
+│     1       │  Alice  │   $50   │  │     1       │  Alice  │   $50   │
+│     2       │   Bob   │   $30   │  │     2       │   Bob   │   $30   │
+│     4       │   NaN   │   $25   │  │     3       │Charlie  │   NaN   │
+└─────────────┴─────────┴─────────┘  │     4       │   NaN   │   $25   │
+ (All from B, missing from A = NaN)  └─────────────┴─────────┴─────────┘
+                                      (Everything from both tables)
+
+```
+
+## The Basics of pd.merge()
+
+The `pd.merge()` function is your workhorse for combining datasets. At its simplest, it links two DataFrames based on shared column values.
+
+**Reference:**
+
+- `pd.merge(left, right)` - Merge two DataFrames (auto-detects common columns)
+- `pd.merge(left, right, on='key')` - Merge on specific column (explicit is better!)
+- `pd.merge(left, right, left_on='key1', right_on='key2')` - Different column names
+- `pd.merge(left, right, how='inner')` - Join type: inner (default), left, right, outer
+- `pd.merge(left, right, on=['col1', 'col2'])` - Merge on multiple columns
+- `pd.merge(left, right, suffixes=('_left', '_right'))` - Handle overlapping column names
+
+**Example:**
 
 ```python
-import platform
-
-import numpy as np
 import pandas as pd
-
-assert platform.python_version() == "3.12.13"
-assert np.__version__ == "2.0.2"
-assert pd.__version__ == "3.0.3"
-
-print("Python:", platform.python_version())
-print("NumPy:", np.__version__)
-print("pandas:", pd.__version__)
+# Customer datacustomers = pd.DataFrame({
+    'customer_id': ['C001', 'C002', 'C003', 'C004'],
+    'name': ['Alice', 'Bob', 'Charlie', 'Diana'],
+    'city': ['Seattle', 'Portland', 'Seattle', 'Eugene']
+})
+# Purchase datapurchases = pd.DataFrame({
+    'customer_id': ['C001', 'C001', 'C002', 'C005'],
+    'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
+    'amount': [999.99, 25.99, 79.99, 299.99]
+})
+# Basic merge - combines on common column 'customer_id'merged = pd.merge(customers, purchases)
+display(merged)
+#   customer_id     name      city  product  amount# 0        C001    Alice   Seattle   Laptop  999.99# 1        C001    Alice   Seattle    Mouse   25.99# 2        C002      Bob  Portland Keyboard   79.99# Explicit is better - specify the keymerged = pd.merge(customers, purchases, on='customer_id')
+display(merged)  # Same result
 ```
 
-Colab's filesystem is ephemeral. A required notebook must reacquire its pinned prepared input and create output directories from code; manual upload and mounted Drive are not defaults. Changes made in a Colab notebook opened from GitHub are not automatically saved back to the repository.
+**Why this matters:** Inner join only keeps matching records - customers without purchases are dropped.
 
-Assignment notebooks must remain runnable in clean local Jupyter. Colab becomes an assignment submission path only after the repository-save and Classroom 50 pilot is approved. Before sharing or submitting, remove credentials, private records, and sensitive output. Stored cell output is never execution evidence: a grader runs a fresh copy. Files written under `output/` are separate generated artifacts and must be recreated by restart-and-run-all.
+## Join Types: The Four Horsemen of Data Merging
 
-## Start with row grain and keys
+Understanding join types is crucial. Each type answers a different question about your data.
 
-**Row grain** states exactly what one row represents. It is also called the unit of observation. Two tables can share a column name while representing different kinds of rows, so grain must be stated before choosing any combination operation.
+**Reference:**
 
-An **identifier** is a value used to distinguish an entity or observation. A **candidate key** is one column, or a combination of columns, that is expected to identify each row uniquely and without missing values. A **primary key** is the candidate key chosen as the table's official row identifier. A **foreign key** is a column, or combination of columns, whose values refer to a key in another table.
+- `how='inner'` - Only rows with matching keys in BOTH DataFrames (intersection)
+- `how='left'` - ALL rows from left DataFrame, matching rows from right (left dominates)
+- `how='right'` - ALL rows from right DataFrame, matching rows from left (right dominates)
+- `how='outer'` - ALL rows from BOTH DataFrames (union)
 
-The running prepared fixture has two tables:
+![1*DTET9ngrx2Gzu6ZJk0G9BQ.jpg](attachment:d22803f1-7fe4-4b22-a41c-9c4829dc6215:1DTET9ngrx2Gzu6ZJk0G9BQ.jpg)
 
-- `visits` has grain **one row per recorded visit**. Its primary key is `visit_id`. The pair `participant_id` and `visit_number` is another candidate key. `site_code` is a foreign key.
-- `sites` has grain **one row per site**. Its primary key is `site_code`.
+![image.png](attachment:89eafda4-c2c6-47a8-a88f-6b60886e728c:image.png)
 
-The supplied CSV text is fixed and verified by checksum. A released demo or assignment uses the same policy with a committed file or immutable HTTPS source rather than a manual upload.
+**Example:**
 
 ```python
-from hashlib import sha256
-from io import StringIO
+# Inner join (default) - only customers with purchases
+inner = pd.merge(customers, purchases, on='customer_id', how='inner')
+display(inner)
+# Result: 3 rows (Alice twice, Bob once) - only matching customers
 
-VISITS_SOURCE = """visit_id,participant_id,visit_number,site_code,status,measure
-V001,P01,1,N,complete,12.5
-V002,P01,2,N,complete,14.0
-V003,P02,1,S,complete,9.5
-V004,P03,1,W,complete,11.0
-V005,P04,1,N,complete,13.5
-"""
+# Left join - ALL customers, even without purchases
+left = pd.merge(customers, purchases, on='customer_id', how='left')
+display(left)
+#   customer_id     name      city    product   amount
+# 0        C001    Alice   Seattle     Laptop   999.99
+# 1        C001    Alice   Seattle      Mouse    25.99
+# 2        C002      Bob  Portland   Keyboard    79.99
+# 3        C003  Charlie   Seattle        NaN      NaN  # No purchase
+# 4        C004    Diana    Eugene        NaN      NaN  # No purchase
 
-SITES_SOURCE = """site_code,site_name,region
-N,North Clinic,north
-S,South Clinic,south
-W,West Clinic,west
-"""
+# Right join - ALL purchases, even without customer info
+right = pd.merge(customers, purchases, on='customer_id', how='right')
+display(right)
+# Result: 4 rows - includes C005's monitor (customer info is NaN)
 
-assert sha256(VISITS_SOURCE.encode("utf-8")).hexdigest() == (
-    "510b3946f74dd1b899943b44c08577104a862c9bbd50d674eb74f5b1d0d9d3b5"
-)
-assert sha256(SITES_SOURCE.encode("utf-8")).hexdigest() == (
-    "452893794bb3fcf804485ba7f701ebd657d92aba9657f1469e36aff73fd17cf2"
-)
+# Outer join - EVERYTHING (all customers and all purchases)
+outer = pd.merge(customers, purchases, on='customer_id', how='outer')
+display(outer)
+# Result: 5 rows - all customers AND all purchases, NaN where no match
 
-visits = pd.read_csv(
-    StringIO(VISITS_SOURCE),
-    dtype={
-        "visit_id": "string",
-        "participant_id": "string",
-        "site_code": "string",
-        "status": "string",
-    },
-)
-sites = pd.read_csv(
-    StringIO(SITES_SOURCE),
-    dtype={
-        "site_code": "string",
-        "site_name": "string",
-        "region": "string",
-    },
-)
-
-print(visits)
-print(sites)
 ```
 
-### Test the key claims
+**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your “master” list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides.
 
-A key claim needs two separate checks: required key values are not missing, and the claimed key values are unique. `Series.is_unique` checks a single-column key. `DataFrame.duplicated(subset=...)` checks a composite key.
+**Why this matters:** Wrong join type = lost data. Use left join to keep all customers.
+
+![image.png](attachment:6b921f05-f054-4215-a211-770b2afad0c9:image.png)
+
+# LIVE DEMO!
+
+(Demo 1: Customer Purchase Analysis)
+
+![image.png](attachment:59815165-7b38-4684-9ebb-dad14fcd60fc:image.png)
+
+## Many-to-One and Many-to-Many Merges
+
+Real-world data rarely has perfect one-to-one relationships. Understanding relationship types (how many rows match) is key.
+
+**Reference:**
+
+- **Many-to-one**: Multiple rows in left DataFrame match one row in right (e.g., many purchases per customer)
+- **Many-to-many**: Multiple rows in both DataFrames match (creates Cartesian product - beware!)
+- Check row counts before and after merge - unexpected growth means many-to-many
+
+**Example:**
 
 ```python
-assert visits["visit_id"].notna().all()
-assert visits["visit_id"].is_unique
+# Many-to-one: Multiple purchases per customer
+# customers has 1 row per customer_id
+# purchases has multiple rows per customer_id
+# Result: Each purchase gets customer info attached
 
-assert visits[["participant_id", "visit_number"]].notna().all().all()
-assert not visits.duplicated(
-    subset=["participant_id", "visit_number"]
-).any()
+many_to_one = pd.merge(customers, purchases, on='customer_id')
+display(many_to_one)
+# Alice appears twice (2 purchases), Bob once (1 purchase)
 
-assert sites["site_code"].notna().all()
-assert sites["site_code"].is_unique
+# Many-to-many: DANGER ZONE
+categories = pd.DataFrame({
+    'product': ['Laptop', 'Mouse', 'Laptop', 'Mouse'],
+    'category': ['Electronics', 'Accessories', 'Computing', 'Peripherals']
+})
 
-assert visits["site_code"].notna().all()
+# Multiple rows for 'Laptop' in purchases, multiple rows for 'Laptop' in categories
+many_to_many = pd.merge(purchases, categories, on='product')
+display(many_to_many)
+# Every combination of matching rows! Alice's Laptop matches BOTH Electronics AND Computing
+# This creates: 1 purchase × 2 categories = 2 rows per purchase
+# With 100 purchases × 100 categories? Could become 10,000 rows!
+
 ```
 
-pandas treats missing merge keys as equal to one another: a missing key on the left can match a missing key on the right. This differs from usual SQL null behavior. For a required key, assert nonmissingness before merging. If missing keys are meaningful, isolate them and document the intended behavior instead of allowing an accidental match. See the pandas [`merge` documentation](https://pandas.pydata.org/docs/reference/api/pandas.merge.html).
+**Common pitfall:** If you expect 1,000 rows and get 10,000 after a merge, you probably have an accidental many-to-many join (where keys repeat in both DataFrames). Check for duplicate keys!
 
-## Predict cardinality and preservation before merging
+```
+BEFORE MERGE:
+customers:          products:
+customer_id | name    product_id | category
+    1      | Alice        1      | Electronics
+    2      | Bob          2      | Clothing
+                          3      | Books
 
-**Cardinality** describes how many rows on each side can share a key:
+AFTER MERGE (many-to-many):
+customer_id | name  | product_id | category
+    1      | Alice |     1      | Electronics  ← Alice × Electronics
+    1      | Alice |     2      | Clothing     ← Alice × Clothing
+    1      | Alice |     3      | Books        ← Alice × Books
+    2      | Bob   |     1      | Electronics  ← Bob × Electronics
+    2      | Bob   |     2      | Clothing     ← Bob × Clothing
+    2      | Bob   |     3      | Books        ← Bob × Books
 
-- **one-to-one:** each key appears at most once on both sides;
-- **one-to-many:** each key appears at most once on the left and can repeat on the right;
-- **many-to-one:** a key can repeat on the left and appears at most once on the right; and
-- **many-to-many:** a key can repeat on both sides.
+Result: 2 customers × 3 products = 6 rows!
 
-Cardinality predicts row behavior. For a many-to-many key value `k`, the matching output contains
+```
 
-`n_left(k) * n_right(k)`
+## Merging on Multiple Columns
 
-rows. Across all shared keys, the number of matched rows is the sum of those products. That multiplication is sometimes intended, but it must never be a surprise.
+Sometimes a single column isn’t enough to uniquely identify matches - you need to match on multiple columns together (like matching on BOTH store_id AND date).
 
-State a **preservation goal** next: which table's observations must remain? Four common preservation joins answer different questions:
+**Reference:**
 
-- an **inner join** keeps only matching keys;
-- a **left join** keeps every left row;
-- a **right join** keeps every right row; and
-- an **outer join** keeps rows from both sides.
+- `on=['col1', 'col2', 'col3']` - Match on multiple columns simultaneously
+- All specified columns must match for rows to merge
+- Useful for hierarchical data (year + month, store + date, etc.)
 
-Here, site codes repeat in `visits` and are unique in `sites`, so the relationship is many-to-one. The goal is to keep every recorded visit, including a visit whose site metadata might be absent, so the intended operation is a left join. With a unique right key, a many-to-one left merge produces exactly one output row for every left row.
+**Example:**
 
 ```python
-visit_site_counts = visits["site_code"].value_counts(dropna=False)
-site_key_counts = sites["site_code"].value_counts(dropna=False)
+# Sales data by store and date
+sales_q1 = pd.DataFrame({
+    'store_id': ['S01', 'S01', 'S02', 'S02'],
+    'quarter': ['Q1', 'Q1', 'Q1', 'Q1'],
+    'sales': [50000, 55000, 42000, 48000]
+})
 
-assert visit_site_counts.max() > 1
-assert site_key_counts.max() == 1
+# Target data by store and quarter
+targets = pd.DataFrame({
+    'store_id': ['S01', 'S02', 'S01', 'S02'],
+    'quarter': ['Q1', 'Q1', 'Q2', 'Q2'],
+    'target': [52000, 45000, 58000, 50000]
+})
 
-relationship = "many_to_one"
-preservation_goal = "keep every visit row"
-expected_output_rows = len(visits)
+# Merge on BOTH store_id AND quarter
+merged = pd.merge(sales_q1, targets, on=['store_id', 'quarter'])
+display(merged)
+#   store_id quarter  sales  target
+# 0      S01      Q1  50000   52000
+# 1      S01      Q1  55000   52000  # Same store/quarter appears twice
+# 2      S02      Q1  42000   45000
+# 3      S02      Q1  48000   45000
 
-print("relationship:", relationship)
-print("preservation goal:", preservation_goal)
 ```
 
-## Merge with explicit keys and diagnostics
+**Why this matters:** Composite keys prevent mismatched data (Q1 sales with Q2 targets).
 
-Always name merge keys with `on=` or `left_on=` and `right_on=`. Do not let pandas infer a join from every same-named column. `validate=` turns the predicted cardinality into an executable contract. `indicator=True` adds a temporary `_merge` column that distinguishes matches from unmatched rows.
+## Handling Overlapping Column Names
+
+When both DataFrames have columns with the same name (besides the merge key), pandas adds suffixes to distinguish them.
+
+**Reference:**
+
+- Default suffixes: `_x` (left DataFrame) and `_y` (right DataFrame)
+- `suffixes=('_left', '_right')` - Custom suffixes for clarity
+- `suffixes=('_old', '_new')` - Useful for comparing versions
+
+**Example:**
 
 ```python
-visits_with_site_audit = visits.merge(
-    sites,
-    on="site_code",
-    how="left",
-    validate="many_to_one",
-    indicator=True,
-    suffixes=("_visit", "_site"),
-)
+# Both DataFrames have 'total' column
+sales = pd.DataFrame({
+    'product_id': ['P001', 'P002', 'P003'],
+    'total': [100, 200, 150]  # Sales total
+})
 
-print(visits_with_site_audit)
+inventory = pd.DataFrame({
+    'product_id': ['P001', 'P002', 'P003'],
+    'total': [50, 75, 30]  # Inventory total
+})
+
+# Default suffixes (_x and _y)
+merged = pd.merge(sales, inventory, on='product_id')
+display(merged)
+#   product_id  total_x  total_y
+# 0       P001      100       50
+# 1       P002      200       75
+# 2       P003      150       30
+
+# Custom suffixes for clarity
+merged = pd.merge(sales, inventory, on='product_id',
+                  suffixes=('_sales', '_inventory'))
+display(merged)
+#   product_id  total_sales  total_inventory
+# 0       P001          100               50
+# 1       P002          200               75
+# 2       P003          150               30
+
 ```
 
-An **unmatched row** has a key with no partner on the other side. Inspect it before dropping the indicator. Then verify the preservation goal and other invariants directly.
+**Pro tip:** Always use descriptive suffixes! `_sales` and `_inventory` are much clearer than `_x` and `_y`.
+
+## Alternative Data Combination Methods
+
+### DataFrame.join(): Index-Based Merging
+
+`*join()` is a simpler alternative to `merge()` when working with indexes - it's like merge but defaults to left join on index.*
+
+**Reference:**
+- `df1.join(df2)` - Left join on index (default)
+- `df1.join(df2, how='outer')` - Outer join on index
+- `df1.join(df2, on='key')` - Join df2's index to df1's 'key' column
+
+**Example:**
 
 ```python
-merge_source_counts = (
-    visits_with_site_audit["_merge"]
-    .value_counts(dropna=False)
-    .to_dict()
-)
-unmatched_visits = visits_with_site_audit.loc[
-    visits_with_site_audit["_merge"].eq("left_only"),
-    ["visit_id", "site_code"],
-]
+# Time series data with dates as index
+prices = pd.DataFrame({'price': [100, 101, 102]}, 
+                      index=pd.to_datetime(['2023-01', '2023-02', '2023-03']))
+volumes = pd.DataFrame({'volume': [1000, 1100, 1200]}, 
+                       index=pd.to_datetime(['2023-01', '2023-02', '2023-03']))
 
-assert merge_source_counts["both"] == len(visits)
-assert merge_source_counts["left_only"] == 0
-assert merge_source_counts["right_only"] == 0
-assert unmatched_visits.empty
-assert len(visits_with_site_audit) == expected_output_rows
-assert visits_with_site_audit["visit_id"].is_unique
-assert set(visits_with_site_audit["visit_id"]) == set(visits["visit_id"])
-
-visits_with_site = visits_with_site_audit.drop(columns="_merge")
+# Join on index
+combined = prices.join(volumes)
+display(combined)
+#           price  volume
+# 2023-01     100    1000
+# 2023-02     101    1100  
+# 2023-03     102    1200
 ```
 
-### Composite keys and overlapping column names
+### Patching Missing Data with combine_first()
 
-A **composite key** uses more than one column because no single column identifies a row. Name every component in `on=[...]` and test the combination before merging.
+When you have overlapping data sources, combine_first() fills gaps intelligently - like having a backup copy that fills in the blanks.
 
-When non-key columns have the same name on both sides, `suffixes=` makes their origins explicit. A suffix resolves a naming collision; it does not prove that the values agree.
+**Reference:**
+
+- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
+- Works by index alignment - matching index values are combined
+- Preserves non-null values from calling DataFrame
+- Fills NaN values with values from other DataFrame
+
+**Example:**
 
 ```python
-visit_reviews = pd.DataFrame(
-    {
-        "participant_id": ["P01", "P01", "P02", "P03", "P04"],
-        "visit_number": [1, 2, 1, 1, 1],
-        "status": ["verified", "verified", "pending", "verified", "pending"],
-    }
-).astype(
-    {
-        "participant_id": "string",
-        "status": "string",
-    }
-)
+# Two data sources with overlapping but incomplete data
+sales_q1 = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'sales': [100, np.nan, 150]
+})
 
-assert visit_reviews[
-    ["participant_id", "visit_number"]
-].notna().all().all()
-assert not visit_reviews.duplicated(
-    subset=["participant_id", "visit_number"]
-).any()
+sales_q2 = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'sales': [120, 200, np.nan]
+})
 
-visits_with_review = visits.merge(
-    visit_reviews,
-    on=["participant_id", "visit_number"],
-    how="left",
-    validate="one_to_one",
-    indicator=True,
-    suffixes=("_visit", "_review"),
-)
+# Combine to get complete picture
+complete = sales_q1.combine_first(sales_q2)
+display(complete)
+#   product  sales
+# 0       A  100.0  # Kept original (non-null)
+# 1       B  200.0  # Filled from Q2
+# 2       C  150.0  # Kept original (non-null)
 
-assert {"status_visit", "status_review"} <= set(visits_with_review.columns)
-assert visits_with_review["_merge"].eq("both").all()
-assert len(visits_with_review) == len(visits)
+# Why this matters: You get the best of both datasets!
+# Q1 had A and C, Q2 had B - now you have all three
+
 ```
 
-### Make failure cases observable
+**Real-world example:** Combining survey responses from different time periods, or merging partial datasets from different sources.
 
-The next cell tests four cases independently:
+![It's important to make sure your analysis destroys as much information as it produces.](attachment:089f6174-3355-4beb-a524-7dce022b4502:image.png)
 
-1. a duplicate right-side key violates the many-to-one contract;
-2. an orphan foreign key remains visible as `left_only`;
-3. missing pandas keys match unless they are isolated; and
-4. a many-to-many result follows the per-key multiplication rule.
+It's important to make sure your analysis destroys as much information as it produces.
+
+# Concatenating DataFrames Along an Axis
+
+*Think of concatenation as stacking LEGO bricks - you can stack them vertically (add more rows) or horizontally (add more columns). Just make sure they fit together!*
+
+Concatenation combines DataFrames by stacking them together, either adding rows (vertical) or columns (horizontal). Unlike merging, concatenation doesn’t use keys - it simply glues DataFrames together.
+
+**Visual Guide - Concatenation Types:**
+
+```
+VERTICAL CONCATENATION (axis=0)     HORIZONTAL CONCATENATION (axis=1)
+DataFrame A:                       DataFrame A:    DataFrame B:
+┌─────────┐                        ┌─────────┐    ┌─────────┐
+│ A │ B   │                        │ A │ B   │    │ C │ D   │
+├─────────┤                        ├─────────┤    ├─────────┤
+│ 1 │ 2   │                        │ 1 │ 2   │    │ 5 │ 6   │
+│ 3 │ 4   │                        │ 3 │ 4   │    │ 7 │ 8   │
+└─────────┘                        └─────────┘    └─────────┘
+         +
+DataFrame B:                               =
+┌─────────┐                        ┌─────────────────┐
+│ A │ B   │                        │ A │ B │ C │ D   │
+├─────────┤                        ├─────────────────┤
+│ 5 │ 6   │                        │ 1 │ 2 │ 5 │ 6   │
+│ 7 │ 8   │                        │ 3 │ 4 │ 7 │ 8   │
+└─────────┘                        └─────────────────┘
+         =
+┌─────────┐
+│ A │ B   │
+├─────────┤
+│ 1 │ 2   │  ← Stacked vertically
+│ 3 │ 4   │
+│ 5 │ 6   │
+│ 7 │ 8   │
+└─────────┘
+
+```
+
+## Vertical Concatenation: Adding More Rows
+
+The most common use case - combining datasets with the same columns.
+
+**Reference:**
+
+- `pd.concat([df1, df2, df3])` - Stack DataFrames vertically (default axis=0)
+- `pd.concat([df1, df2], axis=0)` - Explicit vertical stacking
+- `pd.concat([df1, df2], ignore_index=True)` - Reset index to 0, 1, 2, …
+- `pd.concat([df1, df2], join='outer')` - Union of columns (default)
+- `pd.concat([df1, df2], join='inner')` - Intersection of columns only
+
+**Example:**
 
 ```python
-duplicate_sites = pd.concat(
-    [sites, sites.iloc[[0]]],
-    ignore_index=True,
-)
+# Sales data from different months
+jan_sales = pd.DataFrame({
+    'product': ['Laptop', 'Mouse', 'Keyboard'],
+    'quantity': [5, 20, 15],
+    'month': ['Jan', 'Jan', 'Jan']
+})
 
-duplicate_contract_failed = False
-try:
-    visits.merge(
-        duplicate_sites,
-        on="site_code",
-        how="left",
-        validate="many_to_one",
-    )
-except pd.errors.MergeError as error:
-    duplicate_contract_failed = True
-    print("expected validation failure:", type(error).__name__)
+feb_sales = pd.DataFrame({
+    'product': ['Laptop', 'Monitor', 'Tablet'],
+    'quantity': [8, 3, 12],
+    'month': ['Feb', 'Feb', 'Feb']
+})
 
-assert duplicate_contract_failed
+# Stack them vertically - combines rows
+combined = pd.concat([jan_sales, feb_sales])
+display(combined)
+#    product  quantity month
+# 0   Laptop         5   Jan
+# 1    Mouse        20   Jan
+# 2 Keyboard        15   Jan
+# 0   Laptop         8   Feb  # Index repeats! (0, 1, 2 again)
+# 1  Monitor         3   Feb
+# 2   Tablet        12   Feb
 
-orphan_row = pd.DataFrame(
-    {
-        "visit_id": pd.Series(["V006"], dtype="string"),
-        "participant_id": pd.Series(["P05"], dtype="string"),
-        "visit_number": [1],
-        "site_code": pd.Series(["X"], dtype="string"),
-        "status": pd.Series(["complete"], dtype="string"),
-        "measure": [8.0],
-    }
-)
-visits_with_orphan = pd.concat([visits, orphan_row], ignore_index=True)
-orphan_audit = visits_with_orphan.merge(
-    sites,
-    on="site_code",
-    how="left",
-    validate="many_to_one",
-    indicator=True,
-)
-assert orphan_audit.loc[
-    orphan_audit["_merge"].eq("left_only"),
-    "visit_id",
-].tolist() == ["V006"]
-assert len(orphan_audit) == len(visits_with_orphan)
+# Clean indexes with ignore_index=True
+combined = pd.concat([jan_sales, feb_sales], ignore_index=True)
+display(combined)
+#    product  quantity month
+# 0   Laptop         5   Jan
+# 1    Mouse        20   Jan
+# 2 Keyboard        15   Jan
+# 3   Laptop         8   Feb  # Clean sequential index
+# 4  Monitor         3   Feb
+# 5   Tablet        12   Feb
 
-null_left = pd.DataFrame(
-    {
-        "key": pd.Series(["A", pd.NA], dtype="string"),
-        "left_value": [1, 2],
-    }
-)
-null_right = pd.DataFrame(
-    {
-        "key": pd.Series(["A", pd.NA], dtype="string"),
-        "right_value": [10, 20],
-    }
-)
-null_match = null_left.merge(
-    null_right,
-    on="key",
-    how="inner",
-    validate="one_to_one",
-)
-assert len(null_match) == 2
-assert null_match["key"].isna().sum() == 1
-
-safe_left = null_left.loc[null_left["key"].notna()].copy()
-safe_right = null_right.loc[null_right["key"].notna()].copy()
-assert safe_left["key"].notna().all()
-assert safe_right["key"].notna().all()
-
-many_left = pd.DataFrame({"key": ["A", "A", "B"]})
-many_right = pd.DataFrame({"key": ["A", "A", "A", "B", "B"]})
-many_result = many_left.merge(
-    many_right,
-    on="key",
-    how="inner",
-    validate="many_to_many",
-)
-
-left_counts = many_left["key"].value_counts()
-right_counts = many_right["key"].value_counts()
-shared_keys = left_counts.index.intersection(right_counts.index)
-expected_many_rows = sum(
-    int(left_counts[key]) * int(right_counts[key])
-    for key in shared_keys
-)
-
-assert expected_many_rows == 8
-assert len(many_result) == expected_many_rows
 ```
 
-## LIVE DEMO 1: Validated merge diagnostics
+**When to use concat vs merge:**
 
-The first required demonstration follows the [demo guide](demo/DEMO_GUIDE.md): declare grain and keys, predict a many-to-one relationship, trigger `validate=` with a duplicate dimension key, isolate the problem, inspect an orphan with `indicator=True`, perform the intended left merge, and verify preserved IDs and row count. The duplicate is repaired only after the diagnostic identifies it; silent deduplication is not part of the merge.
+- Use **concat** when stacking similar datasets (same columns, different rows)
+- Use **merge** when joining related datasets (shared keys, different information)
 
-## Concatenate tables with deliberate alignment
+**Why this matters:** Use concat for similar data, merge for related data.
 
-`pd.concat()` combines whole objects along an axis. It does not match foreign keys. Vertical concatenation stacks rows and aligns by column labels. It is appropriate when partitions have the same row grain and compatible schemas.
+## Horizontal Concatenation: Adding More Columns
 
-Add a source column before stacking so every output row retains **provenance**—where that row came from.
+Less common but useful for adding related information side-by-side.
+
+**Reference:**
+
+- `pd.concat([df1, df2], axis=1)` - Stack DataFrames horizontally
+- Indexes are aligned - matching index values are joined
+- Missing indexes result in NaN values
+- Use when adding new features from separate sources
+
+**Example:**
 
 ```python
-january = visits.iloc[:3].copy().assign(source_partition="january")
-february = visits.iloc[3:].copy().assign(source_partition="february")
+# Student grades
+grades = pd.DataFrame({
+    'name': ['Alice', 'Bob', 'Charlie'],
+    'grade': [95, 88, 92]
+}, index=[0, 1, 2])
 
-expected_partition_columns = [
-    "visit_id",
-    "participant_id",
-    "visit_number",
-    "site_code",
-    "status",
-    "measure",
-    "source_partition",
-]
-assert list(january.columns) == expected_partition_columns
-assert list(february.columns) == expected_partition_columns
+# Student attendance (different students!)
+attendance = pd.DataFrame({
+    'days_present': [18, 20, 19],
+    'days_total': [20, 20, 20]
+}, index=[1, 2, 3])  # Different index!
 
-all_partitions = pd.concat(
-    [january, february],
-    axis="index",
-    ignore_index=True,
-)
+# Horizontal concatenation
+combined = pd.concat([grades, attendance], axis=1)
+display(combined)
+#       name  grade  days_present  days_total
+# 0    Alice   95.0           NaN         NaN  # No attendance data
+# 1      Bob   88.0          18.0        20.0  # Match!
+# 2  Charlie   92.0          20.0        20.0  # Match!
+# 3      NaN    NaN          19.0        20.0  # No grade data
 
-assert len(all_partitions) == len(january) + len(february)
-assert all_partitions["visit_id"].is_unique
-assert all_partitions["source_partition"].value_counts().to_dict() == {
-    "january": 3,
-    "february": 2,
-}
 ```
 
-### Column alignment can create missing values
+```
+DataFrame 1: [0,1,2]     DataFrame 2: [1,2,3]
+     👤 0 ←→ A              👤 1 ←→ X
+     👤 1 ←→ B              👤 2 ←→ Y
+     👤 2 ←→ C              👤 3 ←→ Z
 
-Vertical concatenation uses the union of column labels. If one partition lacks a column or introduces another, pandas creates missing positions. That behavior is useful only when the schema difference is expected.
+Trying to dance together (axis=1):
+     👤 0 ←→ A    💃 (no partner) → NaN
+     👤 1 ←→ B ←→ X    💃 (perfect match!)
+     👤 2 ←→ C ←→ Y    💃 (perfect match!)
+     💃 (no partner) ←→ Z → NaN
+
+Result: Awkward dance with lots of empty spaces (NaN values)!
+"When your indexes don't match, it's like trying to dance with someone who's a beat behind!"
+
+```
+
+## Handling Different Columns with join Parameter
+
+When DataFrames don't have identical columns, concat needs to know what to do.
+
+**Reference:**
+
+- `join='outer'` (default) - Keep ALL columns from both DataFrames (union)
+- `join='inner'` - Keep only COMMON columns (intersection)
+
+**Example:**
 
 ```python
-schema_drift_partition = (
-    february
-    .drop(columns="measure")
-    .assign(review_note="late import")
-)
-alignment_preview = pd.concat(
-    [january, schema_drift_partition],
-    ignore_index=True,
-    sort=False,
-)
+# Different columns in each DataFrame
+df1 = pd.DataFrame({
+    'A': [1, 2, 3],
+    'B': [4, 5, 6]
+})
 
-assert alignment_preview.loc[
-    alignment_preview["source_partition"].eq("february"),
-    "measure",
-].isna().all()
-assert alignment_preview.loc[
-    alignment_preview["source_partition"].eq("january"),
-    "review_note",
-].isna().all()
+df2 = pd.DataFrame({
+    'B': [7, 8, 9],
+    'C': [10, 11, 12]
+})
+
+# Outer join (default) - keeps all columns
+outer = pd.concat([df1, df2], join='outer')
+display(outer)
+#      A  B     C
+# 0  1.0  4   NaN  # From df1
+# 1  2.0  5   NaN
+# 2  3.0  6   NaN
+# 0  NaN  7  10.0  # From df2
+# 1  NaN  8  11.0
+# 2  NaN  9  12.0
+
+# Inner join - keeps only column B (common to both)
+inner = pd.concat([df1, df2], join='inner')
+display(inner)
+#    B
+# 0  4
+# 1  5
+# 2  6
+# 0  7
+# 1  8
+# 2  9
+
 ```
 
-This preview diagnoses a schema mismatch; it does not decide whether either column should be filled, dropped, or renamed.
+![image.png](attachment:e5ed5658-a0c1-437a-99a3-592950a55b20:image.png)
 
-### Horizontal concatenation aligns index labels
+image.png
 
-Horizontal concatenation uses `axis="columns"`. It aligns rows by index label rather than by row position, so it is deliberate only when both indexes are meaningful keys for the same row grain.
+# Reshaping: Wide vs Long Format
+
+*Fun fact: 90% of data reshaping confusion comes from not understanding which format you have and which format you need. Once you know that, the solution is usually obvious!*
+
+Data can be organized in two fundamental formats: **wide** (one row per entity, many columns) and **long** (multiple rows per entity, fewer columns). Different analyses and visualizations require different formats.
+
+**Visual Guide - Wide vs Long Format:**
+
+```
+WIDE FORMAT (Easy to Read)          LONG FORMAT (Easy to Analyze)
+┌─────────┬──────┬─────────┬────────┐  ┌─────────┬─────────┬───────┐
+│ student │ math │ english │ science│  │ student │ subject │ score │
+├─────────┼──────┼─────────┼────────┤  ├─────────┼─────────┼───────┤
+│ Alice   │  95  │   90    │   92   │  │ Alice   │ math    │  95   │
+│ Bob     │  88  │   85    │   90   │  │ Alice   │ english │  90   │
+│ Charlie │  92  │   94    │   89   │  │ Alice   │ science │  92   │
+└─────────┴──────┴─────────┴────────┘  │ Bob     │ math    │  88   │
+                                       │ Bob     │ english │  85   │
+                                       │ Bob     │ science │  90   │
+                                       │ Charlie │ math    │  92   │
+                                       │ Charlie │ english │  94   │
+                                       │ Charlie │ science │  89   │
+                                       └─────────┴─────────┴───────┘
+
+Wide: One row per student, multiple columns    Long: Multiple rows per student, fewer columns
+Good for: Reading, pivot tables               Good for: Groupby, plotting, modeling
+
+```
+
+![image.png](attachment:a1a81824-6a5a-43ea-bfcb-f60e27e7bcde:image.png)
+
+## Understanding Wide Format
+
+Wide format has one row per entity and separate columns for each variable/time period.
+
+**Example:**
 
 ```python
-measure_by_visit = (
-    visits
-    .set_index("visit_id")
-    .loc[["V001", "V002", "V003"], ["measure"]]
-)
-review_by_visit = pd.DataFrame(
-    {"review_score": [7.0, 8.0, 9.0]},
-    index=pd.Index(
-        ["V002", "V003", "V006"],
-        dtype="string",
-        name="visit_id",
-    ),
-)
+# Wide format: Student test scores
+wide_data = pd.DataFrame({
+    'student': ['Alice', 'Bob', 'Charlie'],
+    'math': [95, 88, 92],
+    'english': [90, 85, 94],
+    'science': [92, 90, 89]
+})
+display(wide_data)
+#    student  math  english  science
+# 0    Alice    95       90       92
+# 1      Bob    88       85       90
+# 2  Charlie    92       94       89
 
-horizontal_features = pd.concat(
-    [measure_by_visit, review_by_visit],
-    axis="columns",
-)
+# Wide format is good for:
+# - Reading (humans prefer wide tables)
+# - Pivot tables and cross-tabulations
+# - Spreadsheet-style analysis
 
-assert set(horizontal_features.index) == {"V001", "V002", "V003", "V006"}
-assert horizontal_features.isna().sum().to_dict() == {
-    "measure": 1,
-    "review_score": 1,
-}
-assert pd.isna(horizontal_features.loc["V001", "review_score"])
-assert pd.isna(horizontal_features.loc["V006", "measure"])
 ```
 
-The two missing values have exact structural causes: `V001` exists only in the measure table, and `V006` exists only in the review table.
+## Understanding Long Format
 
-## LIVE DEMO 2: Concat provenance and alignment
+Long format has multiple rows per entity, with a variable column indicating what each value represents.
 
-The second required demonstration follows the [demo guide](demo/DEMO_GUIDE.md): vertically stack same-grain partitions with explicit source labels, verify the row total and source counts, then horizontally align two feature tables whose index labels differ. Students explain each resulting missing position from the labels that were present on only one side.
-
-## Reshape between wide and long forms
-
-A **wide-form** table stores repeated measurements in separate columns. A **long-form** table stores the measurement name in one column and its value in another, producing more rows.
-
-**Identifier variables** identify the observation across repeated measurements; they remain as columns during a melt. **Measured variables** are the repeated-measure columns whose names and values move into the long representation.
-
-In the next table, `participant_id` and `site_code` are identifier variables. `baseline_score` and `followup_score` are measured variables.
+**Example:**
 
 ```python
-wide_scores = pd.DataFrame(
-    {
-        "participant_id": ["P01", "P02", "P03"],
-        "site_code": ["N", "S", "W"],
-        "baseline_score": [10.0, 8.5, 11.0],
-        "followup_score": [12.0, 9.5, 13.0],
-    }
-).astype(
-    {
-        "participant_id": "string",
-        "site_code": "string",
-    }
-)
+# Long format: Same data, different structure
+long_data = pd.DataFrame({
+    'student': ['Alice', 'Alice', 'Alice', 'Bob', 'Bob', 'Bob',
+                'Charlie', 'Charlie', 'Charlie'],
+    'subject': ['math', 'english', 'science', 'math', 'english', 'science',
+                'math', 'english', 'science'],
+    'score': [95, 90, 92, 88, 85, 90, 92, 94, 89]
+})
+display(long_data)
+#    student  subject  score
+# 0    Alice     math     95
+# 1    Alice  english     90
+# 2    Alice  science     92
+# 3      Bob     math     88
+# 4      Bob  english     85
+# 5      Bob  science     90
+# 6  Charlie     math     92
+# 7  Charlie  english     94
+# 8  Charlie  science     89
 
-assert wide_scores["participant_id"].is_unique
-print(wide_scores)
+# Long format is good for:
+# - Groupby operations (df.groupby('subject').mean())
+# - Plotting with seaborn/plotly (they prefer long format)
+# - Statistical modeling (most models expect long format)
+
 ```
 
-### Melt wide measurements into rows
+![image.png](attachment:f2c4be85-569b-41a6-89d0-b89b54ed51fd:image.png)
 
-`melt()` keeps `id_vars` and moves named `value_vars` into a variable column and a value column. This is a structural operation; it does not summarize values.
+## Pivoting Long to Wide with pivot()
+
+The `pivot()` method converts long format to wide format - perfect for creating summary tables.
+
+**Reference:**
+
+- `df.pivot(index='row_labels', columns='col_labels', values='data')` - Basic pivot
+- `index` - Column to use for row labels
+- `columns` - Column to use for column labels
+- `values` - Column containing the data values
+- **Critical:** Works only when index/columns combinations are unique!
+
+**Example:**
 
 ```python
-long_scores = wide_scores.melt(
-    id_vars=["participant_id", "site_code"],
-    value_vars=["baseline_score", "followup_score"],
-    var_name="visit_label",
-    value_name="score",
-)
-long_scores["visit_label"] = long_scores["visit_label"].astype("str")
+# Convert long format to wide format
+wide = long_data.pivot(index='student', columns='subject', values='score')
+display(wide)
+# subject  english  math  science
+# student
+# Alice         90    95       92
+# Bob           85    88       90
+# Charlie       94    92       89
 
-assert len(long_scores) == len(wide_scores) * 2
-assert not long_scores.duplicated(
-    subset=["participant_id", "site_code", "visit_label"]
-).any()
+# Why this matters: Now you can easily compare subjects across students!
+# Wide format is easier to read for humans
 
-print(long_scores)
+# Pivot makes the column names the new column headers
+# And index becomes the row labels
+# Values fill the cells
+
 ```
 
-### Pivot long measurements back to columns
+**Common error:** If your index/columns combinations aren’t unique, pivot() will fail. Use `pivot_table()` instead (covered more in [BONUS.md](http://bonus.md/)).
 
-Structural `pivot()` requires at most one value for every identifier-variable combination and output column label. Here that means each (`participant_id`, `site_code`, `visit_label`) combination must be unique. When it is, the wide-to-long-to-wide round trip can be lossless.
+### pivot_table(): Handling Duplicates with Aggregation
+
+https://www.rilldata.com/blog/why-pivot-tables-never-die
+
+When your data has duplicate index/column combinations, `pivot()` fails. Use `pivot_table()` to aggregate those duplicates.
+
+**Reference:**
+
+- `pd.pivot_table(df, values='data', index='rows', columns='cols', aggfunc='sum')` - Pivot with aggregation
+- `aggfunc` - How to combine duplicates: 'sum', 'mean', 'count', etc.
+- All other parameters same as `pivot()`
+
+**Example:**
 
 ```python
-round_trip_scores = (
-    long_scores
-    .pivot(
-        index=["participant_id", "site_code"],
-        columns="visit_label",
-        values="score",
-    )
-    .reset_index()
-)
-round_trip_scores.columns.name = None
-round_trip_scores = round_trip_scores.loc[:, wide_scores.columns]
+# Sales data with multiple entries per month/category
+sales = pd.DataFrame({
+    'month': ['Jan', 'Jan', 'Feb', 'Feb', 'Jan'],
+    'category': ['Electronics', 'Electronics', 'Electronics', 'Clothing', 'Clothing'],
+    'amount': [100, 150, 200, 75, 50]
+})
 
-expected_scores = (
-    wide_scores
-    .sort_values(["participant_id", "site_code"])
-    .reset_index(drop=True)
-)
-round_trip_scores = (
-    round_trip_scores
-    .sort_values(["participant_id", "site_code"])
-    .reset_index(drop=True)
-)
-
-pd.testing.assert_frame_equal(round_trip_scores, expected_scores)
+# pivot() would fail - duplicate Jan/Electronics entries
+# pivot_table() sums them automatically
+sales_pivot = pd.pivot_table(sales, values='amount',
+                             index='month', columns='category',
+                             aggfunc='sum')
+display(sales_pivot)
+# category    Clothing  Electronics
+# month
+# Feb             75.0        200.0
+# Jan             50.0        250.0  # 100 + 150 summed!
 ```
 
-If the required combination is duplicated, `pivot()` refuses to guess which value to keep. That failure is evidence of a violated structural contract.
+**When to use which:**
+
+- Use `pivot()` when index/columns are unique (cleaner, simpler)
+- Use `pivot_table()` when you have duplicates that need aggregation
+
+## Melting Wide to Long with melt()
+
+The `melt()` function converts wide format to long format - essential for analysis and plotting.
+
+**Reference:**
+
+- `pd.melt(df, id_vars=['id_col'], value_vars=['col1', 'col2'])` - Basic melt
+- `id_vars` - Columns to keep as identifier variables
+- `value_vars` - Columns to unpivot (if None, uses all columns except id_vars)
+- `var_name` - Name for the new ‘variable’ column (default: ‘variable’)
+- `value_name` - Name for the new ‘value’ column (default: ‘value’)
+
+**Example:**
 
 ```python
-duplicate_long_scores = pd.concat(
-    [long_scores, long_scores.iloc[[0]]],
-    ignore_index=True,
-)
+# Convert wide format to long format
+long = pd.melt(wide_data,
+               id_vars=['student'],
+               value_vars=['math', 'english', 'science'],
+               var_name='subject',
+               value_name='score')
+display(long)
+#    student  subject  score
+# 0    Alice     math     95
+# 1      Bob     math     88
+# 2  Charlie     math     92
+# 3    Alice  english     90
+# 4      Bob  english     85
+# 5  Charlie  english     94
+# 6    Alice  science     92
+# 7      Bob  science     90
+# 8  Charlie  science     89
 
-duplicate_pivot_failed = False
-try:
-    duplicate_long_scores.pivot(
-        index=["participant_id", "site_code"],
-        columns="visit_label",
-        values="score",
-    )
-except ValueError as error:
-    duplicate_pivot_failed = True
-    print("expected pivot failure:", type(error).__name__)
+# Now you can easily do:
+long.groupby('subject')['score'].mean()
+# subject
+# english    89.67
+# math       91.67
+# science    90.33
 
-assert duplicate_pivot_failed
 ```
 
-## LIVE DEMO 3: Structural melt/pivot round trip
+**Real-world example:** Survey data often comes wide (Q1, Q2, Q3 columns) but needs to be long for analysis.
 
-The third required demonstration follows the [demo guide](demo/DEMO_GUIDE.md): state the wide and long grains, melt unique repeated-measure columns, verify the expected long row count and key combination, pivot back without aggregation, and compare the reconstructed table with the original. A planted duplicate combination must make `pivot()` fail. Lecture 08 will explain how a justified aggregation changes that question.
+**Why this matters:** Long format works better with plotting and statistical analysis.
 
-## Produce validated fresh outputs
+**Visual guide - Wide to Long to Wide workflow:**
 
-The merged output has grain **one row per recorded visit**. The long score output has grain **one row per participant, site, and measurement occasion**. Save each only after its invariants pass, then read it back with the declared schema. The output files are generated artifacts, not notebook-state evidence.
+```
+WIDE FORMAT                           LONG FORMAT
+student | math | english | science    student | subject | score
+Alice   |  95  |   90    |   92   →   Alice   | math    |  95
+Bob     |  88  |   85    |   90       Alice   | english |  90
+                                      Alice   | science |  92
+      melt() ────────────────→        Bob     | math    |  88
+      ←────────────── pivot()         Bob     | english |  85
+                                      Bob     | science |  90
+
+Wide: Easy to read            Long: Easy to analyze with groupby()
+      Spreadsheet style              Ready for plotting (seaborn, plotly)
+
+```
+
+![If all else fails, use “significant at a p>0.05 level” and hope no one notices](attachment:28c0535b-363a-492d-8bbc-04acad6bfaef:image.png)
+
+If all else fails, use “significant at a p>0.05 level” and hope no one notices
+
+# LIVE DEMO!
+
+(Demo 2: Survey Data Reshaping)
+
+# Working with DataFrame Indexes
+
+*Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it’s all about what you need to access quickly!*
+
+The index is special in pandas - it’s the “name” of each row. Moving columns to/from the index is a common operation that makes certain operations easier.
+
+**Index Constraints:**
+
+- **Uniqueness**: Index values *should* be unique (no duplicates)
+- **Performance**: Non-unique indexes work but are slower for lookups
+- **Data integrity**: Duplicate index values can cause unexpected behavior in merges
+- **Best practice**: Use unique identifiers (IDs, timestamps, etc.) as indexes
+
+## set_index(): Moving Columns to Index
+
+Converting columns to index labels makes certain operations faster and more intuitive.
+
+**Reference:**
+
+- `df.set_index('column')` - Make column the new index
+- `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
+- `drop=False` - Keep the column in the DataFrame (default is True, removes it)
+- `inplace=True` - Modify DataFrame in place (default is False, returns new DataFrame)
+
+**Example:**
 
 ```python
-from pathlib import Path
+# Employee data
+employees = pd.DataFrame({
+    'emp_id': ['E001', 'E002', 'E003'],
+    'name': ['Alice', 'Bob', 'Charlie'],
+    'department': ['Engineering', 'Sales', 'Engineering'],
+    'salary': [95000, 75000, 88000]
+})
+display(employees)
+#   emp_id     name   department  salary
+# 0   E001    Alice  Engineering   95000
+# 1   E002      Bob        Sales   75000
+# 2   E003  Charlie  Engineering   88000
 
-analysis_ready = visits_with_site.loc[
-    :,
-    [
-        "visit_id",
-        "participant_id",
-        "visit_number",
-        "site_code",
-        "status",
-        "measure",
-        "site_name",
-        "region",
-    ],
-].copy()
+# Make emp_id the index
+indexed = employees.set_index('emp_id')
+display(indexed)
+#           name   department  salary
+# emp_id
+# E001     Alice  Engineering   95000
+# E002       Bob        Sales   75000
+# E003   Charlie  Engineering   88000
 
-assert len(analysis_ready) == len(visits)
-assert analysis_ready["visit_id"].is_unique
-assert analysis_ready[["site_name", "region"]].notna().all().all()
+# Now you can access by emp_id directly
+display(indexed.loc['E002'])  # Bob's record
+# name              Bob
+# department      Sales
+# salary          75000
 
-output_directory = Path("output")
-output_directory.mkdir(parents=True, exist_ok=True)
-analysis_path = output_directory / "visits_with_site.csv"
-long_path = output_directory / "scores_long.csv"
-
-analysis_ready.to_csv(analysis_path, index=False)
-long_scores.to_csv(long_path, index=False)
-
-analysis_reloaded = pd.read_csv(
-    analysis_path,
-    dtype={
-        "visit_id": "string",
-        "participant_id": "string",
-        "visit_number": "int64",
-        "site_code": "string",
-        "status": "string",
-        "measure": "float64",
-        "site_name": "string",
-        "region": "string",
-    },
-)
-long_reloaded = pd.read_csv(
-    long_path,
-    dtype={
-        "participant_id": "string",
-        "site_code": "string",
-        "visit_label": "str",
-        "score": "float64",
-    },
-)
-
-pd.testing.assert_frame_equal(analysis_reloaded, analysis_ready)
-pd.testing.assert_frame_equal(long_reloaded, long_scores)
 ```
 
-A final check is procedural: restart the runtime, run every cell from the top, and confirm that the pinned source is reacquired, all assertions pass, and both files are recreated. A stale in-memory table or an old file under `output/` does not satisfy that check.
+**Why this matters:** Makes .loc[] selection faster and more intuitive.
 
-## Lecture 07 handoff
+## reset_index(): Moving Index to Columns
 
-After this lecture, students should be able to:
+The opposite operation - converts index back to a regular column.
 
-- produce one prepared analysis table with a stated row grain;
-- convert supplied wide data to long form suitable for seaborn; and
-- explain when rows were added or lost through a join or concatenation.
+**Reference:**
 
-Lecture 07 can therefore begin with supplied prepared data and focus on chart purpose, integrity, accessibility, and plotting interfaces rather than repairing table structure.
+- `df.reset_index()` - Move index to column(s)
+- `drop=True` - Discard the index instead of converting to column
+- `inplace=True` - Modify DataFrame in place
 
-## Core scope boundary
+**Example:**
 
-Required Lecture 06 work is limited to explicit-key `merge()`, deliberate `concat()`, and nonaggregating `melt()`/`pivot()`. It does not reopen cleaning decisions. GroupBy, aggregating `pivot_table()`, hierarchical-index aggregation, visualization, time series, modeling, databases, and performance engineering belong to later lectures or other courses.
+```python
+# Move index back to a column
+reset = indexed.reset_index()
+display(reset)
+#   emp_id     name   department  salary
+# 0   E001    Alice  Engineering   95000
+# 1   E002      Bob        Sales   75000
+# 2   E003  Charlie  Engineering   88000
+
+# Back to original structure with default numeric index
+
+# Discard index instead of converting
+indexed.reset_index(drop=True)
+#       name   department  salary
+# 0    Alice  Engineering   95000
+# 1      Bob        Sales   75000
+# 2  Charlie  Engineering   88000
+
+```
+
+**Common use case:** After a groupby operation, you often want to reset_index() to make the grouping columns regular columns again.
+
+## Basic MultiIndex Operations
+
+*MultiIndex (hierarchical indexing) allows you to have multiple index levels on an axis - think of it as having “sub-categories” in your row labels.*
+
+**Reference:**
+
+- `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
+- `df.index.names = ['level1', 'level2']` - Name the index levels
+- `df.loc[('key1', 'key2')]` - Access specific MultiIndex values
+- `df.swaplevel(0, 1)` - Swap index levels
+- `df.sort_index(level=0)` - Sort by specific level
+
+**Example:**
+
+```python
+# Sales data
+sales = pd.DataFrame({
+    'region': ['West', 'West', 'East', 'East', 'West', 'East'],
+    'quarter': ['Q1', 'Q2', 'Q1', 'Q2', 'Q1', 'Q2'],
+    'sales': [100, 150, 120, 180, 110, 190]
+})
+
+# Groupby creates MultiIndex automatically
+summary = sales.groupby(['region', 'quarter'])['sales'].sum()
+display(summary)
+# region  quarter
+# East    Q1         120  # MultiIndex! Two levels: region and quarter
+#         Q2         370  # (180 + 190)
+# West    Q1         210  # (100 + 110)
+#         Q2         150
+
+# Check the index
+display(summary.index)
+# MultiIndex([('East', 'Q1'),
+#             ('East', 'Q2'),
+#             ('West', 'Q1'),
+#             ('West', 'Q2')],
+#            names=['region', 'quarter'])
+
+```
+
+**Why this matters:** MultiIndex is essential for hierarchical data and makes certain operations much more efficient.
+
+**Common pattern:** After groupby with MultiIndex, use `.reset_index()` to convert back to regular columns.
+
+```python
+# Convert MultiIndex back to regular columns
+flattened = summary.reset_index()
+display(flattened)
+#   region quarter  sales
+# 0   East      Q1    120
+# 1   East      Q2    370
+# 2   West      Q1    210
+# 3   West      Q2    150
+
+# Now easier to work with for most people
+
+```
+
+![image.png](attachment:7010bab1-a2c1-442b-9ca8-664bf2d71c8f:image.png)
+
+*“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”*
+
+# LIVE DEMO! (Demo 3: Index Management and Concatenation)
+
+![ironman.png](attachment:4616c450-499b-4d82-89ed-b64a820ef311:ironman.png)

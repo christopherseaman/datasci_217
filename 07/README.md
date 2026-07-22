@@ -1,78 +1,47 @@
-# Visualization from Question to Accessible Claim
+Data Visualization: From Exploration to Communication
 
-Lecture 07 turns a prepared table into an honest, readable visual argument. The central skill is not memorizing plotting libraries. It is deciding what comparison a chart must support, constructing that chart deliberately, and checking whether another person can interpret it without being misled.
+See [BONUS.md](BONUS.md) for advanced topics:
 
-Optional extensions are collected in [BONUS.md](BONUS.md). They are not prerequisites for the required demos, assignment, or Lecture 08.
+- Advanced matplotlib customization and publication-quality plots
+- Interactive visualization with Bokeh and Plotly
+- Statistical visualization with seaborn advanced features
+- Custom color palettes and themes
+- Animation and dynamic plots
 
-## Prerequisites
+*Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
 
-Before starting this lecture, students should be able to:
+# Outline
 
-- restart and run a notebook from top to bottom using portable paths;
-- inspect, select, filter, and sort a prepared DataFrame;
-- state what one row represents and distinguish row labels from columns;
-- use a supplied long-form table; and
-- read a supplied summary without independently creating it through aggregation.
+- matplotlib fundamentals (figures, subplots, customization)
+- Statistical visualizations with seaborn
+- pandas plotting for quick data exploration
+- Visualization principles and best practices
+- Tufte's principles for effective data visualization
+- Modern visualization libraries (altair, plotnine)
 
-Lecture 07 does not require students to clean, join, reshape, or aggregate data. It also does not assume time-series analysis, correlation or regression interpretation, statistical inference, modeling, interactive-dashboard design, or performance engineering.
 
-## Learning objectives
+![xkcd 1945: Scientific Paper Graph Quality](https://imgs.xkcd.com/comics/scientific_paper_graph_quality.png)
 
-By the end of Lecture 07, students should be able to:
+*"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
-1. State a visualization’s question, audience, and intended claim; identify the variable roles and comparison the chart must support.
-2. Select an appropriate line, bar, scatter, histogram, or box plot and construct it with the Matplotlib `Figure`/`Axes` model, complete labels, and deterministic data.
-3. Critique and revise a chart for visual integrity, including scale, comparable baselines, truthful area/length encodings, context, and avoidance of unsupported claims.
-4. Apply core accessibility practices: readable labels, sufficient contrast, colorblind-safe choices, redundant encoding when needed, and a concise text alternative/caption.
-5. Use pandas/seaborn for a bounded exploratory view, then create and export one annotated explanatory chart tailored to an audience and claim.
-
-## Colab-first execution and evidence
-
-Required Lecture 07 demonstrations are Colab-first and also run in local Jupyter or the VS Code notebook interface. The provisional 2026–27 compatibility candidate is:
-
-| Component | Candidate |
-|---|---|
-| Python | 3.12.13 |
-| NumPy | 2.0.2 |
-| pandas | 3.0.3 |
-| Matplotlib | 3.10.8 |
-| seaborn | 0.13.2 |
-
-This is not the final release lock. A required notebook must select the named Python runtime, conditionally install missing or mismatched course packages before importing them, print the versions actually in use, and pass in both a fresh Colab runtime and clean local Jupyter before publication. Avoid reinstalling unrelated Colab packages.
-
-Colab's filesystem is ephemeral. Required notebooks reacquire pinned prepared data and create output directories in code; manual upload and mounted Drive are not defaults. Changes made in a Colab notebook opened from GitHub are not automatically saved back to the repository.
-
-Assignment notebooks remain runnable in clean local Jupyter. Colab becomes an assignment submission path only after the repository-save and Classroom 50 pilot is approved. Remove credentials, private records, and sensitive output before sharing. Stored cell output is not execution evidence: a grader runs a fresh copy, and a human reviewer inspects the newly rendered chart.
-
-## Start with a visualization contract
+# Start with a visualization contract
 
 A **visualization** maps data values to visible properties so that a reader can make a comparison. Before choosing an API or chart type, write four plain-language statements.
 
 A **question** names what the chart should help the reader compare or understand. An **audience** names the people who will use the chart and the context they bring. A **claim** is the specific descriptive conclusion the finished chart is intended to support. A chart can reveal a pattern, but a visual pattern alone does not prove why that pattern occurred.
 
-For the running example:
-
-- **Question:** How do observed assessment scores change across five study rounds for two programs?
-- **Audience:** A course coordinator deciding what result deserves follow-up.
-- **Intended claim:** In this prepared descriptive dataset, the guided program shows a larger observed increase and ends with the higher score.
-- **Comparison:** Compare the two score paths at the same round and compare each program's first and last rounds.
-
 ### State the unit and grain shown
 
 The **unit displayed** is what one mark or summarized position in the chart represents. Its **grain** is the corresponding row meaning in the plotting table. State both because a chart made from participant rows answers a different question from a chart made from program summaries.
-
-The running line-chart table has grain **one row per program and study round**. Each plotted point represents one already-prepared program-round score. Lecture 08 will teach how such a summary is produced; Lecture 07 only consumes it.
 
 ### Identify variable roles
 
 A variable's **role** describes how it participates in the comparison:
 
-- a **categorical variable** places observations into named groups, such as program;
-- a **quantitative variable** records a numeric magnitude, such as score;
-- an **ordered variable** has a meaningful sequence, such as study round; and
+- a **categorical variable** places observations into named groups;
+- a **quantitative variable** records a numeric magnitude;
+- an **ordered variable** has a meaningful sequence; and
 - an **identifier** distinguishes rows but is not automatically a meaningful visual encoding.
-
-For the running claim, `round_number` is ordered, `score` is quantitative, and `program` is categorical.
 
 ### Separate exploratory and explanatory work
 
@@ -80,45 +49,130 @@ An **exploratory visualization** helps the analyst inspect patterns, distributio
 
 An **explanatory visualization** communicates one selected finding to a named audience. It removes irrelevant alternatives, adds context and annotation, and uses a title or caption that states what the reader should notice without overstating the evidence.
 
-Exploration can produce many views. The final explanatory chart should have one clear job.
-
 ### Think in marks and encodings
 
 A **mark** is a visible object such as a point, line, or rectangle. An **encoding** maps a data value to a visible property such as horizontal position, vertical position, length, color, marker shape, or line style.
 
 Position along a common scale usually supports more precise comparison than area or decorative volume. Color can distinguish categories, but color alone is fragile: some readers cannot distinguish the selected hues, and grayscale reproduction may remove the distinction. When category identity matters, pair color with a redundant encoding such as marker shape, line style, direct labeling, or position.
 
-## Choose a chart that matches the comparison
+# Edward Tufte's Principles of Data Visualization
 
-The five required chart types have different jobs.
+*Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first.*
 
-| Chart | Appropriate comparison | Required cautions |
-|---|---|---|
-| **Line chart** | Change across a genuinely ordered sequence | Do not connect categories whose order has no meaning; identify every line |
-| **Bar chart** | Magnitudes across discrete categories | Bar length encodes magnitude, so comparable bars normally share a zero baseline |
-| **Scatter plot** | How two quantitative variables vary together | A visible relationship is descriptive and does not establish causation |
-| **Histogram** | Distribution of one quantitative variable | Results depend on bin boundaries and width; show the measurement unit |
-| **Box plot** | Compact comparison of quantitative distributions | Explain its summary and inspect the underlying observations before labeling points as errors |
+**"Above all else, show the data."** - Edward Tufte
 
-A **bin** is an interval that collects numeric observations for one histogram bar. Wider or shifted bins can hide or emphasize structure, so the bin specification is part of the chart's meaning.
+Edward Tufte, the pioneer of information design, established fundamental principles that remain essential for effective data visualization.
 
-In a box plot, the **median** is the middle ordered value. The first and third **quartiles**, Q1 and Q3, mark the lower and upper edges of the central half of the data. The **interquartile range**, or **IQR**, is `Q3 - Q1`. With the common `1.5 × IQR` rule documented in Matplotlib's [`Axes.boxplot()` reference](https://matplotlib.org/3.10.8/api/_as_gen/matplotlib.axes.Axes.boxplot.html), each **whisker** reaches the farthest observed value still inside the corresponding cutoff; observations beyond the whiskers appear as individual points. Those points are not automatically data errors, grounds for deletion, or proof of an unusual mechanism. They are observations to investigate in context.
+**Essential Reading:**
 
-## Protect visual integrity
+- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi) - Tufte's seminal work
+- [Envisioning Information](https://www.edwardtufte.com/tufte/books_ei) - Color, layering, and detail
+- [Tufte's website](https://www.edwardtufte.com/) - Essays and resources
 
-A **scale** maps data values to positions, lengths, or other visual magnitudes. An **axis** displays a scale and should name the variable and unit. A **baseline** is the reference value from which a visual length or change is judged. **Context** is the information a reader needs to interpret the comparison, such as the population, period or round range, units, denominator, or whether values are raw observations or prepared summaries.
+**1. Data-Ink Ratio: Maximize the Data-Ink**
 
-**Visual integrity** means that the chart's visible comparisons faithfully represent the documented data, scale, context, and question.
+The **data-ink ratio** is the proportion of ink (or pixels) used to present actual data compared to the total ink used in the entire display.
 
-Use these checks:
+```
+Data-Ink Ratio = Data-Ink / Total Ink Used
+```
 
-- Preserve comparable scales when panels or marks are meant to be compared.
-- Start ordinary magnitude bars at zero because truncating the axis changes their apparent lengths. A nonzero bar baseline requires an exceptional, explicitly justified design.
-- Do not apply the zero rule mechanically to line or scatter plots. Their positions may use a narrower range when the range and context remain visible and the choice does not exaggerate a claim.
-- Avoid area, volume, or pictogram encodings when the data are intended to be compared by simple length.
-- Name units, population, and whether values are observations or summaries.
-- Do not hide inconvenient observations merely to make the pattern cleaner.
-- Phrase descriptive findings as observations, not causal, inferential, or predictive conclusions.
+**Tufte's Goal:** Maximize this ratio by eliminating non-data ink (chartjunk).
+
+**Key Practices:**
+- Remove unnecessary gridlines (or make them subtle)
+- Eliminate decorative elements that don't convey information
+- Use direct labeling instead of legends when possible
+- Avoid 3D effects and shadows that distort perception
+- Remove redundant labels and tick marks
+
+![Data-Ink Ratio Comparison](media/tufte_data_ink_ratio.png)
+
+*Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.*
+
+**2. Chartjunk: Eliminate Visual Noise**
+
+**Chartjunk** includes any visual elements that do not convey information:
+- Unnecessary 3D effects
+- Heavy grid lines
+- Decorative fills and patterns
+- Excessive colors
+- Redundant labels
+
+**3. Lie Factor: Maintain Visual Integrity**
+
+The **lie factor** measures how much a visualization distorts the data:
+
+```
+Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
+```
+
+**Ideal Lie Factor:** Close to 1.0 (no distortion)
+
+**Common distortions to avoid:**
+- Truncated y-axes that exaggerate differences
+- 3D perspective that distorts area/volume comparisons
+- Inconsistent scales
+- Cherry-picked time ranges
+
+**4. Small Multiples: Show Comparisons**
+
+Use small, repeated charts with the same scale to enable easy comparison across categories or time.
+
+![Small Multiples Example](media/tufte_small_multiples.png)
+
+*Small multiples enable quick visual comparison across multiple dimensions while maintaining consistent scales.*
+
+**5. High-Resolution Data Graphics**
+
+Show as much detail as the data allows - don't oversimplify or aggregate unnecessarily.
+
+## Before/After Examples: Applying Tufte's Principles
+
+### Example 1: Bar Chart Redesign
+
+![Bar Chart Comparison](media/tufte_bar_comparison.png)
+
+*Before (left): Excessive colors, patterns, and heavy gridlines distract from the data. After (right): Clean design with direct labeling maximizes data-ink ratio.*
+
+### Example 2: Line Chart with Truncated Axis (Lie Factor)
+
+![Lie Factor Example](media/tufte_lie_factor.png)
+
+*Before (left): Truncated y-axis creates a high lie factor, exaggerating modest growth. After (right): Honest scale starting at zero shows true magnitude of change.*
+
+## Color Palette Best Practices
+
+Different data types require different color strategies:
+
+![Color Palette Guide](media/color_palettes.png)
+
+**Color Selection Guidelines:**
+- **Sequential:** Use for ordered data (temperature, age, income) - single hue gradient
+- **Diverging:** Use for data with meaningful zero/midpoint (profit/loss, correlation) - two contrasting hues
+- **Qualitative:** Use for categories with no inherent order - distinct, unrelated colors
+- **Accessibility:** Always test for colorblind accessibility using tools like [ColorBrewer](https://colorbrewer2.org/)
+
+**Additional Resources:**
+- [ColorBrewer 2.0](https://colorbrewer2.org/) - Interactive color advice for maps and visualizations
+- [Colorblind-Safe Palettes](https://personal.sron.nl/~pault/) - Paul Tol's color schemes
+- [Adobe Color](https://color.adobe.com/) - Create and explore color schemes
+
+## The Right Chart for the Job
+
+**Chart Selection Guide:**
+
+- **Line charts**: Time series, trends over time
+- **Bar charts**: Categories, comparisons
+- **Scatter plots**: Relationships between two variables
+- **Histograms**: Distribution of single variable
+- **Box plots**: Distribution with outliers
+- **Heatmaps**: Patterns in 2D data
+- **Pie charts**: Parts of a whole (use sparingly!)
+
+![Chart Selection Guide](media/chart_selection.png)
+
+*Different chart types are optimized for different data relationships and questions. Choose the right chart for your message.*
 
 ## Make the chart accessible
 
@@ -126,400 +180,711 @@ An accessible chart is designed so more readers can recover its comparison.
 
 - Use readable type, complete labels, and adequate contrast against the background.
 - Use a colorblind-safe palette, but do not treat palette choice as the whole accessibility task.
-- Add redundant encoding when color distinguishes important categories. The running line chart uses both color and marker/line style.
+- Add redundant encoding when color distinguishes important categories.
 - Prefer direct labels or a clearly associated legend over a distant decoding task.
 - Do not rely on hover interaction to reveal essential values.
 - Provide a concise **text alternative** or caption that states the chart type, axes, main pattern, and a relevant limitation.
 
-Example text alternative for the final chart:
+Example text alternative:
 
 > Line chart of prepared score by study round for standard and guided programs. Both rise across five rounds; the guided series rises from 61 to 79 and finishes seven points above the standard series. These are descriptive prepared summaries and do not establish a causal program effect.
 
-## LIVE DEMO 1: Critique and redesign
 
-[Open the Lecture 07 demo guide](demo/DEMO_GUIDE.md).
+# The Visualization Ecosystem
 
-The first required demonstration starts from a supplied misleading chart and its data. Students state the question, audience, claim, unit, and variable roles; diagnose an unjustified bar baseline, incomplete labels, color-only categories, decoration, and an unsupported causal title; then rebuild one honest, accessible chart and supply a text alternative.
+*Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart. But don't worry - we'll focus on the essential tools that actually matter for daily data science work.*
 
-## Construct charts with Matplotlib Figure and Axes
+Python's visualization landscape has evolved dramatically. While matplotlib remains the foundation, modern tools like seaborn, altair, and plotnine offer more intuitive interfaces for common tasks.
 
-A Matplotlib **Figure** is the complete canvas that can be saved. An **Axes** is one plotting area inside that Figure, including its data region, scales, labels, title, and plotted marks. The variable name `ax` conventionally refers to one Axes; it is not an abbreviation for “axis.” An individual x-axis or y-axis is one component of an Axes.
+**Visual Guide - Python Visualization Stack:**
 
-`plt.subplots()` returns both objects. Create them explicitly, draw with `ax` methods, and save with the Figure.
+```
+FOUNDATION LAYER
+┌─────────────────────────────────────┐
+│           matplotlib                │  ← Low-level, highly customizable
+│     (The foundation of everything)   │
+└─────────────────────────────────────┘
+                    ↑
+                    │
+            PANDAS LAYER
+┌─────────────────────────────────────┐
+│         pandas.plot()              │  ← Quick exploration, built on matplotlib
+│     (DataFrame/Series plotting)     │
+└─────────────────────────────────────┘
+                    ↑
+                    │
+            STATISTICAL LAYER
+┌─────────────────────────────────────┐
+│           seaborn                   │  ← Statistical plots, beautiful defaults
+│     (Built on matplotlib)           │
+└─────────────────────────────────────┘
+                    ↑
+                    │
+            MODERN LAYER
+┌─────────────────────────────────────┐
+│    altair (vega-lite)               │  ← Grammar of graphics, interactive
+│    plotnine (ggplot2)               │  ← R's ggplot2 in Python
+└─────────────────────────────────────┘
+```
 
-The first executable cell checks the provisional stack. In Colab, the notebook's earlier setup cell must install mismatched packages before this import cell runs.
+## Choosing the Right Tool
+
+**When to use what:**
+
+- **pandas.plot()** - Quick exploration, basic charts
+- **matplotlib** - Custom plots, publication quality, fine control
+- **seaborn** - Statistical plots, beautiful defaults, relationship analysis
+- **altair** - Interactive plots, grammar of graphics, web-ready
+- **plotnine** - If you know ggplot2, consistent API
+
+**Pro tip:** Start with pandas for exploration, seaborn for analysis, matplotlib for customization, and modern tools for interactive/sharing needs.
+
+# matplotlib: Foundation Layer
+
+*Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures.*
+
+matplotlib is the bedrock of Python visualization. While it can be verbose, understanding its core concepts gives you the power to create any visualization you can imagine.
+
+## Figures and Subplots
+
+Every matplotlib plot lives within a `Figure` object, which can contain multiple `subplots` (individual plot areas).
+
+**Reference:**
+
+- `plt.figure(figsize=(width, height))` - Create a new figure
+- `fig.add_subplot(rows, cols, position)` - Add subplot to figure
+- `plt.subplots(rows, cols)` - Create figure with multiple subplots
+- `fig.savefig('filename.png', dpi=300)` - Save figure to file
+- `plt.show()` - Display the plot
+
+**Example:**
 
 ```python
-import platform
-from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Create a figure with 2x2 subplots
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+
+# Plot on each subplot
+axes[0, 0].plot([1, 2, 3, 4], [1, 4, 2, 3])
+axes[0, 0].set_title('Line Plot')
+
+axes[0, 1].hist(np.random.normal(0, 1, 1000), bins=30)
+axes[0, 1].set_title('Histogram')
+
+axes[1, 0].scatter(np.random.randn(100), np.random.randn(100))
+axes[1, 0].set_title('Scatter Plot')
+
+axes[1, 1].bar(['A', 'B', 'C'], [3, 7, 2])
+axes[1, 1].set_title('Bar Chart')
+
+plt.tight_layout()
+plt.show()
+```
+
+![Matplotlib Subplots Example](media/matplotlib_subplots.png)
+
+*Creating multiple subplots in a single figure allows for easy comparison across different visualization types.*
+
+## Customizing Plots
+
+matplotlib's power comes from its extensive customization options.
+
+**Reference:**
+
+- `ax.set_title('Title')` - Set plot title
+- `ax.set_xlabel('X Label')` - Set x-axis label
+- `ax.set_ylabel('Y Label')` - Set y-axis label
+- `ax.set_xlim(min, max)` - Set x-axis limits
+- `ax.set_ylim(min, max)` - Set y-axis limits
+- `ax.grid(True)` - Add grid lines
+- `ax.legend()` - Add legend
+- `ax.set_style('seaborn')` - Change plot style
+
+**Example:**
+
+```python
+# Create a customized plot
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Generate sample data
+x = np.linspace(0, 10, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+
+# Plot with customization
+ax.plot(x, y1, label='sin(x)', color='blue', linewidth=2)
+ax.plot(x, y2, label='cos(x)', color='red', linewidth=2, linestyle='--')
+
+# Customize appearance
+ax.set_title('Trigonometric Functions')
+ax.set_xlabel('X values')
+ax.set_ylabel('Y values')
+ax.grid(True, alpha=0.3)
+ax.legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+![Matplotlib Customization Example](media/matplotlib_customization.png)
+
+*Customization allows you to create publication-quality plots with precise control over every visual element.*
+
+## Colors, Markers, and Line Styles
+
+matplotlib offers extensive control over visual elements.
+
+**Reference:**
+
+**Colors:**
+- Named colors: `'red'`, `'blue'`, `'green'`
+- Hex colors: `'#FF5733'`, `'#2E8B57'`
+- RGB tuples: `(0.1, 0.2, 0.5)`
+
+**Line Styles:**
+- `'-'` solid, `'--'` dashed, `'-.'` dash-dot, `':'` dotted
+
+**Markers:**
+- `'o'` circle, `'s'` square, `'^'` triangle, `'*'` star
+
+**Example:**
+
+```python
+# Demonstrate different styles
+fig, ax = plt.subplots(figsize=(10, 6))
+
+x = np.linspace(0, 10, 20)
+
+# Different line styles and markers
+ax.plot(x, x, 'o-', label='circles', color='blue', markersize=8)
+ax.plot(x, x**0.5, 's--', label='squares', color='red', markersize=6)
+ax.plot(x, np.log(x+1), '^-.', label='triangles', color='green', markersize=8)
+ax.plot(x, np.sin(x), '*:', label='stars', color='purple', markersize=10)
+
+ax.set_title('Different Line Styles and Markers')
+ax.legend()
+ax.grid(True, alpha=0.3)
+plt.show()
+```
+
+![Matplotlib Colors and Styles](media/matplotlib_styles.png)
+
+*matplotlib provides extensive options for colors, markers, and line styles to create visually distinct data series.*
+
+![xkcd 833: Convincing](https://imgs.xkcd.com/comics/convincing.png)
+
+*"And if you don't label your axes, I'm leaving you." - The importance of proper chart labeling, illustrated.*
+
+# LIVE DEMO!
+
+# pandas: Quick Data Exploration
+
+*Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
+
+pandas provides convenient plotting methods that build on matplotlib, perfect for quick data exploration.
+
+**Reference:**
+
+- `df.plot()` - Line plot (default)
+- `df.plot(kind='bar')` - Bar chart
+- `df.plot(kind='hist')` - Histogram
+- `df.plot(kind='scatter', x='col1', y='col2')` - Scatter plot
+- `df.plot(kind='box')` - Box plot
+- `df.plot(kind='pie')` - Pie chart
+
+**Example:**
+
+```python
 import pandas as pd
+import numpy as np
+
+# Create sample data
+np.random.seed(42)
+df = pd.DataFrame({
+    'A': np.random.randn(100),
+    'B': np.random.randn(100),
+    'C': np.random.randn(100)
+})
+
+# Quick exploration with pandas
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+# Line plot
+df.plot(ax=axes[0, 0], title='Line Plot')
+
+# Histogram
+df.plot(kind='hist', ax=axes[0, 1], alpha=0.7, title='Histogram')
+
+# Scatter plot
+df.plot(kind='scatter', x='A', y='B', ax=axes[1, 0], title='Scatter Plot')
+
+# Box plot
+df.plot(kind='box', ax=axes[1, 1], title='Box Plot')
+
+plt.tight_layout()
+plt.show()
+```
+
+![Pandas Plotting Examples](media/pandas_plotting.png)
+
+*pandas plotting methods provide quick, convenient visualization for data exploration with minimal code.*
+
+## DataFrame Plotting Options
+
+**Reference:**
+
+- `subplots=True` - Create separate subplots for each column
+- `figsize=(width, height)` - Set figure size
+- `title='Title'` - Set plot title
+- `xlabel='X Label'` - Set x-axis label
+- `ylabel='Y Label'` - Set y-axis label
+- `legend=True` - Show legend
+- `grid=True` - Add grid lines
+
+**Example:**
+
+```python
+# Sales data example
+sales_data = pd.DataFrame({
+    'Month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    'Product_A': [100, 120, 110, 130, 140, 135],
+    'Product_B': [80, 90, 95, 105, 110, 115],
+    'Product_C': [60, 70, 75, 80, 85, 90]
+})
+
+# Set Month as index for better plotting
+sales_data.set_index('Month', inplace=True)
+
+# Create subplots for each product
+sales_data.plot(subplots=True, figsize=(10, 8), 
+                title='Sales by Product Over Time',
+                grid=True, legend=True)
+plt.tight_layout()
+plt.show()
+```
+
+# seaborn: Statistical Graphics
+
+*seaborn is like having a data visualization expert sitting next to you, automatically choosing the right colors, styles, and statistical methods to make your plots look professional and informative.*
+
+seaborn builds on matplotlib to provide beautiful statistical visualizations with minimal code. It's the go-to choice for most data analysis tasks.
+
+**Reference:**
+
+- `sns.set_style('whitegrid')` - Set plot style
+- `sns.set_palette('husl')` - Set color palette
+- `sns.scatterplot(x='col1', y='col2', data=df)` - Scatter plot
+- `sns.lineplot(x='col1', y='col2', data=df)` - Line plot
+- `sns.histplot(data=df, x='col')` - Histogram
+- `sns.boxplot(data=df, x='col1', y='col2')` - Box plot
+- `sns.heatmap(data=df)` - Heatmap
+
+**Example:**
+
+```python
 import seaborn as sns
 
-assert platform.python_version() == "3.12.13"
-assert np.__version__ == "2.0.2"
-assert pd.__version__ == "3.0.3"
-assert matplotlib.__version__ == "3.10.8"
-assert sns.__version__ == "0.13.2"
+# Set seaborn style
+sns.set_style('whitegrid')
+tips = sns.load_dataset('tips')
 
-BLUE = "#0072B2"
-ORANGE = "#D55E00"
-GREEN = "#009E73"
-PURPLE = "#CC79A7"
+# Create multiple plots
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+
+# Scatter plot
+sns.scatterplot(data=tips, x='total_bill', y='tip', 
+                hue='time', ax=axes[0, 0])
+axes[0, 0].set_title('Total Bill vs Tip')
+
+# Box plot
+sns.boxplot(data=tips, x='day', y='tip', ax=axes[0, 1])
+axes[0, 1].set_title('Tip by Day')
+
+# Histogram
+sns.histplot(data=tips, x='total_bill', hue='time', 
+             alpha=0.7, ax=axes[1, 0])
+axes[1, 0].set_title('Bill Distribution')
+
+plt.tight_layout()
+plt.show()
 ```
 
-### Use deterministic prepared data
+![Seaborn Statistical Plots](media/seaborn_statistical.png)
 
-**Deterministic data** have fixed documented values, so rerunning the notebook produces the same plotting table and expected comparisons. The examples use literal prepared records rather than random generation or a network-only source.
+*seaborn excels at creating beautiful statistical visualizations with automatic styling and color choices.*
 
-A **long-form table** stores one observed or prepared value per row, with separate columns for identifiers, categories, and measurements. The table `progress_long` has grain one row per program and round. The table `participant_scores` has grain one row per participant. `program_summary` is an already-prepared summary supplied for a bar-chart example; this lecture does not recreate it.
+## Advanced seaborn Features
+
+**Reference:**
+
+- `sns.pairplot(df)` - Pairwise relationships
+- `sns.jointplot(x='col1', y='col2', data=df)` - Joint distribution
+- `sns.violinplot(data=df, x='col1', y='col2')` - Violin plot
+- `sns.stripplot(data=df, x='col1', y='col2')` - Strip plot
+- `sns.catplot(kind='box', data=df, x='col1', y='col2')` - Categorical plot
+
+**Example:**
 
 ```python
-progress_long = pd.DataFrame(
-    {
-        "program": ["Standard"] * 5 + ["Guided"] * 5,
-        "round_number": [1, 2, 3, 4, 5] * 2,
-        "score": [62, 65, 67, 70, 72, 61, 66, 71, 75, 79],
-    }
-).astype({"program": "string"})
+# Advanced seaborn visualizations
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
-participant_scores = pd.DataFrame(
-    {
-        "participant_id": [
-            "S01", "S02", "S03", "S04", "S05",
-            "G01", "G02", "G03", "G04", "G05",
-        ],
-        "program": ["Standard"] * 5 + ["Guided"] * 5,
-        "practice_hours": [2.0, 3.0, 3.5, 4.0, 5.0, 2.5, 3.5, 4.0, 5.0, 6.0],
-        "score": [61, 65, 66, 67, 69, 64, 70, 73, 77, 82],
-    }
-).astype(
-    {
-        "participant_id": "string",
-        "program": "string",
-    }
-)
+# Pair plot (shows all pairwise relationships)
+# Note: This creates its own figure, so we'll use a subset
+sample_data = tips.sample(50)
+sns.pairplot(sample_data, hue='time', height=3)
 
-program_summary = pd.DataFrame(
-    {
-        "program": ["Standard", "Guided"],
-        "mean_score": [65.6, 73.2],
-    }
-).astype({"program": "string"})
+# Joint plot (scatter + histograms)
+sns.jointplot(data=tips, x='total_bill', y='tip', kind='hex')
 
-assert progress_long.shape == (10, 3)
-assert participant_scores.shape == (10, 4)
-assert program_summary.shape == (2, 2)
+# Violin plot (shows distribution shape)
+sns.violinplot(data=tips, x='day', y='tip', ax=axes[0, 0])
+axes[0, 0].set_title('Tip Distribution by Day (Violin Plot)')
+
+# Strip plot (shows individual points)
+sns.stripplot(data=tips, x='day', y='tip', hue='time', ax=axes[0, 1])
+axes[0, 1].set_title('Individual Tips by Day and Time')
+
+plt.tight_layout()
+plt.show()
 ```
 
-### Line chart for an ordered sequence
+# Density Plots and Distribution Visualization
+
+*Density plots show the shape of your data distribution - they're like histograms but smoother, revealing patterns that might be hidden in discrete bins.*
+
+Density plots (also called KDE - Kernel Density Estimation) provide a smooth representation of data distribution.
+
+**Reference:**
+
+- `df.plot.density()` - Create density plot
+- `sns.histplot(data=df, x='col', kde=True)` - Histogram with density overlay
+- `sns.kdeplot(data=df, x='col')` - Pure density plot
+- `sns.distplot(data=df, x='col')` - Combined histogram and density
+
+**Example:**
 
 ```python
-standard_rounds = progress_long.loc[
-    progress_long["program"].eq("Standard")
-]
-guided_rounds = progress_long.loc[
-    progress_long["program"].eq("Guided")
-]
+# Create sample data with different distributions
+np.random.seed(42)
+normal_data = np.random.normal(0, 1, 1000)
+bimodal_data = np.concatenate([
+    np.random.normal(-2, 0.5, 500),
+    np.random.normal(2, 0.5, 500)
+])
 
-line_figure, line_ax = plt.subplots(figsize=(7, 4))
-line_ax.plot(
-    standard_rounds["round_number"],
-    standard_rounds["score"],
-    color=BLUE,
-    marker="o",
-    linestyle="-",
-    label="Standard",
-)
-line_ax.plot(
-    guided_rounds["round_number"],
-    guided_rounds["score"],
-    color=ORANGE,
-    marker="s",
-    linestyle="--",
-    label="Guided",
-)
-line_ax.set(
-    title="Prepared scores across study rounds",
-    xlabel="Study round",
-    ylabel="Prepared score (points)",
-    xticks=[1, 2, 3, 4, 5],
-)
-line_ax.legend(title="Program")
-line_figure.tight_layout()
+# Density plots
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-assert len(line_ax.lines) == 2
-assert line_ax.get_xlabel() == "Study round"
-assert line_ax.get_ylabel() == "Prepared score (points)"
+# pandas density plot
+pd.Series(normal_data).plot.density(ax=axes[0, 0], title='Normal Distribution')
+axes[0, 0].grid(True, alpha=0.3)
+
+# seaborn density plot
+sns.kdeplot(data=normal_data, ax=axes[0, 1], title='Normal Distribution (seaborn)')
+axes[0, 1].grid(True, alpha=0.3)
+
+# Bimodal distribution
+sns.kdeplot(data=bimodal_data, ax=axes[1, 0], title='Bimodal Distribution')
+axes[1, 0].grid(True, alpha=0.3)
+
+# Combined histogram and density
+sns.histplot(data=normal_data, kde=True, ax=axes[1, 1], title='Histogram + Density')
+axes[1, 1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
-### Bar chart for category magnitudes
+# LIVE DEMO!
+
+# Modern Visualization Libraries
+
+*The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
+
+## vega-altair: Grammar of Graphics with Vega-Lite
+
+*altair uses a declarative approach where you describe the data mapping rather than specifying drawing commands. It implements the grammar of graphics through Vega-Lite.*
+
+altair implements the Vega-Lite grammar of graphics, providing a declarative approach to creating statistical visualizations. It's designed for interactive web-based visualizations and supports multiple output formats.
+
+## Chart Creation and Mark Types
+
+altair uses a simple pattern: create a chart, specify the mark type, and encode your data.
+
+**Reference:**
+
+- `alt.Chart(data)` - Create chart from data
+- `alt.Chart(data).mark_circle()` - Scatter plot
+- `alt.Chart(data).mark_bar()` - Bar chart  
+- `alt.Chart(data).mark_line()` - Line plot
+- `alt.Chart(data).mark_area()` - Area chart
+- `alt.Chart(data).mark_rect()` - Heatmap/rectangles
+- `alt.Chart(data).mark_point()` - Point plot
+
+**Example:**
 
 ```python
-bar_figure, bar_ax = plt.subplots(figsize=(6, 4))
-bars = bar_ax.bar(
-    program_summary["program"],
-    program_summary["mean_score"],
-    color=[BLUE, ORANGE],
-)
-bar_ax.set(
-    title="Prepared mean score by program",
-    xlabel="Program",
-    ylabel="Prepared mean score (points)",
-    ylim=(0, 80),
-)
-bar_ax.bar_label(bars, fmt="%.1f")
-bar_figure.tight_layout()
+import altair as alt
+import pandas as pd
 
-assert bar_ax.get_ylim()[0] == 0
-assert len(bars) == 2
+# Sample data
+data = pd.DataFrame({
+    'x': [1, 2, 3, 4, 5],
+    'y': [2, 4, 1, 5, 3],
+    'category': ['A', 'B', 'A', 'C', 'B']
+})
+
+# Scatter plot - shows relationships between variables
+scatter = alt.Chart(data).mark_circle().encode(x='x', y='y')
+scatter.show()
+
+# Bar chart - compares values across categories  
+bar = alt.Chart(data).mark_bar().encode(x='category', y='y')
+bar.show()
+
+# Line chart - shows trends over ordered data
+line = alt.Chart(data).mark_line().encode(x='x', y='y')
+line.show()
+
+# Combined view using altair's concatenation
+combined = alt.hconcat(scatter, bar, line)
+combined.show()
 ```
 
-### Scatter plot for two quantitative variables
+![Altair Basic Charts](media/altair_all_three.png)
+
+*Combined altair charts: scatter plot (left), bar chart (middle), line plot (right)*
+
+## Data Encoding
+
+The `.encode()` method maps data columns to visual properties using type annotations.
+
+**Reference:**
+
+- `x='column:Q'` - Quantitative (continuous) data
+- `y='column:O'` - Ordinal (discrete) data  
+- `color='column:N'` - Nominal (categorical) data
+- `size='column:Q'` - Size encoding
+- `shape='column:N'` - Shape encoding
+- `tooltip=['col1', 'col2']` - Hover information
+
+**Example:**
 
 ```python
-scatter_figure, scatter_ax = plt.subplots(figsize=(6, 4))
-for program, color, marker in [
-    ("Standard", BLUE, "o"),
-    ("Guided", ORANGE, "s"),
-]:
-    subset = participant_scores.loc[
-        participant_scores["program"].eq(program)
-    ]
-    scatter_ax.scatter(
-        subset["practice_hours"],
-        subset["score"],
-        color=color,
-        marker=marker,
-        s=55,
-        label=program,
-    )
-
-scatter_ax.set(
-    title="Practice hours and observed score",
-    xlabel="Practice (hours)",
-    ylabel="Observed score (points)",
+# Enhanced scatter plot with encoding
+chart = alt.Chart(data).mark_circle().encode(
+    x='x:Q',                    # Quantitative x-axis
+    y='y:Q',                    # Quantitative y-axis
+    color='category:N',         # Color by category
+    size='y:Q',                 # Size by y-value
+    tooltip=['x', 'y', 'category']  # Hover info
 )
-scatter_ax.legend(title="Program")
-scatter_figure.tight_layout()
 
-assert len(scatter_ax.collections) == 2
+chart.show()
 ```
 
-### Histogram for one quantitative distribution
+![Altair Encoded Chart](media/altair_encoded.png)
 
-The explicit boundaries below define five bins: `[60, 65)`, `[65, 70)`, `[70, 75)`, `[75, 80)`, and `[80, 85]`.
+*Enhanced scatter plot with color encoding by category and size encoding by y-value*
+
+## Interactive Features
+
+altair provides built-in interactivity through the `.interactive()` method, enabling zoom, pan, and selection.
+
+**Reference:**
+
+- `.interactive()` - Enable zoom/pan
+- `.add_selection()` - Add selection tools
+- `.transform_filter()` - Filter data dynamically
+- `alt.selection_interval()` - Rectangle selection
+- `alt.selection_single()` - Point selection
+
+**Example:**
 
 ```python
-histogram_figure, histogram_ax = plt.subplots(figsize=(6, 4))
-bin_edges = [60, 65, 70, 75, 80, 85]
-counts, returned_edges, patches = histogram_ax.hist(
-    participant_scores["score"],
-    bins=bin_edges,
-    color=GREEN,
-    edgecolor="white",
-)
-histogram_ax.set(
-    title="Distribution of observed participant scores",
-    xlabel="Observed score (points)",
-    ylabel="Participants (count)",
-)
-histogram_figure.tight_layout()
+# Interactive scatter plot
+interactive_chart = alt.Chart(data).mark_circle().encode(
+    x='x:Q',
+    y='y:Q', 
+    color='category:N',
+    tooltip=['x', 'y', 'category']
+).interactive()
 
-assert int(counts.sum()) == len(participant_scores)
-assert returned_edges.tolist() == bin_edges
-assert len(patches) == 5
+interactive_chart.show()
 ```
 
-### Box plot for compact distribution comparison
+## Advanced altair Features
+
+### Faceting and Layering
+
+altair supports faceting (small multiples) and layering multiple mark types.
+
+**Reference:**
+
+- `.facet('column:N')` - Create small multiples
+- `alt.layer()` - Combine multiple mark types
+- `.properties(width=300, height=200)` - Set chart dimensions
+
+**Example:**
 
 ```python
-standard_scores = participant_scores.loc[
-    participant_scores["program"].eq("Standard"),
-    "score",
-]
-guided_scores = participant_scores.loc[
-    participant_scores["program"].eq("Guided"),
-    "score",
-]
+# Faceted chart
+faceted = alt.Chart(data).mark_circle().encode(
+    x='x:Q',
+    y='y:Q',
+    color='category:N'
+).facet('category:N', columns=2)
 
-box_figure, box_ax = plt.subplots(figsize=(6, 4))
-box_artists = box_ax.boxplot(
-    [standard_scores, guided_scores],
-    tick_labels=["Standard", "Guided"],
-    orientation="vertical",
-    whis=1.5,
-    patch_artist=True,
+# Layered chart
+base = alt.Chart(data).encode(x='x:Q', y='y:Q')
+layered = alt.layer(
+    base.mark_circle(color='lightblue'),
+    base.mark_line(color='red').transform_regression('x', 'y')
 )
-for patch, color in zip(box_artists["boxes"], [BLUE, ORANGE]):
-    patch.set_facecolor(color)
-    patch.set_alpha(0.75)
-
-box_ax.set(
-    title="Observed score distributions by program",
-    xlabel="Program",
-    ylabel="Observed score (points)",
-)
-box_figure.tight_layout()
-
-assert len(box_artists["boxes"]) == 2
-assert len(box_artists["medians"]) == 2
 ```
 
-## LIVE DEMO 2: Figure and Axes fundamentals
+### Statistical Transformations
 
-[Open the Lecture 07 demo guide](demo/DEMO_GUIDE.md).
+altair includes built-in statistical transformations.
 
-The second required demonstration begins with the plotting contract and fixed prepared data, creates each of the five core chart types through explicit Figure/Axes objects, labels every scale and unit, applies the bar-baseline rule with nuance, and checks observable chart properties rather than trusting stored output.
+**Reference:**
 
-## Use pandas and seaborn for bounded exploration
+- `.transform_regression('x', 'y')` - Add regression line
+- `.transform_aggregate()` - Group and aggregate data
+- `.transform_filter()` - Filter data based on selections
 
-pandas plotting is a concise exploratory shortcut around Matplotlib. seaborn accepts long-form DataFrames and provides focused defaults for categorical comparisons. Neither tool chooses the question, audience, claim, unit, scale, or interpretation for you.
-
-The next two views inspect the prepared participant rows. They do not calculate correlations, fit trend lines, or estimate uncertainty.
+**Example:**
 
 ```python
-pandas_figure, pandas_ax = plt.subplots(figsize=(6, 4))
-participant_scores.plot.scatter(
-    x="practice_hours",
-    y="score",
-    color=BLUE,
-    ax=pandas_ax,
-)
-pandas_ax.set(
-    title="Exploratory view of practice and score",
-    xlabel="Practice (hours)",
-    ylabel="Observed score (points)",
-)
-pandas_figure.tight_layout()
-
-seaborn_figure, seaborn_ax = plt.subplots(figsize=(6, 4))
-sns.scatterplot(
-    data=participant_scores,
-    x="practice_hours",
-    y="score",
-    hue="program",
-    style="program",
-    palette={"Standard": BLUE, "Guided": ORANGE},
-    markers={"Standard": "o", "Guided": "s"},
-    ax=seaborn_ax,
-)
-seaborn_ax.set(
-    title="Exploratory relationship view by program",
-    xlabel="Practice (hours)",
-    ylabel="Observed score (points)",
-)
-seaborn_ax.legend(title="Program")
-seaborn_figure.tight_layout()
-
-assert pandas_ax.get_xlabel() == "Practice (hours)"
-assert seaborn_ax.get_ylabel() == "Observed score (points)"
+# Chart with regression line
+regression = alt.Chart(data).mark_circle().encode(
+    x='x:Q',
+    y='y:Q'
+) + alt.Chart(data).mark_line(color='red').transform_regression(
+    'x', 'y'
+).encode(x='x:Q', y='y:Q')
 ```
 
-## Move from exploration to one explanatory chart
+## Export Formats
 
-An **annotation** adds focused context to a mark, such as a label, arrow, or reference line. **Layout** is the arrangement of plot area, title, legend, labels, and explanatory text so that they do not overlap or compete. **Export** writes the complete Figure to a file with deliberate dimensions, format, and filename.
+altair supports multiple output formats for different use cases.
 
-The explanatory chart below returns to the declared audience and claim. It uses color plus marker/line style, labels units, describes prepared summaries rather than claiming cause, and annotates the largest observed separation.
+**Reference:**
+
+- `chart.save('plot.png')` - Static bitmap (PNG)
+- `chart.save('plot.svg')` - Static vector (SVG)
+- `chart.save('plot.html')` - Interactive HTML
+- `chart.save('plot.json')` - Vega-Lite JSON specification
+
+**Example:**
 
 ```python
-explanatory_figure, explanatory_ax = plt.subplots(figsize=(8, 4.8))
-explanatory_ax.plot(
-    standard_rounds["round_number"],
-    standard_rounds["score"],
-    color=BLUE,
-    marker="o",
-    linestyle="-",
-    linewidth=2,
-    label="Standard",
-)
-explanatory_ax.plot(
-    guided_rounds["round_number"],
-    guided_rounds["score"],
-    color=ORANGE,
-    marker="s",
-    linestyle="--",
-    linewidth=2,
-    label="Guided",
-)
-explanatory_ax.annotate(
-    "Largest observed separation: 7 points",
-    xy=(5, 79),
-    xytext=(3.15, 81.5),
-    arrowprops={"arrowstyle": "->", "color": "#333333"},
-)
-explanatory_ax.set(
-    title="Guided scores rise more in the prepared five-round summary",
-    xlabel="Study round",
-    ylabel="Prepared score (points)",
-    xticks=[1, 2, 3, 4, 5],
-    xlim=(0.8, 5.2),
-    ylim=(58, 84),
-)
-explanatory_ax.legend(title="Program", frameon=False)
-explanatory_ax.spines[["top", "right"]].set_visible(False)
-
-explanatory_text_alternative = (
-    "Line chart of prepared score by study round for standard and guided "
-    "programs. Both rise across five rounds; guided rises from 61 to 79 "
-    "and finishes seven points above standard. The summaries are descriptive "
-    "and do not establish a causal program effect."
-)
-
-explanatory_figure.tight_layout()
-output_directory = Path("output")
-output_directory.mkdir(parents=True, exist_ok=True)
-explanatory_path = output_directory / "lecture07_explanatory.png"
-explanatory_figure.savefig(explanatory_path, dpi=150, bbox_inches="tight")
-
-assert explanatory_ax.get_title().startswith("Guided scores rise")
-assert explanatory_ax.get_xlabel() == "Study round"
-assert explanatory_ax.get_ylabel() == "Prepared score (points)"
-assert len(explanatory_ax.lines) == 2
-assert explanatory_ax.get_legend() is not None
-assert "do not establish a causal" in explanatory_text_alternative
-assert explanatory_path.is_file()
-assert explanatory_path.stat().st_size > 1_000
+# Export to different formats
+chart.save('scatter.png')      # Static bitmap
+chart.save('scatter.svg')      # Static vector
+chart.save('interactive.html') # Interactive HTML
 ```
 
-### Apply a human visual-QA rubric
+## Other Modern Tools: plotnine, Bokeh, and Plotly
 
-Automated assertions can verify labels, object counts, paths, and file creation. They cannot certify that a chart is honest, legible, accessible, or useful. A human reviewer should answer every item:
+### plotnine: ggplot2 for Python
 
-- **Contract:** Are the question, audience, intended claim, unit, grain, and variable roles explicit?
-- **Choice:** Does the chart type support the intended comparison without adding an unsupported one?
-- **Integrity:** Are scales, baselines, encodings, units, denominators, and context truthful and comparable?
-- **Claim:** Does the title/caption remain descriptive and within the evidence?
-- **Accessibility:** Are labels readable, contrast sufficient, colors distinguishable, and important categories redundantly encoded?
-- **Text alternative:** Does it name the chart, axes, main pattern, and a limitation without merely repeating the title?
-- **Layout:** Are marks, labels, annotation, and legend unclipped and free of confusing overlap at the exported size?
-- **Reproducibility:** Does restart-and-run-all recreate the chart from pinned prepared data without hidden state or an old output file?
+**plotnine** brings R's ggplot2 syntax to Python, perfect for those familiar with R.
 
-## LIVE DEMO 3: Exploratory to explanatory
+**Key Features:**
+- Grammar of graphics approach
+- Layered plotting syntax
+- Familiar to R users
+- Statistical transformations
 
-[Open the Lecture 07 demo guide](demo/DEMO_GUIDE.md).
+**Reference:**
+- `ggplot(data, aes(x='col1', y='col2'))` - Base plot
+- `+ geom_point()` - Add scatter points
+- `+ geom_smooth()` - Add trend line
+- `+ facet_wrap('~column')` - Create facets
+- `+ theme_minimal()` - Apply themes
 
-The third required demonstration makes one bounded pandas or seaborn exploratory view from supplied long-form data, selects a descriptive finding, rebuilds it through Figure/Axes as one annotated accessible explanatory chart, exports it, writes a text alternative, and completes both executable checks and the human visual-QA rubric.
+**Example:**
 
-## Handoff to Lecture 08
+```python
+# Simple scatter plot with ggplot2 syntax
+(ggplot(tips, aes(x='total_bill', y='tip', color='time'))
+ + geom_point()
+ + theme_minimal())
+```
 
-After this lecture, students should be able to:
+### Bokeh: Interactive Web Visualizations
 
-- state a chart's question, audience, intended claim, and displayed unit;
-- use prepared long-form plotting data and explain what each mark represents;
-- construct and critique one basic chart from an already-supplied summary; and
-- explain that aggregation can change the unit and row count represented in a chart.
+**Bokeh** creates interactive web-based visualizations with rich interactivity.
 
-Lecture 08 introduces grouping keys, aggregation, result grain, and aggregating pivot tables. A chart may communicate that grouped result, but visualization does not become a second Lecture 08 objective.
+**Key Features:**
+- High-performance interactive plots
+- Web-based output
+- Custom JavaScript callbacks
+- Server applications
 
-## Core scope boundary
+**Reference:**
+- `figure()` - Create plot figure
+- `.circle()`, `.line()`, `.bar()` - Add glyphs
+- `HoverTool()` - Add hover information
+- `output_notebook()` - Display in Jupyter
 
-Required Lecture 07 work is limited to the visualization contract, the five core static chart types, visual integrity, accessibility, focused Figure/Axes construction, bounded pandas/seaborn exploration, annotation, export, and human visual QA on deterministic prepared data.
+### Plotly: Interactive Dashboards
 
-Cleaning and missing-data decisions remain in Lecture 05. Joins and structural reshape remain in Lecture 06. GroupBy and aggregating pivots belong to Lecture 08; time-series operations to Lecture 09; correlation, regression, inference, prediction, and modeling to Lecture 10. Interactive libraries, dashboards, animation, geospatial systems, and performance engineering are not core Lecture 07 requirements.
+**Plotly** excels at creating interactive dashboards and web applications.
+
+**Key Features:**
+- Easy-to-use API
+- Rich interactivity
+- Dashboard capabilities
+- Multiple chart types
+
+**Reference:**
+- `px.scatter()`, `px.line()`, `px.bar()` - Express functions
+- `go.Figure()` - Graph objects
+- `make_subplots()` - Multiple plots
+- `.show()` - Display plot
+
+**Example:**
+
+```python
+import plotly.express as px
+
+# Simple interactive scatter plot
+fig = px.scatter(tips, x='total_bill', y='tip', color='time',
+                 title="Interactive Scatter Plot")
+fig.show()
+```
+
+## Tool Selection Guide
+
+**When to use each tool:**
+
+- **matplotlib**: Custom plots, publication quality, fine control
+- **seaborn**: Statistical plots, beautiful defaults, relationship analysis  
+- **pandas**: Quick exploration, basic charts
+- **altair**: Interactive plots, grammar of graphics, web-ready
+- **plotnine**: R users, layered approach, statistical plots
+- **Bokeh**: High-performance web visualizations, custom interactions
+- **Plotly**: Dashboards, web applications, easy interactivity
+
+| Tool | Best For | Learning Curve | Interactivity | Output Formats | Grammar |
+|------|----------|----------------|---------------|----------------|---------|
+| matplotlib | Custom plots, publication quality | High | None | PNG/SVG/PDF | Imperative |
+| seaborn | Statistical plots, beautiful defaults | Low | None | PNG/SVG/PDF | Imperative |
+| pandas | Quick exploration, basic charts | Very Low | None | PNG/SVG/PDF | Imperative |
+| altair | Interactive plots, grammar of graphics | Medium | Built-in | PNG/SVG/HTML/JSON | Declarative |
+| plotnine | R users, layered approach | Medium | None | PNG/SVG/PDF | Declarative |
+| bokeh | Interactive web visualizations | High | High | HTML/JS | Imperative |
+| plotly | Dashboards, web applications | Medium | High | HTML/JS | Declarative |
+
+
+![xkcd 1138: Heatmap](https://imgs.xkcd.com/comics/heatmap.png)
+
+*"Every single map of the United States looks the same because it's just a population density map." - A reminder that your visualization should show meaningful patterns, not just expected distributions.*
+
+
+# LIVE DEMO!

@@ -1,128 +1,209 @@
-# Bonus: Optional pandas Extensions
+Bonus Content: Advanced Pandas Operations
 
-This file extends Lecture 04's labeled-data model. None of these sections is required by the Lecture 04 demos, assignment, or Lecture 05.
+*This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, column creation, groupby introductions, and the core CSV workflow before tackling these extensions.*
 
-Return to [README.md](README.md) for the required notebook-state, Series/DataFrame, selection, sorting, and portable CSV workflow.
+---
 
-## Label alignment and explicit broadcasting
+## Data Alignment and Broadcasting
 
-NumPy arithmetic is driven primarily by compatible shapes. pandas arithmetic also considers labels.
+See the lecture for baseline Series/DataFrame comparisons. This section deepens alignment control for mismatched labels, explicit reindexing, and DataFrame↔Series broadcasting so multi-source arithmetic remains predictable.
 
-When two Series use different index labels, pandas aligns equal labels before calculating. The result contains the union of labels. `NaN` marks a label that had no partner for that calculation; handling such markers is outside this optional example.
+**Reference:**
 
-```python
-import pandas as pd
+- Automatic index alignment during arithmetic operations
+- Series align on their index; DataFrames align on both axes when mixed
+- `df.add(series, axis='columns', fill_value=0)` / `df.sub(series, axis='index', fill_value=0)` / `df.mul(...)` / `df.div(...)` — combine while filling gaps
+- `.reindex()` and `.align(join='inner' | 'outer')` — enforce explicit label sets before combining
 
-left = pd.Series([10, 20, 30], index=["north", "south", "west"])
-right = pd.Series([1, 2, 3], index=["south", "west", "east"])
+Series align on their index, while DataFrames track both axes. When you mix them, pandas broadcasts along matching labels and introduces `NaN` wherever labels do not overlap, so make the intended axis explicit when you call arithmetic methods.
 
-print(left + right)
-```
-
-Only `south` and `west` have partners in both Series.
-
-Arithmetic methods can make the intended axis explicit when combining a DataFrame and a Series:
+**Brief Example:**
 
 ```python
-measurements = pd.DataFrame(
-    {
-        "baseline": [10, 20, 30],
-        "follow_up": [20, 30, 40],
-    },
-    index=["north", "south", "west"],
-)
+s1 = pd.Series([1, 2, 3], index=['a', 'b', 'c'])
+s2 = pd.Series([4, 5, 6], index=['b', 'c', 'd'])
+print(s1 + s2)                      # a: NaN, b: 6, c: 8, d: NaN
+print(s1.add(s2, fill_value=0))     # a: 1, b: 6, c: 8, d: 6
 
-column_offsets = pd.Series(
-    {"baseline": 2, "follow_up": 5}
-)
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+row = pd.Series([10, 20], index=['A', 'B'])
+print(df.sub(row, axis='columns'))  # Broadcast Series across DataFrame columns
 
-adjusted = measurements.sub(column_offsets, axis="columns")
-print(adjusted)
+left, right = df.align(df.iloc[:2], join='outer', axis=0)
+print(left)
+print(right)
+
+metrics = pd.DataFrame({
+    'Salary': [120000, 95000, 88000],
+    'Bonus': [6000, 4750, 4400]
+}, index=['Avery', 'Bianca', 'Cheng'])
+
+averages = metrics.mean()
+targets = pd.Series({'Salary': 110000, 'Bonus': 5000, 'Equity': 2000})
+
+print(metrics.sub(averages, axis='columns'))  # Broadcast Series down rows
+print(metrics.add(targets, fill_value=0))     # Fill missing labels before combining
 ```
 
-The explicit `axis="columns"` says that the Series labels should match DataFrame column labels. This is optional label reasoning, not a new required arithmetic pattern.
+---
 
-## Ranking after deterministic sorting
+## Function Application and Method Chaining
 
-Sorting changes row order. Ranking instead returns an order number for each original row.
+The lecture covers vectorized operations; reach for the tools below when you need custom logic or pipeline readability. Combine `apply`/`map` with chaining helpers to keep transformations compact and transparent.
+
+**Reference:**
+
+- `df.apply(func)` — column-wise by default; add `axis='columns'` for row-wise logic
+- `series.map(func)` — element-level transformations with optional dict/Series mapping
+- `df.applymap(func)` — element-wise DataFrame transform (use sparingly for performance)
+- Chain helpers: `.assign()`, `.pipe()`, `.rename()` to build fluent pipelines
+
+**Brief Example:**
 
 ```python
-scores = pd.Series(
-    [88, 95, 88, 72],
-    index=["obs-001", "obs-002", "obs-003", "obs-004"],
-)
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+print(df.apply(lambda col: col.max() - col.min()))
+print(df.apply(lambda row: row.sum(), axis='columns'))
+print(df.map(lambda x: f"${x:.2f}"))
 
-print(scores.rank(ascending=False))
-print(scores.rank(ascending=False, method="min"))
-print(scores.rank(ascending=False, method="dense"))
+summary = (
+    df.assign(total=lambda d: d.sum(axis=1))
+      .pipe(lambda d: d / d['total'].max())
+)
+print(summary)
 ```
 
-Tie methods answer different questions:
+---
 
-- the default gives tied values their average rank;
-- `method="min"` gives every tie the best occupied rank; and
-- `method="dense"` does not leave gaps after a tie.
+## Ranking Strategies
 
-Choose and document the tie rule when rank values will be interpreted or shared.
+Go beyond simple sorting by assigning ranks, controlling tie behavior, and ranking across rows or columns. Pair these techniques with the lecture's descriptions of sorting and unique values when you need ordered analytics.
 
-## Duplicate index labels
+**Reference:**
 
-Lecture 04 uses unique row labels so one label identifies one row. pandas also permits duplicate index labels, but selection can then return a different shape depending on the label.
+- `series.rank()` — mean rank for ties (default)
+- `method='first' | 'min' | 'max' | 'dense'` — tie handling strategies
+- `ascending=False` — reverse ranking
+- `df.rank(axis='columns')` — rank across columns within each row
+
+**Brief Example:**
 
 ```python
-readings = pd.Series(
-    [10, 12, 20],
-    index=["north", "north", "south"],
-    name="reading",
-)
-
-print("unique index:", readings.index.is_unique)
-print("north result:")
-print(readings.loc["north"])
-print("south result:")
-print(readings.loc["south"])
+s = pd.Series([7, -5, 7, 4, 2, 0, 4])
+print(s.rank())                 # Mean rank for ties
+print(s.rank(method='first'))   # First occurrence gets the better rank
+print(s.rank(ascending=False))  # Reverse order ranking
 ```
 
-`readings.loc["north"]` returns a Series because two rows share that label. `readings.loc["south"]` returns one scalar value. This shape change is why the required Lecture 04 examples use unique row labels.
+---
 
-## Optional Excel and JSON reference
+## Handling Duplicate Index Labels
 
-CSV is the only required Lecture 04 file format. The following methods are references for learners who already have an external need for another format.
+The lecture covers duplicate detection at the column level. This section focuses on index semantics when labels repeat, plus tactics for normalizing or exploiting duplicates in time-series and log pipelines.
 
-### Excel workbooks
+**Reference:**
+
+- `index.is_unique` — quick sanity check
+- Label-based selection returns Series/DataFrame when duplicates exist
+- `duplicated()` and `drop_duplicates()` also operate on indexes
+- `groupby(level=0)` or `.reset_index()` can normalize duplicates
+
+**Brief Example:**
 
 ```python
-# Requires an appropriate optional Excel engine in the active environment.
-worksheet = pd.read_excel("data/workbook.xlsx", sheet_name="Measurements")
-worksheet.to_excel(
-    "output/measurements.xlsx",
-    sheet_name="Measurements",
-    index=False,
-)
+import numpy as np
+s = pd.Series([1, 2, 3, 4, 5], index=['a', 'a', 'b', 'b', 'c'])
+print(s.index.is_unique)  # False
+print(s['a'])             # Series with two values
+print(s['c'])             # Scalar
+
+df = pd.DataFrame(np.random.randn(5, 3), index=['a', 'a', 'b', 'b', 'c'])
+print(df.loc['b'])        # DataFrame with the duplicate rows
 ```
 
-Excel support has optional package dependencies. It is not installed or assessed for Lecture 04.
+---
 
-### JSON records
+## Extended I/O and Performance
+
+Revisit the lecture for core CSV ingestion/export. Use this section when you need alternate formats, iterative processing, or performance tuning. Each technique notes the scenarios where it adds value. See the lecture for baseline syntax before layering these extensions.
+
+### Excel Integration
+
+Ideal for business spreadsheets or multi-sheet workbooks.
 
 ```python
-records = pd.read_json("data/records.json", orient="records")
-records.to_json(
-    "output/records.json",
-    orient="records",
-    indent=2,
-)
+# Read entire workbook
+df = pd.read_excel('data.xlsx')
+print(df.head())
+
+# Target a specific sheet
+df_sales = pd.read_excel('data.xlsx', sheet_name='Sales')
+print(df_sales.head())
+
+# Write results back out
+df_sales.to_excel('sales_summary.xlsx', sheet_name='Summary', index=False)
 ```
 
-JSON can represent structures that are not simple rectangular tables, so the correct orientation depends on the producer and consumer. That design choice is not a Lecture 04 requirement.
+Use when you need Excel-native formatting or your stakeholders expect `.xlsx` outputs.
 
-## Scope boundary
+### JSON and Semi-Structured Data
 
-These extensions remain optional:
+Designed for API payloads or nested records.
 
-- label alignment and an explicit arithmetic axis;
-- ranking with documented tie behavior;
-- recognition of duplicate-label selection behavior; and
-- reference-only Excel and JSON methods.
+```python
+df = pd.read_json('data.json')
+df.to_json('output.json', orient='records', indent=2)
+```
 
-They introduce no required demo step, assignment requirement, or prerequisite for the next lecture.
+Switch the `orient` parameter (`'records'`, `'columns'`, `'table'`, etc.) based on the consumer. JSON is great for web services and lightweight integrations.
+
+### SQL Databases
+
+Ideal when data already resides in transactional stores. Requires a SQLAlchemy engine or DB-API connection.
+
+```python
+# import sqlalchemy as sqla
+# engine = sqla.create_engine('sqlite:///mydb.sqlite')
+# query = "SELECT name, total, date FROM sales WHERE date >= '2024-01-01'"
+# df = pd.read_sql(query, engine)
+```
+
+Once records are in a DataFrame, downstream cleaning and analysis mirrors the lecture workflow.
+
+### Reading Large Files in Chunks
+
+Break massive files into bite-sized pieces without exhausting RAM.
+
+```python
+chunk_iter = pd.read_csv('huge_file.csv', chunksize=10000)
+results = []
+
+for chunk in chunk_iter:
+    processed = chunk[chunk['value'] > 0].groupby('category').sum()
+    results.append(processed)
+
+final = pd.concat(results, axis=0).groupby(level=0).sum()
+```
+
+Use chunking when files exceed memory or when you only need aggregated results. See lecture fundamentals for basic `read_csv`; layer this pattern when datasets push RAM limits.
+
+### Advanced CSV Options
+
+Tame messy inputs with custom NA markers, delimiters, or sampling.
+
+```python
+df = pd.read_csv(
+    'data.csv',
+    na_values=['NA', 'NULL', 'missing', '?'],
+    keep_default_na=True
+)
+
+preview = pd.read_csv('large_file.csv', nrows=100)
+print(preview.head())
+```
+
+Start with the lecture’s clean CSV example, then layer these options as you encounter real-world quirks.
+
+---
+
+

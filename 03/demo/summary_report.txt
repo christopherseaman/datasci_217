@@ -1,0 +1,16 @@
+Student Performance Summary
+===========================
+
+Top Performers (Grade > 85):
+name - grade
+Bob - 92
+Diana - 88
+Eve - 95
+Grace - 91
+Isabel - 89
+
+Subject Distribution:
+   4 Math
+   3 Science
+   2 English
+   1 History

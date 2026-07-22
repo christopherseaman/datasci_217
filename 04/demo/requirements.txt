@@ -1,2 +1,4 @@
-numpy==2.0.2
-pandas==3.0.3
+pandas>=2.0.0
+matplotlib>=3.7.0
+jupyterlab>=4.0.0
+jupytext>=1.14.0

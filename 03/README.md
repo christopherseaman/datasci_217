@@ -1,44 +1,52 @@
-# Reproducible Environments, Terminal Pipelines, and NumPy Arrays
+NumPy Arrays & Virtual Environments
 
-## Learning objectives
+**LIVE DEMO!**
 
-By the end of this lecture, you should be able to:
+# Virtual Environments
 
-1. Distinguish an interpreter, package, direct dependency, transitive dependency, environment, activation, and requirements file, then create, verify, and recreate the candidate Python 3.12.13 environment from deliberate direct requirements.
-2. Use `head`, `tail`, `cut`, `sort`, `uniq`, `wc`, a pipe, and overwrite redirection to preview, select, count, and save a result from a small supplied text file whose fields contain no commas.
-3. Create homogeneous 1D and 2D NumPy arrays, inspect `shape`, `ndim`, `size`, and `dtype`, select by position or basic slice, and demonstrate a slice view versus an explicit copy.
-4. Create one boolean mask, perform vectorized same-shape and scalar arithmetic, and calculate whole-array and axis reductions while predicting each output shape.
-5. Reshape and transpose a compatible array, predict one scalar-to-1D broadcast, and run an import-safe NumPy analysis as a terminal `.py` program.
+![xkcd 1987: Python Environment](media/xkcd_1987.png)
 
-## Starting point and execution boundary
+*Virtual environments prevent package chaos*
 
-Lecture 02 established the required GUI Git workflow, functions, minimal dictionaries, small text input/output, local modules, imports, and the main guard. Before continuing, make sure you can:
+## Why Virtual Environments?
 
-- locate a project with `pwd` and `ls`;
-- run `python main.py` from the intended working directory;
-- define a function that returns a value;
-- import a local module without triggering its driver workflow; and
-- inspect, stage, commit, and synchronize through VS Code Source Control or GitHub Desktop.
+**The Problem:** Different projects need different package versions.
 
-This is the final terminal-and-script lecture. All required Python work runs in `.py` files from the POSIX-style shell established in Lecture 01: Bash on Linux, WSL, or the supported cloud environment, and default zsh on macOS. Command-line Git is not required.
+- Project A needs pandas 1.3.0
+- Project B needs pandas 2.0.0
+- Installing one breaks the other!
 
-Lecture 04 introduces notebooks and Google Colab. Do not create or run a notebook in this lecture.
+**The Solution:** Each project gets its own Python environment.
 
-## Candidate runtime, not the final release lock
+## Using venv (recommended)
 
-The currently tested candidate for this lecture is:
+**Reference:**
 
-- Python 3.12.13;
-- NumPy 2.0.2; and
-- a project environment named `.venv`.
+```bash
+# Create environment
+python -m venv datasci-practice
 
-These exact versions make the current examples reproducible. They are not yet the final course lock: the complete course stack, graders, and Lecture 04–11 notebook environments still need release testing.
+# Activate (Mac/Linux)
+source datasci-practice/bin/activate
 
-# Reproducibility vocabulary
+# Activate (Windows)
+datasci-practice\Scripts\activate
+
+# Install packages
+pip install pandas numpy matplotlib
+
+# Save requirements
+pip freeze > requirements.txt
+
+# Deactivate
+deactivate
+```
+
+## Reproducibility vocabulary
 
 A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs.
 
-## Interpreter
+### Interpreter
 
 The Python **interpreter** is the executable program that reads and runs Python code. Two terminals can resolve the command `python` to different interpreter files, so both version and location matter.
 
@@ -56,7 +64,7 @@ python -c "import sys; print(sys.executable)"
 
 The `-c` option runs the short Python string that follows it. Lecture 02 already used this pattern to check import safety.
 
-## Package, module, and dependency
+### Package, module, and dependency
 
 A **module** is a Python file that can be imported. A **package** is installable software that can provide one or more modules. NumPy is a package; code normally loads its top-level module with `import numpy`.
 
@@ -77,7 +85,7 @@ numpy==2.0.2
 
 `==` pins the direct dependency to one exact candidate version. It can be changed later only as an intentional, tested course update.
 
-## Environment and activation
+### Environment and activation
 
 An **environment** is the interpreter plus the packages available to it. A **virtual environment** is an isolated directory containing a project-specific Python command and package installation location.
 
@@ -91,59 +99,36 @@ The environment is recreated from instructions and requirements; it is not synch
 
 **Activation** changes the current shell so `python` and installed commands resolve to the selected environment. Activation does not install a package and does not change Python source files.
 
-# One primary uv workflow
+## Using uv (Fast & Modern)
 
-**uv** is the course's primary Python and package-management tool. Install it before this lecture using one reviewed method from the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/). The lecture does not use a downloaded-script pipeline.
+[uv documentation](https://docs.astral.sh/uv/)
 
-Confirm that uv is available:
-
-```bash
-uv --version
-```
-
-From the project directory containing `requirements.txt`, install and pin the exact candidate interpreter. A **pin** records the selected Python request in `.python-version`:
+**Reference:**
 
 ```bash
-uv python install 3.12.13
-uv python pin 3.12.13
-```
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-Astral documents exact version requests and project pins in its [Python version guide](https://docs.astral.sh/uv/concepts/python-versions/).
+# Create environment
+uv venv datasci-practice
 
-Create `.venv` with that interpreter and activate it:
+# Activate (Mac/Linux)
+source datasci-practice/bin/activate
 
-```bash
-uv venv --python 3.12.13 .venv
-source .venv/bin/activate
-```
+# Activate (Windows)
+datasci-practice\Scripts\activate
 
-The activation command is the supported form for Bash and zsh. Once the environment is active, use `python` consistently:
+# Install packages
+uv pip install pandas numpy matplotlib
 
-```bash
-python --version
-python -c "import sys; print(sys.executable)"
-```
+# Save requirements
+uv pip freeze > requirements.txt
 
-The first command should report `Python 3.12.13`; the path from the second should point inside the project's `.venv`.
-
-Install the deliberate direct requirements into the active environment:
-
-```bash
-uv pip install -r requirements.txt
-python -c "import numpy as np; print(np.__version__)"
-```
-
-The version check should print `2.0.2`. The install command follows Astral's official [package installation](https://docs.astral.sh/uv/pip/packages/) and [environment](https://docs.astral.sh/uv/pip/environments/) guidance.
-
-Do not create the direct-dependency file from a complete listing of everything installed. Such a listing does not distinguish choices made by this project from transitive packages.
-
-Leave the active environment when the project work is complete:
-
-```bash
+# Deactivate
 deactivate
 ```
 
-## Recreate instead of assuming
+### Recreate instead of assuming
 
 An import from the first environment proves only that the first environment works. Recreate the dependency set in a separate disposable directory to test the recorded instructions:
 
@@ -162,7 +147,7 @@ cd ..
 
 The recreated environment should independently report Python 3.12.13 and NumPy 2.0.2.
 
-## Standard-library fallback
+### Standard-library fallback
 
 Use this concise fallback only when uv is unavailable and the candidate Python interpreter is already installed. Confirm that `python` reports 3.12.13 before creating the environment:
 
@@ -177,470 +162,520 @@ deactivate
 
 The outcome is the same: an activated `.venv` created from the deliberate direct-dependency file. The course does not require a second environment manager.
 
-# LIVE DEMO!
+## Using Conda
 
-**Reproduce one environment:** identify the initial interpreter, create and activate `.venv` with uv and Python 3.12.13, install `numpy==2.0.2` from `requirements.txt`, verify both versions, and reproduce those checks in a separate clean directory.
+[Conda documentation](https://docs.conda.io/)
 
-# A bounded terminal data pipeline
-
-The shell can connect small commands when the supplied data is deliberately simple.
-
-**Standard output** is the normal text a command writes to the terminal. **Standard input** is text a command receives. A **pipe**, written `|`, sends one command's standard output to the next command's standard input. A **pipeline** is the connected sequence of commands.
-
-**Overwrite redirection**, written `>`, sends standard output to a file and replaces that file's previous contents. Always confirm the destination path before running it.
-
-A **fixture** is a small supplied file with fixed, known contents. This fixture uses the comma-separated values (**CSV**) format and one comma as a **delimiter**, a character that separates fields. A **field** is one value between delimiters. The first line is the **header**, which names the fields:
-
-```text
-site,score,status
-north,18,complete
-south,21,complete
-north,24,review
-west,19,complete
-south,22,review
-north,20,complete
-```
-
-These commands are valid for this fixture because no field contains a comma, quoted newline, or other CSV complication. `cut` is not a general CSV parser.
-
-## Preview with `head` and `tail`
-
-`head` shows the beginning of a file; `tail` shows the end:
+**Reference:**
 
 ```bash
-head -n 3 observations.csv
-tail -n 2 observations.csv
+# Create environment
+conda create -n datasci-practice python=3.11
+
+# Activate
+conda activate datasci-practice
+
+# Install packages
+conda install pandas numpy matplotlib
+
+# Deactivate
+conda deactivate
+
+# Save environment
+conda env export > environment.yml
 ```
 
-`tail -n +2` starts at line 2, so it excludes this fixture's one-line header:
+# Python Potpourri
 
-```bash
-tail -n +2 observations.csv
-```
+## Type Checking
 
-## Select one field with `cut`
-
-`cut -d','` declares the comma delimiter. `-f1` selects the first field:
-
-```bash
-cut -d',' -f1 observations.csv
-```
-
-Remove the header before selecting the site values:
-
-```bash
-tail -n +2 observations.csv | cut -d',' -f1
-```
-
-## Order and count with `sort`, `uniq`, and `wc`
-
-`sort` places equal lines next to one another. `uniq -c` then counts adjacent equal lines:
-
-```bash
-tail -n +2 observations.csv | cut -d',' -f1 | sort | uniq -c
-```
-
-Save that result by overwriting a named output file:
-
-```bash
-tail -n +2 observations.csv | cut -d',' -f1 | sort | uniq -c > site_counts.txt
-```
-
-Inspect the saved result before using it:
-
-```bash
-cat site_counts.txt
-wc -l site_counts.txt
-```
-
-`wc -l` reports the number of output lines. For this fixture there are three distinct site lines: `north`, `south`, and `west`.
-
-This is the entire required shell-processing surface: preview, select, order, count, and save. More complex parsing belongs in a language or library that understands the data format.
-
-# NumPy's array model
-
-NumPy provides the `ndarray`, or **N-dimensional array**, for regular collections of values. An ndarray is **homogeneous**: its elements share one NumPy data type.
-
-Load NumPy with its conventional short module name:
+**Reference:**
 
 ```python
-import numpy as np
+# Check what type your data is
+user_input = "42"
+print(type(user_input))     # <class 'str'>
+
+number = int(user_input)
+print(type(number))         # <class 'int'>
 ```
 
-An **element** is one value in an array. A **dimension** is one direction needed to locate elements. A one-dimensional array needs one positional index; a two-dimensional array uses row and column positions.
+## F-String Formatting
 
-An **axis** is a numbered dimension. Axis `0` is the first dimension and axis `1` is the second dimension.
+**Reference:**
 
-## Create 1D and 2D arrays
+```python
+name = "Alice"
+grade = 87.5
 
-`np.array()` converts supplied Python lists to ndarrays:
+# F-strings
+message = f"Student {name} earned {grade:.1f}%"
+
+# Formatting options
+print(f"Grade: {grade:.2f}")      # 87.50
+print(f"Grade: {grade:>8.1f}")    # Right-aligned
+print(f"Grade: {grade:<8.1f}")    # Left-aligned
+
+# Expressions in f-strings
+arr = np.array([1, 2, 3, 4, 5])
+print(f"Mean: {arr.mean():.2f}")
+```
+
+**LIVE DEMO!**
+
+![It's pronounced...](media/numpy.webp)
+
+# Why NumPy Matters
+
+Python is famously slow for numerical computing:
+
+```python
+# Pure Python approach (SLOW)
+my_list = list(range(1_000_000))
+result = [x * 2 for x in my_list]  # 46.4 ms
+
+# NumPy approach (FAST)
+import numpy as np
+my_array = np.arange(1_000_000)
+result = my_array * 2  # 0.3 ms - 150x faster!
+```
+
+**NumPy is 10-100x faster** than pure Python for numerical operations.
+
+## The NumPy Solution
+
+- **ndarray**: Fast, memory-efficient multidimensional arrays
+- **Vectorized operations**: Apply functions to entire arrays at once
+- **Broadcasting**: Smart handling of different-sized arrays
+- **Universal functions (ufuncs)**: Fast element-wise operations
+
+## NumPy Quick Reference
+
+![NumPy Cheatsheet](media/nparray_cheatsheet.png)
+
+## Creating Arrays
+
+**Reference:**
 
 ```python
 import numpy as np
 
-scores = np.array([18, 21, 24, 19], dtype=np.float64)
-score_table = np.array(
-    [
-        [18, 21, 24],
-        [20, 22, 26],
-    ],
-    dtype=np.float64,
-)
+# From Python lists
+arr = np.array([1, 2, 3, 4, 5])
+arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
 
-print(scores)
-print(score_table)
+# Array creation functions
+zeros = np.zeros(5)              # array([0., 0., 0., 0., 0.])
+ones = np.ones((2, 3))           # 2x3 array of ones
+range_arr = np.arange(10)        # array([0, 1, 2, ..., 9])
+full = np.full((2, 3), 7)        # 2x3 array filled with 7
 ```
 
-The nested list becomes a two-dimensional array. `dtype=np.float64` makes the shared element type explicit.
+## Array Properties
 
-## Shape, dimensions, size, and dtype
-
-An array's **shape** is its length along each dimension. Python displays that shape as a **tuple**, an ordered fixed sequence in parentheses.
-
-- `shape` is the shape tuple;
-- `ndim` is the number of dimensions;
-- `size` is the total number of elements; and
-- `dtype` is the shared NumPy element type.
+**Reference:**
 
 ```python
-print(scores.shape)
-print(scores.ndim)
-print(scores.size)
-print(scores.dtype)
+arr = np.array([[1, 2, 3], [4, 5, 6]])
 
-print(score_table.shape)
-print(score_table.ndim)
-print(score_table.size)
-print(score_table.dtype)
+print(arr.shape)      # (2, 3) - 2 rows, 3 columns
+print(arr.ndim)       # 2 - number of dimensions
+print(arr.size)       # 6 - total elements
+print(arr.dtype)      # int64 - data type
 ```
 
-Expected output:
+## Data Types
 
-```text
-(4,)
-1
-4
-float64
-(2, 3)
-2
-6
-float64
-```
-
-The comma in `(4,)` distinguishes a one-element shape tuple from ordinary parentheses around a number.
-
-# Positional indexing and basic slicing
-
-NumPy positional indices are zero-based, as list indices were in Lecture 01.
+**Reference:**
 
 ```python
-first_score = scores[0]
-second_row = score_table[1]
-third_column_value = score_table[0, 2]
+# Explicit data types
+arr_int = np.array([1, 2, 3], dtype=np.int32)
+arr_float = np.array([1, 2, 3], dtype=np.float64)
 
-print(first_score)
-print(second_row)
-print(third_column_value)
+# Type conversion
+arr = np.array([1, 2, 3, 4, 5])
+float_arr = arr.astype(np.float64)
+
+# String to numeric
+str_arr = np.array(["1.25", "-9.6", "42"])
+num_arr = str_arr.astype(float)
 ```
 
-Expected output:
+# Array Indexing and Slicing
 
-```text
-18.0
-[20. 22. 26.]
-24.0
-```
+## Basic Indexing
 
-A **slice** selects a regular range. In `start:stop`, the start is included and the stop is excluded. A colon by itself keeps all positions on that axis:
+NumPy's indexing syntax allows you to access and slice array elements using familiar Python notation, extended to work seamlessly across multiple dimensions.
+
+**Reference:**
 
 ```python
-middle_scores = scores[1:3]
-first_row = score_table[0, :]
-second_column = score_table[:, 1]
+arr = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-print(middle_scores)
-print(first_row)
-print(second_column)
+# Single element
+first = arr[0]          # 0
+last = arr[-1]          # 9
+
+# Slicing
+subset = arr[2:7]       # array([2, 3, 4, 5, 6])
+every_other = arr[::2]  # array([0, 2, 4, 6, 8])
 ```
 
-Expected output:
+## Multidimensional Indexing
 
-```text
-[21. 24.]
-[18. 21. 24.]
-[21. 22.]
-```
+With multidimensional arrays, you can use comma-separated indices to access elements, rows, or columns, making it easy to work with matrices and higher-dimensional data.
 
-## Basic slice views and explicit copies
-
-A **view** is an array that looks at the same underlying data as another array. A **copy** has independent data.
-
-Basic NumPy slices are views. Changing the view can therefore change the source:
+**Reference:**
 
 ```python
-source = np.array([10, 20, 30, 40])
-middle_view = source[1:3]
-middle_view[0] = 99
+arr_2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-print(source)
+# Access elements
+first_row = arr_2d[0]        # array([1, 2, 3])
+element = arr_2d[1, 2]       # 6
+
+# Slicing
+first_two_rows = arr_2d[:2]  # First 2 rows
+middle_column = arr_2d[:, 1] # Column 1: array([2, 5, 8])
 ```
 
-Expected output:
+## Boolean Indexing
 
-```text
-[10 99 30 40]
-```
+Boolean indexing allows you to filter arrays using conditional logic, selecting only elements that meet specific criteria. This is essential for data analysis tasks like finding outliers, filtering datasets, or applying conditional transformations.
 
-Use `.copy()` when the selected data must change independently:
+**Reference:**
 
 ```python
-source = np.array([10, 20, 30, 40])
-middle_copy = source[1:3].copy()
-middle_copy[0] = 99
+arr = np.array([1, 5, 3, 8, 2, 9, 4])
 
-print(source)
-print(middle_copy)
+# Boolean mask
+mask = arr > 5              # array([False, False, False, True, False, True, False])
+high_values = arr[mask]     # array([8, 9])
+
+# Conditional operations
+arr[arr > 5] = 0            # Set values > 5 to 0
+
+# Multiple conditions (use & for AND, | for OR)
+mask = (arr > 2) & (arr < 8)
+filtered = arr[mask]
 ```
 
-Expected output:
+## Fancy Indexing
 
-```text
-[10 20 30 40]
-[99 30]
-```
+Fancy indexing uses integer arrays to select multiple elements at arbitrary positions in a single operation. This powerful technique enables efficient data reordering, sampling, and custom selection patterns without explicit loops.
 
-This rule is deliberately specific: basic slicing creates a view, but not every kind of NumPy indexing does. Optional advanced indexing is covered in the bonus material. See NumPy's official [indexing](https://numpy.org/doc/2.0/user/basics.indexing.html) and [copy/view](https://numpy.org/doc/2.0/user/basics.copies.html) explanations.
-
-# Masks and vectorized arithmetic
-
-A **boolean mask** is an array of `True` and `False` values used to select elements at corresponding positions:
+**Reference:**
 
 ```python
-scores = np.array([18, 21, 24, 19])
-review_mask = scores >= 20
-review_scores = scores[review_mask]
+arr = np.array([10, 20, 30, 40, 50, 60, 70, 80])
 
-print(review_mask)
-print(review_scores)
+# Integer array indexing
+indices = [1, 3, 5]
+selected = arr[indices]      # array([20, 40, 60])
+
+# 2D fancy indexing
+arr_2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+selected = arr_2d[[0, 2], [1, 2]]  # array([2, 9])
 ```
 
-Expected output:
+## Views vs Copies
 
-```text
-[False  True  True False]
-[21 24]
-```
+Understanding the distinction between views and copies is critical for avoiding unexpected behavior: slicing operations create views that share memory with the original array, while explicit copies create independent arrays.
 
-A **vectorized operation** applies one array expression element by element. Same-shape arrays align by position:
+**Reference:**
 
 ```python
-baseline = np.array([18, 21, 24])
-follow_up = np.array([20, 20, 27])
-change = follow_up - baseline
+arr = np.array([1, 2, 3, 4, 5])
 
-print(change)
+# Slicing creates views (shares memory)
+view = arr[1:4]
+view[0] = 99                # Modifies original!
+print(arr)                  # array([1, 99, 3, 4, 5])
+
+# Explicit copy
+arr = np.array([1, 2, 3, 4, 5])
+copy = arr[1:4].copy()
+copy[0] = 99                # Doesn't affect original
+print(arr)                  # array([1, 2, 3, 4, 5])
 ```
 
-Expected output:
+# NumPy Operations
 
-```text
-[ 2 -1  3]
-```
+## Arithmetic and Vectorized Operations
 
-# Reductions and axis meaning
+NumPy's vectorized operations perform element-wise calculations across entire arrays without explicit loops, providing both cleaner code and significant performance improvements over standard Python operations.
 
-A **reduction** combines many array elements into fewer summary values. With no axis argument, a reduction uses the whole array. With an axis argument, it combines values along that numbered dimension.
-
-For a table with shape `(2, 3)`, reducing `axis=0` removes the first dimension and leaves one result for each of the three columns. Reducing `axis=1` removes the second dimension and leaves one result for each of the two rows.
+**Reference:**
 
 ```python
-measurements = np.array(
-    [
-        [10, 20, 30],
-        [20, 30, 40],
-    ],
-    dtype=np.float64,
-)
+arr1 = np.array([1, 2, 3, 4, 5])
+arr2 = np.array([5, 4, 3, 2, 1])
 
-overall_mean = measurements.mean()
-column_means = measurements.mean(axis=0)
-row_means = measurements.mean(axis=1)
+# Element-wise operations
+sum_arr = arr1 + arr2       # array([6, 6, 6, 6, 6])
+mult_arr = arr1 * arr2      # array([5, 8, 9, 8, 5])
+power_arr = arr1 ** 2       # array([1, 4, 9, 16, 25])
 
-print(f"Overall mean: {overall_mean:.1f}")
-print(column_means)
-print(column_means.shape)
-print(row_means)
-print(row_means.shape)
+# Scalar operations
+doubled = arr1 * 2          # array([2, 4, 6, 8, 10])
+arr = np.array([[1, 2, 3], [4, 5, 6]])
+result = arr + 10           # Adds 10 to all elements
 ```
 
-Expected output:
+## Statistical Operations
 
-```text
-Overall mean: 25.0
-[15. 25. 35.]
-(3,)
-[20. 30.]
-(2,)
-```
+NumPy provides built-in statistical functions that operate across entire arrays or along specific axes, enabling quick computation of summary statistics for data analysis.
 
-Predict which input dimension disappears before running an axis reduction. NumPy defines `mean(axis=...)` as computing along the selected axis; retaining reduced axes is a separate optional behavior.
-
-# Compatible reshape and transpose
-
-**Reshaping** changes the shape used to organize the same number of elements. The requested shape must have a compatible total size:
+**Reference:**
 
 ```python
-values = np.array([1, 2, 3, 4, 5, 6])
-grid = values.reshape(2, 3)
+grades = np.array([[85, 92, 78], [95, 88, 91], [82, 90, 87]])
 
-print(grid)
-print(grid.shape)
+# Basic statistics
+mean = grades.mean()         # 88.2
+std = grades.std()           # Standard deviation
+max_val = grades.max()       # 95
+min_val = grades.min()       # 78
+
+# Axis-specific (0=columns, 1=rows)
+student_avg = grades.mean(axis=1)  # Average per student
+test_avg = grades.mean(axis=0)     # Average per test
 ```
 
-Expected output:
+## Array Reshaping
 
-```text
-[[1 2 3]
- [4 5 6]]
-(2, 3)
-```
+Reshaping operations let you change an array's dimensions without copying data, making it easy to convert between 1D, 2D, and higher-dimensional representations as needed for different operations.
 
-A **transpose** reverses the axes of this two-dimensional array. `.T` is the concise transpose attribute:
+**Reference:**
 
 ```python
-transposed = grid.T
+# Reshaping
+arr = np.arange(12)
+reshaped = arr.reshape(3, 4)  # 1D to 2D
+flattened = reshaped.flatten() # 2D back to 1D
 
-print(transposed)
-print(transposed.shape)
+# Transposing (flip rows/columns)
+arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
+transposed = arr_2d.T         # Shape (2,3) -> (3,2)
 ```
 
-Expected output:
+# Semi-Advanced Numpy
 
-```text
-[[1 4]
- [2 5]
- [3 6]]
-(3, 2)
-```
+Debating punting these for the bonus content but want to at least mention them...
 
-Do not assume that every reshape shares data. NumPy returns a view when possible and a copy otherwise, as documented for [`reshape`](https://numpy.org/doc/2.0/reference/generated/numpy.reshape.html). When independent mutation matters, make that intention explicit with `.copy()`.
+## Universal Functions (ufuncs)
 
-# One core broadcasting case: scalar to 1D
-
-**Broadcasting** lets NumPy apply an operation to compatible shapes. The sole required case is a scalar combined with a one-dimensional array. Conceptually, the scalar is used at every array position:
+**Reference:**
 
 ```python
-scores = np.array([18, 21, 24])
-adjusted_scores = scores + 1
+arr = np.array([1, 4, 9, 16, 25])
 
-print(adjusted_scores)
-print(adjusted_scores.shape)
+# Common mathematical functions
+sqrt_arr = np.sqrt(arr)         # array([1., 2., 3., 4., 5.])
+exp_arr = np.exp([1, 2, 3])     # array([2.718, 7.389, 20.086])
+
+# Binary functions
+arr1 = np.array([1, 5, 3])
+arr2 = np.array([4, 2, 6])
+max_arr = np.maximum(arr1, arr2) # array([4, 5, 6])
 ```
 
-Expected output:
+## Conditional Logic
 
-```text
-[19 22 25]
-(3,)
-```
-
-The output keeps the array's `(3,)` shape. General multidimensional broadcasting rules are optional bonus material. NumPy documents scalar broadcasting as its [simplest broadcasting example](https://numpy.org/doc/2.0/user/basics.broadcasting.html).
-
-# LIVE DEMO!
-
-**Build the ndarray mental model:** progress from small 1D and 2D literal arrays through shape and dtype, positional selection, a visible slice-view mutation and explicit copy, one mask, same-shape arithmetic, whole/axis reductions, reshape, transpose, and one scalar-to-1D broadcast.
-
-# One import-safe terminal analysis
-
-Lecture 02's module boundary still applies when a third-party package is imported. Save this file as `array_summary.py`:
+**Reference:**
 
 ```python
-import numpy as np
+# np.where: vectorized if-else
+arr = np.array([1, -2, 3, -4, 5])
+result = np.where(arr > 0, arr, 0)  # Replace negatives with 0
+# array([1, 0, 3, 0, 5])
 
-
-def summarize(measurements):
-    """Return the overall mean, column means, and review count."""
-    overall_mean = measurements.mean()
-    column_means = measurements.mean(axis=0)
-    review_values = measurements.reshape(measurements.size)
-    review_mask = review_values >= 30
-    review_count = int(review_mask.sum())
-    return {
-        "overall_mean": overall_mean,
-        "column_means": column_means,
-        "review_count": review_count,
-    }
-
-
-def main():
-    """Run one deterministic array summary."""
-    measurements = np.array(
-        [
-            [10, 20, 30],
-            [20, 30, 40],
-        ],
-        dtype=np.float64,
-    )
-    summary = summarize(measurements)
-
-    print(f'Overall mean: {summary["overall_mean"]:.1f}')
-    print(f'Column means: {summary["column_means"]}')
-    print(f'Values at or above 30: {summary["review_count"]}')
-
-
-if __name__ == "__main__":
-    main()
+# Multiple conditions
+np.where(arr > 0, 'positive', 'negative')
 ```
 
-`review_mask.sum()` is a whole-array reduction. In that sum, each `True` contributes one and each `False` contributes zero, so the result is the number of selected elements.
+## Boolean Array Methods
 
-With the candidate environment active, verify that import is quiet:
+**Reference:**
+
+```python
+arr = np.array([True, False, True, False])
+
+# Check if any/all values are True
+has_any = arr.any()      # True - at least one True
+all_true = arr.all()     # False - not all True
+
+# Works with conditions too
+grades = np.array([85, 92, 78, 95])
+any_above_90 = (grades > 90).any()  # True
+all_above_80 = (grades > 80).all()  # True
+```
+
+## Sorting
+
+**Reference:**
+
+```python
+arr = np.array([3, 1, 4, 1, 5])
+
+# In-place sorting (modifies original)
+arr.sort()              # arr becomes [1, 1, 3, 4, 5]
+
+# Return sorted copy (original unchanged)
+arr = np.array([3, 1, 4, 1, 5])
+sorted_arr = np.sort(arr)  # [1, 1, 3, 4, 5], arr unchanged
+
+# 2D sorting
+arr_2d = np.array([[3, 1], [2, 4]])
+arr_2d.sort(axis=0)     # Sort columns
+arr_2d.sort(axis=1)     # Sort rows
+```
+
+## Random Number Generation
+
+**Reference:**
+
+```python
+# Create random generator
+rng = np.random.default_rng()  # No seed (different each time)
+rng_seeded = np.random.default_rng(seed=42)  # Reproducible
+
+# Generate random numbers
+random_nums = rng.random(5)              # 5 random floats [0, 1)
+random_ints = rng.integers(1, 10, size=5) # 5 random ints [1, 10)
+normal_nums = rng.standard_normal(5)     # 5 from normal distribution
+
+# With seed for reproducibility
+rng = np.random.default_rng(seed=123)
+data = rng.random((3, 3))  # Same result every time
+```
+
+## NumPy Quick Reference
+
+![NumPy Cheatsheet](media/nparray_cheatsheet.png)
+
+*Essential NumPy operations at a glance*
+
+**LIVE DEMO!**
+
+![Learning to Code...](media/learning_to_code.png)
+
+# Command Line Data Processing
+
+Command line tools are powerful for quick data processing tasks. Commands can be chained together using pipes (`|`) to create data processing pipelines.
+
+**Note:** The backslash `\` at the end of a line continues the command on the next line, making long pipelines easier to read.
+
+```mermaid
+graph LR
+    A[Raw Data<br/>data.csv] -->|cat| B[cut -d,]
+    B -->|Extract columns| C[tr lower upper]
+    C -->|Transform| D[sort -n]
+    D -->|Order| E[head -n 10]
+    E -->|Top results| F[results.tsv]
+
+    style A fill:#e1f5ff
+    style F fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#fff4e1
+    style D fill:#fff4e1
+    style E fill:#fff4e1
+```
+
+*Data flows through a series of command line tools, each performing one transformation*
+
+## Text Processing
+
+**Reference:**
 
 ```bash
-python -c "import array_summary"
+# cut: Extract columns
+cut -d',' -f1,3 data.csv        # Columns 1 and 3
+cut -c1-10 file.txt             # Characters 1-10
+
+# sort: Sort data
+sort -n data.txt                # Numerical sort
+sort -k2 -n data.csv            # Sort by column 2
+
+# uniq: Remove duplicate lines (requires sorted input)
+sort data.txt | uniq            # Remove duplicates
+sort data.txt | uniq -c         # Count occurrences
+sort data.txt | uniq -d         # Show only duplicates
+
+# grep: Search and filter
+grep "pattern" file.txt         # Find pattern
+grep -v "pattern" file.txt      # Inverse match
+grep -i "pattern" file.txt      # Case-insensitive
 ```
 
-Then run the program:
+## Advanced Processing
+
+**Reference:**
 
 ```bash
-python array_summary.py
+# tr: Translate characters
+tr 'a-z' 'A-Z' < file.txt       # Uppercase
+tr -d ' ' < file.txt            # Delete spaces
+
+# sed: Stream editor
+sed 's/old/new/g' file.txt      # Replace all
+sed '/pattern/d' file.txt       # Delete lines
+
+# awk: Pattern processing
+awk '{print $1, $3}' file.txt   # Print columns 1, 3
+awk -F',' '$3 > 50' data.csv    # Filter rows
 ```
 
-Expected output:
+## Data Pipelines
 
-```text
-Overall mean: 25.0
-Column means: [15. 25. 35.]
-Values at or above 30: 3
+**Reference:**
+
+```bash
+# Complex pipeline
+cat data.csv | \
+  cut -d',' -f2,4 | \
+  tr '[:lower:]' '[:upper:]' | \
+  sort -k2 -n | \
+  head -n 10 > results.tsv
 ```
 
-The main guard prevents the driver workflow from running during import. NumPy is a direct dependency because this module imports it.
+## Quick Data Visualization
 
-# LIVE DEMO!
+Command line tools for quick data visualization without leaving the terminal.
 
-**Bounded pipeline plus terminal analysis:** preview and count the supplied delimiter-safe fixture with the required shell pipeline, save and inspect the count file, then use a supplied loader to return a homogeneous 2D ndarray to an import-safe analysis module. Reshape the array to 1D before applying the scalar mask, then calculate the documented axis reductions. Students do not implement CSV parsing.
+**Reference:**
 
-# Handoff to Lecture 04
+```bash
+# sparklines: Inline Unicode graphs
+# Install: pip install sparklines
 
-Each terminal script run in Lectures 01–03 starts a fresh Python process, executes the file from top to bottom, and ends. Lecture 04 will define a notebook, cell, kernel/runtime, persistent state, and execution order before asking you to use them. The key contrast is that a notebook's kernel can retain values between separate cell executions, while a new script process does not retain values from the previous run.
+# Visualize grade trends inline
+cut -d',' -f3 students.csv | tail -n +2 | sparklines
+#     Extract column 3 -> Skip header (line 1) -> Graph
+#     tail -n +2 means "start at line 2" (skip the header)
+# Output: ▅█▃▆▇▄▇▂▆▅
 
-Lecture 04 will also define pandas objects and their labels. The conceptual bridge is:
+# With statistics
+cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
 
-- a 1D ndarray supplies the positional array model underneath a pandas **Series**, a labeled one-dimensional object; and
-- a 2D ndarray supplies the positional array model underneath a pandas **DataFrame**, a labeled two-dimensional table.
+# gnuplot: Create terminal plots (optional - many dependencies)
+# Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
 
-Do not use pandas APIs yet. Carry forward the array's dtype, dimensions, shape, positional indexing, masks, and axis reasoning; Lecture 04 adds labels, notebook state, and portable tabular input/output.
+# Simple plot of grades
+cut -d',' -f3 students.csv | tail -n +2 | \
+  gnuplot -e "set terminal dumb; plot '-' with linespoints"
 
-# Key takeaways
+# Bar chart: count students by subject
+cut -d',' -f4 students.csv | tail -n +2 | sort | uniq -c | \
+  gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
+```
 
-- An environment is reproducible only when its interpreter and deliberate direct dependencies can be recreated from recorded instructions.
-- Activation changes which `python` the shell resolves; verify the version and executable path before installing or running.
-- A bounded shell pipeline can preview, select, order, count, and save simple delimiter-safe data, but it is not a general CSV parser.
-- An ndarray has one homogeneous dtype and explicit dimensions, shape, size, and numbered axes.
-- Basic slices are views; `.copy()` requests independent data.
-- Masks, vectorized arithmetic, scalar broadcasting, reductions, reshape, and transpose all have predictable shape consequences.
-- Lecture 04 changes the execution model and adds labels; it does not erase the environment, import-safety, or array reasoning established here.
+Use cases:
 
-# Optional bonus material
+- Quick trend checks in terminal sessions
+- Data quality sanity checks
+- Pipeline debugging visualization
+- Terminal dashboards
 
-The single optional extension for this lecture is [Lecture 03 bonus: Additional NumPy patterns](BONUS.md). It is not assessed or assumed by Lecture 04.
+**LIVE DEMO!**
