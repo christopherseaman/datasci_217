@@ -7,8 +7,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 - Active branch: `2026-refresh`
 - Current phase: lecture content review complete; awaiting user acceptance before demos or assignments
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
-- Branch-only working records: `AGENTS.md` and this file
-- Before the eventual merge to `main`: remove or explicitly exclude both branch-only working records
+- Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
+- Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
 ## Review objective
 
@@ -49,7 +49,7 @@ The task transcript lost a substantial portion of the conversation twice, but th
 
 ## Validation recovered from the interrupted work
 
-- Only lecture README files were modified before this checkpoint.
+- At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
 - `git diff --check` passed.
 - Eleven lecture READMEs had balanced Markdown fences and valid relative links after inherited attachment repairs.
 - 173 Python fences parsed after accounting for IPython magics.
@@ -62,13 +62,15 @@ The task transcript lost a substantial portion of the conversation twice, but th
 - A final adversarial review compared all Lectures 01–11 with `main` and the McKinney-derived references. After repairing Lecture 10's remaining deterministic model-selection claims and stale framework descriptions, every lecture passed with no actionable P0–P2 content finding.
 - The final lecture-wide structural gate checked 23 Markdown files, parsed 295 Python fences after accounting for IPython magics, resolved 67 relative links, and passed `git diff --check`.
 - The Eleventy build completed successfully with 29 pages and 124 copied assets. The branch-only tracking files also build as pages while present; their required pre-merge removal remains recorded above.
+- The new-session handoff checkpoint passed `git diff --check`; the Eleventy build completed with 30 pages and 124 copied assets after adding branch-only `HANDOFF.md`.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
 
-1. Present the consolidated lecture review for user acceptance.
-2. Do not begin demo or assignment edits until the user moves the review to that phase.
-3. When the demo phase begins, start with the two deferred environment/setup findings above.
+1. Start a genuinely new task under Codex CLI/app-server 0.150.1 using `HANDOFF.md` and run its durable-history replay experiment.
+2. Present the consolidated lecture review for user acceptance.
+3. Do not begin demo or assignment edits until the user moves the review to that phase.
+4. When the demo phase begins, start with the two deferred environment/setup findings above.
 
 ## Checkpoint log
 
@@ -81,3 +83,5 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | `888462c` | Reconcile Lectures 06–08 | pandas 3 examples, aligned patching/window semantics, scope boundaries, cardinality guidance, edge cases, and server-specific setup wording reconciled |
 | `ea359ab` | Reconcile Lectures 09–11 | Unintended L09 expansion removed, L09/L10 bonus APIs repaired, L10 scope preserved, and L11 capstone/setup made approachable and reproducible |
 | `63da8b6` | Close the lecture-content review | Repair inherited L06 links and remaining L10 overgeneralizations; record the final adversarial review and validation gates |
+| `5e851d0` | Finalize the review ledger | Record the clean lecture-only checkpoint and pending user acceptance |
+| This checkpoint | Add a new-session handoff | Preserve the missing-history diagnosis, replay experiment, and completed lecture-review state outside task history |
