@@ -1,5 +1,10 @@
 NumPy Arrays & Virtual Environments
 
+Lectures 01–02 established script, language, and Git fluency. Lecture 03 now
+focuses on making execution reproducible: first create a known environment,
+then use it for NumPy-based numerical work. Lectures 01–03 use scripts and the
+terminal; notebooks begin in Lecture 04.
+
 **LIVE DEMO!**
 
 # Virtual Environments
@@ -190,42 +195,16 @@ python -c "import numpy as np; print(np.__version__)"
 conda deactivate
 ```
 
-# Python Potpourri
+## Brief Python refresher
 
-## Type Checking
-
-**Reference:**
-
-```python
-# Check what type your data is
-user_input = "42"
-print(type(user_input))     # <class 'str'>
-
-number = int(user_input)
-print(type(number))         # <class 'int'>
-```
-
-## F-String Formatting
-
-**Reference:**
+Lectures 01–02 introduced type checking and f-string formatting. Keep those
+core-Python tools available while reading the NumPy examples below; no NumPy
+objects are needed for this refresher.
 
 ```python
-import numpy as np
-
 name = "Alice"
 grade = 87.5
-
-# F-strings
-message = f"Student {name} earned {grade:.1f}%"
-
-# Formatting options
-print(f"Grade: {grade:.2f}")      # 87.50
-print(f"Grade: {grade:>8.1f}")    # Right-aligned
-print(f"Grade: {grade:<8.1f}")    # Left-aligned
-
-# Expressions in f-strings
-arr = np.array([1, 2, 3, 4, 5])
-print(f"Mean: {arr.mean():.2f}")
+print(f"Student {name} earned {grade:.1f}%")
 ```
 
 **LIVE DEMO!**
@@ -568,7 +547,11 @@ data = rng.random((3, 3))  # Same result every time
 
 ![Learning to Code...](media/learning_to_code.png)
 
-# Command Line Data Processing
+# Optional reference: Command Line Data Processing
+
+This section is optional reference material, not a new required workflow for
+the lecture. It continues the shell skills from Lectures 01–02 without
+introducing notebooks; the canonical visualization lecture is Lecture 07.
 
 Command line tools are powerful for quick data processing tasks. Commands can be chained together using pipes (`|`) to create data processing pipelines.
 
@@ -647,7 +630,11 @@ cat data.csv | \
   head -n 10 > results.csv
 ```
 
-## Quick Data Visualization
+## Optional reference: Quick Data Visualization
+
+Terminal visualization is also optional/reference-only. Lecture 07 is the
+canonical place for visualization; these commands are included only as a
+quick shell-based supplement.
 
 Command line tools for quick data visualization without leaving the terminal.
 
@@ -684,5 +671,3 @@ Use cases:
 - Data quality sanity checks
 - Pipeline debugging visualization
 - Terminal dashboards
-
-**LIVE DEMO!**

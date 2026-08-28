@@ -104,6 +104,10 @@ flowchart TD
 
 Statistical modeling focuses on quantifying relationships and making inferences about populations, while machine learning often prioritizes prediction on new data. A fitted association does not by itself explain *why* something happens: causal conclusions require an appropriate study design plus explicit identification assumptions.
 
+### A small vocabulary bridge
+
+An **association** is a pattern in which variables vary together; **causation** is a claim that changing one variable would change another under a specified intervention. A model coefficient describes the estimated change in fitted outcome associated with a one-unit change in a predictor, holding the other included predictors fixed—it is not automatically a causal effect. Because samples and measurements vary, estimates have **uncertainty**. A **confidence interval** gives a range produced by a stated procedure for the population quantity, while a **p-value** (at this survey depth) measures how surprising data this extreme would be under a specified null model; neither is a probability that a hypothesis is true. Diagnostics and assumptions—such as an appropriate design, functional form, error behavior, and independence—bound what these summaries can support. Treat them as evidence about an association under a model, not as guarantees or proof of causation.
+
 ## Introduction to `statsmodels`
 
 `statsmodels` is Python's comprehensive statistical modeling library. It provides tools for statistical inference, hypothesis testing, and model diagnostics - the bread and butter of statistical analysis.

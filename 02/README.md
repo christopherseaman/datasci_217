@@ -349,19 +349,39 @@ Analyzes study time vs. performance.
 
 ## Code Example
 ```python
-import pandas as pd
-df = pd.read_csv('data/study_data.csv')
-print(f"Correlation: {df['hours'].corr(df['grade']):.2f}")
+grades = [85, 92, 78]
+average = sum(grades) / len(grades)
+print(f"Average grade: {average:.1f}")
 ```
-
-[Raw data](data/study_data.csv)
 ````
 
 # Python Fundamentals (McKinney Ch2+3)
 
 Python emphasizes readability for data analysis. Everything is an object, enabling consistent behavior. Focus is on practical data manipulation.
 
+## What is new in Lecture 02?
+
+Lecture 01 established the command line, Python installation, variables, basic expressions, and introductory scripts. This lecture uses that foundation in VS Code and Git, then moves into Python’s object model, imports, collections and mutability, functions, file I/O, targeted exceptions, and the `__main__` entry-point pattern.
+
 ![Python Import](media/python_import.webp)
+
+## Brief review: scalars, strings, output, and control flow
+
+Lecture 01 introduced these everyday building blocks. Keep them handy here, but focus on how they support the new topics below rather than relearning them in full.
+
+```python
+count, average = 150, 87.3
+name = "  Alice Johnson  ".strip()
+analysis_ready = count > 0 and average > 0
+
+if name.endswith("son") and analysis_ready:
+    print(f"{name}: {average:.1f}%")
+
+for number in range(3):
+    print(number)
+```
+
+Useful reminders: `int`, `float`, `str`, `bool`, and `None` are common scalar types; use arithmetic, comparisons, and `and`/`or`/`not` as needed; strings provide methods such as `.strip()`, `.lower()`, `.split()`, `.replace()`, and `.isalpha()`; and `print()` with f-strings makes results readable. Indentation, `if`/`elif`/`else`, `for`, `while`, `break`, and `continue` control execution.
 
 ## Language Semantics and Object Model
 
@@ -440,209 +460,6 @@ For a quick import check from a Bash terminal, `-c` runs the Python code supplie
 ```bash
 python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"
 ```
-
-## Scalar Types and Operations
-
-Scalar types represent single values. Python provides rich support for numeric operations, string manipulation, and boolean logic.
-
-**Reference:**
-
-- `int` - Arbitrary precision integers
-- `float` - Double-precision floating-point
-- `str` - Unicode strings
-- `bool` - True/False values
-- `None` - Null value
-- Arithmetic: `+`, `-`, `*`, `/`, `//`, `%`, `**`
-- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
-- Logical: `and`, `or`, `not`
-
-**Brief Example:**
-
-```python
-# Numeric operations
-count = 150
-average = 87.3
-population = 1.4e9  # Scientific notation
-
-# String operations
-name = "Alice Johnson"
-clean_name = "  Bob Smith  ".strip()
-
-# Boolean logic
-has_data = True
-analysis_ready = has_data and count > 0
-```
-
-## String Operations for Data Cleaning
-
-String operations are fundamental for data cleaning. Python provides built-in methods for transforming, cleaning, and validating text data.
-
-**Reference:**
-
-- `str.strip()` - Remove leading/trailing whitespace
-- `str.lower()`, `str.upper()` - Case conversion
-- `str.split(separator)` - Split into list
-- `str.replace(old, new)` - Replace substrings
-- `str.startswith()`, `str.endswith()` - Check prefixes/suffixes
-- `str.find()`, `str.index()` - Find substring positions
-- `str.isdigit()`, `str.isalpha()`, `str.isalnum()` - Type validation
-
-**Brief Example:**
-
-```python
-# Data cleaning operations
-messy_data = "  Alice Johnson  "
-clean_name = messy_data.strip().title()
-
-# Text processing
-filename = "data_2023_report.csv"
-if filename.endswith(".csv"):
-    print("Processing CSV file")
-
-# Data validation
-user_input = "123abc"
-if user_input.isalnum():
-    print("Input contains only letters and numbers")
-```
-
-## Print Statements and Output Formatting
-
-Print statements communicate results and debug code. Understanding formatting options enables clear output.
-
-**Reference:**
-
-- `print(value)` - Basic printing
-- `print(value1, value2, value3)` - Multiple values
-- `f"text {variable}"` - F-string formatting (preferred)
-- `"text {}".format(variable)` - Format method
-- `print(f"Debug: {var} = {value}")` - Debugging output
-- `print(f"Result: {result:.2f}")` - Number formatting
-
-**Brief Example:**
-
-```python
-# Basic printing
-print("Analysis complete")
-print("Value:", 42)
-
-# F-string formatting (preferred)
-name = "Alice"
-score = 87.3456
-print(f"Student: {name}")
-print(f"Score: {score:.1f}%")
-
-# Debugging with print
-data = [1, 2, 3, 4, 5]
-print(f"Debug: data = {data}, length = {len(data)}")
-```
-
-## Basic File I/O Operations
-
-File I/O operations are essential for data science. Python provides simple tools for reading and writing files.
-
-**Reference:**
-
-- `open(file, mode)` - Open file with specified mode
-- `'r'` - Read mode (default)
-- `'w'` - Write mode (overwrites existing files)
-- `'a'` - Append mode (adds to existing files)
-- `'x'` - Create mode (fails if file exists)
-- `file.read()` - Read entire file content
-- `file.readline()` - Read single line
-- `file.readlines()` - Read all lines into list
-- `file.write(string)` - Write string to file
-- `file.close()` - Close file handle
-- `with open(...) as file:` - Close the handle automatically when the block ends
-
-**Brief Example:**
-
-```python
-# Reading from a file
-with open('data.txt', 'r') as file:
-    content = file.read()
-    print(f"File content: {content}")
-
-# Writing to a file
-results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
-with open('grades.txt', 'w') as file:
-    for result in results:
-        file.write(f"{result}\n")
-
-# Appending to a file
-with open('log.txt', 'a') as file:
-    file.write("2023-12-01: Analysis completed\n")
-
-# Print to file examples
-score = 87.3
-with open('results.txt', 'w') as file:
-    print("Analysis Results", file=file)
-    print(f"Average score: {score:.1f}", file=file)
-
-# Avoid print(..., file=open(...)): that pattern leaves closing the file
-# handle implicit. Use a with block so the handle is always closed.
-with open('debug.log', 'a') as log_file:
-    print("Debug info", file=log_file)
-
-# Multiple outputs to same file
-data = [85, 92, 78]
-with open('report.txt', 'w') as report:
-    print("Data Science Report", file=report)
-    print("=" * 20, file=report)
-    print(f"Total samples: {len(data)}", file=report)
-```
-
-## Control Flow Structures
-
-Control flow determines execution order through conditionals and loops. Python's syntax emphasizes readability and iteration.
-
-**Reference:**
-
-- `if condition: ... elif condition: ... else: ...`
-- `for variable in iterable: ...`
-- `while condition: ...`
-- `break` - Exit loop
-- `continue` - Skip to next iteration
-- `range(start, stop, step)` - Generate number sequences
-
-**Brief Example:**
-
-```python
-# Conditional logic
-score = 85
-if score >= 90:
-    grade = "A"
-elif score >= 80:
-    grade = "B"
-else:
-    grade = "C"
-
-# Iteration
-for i in range(5):
-    print(f"Count: {i}")
-
-# List iteration
-grades = [85, 92, 78, 96]
-for grade in grades:
-    if grade >= 90:
-        print(f"Excellent: {grade}")
-```
-
-## Minimal Exception Handling
-
-An **exception** reports a problem that interrupts normal execution. Use `try`/`except` around the operation that can fail, and catch the specific exception you expect rather than hiding every error.
-
-```python
-raw_score = "not available"
-
-try:
-    score = float(raw_score)
-except ValueError as error:
-    print(f"Could not parse score: {error}")
-else:
-    print(f"Parsed score: {score:.1f}")
-```
-
-Opening a missing path raises `FileNotFoundError`; converting invalid numeric text raises `ValueError`. The optional `else` block runs only when the `try` block succeeds.
 
 ## Data Structures: Lists and Tuples
 
@@ -789,7 +606,79 @@ average = calculate_average(grades)
 print(f"Average grade: {average:.1f}")
 ```
 
-### `__main__` for script execution
+## Basic File I/O Operations
+
+File I/O operations are essential for data science. Python provides simple tools for reading and writing files.
+
+**Reference:**
+
+- `open(file, mode)` - Open file with specified mode
+- `'r'` - Read mode (default)
+- `'w'` - Write mode (overwrites existing files)
+- `'a'` - Append mode (adds to existing files)
+- `'x'` - Create mode (fails if file exists)
+- `file.read()` - Read entire file content
+- `file.readline()` - Read single line
+- `file.readlines()` - Read all lines into list
+- `file.write(string)` - Write string to file
+- `file.close()` - Close file handle
+- `with open(...) as file:` - Close the handle automatically when the block ends
+
+**Brief Example:**
+
+```python
+# Reading from a file
+with open('data.txt', 'r') as file:
+    content = file.read()
+    print(f"File content: {content}")
+
+# Writing to a file
+results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
+with open('grades.txt', 'w') as file:
+    for result in results:
+        file.write(f"{result}\n")
+
+# Appending to a file
+with open('log.txt', 'a') as file:
+    file.write("2023-12-01: Analysis completed\n")
+
+# Print to file examples
+score = 87.3
+with open('results.txt', 'w') as file:
+    print("Analysis Results", file=file)
+    print(f"Average score: {score:.1f}", file=file)
+
+# Avoid print(..., file=open(...)): that pattern leaves closing the file
+# handle implicit. Use a with block so the handle is always closed.
+with open('debug.log', 'a') as log_file:
+    print("Debug info", file=log_file)
+
+# Multiple outputs to same file
+data = [85, 92, 78]
+with open('report.txt', 'w') as report:
+    print("Data Science Report", file=report)
+    print("=" * 20, file=report)
+    print(f"Total samples: {len(data)}", file=report)
+```
+
+## Minimal Exception Handling
+
+An **exception** reports a problem that interrupts normal execution. Use `try`/`except` around the operation that can fail, and catch the specific exception you expect rather than hiding every error.
+
+```python
+raw_score = "not available"
+
+try:
+    score = float(raw_score)
+except ValueError as error:
+    print(f"Could not parse score: {error}")
+else:
+    print(f"Parsed score: {score:.1f}")
+```
+
+Opening a missing path raises `FileNotFoundError`; converting invalid numeric text raises `ValueError`. The optional `else` block runs only when the `try` block succeeds.
+
+## `__main__` for script execution
 
 When Python runs a file directly, its special `__name__` variable is set to `"__main__"`. When another file imports it as a module, `__name__` is the module's name. A guard keeps script-only work from running during import:
 
@@ -811,171 +700,16 @@ python3 analysis.py
 python3 -c "import analysis"
 ```
 
-# Command Line Mastery (review)
+# Optional command-line reference
 
-### Essential Navigation Commands
-
-Navigation commands orient you within the file system.
-
-**Reference:**
-
-- `pwd` - Print working directory (shows current location)
-- `ls` - List directory contents
-- `ls -la` - List with detailed information (permissions, size, date)
-- `cd [path]` - Change directory
-- `cd ..` - Move up one directory level
-- `cd ~` - Navigate to home directory
-- `cd -` - Return to previous directory
-
-**Brief Example:**
+Lecture 01 covered navigation, file operations, viewing files, searching, and running scripts. They remain useful reference material, but are not new Lecture 02 content. For this lecture, use the VS Code terminal for project-local commands and focus on Git:
 
 ```bash
-pwd                    # /Users/username/Documents
-ls -la                 # Show all files with details
-cd projects/data_science
-pwd                    # /Users/username/Documents/projects/data_science
+git status
+git add path/to/file.py
+git commit -m "Describe the change"
+git diff
+git push
 ```
 
-### File and Directory Operations
-
-File operations create and organize project structures.
-
-**Reference:**
-
-- `mkdir [name]` - Create directory
-- `mkdir -p [path/to/nested]` - Create nested directories
-- `touch [filename]` - Create empty file
-- `cp [source] [destination]` - Copy files or directories
-- `mv [source] [destination]` - Move or rename files
-- `rm [filename]` - Remove file
-- `rm -r [directory]` - Remove directory recursively
-- `rm -rf [directory]` - Force remove directory (use with caution)
-
-**Brief Example:**
-
-```bash
-mkdir -p data/raw data/processed scripts
-touch scripts/analysis.py
-cp data/raw/dataset.csv data/processed/
-```
-
-### Text Processing and Search
-
-Text processing commands explore and manipulate text data.
-
-**Reference:**
-
-- `cat [filename]` - Display entire file
-- `head [filename]` - Show first 10 lines
-- `tail [filename]` - Show last 10 lines
-- `grep [pattern] [filename]` - Search for text patterns
-- `grep -r [pattern] [directory]` - Recursive search
-- `wc -l [filename]` - Count lines in file
-
-**Brief Example:**
-
-```bash
-head -20 data.csv              # Preview first 20 lines
-grep "error" logfile.txt       # Find error messages
-```
-
-### Visual Directory Structure
-
-The `tree` command shows directory structure hierarchically.
-
-**Reference:**
-
-- `tree` - Show directory structure
-- `tree -L 2` - Limit depth to 2 levels
-- `tree -a` - Show hidden files
-- `tree -d` - Show directories only
-
-**Brief Example:**
-
-```bash
-tree                    # Show full directory structure
-tree -L 2              # Show only 2 levels deep
-tree -d                # Show only directories
-```
-
-### History Navigation and Shortcuts
-
-Shortcuts and history navigation improve command line efficiency.
-
-**Reference:**
-
-- `Up arrow` - Previous command
-- `Down arrow` - Next command
-- `Ctrl+A` - Move to beginning of line
-- `Ctrl+E` - Move to end of line
-- `Ctrl+K` - Delete from cursor to end of line
-- `Ctrl+U` - Delete from cursor to beginning of line
-- `Tab` - Auto-complete commands, files, directories
-- `Ctrl+R` - Reverse search through history
-- `Ctrl+C` - Cancel current command
-- `Ctrl+D` - Exit shell
-
-**Brief Example:**
-
-```bash
-# Use up arrow to recall previous commands
-# Use Tab to complete: cd pro<Tab> → cd projects/
-# Use Ctrl+R to search: Ctrl+R then type "git" to find git commands
-```
-
-### Shell Scripting Fundamentals
-
-Shell scripting automates tasks and creates reusable command sequences.
-
-**Reference:**
-
-- `#!/bin/bash` - Shebang line for bash scripts
-- `echo "text"` - Print text to terminal
-- `mkdir -p dirname` - Create directory (and parents if needed)
-- `chmod +x script.sh` - Make script executable
-- `$1, $2, $3...` - Command line arguments
-- `$@` - All arguments
-- `$#` - Number of arguments
-- `$?` - Exit code of last command
-
-**Brief Example:**
-
-```bash
-#!/bin/bash
-# Create project structure
-echo "Setting up project..."
-mkdir -p src data output
-echo "Directories created"
-
-# Make script executable
-chmod +x setup.sh
-
-# Create files using here-documents
-cat > data/sample.csv << 'EOF'
-name,age,grade
-Alice,20,85
-Bob,19,92
-EOF
-
-echo "Setup complete!"
-```
-
-### Command Chaining and Redirection
-
-Command chaining creates data processing pipelines. Redirection controls input and output.
-
-**Reference:**
-
-- `command1 | command2` - Pipe output to next command
-- `command1 && command2` - Run command2 only if command1 succeeds
-- `command1 || command2` - Run command2 only if command1 fails
-- `command > file` - Redirect output to file
-- `command >> file` - Append output to file
-- `command < file` - Use file as input
-
-**Brief Example:**
-
-```bash
-grep "error" logfile.txt | wc -l    # Count error lines
-ls *.csv | head -5 > filelist.txt   # Save first 5 CSV files to list
-```
+For a fuller Bash command reference, revisit Lecture 01 rather than treating this section as a second shell introduction.

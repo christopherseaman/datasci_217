@@ -207,6 +207,19 @@ The four core notebooks follow the taxi question from evidence to result:
 **`05_geo_bonus.ipynb`** is an optional geographic view of zone-level results. It
 is enrichment, not a required part of the capstone pattern.
 
+### Where this connects to earlier lectures
+
+Use this crosswalk as a set of reminders, not as a mandatory workflow. Each
+decision should still be justified by the capstone question and data.
+
+| Capstone decision or concept | Earlier canonical lecture | Related demo roadmap stage |
+| --- | --- | --- |
+| Question, claim, and evidence | Lecture 07, Data Visualization | `01_setup.ipynb` — trust and inspect the release |
+| Missingness, row meaning, keys, and joins | Lecture 05, Handling Missing Data; Lecture 06, Database-Style DataFrame Joins | `01_setup.ipynb` — audit records; `02_wrangling.ipynb` — build the analysis table |
+| Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `02_wrangling.ipynb` — verify the zone-hour table |
+| Time-aware fields and past-only features | Lecture 09, Time Series Analysis | `02_wrangling.ipynb` — construct history features |
+| Candidate models, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb` — freeze the split; `04_modeling.ipynb` — compare and evaluate |
+
 ## Transfer to the later assignment
 
 The later assignment is a somewhat guided mini research project using a different

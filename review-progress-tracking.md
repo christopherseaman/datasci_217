@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: lecture content review complete; awaiting user acceptance before demos or assignments
+- Current phase: lecture sequencing revision implemented and structurally validated; independent adversarial review pending; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -25,6 +25,23 @@ The task transcript lost a substantial portion of the conversation twice, but th
 - Lecture 10: preserve the inherited model survey and topic scope; make only correctness and evaluation-workflow repairs.
 - Lecture 11: use an approachable, question-led worked capstone; avoid a universal prescriptive lifecycle; divide time roughly evenly between lecture reasoning and a live workflow demonstration.
 - The later assignment should be a somewhat guided mini research project using a different dataset from the Lecture 11 demo.
+- Preserve the overall Lecture 01–11 order. Rebalance Lectures 01–03 around terminal/script fluency, structured/versioned programs, and reproducible NumPy work; introduce notebooks and pandas in Lecture 04 without requiring later concepts early.
+- Treat pandas 3.x as the lecture API contract. Exact tested pins remain activity-specific and will be reconciled when demos and assignments enter scope.
+
+## Course-flow revision checkpoint
+
+The user approved a lecture-only sequencing pass after reviewing the completed content comparison with `main`. The implementation changes only lecture material:
+
+- Lecture 01 now states that Lectures 01–03 use the REPL and scripts and removes the premature `datetime` import preview.
+- Lecture 02 distinguishes review from new material, removes the pre-pandas Markdown example, substantially condenses repeated shell/Python reference material, and orders new Python concepts as objects/imports → collections/mutability → functions → file I/O → targeted exceptions → script entry points.
+- Lecture 03 bridges early script/Git fluency to reproducible environments and NumPy, compresses repeated Python material, and marks terminal processing/visualization as optional reference ahead of the canonical visualization lecture.
+- Lecture 04 introduces notebook mechanics with already-taught core Python before pandas, moves rich DataFrame display after pandas structures, declares the pandas 3.x lecture contract, and limits its final quality section to inspection before Lecture 05 decisions.
+- Lecture 05 aligns its name transformation with the stated trim/preserve-case contract, uses pandas-3-native `DataFrame.map` wording, and makes categorical encoding a forward reference to Lecture 10 rather than assuming modeling vocabulary.
+- Lecture 06 teaches merge cardinality and `validate=` before its first demo and reminds students that index-aligned combination builds on Lecture 04.
+- Lectures 07–09 make the prepared-visualization → aggregation → time-series sequence and optional forecasting preview explicit while teaching current pandas 3 `GroupBy.apply` behavior.
+- Lecture 10 adds a survey-depth statistical vocabulary bridge before inference terms, and Lecture 11 adds a non-prescriptive concept-to-lecture-to-notebook crosswalk.
+
+No demo or assignment file was inspected or edited as part of this implementation batch. The integrated structural and build gates passed; an independent adversarial review is the next action. The lecture states below remain the prior accepted checkpoint until that review finishes.
 
 ## Fresh read-only review results
 
@@ -63,14 +80,17 @@ The task transcript lost a substantial portion of the conversation twice, but th
 - The final lecture-wide structural gate checked 23 Markdown files, parsed 295 Python fences after accounting for IPython magics, resolved 67 relative links, and passed `git diff --check`.
 - The Eleventy build completed successfully with 29 pages and 124 copied assets. The branch-only tracking files also build as pages while present; their required pre-merge removal remains recorded above.
 - The new-session handoff checkpoint passed `git diff --check`; the Eleventy build completed with 30 pages and 124 copied assets after adding branch-only `HANDOFF.md`.
+- The course-flow implementation checkpoint checked the same 23 lecture Markdown files, parsed 291 Python fences after accounting for notebook magics, resolved 71 relative links, and passed `git diff --check`.
+- The course-flow implementation checkpoint Eleventy build completed with 30 pages and 124 copied assets.
+- The revised Lecture 05 compact audit-to-save example executed under pandas 3.0.5 in an isolated temporary directory; every invariant passed and the assertions confirmed that submitted name case is preserved.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
 
-1. Start a genuinely new task under Codex CLI/app-server 0.150.1 using `HANDOFF.md` and run its durable-history replay experiment.
-2. Present the consolidated lecture review for user acceptance.
-3. Do not begin demo or assignment edits until the user moves the review to that phase.
-4. When the demo phase begins, start with the two deferred environment/setup findings above.
+1. Run an independent adversarial prerequisite and scope review of the validated lecture-only sequencing revision; repair any actionable findings before closing the pass.
+2. Re-run the affected and lecture-wide validation gates after any repair.
+3. Present the revised lecture flow for user acceptance.
+4. Do not begin demo or assignment edits until the user moves the review to that phase. When that happens, start with the deferred environment/setup findings and course-wide pandas 3 pin reconciliation.
 
 ## Checkpoint log
 
@@ -85,3 +105,4 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | `63da8b6` | Close the lecture-content review | Repair inherited L06 links and remaining L10 overgeneralizations; record the final adversarial review and validation gates |
 | `5e851d0` | Finalize the review ledger | Record the clean lecture-only checkpoint and pending user acceptance |
 | This checkpoint | Add a new-session handoff | Preserve the missing-history diagnosis, replay experiment, and completed lecture-review state outside task history |
+| Working checkpoint | Rebalance lecture flow and prerequisites | Lecture-only implementation and integrated validation passed; adversarial review pending |

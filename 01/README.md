@@ -310,11 +310,12 @@ Sometimes you need to stop what you're doing:
 
 ## Running Python
 
-You have three ways to run Python:
+For Lectures 01–03, you will use two Python modes:
 
 1. **Interactive mode** (REPL): Type `python3` and start experimenting
 2. **Script mode**: Write code in a file, run with `python3 filename.py`
-3. **Jupyter notebooks**: We'll meet these later!
+
+**Jupyter notebooks** are another way to run Python, but we'll meet them later. They are future material, so use the REPL and script workflow for these first lectures.
 
 **Reference:**
 
@@ -605,9 +606,7 @@ print(f"Score: {test_score:.0f}%")                   # No decimals: 87%
 print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
 ```
 
-**Advanced F-String Patterns for Data Analysis:**
-
-The final example uses `import` to make `datetime` from Python's standard library available. Lecture 02 covers modules and imports in more detail.
+**Formatting Patterns for Data Analysis:**
 
 ```python
 # Currency formatting (useful for business data)
@@ -626,12 +625,6 @@ print(f"Population: {population:.2e}")               # 1.40e+09
 print(f"{'Name':<15} {'Score':>8} {'Grade':>8}")    # Column headers
 print(f"{'Alice':<15} {87.3:>8.1f} {'B+':>8}")      # Left/right aligned data
 print(f"{'Bob':<15} {92.1:>8.1f} {'A-':>8}")
-
-# Date formatting (preview for later lectures)
-from datetime import datetime
-today = datetime.now()
-print(f"Analysis run on: {today:%Y-%m-%d %H:%M}")    # 2024-01-15 14:30
-
 ```
 
 **Basic Input (Rare in Data Science, but Good to Know):**

@@ -2,6 +2,8 @@
 
 This document covers advanced time series topics that go beyond daily data science practice. These techniques are essential for specialized time series analysis, forecasting, and complex temporal modeling.
 
+**Optional preview/reference ahead of Lecture 10:** The forecasting, stationarity, and temporal-modeling material below is optional for Lecture 09. Use it as specialized reference or as a preview of the broader modeling and evaluation ideas introduced in Lecture 10; it is not required lecture content.
+
 ## Period Arithmetic and Fiscal Year Handling
 
 *Periods represent time spans, not specific moments. Understanding periods is crucial for fiscal year analysis and business reporting.*

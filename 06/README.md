@@ -163,11 +163,6 @@ display(outer)
 **Why this matters:** Wrong join type = lost data. Use left join to keep all customers.
 
 
-# LIVE DEMO!
-
-(Demo 1: Customer Purchase Analysis)
-
-
 ## Merge Cardinality and Integrity Checks
 
 Merge cardinality describes whether each key is unique or repeated on the left and right. State the relationship you expect before merging, then ask pandas to validate it.
@@ -234,6 +229,10 @@ display(audit['_merge'].value_counts())
 ```
 
 Row growth alone does not prove a many-to-many merge: an intended one-to-many merge also adds rows. Inspect key uniqueness and use `validate=` to make the expected relationship executable. (`validate='many_to_many'` permits repeats on both sides, so it documents rather than constrains uniqueness.)
+
+# LIVE DEMO!
+
+(Demo 1: Customer Purchase Analysis)
 
 ## Merging on Multiple Columns
 
@@ -323,6 +322,8 @@ display(merged)
 ## Alternative Data Combination Methods
 
 ### DataFrame.join(): Index-Based Merging
+
+Lecture 04 introduced labels and alignment; the later index section revisits the mechanics. Keep that distinction in mind here: `join()` and `combine_first()` match by labels rather than by row position.
 
 `join()` is a simpler alternative to `merge()` when working with indexes: it defaults to a left join on index labels.
 

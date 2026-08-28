@@ -9,7 +9,7 @@ Mid-term: [#FIXME:URL]
 ![Data Pipeline Intro](media/data_pipeline_intro.png)
 *Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
-Data cleaning follows a documented workflow: **audit/detect → decide → transform → validate → save**. Validation happens before a derived artifact is saved; a failed check sends the work back to the audit or decision step. We'll cover each technique individually, then bring it all together in one complete pipeline at the end.
+Lecture 04 ends with an inspection preview: use `isna()` and duplicate counts to identify evidence without changing the table. This lecture turns that evidence into documented cleaning decisions and follows the workflow **audit/detect → decide → transform → validate → save**. Validation happens before a derived artifact is saved; a failed check sends the work back to the audit or decision step. We'll cover each technique individually, then bring it all together in one complete pipeline at the end.
 
 ## Data contract and schema
 
@@ -250,7 +250,7 @@ df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
 column_sums = df.apply(sum, axis=0)  # Sum each column
 print(column_sums)  # A: 6, B: 15
 
-# Element-wise function application (pandas 2.1+)
+# Element-wise DataFrame mapping (pandas 3 DataFrame.map)
 df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
 df_squared = df.map(lambda x: x ** 2)
 print(df_squared)
@@ -429,11 +429,13 @@ Indicator variables convert categories into binary (0/1) columns, which is essen
 
 *Think of dummy variables as translating categories into a language that models can understand - instead of "red", "blue", "green", you get three columns of 1s and 0s indicating which color each row has.*
 
+With `drop_first=True`, one category becomes the reference: a row in that category has 0 in every retained indicator. This avoids carrying a redundant set of columns into a model; Lecture 10 explains the modeling implications in more detail.
+
 **Reference:**
 
 - `pd.get_dummies(series)` - Create dummy variables
 - `prefix='category'` - Add prefix to column names
-- `drop_first=True` - Avoid multicollinearity (drop first category)
+- `drop_first=True` - Omit one category so the remaining indicators use it as the reference level; this can avoid redundant model inputs
 - `dtype='int64'` - Request numeric 0/1 indicator columns; pandas' nullable `boolean` dtype can represent `pd.NA` when a three-state result is needed
 
 **Example:**
@@ -449,7 +451,8 @@ print(dummies)
 df_with_dummies = pd.concat([df, dummies], axis=1)
 print(df_with_dummies)
 
-# Drop first category to avoid multicollinearity
+# Drop one category and use blue as the reference level. Lecture 10 explains
+# the modeling reason for this choice in more detail.
 dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64')
 print(dummies)  # Only color_green and color_red (blue is the reference)
 ```
@@ -501,8 +504,8 @@ Input: "  Alice Smith  "
 ```python
 # Clean text data
 names = pd.Series(['  Alice  ', 'bob', 'CHARLIE'])
-clean_names = names.str.strip().str.title()
-print(clean_names)  # ['Alice', 'Bob', 'Charlie']
+clean_names = names.str.strip()
+print(clean_names)  # ['Alice', 'bob', 'CHARLIE']
 
 # Check patterns
 emails = pd.Series(['alice@example.com', 'bob@test.org'])
@@ -723,7 +726,8 @@ print(audit)
 decisions = {
     "exact duplicate": "keep its first occurrence",
     "unknown, -9, blank, or NA sentinel": "represent as missing",
-    "documented case/whitespace variants": "normalize",
+    "full_name whitespace": "trim; preserve submitted spelling and case",
+    "documented site/status case variants": "normalize",
     "invalid date": "retain the row and store a missing date for review",
 }
 print(pd.Series(decisions, name="decision"))
@@ -731,7 +735,7 @@ print(pd.Series(decisions, name="decision"))
 # TRANSFORM: change only the working copy.
 working = working.drop_duplicates(keep="first").copy()
 working["record_id"] = working["record_id"].str.strip().str.upper()
-working["full_name"] = working["full_name"].str.strip().str.title()
+working["full_name"] = working["full_name"].str.strip()
 working["full_name"] = working["full_name"].mask(working["full_name"].eq(""))
 working["site"] = working["site"].str.strip().str.lower()
 working["status"] = working["status"].str.strip().str.lower()

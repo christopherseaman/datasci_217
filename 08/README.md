@@ -180,19 +180,9 @@ Apply operations let you use custom functions on each group.
 - `grouped.apply(lambda x: x.sort_values('col'), include_groups=False)` - Sort each group
 - `grouped.apply(lambda x: x.nlargest(2, 'col'), include_groups=False)` - Get top 2 from each group
 
-**Important: `include_groups` and pandas versions**
+**Important: `include_groups` in pandas 3**
 
-Historically, `DataFrameGroupBy.apply()` passed grouping columns into each group when those columns were present in the grouped DataFrame. pandas 2.2 added `include_groups` and deprecated that inclusion; pandas 3.0 changed the default to exclusion and no longer permits `include_groups=True`. On pandas 2.2+, explicitly using `include_groups=False` states the current contract and avoids the 2.2 deprecation warning.
-
-**What's happening:**
-- **pandas before 2.2**: `DataFrameGroupBy.apply()` generally includes grouping columns that are columns of the grouped DataFrame.
-- **pandas 2.2**: The legacy default still attempts to include them, but that behavior is deprecated; pass `include_groups=False`.
-- **pandas 3.0+**: Grouping columns are excluded and `include_groups=True` is not allowed; `include_groups=False` remains explicit and valid.
-
-**Why this matters:**
-- The callable receives a predictable set of columns.
-- Code written for pandas 2.2 avoids the warning and follows the pandas 3 contract.
-- `include_groups` controls columns passed to the callable; `group_keys` separately controls whether group labels appear in the combined result's index.
+**Course contract (pandas 3):** `DataFrameGroupBy.apply()` excludes grouping columns from the DataFrame passed to the callable, and `include_groups=True` is not allowed. Pass `include_groups=False` explicitly to document that input-column contract; it is also valid on pandas 2.2+. Historically, pandas 2.2 introduced this option while deprecating the prior inclusion behavior. `include_groups` controls columns passed to the callable; `group_keys` separately controls whether group labels appear in the combined result's index.
 
 **Example:**
 

@@ -10,6 +10,8 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
 
+This lecture uses prepared plotting tables so you can focus on choosing honest encodings and communicating what those tables show. Lecture 08 then teaches how to produce grouped summaries that can become plotting tables.
+
 # Outline
 
 - matplotlib fundamentals (figures, subplots, customization)

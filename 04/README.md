@@ -11,6 +11,8 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 In Lectures 1-3, you wrote Python scripts (`.py` files) that run top-to-bottom. Jupyter notebooks (`.ipynb` files) let you run code in any order, see results immediately, and mix code with documentation - perfect for data exploration and analysis. Think of `.py` files for production code and automation, and `.ipynb` files for interactive analysis and storytelling with data.
 
+The lecture examples use pandas 3.x APIs. Executable demos and assignments record their exact tested package pins in each activity's requirements.
+
 Jupyter notebooks provide an interactive environment for data analysis, combining code execution with rich output display. They're essential for exploratory data analysis, prototyping, and sharing results with stakeholders.
 
 <!-- FIXME: Add screenshot of Jupyter interface in VS Code showing:
@@ -36,66 +38,22 @@ Jupyter notebooks organize work into cells that can contain code or markdown. Th
 - **Markdown cells**: Write documentation and explanations
 - **Cell execution**: `Shift+Enter` (run and advance), `Ctrl+Enter` (run and stay)
 - **Cell management**: `A` (add above), `B` (add below), `DD` (delete cell)
-- **Magic commands**: `%matplotlib inline` (display plots), `%timeit` (time execution)
+- **Magic commands**: `%pwd`, `%ls`, `%timeit`, and `%pip` (notebook utilities)
 - **Kernel**: Python interpreter that executes code cells
 
 **Example:**
 
 ```python
-# Cell 1: Import libraries
-import pandas as pd
-import matplotlib.pyplot as plt
+# Cell 1: Core Python values
+name = "Ada"
+scores = [8, 9, 10]
 
-# Cell 2: Load data
-df = pd.read_csv('data.csv')
-display(f"Data shape: {df.shape}")
+# Cell 2: Run a calculation
+average = sum(scores) / len(scores)
+print(f"{name}'s average: {average:.1f}")
 
-# Cell 3: Quick visualization
-df.head().plot(kind='bar')
-plt.title('Sample Data')
-plt.show()
+# Cell 3: Markdown can explain the result
 ```
-
-## `display()` vs `print()`
-
-*Think of `print()` as the reliable Honda Civic - works everywhere, gets the job done, but nothing fancy. `display()` is the sports car - looks amazing, handles beautifully, but only in the right environment (Jupyter).*
-
-When working with DataFrames and Series in Jupyter, you have two options for viewing output. `print()` works in any Python environment (scripts, notebooks, REPL) and shows plain text. `display()` is Jupyter-specific and renders rich HTML tables with formatting, making data much easier to read.
-
-**Reference:**
-
-- `print(df)` - Plain text output, works everywhere (scripts and notebooks)
-- `display(df)` - Rich HTML table output, **Jupyter notebooks only**
-- Use `display()` for DataFrames/Series in notebooks for better readability
-- Use `print()` for simple values, strings, or when writing `.py` scripts
-- `display()` will fail in regular Python scripts (`.py` files run from terminal)
-
-**Example:**
-
-```python
-import pandas as pd
-
-df = pd.DataFrame({
-    'Name': ['Alice', 'Bob', 'Charlie'],
-    'Age': [25, 30, 35]
-})
-
-# Plain text - works everywhere, but harder to read
-print(df)
-#      Name  Age
-# 0   Alice   25
-# 1     Bob   30
-# 2 Charlie   35
-
-# Rich formatting - Jupyter only, beautiful tables
-display(df)
-# [Renders as a formatted HTML table with borders, alternating row colors, etc.]
-
-# For simple values, print() is fine
-print(f"Total rows: {len(df)}")  # Total rows: 3
-```
-
-**Pro tip:** In Jupyter, if a DataFrame is the last line in a cell, it automatically displays without calling `display()` - but being explicit is clearer!
 
 ## Jupyter Magic Commands
 
@@ -105,9 +63,9 @@ Magic commands provide special functionality for notebook environments. They sta
 
 **Reference:**
 
-- `%matplotlib inline` - Display plots within notebook cells
 - `%pwd` - Print current working directory
 - `%ls` - List directory contents
+- `%timeit expression` - Time a Python expression
 - `%pip install -r requirements.txt` - Install an activity's recorded packages into the notebook kernel environment
 - `%pip list` - List installed packages
 - `%pip show package_name` - Show package information
@@ -115,19 +73,16 @@ Magic commands provide special functionality for notebook environments. They sta
 **Example:**
 
 ```python
-# Display plots inline
-%matplotlib inline
-import matplotlib.pyplot as plt
-plt.plot([1, 2, 3, 4])
-plt.show()
+# These examples use only notebook mechanics and core Python.
+%pwd
+%ls
+%timeit sum(range(100))
 
 # Install the requirements recorded for the current activity
 %pip install -r requirements.txt
-
-# Check your location
-%pwd
-%ls
 ```
+
+Plotting is deferred until Lecture 07, after the plotting libraries and workflow have been introduced.
 
 ## Jupyter Notebooks in VS Code
 
@@ -149,9 +104,8 @@ VS Code provides excellent Jupyter notebook support with integrated terminal, gi
 ```python
 # VS Code automatically detects .ipynb files
 # Just open any .ipynb file and start coding
-import pandas as pd
-df = pd.read_csv('data.csv')
-display(df.head())
+message = "Notebook cells can be rerun independently."
+print(message)
 ```
 
 ## Kernel Management Basics
@@ -190,9 +144,10 @@ This means if you accidentally print your password, patient data, or that embarr
 
 ```python
 # This output contains sensitive data and will be saved in the notebook
-df = pd.read_csv('patient_data.csv')
-display(df.head())  # Shows patient names, IDs, medical info
-# Oops! Now everyone can see John Doe's blood pressure on GitHub
+patient_name = "Example Patient"
+blood_pressure = "120/80"
+print(patient_name, blood_pressure)
+# Clear the output before sharing or committing the notebook.
 ```
 
 **After running this code, the patient data will be visible in your notebook file. Always clear outputs before sharing or committing to git.**
@@ -296,6 +251,21 @@ df = pd.DataFrame({
 display(df.shape)  # (3, 3)
 display(df.dtypes)  # Name: object, Age: int64, Salary: int64
 display(df.describe())  # Summary statistics for numeric columns
+```
+
+## `display()` vs `print()`
+
+Now that Series and DataFrames are defined, we can compare notebook output choices. `print()` works in scripts and notebooks and shows plain text. In a Jupyter notebook, `display()` renders a Series or DataFrame as rich HTML, which is usually easier to scan. Use `print()` for simple values or code that should also run as a `.py` script; use `display()` when the notebook presentation matters. A DataFrame or Series written as the last expression in a cell is also displayed automatically.
+
+**Example:**
+
+```python
+import pandas as pd
+
+df = pd.DataFrame({"Name": ["Alice", "Bob"], "Age": [25, 30]})
+print(df)       # Plain text, works everywhere
+display(df)     # Rich table output in Jupyter
+print(len(df))  # A simple value: 2
 ```
 
 ### Selecting Columns from a DataFrame
@@ -712,33 +682,25 @@ display(df.isnull().sum())  # Missing values per column
 
 ## Data Quality Assessment
 
-Data quality assessment identifies issues like missing values, duplicates, and outliers. This is crucial for ensuring reliable analysis results.
+### Inspection preview (decisions come next lecture)
+
+This short preview shows how to inspect missing values and duplicate rows after the pandas introduction. It identifies evidence only; cleaning decisions and transformations belong to Lecture 05, where they are tied to a documented data contract.
 
 **Reference:**
 
-- `df.isnull()` - Boolean DataFrame: True for missing values
-- `df.notnull()` - Boolean DataFrame: True for non-missing values
-- `df.duplicated()` - Boolean Series: True for duplicate rows
-- `df.drop_duplicates()` - Remove duplicate rows
-- `df.nunique()` - Count unique values per column
-- `df.value_counts()` - Value frequencies
-- `df.describe()` - Summary statistics
+- `df.isna().sum()` - Count missing values per column
+- `df.duplicated().sum()` - Count duplicate rows
 
 **Example:**
 
 ```python
-# Check for missing values
-display(df.isnull().sum())  # Missing values per column
-
-# Check for duplicates
-display(df.duplicated().sum())  # Number of duplicate rows
-df_clean = df.drop_duplicates()  # Remove duplicates
-
-# Check data types
-display(df.dtypes)  # Data types per column
-display(df.info())  # Detailed information
+# Inspect without changing the table
+display(df.isna().sum())       # Missing values per column
+display(df.duplicated().sum()) # Number of duplicate rows
 ```
+
+Lecture 05 picks up from this inspection and documents the cleaning decisions before transforming and validating a working table.
 
 # LIVE DEMO!
 
-(Demo 3: Data I/O - CSV, Excel, JSON, real-world cleaning workflow)
+(Demo 3: Data I/O - CSV, Excel, JSON, and quality inspection)
