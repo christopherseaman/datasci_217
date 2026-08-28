@@ -470,8 +470,8 @@ Ctrl+b p  # Previous window
 # Start persistent analysis session
 tmux new-session -s data_analysis
 
-# Inside tmux, start your analysis on the remote loopback interface
-conda activate datasci_217
+# Inside tmux, activate the environment configured on that server (name varies)
+conda activate YOUR_ENVIRONMENT_NAME
 jupyter notebook --ip=127.0.0.1 --port=8888 --no-browser
 
 # Detach from session (Ctrl+b, then d)
@@ -493,22 +493,19 @@ Optimize only after measuring the real workload. These patterns are optional and
 **Reference:**
 
 ```python
-# Optimize groupby operations
-def efficient_groupby(df, group_cols, agg_cols):
-    """Efficient groupby with optimized operations"""
+# Apply an explicit aggregation specification
+def efficient_groupby(df, group_cols, agg_spec):
+    """Group using caller-supplied columns and aggregation functions."""
     
     # Use categorical data types for grouping columns
     for col in group_cols:
         if df[col].dtype == 'object':
             df[col] = df[col].astype('category')
     
-    # Use specific aggregation functions
-    result = df.groupby(group_cols)[agg_cols].agg({
-        'numeric_col': ['mean', 'sum'],
-        'other_col': 'count'
-    })
-    
-    return result
+    return df.groupby(group_cols, observed=True).agg(agg_spec)
+
+# Example specification:
+# {'numeric_col': ['mean', 'sum'], 'other_col': 'count'}
 
 # Memory-efficient operations
 ## Note: chunking manually for larger-than-memory data should be a last resort.
@@ -544,9 +541,14 @@ def process_chunk(chunk):
 
 def parallel_groupby(df, n_processes=4):
     """Parallel groupby processing"""
-    
+
+    if n_processes < 1:
+        raise ValueError("n_processes must be at least 1")
+    if df.empty:
+        raise ValueError("df must contain at least one row")
+
     # Split data into chunks
-    chunk_size = len(df) // n_processes
+    chunk_size = max(1, len(df) // n_processes)
     chunks = [df.iloc[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
     
     # Process in parallel

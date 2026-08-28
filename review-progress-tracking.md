@@ -35,9 +35,9 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | 03 | Pass | Candidate environment explicitly scoped to Lecture 03 while allowing recorded later requirements |
 | 04 | Pass | Removed `DataFrame.applymap` reference, repaired inline code, and made `%pip` use recorded requirements |
 | 05 | Pass | Independent recheck executed the compact audit-to-save example under pandas 3.0.3; scope and prior API/type/boundary findings are resolved |
-| 06 | Pass with P2 follow-ups | Remove duplicate prose; reconcile `combine_first` bonus example and speaker notes; reconsider newly added `stack`/`unstack` expansion |
-| 07 | Pass for current diff | Retain inherited breadth for now; clarify core/bonus duplication where useful |
-| 08 | Pass for current diff with inherited defects | Repair optional performance helper, zero-size chunk edge case, stale bonus `fillna(method=...)`, and server-specific environment command |
+| 06 | Pass | Independent exhaustive recheck executed the substantive examples under pandas 3.0.3; bonus grouping, stacking, patching, and cardinality guidance are reconciled |
+| 07 | Pass | Inherited optional survey retained; overlap with bonus material is now explicitly reference-only and unassessed |
+| 08 | Pass | Independent exhaustive recheck found no remaining P0–P2 issues after pandas 3 API, grouped-window alignment, dependency, empty/short chunk, and server setup repairs |
 | 09 | Core pass; bonus no-pass | Replace removed/deprecated pandas offset aliases in `09/BONUS.md` |
 | 10 | Pass; scope preserved | Repair incompatible SHAP bonus example; add a minimal environment handoff without expanding scope |
 | 11 | Pass on capstone direction | Pin the demo interpreter and state the Bash/WSL platform assumption; optional brief definitions may improve approachability |
@@ -49,6 +49,8 @@ The task transcript lost a substantial portion of the conversation twice, but th
 - Eleven lecture READMEs had balanced Markdown fences and valid relative links after inherited attachment repairs.
 - 173 Python fences parsed after accounting for IPython magics.
 - An independent review confirmed that Lecture 10 retained every model-family section and that Lecture 11 matched the requested capstone direction.
+- An independent exhaustive review executed the substantive Lecture 06 examples under pandas 3.0.3 and found no remaining P0–P2 issues.
+- Targeted Lecture 08 bonus examples passed under pandas 3.0.3, including grouped windows, multi-key chunk aggregation, header-only input rejection, and the statistical-test sample-size guard; an independent exhaustive recheck found no remaining P0–P2 issues.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
@@ -64,4 +66,5 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | `9523a1d` | Add branch-only tracking instructions and progress ledger | Durable recovery process established |
 | `f727982` | Snapshot recovered edits to Lectures 01–11 | Interrupted work preserved before further reconciliation |
 | `b0fae9a` | Reconcile Lectures 02–04 | Paths, environment scope, pandas 3 API, inline Markdown, and recorded package installation repaired |
-| Pending | Narrow and reconcile Lecture 05 | Replace scope-heavy pipeline and correct API/type/boundary wording |
+| `45cd90f` | Narrow and reconcile Lecture 05 | Compact pipeline independently executed under pandas 3.0.3; API/type/boundary findings resolved |
+| Pending | Reconcile Lectures 06–08 | pandas 3 examples, aligned patching/window semantics, scope boundaries, cardinality guidance, edge cases, and server-specific setup wording reconciled |

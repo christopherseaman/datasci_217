@@ -936,26 +936,6 @@ display(summary.index)
 
 ```
 
-### Moving Levels with unstack() and stack()
-
-`unstack()` moves an index level into the columns; `stack()` moves a column level back into the index. These operations reshape labels without aggregating values.
-
-```python
-wide_summary = summary.unstack('quarter')
-display(wide_summary)
-# quarter   Q1   Q2
-# region
-# East     120  370
-# West     210  150
-
-long_again = wide_summary.stack()
-display(long_again)
-```
-
-If some region-quarter combinations are absent, `unstack()` can create missing cells. [Lecture 08](../08/README.md#hierarchical-grouping) develops hierarchical grouping and reshaping further.
-
-**Why this matters:** MultiIndex is one useful representation for compound labels, especially when moving levels between rows and columns. Ordinary columns are often simpler when hierarchical label operations are not needed.
-
 **Common pattern:** After groupby with MultiIndex, use `.reset_index()` to convert back to regular columns.
 
 ```python

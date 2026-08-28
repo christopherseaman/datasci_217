@@ -132,8 +132,8 @@ print(frame)
 # b             4   5        6   7
 # c             8   9       10  11
 
-# Sum across states (collapse state level)
-by_color = frame.groupby(level='color', axis='columns').sum()
+# Sum across states (transpose so color is a row-index level while grouping)
+by_color = frame.T.groupby(level='color').sum().T
 print(by_color)
 # color  Green  Red
 # a          2    4
@@ -330,41 +330,39 @@ The combine_first() method fills missing values with corresponding values from a
 **Example:**
 
 ```python
-# Survey responses - Week 1 (incomplete)
-week1 = pd.Series([95.0, np.nan, 88.0, np.nan],
-                  index=['Alice', 'Bob', 'Charlie', 'Diana'])
+# Primary survey export (incomplete)
+primary = pd.Series([95.0, np.nan, 88.0, np.nan],
+                    index=['Alice', 'Bob', 'Charlie', 'Diana'])
 
-# Survey responses - Week 2 (filled some gaps)
-week2 = pd.Series([np.nan, 92.0, np.nan, 85.0, 90.0],
-                  index=['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'])
+# Reviewed repair export for the same respondents and measurement
+repair = pd.Series([np.nan, 92.0, np.nan, 85.0],
+                   index=['Alice', 'Bob', 'Charlie', 'Diana'])
 
-print("Week 1:", week1)
+print("Primary:", primary)
 # Alice      95.0
 # Bob         NaN
 # Charlie    88.0
 # Diana       NaN
 
-print("Week 2:", week2)
+print("Repair:", repair)
 # Alice       NaN
 # Bob        92.0
 # Charlie     NaN
 # Diana      85.0
-# Eve        90.0
 
-# Combine: Prefer week1, fill gaps from week2
-combined = week1.combine_first(week2)
+# Prefer the primary export and fill aligned gaps from the repair export
+combined = primary.combine_first(repair)
 print(combined)
-# Alice      95.0  # From week1
-# Bob        92.0  # From week2 (week1 was NaN)
-# Charlie    88.0  # From week1
-# Diana      85.0  # From week2 (week1 was NaN)
-# Eve        90.0  # From week2 (not in week1)
+# Alice      95.0  # From primary
+# Bob        92.0  # Filled from aligned repair
+# Charlie    88.0  # From primary
+# Diana      85.0  # Filled from aligned repair
 
 # Works with DataFrames too
 df1 = pd.DataFrame({
     'A': [1.0, np.nan, 5.0],
     'B': [np.nan, 2.0, np.nan],
-    'C': range(2, 18, 4)
+    'C': range(2, 14, 4)
 }, index=[0, 1, 2])
 
 df2 = pd.DataFrame({
@@ -580,18 +578,16 @@ print(sales)
 
 ---
 
-## 7. Stack/Unstack with dropna Parameter
+## 7. Stack/Unstack and Missing Values in pandas 3
 
-*By default, stack() drops NaN values. The dropna parameter lets you control this behavior - critical when you need to preserve missing data patterns.*
-
-The stack() and unstack() methods have a dropna parameter that controls how missing values are handled.
+In pandas 3, `stack()` uses the new implementation and preserves missing combinations. The former `dropna=` argument is no longer accepted. Remove missing values explicitly after stacking when that is the intended analysis.
 
 **Reference:**
 
-- `df.stack(dropna=True)` - Default: drop rows where result is NaN
-- `df.stack(dropna=False)` - Keep NaN values in the result
-- `df.unstack(fill_value=0)` - Fill missing values with 0 (or other value)
-- Useful for maintaining data completeness
+- `df.stack()` - Move columns into an index level while preserving missing combinations
+- `df.stack().dropna()` - Keep only observed values after reshaping
+- `series.unstack(fill_value=0)` - Rebuild a table and fill combinations absent from the Series index
+- Preserving a missing marker is different from replacing it with zero
 
 **Example:**
 
@@ -603,82 +599,40 @@ survey = pd.DataFrame({
     'Q3': [np.nan, 5, 4, np.nan]
 }, index=['Alice', 'Bob', 'Charlie', 'Diana'])
 
-print(survey)
+# pandas 3 preserves all 12 respondent-question combinations.
+stacked_all = survey.stack()
+print(len(stacked_all))       # 12
+print(stacked_all.isna().sum())  # 4 missing responses
+
+# Drop missing responses only when the question calls for observed values.
+stacked_observed = stacked_all.dropna()
+print(len(stacked_observed))  # 8 observed responses
+
+# Filling with zero is a separate substantive decision.
+zero_filled = stacked_observed.unstack(fill_value=0)
+print(zero_filled)
 #           Q1   Q2   Q3
-# Alice    5.0  4.0  NaN
-# Bob      4.0  NaN  5.0
-# Charlie  NaN  5.0  4.0
-# Diana    3.0  4.0  NaN
-
-# Default stack: drops NaN values
-stacked_drop = survey.stack()
-print(stacked_drop)
-# Alice    Q1    5.0
-#          Q2    4.0
-# Bob      Q1    4.0
-#          Q3    5.0
-# Charlie  Q2    5.0
-#          Q3    4.0
-# Diana    Q1    3.0
-#          Q2    4.0
-# dtype: float64
-# Notice: Only 8 values (missing values dropped)
-
-# Keep NaN values
-stacked_keep = survey.stack(dropna=False)
-print(stacked_keep)
-# Alice    Q1    5.0
-#          Q2    4.0
-#          Q3    NaN  # Kept!
-# Bob      Q1    4.0
-#          Q2    NaN  # Kept!
-#          Q3    5.0
-# Charlie  Q1    NaN  # Kept!
-#          Q2    5.0
-#          Q3    4.0
-# Diana    Q1    3.0
-#          Q2    4.0
-#          Q3    NaN  # Kept!
-# dtype: float64
-# All 12 values preserved
-
-# Unstack with fill_value
-unstacked = stacked_drop.unstack(fill_value=0)
-print(unstacked)
-#           Q1   Q2   Q3
-# Alice    5.0  4.0  0.0  # NaN became 0
+# Alice    5.0  4.0  0.0
 # Bob      4.0  0.0  5.0
 # Charlie  0.0  5.0  4.0
 # Diana    3.0  4.0  0.0
 ```
 
-**When dropna=False matters:**
+For a time-indexed table, the same distinction applies:
 
 ```python
-# Complete time series with gaps
 dates = pd.date_range('2024-01-01', periods=4)
 data = pd.DataFrame({
     'Store1': [100, np.nan, 150, 200],
     'Store2': [120, 140, np.nan, 180]
 }, index=dates)
 
-# With dropna=True (default): loses temporal structure
-stacked_drop = data.stack()
-print(len(stacked_drop))  # Only 6 values
-
-# With dropna=False: maintains complete time grid
-stacked_keep = data.stack(dropna=False)
-print(len(stacked_keep))  # All 8 values (4 dates × 2 stores)
-
-# Critical for time series: you need to know when data is missing
-# vs when the observation didn't occur
+stacked_all = data.stack()
+print(len(stacked_all))            # 8 time-store combinations
+print(len(stacked_all.dropna()))   # 6 observed values
 ```
 
-**Real-world use case:**
-- Time series: Preserve missing data patterns (gaps vs zeros)
-- Survey analysis: Distinguish "no response" from non-applicable questions
-- Data quality checks: Count how many NaN values exist
-- Machine learning: Some algorithms need explicit missing value markers
+Keeping the full result lets a later analysis distinguish a recorded missing value from a combination removed from the table.
 
 ---
 
@@ -874,7 +828,7 @@ Puzzle Piece 1:        Puzzle Piece 2:        Completed Puzzle:
   Has: A, B, C            Has: B, C, D            Has: A, B, C, D
 ```
 
-`*combine_first()` is like completing a jigsaw puzzle - each piece fills in the missing parts!*
+`combine_first()` is like completing a jigsaw puzzle: a lower-priority source fills gaps in an aligned, higher-priority source.
 
 **Reference:**
 
@@ -886,28 +840,28 @@ Puzzle Piece 1:        Puzzle Piece 2:        Completed Puzzle:
 **Example:**
 
 ```python
-# Two data sources with overlapping but incomplete data
-sales_q1 = pd.DataFrame({
+# Two extracts for the same product-level observations
+primary_sales = pd.DataFrame({
     'product': ['A', 'B', 'C'],
-    'sales': [100, np.nan, 150]
-})
+    'sales': [100, np.nan, 150],
+}).set_index('product')
 
-sales_q2 = pd.DataFrame({
+backup_sales = pd.DataFrame({
     'product': ['A', 'B', 'C'],
-    'sales': [120, 200, np.nan]
-})
+    'sales': [120, 200, 175],
+}).set_index('product')
 
-# Combine to get complete picture
-complete = sales_q1.combine_first(sales_q2)
+# Preserve primary values and use the aligned backup only for gaps
+complete = primary_sales.combine_first(backup_sales)
 display(complete)
-#   product  sales
-# 0       A  100.0  # Kept original (non-null)
-# 1       B  200.0  # Filled from Q2
-# 2       C  150.0  # Kept original (non-null)
+#          sales
+# product
+# A        100.0  # Kept primary value
+# B        200.0  # Filled from aligned backup
+# C        150.0  # Kept primary value
 
-# Why this matters: You get the best of both datasets!
-# Q1 had A and C, Q2 had B - now you have all three
+# The index states which observation each value belongs to.
 
 ```
 
-**Real-world example:** Combining survey responses from different time periods, or merging partial datasets from different sources.
+**Real-world example:** Applying a reviewed repair extract to missing values in a primary extract for the same keyed observations. Use `concat()` or `merge()` when the rows represent different periods or entities.

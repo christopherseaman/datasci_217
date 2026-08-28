@@ -59,9 +59,9 @@ df['date'] = pd.to_datetime(df['date'])
 df.set_index('date', inplace=True)
 
 # Group by time periods
-df.groupby(pd.Grouper(freq='M')).sum()  # Monthly
-df.groupby(pd.Grouper(freq='Q')).mean()  # Quarterly
-df.groupby(pd.Grouper(freq='A')).max()   # Annual
+df.groupby(pd.Grouper(freq='ME')).sum()  # Month-end groups
+df.groupby(pd.Grouper(freq='QE')).mean()  # Quarter-end groups
+df.groupby(pd.Grouper(freq='YE')).max()   # Year-end groups
 
 # Custom time windows
 df.groupby(pd.Grouper(freq='7D')).agg({
@@ -118,11 +118,11 @@ pivot = pd.pivot_table(df,
                       columns='region',
                       aggfunc='mean',
                       fill_value=0,           # Fill missing with 0
-                      dropna=False,           # Keep missing combinations
-                      observed=True)          # Include all categories
+                      dropna=False,           # Retain all-NaN result columns
+                      observed=True)          # Show only observed categorical groups
 
 # Handle missing data in different ways
-pivot_filled = pivot.fillna(method='ffill')  # Forward fill
+pivot_filled = pivot.ffill()                 # Forward fill
 pivot_interpolated = pivot.interpolate()     # Linear interpolation
 pivot_dropped = pivot.dropna()               # Drop missing rows
 ```
@@ -219,12 +219,19 @@ def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
     results = []
     
     for chunk in pd.read_csv(file_path, chunksize=chunk_size):
+        if chunk.empty:
+            continue
+
         # Process chunk
         chunk_result = chunk.groupby(group_cols)[agg_cols].sum()
         results.append(chunk_result)
-    
+
+    if not results:
+        raise ValueError("input file must contain at least one data row")
+
     # Combine results
-    final_result = pd.concat(results).groupby(level=0).sum()
+    all_index_levels = list(range(results[0].index.nlevels))
+    final_result = pd.concat(results).groupby(level=all_index_levels).sum()
     
     return final_result
 ```
@@ -243,9 +250,14 @@ def process_chunk(chunk_data):
 
 def parallel_groupby(df, n_processes=4):
     """Parallel groupby processing"""
-    
+
+    if n_processes < 1:
+        raise ValueError("n_processes must be at least 1")
+    if df.empty:
+        raise ValueError("df must contain at least one row")
+
     # Split data into chunks
-    chunk_size = len(df) // n_processes
+    chunk_size = max(1, len(df) // n_processes)
     chunks = [df.iloc[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
     
     # Process in parallel
@@ -264,12 +276,13 @@ def parallel_groupby(df, n_processes=4):
 
 ```python
 # Rolling statistics within groups
-df['rolling_mean'] = df.groupby('category')['value'].rolling(window=5).mean()
-df['rolling_std'] = df.groupby('category')['value'].rolling(window=5).std()
+grouped_values = df.groupby('category')['value']
+df['rolling_mean'] = grouped_values.transform(lambda s: s.rolling(window=5).mean())
+df['rolling_std'] = grouped_values.transform(lambda s: s.rolling(window=5).std())
 
 # Expanding statistics
-df['expanding_sum'] = df.groupby('category')['value'].expanding().sum()
-df['expanding_mean'] = df.groupby('category')['value'].expanding().mean()
+df['expanding_sum'] = grouped_values.transform(lambda s: s.expanding().sum())
+df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 ```
 
 ### Percentile Aggregations
@@ -295,6 +308,8 @@ df.groupby('category')['value'].apply(percentile_agg)
 
 ### Statistical Tests in Groups
 
+This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Install it in the active notebook environment with `%pip install scipy` before running the example.
+
 **Reference:**
 
 ```python
@@ -302,19 +317,21 @@ from scipy import stats
 
 def statistical_tests(group):
     """Perform statistical tests on group"""
-    if len(group) < 3:
-        return pd.Series({'test_stat': np.nan, 'p_value': np.nan})
-    
-    # Normality test
-    stat, p_value = stats.normaltest(group['value'])
+    values = group['value'].dropna()
+
+    # scipy.stats.normaltest requires at least eight observations.
+    if len(values) < 8:
+        stat, p_value = np.nan, np.nan
+    else:
+        stat, p_value = stats.normaltest(values)
     
     return pd.Series({
         'normality_stat': stat,
         'normality_p': p_value,
-        'mean': group['value'].mean(),
-        'std': group['value'].std(),
-        'skewness': stats.skew(group['value']),
-        'kurtosis': stats.kurtosis(group['value'])
+        'mean': values.mean(),
+        'std': values.std(),
+        'skewness': values.skew(),
+        'kurtosis': values.kurt()
     })
 
 # Apply to groups
@@ -419,10 +436,11 @@ df['value_pct_change'] = df.groupby('category')['value'].pct_change()
 
 ```python
 # Window functions within groups
-df['rolling_mean'] = df.groupby('category')['value'].rolling(window=3).mean()
-df['rolling_std'] = df.groupby('category')['value'].rolling(window=3).std()
-df['expanding_sum'] = df.groupby('category')['value'].expanding().sum()
-df['expanding_mean'] = df.groupby('category')['value'].expanding().mean()
+grouped_values = df.groupby('category')['value']
+df['rolling_mean'] = grouped_values.transform(lambda s: s.rolling(window=3).mean())
+df['rolling_std'] = grouped_values.transform(lambda s: s.rolling(window=3).std())
+df['expanding_sum'] = grouped_values.transform(lambda s: s.expanding().sum())
+df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 ```
 
 ## Custom GroupBy Classes

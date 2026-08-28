@@ -14,7 +14,7 @@ Real-world data lives in separate systems - customer records in one database, pu
 
 - pd.merge() returns a new DataFrame without modifying originals, which prevents accidental data corruption but requires reassignment to capture results
 - Never assume pandas will auto-detect merge columns - explicit specification prevents mysterious failures and makes code readable
-- Always check DataFrame shapes before and after merging - unexpected row count changes indicate data loss or accidental many-to-many joins
+- Check DataFrame shapes before and after merging against the expected cardinality: one-to-many joins intentionally add rows, while an unplanned many-to-many join can create a data explosion
 
 ## Join Types: The Four Horsemen
 
@@ -146,7 +146,7 @@ Pivoting transforms long format into wide format by spreading out one column's u
 
 In real messy data, you often have duplicates in your index/column combinations, which breaks regular pivot. Pivot table solves this by aggregating those duplicates - but this means you must choose how to combine them. Sum? Average? Count? This isn't just a technical detail, it's a business decision about what the resulting numbers actually mean.
 
-- This is what you use 90% of the time in practice, not regular `pivot()`
+- Use `pivot_table()` when duplicate index/column combinations genuinely require a defined aggregation; use `pivot()` when uniqueness is expected so unexpected duplicates fail loudly
 - The aggregation function isn't optional - you have to decide: sum? mean? count? first?
 - Different choice of `aggfunc` = different business question being answered
 - Choosing sum vs mean changes the story: sum shows total revenue per category, mean shows typical transaction size - different business questions entirely
@@ -198,4 +198,4 @@ MultiIndex, or hierarchical indexing, allows multiple levels of row labels - lik
 - Most people immediately do `reset_index()` to get back to normal - that's fine!
 - Advanced usage (stack/unstack/swaplevel) exists but you probably won't need it early on
 
-# LIVE DEMO! 
+# LIVE DEMO!

@@ -639,7 +639,7 @@ plt.show()
 
 *The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
 
-This survey is optional. It introduces the design space and current APIs without making every library part of the core lecture contract.
+This survey is optional and not assessed. It introduces the design space and current APIs without making every library part of the core lecture contract. The Bokeh and Plotly material overlaps with `BONUS.md`; treat it as reference material, not a second required sequence.
 
 ## vega-altair: Grammar of Graphics with Vega-Lite
 
