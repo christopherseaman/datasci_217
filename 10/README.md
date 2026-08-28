@@ -26,12 +26,12 @@ Before running the examples, install the packages listed in [`demo/requirements.
 
 # Quick Reference
 
-| Tool | When to Use | Key Features | Best For |
+| Tool | Common starting point | Key features | Typical use |
 |------|-------------|--------------|----------|
 | **statsmodels** | Need p-values, confidence intervals, hypothesis testing | Statistical inference, model diagnostics | Understanding relationships, research |
 | **scikit-learn** | Tabular data, need predictions | Consistent API, many algorithms | General ML tasks, preprocessing |
-| **XGBoost** | Tabular data, need best performance | Gradient boosting, feature importance | Competitions, production tabular data |
-| **TensorFlow/Keras or PyTorch** | Images, text, audio, large datasets | High-level API, production-ready | Computer vision, NLP, deployment |
+| **XGBoost** | Candidate for tabular prediction | Gradient boosting, feature-importance summaries | Benchmarking alongside simpler tabular models |
+| **TensorFlow/Keras or PyTorch** | Candidate for images, text, audio, or learned representations | Automatic differentiation and neural-network APIs | Deep-learning workflows |
 
 # The Modeling Ecosystem: A Brief Tour
 
@@ -60,15 +60,16 @@ STATISTICAL MODELING          TRADITIONAL ML             DEEP LEARNING
 
 ![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
 
-*As models get more powerful, they often become harder to interpret. Choose based on what you need: understanding (interpretability) or performance (accuracy).*
+*More flexible models can be harder to explain, but complexity does not guarantee better performance and interpretability is not all-or-nothing. Compare candidates using the evaluation measure and explanation needs of the intended use.*
 
-**Key Decision Points:**
+**Illustrative starting points:**
 
-- **Need statistical inference?** → `statsmodels` (p-values, confidence intervals, hypothesis testing)
-- **Tabular data, need predictions?** → `scikit-learn` or `XGBoost` (fast, interpretable, powerful)
-- **Images, text, sequences?** → Deep learning (`TensorFlow`/`Keras` or `PyTorch`)
-- **Research/prototyping?** → `PyTorch` (flexible, Pythonic)
-- **Production deployment?** → `TensorFlow`/`Keras` (mature, optimized)
+- **Need statistical inference?** Consider `statsmodels` and check the model assumptions.
+- **Tabular data, need predictions?** Benchmark a simple baseline and suitable `scikit-learn` or `XGBoost` candidates.
+- **Images, text, or audio?** Consider task-specific baselines and, when justified, deep learning with `TensorFlow`/`Keras` or `PyTorch`.
+- **Choosing a framework?** Account for the data, evaluation goal, interpretability, team expertise, latency, deployment, and maintenance constraints.
+
+These are candidate starting points, not deterministic rules. Select a final approach using training-only validation and the constraints of the intended use.
 
 *Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!*
 
@@ -79,17 +80,14 @@ flowchart TD
     A[What's your problem?] --> B{Need statistical<br/>inference?}
     B -->|Yes| C[statsmodels]
     B -->|No| D{What type of data?}
-    D -->|Tabular/Structured| E{How much data?}
-    D -->|Images/Text/Audio| F[Deep Learning<br/>TensorFlow/PyTorch]
-    E -->|Small dataset| G[scikit-learn<br/>Random Forest]
-    E -->|Large dataset| H[XGBoost]
-    C --> I[Linear Regression<br/>GLMs<br/>Time Series]
-    G --> J[Random Forest<br/>Linear Models]
-    H --> K[XGBoost<br/>LightGBM<br/>CatBoost]
-    F --> L[Neural Networks<br/>CNNs/RNNs]
+    D -->|Tabular/Structured| E[Benchmark simple baselines and<br/>scikit-learn/XGBoost candidates]
+    D -->|Images/Text/Audio| F[Benchmark task baselines and<br/>consider TensorFlow/PyTorch]
+    C --> G[Check assumptions and<br/>report uncertainty]
+    E --> H[Choose with training-only validation<br/>and use-case constraints]
+    F --> H
     
     style C fill:#e1f5ff
-    style G fill:#fff4e1
+    style E fill:#fff4e1
     style H fill:#ffe1f5
     style F fill:#e1ffe1
 ```
@@ -381,7 +379,7 @@ print(f"R² score: {score:.3f}")
 
 ## Random Forest
 
-Random Forest is an ensemble method that combines multiple decision trees. It's robust, handles non-linear relationships well, and provides feature importance scores.
+Random Forest is an ensemble method that combines randomized decision trees. It can model nonlinear relationships and interactions without feature scaling, and it provides feature-importance summaries that require context.
 
 *Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works.*
 
@@ -401,15 +399,17 @@ Tree 100: Predicts Class A
 Final Prediction: Class A (majority vote)
 ```
 
-*Each tree votes, and the most popular answer wins. It's like asking 100 people for directions - the majority is usually right!*
+*For classification, the forest combines class predictions or probabilities; for regression, it averages numerical predictions. The aggregation reduces the instability of relying on one fitted tree, but validation still determines whether the forest works well for the task.*
 
 **Why Random Forest?**
 
-- Handles non-linear relationships automatically
-- Robust to outliers and missing data
-- Provides feature importance
-- Works well out-of-the-box (few hyperparameters to tune)
+- Models nonlinear relationships and interactions
+- Aggregates randomized trees to reduce variance relative to one tree
+- Usually does not require feature scaling
+- Provides feature-importance summaries, which are not causal effects
 - Good for both classification and regression
+
+The example below uses finite numeric features. Missing or categorical inputs need a preprocessing strategy compatible with the recorded scikit-learn environment.
 
 **Reference:**
 
@@ -436,7 +436,9 @@ X = np.random.randn(200, 4)
 y = (X[:, 0] + X[:, 1] > 0).astype(int)  # Binary classification
 
 # Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
 
 # Fit model
 model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -456,26 +458,26 @@ print(f"Feature importance: {importance}")
 
 - `LogisticRegression` - Logistic regression for classification
 - `SVC` - Support Vector Machines
-- Use when: You need different decision boundaries or have specific requirements
+- Candidates when their assumptions and decision boundaries fit the task
 
 **Regression:**
 
 - `Ridge`, `Lasso` - Regularized linear regression
-- Use when: You have many features or multicollinearity
+- Candidates when shrinkage may help with many or correlated features
 
 **Unsupervised Learning:**
 
 - `KMeans` - K-means clustering
 - `PCA` - Principal Component Analysis for dimensionality reduction
-- Use when: You don't have labels or want to reduce dimensions
+- Candidates for specific unlabeled-data or dimension-reduction questions
 
 **Model Selection:**
 
 - `cross_val_score` - Cross-validation
 - `GridSearchCV` - Hyperparameter tuning
-- Use when: You need to evaluate models or tune hyperparameters
+- Tools for estimating validation performance or selecting hyperparameters within training data
 
-*Pro tip: Start with Random Forest for most problems. It's like the "blue steel" of machine learning - reliable, effective, and works in most situations.*
+*Pro tip: Start with a meaningful simple baseline, then add candidates whose assumptions and capabilities fit the problem. Let validation evidence—not a favorite algorithm—decide among them.*
 
 *"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
 
@@ -507,29 +509,28 @@ Preprocessing parameters must also be learned without the test set. A `Pipeline`
 
 *Gradient boosting is like the Magnum of machine learning - it's the secret weapon that wins competitions and makes you look like a modeling genius.*
 
-Gradient boosting has dominated machine learning competitions (Kaggle, etc.) for years. It's particularly powerful for tabular data - the kind of structured data you work with in pandas DataFrames.
+Gradient boosting is widely used in machine learning competitions and applied tabular work. It is often a strong candidate for structured data, including the kinds of tables built with pandas.
 
 ## Why Gradient Boosting?
 
 **Performance on Tabular Data:**
 
-- Often outperforms deep learning on structured/tabular data
-- Handles mixed data types (numeric, categorical) well
-- Captures complex non-linear relationships
-- Provides feature importance
+- Often competitive on structured/tabular data
+- Can model nonlinear relationships and interactions among prepared features
+- Provides feature-importance summaries that require careful interpretation
 
-**When to Choose Over Deep Learning:**
+**Reasons to include it among the candidates:**
 
 - You have tabular/structured data (not images, text, sequences)
 - You want fast training and prediction
-- You need interpretability (feature importance)
-- You have limited data (deep learning needs lots of data)
+- Tree-based diagnostics would help investigate predictions
+- You want a strong tabular benchmark without first building a deep architecture
 
-**Real-World Dominance:**
+**Practical strengths:**
 
-- Used by winning teams in most Kaggle competitions
-- Industry standard for many production ML systems
-- Fast, accurate, and relatively easy to use
+- Frequently used in competitive and applied tabular modeling
+- Supported by mature libraries and deployment tooling
+- Often efficient to train, though speed and accuracy depend on the data and configuration
 
 *Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind).*
 
@@ -565,7 +566,7 @@ Final: Combine all models (like a modeling ensemble)
 
 ## `XGBoost` Basics
 
-`XGBoost` (Extreme Gradient Boosting) is the most popular gradient boosting library. It's fast, accurate, and handles many data types well.
+`XGBoost` (Extreme Gradient Boosting) is a widely used gradient-boosting library. It is a strong candidate for many tabular prediction problems, but its performance must be evaluated against appropriate baselines on the data at hand.
 
 **Reference:**
 
@@ -647,25 +648,23 @@ Beyond `XGBoost`, there are other powerful gradient boosting libraries:
 
 **`LightGBM`:**
 
-- Faster training than XGBoost
-- Better memory efficiency
-- Use when: You have large datasets or need speed
+- Designed for efficient training and memory use
+- A candidate when scale or training speed is an important constraint
 
 **`CatBoost`:**
 
-- Excellent handling of categorical features
-- Less hyperparameter tuning needed
-- Use when: You have many categorical variables
+- Provides native mechanisms for categorical features
+- A candidate when the table contains important categorical variables
 
-*Pro tip: Start with XGBoost. If you need speed, try LightGBM. If you have lots of categories, try CatBoost. But remember: they're all really, really good. It's like choosing between blue steel, magnum, and le tigre - they're all amazing, just slightly different.*
+*Pro tip: Benchmark the libraries that fit the data and constraints rather than choosing from a slogan. Their relative speed and predictive performance depend on the dataset, configuration, and evaluation design.*
 
 **The Boosting Family Tree:**
 
 ```
 Gradient Boosting
-├── XGBoost (Extreme - the competition winner)
-├── LightGBM (Fast - the speed demon)
-└── CatBoost (Categorical - the category king)
+├── XGBoost (widely used general implementation)
+├── LightGBM (efficiency-oriented implementation)
+└── CatBoost (native categorical-feature support)
 ```
 
 *"It's all about family. And by family, I mean gradient boosting."*
@@ -678,39 +677,37 @@ Gradient Boosting
 
 *Deep learning is like the "Derelicte" of modeling - it's cutting-edge, it's flashy, and everyone wants to use it even when they probably shouldn't.*
 
-Deep learning uses neural networks with multiple layers to learn complex patterns. It excels at unstructured data: images, text, audio, sequences.
+Deep learning uses neural networks with multiple layers to learn complex patterns. It is widely used for images, text, audio, and other representation-learning tasks.
 
 ## Why Deep Learning?
 
-**When Neural Networks Excel:**
+**Tasks where neural networks are common candidates:**
 
 - Image recognition and computer vision
 - Natural language processing (text)
 - Speech recognition and audio
 - Time series with complex patterns
-- When you have LOTS of data
+- Problems with enough relevant data and compute to evaluate the approach responsibly
 
-**The Deep Learning vs Traditional ML Decision:**
+**Deep learning and simpler candidates:**
 
-- **Use Deep Learning when:**
+- **Consider deep learning when:**
     - You have unstructured data (images, text, audio)
-    - You have massive datasets (millions of examples)
     - You need to learn complex, hierarchical features
-    - Traditional ML isn't performing well enough
+    - Simpler task-appropriate baselines do not meet the evaluation goal
 
-- **Use Traditional ML when:**
+- **Include simpler models when:**
     - You have tabular/structured data
-    - You have limited data
     - You need fast training and prediction
-    - You need interpretability
+    - You need a transparent baseline or tighter resource use
 
-**When NOT to Use Deep Learning:**
+**Reasons a simpler model may be preferable:**
 
-- Small datasets (deep learning needs lots of data)
-- Simple problems (overkill)
-- Need for interpretability
+- The available sample does not support reliable validation of a high-capacity model
+- A simpler approach already meets the goal
+- The explanation requirements are not met by the proposed approach
 - Limited computational resources
-- Tabular data (often better with XGBoost)
+- Tabular data for which simpler and tree-based candidates validate as well or better
 
 **Overfitting Visualization:**
 
@@ -728,28 +725,23 @@ that generalize well.        data but can't generalize.
 
 *Remember: Deep learning is powerful, but it's not always the answer. Sometimes a simple model is the right model.*
 
-**When to Use Deep Learning: A Decision Framework**
+**Building a candidate shortlist:**
 
 ```mermaid
 flowchart TD
     A[Your Problem] --> B{Data Type?}
-    B -->|Images| C[Use Deep Learning<br/>CNNs]
-    B -->|Text| D[Use Deep Learning<br/>RNNs/Transformers]
-    B -->|Audio| E[Use Deep Learning<br/>RNNs]
-    B -->|Tabular| F{How much data?}
-    F -->|Millions of rows| G{Consider Deep Learning}
-    F -->|Thousands of rows| H[Use XGBoost<br/>or Random Forest]
-    G -->|Complex patterns| I[Maybe Deep Learning]
-    G -->|Simple patterns| H
-    C --> J[Neural Networks]
-    D --> J
-    E --> J
-    I --> J
-    J --> K[Train for days<br/>Hope it works]
+    B -->|Images| C[Benchmark task baselines and<br/>consider vision architectures]
+    B -->|Text| D[Benchmark task baselines and<br/>consider transformer architectures]
+    B -->|Audio| E[Benchmark task baselines and<br/>consider audio architectures]
+    B -->|Tabular| F[Benchmark simple and<br/>tree-based candidates]
+    C --> G[Choose using validation and<br/>use-case constraints]
+    D --> G
+    E --> G
+    F --> G
     
-    style J fill:#e1ffe1
-    style H fill:#fff4e1
-    style K fill:#ffe1f5
+    style C fill:#e1ffe1
+    style F fill:#fff4e1
+    style G fill:#ffe1f5
 ```
 
 *"But why deep learning models?" "Seriously? I just told you that a moment ago."*
@@ -760,15 +752,17 @@ flowchart TD
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
-`TensorFlow` is Google's deep learning framework. `Keras` (now integrated into TensorFlow) provides a high-level, user-friendly API for building neural networks.
+`TensorFlow` is an open-source machine-learning platform originally developed by Google. This lecture uses its integrated `tf.keras` API to build neural networks.
 
-**Why TensorFlow/Keras?**
+**Why TensorFlow/Keras may be a candidate:**
 
 - Mature and well-documented
-- Excellent for production deployment
+- Includes tools for multiple deployment targets
 - High-level API makes it easy to get started
 - Extensive ecosystem and community support
 - Good performance optimizations
+
+These strengths may matter in some settings, but framework choice should still reflect measured performance, the target platform, team expertise, and maintenance constraints.
 
 **Reference:**
 
@@ -856,16 +850,16 @@ loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
 print(f"Accuracy: {accuracy:.3f}")
 ```
 
-## `PyTorch`: The Research Standard
+## `PyTorch`: An Open-Source Deep-Learning Framework
 
-`PyTorch` is Facebook's deep learning framework. It's popular in research because of its Pythonic, flexible design and dynamic computation graphs.
+`PyTorch` is an open-source deep-learning framework governed by the PyTorch Foundation. Its eager, Python-oriented interface is used in both research and production settings.
 
-**PyTorch vs TensorFlow Philosophy:**
+**PyTorch and TensorFlow/Keras:**
 
-- **PyTorch:** More Pythonic, dynamic, research-friendly
-- **TensorFlow:** More production-oriented, static graphs (though dynamic now too)
-- **When to choose PyTorch:** Research, prototyping, when you need flexibility
-- **When to choose TensorFlow:** Production, when you need deployment tools
+- **PyTorch:** Eager execution and a Python-oriented modeling ecosystem
+- **TensorFlow/Keras:** High-level Keras APIs within TensorFlow's broader modeling and deployment ecosystem
+- **Both:** Used for research and production; neither role belongs exclusively to one framework
+- **Choice:** Depends on required libraries, deployment target, team expertise, maintenance, and measured performance
 
 **Reference:**
 
@@ -876,44 +870,44 @@ print(f"Accuracy: {accuracy:.3f}")
 - `loss_fn = nn.BCELoss()` - Loss function
 - `model.train()` / `model.eval()` - Set training/evaluation mode
 
-*Note: We're keeping PyTorch brief here since TensorFlow/Keras is more beginner-friendly. But PyTorch is excellent for research and when you need more control.*
+*Note: We're keeping PyTorch brief here because the lecture uses TensorFlow/Keras for its worked example. That is a teaching choice, not a claim that one framework is universally easier or better.*
 
-## Modern Frameworks
+## Other Modern Frameworks
 
-Beyond `TensorFlow` and `PyTorch`, there are cutting-edge research frameworks:
+Beyond `TensorFlow` and `PyTorch`, other frameworks support different computational styles:
 
 **`JAX`:**
 
 - NumPy with automatic differentiation and JIT compilation
-- Research tool for advanced experimentation
-- Use when: You're doing cutting-edge research or need maximum flexibility
+- Used for numerical computing and advanced experimentation
+- A candidate when its transformation and accelerator model fits the problem and team
 
-**Other Research Frameworks:**
+**Other specialized frameworks:**
 
 - Various specialized tools for specific domains
-- Use when: You have specific research needs beyond standard frameworks
+- Consider them when a concrete domain or platform requirement justifies the extra dependency
 
 **The Deep Learning Ecosystem:**
 
 ```
 Deep Learning Frameworks
-├── TensorFlow/Keras (Production - the reliable one)
-├── PyTorch (Research - the flexible one)
-└── JAX (Cutting-edge - the experimental one)
+├── TensorFlow/Keras (high-level modeling and deployment ecosystem)
+├── PyTorch (eager, Python-oriented modeling ecosystem)
+└── JAX (array programming with transformations and JIT compilation)
 ```
 
 *"What is this? A learning rate for ants? It needs to be at least... three times smaller!"*
 
-**Model Performance Comparison (Humorous):**
+**Model-family comparison questions:**
 
-| Model Type | Training Time | Accuracy | Interpretability | When to Use |
-|------------|---------------|----------|-------------------|-------------|
-| Linear Regression | ⚡ Very Fast | 📊 Good | ✅ High | Always start here |
-| Random Forest | ⚡⚡ Fast | 📊📊 Very Good | ✅✅ Medium | Most problems |
-| XGBoost | ⚡⚡ Fast | 📊📊📊 Excellent | ✅ Medium | Tabular data |
-| Deep Learning | 🐌 Slow | 📊📊📊📊 Excellent* | ❌ Low | Images/text/audio |
+| Model family | Useful role in a shortlist | Potential strengths | Check before choosing |
+|---|---|---|---|
+| Linear models | Simple baseline or inference model | Fast, compact, often easy to explain | Functional form and statistical assumptions |
+| Random forests | Nonlinear tabular candidate | Interactions, limited preprocessing, robust baseline | Latency, calibration, and explanation needs |
+| Gradient-boosted trees | Tabular prediction candidate | Flexible nonlinear fits and strong empirical performance | Tuning, calibration, and validation stability |
+| Deep neural networks | Representation-learning candidate | Flexible architectures for images, text, audio, and other complex inputs | Data, compute, deployment, and explanation requirements |
 
-*Note: Training time varies significantly with dataset size. XGBoost is often faster than Random Forest on large datasets, but both are much faster than deep learning for tabular data. Deep learning accuracy is excellent only if you have enough data and time to tune it properly. Otherwise, it's just an expensive way to overfit.*
+Training time and predictive performance vary with the dataset, implementation, hardware, and tuning budget. Measure them in the intended workflow rather than assigning a universal ranking.
 
 *"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"*
 

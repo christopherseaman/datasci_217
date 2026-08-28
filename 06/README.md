@@ -1,10 +1,10 @@
 06) Data Wrangling: Join, Combine, and Reshape
 
-**Assignment 6:** https://classroom.github.com/a/vSeWVPn3
+**Assignment 6:** [assignment instructions](assignment/README.md)
 
-[LIVE DEMO!](https://github.com/christopherseaman/datasci_217/blob/main/06/demo/DEMO_GUIDE.md)
+[LIVE DEMO!](demo/DEMO_GUIDE.md)
 
-See [BONUS.md](https://www.notion.so/sqrlly/BONUS.md) for advanced topics:
+See [BONUS.md](BONUS.md) for advanced topics:
 
 - Merging on index with left_index/right_index parameters
 - Advanced concat options (keys, levels, names, verify_integrity)

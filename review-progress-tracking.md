@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: lecture content only
+- Current phase: lecture content review complete; awaiting user acceptance before demos or assignments
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md` and this file
 - Before the eventual merge to `main`: remove or explicitly exclude both branch-only working records
@@ -35,11 +35,11 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | 03 | Pass | Candidate environment explicitly scoped to Lecture 03 while allowing recorded later requirements |
 | 04 | Pass | Removed `DataFrame.applymap` reference, repaired inline code, and made `%pip` use recorded requirements |
 | 05 | Pass | Independent recheck executed the compact audit-to-save example under pandas 3.0.3; scope and prior API/type/boundary findings are resolved |
-| 06 | Pass | Independent exhaustive recheck executed the substantive examples under pandas 3.0.3; bonus grouping, stacking, patching, and cardinality guidance are reconciled |
+| 06 | Pass | Independent exhaustive recheck executed the substantive examples under pandas 3.0.3; bonus grouping, stacking, patching, cardinality guidance, and inherited course links are reconciled |
 | 07 | Pass | Inherited optional survey retained; overlap with bonus material is now explicitly reference-only and unassessed |
 | 08 | Pass | Independent exhaustive recheck found no remaining P0–P2 issues after pandas 3 API, grouped-window alignment, dependency, empty/short chunk, and server setup repairs |
 | 09 | Pass | Removed unintended scope expansion; retained inherited runtime repairs and reconciled Period versus DatetimeIndex aliases under pandas 3.0.3 |
-| 10 | Pass; scope preserved | Full inherited model survey retained; modern SHAP bonus API and minimal environment handoff independently rechecked |
+| 10 | Pass; scope preserved | Full inherited model survey retained; modern SHAP API, environment handoff, conditional model-selection guidance, and current framework descriptions independently rechecked |
 | 11 | Pass | Approachable question-led capstone, non-prescriptive framing, roughly equal lecture/demo time, terminology, interpreter pin, and Bash/WSL assumptions independently rechecked |
 
 ## Deferred to the demo phase
@@ -59,13 +59,16 @@ The task transcript lost a substantial portion of the conversation twice, but th
 - Targeted and independent execution under pandas 3.0.3 confirmed Lecture 09's corrected feature-table examples, Period/DatetimeIndex aliases, resampling, rolling, and high-frequency examples; the independent scope review confirmed all unintended expansion was removed.
 - An independent Lecture 10 review confirmed the inherited statsmodels, scikit-learn, XGBoost, TensorFlow/Keras, and PyTorch survey remains intact and the modern SHAP example is coherent.
 - An independent Lecture 11 review confirmed the capstone direction, terminology, pinned interpreter, and Bash/WSL setup; no remaining P0–P2 lecture-content issue was found.
+- A final adversarial review compared all Lectures 01–11 with `main` and the McKinney-derived references. After repairing Lecture 10's remaining deterministic model-selection claims and stale framework descriptions, every lecture passed with no actionable P0–P2 content finding.
+- The final lecture-wide structural gate checked 23 Markdown files, parsed 295 Python fences after accounting for IPython magics, resolved 67 relative links, and passed `git diff --check`.
+- The Eleventy build completed successfully with 29 pages and 124 copied assets. The branch-only tracking files also build as pages while present; their required pre-merge removal remains recorded above.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
 
-1. Run a final lecture-wide syntax, fence, link, and diff validation.
-2. Assign an independent whole-course lecture review to challenge the consolidated result.
-3. Present the consolidated lecture review before touching demos or assignments.
+1. Present the consolidated lecture review for user acceptance.
+2. Do not begin demo or assignment edits until the user moves the review to that phase.
+3. When the demo phase begins, start with the two deferred environment/setup findings above.
 
 ## Checkpoint log
 
@@ -76,4 +79,5 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | `b0fae9a` | Reconcile Lectures 02–04 | Paths, environment scope, pandas 3 API, inline Markdown, and recorded package installation repaired |
 | `45cd90f` | Narrow and reconcile Lecture 05 | Compact pipeline independently executed under pandas 3.0.3; API/type/boundary findings resolved |
 | `888462c` | Reconcile Lectures 06–08 | pandas 3 examples, aligned patching/window semantics, scope boundaries, cardinality guidance, edge cases, and server-specific setup wording reconciled |
-| Pending | Reconcile Lectures 09–11 | Unintended L09 expansion removed, L09/L10 bonus APIs repaired, L10 scope preserved, and L11 capstone/setup made approachable and reproducible |
+| `ea359ab` | Reconcile Lectures 09–11 | Unintended L09 expansion removed, L09/L10 bonus APIs repaired, L10 scope preserved, and L11 capstone/setup made approachable and reproducible |
+| Pending | Close the lecture-content review | Repair inherited L06 links and remaining L10 overgeneralizations; record the final adversarial review and validation gates |
