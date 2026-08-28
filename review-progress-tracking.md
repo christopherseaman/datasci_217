@@ -1,0 +1,67 @@
+# Lecture Review Progress Tracking
+
+This is the durable checkpoint for the `2026-refresh` review. Update it after every substantive review or editing step and before every commit.
+
+## Branch-only status
+
+- Active branch: `2026-refresh`
+- Current phase: lecture content only
+- Explicitly out of scope for this phase: demos, assignments, merging to `main`
+- Branch-only working records: `AGENTS.md` and this file
+- Before the eventual merge to `main`: remove or explicitly exclude both branch-only working records
+
+## Review objective
+
+Review all student-facing lecture content against `main`, the relevant Wes McKinney chapter extracts under `work/mckinney_content`, current package behavior, and the intended course sequence. Preserve inherited topic scope unless a change is explicitly justified. Correct factual/API defects and unintended LLM changes without silently redesigning a lecture.
+
+## Recovered work state
+
+The task transcript lost a substantial portion of the conversation twice, but the workspace retained proposed edits to `01/README.md` through `11/README.md`. No demo or assignment files were modified by this lecture pass. The recovered edits remain reviewable in Git.
+
+### Decisions already established
+
+- Lecture 03: reconcile environment, interpreter, version, package, and dependency guidance; pedagogical alternatives may vary when clearly labeled.
+- Lecture 05: reconcile the cleaning workflow, but keep it approachable and proportionate to the lecture.
+- Lecture 10: preserve the inherited model survey and topic scope; make only correctness and evaluation-workflow repairs.
+- Lecture 11: use an approachable, question-led worked capstone; avoid a universal prescriptive lifecycle; divide time roughly evenly between lecture reasoning and a live workflow demonstration.
+- The later assignment should be a somewhat guided mini research project using a different dataset from the Lecture 11 demo.
+
+## Fresh read-only review results
+
+| Lecture | Current review state | Required follow-up |
+| --- | --- | --- |
+| 01 | Pass | None currently identified |
+| 02 | Pass with inherited P2 | Reconcile the illustrative `study_data.csv` path/example |
+| 03 | Pass | Clarify that the candidate environment is scoped and keep platform instructions coherent |
+| 04 | No-pass on small defects | Replace removed `DataFrame.applymap` bonus reference; close malformed inline code; clarify package-install example |
+| 05 | No-pass | Reduce the newly expanded audit pipeline; repair pandas 3/type-conversion wording; clarify core/bonus nullable-type boundary |
+| 06 | Pass with P2 follow-ups | Remove duplicate prose; reconcile `combine_first` bonus example and speaker notes; reconsider newly added `stack`/`unstack` expansion |
+| 07 | Pass for current diff | Retain inherited breadth for now; clarify core/bonus duplication where useful |
+| 08 | Pass for current diff with inherited defects | Repair optional performance helper, zero-size chunk edge case, stale bonus `fillna(method=...)`, and server-specific environment command |
+| 09 | Core pass; bonus no-pass | Replace removed/deprecated pandas offset aliases in `09/BONUS.md` |
+| 10 | Pass; scope preserved | Repair incompatible SHAP bonus example; add a minimal environment handoff without expanding scope |
+| 11 | Pass on capstone direction | Pin the demo interpreter and state the Bash/WSL platform assumption; optional brief definitions may improve approachability |
+
+## Validation recovered from the interrupted work
+
+- Only lecture README files were modified before this checkpoint.
+- `git diff --check` passed.
+- Eleven lecture READMEs had balanced Markdown fences and valid relative links after inherited attachment repairs.
+- 173 Python fences parsed after accounting for IPython magics.
+- An independent review confirmed that Lecture 10 retained every model-family section and that Lecture 11 matched the requested capstone direction.
+- The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
+
+## Next action
+
+1. Commit this branch-only tracking mechanism.
+2. Commit the recovered lecture-edit state as a named checkpoint.
+3. Narrow Lecture 05 and make the listed targeted repairs in small, lecture-group commits.
+4. Re-run lecture-only syntax, fence, link, and diff validation.
+5. Present the consolidated lecture review before touching demos or assignments.
+
+## Checkpoint log
+
+| Commit | Scope | Result |
+| --- | --- | --- |
+| Pending | Add branch-only tracking instructions and progress ledger | Establish durable recovery process |
+
