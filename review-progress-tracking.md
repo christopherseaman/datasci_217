@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: lecture sequencing revision implemented and structurally validated; independent adversarial review pending; demos and assignments remain deferred
+- Current phase: lecture sequencing revision repaired, fully validated, and independently re-reviewed; awaiting user acceptance; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -41,21 +41,37 @@ The user approved a lecture-only sequencing pass after reviewing the completed c
 - Lectures 07–09 make the prepared-visualization → aggregation → time-series sequence and optional forecasting preview explicit while teaching current pandas 3 `GroupBy.apply` behavior.
 - Lecture 10 adds a survey-depth statistical vocabulary bridge before inference terms, and Lecture 11 adds a non-prescriptive concept-to-lecture-to-notebook crosswalk.
 
-No demo or assignment file was inspected or edited as part of this implementation batch. The integrated structural and build gates passed; an independent adversarial review is the next action. The lecture states below remain the prior accepted checkpoint until that review finishes.
+No demo or assignment file was inspected or edited as part of this implementation batch. The initial integrated structural and build gates passed. An independent adversarial review then identified prerequisite, ordering, and pandas 3 contract defects; all were repaired, the gates were rerun, and the final targeted re-review passed with no P0–P2 finding. The lecture states below reflect the current checkpoint.
+
+### Independent adversarial flow-review findings and repairs
+
+The review rejected the first sequencing checkpoint with one P1 and six P2 lecture-scope findings:
+
+- Lecture 04's first `Series` and `DataFrame` examples used `pd` before importing pandas in a fresh kernel.
+- Lecture 03 deactivated the candidate environment before the substantive NumPy sequence without telling students to reactivate the environment they created.
+- Lecture 02's shortened shell reference overstated what Lecture 01 had already taught and removed the compact `grep`/redirection/pipeline/`chmod` prerequisites needed by later lecture setup.
+- Lecture 05 still lowercased human names in an earlier custom-function example, contradicting the preserve-case data contract in the compact pipeline.
+- `06/POINTS.md` retained the pre-cardinality demo ordering and omitted executable `validate=` guidance.
+- `08/POINTS.md` reversed the meaning of `observed=True` for categorical pivot tables.
+- `09/POINTS.md` incorrectly claimed that uppercase hourly alias `H` still works under the pandas 3 course contract.
+
+A targeted re-review then caught one more internal contradiction in `06/POINTS.md`: a customer-left/purchases-right merge was labeled many-to-one instead of one-to-many. The text now states both directional forms consistently with `validate=` and the canonical README.
+
+All eight findings were repaired in the owning lecture layer. The independent reviewer passed the final repair set with no P0–P2 finding. No demo or assignment change was authorized or required.
 
 ## Fresh read-only review results
 
 | Lecture | Current review state | Required follow-up |
 | --- | --- | --- |
-| 01 | Pass | None currently identified |
-| 02 | Pass | Illustrative `study_data.csv` path reconciled |
-| 03 | Pass | Candidate environment explicitly scoped to Lecture 03 while allowing recorded later requirements |
-| 04 | Pass | Removed `DataFrame.applymap` reference, repaired inline code, and made `%pip` use recorded requirements |
-| 05 | Pass | Independent recheck executed the compact audit-to-save example under pandas 3.0.3; scope and prior API/type/boundary findings are resolved |
-| 06 | Pass | Independent exhaustive recheck executed the substantive examples under pandas 3.0.3; bonus grouping, stacking, patching, cardinality guidance, and inherited course links are reconciled |
+| 01 | Pass | Establishes the REPL/script workflow for Lectures 01–03 and defers notebooks |
+| 02 | Pass | Rebalanced against Lecture 01; adds only the compact shell prerequisites used later and sequences structured Python concepts before script entry points |
+| 03 | Pass | Candidate environment is explicitly reactivated before NumPy work; notebooks remain deferred to Lecture 04 |
+| 04 | Pass | Notebook mechanics use core Python first; pandas is imported before use and the lecture targets pandas 3.x |
+| 05 | Pass | Human-name spelling/case is preserved while documented categorical values may be normalized; compact pipeline passed pandas 3.0.5 execution |
+| 06 | Pass | Cardinality and executable `validate=` guidance precede the demo in both README and POINTS; directional one-to-many/many-to-one wording is consistent |
 | 07 | Pass | Inherited optional survey retained; overlap with bonus material is now explicitly reference-only and unassessed |
-| 08 | Pass | Independent exhaustive recheck found no remaining P0–P2 issues after pandas 3 API, grouped-window alignment, dependency, empty/short chunk, and server setup repairs |
-| 09 | Pass | Removed unintended scope expansion; retained inherited runtime repairs and reconciled Period versus DatetimeIndex aliases under pandas 3.0.3 |
+| 08 | Pass | pandas 3 `GroupBy.apply` and categorical `observed` contracts are consistent across README and POINTS |
+| 09 | Pass | Removed unintended scope expansion; retained inherited runtime repairs and consistently uses pandas 3 time-frequency aliases |
 | 10 | Pass; scope preserved | Full inherited model survey retained; modern SHAP API, environment handoff, conditional model-selection guidance, and current framework descriptions independently rechecked |
 | 11 | Pass | Approachable question-led capstone, non-prescriptive framing, roughly equal lecture/demo time, terminology, interpreter pin, and Bash/WSL assumptions independently rechecked |
 
@@ -83,14 +99,16 @@ No demo or assignment file was inspected or edited as part of this implementatio
 - The course-flow implementation checkpoint checked the same 23 lecture Markdown files, parsed 291 Python fences after accounting for notebook magics, resolved 71 relative links, and passed `git diff --check`.
 - The course-flow implementation checkpoint Eleventy build completed with 30 pages and 124 copied assets.
 - The revised Lecture 05 compact audit-to-save example executed under pandas 3.0.5 in an isolated temporary directory; every invariant passed and the assertions confirmed that submitted name case is preserved.
+- After adversarial repairs, the lecture-wide structural gate checked 23 Markdown files, parsed 292 Python fences after accounting for notebook magics, resolved 71 relative links, and passed `git diff --check`.
+- The post-repair Eleventy build completed with 30 pages and 124 copied assets.
+- A pandas 3.0.5 execution check confirmed the customer-left/purchases-right merge accepts `validate='one_to_many'` and the reversed inputs accept `validate='many_to_one'` with identical rows.
+- The independent targeted re-review passed all eight repaired findings with no remaining P0–P2 issue.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
 
-1. Run an independent adversarial prerequisite and scope review of the validated lecture-only sequencing revision; repair any actionable findings before closing the pass.
-2. Re-run the affected and lecture-wide validation gates after any repair.
-3. Present the revised lecture flow for user acceptance.
-4. Do not begin demo or assignment edits until the user moves the review to that phase. When that happens, start with the deferred environment/setup findings and course-wide pandas 3 pin reconciliation.
+1. Present the revised lecture flow for user acceptance.
+2. Do not begin demo or assignment edits until the user moves the review to that phase. When that happens, start with the deferred environment/setup findings and course-wide pandas 3 pin reconciliation.
 
 ## Checkpoint log
 
@@ -104,5 +122,6 @@ No demo or assignment file was inspected or edited as part of this implementatio
 | `ea359ab` | Reconcile Lectures 09–11 | Unintended L09 expansion removed, L09/L10 bonus APIs repaired, L10 scope preserved, and L11 capstone/setup made approachable and reproducible |
 | `63da8b6` | Close the lecture-content review | Repair inherited L06 links and remaining L10 overgeneralizations; record the final adversarial review and validation gates |
 | `5e851d0` | Finalize the review ledger | Record the clean lecture-only checkpoint and pending user acceptance |
-| This checkpoint | Add a new-session handoff | Preserve the missing-history diagnosis, replay experiment, and completed lecture-review state outside task history |
-| Working checkpoint | Rebalance lecture flow and prerequisites | Lecture-only implementation and integrated validation passed; adversarial review pending |
+| `8fd8465` | Add a new-session handoff | Preserve the missing-history diagnosis, replay experiment, and completed lecture-review state outside task history |
+| `3f2c9cd` | Rebalance lecture flow and prerequisites | Lecture-only implementation and initial integrated validation passed |
+| This checkpoint | Close adversarial lecture-flow findings | Eight prerequisite/API-contract findings repaired; final structural, build, pandas 3, and independent review gates passed |

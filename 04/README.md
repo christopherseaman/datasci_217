@@ -174,6 +174,12 @@ Pandas provides powerful data structures and tools for working with structured d
 
 *Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
 
+Import pandas before using its `pd` alias. Run this cell first in a fresh kernel; the remaining pandas examples assume it has run:
+
+```python
+import pandas as pd
+```
+
 ## Pandas Data Structures
 
 *Think of pandas data structures like Russian nesting dolls - Series fit inside DataFrames, which can contain other DataFrames, which can contain... well, you get the idea. It's data structures all the way down!*
@@ -260,8 +266,6 @@ Now that Series and DataFrames are defined, we can compare notebook output choic
 **Example:**
 
 ```python
-import pandas as pd
-
 df = pd.DataFrame({"Name": ["Alice", "Bob"], "Age": [25, 30]})
 print(df)       # Plain text, works everywhere
 display(df)     # Rich table output in Jupyter

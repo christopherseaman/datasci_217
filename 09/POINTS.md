@@ -57,7 +57,7 @@ pandas provides flexible date range generation for creating regular time series.
 - pd.date_range() creates sequences of dates with specified frequencies - 'D' (daily), 'W' (weekly), 'ME' (month end), etc.
 - pd.bdate_range() creates business day sequences, excluding weekends
 - Frequency codes: 'D' (daily), 'B' (business days), 'W-MON' (weekly on Monday), 'MS' (month start), 'QS' (quarter start), 'h' (hourly)
-- Note: Both 'H' and 'h' work for hourly frequency, but 'h' is the recommended form (uppercase 'H' is deprecated in pandas 2.0+)
+- Use lowercase `'h'` for hourly frequency; uppercase `'H'` was removed in pandas 3
 
 ## Frequency Inference
 

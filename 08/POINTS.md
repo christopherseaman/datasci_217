@@ -94,7 +94,7 @@ Advanced pivot operations handle complex scenarios like multiple aggregation fun
 - margins=True with margins_name='Total' adds row and column totals with custom labels
 - fill_value=0 replaces missing combinations with zeros instead of NaN - crucial for financial data
 - dropna=False keeps missing combinations as NaN - useful when you want to see which combinations don't exist
-- observed=True includes all category combinations, even those with no data - important for categorical data
+- `observed=True` includes only categorical groups that actually appear in the data; use `observed=False` when the question requires every defined category combination
 
 # LIVE DEMO!
 

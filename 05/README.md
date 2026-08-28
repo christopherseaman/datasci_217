@@ -221,14 +221,14 @@ Sometimes built-in methods aren't enough - you need to apply custom logic to tra
 **Example:**
 
 ```python
-# Clean text data with custom function
-def clean_text(text):
-    """Remove whitespace and convert to lowercase"""
+# Normalize documented categorical labels with a custom function
+def normalize_status(text):
+    """Trim whitespace and normalize status labels to lowercase."""
     return text.strip().lower()
 
-names = pd.Series(['  Alice  ', 'BOB', '  Charlie'])
-names_clean = names.apply(clean_text)
-print(names_clean)  # ['alice', 'bob', 'charlie']
+statuses = pd.Series(['  Active  ', 'PENDING', '  complete'])
+statuses_clean = statuses.apply(normalize_status)
+print(statuses_clean)  # ['active', 'pending', 'complete']
 
 # Map categorical values to numbers
 status = pd.Series(['active', 'inactive', 'active', 'pending'])

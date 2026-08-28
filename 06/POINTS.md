@@ -25,16 +25,19 @@ The type of join you choose fundamentally changes your results and determines wh
 - Left joins are your friend for "master list + details" scenarios - every customer appears at least once
 - Pro tip: when results look wrong, try outer join first to see ALL the data and identify what's missing
 
-# LIVE DEMO!
-
-## Many-to-One and Many-to-Many Merges
+## Merge Cardinality and Integrity
 
 Not all relationships between datasets are simple one-to-one matches. In real data, one customer might have many purchases, or one product might belong to many categories. Understanding these cardinality relationships (how rows in one table relate to rows in another) is crucial because they determine how many rows your result will have - and getting this wrong leads to mysterious data explosions.
 
-- Many-to-one is what you expect most of the time - one customer record expands to their many purchases
+- One-to-many describes customers on the left and purchases on the right: each unique customer record can expand to several purchase rows; reversing the inputs makes the same relationship many-to-one
 - Many-to-many explosions happen when both tables have duplicates you didn't know about - check for this!
 - Quick sanity check: if result has 10x more rows than you started with, something went wrong
 - Real scenario: accidentally merging on 'date' when multiple transactions share the same date
+- State the expected relationship before merging, then make it executable with `validate='one_to_one'`, `validate='one_to_many'`, or `validate='many_to_one'`
+- Use `indicator=True` when you need to audit which keys appeared only on the left, only on the right, or in both tables
+- `validate='many_to_many'` permits repeated keys on both sides, so it documents rather than constrains cardinality
+
+# LIVE DEMO!
 
 ## Merging on Multiple Columns
 

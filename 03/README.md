@@ -211,6 +211,21 @@ print(f"Student {name} earned {grade:.1f}%")
 
 ![It's pronounced...](media/numpy.webp)
 
+### Activate the candidate environment for NumPy work
+
+The setup examples deactivate each environment to make the boundary visible. Before running the NumPy examples below, activate the `.venv` created by the setup route you chose and leave it active for the rest of the lecture:
+
+```bash
+# uv or standard-library venv on macOS/Linux/WSL Bash
+source .venv/bin/activate
+
+# Confirm that this shell still resolves the tested candidate
+python --version
+python -c "import numpy as np; print(np.__version__)"
+```
+
+Use the PowerShell activation command shown above on native Windows. If you created the environment with Conda, use the matching `conda activate ./.venv` command instead. The checks should report Python 3.12.13 and NumPy 2.0.2.
+
 # Why NumPy Matters
 
 Python is famously slow for numerical computing:
