@@ -12,7 +12,7 @@ This document covers advanced time series topics that go beyond daily data scien
 
 | Function | Description |
 |----------|-------------|
-| `pd.Period('2011', freq='A-DEC')` | Annual period ending December |
+| `pd.Period('2011', freq='Y-DEC')` | Annual period ending December |
 | `pd.Period('2011Q4', freq='Q-JAN')` | Quarterly period with fiscal year |
 | `pd.period_range(start, end, freq='M')` | Create period range |
 | `period.asfreq('M', how='start')` | Convert period frequency |
@@ -25,7 +25,7 @@ import pandas as pd
 import numpy as np
 
 # Create annual period
-p = pd.Period('2011', freq='A-DEC')
+p = pd.Period('2011', freq='Y-DEC')
 print(f"Period: {p}")
 
 # Period arithmetic
@@ -60,7 +60,7 @@ print(ts)
 
 ```python
 # Timestamp-indexed time series
-dates = pd.date_range('2000-01-01', periods=3, freq='M')
+dates = pd.date_range('2000-01-01', periods=3, freq='ME')
 ts = pd.Series(np.random.randn(3), index=dates)
 
 # Convert to periods
@@ -210,9 +210,9 @@ forecast = fitted.forecast(steps=30)
 
 | Function | Description |
 |----------|-------------|
-| `ts.resample('M', kind='period')` | Resample to periods |
-| `ts.resample('M', kind='period').mean()` | Aggregate to periods |
-| `ts.resample('Q-DEC', convention='start')` | Period convention for upsampling |
+| `ts.to_period('M')` | Convert timestamp labels to monthly periods without aggregation |
+| `ts.resample('ME').mean().to_period('M')` | Aggregate monthly, then represent labels as periods |
+| `period_ts.resample('Q-DEC', convention='start')` | Upsample an annual PeriodIndex from the start of each period |
 
 **Example:**
 
@@ -223,7 +223,7 @@ frame = pd.DataFrame(np.random.randn(24, 4),
                      columns=['Colorado', 'Texas', 'New York', 'Ohio'])
 
 # Downsample to annual
-annual = frame.resample('A-DEC').mean()
+annual = frame.resample('Y-DEC').mean()
 
 # Upsample annual to quarterly
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
@@ -258,7 +258,7 @@ resampled = df.set_index('time').groupby(['key', time_key]).sum()
 
 ```python
 # Process high-frequency tick data (e.g., sensor readings)
-def process_tick_data(df, freq='1T'):
+def process_tick_data(df, freq='1min'):
     """Process tick data into regular intervals"""
     resampled = df.resample(freq).agg({
         'value': 'last',      # Last value in interval

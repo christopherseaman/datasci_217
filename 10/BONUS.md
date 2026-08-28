@@ -72,12 +72,15 @@ print(f"Best parameters: {result.x}")
 
 ### SHAP Values
 
+This optional example requires SHAP, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install shap` before running the example.
+
 **Reference:**
 
 - `import shap` - SHAP library
-- `shap.Explainer(model)` - Create explainer
-- `explainer.shap_values(X)` - Calculate SHAP values
-- `shap.summary_plot(shap_values, X)` - Summary plot
+- `shap.TreeExplainer(model)` - Create an explainer for a tree-based model
+- `explainer(X)` - Return SHAP values with feature and observation metadata
+- `shap.plots.beeswarm(shap_values)` - Show feature effects across observations
+- `shap.plots.bar(shap_values)` - Summarize global feature importance
 
 **Example:**
 
@@ -91,10 +94,10 @@ model.fit(X_train, y_train)
 
 # Create explainer
 explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(X_test)
+shap_values = explainer(X_test)
 
 # Summary plot
-shap.summary_plot(shap_values, X_test)
+shap.plots.beeswarm(shap_values)
 
 # Feature importance plot
 shap.plots.bar(shap_values)
@@ -601,4 +604,3 @@ def compare_models(model_a_predictions, model_b_predictions, true_labels):
 ```
 
 These advanced topics will help you build production-ready models, understand model behavior, and maintain models over time in real-world applications.
-

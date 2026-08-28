@@ -250,21 +250,6 @@ print("Time series with shifts:")
 print(weight_features[['weight', 'lag_1', 'diff', 'pct_change']].head())
 ```
 
-For longitudinal data, sort by entity and timestamp before computing lags or windows, and group by entity so one patient's history cannot become another patient's feature:
-
-```python
-measurements = pd.DataFrame({
-    'patient_id': ['A', 'B', 'A', 'B'],
-    'timestamp': pd.to_datetime(['2023-01-02', '2023-01-01', '2023-01-01', '2023-01-03']),
-    'value': [12, 20, 10, 23]
-}).sort_values(['patient_id', 'timestamp'])
-
-measurements['lag_1'] = (
-    measurements.groupby('patient_id', sort=False)['value'].shift(1)
-)
-print(measurements)
-```
-
 # LIVE DEMO!
 
 # Time Series Indexing and Selection
@@ -460,44 +445,6 @@ custom_stats = df['temperature'].resample('ME').apply(custom_agg)
 print(custom_stats.head())
 ```
 
-### Separate source missingness from grid-created missingness
-
-**Source missingness** means a row existed in the supplied data but its measurement was missing. **Grid-created missingness** means a requested grid introduced a timestamp for which no source row existed. Both can display as `NaN`, but they have different provenance and may require different decisions.
-
-No fill is automatic. Forward fill, backward fill, interpolation, and zero each assert a different measurement story. A grid change alone is not evidence that any of those stories is correct.
-
-This example preserves that provenance explicitly: January 2 is a grid-created row, while January 3 is a source row whose measurement was already missing.
-
-```python
-observed = pd.Series(
-    [98.6, np.nan],
-    index=pd.to_datetime(['2023-01-01', '2023-01-03']),
-    name='temperature'
-)
-daily_grid = observed.asfreq('D')
-provenance = pd.DataFrame({
-    'temperature': daily_grid,
-    'source_row': daily_grid.index.isin(observed.index)
-})
-print(provenance)
-```
-
-### Choose a resampling aggregation from measurement meaning
-
-**Measurement meaning** describes what a value represents and how, if at all, values may be combined. Temperature is a state observed at an instant. The mean temperature in a two-hour bin can answer "what was the average of the recorded temperatures in this interval?" The number of source readings is additive and can be summed. A patient identifier, station name, or other label should not be averaged.
-
-```python
-readings = pd.DataFrame({
-    'temperature': [98.4, 98.8, 99.1]
-}, index=pd.to_datetime(['2023-01-01 08:10', '2023-01-01 08:50', '2023-01-01 10:05']))
-
-two_hour_summary = readings.resample('2h').agg(
-    average_temperature=('temperature', 'mean'),
-    reading_count=('temperature', 'size')
-)
-print(two_hour_summary)
-```
-
 # LIVE DEMO!
 
 ![xkcd 2289: Scenario 4](https://imgs.xkcd.com/comics/scenario_4.png)
@@ -621,30 +568,6 @@ print(blood_pressure_features[['blood_pressure', 'ewm_mean', 'ewm_std']].head(10
 
 *"You can't fall off the bell curve if there's no bell curve." - A reminder that time series forecasting, especially during unprecedented events, carries significant uncertainty. Always be honest about prediction intervals.*
 
-## Distinguish observation-count and elapsed-time windows
-
-A **trailing window** summarizes values at or before a row while moving forward through time. An **observation-count window** contains a fixed number of rows, regardless of the elapsed time between them. An **elapsed-time window** contains observations whose timestamps fall inside a stated duration, so the number of rows can vary.
-
-`min_periods=1` means at least one nonmissing value is required for a mean. It does not fill missing values.
-
-Neither answer is universally "the rolling mean"; the intended window must be named.
-
-On this irregular series, the final three rows span nine elapsed days, while the final three-day window contains only the January 10 and 11 observations:
-
-```python
-irregular = pd.Series(
-    [10, 20, 100, 40],
-    index=pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-10', '2023-01-11']),
-    name='value'
-)
-window_comparison = pd.DataFrame({
-    'value': irregular,
-    'last_3_rows_mean': irregular.rolling(3, min_periods=1).mean(),
-    'last_3_days_mean': irregular.rolling('3D', min_periods=1).mean()
-})
-print(window_comparison)
-```
-
 # Time Zone Handling
 
 ![xkcd 1883: Time Zones](media/xkcd_time_zones.png)
@@ -667,6 +590,8 @@ print(window_comparison)
 | `pd.date_range(..., tz='UTC')` | Create timezone-aware date range |
 
 `tz_localize()` attaches a timezone interpretation to naive clock readings without moving those clock values. `tz_convert()` requires timezone-aware values and changes their displayed clock time while preserving the same instants. Localize using the timezone in which naive source timestamps were recorded; convert to UTC for storage or to a local zone for display.
+
+Named timezones require an IANA timezone database. If `US/Eastern` is unavailable in the active notebook environment, install the `tzdata` package with `%pip install tzdata` before running the example.
 
 **Example:**
 
@@ -793,31 +718,6 @@ plt.show()
 ![media/viz_components.png]
 
 *Note: For advanced seasonal decomposition techniques (like STL decomposition), see [BONUS.md](BONUS.md).*
-
-## Check information availability at a prediction timestamp
-
-A **candidate feature** is a value that might later be supplied to a prediction procedure. The **prediction timestamp** is the supplied instant at which the prediction would be issued. **Information availability** asks whether every source value required for a candidate was known by that instant.
-
-A **centered window** uses observations on both sides of a row. A **future-derived candidate** requires any value recorded after the prediction timestamp. Using either one as if it were already known creates **future leakage**: the procedure receives information that would not have existed when the prediction was issued.
-
-Availability is a property of the real workflow, not just the final DataFrame. A value can appear in a completed historical dataset and still have been unavailable at the prediction timestamp.
-
-For example, the centered feature at January 2 below uses the January 3 observation. It is valid for retrospective smoothing but unavailable for a prediction issued on January 2. If the current observation is also unavailable when prediction occurs, shift before applying a trailing window:
-
-```python
-signal = pd.Series(
-    [10, 20, 90],
-    index=pd.date_range('2023-01-01', periods=3, freq='D'),
-    name='signal'
-)
-availability_check = pd.DataFrame({
-    'observed': signal,
-    'trailing_including_now': signal.rolling(3, min_periods=1).mean(),
-    'prior_only': signal.shift(1).rolling(3, min_periods=1).mean(),
-    'centered': signal.rolling(3, center=True, min_periods=1).mean()
-})
-print(availability_check)
-```
 
 
 # LIVE DEMO!

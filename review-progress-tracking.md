@@ -38,9 +38,14 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | 06 | Pass | Independent exhaustive recheck executed the substantive examples under pandas 3.0.3; bonus grouping, stacking, patching, and cardinality guidance are reconciled |
 | 07 | Pass | Inherited optional survey retained; overlap with bonus material is now explicitly reference-only and unassessed |
 | 08 | Pass | Independent exhaustive recheck found no remaining P0–P2 issues after pandas 3 API, grouped-window alignment, dependency, empty/short chunk, and server setup repairs |
-| 09 | Core pass; bonus no-pass | Replace removed/deprecated pandas offset aliases in `09/BONUS.md` |
-| 10 | Pass; scope preserved | Repair incompatible SHAP bonus example; add a minimal environment handoff without expanding scope |
-| 11 | Pass on capstone direction | Pin the demo interpreter and state the Bash/WSL platform assumption; optional brief definitions may improve approachability |
+| 09 | Pass | Removed unintended scope expansion; retained inherited runtime repairs and reconciled Period versus DatetimeIndex aliases under pandas 3.0.3 |
+| 10 | Pass; scope preserved | Full inherited model survey retained; modern SHAP bonus API and minimal environment handoff independently rechecked |
+| 11 | Pass | Approachable question-led capstone, non-prescriptive framing, roughly equal lecture/demo time, terminology, interpreter pin, and Bash/WSL assumptions independently rechecked |
+
+## Deferred to the demo phase
+
+- `09/demo/requirements.txt` permits pandas 2.0 even though the reviewed lecture now consistently targets pandas 3 aliases; reconcile the recorded demo environment before executing that demo.
+- `11/demo/DEMO_GUIDE.md` uses an invalid `uv sync --no-project ... -r requirements.txt` command under uv 0.12.1; replace it with the tested `uv venv` plus `uv pip install -r` sequence during demo review.
 
 ## Validation recovered from the interrupted work
 
@@ -51,12 +56,15 @@ The task transcript lost a substantial portion of the conversation twice, but th
 - An independent review confirmed that Lecture 10 retained every model-family section and that Lecture 11 matched the requested capstone direction.
 - An independent exhaustive review executed the substantive Lecture 06 examples under pandas 3.0.3 and found no remaining P0–P2 issues.
 - Targeted Lecture 08 bonus examples passed under pandas 3.0.3, including grouped windows, multi-key chunk aggregation, header-only input rejection, and the statistical-test sample-size guard; an independent exhaustive recheck found no remaining P0–P2 issues.
+- Targeted and independent execution under pandas 3.0.3 confirmed Lecture 09's corrected feature-table examples, Period/DatetimeIndex aliases, resampling, rolling, and high-frequency examples; the independent scope review confirmed all unintended expansion was removed.
+- An independent Lecture 10 review confirmed the inherited statsmodels, scikit-learn, XGBoost, TensorFlow/Keras, and PyTorch survey remains intact and the modern SHAP example is coherent.
+- An independent Lecture 11 review confirmed the capstone direction, terminology, pinned interpreter, and Bash/WSL setup; no remaining P0–P2 lecture-content issue was found.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
 
-1. Reconcile Lectures 06–11 and their bonus material in small commits.
-2. Re-run lecture-only syntax, fence, link, and diff validation.
+1. Run a final lecture-wide syntax, fence, link, and diff validation.
+2. Assign an independent whole-course lecture review to challenge the consolidated result.
 3. Present the consolidated lecture review before touching demos or assignments.
 
 ## Checkpoint log
@@ -67,4 +75,5 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | `f727982` | Snapshot recovered edits to Lectures 01–11 | Interrupted work preserved before further reconciliation |
 | `b0fae9a` | Reconcile Lectures 02–04 | Paths, environment scope, pandas 3 API, inline Markdown, and recorded package installation repaired |
 | `45cd90f` | Narrow and reconcile Lecture 05 | Compact pipeline independently executed under pandas 3.0.3; API/type/boundary findings resolved |
-| Pending | Reconcile Lectures 06–08 | pandas 3 examples, aligned patching/window semantics, scope boundaries, cardinality guidance, edge cases, and server-specific setup wording reconciled |
+| `888462c` | Reconcile Lectures 06–08 | pandas 3 examples, aligned patching/window semantics, scope boundaries, cardinality guidance, edge cases, and server-specific setup wording reconciled |
+| Pending | Reconcile Lectures 09–11 | Unintended L09 expansion removed, L09/L10 bonus APIs repaired, L10 scope preserved, and L11 capstone/setup made approachable and reproducible |

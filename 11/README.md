@@ -24,8 +24,9 @@ be able to:
 
 - state an answerable question and a candidate claim that evidence could support
   or contradict;
-- identify the row grain and candidate key of both a source table and an analysis
-  table, then perform a check that would expose duplicate or missing keys;
+- identify the row grain (what each row represents) and candidate key (the field
+  or fields expected to identify each row uniquely) of both a source table and an
+  analysis table, then perform a check that would expose duplicate or missing keys;
 - trace one reported result back through its source, selection rules, and important
   transformations;
 - justify a cleaning, wrangling, aggregation, or visualization decision in terms
@@ -44,7 +45,8 @@ construction, and the basic scikit-learn estimator interface.
 The limited new content is integrative rather than a large new API:
 
 - keeping a question, a possible claim, and the available evidence aligned;
-- making row grain, keys, and provenance explicit before calculating;
+- making row grain, keys, and provenance (where data came from and how it was
+  constructed) explicit before calculating;
 - recognizing the boundary between a DataFrame built for analysis and a matrix
   built for a model;
 - deciding whether a model adds anything to the question; and
@@ -150,10 +152,11 @@ with a shift.
 
 The current demo uses a time-ordered training, validation, and test design because
 the intended use is prediction of later hours. It compares a weekly-lag baseline
-with one transparent scikit-learn pipeline, makes the choice using validation data,
-and evaluates the selected approach on the held-out test period. Preprocessing and
-model fitting stay together so that information learned from later data does not
-leak backward.
+(a deliberately simple comparison prediction) with one transparent scikit-learn
+pipeline, makes the choice using validation data reserved for model choice, and
+evaluates the selected approach once on the held-out test period. Preprocessing
+and model fitting stay together so that information learned from later data does
+not leak backward.
 
 These choices fit this question and dataset. Other questions may need a random
 split, grouped split, cross-validation, a statistical model, or no model at all.
@@ -216,12 +219,17 @@ the analytical choices to its data and question.
 
 ## Getting started with the demo
 
+The commands below assume macOS, Linux, or WSL with Bash. On native Windows, open
+the repository in WSL because the data downloader is a Bash script and uses Unix
+checksum tools.
+
 From the course repository:
 
 ```bash
 cd 11/demo
-uv venv .venv
+uv venv --python 3.12.13 .venv
 source .venv/bin/activate
+python --version  # should report Python 3.12.13
 uv pip install -r requirements.txt
 chmod +x download_data.sh
 ./download_data.sh
