@@ -4,7 +4,7 @@ Bonus Content: Advanced Data Cleaning
 
 ## Modern Pandas Extension Types
 
-Pandas extension types solve longstanding issues with missing data and memory efficiency. While useful, these are advanced features that go beyond basic data cleaning workflows.
+The core lecture introduces nullable `Int64` because whole-number columns sometimes contain missing values. This bonus extends the same idea to nullable floats, booleans, and strings, then explores their broader memory and interoperability implications.
 
 *Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
 

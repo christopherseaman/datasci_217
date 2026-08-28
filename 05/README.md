@@ -216,8 +216,7 @@ Sometimes built-in methods aren't enough - you need to apply custom logic to tra
 - `series.apply(func)` - Apply function to each element in a Series
 - `df.apply(func, axis=0)` - Apply function to each column (axis=0, default)
 - `df.apply(func, axis=1)` - Apply function to each row (axis=1)
-- `df.map(func)` - Apply function element-wise to entire DataFrame (pandas 2.1+)
-- `df.applymap(func)` - Deprecated in pandas 2.1+, use `.map()` instead
+- `df.map(func)` - Apply a function element-wise to the entire DataFrame
 
 **Example:**
 
@@ -279,10 +278,10 @@ Converting data to the correct types is essential for proper analysis. This incl
 **Example:**
 
 ```python
-# Convert data types
-df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.5, 5.5, 6.5]})
+# Convert strings and whole-valued floats to integers
+df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.0, 5.0, 6.0]})
 df['A'] = df['A'].astype('int64')  # Convert string to integer
-df['B'] = df['B'].astype('int64')  # Convert float to integer
+df['B'] = df['B'].astype('int64')  # Values are already mathematically whole
 print(df.dtypes)  # A: int64, B: int64
 
 # Capital-I Int64 stores whole numbers while still allowing pd.NA
@@ -662,71 +661,39 @@ print(valid_emails)  # All rows (emails are valid)
 
 # Data Cleaning Pipeline
 
-A reproducible pipeline keeps detection separate from decisions and transformations. It validates the complete working table before saving any clean artifact.
+A reproducible cleaning workflow keeps detection separate from decisions and transformations. It validates the complete working table before saving a derived artifact.
 
 ```mermaid
 graph TD
-    A[Preserve source snapshot and load raw] --> B[Audit and detect without mutation]
+    A[Load source and preserve raw table] --> B[Audit and detect]
     B --> C[Decide and record rationale]
     C --> D[Transform a working copy]
     D --> E{Validate explicit invariants}
     E -->|Failed| B
-    E -->|Passed| F[Save clean data and audit trail]
+    E -->|Passed| F[Save clean table]
 ```
 
-The running example uses one schema from audit through save. One source row represents one submitted person record.
+The example stays intentionally small. One source row represents one submitted person record, and `record_id` is the candidate identifier. The printed audit is an orientation, not an exhaustive detector; the validation stage below performs the authoritative identifier, category, type, and range checks before saving.
 
-| Column | Clean meaning and type | Missing allowed? | Rule |
-|--------|------------------------|------------------|------|
-| `record_id` | record identifier, string | no | `R` followed by three digits; unique after documented exact-duplicate resolution |
-| `full_name` | submitted name, string | yes | surrounding whitespace removed |
-| `site` | collection site, string | no | `north`, `south`, or `west` |
-| `status` | record status, string | yes | `active`, `pending`, or `complete` |
-| `age_text` → `age` | age in years, nullable `Int64` | yes | whole number from 0 through 120 when present |
-| `visit_date` | visit date, datetime | yes | parsed from exact `YYYY-MM-DD` text when present |
+| Column | Clean meaning | Rule used in this fixture |
+|--------|---------------|---------------------------|
+| `record_id` | record identifier | `R` followed by three digits; present and unique |
+| `full_name` | submitted name | trim surrounding whitespace; blank is missing |
+| `site` | collection site | normalize to `north`, `south`, or `west` |
+| `status` | record status | normalize case; `NA` is a documented missing sentinel |
+| `age_text` → `age` | age in years | `unknown` and `-9` are documented missing sentinels; otherwise a whole number from 0 through 120 |
+| `visit_date` | visit date | parse exact `YYYY-MM-DD` text; invalid or blank values remain missing for review |
 
-This fixture's data dictionary says `unknown` and `-9` are missing-age sentinels, `NA` is a missing-status sentinel, blank fields are missing, and the repeated identical `R002` row is an ingestion duplicate. Those facts justify this example's decisions; similar-looking values in another source may mean something else.
+The data dictionary also identifies the repeated identical `R002` row as an ingestion duplicate. Those source facts justify this example's decisions; similar-looking values in another dataset may mean something different.
 
-## One executable audit-to-save example
+## A compact audit-to-save example
 
 ```python
-from hashlib import sha256
-from io import BytesIO
-from pathlib import Path
+from io import StringIO
 
 import pandas as pd
 
-
-# Contract and source-specific decisions
-SOURCE_COLUMNS = [
-    "record_id",
-    "full_name",
-    "site",
-    "status",
-    "age_text",
-    "visit_date",
-]
-CLEAN_COLUMNS = [
-    "record_id",
-    "full_name",
-    "site",
-    "status",
-    "age",
-    "visit_date",
-]
-CLEANING_RULES = {
-    "record_id_pattern": r"R[0-9]{3}",
-    "allowed_sites": {"north", "south", "west"},
-    "allowed_statuses": {"active", "pending", "complete"},
-    "age_sentinels": {"unknown", "-9"},
-    "status_sentinels": {"na"},
-    "minimum_age": 0,
-    "maximum_age": 120,
-}
-
-# Source snapshot -> raw table -> raw snapshot -> working table
-source_name = "submitted_people.csv"
-source_snapshot = b"""record_id,full_name,site,status,age_text,visit_date
+source_csv = """record_id,full_name,site,status,age_text,visit_date
 R001, Alice Smith , north,Active,34,2026-01-15
 R002,BOB JONES,North,active,unknown,2026-02-30
 R002,BOB JONES,North,active,unknown,2026-02-30
@@ -734,231 +701,95 @@ R003, Carla Ruiz ,SOUTH,pending,-9,2026-03-01
 R004,,south,NA,45,
 R005,Evan Li,west,complete,52,2026-02-14
 """
-source_sha256 = sha256(source_snapshot).hexdigest()
-raw = pd.read_csv(
-    BytesIO(source_snapshot),
-    dtype="string",
-    keep_default_na=False,
-)
+
+# LOAD: raw is the parsed source table; working is the table we may change.
+raw = pd.read_csv(StringIO(source_csv), dtype="string", keep_default_na=False)
 raw_snapshot = raw.copy(deep=True)
 working = raw.copy(deep=True)
 
-# AUDIT/DETECT: probes describe raw values without changing raw or working.
-schema_matches = list(raw.columns) == SOURCE_COLUMNS
-if not schema_matches:
-    raise ValueError(
-        f"source columns {list(raw.columns)} do not match {SOURCE_COLUMNS}"
-    )
-
-record_id_probe = raw["record_id"].str.strip().str.upper()
-record_id_missing = (
-    record_id_probe.isna() | record_id_probe.eq("").fillna(False)
-)
-record_id_repeated = (
-    ~record_id_missing & record_id_probe.duplicated(keep=False)
-)
-record_id_bad_format = (
-    ~record_id_missing
-    & ~record_id_probe.str.fullmatch(
-        CLEANING_RULES["record_id_pattern"],
-        na=False,
-    )
-)
-
-age_text_probe = raw["age_text"].str.strip().str.lower()
-age_is_sentinel = age_text_probe.isin(CLEANING_RULES["age_sentinels"])
-age_candidate = age_text_probe.mask(
-    age_is_sentinel | age_text_probe.eq("").fillna(False)
-)
-age_numeric_probe = pd.to_numeric(age_candidate, errors="coerce")
-age_parse_failure = age_candidate.notna() & age_numeric_probe.isna()
-age_noninteger = (
-    age_numeric_probe.notna() & age_numeric_probe.mod(1).ne(0)
-)
-age_out_of_range = age_numeric_probe.notna() & ~age_numeric_probe.between(
-    CLEANING_RULES["minimum_age"],
-    CLEANING_RULES["maximum_age"],
-)
-
-visit_text_probe = raw["visit_date"].str.strip()
-visit_candidate = visit_text_probe.mask(
-    visit_text_probe.eq("").fillna(False)
-)
-visit_datetime_probe = pd.to_datetime(
-    visit_candidate,
-    format="%Y-%m-%d",
-    errors="coerce",
-)
-visit_parse_failure = visit_candidate.notna() & visit_datetime_probe.isna()
-
-issue_audit = pd.Series(
+# AUDIT/DETECT: inspect without mutating either table.
+audit = pd.Series(
     {
-        "missing or blank record IDs": int(record_id_missing.sum()),
-        "rows with repeated candidate IDs": int(record_id_repeated.sum()),
-        "record IDs with invalid format": int(record_id_bad_format.sum()),
-        "redundant exact rows after the first": int(
-            raw.duplicated(keep="first").sum()
-        ),
-        "documented age sentinels": int(age_is_sentinel.sum()),
-        "unparseable nonsentinel ages": int(age_parse_failure.sum()),
-        "numeric noninteger ages": int(age_noninteger.sum()),
-        "numeric ages outside the allowed range": int(age_out_of_range.sum()),
-        "nonempty invalid visit dates": int(visit_parse_failure.sum()),
+        "blank fields": int(raw.eq("").sum().sum()),
+        "exact duplicate rows": int(raw.duplicated(keep="first").sum()),
+        "distinct age markers": sorted(raw["age_text"].unique().tolist()),
+        "distinct status markers": sorted(raw["status"].unique().tolist()),
     },
-    name="count",
+    name="observed",
 )
-print(issue_audit)
+print(audit)
 
-# DECIDE: record why each action is warranted for this source.
-decision_log = pd.DataFrame(
-    [
-        {
-            "issue": "one repeated exact source row",
-            "decision": "keep its first occurrence",
-            "rationale": "fixture provenance identifies repeated ingestion",
-        },
-        {
-            "issue": "other repeated record_id values",
-            "decision": "preserve and fail uniqueness validation",
-            "rationale": "conflicting records require source evidence",
-        },
-        {
-            "issue": "documented sentinel and blank values",
-            "decision": "represent them with pd.NA",
-            "rationale": "the data dictionary defines them as missing",
-        },
-        {
-            "issue": "invalid ages and calendar dates",
-            "decision": "retain the row and store a missing value",
-            "rationale": "missingness is allowed; no imputation is justified",
-        },
-        {
-            "issue": "documented case and whitespace variants",
-            "decision": "normalize strings to their canonical form",
-            "rationale": "the contract defines equivalent spellings",
-        },
-    ]
-).assign(source=source_name, source_sha256=source_sha256)
+# DECIDE: these actions come from this fixture's data dictionary.
+decisions = {
+    "exact duplicate": "keep its first occurrence",
+    "unknown, -9, blank, or NA sentinel": "represent as missing",
+    "documented case/whitespace variants": "normalize",
+    "invalid date": "retain the row and store a missing date for review",
+}
+print(pd.Series(decisions, name="decision"))
 
-# TRANSFORM: make changes only to working.
-exact_duplicate_keep = ~raw.duplicated(keep="first")
-working = working.loc[exact_duplicate_keep].copy()
-
+# TRANSFORM: change only the working copy.
+working = working.drop_duplicates(keep="first").copy()
 working["record_id"] = working["record_id"].str.strip().str.upper()
 working["full_name"] = working["full_name"].str.strip().str.title()
-working["full_name"] = working["full_name"].mask(
-    working["full_name"].eq("").fillna(False)
-)
+working["full_name"] = working["full_name"].mask(working["full_name"].eq(""))
 working["site"] = working["site"].str.strip().str.lower()
 working["status"] = working["status"].str.strip().str.lower()
-working["status"] = working["status"].mask(
-    working["status"].isin(CLEANING_RULES["status_sentinels"])
-    | working["status"].eq("").fillna(False)
-)
+working["status"] = working["status"].mask(working["status"].isin({"", "na"}))
 
-working_age_text = working["age_text"].str.strip().str.lower()
-working_age_text = working_age_text.mask(
-    working_age_text.isin(CLEANING_RULES["age_sentinels"])
-    | working_age_text.eq("").fillna(False)
-)
-working_age_numeric = pd.to_numeric(working_age_text, errors="coerce")
-working_age_valid = (
-    working_age_numeric.notna()
-    & working_age_numeric.mod(1).eq(0)
-    & working_age_numeric.between(
-        CLEANING_RULES["minimum_age"],
-        CLEANING_RULES["maximum_age"],
-    )
-)
-working["age"] = working_age_numeric.where(working_age_valid).astype("Int64")
+age_text = working["age_text"].str.strip().str.lower()
+age_text = age_text.mask(age_text.isin({"", "unknown", "-9"}))
+age_numeric = pd.to_numeric(age_text, errors="coerce")
+valid_age = age_numeric.mod(1).eq(0) & age_numeric.between(0, 120)
+working["age"] = age_numeric.where(valid_age).astype("Int64")
 working = working.drop(columns="age_text")
 
-working_visit_text = working["visit_date"].str.strip()
-working_visit_text = working_visit_text.mask(
-    working_visit_text.eq("").fillna(False)
+visit_text = working["visit_date"].str.strip().mask(
+    working["visit_date"].str.strip().eq("")
 )
 working["visit_date"] = pd.to_datetime(
-    working_visit_text,
+    visit_text,
     format="%Y-%m-%d",
     errors="coerce",
 )
-working = working[CLEAN_COLUMNS]
 
-# VALIDATE: executable invariants must all pass before any output is saved.
-clean_record_ids = working["record_id"].astype("string").str.strip()
-clean_id_present = (
-    clean_record_ids.notna() & clean_record_ids.ne("").fillna(False)
-)
-expected_rows = len(raw) - int(raw.duplicated(keep="first").sum())
-
-validation_results = pd.Series(
+# VALIDATE: stop before saving if any declared contract is false.
+checks = pd.Series(
     {
-        "source snapshot checksum unchanged": (
-            sha256(source_snapshot).hexdigest() == source_sha256
-        ),
         "raw table unchanged": raw.equals(raw_snapshot),
-        "source columns match the schema": schema_matches,
-        "clean columns present in order": list(working.columns) == CLEAN_COLUMNS,
-        "row count reflects only exact duplicate removal": (
-            len(working) == expected_rows
-        ),
-        "record IDs present": clean_id_present.all(),
-        "record IDs match the contract": clean_record_ids.str.fullmatch(
-            CLEANING_RULES["record_id_pattern"],
-            na=False,
+        "only the documented duplicate was removed": len(working) == 5,
+        "record IDs present": working["record_id"].notna().all()
+        and working["record_id"].ne("").all(),
+        "record IDs match the format": working["record_id"].str.fullmatch(
+            r"R[0-9]{3}", na=False
         ).all(),
-        "record IDs unique after normalization": (
-            not clean_record_ids[clean_id_present].duplicated().any()
-        ),
-        "text columns use pandas string dtype": all(
-            isinstance(working[column].dtype, pd.StringDtype)
-            for column in ["record_id", "full_name", "site", "status"]
-        ),
-        "names have no surrounding whitespace": working[
-            "full_name"
-        ].dropna().eq(working["full_name"].dropna().str.strip()).all(),
-        "required sites present": working["site"].notna().all(),
-        "sites allowed": working["site"].isin(
-            CLEANING_RULES["allowed_sites"]
-        ).all(),
+        "record IDs unique": working["record_id"].is_unique,
+        "sites allowed": working["site"].isin({"north", "south", "west"}).all(),
         "statuses allowed when present": working["status"].dropna().isin(
-            CLEANING_RULES["allowed_statuses"]
+            {"active", "pending", "complete"}
         ).all(),
-        "age has nullable integer dtype": str(working["age"].dtype) == "Int64",
-        "ages in range when present": working["age"].dropna().between(
-            CLEANING_RULES["minimum_age"],
-            CLEANING_RULES["maximum_age"],
-        ).all(),
-        "visit date has datetime dtype": (
-            pd.api.types.is_datetime64_any_dtype(working["visit_date"].dtype)
+        "age uses nullable integers": str(working["age"].dtype) == "Int64",
+        "ages in range when present": working["age"].dropna().between(0, 120).all(),
+        "visit date is datetime": pd.api.types.is_datetime64_any_dtype(
+            working["visit_date"]
         ),
     },
     name="passed",
 )
-failed_invariants = validation_results[~validation_results]
-assert failed_invariants.empty, failed_invariants
+failed = checks[~checks]
+if not failed.empty:
+    raise ValueError(f"cleaning validation failed:\n{failed}")
 
-# SAVE: reached only after validation succeeds.
-output_dir = Path("output")
-output_dir.mkdir(parents=True, exist_ok=True)
-clean_path = output_dir / "cleaned_people.csv"
-decision_log["output"] = str(clean_path)
-
-working.to_csv(clean_path, index=False)
-issue_audit.to_csv(output_dir / "cleaning_audit.csv", header=True)
-decision_log.to_csv(output_dir / "cleaning_decisions.csv", index=False)
-validation_results.to_csv(output_dir / "cleaning_validation.csv", header=True)
-
-print(f"validated and saved {len(working)} rows to {clean_path}")
+# SAVE: this line is reached only after every invariant passes.
+working.to_csv("cleaned_people.csv", index=False)
+print(checks)
 ```
 
-The identifier checks strip surrounding whitespace, reject missing and blank values, enforce the declared format, and test uniqueness after normalization. This is more robust than calling `.is_unique` alone: a column containing one missing identifier can otherwise appear unique.
-
-A **validation invariant** is a condition that must be true before declaring the working table clean. Assertions stop this pipeline when its contract is broken. They do not establish that the decisions were wise; the decision log carries that human reasoning. The CSV stores values but not pandas dtype metadata, so a downstream reader must reapply the documented `Int64` and datetime schema.
+A **validation invariant** is a condition that must be true before declaring the working table clean. These checks catch violations of the stated contract; they do not prove that the underlying cleaning decisions were wise. That judgment still depends on source documentation and domain knowledge.
 
 ## Configuration-Driven Processing
 
-Configuration files can make repeated pipelines more maintainable and reproducible. The running pipeline's `CLEANING_RULES` dictionary holds source-specific contract values that transformations and validation share, preventing the two stages from drifting apart.
+Configuration files can make repeated pipelines more maintainable and reproducible. If a pipeline is reused across sources, a small dictionary or reviewed configuration file can hold genuinely changeable contract values so transformation and validation do not drift apart.
 
 Keep genuinely changeable rules separate from the transformation logic, but do not turn every implementation constant into an option. Changing a rule still requires a documented decision and a fresh validation run.
 
@@ -970,9 +801,9 @@ Keep genuinely changeable rules separate from the transformation logic, but do n
 - Document where each cleaning rule came from
 
 
-# Running Notebooks from Command Line
+# Optional: Running Notebooks from Command Line
 
-For automated pipelines and batch processing, you can execute Jupyter notebooks from the command line without opening the Jupyter interface.
+For optional automation and batch processing, you can execute Jupyter notebooks from the command line without opening the Jupyter interface. This is not required for the cleaning concepts above.
 
 ## Basic Execution
 

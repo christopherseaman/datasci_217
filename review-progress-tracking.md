@@ -34,7 +34,7 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | 02 | Pass | Illustrative `study_data.csv` path reconciled |
 | 03 | Pass | Candidate environment explicitly scoped to Lecture 03 while allowing recorded later requirements |
 | 04 | Pass | Removed `DataFrame.applymap` reference, repaired inline code, and made `%pip` use recorded requirements |
-| 05 | No-pass | Reduce the newly expanded audit pipeline; repair pandas 3/type-conversion wording; clarify core/bonus nullable-type boundary |
+| 05 | Pass | Independent recheck executed the compact audit-to-save example under pandas 3.0.3; scope and prior API/type/boundary findings are resolved |
 | 06 | Pass with P2 follow-ups | Remove duplicate prose; reconcile `combine_first` bonus example and speaker notes; reconsider newly added `stack`/`unstack` expansion |
 | 07 | Pass for current diff | Retain inherited breadth for now; clarify core/bonus duplication where useful |
 | 08 | Pass for current diff with inherited defects | Repair optional performance helper, zero-size chunk edge case, stale bonus `fillna(method=...)`, and server-specific environment command |
@@ -53,7 +53,7 @@ The task transcript lost a substantial portion of the conversation twice, but th
 
 ## Next action
 
-1. Narrow Lecture 05 and make the listed targeted repairs in small, lecture-group commits.
+1. Reconcile Lectures 06–11 and their bonus material in small commits.
 2. Re-run lecture-only syntax, fence, link, and diff validation.
 3. Present the consolidated lecture review before touching demos or assignments.
 
@@ -63,4 +63,5 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | --- | --- | --- |
 | `9523a1d` | Add branch-only tracking instructions and progress ledger | Durable recovery process established |
 | `f727982` | Snapshot recovered edits to Lectures 01–11 | Interrupted work preserved before further reconciliation |
-| Pending | Reconcile Lectures 02–04 | Repair paths, environment scope, pandas 3 API, inline Markdown, and recorded package installation |
+| `b0fae9a` | Reconcile Lectures 02–04 | Paths, environment scope, pandas 3 API, inline Markdown, and recorded package installation repaired |
+| Pending | Narrow and reconcile Lecture 05 | Replace scope-heavy pipeline and correct API/type/boundary wording |
