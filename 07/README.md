@@ -26,22 +26,29 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 # Start with a visualization contract
 
-A **visualization** maps data values to visible properties so that a reader can make a comparison. Before choosing an API or chart type, write four plain-language statements.
+A **visualization** maps data values to visible properties so that a reader can make a comparison. Before choosing an API or chart type, write these four plain-language statements:
 
-A **question** names what the chart should help the reader compare or understand. An **audience** names the people who will use the chart and the context they bring. A **claim** is the specific descriptive conclusion the finished chart is intended to support. A chart can reveal a pattern, but a visual pattern alone does not prove why that pattern occurred.
+1. **Question:** What comparison or pattern should the chart help the reader understand?
+2. **Audience and claim:** Who will use the chart, what context do they bring, and what descriptive conclusion should the finished chart support? A visual pattern alone does not prove why that pattern occurred.
+3. **Unit and grain:** What does one mark or summarized position represent, and what does one row in the plotting table represent?
+4. **Variables:** What is each variable's data type, what analytical role does it play, and which visible property will encode it?
+
+For the accessible line-chart example later in this lecture, the four statements could be: (1) compare prepared-score trajectories across five study rounds; (2) help program instructors see the descriptive claim that the guided program rises more and finishes higher, without making a causal claim; (3) each point is a program-round mean and each plotting-table row is one program by round; and (4) round is ordinal and establishes study sequence on x, score is a quantitative measure placed on y, and program is a categorical grouping variable encoded redundantly with color, marker, and line style.
 
 ### State the unit and grain shown
 
 The **unit displayed** is what one mark or summarized position in the chart represents. Its **grain** is the corresponding row meaning in the plotting table. State both because a chart made from participant rows answers a different question from a chart made from program summaries.
 
-### Identify variable roles
+### Separate data type from role
 
-A variable's **role** describes how it participates in the comparison:
+A variable's **data type** describes the meaning and valid operations of its values:
 
-- a **categorical variable** places observations into named groups;
-- a **quantitative variable** records a numeric magnitude;
-- an **ordered variable** has a meaningful sequence; and
-- an **identifier** distinguishes rows but is not automatically a meaningful visual encoding.
+- **categorical** values place observations into named groups;
+- **quantitative** values record numeric magnitudes for which arithmetic is meaningful;
+- **ordinal** values are categories with a meaningful order; and
+- **temporal** values represent dates or times, whose order and spacing may matter.
+
+A variable's **role** describes how it participates in this particular analysis: for example, a quantitative column can be the measure being compared, a categorical column can define groups, and a temporal column can establish observation order. An identifier labels or links records; even when stored as a number, it is not automatically a quantitative measure. The same data type can play different roles in different charts, so record both type and role before choosing x, y, color, or another encoding.
 
 ### Separate exploratory and explanatory work
 
@@ -110,7 +117,7 @@ Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
 **Ideal Lie Factor:** Close to 1.0 (no distortion)
 
 **Common distortions to avoid:**
-- Truncated y-axes that exaggerate differences
+- Axis limits that hide relevant context or exaggerate differences. Bars normally need a zero baseline because length encodes magnitude; line charts do not always need to start at zero, but their range and any axis break must be clear and appropriate to the question.
 - 3D perspective that distorts area/volume comparisons
 - Inconsistent scales
 - Cherry-picked time ranges
@@ -139,7 +146,7 @@ Show as much detail as the data allows - don't oversimplify or aggregate unneces
 
 ![Lie Factor Example](media/tufte_lie_factor.png)
 
-*Before (left): Truncated y-axis creates a high lie factor, exaggerating modest growth. After (right): Honest scale starting at zero shows true magnitude of change.*
+*Before (left): The narrow y-range exaggerates modest growth. After (right): In this example, starting at zero restores useful magnitude context. A zero baseline is not a universal requirement for line charts; use a clearly labeled range that supports the intended comparison without distortion.*
 
 ## Color Palette Best Practices
 
@@ -187,7 +194,31 @@ An accessible chart is designed so more readers can recover its comparison.
 
 Example text alternative:
 
-> Line chart of prepared score by study round for standard and guided programs. Both rise across five rounds; the guided series rises from 61 to 79 and finishes seven points above the standard series. These are descriptive prepared summaries and do not establish a causal program effect.
+> Line chart of mean prepared score by study round for standard and guided programs. Both rise across five rounds; the guided series rises from 61 to 79 and finishes seven points above the standard series. These are descriptive prepared summaries and do not establish a causal program effect.
+
+That text alternative describes this actual example. Color is reinforced with marker shape, line style, and direct labels, so the comparison does not depend on color or a hover interaction alone:
+
+```python
+import matplotlib.pyplot as plt
+
+rounds = [1, 2, 3, 4, 5]
+standard = [60, 62, 65, 68, 72]
+guided = [61, 65, 70, 74, 79]
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(rounds, standard, color='#E69F00', marker='s', linestyle='--')
+ax.plot(rounds, guided, color='#0072B2', marker='o', linestyle='-')
+
+ax.text(5.08, standard[-1], 'Standard', va='center')
+ax.text(5.08, guided[-1], 'Guided', va='center')
+ax.set(xlabel='Study round', ylabel='Mean prepared score',
+       title='Guided program finishes 7 points higher by round 5')
+ax.set_xticks(rounds)
+ax.set_xlim(1, 5.7)
+ax.grid(axis='y', alpha=0.25)
+fig.tight_layout()
+plt.show()
+```
 
 
 # The Visualization Ecosystem
@@ -300,7 +331,7 @@ matplotlib's power comes from its extensive customization options.
 - `ax.set_ylim(min, max)` - Set y-axis limits
 - `ax.grid(True)` - Add grid lines
 - `ax.legend()` - Add legend
-- `ax.set_style('seaborn')` - Change plot style
+- `plt.style.use('ggplot')` - Set a matplotlib style before creating figures
 
 **Example:**
 
@@ -392,7 +423,7 @@ pandas provides convenient plotting methods that build on matplotlib, perfect fo
 - `df.plot(kind='hist')` - Histogram
 - `df.plot(kind='scatter', x='col1', y='col2')` - Scatter plot
 - `df.plot(kind='box')` - Box plot
-- `df.plot(kind='pie')` - Pie chart
+- `df.plot(kind='pie', y='col')` - Pie chart for one named DataFrame column
 
 **Example:**
 
@@ -515,7 +546,9 @@ plt.show()
 
 *seaborn excels at creating beautiful statistical visualizations with automatic styling and color choices.*
 
-## Advanced seaborn Features
+## Optional: Advanced Seaborn Features
+
+The following figure-level and distribution tools are an optional extension; the core lecture uses the axes-level plots above.
 
 **Reference:**
 
@@ -562,7 +595,6 @@ Density plots (also called KDE - Kernel Density Estimation) provide a smooth rep
 - `df.plot.density()` - Create density plot
 - `sns.histplot(data=df, x='col', kde=True)` - Histogram with density overlay
 - `sns.kdeplot(data=df, x='col')` - Pure density plot
-- `sns.distplot(data=df, x='col')` - Combined histogram and density
 
 **Example:**
 
@@ -583,15 +615,18 @@ pd.Series(normal_data).plot.density(ax=axes[0, 0], title='Normal Distribution')
 axes[0, 0].grid(True, alpha=0.3)
 
 # seaborn density plot
-sns.kdeplot(data=normal_data, ax=axes[0, 1], title='Normal Distribution (seaborn)')
+sns.kdeplot(data=normal_data, ax=axes[0, 1])
+axes[0, 1].set_title('Normal Distribution (seaborn)')
 axes[0, 1].grid(True, alpha=0.3)
 
 # Bimodal distribution
-sns.kdeplot(data=bimodal_data, ax=axes[1, 0], title='Bimodal Distribution')
+sns.kdeplot(data=bimodal_data, ax=axes[1, 0])
+axes[1, 0].set_title('Bimodal Distribution')
 axes[1, 0].grid(True, alpha=0.3)
 
 # Combined histogram and density
-sns.histplot(data=normal_data, kde=True, ax=axes[1, 1], title='Histogram + Density')
+sns.histplot(data=normal_data, kde=True, ax=axes[1, 1])
+axes[1, 1].set_title('Histogram + Density')
 axes[1, 1].grid(True, alpha=0.3)
 
 plt.tight_layout()
@@ -600,9 +635,11 @@ plt.show()
 
 # LIVE DEMO!
 
-# Modern Visualization Libraries
+# Optional Survey: Modern Visualization Libraries
 
 *The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
+
+This survey is optional. It introduces the design space and current APIs without making every library part of the core lecture contract.
 
 ## vega-altair: Grammar of Graphics with Vega-Lite
 
@@ -666,6 +703,7 @@ The `.encode()` method maps data columns to visual properties using type annotat
 
 - `x='column:Q'` - Quantitative (continuous) data
 - `y='column:O'` - Ordinal (discrete) data  
+- `x='date:T'` - Temporal (date/time) data
 - `color='column:N'` - Nominal (categorical) data
 - `size='column:Q'` - Size encoding
 - `shape='column:N'` - Shape encoding
@@ -697,10 +735,10 @@ altair provides built-in interactivity through the `.interactive()` method, enab
 **Reference:**
 
 - `.interactive()` - Enable zoom/pan
-- `.add_selection()` - Add selection tools
+- `.add_params(selection)` - Attach a selection parameter (Altair 5+)
 - `.transform_filter()` - Filter data dynamically
 - `alt.selection_interval()` - Rectangle selection
-- `alt.selection_single()` - Point selection
+- `alt.selection_point()` - Point selection
 
 **Example:**
 
@@ -828,7 +866,7 @@ chart.save('interactive.html') # Interactive HTML
 
 **Reference:**
 - `figure()` - Create plot figure
-- `.circle()`, `.line()`, `.bar()` - Add glyphs
+- `.scatter()`, `.line()`, `.vbar()` - Add point, line, and vertical-bar glyphs
 - `HoverTool()` - Add hover information
 - `output_notebook()` - Display in Jupyter
 

@@ -112,6 +112,9 @@ print(f"Age in days: {time_diff.days}")
 **Example:**
 
 ```python
+import numpy as np
+import pandas as pd
+
 # Convert to datetime (lab test dates)
 date_strings = ['2023-01-01', '2023-01-02', '2023-01-03']
 dates = pd.to_datetime(date_strings)
@@ -157,9 +160,9 @@ df = df.set_index('date')  # Set as index
 | `pd.date_range(freq='W-MON')` | `'W-MON'` | Weekly on Monday |
 | `pd.date_range(freq='MS')` | `'MS'` | Month start |
 | `pd.date_range(freq='QS')` | `'QS'` | Quarter start |
-| `pd.date_range(freq='H')` | `'H'` | Hourly |
+| `pd.date_range(freq='h')` | `'h'` | Hourly |
 
-*Note: Both 'H' and 'h' work for hourly frequency, but 'H' is the canonical form.*
+*Note: Use lowercase `'h'` for hourly frequency. The uppercase `'H'` alias was removed in pandas 3.*
 
 **Example:**
 
@@ -231,18 +234,35 @@ Shifting allows you to create lagged or leading versions of your time series, es
 **Example:**
 
 ```python
-# Create sample time series (patient weight measurements)
+# Create sample data (patient weight measurements)
 dates = pd.date_range('2023-01-01', periods=10, freq='D')
-ts = pd.Series([70.5, 70.8, 70.2, 71.0, 70.9, 71.2, 71.5, 71.3, 71.8, 71.6], index=dates)
+weight_features = pd.DataFrame({
+    'weight': [70.5, 70.8, 70.2, 71.0, 70.9, 71.2, 71.5, 71.3, 71.8, 71.6]
+}, index=dates)
 
-# Shifting operations
-ts['lag_1'] = ts.shift(1)  # Previous day
-ts['lead_1'] = ts.shift(-1)  # Next day
-ts['diff'] = ts.diff()  # First difference (day-to-day change)
-ts['pct_change'] = ts.pct_change()  # Percentage change
+# Add shifted versions of the weight Series as new DataFrame columns
+weight_features['lag_1'] = weight_features['weight'].shift(1)  # Previous row
+weight_features['lead_1'] = weight_features['weight'].shift(-1)  # Next row
+weight_features['diff'] = weight_features['weight'].diff()  # Row-to-row change
+weight_features['pct_change'] = weight_features['weight'].pct_change()
 
 print("Time series with shifts:")
-print(ts[['lag_1', 'diff', 'pct_change']].head())
+print(weight_features[['weight', 'lag_1', 'diff', 'pct_change']].head())
+```
+
+For longitudinal data, sort by entity and timestamp before computing lags or windows, and group by entity so one patient's history cannot become another patient's feature:
+
+```python
+measurements = pd.DataFrame({
+    'patient_id': ['A', 'B', 'A', 'B'],
+    'timestamp': pd.to_datetime(['2023-01-02', '2023-01-01', '2023-01-01', '2023-01-03']),
+    'value': [12, 20, 10, 23]
+}).sort_values(['patient_id', 'timestamp'])
+
+measurements['lag_1'] = (
+    measurements.groupby('patient_id', sort=False)['value'].shift(1)
+)
+print(measurements)
 ```
 
 # LIVE DEMO!
@@ -312,7 +332,7 @@ For time series with time components, you can select based on time of day. This 
 
 ```python
 # Create hourly time series (ICU monitoring)
-hourly_dates = pd.date_range('2023-01-01', periods=24*7, freq='H')
+hourly_dates = pd.date_range('2023-01-01', periods=24*7, freq='h')
 hourly_values = np.random.randn(24*7) + 100
 ts_hourly = pd.Series(hourly_values, index=hourly_dates)
 
@@ -357,9 +377,9 @@ The `resample()` method is the workhorse for frequency conversion, similar to `g
 | `ts.resample('D')` | Daily resampling |
 | `ts.resample('W')` | Weekly resampling |
 | `ts.resample('ME')` | Monthly resampling (Month End) |
-| `ts.resample('Q')` | Quarterly resampling |
-| `ts.resample('A')` | Annual resampling |
-| `ts.resample('H')` | Hourly resampling |
+| `ts.resample('QE')` | Quarterly resampling (quarter end) |
+| `ts.resample('YE')` | Annual resampling (year end) |
+| `ts.resample('h')` | Hourly resampling |
 
 **Example:**
 
@@ -383,6 +403,13 @@ monthly = ts_daily.resample('ME').mean()  # 'ME' = Month End
 print("\nMonthly resampled shape:", monthly.shape)
 print("Monthly data:")
 print(monthly.head())
+```
+
+`resample()` puts observations into time bins and then needs an aggregation such as `mean()`. The `label` argument chooses which bin edge labels the result, while `closed` chooses which edge belongs to the bin. Defaults vary by frequency, so specify them when boundary membership matters. In contrast, `asfreq()` selects or introduces timestamps on a new grid without combining observations:
+
+```python
+weekly_mean = ts_daily.resample('W', label='right', closed='right').mean()
+weekly_grid = ts_daily.asfreq('W')  # No aggregation
 ```
 
 ## Resampling with Different Aggregations
@@ -439,9 +466,37 @@ print(custom_stats.head())
 
 No fill is automatic. Forward fill, backward fill, interpolation, and zero each assert a different measurement story. A grid change alone is not evidence that any of those stories is correct.
 
+This example preserves that provenance explicitly: January 2 is a grid-created row, while January 3 is a source row whose measurement was already missing.
+
+```python
+observed = pd.Series(
+    [98.6, np.nan],
+    index=pd.to_datetime(['2023-01-01', '2023-01-03']),
+    name='temperature'
+)
+daily_grid = observed.asfreq('D')
+provenance = pd.DataFrame({
+    'temperature': daily_grid,
+    'source_row': daily_grid.index.isin(observed.index)
+})
+print(provenance)
+```
+
 ### Choose a resampling aggregation from measurement meaning
 
 **Measurement meaning** describes what a value represents and how, if at all, values may be combined. Temperature is a state observed at an instant. The mean temperature in a two-hour bin can answer "what was the average of the recorded temperatures in this interval?" The number of source readings is additive and can be summed. A patient identifier, station name, or other label should not be averaged.
+
+```python
+readings = pd.DataFrame({
+    'temperature': [98.4, 98.8, 99.1]
+}, index=pd.to_datetime(['2023-01-01 08:10', '2023-01-01 08:50', '2023-01-01 10:05']))
+
+two_hour_summary = readings.resample('2h').agg(
+    average_temperature=('temperature', 'mean'),
+    reading_count=('temperature', 'size')
+)
+print(two_hour_summary)
+```
 
 # LIVE DEMO!
 
@@ -473,19 +528,19 @@ The `rolling()` method creates a rolling window object that can be used with var
 **Example:**
 
 ```python
-# Create sample time series (patient temperature over time)
+# Create sample data (patient temperature over time)
 dates = pd.date_range('2023-01-01', periods=100, freq='D')
 values = 98.6 + np.cumsum(np.random.randn(100) * 0.1)  # Temperature with drift
-ts = pd.Series(values, index=dates)
+rolling_features = pd.DataFrame({'temperature': values}, index=dates)
 
 # Rolling statistics (7-day rolling window)
-ts['rolling_mean'] = ts.rolling(window=7).mean()
-ts['rolling_std'] = ts.rolling(window=7).std()
-ts['rolling_min'] = ts.rolling(window=7).min()
-ts['rolling_max'] = ts.rolling(window=7).max()
+rolling_features['rolling_mean'] = rolling_features['temperature'].rolling(window=7).mean()
+rolling_features['rolling_std'] = rolling_features['temperature'].rolling(window=7).std()
+rolling_features['rolling_min'] = rolling_features['temperature'].rolling(window=7).min()
+rolling_features['rolling_max'] = rolling_features['temperature'].rolling(window=7).max()
 
 print("Time series with rolling statistics:")
-print(ts[['rolling_mean', 'rolling_std']].head(10))
+print(rolling_features[['temperature', 'rolling_mean', 'rolling_std']].head(10))
 ```
 
 ## Advanced Rolling Operations
@@ -507,18 +562,20 @@ Rolling windows can be centered, have minimum periods, and use custom functions.
 
 ```python
 # Advanced rolling operations
-ts['centered_mean'] = ts.rolling(window=7, center=True).mean()
-ts['expanding_mean'] = ts.expanding().mean()  # Mean from start to current
-ts['ewm_mean'] = ts.ewm(span=7).mean()  # Exponentially weighted
+rolling_features['centered_mean'] = rolling_features['temperature'].rolling(window=7, center=True).mean()
+rolling_features['expanding_mean'] = rolling_features['temperature'].expanding().mean()
+rolling_features['ewm_mean'] = rolling_features['temperature'].ewm(span=7).mean()
 
 # Custom rolling function
 def rolling_range(series):
     return series.max() - series.min()
 
-ts['rolling_range'] = ts.rolling(window=7).apply(rolling_range)
+rolling_features['rolling_range'] = (
+    rolling_features['temperature'].rolling(window=7).apply(rolling_range)
+)
 
 print("Advanced rolling statistics:")
-print(ts[['centered_mean', 'expanding_mean', 'ewm_mean']].head(10))
+print(rolling_features[['centered_mean', 'expanding_mean', 'ewm_mean']].head(10))
 ```
 
 ## Exponentially Weighted Functions
@@ -541,17 +598,25 @@ Exponentially weighted functions give more weight to recent observations, making
 **Example:**
 
 ```python
-# Create sample time series (patient blood pressure)
+# Create sample data (patient blood pressure)
 dates = pd.date_range('2023-01-01', periods=50, freq='D')
-ts = pd.Series(np.cumsum(np.random.randn(50)) + 120, index=dates)
+blood_pressure_features = pd.DataFrame({
+    'blood_pressure': np.cumsum(np.random.randn(50)) + 120
+}, index=dates)
 
 # Exponentially weighted functions
-ts['ewm_mean'] = ts.ewm(span=5).mean()
-ts['ewm_std'] = ts.ewm(span=5).std()
-ts['ewm_alpha'] = ts.ewm(alpha=0.3).mean()
+blood_pressure_features['ewm_mean'] = (
+    blood_pressure_features['blood_pressure'].ewm(span=5).mean()
+)
+blood_pressure_features['ewm_std'] = (
+    blood_pressure_features['blood_pressure'].ewm(span=5).std()
+)
+blood_pressure_features['ewm_alpha'] = (
+    blood_pressure_features['blood_pressure'].ewm(alpha=0.3).mean()
+)
 
 print("Time series with EWM functions:")
-print(ts[['ewm_mean', 'ewm_std']].head(10))
+print(blood_pressure_features[['blood_pressure', 'ewm_mean', 'ewm_std']].head(10))
 ```
 
 *"You can't fall off the bell curve if there's no bell curve." - A reminder that time series forecasting, especially during unprecedented events, carries significant uncertainty. Always be honest about prediction intervals.*
@@ -563,6 +628,22 @@ A **trailing window** summarizes values at or before a row while moving forward 
 `min_periods=1` means at least one nonmissing value is required for a mean. It does not fill missing values.
 
 Neither answer is universally "the rolling mean"; the intended window must be named.
+
+On this irregular series, the final three rows span nine elapsed days, while the final three-day window contains only the January 10 and 11 observations:
+
+```python
+irregular = pd.Series(
+    [10, 20, 100, 40],
+    index=pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-10', '2023-01-11']),
+    name='value'
+)
+window_comparison = pd.DataFrame({
+    'value': irregular,
+    'last_3_rows_mean': irregular.rolling(3, min_periods=1).mean(),
+    'last_3_days_mean': irregular.rolling('3D', min_periods=1).mean()
+})
+print(window_comparison)
+```
 
 # Time Zone Handling
 
@@ -585,6 +666,8 @@ Neither answer is universally "the rolling mean"; the intended window must be na
 | `pd.Timestamp.now(tz='UTC')` | Current time in timezone |
 | `pd.date_range(..., tz='UTC')` | Create timezone-aware date range |
 
+`tz_localize()` attaches a timezone interpretation to naive clock readings without moving those clock values. `tz_convert()` requires timezone-aware values and changes their displayed clock time while preserving the same instants. Localize using the timezone in which naive source timestamps were recorded; convert to UTC for storage or to a local zone for display.
+
 **Example:**
 
 ```python
@@ -601,7 +684,7 @@ df_tz = pd.DataFrame({
     'value': np.random.randn(3)
 }, index=pd.date_range('2023-01-01', periods=3, freq='D'))
 
-# Localize to UTC
+# Interpret these naive source timestamps as UTC
 df_tz.index = df_tz.index.tz_localize('UTC')
 print("\nUTC DataFrame:")
 print(df_tz)
@@ -718,6 +801,23 @@ A **candidate feature** is a value that might later be supplied to a prediction 
 A **centered window** uses observations on both sides of a row. A **future-derived candidate** requires any value recorded after the prediction timestamp. Using either one as if it were already known creates **future leakage**: the procedure receives information that would not have existed when the prediction was issued.
 
 Availability is a property of the real workflow, not just the final DataFrame. A value can appear in a completed historical dataset and still have been unavailable at the prediction timestamp.
+
+For example, the centered feature at January 2 below uses the January 3 observation. It is valid for retrospective smoothing but unavailable for a prediction issued on January 2. If the current observation is also unavailable when prediction occurs, shift before applying a trailing window:
+
+```python
+signal = pd.Series(
+    [10, 20, 90],
+    index=pd.date_range('2023-01-01', periods=3, freq='D'),
+    name='signal'
+)
+availability_check = pd.DataFrame({
+    'observed': signal,
+    'trailing_including_now': signal.rolling(3, min_periods=1).mean(),
+    'prior_only': signal.shift(1).rolling(3, min_periods=1).mean(),
+    'centered': signal.rolling(3, center=True, min_periods=1).mean()
+})
+print(availability_check)
+```
 
 
 # LIVE DEMO!

@@ -51,7 +51,7 @@ STATISTICAL MODELING          TRADITIONAL ML             DEEP LEARNING
 │                     │      │                  │      │ • RNNs       │
 └─────────────────────┘      └──────────────────┘      └──────────────┘
      ↑                            ↑                          ↑
-  "Why?"                      "What?"                    "How?"
+ "Inference"                "Prediction"             "Representation"
 ```
 
 **Model Complexity vs Interpretability Trade-off:**
@@ -102,7 +102,7 @@ flowchart TD
 
 *Think of statistical modeling as the foundation of your modeling house - you can build fancy additions on top, but you need to understand the basics first.*
 
-Statistical modeling focuses on understanding relationships and making inferences about populations. Unlike machine learning (which prioritizes prediction), statistical models help you understand *why* things happen, not just *what* will happen.
+Statistical modeling focuses on quantifying relationships and making inferences about populations, while machine learning often prioritizes prediction on new data. A fitted association does not by itself explain *why* something happens: causal conclusions require an appropriate study design plus explicit identification assumptions.
 
 ## Introduction to `statsmodels`
 
@@ -111,7 +111,7 @@ Statistical modeling focuses on understanding relationships and making inference
 **When to use `statsmodels`:**
 
 - You need p-values, confidence intervals, or hypothesis tests
-- You want to understand *why* variables are related (not just predict)
+- You want to estimate and test relationships under stated assumptions (not just predict)
 - You're doing traditional statistical analysis (regression, ANOVA, etc.)
 - You need model diagnostics and assumption checking
 
@@ -144,7 +144,7 @@ y = β₀ + β₁x₁ + β₂x₂ + ... + ε
 Where:
 - y = dependent variable (what you're predicting)
 - β₀ = intercept (where the line starts)
-- β₁, β₂, ... = coefficients (how much each x affects y)
+- β₁, β₂, ... = coefficients (the change in fitted y associated with a one-unit increase in x, holding the other predictors fixed)
 - ε = error term (the stuff we can't explain)
 ```
 
@@ -162,7 +162,7 @@ y (target)
 Best-fit line: y = 2.0 + 1.5x
 ```
 
-*The line minimizes the distance (errors) between all data points and the line itself. That's what "least squares" means!*
+*OLS minimizes the sum of squared vertical residuals (`observed y - fitted y`), not the geometric distance from each point to the line. That's what "least squares" means here.*
 
 *"I can turn left, I can turn right, I can even turn... statistically significant!"*
 
@@ -189,11 +189,11 @@ import numpy as np
 
 # Create sample data
 np.random.seed(42)
-df = pd.DataFrame({
-    'x1': np.random.randn(100),
-    'x2': np.random.randn(100),
-    'y': 2 + 3 * np.random.randn(100) + 0.5 * np.random.randn(100)
-})
+x1 = np.random.randn(100)
+x2 = np.random.randn(100)
+noise = np.random.randn(100)
+df = pd.DataFrame({'x1': x1, 'x2': x2})
+df['y'] = 2 + 3 * df['x1'] + 0.5 * df['x2'] + noise
 
 # Formula API (R-like, works with DataFrames)
 model = smf.ols('y ~ x1 + x2', data=df)
@@ -226,15 +226,15 @@ print(results.pvalues)  # Statistical significance
 - Seasonal decomposition
 - Use when: You have temporal dependencies in your data
 
-**When Statistical Methods Beat ML:**
+**When an inferential model is the better fit:**
 
 - You need interpretable coefficients and p-values
 - You have strong theoretical reasons for model structure
 - You need confidence intervals for predictions
-- Sample size is small (statistical methods are more robust)
+- The sample is limited and a prespecified, parsimonious model has assumptions you can justify
 - You're doing hypothesis testing, not just prediction
 
-*Remember: Statistical models answer "why?" Machine learning models answer "what?" Both are valuable, but for different questions.*
+*Remember: inferential analyses quantify associations and uncertainty under assumptions; predictive analyses estimate performance on new data. Neither goal alone establishes a causal "why."*
 
 ![xkcd 1725: Correlation](https://imgs.xkcd.com/comics/correlation.png)
 
@@ -272,11 +272,15 @@ Original Dataset (1000 samples)
 ├── Training Set (800 samples, 80%)
 │   └── Used to train the model
 └── Test Set (200 samples, 20%)
-    └── Used to evaluate model performance
-        (Never seen during training!)
+    └── Used once for final performance evaluation
+        (Not used for fitting, tuning, or model selection!)
 ```
 
 *The golden rule: Never evaluate on data the model has seen during training. That's like giving a student the answers before the test and then being surprised they got 100%.*
+
+Keep the test set untouched until the model and preprocessing choices are final. Tune hyperparameters and compare candidate models with cross-validation confined to the training set or with a separate validation set.
+
+For temporal prediction, Lecture 09's information-availability rule comes first: construct each feature only from information available at its prediction timestamp. Then split chronologically (earlier observations for training, later observations for validation/test) or use a time-series cross-validation scheme; a random split can let future conditions inform past predictions.
 
 **Why `scikit-learn` is the ML standard:**
 
@@ -313,7 +317,7 @@ Linear regression in `scikit-learn` is optimized for prediction rather than infe
 | Speed | Slower | Faster |
 | Use when | Need to understand relationships | Need predictions |
 
-*Think of it this way: `statsmodels` answers "why?" while `scikit-learn` answers "what?"*
+*Think of it this way: `statsmodels` emphasizes inference about parameters and uncertainty, while `scikit-learn` emphasizes predictive workflows and out-of-sample evaluation.*
 
 **Reference:**
 
@@ -345,13 +349,23 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 
-# Create sample data
-np.random.seed(42)
-X = np.random.randn(100, 3)
-y = 2 + 3 * X[:, 0] + 0.5 * X[:, 1] + np.random.randn(100)
+# Create a pandas table, then select feature and target columns explicitly
+rng = np.random.default_rng(42)
+model_df = pd.DataFrame(
+    rng.normal(size=(100, 3)),
+    columns=['x1', 'x2', 'x3']
+)
+model_df['target'] = (
+    2 + 3 * model_df['x1'] + 0.5 * model_df['x2'] + rng.normal(size=100)
+)
+feature_columns = ['x1', 'x2', 'x3']
+X = model_df.loc[:, feature_columns]
+y = model_df['target']
 
 # Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
 # Fit model
 model = LinearRegression()
@@ -469,19 +483,21 @@ print(f"Feature importance: {importance}")
 
 ```mermaid
 flowchart LR
-    A[Raw Data] --> B[Preprocessing]
-    B --> C[Train/Test Split]
-    C --> D[Fit Model]
-    D --> E[Make Predictions]
-    E --> F[Evaluate]
-    F -->|Good enough?| G[Deploy]
-    F -->|Not good enough?| H[Tune Hyperparameters]
-    H --> D
+    A[Raw Data] --> B[Train/Test Split]
+    B --> C[Training Set]
+    B --> D[Untouched Test Set]
+    C --> E[Fit preprocessing and models<br/>with train-only CV/validation]
+    E --> F[Choose final pipeline]
+    F --> G[One final test evaluation]
+    D --> G
+    G --> H[Deploy]
     
-    style D fill:#e1f5ff
-    style E fill:#fff4e1
-    style F fill:#ffe1f5
+    style E fill:#e1f5ff
+    style F fill:#fff4e1
+    style G fill:#ffe1f5
 ```
+
+Preprocessing parameters must also be learned without the test set. A `Pipeline` is the usual way to fit an imputer, encoder, or scaler on each training fold and apply the learned transformation to validation or test rows.
 
 *"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"*
 
@@ -558,7 +574,7 @@ Final: Combine all models (like a modeling ensemble)
 - `model.predict(X_test)` - Make predictions
 - `model.predict_proba(X_test)` - Probability predictions (classification)
 - `model.feature_importances_` - Feature importance
-- `early_stopping_rounds` - Early stopping to prevent overfitting
+- `early_stopping_rounds` - Early stopping to help limit overfitting
 
 **Key Hyperparameters:**
 
@@ -579,9 +595,9 @@ Final: Combine all models (like a modeling ensemble)
 
 *Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash. The sweet spot is somewhere in between.*
 
-**Early Stopping:** Prevents overfitting by stopping training when validation performance stops improving.
+**Early Stopping:** Helps limit overfitting by stopping training when validation performance stops improving.
 
-*Early stopping monitors validation performance during training. When validation metrics stop improving (or start getting worse), training stops automatically. This prevents overfitting by using the best model from earlier rounds rather than continuing to train.*
+*Early stopping monitors validation performance during training. When validation metrics stop improving (or start getting worse), training stops automatically. The validation set therefore participates in model selection; keep a separate test set for the one-time final evaluation.*
 
 **Example:**
 
@@ -596,8 +612,13 @@ np.random.seed(42)
 X = np.random.randn(200, 5)
 y = (X[:, 0] + X[:, 1] > 0).astype(int)
 
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+# Create separate training, validation, and test sets (60% / 20% / 20%)
+X_train, X_holdout, y_train, y_holdout = train_test_split(
+    X, y, test_size=0.4, random_state=42, stratify=y
+)
+X_valid, X_test, y_valid, y_test = train_test_split(
+    X_holdout, y_holdout, test_size=0.5, random_state=42, stratify=y_holdout
+)
 
 # Fit XGBoost model
 model = xgb.XGBClassifier(
@@ -606,11 +627,11 @@ model = xgb.XGBClassifier(
     learning_rate=0.1,
     early_stopping_rounds=10
 )
-model.fit(X_train, y_train, 
-          eval_set=[(X_test, y_test)],
+model.fit(X_train, y_train,
+          eval_set=[(X_valid, y_valid)],
           verbose=False)
 
-# Predictions and feature importance
+# Evaluate only after early stopping has selected the model
 predictions = model.predict(X_test)
 importance = model.feature_importances_
 print(f"Feature importance: {importance}")
@@ -819,8 +840,14 @@ model.compile(
     metrics=['accuracy']
 )
 
-# Train model
-model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=0)
+# Train model; validation data comes from the training sample, not the test set
+model.fit(
+    X_train, y_train,
+    validation_split=0.2,
+    epochs=10,
+    batch_size=32,
+    verbose=0
+)
 
 # Evaluate
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)

@@ -18,29 +18,16 @@ NumPy Arrays & Virtual Environments
 
 **The Solution:** Each project gets its own Python environment.
 
-## Using venv (recommended)
+## Course candidate contract
 
-**Reference:**
+This lecture uses one tested course candidate:
 
-```bash
-# Create environment
-python -m venv datasci-practice
+- CPython 3.12.13
+- a project environment stored in `.venv`
+- NumPy 2.0.2 as the core lecture examples' only direct Python dependency
+- a deliberate `requirements.txt` containing only `numpy==2.0.2`
 
-# Activate (Mac/Linux)
-source datasci-practice/bin/activate
-
-# Activate (Windows)
-datasci-practice\Scripts\activate
-
-# Install packages
-pip install pandas numpy matplotlib
-
-# Save requirements
-pip freeze > requirements.txt
-
-# Deactivate
-deactivate
-```
+These versions are a candidate, not the final course lock. The primary setup below uses uv. The standard-library `venv` and Conda sections are alternatives for comparison; they reproduce this same version, directory, and dependency contract rather than defining separate environments.
 
 ## Reproducibility vocabulary
 
@@ -62,7 +49,7 @@ After activation below, Python can report the exact interpreter path without a p
 python -c "import sys; print(sys.executable)"
 ```
 
-The `-c` option runs the short Python string that follows it. Lecture 02 already used this pattern to check import safety.
+The `-c` option runs the short Python string that follows it.
 
 ### Package, module, and dependency
 
@@ -70,7 +57,7 @@ A **module** is a Python file that can be imported. A **package** is installable
 
 A **dependency** is software a project needs in order to run.
 
-- A **direct dependency** is deliberately chosen by this project and imported or invoked by its code. NumPy is the only direct dependency in this lecture.
+- A **direct dependency** is deliberately chosen by this project and imported by its Python code. NumPy is the only direct Python dependency used by the core lecture examples. The optional command-line supplement later in the lecture names separate tools that are not part of this candidate environment.
 - A **transitive dependency** is needed by a direct dependency rather than chosen directly by this project.
 
 A **requirements file** is a plain-text list of the direct packages a project deliberately needs. Record those dependencies in `requirements.txt`; do not generate that file from every package currently installed in an environment.
@@ -99,33 +86,38 @@ The environment is recreated from instructions and requirements; it is not synch
 
 **Activation** changes the current shell so `python` and installed commands resolve to the selected environment. Activation does not install a package and does not change Python source files.
 
-## Using uv (Fast & Modern)
+## Using uv (course candidate)
 
 [uv documentation](https://docs.astral.sh/uv/)
 
 **Reference:**
 
 ```bash
-# Install uv (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Confirm uv is installed
+uv --version
 
-# Create environment
-uv venv datasci-practice
+# Record and create the exact candidate environment
+uv python pin 3.12.13
+uv venv --python 3.12.13 .venv
 
-# Activate (Mac/Linux)
-source datasci-practice/bin/activate
+# Activate (macOS/Linux/WSL Bash)
+source .venv/bin/activate
 
-# Activate (Windows)
-datasci-practice\Scripts\activate
+# Install the deliberate direct requirements
+uv pip install -r requirements.txt
 
-# Install packages
-uv pip install pandas numpy matplotlib
-
-# Save requirements
-uv pip freeze > requirements.txt
+# Verify the candidate
+python --version
+python -c "import numpy as np; print(np.__version__)"
 
 # Deactivate
 deactivate
+```
+
+In native Windows PowerShell, replace the Bash activation line with:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
 ```
 
 ### Recreate instead of assuming
@@ -147,42 +139,55 @@ cd ..
 
 The recreated environment should independently report Python 3.12.13 and NumPy 2.0.2.
 
-### Standard-library fallback
+## Using standard-library venv (alternative)
 
 Use this concise fallback only when uv is unavailable and the candidate Python interpreter is already installed. Confirm that `python` reports 3.12.13 before creating the environment:
 
 ```bash
 python --version
 python -m venv .venv
+
+# Activate (macOS/Linux/WSL Bash)
 source .venv/bin/activate
+
 python -m pip install -r requirements.txt
 python -c "import numpy as np; print(np.__version__)"
 deactivate
 ```
 
-The outcome is the same: an activated `.venv` created from the deliberate direct-dependency file. The course does not require a second environment manager.
+In native Windows PowerShell, replace the Bash activation line with:
 
-## Using Conda
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+The outcome is the same: an activated `.venv` created from the deliberate direct-dependency file. Choose one setup route; do not nest one environment inside another.
+
+## Using Conda (alternative comparison)
 
 [Conda documentation](https://docs.conda.io/)
+
+Conda is not the course's primary setup route. Use it only if the configured channels provide the exact candidate Python version; otherwise use uv. This example keeps the same `.venv` location and installs the same deliberate requirements file.
 
 **Reference:**
 
 ```bash
-# Create environment
-conda create -n datasci-practice python=3.11
+# Create the exact candidate environment
+conda create --prefix ./.venv python=3.12.13 pip
 
-# Activate
-conda activate datasci-practice
+# Activate (Mac/Linux)
+conda activate ./.venv
 
-# Install packages
-conda install pandas numpy matplotlib
+# Activate (Windows)
+conda activate .\.venv
+
+# Install and verify the deliberate direct requirements
+python -m pip install -r requirements.txt
+python --version
+python -c "import numpy as np; print(np.__version__)"
 
 # Deactivate
 conda deactivate
-
-# Save environment
-conda env export > environment.yml
 ```
 
 # Python Potpourri
@@ -205,6 +210,8 @@ print(type(number))         # <class 'int'>
 **Reference:**
 
 ```python
+import numpy as np
+
 name = "Alice"
 grade = 87.5
 
@@ -433,7 +440,7 @@ NumPy provides built-in statistical functions that operate across entire arrays 
 grades = np.array([[85, 92, 78], [95, 88, 91], [82, 90, 87]])
 
 # Basic statistics
-mean = grades.mean()         # 88.2
+mean = grades.mean()         # Approximately 87.56
 std = grades.std()           # Standard deviation
 max_val = grades.max()       # 95
 min_val = grades.min()       # 78
@@ -445,7 +452,7 @@ test_avg = grades.mean(axis=0)     # Average per test
 
 ## Array Reshaping
 
-Reshaping operations let you change an array's dimensions without copying data, making it easy to convert between 1D, 2D, and higher-dimensional representations as needed for different operations.
+Reshaping operations change an array's dimensions. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
 **Reference:**
 
@@ -509,7 +516,7 @@ all_true = arr.all()     # False - not all True
 # Works with conditions too
 grades = np.array([85, 92, 78, 95])
 any_above_90 = (grades > 90).any()  # True
-all_above_80 = (grades > 80).all()  # True
+all_above_80 = (grades > 80).all()  # False (78 is not above 80)
 ```
 
 ## Sorting
@@ -571,9 +578,9 @@ Command line tools are powerful for quick data processing tasks. Commands can be
 graph LR
     A[Raw Data<br/>data.csv] -->|cat| B[cut -d,]
     B -->|Extract columns| C[tr lower upper]
-    C -->|Transform| D[sort -n]
+    C -->|Transform| D[sort by comma field 2]
     D -->|Order| E[head -n 10]
-    E -->|Top results| F[results.tsv]
+    E -->|Top results| F[results.csv]
 
     style A fill:#e1f5ff
     style F fill:#e1f5ff
@@ -596,7 +603,7 @@ cut -c1-10 file.txt             # Characters 1-10
 
 # sort: Sort data
 sort -n data.txt                # Numerical sort
-sort -k2 -n data.csv            # Sort by column 2
+sort -t',' -k2,2n data.csv      # Numeric sort by comma-delimited field 2
 
 # uniq: Remove duplicate lines (requires sorted input)
 sort data.txt | uniq            # Remove duplicates
@@ -636,8 +643,8 @@ awk -F',' '$3 > 50' data.csv    # Filter rows
 cat data.csv | \
   cut -d',' -f2,4 | \
   tr '[:lower:]' '[:upper:]' | \
-  sort -k2 -n | \
-  head -n 10 > results.tsv
+  sort -t',' -k2,2n | \
+  head -n 10 > results.csv
 ```
 
 ## Quick Data Visualization

@@ -53,15 +53,14 @@ The task transcript lost a substantial portion of the conversation twice, but th
 
 ## Next action
 
-1. Commit this branch-only tracking mechanism.
-2. Commit the recovered lecture-edit state as a named checkpoint.
-3. Narrow Lecture 05 and make the listed targeted repairs in small, lecture-group commits.
-4. Re-run lecture-only syntax, fence, link, and diff validation.
-5. Present the consolidated lecture review before touching demos or assignments.
+1. Commit the recovered lecture-edit state as a named checkpoint.
+2. Narrow Lecture 05 and make the listed targeted repairs in small, lecture-group commits.
+3. Re-run lecture-only syntax, fence, link, and diff validation.
+4. Present the consolidated lecture review before touching demos or assignments.
 
 ## Checkpoint log
 
 | Commit | Scope | Result |
 | --- | --- | --- |
-| Pending | Add branch-only tracking instructions and progress ledger | Establish durable recovery process |
-
+| `9523a1d` | Add branch-only tracking instructions and progress ledger | Durable recovery process established |
+| Pending | Snapshot recovered edits to Lectures 01–11 | Preserve the interrupted work before further reconciliation |

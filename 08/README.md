@@ -12,12 +12,12 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 - groupby split-apply-combine essentials
 - pivot tables and crosstab basics
-- remote workflows: ssh, screen, tmux
-- performance-minded patterns beginners should know
+- optional remote workflows: ssh, screen, tmux
+- optional performance-minded patterns
 
 *Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
 
-Data aggregation is the process of summarizing and grouping data to extract meaningful insights. This lecture covers the essential tools for data aggregation: **groupby operations**, **pivot tables**, and **remote computing** for handling large datasets.
+Data aggregation is the process of summarizing and grouping data to extract meaningful insights. The core lecture covers **groupby operations**, **pivot tables**, and the shape of their results. Remote-computing and performance sections are optional operational extensions for datasets or jobs that outgrow a local workflow.
 
 # The Split-Apply-Combine Paradigm
 
@@ -103,6 +103,24 @@ print(df.groupby('Department').agg({
 }))
 ```
 
+## Choose the result contract first
+
+Choose an operation by the grain and shape the result should have:
+
+- **Aggregation** reduces each group to one or more summary values, so the result has one row per group-key combination.
+- **Transform** returns values aligned to the original index and row count, so group statistics can be added back to the original rows.
+- **Apply** has a flexible return contract and is usually slower; use it when a built-in aggregation, transform, or filter cannot express the operation.
+
+Grouping keys have their own contract. `groupby` uses `dropna=True` by default, so rows with a missing group key are excluded; use `dropna=False` when missing keys should form a group. Named aggregation gives stable output column names, and `as_index=False` keeps group keys as ordinary columns:
+
+```python
+department_summary = (
+    df.groupby('Department', as_index=False, dropna=False)
+      .agg(mean_salary=('Salary', 'mean'),
+           employee_count=('Employee', 'size'))
+)
+```
+
 # Advanced GroupBy Operations
 
 ## Transform Operations
@@ -114,7 +132,7 @@ Transform operations apply a function to each group and return a result with the
 - `grouped.transform('mean')` - Apply mean to each group
 - `grouped.transform('std')` - Apply standard deviation to each group
 - `grouped.transform(lambda x: x - x.mean())` - Custom transform function
-- `grouped.transform(['mean', 'std'])` - Multiple transforms
+- `grouped.agg(['mean', 'std'])` - Compute multiple group-level summaries; unlike transform, this reduces to one row per group
 
 **Example:**
 
@@ -158,32 +176,30 @@ Apply operations let you use custom functions on each group.
 
 **Reference:**
 
-- `grouped.apply(func)` - Apply custom function to each group
-- `grouped.apply(lambda x: x.sort_values('col'))` - Sort each group
-- `grouped.apply(lambda x: x.nlargest(2, 'col'))` - Get top 2 from each group
-- `grouped.apply(func, include_groups=False)` - Exclude grouping columns from function (pandas 2.2+)
+- `grouped.apply(func, include_groups=False)` - Apply a custom function to each group
+- `grouped.apply(lambda x: x.sort_values('col'), include_groups=False)` - Sort each group
+- `grouped.apply(lambda x: x.nlargest(2, 'col'), include_groups=False)` - Get top 2 from each group
 
-**Important: FutureWarning for `include_groups` Parameter**
+**Important: `include_groups` and pandas versions**
 
-Starting in pandas 2.2, when using `.apply()` on a GroupBy object, pandas will include the grouping columns in the DataFrame passed to your function. This is a change from previous behavior where grouping columns were excluded. To maintain the old behavior (where grouping columns are excluded), you should explicitly set `include_groups=False`.
+Historically, `DataFrameGroupBy.apply()` passed grouping columns into each group when those columns were present in the grouped DataFrame. pandas 2.2 added `include_groups` and deprecated that inclusion; pandas 3.0 changed the default to exclusion and no longer permits `include_groups=True`. On pandas 2.2+, explicitly using `include_groups=False` states the current contract and avoids the 2.2 deprecation warning.
 
 **What's happening:**
-- **Old behavior (pandas < 2.2)**: When you call `df.groupby('Department').apply(func)`, the function receives only the non-grouping columns
-- **New behavior (pandas 2.2+)**: By default, the function receives all columns including the grouping columns
-- **Future behavior**: `include_groups=False` will become the default, but you should explicitly set it now to avoid warnings
+- **pandas before 2.2**: `DataFrameGroupBy.apply()` generally includes grouping columns that are columns of the grouped DataFrame.
+- **pandas 2.2**: The legacy default still attempts to include them, but that behavior is deprecated; pass `include_groups=False`.
+- **pandas 3.0+**: Grouping columns are excluded and `include_groups=True` is not allowed; `include_groups=False` remains explicit and valid.
 
 **Why this matters:**
-- If your function expects only non-grouping columns, you'll get unexpected behavior
-- The warning helps you prepare for future pandas versions
-- Setting `include_groups=False` explicitly makes your code future-proof
+- The callable receives a predictable set of columns.
+- Code written for pandas 2.2 avoids the warning and follows the pandas 3 contract.
+- `include_groups` controls columns passed to the callable; `group_keys` separately controls whether group labels appear in the combined result's index.
 
 **Example:**
 
 ```python
 # Apply: Custom function for salary statistics
 def salary_stats(group):
-    # With include_groups=False, 'group' contains only non-grouping columns
-    # Without it, 'group' also contains 'Department' column
+    # include_groups=False ensures 'group' contains non-grouping columns only.
     return pd.Series({
         'count': len(group),
         'mean': group['Salary'].mean(),
@@ -192,7 +208,7 @@ def salary_stats(group):
     })
 
 print("Custom statistics by department:")
-# Explicitly set include_groups=False to avoid FutureWarning
+# State the input-column contract (and avoid the pandas 2.2 warning).
 print(df.groupby('Department').apply(salary_stats, include_groups=False))
 
 # Apply: Get top earners in each department
@@ -304,8 +320,8 @@ print(pivot_multi)
 
 - `pivot_table(..., margins=True, margins_name='Total')` - Add totals
 - `pivot_table(..., fill_value=0)` - Fill missing values
-- `pivot_table(..., dropna=False)` - Keep missing combinations
-- `pivot_table(..., observed=True)` - Include all category combinations
+- `pivot_table(..., dropna=False)` - Retain all-NA result columns and include NA-key rows when computing margins
+- `pivot_table(..., observed=True)` - For categorical groupers, show only category values/combinations observed in the data
 
 **Example:**
 
@@ -332,13 +348,13 @@ print(crosstab)
 
 # LIVE DEMO!
 
-# Remote Computing and SSH
+# Optional: Remote Computing and SSH
 ![xkcd 2523: Endangered Data](https://imgs.xkcd.com/comics/endangered_2x.png)
 
 
 *When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
 
-Remote computing allows you to leverage powerful servers for data analysis that would be impossible on your local machine.
+This operational section is not required to understand aggregation. Use it only when course infrastructure or data size calls for a remote machine, and follow that system's access and security policy.
 
 ## SSH Fundamentals
 
@@ -375,8 +391,8 @@ scp username@server.com:~/results/analysis.ipynb ./
 **Reference:**
 
 ```bash
-# Start Jupyter notebook on remote server
-jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+# Start Jupyter on the remote loopback interface
+jupyter notebook --ip=127.0.0.1 --port=8888 --no-browser
 
 # Forward port to local machine
 ssh -L 8888:localhost:8888 username@server.com
@@ -454,9 +470,9 @@ Ctrl+b p  # Previous window
 # Start persistent analysis session
 tmux new-session -s data_analysis
 
-# Inside tmux, start your analysis
+# Inside tmux, start your analysis on the remote loopback interface
 conda activate datasci_217
-jupyter notebook --ip=0.0.0.0 --port=8888
+jupyter notebook --ip=127.0.0.1 --port=8888 --no-browser
 
 # Detach from session (Ctrl+b, then d)
 # Session continues running on server
@@ -465,10 +481,10 @@ jupyter notebook --ip=0.0.0.0 --port=8888
 tmux attach-session -t data_analysis
 ```
 
-# Performance Optimization
+# Optional: Performance Optimization
 ![xkcd 2582: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
 
-*When working with large datasets, every millisecond counts. Understanding performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis.*
+Optimize only after measuring the real workload. These patterns are optional and their benefit depends on pandas version, data types, group cardinality, memory, and hardware; the benchmark below is illustrative rather than a promise for every dataset.
 
 ![Performance Benchmarks - All comparisons on 10M rows (lower is better)](media/perf_combined.png)
 

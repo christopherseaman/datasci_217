@@ -1,221 +1,241 @@
-The Complete Data Science Workflow: From Raw Data to Insights
+# From a Question to a Defensible Result
 
 ![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
 
-*"I used to be a data scientist, but then I automated myself out of a job. Now I'm just a script that runs every morning."*
+This capstone lecture is about putting familiar tools together around a real
+question. It is not a claim that every project follows one complete, linear
+"data science lifecycle," and it is not a challenge to use every technique from
+the course.
 
-# Outline
+The approach follows the spirit of McKinney's data analysis examples: understand
+what the records represent, ask a focused question, and let that question determine
+the useful cleaning, reshaping, summaries, plots, and—when appropriate—modeling.
+The path is usually iterative. A surprising count may send us back to the source
+documentation; a plot may reveal that the first question needs revision.
 
-This final lecture walks through a **complete data science project** from start to finish, demonstrating how all the tools and techniques from Lectures 01-10 work together in a real-world workflow.
+The current live demo uses a compact course release derived from January–June 2023
+NYC Yellow Taxi trip records. It is one worked example, not a universal project
+template.
 
-- **Phase 1-3:** Setup, exploration, and data cleaning
-- **Phase 4-5:** Data wrangling, transformation, and feature engineering
-- **Phase 6-7:** Pattern analysis and modeling preparation
-- **Phase 8-9:** Modeling, evaluation, and results communication
+## Learning objectives
 
-**Demo dataset:** A compact, frozen NYC Yellow Taxi release derived from January-June 2023 trip records. The required workflow predicts next-hour pickup counts; an optional fifth demo uses taxi-zone polygons to help ground the data.
+By the end of the session, given a dataset and an analytical question, you should
+be able to:
 
-# The Complete Workflow
+- state an answerable question and a candidate claim that evidence could support
+  or contradict;
+- identify the row grain and candidate key of both a source table and an analysis
+  table, then perform a check that would expose duplicate or missing keys;
+- trace one reported result back through its source, selection rules, and important
+  transformations;
+- justify a cleaning, wrangling, aggregation, or visualization decision in terms
+  of the question it helps answer;
+- when prediction is appropriate, specify a target, prediction time, available
+  features, comparison baseline, split strategy, and evaluation measure; and
+- write a concise conclusion that separates the observed result, the claim it
+  supports, and at least one material limitation.
 
-*Reality check: Real data science projects don't follow a linear path. You'll iterate, backtrack, and discover new questions as you explore. But having a structured workflow helps you stay organized and ensures you don't miss critical steps.*
+## What is review, and what is new?
 
-This lecture demonstrates the **complete data science lifecycle**:
+Most of today's code is review. We will reuse DataFrame inspection, missing-value
+handling, joins, `groupby`, reshaping, datetime operations, visualization, feature
+construction, and the basic scikit-learn estimator interface.
 
+The limited new content is integrative rather than a large new API:
+
+- keeping a question, a possible claim, and the available evidence aligned;
+- making row grain, keys, and provenance explicit before calculating;
+- recognizing the boundary between a DataFrame built for analysis and a matrix
+  built for a model;
+- deciding whether a model adds anything to the question; and
+- carrying evidence and limitations through to the final communication.
+
+McKinney's Chapter 13 examples model this kind of integration. Different questions
+call for different moves: missing fields become visible during inspection, related
+tables are merged when the desired comparison needs them, and counts are sometimes
+normalized before groups can be compared fairly. Chapter 12 supplies the narrower
+bridge from pandas to modeling: feature engineering often grows out of aggregation
+and transformation, preprocessing must respect the training data, and performance
+is assessed on out-of-sample data. Neither chapter presents a quota of techniques.
+
+## A worked capstone: one question, several connected decisions
+
+### Begin with the question and the possible claim
+
+For the taxi example, our working question is:
+
+> Using information available before a target hour, how well can we predict the
+> pickup count for each selected taxi zone in the next hour, and where are the
+> largest errors?
+
+That question implies a prediction time, an outcome, and a unit of analysis. It
+also suggests a testable candidate claim: recent history, weekly history, and
+calendar position may predict next-hour pickups better than simply repeating the
+count from the same hour one week earlier. The demo does not assume that claim is
+true; the comparison supplies the evidence.
+
+A different project might ask a descriptive or comparative question instead. In
+that case, a carefully designed table, aggregation, and visualization may be the
+right endpoint. A model is useful only when it helps answer the question.
+
+### Establish what one row means
+
+The taxi release offers two useful views of the same setting:
+
+| View | One row represents | Key or identifier | What it can support |
+| --- | --- | --- | --- |
+| Event sample | one sampled pickup event | `course_row_id` | auditing fields and practicing event-level checks |
+| Zone-hour panel | one selected zone at one UTC hour | (`pickup_zone_id`, `target_hour_utc`) | zone-hour counts, time patterns, and the prediction task |
+
+The event sample is not a random sample for estimating citywide totals. The panel
+was derived separately from the full documented source files. Confusing those two
+grains would produce calculations that run successfully but answer the wrong
+question.
+
+Before analysis, we therefore ask:
+
+- What generated these records, and what selection rules were applied?
+- Is the proposed key unique and complete at the grain we need?
+- Does a zero mean no observed pickups, or could it mean no row was recorded?
+- Which timestamp orders events unambiguously, and which is easiest to interpret?
+
+In this example, UTC provides an unambiguous ordering key through daylight-saving
+changes, while New York local time is useful for explaining hourly and weekly
+patterns.
+
+### Audit evidence before changing it
+
+Provenance and data quality are part of the analysis, not setup trivia. The demo
+uses the release manifest to connect course artifacts to documented source files
+and to verify file identities. We then inspect types, missingness, timestamp
+parsing, month membership, zone membership, uniqueness, and coverage.
+
+Cleaning is purposeful. We do not automatically drop every row with a missing
+value or remove every large observation. Instead, we ask whether an issue changes
+the meaning of a row or threatens the intended calculation. When a row is excluded,
+the demo records a reason so that the decision remains auditable.
+
+### Build the table the question needs
+
+The source grain and the question's grain are often different. Here, prediction
+needs a complete zone-hour panel rather than a pile of individual trips. Once that
+grain is established, calendar fields, lagged counts, and rolling summaries can be
+defined with a clear interpretation.
+
+This is the same general move seen throughout McKinney's examples: merge when facts
+are split across tables, aggregate when the question concerns groups, reshape when
+the comparison is clearer in another layout, and normalize when raw totals would
+be misleading. Those are choices, not mandatory project stages. Each transformation
+should have a sentence explaining what question it serves and a check that the
+result still has the intended grain.
+
+### Let summaries and plots refine the question
+
+Simple summaries usually come before a model. Counts by group, distributions, and
+time profiles can reveal data problems, plausible patterns, and important
+differences between groups. A useful plot has a job: it might compare hourly pickup
+profiles, show changes over time, or expose where prediction errors are concentrated.
+
+The analysis may loop here. An unexpected pattern can motivate a subgroup view, a
+normalization, a revised cleaning decision, or a narrower claim. Exploration is
+productive when each follow-up is tied to the question rather than to a desire to
+generate more charts.
+
+### Model only under a clear prediction contract
+
+For a predictive question, "what would be known at prediction time?" is the key
+boundary. A feature for target hour *t* may use earlier observations, but not the
+target count or information created afterward. Rolling features therefore begin
+with a shift.
+
+The current demo uses a time-ordered training, validation, and test design because
+the intended use is prediction of later hours. It compares a weekly-lag baseline
+with one transparent scikit-learn pipeline, makes the choice using validation data,
+and evaluates the selected approach on the held-out test period. Preprocessing and
+model fitting stay together so that information learned from later data does not
+leak backward.
+
+These choices fit this question and dataset. Other questions may need a random
+split, grouped split, cross-validation, a statistical model, or no model at all.
+The transferable principle is to make the evaluation resemble the proposed use
+and to compare against a meaningful simple alternative.
+
+### Communicate a result at the strength the evidence allows
+
+A compact conclusion should answer four questions:
+
+1. What did we observe, using what measure or visualization?
+2. What claim does that evidence support—and what stronger claim does it not
+   support?
+3. Where does the result vary or fail?
+4. Which provenance, coverage, measurement, or modeling limitation matters most?
+
+For the taxi demo, prediction error can describe performance on the held-out hours
+and selected zones in this release. By itself, it does not establish a causal
+explanation, guarantee future performance, or describe all NYC taxi activity.
+
+## Session shape: lecture and demo in equal parts
+
+We will spend roughly half the session on the worked reasoning above and half on
+the executable taxi example.
+
+| Share of class | Mode | Focus |
+| --- | --- | --- |
+| First ~50% | worked lecture and discussion | question and claim, grain and key, provenance, purposeful transformations, the modeling decision, and defensible communication |
+| Second ~50% | live notebook walkthrough | inspect concrete records, build the zone-hour table, prepare past-only features, evaluate a simple comparison, and inspect errors |
+
+The lecture supplies the reasoning that transfers to other datasets. The demo
+shows how one particular set of decisions is implemented and checked; it is not a
+second pass through a required universal checklist.
+
+## Demo roadmap
+
+The four core notebooks follow the taxi question from evidence to result:
+
+1. **`01_setup.ipynb` — Trust the release before using it.** Verify provenance,
+   inspect event-grain records, and make exclusions auditable.
+2. **`02_wrangling.ipynb` — Build a past-only model table.** Verify the zone-hour
+   key and coverage, then construct interpretable calendar and history features.
+3. **`03_model_prep.ipynb` — Analyze training patterns and freeze the split.** Use
+   training data for exploratory summaries and keep later periods separate.
+4. **`04_modeling.ipynb` — Compare, freeze, and report.** Compare a weekly baseline
+   with one pipeline, evaluate held-out performance, and examine error slices.
+
+**`05_geo_bonus.ipynb`** is an optional geographic view of zone-level results. It
+is enrichment, not a required part of the capstone pattern.
+
+## Transfer to the later assignment
+
+The later assignment is a somewhat guided mini research project using a different
+dataset. The transfer is in the reasoning: formulate a question, understand the
+records, choose transformations that serve the question, evaluate claims honestly,
+and communicate limitations. It should not be a search-and-replace copy of the
+taxi notebooks, and it does not need a technique merely because that technique
+appears in today's demo. Follow the assignment's own deliverables while adapting
+the analytical choices to its data and question.
+
+## Getting started with the demo
+
+From the course repository:
+
+```bash
+cd 11/demo
+uv venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+chmod +x download_data.sh
+./download_data.sh
 ```
-Raw Data → Exploration → Cleaning → Wrangling → Feature Engineering
-    → Analysis → Modeling → Results → Insights
-```
 
-Each phase builds on the previous one, and we'll use techniques from every lecture in this course.
+Then open `01_setup.ipynb` and continue through `04_modeling.ipynb` in order. Each
+notebook explains the artifact it reads or rebuilds, so you can pause between them
+and inspect the intermediate reasoning—not just the final output.
 
-**Key Principle:** This isn't just about individual techniques - it's about **integrating everything you've learned** into a cohesive analytical process.
+## Optional practice after class
 
-# Notebook Structure
-
-This lecture is organized into **4 interactive notebooks** that you can follow along with:
-
-1. **Notebook 1: Setup, Exploration & Cleaning**
-   - Loading and inspecting data
-   - Initial exploration and visualization
-   - Systematic data cleaning workflow
-
-2. **Notebook 2: Wrangling & Feature Engineering**
-   - Establishing a complete zone-hour panel
-   - Time series datetime handling
-   - Creating past-only lag and rolling features
-
-3. **Notebook 3: Pattern Analysis & Modeling Prep**
-   - Training-only pattern analysis
-   - Identifying hourly and weekly structure
-   - Temporal train/validation/test splitting
-   - Feature-availability checks
-
-4. **Notebook 4: Modeling & Results**
-   - A weekly-lag baseline and one scikit-learn pipeline
-   - Validation-based model choice
-   - One untouched test evaluation and error slices
-   - Final visualizations and results communication
-
-## Phase-to-Notebook Mapping
-
-This is really only useful if you get stuck on the final and want to know where to look in today’s lecture.
-
-**Notebook 1:** Phases 1-3 (Setup, Exploration, Cleaning)
-- Phase 1: Project Setup & Data Acquisition
-- Phase 2: Data Exploration & Understanding
-- Phase 3: Data Cleaning & Preprocessing
-
-**Notebook 2:** Phases 4-5 (Wrangling, Feature Engineering)
-- Phase 4: Data Wrangling & Transformation
-- Phase 5: Feature Engineering & Aggregation
-
-**Notebook 3:** Phases 6-7 (Pattern Analysis, Modeling Prep)
-- Phase 6: Pattern Analysis & Advanced Visualization
-- Phase 7: Modeling Preparation
-
-**Notebook 4:** Phases 8-9 (Modeling, Results)
-- Phase 8: Modeling
-- Phase 9: Results & Insights
-
-**How to Use:**
-- Each notebook can be run independently (after previous notebooks)
-- Follow along during lecture or work through them on your own
-- All notebooks use the NYC Taxi Trip Dataset
-- Code is executable and well-documented
-
-# Time Series Component
-
-**Note:** This project includes **time series analysis** as a required component. The NYC Taxi dataset has temporal patterns that require time series operations:
-- Hourly and daily patterns
-- Day-of-week effects
-- Seasonal trends
-- Time-based feature engineering
-
-You'll see datetime operations, resampling, rolling windows, and temporal modeling - applying the time series skills from Lecture 09 within a complete project workflow.
-
-## Workflow Requirements Checklist
-
-Use this checklist to ensure you complete all required components:
-
-**Phase 1-2 (Setup & Exploration):**
-- [ ] Data loaded successfully
-- [ ] Initial inspection completed (shape, info, describe)
-- [ ] Missing values identified
-- [ ] Basic visualizations created (distributions, time series if applicable)
-- [ ] Data quality issues documented
-
-**Phase 3 (Cleaning):**
-- [ ] Missing data handling strategy chosen and implemented
-- [ ] Outliers detected and handled
-- [ ] Data types validated and converted
-- [ ] Duplicates identified and removed
-- [ ] Cleaning decisions documented
-
-**Phase 4 (Wrangling):**
-- [ ] Datetime columns parsed correctly
-- [ ] Datetime index set
-- [ ] Temporal features extracted (hour, day_of_week, month minimum)
-- [ ] Multiple datasets merged (if applicable)
-- [ ] Data reshaped as needed
-
-**Phase 5 (Feature Engineering):**
-- [ ] Derived features created
-- [ ] Time-based aggregations performed
-- [ ] At least one rolling window calculation
-- [ ] Categorical features created (if applicable)
-- [ ] Feature list documented
-
-**Phase 6 (Pattern Analysis):**
-- [ ] Trends over time identified
-- [ ] Seasonal patterns analyzed
-- [ ] Correlation analysis completed
-- [ ] Advanced visualizations created
-- [ ] Key patterns documented
-
-**Phase 7 (Modeling Prep):**
-- [ ] Target and one-hour prediction horizon selected
-- [ ] Temporal train/validation/test split performed (NOT random split)
-- [ ] Features selected and prepared
-- [ ] Categorical variables handled (encoding if needed)
-- [ ] No data leakage (future data not in training set)
-
-**Phase 8 (Modeling):**
-- [ ] Weekly-lag baseline calculated
-- [ ] One supported model selected using validation only
-- [ ] Final performance evaluated once on the untouched test set
-- [ ] Error slices checked by zone and local hour
-- [ ] Model performance documented
-
-**Phase 9 (Results):**
-- [ ] Final visualizations created
-- [ ] Summary tables generated
-- [ ] Key findings documented
-- [ ] Results communicated clearly
-
-# Connection to Final Assignment
-
-This lecture demonstrates the **same workflow** that you'll use in the final assignment, but with:
-- **More detailed explanations** and rationale
-- **Live demonstrations** of techniques
-- **Best practices** and professional workflows
-- **Troubleshooting** common issues
-
-The final assignment follows the same nine-phase structure with a different dataset: a frozen Chicago Beach Weather Sensors release. It focuses on **applying** the workflow rather than repeating the taxi example.
-
-**Key Difference:** This lecture teaches the workflow. The assignment assesses your ability to execute it.
-
-# Learning Objectives
-
-By the end of this lecture, you should be able to:
-
-- Execute a complete data science workflow from raw data to insights
-- Integrate techniques from all previous lectures
-- Handle real-world data quality issues
-- Perform time series analysis on temporal data
-- Build and evaluate predictive models
-- Communicate results effectively
-
-# Getting Started
-
-1. **Navigate to the demo folder:**
-   ```bash
-   cd 11/demo
-   ```
-
-2. **Set up the environment:**
-   ```bash
-   uv venv .venv
-   source .venv/bin/activate
-   uv pip install -r requirements.txt
-   ```
-
-3. **Verify the compact NYC Taxi demo release:**
-   ```bash
-   chmod +x download_data.sh
-   ./download_data.sh
-   ```
-
-4. **Open the notebooks in order:**
-   - `01_setup.ipynb` - Setup, Exploration & Cleaning
-   - `02_wrangling.ipynb` - Wrangling & Feature Engineering
-   - `03_model_prep.ipynb` - Pattern Analysis & Modeling Prep
-   - `04_modeling.ipynb` - Modeling & Results
-
-   Optional: `05_geo_bonus.ipynb` uses supplied geospatial machinery to map zone-level results. It is not assignment material.
-
-5. **Follow along** or work through them independently
-
-6. **Run each cell** to see the results and understand the workflow
-
----
-
-*"The best way to learn data science is to do data science. This lecture gives you a complete, real-world example of how it all fits together."*
-
-# Holiday fun…
-
-- [Advent of Code](https://adventofcode.com) - Get in the holiday spirit!
-- [GameShell](https://github.com/phyver/GameShell) - A game to learn the Unix shell
+- [Advent of Code](https://adventofcode.com) — short programming puzzles for
+  continued practice.
+- [GameShell](https://github.com/phyver/GameShell) — a game for practicing the Unix
+  shell.
 
 ![xkcd 1513: Code Quality](media/xkcd_1513.png)
-
-*"I honestly didn't think you could even USE emoji in variable names. Or that there were so many different crying ones."*

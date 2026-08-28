@@ -9,11 +9,11 @@ Mid-term: [#FIXME:URL]
 ![Data Pipeline Intro](media/data_pipeline_intro.png)
 *Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
-Data cleaning follows a systematic workflow: **detect → handle → validate → transform**. We'll cover each technique individually, then bring it all together in a complete pipeline at the end.
+Data cleaning follows a documented workflow: **audit/detect → decide → transform → validate → save**. Validation happens before a derived artifact is saved; a failed check sends the work back to the audit or decision step. We'll cover each technique individually, then bring it all together in one complete pipeline at the end.
 
 ## Data contract and schema
 
-**Raw data** is the source artifact as received. Preserve it unchanged. **Cleaned data** is a separate, derived artifact that satisfies a documented contract after deliberate transformations and validation. Clean does not mean perfect, complete, or free of unusual values.
+The **source artifact** is the file or bytes as received. A **raw table** is the parsed, unmodified view of that source. Keep a **raw snapshot** for a mutation check, and perform transformations only on a separate **working table**. **Cleaned data** is a derived artifact saved only after the working table satisfies a documented contract. Clean does not mean perfect, complete, or free of unusual values.
 
 **Row meaning** states what one row represents. A **schema** records the expected column names, meanings, data types, allowed or required values, and whether missing values are permitted.
 
@@ -21,13 +21,13 @@ A **candidate identifier** is one column, or a combination of columns, expected 
 
 **Tidy data** uses one column for each variable, one row for each observation, and one table for each type of observational unit. This is a structural description, not proof that the values are valid or clean. Lecture 06 teaches structural reshaping; Lecture 05 only states the expected row and column meanings. See Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10) for the originating formulation.
 
-**Provenance** records where an artifact came from. An **audit trail** records the source, detected issues, decisions, transformations, validation results, and output. Together they make the path from raw to clean inspectable.
+**Provenance** records where an artifact came from; a source name and content checksum are two useful pieces of evidence. An **audit trail** records the source, detected issues, decisions, transformations, validation results, and output. Together they make the path from source snapshot to raw table to working table to clean artifact inspectable.
 
 # Handling Missing Data
 
 Missing data is a common problem in real-world datasets. Understanding how to identify, analyze, and handle missing data is crucial for reliable data analysis. Pandas provides powerful tools for working with missing values.
 
-*Fun fact: Missing data has its own Wikipedia page with 47 different types of missingness. The most common? "I forgot to fill this out" and "The system crashed again."*
+*A missing marker records absence, not its cause. The same blank can mean nonresponse, inapplicability, or a system failure.*
 
 ![Missing Data Patterns](media/missing_data_patterns_diagram.png)
 *Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
@@ -36,7 +36,7 @@ Missing data is a common problem in real-world datasets. Understanding how to id
 
 ## Missing Data Detection
 
-Missing data detection identifies where data is missing and helps understand the pattern of missingness. This is the first step in any data cleaning process.
+Missing data detection identifies values pandas recognizes as missing and helps describe their pattern. A Boolean missingness mask does not by itself detect source-specific sentinel codes such as `-9` or `unknown`, establish why values are absent, or determine what to do with them.
 
 *Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up.*
 
@@ -68,7 +68,7 @@ plt.show()
 
 ## Missing Data Analysis
 
-Missing data analysis helps understand the pattern and mechanism of missingness. This information guides the choice of appropriate handling strategies.
+Missing data analysis describes patterns and prompts investigation of possible mechanisms. Counts and Boolean masks alone cannot establish why values are missing; that requires source knowledge and, often, a substantive assumption. The resulting evidence guides the choice of an appropriate handling strategy.
 
 **Reference:**
 
@@ -90,18 +90,18 @@ print(df.isnull().sum(axis=1))  # Missing values per row
 
 # Remove rows with missing values
 df_clean = df.dropna()
-print(df_clean.shape)  # (2, 3) - removed rows with missing values
+print(df_clean.shape)  # (1, 3) - only the first row is complete
 ```
 
 ## Missing Data Imputation
 
-Missing data imputation fills in missing values using various strategies. The choice of imputation method depends on the data type and the pattern of missingness.
+Missing data imputation fills in missing values using a stated rule. Whether to impute, retain, flag, or drop a value depends on the variable's meaning, how the value became missing, and the intended analysis. No method below is an automatic default.
 
 **Reference:**
 
 - `df.fillna(value)` - Fill missing values with constant
-- `df.ffill()` / `df.fillna(method='ffill')` - Forward fill (use previous value; method= deprecated in pandas 3.0)
-- `df.bfill()` / `df.fillna(method='bfill')` - Backward fill (use next value; method= deprecated in pandas 3.0)
+- `df.ffill()` - Forward fill (use the previous value)
+- `df.bfill()` - Backward fill (use the next value)
 - `df.fillna(df.mean())` - Fill with column mean
 - `df.fillna(df.median())` - Fill with column median
 - `df.fillna(df.mode().iloc[0])` - Fill with column mode
@@ -121,12 +121,9 @@ print(df_filled)  # Missing values replaced with 0
 df_mean = df.fillna(df.mean())
 print(df_mean)  # Missing values replaced with column mean
 
-# Forward fill - modern syntax (pandas 1.4+)
+# Forward fill is appropriate only when row order and entity boundaries justify it
 df_ffill = df.ffill()
 print(df_ffill)  # Missing values replaced with previous value
-
-# Deprecated syntax (still works in pandas 2.x, removed in 3.0)
-df_ffill_old = df.fillna(method='ffill')  # Avoid this in new code
 ```
 
 ```
@@ -144,9 +141,9 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
 
 # Data Transformation Techniques
 
-## Removing Duplicates
+## Detecting and Resolving Duplicates
 
-Duplicate rows can skew your analysis and waste computational resources. Removing duplicates is a common first step in data cleaning.
+Repeated rows or identifiers are evidence to investigate, not an instruction to delete. Use the row meaning, candidate identifier, source process, and any timestamps or version fields to decide whether records are redundant, conflicting, or valid repeated observations.
 
 *Fun fact: Duplicates are like that one song that gets stuck in your head - they keep showing up everywhere, even when you think you've gotten rid of them all.*
 
@@ -164,9 +161,9 @@ Duplicate rows can skew your analysis and waste computational resources. Removin
 df = pd.DataFrame({'A': [1, 2, 2, 3], 'B': [4, 5, 5, 6]})
 print(df.duplicated().sum())  # Number of duplicate rows
 
-# Remove duplicates
-df_clean = df.drop_duplicates()
-print(df_clean)  # Removed duplicate rows
+# This fixture defines identical A/B rows as repeated ingestion, so keep one
+df_clean = df.drop_duplicates(keep='first')
+print(df_clean)
 ```
 
 ## Replacing Values
@@ -273,6 +270,7 @@ Converting data to the correct types is essential for proper analysis. This incl
 **Reference:**
 
 - `df.astype('int64')` - Convert to integer
+- `series.astype('Int64')` - Convert to pandas' nullable integer type
 - `df.astype('float64')` - Convert to float
 - `df.astype('string')` - Convert to string
 - `pd.to_datetime(df['date_column'])` - Convert to datetime
@@ -286,7 +284,14 @@ df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.5, 5.5, 6.5]})
 df['A'] = df['A'].astype('int64')  # Convert string to integer
 df['B'] = df['B'].astype('int64')  # Convert float to integer
 print(df.dtypes)  # A: int64, B: int64
+
+# Capital-I Int64 stores whole numbers while still allowing pd.NA
+ages = pd.Series(['34', None, '52'], dtype='string')
+ages = pd.to_numeric(ages, errors='coerce').astype('Int64')
+print(ages.dtype)  # Int64
 ```
+
+NumPy's lowercase `int64` cannot represent a missing value. Pandas' capital-I nullable `Int64` dtype stores integers plus `pd.NA`; it is the appropriate contract when whole-number data may be missing. Converting a fractional value such as `40.5` to `Int64` is not a rounding policy, so decide how to handle fractional values before casting.
 
 ## Renaming Axis Indexes
 
@@ -308,9 +313,13 @@ df = pd.DataFrame({'OldName': [1, 2, 3], 'Another_Old': [4, 5, 6]})
 df_renamed = df.rename(columns={'OldName': 'new_name', 'Another_Old': 'better_name'})
 print(df_renamed.columns)  # ['new_name', 'better_name']
 
-# Apply function to all columns
-df.columns = ['First Column', ' Second ', 'THIRD']
-df_clean = df.rename(columns=str.lower)  # Lowercase all
+# Apply functions to all columns
+labels_df = pd.DataFrame({
+    'First Column': [1, 2, 3],
+    ' Second ': [4, 5, 6],
+    'THIRD': [7, 8, 9],
+})
+df_clean = labels_df.rename(columns=str.lower)  # Lowercase all
 df_clean = df_clean.rename(columns=str.strip)  # Remove spaces
 print(df_clean.columns)  # ['first column', 'second', 'third']
 
@@ -327,7 +336,8 @@ Converting continuous variables into categories makes data easier to analyze and
 
 **Reference:**
 
-- `pd.cut(series, bins)` - Cut into equal-width bins
+- `pd.cut(series, bins=4)` - Cut the value range into four equal-width bins
+- `pd.cut(series, bins=[...])` - Cut at explicitly supplied edges (not necessarily equal-width)
 - `pd.qcut(series, q)` - Cut into equal-frequency bins
 - `bins=[0, 18, 35, 50, 100]` - Custom bin edges
 - `labels=['Young', 'Middle', 'Senior']` - Custom labels for bins
@@ -343,7 +353,7 @@ print(age_groups)  # [Young, Young, Middle, Senior, Senior]
 
 ## Detecting and Filtering Outliers
 
-Outliers are extreme values that may represent errors or important anomalies. Detecting and handling them appropriately is crucial for reliable analysis.
+Outliers are extreme values that may represent errors, rare but valid observations, or important anomalies. A statistical rule can flag candidates, but source evidence, domain meaning, and analysis purpose determine whether to keep, correct, cap, or exclude them.
 
 ![IQR Method for Outlier Detection](https://upload.wikimedia.org/wikipedia/commons/8/89/Boxplot_vs_PDF.png)
 
@@ -352,20 +362,23 @@ Outliers are extreme values that may represent errors or important anomalies. De
 - `df[df['col'] > threshold]` - Filter by threshold
 - `df.clip(lower, upper)` - Cap values at bounds
 - `df.quantile([0.25, 0.75])` - Find quartiles for IQR method
-- `df[(df > lower) & (df < upper)]` - Filter within bounds
+- `df[df['col'].between(lower, upper)]` - Keep rows whose selected value is within bounds
 
 **Example:**
 
 ```python
-# Remove values beyond 3 standard deviations
-df = pd.DataFrame({'value': [1, 2, 3, 100, 4, 5]})
+# Flag values beyond 3 standard deviations
+df = pd.DataFrame({'value': [1, 2, 3, 4, 5] * 4 + [100]})
 mean, std = df['value'].mean(), df['value'].std()
-df_clean = df[abs(df['value'] - mean) < 3 * std]
-print(df_clean)  # Removes 100
+three_sd_flag = abs(df['value'] - mean) > 3 * std
+print(df.loc[three_sd_flag])  # Flags 100 for investigation
+
+# Exclude a flagged row only after evidence supports that decision
+df_clean = df.loc[~three_sd_flag].copy()
 
 # Cap extreme values
-df['value'] = df['value'].clip(lower=0, upper=10)
-print(df)  # Values capped at 0-10 range
+capped = df.assign(value=df['value'].clip(lower=0, upper=10))
+print(capped)  # Values capped at 0-10 range
 
 # IQR method for outlier detection
 Q1 = df['value'].quantile(0.25)
@@ -422,7 +435,7 @@ Indicator variables convert categories into binary (0/1) columns, which is essen
 - `pd.get_dummies(series)` - Create dummy variables
 - `prefix='category'` - Add prefix to column names
 - `drop_first=True` - Avoid multicollinearity (drop first category)
-- `dtype='int64'` - Specify data type for dummies (use int64 not bool - booleans can't represent missing values)
+- `dtype='int64'` - Request numeric 0/1 indicator columns; pandas' nullable `boolean` dtype can represent `pd.NA` when a three-state result is needed
 
 **Example:**
 
@@ -526,7 +539,7 @@ print(names_df)  # Two columns with first and last names
 
 ## Random Sampling
 
-Random sampling creates representative subsets of data for analysis, testing, and machine learning. It's essential for creating train/test splits, bootstrap analysis, and data exploration.
+Random sampling selects rows using a probability mechanism. Randomness alone does not guarantee a representative subset: the sampling frame, selection probabilities, sample size, strata, and nonresponse still matter. Choose the design for the target population and purpose.
 
 **Reference:**
 
@@ -546,15 +559,15 @@ df = pd.DataFrame({'A': range(100), 'B': range(100, 200)})
 sample = df.sample(n=10, random_state=42)  # Sample 10 rows
 print(len(sample))  # 10
 
-# Stratified sampling
+# Stratified sampling: this design chooses two rows from each category
 df['category'] = ['A', 'B'] * 50
-stratified = df.groupby('category').apply(lambda x: x.sample(2))
+stratified = df.groupby('category', group_keys=False).sample(n=2, random_state=42)
 print(len(stratified))  # 4 (2 from each category)
 ```
 
 ## Permutation and Shuffling
 
-Permutation randomizes data order while preserving relationships. It's essential for cross-validation, bootstrap analysis, and breaking temporal dependencies in time series data.
+Permutation randomizes row order while preserving relationships among columns in each row. Use it when the method calls for exchangeable rows; shuffling ordered or time-series data can destroy meaningful dependence.
 
 **Reference:**
 
@@ -582,13 +595,13 @@ print(len(bootstrap))  # 4 (same length, but with replacement)
 ![xkcd 2239 "Database"](media/xkcd_2239.png)
 *Shows data errors invalidating research - perfect for validation section*
 
-| Issue | Detection | Solution |
-|-------|-----------|----------|
-| Missing Values | `df.isnull().sum()` | • Impute (mean/median)<br>• Forward/backward fill<br>• Drop if <5% missing |
-| Duplicates | `df.duplicated()` | • `drop_duplicates()`<br>• Keep first or last |
-| Wrong Data Type | `df.dtypes` | • `astype('int64')`<br>• `pd.to_datetime()` |
-| Outliers | `df.describe()`<br>Box plots | • IQR method filter<br>• Clip extreme values<br>• Keep if valid (verify) |
-| Inconsistent Categories | `df['col'].unique()` | • `str.lower().strip()`<br>• `replace()` mapping |
+| Issue | Detection | Possible response after investigation |
+|-------|-----------|---------------------------------------|
+| Missing Values | `df.isnull().sum()` plus sentinel checks | Retain, flag, impute, or drop according to variable meaning and analysis purpose |
+| Duplicate Candidates | exact-row and candidate-identifier checks | Confirm row meaning and source history; consolidate or remove only records shown to be redundant |
+| Wrong Data Type | `df.dtypes` plus conversion probes | Parse with an explicit failure policy, then validate the intended dtype |
+| Outliers | `df.describe()`<br>Box plots<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
+| Inconsistent Categories | `df['col'].unique()` | Normalize only differences known to share a meaning; map documented aliases explicitly |
 
 ## Data Quality Checks
 
@@ -624,12 +637,12 @@ Data validation rules ensure data meets business requirements and constraints. T
 **Reference:**
 
 - `df[condition]` - Filter rows meeting condition
-- `df.between(left, right)` - Check if values are between bounds
+- `series.between(left, right)` - Check whether Series values are between bounds
 - `df.isin(values)` - Check if values are in list
-- `df.str.contains(pattern)` - Check if strings contain pattern
-- `df.str.match(pattern)` - Check if strings match pattern
-- `df.str.len()` - Get string length
-- `df.str.isdigit()` - Check if strings are digits
+- `series.str.contains(pattern)` - Check if Series strings contain pattern
+- `series.str.match(pattern)` - Check if Series strings match pattern
+- `series.str.len()` - Get Series string lengths
+- `series.str.isdigit()` - Check if Series strings are digits
 
 **Example:**
 
@@ -649,160 +662,312 @@ print(valid_emails)  # All rows (emails are valid)
 
 # Data Cleaning Pipeline
 
-A systematic approach to data cleaning ensures consistent, high-quality results. Follow these steps in order for best results.
+A reproducible pipeline keeps detection separate from decisions and transformations. It validates the complete working table before saving any clean artifact.
 
 ```mermaid
 graph TD
-    A[Load Data] --> B{Inspect Data}
-    B --> C[Check Missing Values]
-    B --> D[Check Duplicates]
-    B --> E[Check Data Types]
-    B --> F[Check Outliers]
-
-    C --> G{Issues Found?}
-    D --> G
-    E --> G
-    F --> G
-
-    G -->|Yes| H[Handle Issues]
-    G -->|No| L[Validate Results]
-
-    H --> I[Fill/Drop Missing]
-    H --> J[Remove Duplicates]
-    H --> K[Convert Types]
-    H --> M[Handle Outliers]
-
-    I --> L
-    J --> L
-    K --> L
-    M --> L
-
-    L --> N{Data Quality OK?}
-    N -->|No| B
-    N -->|Yes| O[Document Decisions]
-    O --> P[Export Clean Data]
+    A[Preserve source snapshot and load raw] --> B[Audit and detect without mutation]
+    B --> C[Decide and record rationale]
+    C --> D[Transform a working copy]
+    D --> E{Validate explicit invariants}
+    E -->|Failed| B
+    E -->|Passed| F[Save clean data and audit trail]
 ```
 
-*Think of data cleaning as being a detective - you need to follow the clues, ask the right questions, and sometimes you have to make tough decisions about what to keep and what to throw away.*
+The running example uses one schema from audit through save. One source row represents one submitted person record.
 
-**Reference:**
+| Column | Clean meaning and type | Missing allowed? | Rule |
+|--------|------------------------|------------------|------|
+| `record_id` | record identifier, string | no | `R` followed by three digits; unique after documented exact-duplicate resolution |
+| `full_name` | submitted name, string | yes | surrounding whitespace removed |
+| `site` | collection site, string | no | `north`, `south`, or `west` |
+| `status` | record status, string | yes | `active`, `pending`, or `complete` |
+| `age_text` → `age` | age in years, nullable `Int64` | yes | whole number from 0 through 120 when present |
+| `visit_date` | visit date, datetime | yes | parsed from exact `YYYY-MM-DD` text when present |
 
-1. **Load and inspect data** - `df.head()`, `df.info()`, `df.describe()`
-2. **Handle missing values** - `df.isnull().sum()`, `df.fillna()`, `df.dropna()`
-3. **Remove duplicates** - `df.duplicated()`, `df.drop_duplicates()`
-4. **Convert data types** - `df.astype()`, `pd.to_datetime()`, `pd.to_numeric()`
-5. **Handle outliers** - `df.quantile()`, `df.clip()`, filtering
-6. **Validate data quality** - Check ranges, patterns, consistency
-7. **Export clean data** - `df.to_csv()`, `df.to_excel()`
+This fixture's data dictionary says `unknown` and `-9` are missing-age sentinels, `NA` is a missing-status sentinel, blank fields are missing, and the repeated identical `R002` row is an ingestion duplicate. Those facts justify this example's decisions; similar-looking values in another source may mean something else.
 
-**Example:**
-
-```python
-# Step 1: Load and inspect
-df = pd.read_csv('messy_data.csv')
-print(df.info())
-print(df.isnull().sum())
-
-# Step 2: Handle missing values
-df['Age'].fillna(df['Age'].mean(), inplace=True)
-df['Name'].fillna('Unknown', inplace=True)
-
-# Step 3: Remove duplicates
-df = df.drop_duplicates()
-
-# Step 4: Convert data types
-df['Age'] = df['Age'].astype('int64')
-df['Date'] = pd.to_datetime(df['Date'])
-
-# Step 5: Handle outliers
-Q1, Q3 = df['Salary'].quantile([0.25, 0.75])
-IQR = Q3 - Q1
-df = df[~((df['Salary'] < Q1 - 1.5*IQR) | (df['Salary'] > Q3 + 1.5*IQR))]
-
-# Step 6: Validate
-print(df.describe())
-print(df.dtypes)
-
-# Step 7: Export
-df.to_csv('clean_data.csv', index=False)
-```
-
-## Validate explicit invariants
-
-A **validation invariant** is a condition that must be true after a pipeline stage. Write it before declaring an artifact clean, then make it executable.
-
-Useful invariant categories include:
-
-- exact column presence and order;
-- expected row-count relationship;
-- required identifiers present and unique;
-- allowed category values;
-- intended numeric and datetime types;
-- permitted missingness by column; and
-- valid numeric ranges when values are present.
+## One executable audit-to-save example
 
 ```python
+from hashlib import sha256
+from io import BytesIO
+from pathlib import Path
+
+import pandas as pd
+
+
+# Contract and source-specific decisions
+SOURCE_COLUMNS = [
+    "record_id",
+    "full_name",
+    "site",
+    "status",
+    "age_text",
+    "visit_date",
+]
+CLEAN_COLUMNS = [
+    "record_id",
+    "full_name",
+    "site",
+    "status",
+    "age",
+    "visit_date",
+]
+CLEANING_RULES = {
+    "record_id_pattern": r"R[0-9]{3}",
+    "allowed_sites": {"north", "south", "west"},
+    "allowed_statuses": {"active", "pending", "complete"},
+    "age_sentinels": {"unknown", "-9"},
+    "status_sentinels": {"na"},
+    "minimum_age": 0,
+    "maximum_age": 120,
+}
+
+# Source snapshot -> raw table -> raw snapshot -> working table
+source_name = "submitted_people.csv"
+source_snapshot = b"""record_id,full_name,site,status,age_text,visit_date
+R001, Alice Smith , north,Active,34,2026-01-15
+R002,BOB JONES,North,active,unknown,2026-02-30
+R002,BOB JONES,North,active,unknown,2026-02-30
+R003, Carla Ruiz ,SOUTH,pending,-9,2026-03-01
+R004,,south,NA,45,
+R005,Evan Li,west,complete,52,2026-02-14
+"""
+source_sha256 = sha256(source_snapshot).hexdigest()
+raw = pd.read_csv(
+    BytesIO(source_snapshot),
+    dtype="string",
+    keep_default_na=False,
+)
+raw_snapshot = raw.copy(deep=True)
+working = raw.copy(deep=True)
+
+# AUDIT/DETECT: probes describe raw values without changing raw or working.
+schema_matches = list(raw.columns) == SOURCE_COLUMNS
+if not schema_matches:
+    raise ValueError(
+        f"source columns {list(raw.columns)} do not match {SOURCE_COLUMNS}"
+    )
+
+record_id_probe = raw["record_id"].str.strip().str.upper()
+record_id_missing = (
+    record_id_probe.isna() | record_id_probe.eq("").fillna(False)
+)
+record_id_repeated = (
+    ~record_id_missing & record_id_probe.duplicated(keep=False)
+)
+record_id_bad_format = (
+    ~record_id_missing
+    & ~record_id_probe.str.fullmatch(
+        CLEANING_RULES["record_id_pattern"],
+        na=False,
+    )
+)
+
+age_text_probe = raw["age_text"].str.strip().str.lower()
+age_is_sentinel = age_text_probe.isin(CLEANING_RULES["age_sentinels"])
+age_candidate = age_text_probe.mask(
+    age_is_sentinel | age_text_probe.eq("").fillna(False)
+)
+age_numeric_probe = pd.to_numeric(age_candidate, errors="coerce")
+age_parse_failure = age_candidate.notna() & age_numeric_probe.isna()
+age_noninteger = (
+    age_numeric_probe.notna() & age_numeric_probe.mod(1).ne(0)
+)
+age_out_of_range = age_numeric_probe.notna() & ~age_numeric_probe.between(
+    CLEANING_RULES["minimum_age"],
+    CLEANING_RULES["maximum_age"],
+)
+
+visit_text_probe = raw["visit_date"].str.strip()
+visit_candidate = visit_text_probe.mask(
+    visit_text_probe.eq("").fillna(False)
+)
+visit_datetime_probe = pd.to_datetime(
+    visit_candidate,
+    format="%Y-%m-%d",
+    errors="coerce",
+)
+visit_parse_failure = visit_candidate.notna() & visit_datetime_probe.isna()
+
+issue_audit = pd.Series(
+    {
+        "missing or blank record IDs": int(record_id_missing.sum()),
+        "rows with repeated candidate IDs": int(record_id_repeated.sum()),
+        "record IDs with invalid format": int(record_id_bad_format.sum()),
+        "redundant exact rows after the first": int(
+            raw.duplicated(keep="first").sum()
+        ),
+        "documented age sentinels": int(age_is_sentinel.sum()),
+        "unparseable nonsentinel ages": int(age_parse_failure.sum()),
+        "numeric noninteger ages": int(age_noninteger.sum()),
+        "numeric ages outside the allowed range": int(age_out_of_range.sum()),
+        "nonempty invalid visit dates": int(visit_parse_failure.sum()),
+    },
+    name="count",
+)
+print(issue_audit)
+
+# DECIDE: record why each action is warranted for this source.
+decision_log = pd.DataFrame(
+    [
+        {
+            "issue": "one repeated exact source row",
+            "decision": "keep its first occurrence",
+            "rationale": "fixture provenance identifies repeated ingestion",
+        },
+        {
+            "issue": "other repeated record_id values",
+            "decision": "preserve and fail uniqueness validation",
+            "rationale": "conflicting records require source evidence",
+        },
+        {
+            "issue": "documented sentinel and blank values",
+            "decision": "represent them with pd.NA",
+            "rationale": "the data dictionary defines them as missing",
+        },
+        {
+            "issue": "invalid ages and calendar dates",
+            "decision": "retain the row and store a missing value",
+            "rationale": "missingness is allowed; no imputation is justified",
+        },
+        {
+            "issue": "documented case and whitespace variants",
+            "decision": "normalize strings to their canonical form",
+            "rationale": "the contract defines equivalent spellings",
+        },
+    ]
+).assign(source=source_name, source_sha256=source_sha256)
+
+# TRANSFORM: make changes only to working.
+exact_duplicate_keep = ~raw.duplicated(keep="first")
+working = working.loc[exact_duplicate_keep].copy()
+
+working["record_id"] = working["record_id"].str.strip().str.upper()
+working["full_name"] = working["full_name"].str.strip().str.title()
+working["full_name"] = working["full_name"].mask(
+    working["full_name"].eq("").fillna(False)
+)
+working["site"] = working["site"].str.strip().str.lower()
+working["status"] = working["status"].str.strip().str.lower()
+working["status"] = working["status"].mask(
+    working["status"].isin(CLEANING_RULES["status_sentinels"])
+    | working["status"].eq("").fillna(False)
+)
+
+working_age_text = working["age_text"].str.strip().str.lower()
+working_age_text = working_age_text.mask(
+    working_age_text.isin(CLEANING_RULES["age_sentinels"])
+    | working_age_text.eq("").fillna(False)
+)
+working_age_numeric = pd.to_numeric(working_age_text, errors="coerce")
+working_age_valid = (
+    working_age_numeric.notna()
+    & working_age_numeric.mod(1).eq(0)
+    & working_age_numeric.between(
+        CLEANING_RULES["minimum_age"],
+        CLEANING_RULES["maximum_age"],
+    )
+)
+working["age"] = working_age_numeric.where(working_age_valid).astype("Int64")
+working = working.drop(columns="age_text")
+
+working_visit_text = working["visit_date"].str.strip()
+working_visit_text = working_visit_text.mask(
+    working_visit_text.eq("").fillna(False)
+)
+working["visit_date"] = pd.to_datetime(
+    working_visit_text,
+    format="%Y-%m-%d",
+    errors="coerce",
+)
+working = working[CLEAN_COLUMNS]
+
+# VALIDATE: executable invariants must all pass before any output is saved.
+clean_record_ids = working["record_id"].astype("string").str.strip()
+clean_id_present = (
+    clean_record_ids.notna() & clean_record_ids.ne("").fillna(False)
+)
+expected_rows = len(raw) - int(raw.duplicated(keep="first").sum())
+
 validation_results = pd.Series(
     {
-        "raw preserved": raw.equals(raw_snapshot),
-        "expected rows after one exact duplicate removal": len(working) == 5,
-        "record ID present": working["record_id"].notna().all(),
-        "record ID unique": working["record_id"].is_unique,
-        "site allowed": working["site"].isin(["north", "south", "west"]).all(),
-        "status allowed when present": working["status"].dropna().isin(
-            ["active", "pending", "complete"]
+        "source snapshot checksum unchanged": (
+            sha256(source_snapshot).hexdigest() == source_sha256
+        ),
+        "raw table unchanged": raw.equals(raw_snapshot),
+        "source columns match the schema": schema_matches,
+        "clean columns present in order": list(working.columns) == CLEAN_COLUMNS,
+        "row count reflects only exact duplicate removal": (
+            len(working) == expected_rows
+        ),
+        "record IDs present": clean_id_present.all(),
+        "record IDs match the contract": clean_record_ids.str.fullmatch(
+            CLEANING_RULES["record_id_pattern"],
+            na=False,
+        ).all(),
+        "record IDs unique after normalization": (
+            not clean_record_ids[clean_id_present].duplicated().any()
+        ),
+        "text columns use pandas string dtype": all(
+            isinstance(working[column].dtype, pd.StringDtype)
+            for column in ["record_id", "full_name", "site", "status"]
+        ),
+        "names have no surrounding whitespace": working[
+            "full_name"
+        ].dropna().eq(working["full_name"].dropna().str.strip()).all(),
+        "required sites present": working["site"].notna().all(),
+        "sites allowed": working["site"].isin(
+            CLEANING_RULES["allowed_sites"]
+        ).all(),
+        "statuses allowed when present": working["status"].dropna().isin(
+            CLEANING_RULES["allowed_statuses"]
         ).all(),
         "age has nullable integer dtype": str(working["age"].dtype) == "Int64",
-        "age in range when present": working["age"].dropna().between(0, 120).all(),
-        "visit date has datetime dtype": pd.api.types.is_datetime64_any_dtype(
-            working["visit_date"].dtype
+        "ages in range when present": working["age"].dropna().between(
+            CLEANING_RULES["minimum_age"],
+            CLEANING_RULES["maximum_age"],
+        ).all(),
+        "visit date has datetime dtype": (
+            pd.api.types.is_datetime64_any_dtype(working["visit_date"].dtype)
         ),
     },
     name="passed",
 )
+failed_invariants = validation_results[~validation_results]
+assert failed_invariants.empty, failed_invariants
 
-assert validation_results.all(), validation_results[~validation_results]
-validation_results
+# SAVE: reached only after validation succeeds.
+output_dir = Path("output")
+output_dir.mkdir(parents=True, exist_ok=True)
+clean_path = output_dir / "cleaned_people.csv"
+decision_log["output"] = str(clean_path)
+
+working.to_csv(clean_path, index=False)
+issue_audit.to_csv(output_dir / "cleaning_audit.csv", header=True)
+decision_log.to_csv(output_dir / "cleaning_decisions.csv", index=False)
+validation_results.to_csv(output_dir / "cleaning_validation.csv", header=True)
+
+print(f"validated and saved {len(working)} rows to {clean_path}")
 ```
 
-Assertions stop the pipeline when its contract is broken. They do not establish that the original decisions were wise; the decision log carries that human reasoning.
+The identifier checks strip surrounding whitespace, reject missing and blank values, enforce the declared format, and test uniqueness after normalization. This is more robust than calling `.is_unique` alone: a column containing one missing identifier can otherwise appear unique.
+
+A **validation invariant** is a condition that must be true before declaring the working table clean. Assertions stop this pipeline when its contract is broken. They do not establish that the decisions were wise; the decision log carries that human reasoning. The CSV stores values but not pandas dtype metadata, so a downstream reader must reapply the documented `Int64` and datetime schema.
 
 ## Configuration-Driven Processing
 
-Configuration files make data cleaning pipelines more maintainable and reproducible. Simple text files or Python dictionaries can store filter rules, cleaning parameters, and processing steps.
+Configuration files can make repeated pipelines more maintainable and reproducible. The running pipeline's `CLEANING_RULES` dictionary holds source-specific contract values that transformations and validation share, preventing the two stages from drifting apart.
 
-*Pro tip: Keep your data cleaning logic separate from your parameters. This makes your code more maintainable and your pipelines more reproducible.*
+Keep genuinely changeable rules separate from the transformation logic, but do not turn every implementation constant into an option. Changing a rule still requires a documented decision and a fresh validation run.
 
 **Reference:**
 
 - Use Python dictionaries for simple configurations
 - Store parameters in separate files (CSV, JSON, or simple text)
 - Keep cleaning logic in functions
-- Document your cleaning decisions
-
-**Example:**
-
-```python
-# Simple configuration dictionary
-cleaning_config = {
-    'missing_strategies': {
-        'age': 'median',
-        'income': 'mean', 
-        'date': 'ffill'
-    },
-    'outlier_threshold': 3.0,
-    'drop_columns': ['temp_id', 'notes']
-}
-
-# Apply configuration
-for column, strategy in cleaning_config['missing_strategies'].items():
-    if strategy == 'median':
-        df[column].fillna(df[column].median(), inplace=True)
-    elif strategy == 'mean':
-        df[column].fillna(df[column].mean(), inplace=True)
-    elif strategy == 'ffill':
-        df[column].fillna(method='ffill', inplace=True)
-```
+- Document where each cleaning rule came from
 
 
 # Running Notebooks from Command Line

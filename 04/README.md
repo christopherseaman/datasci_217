@@ -396,7 +396,7 @@ The key difference: **`.loc` uses LABELS, `.iloc` uses POSITIONS** (like list in
 - `df.iloc[row_positions, column_positions]` — position-based selection
 - `df.query("expression")` — filter with readable expressions
 - `df[df['column'] > value]` — boolean masking
-- `df.isin(sequence)` / `df.between(left, right)` — membership utilities
+- `df.isin(sequence)` / `df['column'].between(left, right)` — membership and range tests
 
 **Example:**
 
@@ -427,8 +427,13 @@ display(employees.iloc[0:3, 1])    # Ages for positions 0, 1, 2 (NOT including p
 # employees.loc[1, 'Name']    # ERROR! No row with label '1' 
 # employees.iloc['emp002', 0] # ERROR! Can't use string labels with iloc
 
-# Boolean indexing (works with either)
-adults = employees[employees['Age'] >= 30]  # Bob, Charlie, Diana
+# A Boolean Series carries index labels, so .loc aligns it by label
+age_mask = employees['Age'] >= 30
+adults = employees.loc[age_mask]  # Bob and Charlie
+
+# .iloc is positional and does not accept an indexed Boolean Series.
+# Convert deliberately to a positional Boolean array when position is intended.
+adults_by_position = employees.iloc[age_mask.to_numpy()]
 high_earners = employees.loc[employees['Salary'] > 60000]  # Charlie
 ```
 
@@ -466,16 +471,37 @@ augmented = salaries.assign(
 display(augmented[['Name', 'HourlyRate', 'TotalComp']])
 ```
 
-### Handling Missing Data
+### Label Alignment and Safe Assignment
 
-Missing data decisions begin when files are read and continue throughout transformations. Detect gaps, decide whether to fill or drop, and capture read-time options so messy inputs become reproducible.
+Pandas aligns Series and DataFrame operations by index label, not merely by row position. Unmatched labels can produce missing values. Use `reindex()` when you need to make the target labels, order, and missing-label policy explicit.
+
+```python
+scores = pd.DataFrame(
+    {'score': [80, 90, 70]},
+    index=['student_a', 'student_b', 'student_c']
+)
+bonus = pd.Series({'student_c': 5, 'student_a': 2})
+
+# Series assignment aligns labels; reindex also supplies the missing student_b value.
+scores['bonus'] = bonus.reindex(scores.index, fill_value=0)
+scores['adjusted_score'] = scores['score'] + scores['bonus']
+
+# Assign through .loc in one operation so the original DataFrame is updated.
+scores['status'] = 'ok'
+scores.loc[scores['score'] < 75, 'status'] = 'review'
+```
+
+Avoid chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'`: the intermediate selection is not a safe assignment target. Use `.loc[row_mask, column] = value` instead.
+
+### Detecting Missing Data at Read Time
+
+Missing-data work begins by telling pandas which source tokens represent missing values and measuring the gaps. This lecture focuses on detection and reproducible read-time handling; [Lecture 05](../05/README.md) covers decisions such as filling or dropping values.
 
 **Reference:**
 
-- `series.isnull()`, `series.notnull()` — null diagnostics
-- `df.fillna(value | method='ffill' | method='bfill')` — replacement strategies
-- `df.dropna(subset=..., how='any' | 'all')` — remove incomplete rows
-- `df.isnull().sum()` — column-level null counts
+- `pd.read_csv(..., na_values=[...], keep_default_na=True)` — define missing tokens while reading
+- `series.isna()`, `series.notna()` — null diagnostics
+- `df.isna().sum()` — column-level null counts
 
 **Example:**
 
@@ -488,9 +514,7 @@ survey = pd.read_csv(
     usecols=['name', 'role', 'bonus', 'start_date']
 )
 
-survey['bonus'] = survey['bonus'].fillna(0)
-clean = survey.dropna(subset=['start_date'])
-display(survey.isnull().sum())
+display(survey.isna().sum())
 ```
 
 ## Data Type Conversion
@@ -517,9 +541,9 @@ df['B'] = df['B'].astype('int64')  # Convert float to integer
 display(df.dtypes)  # A: int64, B: int64
 
 # Handle conversion errors
-df['C'] = ['1', '2', 'invalid', '4']
+df['C'] = ['1', 'invalid', '4']
 df['C'] = pd.to_numeric(df['C'], errors='coerce')  # Invalid becomes NaN
-display(df['C'])  # [1.0, 2.0, NaN, 4.0]
+display(df['C'])  # [1.0, NaN, 4.0]
 ```
 
 # LIVE DEMO!
@@ -571,16 +595,13 @@ display(categories.value_counts())  # A: 2, B: 2, C: 1
 display(categories.isin(['A', 'B']))  # [True, True, True, False, True]
 ```
 
-## GroupBy
+## GroupBy Preview
 
-GroupBy enables split-apply-combine analytics: split data into groups, apply aggregations or filters, then combine results into aligned outputs. It replaces manual loops with expressive transformations.
+GroupBy uses a split-apply-combine pattern: split rows into groups, compute a result for each group, and combine those results. This brief summary is a preview; [Lecture 08](../08/README.md) is the canonical treatment of multi-key grouping, aggregation, `transform()`, and `filter()`.
 
 **Reference:**
 
 - `df.groupby('col')[target].agg(['mean', 'count'])` — summarize groups
-- `df.groupby(['col1', 'col2']).sum(numeric_only=True)` — multi-key aggregation
-- `grouped.filter(lambda g: ...)` — keep groups matching criteria
-- `grouped.transform(func)` — broadcast aggregated values back to rows
 
 **Example:**
 

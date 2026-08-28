@@ -14,18 +14,18 @@ Before we dive into the technical content, let's make sure you have everything y
 
 ## Getting to the Command Line
 
-![learning to code is kind of like this](attachment:0810b6f6-6cb0-4096-af15-e70742160b34:rocket_packs.png)
+![learning to code is kind of like this](media/rocket_packs.png)
 
-The command line is your direct conversation with your computer. Here's how to access it on different systems:
+The command line is your direct conversation with your computer. The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
 
 **Windows Users:**
 WSL:
 
 - **Windows Subsystem for Linux (WSL)** (recommended): Run `wsl --install` in PowerShell as Administrator
 
-Native:
+Native Windows:
 
-- **PowerShell** (built-in): Press `Win + X`, then select "Windows PowerShell"
+- **PowerShell** (built-in): Press `Win + X`, then select "Terminal" or "Windows PowerShell." You can run Git and Python there, but Bash-specific examples such as `touch`, brace expansion, and `find -exec` do not transfer unchanged.
 - **GitHub Codespaces** (cloud option): No installation needed
 
 **Mac Users:**
@@ -50,7 +50,7 @@ sudo apt install python3 python3-pip python3-venv
 
 **Windows Native:**
 
-```bash
+```powershell
 # Option 1: Official installer from python.org
 # Download Python 3.12+ from <https://python.org>
 
@@ -72,9 +72,12 @@ brew install python3
 **Verify Installation:**
 
 ```bash
+# WSL, macOS, or Codespaces
 python3 --version
 # Should show: Python 3.12.x (or similar)
 ```
+
+In native Windows PowerShell, use `py --version` (or `python --version` if that is the command your installer configured). Until we activate a virtual environment later in the course, Bash examples use `python3`; native PowerShell users should substitute `py`. Inside an activated environment, `python` will refer to that environment's interpreter.
 
 ## Text Editor Options
 
@@ -95,7 +98,7 @@ You'll need a good text editor to write Python code. Here are your options:
 
 ## Why VS Code?
 
-![IDE Choice Guidance](attachment:dded90d5-dc5c-4af9-8fce-8873f984b257:IDE_choice.png)
+![IDE Choice Guidance](media/IDE_choice.png)
 
 VS Code strikes the perfect balance between simplicity and power. It's what most professional data scientists use, and it's what we'll use in this course.
 
@@ -137,7 +140,7 @@ Git configuration (one-time setup):
 
 You don't want to put your email all over the public internet, so GitHub provides a proxy service. You can see the proxy email address in your [GitHub email settings https://github.com/settings/emails](https://github.com/settings/emails).
 
-![GitHub Email Setup](attachment:5b73deb7-7ac1-4124-a6f7-ff491e34679f:github_email.png)
+![GitHub Email Setup](media/github_email.png)
 
 ### Setting up Git in the Command Line
 
@@ -162,11 +165,11 @@ It's like being bilingual in the data world. Python speaks to your data, command
 
 ## What is the Command Line?
 
-The command line is your direct conversation with your computer. Instead of clicking icons, you type commands. Why? Because it's faster, more precise, and works exactly the same way on every computer.
+The command line is your direct conversation with your computer. Instead of clicking icons, you type commands. Why? Because it is fast, precise, and reproducible when everyone uses the same shell. This lecture's commands target Bash-compatible shells; PowerShell equivalents can differ.
 
 Think of it as texting your computer instead of playing charades with icons.
 
-![Unix System Reference](attachment:9ce5f858-bb8c-4f39-a517-f77fbff9adf1:its-a-unix-system.jpeg)
+![Unix System Reference](media/its-a-unix-system.jpeg)
 
 ## Navigation Commands
 
@@ -239,7 +242,7 @@ cp -r project/ backups/$(date +%Y-%m-%d)/
 
 # Pattern 3: Finding and organizing files by type
 mkdir analysis/{python,jupyter,results}
-find . -name "*.py" -exec cp {} analysis/python/ \\;
+find . -name "*.py" -exec cp {} analysis/python/ \;
 
 ```
 
@@ -303,28 +306,29 @@ Sometimes you need to stop what you're doing:
 
 # Python Basics
 
-![xkcd_353.png](attachment:9845cc22-16c0-48c9-b87a-46701a9f55b1:xkcd_353.png)
+![xkcd_353.png](media/xkcd_353.png)
 
 ## Running Python
 
 You have three ways to run Python:
 
-1. **Interactive mode** (REPL): Just type `python` and start experimenting
-2. **Script mode**: Write code in a file, run with `python filename.py`
+1. **Interactive mode** (REPL): Type `python3` and start experimenting
+2. **Script mode**: Write code in a file, run with `python3 filename.py`
 3. **Jupyter notebooks**: We'll meet these later!
 
 **Reference:**
 
 ```bash
-python                  # Start interactive Python
-python script.py        # Run a Python script
-exit()                 # Quit interactive Python
+python3                 # Start interactive Python
+python3 script.py       # Run a Python script
 ```
+
+These are Bash commands. In native Windows PowerShell, substitute `py` for `python3`. At the Python `>>>` prompt, enter `exit()` to leave the REPL.
 
 **Interactive Mode Example:**
 
-```python
-$ python
+```console
+$ python3
 >>> print("Hello, World!")
 Hello, World!
 >>> exit()
@@ -333,7 +337,7 @@ Hello, World!
 **Script Mode Example:**
 
 ```bash
-$ python my_script.py
+python3 my_script.py
 ```
 
 ## Python Syntax Overview
@@ -341,14 +345,19 @@ $ python my_script.py
 Python has some unique syntax rules that are essential to understand:
 
 **Indentation Matters!**
-Python uses indentation (spaces or tabs) to group code together. This is different from most programming languages:
+Python uses indentation to group code together. Use four spaces per indentation level rather than mixing spaces and tabs:
+
+This is a preview of an `if` conditional; the Control Structures section below explains how the condition works.
 
 ```python
 # Correct indentation
+x = 1
 if x > 0:
     print("Positive")    # This line is indented
     print("Still positive")  # This line is also indented
+```
 
+```text
 # Wrong indentation (will cause an error)
 if x > 0:
 print("This will cause an IndentationError")
@@ -448,6 +457,8 @@ print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 
 ## Basic Operations
 
+An **f-string** begins with `f` and evaluates expressions inside `{}`. The Printing section below develops its formatting options.
+
 **Reference:**
 
 ```python
@@ -461,6 +472,9 @@ result = 15 % 4         # Remainder: 3
 result = 2 ** 3         # Power: 8
 
 # String operations
+first = "Ada"
+last = "Lovelace"
+name = first
 full_name = first + " " + last        # Concatenation
 message = f"Hello {name}!"            # f-string formatting (preferred)
 ```
@@ -475,7 +489,7 @@ bmi = weight_kg / (height_m ** 2)
 print(f"BMI is {bmi:.1f}")
 ```
 
-![xkcd_1513.png](attachment:9622c4f3-7728-4e29-8a14-7b69a5805426:xkcd_1513.png)
+![xkcd_1513.png](media/xkcd_1513.png)
 
 ## Control Structures
 
@@ -487,6 +501,8 @@ Control structures let your programs make decisions and repeat actions - essenti
 
 ```python
 # Equality and inequality
+x = 2
+y = 3
 x == y          # Equal to
 x != y          # Not equal to
 x < y           # Less than
@@ -498,6 +514,8 @@ x >= y          # Greater than or equal
 x in [1, 2, 3]  # Is x in the list?
 x not in [1, 2, 3]  # Is x NOT in the list?
 ```
+
+Square brackets create a **list**, an ordered collection. The loop examples below introduce the list operations needed today; Lecture 02 develops indexing and slicing.
 
 ### If Statements
 
@@ -533,6 +551,8 @@ else:
 ```
 
 ### For Loops
+
+`range(5)` supplies the integers from 0 through 4. A list supplies its items in order; Lecture 02 covers lists in more depth.
 
 **Basic For Loops:**
 
@@ -587,6 +607,8 @@ print(f"Above average by {test_score - class_average:.1f} points")  # Calculatio
 
 **Advanced F-String Patterns for Data Analysis:**
 
+The final example uses `import` to make `datetime` from Python's standard library available. Lecture 02 covers modules and imports in more detail.
+
 ```python
 # Currency formatting (useful for business data)
 revenue = 15432.50
@@ -634,7 +656,7 @@ F-strings let you create clear, readable output that tells the story of your dat
 
 # Debugging and Error Handling Basics
 
-![Programming is doing something wrong over and over until you do something right](attachment:3ee9c474-3b78-435d-9f18-835873aea2f7:it_works.png)
+![Programming is doing something wrong over and over until you do something right](media/it_works.png)
 
 **Reading Python Error Messages (Essential Skill!):**
 
@@ -756,7 +778,7 @@ print(f"Best day: ${best_day}")
 
 ```bash
 # Command line: Run the analysis
-python calculate_stats.py
+python3 calculate_stats.py
 
 ```
 

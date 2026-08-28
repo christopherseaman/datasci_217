@@ -337,7 +337,7 @@ Markdown is a lightweight markup language for formatted text, essential for docu
 
 **Brief Example:**
 
-```
+````markdown
 # Data Analysis Report
 
 ## Overview
@@ -355,7 +355,7 @@ print(f"Correlation: {df['hours'].corr(df['grade']):.2f}")
 ```
 
 [Raw data](data/study_data.csv)
-```
+````
 
 # Python Fundamentals (McKinney Ch2+3)
 
@@ -379,6 +379,7 @@ Python uses indentation for code structure, creating clean code. Every value is 
 **Brief Example:**
 ```python
 # Indentation matters
+x = 3
 if x > 0:
     print("Positive")
     y = x * 2
@@ -391,7 +392,7 @@ print(isinstance("hello", str))  # True
 
 Object introspection examines objects at runtime—their type, attributes, and methods. Valuable for unknown datasets and flexible code.
 
-Python uses **duck typing**: "If it walks like a duck and quacks like a duck, then it must be a duck." If an object supports the needed methods, you can use it—regardless of its actual type.
+Python uses **duck typing**: "If it walks like a duck and quacks like a duck, then it must be a duck." If an object supports the needed operations, you can use it—regardless of its actual type.
 
 ![Duck Typing](media/duck_typing.jpg)
 
@@ -404,20 +405,40 @@ This means functions work with any object that behaves as expected, not just tho
 - `help(object)` - Shows documentation
 
 ```python
-# Duck typing: treat the same object as different types
-big_number = 12345
-print(f"As a number: {big_number} (type: {type(big_number).__name__})")
+# Duck typing: unrelated types can support the same operation.
+label = "dataset"
+grades = [85, 92, 78]
 
-# Convert to string - now we can iterate through digits
-number_as_string = str(big_number)
-print(f"As a string: '{number_as_string}' (type: {type(number_as_string).__name__})")
+print(len(label))   # str provides a length: 7
+print(len(grades))  # list also provides a length: 3
+```
 
-# Duck typing: if it acts like an iterable, treat it like one
-digit_sum = 0
-for digit_char in number_as_string:  # Treating string like a list
-    digit_sum += int(digit_char)     # Converting back to int
-    
-print(f"Sum of digits: {digit_sum}")
+Neither value is converted to the other's type. Python attempts the operation the code requests; an unsupported operation usually raises `TypeError`.
+
+## Imports and Modules
+
+A **module** is a Python file that provides reusable names. An `import` loads a module and binds a name for it in the current program. Modules in the standard library ship with Python; third-party modules must be installed in the active environment first.
+
+**Reference:**
+
+- `import module` - Import a module and use `module.name`
+- `import module as alias` - Bind a shorter local name; this does not copy the module
+- `from module import name` - Import one specific name
+
+```python
+import math
+import statistics as stats
+from math import pi
+
+print(math.sqrt(16))
+print(stats.mean([85, 92, 78]))
+print(pi)
+```
+
+For a quick import check from a Bash terminal, `-c` runs the Python code supplied as a string:
+
+```bash
+python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"
 ```
 
 ## Scalar Types and Operations
@@ -531,6 +552,7 @@ File I/O operations are essential for data science. Python provides simple tools
 - `file.readlines()` - Read all lines into list
 - `file.write(string)` - Write string to file
 - `file.close()` - Close file handle
+- `with open(...) as file:` - Close the handle automatically when the block ends
 
 **Brief Example:**
 
@@ -551,14 +573,18 @@ with open('log.txt', 'a') as file:
     file.write("2023-12-01: Analysis completed\n")
 
 # Print to file examples
+score = 87.3
 with open('results.txt', 'w') as file:
     print("Analysis Results", file=file)
     print(f"Average score: {score:.1f}", file=file)
 
-# One-liner file output
-print("Debug info", file=open('debug.log', 'a'))
+# Avoid print(..., file=open(...)): that pattern leaves closing the file
+# handle implicit. Use a with block so the handle is always closed.
+with open('debug.log', 'a') as log_file:
+    print("Debug info", file=log_file)
 
 # Multiple outputs to same file
+data = [85, 92, 78]
 with open('report.txt', 'w') as report:
     print("Data Science Report", file=report)
     print("=" * 20, file=report)
@@ -601,6 +627,23 @@ for grade in grades:
         print(f"Excellent: {grade}")
 ```
 
+## Minimal Exception Handling
+
+An **exception** reports a problem that interrupts normal execution. Use `try`/`except` around the operation that can fail, and catch the specific exception you expect rather than hiding every error.
+
+```python
+raw_score = "not available"
+
+try:
+    score = float(raw_score)
+except ValueError as error:
+    print(f"Could not parse score: {error}")
+else:
+    print(f"Parsed score: {score:.1f}")
+```
+
+Opening a missing path raises `FileNotFoundError`; converting invalid numeric text raises `ValueError`. The optional `else` block runs only when the `try` block succeeds.
+
 ## Data Structures: Lists and Tuples
 
 Lists provide mutable sequences for data. Tuples offer immutable sequences useful for fixed records.
@@ -609,6 +652,8 @@ Lists provide mutable sequences for data. Tuples offer immutable sequences usefu
 
 - `list()` - Create list
 - `[item1, item2, ...]` - List literal
+- `list[index]` - Access one item using a zero-based index
+- `list[start:stop]` - Slice from `start` up to, but not including, `stop`
 - `list.append(item)` - Add to end
 - `list.insert(index, item)` - Insert at position
 - `list.remove(item)` - Remove first occurrence
@@ -625,10 +670,38 @@ grades.append(90)
 grades.insert(1, 87)
 total = sum(grades)
 
+# Indexing and slicing
+first_grade = grades[0]
+last_grade = grades[-1]
+middle_grades = grades[1:4]  # Indices 1, 2, and 3
+every_other_grade = grades[::2]
+
 # Tuples - immutable sequences
 coordinates = (40.7128, -74.0060)
 name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
 ```
+
+## Names, Aliasing, and Mutability
+
+Assignment binds a name to an object; it does not automatically copy the object. Lists, dictionaries, and sets are **mutable**, so they can change in place. Numbers, strings, and tuples are **immutable**, so an operation produces a new value instead of changing the existing object.
+
+Two names are **aliases** when they refer to the same object. A mutation through either alias is visible through the other:
+
+```python
+grades = [85, 92, 78]
+same_grades = grades
+same_grades[0] = 90
+
+print(grades)                 # [90, 92, 78]
+print(same_grades is grades)  # True: same object
+
+copied_grades = grades.copy()
+copied_grades[0] = 75
+print(grades)                 # Still [90, 92, 78]
+print(copied_grades)          # [75, 92, 78]
+```
+
+Use `==` to compare values. Use `is` for object identity, most commonly in a check such as `value is None`. `list.copy()` makes a new outer list; mutable objects nested inside it are still shared.
 
 ## Data Structures: Dictionaries and Sets
 
@@ -710,7 +783,7 @@ def calculate_average(grades):
         return 0
     return sum(grades) / len(grades)
 
-### Function usage
+# Function usage
 grades = [85, 92, 78, 96, 88]
 average = calculate_average(grades)
 print(f"Average grade: {average:.1f}")
@@ -718,11 +791,25 @@ print(f"Average grade: {average:.1f}")
 
 ### `__main__` for script execution
 
-if **name** == "**main**":
-    # This code runs when script is executed directly
+When Python runs a file directly, its special `__name__` variable is set to `"__main__"`. When another file imports it as a module, `__name__` is the module's name. A guard keeps script-only work from running during import:
+
+```python
+def main():
     grades = [85, 92, 78, 96, 88]
-    average = calculate_average(grades)
+    average = sum(grades) / len(grades)
     print(f"Average grade: {average:.1f}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+If this is saved as `analysis.py`, the first command runs `main()` and the second only checks that importing the module has no script-only side effects:
+
+```bash
+python3 analysis.py
+python3 -c "import analysis"
+```
 
 # Command Line Mastery (review)
 
