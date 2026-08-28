@@ -18,7 +18,7 @@ NumPy Arrays & Virtual Environments
 
 **The Solution:** Each project gets its own Python environment.
 
-## Course candidate contract
+## Lecture 03 candidate environment
 
 This lecture uses one tested course candidate:
 
@@ -27,7 +27,7 @@ This lecture uses one tested course candidate:
 - NumPy 2.0.2 as the core lecture examples' only direct Python dependency
 - a deliberate `requirements.txt` containing only `numpy==2.0.2`
 
-These versions are a candidate, not the final course lock. The primary setup below uses uv. The standard-library `venv` and Conda sections are alternatives for comparison; they reproduce this same version, directory, and dependency contract rather than defining separate environments.
+These versions define the tested candidate for this lecture's NumPy work, not a permanent dependency set for every later lecture. Later activities may add packages through their own recorded requirements. The primary setup below uses uv. The standard-library `venv` and Conda sections are alternatives for comparison; here they reproduce the same version, directory, and dependency contract rather than defining separate learning outcomes.
 
 ## Reproducibility vocabulary
 

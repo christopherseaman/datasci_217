@@ -31,9 +31,9 @@ The task transcript lost a substantial portion of the conversation twice, but th
 | Lecture | Current review state | Required follow-up |
 | --- | --- | --- |
 | 01 | Pass | None currently identified |
-| 02 | Pass with inherited P2 | Reconcile the illustrative `study_data.csv` path/example |
-| 03 | Pass | Clarify that the candidate environment is scoped and keep platform instructions coherent |
-| 04 | No-pass on small defects | Replace removed `DataFrame.applymap` bonus reference; close malformed inline code; clarify package-install example |
+| 02 | Pass | Illustrative `study_data.csv` path reconciled |
+| 03 | Pass | Candidate environment explicitly scoped to Lecture 03 while allowing recorded later requirements |
+| 04 | Pass | Removed `DataFrame.applymap` reference, repaired inline code, and made `%pip` use recorded requirements |
 | 05 | No-pass | Reduce the newly expanded audit pipeline; repair pandas 3/type-conversion wording; clarify core/bonus nullable-type boundary |
 | 06 | Pass with P2 follow-ups | Remove duplicate prose; reconcile `combine_first` bonus example and speaker notes; reconsider newly added `stack`/`unstack` expansion |
 | 07 | Pass for current diff | Retain inherited breadth for now; clarify core/bonus duplication where useful |
@@ -53,14 +53,14 @@ The task transcript lost a substantial portion of the conversation twice, but th
 
 ## Next action
 
-1. Commit the recovered lecture-edit state as a named checkpoint.
-2. Narrow Lecture 05 and make the listed targeted repairs in small, lecture-group commits.
-3. Re-run lecture-only syntax, fence, link, and diff validation.
-4. Present the consolidated lecture review before touching demos or assignments.
+1. Narrow Lecture 05 and make the listed targeted repairs in small, lecture-group commits.
+2. Re-run lecture-only syntax, fence, link, and diff validation.
+3. Present the consolidated lecture review before touching demos or assignments.
 
 ## Checkpoint log
 
 | Commit | Scope | Result |
 | --- | --- | --- |
 | `9523a1d` | Add branch-only tracking instructions and progress ledger | Durable recovery process established |
-| Pending | Snapshot recovered edits to Lectures 01–11 | Preserve the interrupted work before further reconciliation |
+| `f727982` | Snapshot recovered edits to Lectures 01–11 | Interrupted work preserved before further reconciliation |
+| Pending | Reconcile Lectures 02–04 | Repair paths, environment scope, pandas 3 API, inline Markdown, and recorded package installation |

@@ -55,7 +55,7 @@ The lecture covers vectorized operations; reach for the tools below when you nee
 
 - `df.apply(func)` — column-wise by default; add `axis='columns'` for row-wise logic
 - `series.map(func)` — element-level transformations with optional dict/Series mapping
-- `df.applymap(func)` — element-wise DataFrame transform (use sparingly for performance)
+- `df.map(func)` — element-wise DataFrame transform (use sparingly for performance)
 - Chain helpers: `.assign()`, `.pipe()`, `.rename()` to build fluent pipelines
 
 **Brief Example:**
@@ -205,5 +205,4 @@ print(preview.head())
 Start with the lecture’s clean CSV example, then layer these options as you encounter real-world quirks.
 
 ---
-
 

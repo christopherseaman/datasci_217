@@ -350,7 +350,7 @@ Analyzes study time vs. performance.
 ## Code Example
 ```python
 import pandas as pd
-df = pd.read_csv('study_data.csv')
+df = pd.read_csv('data/study_data.csv')
 print(f"Correlation: {df['hours'].corr(df['grade']):.2f}")
 ```
 

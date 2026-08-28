@@ -108,7 +108,7 @@ Magic commands provide special functionality for notebook environments. They sta
 - `%matplotlib inline` - Display plots within notebook cells
 - `%pwd` - Print current working directory
 - `%ls` - List directory contents
-- `%pip install package_name` - Install Python packages
+- `%pip install -r requirements.txt` - Install an activity's recorded packages into the notebook kernel environment
 - `%pip list` - List installed packages
 - `%pip show package_name` - Show package information
 
@@ -121,8 +121,8 @@ import matplotlib.pyplot as plt
 plt.plot([1, 2, 3, 4])
 plt.show()
 
-# Install packages
-%pip install pandas numpy matplotlib
+# Install the requirements recorded for the current activity
+%pip install -r requirements.txt
 
 # Check your location
 %pwd
@@ -637,8 +637,8 @@ Reading
 
 Writing
 
-- `df.to_csv('asdf.csv') - no frills
-- `df.to_csv('tab_separated.tsv', sep='\t')
+- `df.to_csv('asdf.csv')` - no frills
+- `df.to_csv('tab_separated.tsv', sep='\t')`
 - `df.to_csv(path, index=False, na_rep='')` — write cleaned results
 - `df.to_csv(path, columns=[...])` — export selected columns
 
