@@ -602,8 +602,8 @@ Assignment 11 remains the integrated Chicago forecasting capstone.
 
 Student-facing instructions no longer promise the removed generators,
 clinical-trial package, legacy notebook layouts, or XGBoost assignment path.
-The local-first execution boundary is explicit; Colab is described only as an
-optional route for lecture demos, not as an assignment submission mechanism.
+The local-first execution boundary is explicit. Assignment 11 is local-Jupyter
+only; it does not add a demo or Colab execution option.
 Active assignment requirements, platform notes, notebook assertions, and
 public/instructor protected-file and cell digests are synchronized to the
 current pandas 3.0.5/NumPy 2.0.2 candidate (with the existing activity-specific

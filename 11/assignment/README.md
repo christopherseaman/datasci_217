@@ -23,7 +23,7 @@ uv pip install -r requirements.txt
 jupyter lab
 ```
 
-Open `q1_setup_exploration.ipynb`. Local Jupyter is the grading reference for this assignment. The lecture demo Colab links are an optional viewing/execution route for the demos, not an assignment submission route; use local Jupyter for submitted work.
+Open `q1_setup_exploration.ipynb` in local Jupyter. Local Jupyter is the grading reference and the only supported execution route for this assignment.
 
 The release and provenance manifest are committed under `data/`. `download_data.sh` does not download or replace anything; it verifies those committed files.
 
@@ -41,7 +41,9 @@ The release and provenance manifest are committed under `data/`. `download_data.
 | Q8 | 14 | [`q8_results.ipynb`](q8_results.ipynb) | Evaluate the untouched test period |
 | Q9 | 6 | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` |
 
-Lecture 11 demonstrates the workflow. The optional NYC Taxi geographic visualization is a lecture demo only; this assignment has no maps, coordinates, spatial joins, geographic features, or geographic dependencies.
+Lecture 11 demonstrates the workflow. Geographic material is outside this
+assignment: do not add maps, coordinates, spatial joins, geographic features,
+or geographic dependencies.
 
 ## Submission
 
