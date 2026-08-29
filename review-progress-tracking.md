@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: fresh pairwise comparison of the 11 core lecture READMEs against `main` in progress; known course-wide heading normalization remains open; demos and assignments remain deferred
+- Current phase: fresh pairwise comparison of the 11 core lecture READMEs against `main` complete; one explicit Lecture 10 preservation repair and the known course-wide heading normalization remain open; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -18,7 +18,39 @@ Review all student-facing lecture content against `main`, the relevant Wes McKin
 
 The instructor clarified that this pass compares the current lecture pairs, not every lecture-related Markdown page. The exact scope is the 11 pairwise comparisons from `main:01/README.md` versus current `01/README.md` through `main:11/README.md` versus current `11/README.md`—22 document snapshots representing 11 lectures. BONUS, POINTS, demos, assignments, and branch-only records are excluded from the comparison. The baseline is current commit `299cdbb` against `main` commit `7b49984`; `main` is an ancestor of the current branch.
 
-The review will distinguish intentional pandas 3/API modernization, prerequisite reordering, and approved content consolidation from accidental topic loss or unjustified expansion. It retains the established non-executable lecture boundary and treats the known one-H1 hierarchy gap as a separate format result.
+The review distinguished intentional pandas 3/API modernization, prerequisite reordering, and approved content consolidation from accidental topic loss or unjustified expansion. It retained the established non-executable lecture boundary and treated the known one-H1 hierarchy gap as a separate format result. Four pair-range reviewers, a cross-course sequence reviewer, a quantitative reviewer, and an independent synthesis challenger all used this same scope.
+
+### Core-pair verdict
+
+**The Lecture 01–11 sequence and inherited core-topic coverage pass, but the comparison found one required preservation repair before content parity with `main` is approved.** Ten pairs are approved, including Lecture 05 with a minor discoverability note. Lecture 10 retains every required model family and is substantively more accurate, but it drops two inherited Zoolander references despite the instructor's explicit preserve-all requirement. No P0 defect or additional P1/P2 accidental topic loss was found. The independent challenge confirmed this synthesis rather than exposing another material regression.
+
+| Lecture | Completeness versus `main` | Order and prerequisites | Size/density | Fun/engagement | Pair result |
+| --- | --- | --- | --- | --- | --- |
+| 01 | Full foundation retained and clarified | Strong terminal/script-first opening | Balanced | Retained | Approve |
+| 02 | Full structured-Python/Git role retained; premature pandas use removed | Strong bridge from Lecture 01 | Substantially consolidated | Retained | Approve |
+| 03 | Environment and NumPy contract expanded | Strong script/Git-to-reproducibility bridge | Denser, but justified | Retained | Approve |
+| 04 | Notebook and pandas foundation modernized for pandas 3 | Strong; plotting remains deferred | Balanced | Slightly less immediate visual payoff | Approve |
+| 05 | Cleaning core strengthened; peripheral core blocks removed | Excellent contract-to-save progression | More focused | Retained | Approve, with P3 notice option |
+| 06 | Joins, concat, reshape, and index topics retained | Excellent cardinality-first progression | Balanced | Broken imported visuals removed; concept-serving humor retained | Approve |
+| 07 | Visualization contract retained and improved | Strong matplotlib → pandas → seaborn sequence | Advanced survey consolidated | Retained | Approve |
+| 08 | Aggregation and pivot scope retained with pandas 3 result-shape semantics | Strong | Balanced | Retained | Approve |
+| 09 | Temporal core retained; specialized decomposition explicitly made optional | Strong | Balanced | Retained | Approve |
+| 10 | All inherited model families and evaluation workflow retained | Strong statistics → ML → boosting → deep-learning order | Largest core lecture, but segmented and purposeful | Strong overall; two required references missing | Changes required |
+| 11 | Inherited integrative topic families retained in a question-led rewrite | Improved: question/evidence precede transformation and modeling | Expanded, appropriate for synthesis | Lighter than `main`, but still uses relevant visuals | Approve |
+
+### Actionable comparison findings
+
+1. **P1 preservation violation — restore two Lecture 10 Zoolander references without restoring the deterministic model advice around them.** `main:10/README.md:462` used the “blue steel” reference in its Random Forest tip; current `10/README.md:484` correctly replaces the universal algorithm recommendation but removes the reference. `main:10/README.md:637` compared XGBoost, LightGBM, and CatBoost to “blue steel, magnum, and le tigre”; current `10/README.md:667` correctly makes the selection advice evidence-based but removes the comparison. The content repair should keep the accurate current guidance and reincorporate the two franchise references rather than reverting the old “start with X” prescriptions.
+2. **P3 discoverability option — Lecture 05 no longer signals two inherited peripheral sections.** `main:05/README.md:513-566` covered random sampling/permutation and `main:05/README.md:756-809` covered command-line notebook execution. The current core lecture appropriately focuses on cleaning and contains no replacement core signpost. This is not a cleaning-topic or sequence failure; if inherited-topic discoverability matters, add a brief optional pointer rather than restoring the two large blocks.
+3. **Separate format gate — nine core READMEs still have multiple H1 headings.** Lectures 03 and 11 have exactly one H1; Lectures 01, 02, and 04–10 do not. This is an existing hierarchy/accessibility issue rather than content loss relative to `main`.
+
+### Intentional differences that are not regressions
+
+- Lecture 02's generic reporting example avoids using pandas before Lecture 04; the old example depended on an undeclared pandas setup and a term-like raw-data link. The prerequisite correction outweighs its small loss of data-science flavor.
+- Lecture 06 removes 12 `attachment:` image references from `main`; those were non-repository Notion URIs. The current prose, tables, ASCII join diagrams, and retained humor preserve the instructional work, so the raw image-count drop is not a content defect.
+- Lecture 07 keeps the advanced visualization ecosystem as a concise optional survey rather than several full executable walkthroughs. Lecture 09 explicitly makes decomposition/forecasting optional. Both are justified ownership and density changes.
+- Lecture 11's old phase/checklist structure was intentionally replaced by a question-led integration path. Its crosswalk preserves cleaning, joins/reshape, aggregation, visualization, time series, modeling/evaluation, and communication without imposing a universal lifecycle.
+- A prose-oriented metric increased for every current core README. The largest gains are Lectures 11, 10, and 03; large line-count reductions in Lectures 02 and 07 principally reflect code/reference consolidation rather than disappearing core concepts. These counts support the pair review but do not by themselves establish pedagogical quality.
 
 ## Recovered work state
 
@@ -115,7 +147,7 @@ The first repair batch changed 24 lecture Markdown pages and no demo or assignme
 - Lecture 03 now uses one H1 title with H2 main sections and nested subsections, removes duplicated quick-reference material and the author-facing drafting note, and repairs the NumPy membership, indirect-sort, and large-memmap examples without adding execution-state glue.
 - Lectures 04–10 repair the recorded pandas, statistics, safety, visualization, time-series, modeling, serialization, attention, Featuretools, and drift-response defects.
 - `POINTS.md` for Lectures 06–09 now treats each README as authoritative and retains concise instructor cues rather than a second full lecture. The required three `LIVE DEMO` markers remain in each of Lectures 07–09's cue sheets.
-- Lecture 06's two bad jokes were replaced with concept-serving levity. Lecture 10 retains all existing Zoolander material while its surrounding API guidance is consolidated.
+- Lecture 06's two bad jokes were replaced with concept-serving levity. Lecture 10 retained all Zoolander material present at the start of that repair batch while its surrounding API guidance was consolidated; the later direct comparison with `main` above found two older references that were already absent from that batch baseline.
 
 This is a pre-review implementation record, not a correctness or approval verdict. Independent reviewers must still challenge factual/API safety and pedagogical structure/size against the complete lecture context, after which all lecture-wide gates must run from the current sources.
 
@@ -128,7 +160,7 @@ The final content/size review found no accidental loss of an inherited topic fam
 - Lecture 02's bonus bundle is roughly 46% smaller by the reviewer's prose measure and now has distinct Python-concept, Python-CLI, and Git ownership.
 - The four points pages are compact cue sheets rather than parallel lectures. Raw word counts fell from 2,725 to 550 (Lecture 06), 2,337 to 446 (Lecture 07), 2,005 to 302 (Lecture 08), and 1,603 to 352 (Lecture 09). Each retains exactly three `LIVE DEMO` markers and one H1 title.
 - Lecture 03 has one H1 with coherent H2/H3/H4 nesting; its optional shell/terminal-visualization material follows the core environment and NumPy sequence without becoming a prerequisite.
-- Lecture 10 retains all 11 detected Zoolander reference lines and the statsmodels, scikit-learn, XGBoost, TensorFlow/Keras, and PyTorch families while adding the missing task/cost-aligned metric bridge.
+- Lecture 10 retained all 11 detected Zoolander reference lines present at the start of that repair batch and the statsmodels, scikit-learn, XGBoost, TensorFlow/Keras, and PyTorch families while adding the missing task/cost-aligned metric bridge. The later direct comparison with `main` above supersedes the broader preservation inference: two additional older references remain to be restored.
 - Lecture 06 retains concept-serving humor in both repaired locations. No decorative humor was added to dry bonus pages.
 
 Final integrated gates from the current sources:
@@ -196,13 +228,13 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 | 02 | Resolved | Open: README | Core role is sound; bonus ownership, API-contract, and Git-safety cleanup is complete |
 | 03 | Resolved | Open: BONUS | Environment-to-NumPy order works; density, stale NumPy API, duplicated reference, and author-note issues are resolved |
 | 04 | Resolved | Open: README and BONUS | Strong pandas 3 foundation; the bonus alignment example is repaired |
-| 05 | Resolved | Open: README and BONUS | Excellent contract-driven cleaning owner; missingness sequencing and non-destructive notebook guidance are clarified |
+| 05 | Resolved; optional core signpost decision | Open: README and BONUS | Excellent contract-driven cleaning owner; missingness sequencing and non-destructive notebook guidance are clarified; the direct `main` comparison records a minor discoverability option for removed peripheral sections |
 | 06 | Resolved | Open: README and BONUS | Strong joins/reshape core; null-key guidance, points drift, stale bonus claims, and harmful humor are resolved |
 | 07 | Resolved | Open: README | Excellent visualization contract; inference, trend/grid examples, and duplicate extensions are repaired |
 | 08 | Resolved | Open: README | Strong result-shape-first core; aggregation, validation, remote-safety, and parallel-page volume issues are resolved |
 | 09 | Resolved | Open: README | Strong temporal core; optional STL/ADF/count guidance and broken image links are repaired |
-| 10 | Resolved | Open: README | Inherited survey breadth is intact; metric selection, API/claim corrections, and repeated detail are repaired while preserving all Zoolander material |
-| 11 | Pass unchanged | Pass | Question-led, non-prescriptive, and appropriately sized capstone |
+| 10 | Open: restore two inherited Zoolander references | Open: README | Inherited survey breadth is intact and the accuracy repairs pass; two `main`-carried references must be reincorporated without restoring deterministic model advice |
+| 11 | Pass | Pass | Intentional question-led, non-prescriptive rewrite; inherited integrative topic families are retained and its expanded size is appropriate |
 
 ## Deferred to the demo phase
 
@@ -249,9 +281,11 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 
 ## Next action
 
-1. Confirm the standard-Markdown decision and normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
-2. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
-3. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
+1. Restore the two Lecture 10 Zoolander references identified by the direct `main` comparison while preserving the current evidence-based model-selection advice.
+2. Decide whether Lecture 05 needs a one-sentence optional pointer for the removed sampling/permutation and notebook-automation sections; do not restore the large peripheral blocks by default.
+3. Normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
+4. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
+5. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
 
 ## Checkpoint log
 
