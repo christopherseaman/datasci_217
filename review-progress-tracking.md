@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: content/API repair batch passes, but course-wide lecture heading normalization is still required before approval; demos and assignments remain deferred
+- Current phase: fresh pairwise comparison of the 11 core lecture READMEs against `main` in progress; known course-wide heading normalization remains open; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -13,6 +13,12 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Review objective
 
 Review all student-facing lecture content against `main`, the relevant Wes McKinney chapter extracts under `work/mckinney_content`, current package behavior, and the intended course sequence. Preserve inherited topic scope unless a change is explicitly justified. Correct factual/API defects and unintended LLM changes without silently redesigning a lecture.
+
+## Fresh core-lecture comparison against main
+
+The instructor clarified that this pass compares the current lecture pairs, not every lecture-related Markdown page. The exact scope is the 11 pairwise comparisons from `main:01/README.md` versus current `01/README.md` through `main:11/README.md` versus current `11/README.md`—22 document snapshots representing 11 lectures. BONUS, POINTS, demos, assignments, and branch-only records are excluded from the comparison. The baseline is current commit `299cdbb` against `main` commit `7b49984`; `main` is an ancestor of the current branch.
+
+The review will distinguish intentional pandas 3/API modernization, prerequisite reordering, and approved content consolidation from accidental topic loss or unjustified expansion. It retains the established non-executable lecture boundary and treats the known one-H1 hierarchy gap as a separate format result.
 
 ## Recovered work state
 
