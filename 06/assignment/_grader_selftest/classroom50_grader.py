@@ -53,7 +53,7 @@ EXPECTED_CELL_TYPES = {
     for cell_id in EXPECTED_CELL_IDS
 }
 PROTECTED_CELL_SHA256 = {
-    "a06-header": "1c728cf8f59fd331446ab73f55086e782d4399685985a1969d5f9839ad41f3cd",
+    "a06-header": "c55dd34558c7a8730e18a3b5df29a6c999285142c69ae5a29ec06be1dead7766",
     "a06-setup": "68f227f40a9ed45e80664eaf939b2b270326e483389dd547abe76fa363bdec44",
     "a06-data-contract": "0265d9faa5bb57d9d5061a4ca68426982deb244a18b67506ec33cca4f1d91270",
     "a06-final-verify": "d3dd35f4762145d5f012c7798bc9072f2d8d2cc195b74e772c931dd18979b4c9",
@@ -62,9 +62,9 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
-    "README.md": "2a439cc655b0447c6bd0b93be0fa998c8b4e08e82ca356f4b54fe168a0da4b1d",
-    "PLATFORM_CHECK.md": "ebbca4c26b9701f231a6ef73a295c1619538db24cdd929828b8e3581bc8852d2",
-    "check_assignment.py": "021eda3133ae3eb88ed15b3c98b114717e0a0d9e1e7f2f99324592506fd5d94e",
+    "README.md": "b832a10866a5cd8b90517f014d5a9e7abec040c24834515296b18aa4ede7a721",
+    "PLATFORM_CHECK.md": "be24dc511a18966dbe361835c4ff62d3f24f841f629fa7e0d8791c71759c54d5",
+    "check_assignment.py": "d8c1a3809ddaf3f0fd7aa0d6bf8d714e6823e9cdc20cf702d74cf13a5289218d",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
     "data/specimens.csv": "26eeae8d64a2870dc94195a45f924058b777eb1c97f96d2310e86f06403ba605",
     "data/stations_history.csv": "dc6f75e588183d5291abd69b4d5aa856472a711f6ff546b015dd21610d55708c",

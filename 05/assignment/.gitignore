@@ -1,1 +1,5 @@
-TIPS.md
+.venv/
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+.pytest_cache/

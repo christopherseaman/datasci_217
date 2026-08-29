@@ -588,6 +588,43 @@ An attempted Assignment 04 instructor self-test stopped before grading because
 the host does not have `nbformat`; this is an environment limitation, not a
 passing or failing assignment result.
 
+## Assignment source reconciliation (2026-08-29)
+
+The assignment review is now active. Assignments 02–10 were reconciled to the
+rebuilt lecture/demo contracts rather than the legacy README and notebook
+prompts. The restored contracts now cover, in sequence: Git-safe script
+refactoring (02), terminal NumPy work (03), first notebooks and labeled data
+(04), documented cleaning (05), validated combination and structural reshape
+(06), visualization critique/redesign (07), explicit-grain grouping (08),
+entity-aware temporal evidence (09), and bounded OLS/chronological evaluation
+(10). Assignment 01 remains the terminal/Python readiness exercise, and
+Assignment 11 remains the integrated Chicago forecasting capstone.
+
+Student-facing instructions no longer promise the removed generators,
+clinical-trial package, legacy notebook layouts, or XGBoost assignment path.
+The local-first execution boundary is explicit; Colab is described only as an
+optional route for lecture demos, not as an assignment submission mechanism.
+Active assignment requirements, platform notes, notebook assertions, and
+public/instructor protected-file and cell digests are synchronized to the
+current pandas 3.0.5/NumPy 2.0.2 candidate (with the existing activity-specific
+Matplotlib, seaborn, scikit-learn, and statsmodels pins).
+
+The 04 and 05 starter `.gitignore` files were also restored to the exact
+cache/output-exclusion contracts enforced by their public checkers; the
+Assignment 04 instructor protected-file manifest now records its current
+platform and public-checker bytes.
+
+Static validation passed for JSON, notebook IDs/order, stale learner-facing
+contract removal, Python compilation of all non-intentionally-broken assignment
+files, protected-source digests, and `git diff --check`. The public checkers
+were smoke-tested from their starter state: remaining failures are expected
+TODO/generated-artifact or unavailable-host-dependency messages, not source
+integrity or contract-map mismatches. Fresh notebook execution remains a
+release gate for an environment containing each assignment's exact pins; the
+host here is Python 3.14 and does not have the NumPy/Jupyter stack required by
+the notebooks. Assignment 01's deliberately broken `debug_report.py` is an
+intentional debugging starter and is excluded from the compilation claim.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
@@ -628,9 +665,8 @@ passing or failing assignment result.
 
 ## Next action
 
-1. Commit the portable assignment-source/pytest/Actions checkpoint after the
-   user reviews the `main` comparison and confirms the nested-workflow export
-   convention.
+1. Commit the reconciled assignment-source/pytest/Actions checkpoint after
+   this validation.
 2. Design and implement the TA grading runner against local assignment
    subtrees first; add exported repository coordinates and a semester roster
    only when the standalone repositories are created.

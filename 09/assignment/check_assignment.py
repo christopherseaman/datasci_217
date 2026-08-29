@@ -34,8 +34,8 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "README.md": "03026ba8f1d57e57b4a030c2ec1cd3cf0358a24df8829b735a099b47881654ff",
-    "PLATFORM_CHECK.md": "019a5c52b6c7adca37c0c95300a633d15c594258928a9080dab24d6b6026952c",
+    "README.md": "bf1516bddac77a5b8e1003a237b4e954cdccac377f31f237c8ffe39840fb7558",
+    "PLATFORM_CHECK.md": "2ada43d46e2d26412f5f13a12a7315ddd24f77e333303a0b071e46662a381c1c",
     "data/fixture.json": "27558bc4da7738775879501a6f11a0a9d874f3948823e54bb5e82ab91a02d703",
     "data/zone_co2_readings.csv": "c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4",
 }
@@ -56,7 +56,7 @@ MARKDOWN_IDS = {
     "a09-task3-prompt", "a09-task3-explain", "a09-synthesis",
 }
 PROTECTED_CELL_SHA256 = {
-    "a09-header": "131ea3ecea5c880816109cc7c1b03980dcd3c0c2e4cd9d17b34d68a5af3e9163",
+    "a09-header": "fd9bfd600830518361e0779324743bc86f613c975b7ce0ac46027a10b0242542",
     "a09-setup": "46d251a68a1b2b740e64bdb90e892500cade7bb6235b69e0c2876670cd4f837d",
     "a09-terms-data": "f8ad0129811ecd03ed7c0dc60b860b68a1be545003e4961cdaea6b43489dfa59",
     "a09-task2-prompt": "d1d9d124b7fd9904ee9a47256745def60937945d1bfe40194239314199bedc1b",

@@ -82,9 +82,9 @@ PROTECTED_CELL_IDS = {
 CANDIDATE_PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "PLATFORM_CHECK.md": "36a10e0fe458fc8e0ef2e47327540c2bc4db3eaf8e91eb7ecb2fe1acd2bf2713",
-    "README.md": "ea1f6fd44ca95ccf95b4581add8240fd718a0c7f35f439161a104d4071bc901f",
-    "check_assignment.py": "60b1faa514ddf51daeaade5d709caadf4329401fb7ec62a375844bbcaa75895d",
+    "PLATFORM_CHECK.md": "69afb426e92641082df243c34fe2b2e12b9dbba84a3415f0e97b5073ab668f4d",
+    "README.md": "4da9bacd4d26346305ccb5adf5c6cf10fab4d292c05b8429ad6aeef788445e4e",
+    "check_assignment.py": "4b298f2095d1a35fc258b2f8f93112858b00b87cf342c58ebdb29e1c5cc370b0",
     "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",

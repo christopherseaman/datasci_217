@@ -23,7 +23,7 @@ uv pip install -r requirements.txt
 jupyter lab
 ```
 
-Open `q1_setup_exploration.ipynb`. Local Jupyter is the grading reference. Colab assignment support is pending save-back validation; use local Jupyter unless your instructor announces otherwise.
+Open `q1_setup_exploration.ipynb`. Local Jupyter is the grading reference for this assignment. The lecture demo Colab links are an optional viewing/execution route for the demos, not an assignment submission route; use local Jupyter for submitted work.
 
 The release and provenance manifest are committed under `data/`. `download_data.sh` does not download or replace anything; it verifies those committed files.
 

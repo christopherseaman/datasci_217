@@ -1,6 +1,6 @@
 # Platform Check
 
-Local Jupyter is the grading reference. Colab assignment support is pending save-back validation, so use the local setup unless your instructor announces otherwise.
+Local Jupyter is the grading reference for this assignment. Colab is an optional execution route for the lecture demos only, not an assignment submission route.
 
 From `11/assignment`, run:
 

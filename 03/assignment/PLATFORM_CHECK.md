@@ -4,10 +4,10 @@ This required GUI delivery workflow is an unassessed platform checklist, separat
 
 Use VS Code Source Control. GitHub Desktop is an acceptable equivalent when it exposes the same working-tree, diff, staging, commit, branch, merge, and remote states. Do not use command-line Git.
 
-## Open the provisioned repository
+## Open the assignment repository
 
-1. Open the Assignment 03 repository URL supplied by the instructor.
-2. Open the repository with the supported GUI workflow.
+1. Open the `03/assignment` subtree, or its exported standalone repository, with the supported GUI workflow.
+2. Open that repository with the supported GUI workflow.
 3. Open the repository folder in VS Code and confirm that it contains this `PLATFORM_CHECK.md`.
 4. Switch to `main` if necessary, select **Sync Changes**, and confirm that Source Control lists no unfinished changes.
 
@@ -42,6 +42,6 @@ The four generated pipeline text files may remain untracked working evidence; th
 4. A conflict is not required. If one appears, resolve the intended final content, remove every conflict marker, inspect the resolution, and complete the merge through Source Control.
 5. Select **Sync Changes**.
 6. In the browser, confirm that `main` contains the two exact environment records, completed pipeline block, saved environment probe, and both completed Python files. Confirm that `.venv/` and `recreation-check/` are absent.
-7. Optionally open the repository's **Actions** tab to inspect the public pytest feedback.
+7. Optionally open the repository's **Actions** tab to inspect the public pytest feedback. Actions are optional feedback, not a submission requirement.
 
 If a required GUI control is unavailable, stop before trying terminal Git commands. Record the exact message and contact the instructor.

@@ -37,8 +37,8 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "5072907d928869027f0ab9884599bce2fda548faad48bf8c766bd58998655763",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "README.md": "23bec29177d65945bc7c24de2f86d4a895c19148da19af9bbaebb19163fb6e33",
-    "PLATFORM_CHECK.md": "a91844e48604d5b093c8ccf4d8298bea5d01b971f3e4d2e2d8978c9a89d65faa",
+    "README.md": "d9bb0b8bb9699a2fee850e72a05e4e69cf5f26af1f74ed64a61b399ab3fe1481",
+    "PLATFORM_CHECK.md": "12e9b9ab5ad249c23f50b56c8d393c24af65796e66ad3345df3c18e19f85b7f6",
     "data/fixture.json": "1c3397cb2d98ae239f6a7cd254bb3aa9980d94cd23af4546c834a9262de0a28c",
 }
 EXPECTED_CELL_IDS = [
@@ -77,12 +77,12 @@ MARKDOWN_IDS = {
     "a07-visual-review",
 }
 PROTECTED_CELL_SHA256 = {
-    "a07-header": "011748bb7034d207811f6f934d6fa80c6f4a6c4cedeab5b9c368dbf56152aeef",
-    "a07-setup": "0bb09a1b55bd5488b844b6c99042f3f8bb6934e66eb831f98cd3dfd4a21baaa1",
+    "a07-header": "98a0484f819c84e29bd6dc972e5e26b473d5dc840a2344615ef5c58f53691943",
+    "a07-setup": "8e898c45d900d895f092d3fb235460d66e460391bdb83e32ae27cf38da0ec3ff",
     "a07-terms-data": "f762645fcbbe9d28dbd3d77ae4d124baa9030fdc41a1295be3a5b4d9634dcad4",
     "a07-task2-context": "7ddee594b77784ea7b2684f82f1fb1215bbdf79224ffd153a2269bfec3278fa2",
     "a07-supplied-flawed": "96bfd9dd6114ad84f305dc8567e757ac8ce33cfed55c546447f763bb73bf867b",
-    "a07-final-verify": "25bc659c20a016d53b2fc1eb1c27a34d9829d94964ed5d6efc4658b74f0af375",
+    "a07-final-verify": "990573f70aa3ef7a8cd27cc5db117ffe2c50b55ad1f8cbb7615b46f2c7f2c22d",
 }
 STUDENT_MARKDOWN_IDS = MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)
 STUDENT_CODE_IDS = set(EXPECTED_CELL_IDS) - MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)

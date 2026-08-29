@@ -58,8 +58,8 @@ EXPECTED_CELL_TYPES = {
     for cell_id in EXPECTED_CELL_IDS
 }
 PROTECTED_CELL_SHA256 = {
-    "a08-header": "c49240238f3ebd296cf0c211170c56764f657972b9976a2a6c821d745b59b700",
-    "a08-setup": "7d64bb798e93b090281c6f427dd10d113caffe31debf836eeefcb18b8b162778",
+    "a08-header": "3ff1edadbb47417ae04c521783a7d76f40f7e4bfbd2f2985effe384e8636b208",
+    "a08-setup": "a27e20efd45d3556a420e9653ad5d2fb834bc45ec7d035c17cdb90bcc6bc6220",
     "a08-terms-data": "0888ac5c6da29f2fc882d06cc707956518908ad339ce2a3319625100cc9e2d0c",
     "a08-task2-prompt": "c121bd5943bff1925995836ece9508768e394ff2da0d9d906ee7d319ccb972e6",
     "a08-task3-prompt": "45e6d964a75c3a478c63d4623416fec1f814c576ffa344f7b1e416618604ead0",
@@ -69,9 +69,9 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "README.md": "c7382a76e6cce665176d8a3d65dfb2c103d65a70132b1b41ba68c7cc79079f32",
-    "PLATFORM_CHECK.md": "d60455f2ea443990929cea97260c509399454e8bb839acc7043e60bbc3120b41",
-    "check_assignment.py": "64256b16b0bae2a29192b2397ca52c80bac5c5e21a0edf32fefb4d53038d6144",
+    "README.md": "1ae599730f86fad8b1906d46aa3bc2ed7096fd8adb89af84394d9f5fbba2e0f3",
+    "PLATFORM_CHECK.md": "b12b67322be29e1bfc641de85e82f7216f4ac52ef6a1ef738670d87114749281",
+    "check_assignment.py": "b15325444266ca1241438c8c90fa33feac301106e6a75234c137225d9ceb4578",
     "data/fixture.json": "b2fee1c48fb678b81318d2f085c42e2f9b480bd6c4eed6f07ef118b9bfd70860",
     "data/support_requests.csv": "a9136161332c5da9f8f1251d869bbd014ed762751675fb757f81a79cff5352d6",
 }

@@ -1,187 +1,156 @@
-# Assignment 7: Data Visualization
+# Assignment 07: Visualization Critique, Redesign, and Explanation
 
-**Deliverable:** Completed `assignment.ipynb` with output files in `output/`
+Use prepared synthetic data to move through three visualization roles: inspect
+a bounded pattern, diagnose a misleading supplied chart, and communicate one
+descriptive finding to a named audience. You will connect each chart to its
+question, row grain, variable roles, displayed unit, and evidentiary limit.
 
-## Environment Setup
+This is a clean-local-Jupyter assignment. The fixtures are course-authored,
+synthetic, nonidentifying, and different from the Lecture 07 demo data. Do not
+use Colab, manual uploads, Drive mounts, network access, or `/content` paths.
+The portable setup supports both a standalone exported assignment repository
+and this full course repository.
 
-### Create Virtual Environment
+## Core vocabulary
 
-Create a virtual environment for this assignment:
+A **visualization** maps data values to visible properties so a reader can make
+a comparison. The **question** states what the chart should help the reader
+compare or understand. The **audience** is who will use it and the context they
+bring. An **intended claim** is the bounded descriptive conclusion the final
+chart should support. The **displayed unit** names the magnitude reported by an
+axis or mark, while the **grain** says what one row and corresponding mark or
+position represents.
+
+In this assignment, variables have four roles: **categorical** values identify
+groups, **quantitative** values report numerical magnitudes, **ordered** values
+have a meaningful sequence, and an **identifier** distinguishes one record.
+An **exploratory visualization** is a truthful view used to inspect a pattern
+while refining a question. An **explanatory visualization** is a focused chart
+that communicates one selected finding to a named audience.
+
+A **mark** is a visible point, line, or rectangle. An **encoding** maps a value
+to position, length, color, marker, hatch, or line style. A **redundant
+encoding** adds a second cue for the same important category identity. **Visual
+integrity** means visible comparisons faithfully represent the data, scale,
+context, and claim. **Accessibility** means design choices let more readers
+recover the comparison. A Matplotlib **Figure** is the complete saved canvas;
+an **Axes** is one plotting area with scales, labels, title, and marks. An
+**annotation** attaches focused context to a selected mark or position. A
+**text alternative** names the chart, axes, main pattern, and relevant
+limitation in text.
+
+## Setup
+
+Use CPython 3.12.13. From this directory, create and activate a virtual
+environment, install the exact runtime record, and open Jupyter or the VS Code
+notebook interface:
 
 ```bash
-# Create venv
-python3 -m venv .venv
-
-# Activate (Linux/Mac)
+python -m venv .venv
 source .venv/bin/activate
-
-# Activate (Windows)
-.venv\Scripts\activate
+python -m pip install -r requirements.txt
 ```
 
-### Install Requirements
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
+[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before editing the notebook. The Python
+program that starts Jupyter and the notebook kernel must use this environment.
 
-You have two options to install the required packages:
+## Prepared fixtures
 
-**Option 1: Using pip in terminal**
+- `format_completion.csv`: four rows, one per delivery format and stage;
+  categorical format and stage with quantitative prepared completion percent.
+- `session_observations.csv`: twelve rows, one per synthetic learning session;
+  identifier, categorical pathway, and two quantitative fields.
+- `pathway_checkpoints.csv`: eight rows, one per pathway and checkpoint;
+  categorical pathway, ordered checkpoint, and quantitative prepared
+  completion percent.
+
+The rows describe only the prepared fixtures. They do not establish cause,
+population effects, prediction, or general patterns. Do not generate, clean,
+join, reshape, or aggregate these complete assignment fixtures.
+
+## Deliverables
+
+Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all 23
+cells from top to bottom. Commit the notebook and these five regenerated files
+in the assignment repository:
+
+- `output/critique_redesign.png`
+- `output/pathway_explanatory.png`
+- `output/explanatory_supporting_data.csv`
+- `output/visualization_evidence.json`
+- `output/explanatory_text_alternative.txt`
+
+These files are intentionally visible in VS Code Source Control and GitHub
+Desktop. Commit and push all six deliverables. Do not edit the data fixtures,
+supplied notebook cells, environment records, checker, or instructions. Stored
+notebook output is useful for human review but is not trusted as execution
+evidence; the central grader clears and executes a disposable copy from fresh
+state.
+
+After restart-and-run, use the discoverable student check:
+
 ```bash
-pip install -r requirements.txt
+python check_assignment.py
 ```
 
-**Option 2: Using %pip magic in Jupyter**
+The checker inspects files and notebook source without executing notebook code.
+Fix each `[FIX]` message, restart and run all, then check again. It screens
+machine-readable requirements; it cannot certify that a chart is clear,
+accessible, honest, or visually effective.
 
-You can install packages directly from a Jupyter notebook cell using the `%pip` magic command:
+## Task 1: bounded exploration
 
-```python
-# Install single package
-%pip install matplotlib
+State an exploratory question, the one-session row/mark grain, variable roles,
+one observation restricted to the twelve supplied rows, and a limitation that
+rejects causal and generalized conclusions. Implement
+`build_exploratory_chart(session_table, pathway_order)` as one scatterplot of
+activities completed against reflection score. Encode pathway with both color
+and marker shape, preserve the caller's two-label order, label units, and
+return its Figure and Axes without saving a third PNG. Display and inspect the
+live result.
 
-# Install from requirements.txt
-%pip install -r requirements.txt
-```
+## Task 2: critique and redesign
 
-**Important:** Make sure your Jupyter notebook is using the same virtual environment as your kernel. Select the `.venv` kernel in Jupyter's kernel menu.
+Inspect the supplied four-bar comparison for a learning-support coordinator.
+It intentionally has an unsupported causal title, truncated baseline, missing
+unit, color-only category encoding, and distracting decoration. Explain each
+problem and a repair without changing the prepared values.
 
-## Generate the Dataset (Provided)
+Implement `build_critique_redesign(summary_table, format_order, stage_order)`.
+Use a zero baseline, explicit percentage unit, course colors plus hatches,
+value labels, restrained decoration, and an outside legend. Preserve arbitrary
+valid caller labels and order. Save the canonical result as
+`output/critique_redesign.png`.
 
-Run the data generator notebook to create your dataset:
+## Task 3: audience-focused explanation
 
-```bash
-jupyter notebook data_generator.ipynb
-```
+State the question, learning-support coordinator audience and follow-up use,
+bounded intended claim, unit, grain, roles, comparison, chart rationale, and
+causal limitation. Copy and export the exact supporting data. Implement
+`build_explanatory_chart(checkpoint_table, pathway_order)` so the two ordered
+paths have redundant color, marker, and line-style cues. Derive the leader,
+checkpoint count, final absolute gap, title, and annotation from any valid
+two-pathway input; on a final tie, attach the annotation to the second requested
+pathway. Save the canonical result as `output/pathway_explanatory.png`.
 
-Run all cells to create the CSV files in `data/`:
-- `data/sales_data.csv` (sales transactions)
-- `data/customer_data.csv` (customer information)
-- `data/product_data.csv` (product catalog)
+Export the exact evidence JSON and matching one-paragraph text alternative.
+The alternative must name the line chart, both axes and units, both pathways,
+the first-to-last pattern, the nine-point final gap, and the limitation that
+prepared descriptive rows cannot establish cause. Finish the visual-review
+checklist with observable evidence rather than yes/no answers.
 
-## Complete the Four Questions
+## Scope and assessment boundary
 
-Open `assignment.ipynb` and work through the four questions. The notebook provides:
+Use the prepared rows directly with Matplotlib and one bounded seaborn
+scatterplot. GroupBy, aggregation and summary calculations; joining, reshaping
+and cleaning; time series; modeling or inference; random or remote data;
+interactive charts, dashboards, maps, animations, and additional chart
+families are outside scope.
 
-- **Step-by-step instructions** with clear TODO items
-- **Helpful hints** for each operation
-- **Sample data** and examples to guide your work
-- **Validation checks** to ensure your outputs are correct
-
-**Prerequisites:** This assignment uses matplotlib, seaborn, and pandas plotting from Lecture 07.
-
-**How to use the scaffold notebook:**
-1. Read each cell carefully - they contain detailed instructions
-2. Complete the TODO items by replacing `None` with your code
-3. Run each cell to see your progress
-4. Use the hints provided in comments
-5. Check the submission checklist at the end
-
-### Question 1: matplotlib Fundamentals
-
-**What you'll do:**
-- Create figures and subplots with matplotlib
-- Customize plot appearance (colors, markers, styles)
-- Generate different plot types (line, bar, scatter, histogram)
-- Save plots in multiple formats
-- Create a multi-panel visualization
-
-**Skills:** matplotlib figures, subplots, customization, plot types, file export
-
-**Output:** `output/q1_matplotlib_plots.png`, `output/q1_multi_panel.png`
-
-### Question 2: seaborn Statistical Visualization
-
-**What you'll do:**
-- Create statistical plots with seaborn
-- Visualize relationships between variables
-- Analyze distributions and patterns
-- Apply seaborn styling and themes
-- Create correlation analysis
-
-**Skills:** seaborn statistical plots, relationship visualization, distribution analysis, styling
-
-**Output:** `output/q2_seaborn_plots.png`, `output/q2_correlation_heatmap.png`
-
-### Question 3: pandas Plotting and Data Exploration
-
-**What you'll do:**
-- Use pandas plotting for quick data exploration
-- Create time series visualizations
-- Generate multiple plot types with pandas
-- Apply visualization best practices
-- Create a comprehensive data overview
-
-**Skills:** pandas plotting, time series visualization, data exploration, best practices
-
-**Output:** `output/q3_pandas_plots.png`, `output/q3_data_overview.png`
-
-## Assignment Structure
-
-```
-07/assignment/
-├── README.md                      # This file - assignment instructions
-├── assignment.md                  # Notebook source (for jupytext)
-├── assignment.ipynb              # Completed notebook (you work here)
-├── data_generator.ipynb          # Run once to create datasets
-├── data/                         # Generated datasets
-│   ├── sales_data.csv            # Sales transactions (1,000 records)
-│   ├── customer_data.csv         # Customer information (200 customers)
-│   └── product_data.csv          # Product catalog (100 products)
-├── output/                       # Your saved results (created by your code)
-│   ├── q1_matplotlib_plots.png   # Q1 matplotlib output
-│   ├── q1_multi_panel.png        # Q1 multi-panel plot
-│   ├── q2_seaborn_plots.png      # Q2 seaborn output
-│   ├── q2_correlation_heatmap.png # Q2 correlation analysis
-│   ├── q3_pandas_plots.png       # Q3 pandas output
-│   └── q3_data_overview.png      # Q3 data overview
-└── .github/
-    └── test/
-        ├── test_assignment.py    # Auto-grading tests
-        └── requirements.txt      # Test dependencies
-```
-
-## Dataset Schemas
-
-### `data/sales_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `transaction_id` | string | Unique transaction ID (T0001, T0002, ...) |
-| `customer_id` | string | Customer ID (links to customer_data.csv) |
-| `product_id` | string | Product ID (links to product_data.csv) |
-| `quantity` | int | Number of items purchased |
-| `unit_price` | float | Price per unit |
-| `total_amount` | float | Total transaction amount |
-| `transaction_date` | string | Transaction date (YYYY-MM-DD) |
-| `store_location` | string | Store location (North, South, East, West) |
-
-### `data/customer_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `customer_id` | string | Unique customer ID (C0001, C0002, ...) |
-| `customer_name` | string | Customer full name |
-| `age` | int | Customer age |
-| `gender` | string | Customer gender (M, F) |
-| `city` | string | Customer city |
-| `state` | string | Customer state |
-| `registration_date` | string | Customer registration date (YYYY-MM-DD) |
-
-### `data/product_data.csv`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `product_id` | string | Unique product ID (P001, P002, ...) |
-| `product_name` | string | Product name |
-| `category` | string | Product category (Electronics, Clothing, Home & Garden, Books, Sports) |
-| `brand` | string | Product brand |
-| `unit_price` | float | Product price |
-| `stock_quantity` | int | Current inventory level |
-
-## Submission Checklist
-
-Before submitting, verify you've created:
-
-- [ ] `output/q1_matplotlib_plots.png` - matplotlib fundamentals
-- [ ] `output/q1_multi_panel.png` - multi-panel visualization
-- [ ] `output/q2_seaborn_plots.png` - seaborn statistical plots
-- [ ] `output/q2_correlation_heatmap.png` - correlation analysis
-- [ ] `output/q3_pandas_plots.png` - pandas plotting
-- [ ] `output/q3_data_overview.png` - data exploration
+The implementation has a provisional 80-point automated overlay: 10 points for
+fixtures and reproducibility, 15 for Task 1, 25 for Task 2, 25 for Task 3, and
+5 for artifact integrity. A separate 20-point human review covers contract fit,
+visual integrity, accessibility, annotation, text alternative, organization,
+and limitations. Course policy will decide how this diagnostic evidence maps
+to a grade; the notebook and public checker declare no pass threshold.
