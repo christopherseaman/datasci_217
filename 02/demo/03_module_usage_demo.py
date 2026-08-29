@@ -11,21 +11,27 @@ and use them in a new context, showing the power of modular design.
 
 import sys
 import os
+import importlib.util
 
 # Add current directory to Python path so we can import our demo script
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import specific functions from our demo script
-from python_functions_demo import (
-    calculate_average,
-    find_highest_grade,
-    print_student_grades,
-    get_grades_list,
-    safe_calculate_average,
-    validate_student_data,
-    save_results_to_file,
-    load_students_from_csv
-)
+# The preceding demo keeps its numbered teaching filename, so load it by path.
+functions_demo_path = os.path.join(os.path.dirname(__file__), "03_python_functions_demo.py")
+spec = importlib.util.spec_from_file_location("python_functions_demo", functions_demo_path)
+if spec is None or spec.loader is None:
+    raise ImportError(f"Could not load {functions_demo_path}")
+functions_demo = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(functions_demo)
+
+calculate_average = functions_demo.calculate_average
+find_highest_grade = functions_demo.find_highest_grade
+print_student_grades = functions_demo.print_student_grades
+get_grades_list = functions_demo.get_grades_list
+safe_calculate_average = functions_demo.safe_calculate_average
+validate_student_data = functions_demo.validate_student_data
+save_results_to_file = functions_demo.save_results_to_file
+load_students_from_csv = functions_demo.load_students_from_csv
 
 def analyze_grade_distribution(grades):
     """Analyze the distribution of grades."""

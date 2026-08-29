@@ -5,14 +5,35 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: focused ownership follow-up; sampling and notebook automation have their intended Lecture 05/Lecture 04 owners, the approved Lecture 11 refinements and instructor-directed xkcd/humor repairs pass integrated lecture-only validation and independent review, course-wide heading normalization remains open, and demos/assignments remain deferred
-- Explicitly out of scope for this phase: demos, assignments, merging to `main`
+- Current phase: demo audit; the lecture content and instructor-directed xkcd/humor repairs pass their recorded lecture-only reviews, course-wide heading normalization remains open, and demos are now being checked against the lecture-at-that-point contract while assignments remain deferred
+- Explicitly out of scope for this phase: assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
 ## Review objective
 
 Review all student-facing lecture content against `main`, the relevant Wes McKinney chapter extracts under `work/mckinney_content`, current package behavior, and the intended course sequence. Preserve inherited topic scope unless a change is explicitly justified. Correct factual/API defects and unintended LLM changes without silently redesigning a lecture.
+
+## Demo audit scope and contract
+
+The instructor authorized a separate demo-phase review after the lecture-only content checkpoint. The demo scope is every lecture's student-facing demo Markdown and its generated notebook/notebook source, with Lecture 11 treated as one capstone demo rather than three smaller demos. Assignments remain out of scope. Each demo should match the lecture material available at its position, usually landing near the first third, middle, and end of the lecture, and should introduce no concept before the lecture has taught it. Demo Markdown should generate a notebook that executes without errors when its documented packages and versions are available. The audit therefore checks generation fidelity, notebook execution, demo ordering and coverage, pandas 3/API compatibility, package-version alignment between lecture, demo, and local environment metadata, and stale or missing dependencies. The lecture/demo boundary is pedagogical: lecture code explains concepts, while demo notebooks own execution setup and state.
+
+## Demo audit checkpoint (read-only)
+
+The first demo audit covered all student-facing demo paths for Lectures 01–11 and excluded assignments. It checked the Markdown source, any paired notebook, the demo guide, local package metadata, and the lecture section named as the demo's owner. Four independent group reviews returned `NEEDS REPAIR`.
+
+| Demo group | Execution/structure result | Main findings |
+| --- | --- | --- |
+| 01–03 | Scripts partly execute; no notebook source exists | Lecture 02 has a broken module import, a backup-directory bug, unsafe reset/force-push instructions, and guide/file-name drift. Lecture 03's analysis scripts look for a missing `data/students.csv`, mislabel non-Math subjects, and use a guide order that precedes the lecture's environment → NumPy sequence. Lecture 01's integration script imports `json`, `pathlib`, and `datetime` before those concepts are taught. Lecture 03's NumPy requirement is unbounded `numpy>=1.24.0` despite the lecture's tested NumPy 2.0.2/Python 3.12.13 contract. |
+| 04–06 | Eight of nine notebooks execute under a temporary pandas 3.0.3 stack; one fails | Paired Markdown and notebooks are materially divergent in Lecture 04 and in Lectures 05–06. Lecture 05 Demo 2 fails on tied `qcut` edges; Lecture 05 has no demo requirements file. Lecture 04 and 06 requirements still permit pandas 2, Lecture 04 notebooks install packages during execution, Lecture 04 Demo 3 lacks its repository fixture, Lecture 05 Demo 1 previews a heatmap before visualization is taught, and Lecture 06 notebooks 1–2 carry stale Python 3.11 metadata. |
+| 07–09 | Markdown-generated 08 notebooks execute; stored 07/09 notebooks fail on current APIs | Matplotlib `boxplot(labels=...)` fails and must use `tick_labels=`. Stored Lecture 08 notebooks retain stale uppercase `freq="H"` and diverge from Markdown. Lecture 09 Demo 1 teaches time zones before the lecture's time-zone section. Lecture 07's Altair selection APIs are deprecated. Requirements use broad pre-pandas-3 lower bounds, and Lecture 09's guide names optional Altair without declaring it. |
+| 10–11 | Lecture 10 execution remains unverified on the available host; Lecture 11's capstone structure is strong | Lecture 10 Demo 2 uses the test set for XGBoost early stopping and reports it as final performance; Demo 3 repeatedly uses the test set for architecture/model comparison. Demo 1 labels mean-prediction confidence intervals as prediction intervals. The guide's data-size claims and Python 3.13 requirement conflict with actual datasets and the repository's Python 3.12 pin; `load_wine` is mislabeled as Wine Quality. Lecture 11's one-capstone-demo design and four required notebooks match the lecture, but its local `uv sync --no-project ... -r requirements.txt` command is invalid and its Colab links remain development URLs pending immutable-tag publication. |
+
+The audit's cross-cutting recommendation is to make Markdown the authoritative source for every paired demo because the instructor's execution contract is “Markdown generates the notebook.” Where an existing notebook contains richer content than its Markdown (notably Lecture 04 and Lecture 06), reconcile that content into the Markdown source before regenerating the notebook; do not silently discard executable coverage. The repair batch will then regenerate paired notebooks and compare generated cells to their Markdown source.
+
+The version baseline for the repair is the already tested course candidate: Python 3.12.13, NumPy 2.0.2, pandas 3.0.3, Matplotlib 3.11.1, scikit-learn 1.9.0, PyArrow 25.0.0, JupyterLab 4.4.10, and Jupytext 1.18.1 where those packages are used. Activity-specific libraries will be pinned only after their demo code is repaired and exercised; broad lower bounds that permit pandas 2 or pre-current plotting APIs are not acceptable. Lecture text will be updated only when its documented package/version contract is stale relative to the demo's tested contract. The first repair scope covers the P1 execution/safety failures, all source/notebook drift, pandas 3/API/version mismatches, and the directly misleading placement/guide claims; optional Colab publication remains a release operation rather than a local execution prerequisite.
+
+No demo or lecture source was edited during this read-only audit; only this branch ledger records the findings. The next step is the bounded repair batch, followed by fresh Markdown-to-notebook generation, temporary-environment execution, lecture/demo alignment checks, and an independent adversarial demo review.
 
 ## Fresh core-lecture comparison against main
 
@@ -279,10 +300,69 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 | 10 | Resolved | Open: README | Inherited survey breadth and all main-carried Zoolander references are intact; evidence-based model selection and the corrected unique Statistics comic remain in place |
 | 11 | Resolved | Pass | Question-led, non-prescriptive rewrite includes the approved prompt, local definitions, three delivery anchors, a concept-serving Data Trap comic, and the capstone joke; the intentional opening visual remains |
 
-## Deferred to the demo phase
+## Demo repair checkpoint
 
-- `09/demo/requirements.txt` permits pandas 2.0 even though the reviewed lecture now consistently targets pandas 3 aliases; reconcile the recorded demo environment before executing that demo.
-- `11/demo/DEMO_GUIDE.md` uses an invalid `uv sync --no-project ... -r requirements.txt` command under uv 0.12.1; replace it with the tested `uv venv` plus `uv pip install -r` sequence during demo review.
+The authorized demo phase repaired the execution, source-fidelity, ordering,
+and version findings from the read-only audit. Markdown is now authoritative
+for all 27 paired notebooks (04–11, including the Lecture 09 guide and the
+optional Lecture 11 geo notebook), and fresh Jupytext generation matches every
+stored notebook's cell types and sources. The Lecture 01–03 script demos remain
+script-based because notebooks are intentionally introduced only in Lecture 04.
+
+- Pinned the active demo environments to CPython 3.12.13 and the pandas 3
+  candidate (`pandas==3.0.3`, `numpy==2.0.2`), with activity-specific exact
+  pins for plotting, statistics, modeling, and the Lecture 11 capstone.
+- Reconciled the richer 04–11 notebook material into Markdown, regenerated
+  notebooks without outputs, and added the missing 04 Anscombe fixture and 05
+  requirements file.
+- Fixed pandas 3/API issues: tied `qcut`, current Matplotlib `tick_labels`,
+  Altair point selections, lowercase hourly aliases, and current notebook
+  metadata. Removed runtime package installation from 04 demos.
+- Corrected Lecture 10 prediction-interval semantics and test-set leakage in
+  boosting/deep-learning comparisons; corrected dataset and Python-version
+  claims in the guides. Lecture 11 local setup now uses `uv venv` plus
+  `uv pip install` and keeps development Colab links explicitly pending
+  immutable-tag publication.
+- Kept the usual three-demo cadence for Lectures 01–10, consolidating the
+  foundational Lecture 01 guide into setup/CLI, Python/control flow, and one
+  simple integration workflow. Lecture 11 remains one capstone with four
+  required notebooks and one optional geo bonus.
+- Simplified the Lecture 01 integration script to concepts already taught in
+  Lecture 01. Its CLI path-error exercise captures the expected failure and
+  then runs the corrected path so the demo exits successfully.
+- Kept Lecture 04 Demo 1 focused on notebook mechanics and core Python by
+  removing its pre-pandas NumPy/pandas version check; the version contract is
+  checked in the later pandas demos and their guide.
+- Corrected stale cross-lecture references in the Lecture 09 guide/demo
+  (GroupBy is Lecture 08; cleaning is Lecture 05) and moved timezone material
+  to the end demo, after the lecture introduces it. Lecture 05's guide no
+  longer repeats Lecture 04's notebook-automation material.
+
+Independent implementation validation:
+
+- All 27 Markdown/notebook pairs regenerated with Jupytext 1.18.1; zero
+  cell-type/source mismatches and no stored outputs or execution counts.
+- Disposable Lecture 01–03 script runs passed under Python 3.12.13 and NumPy
+  2.0.2; shell syntax and Python compilation checks passed.
+- Repair agents executed fresh copies of all 04–09 notebooks, all three
+  Lecture 10 demos, and required Lecture 11 notebooks in isolated pinned
+  environments with zero cell errors. Optional Lecture 11 geo execution and
+  Colab publication remain unverified.
+- Additional scoped checks found no stale uppercase pandas hourly aliases,
+  legacy Matplotlib `labels=`, deprecated Altair selection APIs, unsafe
+  `nbconvert --inplace`/`--allow-errors` guide references, or broad pandas-2
+  requirements. `git diff --check` passed.
+
+An independent adversarial reviewer confirmed the repaired 05 guide, all
+source/notebook pairs, current APIs, and the three-demo cadence. The review
+also classified the intentionally captured Lecture 01 path error as
+non-blocking teaching behavior; the current script now handles it explicitly.
+The focused follow-up also passed the simplified Lecture 01 integration and
+CLI demos with zero stderr and confirmed that Lecture 04 Demo 1 no longer
+imports pandas before pandas is introduced in the lecture.
+No assignment paths were edited. The active demo phase is ready for a
+checkpoint commit; the separate lecture heading-format gate and eventual
+branch-only cleanup remain open.
 
 ## Validation recovered from the interrupted work
 
@@ -324,10 +404,14 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 
 ## Next action
 
-1. Normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
-2. Keep sampling owned by Lecture 05 and notebook automation owned by Lecture 04; do not re-expand the removed parallel reference blocks.
-3. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
-4. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
+1. Run the final integrated demo/lecture structural and build checks, then
+   checkpoint the demo repair on `2026-refresh`.
+2. If desired before merge, normalize the 13 remaining nonconforming lecture
+   pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
+   change.
+3. Keep assignments deferred and do not merge to `main`; remove or explicitly
+   exclude `AGENTS.md`, `HANDOFF.md`, and this tracker during the eventual merge
+   cleanup.
 
 ## Checkpoint log
 
@@ -354,3 +438,4 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 | `36ea01c` | Record the core-lecture comparison | Preserve the pairwise content, flow, size, and engagement verdicts |
 | `7e6ba44` | Restore Lecture 10 references | Restore every main-carried Zoolander reference before further review |
 | `aa35ea2` | Refine lecture ownership and capstone | Place sampling and notebook automation with their owning lectures and clarify Lecture 11 |
+| `demo-repair` | Repair and validate lecture demos | Reconcile Markdown/notebook sources, standardize the pandas 3 candidate, repair execution/API/order defects, and pass independent demo review |

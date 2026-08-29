@@ -34,8 +34,10 @@ current local verification does not claim that the remote development links work
 From `11/demo/`:
 
 ```bash
-uv sync --no-project --python 3.12.13 -r requirements.txt
-uv run --no-project jupyter lab
+uv venv --python 3.12.13 .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+jupyter lab
 ```
 
 The notebooks create `output/` as needed. Demo 2 writes a compact model table;

@@ -302,69 +302,9 @@ print(last_3_days.tail())
 
 The `between_time()` and `at_time()` methods make it straightforward to compare nighttime vs. daytime vital signs or analyze patterns during specific hours.
 
-## Part 4: Time Zone Handling for Multi-Site Studies
+## Part 4: Real-World Example - Patient Monitoring Analysis
 
-In multi-site clinical trials or global health surveillance, time zones become critical. The same event recorded at different sites needs to be aligned to a common timezone for analysis. pandas provides robust timezone handling.
-
-### Basic Time Zone Operations
-
-Timezone-aware datetime objects include information about which timezone they represent. This allows accurate conversion between timezones and prevents errors in temporal analysis.
-
-```python
-# Create timezone-aware datetime (clinical trial with multiple sites)
-utc_time = pd.Timestamp.now(tz='UTC')
-print(f"UTC time: {utc_time}")
-
-# Convert to different timezone (US Eastern)
-eastern_time = utc_time.tz_convert('US/Eastern')
-print(f"Eastern time: {eastern_time}")
-
-# Create timezone-aware DataFrame (multi-site clinical trial)
-site_data = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003'],
-    'value': np.random.randn(3)
-}, index=pd.date_range('2023-01-01', periods=3, freq='D'))
-
-# Localize to UTC (standardize all sites)
-site_data.index = site_data.index.tz_localize('UTC')
-print("\nSite data (UTC):")
-print(site_data)
-
-# Convert to Eastern time (site location)
-site_data.index = site_data.index.tz_convert('US/Eastern')
-print("\nSite data (Eastern):")
-print(site_data)
-```
-
-When analyzing data from multiple clinical trial sites, you must standardize timestamps to a common timezone (typically UTC). The `tz_localize()` function adds timezone information to naive datetime objects, while `tz_convert()` converts between timezones.
-
-### Multiple Time Zones
-
-Real-world clinical trials often involve sites across multiple timezones. Understanding how to convert between them is essential for accurate temporal analysis.
-
-```python
-# Clinical trial sites in different time zones
-sites = {
-    'UTC': 'UTC',
-    'New York': 'US/Eastern',
-    'London': 'Europe/London',
-    'Tokyo': 'Asia/Tokyo',
-    'Sydney': 'Australia/Sydney'
-}
-
-print("=== Multi-Site Clinical Trial Time Zones ===")
-base_time = pd.Timestamp('2023-01-01 12:00:00', tz='UTC')
-
-for site_name, tz in sites.items():
-    converted_time = base_time.tz_convert(tz)
-    print(f"{site_name:12} ({tz:20}): {converted_time}")
-```
-
-When a patient in New York has an event at 2 PM Eastern time, and a patient in Tokyo has the same event at 2 PM Tokyo time, these are actually different moments in time. Converting everything to UTC ensures accurate temporal comparisons.
-
-## Part 5: Real-World Example - Patient Monitoring Analysis
-
-Now let's combine everything we've learned into a realistic patient monitoring scenario. This demonstrates how datetime operations, indexing, and timezone handling work together in practice. We'll also use `diff()` and `pct_change()` to analyze changes over time.
+Now let's combine datetime operations and indexing into a realistic patient monitoring scenario. We'll use `diff()` and `pct_change()` to analyze changes over time. Time-zone localization and conversion are introduced later in Demo 3, after the lecture's time-zone section.
 
 ### Load and Prepare Patient Data
 
@@ -471,4 +411,3 @@ plt.show()
 ```
 
 Time series plots reveal patterns that summary statistics miss - like seasonal trends, sudden changes, or gradual drifts. The visualization above combines raw data, reference lines, and highlighted significant changes to provide comprehensive insight.
-

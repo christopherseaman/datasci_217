@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 echo "=========================================="
 echo "CLI NAVIGATION DEMO"
@@ -37,14 +38,27 @@ EOF
 
 echo "Running analysis script..."
 cd scripts
+if python3 analyze.py 2>../path_error.txt; then
+    echo "Unexpected success: inspect the working directory and path."
+else
+    echo "Expected path error captured (the script continues so we can fix it):"
+    cat ../path_error.txt
+fi
+
+cat > analyze.py << 'EOF'
+with open('../data/grades.csv', 'r') as f:
+    print(f.read())
+EOF
+
+echo "Running the corrected analysis script..."
 python3 analyze.py
 
-echo -e "\n💡 Fix: Check the commented line in analyze.py"
+echo -e "\n💡 Fix: the data path is relative to the scripts/ directory"
 
 echo -e "\nCleanup:"
 cd ../..
 echo "Back to: $(pwd)"
-echo "To remove project: rm -rf data_project"
+echo "To remove project after verifying your location: rm -r data_project"
 
 echo -e "\n=========================================="
 echo "Key commands: pwd, ls, mkdir, cd, cat"

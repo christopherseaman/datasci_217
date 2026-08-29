@@ -3,10 +3,22 @@
 ## Overview
 Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals, seaborn statistical plots, pandas plotting, and modern visualization tools.
 
+Markdown is the authoritative source for each generated notebook. The tested
+activity environment is CPython 3.12.13 with the exact NumPy, pandas,
+Matplotlib, Seaborn, Altair, and supporting-library pins in `requirements.txt`.
+Create it before launching Jupyter:
+
+```bash
+uv venv --python 3.12.13 .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+jupyter lab
+```
+
 ## Demo Structure
 
 ### Demo 1: matplotlib Fundamentals
-**File**: `demo1_matplotlib_basics.ipynb`
+**File**: `demo1_matplotlib_basics.ipynb` (generated from `demo1_matplotlib_basics.md`)
 **Duration**: 25 minutes
 **Focus**: Core matplotlib concepts and customization
 
@@ -16,7 +28,7 @@ Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals
 - Multiple plot types (line, bar, scatter, histogram)
 
 ### Demo 2: pandas Plotting and seaborn Statistical Visualization
-**File**: `demo2_seaborn_statistical.ipynb`
+**File**: `demo2_seaborn_statistical.ipynb` (generated from `demo2_seaborn_statistical.md`)
 **Duration**: 25 minutes
 **Focus**: Quick exploration and statistical plots
 
@@ -27,7 +39,7 @@ Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals
 - Styling and themes
 
 ### Demo 3: Modern Visualization Tools
-**File**: `demo3_pandas_altair.ipynb`
+**File**: `demo3_pandas_altair.ipynb` (generated from `demo3_pandas_altair.md`)
 **Duration**: 25 minutes
 **Focus**: Modern visualization libraries and interactivity
 
@@ -48,6 +60,7 @@ Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals
 - Python environment with matplotlib, seaborn, pandas, altair, plotnine
 - Sample datasets (tips, iris, stock data)
 - Jupyter notebook interface
+- Jupytext; Markdown is the authoritative source for each generated notebook
 
 ## Instructor Notes
 - Each demo builds visualization skills progressively

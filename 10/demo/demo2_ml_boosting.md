@@ -57,11 +57,11 @@ print("\nSummary statistics:")
 print(df.describe())
 ```
 
-## Part 2: Train/Test Split
+## Part 2: Train/Validation/Test Split
 
 The golden rule: never evaluate on data the model has seen during training!
 
-Before we can train any machine learning model, we need to split our data. This is critical: we must never evaluate a model on data it has seen during training. The test set acts as a "final exam" that the model hasn't studied for.
+Before we can train any machine learning model, we need to split our data. The validation set selects models and tuning choices; the test set stays untouched until one final evaluation of the frozen choice.
 
 ```python
 # Prepare features and target
@@ -70,23 +70,28 @@ feature_cols = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms',
 X = df[feature_cols]
 y = df['house_value']
 
-# Split into training and test sets (80/20)
-X_train, X_test, y_train, y_test = train_test_split(
+# Reserve 20% as an untouched final test set, then split the remainder for validation.
+X_train_valid, X_test, y_train_valid, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
+)
+X_train, X_valid, y_train, y_valid = train_test_split(
+    X_train_valid, y_train_valid, test_size=0.25, random_state=42
 )
 
 print(f"Training set: {X_train.shape[0]} samples")
+print(f"Validation set: {X_valid.shape[0]} samples")
 print(f"Test set: {X_test.shape[0]} samples")
 print(f"\nTraining target statistics:")
 print(y_train.describe())
-print(f"\nTest target statistics:")
-print(y_test.describe())
+print(f"\nValidation target statistics:")
+print(y_valid.describe())
 ```
 
 **Why split the data?**
 - **Training set**: Used to teach the model patterns in the data
-- **Test set**: Used to evaluate how well the model generalizes to new, unseen data
-- **80/20 split**: Common practice, but can vary based on dataset size
+- **Validation set**: Used to compare candidate models and tune training choices
+- **Test set**: Held untouched until the final, one-time evaluation
+- **60/20/20 split**: A simple teaching split; proportions depend on dataset size
 - **random_state=42**: Ensures reproducible splits (same random seed = same split)
 
 ## Part 3: Linear Regression with scikit-learn
@@ -102,19 +107,19 @@ lr_model.fit(X_train, y_train)
 
 # Make predictions
 y_train_pred = lr_model.predict(X_train)
-y_test_pred = lr_model.predict(X_test)
+y_valid_pred = lr_model.predict(X_valid)
 
 # Evaluate model
 train_r2 = r2_score(y_train, y_train_pred)
-test_r2 = r2_score(y_test, y_test_pred)
+valid_r2 = r2_score(y_valid, y_valid_pred)
 train_rmse = np.sqrt(mean_squared_error(y_train, y_train_pred))
-test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
+valid_rmse = np.sqrt(mean_squared_error(y_valid, y_valid_pred))
 
 print("=== Linear Regression Results ===")
 print(f"Training R²: {train_r2:.4f}")
-print(f"Test R²: {test_r2:.4f}")
+print(f"Validation R²: {valid_r2:.4f}")
 print(f"Training RMSE: ${train_rmse:.2f}k")
-print(f"Test RMSE: ${test_rmse:.2f}k")
+print(f"Validation RMSE: ${valid_rmse:.2f}k")
 print(f"\nCoefficients:")
 coef_df = pd.DataFrame({
     'feature': feature_cols,
@@ -127,7 +132,7 @@ print(f"\nIntercept: ${lr_model.intercept_:.2f}k")
 **Understanding the metrics:**
 - **R² (R-squared)**: Proportion of variance explained (0-1, higher is better). An R² of 0.85 means the model explains 85% of house value variation.
 - **RMSE (Root Mean Squared Error)**: Average prediction error in the same units as the target. Lower is better.
-- **Training vs Test**: If training performance is much better than test, the model is overfitting (memorizing training data).
+- **Training vs validation**: If training performance is much better than validation, the model may be overfitting.
 - **Coefficients**: Show how much each feature contributes to the house value prediction.
 
 ## Part 4: Regularized Linear Models
@@ -142,19 +147,19 @@ Regularization is a technique to prevent overfitting by penalizing large coeffic
 # Ridge Regression (L2 regularization)
 ridge_model = Ridge(alpha=10.0)  # alpha controls regularization strength
 ridge_model.fit(X_train, y_train)
-ridge_test_r2 = r2_score(y_test, ridge_model.predict(X_test))
-ridge_test_rmse = np.sqrt(mean_squared_error(y_test, ridge_model.predict(X_test)))
+ridge_valid_r2 = r2_score(y_valid, ridge_model.predict(X_valid))
+ridge_valid_rmse = np.sqrt(mean_squared_error(y_valid, ridge_model.predict(X_valid)))
 
 # Lasso Regression (L1 regularization - can zero out coefficients)
 lasso_model = Lasso(alpha=1.0)
 lasso_model.fit(X_train, y_train)
-lasso_test_r2 = r2_score(y_test, lasso_model.predict(X_test))
-lasso_test_rmse = np.sqrt(mean_squared_error(y_test, lasso_model.predict(X_test)))
+lasso_valid_r2 = r2_score(y_valid, lasso_model.predict(X_valid))
+lasso_valid_rmse = np.sqrt(mean_squared_error(y_valid, lasso_model.predict(X_valid)))
 
 print("=== Regularized Models Comparison ===")
-print(f"Linear Regression - Test R²: {test_r2:.4f}, RMSE: ${test_rmse:.2f}k")
-print(f"Ridge Regression - Test R²: {ridge_test_r2:.4f}, RMSE: ${ridge_test_rmse:.2f}k")
-print(f"Lasso Regression - Test R²: {lasso_test_r2:.4f}, RMSE: ${lasso_test_rmse:.2f}k")
+print(f"Linear Regression - Validation R²: {valid_r2:.4f}, RMSE: ${valid_rmse:.2f}k")
+print(f"Ridge Regression - Validation R²: {ridge_valid_r2:.4f}, RMSE: ${ridge_valid_rmse:.2f}k")
+print(f"Lasso Regression - Validation R²: {lasso_valid_r2:.4f}, RMSE: ${lasso_valid_rmse:.2f}k")
 
 # Compare coefficients
 coef_comparison = pd.DataFrame({
@@ -193,19 +198,19 @@ rf_model.fit(X_train, y_train)
 
 # Make predictions
 rf_train_pred = rf_model.predict(X_train)
-rf_test_pred = rf_model.predict(X_test)
+rf_valid_pred = rf_model.predict(X_valid)
 
 # Evaluate
 rf_train_r2 = r2_score(y_train, rf_train_pred)
-rf_test_r2 = r2_score(y_test, rf_test_pred)
+rf_valid_r2 = r2_score(y_valid, rf_valid_pred)
 rf_train_rmse = np.sqrt(mean_squared_error(y_train, rf_train_pred))
-rf_test_rmse = np.sqrt(mean_squared_error(y_test, rf_test_pred))
+rf_valid_rmse = np.sqrt(mean_squared_error(y_valid, rf_valid_pred))
 
 print("=== Random Forest Results ===")
 print(f"Training R²: {rf_train_r2:.4f}")
-print(f"Test R²: {rf_test_r2:.4f}")
+print(f"Validation R²: {rf_valid_r2:.4f}")
 print(f"Training RMSE: ${rf_train_rmse:.2f}k")
-print(f"Test RMSE: ${rf_test_rmse:.2f}k")
+print(f"Validation RMSE: ${rf_valid_rmse:.2f}k")
 
 # Feature importance
 feature_importance = pd.DataFrame({
@@ -240,25 +245,25 @@ xgb_model = xgb.XGBRegressor(
 
 xgb_model.fit(
     X_train, y_train,
-    eval_set=[(X_test, y_test)],
+    eval_set=[(X_valid, y_valid)],
     verbose=False
 )
 
 # Make predictions
 xgb_train_pred = xgb_model.predict(X_train)
-xgb_test_pred = xgb_model.predict(X_test)
+xgb_valid_pred = xgb_model.predict(X_valid)
 
 # Evaluate
 xgb_train_r2 = r2_score(y_train, xgb_train_pred)
-xgb_test_r2 = r2_score(y_test, xgb_test_pred)
+xgb_valid_r2 = r2_score(y_valid, xgb_valid_pred)
 xgb_train_rmse = np.sqrt(mean_squared_error(y_train, xgb_train_pred))
-xgb_test_rmse = np.sqrt(mean_squared_error(y_test, xgb_test_pred))
+xgb_valid_rmse = np.sqrt(mean_squared_error(y_valid, xgb_valid_pred))
 
 print("=== XGBoost Results ===")
 print(f"Training R²: {xgb_train_r2:.4f}")
-print(f"Test R²: {xgb_test_r2:.4f}")
+print(f"Validation R²: {xgb_valid_r2:.4f}")
 print(f"Training RMSE: ${xgb_train_rmse:.2f}k")
-print(f"Test RMSE: ${xgb_test_rmse:.2f}k")
+print(f"Validation RMSE: ${xgb_valid_rmse:.2f}k")
 
 # Feature importance
 xgb_importance = pd.DataFrame({
@@ -280,8 +285,8 @@ comparison = pd.DataFrame({
     'Model': ['Linear Regression', 'Ridge', 'Lasso', 'Random Forest', 'XGBoost'],
     'Train R²': [train_r2, r2_score(y_train, ridge_model.predict(X_train)), 
                   r2_score(y_train, lasso_model.predict(X_train)), rf_train_r2, xgb_train_r2],
-    'Test R²': [test_r2, ridge_test_r2, lasso_test_r2, rf_test_r2, xgb_test_r2],
-    'Test RMSE': [test_rmse, ridge_test_rmse, lasso_test_rmse, rf_test_rmse, xgb_test_rmse]
+    'Validation R²': [valid_r2, ridge_valid_r2, lasso_valid_r2, rf_valid_r2, xgb_valid_r2],
+    'Validation RMSE': [valid_rmse, ridge_valid_rmse, lasso_valid_rmse, rf_valid_rmse, xgb_valid_rmse]
 })
 
 print("=== Model Comparison ===")
@@ -290,7 +295,7 @@ print(comparison.to_string(index=False))
 # Visualize comparison
 comparison_long = comparison.melt(
     id_vars='Model',
-    value_vars=['Train R²', 'Test R²'],
+    value_vars=['Train R²', 'Validation R²'],
     var_name='Metric',
     value_name='R² Score'
 )
@@ -306,16 +311,16 @@ alt.Chart(comparison_long).mark_bar().encode(
 )
 ```
 
-## Part 8: Prediction Visualization
+## Part 8: Validation Prediction Visualization
 
 Visualize how well our best model predicts house values.
 
 ```python
-# Use XGBoost predictions for visualization
+# Use validation predictions while the test set remains sealed.
 pred_df = pd.DataFrame({
-    'actual': y_test.values,
-    'predicted': xgb_test_pred,
-    'error': y_test.values - xgb_test_pred
+    'actual': y_valid.values,
+    'predicted': xgb_valid_pred,
+    'error': y_valid.values - xgb_valid_pred
 })
 
 # Scatter plot: actual vs predicted
@@ -410,7 +415,7 @@ xgb_early_stop = xgb.XGBRegressor(
 # Fit with early stopping
 xgb_early_stop.fit(
     X_train, y_train,
-    eval_set=[(X_test, y_test)],
+    eval_set=[(X_valid, y_valid)],
     verbose=False
 )
 
@@ -419,19 +424,43 @@ print(f"=== Early Stopping Results ===")
 print(f"Best iteration: {xgb_early_stop.best_iteration}")
 print(f"Best score: {xgb_early_stop.best_score:.4f}")
 
-# Compare with model without early stopping
-xgb_early_pred = xgb_early_stop.predict(X_test)
-xgb_early_r2 = r2_score(y_test, xgb_early_pred)
-xgb_early_rmse = np.sqrt(mean_squared_error(y_test, xgb_early_pred))
+# Compare with model without early stopping on validation data.
+xgb_early_pred = xgb_early_stop.predict(X_valid)
+xgb_early_r2 = r2_score(y_valid, xgb_early_pred)
+xgb_early_rmse = np.sqrt(mean_squared_error(y_valid, xgb_early_pred))
 
-print(f"\nXGBoost (no early stopping) - Test R²: {xgb_test_r2:.4f}, RMSE: ${xgb_test_rmse:.2f}k")
-print(f"XGBoost (with early stopping) - Test R²: {xgb_early_r2:.4f}, RMSE: ${xgb_early_rmse:.2f}k")
+print(f"\nXGBoost (no early stopping) - Validation R²: {xgb_valid_r2:.4f}, RMSE: ${xgb_valid_rmse:.2f}k")
+print(f"XGBoost (with early stopping) - Validation R²: {xgb_early_r2:.4f}, RMSE: ${xgb_early_rmse:.2f}k")
+```
+
+## Part 11: One Final Test Evaluation
+
+After selecting early-stopped XGBoost using validation results, refit that frozen
+configuration on the combined training and validation rows. This is the first and
+only point at which the test set is used.
+
+```python
+final_xgb = xgb.XGBRegressor(
+    n_estimators=xgb_early_stop.best_iteration + 1,
+    max_depth=5,
+    learning_rate=0.1,
+    random_state=42,
+    n_jobs=-1,
+)
+final_xgb.fit(X_train_valid, y_train_valid, verbose=False)
+final_test_pred = final_xgb.predict(X_test)
+final_test_r2 = r2_score(y_test, final_test_pred)
+final_test_rmse = np.sqrt(mean_squared_error(y_test, final_test_pred))
+
+print("=== Final Test Performance: selected early-stopped XGBoost ===")
+print(f"Test R²: {final_test_r2:.4f}")
+print(f"Test RMSE: ${final_test_rmse:.2f}k")
 ```
 
 ## Key Takeaways
 
 1. **scikit-learn API**: Consistent fit/predict pattern across all models
-2. **Train/test split**: Always evaluate on unseen data
+2. **Train/validation/test split**: Select with validation; report the test result once
 3. **Regularization**: Ridge and Lasso help prevent overfitting
 4. **Random Forest**: Handles non-linear relationships automatically
 5. **XGBoost**: Often the best performer on tabular data
@@ -445,4 +474,3 @@ print(f"XGBoost (with early stopping) - Test R²: {xgb_early_r2:.4f}, RMSE: ${xg
 - Try other scikit-learn models (SVM, KNN)
 - Explore LightGBM and CatBoost alternatives to XGBoost
 - Learn about cross-validation for better model evaluation
-

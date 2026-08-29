@@ -221,7 +221,7 @@ axes[0].grid(True, alpha=0.3)
 plt.colorbar(scatter, ax=axes[0])
 
 # Box plot
-box_plot = axes[1].boxplot(data_by_group, labels=['Group 1', 'Group 2', 'Group 3'])
+box_plot = axes[1].boxplot(data_by_group, tick_labels=['Group 1', 'Group 2', 'Group 3'])
 axes[1].set_title('Box Plot')
 axes[1].set_xlabel('Groups')
 axes[1].set_ylabel('Values')
@@ -268,4 +268,3 @@ print("Figures saved as PNG, PDF, and SVG")
 3. **Plot Types**: Choose the right plot type for your data (line, bar, scatter, histogram, box)
 4. **Export**: Save figures in high quality for presentations and publications
 5. **Best Practices**: Use clear labels, appropriate colors, and good contrast
-

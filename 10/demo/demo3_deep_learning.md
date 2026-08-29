@@ -10,9 +10,8 @@
 
 ## Setup
 
-**Important:** This demo requires Python 3.13 or earlier. When creating your virtual environment with `uv`, use: `uv venv --python python3.13`
-
-This ensures TensorFlow can be installed. If you're using Python 3.14, TensorFlow is not yet available.
+**Important:** Use the course's tested Python 3.12.13 environment and the exact
+package versions in `requirements.txt`.
 
 ```python
 import pandas as pd
@@ -34,10 +33,12 @@ print(f"Keras version: {keras.__version__}")
 
 ## Part 1: Load Real Classification Dataset
 
-For deep learning, we'll use the Wine Quality dataset - a real-world dataset containing chemical properties of wines and their quality ratings. We'll convert this to a binary classification problem.
+For deep learning, we'll use scikit-learn's Wine recognition dataset: chemical
+analysis measurements for three cultivars. We'll convert its three-class target
+to a binary classification problem.
 
 ```python
-# Load Wine Quality dataset from scikit-learn
+# Load the Wine recognition dataset from scikit-learn
 from sklearn.datasets import load_wine
 
 # Fetch the dataset
@@ -83,24 +84,29 @@ feature_cols = wine_data.feature_names
 X = df[feature_cols].values
 y = df['target'].values
 
-# Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(
+# Reserve the test set before making architecture or model choices.
+X_train_valid, X_test, y_train_valid, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
+X_train, X_valid, y_train, y_valid = train_test_split(
+    X_train_valid, y_train_valid, test_size=0.25, random_state=42, stratify=y_train_valid
+)
 
-# Scale features (important for neural networks!)
+# Fit preprocessing on training rows only, then apply it everywhere else.
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
+X_valid_scaled = scaler.transform(X_valid)
 X_test_scaled = scaler.transform(X_test)
 
 print(f"Training set: {X_train_scaled.shape}")
+print(f"Validation set: {X_valid_scaled.shape}")
 print(f"Test set: {X_test_scaled.shape}")
 print(f"\nFeature statistics (after scaling):")
 print(f"Mean: {X_train_scaled.mean(axis=0)[:5]}")  # Should be ~0
 print(f"Std: {X_train_scaled.std(axis=0)[:5]}")    # Should be ~1
 ```
 
-**StandardScaler** transforms features to have mean=0 and standard deviation=1. Notice we fit the scaler on training data only, then transform both training and test data. This prevents data leakage - the test set statistics shouldn't influence the scaling.
+**StandardScaler** transforms features to have mean=0 and standard deviation=1. Notice we fit the scaler on training data only, then transform validation and test data. This prevents leakage: neither validation nor test statistics influence scaling.
 
 ## Part 3: Build Your First Neural Network
 
@@ -170,7 +176,7 @@ history = model.fit(
     X_train_scaled, y_train,
     epochs=50,  # Number of training iterations
     batch_size=32,  # Number of samples per gradient update
-    validation_split=0.2,  # Use 20% of training data for validation
+    validation_data=(X_valid_scaled, y_valid),
     verbose=1  # Show progress
 )
 ```
@@ -180,27 +186,28 @@ history = model.fit(
 - **Batch size**: Number of samples processed before updating weights
 - **Validation split**: Hold out some training data to monitor overfitting
 
-## Part 6: Evaluate Model Performance
+## Part 6: Evaluate Validation Performance
 
-Let's see how well our model performs on the test set.
+Use validation results to inspect this candidate while the test set remains
+untouched for one final evaluation.
 
 ```python
-# Evaluate on test set
-test_loss, test_accuracy = model.evaluate(X_test_scaled, y_test, verbose=0)
-print(f"=== Test Set Performance ===")
-print(f"Test Loss: {test_loss:.4f}")
-print(f"Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
+# Evaluate on validation data
+valid_loss, valid_accuracy = model.evaluate(X_valid_scaled, y_valid, verbose=0)
+print(f"=== Validation Performance ===")
+print(f"Validation Loss: {valid_loss:.4f}")
+print(f"Validation Accuracy: {valid_accuracy:.4f} ({valid_accuracy*100:.2f}%)")
 
 # Make predictions
-y_pred_proba = model.predict(X_test_scaled, verbose=0)
+y_pred_proba = model.predict(X_valid_scaled, verbose=0)
 y_pred = (y_pred_proba > 0.5).astype(int).flatten()
 
 # Classification report
 print("\n=== Classification Report ===")
-print(classification_report(y_test, y_pred))
+print(classification_report(y_valid, y_pred))
 
 # Confusion matrix
-cm = confusion_matrix(y_test, y_pred)
+cm = confusion_matrix(y_valid, y_pred)
 print("\n=== Confusion Matrix ===")
 print("                Predicted")
 print("              Negative  Positive")
@@ -277,25 +284,25 @@ import xgboost as xgb
 # Logistic Regression
 lr = LogisticRegression(max_iter=1000, random_state=42)
 lr.fit(X_train_scaled, y_train)
-lr_pred = lr.predict(X_test_scaled)
-lr_acc = accuracy_score(y_test, lr_pred)
+lr_pred = lr.predict(X_valid_scaled)
+lr_acc = accuracy_score(y_valid, lr_pred)
 
 # Random Forest
 rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
 rf.fit(X_train_scaled, y_train)
-rf_pred = rf.predict(X_test_scaled)
-rf_acc = accuracy_score(y_test, rf_pred)
+rf_pred = rf.predict(X_valid_scaled)
+rf_acc = accuracy_score(y_valid, rf_pred)
 
 # XGBoost
 xgb_clf = xgb.XGBClassifier(n_estimators=100, random_state=42, n_jobs=-1)
 xgb_clf.fit(X_train_scaled, y_train)
-xgb_pred = xgb_clf.predict(X_test_scaled)
-xgb_acc = accuracy_score(y_test, xgb_pred)
+xgb_pred = xgb_clf.predict(X_valid_scaled)
+xgb_acc = accuracy_score(y_valid, xgb_pred)
 
 # Compare
 comparison = pd.DataFrame({
     'Model': ['Logistic Regression', 'Random Forest', 'XGBoost', 'Neural Network'],
-    'Accuracy': [lr_acc, rf_acc, xgb_acc, test_accuracy]
+    'Validation Accuracy': [lr_acc, rf_acc, xgb_acc, valid_accuracy]
 })
 
 print("=== Model Comparison ===")
@@ -304,7 +311,7 @@ print(comparison.to_string(index=False))
 # Visualize
 alt.Chart(comparison).mark_bar().encode(
     x=alt.X('Model:N', title='Model', sort='-y'),
-    y=alt.Y('Accuracy:Q', title='Test Accuracy', scale=alt.Scale(domain=[0, 1]))
+    y=alt.Y('Validation Accuracy:Q', title='Validation Accuracy', scale=alt.Scale(domain=[0, 1]))
 ).properties(
     width=400,
     height=300
@@ -315,7 +322,8 @@ alt.Chart(comparison).mark_bar().encode(
 
 ## Part 9: Experiment with Architecture
 
-Let's try different architectures to see how they affect performance.
+Let's try different architectures as exploratory examples. Compare them on the
+validation set; do not use the test set to choose among them.
 
 ```python
 # Build a deeper network
@@ -339,12 +347,12 @@ history_deep = model_deep.fit(
     X_train_scaled, y_train,
     epochs=50,
     batch_size=32,
-    validation_split=0.2,
+    validation_data=(X_valid_scaled, y_valid),
     verbose=0
 )
 
 # Evaluate
-deep_test_loss, deep_test_acc = model_deep.evaluate(X_test_scaled, y_test, verbose=0)
+deep_valid_loss, deep_valid_acc = model_deep.evaluate(X_valid_scaled, y_valid, verbose=0)
 
 # Build a wider network
 model_wide = keras.Sequential([
@@ -365,17 +373,17 @@ history_wide = model_wide.fit(
     X_train_scaled, y_train,
     epochs=50,
     batch_size=32,
-    validation_split=0.2,
+    validation_data=(X_valid_scaled, y_valid),
     verbose=0
 )
 
 # Evaluate
-wide_test_loss, wide_test_acc = model_wide.evaluate(X_test_scaled, y_test, verbose=0)
+wide_valid_loss, wide_valid_acc = model_wide.evaluate(X_valid_scaled, y_valid, verbose=0)
 
 # Compare architectures
 arch_comparison = pd.DataFrame({
     'Architecture': ['Original (64-32)', 'Deep (128-64-32-16)', 'Wide (256-128)'],
-    'Test Accuracy': [test_accuracy, deep_test_acc, wide_test_acc],
+    'Validation Accuracy': [valid_accuracy, deep_valid_acc, wide_valid_acc],
     'Parameters': [model.count_params(), model_deep.count_params(), model_wide.count_params()]
 })
 
@@ -416,16 +424,16 @@ history_reg = model_regularized.fit(
     X_train_scaled, y_train,
     epochs=50,
     batch_size=32,
-    validation_split=0.2,
+    validation_data=(X_valid_scaled, y_valid),
     verbose=0
 )
 
 # Evaluate
-reg_test_loss, reg_test_acc = model_regularized.evaluate(X_test_scaled, y_test, verbose=0)
+reg_valid_loss, reg_valid_acc = model_regularized.evaluate(X_valid_scaled, y_valid, verbose=0)
 
 print("=== Regularization Comparison ===")
-print(f"Original model - Test Accuracy: {test_accuracy:.4f}")
-print(f"Regularized model - Test Accuracy: {reg_test_acc:.4f}")
+print(f"Original model - Validation Accuracy: {valid_accuracy:.4f}")
+print(f"Regularized model - Validation Accuracy: {reg_valid_acc:.4f}")
 
 # Compare training curves
 history_reg_df = pd.DataFrame(history_reg.history)
@@ -452,6 +460,33 @@ alt.Chart(val_loss_comparison).mark_line(point=True).encode(
     height=250,
     title='Validation Loss: Original vs Regularized'
 )
+```
+
+## Part 11: One Final Test Evaluation
+
+The original 64–32 network is the pre-specified final teaching candidate. The
+architecture and regularization examples above are exploratory validation work,
+not a license to repeatedly inspect the test set. Refit the selected candidate on
+the combined training and validation rows, then score it once on the untouched test set.
+
+```python
+final_scaler = StandardScaler()
+X_train_valid_scaled = final_scaler.fit_transform(X_train_valid)
+X_test_final_scaled = final_scaler.transform(X_test)
+
+final_model = keras.Sequential([
+    keras.layers.Input(shape=(n_features,)),
+    keras.layers.Dense(64, activation='relu'),
+    keras.layers.Dense(32, activation='relu'),
+    keras.layers.Dense(1, activation='sigmoid'),
+])
+final_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+final_model.fit(X_train_valid_scaled, y_train_valid, epochs=50, batch_size=32, verbose=0)
+
+test_loss, test_accuracy = final_model.evaluate(X_test_final_scaled, y_test, verbose=0)
+print("=== Final Test Performance: pre-specified 64-32 network ===")
+print(f"Test Loss: {test_loss:.4f}")
+print(f"Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
 ```
 
 **Regularization techniques:**
@@ -487,4 +522,3 @@ alt.Chart(val_loss_comparison).mark_line(point=True).encode(
 - Learn about callbacks (EarlyStopping, ModelCheckpoint)
 - Experiment with different architectures
 - Explore PyTorch for more flexibility
-

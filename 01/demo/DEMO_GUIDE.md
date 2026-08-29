@@ -1,6 +1,6 @@
 # Live Demo!
 
-# Demo 1: GitHub & VS Code Setup
+# Demo 1: Setup and command-line navigation
 **Guide:** `01_github_vscode_setup_guide.md` (Live walkthrough, no script)
 
 **Key Steps:**
@@ -32,7 +32,7 @@
 - Verify students can see their noreply email
 - Confirm hello.py runs successfully
 
-# Demo 2: Command Line Navigation
+## Command-line navigation
 **Script:** `02_cli_navigation_demo.sh`
 
 **Key Steps:**
@@ -54,15 +54,15 @@
    - Basic CSV data example
 
 4. Path problem demonstration
-   - Script fails due to wrong file path
-   - Fix shown as commented line in script
+   - The first run captures the expected wrong-path error
+   - The script rewrites the path and reruns successfully
    - Teaches relative path concept
 
 **Discussion Points:**
 - Why the Python script couldn't find the file
 - How file paths work from different directories
 
-# Demo 3: Python Basics with Debugging
+# Demo 2: Python basics, debugging, and control structures
 **Script:** `03_python_basics_demo.py`
 
 **Key Steps:**
@@ -97,7 +97,7 @@
 - Discuss data types and their importance
 - Practice reading error messages and understanding fixes
 
-# Demo 4: Control Structures
+## Control structures
 **Script:** `04_control_structures_demo.py`
 
 **Key Steps:**
@@ -130,7 +130,7 @@
 - Compare different coding approaches
 - Practice identifying logic errors in commented-out code
 
-# Demo 5: Complete Integration
+# Demo 3: Complete integration
 **Script:** `05_integration_workflow_demo.py`
 
 **Key Steps:**
@@ -142,26 +142,17 @@
    ```bash
    python3 05_integration_workflow_demo.py
    ```
-   - Professional project structure
-   - Intentional bad data as realistic scenario
-   - Simplified linear workflow (no complex functions)
+   - A small list-based fixture keeps attention on the workflow
+   - The command line supplies the project location; Python analyzes the values
+   - The script uses only Lecture 01 variables, lists, loops, conditionals, and arithmetic
 
-3. Data Loading with Validation
-   - Validation catching problems
-   - Time savings in debugging
+3. Analysis
+   - Print each student's status using a loop and a threshold
+   - Calculate class average, minimum, maximum, and passing count
 
-4. Analysis
-   - Simple but properly organized statistics
-   - Complete analysis for each student
-
-5. Saving Results
-   - Multiple output formats for different audiences
-   - Logging for reproducibility in research
-
-6. Organization and Automation
-   - Final directory tree
-   - Portfolio-worthy organization
-   - Automation as goal: write once, run many times
+4. Saving Results
+   - Redirect the script's printed report to `results.txt`
+   - Re-run the same script whenever the input list changes
 
 **Discussion Points:**
 - Potential additions to the analysis
@@ -174,4 +165,3 @@
 3. **Test small, build big** - "Always verify each piece works"
 4. **Debugging is detective work** - "Use print(), check types, read errors"
 5. **This is real** - "You've seen actual data science workflow"
-

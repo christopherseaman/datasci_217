@@ -5,11 +5,14 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.0
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
+  language_info:
+    name: python
+    version: 3.12.13
 ---
 
 # Data Transformation and Cleaning Pipeline
@@ -36,11 +39,16 @@ R005,52,85000,masters,dissatisfied,north
 R006,19,  ,high school,satisfied,South
 R007,invalid,72000,bachelors,very satisfied,NORTH"""
 
-# Write and load
-with open('survey.csv', 'w') as f:
+# Write generated demo output outside the source directory.
+from pathlib import Path
+
+output_dir = Path('output')
+output_dir.mkdir(exist_ok=True)
+survey_path = output_dir / 'survey.csv'
+with survey_path.open('w') as f:
     f.write(survey_data)
 
-df = pd.read_csv('survey.csv')
+df = pd.read_csv(survey_path)
 print("Raw survey data:")
 print(df)
 print(f"\nData types:\n{df.dtypes}")
@@ -61,13 +69,14 @@ print(df_clean.columns.tolist())
 ## Handle Sentinel Values and Bad Data
 
 ```python
-# Replace sentinel values (-999, "N/A", etc.)
+# Convert before calculating a numeric median, then replace the sentinel.
+df_clean['income'] = pd.to_numeric(df_clean['income'], errors='coerce')
 df_clean['income'] = df_clean['income'].replace(-999, np.nan)
 
 # Fix data type issues - invalid values become NaN
 df_clean['age'] = pd.to_numeric(df_clean['age'], errors='coerce')
 
-# Fill missing income with median
+# Fill missing income with the numeric median
 median_income = df_clean['income'].median()
 df_clean['income'] = df_clean['income'].fillna(median_income)
 
@@ -108,11 +117,14 @@ df_clean['age_group'] = pd.cut(
     labels=['Young', 'Middle', 'Senior']
 )
 
-# Create income categories with equal-frequency bins (quantiles)
+# This deterministic fixture has repeated income values.  `duplicates="drop"`
+# makes qcut use the distinct quantile edges that are available rather than
+# failing on a tied edge; labels are omitted because their count then depends
+# on those observed edges.
 df_clean['income_level'] = pd.qcut(
     df_clean['income'],
     q=3,
-    labels=['Low', 'Medium', 'High']
+    duplicates='drop'
 )
 
 print("\nAge groups and income levels:")

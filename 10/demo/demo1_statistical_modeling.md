@@ -195,8 +195,9 @@ new_houses['predicted_value'] = predictions
 print(new_houses)
 print("\nNote: Values are in hundreds of thousands of dollars")
 
-# Get prediction intervals (confidence intervals for predictions)
-pred_intervals = results_formula.get_prediction(new_houses).conf_int()
+# Get intervals for individual future observations, not just mean responses.
+# ``obs=True`` includes the residual variation in a new house value.
+pred_intervals = results_formula.get_prediction(new_houses).conf_int(obs=True)
 new_houses['pred_lower'] = pred_intervals[:, 0]
 new_houses['pred_upper'] = pred_intervals[:, 1]
 print("\nWith 95% prediction intervals:")
@@ -382,4 +383,3 @@ print(income_coefs)
 - Experiment with different model specifications
 - Explore generalized linear models (GLMs) for non-normal data
 - Learn about model diagnostics and assumption checking
-

@@ -174,7 +174,7 @@ selectable_chart = alt.Chart(data).mark_circle().encode(
     y='y:Q',
     color=alt.condition(selection, 'category:N', alt.value('lightgray')),
     opacity=alt.condition(selection, alt.value(0.8), alt.value(0.2))
-).add_selection(selection)
+).add_params(selection)
 
 selectable_chart
 ```
@@ -183,7 +183,7 @@ selectable_chart
 
 ```python
 # Point selection
-point_selection = alt.selection_single()
+point_selection = alt.selection_point()
 
 # Chart with point selection
 point_chart = alt.Chart(data).mark_circle().encode(
@@ -191,7 +191,7 @@ point_chart = alt.Chart(data).mark_circle().encode(
     y='y:Q',
     color=alt.condition(point_selection, 'category:N', alt.value('lightgray')),
     size=alt.condition(point_selection, alt.value(200), alt.value(50))
-).add_selection(point_selection)
+).add_params(point_selection)
 
 point_chart
 ```
@@ -209,7 +209,7 @@ scatter = alt.Chart(data).mark_circle().encode(
     x='x:Q',
     y='y:Q',
     color=alt.condition(brush, 'category:N', alt.value('lightgray'))
-).add_selection(brush)
+).add_params(brush)
 
 # Histogram that responds to selection
 histogram = alt.Chart(data).mark_bar().encode(
@@ -234,8 +234,8 @@ agg_chart = alt.Chart(data).mark_bar().encode(
     x='category:N',
     y='mean(value):Q',
     color='category:N'
-).add_selection(
-    alt.selection_single()
+).add_params(
+    alt.selection_point()
 )
 
 agg_chart

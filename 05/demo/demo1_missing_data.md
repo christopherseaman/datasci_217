@@ -5,11 +5,14 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.0
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
+  language_info:
+    name: python
+    version: 3.12.13
 ---
 
 # Missing Data Detective Work
@@ -19,7 +22,6 @@ Mastering missing data detection, analysis, and strategic handling
 ```python
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 print("Missing data detective tools loaded!")
 ```
@@ -59,15 +61,9 @@ print(f"\nRows with missing data: {df.isnull().any(axis=1).sum()} out of {len(df
 ## Visualize Missing Data Pattern
 
 ```python
-# Heatmap of missing values
-plt.figure(figsize=(10, 4))
-plt.imshow(df.isnull(), cmap='RdYlGn_r', aspect='auto')
-plt.colorbar(label='Missing (1) vs Present (0)')
-plt.yticks(range(len(df)), df.index)
-plt.xticks(range(len(df.columns)), df.columns, rotation=45)
-plt.title('Missing Data Pattern')
-plt.tight_layout()
-plt.show()
+# A compact table keeps visualization instruction in Lecture 07.
+missing_by_row = df.isna().sum(axis=1).rename('missing_fields')
+print(pd.concat([df['patient_id'], missing_by_row], axis=1).to_string(index=False))
 ```
 
 ## Strategic Missing Data Handling
@@ -79,7 +75,7 @@ print("\nAge - filled with median:")
 print(df[['patient_id', 'age', 'age_filled']])
 
 # Strategy 2: Forward fill test dates (temporal data)
-df['test_date_filled'] = pd.to_datetime(df['test_date']).fillna(method='ffill')
+df['test_date_filled'] = pd.to_datetime(df['test_date']).ffill()
 print("\nTest dates - forward filled:")
 print(df[['patient_id', 'test_date', 'test_date_filled']])
 

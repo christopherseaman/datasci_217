@@ -17,7 +17,7 @@ This guide provides an overview of the three demos for Lecture 10.
 - Formula API (`smf.ols()`) vs Array API (`sm.OLS()`)
 - Model summary and interpretation
 - Coefficient significance testing
-- Making predictions with confidence intervals
+- Making predictions with mean confidence intervals and individual prediction intervals
 - Model comparison
 
 **Estimated Time:** 30-40 minutes
@@ -35,7 +35,7 @@ This guide provides an overview of the three demos for Lecture 10.
 - Visualize results with Altair
 
 **Key Topics:**
-- Train/test split
+- Train/validation/test split with one final test report
 - Linear regression with regularization (Ridge, Lasso)
 - Random Forest for non-linear relationships
 - XGBoost gradient boosting
@@ -72,14 +72,16 @@ This guide provides an overview of the three demos for Lecture 10.
 
 ### Prerequisites
 
-1. Create a virtual environment using `uv` with Python 3.13 (required for TensorFlow):
+1. Create a virtual environment using the tested course candidate, Python 3.12.13:
 ```bash
-# Specify Python 3.13 for TensorFlow compatibility
-uv venv --python python3.13
+# Use the course's tested Python and create the local environment
+uv venv --python 3.12.13 .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 ```
 
-**Important:** TensorFlow requires Python 3.13 or earlier. If you use Python 3.14, Demo 3 (Deep Learning) will not work. The `--python python3.13` flag ensures compatibility.
+**Important:** The exact pins in `requirements.txt` are the supported demo matrix.
+They were tested with Python 3.12.13; use a separate, explicitly tested matrix
+before substituting another Python or package version.
 
 2. Install dependencies:
 ```bash
@@ -117,7 +119,7 @@ jupyter notebook
 - **Demo 1**: Emphasize the difference between statistical inference (statsmodels) and prediction (scikit-learn)
 - **Demo 2**: Highlight the consistent scikit-learn API and when to use each model type
 - **Demo 3**: Stress that deep learning isn't always better - show the comparison with traditional ML
-- All demos use generated data, so results will be consistent across runs
+- Demos 1–2 download California Housing (20,640 California census block groups from the 1990 census); Demo 3 uses scikit-learn's bundled Wine recognition dataset (178 samples)
 - The demos build complexity gradually - don't skip ahead
 - Encourage students to experiment with hyperparameters and see how results change
 
@@ -126,5 +128,4 @@ jupyter notebook
 - **Import errors**: Make sure all packages are installed in the correct environment
 - **Jupytext not working**: Install with `pip install jupytext` or use `jupyter notebook` which should recognize `.md` files automatically
 - **Altair plots not showing**: Make sure you're running in Jupyter, not plain Python
-- **Memory issues with large datasets**: The demos use moderately sized datasets (2000-10000 samples). If needed, reduce `n_samples` in the data generation cells
-
+- **Dataset download failure**: Demos 1–2 fetch California Housing on first run; cache it or arrange network access before class

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # CLI Advanced Demo Script
 # This script demonstrates advanced command line operations
@@ -40,7 +41,11 @@ echo
 # Step 3: Basic file operations
 echo "Step 3: Basic file operations..."
 echo "Current directory structure:"
-tree -L 3
+if command -v tree >/dev/null 2>&1; then
+    tree -L 3
+else
+    find . -maxdepth 3 -print
+fi
 echo
 
 echo "File sizes:"
@@ -90,8 +95,9 @@ echo
 
 echo "Creating backup with timestamp:"
 timestamp=$(date +"%Y%m%d_%H%M%S")
-mkdir -p backups
-cp data/raw/*.csv backups/backup_${timestamp}/
+backup_dir="backups/backup_${timestamp}"
+mkdir -p "$backup_dir"
+cp data/raw/*.csv "$backup_dir/"
 echo "Backup created: backup_${timestamp}"
 echo
 
@@ -150,7 +156,11 @@ echo
 
 # Step 11: Final project structure
 echo "Step 11: Final project structure:"
-tree
+if command -v tree >/dev/null 2>&1; then
+    tree
+else
+    find . -print
+fi
 echo
 
 echo "=== Demo Complete ==="

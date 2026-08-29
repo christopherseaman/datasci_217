@@ -5,11 +5,14 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.0
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
+  language_info:
+    name: python
+    version: 3.12.13
 ---
 
 # Complete Data Cleaning Workflow
@@ -35,10 +38,15 @@ O004,Bob Jones,Widget C,19.99,5,2024-01-18,Complete
 O005,Jane Smith,Widget B,49.99,3,2024-01-19,cancelled
 O006,BOB JONES,  ,35.50,2,2024-01-20,complete"""
 
-with open('orders_dirty.csv', 'w') as f:
+from pathlib import Path
+
+output_dir = Path('output')
+output_dir.mkdir(exist_ok=True)
+orders_path = output_dir / 'orders_dirty.csv'
+with orders_path.open('w') as f:
     f.write(ecommerce_data)
 
-df = pd.read_csv('orders_dirty.csv')
+df = pd.read_csv(orders_path)
 print("Dirty e-commerce data:")
 print(df)
 ```
@@ -140,12 +148,12 @@ if len(outliers) > 0:
 
 ```python
 # Save cleaned data
-df_clean.to_csv('orders_clean.csv', index=False)
-print("\n✓ Saved orders_clean.csv")
+df_clean.to_csv(output_dir / 'orders_clean.csv', index=False)
+print("\n✓ Saved output/orders_clean.csv")
 
 # Save summary
-customer_summary.to_csv('customer_summary.csv')
-print("✓ Saved customer_summary.csv")
+customer_summary.to_csv(output_dir / 'customer_summary.csv')
+print("✓ Saved output/customer_summary.csv")
 
 # Create data quality report
 report = f"""DATA CLEANING REPORT
@@ -167,9 +175,9 @@ Final data quality:
 - Outliers detected: {len(outliers)}
 """
 
-with open('cleaning_report.txt', 'w') as f:
+with (output_dir / 'cleaning_report.txt').open('w') as f:
     f.write(report)
-print("✓ Saved cleaning_report.txt")
+print("✓ Saved output/cleaning_report.txt")
 
 print("\n=== WORKFLOW COMPLETE ===")
 print("All files saved. Data is clean and ready for analysis!")

@@ -39,8 +39,6 @@ REQUIRED = {
     "numpy": "2.0.2",
     "pandas": "3.0.3",
     "pyarrow": "25.0.0",
-    "scikit-learn": "1.9.0",
-    "matplotlib": "3.11.1",
 }
 missing = []
 for package, version in REQUIRED.items():

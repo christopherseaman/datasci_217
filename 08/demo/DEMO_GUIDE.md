@@ -3,10 +3,22 @@
 ## Overview
 Hands-on practice with data aggregation operations: groupby operations, pivot tables, remote computing, and performance optimization.
 
+Markdown is the authoritative source for each generated notebook. The tested
+activity environment is CPython 3.12.13 with NumPy 2.0.2, pandas 3.0.3,
+Matplotlib 3.11.1, Seaborn 0.13.2, JupyterLab 4.4.10, Jupytext 1.18.1, and
+psutil 7.0.0 as pinned in `requirements.txt`:
+
+```bash
+uv venv --python 3.12.13 .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+jupyter lab
+```
+
 ## Demo Structure
 
 ### Demo 1: GroupBy Operations
-**File**: `demo1_groupby_operations.ipynb`
+**File**: `demo1_groupby_operations.ipynb` (generated from `demo1_groupby_operations.md`)
 **Duration**: 25 minutes
 **Focus**: Split-apply-combine paradigm and aggregation functions
 
@@ -16,7 +28,7 @@ Hands-on practice with data aggregation operations: groupby operations, pivot ta
 - Hierarchical grouping and MultiIndex
 
 ### Demo 2: Pivot Tables and Cross-Tabulations
-**File**: `demo2_pivot_tables.ipynb`
+**File**: `demo2_pivot_tables.ipynb` (generated from `demo2_pivot_tables.md`)
 **Duration**: 25 minutes
 **Focus**: Multi-dimensional data analysis
 
@@ -26,7 +38,7 @@ Hands-on practice with data aggregation operations: groupby operations, pivot ta
 - Advanced pivot operations
 
 ### Demo 3: Remote Computing and Performance
-**File**: `demo3_remote_performance.ipynb`
+**File**: `demo3_remote_performance.ipynb` (generated from `demo3_remote_performance.md`)
 **Duration**: 25 minutes
 **Focus**: Large dataset handling and optimization
 
@@ -47,6 +59,7 @@ Hands-on practice with data aggregation operations: groupby operations, pivot ta
 - Sample datasets (sales, customer, product data)
 - Jupyter notebook interface
 - Optional: Remote server access for SSH demo
+- Jupytext; Markdown is the authoritative source for each generated notebook
 
 ## Instructor Notes
 - Each demo builds aggregation skills progressively

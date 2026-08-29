@@ -1,14 +1,18 @@
 ---
-jupytext:
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.17.3
-kernelspec:
-  display_name: Python 3
-  language: python
-  name: python3
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.12.13
 ---
 
 # Demo 3: Time Series Concatenation and Index Management
@@ -22,11 +26,10 @@ kernelspec:
 - Combine `concat()` and `merge()` in practical workflows
 - Work with time-based indexes for temporal data
 
-+++
 
 ## Setup
 
-```{code-cell}
+```python
 import pandas as pd
 import numpy as np
 
@@ -38,7 +41,7 @@ np.random.seed(42)
 
 We'll simulate monthly sales data that arrives in separate quarterly files.
 
-```{code-cell}
+```python
 # Q1 Sales (Jan-Mar 2023)
 q1_sales = pd.DataFrame({
     'month': pd.to_datetime(['2023-01-01', '2023-02-01', '2023-03-01']),
@@ -73,13 +76,12 @@ display(q3_sales)
 
 **Scenario:** You receive quarterly sales files and need to combine them into a single dataset for annual analysis.
 
-+++
 
 ## Vertical Concatenation: Stacking Rows
 
 Use `pd.concat()` to stack DataFrames vertically (add more rows).
 
-```{code-cell}
+```python
 # Basic vertical concatenation
 year_sales = pd.concat([q1_sales, q2_sales, q3_sales])
 
@@ -95,7 +97,7 @@ year_sales
 1. Use `ignore_index=True` to create new sequential index
 2. Use `set_index()` to make month the index
 
-```{code-cell}
+```python
 # Solution 1: ignore_index=True for clean sequential index
 year_sales_clean = pd.concat([q1_sales, q2_sales, q3_sales], ignore_index=True)
 
@@ -110,13 +112,12 @@ year_sales_clean
 - When you want clean sequential numbering
 - When combining similar datasets from different sources
 
-+++
 
 ## Using set_index() for Meaningful Row Labels
 
 For time series data, the date should be the index!
 
-```{code-cell}
+```python
 # Solution 2: Use month as index (better for time series!)
 year_sales_indexed = pd.concat([q1_sales, q2_sales, q3_sales], ignore_index=True)
 year_sales_indexed = year_sales_indexed.set_index('month')
@@ -130,14 +131,14 @@ year_sales_indexed
 - Easy time-based filtering and resampling
 - More meaningful than numeric index
 
-```{code-cell}
+```python
 # Example: Select Q2 data using datetime index
 q2_data = year_sales_indexed.loc['2023-04':'2023-06']
 print("Q2 Data (using datetime index):")
 q2_data
 ```
 
-```{code-cell}
+```python
 # Example: Calculate quarterly totals
 quarterly_totals = year_sales_indexed.resample('QE').sum()
 print("\nQuarterly Totals (resample magic!):")
@@ -146,13 +147,12 @@ quarterly_totals
 
 **This is why datetime indexes are powerful for time series!**
 
-+++
 
 ## Horizontal Concatenation: Adding Columns
 
 Use `axis=1` to concatenate side-by-side (adding more columns).
 
-```{code-cell}
+```python
 # Create additional metrics in separate DataFrames
 # Marketing spend data
 marketing = pd.DataFrame({
@@ -176,7 +176,7 @@ print("\nSatisfaction Data:")
 display(satisfaction.head())
 ```
 
-```{code-cell}
+```python
 # Get first 6 months of sales for this example
 sales_h1 = year_sales_indexed.loc['2023-01':'2023-06']
 
@@ -194,13 +194,12 @@ combined_metrics
 
 **Key insight:** Horizontal concat uses index for alignment!
 
-+++
 
 ## Handling Misaligned Indexes
 
 What happens when indexes don't match perfectly?
 
-```{code-cell}
+```python
 # Create data with missing/extra months
 partial_data = pd.DataFrame({
     'month': pd.to_datetime(['2023-02-01', '2023-03-01', '2023-04-01', 
@@ -223,7 +222,7 @@ combined_misaligned
 
 **Alternative:** Use `join='inner'` to keep only matching indexes.
 
-```{code-cell}
+```python
 # Inner join - only keep matching months
 combined_inner = pd.concat([sales_h1, partial_data], axis=1, join='inner')
 
@@ -235,13 +234,12 @@ combined_inner
 
 **Common pitfall:** Using horizontal concat when you should use merge. If indexes don't align well, consider `pd.merge()` instead!
 
-+++
 
 ## Alternative: combine_first() for Filling Missing Values
 
 When you have two DataFrames with overlapping indexes and want to fill missing values, `combine_first()` is simpler than concat.
 
-```{code-cell}
+```python
 # Create primary sales data with some missing values (NaN)
 primary_sales = pd.DataFrame({
     'month': pd.to_datetime(['2023-01-01', '2023-02-01', '2023-03-01',
@@ -266,7 +264,7 @@ display(estimated_sales)
 
 **Scenario:** You have actual sales data but some months are missing. You have estimated/forecast data as backup.
 
-```{code-cell}
+```python
 # Use combine_first() to fill missing values
 filled_sales = primary_sales.combine_first(estimated_sales)
 
@@ -287,7 +285,7 @@ filled_sales
 
 **vs concat():** Much cleaner syntax for this specific use case!
 
-```{code-cell}
+```python
 # Compare with concat approach (more complex)
 concat_result = pd.concat([primary_sales, estimated_sales], axis=1, join='outer')
 print("Concat result (creates duplicate columns):")
@@ -299,7 +297,7 @@ display(concat_result)
 
 **See the difference?** concat creates duplicate columns, combine_first() merges them intelligently.
 
-```{code-cell}
+```python
 # Real-world application: Add data quality flags
 filled_sales['data_source'] = 'actual'
 # Mark rows where primary had NaN as 'estimated'
@@ -323,13 +321,12 @@ filled_sales
 - Joining by keys other than index (use merge)
 - Need complex aggregation logic (use fillna with custom functions)
 
-+++
 
 ## reset_index(): Moving Index Back to Columns
 
 Sometimes you need to convert the index back to a regular column.
 
-```{code-cell}
+```python
 # Current state: month is the index
 print("Before reset_index():")
 display(combined_metrics.head())
@@ -337,7 +334,7 @@ print(f"Index name: {combined_metrics.index.name}")
 print(f"Columns: {list(combined_metrics.columns)}")
 ```
 
-```{code-cell}
+```python
 # Reset index to make month a regular column
 combined_reset = combined_metrics.reset_index()
 
@@ -356,7 +353,7 @@ print(f"Columns: {list(combined_reset.columns)}")
 - Before saving to CSV (indexes aren't always preserved)
 - When you need the index as a column for analysis
 
-```{code-cell}
+```python
 # Alternative: drop the index instead of converting to column
 combined_dropped = combined_metrics.reset_index(drop=True)
 
@@ -366,20 +363,19 @@ combined_dropped.head()
 
 **Use `drop=True` when:** The index contains no useful information.
 
-+++
 
 ## Combining concat() and merge() in Workflows
 
 Real-world scenarios often require both operations.
 
-```{code-cell}
+```python
 # Step 1: Concatenate quarterly sales files
 all_sales = pd.concat([q1_sales, q2_sales, q3_sales], ignore_index=True)
 print("Step 1: Concatenated Sales Data")
 display(all_sales.head())
 ```
 
-```{code-cell}
+```python
 # Step 2: Create product category data
 # (This would come from a separate database table in reality)
 products = pd.DataFrame({
@@ -396,7 +392,7 @@ print("\nStep 2: Product Category Data")
 display(products.head())
 ```
 
-```{code-cell}
+```python
 # Step 3: Merge sales with product data
 sales_enriched = pd.merge(all_sales, products, on='month', how='left')
 
@@ -404,7 +400,7 @@ print("\nStep 3: Merged Sales + Product Data")
 display(sales_enriched.head())
 ```
 
-```{code-cell}
+```python
 # Step 4: Calculate metrics and analyze
 sales_enriched['return_rate'] = (sales_enriched['returns'] / 
                                  sales_enriched['units_sold'] * 100).round(2)
@@ -415,7 +411,7 @@ print("\nStep 4: Final Analysis Dataset")
 display(sales_enriched)
 ```
 
-```{code-cell}
+```python
 # Step 5: Analyze by product category
 category_summary = sales_enriched.groupby('top_category').agg({
     'revenue': 'sum',
@@ -439,13 +435,12 @@ category_summary.sort_values('revenue', ascending=False)
 
 **Key insight:** concat for stacking, merge for joining!
 
-+++
 
 ## Tracking Data Sources with keys Parameter
 
 Use `keys` to label where data came from during concatenation.
 
-```{code-cell}
+```python
 # Concatenate with source labels
 labeled_sales = pd.concat(
     [q1_sales, q2_sales, q3_sales],
@@ -463,14 +458,14 @@ labeled_sales
 
 **Use case:** Track data provenance when combining multiple sources.
 
-```{code-cell}
+```python
 # Select all Q2 data using the outer index level
 q2_only = labeled_sales.loc['Q2']
 print("Q2 Data Only:")
 q2_only
 ```
 
-```{code-cell}
+```python
 # Flatten the MultiIndex with reset_index
 labeled_flat = labeled_sales.reset_index()
 print("\nFlattened with Quarter Column:")
@@ -479,13 +474,12 @@ labeled_flat
 
 **Perfect!** Now we have a `quarter` column showing data source.
 
-+++
 
 ## Real-World Application: Year-Over-Year Analysis
 
 Combining techniques to compare 2023 vs 2024 performance.
 
-```{code-cell}
+```python
 # Create 2024 Q1 data for comparison
 q1_2024 = pd.DataFrame({
     'month': pd.to_datetime(['2024-01-01', '2024-02-01', '2024-03-01']),
@@ -511,7 +505,7 @@ print("Year-Over-Year Q1 Data:")
 yoy_data
 ```
 
-```{code-cell}
+```python
 # Pivot to compare 2023 vs 2024 side-by-side
 yoy_comparison = yoy_data.pivot_table(
     index='month_name',
@@ -523,7 +517,7 @@ print("\nYear-Over-Year Comparison (Pivoted):")
 yoy_comparison
 ```
 
-```{code-cell}
+```python
 # Calculate growth rates
 # Flatten column names for easier access
 yoy_flat = yoy_comparison.copy()
@@ -554,7 +548,6 @@ yoy_flat[['revenue_2023', 'revenue_2024', 'revenue_growth_%',
 2. **pivot_table()** - Create side-by-side comparison
 3. Calculate derived metrics (growth rates)
 
-+++
 
 ## Key Takeaways
 

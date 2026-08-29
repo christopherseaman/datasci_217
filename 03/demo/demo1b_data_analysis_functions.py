@@ -1,6 +1,8 @@
 """Advanced student data analysis with modular design."""
 import os
 
+DEMO_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def load_data(filename):
     """Generic loader that checks file extension."""
     if filename.endswith('.csv'):
@@ -101,16 +103,17 @@ Subject Distribution:
 def main():
     """Main execution function."""
     # Load data using modular functions
-    students = load_data('data/students.csv')
+    students = load_data(os.path.join(DEMO_DIR, 'students.csv'))
 
     # Perform analysis
     results = analyze_data(students)
 
     # Save results
-    save_results(results, 'output/analysis_report.txt')
+    output_file = os.path.join(DEMO_DIR, 'output', 'analysis_report.txt')
+    save_results(results, output_file)
 
     # Also print to console
-    with open('output/analysis_report.txt', 'r') as f:
+    with open(output_file, 'r') as f:
         print(f.read())
 
 if __name__ == "__main__":

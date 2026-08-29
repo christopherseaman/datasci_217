@@ -5,162 +5,209 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.0
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
+  language_info:
+    name: python
+    version: 3.12.13
 ---
 
-# Pandas DataFrame Exploration
+# Demo 2 — From NumPy arrays to labeled pandas
 
-Mastering pandas basics: creation, selection, filtering, and operations
+**Learning objectives**
 
-## Step 1: Create DataFrame from Dictionary
+- Convert one 1D ndarray to a Series and one 2D ndarray to a DataFrame.
+- Inspect labels, shape, dtypes, and bounded numeric summaries.
+- Select with brackets, `.loc`, `.iloc`, and one boolean mask.
+- Add one derived column and sort with a unique tie-breaker.
+
+Colab is the default launch experience; local Jupyter runs the same cells. See `DEMO_GUIDE.md` for launch links and checkpoints. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
+
+Compatibility candidate: Python 3.12.13, NumPy 2.0.2, pandas 3.0.3. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
 
 ```python
-import pandas as pd
+from importlib.metadata import version
+import sys
+
+PANDAS_CANDIDATE = "3.0.3"
+
 import numpy as np
+import pandas as pd
 
-# Create from dictionary
-employee_data = {
-    'employee_id': ['E001', 'E002', 'E003', 'E004', 'E005'],
-    'name': ['Alice Johnson', 'Bob Smith', 'Charlie Davis', 'Diana Martinez', 'Eve Wilson'],
-    'department': ['Engineering', 'Sales', 'Engineering', 'Marketing', 'Sales'],
-    'salary': [85000, 65000, 92000, 58000, 71000],
-    'years_experience': [5, 3, 8, 2, 4]
-}
-
-df = pd.DataFrame(employee_data)
-print(df)
-print(f"\nShape: {df.shape}")
-print(f"\nData types:\n{df.dtypes}")
+assert version("pandas") == PANDAS_CANDIDATE, (
+    "Install the demo requirements before running this notebook; "
+    f"expected pandas {PANDAS_CANDIDATE}, found {version('pandas')}"
+)
+print("Python:", sys.version.split()[0])
+print("NumPy:", np.__version__)
+print("pandas:", pd.__version__)
 ```
 
-## Step 2: Column Selection (THE FIRST THING YOU DO!)
+## A 1D ndarray becomes a Series
+
+Lecture 03 used a NumPy **ndarray**, a homogeneous array selected by integer position. A pandas **Series** is a one-dimensional labeled object. Its **index** contains row labels, its `dtype` describes the stored values, and its optional `name` identifies the Series.
 
 ```python
-# Single column (returns Series)
-names = df['name']
-print("Single column (Series):")
-print(type(names))
-print(names)
+temperatures = np.array([18.5, 21.0, 19.5])
 
-# Multiple columns (returns DataFrame)
-basic_info = df[['name', 'department']]
-print("\nMultiple columns (DataFrame):")
-print(type(basic_info))
-print(basic_info)
+temperature_by_site = pd.Series(
+    temperatures,
+    index=["north", "south", "west"],
+    name="temperature_c",
+)
 
-# Select only numeric columns
-numeric_cols = df.select_dtypes(include=['number'])
-print("\nNumeric columns only:")
-print(numeric_cols)
+print(temperature_by_site)
+print("index:", temperature_by_site.index)
+print("dtype:", temperature_by_site.dtype)
 ```
 
-## Step 3: DataFrame Inspection & Summary Statistics
+## A 2D ndarray becomes a DataFrame
+
+A pandas **DataFrame** is a two-dimensional labeled table. Its `index` labels rows, its `columns` label columns, its `shape` reports `(rows, columns)`, and its `dtypes` report one dtype for each column.
 
 ```python
-# First few rows
-print("First 3 rows:")
-print(df.head(3))
+measurements = np.array(
+    [
+        [10, 20],
+        [20, 30],
+        [30, 40],
+        [10, 20],
+    ]
+)
 
-# Summary statistics - THE most important exploration tool
-print("\nSummary statistics:")
-print(df.describe())
+measurement_table = pd.DataFrame(
+    measurements,
+    index=["obs-001", "obs-002", "obs-003", "obs-004"],
+    columns=["baseline", "follow_up"],
+)
+measurement_table.index.name = "record_id"
 
-# DataFrame structure and memory
-print("\nDataFrame info:")
-df.info()
-
-# Count values
-print(f"\nTotal rows: {len(df)}")
-print(f"\nNon-null counts per column:")
-print(df.count())
-
-# Unique values in categorical columns
-print(f"\nDepartments: {df['department'].unique()}")
-print(f"Number of unique departments: {df['department'].nunique()}")
-print(f"\nValue counts for department:")
-print(df['department'].value_counts())
+print("index:", measurement_table.index)
+print("columns:", measurement_table.columns)
+print("shape:", measurement_table.shape)
+print("dtypes:")
+print(measurement_table.dtypes)
+measurement_table
 ```
 
-## Step 4: Label vs Position Selection (.loc vs .iloc)
+## Bounded inspection
+
+`head(3)` returns a small structural preview. `info()` prints index details, column names, **non-null counts** (entries present rather than missing), dtypes, and a memory summary. Numeric `describe()` reports count, mean, standard deviation (`std`), minimum, percentile cut points, and maximum. This lecture inspects those results; decisions about missing values or cleaning belong to Lecture 05. Call `info()` directly because it prints its report and returns `None`.
 
 ```python
-# .loc - label-based selection
-print("Using .loc (labels):")
-print(df.loc[0, 'name'])  # Row 0, column 'name'
-print(df.loc[0:2, ['name', 'salary']])  # Rows 0-2 (inclusive!), specific columns
+first_three = measurement_table.head(3)
+print(first_three)
 
-print("\nUsing .iloc (positions):")
-print(df.iloc[0, 1])  # Row 0, column 1 (position)
-print(df.iloc[0:2, [1, 3]])  # Rows 0-1 (exclusive!), columns at positions 1 and 3
+measurement_table.info()
+
+numeric_summary = measurement_table.describe()
+print(numeric_summary)
 ```
 
-## Step 5: Boolean Filtering & .query()
+## Select columns with brackets
+
+Brackets select columns by label. `df["column"]` returns a Series, while a list of column labels inside double brackets returns a DataFrame. Bracket notation also works with names containing spaces or names shared by DataFrame methods.
 
 ```python
-# Single condition
-high_earners = df[df['salary'] > 70000]
-print("High earners (>$70k):")
-print(high_earners)
+baseline_series = measurement_table["baseline"]
+baseline_table = measurement_table[["baseline"]]
+two_columns = measurement_table[["baseline", "follow_up"]]
 
-# Multiple conditions (& = AND, | = OR, must use parentheses!)
-experienced_engineers = df[(df['department'] == 'Engineering') & (df['years_experience'] > 4)]
-print("\nExperienced engineers:")
-print(experienced_engineers)
-
-# Using .isin() for multiple values
-sales_or_marketing = df[df['department'].isin(['Sales', 'Marketing'])]
-print("\nSales or Marketing:")
-print(sales_or_marketing)
-
-# Using .query() for more readable filtering
-high_earner_query = df.query('salary > 70000')
-print("\nUsing .query() - more readable:")
-print(high_earner_query)
-
-# Complex query with multiple conditions
-complex_query = df.query('department == "Engineering" and years_experience > 4')
-print("\nComplex query:")
-print(complex_query)
+print(type(baseline_series))
+print(type(baseline_table))
+two_columns
 ```
 
-## Step 6: Column Operations
+## Labels with `.loc`; positions with `.iloc`
+
+`.loc` selects by row and column **labels**. `.iloc` selects by zero-based integer **positions**. Label slices include both named endpoints when present; positional slices follow ordinary Python slicing and exclude the stop position.
 
 ```python
-# Create new column
-df['salary_per_year_exp'] = df['salary'] / df['years_experience']
-print("Added calculated column:")
-print(df[['name', 'salary_per_year_exp']])
+same_value_by_label = measurement_table.loc["obs-002", "baseline"]
+same_value_by_position = measurement_table.iloc[1, 0]
 
-# Rename columns
-df_renamed = df.rename(columns={'years_experience': 'experience_yrs'})
-print("\nRenamed column:")
-print(df_renamed.columns)
+label_block = measurement_table.loc[
+    "obs-002":"obs-003",
+    ["baseline", "follow_up"],
+]
+position_block = measurement_table.iloc[1:3, 0:2]
 
-# Drop columns
-df_subset = df.drop(columns=['employee_id'])
-print("\nAfter dropping employee_id:")
-print(df_subset.columns)
+print(same_value_by_label)
+print(same_value_by_position)
+print(label_block)
+print(position_block)
 ```
 
-## Step 7: Sorting and Ranking
+## Filter with one mask
+
+Lecture 03 defined a **mask** as `True` and `False` values used to select elements. A pandas mask carries the same row index as the Series or DataFrame. Build it separately and give it a descriptive name so the selection condition remains visible.
 
 ```python
-# Sort by salary
-df_sorted = df.sort_values('salary', ascending=False)
-print("Sorted by salary (high to low):")
-print(df_sorted[['name', 'salary']])
+follow_up_at_least_30 = measurement_table["follow_up"] >= 30
 
-# Sort by multiple columns
-df_multi_sort = df.sort_values(['department', 'salary'], ascending=[True, False])
-print("\nSorted by department, then salary within each:")
-print(df_multi_sort[['name', 'department', 'salary']])
+selected_measurements = measurement_table.loc[
+    follow_up_at_least_30,
+    ["baseline", "follow_up"],
+]
 
-# Sort by index
-df_sorted_index = df.sort_index()
-print("\nSorted by index:")
-print(df_sorted_index)
+print(follow_up_at_least_30)
+selected_measurements
+```
+
+## Add one derived column
+
+A **derived column** is calculated from existing columns. pandas aligns the arithmetic by row labels, so this calculation needs no explicit Python loop.
+
+```python
+measurement_table["change"] = (
+    measurement_table["follow_up"] - measurement_table["baseline"]
+)
+
+measurement_table
+```
+
+## Sort deterministically
+
+A **deterministic sort** produces the same observable row order for the same input. State every key and direction, and finish with a unique tie-breaker. Here `record_id` names the unique index labels and resolves equal `change` values.
+
+```python
+ordered_measurements = measurement_table.sort_values(
+    by=["change", "record_id"],
+    ascending=[False, True],
+)
+
+ordered_measurements
+```
+
+```python
+assert np.array_equal(temperatures, np.array([18.5, 21.0, 19.5]))
+assert temperature_by_site.index.tolist() == ["north", "south", "west"]
+assert temperature_by_site.name == "temperature_c"
+assert measurement_table.index.name == "record_id"
+assert measurement_table.index.tolist() == [
+    "obs-001",
+    "obs-002",
+    "obs-003",
+    "obs-004",
+]
+assert measurement_table[["baseline", "follow_up"]].shape == (4, 2)
+assert first_three.shape == (3, 2)
+assert numeric_summary.shape == (8, 2)
+assert isinstance(baseline_series, pd.Series)
+assert isinstance(baseline_table, pd.DataFrame)
+assert same_value_by_label == same_value_by_position == 20
+pd.testing.assert_frame_equal(label_block, position_block)
+assert selected_measurements.index.tolist() == ["obs-002", "obs-003"]
+assert measurement_table["change"].tolist() == [10, 10, 10, 10]
+assert ordered_measurements.index.tolist() == [
+    "obs-001",
+    "obs-002",
+    "obs-003",
+    "obs-004",
+]
+
+print("Demo 2 fresh-run verification passed")
 ```

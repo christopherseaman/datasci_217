@@ -170,7 +170,7 @@ axes[1, 0].grid(True, alpha=0.3)
 
 # Box plot by month (seasonal pattern)
 monthly_data = [site_a[site_a.index.month == i]['cases'].values for i in range(1, 13)]
-axes[1, 1].boxplot(monthly_data, labels=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+axes[1, 1].boxplot(monthly_data, tick_labels=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
 axes[1, 1].set_title('Monthly Distribution (Seasonal Pattern)', fontsize=12, fontweight='bold')
 axes[1, 1].set_xlabel('Month')
@@ -350,7 +350,45 @@ The monthly averages reveal seasonal patterns - notice how some months consisten
 
 *Note: For advanced seasonal decomposition techniques (like STL decomposition), see the BONUS.md section on advanced time series decomposition.*
 
-## Part 5: Integration with Earlier Concepts
+## Part 5: Time Zone Handling for Multi-Site Reporting
+
+Time-zone handling belongs here, after the lecture's time-zone section. When observations come from multiple sites, first identify the local time used at collection, then localize those naive timestamps and convert them to a common analysis zone such as UTC.
+
+```python
+# Create a timezone-aware timestamp and convert it for a site report.
+utc_time = pd.Timestamp.now(tz='UTC')
+eastern_time = utc_time.tz_convert('US/Eastern')
+print(f"UTC time: {utc_time}")
+print(f"Eastern time: {eastern_time}")
+
+# Localize naive collection times before converting them to the site's display zone.
+site_data = pd.DataFrame(
+    {'patient_id': ['P001', 'P002', 'P003'], 'value': np.random.randn(3)},
+    index=pd.date_range('2023-01-01', periods=3, freq='D'),
+)
+site_data.index = site_data.index.tz_localize('UTC')
+site_data.index = site_data.index.tz_convert('US/Eastern')
+print(site_data)
+```
+
+`tz_localize()` attaches a time zone to timestamps that do not yet represent an absolute instant. `tz_convert()` changes the representation of timestamps that are already time-zone aware. For comparisons across sites, retain the original collection-zone metadata and perform the analysis in a common zone.
+
+```python
+# The same UTC instant displayed for sites in different local time zones.
+sites = {
+    'UTC': 'UTC',
+    'New York': 'US/Eastern',
+    'London': 'Europe/London',
+    'Tokyo': 'Asia/Tokyo',
+    'Sydney': 'Australia/Sydney',
+}
+base_time = pd.Timestamp('2023-01-01 12:00:00', tz='UTC')
+
+for site_name, timezone in sites.items():
+    print(f"{site_name:12} ({timezone:20}): {base_time.tz_convert(timezone)}")
+```
+
+## Part 6: Integration with Earlier Concepts
 
 Let's combine all the concepts we've learned - indexing, resampling, rolling windows, and visualization - into a comprehensive analysis.
 
@@ -419,4 +457,3 @@ plt.show()
 ```
 
 This comprehensive visualization demonstrates how different techniques reveal different aspects of the data. Daily data with rolling windows shows short-term fluctuations and multiple time scales of trends. Weekly resampled data smooths out daily noise while preserving weekly patterns. Monthly resampled data shows long-term trends and seasonal patterns. Each view serves a different purpose - use daily views for detailed analysis, weekly for trend identification, and monthly for long-term patterns.
-

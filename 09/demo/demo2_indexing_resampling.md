@@ -19,7 +19,7 @@ In medical settings, you often have high-frequency data (hourly monitoring) that
 
 ### Understanding Resampling
 
-Resampling is similar to groupby operations (from Lecture 5), but instead of grouping by categories, you're grouping by time intervals. Downsampling aggregates higher frequency data to lower frequency (e.g., hourly to daily), while upsampling converts lower frequency to higher frequency (often creating missing values).
+Resampling is similar to groupby operations (from Lecture 08), but instead of grouping by categories, you're grouping by time intervals. Downsampling aggregates higher frequency data to lower frequency (e.g., hourly to daily), while upsampling converts lower frequency to higher frequency (often creating missing values).
 
 ### Load and Prepare ICU Data
 
@@ -120,7 +120,7 @@ plt.show()
 Just like groupby operations, you can apply multiple aggregation functions when resampling. This allows you to calculate comprehensive statistics for each time period.
 
 ```python
-# Resample with multiple aggregations (like groupby from Lecture 5)
+# Resample with multiple aggregations (like groupby from Lecture 08)
 print("=== Resampling with Multiple Aggregations ===\n")
 
 # Resample to weekly with multiple statistics
@@ -490,4 +490,3 @@ plt.show()
 ```
 
 This multi-variable visualization allows you to compare trends across different vital signs simultaneously. Notice how rolling means help identify underlying trends despite daily fluctuations, and how reference lines (like the critical oxygen saturation threshold) provide clinical context.
-

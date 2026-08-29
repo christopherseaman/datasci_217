@@ -3,6 +3,18 @@
 ## Overview
 Hands-on practice with the three fundamental data wrangling operations: merging datasets, concatenating DataFrames, and reshaping data formats.
 
+The paired Markdown files are authoritative; regenerate a notebook with
+Jupytext after editing Markdown. The tested activity environment is CPython
+3.12.13 with NumPy 2.0.2, pandas 3.0.3, JupyterLab 4.4.10, and Jupytext 1.18.1
+as pinned in `requirements.txt`:
+
+```bash
+uv venv --python 3.12.13 .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+jupyter lab
+```
+
 ## Demo Structure
 
 ### Demo 1: Merge Operations
