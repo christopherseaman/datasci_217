@@ -182,21 +182,21 @@ All eight findings were repaired in the owning lecture layer. The independent re
 
 ## Current lecture-by-lecture assessment
 
-Scores use 5 for the strongest result. The size score considers the whole lecture bundle, including bonus and points material, rather than treating code-block count as an execution requirement.
+A post-repair read-only audit confirmed that every original P1/P2 finding and every substantive repair action in the earlier per-lecture scorecard is closed. The old numeric scores described the pre-repair state and are superseded by this status matrix. Heading conformance is shown separately because it is the only remaining lecture release gate.
 
-| Lecture | Completeness | Order | Size | Fun | Current assessment |
-| --- | ---: | ---: | ---: | ---: | --- |
-| 01 | 4 | 4 | 2 | 4 | Strong foundation; repair the mixed Bash/Python bonus fence and consider pacing only after real delivery feedback |
-| 02 | 4 | 3 | 1 | 3 | Core role is sound; bonus duplication, contract errors, and destructive Git guidance require cleanup |
-| 03 | 4 | 4 | 2 | 3 | Environment-to-NumPy order works; reduce structural density, stale NumPy API, repeated reference, and author note |
-| 04 | 4 | 4 | 3 | 4 | Strong pandas 3 foundation; repair the bonus alignment example |
-| 05 | 5 | 4 | 3 | 4 | Excellent contract-driven cleaning owner; clarify missingness/plot preview and non-destructive notebook reference |
-| 06 | 5 | 4 | 2 | 3 | Strong joins/reshape core; repair null-key guidance, points drift, stale bonus claims, and harmful humor |
-| 07 | 4 | 3 | 2 | 5 | Excellent visualization contract; repair inference/trend/grid examples and reduce duplicate extensions |
-| 08 | 4 | 4 | 2 | 4 | Strong result-shape-first core; invalid bonus aggregations, broken validation, unsafe points, and parallel-page volume block approval |
-| 09 | 4 | 4 | 3 | 4 | Strong temporal core; repair optional STL/ADF/count examples and two broken image links |
-| 10 | 4 | 4 | 2 | 3 | Inherited survey breadth is intact; add the metric bridge, correct APIs/claims, and reduce repeated pop-culture/API detail |
-| 11 | 5 | 5 | 4 | 5 | Pass; question-led, non-prescriptive, appropriately sized capstone |
+| Lecture | Content repair | Heading gate | Current assessment |
+| --- | --- | --- | --- |
+| 01 | Resolved | Open: README | Strong foundation; the mixed Bash/Python bonus fence is repaired; defer pacing changes until delivery feedback |
+| 02 | Resolved | Open: README | Core role is sound; bonus ownership, API-contract, and Git-safety cleanup is complete |
+| 03 | Resolved | Open: BONUS | Environment-to-NumPy order works; density, stale NumPy API, duplicated reference, and author-note issues are resolved |
+| 04 | Resolved | Open: README and BONUS | Strong pandas 3 foundation; the bonus alignment example is repaired |
+| 05 | Resolved | Open: README and BONUS | Excellent contract-driven cleaning owner; missingness sequencing and non-destructive notebook guidance are clarified |
+| 06 | Resolved | Open: README and BONUS | Strong joins/reshape core; null-key guidance, points drift, stale bonus claims, and harmful humor are resolved |
+| 07 | Resolved | Open: README | Excellent visualization contract; inference, trend/grid examples, and duplicate extensions are repaired |
+| 08 | Resolved | Open: README | Strong result-shape-first core; aggregation, validation, remote-safety, and parallel-page volume issues are resolved |
+| 09 | Resolved | Open: README | Strong temporal core; optional STL/ADF/count guidance and broken image links are repaired |
+| 10 | Resolved | Open: README | Inherited survey breadth is intact; metric selection, API/claim corrections, and repeated detail are repaired while preserving all Zoolander material |
+| 11 | Pass unchanged | Pass | Question-led, non-prescriptive, and appropriately sized capstone |
 
 ## Deferred to the demo phase
 
