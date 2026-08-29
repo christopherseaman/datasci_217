@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: fresh pairwise comparison follow-up; the Lecture 10 preservation repair is complete and independently passed, Lecture 11 discussion choices are pending instructor disposition, and the known course-wide heading normalization remains open; demos and assignments remain deferred
+- Current phase: focused ownership follow-up; sampling and notebook automation now have their intended Lecture 05/Lecture 04 owners, the approved Lecture 11 refinements are implemented and independently passed, xkcd duplicate/correctness disposition and course-wide heading normalization remain open, and demos/assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -67,6 +67,29 @@ The focused Lecture 11 review confirms that the current question-led capstone is
 No Lecture 11 edit is authorized by this review checkpoint; these choices are recorded for discussion with the instructor.
 
 Focused validation passed: `git diff --check` reported no whitespace errors; an independent read-only reviewer confirmed all main-carried Zoolander reference lines are represented and the old deterministic Random Forest/XGBoost prescriptions remain absent; and Eleventy wrote 30 pages and copied 124 assets. The only lecture source change is the two-line Lecture 10 restoration. No demo or assignment path changed.
+
+### Sampling, notebook-automation, Lecture 11, and xkcd follow-up
+
+The instructor chose to retain sampling in the course and identified notebook automation as Lecture 04 material. The lecture-only implementation now assigns the concepts as follows:
+
+- Lecture 05 core teaches a reproducible row sample as a manual inspection aid. It explicitly says that randomness does not guarantee representativeness, whole-table validation still owns correctness, and ordered/time-series rows must not be shuffled casually.
+- Lecture 05 bonus retains the design-heavy extensions without duplicating the core example: group-wise `GroupBy.sample`, weighted and systematic selection caveats, and replacement/bootstrap resampling. Bootstrap is distinguished from an ordinary sample, permutation, and train/test split.
+- Lecture 04 core links `Restart & Run All` to an optional non-interactive workflow. Lecture 04 bonus now owns safe `jupyter nbconvert --execute` guidance, separate output files, stop-on-failure shell behavior, and explicit warnings about `--inplace`, `--allow-errors`, kernels, packages, paths, and working directories. The full unrelated section was removed from Lecture 05 bonus.
+- Lecture 11 now pauses for students to choose the evaluation measure, selected-zone rule, and meaningful baseline; locally defines the release manifest, recent lag, weekly lag, and rolling history; and names question/claim, grain/provenance, and prediction contract as the three lecture anchors. Both xkcd images remain, including the intentionally personal/meta `fifteen_years_2x.png` opener.
+
+Runtime validation used an isolated Python 3.12 environment with pandas 3.0.5, nbconvert 7.16.6, nbformat 5.10.4, and a temporary registered IPython kernel. The Lecture 05 sampling and group/bootstrap examples passed. The documented nbconvert command wrote the named separate notebook without changing its source, and a notebook with a failing cell returned nonzero. An initial trial without a registered kernel failed exactly at the kernel boundary, supporting the lecture's statement that kernel and package selection are part of the execution contract. An independent read-only challenge then passed all five changed lecture pages with no P0–P3 finding and confirmed that only redundant API/CLI variants, not concepts, were removed.
+
+The final scoped gate found balanced fences and resolving local links in all six changed Markdown files (the five lecture pages plus this ledger), `git diff --check` passed, and Eleventy wrote 30 pages and copied 124 assets. Changed lecture paths are limited to Lectures 04, 05, and 11; no demo or assignment path changed.
+
+The xkcd inventory covered all lecture Markdown under Lectures 01–11 while excluding demos and assignments. It found 25 embedded comic references representing 22 intended distinct comics after resolving repeated content. Three embedded duplicate groups need instructor disposition:
+
+- xkcd 1513, “Code Quality,” is byte-identical in `01/README.md` and `11/README.md`. It fits Lecture 11 as a closing course-culture callback; the Lecture 01 copy is comparatively unmotivated.
+- xkcd 1296, “Git Commit,” appears in both `02/README.md` and `02/bonus/advanced_git.md` through the same file. Keep the core placement; the bonus repetition adds no new work and bonus pages may remain dry.
+- xkcd 1838, “Machine Learning,” appears twice in `10/README.md` at standard and 2× resolution. The second occurrence is incorrectly labeled xkcd 2400; xkcd 2400 is actually “Statistics.” Keep the opening occurrence and remove or replace the mislabeled repeat.
+
+The same audit found two correctness issues rather than duplicates: `08/README.md` labels “Slope Hypothesis Testing” as xkcd 2582, but the comic is xkcd 2533 and xkcd 2582 is “Data Trap”; and `05/media/xkcd_2239.png` is a saved HTML 404 response rather than the intended xkcd 2239 “Data Error” image. Those factual/broken-asset repairs are recommended regardless of the duplicate-placement choice. Two commented Lecture 04 FIXME candidates and repeated URLs in noncanonical `08/addme*.md` notes are not embedded comic repetitions.
+
+Lecture 11 is visually warm and strongly interactive but contains almost no written joke beyond vivid phrasing. That is acceptable for the capstone. If one more concept-serving line is desired, the preferred addition after “Those are choices, not mandatory project stages” is: “A capstone is not a technique scavenger hunt; the data gets a vote.” No humor or duplicate-comic edit is included in this checkpoint without instructor disposition.
 
 ## Recovered work state
 
@@ -243,14 +266,14 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 | 01 | Resolved | Open: README | Strong foundation; the mixed Bash/Python bonus fence is repaired; defer pacing changes until delivery feedback |
 | 02 | Resolved | Open: README | Core role is sound; bonus ownership, API-contract, and Git-safety cleanup is complete |
 | 03 | Resolved | Open: BONUS | Environment-to-NumPy order works; density, stale NumPy API, duplicated reference, and author-note issues are resolved |
-| 04 | Resolved | Open: README and BONUS | Strong pandas 3 foundation; the bonus alignment example is repaired |
-| 05 | Resolved; leave peripheral sections out of core unless later assessment requires a pointer | Open: README and BONUS | Excellent contract-driven cleaning owner; removed sampling and notebook-automation blocks are not cleaning prerequisites and carried conceptual or safety caveats |
+| 04 | Resolved | Open: README and BONUS | Strong pandas 3 foundation; optional safe notebook automation now sits with the Jupyter owner rather than cleaning |
+| 05 | Resolved | Open: README and BONUS | Excellent contract-driven cleaning owner; core sampling serves manual inspection, design-heavy variants remain optional, and notebook automation moved to Lecture 04 |
 | 06 | Resolved | Open: README and BONUS | Strong joins/reshape core; null-key guidance, points drift, stale bonus claims, and harmful humor are resolved |
 | 07 | Resolved | Open: README | Excellent visualization contract; inference, trend/grid examples, and duplicate extensions are repaired |
 | 08 | Resolved | Open: README | Strong result-shape-first core; aggregation, validation, remote-safety, and parallel-page volume issues are resolved |
 | 09 | Resolved | Open: README | Strong temporal core; optional STL/ADF/count guidance and broken image links are repaired |
 | 10 | Resolved | Open: README | Inherited survey breadth and all main-carried Zoolander references are intact; evidence-based model-selection guidance remains in place |
-| 11 | Pass; focused discussion pending | Pass | Intentional question-led, non-prescriptive rewrite; choose the interactive measurement prompt, delivery anchors, local definitions, and opening visual before final acceptance |
+| 11 | Resolved | Pass | Question-led, non-prescriptive rewrite now includes the approved measurement prompt, local definitions, and three delivery anchors; the intentional opening visual remains |
 
 ## Deferred to the demo phase
 
@@ -297,8 +320,8 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 
 ## Next action
 
-1. Resolve the recorded Lecture 11 instructor choices; do not edit its core until that discussion is complete.
-2. Leave Lecture 05's peripheral sampling and notebook-automation blocks out of core unless later assessed material establishes a concrete need for a short pointer.
+1. Resolve the three xkcd duplicate placements, the two xkcd correctness/broken-asset findings, and the optional single Lecture 11 humor line.
+2. Keep sampling owned by Lecture 05 and notebook automation owned by Lecture 04; do not re-expand the removed parallel reference blocks.
 3. Normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
 4. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
 5. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.

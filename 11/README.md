@@ -76,6 +76,10 @@ calendar position may predict next-hour pickups better than simply repeating the
 count from the same hour one week earlier. The demo does not assume that claim is
 true; the comparison supplies the evidence.
 
+Pause for an in-class choice: what should “how well” mean (which evaluation
+measure), how should we define the selected zones, and what baseline would make
+the comparison meaningful?
+
 A different project might ask a descriptive or comparative question instead. In
 that case, a carefully designed table, aggregation, and visualization may be the
 right endpoint. A model is useful only when it helps answer the question.
@@ -108,8 +112,9 @@ patterns.
 ### Audit evidence before changing it
 
 Provenance and data quality are part of the analysis, not setup trivia. The demo
-uses the release manifest to connect course artifacts to documented source files
-and to verify file identities. We then inspect types, missingness, timestamp
+uses the release manifest—the expected artifact filenames, source identities, and
+checksums—to connect course artifacts to documented source files and verify file
+identities. We then inspect types, missingness, timestamp
 parsing, month membership, zone membership, uniqueness, and coverage.
 
 Cleaning is purposeful. We do not automatically drop every row with a missing
@@ -122,7 +127,10 @@ the demo records a reason so that the decision remains auditable.
 The source grain and the question's grain are often different. Here, prediction
 needs a complete zone-hour panel rather than a pile of individual trips. Once that
 grain is established, calendar fields, lagged counts, and rolling summaries can be
-defined with a clear interpretation.
+defined with a clear interpretation. Here, a recent lag is the previous hour
+(*t*−1), a weekly lag is the same zone and hour 168 hours earlier (*t*−168), and
+rolling history is a summary such as the mean of earlier hourly counts over a
+specified window.
 
 This is the same general move seen throughout McKinney's examples: merge when facts
 are split across tables, aggregate when the question concerns groups, reshape when
@@ -180,11 +188,13 @@ explanation, guarantee future performance, or describe all NYC taxi activity.
 ## Session shape: lecture and demo in equal parts
 
 We will spend roughly half the session on the worked reasoning above and half on
-the executable taxi example.
+the executable taxi example. The three lecture anchors are question/claim,
+grain/provenance, and the prediction contract; the other subsections serve as
+synthesis and reference for the live example.
 
 | Share of class | Mode | Focus |
 | --- | --- | --- |
-| First ~50% | worked lecture and discussion | question and claim, grain and key, provenance, purposeful transformations, the modeling decision, and defensible communication |
+| First ~50% | worked lecture and discussion | question/claim, grain/provenance, and prediction contract, with the other decisions synthesized around them |
 | Second ~50% | live notebook walkthrough | inspect concrete records, build the zone-hour table, prepare past-only features, evaluate a simple comparison, and inspect errors |
 
 The lecture supplies the reasoning that transfers to other datasets. The demo

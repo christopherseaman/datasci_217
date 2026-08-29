@@ -6,6 +6,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Function application patterns and method chaining notes
 - Ranking strategies and working with duplicate index labels
 - Extended I/O and performance tips (Excel, JSON, chunked reads)
+- Safe non-interactive notebook execution and failure handling
 
 # Jupyter Notebooks: Interactive Data Analysis
 
@@ -127,6 +128,10 @@ When to restart your kernel:
 - Variables seem to have wrong values
 - "It worked before but now it doesn't"
 - Before submitting assignments (test it runs from top to bottom!)
+
+`Restart & Run All` is the interactive reproducibility check. For optional batch
+execution that preserves the source notebook and stops on failed cells, see
+[Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
 
 ## Notebook Outputs and Git: The Memory Problem
 

@@ -1,6 +1,41 @@
-Bonus Content: Advanced Pandas Operations
+Bonus Content: Jupyter Workflows and Advanced Pandas Operations
 
 *This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, column creation, groupby introductions, and the core CSV workflow before tackling these extensions.*
+
+---
+
+## Running Notebooks Non-Interactively
+
+Notebooks are interactive by default, but a reviewed notebook can also be executed
+from the command line for a reproducibility check or a batch workflow. This is an
+optional notebook skill, not a requirement that lecture pages run top-to-bottom.
+Executable activities still own their tested environments, paths, and commands.
+
+```bash
+# Execute every cell in order and write a separate output notebook.
+jupyter nbconvert --execute --to notebook \
+    --output executed_analysis.ipynb analysis.ipynb
+```
+
+By default, a cell error makes the command fail. Automation should treat that
+nonzero exit status as a stop signal rather than continuing with later work. A
+shell pipeline can make that policy explicit:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+jupyter nbconvert --execute --to notebook \
+    --output executed_prepare.ipynb prepare.ipynb
+jupyter nbconvert --execute --to notebook \
+    --output executed_analyze.ipynb analyze.ipynb
+```
+
+Keep the source notebook unchanged by writing a distinct output file. Avoid
+`--inplace` unless overwriting the source is deliberate and recoverable. Avoid
+`--allow-errors` in validation or production workflows because it can produce an
+output notebook containing failed cells. The working directory, selected kernel,
+and installed packages are part of the execution contract.
 
 ---
 

@@ -542,6 +542,34 @@ print(names_df)  # Two columns with first and last names
 ![xkcd 2239 "Database"](media/xkcd_2239.png)
 *Shows data errors invalidating research - perfect for validation section*
 
+## Sampling Rows for Inspection
+
+A row sample can help a person inspect records that would be missed by looking
+only at the first or last rows. It is a supplement to whole-table validation, not
+proof that the data is representative or correct. Record the sampling frame (the
+rows eligible to be selected), purpose, and random seed when the selected rows
+become part of an audit trail.
+
+**Reference:**
+
+- `df.sample(n=5, random_state=42)` - Draw five rows without replacement
+- `df.sample(frac=0.1, random_state=42)` - Draw ten percent of the rows
+- `df.sample(frac=1, random_state=42)` - Permute row order while keeping each row intact
+
+```python
+records = pd.DataFrame({
+    'record_id': ['R001', 'R002', 'R003', 'R004', 'R005'],
+    'status': ['active', 'pending', 'active', 'complete', 'pending'],
+})
+
+inspection = records.sample(n=3, random_state=42)
+print(inspection)
+```
+
+Random selection alone does not make a sample representative. Do not shuffle rows
+when order carries meaning—especially before time-series analysis or temporal
+validation. The quality checks below still evaluate the complete table.
+
 | Issue | Detection | Possible response after investigation |
 |-------|-----------|---------------------------------------|
 | Missing Values | `df.isna().sum()` plus sentinel checks | Retain, flag, impute, or drop according to variable meaning and analysis purpose |

@@ -277,114 +277,47 @@ print(df)
 
 **Conditional Replacement:** Complex business logic, deriving new categories, data validation with multiple rules.
 
-# Optional Reference: Random Sampling and Permutation
+# Optional Reference: Sampling Designs and Resampling
 
-Sampling and permutation are useful analysis tools, but they are peripheral to the core cleaning workflow.
+The core lecture uses simple random row samples for manual inspection. The
+techniques below need additional design assumptions and should not be treated as
+automatic routes to representative data.
 
-## Random Sampling
+## Group-Wise Sampling
 
-Random sampling selects rows using a probability mechanism. Randomness alone does not guarantee a representative subset: the sampling frame, selection probabilities, sample size, strata, and nonresponse still matter. Choose the design for the target population and purpose.
-
-**Reference:**
-
-- `df.sample(n=None, frac=None, replace=False, weights=None, random_state=None)` - Random sampling
-- `n=10` - Sample exactly 10 rows
-- `frac=0.5` - Sample 50% of rows
-- `replace=True` - Sample with replacement (bootstrap)
-- `weights='column'` - Weighted sampling by column values
-- `random_state=42` - Reproducible sampling
-- `df.iloc[::step]` - Systematic sampling every nth row
-
-**Example:**
+Use `GroupBy.sample` when the design calls for a fixed number or fraction from each
+defined group. The groups and allocation are analytical choices; every group must
+have enough rows unless sampling with replacement is deliberate.
 
 ```python
-# Random sampling
-df = pd.DataFrame({'A': range(100), 'B': range(100, 200)})
-sample = df.sample(n=10, random_state=42)  # Sample 10 rows
-print(len(sample))  # 10
+frame = pd.DataFrame({
+    'site': ['north'] * 4 + ['south'] * 4,
+    'value': [3, 5, 4, 8, 2, 7, 6, 9],
+})
 
-# Stratified sampling: this design chooses two rows from each category
-df['category'] = ['A', 'B'] * 50
-stratified = df.groupby('category', group_keys=False).sample(n=2, random_state=42)
-print(len(stratified))  # 4 (2 from each category)
+by_site = frame.groupby('site', group_keys=False).sample(
+    n=2,
+    random_state=42,
+)
+print(by_site)
 ```
 
-## Permutation and Shuffling
+## Weighted, Systematic, and Replacement Sampling
 
-Permutation randomizes row order while preserving relationships among columns in each row. Use it when the method calls for exchangeable rows; shuffling ordered or time-series data can destroy meaningful dependence.
-
-**Reference:**
-
-- `df.sample(frac=1)` - Shuffle all rows (permutation)
-- `df.reindex(np.random.permutation(df.index))` - Permute index order
-- `df.sample(n=len(df), replace=True)` - Bootstrap sampling
-- `np.random.permutation(array)` - Randomly permute array
-- `random_state=42` - Reproducible permutation
-
-**Example:**
+- `df.sample(weights='weight')` uses caller-supplied selection weights, which must
+  be validated and justified by the sampling design.
+- `df.iloc[::step]` selects every *step*th row, but ordering or periodic structure
+  can make that systematically biased.
+- `df.sample(n=len(df), replace=True)` draws a same-sized resample with expected
+  duplicates. Repeating that operation to estimate a statistic's uncertainty is a
+  bootstrap procedure with assumptions of its own; it is not an ordinary train/test
+  split or proof of representativeness.
 
 ```python
-# Shuffle DataFrame
-df = pd.DataFrame({'A': [1, 2, 3, 4], 'B': [5, 6, 7, 8]})
-shuffled = df.sample(frac=1, random_state=42)
-print(shuffled)  # Random order of rows
-
-# Bootstrap sampling
-bootstrap = df.sample(n=len(df), replace=True, random_state=42)
-print(len(bootstrap))  # 4 (same length, but with replacement)
+bootstrap_draw = frame.sample(
+    n=len(frame),
+    replace=True,
+    random_state=42,
+)
+print(bootstrap_draw)
 ```
-
-# Optional Workflow Reference: Running Notebooks from Command Line
-
-For optional automation and batch processing, you can execute Jupyter notebooks from the command line without opening the Jupyter interface. This is not required for the cleaning concepts above. Executable activities own the tested commands and environment instructions; treat the examples here as workflow reference.
-
-## Basic Execution
-
-```bash
-# Execute a single notebook
-jupyter nbconvert --execute --to notebook your_notebook.ipynb
-
-# Execute to a separate output file; keep the source notebook unchanged.
-jupyter nbconvert --execute --to notebook \
-    --output executed_notebook your_notebook.ipynb
-```
-
-## Notebook Pipeline Automation
-
-Always check "exit codes" after notebook execution to ensure your pipeline stops if any step fails. When a command runs successfully it returns an exit code of 0, other values (usually 1) indicate an error.
-
-You may check exit codes using the special variable `$?`, which contains exit code for the previous command. Alternatively, we can use an OR operator (`||`) to instruct the shell to do something when a command fails.
-
-**Note:** The `||` operator means "OR" - if the command fails (non-zero exit code), execute the code block in curly braces `{}`. This is more concise than checking `$?` explicitly.
-
-```bash
-#!/bin/bash
-# Example pipeline script
-
-echo "Starting data analysis pipeline..."
-
-# Run notebooks in sequence
-jupyter nbconvert --execute --to notebook q4_exploration.ipynb
-if [ $? -ne 0 ]; then
-    echo "ERROR: Q4 exploration failed"
-    exit 1
-fi
-
-jupyter nbconvert --execute --to notebook q5_missing_data.ipynb || {
-    echo "ERROR: Q5 missing data analysis failed"
-    exit 1
-}
-
-echo "Pipeline completed successfully!"
-```
-
-## Key Parameters
-
-- `--execute`: Run all cells in the notebook
-- `--to notebook`: Keep output as notebook format
-- `--output filename`: Save to a new file (the safe default shown above)
-- Avoid `--inplace` unless overwriting the source is deliberate and a backup or
-  version-control checkpoint exists.
-- Avoid `--allow-errors` in validation or production pipelines: it can produce
-  an output notebook even when a cell failed. If used for exploratory capture,
-  inspect the recorded errors and still check the command's exit status.
