@@ -625,6 +625,189 @@ host here is Python 3.14 and does not have the NumPy/Jupyter stack required by
 the notebooks. Assignment 01's deliberately broken `debug_report.py` is an
 intentional debugging starter and is excluded from the compilation claim.
 
+## Full adversarial assignment review (2026-08-29)
+
+Eight independent review workstreams examined Assignments 01–11 in pairs,
+course-wide sequence and workload, delivery/testing architecture, and one
+adversarial refutation pass. The review covered learner instructions, starter
+artifacts, lectures and demos available before each assignment, dependency and
+platform records, public checks, optional Actions, instructor self-tests,
+export boundaries, grading false positives/negatives, size, and engagement.
+This was a review-only checkpoint: no assignment, lecture, demo, checker, or
+grader source was changed.
+
+The governing boundaries were explicit. Lectures explain concepts and are not
+student execution artifacts; demos and assignments must execute. Assignment 11
+remains one local-Jupyter capstone assignment, with no added demo, class
+meeting, Colab route, or geographic requirement. Term-specific assignment
+launch URLs remain placeholders; immutable source-provenance URLs in the
+committed data manifest are not term routing and should remain concrete.
+
+### Verdict
+
+The overall prerequisite order passes except for Assignment 11's
+permutation-importance deliverable, which contradicts its mapped Q7–Q9 demo:
+terminal/Python work in 01–03, notebooks and pandas beginning in 04, cleaning
+in 05, combination/reshape in 06, visualization in 07, aggregation in 08,
+temporal work in 09, modeling in 10, and synthesis in 11. No notebook is
+required before notebooks are introduced, and the refreshed assignments are
+materially more focused and better aligned than the legacy `main` versions.
+Reviewers consistently rated Assignment 07 as the strongest creative and
+accessibility exercise and Assignment 11 as an authentic culminating project.
+
+The assignment set is nevertheless **blocked for release** by grading,
+environment, and export defects. Passing public or instructor checks cannot yet
+be treated as a reliable fast-track signal for every assignment.
+
+### P1 — release blockers
+
+1. **Assignment 10 is not certified and its release harness crashes.**
+   `10/assignment/PLATFORM_CHECK.md` correctly records that the transitive
+   dependency lock is still absent. Independently, the exact Python 3.12.13
+   self-test fails at `_grader_selftest/run.py:620`: the alternate-workflow
+   mutant calls `mkdir(parents=True)` for the already-required
+   `.github/workflows` directory without `exist_ok=True`, raising
+   `FileExistsError` before the adversarial suite completes. Supply and certify
+   the lock, repair the mutant, rerun the complete harness, and exercise a real
+   exported Actions repository.
+2. **Assignment 11 has a demonstrated full-credit grading false positive.**
+   Its canonical correct fixture records `DummyRegressor(strategy="mean")` but
+   writes persistence values as the model predictions and writes zero
+   permutation importances. Both the public checker and instructor grader award
+   full credit because they validate the recorded class and output arithmetic
+   separately; neither proves that the declared fitted pipeline produced the
+   saved predictions or importances. Generate the canonical fixture by fitting
+   the declared pipeline, add a spec/prediction-mismatch mutant, and make the
+   trusted path reconstruct or fresh-execute the selected model before using a
+   pass for grading triage.
+3. **The canonical assignment subtrees are not deterministic student exports.**
+   Every subtree contains instructor-only `_grader_selftest` material that its
+   own documentation says must not ship. No exporter or allowlist currently
+   performs that exclusion. In addition, the 04–09 public checkers recursively
+   reject the instructor tree and ordinary ignored notebook state such as
+   `.ipynb_checkpoints`; 10 excludes the instructor tree but still rejects
+   ordinary notebook/cache state. A reproduced Assignment 04 check passed its
+   inventory before a checkpoint was added and then rejected the checkpoint as
+   an unexpected submission file. Implement one deterministic exporter, keep
+   the trusted grader outside the student checkout, and smoke-test all eleven
+   exported repository roots.
+4. **The notebook environment contract is incomplete for 04–10.** Assignments
+   04–09 direct learners to create or refresh an environment from
+   `requirements.txt` and select it as a notebook kernel, but those records omit
+   `ipykernel` and a Jupyter host. Assignment 10 requires an approved local
+   Jupyter environment with exact direct versions but does not document how to
+   provision its host or kernel. Assignment 11 is the only notebook assignment
+   with recorded Jupyter tooling. Standardize either a pinned notebook-tooling
+   record or a separately provisioned host plus the required kernel dependency,
+   and test the documented clean setup rather than relying on an unrecorded
+   global environment.
+5. **The trusted TA grading/export path is still a design, not an operational
+   replacement for Classroom 50.** The proposed isolated batch runner, roster,
+   immutable refs, time/resource limits, infrastructure-error separation, and
+   reports are not implemented or piloted. Meanwhile the 04–11 instructor
+   bundles still emit Classroom 50 result schemas, the 04–10 public checkers
+   allow obsolete Classroom delivery files, and the Lecture 01 setup demo still
+   tells students that assignments use GitHub Classroom. Finish and pilot the
+   trusted path, then remove the active legacy contracts and wording.
+
+### P2/P3 — important cleanup and planning findings
+
+- Assignment 11 requires validation permutation importance even though its
+  Q7–Q9 mapped demo explicitly says there is no feature-importance requirement.
+  This is the one clear required-technique mismatch. Because no extra meeting
+  or demo is desired, prefer replacing that deliverable with an already-taught
+  model/error interpretation task rather than expanding the course.
+- Assignment 11's required `download_data.sh` uses GNU-only `sha256sum` and
+  `stat -c`, contradicting the course's macOS support. Perform the checksum and
+  byte-size validation in portable Python or add and test BSD/macOS branches.
+- Assignment 03 tells learners to replace a requirements `TODO`, but
+  `requirements.txt` already contains the required NumPy pin so Actions can
+  install the starter. Describe the pin as supplied and verified.
+- Assignments 05–08 still publish provisional grading language. Replace it with
+  one reusable policy distinguishing advisory public checks, trusted grading
+  triage, human review, and term-specific weights.
+- Assignment 08 should identify which cells are protected instead of saying
+  both “complete every TODO” and “do not edit supplied notebook cells.” Its
+  structural-`pivot` versus aggregating-`pivot_table` scope is already explicit
+  and needs no further repair.
+- Assignments 07–10 remove owned output files at notebook startup. These are
+  recoverable generated artifacts, not source destruction, but a failed run can
+  erase the last successful evidence. Prefer atomic replacement or state the
+  cleanup contract clearly.
+- Assignment 10's README says Colab is outside the current contract while its
+  platform page describes a conditional future route. Use one present-tense
+  statement: local-only unless the instructor publishes a tested full-tree
+  route.
+- Assignments 01–03 are intentionally tightly checker-shaped. Retain the novice
+  guardrails, but consider one small transfer/rationale prompt in each so exact
+  AST compliance is not the whole learning signal.
+- Assignment 11 is objectively the largest package, but no evidence establishes
+  a one-class-meeting completion target. It remains one final-project assignment
+  slot. Do not add a meeting or split it on an unsupported pacing assumption.
+  Add milestone/time guidance and run a timed novice pilot before making
+  workload claims. Rename or explain its “nine phases” as question/deliverable
+  checkpoints so the label does not imply a universal lifecycle.
+- Assignment 11 supplies generic fixed image alt strings rather than requiring
+  students to write descriptive alternatives for their final visualizations.
+  Keep accessibility under explicit human review or make the prose artifact
+  carry a short chart description.
+- Assignment 04's public checker is static/artifact-only, but the surrounding
+  “All public checks passed” wording can sound like fresh execution was proved.
+  Label that pass as readiness feedback; the trusted grader owns execution.
+
+### Per-assignment result
+
+Every row additionally inherits the deterministic-export, exported-Actions,
+and trusted-runner gates; Assignments 04–10 inherit the notebook-environment
+gate. Assignment 04 also requires a clean exact-environment harness rerun
+because the only attempted run was invalidated by a concurrent kernel-port
+collision.
+
+| Assignment | Content, order, and engagement | Release status |
+| --- | --- | --- |
+| 01 | Pass; bounded terminal/Python foundation | No assignment-specific blocker |
+| 02 | Pass; useful continuity and Git-safe refactor | No assignment-specific blocker |
+| 03 | Pass; correct bridge from scripts to NumPy | Minor README/pin mismatch |
+| 04 | Pass; appropriately introduces notebooks and labeled pandas | Inventory messaging issue; exact harness rerun required |
+| 05 | Pass; coherent contract-first cleaning exercise | Submission-inventory and grading-policy cleanup |
+| 06 | Pass; coherent joins, alignment, and structural reshape | Submission-inventory and grading-policy cleanup |
+| 07 | Pass; reviewers' strongest creative/audience exercise | Inventory, output-cleanup, and grading-policy cleanup |
+| 08 | Pass; grouping grain and aggregation are well sequenced | Inventory, protected-cell wording, and grading-policy cleanup |
+| 09 | Pass; demanding but well-scoped temporal evidence | Submission-inventory cleanup |
+| 10 | Content aligned with Lecture 10 and its demos | **Blocked:** broken release harness and missing certified lock |
+| 11 | Strong local-only, no-geo capstone direction | **Blocked:** grading provenance false positive; mapped-demo mismatch and macOS setup defect |
+
+### Validation and rejected false positives
+
+- Exact/pinned instructor harnesses passed for Assignments 01–03, 05–09, and
+  11. Assignment 10 reproducibly failed with the `FileExistsError` above. An
+  earlier concurrent Assignment 04 run was invalidated by a local kernel-port
+  collision and is not counted as a product failure.
+- The Assignment 11 canonical artifacts received full public and instructor
+  scores despite the declared-model/prediction mismatch, directly demonstrating
+  the false positive rather than merely inferring it from static code.
+- Assignment 11's committed data download/checksum passed on Linux, all nine
+  Jupytext pairs passed strict synchronization, and release-manifest hashes
+  matched. macOS execution remains unverified and the GNU commands are
+  nonportable by inspection.
+- The reported Assignment 05 date-count contradiction was rejected: the raw
+  fixture contains the invalid `R002` date twice plus invalid `R009`, so the
+  required count of three is correct while the empty date remains excluded.
+- The reported Assignment 01/02 Actions cache-path failure was rejected. Their
+  cache dependency patterns also match the existing
+  `.github/test/requirements.txt`; an absent optional root `requirements.txt`
+  does not establish failure.
+- A difference between Assignment 10 and legacy `main` is not a defect: the
+  refreshed README, notebook, checker, and outputs agree with one another.
+- Assignment 11's concrete Chicago source URLs are provenance, not the
+  term-specific assignment launch URLs that must remain placeholders.
+- GitHub-hosted Actions, actual standalone exports, a production TA runner,
+  macOS, and timed novice workload pilots were not executed. They remain
+  explicit release gates; the stale repository-wide course audit is not used as
+  evidence for this assignment verdict.
+- The durable review update passed `git diff --check`; Eleventy rendered all 30
+  pages and copied 124 assets successfully.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
@@ -665,12 +848,23 @@ intentional debugging starter and is excluded from the compilation claim.
 
 ## Next action
 
-1. Commit the reconciled assignment-source/pytest/Actions checkpoint after
-   this validation.
-2. Design and implement the TA grading runner against local assignment
-   subtrees first; add exported repository coordinates and a semester roster
-   only when the standalone repositories are created.
-3. If desired before merge, normalize the 13 remaining nonconforming lecture
+1. Repair the assignment release blockers in this order: Assignment 11 grading
+   provenance and the mapped-demo-contradicted permutation-importance
+   requirement; Assignment 10's crashing harness and missing certified lock;
+   one notebook-tooling
+   environment contract; then one deterministic student exporter with
+   root-level smoke tests for all eleven packages.
+2. Implement and pilot the trusted TA runner against exported disposable
+   checkouts. Keep its tests outside student control, disable network access,
+   bound resources and logs, pin source/submission commits, distinguish
+   infrastructure failures from student failures, and preserve human review.
+   Add exported repository coordinates and the private semester roster only
+   when those repositories are created.
+3. Remove the residual Classroom 50 schemas, filename allowances, and Lecture
+   01 promise after the replacement path exists. Resolve the smaller A03,
+   A05–A08, A10, and A11 wording/platform issues, then run exported Actions,
+   macOS, repeatability, and timed novice-pilot gates.
+4. If desired before merge, normalize the 13 remaining nonconforming lecture
    pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
    change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
    `HANDOFF.md`, and this tracker during the eventual merge cleanup.
@@ -700,4 +894,9 @@ intentional debugging starter and is excluded from the compilation claim.
 | `36ea01c` | Record the core-lecture comparison | Preserve the pairwise content, flow, size, and engagement verdicts |
 | `7e6ba44` | Restore Lecture 10 references | Restore every main-carried Zoolander reference before further review |
 | `aa35ea2` | Refine lecture ownership and capstone | Place sampling and notebook automation with their owning lectures and clarify Lecture 11 |
-| `demo-repair` | Repair and validate lecture demos | Reconcile Markdown/notebook sources, standardize the pandas 3 candidate, repair execution/API/order defects, and pass independent demo review |
+| `feabed4` | Repair and validate lecture demos | Reconcile Markdown/notebook sources, standardize the pandas 3 candidate, repair execution/API/order defects, and pass independent demo review |
+| `3d4cb84` | Record the pytest grading direction | Preserve the optional-Actions plus trusted-TA-runner design and unresolved operational gates |
+| `d5a7940` | Add portable assignment workflows | Materialize public pytest adapters and optional exported-root Actions for Assignments 01–11 |
+| `265a1ca` | Record assignment alignment gaps | Distinguish portable test plumbing from unreconciled legacy assignment content |
+| `af445bf` | Reconcile assignments with lectures and demos | Replace legacy 02–10 contracts and synchronize active assignment sources and protected records |
+| `ae3f7d9` | Keep the capstone assignment local-only | Remove the unrequested Assignment 11 demo/Colab option and preserve one existing capstone assignment |
