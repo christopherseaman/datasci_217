@@ -520,6 +520,49 @@ rules were otherwise left unchanged; package inventories and integrity hashes
 were updated to account for the portable public-test files and the refreshed
 dependency pin.
 
+## Assignment/test/content alignment audit (2026-08-29)
+
+The portable test shape is implemented, but it must not be mistaken for a
+completed assignment-content migration. The `.github/test` files are adapters:
+Assignments 01–03 load the existing root public pytest facades, while
+Assignments 04–11 run the public `check_assignment.py` command in a subprocess.
+The adapters and checker expectations were updated for the rebuilt fixture and
+dependency contracts, but the student-facing assignment source was not
+reconciled in the same step.
+
+Static comparison found the following release blockers:
+
+- Assignment 02's README still describes the legacy separate repository,
+  `setup_project.sh`, and `src/data_analysis*.py` project, while the package
+  contains `analysis_utils.py`, `main.py`, and the rebuilt checks.
+- Assignment 03's README still requires removed health-data generators and a
+  50,000-row CSV; the package now contains a fixed NumPy exercise and
+  `observations.csv`.
+- Assignment 04's README and notebook still use the removed
+  `data_generator.ipynb`/`customer_purchases.csv` contract, while its checker
+  expects the fixed `a04-purchases-v1` fixture and `a04-*` notebook cell IDs.
+- Assignment 05's README still describes the removed eight-part clinical-trial
+  pipeline; the package is the compact fixed-people cleaning notebook.
+- Assignments 06–09 retain README prose for removed generators, datasets, or
+  notebook layouts, while their checkers target fixed fixtures and rebuilt
+  notebook contracts. Assignment 07 also says “four questions” while listing
+  three, and Assignment 09 still documents three old datasets.
+- Assignment 10's README and notebook still promise/import XGBoost, but
+  `requirements.txt` and the checker intentionally define the bounded
+  statsmodels/scikit-learn contract and reject XGBoost in student cells.
+- Assignment 11 is the exception: its frozen Chicago sensor release, nine
+  phases, sklearn-only model boundary, and no-geo assignment scope are aligned
+  with Lecture 11 and its capstone transfer. Its Colab/local-Jupyter wording
+  remains a separate publication decision.
+
+Therefore the current tests are adapted to the intended rebuilt contracts only
+in part, and the assignments are not yet fully updated to match the final
+lectures and demos. The next authorized assignment pass must choose each
+rebuilt package as authoritative, rewrite its README/notebook prompts and
+starter files to that contract, then update public/instructor checks together
+and smoke-test each exported subtree. No assignment source or test assertion
+was changed during this audit.
+
 ## Assignment/demo dependency pin refresh (2026-08-29)
 
 PyPI now lists pandas 3.0.5 as the current 3.x release (3.0.4 was yanked), so
