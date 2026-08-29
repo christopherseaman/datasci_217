@@ -481,7 +481,7 @@ print(f"Feature importance: {importance}")
 - `GridSearchCV` - Hyperparameter tuning
 - Tools for estimating validation performance or selecting hyperparameters within training data
 
-*Pro tip: Start with a meaningful simple baseline, then add candidates whose assumptions and capabilities fit the problem. Let validation evidence—not a favorite algorithm—decide among them.*
+*Pro tip: Start with a meaningful simple baseline, then add candidates whose assumptions and capabilities fit the problem. Let validation evidence—not a favorite algorithm—decide among them. Blue steel is a style, not a model-selection rule.*
 
 *"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
 
@@ -664,7 +664,7 @@ Beyond `XGBoost`, there are other powerful gradient boosting libraries:
 - Provides native mechanisms for categorical features
 - A candidate when the table contains important categorical variables
 
-*Pro tip: Benchmark the libraries that fit the data and constraints rather than choosing from a slogan. Their relative speed and predictive performance depend on the dataset, configuration, and evaluation design.*
+*Pro tip: Benchmark the libraries that fit the data and constraints rather than choosing from a slogan. Their relative speed and predictive performance depend on the dataset, configuration, and evaluation design. It's like choosing between blue steel, magnum, and le tigre—they're all amazing, just slightly different, so benchmark them on your data.*
 
 **The Boosting Family Tree:**
 

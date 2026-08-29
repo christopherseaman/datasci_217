@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: fresh pairwise comparison of the 11 core lecture READMEs against `main` complete; one explicit Lecture 10 preservation repair and the known course-wide heading normalization remain open; demos and assignments remain deferred
+- Current phase: fresh pairwise comparison follow-up; the Lecture 10 preservation repair is complete and independently passed, Lecture 11 discussion choices are pending instructor disposition, and the known course-wide heading normalization remains open; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -22,7 +22,7 @@ The review distinguished intentional pandas 3/API modernization, prerequisite re
 
 ### Core-pair verdict
 
-**The Lecture 01–11 sequence and inherited core-topic coverage pass, but the comparison found one required preservation repair before content parity with `main` is approved.** Ten pairs are approved, including Lecture 05 with a minor discoverability note. Lecture 10 retains every required model family and is substantively more accurate, but it drops two inherited Zoolander references despite the instructor's explicit preserve-all requirement. No P0 defect or additional P1/P2 accidental topic loss was found. The independent challenge confirmed this synthesis rather than exposing another material regression.
+**The Lecture 01–11 sequence and inherited core-topic coverage pass.** The initial comparison found one required preservation repair: Lecture 10 retained every required model family and was substantively more accurate, but it dropped two inherited Zoolander references despite the instructor's explicit preserve-all requirement. Both references are now restored without reviving the old deterministic model advice, and an independent challenger passed the repair. All 11 core pairs therefore pass their content comparison, including Lecture 05 with a minor discoverability discussion. The separate heading-format gate remains open.
 
 | Lecture | Completeness versus `main` | Order and prerequisites | Size/density | Fun/engagement | Pair result |
 | --- | --- | --- | --- | --- | --- |
@@ -35,12 +35,12 @@ The review distinguished intentional pandas 3/API modernization, prerequisite re
 | 07 | Visualization contract retained and improved | Strong matplotlib → pandas → seaborn sequence | Advanced survey consolidated | Retained | Approve |
 | 08 | Aggregation and pivot scope retained with pandas 3 result-shape semantics | Strong | Balanced | Retained | Approve |
 | 09 | Temporal core retained; specialized decomposition explicitly made optional | Strong | Balanced | Retained | Approve |
-| 10 | All inherited model families and evaluation workflow retained | Strong statistics → ML → boosting → deep-learning order | Largest core lecture, but segmented and purposeful | Strong overall; two required references missing | Changes required |
+| 10 | All inherited model families and evaluation workflow retained | Strong statistics → ML → boosting → deep-learning order | Largest core lecture, but segmented and purposeful | Strong; all inherited Zoolander references restored | Approve after repair |
 | 11 | Inherited integrative topic families retained in a question-led rewrite | Improved: question/evidence precede transformation and modeling | Expanded, appropriate for synthesis | Lighter than `main`, but still uses relevant visuals | Approve |
 
 ### Actionable comparison findings
 
-1. **P1 preservation violation — restore two Lecture 10 Zoolander references without restoring the deterministic model advice around them.** `main:10/README.md:462` used the “blue steel” reference in its Random Forest tip; current `10/README.md:484` correctly replaces the universal algorithm recommendation but removes the reference. `main:10/README.md:637` compared XGBoost, LightGBM, and CatBoost to “blue steel, magnum, and le tigre”; current `10/README.md:667` correctly makes the selection advice evidence-based but removes the comparison. The content repair should keep the accurate current guidance and reincorporate the two franchise references rather than reverting the old “start with X” prescriptions.
+1. **Resolved P1 preservation violation — two Lecture 10 Zoolander references are restored without restoring the deterministic model advice around them.** `main:10/README.md:462` used the “blue steel” reference in its Random Forest tip; current `10/README.md:484` now makes Blue Steel explicitly a style rather than a model-selection rule while retaining baseline-and-validation guidance. `main:10/README.md:637` compared XGBoost, LightGBM, and CatBoost to “blue steel, magnum, and le tigre”; current `10/README.md:667` restores that comparison while retaining dataset-specific benchmarking. Independent review confirmed that the two-line diff restores the main-carried references, leaves “start with Random Forest/XGBoost” prescriptions absent, and introduces no new factual or pedagogical issue.
 2. **P3 discoverability option — Lecture 05 no longer signals two inherited peripheral sections.** `main:05/README.md:513-566` covered random sampling/permutation and `main:05/README.md:756-809` covered command-line notebook execution. The current core lecture appropriately focuses on cleaning and contains no replacement core signpost. This is not a cleaning-topic or sequence failure; if inherited-topic discoverability matters, add a brief optional pointer rather than restoring the two large blocks.
 3. **Separate format gate — nine core READMEs still have multiple H1 headings.** Lectures 03 and 11 have exactly one H1; Lectures 01, 02, and 04–10 do not. This is an existing hierarchy/accessibility issue rather than content loss relative to `main`.
 
@@ -51,6 +51,22 @@ The review distinguished intentional pandas 3/API modernization, prerequisite re
 - Lecture 07 keeps the advanced visualization ecosystem as a concise optional survey rather than several full executable walkthroughs. Lecture 09 explicitly makes decomposition/forecasting optional. Both are justified ownership and density changes.
 - Lecture 11's old phase/checklist structure was intentionally replaced by a question-led integration path. Its crosswalk preserves cleaning, joins/reshape, aggregation, visualization, time series, modeling/evaluation, and communication without imposing a universal lifecycle.
 - A prose-oriented metric increased for every current core README. The largest gains are Lectures 11, 10, and 03; large line-count reductions in Lectures 02 and 07 principally reflect code/reference consolidation rather than disappearing core concepts. These counts support the pair review but do not by themselves establish pedagogical quality.
+
+### Focused Lecture 05 and Lecture 11 follow-up
+
+The removed Lecture 05 sampling block taught `DataFrame.sample()` by count or fraction, weighted/replacement sampling, shuffling/permutation, a `groupby(...).apply(...)` stratified example, and bootstrap resampling. It was not required by the cleaning progression, and parts of its framing were misleading: a random sample is not automatically representative, shuffling does not safely “break temporal dependencies,” and the stratified example needs pandas-3-specific care. The removed notebook-automation block taught `jupyter nbconvert --execute`, output versus `--inplace`, shell exit handling, sequential notebook execution, and `--allow-errors`. This is operational tooling rather than cleaning content; `--inplace` is destructive and `--allow-errors` can mask a failed pipeline without careful framing. The current recommendation is to leave both large blocks out of core. Add a short pointer only if a later assessed activity actually expects either skill.
+
+The focused Lecture 11 review confirms that the current question-led capstone is a substantial improvement over `main`'s universal nine-phase workflow and technique checklist. It preserves the inherited subject families while adding better intellectual owners for grain, provenance, evidence strength, prediction-time boundaries, baseline comparison, and limitations. No P0/P1 correctness or prerequisite defect was found. The remaining instructor choices are:
+
+1. Make the unresolved parts of “how well” and “selected taxi zones” explicit. The preferred treatment is a short in-class decision prompt asking students to choose an evaluation measure and zone-selection rule, rather than silently supplying them or leaving the question apparently complete.
+2. Teach three anchor decisions in the lecture half—question/claim, grain/provenance, and prediction contract—and treat the remaining subsections as synthesis/reference. This keeps the roughly 50/50 lecture/demo plan feasible without deleting the conceptual breadth.
+3. Define the release manifest and one history-feature example locally. A parenthetical description of the manifest as expected filenames plus identities/checksums, and one concrete distinction among recent lag, weekly lag, and rolling history, would remove the only meaningful abstraction jumps.
+4. Preserve the opening `fifteen_years_2x.png`. The instructor confirmed that it intentionally anchors the explanation for including so many xkcd comics throughout the course; the visual is therefore not a content or engagement finding. If that purpose needs to survive instructor handoff, an optional short presenter cue could make the connection explicit, but the planned spoken explanation is sufficient for the current lecture.
+5. Optionally compress the six-line McKinney Chapters 12–13 recap. The stable conceptual attribution is reasonable, but the lecture stands on its own and does not need edition-specific chapter narration unless those chapters are assigned reading.
+
+No Lecture 11 edit is authorized by this review checkpoint; these choices are recorded for discussion with the instructor.
+
+Focused validation passed: `git diff --check` reported no whitespace errors; an independent read-only reviewer confirmed all main-carried Zoolander reference lines are represented and the old deterministic Random Forest/XGBoost prescriptions remain absent; and Eleventy wrote 30 pages and copied 124 assets. The only lecture source change is the two-line Lecture 10 restoration. No demo or assignment path changed.
 
 ## Recovered work state
 
@@ -228,13 +244,13 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 | 02 | Resolved | Open: README | Core role is sound; bonus ownership, API-contract, and Git-safety cleanup is complete |
 | 03 | Resolved | Open: BONUS | Environment-to-NumPy order works; density, stale NumPy API, duplicated reference, and author-note issues are resolved |
 | 04 | Resolved | Open: README and BONUS | Strong pandas 3 foundation; the bonus alignment example is repaired |
-| 05 | Resolved; optional core signpost decision | Open: README and BONUS | Excellent contract-driven cleaning owner; missingness sequencing and non-destructive notebook guidance are clarified; the direct `main` comparison records a minor discoverability option for removed peripheral sections |
+| 05 | Resolved; leave peripheral sections out of core unless later assessment requires a pointer | Open: README and BONUS | Excellent contract-driven cleaning owner; removed sampling and notebook-automation blocks are not cleaning prerequisites and carried conceptual or safety caveats |
 | 06 | Resolved | Open: README and BONUS | Strong joins/reshape core; null-key guidance, points drift, stale bonus claims, and harmful humor are resolved |
 | 07 | Resolved | Open: README | Excellent visualization contract; inference, trend/grid examples, and duplicate extensions are repaired |
 | 08 | Resolved | Open: README | Strong result-shape-first core; aggregation, validation, remote-safety, and parallel-page volume issues are resolved |
 | 09 | Resolved | Open: README | Strong temporal core; optional STL/ADF/count guidance and broken image links are repaired |
-| 10 | Open: restore two inherited Zoolander references | Open: README | Inherited survey breadth is intact and the accuracy repairs pass; two `main`-carried references must be reincorporated without restoring deterministic model advice |
-| 11 | Pass | Pass | Intentional question-led, non-prescriptive rewrite; inherited integrative topic families are retained and its expanded size is appropriate |
+| 10 | Resolved | Open: README | Inherited survey breadth and all main-carried Zoolander references are intact; evidence-based model-selection guidance remains in place |
+| 11 | Pass; focused discussion pending | Pass | Intentional question-led, non-prescriptive rewrite; choose the interactive measurement prompt, delivery anchors, local definitions, and opening visual before final acceptance |
 
 ## Deferred to the demo phase
 
@@ -281,8 +297,8 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 
 ## Next action
 
-1. Restore the two Lecture 10 Zoolander references identified by the direct `main` comparison while preserving the current evidence-based model-selection advice.
-2. Decide whether Lecture 05 needs a one-sentence optional pointer for the removed sampling/permutation and notebook-automation sections; do not restore the large peripheral blocks by default.
+1. Resolve the recorded Lecture 11 instructor choices; do not edit its core until that discussion is complete.
+2. Leave Lecture 05's peripheral sampling and notebook-automation blocks out of core unless later assessed material establishes a concrete need for a short pointer.
 3. Normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
 4. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
 5. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
