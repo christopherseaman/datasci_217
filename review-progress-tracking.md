@@ -5,8 +5,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: assignment/grading design; the lecture content and instructor-directed xkcd/humor repairs pass their recorded lecture-only reviews, course-wide heading normalization remains open, and the demo audit is recorded as complete for its authorized scope
-- Explicitly out of scope for this phase: merging to `main`; assignment source content remains unchanged while the portable repository/pytest/Actions shape is aligned
+- Current phase: the full assignment audit is recorded; overall content order passes except for Assignment 11's mapped-demo mismatch, while verified grading, environment, export, and delivery defects block assignment release. Lecture and demo reviews remain complete for their recorded scopes, and course-wide heading normalization remains open.
+- Explicitly out of scope for this checkpoint: changing assignment sources or merging to `main`; this step reviewed and recorded the current packages only
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
@@ -900,3 +900,4 @@ collision.
 | `265a1ca` | Record assignment alignment gaps | Distinguish portable test plumbing from unreconciled legacy assignment content |
 | `af445bf` | Reconcile assignments with lectures and demos | Replace legacy 02–10 contracts and synchronize active assignment sources and protected records |
 | `ae3f7d9` | Keep the capstone assignment local-only | Remove the unrequested Assignment 11 demo/Colab option and preserve one existing capstone assignment |
+| `4b56fc6` | Record the adversarial assignment review | Overall prerequisite order passes except the A11 permutation-importance mismatch; release remains blocked by verified grading, environment, export, and delivery defects |
