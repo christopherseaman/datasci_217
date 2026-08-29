@@ -3,7 +3,7 @@ Data Visualization: From Exploration to Communication
 See [BONUS.md](BONUS.md) for advanced topics:
 
 - Advanced matplotlib customization and publication-quality plots
-- Interactive visualization with Bokeh and Plotly
+- Interactive visualization with Altair, Bokeh, and Plotly
 - Statistical visualization with seaborn advanced features
 - Custom color palettes and themes
 - Animation and dynamic plots
@@ -15,8 +15,8 @@ This lecture uses prepared plotting tables so you can focus on choosing honest e
 # Outline
 
 - matplotlib fundamentals (figures, subplots, customization)
-- Statistical visualizations with seaborn
 - pandas plotting for quick data exploration
+- Statistical visualizations with seaborn
 - Visualization principles and best practices
 - Tufte's principles for effective data visualization
 - Modern visualization libraries (altair, plotnine)
@@ -270,7 +270,7 @@ FOUNDATION LAYER
 - **altair** - Interactive plots, grammar of graphics, web-ready
 - **plotnine** - If you know ggplot2, consistent API
 
-**Pro tip:** Start with pandas for exploration, seaborn for analysis, matplotlib for customization, and modern tools for interactive/sharing needs.
+**Pro tip:** Learn the foundation in sequence: matplotlib for figures and axes, pandas for quick exploration, then seaborn for statistical graphics. Use modern tools when interactive or web delivery is part of the contract.
 
 # matplotlib: Foundation Layer
 
@@ -488,7 +488,7 @@ sales_data = pd.DataFrame({
 })
 
 # Set Month as index for better plotting
-sales_data.set_index('Month', inplace=True)
+sales_data = sales_data.set_index('Month')
 
 # Create subplots for each product
 sales_data.plot(subplots=True, figsize=(10, 8), 
@@ -641,271 +641,24 @@ plt.show()
 
 *The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
 
-This survey is optional and not assessed. It introduces the design space and current APIs without making every library part of the core lecture contract. The Bokeh and Plotly material overlaps with `BONUS.md`; treat it as reference material, not a second required sequence.
+This survey is optional and not assessed. It introduces the design space without making every library part of the core lecture contract. Keep using the same visualization contract: choose a truthful encoding, preserve labels and context, add redundant encodings where category identity matters, and provide a useful text alternative. Executable Altair, Bokeh, and Plotly examples live in [BONUS.md](BONUS.md).
 
-## vega-altair: Grammar of Graphics with Vega-Lite
+## Ecosystem at a glance
 
-*altair uses a declarative approach where you describe the data mapping rather than specifying drawing commands. It implements the grammar of graphics through Vega-Lite.*
+- **vega-altair** expresses marks and typed encodings declaratively through Vega-Lite. It is a strong fit for concise interactive statistical graphics, faceting, layering, and portable HTML or JSON specifications.
+- **plotnine** brings a layered grammar-of-graphics interface familiar to ggplot2 users.
+- **Bokeh** targets browser-based visualizations, custom interactions, and server applications.
+- **Plotly** offers a high-level Express API plus lower-level graph objects for interactive charts and dashboards.
 
-altair implements the Vega-Lite grammar of graphics, providing a declarative approach to creating statistical visualizations. It's designed for interactive web-based visualizations and supports multiple output formats.
-
-## Chart Creation and Mark Types
-
-altair uses a simple pattern: create a chart, specify the mark type, and encode your data.
-
-**Reference:**
-
-- `alt.Chart(data)` - Create chart from data
-- `alt.Chart(data).mark_circle()` - Scatter plot
-- `alt.Chart(data).mark_bar()` - Bar chart  
-- `alt.Chart(data).mark_line()` - Line plot
-- `alt.Chart(data).mark_area()` - Area chart
-- `alt.Chart(data).mark_rect()` - Heatmap/rectangles
-- `alt.Chart(data).mark_point()` - Point plot
-
-**Example:**
-
-```python
-import altair as alt
-import pandas as pd
-
-# Sample data
-data = pd.DataFrame({
-    'x': [1, 2, 3, 4, 5],
-    'y': [2, 4, 1, 5, 3],
-    'category': ['A', 'B', 'A', 'C', 'B']
-})
-
-# Scatter plot - shows relationships between variables
-scatter = alt.Chart(data).mark_circle().encode(x='x', y='y')
-scatter.show()
-
-# Bar chart - compares values across categories  
-bar = alt.Chart(data).mark_bar().encode(x='category', y='y')
-bar.show()
-
-# Line chart - shows trends over ordered data
-line = alt.Chart(data).mark_line().encode(x='x', y='y')
-line.show()
-
-# Combined view using altair's concatenation
-combined = alt.hconcat(scatter, bar, line)
-combined.show()
-```
-
-![Altair Basic Charts](media/altair_all_three.png)
-
-*Combined altair charts: scatter plot (left), bar chart (middle), line plot (right)*
-
-## Data Encoding
-
-The `.encode()` method maps data columns to visual properties using type annotations.
-
-**Reference:**
-
-- `x='column:Q'` - Quantitative (continuous) data
-- `y='column:O'` - Ordinal (discrete) data  
-- `x='date:T'` - Temporal (date/time) data
-- `color='column:N'` - Nominal (categorical) data
-- `size='column:Q'` - Size encoding
-- `shape='column:N'` - Shape encoding
-- `tooltip=['col1', 'col2']` - Hover information
-
-**Example:**
-
-```python
-# Enhanced scatter plot with encoding
-chart = alt.Chart(data).mark_circle().encode(
-    x='x:Q',                    # Quantitative x-axis
-    y='y:Q',                    # Quantitative y-axis
-    color='category:N',         # Color by category
-    size='y:Q',                 # Size by y-value
-    tooltip=['x', 'y', 'category']  # Hover info
-)
-
-chart.show()
-```
-
-![Altair Encoded Chart](media/altair_encoded.png)
-
-*Enhanced scatter plot with color encoding by category and size encoding by y-value*
-
-## Interactive Features
-
-altair provides built-in interactivity through the `.interactive()` method, enabling zoom, pan, and selection.
-
-**Reference:**
-
-- `.interactive()` - Enable zoom/pan
-- `.add_params(selection)` - Attach a selection parameter (Altair 5+)
-- `.transform_filter()` - Filter data dynamically
-- `alt.selection_interval()` - Rectangle selection
-- `alt.selection_point()` - Point selection
-
-**Example:**
-
-```python
-# Interactive scatter plot
-interactive_chart = alt.Chart(data).mark_circle().encode(
-    x='x:Q',
-    y='y:Q', 
-    color='category:N',
-    tooltip=['x', 'y', 'category']
-).interactive()
-
-interactive_chart.show()
-```
-
-## Advanced altair Features
-
-### Faceting and Layering
-
-altair supports faceting (small multiples) and layering multiple mark types.
-
-**Reference:**
-
-- `.facet('column:N')` - Create small multiples
-- `alt.layer()` - Combine multiple mark types
-- `.properties(width=300, height=200)` - Set chart dimensions
-
-**Example:**
-
-```python
-# Faceted chart
-faceted = alt.Chart(data).mark_circle().encode(
-    x='x:Q',
-    y='y:Q',
-    color='category:N'
-).facet('category:N', columns=2)
-
-# Layered chart
-base = alt.Chart(data).encode(x='x:Q', y='y:Q')
-layered = alt.layer(
-    base.mark_circle(color='lightblue'),
-    base.mark_line(color='red').transform_regression('x', 'y')
-)
-```
-
-### Statistical Transformations
-
-altair includes built-in statistical transformations.
-
-**Reference:**
-
-- `.transform_regression('x', 'y')` - Add regression line
-- `.transform_aggregate()` - Group and aggregate data
-- `.transform_filter()` - Filter data based on selections
-
-**Example:**
-
-```python
-# Chart with regression line
-regression = alt.Chart(data).mark_circle().encode(
-    x='x:Q',
-    y='y:Q'
-) + alt.Chart(data).mark_line(color='red').transform_regression(
-    'x', 'y'
-).encode(x='x:Q', y='y:Q')
-```
-
-## Export Formats
-
-altair supports multiple output formats for different use cases.
-
-**Reference:**
-
-- `chart.save('plot.png')` - Static bitmap (PNG)
-- `chart.save('plot.svg')` - Static vector (SVG)
-- `chart.save('plot.html')` - Interactive HTML
-- `chart.save('plot.json')` - Vega-Lite JSON specification
-
-**Example:**
-
-```python
-# Export to different formats
-chart.save('scatter.png')      # Static bitmap
-chart.save('scatter.svg')      # Static vector
-chart.save('interactive.html') # Interactive HTML
-```
-
-## Other Modern Tools: plotnine, Bokeh, and Plotly
-
-### plotnine: ggplot2 for Python
-
-**plotnine** brings R's ggplot2 syntax to Python, perfect for those familiar with R.
-
-**Key Features:**
-- Grammar of graphics approach
-- Layered plotting syntax
-- Familiar to R users
-- Statistical transformations
-
-**Reference:**
-- `ggplot(data, aes(x='col1', y='col2'))` - Base plot
-- `+ geom_point()` - Add scatter points
-- `+ geom_smooth()` - Add trend line
-- `+ facet_wrap('~column')` - Create facets
-- `+ theme_minimal()` - Apply themes
-
-**Example:**
-
-```python
-# Simple scatter plot with ggplot2 syntax
-(ggplot(tips, aes(x='total_bill', y='tip', color='time'))
- + geom_point()
- + theme_minimal())
-```
-
-### Bokeh: Interactive Web Visualizations
-
-**Bokeh** creates interactive web-based visualizations with rich interactivity.
-
-**Key Features:**
-- High-performance interactive plots
-- Web-based output
-- Custom JavaScript callbacks
-- Server applications
-
-**Reference:**
-- `figure()` - Create plot figure
-- `.scatter()`, `.line()`, `.vbar()` - Add point, line, and vertical-bar glyphs
-- `HoverTool()` - Add hover information
-- `output_notebook()` - Display in Jupyter
-
-### Plotly: Interactive Dashboards
-
-**Plotly** excels at creating interactive dashboards and web applications.
-
-**Key Features:**
-- Easy-to-use API
-- Rich interactivity
-- Dashboard capabilities
-- Multiple chart types
-
-**Reference:**
-- `px.scatter()`, `px.line()`, `px.bar()` - Express functions
-- `go.Figure()` - Graph objects
-- `make_subplots()` - Multiple plots
-- `.show()` - Display plot
-
-**Example:**
-
-```python
-import plotly.express as px
-
-# Simple interactive scatter plot
-fig = px.scatter(tips, x='total_bill', y='tip', color='time',
-                 title="Interactive Scatter Plot")
-fig.show()
-```
+Interactivity changes the delivery medium, not the analytical obligation. Hover can supplement visible labels but should not carry essential information by itself, and exported or shared views still need usable contrast, context, and a text alternative.
 
 ## Tool Selection Guide
 
 **When to use each tool:**
 
 - **matplotlib**: Custom plots, publication quality, fine control
-- **seaborn**: Statistical plots, beautiful defaults, relationship analysis  
 - **pandas**: Quick exploration, basic charts
+- **seaborn**: Statistical plots, beautiful defaults, relationship analysis
 - **altair**: Interactive plots, grammar of graphics, web-ready
 - **plotnine**: R users, layered approach, statistical plots
 - **Bokeh**: High-performance web visualizations, custom interactions

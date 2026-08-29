@@ -20,9 +20,9 @@ GroupBy operations let you calculate statistics within groups defined by one or 
 - Use .agg() with a dictionary to apply different functions to different columns - this is more flexible than chaining multiple operations
 - Always check the shape of your result - unexpected row counts indicate data loss or accidental many-to-many joins
 
-## Advanced GroupBy Operations
+## Choose the GroupBy result shape
 
-GroupBy operations go beyond simple aggregation to include transformation, filtering, and custom functions. These advanced operations let you create new columns, remove groups, and apply complex logic within each group.
+Choose the most specific operation that produces the result shape you need: aggregate for one row per group, transform for one value per original row, filter to retain or discard whole groups, and apply only for custom outputs the specific operations cannot express. In pandas 3, categorical groupers default to `observed=True`; use `observed=False` only when the result must include every defined category or category combination.
 
 ### Transform Operations
 
@@ -48,9 +48,9 @@ Filter operations remove entire groups based on a condition. This is different f
 
 Apply operations let you use custom functions on each group. This is the most flexible but also most complex option - you can implement any logic that works on a group of rows.
 
-- apply() lets you use custom functions on each group - this is where GroupBy becomes truly powerful
+- apply() lets you use custom functions on each group when agg(), transform(), or filter() cannot express the result
 - Custom functions can return Series, DataFrames, or scalars - the return type determines the final result structure
-- Use apply() when you need complex logic that doesn't fit standard aggregation functions
+- In pandas 3, grouping columns are excluded from each group passed to the callable, and include_groups=True is invalid
 - Common pattern: apply(lambda x: x.nlargest(2, 'column')) to get the top 2 items from each group
 - Be careful with apply() performance - it's slower than built-in aggregation functions for large datasets
 
@@ -94,13 +94,13 @@ Advanced pivot operations handle complex scenarios like multiple aggregation fun
 - margins=True with margins_name='Total' adds row and column totals with custom labels
 - fill_value=0 replaces missing combinations with zeros instead of NaN - crucial for financial data
 - dropna=False keeps missing combinations as NaN - useful when you want to see which combinations don't exist
-- `observed=True` includes only categorical groups that actually appear in the data; use `observed=False` when the question requires every defined category combination
+- In pandas 3, `observed=True` is the default and includes only categorical groups that appear in the data; use `observed=False` only when the question requires every defined category combination
 
 # LIVE DEMO!
 
-# Remote Computing and SSH
+# Optional Reference: Remote Computing and SSH
 
-When your data is too big for your laptop, it's time to think about remote computing. SSH provides secure access to powerful remote servers that can handle massive datasets and long-running analyses.
+This operational reference is optional and is not part of the core aggregation sequence. When course infrastructure or data size requires a remote machine, SSH provides secure access for large datasets and long-running analyses.
 
 - SSH (Secure Shell) provides encrypted remote access to servers - essential for working with large datasets
 - ssh-keygen creates public/private key pairs for passwordless authentication - much more secure than passwords
@@ -138,9 +138,9 @@ Persistent terminal sessions are essential for remote computing. They allow your
 - tmux attach-session -t analysis reconnects to a running session
 - This is crucial for long-running analysis that might take hours or days to complete
 
-# Performance Optimization
+# Optional Reference: Performance Optimization
 
-When working with large datasets, performance optimization can mean the difference between a 5-minute analysis and a 5-hour analysis. Understanding how to optimize GroupBy operations and memory usage is essential for real-world data analysis.
+This section is optional reference material. Measure a representative workload before optimizing; performance depends on data types, cardinality, pandas version, memory, and hardware.
 
 # FIXME: Add performance comparison chart showing groupby vs pivot_table vs manual aggregation speed
 
@@ -150,8 +150,8 @@ When working with large datasets, performance optimization can mean the differen
 
 Efficient GroupBy operations require understanding how pandas processes grouped data and optimizing your code accordingly.
 
-- Use categorical data types for grouping columns - this can dramatically improve performance for repeated grouping operations
-- Avoid unnecessary data copying - work with views when possible, use inplace operations when appropriate
+- Convert only explicitly selected, repeatedly grouped low-cardinality columns to categorical, after confirming that category semantics fit the data
+- Under copy-on-write, prefer clear reassignment for DataFrame-returning operations and assign column updates through the owning DataFrame, such as df['result'] = values or df.loc[mask, 'result'] = values
 - Use specific aggregation functions rather than generic apply() when possible - built-in functions are much faster
 - Consider using Dask or other parallel processing libraries for datasets that don't fit in memory
 - Profile your code to identify bottlenecks - don't optimize blindly without measuring actual performance
@@ -173,10 +173,8 @@ Parallel processing can significantly speed up GroupBy operations on large datas
 Data aggregation is a fundamental skill for any data scientist. The key is understanding the split-apply-combine paradigm and choosing the right tools for your specific analysis needs.
 
 - Master the split-apply-combine paradigm - it's the foundation of data aggregation and answers most "what if we group by..." questions
-- Use pivot tables for multi-dimensional analysis - they're more powerful than Excel and handle complex scenarios
-- Leverage remote computing for large datasets - SSH and tmux make powerful servers accessible
-- Optimize performance with efficient operations and parallel processing when needed
-- Use persistent sessions for long-running analysis - tmux ensures your work survives disconnections
+- Choose the result shape first: agg() for summaries, transform() for row-aligned results, filter() for whole groups, and apply() only for genuinely custom results
+- Use pivot tables for concise multi-dimensional summaries and explicit aggregation in pandas workflows
 - Understand hierarchical grouping for complex data structures - but don't be afraid to flatten results when needed
 
-You now have the skills to aggregate and summarize data effectively, even with large datasets that require remote computing resources.
+You now have the core skills to choose, aggregate, and reshape grouped results effectively.

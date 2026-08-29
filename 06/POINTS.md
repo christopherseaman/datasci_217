@@ -58,9 +58,13 @@ When both DataFrames have columns with the same name beyond your merge key, pand
 
 # Alternative Data Combination Methods
 
+## Prerequisite: Index Labels and Alignment
+
+Index-based combination matches row labels, not row positions. Labels may appear in different orders or in only one input; the operation decides whether to retain their union or intersection, and retained unmatched labels produce missing values. Confirm that labels carry the same row identity before relying on this behavior.
+
 ## DataFrame.join()
 
-There's actually a second way to join DataFrames in pandas that's simpler but more specialized. The `.join()` method is optimized for the specific case where you're joining based on the index rather than a column. It's less flexible than merge, but that simplicity is the point - when you have index-based data, join provides cleaner syntax.
+There's a second way to join DataFrames in pandas that's simpler but more specialized. The `.join()` method is designed for the case where you're joining based on the index rather than a column. It's less flexible than merge, but that simplicity can make index-based code clearer.
 
 - Use `.join()` when your right DataFrame is already indexed the way you want - it's like merge but defaults to left join on index
 - It's less flexible but that's the point - simpler API for a specific use case like time series data
@@ -71,8 +75,8 @@ There's actually a second way to join DataFrames in pandas that's simpler but mo
 Real-world data often comes with gaps, overlaps, and inconsistencies that don't fit neatly into standard merge or concat patterns. These specialized methods handle the messy edge cases you'll encounter when working with incomplete datasets, time series with missing periods, or overlapping data sources that need careful reconciliation.
 
 - `combine_first()` acts like a smart patch tool - it fills NaN values in your primary DataFrame with values from a backup DataFrame while preserving existing data
-- This is perfect for scenarios like "Q1 sales are incomplete, use Q2 data to fill the gaps but don't overwrite good Q1 data"  
-- Unlike merge which creates new rows or concat which stacks data, combine_first preserves your DataFrame structure and just fills holes
+- This fits scenarios where a reviewed fallback source contains the same variables and observations as an incomplete primary source
+- `combine_first()` aligns both axes and may add labels found only in the fallback; the caller's non-null values retain priority
 - Real use case: combining customer records from old and new CRM systems where neither has complete data but together they're comprehensive
 - Think of it as "if primary source has data, use it; if not, check backup source" - it's a fallback mechanism for patching datasets
 
@@ -80,9 +84,9 @@ Real-world data often comes with gaps, overlaps, and inconsistencies that don't 
 
 ## Introduction
 
-While merging intelligently matches rows using shared keys, concatenation is much simpler - it's just stacking DataFrames together like blocks. This is fundamentally different: concat doesn't look for matching values to link on, it just glues pieces side-by-side or top-to-bottom. Understanding when to concat versus when to merge is one of the key mental models in data wrangling.
+While merging relates rows through keys, concatenation stacks objects along an axis and aligns labels on the other axis. Understanding when to concat versus when to merge is one of the key mental models in data wrangling.
 
-- Concat is "dumb stacking" - no intelligence about matching keys, just gluing pieces together
+- Concat does not perform relational key matching; it stacks along one axis and aligns the other
 - Ask yourself: am I combining similar things (concat) or relating different things (merge)?
 - Most common mistake: forgetting to reset the index after vertical concat
 
@@ -97,19 +101,19 @@ The most common concatenation pattern is vertical stacking - taking DataFrames w
 
 ## Horizontal Concatenation: Adding More Columns
 
-Less common than vertical stacking, horizontal concatenation puts DataFrames side-by-side to add more columns. This operation assumes your DataFrames already have aligned rows through their indexes - you're not matching on a key, you're relying on the indexes to tell you which rows correspond. This is fragile and usually indicates you should be using merge instead, but it has its place.
+Less common than vertical stacking, horizontal concatenation puts DataFrames side-by-side to add more columns. You're relying on index labels to tell pandas which rows correspond, so those labels must represent the same identity in every input.
 
 - Horizontal concat is rarer because adding columns usually means you should be merging on a key rather than relying on index alignment
-- Only works when indexes align perfectly - misaligned indexes create NaN chaos that's hard to debug
+- Indexes need not match perfectly: the default retains their union and inserts `NaN` for labels missing from an input; `join='inner'` retains only shared labels
 - Real use case: combining results from three separate analyses on the same entities where you want to compare outputs side-by-side
 
-## Handling Different Columns with join Parameter
+## Column-Set Alignment with the join Parameter
 
-When concatenating DataFrames that don't have identical column sets, pandas needs guidance on what to do with the mismatch. Should it keep all columns from both and fill missing values with NaN? Or only keep columns that exist in all DataFrames? This join parameter (confusingly named since it's not really a "join" in the merge sense) controls this behavior.
+For vertical concatenation, `join=` is the **column-set alignment mode**, not a relational join. It controls whether pandas keeps the union or intersection of columns on the non-concatenation axis.
 
-- The `join` parameter name is misleading - it's about column handling, not row matching like merge-style joins
+- In this vertical-concat context, `join` is about column-set alignment, not key matching like `merge()`
 - `join='outer'` creates a sparse result by keeping all columns and filling missing values with NaN - useful when you want to preserve all available data
-- `join='inner'` creates a clean structure by keeping only common columns - you lose data but get a tidy result with no missing values
+- `join='inner'` keeps only common columns; existing missing values within those columns remain
 
 # Reshaping: Wide vs Long Format
 
@@ -119,7 +123,7 @@ One of the most fundamental yet confusing aspects of data wrangling is understan
 
 - This is where students get completely lost - not because it's hard, but because they don't recognize which format they have
 - Rule of thumb: if you can read it like a spreadsheet, it's wide; if it has a "variable" column, it's long
-- Different tools expect different formats - seaborn wants long, Excel pivot tables want wide
+- Different interfaces favor different formats; many seaborn mappings are convenient with long data, while some analyses and presentation tables use wide data
 
 ## Understanding Wide Format
 
@@ -131,11 +135,11 @@ Wide format is the natural way humans organize data in spreadsheets - one row pe
 
 ## Understanding Long Format
 
-Long format seems redundant and inefficient at first glance - why repeat the student name three times when you could write it once? But this "redundancy" is actually what makes data computationally analyzable. By having a dedicated column for the variable type (like 'subject'), you can use groupby, filtering, and plotting operations that would be impossible or clunky in wide format.
+Long format seems redundant at first glance - why repeat the student name three times when you could write it once? But a dedicated variable column (like `subject`) can make grouping, filtering, and plotting mappings direct when those operations treat the variable values uniformly.
 
 - Long looks weird and repetitive at first - "why is Alice's name repeated three times?"
 - The magic: now `groupby('subject')` works naturally - all math scores are in one column
-- Every major plotting library (seaborn, plotly, altair) prefers long format
+- Many plotting APIs work naturally with long data, but the required shape depends on the specific interface and chart
 
 ## Pivoting Long to Wide with pivot()
 
@@ -145,22 +149,20 @@ Pivoting transforms long format into wide format by spreading out one column's u
 - The uniqueness constraint catches you off guard - "it worked on the example data but fails on real data"
 - Mental model: you're spreading out one column's values to become many column headers
 
-## pivot_table(): Handling Duplicates with Aggregation
+## pivot_table(): Aggregation Preview
 
-In real messy data, you often have duplicates in your index/column combinations, which breaks regular pivot. Pivot table solves this by aggregating those duplicates - but this means you must choose how to combine them. Sum? Average? Count? This isn't just a technical detail, it's a business decision about what the resulting numbers actually mean.
+`pivot()` cannot choose one cell value when an index/column pair identifies repeated observations. If those repeats are valid, `pivot_table()` can aggregate them before reshaping—but `sum`, `mean`, and `count` answer different questions. [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations) is the canonical treatment of aggregation and pivot tables.
 
 - Use `pivot_table()` when duplicate index/column combinations genuinely require a defined aggregation; use `pivot()` when uniqueness is expected so unexpected duplicates fail loudly
-- The aggregation function isn't optional - you have to decide: sum? mean? count? first?
-- Different choice of `aggfunc` = different business question being answered
-- Choosing sum vs mean changes the story: sum shows total revenue per category, mean shows typical transaction size - different business questions entirely
+- Choose `aggfunc` deliberately; this is an aggregation decision, not merely a way around an error
 
 ## Melting Wide to Long with melt()
 
-Melt is the inverse of pivot - it transforms wide format into long format by "unpivoting" columns into rows. This is almost always your first step when receiving data, because most analysis and visualization tools work better with long format. The operation feels like it's making your data worse (more repetitive, more rows), but it's actually making it more analyzable.
+Melt is the inverse of pivot - it transforms selected wide columns into variable-value rows. Use it when the next grouping, filtering, or plotting interface expects observations in that structure; do not reshape merely from habit.
 
-- Melt is your first step in almost any analysis pipeline - get data into analyzable format
+- Melt early when variable names stored across columns need to become values in one variable column
 - `id_vars` are the columns that identify the entity; everything else gets unpivoted
-- Common confusion: "do I melt first then groupby, or groupby then melt?" - almost always melt first
+- Melt before `groupby` when the groups are encoded in wide column names; otherwise grouping first or not melting at all may be appropriate
 - The resulting DataFrame looks inefficient (repeated values) but enables powerful operations
 
 # LIVE DEMO
@@ -169,20 +171,21 @@ Melt is the inverse of pivot - it transforms wide format into long format by "un
 
 ## Introduction
 
-The DataFrame index is often ignored by beginners who just stick with the default 0, 1, 2... numbering, but understanding indexes unlocks significant performance improvements and more intuitive code. The index is metadata about your rows - it's the "name" or "address" of each row. Moving columns to and from the index is a common operation that changes how you access and manipulate your data.
+The DataFrame index is often ignored by beginners who just stick with the default 0, 1, 2... numbering, but understanding indexes enables label-based selection and alignment. The index is the row-label axis. Moving columns to and from it changes how you identify and combine rows.
 
-- Most beginners ignore the index and just use default 0, 1, 2... - you're missing out on performance and clarity
-- The index is metadata *about* your rows, not data *in* your rows
-- When should you care about the index? When you'll be looking up rows by some identifier repeatedly
+With pandas 3 Copy-on-Write, use a returned-object mental model for these transformations: capture the result or deliberately reassign the variable.
+
+- A default `RangeIndex` is fine when rows do not need meaningful labels
+- Index labels are not automatically unique or equivalent to database primary keys
+- Care about the index when label-based selection or alignment serves the task
 
 ## set_index(): Moving Columns to Index
 
-Setting a column as the index is a declaration about how you'll identify and access rows. It's the difference between "give me row 7" and "give me the employee with ID E0123". This not only makes your code more readable but also leverages pandas' optimized index lookup, which is substantially faster than searching through a regular column.
+Setting a column as the index is a declaration about how you'll label and access rows. It's the difference between "give me row 7" and "give me the employee labeled E0123". It can make label-based selection and alignment clearer, but it does not guarantee uniqueness or universal performance gains.
 
 - Setting an index is declaring "this column is how I identify these rows"
-- Performance matters: looking up by index is fast (hash table), looking up by column value is slow (scan)
-- But: if your index isn't unique, you've made things slower and more confusing
-- Practical advice: use timestamps, IDs, or other guaranteed-unique identifiers
+- Use the returned-object model: `indexed = df.set_index('employee_id')`
+- Check or request uniqueness when the operation requires it
 
 ## reset_index(): Moving Index to Columns
 
@@ -191,6 +194,7 @@ The opposite of set_index, reset_index converts your index back into a regular c
 - You'll use this constantly after `groupby()` because groupby creates weird hierarchical indexes
 - `drop=True` when you don't care about the old index (usually when it was just 0, 1, 2...)
 - `drop=False` when the index contains information you want to keep as a column
+- Capture or reassign the result: `flat = indexed.reset_index()`
 
 ## Basic MultiIndex Operations
 

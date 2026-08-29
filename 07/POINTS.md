@@ -168,115 +168,22 @@ Density plots show the shape of your data distribution more smoothly than histog
 
 # LIVE DEMO!
 
-# Modern Visualization Libraries
+# Optional Survey: Modern Visualization Libraries
 
-The Python visualization ecosystem continues to evolve with new libraries that offer different approaches to creating plots. While matplotlib and seaborn remain the workhorses, modern tools like altair and plotnine offer exciting alternatives for specific use cases.
+This optional, non-assessed survey introduces alternatives without changing the visualization contract. Truthful encodings, visible context, redundant category encodings, and useful text alternatives still apply; hover should supplement rather than replace essential information.
 
-## vega-altair: Grammar of Graphics with Vega-Lite
+## Ecosystem at a glance
 
-altair implements the grammar of graphics approach, making it intuitive to build complex visualizations by combining simple building blocks. It's particularly powerful for interactive plots and web-based dashboards.
+- **vega-altair** uses declarative marks and typed encodings for concise interactive statistical graphics, faceting, layering, and portable HTML or JSON specifications.
+- **plotnine** offers a layered grammar-of-graphics interface familiar to ggplot2 users.
+- **Bokeh** targets browser-based visualizations, custom interactions, and server applications.
+- **Plotly** combines a high-level Express API with lower-level graph objects for interactive charts and dashboards.
 
-- altair uses a declarative syntax where you describe what you want rather than how to draw it
-- The encode() method maps data columns to visual properties like position, color, size, and shape
-- altair automatically handles legends, axes, and color scales - you focus on the data mapping
-- Interactive features come for free - zooming, panning, and brushing work automatically
-- altair plots can be exported to HTML for web sharing or converted to static images
+## Tool choice
 
-## Chart Creation and Mark Types
-
-altair's mark types define the visual representation of your data. Each mark type is optimized for different data structures and relationships, and combining them creates sophisticated visualizations.
-
-- Mark types (circle, bar, line, area, rect, point) define how data points are visually represented
-- The pattern is consistent: create chart, specify mark, encode data mappings
-- Combined views using concatenation or layering enable complex multi-panel displays
-- altair automatically infers appropriate scales and axes based on data types and mark choices
-
-## Data Encoding
-
-Data encoding is where altair's declarative approach shines - you specify what to show, not how to draw it. Type annotations (Q for quantitative, N for nominal, O for ordinal) tell altair how to handle each data dimension.
-
-- Type annotations guide altair's automatic scale and axis generation: :Q for continuous, :N for categorical, :O for ordered
-- Multiple visual channels (x, y, color, size, shape) can encode different data dimensions simultaneously
-- Tooltips enhance interactivity by showing data values on hover without cluttering the plot
-- The encoding approach scales from simple scatter plots to complex multi-dimensional visualizations
-
-## Interactive Features
-
-altair's interactive features distinguish it from static plotting libraries. What would require custom JavaScript in other tools comes built-in with simple method calls.
-
-- .interactive() enables zoom and pan with no additional code
-- Selection tools (interval, single) enable brushing and linking across multiple plots
-- Transform filters create dynamic views based on user selections
-- These features make altair ideal for exploratory data analysis and interactive dashboards
-
-## Advanced altair Features
-
-### Faceting and Layering
-
-Faceting and layering represent different composition strategies - faceting creates small multiples while layering combines different mark types in a single view.
-
-- .facet() creates small multiples (Tufte's principle) with consistent scales across panels
-- alt.layer() combines different mark types (scatter + regression line, data + annotations)
-- These composition methods transform simple charts into sophisticated multi-view visualizations
-- Properties like width and height control individual facet or layer dimensions
-
-### Statistical Transformations
-
-Built-in statistical transformations eliminate the need for preprocessing data outside the visualization code.
-
-- transform_regression() adds fitted regression lines directly in the visualization specification
-- transform_aggregate() enables grouping and summarizing data within the plot
-- transform_filter() creates conditional views based on data values or selections
-- These transformations keep data manipulation and visualization tightly coupled
-
-## Export Formats
-
-altair's flexibility extends to output formats - the same visualization can be static for papers or interactive for web dashboards.
-
-- PNG/SVG export creates static images for publications and presentations
-- HTML export preserves full interactivity for web deployment
-- JSON export saves the Vega-Lite specification for reuse or modification
-- This format flexibility means one visualization definition serves multiple use cases
-
-## Other Modern Tools: plotnine, Bokeh, and Plotly
-
-### plotnine: ggplot2 for Python
-
-plotnine brings R's ggplot2 syntax to Python, providing a grammar-of-graphics interface that will feel familiar to R users while offering Python's data processing advantages.
-
-- Grammar of graphics approach layers geometric objects, statistical transformations, and scales
-- Syntax matches ggplot2 almost exactly, easing the transition for R users
-- Statistical transformations and faceting capabilities rival the original ggplot2
-- Best suited for those already familiar with ggplot2 or preferring its explicit layering approach
-
-### Bokeh: Interactive Web Visualizations
-
-Bokeh specializes in high-performance interactive visualizations for web browsers, with emphasis on large datasets and custom interactivity.
-
-- Server applications enable real-time streaming data and complex interactions
-- Custom JavaScript callbacks provide fine-grained control over interactive behavior
-- Performance optimization handles large datasets that would overwhelm client-side rendering
-- Best suited for web applications and dashboards requiring custom interactive features
-
-### Plotly: Interactive Dashboards
-
-Plotly offers both simple express API for quick plots and detailed graph objects for complex dashboards.
-
-- Express API (px) provides high-level functions similar to seaborn but with built-in interactivity
-- Graph objects (go) enable fine-grained control for complex multi-panel dashboards
-- Dash framework extends plotly into full web application development
-- Best suited for creating interactive dashboards and web-based data exploration tools
-
-## Tool Selection Guide
-
-This comprehensive tool selection guide synthesizes the strengths and ideal use cases for each visualization library covered. The goal is helping you match tools to tasks rather than forcing everything through a single approach.
-
-- matplotlib for custom plots, publication quality, fine control over every visual element
-- seaborn for statistical plots, beautiful defaults, relationship analysis with minimal code
-- pandas for quick exploration and basic charts directly from DataFrames
-- altair for interactive plots, grammar of graphics, web-ready visualizations
-- plotnine for R users who prefer ggplot2's layered approach
-- Bokeh for high-performance web visualizations with custom interactions
-- Plotly for dashboards, web applications, easy interactivity without custom JavaScript
+- Use **matplotlib** for figure and axes control, **pandas plotting** for quick exploration, and **seaborn** for statistical graphics.
+- Consider **Altair** or **plotnine** when a grammar-of-graphics workflow fits the task.
+- Consider **Bokeh** or **Plotly** when browser interactivity or dashboard delivery is part of the requirement.
+- Choose the tool after defining the question, audience, data grain, and encodings; a different library does not fix a weak chart contract.
 
 # LIVE DEMO!

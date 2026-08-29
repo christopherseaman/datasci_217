@@ -1,5 +1,7 @@
 # Time Series Analysis: Temporal Data and Trends
 
+The core lecture covers datetime parsing and indexing, date ranges and current pandas offset aliases, time-based selection, resampling, rolling and exponentially weighted windows, basic time zone handling, and plots of temporal structure. Periods, decomposition, forecasting, high-frequency data, and custom frequencies are optional material in [BONUS.md](BONUS.md).
+
 ## Understanding Time Series Data
 
 Time series data is characterized by observations collected over time, where the order and timing of observations matter. Unlike cross-sectional data, time series data has a natural temporal structure that we can exploit for analysis. Understanding this temporal structure is crucial for effective time series analysis.
@@ -28,7 +30,7 @@ Working with dates and times in Python requires understanding the datetime modul
 - pandas' DatetimeIndex is optimized for time series analysis - it provides powerful indexing, resampling, and time-based operations
 - pd.to_datetime() converts strings to datetime objects with intelligent parsing - it handles many common date formats automatically
 - pd.date_range() creates sequences of dates with specified frequencies - essential for creating time series data
-- Always use pandas for time series analysis - it's much more powerful than basic datetime operations
+- Use Python's `datetime` for simple scalar date arithmetic and formatting; use pandas when working with labeled arrays, date ranges, selection, resampling, or window operations
 
 ## Python datetime Module
 
@@ -64,8 +66,8 @@ pandas provides flexible date range generation for creating regular time series.
 You can infer the frequency of a time series and convert between frequencies.
 
 - pd.infer_freq(ts.index) infers frequency from a time series index
-- ts.asfreq(freq) converts a time series to a specific frequency
-- ts.resample(freq).asfreq() combines resampling with frequency conversion
+- ts.asfreq(freq) conforms a series to a new timestamp grid without combining observations; unmatched grid points become missing
+- ts.resample(freq).asfreq() selects observations at resample bin labels; it is not an aggregation
 
 ## Shifting and Lagging
 
@@ -115,16 +117,18 @@ For time series with time components, you can select based on time of day. This 
 
 # Resampling and Frequency Conversion
 
-Resampling converts time series from one frequency to another. **Downsampling** aggregates higher frequency data to lower frequency (e.g., daily to monthly). **Upsampling** converts lower frequency to higher frequency (e.g., monthly to daily), often introducing missing values.
+Resampling puts observations into time bins. Combining the observations in each bin requires an aggregation such as `mean()` or `sum()`. Upsampling to a denser grid often introduces missing values; `asfreq()` conforms to a grid without combining observations.
 
 ## Basic Resampling
 
 The `resample()` method is the workhorse for frequency conversion, similar to `groupby()` but for time intervals.
 
-- Frequency codes: 'D' (daily), 'W' (weekly), 'ME' (month end), 'Q' (quarterly), 'A' (annual), 'h' (hourly)
+- Timestamp offset aliases: 'D' (daily), 'W' (weekly), 'ME' (month end), 'QE' (quarter end), 'YE' (year end), 'h' (hourly)
+- Period frequencies describe spans and use aliases such as 'Q-DEC' and 'Y-DEC'; they are distinct from the timestamp offsets 'QE' and 'YE'
 - ts.resample('D').mean() converts to daily averages
 - ts.resample('ME').mean() converts to monthly averages (Month End)
 - ts.resample('W').mean() converts to weekly averages
+- ts.resample('W').asfreq() selects values at weekly bin labels without aggregating the bin
 
 ## Resampling with Different Aggregations
 
@@ -177,27 +181,18 @@ Exponentially weighted functions give more weight to recent observations, making
 
 # Time Series Visualization
 
-Visualization is essential for understanding time series data. A good plot can reveal patterns, trends, and anomalies that summary statistics miss.
+Apply Lecture 07 plotting principles to temporal structure: put time on the x-axis, preserve chronological order, make gaps visible, and identify the time zone when relevant.
 
 ## Basic Time Series Plots
 
-Creating effective time series visualizations helps identify patterns, trends, and anomalies. The most common visualization is a simple line plot showing values over time.
+Use a line plot for ordered observations and, when useful, overlay a rolling summary while keeping the raw variation visible.
 
 - ts.plot() - basic line plot of time series
 - ts.plot(figsize=(12, 6)) - plot with custom figure size
 - ts.plot(title='Title') - plot with title
-- ts.plot(style='-', marker='o') - plot with custom style and markers
 - ax = ts.plot() - get axes for further customization
 - Overlay rolling means on raw data to smooth noise and reveal underlying trends
 
-## Visualizing Time Series Components
-
-Real-world time series data often contains multiple components: trend, seasonality, and noise. Visualizing these components separately helps understand the underlying patterns.
-
-- Create separate plots for each component (trend, seasonal, noise) to see how they contribute to the overall pattern
-- Trend component shows long-term direction
-- Seasonal component shows repeating patterns
-- Noise component shows random variation
-- For advanced seasonal decomposition techniques (like STL decomposition), see [BONUS.md](BONUS.md)
+- Component and decomposition plots are optional; see [BONUS.md](BONUS.md)
 
 # LIVE DEMO!

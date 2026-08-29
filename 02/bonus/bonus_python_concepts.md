@@ -240,13 +240,12 @@ status = "adult" if age >= 18 else "minor"
 score = 85
 grade = "pass" if score >= 70 else "fail"
 
-# Data science applications
-import pandas as pd
-data = pd.DataFrame({'temperature': [15, 25, 35, 5, 45]})
-
-# Create categorical variables
-data['temp_category'] = ['hot' if temp > 30 else 'cold' if temp < 10 else 'moderate'
-                        for temp in data['temperature']]
+# Data science application using the core Python taught so far
+temperatures = [15, 25, 35, 5, 45]
+temp_categories = [
+    'hot' if temp > 30 else 'cold' if temp < 10 else 'moderate'
+    for temp in temperatures
+]
 
 # Handle missing data with defaults
 user_input = None

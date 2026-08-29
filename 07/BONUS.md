@@ -141,6 +141,9 @@ df.plot.area(alpha=0.7, stacked=True)
 - `sns.violinplot()` - Distribution shapes
 - `sns.heatmap()` - Correlation matrices
 - `sns.clustermap()` - Hierarchical clustering heatmap
+- `sns.regplot()` - Scatter plot with fitted regression
+- `sns.residplot()` - Residual diagnostic plot
+- `sns.kdeplot()` - One- or two-dimensional density estimate
 
 **Example:**
 
@@ -174,6 +177,28 @@ sns.catplot(data=df, x='category', y='value', col='time', row='group')
 # Facet grid
 g = sns.FacetGrid(df, col='category', row='group')
 g.map(sns.scatterplot, 'x', 'y')
+```
+
+### Custom Themes and Styles
+
+**Reference:**
+
+```python
+sns.set_theme(style="whitegrid",
+              palette="husl",
+              font_scale=1.2,
+              rc={"figure.figsize": (10, 8)})
+
+custom_style = {
+    'axes.spines.left': True,
+    'axes.spines.bottom': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'axes.grid': True,
+    'grid.alpha': 0.3
+}
+
+sns.set_style("white", rc=custom_style)
 ```
 
 ## Advanced matplotlib Customization
@@ -242,6 +267,29 @@ plt.colorbar()
 
 ## Interactive Visualizations
 
+### Altair for Declarative Interactive Charts
+
+**Reference:**
+
+```python
+import altair as alt
+
+base = alt.Chart(df).encode(
+    x='x:Q',
+    y='y:Q',
+    color='category:N',
+    tooltip=['x', 'y', 'category']
+)
+
+# Layer points with a fitted line, then enable pan and zoom.
+chart = (
+    base.mark_circle()
+    + base.transform_regression('x', 'y').mark_line()
+).interactive()
+
+chart.save('interactive_chart.html')
+```
+
 ### Bokeh for Interactive Plots
 
 **Reference:**
@@ -299,51 +347,6 @@ fig.add_trace(go.Scatter(x=df['total_bill'],
 
 # Show plot
 fig.show()
-```
-
-## Advanced seaborn Features
-
-### Statistical Plotting
-
-**Reference:**
-
-```python
-import seaborn as sns
-
-# Statistical plots
-sns.regplot(data=df, x='x', y='y')  # Regression plot
-sns.residplot(data=df, x='x', y='y')  # Residual plot
-sns.distplot(data=df, x='column')  # Distribution plot
-sns.kdeplot(data=df, x='x', y='y')  # 2D density plot
-
-# Advanced statistical plots
-sns.pairplot(df, hue='category', diag_kind='kde')
-sns.jointplot(data=df, x='x', y='y', kind='hex')
-sns.clustermap(df.corr(), annot=True, cmap='coolwarm')
-```
-
-### Custom Themes and Styles
-
-**Reference:**
-
-```python
-# Set custom theme
-sns.set_theme(style="whitegrid", 
-              palette="husl",
-              font_scale=1.2,
-              rc={"figure.figsize": (10, 8)})
-
-# Or create custom style
-custom_style = {
-    'axes.spines.left': True,
-    'axes.spines.bottom': True,
-    'axes.spines.top': False,
-    'axes.spines.right': False,
-    'axes.grid': True,
-    'grid.alpha': 0.3
-}
-
-sns.set_style("white", rc=custom_style)
 ```
 
 ## Animation and Dynamic Plots

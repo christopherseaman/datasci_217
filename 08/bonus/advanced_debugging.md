@@ -2,6 +2,8 @@
 
 This bonus content covers advanced debugging techniques, performance profiling, and enterprise-level data analysis patterns for students ready to work with complex, large-scale datasets.
 
+Under pandas 3, inferred text uses the `str` dtype and Copy-on-Write makes view-oriented mutation advice obsolete. Profile first, treat dtype changes as reviewed data-contract decisions, and apply them through explicit returned objects rather than automatic guesses.
+
 ## Memory Profiling and Optimization
 
 ### Understanding Memory Usage in pandas
@@ -38,11 +40,11 @@ def analyze_memory_usage(df):
     for col in df.columns:
         dtype = df[col].dtype
         
-        if dtype == 'object':
-            # Check if can be categorical
+        if pd.api.types.is_string_dtype(df[col]):
+            # Flag repeated text as a candidate for a reviewed category contract.
             unique_ratio = df[col].nunique() / len(df)
             if unique_ratio < 0.5:
-                print(f"  {col}: Convert to categorical (reduces {unique_ratio:.1%} unique values)")
+                print(f"  {col}: Repeated text ({unique_ratio:.1%} unique); measure a categorical representation if its finite-domain semantics fit")
         
         elif dtype in ['int64', 'float64']:
             # Check if can use smaller numeric types
@@ -61,36 +63,16 @@ def analyze_memory_usage(df):
                 if np.allclose(df[col], float32_version, equal_nan=True):
                     print(f"  {col}: Can use float32 (saves ~50% memory)")
 
-def optimize_dataframe_memory(df):
+def apply_reviewed_dtypes(df, dtype_map):
     """
-    Automatically optimize DataFrame memory usage
+    Return a DataFrame using caller-reviewed dtype conversions.
+
+    Validate integer ranges, float precision, and category semantics before
+    constructing dtype_map. This function deliberately does not infer them.
     """
     original_memory = df.memory_usage(deep=True).sum()
-    
-    # Optimize object columns
-    for col in df.select_dtypes(include=['object']).columns:
-        unique_ratio = df[col].nunique() / len(df)
-        if unique_ratio < 0.5:  # Less than 50% unique values
-            df[col] = df[col].astype('category')
-    
-    # Optimize integer columns
-    for col in df.select_dtypes(include=['int64']).columns:
-        min_val, max_val = df[col].min(), df[col].max()
-        
-        if min_val >= -128 and max_val <= 127:
-            df[col] = df[col].astype('int8')
-        elif min_val >= -32768 and max_val <= 32767:
-            df[col] = df[col].astype('int16')
-        elif min_val >= -2147483648 and max_val <= 2147483647:
-            df[col] = df[col].astype('int32')
-    
-    # Optimize float columns
-    for col in df.select_dtypes(include=['float64']).columns:
-        float32_version = df[col].astype('float32')
-        if np.allclose(df[col], float32_version, equal_nan=True):
-            df[col] = float32_version
-    
-    optimized_memory = df.memory_usage(deep=True).sum()
+    optimized = df.astype(dtype_map)
+    optimized_memory = optimized.memory_usage(deep=True).sum()
     reduction = (1 - optimized_memory/original_memory) * 100
     
     print(f"Memory optimization complete:")
@@ -98,7 +80,7 @@ def optimize_dataframe_memory(df):
     print(f"  Optimized: {optimized_memory / 1024**2:.2f} MB")
     print(f"  Reduction: {reduction:.1f}%")
     
-    return df
+    return optimized
 
 @profile  # Requires memory_profiler package
 def memory_intensive_analysis(df):
@@ -190,7 +172,7 @@ def debug_pipeline_step(step_name, save_intermediate=True):
                 # Log debugging information
                 if len(args) > 0 and hasattr(args[0], 'dtypes'):
                     logger.error(f"Input data types: {dict(args[0].dtypes)}")
-                    logger.error(f"Input null counts: {dict(args[0].isnull().sum())}")
+                    logger.error(f"Input null counts: {dict(args[0].isna().sum())}")
                 
                 raise
         
@@ -267,7 +249,7 @@ def load_and_validate_data(filename):
     validations = {
         'has_data': lambda df: len(df) > 0,
         'has_required_columns': lambda df: all(col in df.columns for col in ['customer_id', 'revenue']),
-        'no_all_null_columns': lambda df: not df.isnull().all().any()
+        'no_all_null_columns': lambda df: not df.isna().all().any()
     }
     
     debugger.validate_step("data_loading", df, validations)
@@ -596,7 +578,7 @@ def create_standard_validator() -> DataValidator:
     def check_missing_data_threshold(df, threshold=0.5):
         missing_cols = []
         for col in df.columns:
-            missing_pct = df[col].isnull().mean()
+            missing_pct = df[col].isna().mean()
             if missing_pct > threshold:
                 missing_cols.append(f"{col} ({missing_pct:.1%})")
         
@@ -626,14 +608,14 @@ def create_standard_validator() -> DataValidator:
     def check_data_types(df):
         type_issues = []
         for col in df.columns:
-            if df[col].dtype == 'object':
-                # Check if numeric data stored as object
+            if pd.api.types.is_string_dtype(df[col]):
+                # Check if numeric-looking data is stored as text.
                 try:
                     numeric_version = pd.to_numeric(df[col], errors='coerce')
-                    non_numeric_count = numeric_version.isnull().sum() - df[col].isnull().sum()
+                    non_numeric_count = numeric_version.isna().sum() - df[col].isna().sum()
                     if non_numeric_count > 0 and non_numeric_count < len(df) * 0.1:
                         type_issues.append(f"{col} (appears mostly numeric but has {non_numeric_count} non-numeric values)")
-                except:
+                except (TypeError, ValueError):
                     pass
         
         passed = len(type_issues) == 0

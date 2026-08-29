@@ -25,37 +25,12 @@ even_squares = list(map(lambda x: x**2, filter(lambda x: x % 2 == 0, numbers)))
 # Lambda with data processing
 data = ["  Alice  ", "  Bob", "Charlie   "]
 clean_names = list(map(lambda x: x.strip().title(), data))
-## Lambda Functions and Functional Programming
-
-**Conceptual Description:**
-Lambda functions provide concise anonymous function syntax for simple operations used once. They're particularly useful with higher-order functions like `sorted()`, `filter()`, and `map()` for data transformations and custom sorting logic.
-
-**Reference:**
-- `lambda parameters: expression` - Anonymous function syntax
-- `sorted(iterable, key=function)` - Sort with custom key function
-- `filter(function, iterable)` - Filter items based on condition
-- `map(function, iterable)` - Apply function to each item
-- `functools.reduce(function, iterable)` - Cumulative operations
-
-**Brief Example:**
-```python
-# Lambda with sorting
-students = [("Alice", 85), ("Bob", 92), ("Charlie", 78)]
-sorted_students = sorted(students, key=lambda x: x[1], reverse=True)
-
-# Lambda with filter and map
-numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-even_squares = list(map(lambda x: x**2, filter(lambda x: x % 2 == 0, numbers)))
-
-# Lambda with data processing
-data = ["  Alice  ", "  Bob", "Charlie   "]
-clean_names = list(map(lambda x: x.strip().title(), data))
 
 # Complex lambda for data analysis
 sales_data = [{"product": "A", "sales": 100}, {"product": "B", "sales": 200}]
 top_products = sorted(sales_data, key=lambda x: x["sales"], reverse=True)
 ```
-```
+
 ## Advanced List Comprehensions and Function-based Operations
 
 **Conceptual Description:**
@@ -214,3 +189,4 @@ Command chaining allows complex data processing pipelines by connecting multiple
 ```bash
 grep "error" logfile.txt | wc -l    # Count error lines
 ls *.csv | head -5 > filelist.txt   # Save first 5 CSV files to list
+```

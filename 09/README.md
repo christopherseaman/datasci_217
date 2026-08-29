@@ -1,4 +1,4 @@
-See [BONUS.md](BONUS.md) for advanced topics:
+See [BONUS.md](BONUS.md) for optional topics outside the core Lecture 09 scope:
 
 - Advanced time series decomposition and seasonal analysis
 - Time series forecasting with ARIMA and exponential smoothing
@@ -14,18 +14,20 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 *"Cauchy-Lorentz: 'Something alarmingly mathematical is happening, and you should probably stop.'" - A reminder that not every pattern in time series data is meaningful, and overfitting is always lurking.*
 
-Time series analysis is the art of understanding temporal patterns in data. This lecture covers the essential tools for time series analysis: **datetime handling**, **resampling and frequency conversion**, **rolling window operations**, and **time series indexing and selection**.
+Time series analysis is the art of understanding temporal patterns in data. The core lecture covers **datetime parsing and indexing**, **date ranges and current pandas offset aliases**, **time-based selection**, **resampling**, **rolling and exponentially weighted windows**, **basic time zone handling**, and **plots that reveal temporal structure**. Period arithmetic, decomposition, forecasting, high-frequency data, and custom frequencies are optional topics in [BONUS.md](BONUS.md), not core Lecture 09 content.
 
 *Pro tip: Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at timezone conversions. Master these datetime tools and you'll be ahead of 90% of data scientists.*
 
 **Learning Objectives:**
 
 - Master datetime data types and parsing
+- Generate date ranges with current pandas offset aliases
 - Perform time series indexing and selection
 - Use resampling and frequency conversion
 - Apply rolling window operations
 - Understand exponentially weighted functions
 - Handle basic time zone operations
+- Apply Lecture 07 visualization principles to temporal structure
 
 # Understanding Time Series Data
 
@@ -194,8 +196,8 @@ You can infer the frequency of a time series and convert between frequencies.
 | Function | Description |
 |----------|-------------|
 | `pd.infer_freq(ts.index)` | Infer frequency from time series |
-| `ts.asfreq(freq)` | Convert to specific frequency |
-| `ts.resample(freq).asfreq()` | Resample and convert frequency |
+| `ts.asfreq(freq)` | Conform to a new timestamp grid without combining observations |
+| `ts.resample(freq).asfreq()` | Select observations at resample bin labels without aggregation |
 
 **Example:**
 
@@ -208,7 +210,7 @@ ts = pd.Series(np.random.randn(100), index=dates)
 freq = pd.infer_freq(ts.index)
 print(f"Inferred frequency: {freq}")
 
-# Convert to different frequency (daily to weekly)
+# Select values on a weekly grid; do not aggregate daily observations
 ts_weekly = ts.asfreq('W')
 print(f"Weekly frequency: {pd.infer_freq(ts_weekly.index)}")
 ```
@@ -390,11 +392,12 @@ print("Monthly data:")
 print(monthly.head())
 ```
 
-`resample()` puts observations into time bins and then needs an aggregation such as `mean()`. The `label` argument chooses which bin edge labels the result, while `closed` chooses which edge belongs to the bin. Defaults vary by frequency, so specify them when boundary membership matters. In contrast, `asfreq()` selects or introduces timestamps on a new grid without combining observations:
+`resample()` puts observations into time bins; to combine the observations in each bin, it needs an aggregation such as `mean()`. The `label` argument chooses which bin edge labels the result, while `closed` chooses which edge belongs to the bin. Defaults vary by frequency, so specify them when boundary membership matters. In contrast, `asfreq()` conforms a series to a new timestamp grid by selecting existing values at those timestamps (and introducing missing values where the new grid has no match), without combining observations. `resample(...).asfreq()` likewise selects values at the resample bin labels; it is not an aggregation:
 
 ```python
 weekly_mean = ts_daily.resample('W', label='right', closed='right').mean()
 weekly_grid = ts_daily.asfreq('W')  # No aggregation
+weekly_bin_labels = ts_daily.resample('W').asfreq()  # Selection at bin labels
 ```
 
 ## Resampling with Different Aggregations
@@ -622,11 +625,11 @@ print(df_tz)
 
 # Time Series Visualization
 
-Visualization is essential for understanding time series data. A good plot can reveal patterns, trends, and anomalies that summary statistics miss.
+This section applies the plotting principles from Lecture 07 to temporal structure. Put time on the x-axis, preserve chronological order, choose a scale that makes gaps visible, and label the time zone when it matters. The goal is to compare raw observations with a time-based summary, not to reteach general plotting.
 
 ## Basic Time Series Plots
 
-Creating effective time series visualizations helps identify patterns, trends, and anomalies. The most common visualization is a simple line plot showing values over time.
+Use a line plot for ordered observations and overlay a rolling summary when it helps reveal change over time. Keep the raw series visible so the smoother does not hide variation.
 
 **Reference:**
 
@@ -673,51 +676,7 @@ plt.show()
 
 ![media/viz_temp_rolling.png]
 
-## Visualizing Time Series Components
-
-Real-world time series data often contains multiple components: trend, seasonality, and noise. Visualizing these components separately helps understand the underlying patterns.
-
-**Example:**
-
-```python
-# Create time series with trend, seasonal, and noise components
-dates = pd.date_range('2023-01-01', periods=365, freq='D')
-trend = np.linspace(100, 120, 365)  # Long-term trend
-seasonal = 10 * np.sin(2 * np.pi * np.arange(365) / 365.25)  # Seasonal pattern
-noise = np.random.randn(365) * 3  # Random noise
-combined = trend + seasonal + noise
-ts = pd.Series(combined, index=dates)
-
-# Visualize components separately
-fig, axes = plt.subplots(4, 1, figsize=(12, 12), sharex=True)
-
-# Original combined series
-ts.plot(ax=axes[0], title='Original (Trend + Seasonal + Noise)', color='black')
-axes[0].set_ylabel('Value')
-
-# Trend component
-pd.Series(trend, index=dates).plot(ax=axes[1], title='Trend Component', color='blue')
-axes[1].set_ylabel('Value')
-
-# Seasonal component
-pd.Series(seasonal, index=dates).plot(ax=axes[2], title='Seasonal Component', color='green')
-axes[2].set_ylabel('Value')
-
-# Noise component
-pd.Series(noise, index=dates).plot(ax=axes[3], title='Noise Component', color='red', alpha=0.7)
-axes[3].set_ylabel('Value')
-axes[3].set_xlabel('Date')
-
-for ax in axes:
-    ax.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-
-![media/viz_components.png]
-
-*Note: For advanced seasonal decomposition techniques (like STL decomposition), see [BONUS.md](BONUS.md).*
+*Optional decomposition and component plots belong in [BONUS.md](BONUS.md).*
 
 
 # LIVE DEMO!

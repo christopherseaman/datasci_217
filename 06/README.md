@@ -321,9 +321,13 @@ display(merged)
 
 ## Alternative Data Combination Methods
 
+### Prerequisite: Index Labels and Alignment
+
+An index supplies row labels. When pandas aligns objects, equal labels identify corresponding rows; label order and coverage do not have to match. Unmatched labels are retained or discarded according to the operation and its alignment mode, and retained gaps become `NaN`. Before using index-based combination, confirm that the labels mean the same thing in every object; a shared default `RangeIndex` does not establish shared identity.
+
 ### DataFrame.join(): Index-Based Merging
 
-Lecture 04 introduced labels and alignment; the later index section revisits the mechanics. Keep that distinction in mind here: `join()` and `combine_first()` match by labels rather than by row position.
+Lecture 04 introduced labels and alignment, and the later index section builds on this prerequisite with index-management mechanics. Keep the distinction in mind here: `join()` and `combine_first()` match by labels rather than by row position.
 
 `join()` is a simpler alternative to `merge()` when working with indexes: it defaults to a left join on index labels.
 
@@ -527,9 +531,9 @@ display(combined)
 
 Do not rely on default `RangeIndex` values from independently loaded tables: two unrelated first rows would both have label `0` and would appear to match. If identity is stored in ordinary columns rather than the index, use `merge()` on those keys.
 
-## Handling Different Columns with join Parameter
+## Column-Set Alignment with the join Parameter
 
-When DataFrames don't have identical columns, concat needs to know what to do.
+For the vertical concatenation shown here, `join=` is the **column-set alignment mode**, not a relational join. It tells `concat()` whether to keep the union or intersection of columns on the non-concatenation axis.
 
 **Reference:**
 
@@ -698,39 +702,21 @@ display(wide)
 
 ### pivot_table(): Aggregating Before Reshaping (Preview)
 
-Unlike `pivot()`, `pivot_table()` groups and aggregates before reshaping. The aggregation choice changes the meaning of the result, so specify it deliberately. [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations) covers aggregating pivots and cross-tabulations in depth.
-
-**Reference:**
-
-- `pd.pivot_table(df, values='data', index='rows', columns='cols', aggfunc='sum')` - Pivot with aggregation
-- `aggfunc` - How to combine duplicates: 'sum', 'mean', 'count', etc.
-
-**Example:**
+`pivot()` needs each index/column pair to identify one value. If repeated observations are valid, an aggregation must decide how those values become one cell; `pivot_table()` performs that aggregation before reshaping. The choice of `sum`, `mean`, or another function changes the question being answered. Aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
 
 ```python
-# Sales data with multiple entries per month/category
 sales = pd.DataFrame({
-    'month': ['Jan', 'Jan', 'Feb', 'Feb', 'Jan'],
-    'category': ['Electronics', 'Electronics', 'Electronics', 'Clothing', 'Clothing'],
-    'amount': [100, 150, 200, 75, 50]
+    'month': ['Jan', 'Jan'],
+    'category': ['Electronics', 'Electronics'],
+    'amount': [100, 150],
 })
 
 # pivot() would fail because Jan/Electronics appears twice.
-# Here summing is an explicit part of the sales question.
+# Use this only when summing those rows is part of the question.
 sales_pivot = pd.pivot_table(sales, values='amount',
                              index='month', columns='category',
                              aggfunc='sum')
-display(sales_pivot)
-# category    Clothing  Electronics
-# month
-# Feb             75.0        200.0
-# Jan             50.0        250.0  # 100 + 150 summed!
 ```
-
-**When to use which:**
-
-- Use `pivot()` when index/columns are unique (cleaner, simpler)
-- Use `pivot_table()` when aggregation is intended, with an explicit `aggfunc`
 
 ## Melting Wide to Long with melt()
 
@@ -808,6 +794,8 @@ If all else fails, use “significant at a p>0.05 level” and hope no one notic
 
 The index is pandas' row-label axis. Pandas uses it for `.loc` selection and automatic alignment, but it is not automatically a database primary key or a guarantee of row uniqueness.
 
+In the pandas 3 Copy-on-Write model, treat index changes as transformations: capture the returned DataFrame or deliberately reassign the variable.
+
 **Key Properties:**
 
 - Index labels may be unique or duplicated; `.loc[label]` returns every matching row.
@@ -824,8 +812,8 @@ The index is pandas' row-label axis. Pandas uses it for `.loc` selection and aut
 - `df.set_index('column')` - Make column the new index
 - `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
 - `drop=False` - Keep the column in the DataFrame (default is True, removes it)
-- `inplace=True` - Modify DataFrame in place (default is False, returns new DataFrame)
 - `verify_integrity=True` - Raise an error if the new index contains duplicates
+- Capture the returned object, as in `indexed = df.set_index('column')`
 
 **Example:**
 
@@ -870,7 +858,7 @@ The opposite operation - converts index back to a regular column.
 
 - `df.reset_index()` - Move index to column(s)
 - `drop=True` - Discard the index instead of converting to column
-- `inplace=True` - Modify DataFrame in place
+- Capture or reassign the returned object, as in `flat = df.reset_index()`
 
 **Example:**
 
@@ -886,7 +874,8 @@ display(reset)
 # Back to original structure with default numeric index
 
 # Discard index instead of converting
-indexed.reset_index(drop=True)
+dropped = indexed.reset_index(drop=True)
+display(dropped)
 #       name   department  salary
 # 0    Alice  Engineering   95000
 # 1      Bob        Sales   75000

@@ -109,9 +109,10 @@ Choose an operation by the grain and shape the result should have:
 
 - **Aggregation** reduces each group to one or more summary values, so the result has one row per group-key combination.
 - **Transform** returns values aligned to the original index and row count, so group statistics can be added back to the original rows.
-- **Apply** has a flexible return contract and is usually slower; use it when a built-in aggregation, transform, or filter cannot express the operation.
+- **Filter** keeps or removes whole groups while preserving the rows of groups that pass.
+- **Apply** has a flexible return contract; use it only when aggregation, transform, and filter cannot express the operation.
 
-Grouping keys have their own contract. `groupby` uses `dropna=True` by default, so rows with a missing group key are excluded; use `dropna=False` when missing keys should form a group. Named aggregation gives stable output column names, and `as_index=False` keeps group keys as ordinary columns:
+Grouping keys have their own contract. `groupby` uses `dropna=True` by default, so rows with a missing group key are excluded; use `dropna=False` when missing keys should form a group. In pandas 3, categorical groupers default to `observed=True`, which returns only groups present in the data; use `observed=False` only when the result must include every defined category or category combination. Named aggregation gives stable output column names, and `as_index=False` keeps group keys as ordinary columns:
 
 ```python
 department_summary = (
@@ -121,7 +122,7 @@ department_summary = (
 )
 ```
 
-# Advanced GroupBy Operations
+# GroupBy Result-Shape Choices
 
 ## Transform Operations
 
@@ -180,9 +181,7 @@ Apply operations let you use custom functions on each group.
 - `grouped.apply(lambda x: x.sort_values('col'), include_groups=False)` - Sort each group
 - `grouped.apply(lambda x: x.nlargest(2, 'col'), include_groups=False)` - Get top 2 from each group
 
-**Important: `include_groups` in pandas 3**
-
-**Course contract (pandas 3):** `DataFrameGroupBy.apply()` excludes grouping columns from the DataFrame passed to the callable, and `include_groups=True` is not allowed. Pass `include_groups=False` explicitly to document that input-column contract; it is also valid on pandas 2.2+. Historically, pandas 2.2 introduced this option while deprecating the prior inclusion behavior. `include_groups` controls columns passed to the callable; `group_keys` separately controls whether group labels appear in the combined result's index.
+**Pandas 3 contract:** `DataFrameGroupBy.apply()` excludes grouping columns from the DataFrame passed to the callable, and `include_groups=True` is invalid. `include_groups` controls the callable's input columns; `group_keys` separately controls group labels in the combined result's index.
 
 **Example:**
 
@@ -198,7 +197,7 @@ def salary_stats(group):
     })
 
 print("Custom statistics by department:")
-# State the input-column contract (and avoid the pandas 2.2 warning).
+# State the callable's input-column contract explicitly.
 print(df.groupby('Department').apply(salary_stats, include_groups=False))
 
 # Apply: Get top earners in each department
@@ -311,7 +310,7 @@ print(pivot_multi)
 - `pivot_table(..., margins=True, margins_name='Total')` - Add totals
 - `pivot_table(..., fill_value=0)` - Fill missing values
 - `pivot_table(..., dropna=False)` - Retain all-NA result columns and include NA-key rows when computing margins
-- `pivot_table(..., observed=True)` - For categorical groupers, show only category values/combinations observed in the data
+- `pivot_table(..., observed=True)` - pandas 3 default for categorical groupers: show only observed category values/combinations; use `observed=False` only for every defined category combination
 
 **Example:**
 
@@ -486,12 +485,6 @@ Optimize only after measuring the real workload. These patterns are optional and
 # Apply an explicit aggregation specification
 def efficient_groupby(df, group_cols, agg_spec):
     """Group using caller-supplied columns and aggregation functions."""
-    
-    # Use categorical data types for grouping columns
-    for col in group_cols:
-        if df[col].dtype == 'object':
-            df[col] = df[col].astype('category')
-    
     return df.groupby(group_cols, observed=True).agg(agg_spec)
 
 # Example specification:

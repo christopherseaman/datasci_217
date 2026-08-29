@@ -56,7 +56,7 @@ df.groupby('category').agg({
 ```python
 # Time-based grouping
 df['date'] = pd.to_datetime(df['date'])
-df.set_index('date', inplace=True)
+df = df.set_index('date')
 
 # Group by time periods
 df.groupby(pd.Grouper(freq='ME')).sum()  # Month-end groups
@@ -109,6 +109,8 @@ pivot = pd.pivot_table(df,
 ### Pivot Table with Missing Data Handling
 
 **Reference:**
+
+In pandas 3, categorical groupers default to `observed=True`. Use `observed=False` only when a table must include every defined category or category combination.
 
 ```python
 # Advanced missing data handling
@@ -180,32 +182,23 @@ def hierarchical_analysis(df):
 
 ## Performance Optimization
 
-### Memory-Efficient GroupBy
+### Dtype-Aware GroupBy
 
 **Reference:**
 
 ```python
-# Memory-efficient groupby operations
-def memory_efficient_groupby(df, group_cols, agg_cols):
-    """Optimize memory usage in groupby operations"""
+# GroupBy with caller-validated dtype choices
+def configured_groupby(df, group_cols, agg_cols, dtype_map=None):
+    """Group after applying only caller-supplied, validated dtype conversions."""
+
+    working = df.astype(dtype_map) if dtype_map else df
     
-    # Use categorical data types
-    for col in group_cols:
-        if df[col].dtype == 'object':
-            df[col] = df[col].astype('category')
-    
-    # Use specific data types
-    for col in agg_cols:
-        if df[col].dtype == 'float64':
-            df[col] = df[col].astype('float32')
-        elif df[col].dtype == 'int64':
-            df[col] = df[col].astype('int32')
-    
-    # Perform groupby
-    result = df.groupby(group_cols)[agg_cols].sum()
+    result = working.groupby(group_cols, observed=True)[agg_cols].sum()
     
     return result
 ```
+
+Supply `dtype_map` only after validating numeric range and precision requirements and, for categorical conversions, the intended category semantics. Omitting it preserves the input dtypes; the function never auto-downcasts.
 
 ### Chunked Processing
 

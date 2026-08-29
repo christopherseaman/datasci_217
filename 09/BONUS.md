@@ -1,6 +1,6 @@
 # Advanced Time Series Analysis Topics
 
-This document covers advanced time series topics that go beyond daily data science practice. These techniques are essential for specialized time series analysis, forecasting, and complex temporal modeling.
+Everything in this document is optional for Lecture 09. It collects specialized material on periods, decomposition, forecasting, high-frequency data, custom frequencies, advanced time zones, and additional visualization.
 
 **Optional preview/reference ahead of Lecture 10:** The forecasting, stationarity, and temporal-modeling material below is optional for Lecture 09. Use it as specialized reference or as a preview of the broader modeling and evaluation ideas introduced in Lecture 10; it is not required lecture content.
 
@@ -215,6 +215,8 @@ forecast = fitted.forecast(steps=30)
 | `ts.to_period('M')` | Convert timestamp labels to monthly periods without aggregation |
 | `ts.resample('ME').mean().to_period('M')` | Aggregate monthly, then represent labels as periods |
 | `period_ts.resample('Q-DEC', convention='start')` | Upsample an annual PeriodIndex from the start of each period |
+
+`QE` and `YE` are timestamp offset aliases used with a `DatetimeIndex`. Period frequencies describe spans and retain aliases such as `Q-DEC` and `Y-DEC`; do not substitute timestamp aliases mechanically.
 
 **Example:**
 

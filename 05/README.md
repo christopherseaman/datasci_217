@@ -9,7 +9,7 @@ Mid-term: [#FIXME:URL]
 ![Data Pipeline Intro](media/data_pipeline_intro.png)
 *Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
-Lecture 04 ends with an inspection preview: use `isna()` and duplicate counts to identify evidence without changing the table. This lecture turns that evidence into documented cleaning decisions and follows the workflow **audit/detect → decide → transform → validate → save**. Validation happens before a derived artifact is saved; a failed check sends the work back to the audit or decision step. We'll cover each technique individually, then bring it all together in one complete pipeline at the end.
+Lecture 04 ends with an inspection preview: use `isna()` and duplicate counts to identify evidence without changing the table. This lecture turns that evidence into documented cleaning decisions and follows the workflow **define the data contract → audit/detect → decide → transform → validate → save**. Validation happens before a derived artifact is saved; a failed check sends the work back to the audit or decision step. We'll cover each technique individually, then bring it all together in one complete pipeline at the end.
 
 ## Data contract and schema
 
@@ -42,26 +42,24 @@ Missing data detection identifies values pandas recognizes as missing and helps 
 
 **Reference:**
 
-- `df.isnull()` - Boolean DataFrame: True for missing values
-- `df.notnull()` - Boolean DataFrame: True for non-missing values
-- `df.isna()` - Alias for isnull()
-- `df.notna()` - Alias for notnull()
-- `df.isnull().sum()` - Count missing values per column
-- `df.isnull().any()` - True if any missing values in column
-- `df.isnull().all()` - True if all values missing in column
+- `df.isna()` - Boolean DataFrame: True for missing values
+- `df.notna()` - Boolean DataFrame: True for non-missing values
+- `df.isna().sum()` - Count missing values per column
+- `df.isna().any()` - True if any missing values in column
+- `df.isna().all()` - True if all values missing in column
 
 **Example:**
 
 ```python
 # Check for missing values
 df = pd.DataFrame({'A': [1, 2, None, 4], 'B': [5, None, 7, 8]})
-print(df.isnull().sum())  # A: 1, B: 1
-print(df.isnull().any())  # A: True, B: True
-print(df.isnull().all())  # A: False, B: False
+print(df.isna().sum())  # A: 1, B: 1
+print(df.isna().any())  # A: True, B: True
+print(df.isna().all())  # A: False, B: False
 
 # Visualize missing data
 import matplotlib.pyplot as plt
-df.isnull().sum().plot(kind='bar')
+df.isna().sum().plot(kind='bar')
 plt.title('Missing Values by Column')
 plt.show()
 ```
@@ -72,9 +70,9 @@ Missing data analysis describes patterns and prompts investigation of possible m
 
 **Reference:**
 
-- `df.isnull().sum()` - Count missing values per column
-- `df.isnull().sum(axis=1)` - Count missing values per row
-- `df.isnull().mean()` - Proportion of missing values per column
+- `df.isna().sum()` - Count missing values per column
+- `df.isna().sum(axis=1)` - Count missing values per row
+- `df.isna().mean()` - Proportion of missing values per column
 - `df.dropna()` - Remove rows with any missing values
 - `df.dropna(axis=1)` - Remove columns with any missing values
 - `df.dropna(thresh=n)` - Keep rows with at least n non-null values
@@ -84,9 +82,9 @@ Missing data analysis describes patterns and prompts investigation of possible m
 ```python
 # Analyze missing data patterns
 df = pd.DataFrame({'A': [1, 2, None, 4], 'B': [5, None, 7, 8], 'C': [9, 10, 11, None]})
-print(df.isnull().sum())  # Missing values per column
-print(df.isnull().mean())  # Proportion missing per column
-print(df.isnull().sum(axis=1))  # Missing values per row
+print(df.isna().sum())  # Missing values per column
+print(df.isna().mean())  # Proportion missing per column
+print(df.isna().sum(axis=1))  # Missing values per row
 
 # Remove rows with missing values
 df_clean = df.dropna()
@@ -204,31 +202,29 @@ print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
 ![xkcd 1205 "Is It Worth the Time?"](media/xkcd_1205_apply.png)
 *Classic time-saving calculation chart - perfect for .apply() section*
 
-Sometimes built-in methods aren't enough - you need to apply custom logic to transform your data. The `.apply()` and `.map()` methods let you use any function (built-in or custom) to transform data.
-
-*Think of `.apply()` as your data transformation Swiss Army knife - when pandas doesn't have a built-in method for what you need, you can just write your own function and apply it to every row, column, or value.*
+Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis.
 
 **Quick lambda primer**: A `lambda` is a one-line anonymous function, perfect for simple transformations: `lambda x: x * 2` is equivalent to `def double(x): return x * 2`, just more concise for one-time use.
 
 **Reference:**
 
-- `series.map(dict_or_func)` - Map values in a Series (element-wise)
-- `series.apply(func)` - Apply function to each element in a Series
-- `df.apply(func, axis=0)` - Apply function to each column (axis=0, default)
-- `df.apply(func, axis=1)` - Apply function to each row (axis=1)
-- `df.map(func)` - Apply a function element-wise to the entire DataFrame
+- `series.map(dict_or_func)` - Map individual Series values with a function or dictionary
+- `df.map(func)` - Map individual elements across the entire DataFrame
+- `series.apply(func)` - Invoke a function along a Series
+- `df.apply(func, axis=0)` - Invoke a function on each column (`axis=0`, the default)
+- `df.apply(func, axis=1)` - Invoke a function on each row (`axis=1`)
 
 **Example:**
 
 ```python
-# Normalize documented categorical labels with a custom function
-def normalize_status(text):
-    """Trim whitespace and normalize status labels to lowercase."""
-    return text.strip().lower()
+# Apply custom numeric logic along a Series
+def performance_band(score):
+    """Assign a documented band from a numeric score."""
+    return 'high' if score >= 80 else 'standard'
 
-statuses = pd.Series(['  Active  ', 'PENDING', '  complete'])
-statuses_clean = statuses.apply(normalize_status)
-print(statuses_clean)  # ['active', 'pending', 'complete']
+scores = pd.Series([72, 91, 84])
+bands = scores.apply(performance_band)
+print(bands)  # ['standard', 'high', 'high']
 
 # Map categorical values to numbers
 status = pd.Series(['active', 'inactive', 'active', 'pending'])
@@ -271,7 +267,7 @@ Converting data to the correct types is essential for proper analysis. This incl
 - `df.astype('int64')` - Convert to integer
 - `series.astype('Int64')` - Convert to pandas' nullable integer type
 - `df.astype('float64')` - Convert to float
-- `df.astype('string')` - Convert to string
+- `series.astype('string')` - Explicitly request nullable string data
 - `pd.to_datetime(df['date_column'])` - Convert to datetime
 - `pd.to_numeric(df['column'], errors='coerce')` - Convert to numeric, errors become NaN
 
@@ -302,7 +298,8 @@ Renaming changes row or column labels without modifying data. This is essential 
 - `df.rename(columns={old: new})` - Rename columns
 - `df.rename(columns=str.lower)` - Apply function to all columns
 - `df.rename(columns=str.strip)` - Remove whitespace from column names
-- `inplace=True` - Modify DataFrame in place
+
+Prefer assigning the returned object, as below. For targeted value changes, assign directly with `.loc`; these forms are clear under pandas 3 Copy-on-Write behavior.
 
 **Example:**
 
@@ -373,7 +370,7 @@ three_sd_flag = abs(df['value'] - mean) > 3 * std
 print(df.loc[three_sd_flag])  # Flags 100 for investigation
 
 # Exclude a flagged row only after evidence supports that decision
-df_clean = df.loc[~three_sd_flag].copy()
+df_clean = df.loc[~three_sd_flag]
 
 # Cap extreme values
 capped = df.assign(value=df['value'].clip(lower=0, upper=10))
@@ -396,10 +393,10 @@ Working with categorical data is common in data analysis. Pandas provides two ma
 
 ## Categorical Data Type
 
-The categorical type is incredibly powerful for memory optimization, especially when you have repeated string values.
+The categorical type represents a finite set of values and optional ordering. It can reduce memory for repeated low-cardinality text, but measure that effect on the actual data.
 
 ![Categorical Encoding](media/categorical_encoding_diagram.png)
-*Visual showing categorical encoding: Original values → Categories → Codes with memory savings comparison*
+*Visual showing categorical encoding: Original values → Categories → Codes, with a storage comparison*
 
 **Reference:**
 
@@ -411,9 +408,9 @@ The categorical type is incredibly powerful for memory optimization, especially 
 **Example:**
 
 ```python
-# Huge memory savings for repeated values
+# Compare storage for repeated values
 colors = pd.Series(['red', 'blue', 'red', 'green', 'blue'] * 1000)
-print(f"As object: {colors.memory_usage(deep=True)} bytes")
+print(f"As str: {colors.memory_usage(deep=True)} bytes")
 
 colors_cat = colors.astype('category')
 print(f"As category: {colors_cat.memory_usage(deep=True)} bytes")
@@ -457,7 +454,7 @@ dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='in
 print(dummies)  # Only color_green and color_red (blue is the reference)
 ```
 
-**LIVE DEMO!** (Demo 2: Transformations - categorical encoding, string operations, sampling)
+**LIVE DEMO!** (Demo 2: Transformations - categorical encoding and string operations)
 
 # String Manipulation
 
@@ -537,61 +534,6 @@ names_df = full_names.str.split(' ', expand=True)
 print(names_df)  # Two columns with first and last names
 ```
 
-# Random Sampling and Permutation
-
-## Random Sampling
-
-Random sampling selects rows using a probability mechanism. Randomness alone does not guarantee a representative subset: the sampling frame, selection probabilities, sample size, strata, and nonresponse still matter. Choose the design for the target population and purpose.
-
-**Reference:**
-
-- `df.sample(n=None, frac=None, replace=False, weights=None, random_state=None)` - Random sampling
-- `n=10` - Sample exactly 10 rows
-- `frac=0.5` - Sample 50% of rows
-- `replace=True` - Sample with replacement (bootstrap)
-- `weights='column'` - Weighted sampling by column values
-- `random_state=42` - Reproducible sampling
-- `df.iloc[::step]` - Systematic sampling every nth row
-
-**Example:**
-
-```python
-# Random sampling
-df = pd.DataFrame({'A': range(100), 'B': range(100, 200)})
-sample = df.sample(n=10, random_state=42)  # Sample 10 rows
-print(len(sample))  # 10
-
-# Stratified sampling: this design chooses two rows from each category
-df['category'] = ['A', 'B'] * 50
-stratified = df.groupby('category', group_keys=False).sample(n=2, random_state=42)
-print(len(stratified))  # 4 (2 from each category)
-```
-
-## Permutation and Shuffling
-
-Permutation randomizes row order while preserving relationships among columns in each row. Use it when the method calls for exchangeable rows; shuffling ordered or time-series data can destroy meaningful dependence.
-
-**Reference:**
-
-- `df.sample(frac=1)` - Shuffle all rows (permutation)
-- `df.reindex(np.random.permutation(df.index))` - Permute index order
-- `df.sample(n=len(df), replace=True)` - Bootstrap sampling
-- `np.random.permutation(array)` - Randomly permute array
-- `random_state=42` - Reproducible permutation
-
-**Example:**
-
-```python
-# Shuffle DataFrame
-df = pd.DataFrame({'A': [1, 2, 3, 4], 'B': [5, 6, 7, 8]})
-shuffled = df.sample(frac=1, random_state=42)
-print(shuffled)  # Random order of rows
-
-# Bootstrap sampling
-bootstrap = df.sample(n=len(df), replace=True, random_state=42)
-print(len(bootstrap))  # 4 (same length, but with replacement)
-```
-
 # Data Validation and Quality Assessment
 
 ![xkcd 2239 "Database"](media/xkcd_2239.png)
@@ -599,7 +541,7 @@ print(len(bootstrap))  # 4 (same length, but with replacement)
 
 | Issue | Detection | Possible response after investigation |
 |-------|-----------|---------------------------------------|
-| Missing Values | `df.isnull().sum()` plus sentinel checks | Retain, flag, impute, or drop according to variable meaning and analysis purpose |
+| Missing Values | `df.isna().sum()` plus sentinel checks | Retain, flag, impute, or drop according to variable meaning and analysis purpose |
 | Duplicate Candidates | exact-row and candidate-identifier checks | Confirm row meaning and source history; consolidate or remove only records shown to be redundant |
 | Wrong Data Type | `df.dtypes` plus conversion probes | Parse with an explicit failure policy, then validate the intended dtype |
 | Outliers | `df.describe()`<br>Box plots<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
@@ -611,13 +553,13 @@ Data quality checks identify issues like missing values, duplicates, outliers, a
 
 **Reference:**
 
-- `df.isnull().sum()` - Count missing values per column
+- `df.isna().sum()` - Count missing values per column
 - `df.duplicated().sum()` - Count duplicate rows
 - `df.nunique()` - Count unique values per column
 - `df.dtypes` - Data types per column
 - `df.describe()` - Summary statistics (numeric columns only by default)
 - `df.describe(include='all')` - Summary statistics for all columns (numeric + categorical)
-- `df.describe(include=['object'])` - Summary statistics for categorical columns only
+- `df.describe(include=['str', 'category'])` - Summary statistics for text and categorical columns
 - `df.info()` - Detailed information
 - `df.memory_usage()` - Memory usage per column
 
@@ -626,7 +568,7 @@ Data quality checks identify issues like missing values, duplicates, outliers, a
 ```python
 # Data quality assessment
 df = pd.DataFrame({'A': [1, 2, 2, 4], 'B': [5, 6, 6, 8], 'C': [9, 10, 11, 12]})
-print(df.isnull().sum())  # Missing values per column
+print(df.isna().sum())  # Missing values per column
 print(df.duplicated().sum())  # Number of duplicate rows
 print(df.nunique())  # Unique values per column
 print(df.dtypes)  # Data types per column
@@ -668,12 +610,13 @@ A reproducible cleaning workflow keeps detection separate from decisions and tra
 
 ```mermaid
 graph TD
-    A[Load source and preserve raw table] --> B[Audit and detect]
-    B --> C[Decide and record rationale]
-    C --> D[Transform a working copy]
-    D --> E{Validate explicit invariants}
-    E -->|Failed| B
-    E -->|Passed| F[Save clean table]
+    A[Define the data contract] --> B[Load source and preserve raw table]
+    B --> C[Audit and detect]
+    C --> D[Decide and record rationale]
+    D --> E[Transform a working table]
+    E --> F{Validate explicit invariants}
+    F -->|Failed| C
+    F -->|Passed| G[Save clean table]
 ```
 
 The example stays intentionally small. One source row represents one submitted person record, and `record_id` is the candidate identifier. The printed audit is an orientation, not an exhaustive detector; the validation stage below performs the authoritative identifier, category, type, and range checks before saving.
@@ -733,7 +676,7 @@ decisions = {
 print(pd.Series(decisions, name="decision"))
 
 # TRANSFORM: change only the working copy.
-working = working.drop_duplicates(keep="first").copy()
+working = working.drop_duplicates(keep="first")
 working["record_id"] = working["record_id"].str.strip().str.upper()
 working["full_name"] = working["full_name"].str.strip()
 working["full_name"] = working["full_name"].mask(working["full_name"].eq(""))
@@ -803,62 +746,6 @@ Keep genuinely changeable rules separate from the transformation logic, but do n
 - Store parameters in separate files (CSV, JSON, or simple text)
 - Keep cleaning logic in functions
 - Document where each cleaning rule came from
-
-
-# Optional: Running Notebooks from Command Line
-
-For optional automation and batch processing, you can execute Jupyter notebooks from the command line without opening the Jupyter interface. This is not required for the cleaning concepts above.
-
-## Basic Execution
-
-```bash
-# Execute a single notebook
-jupyter nbconvert --execute --to notebook your_notebook.ipynb
-
-# Execute and save output to a new file
-jupyter nbconvert --execute --to notebook --output executed_notebook your_notebook.ipynb
-
-# Execute and overwrite the original file
-jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
-```
-
-## Notebook Pipeline Automation
-
-Always check "exit codes" after notebook execution to ensure your pipeline stops if any step fails. When a command runs successfully it returns an exit code of 0, other values (usually 1) indicate an error.
-
-You may check exit codes using the special variable `$?`, which contains exit code for the previous command. Alternatively, we can use an OR operator (`||`) to instruct the shell to do something when a command fails.
-
-**Note:** The `||` operator means "OR" - if the command fails (non-zero exit code), execute the code block in curly braces `{}`. This is more concise than checking `$?` explicitly.
-
-```bash
-#!/bin/bash
-# Example pipeline script
-
-echo "Starting data analysis pipeline..."
-
-# Run notebooks in sequence
-jupyter nbconvert --execute --to notebook q4_exploration.ipynb
-if [ $? -ne 0 ]; then
-    echo "ERROR: Q4 exploration failed"
-    exit 1
-fi
-
-jupyter nbconvert --execute --to notebook q5_missing_data.ipynb || {
-    echo "ERROR: Q5 missing data analysis failed"
-    exit 1
-}
-
-echo "Pipeline completed successfully!"
-```
-
-## Key Parameters
-
-- `--execute`: Run all cells in the notebook
-- `--to notebook`: Keep output as notebook format
-- `--inplace`: Overwrite the original file
-- `--output filename`: Save to a new file
-- `--allow-errors`: Continue execution even if cells fail
-
 
 
 # **LIVE DEMO!**

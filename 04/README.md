@@ -174,15 +174,24 @@ Pandas provides powerful data structures and tools for working with structured d
 
 *Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
 
-Import pandas before using its `pd` alias. Run this cell first in a fresh kernel; the remaining pandas examples assume it has run:
+Pandas is conventionally imported with the short alias `pd`, which the examples below use:
 
 ```python
 import pandas as pd
 ```
 
+## A pandas 3 Mental Model
+
+Two pandas 3 defaults shape how the examples in this lecture behave:
+
+- Ordinary columns inferred from text use the `str` dtype rather than reporting `object`. Explicitly request the nullable `string` dtype when a data contract calls for `pd.NA`-backed text.
+- Copy-on-Write makes a returned Series or DataFrame, including a selected subset, behave independently at the user level. To mutate an owning DataFrame, make the complete assignment in one `.loc[...] = ...` or `.iloc[...] = ...` statement; to produce a changed result, use a method that returns one and reassign it. Chained assignment never updates the original DataFrame.
+
+Use the official [pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html), [string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html), and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html) as the current contract when older books or examples disagree.
+
 ## Pandas Data Structures
 
-*Think of pandas data structures like Russian nesting dolls - Series fit inside DataFrames, which can contain other DataFrames, which can contain... well, you get the idea. It's data structures all the way down!*
+A Series is one labeled dimension; a DataFrame combines labeled columns under a shared row index. That shared index is what makes selection and alignment more than simple list positioning.
 
 <!-- FIXME: Add diagram showing Series vs DataFrame relationships (media/pandas_structures.png) -->
 
@@ -255,7 +264,7 @@ df = pd.DataFrame({
 })
 
 display(df.shape)  # (3, 3)
-display(df.dtypes)  # Name: object, Age: int64, Salary: int64
+display(df.dtypes)  # Name: str, Age: int64, Salary: int64
 display(df.describe())  # Summary statistics for numeric columns
 ```
 
@@ -418,7 +427,7 @@ high_earners = employees.loc[employees['Salary'] > 60000]  # Charlie
 
 ### Adding Columns to DataFrames
 
-Derived columns capture new features and align automatically with existing indexes. Choose between direct assignment for quick mutations and `.assign()` when you need a non-mutating pipeline step.
+Derived columns capture new features and align automatically with existing indexes. Mutate the owning DataFrame directly when that is the intent; use `.assign()` and bind its returned DataFrame when you want a new result.
 
 **Reference:**
 
@@ -465,11 +474,13 @@ scores['status'] = 'ok'
 scores.loc[scores['score'] < 75, 'status'] = 'review'
 ```
 
-Avoid chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'`: the intermediate selection is not a safe assignment target. Use `.loc[row_mask, column] = value` instead.
+With Copy-on-Write, a subset behaves independently: mutating it does not mutate `scores`. Chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'` therefore never updates the original DataFrame. Update the owner in one statement with `.loc[row_mask, column] = value` (or `.iloc[...] = value` for positional assignment), as above. When the goal is a separate result, transform the subset and explicitly assign the returned object to a name.
 
 ### Detecting Missing Data at Read Time
 
 Missing-data work begins by telling pandas which source tokens represent missing values and measuring the gaps. This lecture focuses on detection and reproducible read-time handling; [Lecture 05](../05/README.md) covers decisions such as filling or dropping values.
+
+Inspect dtypes and missing-value counts together. In pandas 3, ordinary inferred text columns report `str`; use an explicit nullable `string` dtype only when that distinction is part of the data contract.
 
 **Reference:**
 
@@ -489,29 +500,28 @@ survey = pd.read_csv(
 )
 
 display(survey.isna().sum())
+display(survey.dtypes)
 ```
 
 ## Data Type Conversion
 
-Converting data types is like trying to convince your data to identify as something else. Sometimes it works smoothly (string "42" → int 42), sometimes you need therapy (error handling), and sometimes it just refuses and throws a ValueError. Just remember: you can't force a square peg into a round hole, but pandas will try its best!
-
-Converting data to the correct types is essential for proper analysis. This includes converting strings to numbers, dates, and other appropriate types.
+Converting data to the correct types is essential for proper analysis. This short section introduces the mechanics; Lecture 05 ties each conversion to a data contract and decides what to do with invalid or lossy values.
 
 **Reference:**
 
 - `df.astype('int64')` - Convert to integer
 - `df.astype('float64')` - Convert to float
-- `df.astype('string')` - Convert to string
+- `series.astype('string')` - Explicitly request nullable string data
 - `pd.to_datetime(df['date_column'])` - Convert to datetime
 - `pd.to_numeric(df['column'], errors='coerce')` - Convert to numeric, errors become NaN
 
 **Example:**
 
 ```python
-# Convert data types
-df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.5, 5.5, 6.5]})
+# Convert text digits and whole-valued floats
+df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.0, 5.0, 6.0]})
 df['A'] = df['A'].astype('int64')  # Convert string to integer
-df['B'] = df['B'].astype('int64')  # Convert float to integer
+df['B'] = df['B'].astype('int64')  # Values are already mathematically whole
 display(df.dtypes)  # A: int64, B: int64
 
 # Handle conversion errors
@@ -571,23 +581,19 @@ display(categories.isin(['A', 'B']))  # [True, True, True, False, True]
 
 ## GroupBy Preview
 
-GroupBy uses a split-apply-combine pattern: split rows into groups, compute a result for each group, and combine those results. This brief summary is a preview; [Lecture 08](../08/README.md) is the canonical treatment of multi-key grouping, aggregation, `transform()`, and `filter()`.
-
-**Reference:**
-
-- `df.groupby('col')[target].agg(['mean', 'count'])` — summarize groups
+GroupBy follows a split-apply-combine idea: split rows by a key, compute within each group, and combine the results. For a first glimpse, this calculates one mean per department:
 
 **Example:**
 
 ```python
-comp = pd.DataFrame({
-    'Department': ['Eng', 'Eng', 'Sales', 'Sales', 'People Ops'],
-    'Salary': [120000, 115000, 95000, 98000, 88000]
+pay = pd.DataFrame({
+    'Department': ['Engineering', 'Engineering', 'Sales'],
+    'Salary': [120000, 115000, 95000],
 })
-
-dept_summary = comp.groupby('Department')['Salary'].agg(['count', 'mean'])
-display(dept_summary)
+display(pay.groupby('Department')['Salary'].mean())
 ```
+
+[Lecture 08](../08/README.md) is the canonical treatment of grouping, aggregation, `transform()`, and `filter()`.
 
 # Data Loading and Storage
 
@@ -672,7 +678,7 @@ Summary statistics provide a quick overview of your data's distribution and char
 - `df.count()` - Non-null values per column
 - `df.nunique()` - Unique values per column
 - `df.memory_usage()` - Memory usage per column
-- `df.isnull().sum()` - Missing values per column
+- `df.isna().sum()` - Missing values per column
 
 **Example:**
 
@@ -680,8 +686,8 @@ Summary statistics provide a quick overview of your data's distribution and char
 # Summary statistics
 df = pd.DataFrame({'A': [1, 2, 3, 4, 5], 'B': [2, 4, 6, 8, 10]})
 display(df.describe())  # count, mean, std, min, 25%, 50%, 75%, max
-display(df.info())  # Data types and memory usage
-display(df.isnull().sum())  # Missing values per column
+df.info()  # Prints data types and memory usage
+display(df.isna().sum())  # Missing values per column
 ```
 
 ## Data Quality Assessment
