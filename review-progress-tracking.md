@@ -403,6 +403,51 @@ would add a wrapper such as pyecharts and a second rendering/tooling model.
 It is a good optional ecosystem comparison or web-dashboard extension, not a
 clean replacement for the lecture's current Altair teaching contract.
 
+## Assignment/grading design discussion (2026-08-29)
+
+The instructor proposed retiring GitHub Classroom/Classroom 50 in favor of
+optional student GitHub Actions plus pytest, with a separate TA/instructor
+runner that reads one assignment-source/fork manifest, fetches fresh checkouts,
+executes trusted tests, and writes a report for grading triage. The assignment
+inventory supports this direction, with two constraints:
+
+- Assignments 01–03 already expose pytest facades, but Assignments 04–11 expose
+  standalone public checkers while their instructor-only `_grader_selftest`
+  bundles contain the stronger fresh-execution, artifact, alternate-input, and
+  repeatability contracts. Running only `check_assignment.py` for 04–11 would
+  silently under-grade the current behavior.
+- The repository has no root pytest configuration or grading workflow. Existing
+  Classroom 50 files are mostly self-test/reference bundles; production
+  provisioning is external and not a viable dependency for this semester.
+
+Recommended replacement shape:
+
+1. Keep one pinned source/starter repository per assignment, with an optional
+   student-facing `.github/workflows/tests.yml` that runs public pytest checks
+   on push. Students may ignore the workflow; it is feedback, not submission.
+2. Add a small instructor-only `grading/` runner in this repository. A source
+   manifest records assignment IDs, source repository/ref, trusted test path,
+   dependency lock, artifact mode (`artifact_only` or `fresh_execution`), and
+   limits. A semester roster file records reviewed student repository mappings;
+   GitHub fork discovery may generate candidates but must not silently become
+   the grading roster.
+3. At snapshot time resolve source and student refs to full commit SHAs. Clone
+   each into a fresh directory, validate the committed tree, run trusted tests
+   against a controlled `SUBMISSION_ROOT`, and emit JSON/CSV plus JUnit XML and
+   bounded logs. Never run student-supplied pytest configuration or tests as the
+   grader's test suite.
+4. Preserve the current assignment-specific contracts while migrating their
+   trusted logic behind pytest adapters. Keep human review for prose, chart
+   quality, workflow evidence, and other non-automatable points. A passing
+   report is a fast-track signal, not an automatic final grade.
+
+The remaining design gates are the private/public location of the student
+roster, the sandbox/container available for arbitrary student code, the
+source-test visibility policy, the commit/ref policy for resubmissions, and
+whether the first pilot should cover a simple script assignment plus one
+notebook-heavy assignment. No assignment files were changed during this design
+discussion.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
