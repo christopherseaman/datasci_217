@@ -353,6 +353,9 @@ Independent implementation validation:
   separate geospatial dependencies; it is included as a notebook and Colab
   option, while remote Colab execution remains a release-time certification
   task.
+- The public Colab links and the Lecture 11 notebook fallback data URLs now use
+  the same `2026-refresh` branch. A fresh no-local-data setup run must validate
+  those URLs before release links are retargeted to `main` or an immutable tag.
 - Additional scoped checks found no stale uppercase pandas hourly aliases,
   legacy Matplotlib `labels=`, deprecated Altair selection APIs, unsafe
   `nbconvert --inplace`/`--allow-errors` guide references, or broad pandas-2

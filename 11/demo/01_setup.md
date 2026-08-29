@@ -21,8 +21,9 @@ Our project contract is precise: predict the **next-hour pickup count** for one
 with sampled trip events, so we can practice auditing raw-ish records before using
 the derived hourly panel.
 
-The development download URLs below use the repository's `main` branch. They will
-be replaced by immutable annual-tag URLs when the release is frozen.
+The development download URLs below use the public `2026-refresh` branch while
+this review is in progress. They will be replaced by immutable annual-tag URLs
+when the release is frozen.
 
 ## One setup cell
 
@@ -71,7 +72,7 @@ Local Jupyter finds the committed files in `data/`. A fresh Colab runtime downlo
 the same files from raw GitHub URLs. No Drive mount or manual upload is needed.
 
 ```python
-REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/2026-refresh/11/demo/data"
 FILENAMES = [
     "demo_release_manifest.json",
     "yellow_taxi_2023_h1_event_sample.parquet",

@@ -69,11 +69,12 @@ print(f"Python {sys.version.split()[0]} | scikit-learn {metadata.version('scikit
 
 ## Independently rebuild the model table and split
 
-Fresh Colab downloads only the compact frozen panel. Development URLs use `main`;
-immutable annual-tag replacement is pending release freeze.
+Fresh Colab downloads only the compact frozen panel. Development URLs use
+`2026-refresh` while this review is in progress; immutable annual-tag
+replacement is pending release freeze.
 
 ```python
-REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/2026-refresh/11/demo/data"
 
 def acquire_authenticated_panel():
     filenames = ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_counts.parquet"]
