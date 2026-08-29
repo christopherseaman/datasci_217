@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: full lecture-only adversarial audit complete and independently checked; changes are required before lecture approval; awaiting user direction; demos and assignments remain deferred
+- Current phase: instructor-authorized lecture-only repair batch complete; independent adversarial review and integrated validation pass; awaiting instructor approval; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -84,7 +84,56 @@ Comparison with `main` found no material accidental loss of inherited topic fami
 - The median core lecture is 2,393 prose words. Lecture 10 is the largest at 3,967 words (1.66× median); retain its required model-family breadth but compress repeated API detail, comparisons, and pop-culture framing.
 - Lecture 02 has 2,049 bonus words across three files and repeats lambda and shell-scripting material. Lecture 03 has the highest structural density—40 headings and 33 fenced examples in 1,358 prose words—and repeats its NumPy quick reference/image while carrying optional shell/visualization catalogs in core.
 - Lecture 06's core/bonus/points bundle and Lectures 07–09's parallel points pages are the main total-volume problem; the core lengths of Lectures 04–07 and 09 are otherwise proportionate to their scope. Lecture 11 is appropriately sized for its integrative role.
-- The course has enough fun. Lectures 07 and 11 are the strongest models because engagement serves the concept; Lectures 01, 02, 05, 08, and 09 are also engaging. Do not add more decorative jokes. Reduce Lecture 10's repeated Zoolander references, remove Lecture 06's fabricated “2007 schism” and statistical joke, replace Lecture 03's author-facing drafting note, and give dry bonus pages a one-sentence motivating problem rather than more humor.
+- The course has enough fun. Lectures 07 and 11 are the strongest models because engagement serves the concept; Lectures 01, 02, 05, 08, and 09 are also engaging. Do not add decorative jokes merely to enliven bonus pages. Replace Lecture 06's fabricated “2007 schism” and statistical joke with concept-serving humor, and replace Lecture 03's author-facing drafting note. Preserve every existing Lecture 10 Zoolander joke and reference while compressing repeated API detail around them.
+
+### Instructor disposition and authorized repair scope
+
+The instructor accepted the correctness, safety, metric-selection, size, and organization findings with these controlling clarifications:
+
+- Compress and consolidate repeated API detail, especially in the large parallel bonus and points material.
+- Replace rather than merely remove the Lecture 06 jokes so the lecture does not lose its humor.
+- Bonus pages may remain dry; engagement additions are unnecessary there.
+- Preserve all Lecture 10 Zoolander jokes and references.
+- Normalize Lecture 03 toward the current repository convention—one H1 title, H2 sections, and nested headings as useful—without treating the convention as a rigid template. Within that structure, prefer the established explanation → reference → brief example rhythm where it helps.
+- Materially trim and deduplicate Lecture 02's bonus bundle, with clear ownership between Python-concept extensions, Python CLI material, and advanced Git.
+- Keep the lecture/demo boundary intact: lectures explain; they are not notebooks or scripts that must run top-to-bottom. Do not add activation, installation, import, or shared-state glue solely for whole-lecture executability.
+- Continue to treat term-specific assignment URLs as intentional placeholders and leave demos and assignments untouched.
+
+The authorized implementation batch covers the recorded P1/P2 lecture findings and these editorial constraints without expanding inherited topic scope. It will be followed by independent adversarial review and integrated lecture-only validation before approval is requested again.
+
+### Repair implementation checkpoint (pre-review)
+
+The first repair batch changed 24 lecture Markdown pages and no demo or assignment file. The working diff is deliberately subtractive: approximately 1,500 lines were removed and 550 added before this ledger update. The largest reductions establish clear ownership instead of maintaining parallel explanations:
+
+- Lecture 02's Python-concepts, Python-CLI, and advanced-Git bonus pages now have distinct roles; repeated lambda, function, main-guard, and shell material was removed, and unsafe discard/history-rewrite recipes were removed or replaced with coordinated safety guidance.
+- Lecture 03 now uses one H1 title with H2 main sections and nested subsections, removes duplicated quick-reference material and the author-facing drafting note, and repairs the NumPy membership, indirect-sort, and large-memmap examples without adding execution-state glue.
+- Lectures 04–10 repair the recorded pandas, statistics, safety, visualization, time-series, modeling, serialization, attention, Featuretools, and drift-response defects.
+- `POINTS.md` for Lectures 06–09 now treats each README as authoritative and retains concise instructor cues rather than a second full lecture. The required three `LIVE DEMO` markers remain in each of Lectures 07–09's cue sheets.
+- Lecture 06's two bad jokes were replaced with concept-serving levity. Lecture 10 retains all existing Zoolander material while its surrounding API guidance is consolidated.
+
+This is a pre-review implementation record, not a correctness or approval verdict. Independent reviewers must still challenge factual/API safety and pedagogical structure/size against the complete lecture context, after which all lecture-wide gates must run from the current sources.
+
+### Post-repair adversarial verdict and validation
+
+**Ready for instructor approval; not yet instructor-approved.** Two independent read-only reviewers challenged the integrated repair set. The first pass rejected it with one P1 and eight unique P2 findings across presentation-marker preservation, cue-sheet hierarchy, shell no-match behavior, null-key sentinel wording, Plotly OLS requirements, a local NumPy import, zero-weight handling, and tick-index requirements. All were repaired. A targeted correctness re-review then caught one version-specific mistake: `adfuller(..., result_object=False)` is valid in statsmodels 0.15 but not the course's pinned 0.14.6. The example was restored to the pinned-compatible call and the actual pinned stack was executed. Both final re-reviews passed with no remaining P0–P3 finding.
+
+The final content/size review found no accidental loss of an inherited topic family:
+
+- Lecture 02's bonus bundle is roughly 46% smaller by the reviewer's prose measure and now has distinct Python-concept, Python-CLI, and Git ownership.
+- The four points pages are compact cue sheets rather than parallel lectures. Raw word counts fell from 2,725 to 550 (Lecture 06), 2,337 to 446 (Lecture 07), 2,005 to 302 (Lecture 08), and 1,603 to 352 (Lecture 09). Each retains exactly three `LIVE DEMO` markers and one H1 title.
+- Lecture 03 has one H1 with coherent H2/H3/H4 nesting; its optional shell/terminal-visualization material follows the core environment and NumPy sequence without becoming a prerequisite.
+- Lecture 10 retains all 11 detected Zoolander reference lines and the statsmodels, scikit-learn, XGBoost, TensorFlow/Keras, and PyTorch families while adding the missing task/cost-aligned metric bridge.
+- Lecture 06 retains concept-serving humor in both repaired locations. No decorative humor was added to dry bonus pages.
+
+Final integrated gates from the current sources:
+
+- Scope: 24 lecture Markdown files plus this branch-only ledger changed; no demo or assignment path changed.
+- Structure: all 28 canonical lecture pages passed with 413 balanced fenced blocks, 298 parseable Python fences after accounting for notebook magics, and 86 resolving relative links.
+- Hierarchy/cues: Lecture 03 and the four points pages each have one H1; Lectures 06–09 each retain exactly three `LIVE DEMO` markers.
+- Runtime: a targeted suite passed with warnings promoted to errors under Python 3.12, NumPy 2.0.2, pandas 3.0.5, SciPy 1.18.1, statsmodels 0.14.6, Plotly, and scikit-learn 1.9.0. It covered NumPy membership/indirect sorting, DataFrame–Series alignment, null-key merge behavior, the t interval, group-wise Plotly OLS, named GroupBy aggregation, weighted reshape and zero-weight detection, STL, ADF, and tick resampling/index validation.
+- Safety: the advanced CLI no-match and match branches passed a targeted shell-logic check; destructive Git recipes remain removed.
+- Build: Eleventy wrote 30 pages and copied 124 assets.
+- Hygiene: `git diff --check` passed, and every changed path is inside the authorized lecture scope or this ledger.
 
 ## Course-flow revision checkpoint
 
@@ -180,10 +229,9 @@ Scores use 5 for the strongest result. The size score considers the whole lectur
 
 ## Next action
 
-1. Present the full adversarial report and obtain direction before changing lecture content.
-2. If authorized, repair P1 correctness/safety findings first, then the P2 content/organization batch without expanding inherited topic scope.
-3. Run an independent post-edit review and integrated lecture gates before requesting approval again.
-4. Keep demos and assignments deferred until lecture content is explicitly approved.
+1. Obtain instructor approval or targeted lecture feedback on this repaired checkpoint.
+2. If further lecture changes are requested, keep them lecture-only and rerun proportionate adversarial and integrated gates.
+3. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
 
 ## Checkpoint log
 

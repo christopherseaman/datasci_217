@@ -134,7 +134,7 @@ difference = np.setdiff1d(arr1, arr2)            # array([1, 2]) - in arr1 not a
 symmetric_diff = np.setxor1d(arr1, arr2)         # Elements in one but not both
 
 # Test membership
-is_member = np.in1d(arr1, arr2)                  # Boolean array
+is_member = np.isin(arr1, arr2)                  # Boolean array
 ```
 
 # Advanced Sorting
@@ -146,7 +146,6 @@ arr = np.array([3, 1, 4, 1, 5, 9, 2, 6])
 
 # Sorting
 sorted_arr = np.sort(arr)                        # Returns sorted copy
-arr.sort()                                       # Sorts in place
 
 # Indirect sort (get indices)
 sorted_indices = np.argsort(arr)                 # Indices that would sort
@@ -249,7 +248,7 @@ For working with arrays larger than RAM:
 
 ```python
 # Create memory-mapped file
-shape = (1000000, 100)
+shape = (1000000, 100)  # 800,000,000 bytes (~800 MB) of float64 storage
 mmap_array = np.memmap('large_array.dat', dtype='float64', mode='w+', shape=shape)
 
 # Use like normal array (but stored on disk)

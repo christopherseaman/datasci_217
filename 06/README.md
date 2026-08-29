@@ -15,7 +15,9 @@ See [BONUS.md](BONUS.md) for advanced topics:
 *Fun fact: The word “wrangling” comes from the Old English “wranglian” meaning “to dispute or argue.” This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
 
 
-There was a schism in 2007, when a sect advocating OpenOffice created a fork of Sunday.xlsx and maintained it independently for several months. The efforts to reconcile the conflicting schedules led to the reinvention, within the cells of the spreadsheet, of modern version control.
+Join keys are the table's name tags: if two rows share a tag, pandas brings
+their columns together. A good key makes matching boring; a bad key turns the
+merge into an enthusiastic photocopier.
 
 Data wrangling is the art of transforming messy, disconnected datasets into clean, analysis-ready structures. This lecture focuses on the three fundamental operations you’ll use every single day: **merging datasets**, **concatenating DataFrames**, and **reshaping data formats**.
 
@@ -32,6 +34,13 @@ Data wrangling is the art of transforming messy, disconnected datasets into clea
 *Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration.*
 
 Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you’ve worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
+
+**Important difference from SQL:** pandas matches null key values with other
+null key values. SQL usually treats `NULL = NULL` as unknown, so SQL joins do
+not match two null keys. If missing keys should never match, filter them or
+replace missing keys on the left and right with **different** sentinels that
+cannot occur in the data. Never use one shared sentinel—it would recreate the
+same match. Document whichever policy you choose.
 
 **Visual Guide - Join Types:**
 
@@ -782,7 +791,8 @@ Wide: subject columns         Long: subject stored as a value
 ```
 
 
-If all else fails, use “significant at a p>0.05 level” and hope no one notices
+If a reshape feels mysterious, write down what one row represents before
+choosing `pivot()` or `melt()`—your future self will thank you for the labels.
 
 # LIVE DEMO!
 

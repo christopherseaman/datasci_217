@@ -12,7 +12,7 @@ See the lecture for baseline Series/DataFrame comparisons. This section deepens 
 
 - Automatic index alignment during arithmetic operations
 - Series align on their index; DataFrames align on both axes when mixed
-- `df.add(series, axis='columns', fill_value=0)` / `df.sub(series, axis='index', fill_value=0)` / `df.mul(...)` / `df.div(...)` — combine while filling gaps
+- `df.add(series, axis='columns')` / `df.sub(series, axis='index')` / `df.mul(...)` / `df.div(...)` — combine after choosing the broadcast axis
 - `.reindex()` and `.align(join='inner' | 'outer')` — enforce explicit label sets before combining
 
 Series align on their index, while DataFrames track both axes. When you mix them, pandas broadcasts along matching labels and introduces `NaN` wherever labels do not overlap, so make the intended axis explicit when you call arithmetic methods.
@@ -42,7 +42,10 @@ averages = metrics.mean()
 targets = pd.Series({'Salary': 110000, 'Bonus': 5000, 'Equity': 2000})
 
 print(metrics.sub(averages, axis='columns'))  # Broadcast Series down rows
-print(metrics.add(targets, fill_value=0))     # Fill missing labels before combining
+# Reindex explicitly before arithmetic: this makes both the labels and the
+# treatment of labels absent from the Series visible (and works in pandas 3).
+targets_for_metrics = targets.reindex(metrics.columns, fill_value=0)
+print(metrics.add(targets_for_metrics, axis='columns'))
 ```
 
 ---
@@ -205,4 +208,3 @@ print(preview.head())
 Start with the lecture’s clean CSV example, then layer these options as you encounter real-world quirks.
 
 ---
-

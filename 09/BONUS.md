@@ -132,7 +132,9 @@ plt.show()
 from statsmodels.tsa.seasonal import STL
 
 # STL decomposition (more robust to outliers)
-stl = STL(ts, seasonal=365)
+# `period` is the known number of observations per cycle (annual here).
+# `seasonal` is the odd length of STL's seasonal smoother, not the period.
+stl = STL(ts, period=365, seasonal=13, robust=True)
 result = stl.fit()
 
 # Access components
@@ -156,15 +158,15 @@ from statsmodels.tsa.stattools import adfuller
 
 # Check stationarity
 def check_stationarity(series):
-    """Check if time series is stationary"""
+    """Report the ADF test against the unit-root null hypothesis."""
     result = adfuller(series)
     print(f'ADF Statistic: {result[0]}')
     print(f'p-value: {result[1]}')
     
     if result[1] <= 0.05:
-        print("Series is stationary")
+        print("Reject the unit-root null: evidence supports stationarity")
     else:
-        print("Series is not stationary")
+        print("Fail to reject the unit-root null: result is inconclusive")
 
 # Fit ARIMA model
 def fit_arima(series, order=(1, 1, 1)):
@@ -261,14 +263,24 @@ resampled = df.set_index('time').groupby(['key', time_key]).sum()
 **Reference:**
 
 ```python
+import pandas as pd
+
 # Process high-frequency tick data (e.g., sensor readings)
 def process_tick_data(df, freq='1min'):
-    """Process tick data into regular intervals"""
-    resampled = df.resample(freq).agg({
-        'value': 'last',      # Last value in interval
-        'volume': 'sum',      # Total volume in interval
-        'count': 'count'      # Number of observations in interval
-    })
+    """Aggregate a DatetimeIndex table with ``value`` and ``volume`` columns.
+
+    ``n_obs`` counts input rows in each interval; it is not a source
+    column. Add another named aggregation when a separate quantity field
+    should be summed. Choose and document a naive or timezone-aware index
+    before calling; resampling preserves that time basis.
+    """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise TypeError('df must use a DatetimeIndex')
+    resampled = df.sort_index().resample(freq).agg(
+        last_value=('value', 'last'),
+        total_volume=('volume', 'sum'),
+        n_obs=('value', 'size'),
+    )
     return resampled
 ```
 

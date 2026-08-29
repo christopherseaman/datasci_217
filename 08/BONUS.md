@@ -10,20 +10,15 @@
 import pandas as pd
 import numpy as np
 
-# Custom aggregation function
-def custom_agg(series):
-    """Custom aggregation that returns multiple values"""
-    return pd.Series({
-        'mean': series.mean(),
-        'std': series.std(),
-        'min': series.min(),
-        'max': series.max(),
-        'range': series.max() - series.min(),
-        'iqr': series.quantile(0.75) - series.quantile(0.25)
-    })
-
-# Apply custom function
-df.groupby('category').agg(custom_agg)
+# Named/list aggregations keep each aggregation scalar, producing stable columns.
+summary = df.groupby('category').agg(
+    mean=('value', 'mean'),
+    std=('value', 'std'),
+    min=('value', 'min'),
+    max=('value', 'max'),
+    range=('value', lambda s: s.max() - s.min()),
+    iqr=('value', lambda s: s.quantile(0.75) - s.quantile(0.25)),
+)
 ```
 
 ### Lambda Functions in GroupBy
@@ -59,9 +54,9 @@ df['date'] = pd.to_datetime(df['date'])
 df = df.set_index('date')
 
 # Group by time periods
-df.groupby(pd.Grouper(freq='ME')).sum()  # Month-end groups
-df.groupby(pd.Grouper(freq='QE')).mean()  # Quarter-end groups
-df.groupby(pd.Grouper(freq='YE')).max()   # Year-end groups
+df.groupby(pd.Grouper(freq='ME'))[['value']].sum()  # Month-end groups
+df.groupby(pd.Grouper(freq='QE'))[['value']].mean()  # Quarter-end groups
+df.groupby(pd.Grouper(freq='YE'))[['value']].max()   # Year-end groups
 
 # Custom time windows
 df.groupby(pd.Grouper(freq='7D')).agg({
@@ -94,16 +89,20 @@ pivot.columns = ['_'.join(col).strip() for col in pivot.columns]
 **Reference:**
 
 ```python
-# Custom aggregation in pivot tables
-def weighted_average(group):
-    """Calculate weighted average"""
-    return np.average(group['value'], weights=group['weight'])
+# A pivot_table aggregator receives only the selected ``values`` series, not
+# the full rows. Compute weighted components first, validate the denominators,
+# then reshape their sums.
+if (df['weight'] < 0).any():
+    raise ValueError('weights must be nonnegative')
 
-pivot = pd.pivot_table(df,
-                      values='value',
-                      index='category',
-                      columns='region',
-                      aggfunc=weighted_average)
+df = df.assign(weighted_value=df['value'] * df['weight'])
+weighted = (df.groupby(['category', 'region'], observed=True)
+              [['weighted_value', 'weight']].sum())
+weight_totals = weighted['weight'].unstack('region')
+if weight_totals.eq(0).any().any():
+    raise ValueError('each observed group must have positive total weight')
+
+pivot = weighted['weighted_value'].unstack('region').div(weight_totals)
 ```
 
 ### Pivot Table with Missing Data Handling
@@ -140,9 +139,9 @@ pivot_dropped = pivot.dropna()               # Drop missing rows
 df_multi = df.set_index(['level1', 'level2'])
 
 # Operations on MultiIndex
-df_multi.groupby(level=0).sum()  # Group by first level
-df_multi.groupby(level=1).mean()  # Group by second level
-df_multi.groupby(level=[0, 1]).max()  # Group by both levels
+df_multi.groupby(level=0, observed=True)[['value']].sum()  # First level
+df_multi.groupby(level=1, observed=True)[['value']].mean()  # Second level
+df_multi.groupby(level=[0, 1], observed=True)[['value']].max()  # Both levels
 
 # Swap levels
 df_multi.swaplevel(0, 1)
@@ -216,7 +215,7 @@ def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
             continue
 
         # Process chunk
-        chunk_result = chunk.groupby(group_cols)[agg_cols].sum()
+        chunk_result = chunk.groupby(group_cols, observed=True)[agg_cols].sum()
         results.append(chunk_result)
 
     if not results:
@@ -224,7 +223,9 @@ def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
 
     # Combine results
     all_index_levels = list(range(results[0].index.nlevels))
-    final_result = pd.concat(results).groupby(level=all_index_levels).sum()
+    final_result = (pd.concat(results)
+                    .groupby(level=all_index_levels, observed=True)[agg_cols]
+                    .sum())
     
     return final_result
 ```
@@ -239,7 +240,7 @@ import pandas as pd
 
 def process_chunk(chunk_data):
     """Process a single chunk"""
-    return chunk_data.groupby('category').sum()
+    return chunk_data.groupby('category', observed=True)[['value']].sum()
 
 def parallel_groupby(df, n_processes=4):
     """Parallel groupby processing"""
@@ -258,7 +259,7 @@ def parallel_groupby(df, n_processes=4):
         results = pool.map(process_chunk, chunks)
     
     # Combine results
-    return pd.concat(results).groupby(level=0).sum()
+    return pd.concat(results).groupby(level=0, observed=True)[['value']].sum()
 ```
 
 ## Advanced Statistical Aggregations
@@ -373,21 +374,11 @@ pivot = pd.pivot_table(df,
 
 ### Pivot Table with Custom Aggregation
 
-**Reference:**
-
-```python
-# Custom aggregation in pivot tables
-def weighted_mean(group):
-    """Calculate weighted mean"""
-    return np.average(group['value'], weights=group['weight'])
-
-pivot = pd.pivot_table(df,
-                      values='value',
-                      index='category',
-                      columns='region',
-                      aggfunc=weighted_mean,
-                      fill_value=0)
-```
+The grouped weighted-mean workflow in
+[Pivot Table with Custom Functions](#pivot-table-with-custom-functions) is the
+canonical example. It computes and validates the numerator and denominator
+before reshaping because `pivot_table(values='value')` does not pass the
+separate `weight` column to its aggregator.
 
 ## Advanced GroupBy Transformations
 
@@ -508,7 +499,7 @@ s3 = boto3.client('s3')
 df = pd.read_csv('s3://bucket/data.csv')
 
 # Process data
-result = df.groupby('category').sum()
+result = df.groupby('category', observed=True)[['value']].sum()
 
 # Save back to S3
 result.to_csv('s3://bucket/results.csv')

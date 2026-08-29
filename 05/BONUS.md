@@ -344,11 +344,9 @@ For optional automation and batch processing, you can execute Jupyter notebooks 
 # Execute a single notebook
 jupyter nbconvert --execute --to notebook your_notebook.ipynb
 
-# Execute and save output to a new file
-jupyter nbconvert --execute --to notebook --output executed_notebook your_notebook.ipynb
-
-# Execute and overwrite the original file
-jupyter nbconvert --execute --to notebook --inplace your_notebook.ipynb
+# Execute to a separate output file; keep the source notebook unchanged.
+jupyter nbconvert --execute --to notebook \
+    --output executed_notebook your_notebook.ipynb
 ```
 
 ## Notebook Pipeline Automation
@@ -384,6 +382,9 @@ echo "Pipeline completed successfully!"
 
 - `--execute`: Run all cells in the notebook
 - `--to notebook`: Keep output as notebook format
-- `--inplace`: Overwrite the original file
-- `--output filename`: Save to a new file
-- `--allow-errors`: Continue execution even if cells fail
+- `--output filename`: Save to a new file (the safe default shown above)
+- Avoid `--inplace` unless overwriting the source is deliberate and a backup or
+  version-control checkpoint exists.
+- Avoid `--allow-errors` in validation or production pipelines: it can produce
+  an output notebook even when a cell failed. If used for exploratory capture,
+  inspect the recorded errors and still check the command's exit status.

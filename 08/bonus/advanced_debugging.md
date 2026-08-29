@@ -216,8 +216,17 @@ class PipelineDebugger:
         for validation_name, validation_func in validations.items():
             try:
                 result = validation_func(data)
-                validation_results[validation_name] = {'passed': True, 'result': result}
-                self.logger.info(f"  ✓ {validation_name}: PASSED")
+                # Validators may return a Boolean or raise. A false result is
+                # a failure even when no exception was raised.
+                passed = bool(result)
+                validation_results[validation_name] = {
+                    'passed': passed,
+                    'result': result,
+                }
+                if passed:
+                    self.logger.info(f"  ✓ {validation_name}: PASSED")
+                else:
+                    self.logger.error(f"  ✗ {validation_name}: FAILED")
             except Exception as e:
                 validation_results[validation_name] = {'passed': False, 'error': str(e)}
                 self.logger.error(f"  ✗ {validation_name}: FAILED - {str(e)}")

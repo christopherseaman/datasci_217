@@ -232,7 +232,10 @@ hierarchical_df = pd.DataFrame({
 })
 
 # Hierarchical grouping
-hierarchical_grouped = hierarchical_df.groupby(['Region', 'Department']).sum()
+hierarchical_grouped = (
+    hierarchical_df.groupby(['Region', 'Department'], observed=True)
+    [['Revenue', 'Employees']].sum()
+)
 print("Hierarchical grouping:")
 print(hierarchical_grouped)
 
@@ -502,11 +505,14 @@ def memory_efficient_analysis(df):
     
     for chunk in pd.read_csv('large_file.csv', chunksize=chunk_size):
         # Process chunk
-        chunk_result = chunk.groupby('category').sum()
+        chunk_result = chunk.groupby('category', observed=True)[['value']].sum()
         results.append(chunk_result)
-    
+
+    if not results:
+        raise ValueError("input file must contain at least one data row")
+
     # Combine results
-    final_result = pd.concat(results).groupby(level=0).sum()
+    final_result = pd.concat(results).groupby(level=0, observed=True)[['value']].sum()
     return final_result
 ```
 
@@ -520,7 +526,7 @@ import pandas as pd
 
 def process_chunk(chunk):
     """Process a single chunk of data"""
-    return chunk.groupby('category').sum()
+    return chunk.groupby('category', observed=True)[['value']].sum()
 
 def parallel_groupby(df, n_processes=4):
     """Parallel groupby processing"""
@@ -539,7 +545,7 @@ def parallel_groupby(df, n_processes=4):
         results = pool.map(process_chunk, chunks)
     
     # Combine results
-    return pd.concat(results).groupby(level=0).sum()
+    return pd.concat(results).groupby(level=0, observed=True)[['value']].sum()
 ```
 
 # LIVE DEMO!

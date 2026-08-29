@@ -108,10 +108,10 @@ git branch -d feature/data-visualization
 
 ### Undoing Changes
 
-**Undo working directory changes:**
+**Review before undoing working-directory changes:**
 ```bash
-git checkout -- file.txt          # Discard changes to file
-git checkout .                     # Discard all changes
+git diff file.txt                  # Review edits first
+git restore --staged file.txt     # Unstage, keep edits
 ```
 
 **Undo staged changes:**
@@ -124,7 +124,6 @@ git reset                          # Unstage all files
 ```bash
 git reset --soft HEAD~1            # Undo last commit, keep changes staged
 git reset --mixed HEAD~1           # Undo last commit, unstage changes
-git reset --hard HEAD~1            # Undo last commit, lose changes (DANGEROUS!)
 ```
 
 **Revert published commits:**
@@ -398,8 +397,8 @@ git branch -d temp-branch          # Clean up
 # Undo last commit but keep changes
 git reset --soft HEAD~1
 
-# Completely remove last commit (DANGEROUS!)
-git reset --hard HEAD~1
+# Safely undo a published commit with a new inverse commit
+git revert HEAD
 
 # Amend last commit message
 git commit --amend -m "New commit message"
@@ -411,24 +410,17 @@ git commit --amend --no-edit
 
 ### Large Repository Issues
 
-```bash
-# Clean up repository
-git gc --aggressive --prune=now
-
-# Remove files from Git history (NUCLEAR OPTION)
-git filter-branch --force --index-filter \
-'git rm --cached --ignore-unmatch large_file.csv' \
---prune-empty --tag-name-filter cat -- --all
-
-# Force push (after filter-branch)
-git push --force --all
-```
+For sensitive or oversized files accidentally committed, stop and coordinate
+with the repository administrator. History rewriting affects every clone; do
+not treat legacy history-rewrite commands as routine recipes. Make a verified
+backup and follow the hosting provider's current removal workflow in a
+disposable clone.
 
 ## When NOT to Use These Advanced Features
 
 - **Don't rebase public branches:** Others might have based work on them
-- **Don't force push to shared branches:** Can cause others to lose work  
-- **Don't use filter-branch lightly:** Can rewrite entire repository history
+- **Don't force push to shared branches:** it can cause others to lose work.
+- **Don't rewrite history casually:** coordinate, back up, and use a disposable clone.
 - **Don't overcomplicate:** Simple workflows are often better for small teams
 
 ## Resources for Deep Learning

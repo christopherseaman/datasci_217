@@ -219,7 +219,11 @@ print(both_index)
 - After set_index() operations
 - Joining dimension tables to fact tables (data warehouse style)
 
-**Gotcha:** When merging on index, the index values are preserved in many-to-one joins (unlike column merges which discard indexes).
+**Gotcha:** An index used as a merge key is not automatically preserved as the
+result's index in every merge. Column-key merges generally create a new result
+index; index-key merges use the participating index labels as keys, but the
+resulting index structure depends on the join and key choices. Inspect
+`result.index` or call `reset_index()` when you need a predictable column form.
 
 ---
 
@@ -469,7 +473,7 @@ try:
     result = pd.concat([df1, df2], verify_integrity=True)
 except ValueError as e:
     print(f"Error: {e}")
-# Error: Indexes have overlapping values: Int64Index([2], dtype='int64')
+# Error: Indexes have overlapping values: Index([2], dtype='int64')
 
 # Solution: Use ignore_index or handle duplicates
 result = pd.concat([df1, df2], ignore_index=True)

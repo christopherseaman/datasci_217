@@ -210,46 +210,28 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
 ```
 
-### Custom Layers and Models
+### Sequence attention with a documented Keras layer
 
 **Reference:**
 
-- `from tensorflow.keras import layers, Model` - Custom model building
-- `class CustomLayer(layers.Layer)` - Custom layer class
-- `class CustomModel(Model)` - Custom model class
+- `keras.layers.MultiHeadAttention` - Current built-in self/cross-attention layer
 
 **Example:**
 
 ```python
-from tensorflow.keras import layers, Model
+import tensorflow as tf
+from tensorflow import keras
 
-# Custom layer
-class AttentionLayer(layers.Layer):
-    def __init__(self, units):
-        super(AttentionLayer, self).__init__()
-        self.units = units
-    
-    def build(self, input_shape):
-        self.W = self.add_weight(shape=(input_shape[-1], self.units),
-                                initializer='random_normal',
-                                trainable=True)
-    
-    def call(self, inputs):
-        attention_weights = tf.nn.softmax(tf.matmul(inputs, self.W))
-        return tf.matmul(attention_weights, inputs)
-
-# Custom model
-class CustomModel(Model):
-    def __init__(self):
-        super(CustomModel, self).__init__()
-        self.attention = AttentionLayer(64)
-        self.dense1 = layers.Dense(128, activation='relu')
-        self.dense2 = layers.Dense(10, activation='softmax')
-    
-    def call(self, inputs):
-        x = self.attention(inputs)
-        x = self.dense1(x)
-        return self.dense2(x)
+# A batch of sequences: (batch, timesteps, embedding_dim)
+inputs = keras.Input(shape=(20, 64))
+attention = keras.layers.MultiHeadAttention(
+    num_heads=4, key_dim=16, dropout=0.1
+)(inputs, inputs)  # self-attention; output shape is (batch, 20, 64)
+x = keras.layers.LayerNormalization()(inputs + attention)
+x = keras.layers.GlobalAveragePooling1D()(x)
+outputs = keras.layers.Dense(10, activation="softmax")(x)
+model = keras.Model(inputs, outputs)
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
 ```
 
 ## Model Ensembling
@@ -390,13 +372,13 @@ model.plot(forecast)
 - `import joblib` - Joblib for scikit-learn models
 - `joblib.dump(model, 'model.pkl')` - Save model
 - `model = joblib.load('model.pkl')` - Load model
-- `tf.keras.models.save_model(model, 'path')` - Save TensorFlow model
+- `model.save('model.keras')` - Save a Keras model in the native `.keras` format
+- `model.export('saved_model')` - Export a TensorFlow SavedModel for serving (Keras 3)
 
 **Example:**
 
 ```python
 import joblib
-import pickle
 
 # Save scikit-learn model
 joblib.dump(model, 'model.pkl')
@@ -414,6 +396,8 @@ joblib.dump(model_package, 'model_package.pkl')
 loaded = joblib.load('model_package.pkl')
 model = loaded['model']
 ```
+
+Pickle/joblib files can execute arbitrary code while loading. Load them only from a trusted, integrity-checked source in a compatible environment; never treat an uploaded or untrusted pickle as data. For Keras, use `keras.models.load_model('model.keras')` for the native format; use the exported SavedModel with a serving/runtime tool rather than passing it to `load_model`.
 
 ### Model Versioning
 
@@ -452,8 +436,8 @@ with mlflow.start_run():
 
 **Reference:**
 
-- `from featuretools import dfs` - Automated feature engineering
-- `feature_matrix, feature_defs = dfs(entities, relationships)` - Generate features
+- `EntitySet.add_dataframe` - Register related tables
+- `featuretools.dfs` - Generate features from an EntitySet
 
 **Example:**
 
@@ -464,14 +448,14 @@ import featuretools as ft
 es = ft.EntitySet(id='data')
 
 # Add entities
-es = es.entity_from_dataframe(
-    entity_id='customers',
+es = es.add_dataframe(
+    dataframe_name='customers',
     dataframe=customer_df,
     index='customer_id'
 )
 
-es = es.entity_from_dataframe(
-    entity_id='transactions',
+es = es.add_dataframe(
+    dataframe_name='transactions',
     dataframe=transaction_df,
     index='transaction_id',
     time_index='transaction_date'
@@ -479,14 +463,16 @@ es = es.entity_from_dataframe(
 
 # Define relationships
 es = es.add_relationship(
-    ft.Relationship(es['customers']['customer_id'],
-                   es['transactions']['customer_id'])
+    parent_dataframe_name='customers',
+    parent_column_name='customer_id',
+    child_dataframe_name='transactions',
+    child_column_name='customer_id',
 )
 
 # Generate features
 feature_matrix, feature_defs = ft.dfs(
     entityset=es,
-    target_entity='customers',
+    target_dataframe_name='customers',
     max_depth=2
 )
 ```
@@ -555,7 +541,9 @@ def detect_drift(reference_data, new_data, threshold=0.05):
 for batch in data_batches:
     drift = detect_drift(reference_data, batch)
     if any(d['drift'] for d in drift.values()):
-        print("Drift detected! Retrain model.")
+        print("Drift signal: investigate data quality, affected segments, and live performance.")
+        # Retraining requires explicit review, leakage checks, and validation
+        # against the current model before any deployment decision.
 ```
 
 ### A/B Testing for Models

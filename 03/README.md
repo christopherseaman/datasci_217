@@ -1,4 +1,4 @@
-NumPy Arrays & Virtual Environments
+# NumPy Arrays & Virtual Environments
 
 Lectures 01–02 established script, language, and Git fluency. Lecture 03 now
 focuses on making execution reproducible: first create a known environment,
@@ -7,13 +7,13 @@ terminal; notebooks begin in Lecture 04.
 
 **LIVE DEMO!**
 
-# Virtual Environments
+## Virtual Environments
 
 ![xkcd 1987: Python Environment](media/xkcd_1987.png)
 
 *Virtual environments prevent package chaos*
 
-## Why Virtual Environments?
+### Why Virtual Environments?
 
 **The Problem:** Different projects need different package versions.
 
@@ -23,7 +23,7 @@ terminal; notebooks begin in Lecture 04.
 
 **The Solution:** Each project gets its own Python environment.
 
-## Lecture 03 candidate environment
+### Lecture 03 candidate environment
 
 This lecture uses one tested course candidate:
 
@@ -34,11 +34,11 @@ This lecture uses one tested course candidate:
 
 These versions define the tested candidate for this lecture's NumPy work, not a permanent dependency set for every later lecture. Later activities may add packages through their own recorded requirements. The primary setup below uses uv. The standard-library `venv` and Conda sections are alternatives for comparison; here they reproduce the same version, directory, and dependency contract rather than defining separate learning outcomes.
 
-## Reproducibility vocabulary
+### Reproducibility vocabulary
 
 A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs.
 
-### Interpreter
+#### Interpreter
 
 The Python **interpreter** is the executable program that reads and runs Python code. Two terminals can resolve the command `python` to different interpreter files, so both version and location matter.
 
@@ -56,7 +56,7 @@ python -c "import sys; print(sys.executable)"
 
 The `-c` option runs the short Python string that follows it.
 
-### Package, module, and dependency
+#### Package, module, and dependency
 
 A **module** is a Python file that can be imported. A **package** is installable software that can provide one or more modules. NumPy is a package; code normally loads its top-level module with `import numpy`.
 
@@ -77,7 +77,7 @@ numpy==2.0.2
 
 `==` pins the direct dependency to one exact candidate version. It can be changed later only as an intentional, tested course update.
 
-### Environment and activation
+#### Environment and activation
 
 An **environment** is the interpreter plus the packages available to it. A **virtual environment** is an isolated directory containing a project-specific Python command and package installation location.
 
@@ -91,7 +91,7 @@ The environment is recreated from instructions and requirements; it is not synch
 
 **Activation** changes the current shell so `python` and installed commands resolve to the selected environment. Activation does not install a package and does not change Python source files.
 
-## Using uv (course candidate)
+### Using uv (course candidate)
 
 [uv documentation](https://docs.astral.sh/uv/)
 
@@ -144,7 +144,7 @@ cd ..
 
 The recreated environment should independently report Python 3.12.13 and NumPy 2.0.2.
 
-## Using standard-library venv (alternative)
+### Using standard-library venv (alternative)
 
 Use this concise fallback only when uv is unavailable and the candidate Python interpreter is already installed. Confirm that `python` reports 3.12.13 before creating the environment:
 
@@ -168,7 +168,7 @@ In native Windows PowerShell, replace the Bash activation line with:
 
 The outcome is the same: an activated `.venv` created from the deliberate direct-dependency file. Choose one setup route; do not nest one environment inside another.
 
-## Using Conda (alternative comparison)
+### Using Conda (alternative comparison)
 
 [Conda documentation](https://docs.conda.io/)
 
@@ -211,7 +211,7 @@ print(f"Student {name} earned {grade:.1f}%")
 
 ![It's pronounced...](media/numpy.webp)
 
-# Why NumPy Matters
+## Why NumPy Matters
 
 Python is famously slow for numerical computing:
 
@@ -228,18 +228,20 @@ result = my_array * 2  # 0.3 ms - 150x faster!
 
 **NumPy is 10-100x faster** than pure Python for numerical operations.
 
-## The NumPy Solution
+### The NumPy Solution
 
 - **ndarray**: Fast, memory-efficient multidimensional arrays
 - **Vectorized operations**: Apply functions to entire arrays at once
 - **Broadcasting**: Smart handling of different-sized arrays
 - **Universal functions (ufuncs)**: Fast element-wise operations
 
-## NumPy Quick Reference
+## NumPy Arrays
+
+### NumPy Quick Reference
 
 ![NumPy Cheatsheet](media/nparray_cheatsheet.png)
 
-## Creating Arrays
+### Creating Arrays
 
 **Reference:**
 
@@ -257,7 +259,7 @@ range_arr = np.arange(10)        # array([0, 1, 2, ..., 9])
 full = np.full((2, 3), 7)        # 2x3 array filled with 7
 ```
 
-## Array Properties
+### Array Properties
 
 **Reference:**
 
@@ -270,7 +272,7 @@ print(arr.size)       # 6 - total elements
 print(arr.dtype)      # int64 - data type
 ```
 
-## Data Types
+### Data Types
 
 **Reference:**
 
@@ -288,9 +290,9 @@ str_arr = np.array(["1.25", "-9.6", "42"])
 num_arr = str_arr.astype(float)
 ```
 
-# Array Indexing and Slicing
+## Array Indexing and Slicing
 
-## Basic Indexing
+### Basic Indexing
 
 NumPy's indexing syntax allows you to access and slice array elements using familiar Python notation, extended to work seamlessly across multiple dimensions.
 
@@ -308,7 +310,7 @@ subset = arr[2:7]       # array([2, 3, 4, 5, 6])
 every_other = arr[::2]  # array([0, 2, 4, 6, 8])
 ```
 
-## Multidimensional Indexing
+### Multidimensional Indexing
 
 With multidimensional arrays, you can use comma-separated indices to access elements, rows, or columns, making it easy to work with matrices and higher-dimensional data.
 
@@ -326,7 +328,7 @@ first_two_rows = arr_2d[:2]  # First 2 rows
 middle_column = arr_2d[:, 1] # Column 1: array([2, 5, 8])
 ```
 
-## Boolean Indexing
+### Boolean Indexing
 
 Boolean indexing allows you to filter arrays using conditional logic, selecting only elements that meet specific criteria. This is essential for data analysis tasks like finding outliers, filtering datasets, or applying conditional transformations.
 
@@ -347,7 +349,7 @@ mask = (arr > 2) & (arr < 8)
 filtered = arr[mask]
 ```
 
-## Fancy Indexing
+### Fancy Indexing
 
 Fancy indexing uses integer arrays to select multiple elements at arbitrary positions in a single operation. This powerful technique enables efficient data reordering, sampling, and custom selection patterns without explicit loops.
 
@@ -365,7 +367,7 @@ arr_2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 selected = arr_2d[[0, 2], [1, 2]]  # array([2, 9])
 ```
 
-## Views vs Copies
+### Views vs Copies
 
 Understanding the distinction between views and copies is critical for avoiding unexpected behavior: slicing operations create views that share memory with the original array, while explicit copies create independent arrays.
 
@@ -386,9 +388,9 @@ copy[0] = 99                # Doesn't affect original
 print(arr)                  # array([1, 2, 3, 4, 5])
 ```
 
-# NumPy Operations
+## NumPy Operations
 
-## Arithmetic and Vectorized Operations
+### Arithmetic and Vectorized Operations
 
 NumPy's vectorized operations perform element-wise calculations across entire arrays without explicit loops, providing both cleaner code and significant performance improvements over standard Python operations.
 
@@ -409,7 +411,7 @@ arr = np.array([[1, 2, 3], [4, 5, 6]])
 result = arr + 10           # Adds 10 to all elements
 ```
 
-## Statistical Operations
+### Statistical Operations
 
 NumPy provides built-in statistical functions that operate across entire arrays or along specific axes, enabling quick computation of summary statistics for data analysis.
 
@@ -429,7 +431,7 @@ student_avg = grades.mean(axis=1)  # Average per student
 test_avg = grades.mean(axis=0)     # Average per test
 ```
 
-## Array Reshaping
+### Array Reshaping
 
 Reshaping operations change an array's dimensions. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
@@ -446,11 +448,12 @@ arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
 transposed = arr_2d.T         # Shape (2,3) -> (3,2)
 ```
 
-# Semi-Advanced Numpy
+## Semi-Advanced NumPy
 
-Debating punting these for the bonus content but want to at least mention them...
+The following short reference keeps a few useful NumPy operations visible;
+the more specialized material is collected in [the bonus page](BONUS.md).
 
-## Universal Functions (ufuncs)
+### Universal Functions (ufuncs)
 
 **Reference:**
 
@@ -467,7 +470,7 @@ arr2 = np.array([4, 2, 6])
 max_arr = np.maximum(arr1, arr2) # array([4, 5, 6])
 ```
 
-## Conditional Logic
+### Conditional Logic
 
 **Reference:**
 
@@ -481,7 +484,7 @@ result = np.where(arr > 0, arr, 0)  # Replace negatives with 0
 np.where(arr > 0, 'positive', 'negative')
 ```
 
-## Boolean Array Methods
+### Boolean Array Methods
 
 **Reference:**
 
@@ -498,7 +501,7 @@ any_above_90 = (grades > 90).any()  # True
 all_above_80 = (grades > 80).all()  # False (78 is not above 80)
 ```
 
-## Sorting
+### Sorting
 
 **Reference:**
 
@@ -518,7 +521,7 @@ arr_2d.sort(axis=0)     # Sort columns
 arr_2d.sort(axis=1)     # Sort rows
 ```
 
-## Random Number Generation
+### Random Number Generation
 
 **Reference:**
 
@@ -537,17 +540,11 @@ rng = np.random.default_rng(seed=123)
 data = rng.random((3, 3))  # Same result every time
 ```
 
-## NumPy Quick Reference
-
-![NumPy Cheatsheet](media/nparray_cheatsheet.png)
-
-*Essential NumPy operations at a glance*
-
 **LIVE DEMO!**
 
 ![Learning to Code...](media/learning_to_code.png)
 
-# Optional reference: Command Line Data Processing
+## Optional reference: Command Line Data Processing
 
 This section is optional reference material, not a new required workflow for
 the lecture. It continues the shell skills from Lectures 01–02 without
@@ -575,7 +572,7 @@ graph LR
 
 *Data flows through a series of command line tools, each performing one transformation*
 
-## Text Processing
+### Text Processing
 
 **Reference:**
 
@@ -599,7 +596,7 @@ grep -v "pattern" file.txt      # Inverse match
 grep -i "pattern" file.txt      # Case-insensitive
 ```
 
-## Advanced Processing
+### Advanced Processing
 
 **Reference:**
 
@@ -617,7 +614,7 @@ awk '{print $1, $3}' file.txt   # Print columns 1, 3
 awk -F',' '$3 > 50' data.csv    # Filter rows
 ```
 
-## Data Pipelines
+### Data Pipelines
 
 **Reference:**
 
@@ -630,7 +627,7 @@ cat data.csv | \
   head -n 10 > results.csv
 ```
 
-## Optional reference: Quick Data Visualization
+### Optional reference: Quick Data Visualization
 
 Terminal visualization is also optional/reference-only. Lecture 07 is the
 canonical place for visualization; these commands are included only as a

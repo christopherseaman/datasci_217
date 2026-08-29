@@ -29,6 +29,8 @@ Missing data is a common problem in real-world datasets. Understanding how to id
 
 *A missing marker records absence, not its cause. The same blank can mean nonresponse, inapplicability, or a system failure.*
 
+Before naming a missingness mechanism, ask what process could have produced the blank. A value may be missing for reasons unrelated to the data (for example, a sensor failed), because its absence is related to other observed information (for example, a survey question is skipped by a particular group), or because the unobserved value itself affects whether it is recorded (for example, high earners decline to report income). These are commonly called **MCAR** (Missing Completely At Random), **MAR** (Missing At Random), and **MNAR** (Missing Not At Random). The labels organize assumptions; counts alone cannot prove which mechanism applies.
+
 ![Missing Data Patterns](media/missing_data_patterns_diagram.png)
 *Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
 
@@ -57,11 +59,12 @@ print(df.isna().sum())  # A: 1, B: 1
 print(df.isna().any())  # A: True, B: True
 print(df.isna().all())  # A: False, B: False
 
-# Visualize missing data
-import matplotlib.pyplot as plt
-df.isna().sum().plot(kind='bar')
-plt.title('Missing Values by Column')
-plt.show()
+# Keep the first inspection tabular; charting is introduced in Lecture 07.
+missing_summary = pd.DataFrame({
+    'missing_count': df.isna().sum(),
+    'missing_fraction': df.isna().mean(),
+})
+print(missing_summary)
 ```
 
 ## Missing Data Analysis

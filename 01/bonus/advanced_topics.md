@@ -90,7 +90,9 @@ Your computer stores settings in environment variables:
 echo $HOME         # Your home directory
 echo $PATH         # Where computer looks for commands
 env                # Show all environment variables
+```
 
+```python
 # In Python, you can access these too:
 import os
 print(os.environ['HOME'])    # Access environment variable

@@ -14,12 +14,13 @@ This lecture uses prepared plotting tables so you can focus on choosing honest e
 
 # Outline
 
+- Visualization contract: question, audience, unit, grain, and encodings
+- Tufte's principles for honest, readable displays
+- Visualization ecosystem and tool selection
 - matplotlib fundamentals (figures, subplots, customization)
 - pandas plotting for quick data exploration
-- Statistical visualizations with seaborn
-- Visualization principles and best practices
-- Tufte's principles for effective data visualization
-- Modern visualization libraries (altair, plotnine)
+- seaborn statistical graphics and distribution views
+- Optional survey: modern visualization libraries (Altair, plotnine, Bokeh, Plotly)
 
 
 ![xkcd 1945: Scientific Paper Graph Quality](https://imgs.xkcd.com/comics/scientific_paper_graph_quality.png)

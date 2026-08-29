@@ -671,10 +671,10 @@ plt.tight_layout()
 plt.show()
 ```
 
-![media/viz_temp.png]
+![Time series temperature plot](media/viz_temp.png)
 
 
-![media/viz_temp_rolling.png]
+![Temperature plot with a rolling mean](media/viz_temp_rolling.png)
 
 *Optional decomposition and component plots belong in [BONUS.md](BONUS.md).*
 

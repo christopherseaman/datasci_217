@@ -329,21 +329,16 @@ show(p)
 
 ```python
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-# Create interactive scatter plot
-fig = px.scatter(df, x='total_bill', y='tip', 
+# Add a fitted ordinary-least-squares line. A raw line connecting rows in
+# dataframe order would not represent a statistical trend. Plotly delegates
+# OLS fitting to its optional statsmodels dependency, and color='time' fits
+# one line per time group rather than one pooled line.
+fig = px.scatter(df, x='total_bill', y='tip',
                  color='time', size='size',
                  hover_data=['day', 'smoker'],
-                 title='Interactive Tips Analysis')
-
-# Add trend line
-fig.add_trace(go.Scatter(x=df['total_bill'], 
-                        y=df['tip'],
-                        mode='lines',
-                        name='Trend',
-                        line=dict(dash='dash')))
+                 trendline='ols',
+                 title='Interactive Tips Analysis with fitted trend')
 
 # Show plot
 fig.show()
@@ -541,24 +536,28 @@ pyo.plot(fig, filename='interactive_plot.html', auto_open=False)
 **Reference:**
 
 ```python
-# Add confidence intervals to plots
-def plot_with_confidence(x, y, ax):
-    # Calculate confidence interval
-    mean_y = np.mean(y)
-    std_y = np.std(y)
-    n = len(y)
-    se = std_y / np.sqrt(n)
-    ci = 1.96 * se  # 95% confidence interval
-    
-    # Plot mean line
-    ax.axhline(mean_y, color='red', linestyle='-', linewidth=2)
-    
-    # Plot confidence interval
-    ax.axhspan(mean_y - ci, mean_y + ci, alpha=0.3, color='red')
-    
-    # Add labels
-    ax.text(0.02, 0.98, f'Mean: {mean_y:.2f} ± {ci:.2f}', 
-            transform=ax.transAxes, verticalalignment='top')
+# Add a one-sample t confidence interval for a mean. This is appropriate when
+# y is an independent sample from one population and its distribution is
+# reasonably symmetric (or n is large enough for the t approximation).
+import numpy as np
+from scipy import stats
+
+def plot_with_confidence(y, ax):
+    y = np.asarray(y, dtype=float)
+    n = y.size
+    if n < 2:
+        raise ValueError('at least two observations are required')
+    mean_y = y.mean()
+    se = stats.sem(y)
+    half_width = stats.t.ppf(0.975, df=n - 1) * se
+
+    ax.axhline(mean_y, color='red', linewidth=2, label='sample mean')
+    ax.axhspan(mean_y - half_width, mean_y + half_width,
+               alpha=0.3, color='red', label='95% t interval')
+    ax.text(0.02, 0.98,
+            f'Mean: {mean_y:.2f} (95% t interval: '
+            f'{mean_y - half_width:.2f}–{mean_y + half_width:.2f})',
+            transform=ax.transAxes, va='top')
 ```
 
 ### Statistical Annotations
@@ -683,7 +682,10 @@ def calculate_plot_quality(fig):
         'has_xlabel': bool(ax.get_xlabel()),
         'has_ylabel': bool(ax.get_ylabel()),
         'has_legend': bool(ax.get_legend()),
-        'has_grid': ax.grid,
+        'has_grid': any(
+            line.get_visible()
+            for line in ax.get_xgridlines() + ax.get_ygridlines()
+        ),
         'aspect_ratio': fig.get_figwidth() / fig.get_figheight()
     }
     

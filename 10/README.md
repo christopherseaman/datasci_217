@@ -254,7 +254,7 @@ Machine learning focuses on prediction rather than inference. While statistical 
 
 ## Introduction to `scikit-learn`
 
-`scikit-learn` is Python's standard machine learning library. It provides a consistent API across all models: fit, predict, transform. This consistency makes it easy to try different algorithms and build complex pipelines.
+`scikit-learn` is Python's standard machine learning library. Its objects share composable conventions, but they do not all expose the same methods: estimators learn with `fit`; predictors additionally provide `predict` (and often `predict_proba`); transformers provide `transform` (usually `fit_transform` as a convenience); and pipelines chain transformers with a final estimator.
 
 **The `scikit-learn` API Pattern:**
 
@@ -507,6 +507,10 @@ flowchart LR
 
 Preprocessing parameters must also be learned without the test set. A `Pipeline` is the usual way to fit an imputer, encoder, or scaler on each training fold and apply the learned transformation to validation or test rows.
 
+### Choosing an evaluation measure
+
+Carry one task- and cost-aligned measure through the same baseline → training-only validation/CV → one-time test workflow. For regression, MAE is easy to interpret in the target's units and is less sensitive to large errors than squared-error measures; RMSE (or MSE) penalizes large misses more. For classification, accuracy is reasonable only when class and error costs are balanced; precision, recall, F1, a confusion matrix, or a ranking/probability measure such as ROC AUC or average precision may better reflect unequal costs or class imbalance. Decide this measure before comparing candidates, and report any complementary measures needed to expose important failure modes. The test set is still reserved for the final, pre-specified report.
+
 *"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"*
 
 # The Secret Weapon: Gradient Boosting
@@ -540,7 +544,7 @@ Gradient boosting is widely used in machine learning competitions and applied ta
 
 **Gradient Boosting: The Magnum of Machine Learning**
 
-Gradient boosting builds models sequentially, each one correcting the mistakes of the previous ones.
+For squared-error regression, this can be pictured as fitting the next tree to ordinary residuals (actual minus current prediction). More generally, gradient boosting fits each new learner to pseudo-residuals—the negative gradient of the chosen loss—so the target is not always an ordinary residual and the loss need not be squared error.
 
 ```
 Model 1: Makes predictions (with errors)
@@ -555,8 +559,8 @@ Final: Combine all models (like a modeling ensemble)
 | Step | What Happens | Example |
 |------|--------------|---------|
 | 1 | Initial model makes predictions | Predicts: [5.0, 3.0, 7.0] |
-| 2 | Calculate errors (residuals) | Actual: [5.5, 3.2, 6.8], Errors: [0.5, 0.2, -0.2] |
-| 3 | New model predicts the errors | Predicts errors: [0.4, 0.3, -0.1] |
+| 2 | Calculate the next-step targets | For squared-error regression, residuals: [0.5, 0.2, -0.2] |
+| 3 | New model predicts those targets | Example fitted updates: [0.4, 0.3, -0.1] |
 | 4 | Add error predictions to original | New predictions: [5.4, 3.3, 6.9] |
 | 5 | Repeat until errors are minimized | Continue for N rounds |
 
@@ -593,14 +597,14 @@ Final: Combine all models (like a modeling ensemble)
 
 **Hyperparameter Effects:**
 
-| Hyperparameter | Too Low | Too High | Sweet Spot |
+| Hyperparameter | Too Low | Too High | Illustrative toy starting points* |
 |----------------|---------|----------|------------|
 | `n_estimators` | Underfitting | Overfitting | 50-200 |
 | `max_depth` | Can't learn complex patterns | Overfitting | 3-6 |
 | `learning_rate` | Slow convergence | Unstable training | 0.01-0.3 |
 | `subsample` | Less robust | More variance | 0.8-1.0 |
 
-*Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash. The sweet spot is somewhere in between.*
+*These ranges are toy starting points, not universal sweet spots. Validate them against a baseline with the task's chosen measure; the useful range depends on the data, objective, budget, and regularization.* Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash.
 
 **Early Stopping:** Helps limit overfitting by stopping training when validation performance stops improving.
 
