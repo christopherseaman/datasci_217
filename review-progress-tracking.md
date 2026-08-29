@@ -153,4 +153,4 @@ All eight findings were repaired in the owning lecture layer. The independent re
 | `8fd8465` | Add a new-session handoff | Preserve the missing-history diagnosis, replay experiment, and completed lecture-review state outside task history |
 | `3f2c9cd` | Rebalance lecture flow and prerequisites | Lecture-only implementation and initial integrated validation passed |
 | `f9dcd50` | Close adversarial lecture-flow findings | Eight prerequisite/API-contract findings repaired; final structural, build, pandas 3, and independent review gates passed |
-| Working checkpoint | Reorganize lecture content for pandas 3 | Expanded validation and independent review passed; ready to commit and present for acceptance |
+| `a728700` | Reorganize lecture content for pandas 3 | Expanded validation and independent review passed; lecture-only checkpoint ready for acceptance |
