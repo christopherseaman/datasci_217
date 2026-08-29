@@ -34,8 +34,10 @@ jupyter nbconvert --to notebook --execute \
 Create a small patient table, quantify missingness, inspect a row-level
 summary, and apply context-specific strategies: median imputation for age,
 forward fill for ordered test dates, and a documented drop rule for rows
-missing both critical measurements. The tabular summary is intentional;
-visualization belongs to Lecture 07.
+missing both critical measurements. The tabular summary is the core activity.
+An optional heatmap preview is included immediately afterward for visual
+learners; it previews the formal visualization workflow in Lecture 07 without
+turning chart interpretation into a Lecture 05 prerequisite.
 
 ## Demo 2 — Transformation and cleaning pipeline
 

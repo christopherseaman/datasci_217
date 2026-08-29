@@ -314,7 +314,9 @@ script-based because notebooks are intentionally introduced only in Lecture 04.
   pins for plotting, statistics, modeling, and the Lecture 11 capstone.
 - Reconciled the richer 04–11 notebook material into Markdown, regenerated
   notebooks without outputs, and added the missing 04 Anscombe fixture and 05
-  requirements file.
+  requirements file. Lecture 05 Demo 1 keeps its tabular missingness analysis
+  as the core path and adds an explicitly labeled Lecture 07 heatmap preview
+  for visual learners, with the plotting dependencies pinned alongside it.
 - Fixed pandas 3/API issues: tied `qcut`, current Matplotlib `tick_labels`,
   Altair point selections, lowercase hourly aliases, and current notebook
   metadata. Removed runtime package installation from 04 demos.
@@ -346,8 +348,11 @@ Independent implementation validation:
   2.0.2; shell syntax and Python compilation checks passed.
 - Repair agents executed fresh copies of all 04–09 notebooks, all three
   Lecture 10 demos, and required Lecture 11 notebooks in isolated pinned
-  environments with zero cell errors. Optional Lecture 11 geo execution and
-  Colab publication remain unverified.
+  environments with zero cell errors. The optional Lecture 11 geo notebook was
+  subsequently executed in the same temporary capstone layout with its
+  separate geospatial dependencies; it is included as a notebook and Colab
+  option, while remote Colab execution remains a release-time certification
+  task.
 - Additional scoped checks found no stale uppercase pandas hourly aliases,
   legacy Matplotlib `labels=`, deprecated Altair selection APIs, unsafe
   `nbconvert --inplace`/`--allow-errors` guide references, or broad pandas-2
@@ -360,6 +365,12 @@ non-blocking teaching behavior; the current script now handles it explicitly.
 The focused follow-up also passed the simplified Lecture 01 integration and
 CLI demos with zero stderr and confirmed that Lecture 04 Demo 1 no longer
 imports pandas before pandas is introduced in the lecture.
+- The revised Lecture 05 Demo 1, including its visual-preview cell, and the
+  other two Lecture 05 demos were regenerated and executed in a fresh pinned
+  environment with zero cell errors.
+- The two unreferenced legacy demo Markdown files (`07/demo/data_cleaning_viz_demo.md`
+  and `08/demo/live_demo_guide.md`) were removed; the active demo guides are
+  now the only student-facing demo entry points for those lectures.
 No assignment paths were edited. The active demo phase is ready for a
 checkpoint commit; the separate lecture heading-format gate and eventual
 branch-only cleanup remain open.

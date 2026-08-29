@@ -58,12 +58,35 @@ print((df.isnull().sum() / len(df) * 100).round(1))
 print(f"\nRows with missing data: {df.isnull().any(axis=1).sum()} out of {len(df)}")
 ```
 
-## Visualize Missing Data Pattern
+## Visual Preview: Missingness Heatmap
+
+The tabular summary above is the core Lecture 05 activity. For visual learners,
+this optional preview turns the same missingness indicators into a heatmap. It
+is a preview of the visualization workflow formalized in Lecture 07, not a new
+cleaning decision: darker cells simply mean that a value is missing.
 
 ```python
-# A compact table keeps visualization instruction in Lecture 07.
 missing_by_row = df.isna().sum(axis=1).rename('missing_fields')
 print(pd.concat([df['patient_id'], missing_by_row], axis=1).to_string(index=False))
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+missing_indicator = df.drop(columns=['patient_id']).isna().astype(int)
+figure, axis = plt.subplots(figsize=(8, 3))
+sns.heatmap(
+    missing_indicator.T,
+    cmap=['#f2f2f2', '#d95f02'],
+    cbar=False,
+    linewidths=0.5,
+    linecolor='white',
+    ax=axis,
+)
+axis.set_title('Optional preview: where patient values are missing')
+axis.set_xlabel('Patient row')
+axis.set_ylabel('Field')
+figure.tight_layout()
+plt.show()
 ```
 
 ## Strategic Missing Data Handling
