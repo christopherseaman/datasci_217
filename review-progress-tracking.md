@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: instructor-authorized lecture-only repair batch complete; independent adversarial review and integrated validation pass; awaiting instructor approval; demos and assignments remain deferred
+- Current phase: content/API repair batch passes, but course-wide lecture heading normalization is still required before approval; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -115,7 +115,7 @@ This is a pre-review implementation record, not a correctness or approval verdic
 
 ### Post-repair adversarial verdict and validation
 
-**Ready for instructor approval; not yet instructor-approved.** Two independent read-only reviewers challenged the integrated repair set. The first pass rejected it with one P1 and eight unique P2 findings across presentation-marker preservation, cue-sheet hierarchy, shell no-match behavior, null-key sentinel wording, Plotly OLS requirements, a local NumPy import, zero-weight handling, and tick-index requirements. All were repaired. A targeted correctness re-review then caught one version-specific mistake: `adfuller(..., result_object=False)` is valid in statsmodels 0.15 but not the course's pinned 0.14.6. The example was restored to the pinned-compatible call and the actual pinned stack was executed. Both final re-reviews passed with no remaining P0–P3 finding.
+**The authorized content/API repair batch passes; full lecture approval remains pending course-wide heading normalization.** Two independent read-only reviewers challenged the integrated repair set. The first pass rejected it with one P1 and eight unique P2 findings across presentation-marker preservation, cue-sheet hierarchy, shell no-match behavior, null-key sentinel wording, Plotly OLS requirements, a local NumPy import, zero-weight handling, and tick-index requirements. All were repaired. A targeted correctness re-review then caught one version-specific mistake: `adfuller(..., result_object=False)` is valid in statsmodels 0.15 but not the course's pinned 0.14.6. The example was restored to the pinned-compatible call and the actual pinned stack was executed. Both final re-reviews passed with no remaining P0–P3 content/API finding.
 
 The final content/size review found no accidental loss of an inherited topic family:
 
@@ -134,6 +134,20 @@ Final integrated gates from the current sources:
 - Safety: the advanced CLI no-match and match branches passed a targeted shell-logic check; destructive Git recipes remain removed.
 - Build: Eleventy wrote 30 pages and copied 124 assets.
 - Hygiene: `git diff --check` passed, and every changed path is inside the authorized lecture scope or this ledger.
+
+### Course-wide Markdown hierarchy clarification
+
+The current authority is `work/course_dependency_alignment.md`: lecture sources use standard Markdown with one H1 title, H2 sections, and deeper headings as useful. The multiple-H1 Notion-import convention in the archived `work/implementation_plan.md` is not a current release constraint.
+
+A course-wide inventory exposed a remaining normalization gap that the prior structural gate did not enforce:
+
+- 15 of the 28 canonical lecture pages currently have exactly one H1.
+- Nine core READMEs still use multiple H1 headings: Lectures 01, 02, and 04–10.
+- `03/BONUS.md` and `05/BONUS.md` use multiple H1 headings.
+- `04/BONUS.md` and `06/BONUS.md` have no H1 title.
+- Lecture 03's README and the revised Lectures 06–09 points pages already follow the intended hierarchy.
+
+The previous fence, Python-syntax, relative-link, runtime, and build results remain valid, but the heading-format acceptance claim was too narrow. Full lecture approval therefore requires a lecture-only hierarchy pass across the 13 nonconforming pages, with semantic demotion rather than a blind replacement of heading markers, followed by another structural and pedagogical review.
 
 ## Course-flow revision checkpoint
 
@@ -229,8 +243,8 @@ Scores use 5 for the strongest result. The size score considers the whole lectur
 
 ## Next action
 
-1. Obtain instructor approval or targeted lecture feedback on this repaired checkpoint.
-2. If further lecture changes are requested, keep them lecture-only and rerun proportionate adversarial and integrated gates.
+1. Confirm the standard-Markdown decision and normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
+2. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
 3. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
 
 ## Checkpoint log
