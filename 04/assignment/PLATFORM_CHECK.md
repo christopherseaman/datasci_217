@@ -6,7 +6,7 @@ Assignment 04 must be completed in clean local Jupyter or the VS Code notebook i
 
 ## Open the provisioned repository
 
-1. Accept the instructor-provided Classroom50 Assignment 04 link.
+1. Open the Assignment 04 repository URL supplied by the instructor.
 2. Open the provisioned repository locally with GitHub Desktop or VS Code Source Control.
 3. Open the repository folder in VS Code and confirm it contains this `PLATFORM_CHECK.md`.
 4. Switch to `main` if necessary, select **Sync Changes**, and confirm there are no unfinished changes.
@@ -34,6 +34,6 @@ Stored notebook output is not grading evidence. The managed grader executes a di
 5. Commit with the summary `Complete Assignment 04 notebook`.
 6. Select **Sync Changes** or **Push origin** so `main` receives the commit.
 7. Open the assigned repository in the browser and confirm the notebook and both CSV files are present.
-8. Confirm that Classroom50 shows the latest submission or grader status. Follow the instructor's stated retry policy if it is pending.
+8. Optionally open the repository's **Actions** tab to inspect the public pytest feedback.
 
 If a required GUI or local-Jupyter control is unavailable, stop before trying terminal Git or moving the assignment to Colab. Record the exact message and contact the instructor.

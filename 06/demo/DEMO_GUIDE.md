@@ -5,7 +5,7 @@ Hands-on practice with the three fundamental data wrangling operations: merging 
 
 The paired Markdown files are authoritative; regenerate a notebook with
 Jupytext after editing Markdown. The tested activity environment is CPython
-3.12.13 with NumPy 2.0.2, pandas 3.0.3, JupyterLab 4.4.10, and Jupytext 1.18.1
+3.12.13 with NumPy 2.0.2, pandas 3.0.5, JupyterLab 4.4.10, and Jupytext 1.18.1
 as pinned in `requirements.txt`:
 
 ```bash

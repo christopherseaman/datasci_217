@@ -1,4 +1,4 @@
-"""Public pytest contract for Assignment 01 and Classroom 50."""
+"""Public pytest contract for Assignment 01 and the optional Actions workflow."""
 
 from pathlib import Path
 

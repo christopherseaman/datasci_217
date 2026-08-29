@@ -17,7 +17,7 @@ The starter package contains:
 - `debug_report.py`: Question 3 starter with exactly three prepared errors;
 - `make_output.py`: supplied output-file wrapper; do not edit it;
 - `check_assignment.py`: supplied local checker; do not edit it;
-- `test_assignment.py`: the public Classroom 50/pytest contract; do not edit it.
+- `.github/test/test_assignment.py`: the public pytest contract used by the optional Actions check; do not edit it.
 
 The supplied checker and wrapper use later Python features internally. You only run those files. Their implementation is not assessed and is not a model for your Lecture 01 code.
 
@@ -141,7 +141,7 @@ All public checks passed.
 
 If a check fails, fix the student file named in the message, rerun that script, rerun `python make_output.py` when requested, and then run the checker again. You do not need to install pytest locally.
 
-Classroom 50 may run `test_assignment.py` with pytest as part of grading. Those public tests use the same checks as `check_assignment.py`. Additional production tests, if any, remain in the centrally managed grader bundle rather than the student starter repository, but they enforce this same written contract.
+The optional GitHub Actions workflow runs `.github/test/test_assignment.py` with pytest on pushes and pull requests. Those public tests use the same checks as `check_assignment.py`; the workflow is feedback, not a submission requirement. Additional instructor checks, if any, remain outside the student repository.
 
 ## Completion contract
 

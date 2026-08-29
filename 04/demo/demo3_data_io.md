@@ -26,13 +26,13 @@ jupyter:
 
 Colab is the default launch experience; local Jupyter runs the same cells. See `DEMO_GUIDE.md` for launch links and path-case checks. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
 
-Compatibility candidate: Python 3.12.13, NumPy 2.0.2, pandas 3.0.3. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
+Compatibility candidate: Python 3.12.13, NumPy 2.0.2, pandas 3.0.5. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
 
 ```python
 from importlib.metadata import version
 import sys
 
-PANDAS_CANDIDATE = "3.0.3"
+PANDAS_CANDIDATE = "3.0.5"
 
 import numpy as np
 import pandas as pd

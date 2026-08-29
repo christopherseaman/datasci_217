@@ -2,7 +2,7 @@
 # requires-python = "==3.12.13"
 # dependencies = [
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 #   "nbclient==0.11.0",
 #   "nbformat==5.10.4",
 #   "ipykernel==7.3.0",

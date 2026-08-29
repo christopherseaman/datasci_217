@@ -5,8 +5,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: demo audit; the lecture content and instructor-directed xkcd/humor repairs pass their recorded lecture-only reviews, course-wide heading normalization remains open, and demos are now being checked against the lecture-at-that-point contract while assignments remain deferred
-- Explicitly out of scope for this phase: assignments, merging to `main`
+- Current phase: assignment/grading design; the lecture content and instructor-directed xkcd/humor repairs pass their recorded lecture-only reviews, course-wide heading normalization remains open, and the demo audit is recorded as complete for its authorized scope
+- Explicitly out of scope for this phase: merging to `main`; assignment source content remains unchanged while the portable repository/pytest/Actions shape is aligned
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
@@ -420,23 +420,36 @@ inventory supports this direction, with two constraints:
   Classroom 50 files are mostly self-test/reference bundles; production
   provisioning is external and not a viable dependency for this semester.
 
+The source-location clarification is controlling: the canonical source/starter
+for each assignment is the existing `01/assignment` through `11/assignment`
+subtree in this repository. We do not create or require eleven external source
+repositories during this refresh. When the course is ready to publish, each
+subtree can be exported as the basis of its own assignment repository; its
+local tests, dependency files, and workflow travel with that export. The
+workbook/site monorepo is not expected to execute nested workflow files.
+
 Recommended replacement shape:
 
-1. Keep one pinned source/starter repository per assignment, with an optional
-   student-facing `.github/workflows/tests.yml` that runs public pytest checks
-   on push. Students may ignore the workflow; it is feedback, not submission.
-2. Add a small instructor-only `grading/` runner in this repository. A source
-   manifest records assignment IDs, source repository/ref, trusted test path,
-   dependency lock, artifact mode (`artifact_only` or `fresh_execution`), and
-   limits. A semester roster file records reviewed student repository mappings;
-   GitHub fork discovery may generate candidates but must not silently become
-   the grading roster.
-3. At snapshot time resolve source and student refs to full commit SHAs. Clone
-   each into a fresh directory, validate the committed tree, run trusted tests
-   against a controlled `SUBMISSION_ROOT`, and emit JSON/CSV plus JUnit XML and
-   bounded logs. Never run student-supplied pytest configuration or tests as the
-   grader's test suite.
-4. Preserve the current assignment-specific contracts while migrating their
+1. Keep each `NN/assignment` subtree portable. Add an optional
+   `NN/assignment/.github/workflows/tests.yml` that runs the public pytest
+   contract on push, pull request, or manual dispatch when that subtree is
+   exported as a standalone repository. Students may ignore the workflow; it
+   is feedback, not submission.
+2. Keep public tests/checkers inside the portable subtree. Where the rebuilt
+   package currently exposes only `check_assignment.py` (Assignments 04–11),
+   provide a thin pytest entrypoint that invokes that public checker without
+   importing or exposing the instructor-only `_grader_selftest` bundle.
+3. Add a small instructor-only `grading/` runner in this repository later. Its
+   source manifest should identify the local source subtree now and optionally
+   record the exported repository/ref once repositories exist. A semester roster
+   file records reviewed student repository mappings; GitHub fork discovery may
+   generate candidates but must not silently become the grading roster.
+4. At snapshot time resolve exported source and student refs to full commit
+   SHAs. Clone each into a fresh directory, validate the committed tree, run
+   trusted tests against a controlled `SUBMISSION_ROOT`, and emit JSON/CSV plus
+   JUnit XML and bounded logs. Never run student-supplied pytest configuration or
+   tests as the grader's test suite.
+5. Preserve the current assignment-specific contracts while migrating their
    trusted logic behind pytest adapters. Keep human review for prose, chart
    quality, workflow evidence, and other non-automatable points. A passing
    report is a fast-track signal, not an automatic final grade.
@@ -445,8 +458,92 @@ The remaining design gates are the private/public location of the student
 roster, the sandbox/container available for arbitrary student code, the
 source-test visibility policy, the commit/ref policy for resubmissions, and
 whether the first pilot should cover a simple script assignment plus one
-notebook-heavy assignment. No assignment files were changed during this design
-discussion.
+notebook-heavy assignment. The source-location comparison changed the design
+record only; assignment source content was not changed during this step.
+
+## Assignment source-layout comparison (2026-08-29)
+
+The `main` branch used the same portable-subtree idea, but its workflows were
+legacy Classroom jobs: they downloaded mutable tests with `curl`, used mixed
+Python 3.10–3.12 versions, and in several cases executed notebooks before
+running pytest. The refreshed branch intentionally removed those jobs and
+replaced them with stronger local public checkers plus instructor self-tests.
+The useful structural part to retain is the per-assignment location:
+
+- `NN/assignment/README.md`, starter artifacts, fixtures, and dependency pins
+  remain the source bundle;
+- `NN/assignment/.github/test/` is the exported repository's public pytest
+  entrypoint;
+- `NN/assignment/.github/workflows/tests.yml` is optional learner feedback;
+- `NN/assignment/_grader_selftest/` remains instructor-only and is excluded
+  when a student repository is exported.
+
+Nested `.github` directories are not active Actions workflows while they live
+under this monorepo; they become active after the selected assignment subtree
+is copied to repository root. No external source-repository URLs or student
+roster are required until that export/publishing step.
+
+## Assignment portable-test implementation checkpoint (2026-08-29)
+
+The portable source layout is now materialized for all eleven assignment
+subtrees. Each `NN/assignment` contains:
+
+- `.github/test/requirements.txt` with the public pytest runner dependency;
+- `.github/test/test_assignment.py` as the standalone-repository test entrypoint;
+- `.github/workflows/tests.yml`, an optional push/pull-request/manual workflow
+  using the course's Python 3.12.13 line and the assignment's own requirements.
+
+Assignments 01–03 keep their existing root-level public pytest facades; the
+new `.github/test` files load those facades so the export has the conventional
+main-branch path without duplicating checks. Assignments 04–11 expose a thin
+pytest adapter that runs the public `check_assignment.py` in a subprocess. The
+adapter does not import or invoke `_grader_selftest`, so the instructor-only
+bundle remains outside the learner-facing test contract. Public checker and
+central-grader package inventories now explicitly allow these three portable
+test/workflow files; otherwise an otherwise-correct exported submission would
+be rejected as containing unexpected files.
+
+The old student-facing Classroom/Classroom50 instructions were replaced with
+repository and optional Actions language in the affected assignment README and
+platform-check pages. `03/assignment/requirements.txt` was also repaired from
+the placeholder `TODO` to its already-documented NumPy 2.0.2 pin so the new
+workflow has a valid dependency file.
+
+Validation for this checkpoint: all eleven new test entrypoints parse with the
+standard-library AST parser; every assignment has the expected three-file
+`.github` layout; no student-facing Assignment README or PLATFORM_CHECK page
+still names Classroom; and `git diff --check` passes. The workflows are not
+claimed to have executed from this monorepo because GitHub does not activate
+nested workflow files; each must be smoke-tested after its subtree is exported
+to repository root. Assignment task content and the instructor's core grading
+rules were otherwise left unchanged; package inventories and integrity hashes
+were updated to account for the portable public-test files and the refreshed
+dependency pin.
+
+## Assignment/demo dependency pin refresh (2026-08-29)
+
+PyPI now lists pandas 3.0.5 as the current 3.x release (3.0.4 was yanked), so
+the active assignment and demo contracts were mechanically aligned from 3.0.3
+to 3.0.5. The Assignment 07 contract also now uses Matplotlib 3.11.1, matching
+the demo and the course candidate rather than its older 3.10.8 pin. These
+updates include requirements files, public/instructor expectation strings and
+protected-file hashes, Assignment 11's release metadata, demo
+metadata/manifests, and the repository audit's active expectations. The
+assignment workflows continue to use CPython 3.12.13; moving to 3.14 remains a
+separate ecosystem decision because the course's TensorFlow path is not part of
+this assignment packaging change.
+
+This was a contract/data-record update, not an assignment execution pass. The
+user explicitly kept assignment execution out of the current review scope.
+Static validation confirmed no active `3.0.3` references remain outside the
+archived `work/` material and historical ledger text, all refreshed protected
+requirement hashes match their files, and the Assignment 11 manifest hash was
+updated to match its refreshed bytes. Fresh assignment and demo execution
+remains a later release gate.
+
+An attempted Assignment 04 instructor self-test stopped before grading because
+the host does not have `nbformat`; this is an environment limitation, not a
+passing or failing assignment result.
 
 ## Validation recovered from the interrupted work
 
@@ -488,14 +585,16 @@ discussion.
 
 ## Next action
 
-1. Run the final integrated demo/lecture structural and build checks, then
-   checkpoint the demo repair on `2026-refresh`.
-2. If desired before merge, normalize the 13 remaining nonconforming lecture
+1. Commit the portable assignment-source/pytest/Actions checkpoint after the
+   user reviews the `main` comparison and confirms the nested-workflow export
+   convention.
+2. Design and implement the TA grading runner against local assignment
+   subtrees first; add exported repository coordinates and a semester roster
+   only when the standalone repositories are created.
+3. If desired before merge, normalize the 13 remaining nonconforming lecture
    pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
-   change.
-3. Keep assignments deferred and do not merge to `main`; remove or explicitly
-   exclude `AGENTS.md`, `HANDOFF.md`, and this tracker during the eventual merge
-   cleanup.
+   change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
+   `HANDOFF.md`, and this tracker during the eventual merge cleanup.
 
 ## Checkpoint log
 

@@ -35,6 +35,9 @@ REQUIRED_COPY_PATHS = (
     "requirements.txt",
     "data/fixture.json",
     "data/purchases.csv",
+    ".github/test/requirements.txt",
+    ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 )
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 REQUIRED_CELL_IDS = {

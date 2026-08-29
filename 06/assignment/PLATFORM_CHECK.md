@@ -18,7 +18,7 @@ Expected versions:
 ```text
 Python 3.12.13
 NumPy 2.0.2
-pandas 3.0.3
+pandas 3.0.5
 ```
 
 The printed interpreter path should be inside the environment you activated.
@@ -45,7 +45,7 @@ print(np.__version__)
 print(pd.__version__)
 ```
 
-The kernel must report CPython 3.12.13, NumPy 2.0.2, and pandas 3.0.3, and its
+The kernel must report CPython 3.12.13, NumPy 2.0.2, and pandas 3.0.5, and its
 interpreter path must match the intended environment. If not, stop and change
 the notebook kernel before doing assignment work.
 
@@ -54,7 +54,7 @@ the notebook kernel before doing assignment work.
 Run the supplied setup cell without editing it. It must print an assignment root
 and verify fixture set `a06-structural-wrangling-v1`. It works from either:
 
-- a standalone Classroom50 repository containing `data/fixture.json`; or
+- a standalone Assignment 06 repository containing `data/fixture.json`; or
 - the full course repository containing `06/assignment/data/fixture.json`.
 
 A missing or checksum-mismatched fixture is a stop condition. Restore the

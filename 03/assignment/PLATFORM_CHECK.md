@@ -6,8 +6,8 @@ Use VS Code Source Control. GitHub Desktop is an acceptable equivalent when it e
 
 ## Open the provisioned repository
 
-1. Accept the instructor-provided Classroom 50 Assignment 03 link.
-2. Open the provisioned repository with the supported GUI workflow.
+1. Open the Assignment 03 repository URL supplied by the instructor.
+2. Open the repository with the supported GUI workflow.
 3. Open the repository folder in VS Code and confirm that it contains this `PLATFORM_CHECK.md`.
 4. Switch to `main` if necessary, select **Sync Changes**, and confirm that Source Control lists no unfinished changes.
 
@@ -42,6 +42,6 @@ The four generated pipeline text files may remain untracked working evidence; th
 4. A conflict is not required. If one appears, resolve the intended final content, remove every conflict marker, inspect the resolution, and complete the merge through Source Control.
 5. Select **Sync Changes**.
 6. In the browser, confirm that `main` contains the two exact environment records, completed pipeline block, saved environment probe, and both completed Python files. Confirm that `.venv/` and `recreation-check/` are absent.
-7. Confirm that Classroom 50 shows the latest submission or grader status.
+7. Optionally open the repository's **Actions** tab to inspect the public pytest feedback.
 
 If a required GUI control is unavailable, stop before trying terminal Git commands. Record the exact message and contact the instructor.

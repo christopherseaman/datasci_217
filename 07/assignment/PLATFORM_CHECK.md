@@ -1,4 +1,4 @@
-# Assignment 07 local Jupyter and Classroom50 check
+# Assignment 07 local Jupyter and repository check
 
 Complete this check before editing `assignment.ipynb`. The Python program that
 launches Jupyter and the Python kernel selected inside a notebook can be
@@ -18,8 +18,8 @@ Expected versions:
 ```text
 Python 3.12.13
 NumPy 2.0.2
-pandas 3.0.3
-Matplotlib 3.10.8
+pandas 3.0.5
+Matplotlib 3.11.1
 seaborn 0.13.2
 ```
 
@@ -59,7 +59,7 @@ match the intended environment. If not, stop and change the notebook kernel.
 Run the supplied setup cell without editing it. It must print an assignment
 root and verify fixture set `a07-visualization-v1`. It works from either:
 
-- a standalone Classroom50 repository containing `data/fixture.json`; or
+- a standalone Assignment 07 repository containing `data/fixture.json`; or
 - the full course repository containing `07/assignment/data/fixture.json`.
 
 A missing, unexpected, or checksum-mismatched fixture is a stop condition.
@@ -84,11 +84,11 @@ In VS Code Source Control or GitHub Desktop, confirm that the completed
 Review the diff, commit them, and push the commit used for submission. The
 outputs are deliberately not ignored.
 
-## 7. Use Classroom50 feedback and resubmit
+## 7. Review optional Actions feedback
 
-Submit the pushed commit through the course's Classroom50 assignment. Read the
-per-test feedback in Classroom50. If a test fails, correct the source notebook,
+The repository's optional Actions workflow runs the public pytest contract. Read
+the per-test feedback there if you enable it. If a test fails, correct the source notebook,
 restart and run all again, rerun `python check_assignment.py`, inspect the six
 deliverables in the Git GUI, commit, push, and resubmit according to the course
-policy. Classroom50's automated result does not replace the separate human
+policy. Automated results do not replace the separate human
 visual and communication review.

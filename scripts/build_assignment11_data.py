@@ -1,6 +1,6 @@
 # /// script
 # requires-python = "==3.12.13"
-# dependencies = ["pandas==3.0.3"]
+# dependencies = ["pandas==3.0.5"]
 # ///
 """Build the frozen Chicago Beach Weather release for Assignment 11."""
 

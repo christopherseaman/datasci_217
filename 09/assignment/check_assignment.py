@@ -2,7 +2,7 @@
 # requires-python = "==3.12.13"
 # dependencies = [
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 # ]
 # ///
 
@@ -26,13 +26,13 @@ import sys
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
 EXPECTED_PYTHON = "3.12.13\n"
-EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.3\n"
+EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
     ".ipynb_checkpoints/\n__pycache__/\n*.py[cod]\n.pytest_cache/\n.venv/\nvenv/\n"
 )
 PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "29cb7d486f7fab60576ddf66c0b0164fe830b43138feb1f4c7c6b7a8ecc6a4fb",
+    "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "03026ba8f1d57e57b4a030c2ec1cd3cf0358a24df8829b735a099b47881654ff",
     "PLATFORM_CHECK.md": "019a5c52b6c7adca37c0c95300a633d15c594258928a9080dab24d6b6026952c",
@@ -57,7 +57,7 @@ MARKDOWN_IDS = {
 }
 PROTECTED_CELL_SHA256 = {
     "a09-header": "131ea3ecea5c880816109cc7c1b03980dcd3c0c2e4cd9d17b34d68a5af3e9163",
-    "a09-setup": "2a2426aaadd2dfa4fb8fd231d47f0f5918f0ce86dce6e485f7e9b92ee950f754",
+    "a09-setup": "46d251a68a1b2b740e64bdb90e892500cade7bb6235b69e0c2876670cd4f837d",
     "a09-terms-data": "f8ad0129811ecd03ed7c0dc60b860b68a1be545003e4961cdaea6b43489dfa59",
     "a09-task2-prompt": "d1d9d124b7fd9904ee9a47256745def60937945d1bfe40194239314199bedc1b",
     "a09-task3-prompt": "90f1797b0b65472c3567451467e85e144a2add9110a3d11a1714d3d31fe75966",
@@ -94,6 +94,8 @@ STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json", "data/zone_co2_readings.csv",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 BANNED_ATTRIBUTES = {
@@ -133,7 +135,7 @@ def _check_submission_inventory() -> None:
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != "output"
     }
     expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only Classroom50 delivery metadata is optional.")
+    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
     for relative in actual & DELIVERY_FILES:
         _assert(not (ASSIGNMENT_DIR / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
 
@@ -172,7 +174,7 @@ def _literal_argument(call: ast.Call, position: int = 0):
 def check_environment_and_files() -> None:
     _check_submission_inventory()
     _assert(sys.version_info[:3] == (3, 12, 13), "Use the Assignment 09 CPython 3.12.13 interpreter.")
-    for package, expected in (("numpy", "2.0.2"), ("pandas", "3.0.3")):
+    for package, expected in (("numpy", "2.0.2"), ("pandas", "3.0.5")):
         try:
             observed = metadata.version(package)
         except metadata.PackageNotFoundError as error:

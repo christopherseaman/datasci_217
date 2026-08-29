@@ -17,7 +17,7 @@ Expected output versions:
 
 ```text
 Python 3.12.13
-2.0.2 3.0.3 1.9.0 3.11.1 4.4.10 1.18.1
+2.0.2 3.0.5 1.9.0 3.11.1 4.4.10 1.18.1
 ```
 
 If `uv` reports that Python is missing, run `uv python install 3.12.13`, then repeat setup. Do not replace exact pins with version ranges.

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = "==3.12.13"
-# dependencies = ["numpy==2.0.2", "pandas==3.0.3"]
+# dependencies = ["numpy==2.0.2", "pandas==3.0.5"]
 # ///
 
 """Independent central-grader reference for Assignment 05.
@@ -27,7 +27,7 @@ import pandas as pd
 
 
 EXPECTED_SHA256 = "d13dc9676519c81729b33d53ffc2e8fec92e645c6978af7ebf325fcd7147753b"
-EXPECTED_SETUP_SHA256 = "46ce6c927699603018f448982b1162c33e939edb1358688e977b9eb1e9c65ffa"
+EXPECTED_SETUP_SHA256 = "c54ad0ae9d10a0681aab686cda368a46e28695dc46c1af84b5f685cc9c4dd43d"
 EXPECTED_FINAL_SHA256 = "d91e8b83bbcef6caf595893837586e3b1d1408b18bd15e1dedffd678fb69e802"
 EXPECTED_MANIFEST = {
     "fixture_id": "a05-people-cleaning-v1",
@@ -124,6 +124,8 @@ STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json", "data/people_raw.csv",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 REQUIRED_CONTEXT_ENV = {
@@ -191,7 +193,7 @@ def _load_notebook(root: Path) -> tuple[dict, dict[str, dict]]:
 def _check_static_contract(root: Path) -> None:
     _assert(sys.version_info[:3] == (3, 12, 13), "grader must use Python 3.12.13")
     _assert(np.__version__ == "2.0.2", "grader must use NumPy 2.0.2")
-    _assert(pd.__version__ == "3.0.3", "grader must use pandas 3.0.3")
+    _assert(pd.__version__ == "3.0.5", "grader must use pandas 3.0.5")
     actual_files = {
         path.relative_to(root).as_posix()
         for path in root.rglob("*")
@@ -204,7 +206,7 @@ def _check_static_contract(root: Path) -> None:
     _assert(not any((root / relative).is_symlink() for relative in actual_files & DELIVERY_FILES), "delivery metadata must be regular files")
     _assert((root / ".python-version").read_text() == "3.12.13\n", "wrong Python record")
     _assert(
-        (root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.3\n",
+        (root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.5\n",
         "wrong dependency records",
     )
     manifest_path = root / "data" / "fixture.json"

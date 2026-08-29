@@ -109,11 +109,25 @@ Grading is artifact-only. It does not inspect notebook source or ASTs. Passing r
 
 Legacy GitHub Classroom workflow files and large committed example outputs were removed.
 
+The canonical source/starter for each assignment is the corresponding
+`NN/assignment` subtree in this repository. Each subtree now carries a portable
+`.github/test` pytest entrypoint and an optional `.github/workflows/tests.yml`
+workflow. Those nested workflows are intentionally dormant in this monorepo;
+when an assignment is later copied to repository root, the same subtree becomes
+the standalone assignment repository and its Actions feedback works without
+mutable remote test downloads. The instructor-only `_grader_selftest` bundles
+remain source material for the later TA grading runner and are excluded from
+student-repository exports.
+
 ## Course-wide Infrastructure
 
 - Legacy per-assignment GitHub Classroom workflows were removed from Assignments 02-11.
 - Local public checkers and instructor self-test bundles were introduced.
-- Assignments 04-11 include candidate Classroom 50 entrypoints and use the `classroom50/result/v1` result schema.
+- Assignments 04-11 retain instructor-only grader bundles as migration input;
+  they are not part of the learner-facing repository export.
+- The current portable learner contract is per-assignment pytest plus optional
+  GitHub Actions; the `NN/assignment` directories are the source bundles from
+  which standalone assignment repositories can be published later.
 - Fixed local fixtures replace many random generators and large committed outputs.
 - Instructor grader bundles must be excluded when student template repositories are created.
 

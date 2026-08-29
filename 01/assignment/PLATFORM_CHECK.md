@@ -6,8 +6,8 @@ Use GitHub Desktop for this first delivery unless the instructor gives you an eq
 
 ## Open the assigned repository
 
-1. Open the instructor-provided Classroom 50 Assignment 01 link in a browser and sign in with the course GitHub account.
-2. Accept the assignment and wait for the link to your assigned GitHub repository.
+1. Open the Assignment 01 repository URL supplied by the instructor and sign in with the course GitHub account.
+2. Open the repository and confirm that it contains the Assignment 01 files.
 3. On that repository page, select **Code → Open with GitHub Desktop**.
 4. Approve the browser prompt to open GitHub Desktop.
 5. In GitHub Desktop, choose a local folder you can find again and select **Clone**.
@@ -25,6 +25,6 @@ Complete the assignment and make `python check_assignment.py` report `All public
 5. Select **Push origin**.
 6. Return to the assigned repository page in the browser and refresh it.
 7. Open `output/readiness.txt` on the repository page and confirm that its final line is `Next checkpoint: 5`.
-8. Open the Classroom 50 assignment page and confirm that the latest submission or grader status appears. If the status is still pending, leave the page open and follow the instructor's stated retry policy.
+8. Optionally open the repository's **Actions** tab to inspect the public pytest feedback; a green run is useful evidence but is not a submission requirement.
 
 If any named button is unavailable, stop before trying terminal Git commands. Record a screenshot and the exact message, then contact the instructor. The delivery checkpoint is handled separately from the Python pass/fail result.

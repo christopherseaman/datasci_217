@@ -1,4 +1,4 @@
-"""Public managed-pytest facade for Assignment 03 and Classroom 50."""
+"""Public managed-pytest facade for Assignment 03 and the optional Actions workflow."""
 
 from pathlib import Path
 

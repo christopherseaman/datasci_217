@@ -39,6 +39,6 @@
   "builder": {
     "script": "scripts/build_assignment11_data.py",
     "python": "3.12.13",
-    "pandas": "3.0.3"
+    "pandas": "3.0.5"
   }
 }

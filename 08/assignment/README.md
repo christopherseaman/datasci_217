@@ -89,7 +89,7 @@ Run tests locally:
 pytest -q 08/assignment/.github/test/test_assignment.py
 ```
 
-GitHub Classroom will run the same tests on push.
+The optional GitHub Actions workflow runs the same public tests on push.
 
 ### Question 1: Basic GroupBy Operations
 
@@ -210,4 +210,3 @@ Before submitting, verify you've created:
 - [ ] `output/q3_pivot_analysis.csv` - Pivot table analysis
 - [ ] `output/q3_crosstab_analysis.csv` - Cross-tabulation analysis
 - [ ] `output/q3_pivot_visualization.png` - Pivot visualization
- 

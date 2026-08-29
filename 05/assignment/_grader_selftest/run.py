@@ -1,6 +1,6 @@
 # /// script
 # requires-python = "==3.12.13"
-# dependencies = ["numpy==2.0.2", "pandas==3.0.3"]
+# dependencies = ["numpy==2.0.2", "pandas==3.0.5"]
 # ///
 
 """Adversarial self-test for the Assignment 05 public and central graders."""

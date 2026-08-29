@@ -1,7 +1,7 @@
 # Demo Requirements for Data Wrangling (Lecture 06)
 # Core data science libraries
 
-pandas==3.0.3
+pandas==3.0.5
 numpy==2.0.2
 jupyterlab==4.4.10
 jupytext==1.18.1

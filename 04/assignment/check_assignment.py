@@ -11,7 +11,7 @@ from pathlib import Path
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
 EXPECTED_PYTHON = "3.12.13\n"
-EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.3\n"
+EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
     ".venv/\n"
     ".ipynb_checkpoints/\n"
@@ -47,6 +47,8 @@ STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json", "data/purchases.csv",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 
@@ -90,7 +92,7 @@ def _check_submission_inventory(root: Path) -> None:
         and path.relative_to(root).parts[0] != "output"
     }
     expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only Classroom50 delivery metadata is optional.")
+    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
     for relative in actual & DELIVERY_FILES:
         _assert(not (root / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
 
@@ -149,7 +151,7 @@ def check_environment_and_fixture(root: Path) -> None:
     _assert(
         _read_text(root / "requirements.txt", "requirements.txt")
         == EXPECTED_REQUIREMENTS,
-        "Restore requirements.txt to the exact NumPy 2.0.2 and pandas 3.0.3 records.",
+        "Restore requirements.txt to the exact NumPy 2.0.2 and pandas 3.0.5 records.",
     )
     _assert(
         _read_text(root / ".gitignore", ".gitignore") == EXPECTED_GITIGNORE,

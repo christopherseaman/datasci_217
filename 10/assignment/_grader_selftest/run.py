@@ -6,7 +6,7 @@
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 #   "Pillow==12.3.0",
 #   "scikit-learn==1.9.0",
 #   "statsmodels==0.14.6",

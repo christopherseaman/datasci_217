@@ -13,7 +13,7 @@ assignment or submission path for Assignment 05.
    python -c "from pathlib import Path; print(Path('data/people_raw.csv').is_file())"
    ```
 
-   The first command must print `2.0.2 3.0.3`; the second must print `True`.
+   The first command must print `2.0.2 3.0.5`; the second must print `True`.
 
 5. Open `assignment.ipynb` with the `.venv` Python 3 kernel. Restart the kernel
    and use **Run All**. The supplied setup cell should complete without error.

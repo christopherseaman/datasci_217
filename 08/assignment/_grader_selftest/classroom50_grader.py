@@ -5,7 +5,7 @@
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 # ]
 # ///
 
@@ -67,7 +67,7 @@ PROTECTED_CELL_SHA256 = {
 }
 PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "29cb7d486f7fab60576ddf66c0b0164fe830b43138feb1f4c7c6b7a8ecc6a4fb",
+    "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "c7382a76e6cce665176d8a3d65dfb2c103d65a70132b1b41ba68c7cc79079f32",
     "PLATFORM_CHECK.md": "d60455f2ea443990929cea97260c509399454e8bb839acc7043e60bbc3120b41",
@@ -86,6 +86,8 @@ STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json", "data/support_requests.csv",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 REQUIRED_CONTEXT_ENV = {
@@ -193,7 +195,7 @@ def _function_nodes(tree: ast.AST) -> dict[str, ast.FunctionDef]:
 def _check_runtime_and_protected(root: Path) -> tuple[dict[str, dict], ast.AST]:
     _assert(sys.version_info[:3] == (3, 12, 13), "grader must use Python 3.12.13")
     _assert(np.__version__ == "2.0.2", "grader must use NumPy 2.0.2")
-    _assert(pd.__version__ == "3.0.3", "grader must use pandas 3.0.3")
+    _assert(pd.__version__ == "3.0.5", "grader must use pandas 3.0.5")
     actual_files = {
         path.relative_to(root).as_posix()
         for path in root.rglob("*")
@@ -209,7 +211,7 @@ def _check_runtime_and_protected(root: Path) -> tuple[dict[str, dict], ast.AST]:
         _assert(path.is_file(), f"missing protected file: {relative}")
         _assert(sha256(path.read_bytes()).hexdigest() == expected, f"protected file changed: {relative}")
     _assert((root / ".python-version").read_text() == "3.12.13\n", "wrong Python record")
-    _assert((root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.3\n", "wrong dependency records")
+    _assert((root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.5\n", "wrong dependency records")
     gitignore = (root / ".gitignore").read_text()
     _assert("output/" not in gitignore and "*.csv" not in gitignore, "required CSV artifacts are ignored")
     _assert(

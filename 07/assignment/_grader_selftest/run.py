@@ -2,8 +2,8 @@
 # requires-python = "==3.12.13"
 # dependencies = [
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
-#   "matplotlib==3.10.8",
+#   "pandas==3.0.5",
+#   "matplotlib==3.11.1",
 #   "seaborn==0.13.2",
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",

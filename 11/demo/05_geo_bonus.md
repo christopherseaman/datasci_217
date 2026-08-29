@@ -34,7 +34,7 @@ import sys
 
 REQUIRED = {
     "numpy": "2.0.2",
-    "pandas": "3.0.3",
+    "pandas": "3.0.5",
     "matplotlib": "3.11.1",
     "geopandas": "1.1.1",
     "shapely": "2.1.1",

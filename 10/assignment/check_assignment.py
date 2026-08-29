@@ -4,7 +4,7 @@
 # dependencies = [
 #   "matplotlib==3.11.1",
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 #   "scikit-learn==1.9.0",
 #   "statsmodels==0.14.6",
 # ]
@@ -33,7 +33,7 @@ EXPECTED_PYTHON = (3, 12, 13)
 EXPECTED_DISTRIBUTIONS = {
     "matplotlib": "3.11.1",
     "numpy": "2.0.2",
-    "pandas": "3.0.3",
+    "pandas": "3.0.5",
     "scikit-learn": "1.9.0",
     "statsmodels": "0.14.6",
 }
@@ -41,7 +41,7 @@ PEP_REQUIRES_PYTHON = "==3.12.13"
 PEP_DEPENDENCIES = [
     "matplotlib==3.11.1",
     "numpy==2.0.2",
-    "pandas==3.0.3",
+    "pandas==3.0.5",
     "scikit-learn==1.9.0",
     "statsmodels==0.14.6",
 ]
@@ -82,7 +82,7 @@ CANDIDATE_PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "PLATFORM_CHECK.md": "36a10e0fe458fc8e0ef2e47327540c2bc4db3eaf8e91eb7ecb2fe1acd2bf2713",
     "README.md": "ea1f6fd44ca95ccf95b4581add8240fd718a0c7f35f439161a104d4071bc901f",
-    "requirements.txt": "e5dbf553be7ba3834771e011d9f8cc5c8ed58ec5c4a901563d302d4389e97170",
+    "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
     "data/batch_strength.csv": "f14faf7da64347dfc255aa84b14e79eef7f2d0de94b394c747323319d937baa3",
@@ -126,6 +126,8 @@ SIGNATURES = {
 BASE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
     *FIXTURES,
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}

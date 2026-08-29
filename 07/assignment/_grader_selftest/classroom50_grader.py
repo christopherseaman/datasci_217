@@ -2,8 +2,8 @@
 # requires-python = "==3.12.13"
 # dependencies = [
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
-#   "matplotlib==3.10.8",
+#   "pandas==3.0.5",
+#   "matplotlib==3.11.1",
 #   "seaborn==0.13.2",
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
@@ -64,7 +64,7 @@ STUDENT_MARKDOWN_IDS = MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)
 STUDENT_CODE_IDS = set(EXPECTED_CELL_IDS) - MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)
 PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "73ea59f29400bcc500ba15ab38d0fa7a805748ea094de8f055aaa7b8c1b8e207",
+    "requirements.txt": "5072907d928869027f0ab9884599bce2fda548faad48bf8c766bd58998655763",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "23bec29177d65945bc7c24de2f86d4a895c19148da19af9bbaebb19163fb6e33",
     "PLATFORM_CHECK.md": "a91844e48604d5b093c8ccf4d8298bea5d01b971f3e4d2e2d8978c9a89d65faa",
@@ -84,6 +84,8 @@ STUDENT_PACKAGE_FILES = {
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json", "data/format_completion.csv",
     "data/pathway_checkpoints.csv", "data/session_observations.csv",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 SUPPORTING_HASH = "ec9a336b7fb97418a6f058704f2509c8cee6b13d744efb7a6e3e99224ef8c258"
@@ -309,7 +311,7 @@ def _check_static(root: Path) -> tuple[dict, dict[str, dict]]:
 
 def _check_grader_runtime() -> None:
     expected = {
-        "numpy": "2.0.2", "pandas": "3.0.3", "matplotlib": "3.10.8",
+        "numpy": "2.0.2", "pandas": "3.0.5", "matplotlib": "3.11.1",
         "seaborn": "0.13.2", "nbclient": "0.10.2", "nbformat": "5.10.4",
         "ipykernel": "6.29.5", "Pillow": "12.3.0",
     }

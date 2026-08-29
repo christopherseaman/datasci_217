@@ -28,7 +28,7 @@ from sklearn.base import RegressorMixin
 RELEASE_NAME = "chicago_beach_sensors_2022_2024.csv"
 MANIFEST_NAME = "release_manifest.json"
 RELEASE_SHA256 = "7209cddd9b80e9475f9af17169b935e1ac2ef4a7a32fb72963ad0566b3474139"
-MANIFEST_SHA256 = "019dc07b65c8049516794a6e324766d8f058bf5518ae26dc7db336f772420bea"
+MANIFEST_SHA256 = "0dfafa6d0981dc00bf8e68f45ba16f371ab5ae75d20d2835fbc76e9748b96192"
 RELEASE_ROWS = 50_895
 LOCAL_TZ = "America/Chicago"
 RAW_COLUMNS = [
@@ -117,7 +117,7 @@ def _release_path(root: Path) -> Path:
 def _validate_environment_and_release(root: Path) -> None:
     if sys.version_info[:3] != (3, 12, 13):
         raise InfrastructureError(f"grader requires Python 3.12.13; found {sys.version.split()[0]}")
-    if (np.__version__, pd.__version__, sklearn.__version__) != ("2.0.2", "3.0.3", "1.9.0"):
+    if (np.__version__, pd.__version__, sklearn.__version__) != ("2.0.2", "3.0.5", "1.9.0"):
         raise InfrastructureError(f"dependency versions differ: numpy={np.__version__}, pandas={pd.__version__}, sklearn={sklearn.__version__}")
     release, manifest = _release_path(root), root / "data" / MANIFEST_NAME
     if any(not path.is_file() or path.is_symlink() for path in (release, manifest)):

@@ -7,7 +7,7 @@ demos are the top-to-bottom execution contract.
 
 ## Tested environment
 
-The demos were exercised with CPython 3.12.13, NumPy 2.0.2, pandas 3.0.3,
+The demos were exercised with CPython 3.12.13, NumPy 2.0.2, pandas 3.0.5,
 JupyterLab 4.4.10, and Jupytext 1.18.1. From this directory, create an
 environment and install the recorded requirements before launching Jupyter:
 

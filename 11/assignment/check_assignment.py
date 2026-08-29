@@ -1,6 +1,6 @@
 # /// script
 # requires-python = "==3.12.13"
-# dependencies = ["numpy==2.0.2", "pandas==3.0.3", "scikit-learn==1.9.0"]
+# dependencies = ["numpy==2.0.2", "pandas==3.0.5", "scikit-learn==1.9.0"]
 # ///
 
 """Structural and cross-artifact readiness checker for Assignment 11."""
@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "output"
 LOCAL_TZ = "America/Chicago"
 RELEASE_SHA256 = "7209cddd9b80e9475f9af17169b935e1ac2ef4a7a32fb72963ad0566b3474139"
-MANIFEST_SHA256 = "019dc07b65c8049516794a6e324766d8f058bf5518ae26dc7db336f772420bea"
+MANIFEST_SHA256 = "0dfafa6d0981dc00bf8e68f45ba16f371ab5ae75d20d2835fbc76e9748b96192"
 RAW_COLUMNS = [
     "station_name", "measurement_timestamp", "air_temperature_c", "wet_bulb_temperature_c",
     "relative_humidity_pct", "rain_intensity_mm_per_hour", "interval_rain_mm", "total_rain_mm",

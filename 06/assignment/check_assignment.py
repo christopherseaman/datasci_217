@@ -17,7 +17,7 @@ import sys
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
 EXPECTED_PYTHON = "3.12.13\n"
-EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.3\n"
+EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
     ".venv/\n"
     ".ipynb_checkpoints/\n"
@@ -28,7 +28,7 @@ EXPECTED_GITIGNORE = (
 )
 PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "29cb7d486f7fab60576ddf66c0b0164fe830b43138feb1f4c7c6b7a8ecc6a4fb",
+    "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
     "README.md": "2a439cc655b0447c6bd0b93be0fa998c8b4e08e82ca356f4b54fe168a0da4b1d",
     "PLATFORM_CHECK.md": "ebbca4c26b9701f231a6ef73a295c1619538db24cdd929828b8e3581bc8852d2",
@@ -188,6 +188,8 @@ STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
     *(f"data/{record['path']}" for record in FIXTURE_MANIFEST["files"]),
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
@@ -250,7 +252,7 @@ def _check_submission_inventory() -> None:
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != "output"
     }
     expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only Classroom50 delivery metadata is optional.")
+    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
     for relative in actual & DELIVERY_FILES:
         _assert(not (ASSIGNMENT_DIR / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
 
@@ -261,7 +263,7 @@ def check_environment_and_protected_files() -> None:
         sys.version_info[:3] == (3, 12, 13),
         "Run this checker with the Assignment 06 CPython 3.12.13 interpreter.",
     )
-    for package, expected in (("numpy", "2.0.2"), ("pandas", "3.0.3")):
+    for package, expected in (("numpy", "2.0.2"), ("pandas", "3.0.5")):
         try:
             observed = metadata.version(package)
         except metadata.PackageNotFoundError as error:
@@ -471,7 +473,7 @@ def main() -> int:
         print("\n".join(failures))
         print("Assignment 06 is not ready. Fix the messages, restart and run all cells, then check again.")
         return 1
-    print("All public checks passed. The independent Classroom50 grader will fresh-execute the submission.")
+    print("All public checks passed. Instructor review may run stronger checks separately.")
     return 0
 
 

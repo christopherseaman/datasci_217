@@ -15,4 +15,4 @@ The notebook searches only the current directory and its parents for either this
 
 Colab is conditional on the course launch route copying the complete assignment tree into the runtime. A standalone notebook upload is not supported.
 
-This candidate is not release-certified until the course-wide exact transitive dependency lock and immutable central-container digest are supplied and certified. The public learner workflow can be tested with the direct pins, but the production Classroom50 bootstrap deliberately refuses to grade without the real instructor lock.
+This candidate is not release-certified until the course-wide exact transitive dependency lock is supplied and certified. The public learner workflow can be tested with the direct pins. The optional Actions workflow is feedback only; it does not replace instructor review.

@@ -4,7 +4,7 @@
 Hands-on practice with data aggregation operations: groupby operations, pivot tables, remote computing, and performance optimization.
 
 Markdown is the authoritative source for each generated notebook. The tested
-activity environment is CPython 3.12.13 with NumPy 2.0.2, pandas 3.0.3,
+activity environment is CPython 3.12.13 with NumPy 2.0.2, pandas 3.0.5,
 Matplotlib 3.11.1, Seaborn 0.13.2, JupyterLab 4.4.10, Jupytext 1.18.1, and
 psutil 7.0.0 as pinned in `requirements.txt`:
 

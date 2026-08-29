@@ -5,7 +5,7 @@
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 # ]
 # ///
 
@@ -449,7 +449,7 @@ def _assert_delivery_inventory(correct: Path, temporary: Path) -> None:
 
 
 def _check_pep723() -> None:
-    expected = ["ipykernel==6.29.5", "nbclient==0.10.2", "nbformat==5.10.4", "numpy==2.0.2", "pandas==3.0.3"]
+    expected = ["ipykernel==6.29.5", "nbclient==0.10.2", "nbformat==5.10.4", "numpy==2.0.2", "pandas==3.0.5"]
     requirements = (ASSIGNMENT_DIR / "_grader_selftest/requirements.txt").read_text().splitlines()
     assert requirements == expected
     for path in (Path(__file__), ASSIGNMENT_DIR / "_grader_selftest/classroom50_grader.py"):
@@ -463,7 +463,7 @@ def _check_pep723() -> None:
     assert "# dependencies = []" in bootstrap
     public_source = (ASSIGNMENT_DIR / "check_assignment.py").read_text()
     assert '# requires-python = "==3.12.13"' in public_source
-    assert '"numpy==2.0.2"' in public_source and '"pandas==3.0.3"' in public_source
+    assert '"numpy==2.0.2"' in public_source and '"pandas==3.0.5"' in public_source
 
 
 def main() -> int:

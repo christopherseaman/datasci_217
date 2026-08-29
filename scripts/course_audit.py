@@ -608,7 +608,7 @@ def audit_lecture05_demos(errors: list[str]) -> None:
 
     requirements = demo_dir / "requirements.txt"
     if requirements.is_file():
-        expected_requirements = "numpy==2.0.2\npandas==3.0.3\n"
+        expected_requirements = "numpy==2.0.2\npandas==3.0.5\n"
         if requirements.read_text(encoding="utf-8") != expected_requirements:
             errors.append("unexpected Lecture 05 demo requirements")
     else:
@@ -651,7 +651,7 @@ def audit_lecture05_demos(errors: list[str]) -> None:
             code_source.append("".join(source) if isinstance(source, list) else source)
 
         joined_source = "\n".join(code_source)
-        if 'PANDAS_CANDIDATE = "3.0.3"' not in joined_source:
+        if 'PANDAS_CANDIDATE = "3.0.5"' not in joined_source:
             errors.append(
                 f"missing Lecture 05 pandas candidate setup: {path.relative_to(ROOT)}"
             )
@@ -718,7 +718,7 @@ def audit_lecture06_demos(errors: list[str]) -> None:
 
     requirements = demo_dir / "requirements.txt"
     if requirements.is_file():
-        expected_requirements = "numpy==2.0.2\npandas==3.0.3\n"
+        expected_requirements = "numpy==2.0.2\npandas==3.0.5\n"
         if requirements.read_text(encoding="utf-8") != expected_requirements:
             errors.append("unexpected Lecture 06 demo requirements")
     else:
@@ -761,7 +761,7 @@ def audit_lecture06_demos(errors: list[str]) -> None:
             code_source.append("".join(source) if isinstance(source, list) else source)
 
         joined_source = "\n".join(code_source)
-        if 'PANDAS_CANDIDATE = "3.0.3"' not in joined_source:
+        if 'PANDAS_CANDIDATE = "3.0.5"' not in joined_source:
             errors.append(
                 f"missing Lecture 06 pandas candidate setup: {path.relative_to(ROOT)}"
             )
@@ -813,8 +813,8 @@ def audit_lecture07_demos(errors: list[str]) -> None:
         ".python-version": "3.12.13\n",
         "requirements.txt": (
             "numpy==2.0.2\n"
-            "pandas==3.0.3\n"
-            "matplotlib==3.10.8\n"
+            "pandas==3.0.5\n"
+            "matplotlib==3.11.1\n"
             "seaborn==0.13.2\n"
         ),
         ".gitignore": (
@@ -887,7 +887,7 @@ def audit_lecture07_demos(errors: list[str]) -> None:
             code_source.append("".join(source) if isinstance(source, list) else source)
 
         joined_source = "\n".join(code_source)
-        for version in ("2.0.2", "3.0.3", "3.10.8", "0.13.2"):
+        for version in ("2.0.2", "3.0.5", "3.11.1", "0.13.2"):
             if version not in joined_source:
                 errors.append(
                     f"missing Lecture 07 candidate {version}: {path.relative_to(ROOT)}"
@@ -977,8 +977,8 @@ def audit_assignment07(errors: list[str]) -> None:
         ".python-version": "3.12.13\n",
         "requirements.txt": (
             "numpy==2.0.2\n"
-            "pandas==3.0.3\n"
-            "matplotlib==3.10.8\n"
+            "pandas==3.0.5\n"
+            "matplotlib==3.11.1\n"
             "seaborn==0.13.2\n"
         ),
         ".gitignore": (
@@ -991,8 +991,8 @@ def audit_assignment07(errors: list[str]) -> None:
         ),
         "_grader_selftest/requirements.txt": (
             "numpy==2.0.2\n"
-            "pandas==3.0.3\n"
-            "matplotlib==3.10.8\n"
+            "pandas==3.0.5\n"
+            "matplotlib==3.11.1\n"
             "seaborn==0.13.2\n"
             "nbclient==0.10.2\n"
             "nbformat==5.10.4\n"
@@ -1114,7 +1114,7 @@ def audit_assignment08(errors: list[str]) -> None:
 
     expected_small_files = {
         ".python-version": "3.12.13\n",
-        "requirements.txt": "numpy==2.0.2\npandas==3.0.3\n",
+        "requirements.txt": "numpy==2.0.2\npandas==3.0.5\n",
         ".gitignore": (
             ".ipynb_checkpoints/\n"
             "__pycache__/\n"
@@ -1128,7 +1128,7 @@ def audit_assignment08(errors: list[str]) -> None:
             "nbclient==0.10.2\n"
             "nbformat==5.10.4\n"
             "numpy==2.0.2\n"
-            "pandas==3.0.3\n"
+            "pandas==3.0.5\n"
         ),
     }
     for relative, expected in expected_small_files.items():
@@ -1274,7 +1274,7 @@ def audit_assignment09(errors: list[str]) -> None:
 
     expected_small_files = {
         ".python-version": "3.12.13\n",
-        "requirements.txt": "numpy==2.0.2\npandas==3.0.3\n",
+        "requirements.txt": "numpy==2.0.2\npandas==3.0.5\n",
         ".gitignore": (
             ".ipynb_checkpoints/\n"
             "__pycache__/\n"
@@ -1288,7 +1288,7 @@ def audit_assignment09(errors: list[str]) -> None:
             "nbclient==0.10.2\n"
             "nbformat==5.10.4\n"
             "numpy==2.0.2\n"
-            "pandas==3.0.3\n"
+            "pandas==3.0.5\n"
         ),
     }
     for relative, expected in expected_small_files.items():
@@ -1417,7 +1417,7 @@ def audit_assignment09(errors: list[str]) -> None:
         '"nbclient==0.10.2"',
         '"nbformat==5.10.4"',
         '"numpy==2.0.2"',
-        '"pandas==3.0.3"',
+        '"pandas==3.0.5"',
     }
     for relative in (
         "_grader_selftest/classroom50_grader.py",
@@ -1439,7 +1439,7 @@ def audit_assignment09(errors: list[str]) -> None:
     if (
         '# requires-python = "==3.12.13"' not in public_source
         or '"numpy==2.0.2"' not in public_source
-        or '"pandas==3.0.3"' not in public_source
+        or '"pandas==3.0.5"' not in public_source
     ):
         errors.append("Assignment 09 public checker PEP 723 metadata differs")
 
@@ -1589,7 +1589,7 @@ def audit_lecture08_demos(errors: list[str]) -> None:
 
     expected_small_files = {
         ".python-version": "3.12.13\n",
-        "requirements.txt": "numpy==2.0.2\npandas==3.0.3\n",
+        "requirements.txt": "numpy==2.0.2\npandas==3.0.5\n",
         ".gitignore": (
             ".ipynb_checkpoints/\n"
             "output/\n"
@@ -1729,7 +1729,7 @@ def audit_lecture08_demos(errors: list[str]) -> None:
 
         joined_source = "\n".join(code_source)
         joined_markdown = "\n".join(markdown_source)
-        for version in ("3.12.13", "2.0.2", "3.0.3"):
+        for version in ("3.12.13", "2.0.2", "3.0.5"):
             if version not in joined_source:
                 errors.append(
                     f"missing Lecture 08 candidate {version}: {path.relative_to(ROOT)}"
@@ -1846,7 +1846,7 @@ def audit_lecture09_demos(errors: list[str]) -> None:
 
     expected_small_files = {
         ".python-version": "3.12.13\n",
-        "requirements.txt": "numpy==2.0.2\npandas==3.0.3\n",
+        "requirements.txt": "numpy==2.0.2\npandas==3.0.5\n",
         ".gitignore": (
             ".ipynb_checkpoints/\n"
             "output/\n"
@@ -2030,7 +2030,7 @@ def audit_lecture09_demos(errors: list[str]) -> None:
 
         joined_source = "\n".join(code_source)
         joined_markdown = "\n".join(markdown_source)
-        for version in ("3.12.13", "2.0.2", "3.0.3"):
+        for version in ("3.12.13", "2.0.2", "3.0.5"):
             if version not in joined_source:
                 errors.append(
                     f"missing Lecture 09 candidate {version}: {path.relative_to(ROOT)}"

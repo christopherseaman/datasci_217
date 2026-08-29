@@ -1,0 +1,37 @@
+name: Assignment 06 public tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    steps:
+      - name: Check out assignment
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            .github/test/requirements.txt
+
+      - name: Install assignment and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r .github/test/requirements.txt
+          if [ -s requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          fi
+
+      - name: Run public pytest contract
+        run: python -m pytest .github/test/test_assignment.py -q --tb=short

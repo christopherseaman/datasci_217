@@ -6,7 +6,7 @@
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
 #   "numpy==2.0.2",
-#   "pandas==3.0.3",
+#   "pandas==3.0.5",
 #   "Pillow==12.3.0",
 #   "scikit-learn==1.9.0",
 #   "statsmodels==0.14.6",
@@ -48,7 +48,7 @@ PEP_REQUIRES_PYTHON = "==3.12.13"
 PEP_DEPENDENCIES = [
     "matplotlib==3.11.1",
     "numpy==2.0.2",
-    "pandas==3.0.3",
+    "pandas==3.0.5",
     "scikit-learn==1.9.0",
     "statsmodels==0.14.6",
 ]
@@ -85,7 +85,7 @@ CANDIDATE_PROTECTED_FILE_SHA256 = {
     "PLATFORM_CHECK.md": "36a10e0fe458fc8e0ef2e47327540c2bc4db3eaf8e91eb7ecb2fe1acd2bf2713",
     "README.md": "ea1f6fd44ca95ccf95b4581add8240fd718a0c7f35f439161a104d4071bc901f",
     "check_assignment.py": "60b1faa514ddf51daeaade5d709caadf4329401fb7ec62a375844bbcaa75895d",
-    "requirements.txt": "e5dbf553be7ba3834771e011d9f8cc5c8ed58ec5c4a901563d302d4389e97170",
+    "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
     "data/batch_strength.csv": "f14faf7da64347dfc255aa84b14e79eef7f2d0de94b394c747323319d937baa3",
@@ -135,6 +135,8 @@ FIXTURES = {
 BASE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt", *FIXTURES,
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 CSV_HASHES = {
@@ -259,7 +261,7 @@ def _inventory(root: Path) -> None:
 def _validate_template(root: Path) -> tuple[dict, dict[str, dict], ast.Module]:
     _assert(sys.version_info[:3] == (3, 12, 13), "grader Python differs from 3.12.13")
     versions = (matplotlib.__version__, np.__version__, pd.__version__, sklearn.__version__, statsmodels.__version__)
-    _assert(versions == ("3.11.1", "2.0.2", "3.0.3", "1.9.0", "0.14.6"), f"direct candidate versions differ: {versions}")
+    _assert(versions == ("3.11.1", "2.0.2", "3.0.5", "1.9.0", "0.14.6"), f"direct candidate versions differ: {versions}")
     _inventory(root)
     _validate_checker_static(root)
     for relative, digest in FIXTURES.items():

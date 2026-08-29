@@ -1,8 +1,8 @@
 """Dependency-free public structural checks for Assignment 07.
 
 This checker reads files and notebook source. It does not execute notebook code,
-award points, or certify the visual quality of rendered charts. Classroom50's
-independent grader fresh-executes a disposable submission copy.
+award points, or certify the visual quality of rendered charts. Instructor
+review may execute a disposable submission copy separately.
 """
 
 from __future__ import annotations
@@ -21,8 +21,8 @@ ASSIGNMENT_DIR = Path(__file__).resolve().parent
 EXPECTED_PYTHON = "3.12.13\n"
 EXPECTED_REQUIREMENTS = (
     "numpy==2.0.2\n"
-    "pandas==3.0.3\n"
-    "matplotlib==3.10.8\n"
+    "pandas==3.0.5\n"
+    "matplotlib==3.11.1\n"
     "seaborn==0.13.2\n"
 )
 EXPECTED_GITIGNORE = (
@@ -35,7 +35,7 @@ EXPECTED_GITIGNORE = (
 )
 PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "73ea59f29400bcc500ba15ab38d0fa7a805748ea094de8f055aaa7b8c1b8e207",
+    "requirements.txt": "5072907d928869027f0ab9884599bce2fda548faad48bf8c766bd58998655763",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "23bec29177d65945bc7c24de2f86d4a895c19148da19af9bbaebb19163fb6e33",
     "PLATFORM_CHECK.md": "a91844e48604d5b093c8ccf4d8298bea5d01b971f3e4d2e2d8978c9a89d65faa",
@@ -129,6 +129,8 @@ STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
     "data/fixture.json",
+    ".github/test/requirements.txt", ".github/test/test_assignment.py",
+    ".github/workflows/tests.yml",
     *(f"data/{record['path']}" for record in FIXTURE_MANIFEST["files"]),
 }
 DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
@@ -209,7 +211,7 @@ def _check_submission_inventory() -> None:
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != "output"
     }
     expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only Classroom50 delivery metadata is optional.")
+    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
     for relative in actual & DELIVERY_FILES:
         _assert(not (ASSIGNMENT_DIR / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
 
@@ -222,8 +224,8 @@ def check_environment_and_protected_files() -> None:
     )
     expected_packages = (
         ("numpy", "2.0.2"),
-        ("pandas", "3.0.3"),
-        ("matplotlib", "3.10.8"),
+        ("pandas", "3.0.5"),
+        ("matplotlib", "3.11.1"),
         ("seaborn", "0.13.2"),
     )
     for package, expected in expected_packages:
@@ -462,7 +464,7 @@ def main() -> int:
         print("\n".join(failures))
         print("Assignment 07 is not ready. Fix the messages, restart and run all 23 cells, then check again.")
         return 1
-    print("Public machine-readable checks passed. Human chart review and independent Classroom50 fresh execution are still required.")
+    print("Public machine-readable checks passed. Human chart review is still required.")
     return 0
 
 

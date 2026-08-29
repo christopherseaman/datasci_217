@@ -38,7 +38,7 @@ import sys
 
 REQUIRED = {
     "numpy": "2.0.2",
-    "pandas": "3.0.3",
+    "pandas": "3.0.5",
     "pyarrow": "25.0.0",
 }
 missing = []

@@ -6,8 +6,8 @@ Use VS Code Source Control for these steps. GitHub Desktop is an acceptable equi
 
 ## Open the provisioned repository
 
-1. Accept the instructor-provided Classroom 50 Assignment 02 link.
-2. Open the provisioned repository locally with the supported GUI workflow.
+1. Open the Assignment 02 repository URL supplied by the instructor.
+2. Open the repository locally with the supported GUI workflow.
 3. Open the repository folder in VS Code and confirm that it contains this `PLATFORM_CHECK.md`.
 4. Open Source Control, switch to `main` if necessary, and select **Sync Changes** before editing.
 5. Confirm that Source Control lists no unfinished changes.
@@ -42,6 +42,6 @@ Use VS Code Source Control for these steps. GitHub Desktop is an acceptable equi
 4. A conflict is not required. If an unexpected conflict appears, resolve the intended final content, remove all conflict markers, inspect the resolution, and complete the merge through Source Control.
 5. Select **Sync Changes**.
 6. Open the assigned repository in the browser and confirm that `main` contains the completed documentation, both Python files, and `report.txt`.
-7. Confirm that Classroom 50 shows the latest submission or grader status.
+7. Optionally open the repository's **Actions** tab to inspect the public pytest feedback.
 
 If a required GUI control is unavailable, stop before trying terminal Git commands. Record the exact message and contact the instructor.

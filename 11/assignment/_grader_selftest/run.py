@@ -297,8 +297,8 @@ def _run_cli(script: Path, target: Path, cwd: Path, environment: dict[str, str])
 
 def main() -> int:
     assert sys.version_info[:3] == (3, 12, 13)
-    assert (np.__version__, pd.__version__) == ("2.0.2", "3.0.3")
-    assert (ASSIGNMENT / "_grader_selftest/requirements.txt").read_text(encoding="utf-8").splitlines() == ["numpy==2.0.2", "pandas==3.0.3", "scikit-learn==1.9.0"]
+    assert (np.__version__, pd.__version__) == ("2.0.2", "3.0.5")
+    assert (ASSIGNMENT / "_grader_selftest/requirements.txt").read_text(encoding="utf-8").splitlines() == ["numpy==2.0.2", "pandas==3.0.5", "scikit-learn==1.9.0"]
     public_source = (ASSIGNMENT / "check_assignment.py").read_text(encoding="utf-8")
     central_source = (ASSIGNMENT / "_grader_selftest/classroom50_grader.py").read_text(encoding="utf-8")
     harness_source = Path(__file__).read_text(encoding="utf-8")

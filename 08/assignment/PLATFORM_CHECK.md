@@ -18,7 +18,7 @@ Expected versions:
 ```text
 Python 3.12.13
 NumPy 2.0.2
-pandas 3.0.3
+pandas 3.0.5
 ```
 
 The interpreter path should be inside the environment you activated.
@@ -44,7 +44,7 @@ print(np.__version__)
 print(pd.__version__)
 ```
 
-The kernel must report CPython 3.12.13, NumPy 2.0.2, and pandas 3.0.3, and its
+The kernel must report CPython 3.12.13, NumPy 2.0.2, and pandas 3.0.5, and its
 interpreter must match the intended environment. If not, stop and change the
 notebook kernel before doing assignment work.
 
@@ -54,7 +54,7 @@ Run the supplied setup cell without editing it. It searches upward from the
 kernel working directory and must print an assignment root after verifying
 fixture `a08-support-requests-v1`. Supported checkouts include:
 
-- a standalone Classroom50 repository containing `data/fixture.json`; or
+- a standalone Assignment 08 repository containing `data/fixture.json`; or
 - the full course repository containing `08/assignment/data/fixture.json`.
 
 Launching from a nested directory inside the assignment is also supported. A
@@ -79,6 +79,6 @@ python check_assignment.py
 ```
 
 Commit and push the notebook and all five CSVs with VS Code Source Control or
-GitHub Desktop. Submit through Classroom50, inspect its feedback and review
-link, correct your notebook if needed, rerun from fresh state, commit and push
-the corrected files, and resubmit according to the published course policy.
+GitHub Desktop. Optionally inspect the repository's Actions feedback, correct
+your notebook if needed, rerun from fresh state, and commit and push the
+corrected files. Automated results do not replace the separate human review.
