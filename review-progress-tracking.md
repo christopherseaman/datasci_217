@@ -364,6 +364,29 @@ No assignment paths were edited. The active demo phase is ready for a
 checkpoint commit; the separate lecture heading-format gate and eventual
 branch-only cleanup remain open.
 
+## Current release recheck (2026-08-28)
+
+The tested demo baseline above is now behind the current upstream releases:
+PyPI lists pandas 3.0.5 as the latest pandas release, and Python.org lists
+Python 3.14.7 as the latest stable interpreter (with Python 3.12.14 and
+3.13.15 as the current maintenance releases for those lines). The repaired
+demos therefore have execution evidence for pandas 3.0.3 / CPython 3.12.13,
+not yet for pandas 3.0.5 / CPython 3.14.7.
+
+The Python choice needs an ecosystem gate rather than a version-number-only
+upgrade. The current TensorFlow release publishes wheels through CPython 3.13
+but not 3.14, so a single 3.14 baseline would make Lecture 10's TensorFlow
+demo conditional or require a newer TensorFlow release. The next dependency
+refresh should bump pandas to 3.0.5 and either keep the conservative 3.12 line
+(updating to 3.12.14) or move the entire tested matrix to 3.13.15 together
+with a TensorFlow/package refresh and a complete rerun.
+
+Altair remains the recommended required declarative visualization for this
+Python/Jupyter course. Apache ECharts is JavaScript/DOM-first; a Python use
+would add a wrapper such as pyecharts and a second rendering/tooling model.
+It is a good optional ecosystem comparison or web-dashboard extension, not a
+clean replacement for the lecture's current Altair teaching contract.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
