@@ -354,8 +354,10 @@ Independent implementation validation:
   option, while remote Colab execution remains a release-time certification
   task.
 - The public Colab links and the Lecture 11 notebook fallback data URLs now use
-  the same `2026-refresh` branch. A fresh no-local-data setup run must validate
-  those URLs before release links are retargeted to `main` or an immutable tag.
+  the same `2026-refresh` branch. All five Colab URLs and all four fallback
+  data files returned HTTP 200, and a fresh no-local-data execution of
+  `01_setup.ipynb` passed. Before release, retarget the links to `main` or an
+  immutable tag and perform one manual Colab smoke test.
 - Additional scoped checks found no stale uppercase pandas hourly aliases,
   legacy Matplotlib `labels=`, deprecated Altair selection APIs, unsafe
   `nbconvert --inplace`/`--allow-errors` guide references, or broad pandas-2
