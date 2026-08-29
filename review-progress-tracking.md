@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: lecture-only pandas 3 organization checkpoint validated and independently approved; awaiting user acceptance; demos and assignments remain deferred
+- Current phase: full lecture-only adversarial audit complete and independently checked; changes are required before lecture approval; awaiting user direction; demos and assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -48,6 +48,44 @@ The follow-up audit used current official pandas 3.0.5 documentation as the API 
 
 No demo or assignment file was inspected or edited. The expanded structural gate, site build, and pandas 3 execution suite passed. Independent adversarial review passed the full change set and the final Lecture 02 bonus repair with no P0–P2 finding.
 
+## Full adversarial lecture audit
+
+The user requested a fresh review of all lecture content for completeness, prerequisite order, course flow, size, and sufficient fun/engagement. Eight independent read-only workstreams reviewed the 28 canonical lecture Markdown pages. Every workstream was explicitly constrained by the established boundary: lectures explain and illustrate topics and are not activities meant to execute top-to-bottom. Missing activation, installation, local imports, or shared runtime state was therefore not treated as a defect; individual claims and examples still had to be coherent and factual. All demo and assignment paths remained excluded. The user also confirmed that term-specific assignment and midterm URL placeholders are intentional repository slots, not findings.
+
+### Verdict
+
+**Changes required before lecture approval; no P0 finding.** The canonical sequence and inherited topic coverage pass. The main path is coherent:
+
+`shell + scripts` → `Git + structured Python` → `environment concepts + NumPy` → `notebooks + pandas` → `cleaning` → `join/reshape` → `visualization` → `aggregation` → `time series` → `modeling` → `question-led capstone`
+
+Comparison with `main` found no material accidental loss of inherited topic families. Most remaining correctness and safety debt is concentrated in bonus pages and the parallel `POINTS.md` copies, although Lecture 10 has one core completeness gap and several core wording issues.
+
+### P1 — repair before approval
+
+1. **Metric selection has no conceptual owner.** `10/README.md:272-307` relies on estimator-default `model.score()` and never explains how to choose among regression or classification measures, while `11/README.md:34-35` expects students to choose an evaluation measure. Lecture 10 already covers baselines, validation/CV selection, and one-time test reporting at `:478-508`; add a compact task/cost-aligned metrics bridge to that existing workflow without expanding into a full metrics course.
+2. **Several statistical examples teach unsupported conclusions.** Remove the `p>0.05` joke at `06/README.md:785`; repair the generic normal-approximation interval at `07/BONUS.md:539-579`; and correct `09/BONUS.md:127-167`, where `seasonal=365` configures the STL smoother rather than annual periodicity and the ADF helper turns failure to reject a unit-root null into proof of nonstationarity. Lecture 10 should remain the inference vocabulary owner.
+3. **Advanced Git and remote-notebook guidance crosses safety boundaries.** `02/bonus/advanced_git.md:111-115,395-425` presents commands that discard work or rewrite and force-push history without a verified disposable target or recovery workflow; it also teaches `git filter-branch`, which Git itself recommends against. `08/POINTS.md:121-129` binds Jupyter to `0.0.0.0` even though the canonical README correctly uses loopback plus SSH forwarding. Remove the destructive recipes or confine them to an explicitly disposable/recoverable setting, and synchronize the remote guidance to loopback.
+4. **Some pandas examples are invalid under the declared pandas 3 contract.** `04/BONUS.md:13-45` uses unsupported DataFrame–Series arithmetic with `fill_value`; `08/BONUS.md:13-26` asks `GroupBy.agg` to return a multi-value Series; and the weighted pivot examples at `08/BONUS.md:97-106,378-389` try to access a weight column that `pivot_table(values='value')` does not pass to the aggregator. Replace them with explicit alignment, named/list aggregations, and a grouped weighted-total workflow.
+5. **The advanced validation example records false results as passes.** `08/bonus/advanced_debugging.md:210-228` unconditionally records `passed: True` whenever a Boolean-returning validator does not raise, even though the supplied validators at `:249-268` return `False` for failure. Honor `bool(result)` or require and document an exception-based validator contract.
+6. **Two Lecture 10 bonus examples are not viable current examples.** The custom attention layer at `10/BONUS.md:223-252` is dimensionally invalid for ordinary sequence inputs and is not an attention computation; the Featuretools example at `10/BONUS.md:455-490` uses removed entity APIs. Replace these with current Keras attention and Featuretools EntitySet/DFS APIs or label non-runnable material explicitly as pseudocode.
+
+### P2 — important content and organization repairs
+
+- `01/bonus/advanced_topics.md:85-97` mixes Python statements into a Bash fence. `02/bonus/bonus_python_concepts.md:162-190` promises a `mode` method it does not implement, and its later object-model table overstates identity-as-address and unconditional tuple hashability. `03/BONUS.md:121-158` uses deprecated `np.in1d` and demonstrates `argsort` only after sorting the source in place.
+- `05/README.md:51-69` uses a Matplotlib missingness plot before the visualization lecture and names missingness mechanisms without a plain-language bridge. Treat the chart as an explicit Lecture 07 preview or keep this core example tabular. `05/BONUS.md:351-389` should not present `nbconvert --inplace` or `--allow-errors` without overwrite/failure warnings.
+- `06/README.md:30-82` should teach pandas' null-key matching difference from SQL. `06/BONUS.md:222,472` overstates index preservation and carries a stale `Int64Index` representation; `06/POINTS.md:34,122-150` uses a false row-growth heuristic and overstates wide/long rules.
+- `07/README.md:15-22` has an outline that does not match section order. `07/BONUS.md:336-349,675-688` labels a raw connecting line as a trend and stores the `ax.grid` method rather than grid state. `07/POINTS.md:26-33` loses the canonical README's nuance about zero baselines for bars versus contextual line-chart axes.
+- `09/BONUS.md:265-271` silently assumes input columns named `value`, `volume`, and `count`; document that schema, or use `.size()`/named aggregation if `count` is intended to mean the number of observations. `09/README.md:674,677` contains two malformed image placeholders even though the intended image files exist.
+- `10/README.md:257` incorrectly assigns `fit`, `predict`, and `transform` to every model; `:543-561` describes ordinary residual fitting without qualifying squared-error regression or introducing pseudo-residuals; and `:594-603` presents data-dependent XGBoost ranges as universal “sweet spots.” `10/BONUS.md:390-415` needs the untrusted-pickle boundary and current Keras save/export targets; `:535-559` should not turn an indiscriminate KS alert into automatic retraining.
+- The four `POINTS.md` files are large parallel accounts—1,665 to 2,656 prose words each—and have already drifted from canonical guidance. Establish the README as authoritative and reduce points to presentation cues/links, or deprecate them.
+
+### Size and engagement findings
+
+- The median core lecture is 2,393 prose words. Lecture 10 is the largest at 3,967 words (1.66× median); retain its required model-family breadth but compress repeated API detail, comparisons, and pop-culture framing.
+- Lecture 02 has 2,049 bonus words across three files and repeats lambda and shell-scripting material. Lecture 03 has the highest structural density—40 headings and 33 fenced examples in 1,358 prose words—and repeats its NumPy quick reference/image while carrying optional shell/visualization catalogs in core.
+- Lecture 06's core/bonus/points bundle and Lectures 07–09's parallel points pages are the main total-volume problem; the core lengths of Lectures 04–07 and 09 are otherwise proportionate to their scope. Lecture 11 is appropriately sized for its integrative role.
+- The course has enough fun. Lectures 07 and 11 are the strongest models because engagement serves the concept; Lectures 01, 02, 05, 08, and 09 are also engaging. Do not add more decorative jokes. Reduce Lecture 10's repeated Zoolander references, remove Lecture 06's fabricated “2007 schism” and statistical joke, replace Lecture 03's author-facing drafting note, and give dry bonus pages a one-sentence motivating problem rather than more humor.
+
 ## Course-flow revision checkpoint
 
 The user approved a lecture-only sequencing pass after reviewing the completed content comparison with `main`. The implementation changes only lecture material:
@@ -79,21 +117,23 @@ A targeted re-review then caught one more internal contradiction in `06/POINTS.m
 
 All eight findings were repaired in the owning lecture layer. The independent reviewer passed the final repair set with no P0–P2 finding. No demo or assignment change was authorized or required.
 
-## Fresh read-only review results
+## Current lecture-by-lecture assessment
 
-| Lecture | Current review state | Required follow-up |
-| --- | --- | --- |
-| 01 | Pass | Establishes the REPL/script workflow for Lectures 01–03 and defers notebooks |
-| 02 | Pass | Rebalanced against Lecture 01; adds only the compact shell prerequisites used later, sequences structured Python concepts before script entry points, and keeps pandas out of the bonus material |
-| 03 | Pass | Environment identity remains in scope without an artificial reactivation step; notebooks remain deferred to Lecture 04 |
-| 04 | Pass | Notebook mechanics use core Python first; pandas 3 `str`, Copy-on-Write, assignment, dtype, and missingness contracts are introduced together |
-| 05 | Pass | Cleaning owns contract-driven transformations and validation; peripheral sampling and notebook automation are optional bonus reference |
-| 06 | Pass | Merge, label alignment, concat, reshape, and index responsibilities are explicit; `pivot_table` is only a Lecture 08 preview |
-| 07 | Pass | Core plotting sequence is retained; the duplicated modern-library material is one concise optional survey with bonus examples |
-| 08 | Pass | GroupBy is organized by result shape and uses current pandas 3 `observed`/`include_groups`/Copy-on-Write contracts |
-| 09 | Pass | Core time-series scope uses current offset aliases and separates grid conformance from aggregation; specialized modeling remains bonus material |
-| 10 | Pass; scope preserved | Full inherited model survey retained; modern SHAP API, environment handoff, conditional model-selection guidance, and current framework descriptions independently rechecked |
-| 11 | Pass | Approachable question-led capstone, non-prescriptive framing, roughly equal lecture/demo time, terminology, interpreter pin, and Bash/WSL assumptions independently rechecked |
+Scores use 5 for the strongest result. The size score considers the whole lecture bundle, including bonus and points material, rather than treating code-block count as an execution requirement.
+
+| Lecture | Completeness | Order | Size | Fun | Current assessment |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 01 | 4 | 4 | 2 | 4 | Strong foundation; repair the mixed Bash/Python bonus fence and consider pacing only after real delivery feedback |
+| 02 | 4 | 3 | 1 | 3 | Core role is sound; bonus duplication, contract errors, and destructive Git guidance require cleanup |
+| 03 | 4 | 4 | 2 | 3 | Environment-to-NumPy order works; reduce structural density, stale NumPy API, repeated reference, and author note |
+| 04 | 4 | 4 | 3 | 4 | Strong pandas 3 foundation; repair the bonus alignment example |
+| 05 | 5 | 4 | 3 | 4 | Excellent contract-driven cleaning owner; clarify missingness/plot preview and non-destructive notebook reference |
+| 06 | 5 | 4 | 2 | 3 | Strong joins/reshape core; repair null-key guidance, points drift, stale bonus claims, and harmful humor |
+| 07 | 4 | 3 | 2 | 5 | Excellent visualization contract; repair inference/trend/grid examples and reduce duplicate extensions |
+| 08 | 4 | 4 | 2 | 4 | Strong result-shape-first core; invalid bonus aggregations, broken validation, unsafe points, and parallel-page volume block approval |
+| 09 | 4 | 4 | 3 | 4 | Strong temporal core; repair optional STL/ADF/count examples and two broken image links |
+| 10 | 4 | 4 | 2 | 3 | Inherited survey breadth is intact; add the metric bridge, correct APIs/claims, and reduce repeated pop-culture/API detail |
+| 11 | 5 | 5 | 4 | 5 | Pass; question-led, non-prescriptive, appropriately sized capstone |
 
 ## Deferred to the demo phase
 
@@ -131,12 +171,19 @@ All eight findings were repaired in the owning lecture layer. The independent re
 - The post-repair Eleventy build completed with 30 pages and 124 copied assets.
 - The pandas 3.0.5 contract suite was rerun from the current lecture sources under Python 3.12 with NumPy 2.0.2; all string, Copy-on-Write, cleaning-pipeline, grouping, merge/alignment/pivot, dtype, offset, and frequency-conversion checks passed with warnings promoted to errors.
 - Independent adversarial review passed the pandas 3 content/API/organization changes and the final nested Lecture 02 bonus repair with no P0–P2 finding.
+- The subsequent full adversarial audit used eight independent workstreams across lecture groups, course sequencing, factual/API currency, quantitative size, and engagement. All used the non-executable lecture boundary and excluded demos, assignments, and intentional term-specific URL placeholders.
+- The size audit measured 28 canonical lecture pages. Core prose ranged from 1,101 words (Lecture 08) to 3,967 words (Lecture 10), with a 2,393-word median; it also counted headings, fenced examples, images, bonus volume, and parallel points volume without treating examples as an execution contract.
+- Official scikit-learn, pandas, NumPy, statsmodels, Git, Jupyter, Keras, and Featuretools documentation supported the current-API and safety findings. A targeted run under Python 3.12, NumPy 2.0.2, and pandas 3.0.5 reproduced the unsupported DataFrame–Series `fill_value`, multi-value GroupBy aggregation, weighted-pivot, and `np.in1d` deprecation findings.
+- The full audit found no P0 issue and passed the canonical course sequence and inherited scope, but found P1 correctness/safety defects and P2 organization/content defects. Lecture content is therefore not yet approved.
+- An independent challenge of the synthesized report caught two overstatements: Lecture 10 already owns baseline/CV/test-split workflow, and Lecture 09's tick example assumes rather than necessarily lacks a `count` column. Both findings were narrowed, and the targeted re-review passed with no remaining material synthesis defect.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
 ## Next action
 
-1. Commit this coherent lecture-only checkpoint and present it for user acceptance.
-2. Keep demos and assignments deferred until lecture content is explicitly approved.
+1. Present the full adversarial report and obtain direction before changing lecture content.
+2. If authorized, repair P1 correctness/safety findings first, then the P2 content/organization batch without expanding inherited topic scope.
+3. Run an independent post-edit review and integrated lecture gates before requesting approval again.
+4. Keep demos and assignments deferred until lecture content is explicitly approved.
 
 ## Checkpoint log
 
@@ -154,3 +201,4 @@ All eight findings were repaired in the owning lecture layer. The independent re
 | `3f2c9cd` | Rebalance lecture flow and prerequisites | Lecture-only implementation and initial integrated validation passed |
 | `f9dcd50` | Close adversarial lecture-flow findings | Eight prerequisite/API-contract findings repaired; final structural, build, pandas 3, and independent review gates passed |
 | `a728700` | Reorganize lecture content for pandas 3 | Expanded validation and independent review passed; lecture-only checkpoint ready for acceptance |
+| Working checkpoint | Run full adversarial lecture audit | Sequence/scope pass; no P0; P1 correctness/safety and P2 content/organization repairs required before approval |
