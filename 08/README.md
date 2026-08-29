@@ -474,7 +474,7 @@ tmux attach-session -t data_analysis
 ```
 
 # Optional: Performance Optimization
-![xkcd 2582: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
+![xkcd 2533: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
 
 Optimize only after measuring the real workload. These patterns are optional and their benefit depends on pandas version, data types, group cardinality, memory, and hardware; the benchmark below is illustrative rather than a promise for every dataset.
 

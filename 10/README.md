@@ -568,7 +568,7 @@ Final: Combine all models (like a modeling ensemble)
 
 *"What is this? A model for ants? It needs to be at least... three times more accurate!"*
 
-![xkcd 2400: Machine Learning](https://imgs.xkcd.com/comics/machine_learning_2x.png)
+![xkcd 2400: Statistics](https://imgs.xkcd.com/comics/statistics.png)
 
 *"Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."*
 

@@ -466,5 +466,3 @@ git commit -m "Add data validation to analysis script
 
 Fixes issue #123"
 ```
-
-![xkcd 1296: Git Commit](../media/xkcd_1296.png)

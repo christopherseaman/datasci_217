@@ -139,6 +139,8 @@ be misleading. Those are choices, not mandatory project stages. Each transformat
 should have a sentence explaining what question it serves and a check that the
 result still has the intended grain.
 
+*Your capstone is not Pokémon for obscure ML—you don't have to catch 'em all.*
+
 ### Let summaries and plots refine the question
 
 Simple summaries usually come before a model. Counts by group, distributions, and
@@ -150,6 +152,9 @@ The analysis may loop here. An unexpected pattern can motivate a subgroup view, 
 normalization, a revised cleaning decision, or a narrower claim. Exploration is
 productive when each follow-up is tied to the question rather than to a desire to
 generate more charts.
+
+![xkcd 2582: Data Trap](https://imgs.xkcd.com/comics/data_trap.png)
+*Analysis should produce understanding, not an unbounded pile of artifacts.*
 
 ### Model only under a clear prediction contract
 

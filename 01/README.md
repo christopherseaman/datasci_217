@@ -490,7 +490,7 @@ bmi = weight_kg / (height_m ** 2)
 print(f"BMI is {bmi:.1f}")
 ```
 
-![xkcd_1513.png](media/xkcd_1513.png)
+![xkcd 1654: Universal Install Script](https://imgs.xkcd.com/comics/universal_install_script.png)
 
 ## Control Structures
 

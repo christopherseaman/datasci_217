@@ -539,8 +539,8 @@ print(names_df)  # Two columns with first and last names
 
 # Data Validation and Quality Assessment
 
-![xkcd 2239 "Database"](media/xkcd_2239.png)
-*Shows data errors invalidating research - perfect for validation section*
+![xkcd 2239: Data Error](media/xkcd_2239.png)
+*A clean-looking analysis cannot rescue corrupted source data.*
 
 ## Sampling Rows for Inspection
 

@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: focused ownership follow-up; sampling and notebook automation now have their intended Lecture 05/Lecture 04 owners, the approved Lecture 11 refinements are implemented and independently passed, xkcd duplicate/correctness disposition and course-wide heading normalization remain open, and demos/assignments remain deferred
+- Current phase: focused ownership follow-up; sampling and notebook automation have their intended Lecture 05/Lecture 04 owners, the approved Lecture 11 refinements and instructor-directed xkcd/humor repairs pass integrated lecture-only validation and independent review, course-wide heading normalization remains open, and demos/assignments remain deferred
 - Explicitly out of scope for this phase: demos, assignments, merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -90,6 +90,10 @@ The xkcd inventory covered all lecture Markdown under Lectures 01–11 while exc
 The same audit found two correctness issues rather than duplicates: `08/README.md` labels “Slope Hypothesis Testing” as xkcd 2582, but the comic is xkcd 2533 and xkcd 2582 is “Data Trap”; and `05/media/xkcd_2239.png` is a saved HTML 404 response rather than the intended xkcd 2239 “Data Error” image. Those factual/broken-asset repairs are recommended regardless of the duplicate-placement choice. Two commented Lecture 04 FIXME candidates and repeated URLs in noncanonical `08/addme*.md` notes are not embedded comic repetitions.
 
 Lecture 11 is visually warm and strongly interactive but contains almost no written joke beyond vivid phrasing. That is acceptable for the capstone. If one more concept-serving line is desired, the preferred addition after “Those are choices, not mandatory project stages” is: “A capstone is not a technique scavenger hunt; the data gets a vote.” No humor or duplicate-comic edit is included in this checkpoint without instructor disposition.
+
+The instructor then resolved every open comic disposition. Lecture 01 now bridges into conditionals with unique xkcd 1654, “Universal Install Script,” while xkcd 1513 remains only as Lecture 11's closing callback. The Lecture 02 bonus repetition of xkcd 1296 is removed while its core placement remains. Lecture 10 keeps xkcd 1838 at its opening and replaces the mislabeled repeated image with the actual xkcd 2400, “Statistics,” without changing any Zoolander reference. Lecture 08 correctly identifies “Slope Hypothesis Testing” as xkcd 2533. The invalid 146-byte HTML file at `05/media/xkcd_2239.png` is replaced by the official 740×282 xkcd 2239 “Data Error” PNG. Lecture 11 now embeds xkcd 2582, “Data Trap,” beside its warning against artifact-generating exploration and adds the instructor's tighter Pokémon/capstone line after the non-prescriptive transformation guidance. Official xkcd pages and image URLs confirmed all five titles, numbers, and source images.
+
+Integrated validation now passes. A lecture-only gate checked 28 core, bonus, and points Markdown pages, found 414 balanced fenced blocks, resolved 85 local links/images, and confirmed exactly one embedded occurrence each of xkcd 1296, 1513, 1654, 1838, 2239, 2400, 2533, and 2582. The requested remote image URLs returned successfully. The repaired xkcd 2239 asset has a valid PNG signature, is 46,171 bytes at 740×282 pixels, renders as “Data Error,” and is copied byte-for-byte into the built site. `git diff --check` passed. Eleventy wrote 30 pages and copied 124 assets; the rendered pages contain each new label/image and the Pokémon line. The changed scope remains seven lecture files/assets plus this ledger, with no demo or assignment path changed. A fresh independent adversarial review passed all six instructor requirements with no P0–P3 finding, independently confirmed the official comic metadata and xkcd 2239 byte identity, found no unintended embedded-comic duplicate, and verified that every Zoolander reference plus Lecture 11's intentional fifteen-years opener remains intact.
 
 ## Recovered work state
 
@@ -263,17 +267,17 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 
 | Lecture | Content repair | Heading gate | Current assessment |
 | --- | --- | --- | --- |
-| 01 | Resolved | Open: README | Strong foundation; the mixed Bash/Python bonus fence is repaired; defer pacing changes until delivery feedback |
-| 02 | Resolved | Open: README | Core role is sound; bonus ownership, API-contract, and Git-safety cleanup is complete |
+| 01 | Resolved | Open: README | Strong foundation; the mixed Bash/Python bonus fence is repaired and the unique conditional-comic bridge replaces the duplicate closing callback |
+| 02 | Resolved | Open: README | Core role is sound; bonus ownership, API-contract, Git-safety, and duplicate-comic cleanup are complete |
 | 03 | Resolved | Open: BONUS | Environment-to-NumPy order works; density, stale NumPy API, duplicated reference, and author-note issues are resolved |
 | 04 | Resolved | Open: README and BONUS | Strong pandas 3 foundation; optional safe notebook automation now sits with the Jupyter owner rather than cleaning |
-| 05 | Resolved | Open: README and BONUS | Excellent contract-driven cleaning owner; core sampling serves manual inspection, design-heavy variants remain optional, and notebook automation moved to Lecture 04 |
+| 05 | Resolved | Open: README and BONUS | Excellent contract-driven cleaning owner; core sampling serves manual inspection, notebook automation moved to Lecture 04, and the broken validation comic is repaired |
 | 06 | Resolved | Open: README and BONUS | Strong joins/reshape core; null-key guidance, points drift, stale bonus claims, and harmful humor are resolved |
 | 07 | Resolved | Open: README | Excellent visualization contract; inference, trend/grid examples, and duplicate extensions are repaired |
-| 08 | Resolved | Open: README | Strong result-shape-first core; aggregation, validation, remote-safety, and parallel-page volume issues are resolved |
+| 08 | Resolved | Open: README | Strong result-shape-first core; aggregation, validation, remote-safety, parallel-page volume, and the mislabeled comic are resolved |
 | 09 | Resolved | Open: README | Strong temporal core; optional STL/ADF/count guidance and broken image links are repaired |
-| 10 | Resolved | Open: README | Inherited survey breadth and all main-carried Zoolander references are intact; evidence-based model-selection guidance remains in place |
-| 11 | Resolved | Pass | Question-led, non-prescriptive rewrite now includes the approved measurement prompt, local definitions, and three delivery anchors; the intentional opening visual remains |
+| 10 | Resolved | Open: README | Inherited survey breadth and all main-carried Zoolander references are intact; evidence-based model selection and the corrected unique Statistics comic remain in place |
+| 11 | Resolved | Pass | Question-led, non-prescriptive rewrite includes the approved prompt, local definitions, three delivery anchors, a concept-serving Data Trap comic, and the capstone joke; the intentional opening visual remains |
 
 ## Deferred to the demo phase
 
@@ -320,11 +324,10 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 
 ## Next action
 
-1. Resolve the three xkcd duplicate placements, the two xkcd correctness/broken-asset findings, and the optional single Lecture 11 humor line.
+1. Normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
 2. Keep sampling owned by Lecture 05 and notebook automation owned by Lecture 04; do not re-expand the removed parallel reference blocks.
-3. Normalize the 13 remaining nonconforming lecture pages to one H1 with semantic H2/H3/H4 nesting.
-4. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
-5. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
+3. Rerun course-wide heading, fence, link, syntax, build, and independent pedagogical gates before requesting lecture approval.
+4. Keep demos and assignments deferred until lecture content is explicitly approved; review those as separate later phases.
 
 ## Checkpoint log
 
@@ -344,3 +347,10 @@ A post-repair read-only audit confirmed that every original P1/P2 finding and ev
 | `a728700` | Reorganize lecture content for pandas 3 | Expanded validation and independent review passed; lecture-only checkpoint ready for acceptance |
 | `b2c1f09` | Run full adversarial lecture audit | Sequence/scope pass; no P0; P1 correctness/safety and P2 content/organization repairs required before approval |
 | `c6fdaf4` | Resolve adversarial lecture findings | Authorized lecture-only repairs, pinned-stack validation, integrated gates, and final independent re-reviews passed with no P0–P3 finding |
+| `fe3f003` | Record the repaired lecture checkpoint | Preserve the completed repair evidence and remaining heading gate |
+| `bdc072d` | Record the lecture heading-format gap | Identify the remaining one-H1 normalization scope |
+| `299cdbb` | Refresh per-lecture repair status | Confirm content findings closed separately from heading conformance |
+| `d92522e` | Scope the core-lecture comparison | Define pairwise `main` versus branch review across Lectures 01–11 |
+| `36ea01c` | Record the core-lecture comparison | Preserve the pairwise content, flow, size, and engagement verdicts |
+| `7e6ba44` | Restore Lecture 10 references | Restore every main-carried Zoolander reference before further review |
+| `aa35ea2` | Refine lecture ownership and capstone | Place sampling and notebook automation with their owning lectures and clarify Lecture 11 |
