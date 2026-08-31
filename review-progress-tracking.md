@@ -1213,3 +1213,4 @@ scratch.
 | `dfc5a5b` | Clarify grading and final-project choices | Separate the future non-Classroom batch helper from content approval, close the A11 workload concern with its two-week schedule, and bound the remaining consistency choices |
 | `ab62eea` | Remove invented pacing and tooling work | Preserve Assignment 11's intentional breadth without prescribing duration and reject notebook-tooling dependency churn |
 | `45adc20` | Align grading and modeling contracts | Implement and validate the bounded Lecture 10, Assignment 10/11, neutral-grader, URL-placeholder, and active-Classroom cleanup batch |
+| `ce11716` | Align demos with lecture prerequisites | Move foundational concepts to their owning lectures, remove later-topic demo dependencies, apply the pandas 3 preprocessing/index contracts, and pass execution plus independent review |
