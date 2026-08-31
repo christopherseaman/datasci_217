@@ -966,6 +966,61 @@ Validation evidence:
   objective, one Lecture 11 demo contradiction, the missing 10/11 audit coverage,
   and generated-environment warning noise were repaired.
 
+## Lecture/demo/assignment prerequisite crosswalk (2026-08-31)
+
+An eight-workstream read-only crosswalk checked each active lecture against its
+demo guide, demo sources, assignment instructions, starter artifacts, and the
+cumulative sequence through Lecture 11. Lectures were evaluated as explanatory
+documents, not as executable notebooks. Supplied bootstrap code and
+assignment-specific data contracts were not counted as concepts that must have
+appeared verbatim in an earlier lecture.
+
+The graded-assignment coverage gate passes. Assignments 01–10 stay within their
+own or earlier lectures, and Assignment 11's exact release checks, sensor rules,
+panel grain, feature manifest, and reporting artifacts are specified locally.
+Its underlying cleaning, joining, grouping, visualization, temporal-analysis,
+modeling, validation, and leakage concepts are covered cumulatively. Scripts
+remain intentional through Lecture 03; Lecture 04 introduces notebooks before
+either its notebook-based demos or assignment.
+
+The demo-ordering gate does not yet pass. The independent adjudicator confirmed
+these learner-facing repair targets:
+
+- Lecture 01's control-structures demo explicitly teaches `enumerate`,
+  comprehensions, `try`/`except`, `break`, `continue`, and `isinstance` before
+  their Lecture 02 treatment.
+- Lecture 02's advanced CLI demo teaches `wc`, `cut`, `sort`, `uniq`, `awk`,
+  command substitution, variables, and grouped redirection even though the
+  lecture defers longer pipelines to Lecture 03.
+- Lecture 05's missing-data demo forward-fills patient dates without an entity
+  or ordering contract, contradicting the lecture's own caution. Its workflow
+  demo also uses `to_period()` and `groupby().agg()` before their canonical
+  owners without preview framing.
+- Lecture 06's third demo uses time-series `resample()` before Lecture 09 and
+  makes `groupby()`/`pivot_table()` part of a core workflow before Lecture 08.
+- Lecture 07's heatmap demo uses `pivot_table()` as an unexplained preparation
+  step before the canonical Lecture 08 treatment.
+- Lecture 10's deep-learning demo presents Dropout without defining it in the
+  lecture or framing it as an extension. Keras L2 regularization is adequately
+  grounded by the lecture's L1/L2 discussion and is not a separate gap.
+- Lecture 11's fourth demo relies on `ColumnTransformer` and `OneHotEncoder` as
+  essential pipeline machinery without enough local API framing. The
+  assignment's `SimpleImputer` configuration is explicitly supplied and is not
+  a prerequisite failure.
+
+Two lower-priority documentation-polish candidates remain: Lecture 02's
+self-contained numbered-module loader and Lecture 03's compact NumPy idioms.
+The review rejected Lecture 04's supplied checksum/download bootstrap, Lecture
+08's synthetic timestamps, Lecture 09's explicitly optional decomposition, and
+Assignment 11's dataset-specific rules as prerequisite findings.
+
+No course-content file changed during this review. The smallest follow-up is a
+demo-alignment batch: defer the genuinely later concepts, or label and explain
+bounded previews where they materially support the current lecture. Do not add
+another Lecture 11 demo or meeting, assignment-duration language, or notebook
+tooling dependencies. The review-only checkpoint passed `git diff --check`; the
+Eleventy build rendered 30 pages and copied 124 assets.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
@@ -1006,12 +1061,16 @@ Validation evidence:
 
 ## Next action
 
-1. The validated content and per-assignment harness checkpoint is committed and
+1. If authorized, run one bounded demo-alignment batch for the confirmed
+   crosswalk findings above. The assignments need no prerequisite-driven
+   expansion; do not turn assignment-specific rules or supplied setup code into
+   new lecture topics.
+2. The validated content and per-assignment harness checkpoint is committed and
    pushed on `2026-refresh`; do not merge to `main` in this review step.
-2. After standalone assignment repositories exist, implement and pilot the
+3. After standalone assignment repositories exist, implement and pilot the
    neutral batch-grading helper on one script and one notebook assignment, then
    populate source coordinates, student mappings, and ref/gradebook policy.
-3. If desired before merge, normalize the 13 remaining nonconforming lecture
+4. If desired before merge, normalize the 13 remaining nonconforming lecture
    pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
    change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
    `HANDOFF.md`, and this tracker during the eventual merge cleanup.
