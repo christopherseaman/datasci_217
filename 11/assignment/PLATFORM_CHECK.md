@@ -23,3 +23,4 @@ Python 3.12.13
 If `uv` reports that Python is missing, run `uv python install 3.12.13`, then repeat setup. Do not replace exact pins with version ranges.
 
 The release is a CSV read directly by pandas, so no parquet or geographic package is needed.
+The verifier uses the required Python runtime for its checksum and byte-count checks; it does not require platform-specific `sha256sum` or `stat` options.

@@ -12,19 +12,6 @@ if [[ ! -f "$MANIFEST" || ! -f "$RELEASE" ]]; then
     exit 1
 fi
 
-actual_sha256="$(sha256sum "$RELEASE" | cut -d ' ' -f 1)"
-actual_bytes="$(stat -c '%s' "$RELEASE")"
-
-if [[ "$actual_sha256" != "$EXPECTED_SHA256" ]]; then
-    printf 'Release checksum mismatch: %s\n' "$RELEASE" >&2
-    exit 1
-fi
-
-if [[ "$actual_bytes" != "$EXPECTED_BYTES" ]]; then
-    printf 'Release size mismatch: expected %s bytes, observed %s bytes\n' "$EXPECTED_BYTES" "$actual_bytes" >&2
-    exit 1
-fi
-
 if command -v python >/dev/null 2>&1; then
     PYTHON_COMMAND=(python)
 elif command -v python3 >/dev/null 2>&1; then
@@ -36,13 +23,25 @@ else
     exit 1
 fi
 
-"${PYTHON_COMMAND[@]}" - "$MANIFEST" "$EXPECTED_SHA256" "$EXPECTED_BYTES" <<'PY'
+"${PYTHON_COMMAND[@]}" - "$MANIFEST" "$RELEASE" "$EXPECTED_SHA256" "$EXPECTED_BYTES" <<'PY'
+from hashlib import sha256
 import json
+from pathlib import Path
 import sys
 
-manifest_path, expected_hash, expected_size = sys.argv[1:]
+manifest_path, release_path, expected_hash, expected_size = sys.argv[1:]
 with open(manifest_path, encoding="utf-8") as handle:
     manifest = json.load(handle)
+
+release_bytes = Path(release_path).read_bytes()
+actual_hash = sha256(release_bytes).hexdigest()
+actual_size = len(release_bytes)
+if actual_hash != expected_hash:
+    raise SystemExit(f"Release checksum mismatch: {release_path}")
+if actual_size != int(expected_size):
+    raise SystemExit(
+        f"Release size mismatch: expected {expected_size} bytes, observed {actual_size} bytes"
+    )
 
 assert manifest["schema"] == "datasci217/assignment11-release/v1"
 assert manifest["release_filename"] == "chicago_beach_sensors_2022_2024.csv"
@@ -72,6 +71,6 @@ assert manifest["stations"] == [
     "Oak Street Weather Station",
 ]
 assert manifest["source_timezone"] == "America/Chicago"
-PY
 
-printf 'Verified frozen release and manifest: %s (%s bytes)\n' "$RELEASE" "$actual_bytes"
+print(f"Verified frozen release and manifest: {release_path} ({actual_size} bytes)")
+PY

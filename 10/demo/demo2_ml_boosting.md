@@ -4,7 +4,7 @@
 - Master the scikit-learn fit/predict pattern
 - Build and evaluate linear regression and random forest models
 - Use XGBoost for gradient boosting
-- Understand feature importance
+- Distinguish model-specific importance from held-out permutation importance
 - Compare model performance
 - Visualize results with Altair
 
@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.inspection import permutation_importance
 import xgboost as xgb
 import altair as alt
 
@@ -224,7 +225,7 @@ print(feature_importance)
 
 **Key insights:**
 - Random Forest often outperforms linear models on complex, non-linear data
-- Feature importance tells you which variables matter most
+- Its model-specific importance summarizes how the fitted forest used the features
 - Random Forest can capture interactions between features automatically
 
 ## Part 6: XGBoost - The Secret Weapon
@@ -396,6 +397,40 @@ alt.Chart(importance_long).mark_bar().encode(
 )
 ```
 
+The summaries above are specific to each tree implementation. Permutation
+importance works with any fitted predictor and measures how much its held-out
+score deteriorates when one feature is shuffled. Here we use the validation set,
+not the final test set, and keep MAE as the evaluation measure. scikit-learn
+orients scorers so higher is better, so MAE uses the negative-MAE scorer; a
+positive result below is the increase in validation MAE after shuffling.
+
+```python
+# Measure predictive reliance on validation data with reproducible shuffles.
+permutation_result = permutation_importance(
+    xgb_model,
+    X_valid,
+    y_valid,
+    scoring='neg_mean_absolute_error',
+    n_repeats=10,
+    random_state=42,
+    n_jobs=-1,
+)
+
+permutation_df = pd.DataFrame({
+    'feature': feature_cols,
+    'validation_mae_increase': permutation_result.importances_mean,
+    'repeat_std': permutation_result.importances_std,
+}).sort_values('validation_mae_increase', ascending=False)
+
+print("=== XGBoost Permutation Importance (Validation MAE Increase) ===")
+print(permutation_df)
+```
+
+Correlated features can substitute for one another, so shuffling either one may
+show little damage or divide importance between them. These values describe this
+fitted model's predictive reliance under shuffling; they are not causal effects
+and do not establish that changing a feature would change house values.
+
 ## Part 10: Early Stopping with XGBoost
 
 Early stopping prevents overfitting by stopping training when validation performance stops improving.
@@ -463,8 +498,8 @@ print(f"Test RMSE: ${final_test_rmse:.2f}k")
 2. **Train/validation/test split**: Select with validation; report the test result once
 3. **Regularization**: Ridge and Lasso help prevent overfitting
 4. **Random Forest**: Handles non-linear relationships automatically
-5. **XGBoost**: Often the best performer on tabular data
-6. **Feature importance**: Understand which variables matter most
+5. **XGBoost**: A strong candidate to benchmark on tabular data
+6. **Feature importance**: Compare model-specific summaries with held-out permutation importance
 7. **Early stopping**: Prevents overfitting in gradient boosting
 8. **Model comparison**: Always compare multiple models to find the best one
 

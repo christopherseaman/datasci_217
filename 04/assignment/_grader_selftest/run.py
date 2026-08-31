@@ -44,7 +44,6 @@ ARTIFACT_TEST = "new canonical CSV artifacts"
 RELOCATED_TEST = "relocated checkout and nested launch"
 ALTERNATE_TEST = "alternate valid fixture and deterministic tie handling"
 REQUIRED_RUNNER_ENV = (
-    "CLASSROOM",
     "ASSIGNMENT",
     "SUBMISSION_TAG",
     "COMMIT_URL",
@@ -202,10 +201,6 @@ def assert_delivery_inventory(correct: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="ds217-a04-inventory-") as temporary:
         accepted = Path(temporary) / "accepted"
         shutil.copytree(correct, accepted)
-        (accepted / ".classroom50.yaml").write_text("version: 1\n", encoding="utf-8")
-        workflow = accepted / ".github/workflows/autograde.yaml"
-        workflow.parent.mkdir(parents=True, exist_ok=True)
-        workflow.write_text("name: autograde\n", encoding="utf-8")
         git_config = accepted / ".git/config"
         git_config.parent.mkdir(parents=True)
         git_config.write_text("[core]\n", encoding="utf-8")
@@ -214,6 +209,8 @@ def assert_delivery_inventory(correct: Path) -> None:
         assert_all_central_pass(accepted, "accepted delivery metadata")
 
         for label, relative in (
+            ("legacy-delivery-metadata", ".classroom50.yaml"),
+            ("autograde-workflow", ".github/workflows/autograde.yaml"),
             ("extra-root", "notes.txt"),
             ("extra-workflow", ".github/workflows/extra.yaml"),
             ("grader-tree", "_grader_selftest/copied.py"),
@@ -228,7 +225,7 @@ def assert_delivery_inventory(correct: Path) -> None:
                 raise AssertionError(f"public readiness accepted {label}")
             if central_results(rejected)[PROTECTED_TEST].passed:
                 raise AssertionError(f"central grader accepted {label}")
-    print("[PASS] delivery metadata and top-level .git accepted; inventory bypasses rejected")
+    print("[PASS] top-level .git accepted; delivery metadata and inventory bypasses rejected")
 
 
 def replace_cell_source(root: Path, cell_id: str, old: str, new: str) -> None:
@@ -323,7 +320,6 @@ with tempfile.TemporaryDirectory(prefix="ds217-a04-correct-") as temporary:
     autograder_env = {
         **os.environ,
         "A04_SKIP_INSTALL": "1",
-        "CLASSROOM": "datasci-217-local",
         "ASSIGNMENT": "assignment-04",
         "SUBMISSION_TAG": "submit/local-correct",
         "COMMIT_URL": "https://example.invalid/commit/correct",
@@ -343,17 +339,28 @@ with tempfile.TemporaryDirectory(prefix="ds217-a04-correct-") as temporary:
         raise AssertionError(f"autograder prototype crashed: {autograder.stdout}{autograder.stderr}")
     result = json.loads((correct / "result.json").read_text(encoding="utf-8"))
     if not (
-        result["schema"] == "classroom50/result/v1"
+        set(result) == {
+            "schema", "assignment", "submission", "commit", "release",
+            "review", "datetime", "score", "max-score", "tests",
+        }
+        and all(
+            isinstance(result[field], str) and result[field]
+            for field in (
+                "assignment", "submission", "commit", "release", "review",
+                "datetime",
+            )
+        )
+        and result["schema"] == "datasci217/grading-result/v1"
         and result["score"] == result["max-score"] == 10
         and len(result["tests"]) == 6
         and all(test["passed"] for test in result["tests"])
     ):
-        raise AssertionError(f"invalid Classroom50 result payload: {result}")
+        raise AssertionError(f"invalid grading result payload: {result}")
     if result["review"] != autograder_env["REVIEW_URL"] or not UTC_DATETIME.fullmatch(
         result["datetime"]
     ):
         raise AssertionError(f"runner context was not emitted exactly: {result}")
-    print("[PASS] autograder emits a full-score classroom50/result/v1 payload")
+    print("[PASS] autograder emits a full-score datasci217/grading-result/v1 payload")
 
     with tempfile.TemporaryDirectory(prefix="ds217-a04-runner-contract-") as contract_name:
         contract_root = Path(contract_name)

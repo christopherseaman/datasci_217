@@ -45,7 +45,8 @@
 - "GitHub is your coding portfolio"
 - "Every commit is saved forever"
 - "Employers look at GitHub profiles"
-- "We'll use GitHub Classroom for assignments"
+- "You'll commit your work to a dedicated assignment repository"
+- "GitHub Actions may provide optional feedback before instructor grading"
 
 ---
 

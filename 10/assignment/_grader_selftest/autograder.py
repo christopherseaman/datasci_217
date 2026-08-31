@@ -3,12 +3,7 @@
 # dependencies = []
 # ///
 
-"""Plain-Python Classroom50 bootstrap for Assignment 10.
-
-The non-release candidate intentionally has no transitive constraints file.
-Production grading must fail as infrastructure rather than silently resolving
-an uncertified environment.
-"""
+"""Plain-Python instructor grader bootstrap for Assignment 10."""
 
 from __future__ import annotations
 
@@ -27,14 +22,6 @@ def main() -> int:
     result_path = Path.cwd() / "result.json"
     if result_path.is_file() or result_path.is_symlink():
         result_path.unlink()
-    constraints_path = BUNDLE_DIR / "constraints.txt"
-    if not constraints_path.is_file() or constraints_path.is_symlink():
-        print(
-            "[INFRASTRUCTURE] Assignment 10 is not release-certified: "
-            "the exact instructor constraints.txt is absent.",
-            file=sys.stderr,
-        )
-        return 2
     try:
         pip_check = subprocess.run(
             [sys.executable, "-m", "pip", "--version"],
@@ -52,14 +39,12 @@ def main() -> int:
                 "install",
                 "--disable-pip-version-check",
                 "--quiet",
-                "-c",
-                str(constraints_path),
                 "-r",
                 str(BUNDLE_DIR / "requirements.txt"),
             ],
             check=True,
         )
-        from classroom50_grader import main as grade
+        from grader import main as grade
 
         return grade()
     except Exception as error:

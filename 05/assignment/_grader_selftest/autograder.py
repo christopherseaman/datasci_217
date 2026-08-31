@@ -3,7 +3,7 @@
 # dependencies = []
 # ///
 
-"""Plain-Python Classroom50 bootstrap for Assignment 05."""
+"""Plain-Python grading bootstrap for Assignment 05."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def main() -> int:
             ],
             check=True,
         )
-        from classroom50_grader import main as grade
+        from grader import main as grade
 
         return grade()
     except Exception as error:

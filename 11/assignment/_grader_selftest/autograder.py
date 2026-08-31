@@ -3,7 +3,7 @@
 # dependencies = []
 # ///
 
-"""Plain-Python Classroom50 bootstrap for Assignment 11."""
+"""Plain-Python trusted-grader bootstrap for Assignment 11."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def main() -> int:
             [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "--quiet", "-r", str(BUNDLE_DIR / "requirements.txt")],
             check=True,
         )
-        from classroom50_grader import main as grade
+        from grader import main as grade
 
         return grade()
     except Exception as error:

@@ -50,7 +50,6 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -91,10 +90,7 @@ def _check_submission_inventory(root: Path) -> None:
         and path.relative_to(root).parts[0] != ".git"
         and path.relative_to(root).parts[0] != "output"
     }
-    expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
-    for relative in actual & DELIVERY_FILES:
-        _assert(not (root / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
+    _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
 
 
 def check_notebook_json_and_state_order(root: Path) -> None:

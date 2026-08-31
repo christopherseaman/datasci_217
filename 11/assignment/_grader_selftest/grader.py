@@ -23,6 +23,11 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.base import RegressorMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.inspection import permutation_importance
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
 
 RELEASE_NAME = "chicago_beach_sensors_2022_2024.csv"
@@ -96,14 +101,14 @@ def _assert(condition: bool, message: str) -> None:
 
 def _context() -> dict[str, str]:
     names = {
-        "classroom": "CLASSROOM", "assignment": "ASSIGNMENT",
+        "assignment": "ASSIGNMENT",
         "submission": "SUBMISSION_TAG", "commit": "COMMIT_URL", "release": "RELEASE_URL",
     }
     result = {}
     for field, variable in names.items():
         value = os.environ.get(variable, "").strip()
         if not value:
-            raise InfrastructureError(f"missing required Classroom50 runner context: {variable}")
+            raise InfrastructureError(f"missing required grader runner context: {variable}")
         result[field] = value
     result["review"] = os.environ.get("REVIEW_URL", "").strip() or result["commit"]
     result["datetime"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -453,7 +458,7 @@ def _check_q6(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     _assert_frame(_artifact(root, "q6_split_summary.csv"), refs["split_summary"])
 
 
-def _check_model_spec(root: Path) -> None:
+def _pipeline_from_model_spec(root: Path) -> Pipeline:
     columns = ["estimator_module", "estimator_class", "parameters_json", "feature_columns", "random_state"]
     spec = _read_csv(_artifact(root, "q7_model_spec.csv"), columns)
     _assert(len(spec) == 1, "q7_model_spec.csv must contain one row")
@@ -469,12 +474,43 @@ def _check_model_spec(root: Path) -> None:
     module = importlib.import_module(row["estimator_module"])
     estimator_class = getattr(module, row["estimator_class"], None)
     _assert(isinstance(estimator_class, type) and issubclass(estimator_class, RegressorMixin), "model spec must name an sklearn regressor class")
+    try:
+        estimator = estimator_class(**parameters)
+    except Exception as error:
+        raise AssertionError(f"cannot recreate estimator from model spec: {error}") from error
     random_state = pd.to_numeric(pd.Series([row["random_state"]]), errors="coerce").iloc[0]
     _assert(random_state == 217, "random_state must be 217")
     if "random_state" in parameters:
         _assert(parameters["random_state"] == 217, "supported random_state parameter must be 217")
     if "n_jobs" in parameters:
         _assert(parameters["n_jobs"] == 1, "supported n_jobs parameter must be 1")
+    supported = estimator.get_params(deep=False)
+    if "random_state" in supported:
+        _assert(supported["random_state"] == 217, "supported random_state parameter must be 217")
+    if "n_jobs" in supported:
+        _assert(supported["n_jobs"] == 1, "supported n_jobs parameter must be 1")
+    preprocessing = ColumnTransformer([
+        ("station", OneHotEncoder(handle_unknown="ignore", sparse_output=False), ["station_name"]),
+        ("numeric", SimpleImputer(strategy="median"), NUMERIC_FEATURES),
+    ])
+    return Pipeline([("preprocessing", preprocessing), ("regressor", estimator)])
+
+
+def _declared_model_results(root: Path, refs: dict[str, pd.DataFrame], split: str) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
+    pipeline = _pipeline_from_model_spec(root)
+    fit_splits = ["train"] if split == "validation" else ["train", "validation"]
+    x_fit = pd.concat([refs[f"x_{name}"] for name in fit_splits], ignore_index=True)
+    y_fit = pd.concat([refs[f"y_{name}"] for name in fit_splits], ignore_index=True)
+    pipeline.fit(x_fit[FEATURES], y_fit[TARGET])
+    predictions = np.asarray(pipeline.predict(refs[f"x_{split}"][FEATURES]), dtype=float)
+    _assert(np.isfinite(predictions).all(), "declared model produced nonfinite predictions")
+    if split != "validation":
+        return predictions, None, None
+    result = permutation_importance(
+        pipeline, refs["x_validation"][FEATURES], refs["y_validation"][TARGET],
+        scoring="neg_mean_absolute_error", n_repeats=10, random_state=217,
+    )
+    return predictions, result.importances_mean, result.importances_std
 
 
 def _prediction_frame(root: Path, refs: dict[str, pd.DataFrame], split: str, name: str, test: bool) -> pd.DataFrame:
@@ -513,17 +549,21 @@ def _check_metrics(root: Path, predictions: pd.DataFrame, name: str) -> None:
 
 
 def _check_q7(root: Path, refs: dict[str, pd.DataFrame]) -> None:
-    _check_model_spec(root)
+    expected_predictions, expected_mean, expected_std = _declared_model_results(root, refs, "validation")
     predictions = _prediction_frame(root, refs, "validation", "q7_validation_predictions.csv", False)
+    _assert(np.allclose(predictions["model_prediction"], expected_predictions, rtol=1e-9, atol=1e-9), "validation predictions do not match the declared train-fitted pipeline")
     _check_metrics(root, predictions, "q7_validation_metrics.csv")
     importance = _read_csv(_artifact(root, "q7_permutation_importance.csv"), ["feature", "mean_mae_increase", "std_mae_increase"])
     _assert(importance["feature"].tolist() == FEATURES, "permutation importance feature set/order differs")
     values = importance[["mean_mae_increase", "std_mae_increase"]].apply(pd.to_numeric, errors="coerce").to_numpy()
     _assert(np.isfinite(values).all(), "permutation importance values must be finite")
+    _assert(np.allclose(values[:, 0], expected_mean, rtol=1e-9, atol=1e-9) and np.allclose(values[:, 1], expected_std, rtol=1e-9, atol=1e-9), "permutation importance does not match the declared train-fitted pipeline")
 
 
 def _check_q8(root: Path, refs: dict[str, pd.DataFrame]) -> None:
+    expected_predictions, _, _ = _declared_model_results(root, refs, "test")
     predictions = _prediction_frame(root, refs, "test", "q8_test_predictions.csv", True)
+    _assert(np.allclose(predictions["model_prediction"], expected_predictions, rtol=1e-9, atol=1e-9), "test predictions do not match the declared train-plus-validation-fitted pipeline")
     _check_metrics(root, predictions, "q8_test_metrics.csv")
     rows = []
     for model, column in [("persistence_baseline", "persistence_prediction"), ("student_model", "model_prediction")]:
@@ -614,7 +654,7 @@ def grade_submission(submission_root: str | Path) -> dict:
         score = row["points"] if row["passed"] else 0
         print(f"[{row['status']}] {row['name']} ({row['points']} points): {row['detail']}")
         tests.append({"test-name": row["name"], "passed": row["passed"], "score": score, "max-score": row["points"]})
-    return {"schema": "classroom50/result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 100, "tests": tests}
+    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 100, "tests": tests}
 
 
 def main() -> int:

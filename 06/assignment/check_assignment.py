@@ -192,7 +192,6 @@ STUDENT_PACKAGE_FILES = {
     ".github/workflows/tests.yml",
     *(f"data/{record['path']}" for record in FIXTURE_MANIFEST["files"]),
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 BANNED_ATTRIBUTES = {
     "agg",
     "aggregate",
@@ -251,10 +250,7 @@ def _check_submission_inventory() -> None:
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != ".git"
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != "output"
     }
-    expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
-    for relative in actual & DELIVERY_FILES:
-        _assert(not (ASSIGNMENT_DIR / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
+    _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
 
 
 def check_environment_and_protected_files() -> None:

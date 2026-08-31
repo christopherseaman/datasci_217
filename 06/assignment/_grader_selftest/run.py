@@ -22,7 +22,7 @@ import subprocess
 import sys
 import tempfile
 
-from classroom50_grader import (
+from grader import (
     ARTIFACT_SHA256,
     REQUIRED_CONTEXT_ENV,
     _execute_notebook,
@@ -563,14 +563,14 @@ def _run_public(root: Path) -> subprocess.CompletedProcess[str]:
 
 def _assert_result_schema(result: dict, expected_score: int | None = None) -> None:
     assert set(result) == {
-        "schema", "classroom", "assignment", "submission", "commit",
+        "schema", "assignment", "submission", "commit",
         "release", "review", "datetime", "score", "max-score", "tests",
     }
-    assert result["schema"] == "classroom50/result/v1"
+    assert result["schema"] == "datasci217/grading-result/v1"
     assert all(
         isinstance(result[field], str) and result[field]
         for field in (
-            "classroom", "assignment", "submission", "commit", "release",
+            "assignment", "submission", "commit", "release",
             "review", "datetime",
         )
     )
@@ -596,16 +596,14 @@ def _clone(source: Path, destination: Path) -> None:
 def _assert_delivery_inventory(correct: Path, temporary: Path) -> None:
     accepted = temporary / "accepted-delivery"
     _clone(correct, accepted)
-    (accepted / ".classroom50.yaml").write_text("version: 1\n", encoding="utf-8")
-    workflow = accepted / ".github/workflows/autograde.yaml"
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text("name: autograde\n", encoding="utf-8")
     git_config = accepted / ".git/config"
     git_config.parent.mkdir(parents=True)
     git_config.write_text("[core]\n", encoding="utf-8")
     assert _run_public(accepted).returncode == 0
     assert grade_submission(accepted)["score"] == 90
     for label, relative in (
+        ("legacy-delivery-metadata", ".classroom50.yaml"),
+        ("autograde-workflow", ".github/workflows/autograde.yaml"),
         ("extra-root", "notes.txt"),
         ("extra-workflow", ".github/workflows/extra.yaml"),
         ("grader-tree", "_grader_selftest/copied.py"),
@@ -631,7 +629,6 @@ def _grade_rejected(root: Path, label: str, rejection_log: list[str]) -> dict:
 def main() -> int:
     rejection_log: list[str] = []
     runner_env = {
-        "CLASSROOM": "datasci-217-local",
         "ASSIGNMENT": "assignment-06",
         "SUBMISSION_TAG": "submit/local-correct",
         "COMMIT_URL": "https://example.invalid/commit/correct",
@@ -980,7 +977,7 @@ def main() -> int:
     print(f"rejected-cases={len(rejection_log)}")
     for evidence in rejection_log:
         print(f"REJECT {evidence}")
-    print("result-schema=classroom50/result/v1; result-file=result.json; captured-failure-exit=0")
+    print("result-schema=datasci217/grading-result/v1; result-file=result.json; captured-failure-exit=0")
     print("layouts=flattened+course-root; relocation=spaces; rerun=deterministic; alternate-functions=6/6")
     return 0
 

@@ -8,4 +8,4 @@ Run from `01/assignment` with Python 3.12:
 python _grader_selftest/run.py
 ```
 
-Production-only tests and fixtures remain in the centrally managed Classroom 50 grader bundle. Public checks are intentionally discoverable and implement the written student contract; this self-test does not claim secrecy.
+Additional instructor tests and fixtures may independently enforce the written student contract against committed assignment work. Public checks are intentionally discoverable; this self-test does not claim secrecy or define a batch-grading workflow.

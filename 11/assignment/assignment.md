@@ -29,7 +29,7 @@ Do not use live downloads or external data.
 - The persistence baseline uses current `air_temperature_c_t` as the next-hour prediction.
 - MAE is the primary metric. Also report RMSE and R2, calculated from unrounded predictions.
 - Choose one regressor from pinned scikit-learn. Do not use XGBoost or add model libraries.
-- Use an sklearn `Pipeline` with one-hot encoding for `station_name` and train-fitted median imputation for numeric predictors.
+- Use an sklearn `Pipeline` with `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` for `station_name` and `SimpleImputer(strategy="median")` for numeric predictors. Fit both preprocessing steps from the fitting rows only.
 - Set `random_state=217` and `n_jobs=1` when the selected estimator supports those parameters.
 - Do not use external data, tune on test results, or claim that a performance threshold is required.
 
@@ -215,6 +215,7 @@ Columns: `split`, `n_rows`, `target_start`, `target_end`, `n_features`. Exactly 
 ### Q7: Modeling (14 points)
 
 Use training rows to fit candidates and validation rows to select one final model. Do not access any test artifact in this phase.
+Review the pipeline and validation pattern from [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) before starting this phase.
 
 `output/q7_model_spec.csv`
 
@@ -230,7 +231,7 @@ Columns: `model`, `mae`, `rmse`, `r2`, `n`. Exactly two rows, in order: `persist
 
 `output/q7_permutation_importance.csv`
 
-Columns: `feature`, `mean_mae_increase`, `std_mae_increase`. Calculate validation permutation importance for the fixed predictors with MAE scoring, `n_repeats=10`, and `random_state=217`. Preserve fixed feature order.
+Columns: `feature`, `mean_mae_increase`, `std_mae_increase`. Calculate validation permutation importance through the fitted pipeline with `scoring="neg_mean_absolute_error"`, `n_repeats=10`, and `random_state=217`. Save `importances_mean` as `mean_mae_increase` and `importances_std` as `std_mae_increase`, preserving fixed feature order. With sklearn's negative-MAE scorer, a positive importance means that permutation increased MAE.
 
 ### Q8: Results (14 points)
 

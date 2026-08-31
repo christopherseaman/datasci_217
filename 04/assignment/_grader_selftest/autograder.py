@@ -3,7 +3,7 @@
 # dependencies = []
 # ///
 
-"""Classroom50 per-assignment autograder prototype for Assignment 04.
+"""Per-assignment autograder entrypoint for Assignment 04.
 
 This file and its siblings belong in the teacher-controlled Assignment 04
 bundle, never in the student starter. Test failures are represented in the
@@ -22,7 +22,6 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 REQUIRED_CONTEXT_ENV = {
-    "classroom": "CLASSROOM",
     "assignment": "ASSIGNMENT",
     "submission": "SUBMISSION_TAG",
     "commit": "COMMIT_URL",
@@ -44,7 +43,7 @@ def _context() -> dict[str, str]:
         context[field] = value
     if missing:
         raise InfrastructureError(
-            "missing required Classroom50 context: " + ", ".join(missing)
+            "missing required grading context: " + ", ".join(missing)
         )
     context["review"] = os.environ.get("REVIEW_URL", "").strip() or context["commit"]
     context["datetime"] = datetime.datetime.now(datetime.timezone.utc).strftime(
@@ -110,7 +109,7 @@ def main() -> int:
         for test in tests
     ]
     result = {
-        "schema": "classroom50/result/v1",
+        "schema": "datasci217/grading-result/v1",
         **context,
         "score": sum(test["score"] for test in result_tests),
         "max-score": sum(test["max-score"] for test in result_tests),

@@ -9,11 +9,11 @@
 # ]
 # ///
 
-"""Independent Classroom50 central-grader reference for Assignment 06.
+"""Independent central-grader reference for Assignment 06.
 
 This instructor-only module never imports the student-editable public checker.
 It fresh-executes stripped disposable notebook copies, appends grader-owned
-behavioral checks, and emits the official Classroom50 result contract.
+behavioral checks, and emits the official grading result contract.
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ PROTECTED_FILE_SHA256 = {
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
     "README.md": "b832a10866a5cd8b90517f014d5a9e7abec040c24834515296b18aa4ede7a721",
     "PLATFORM_CHECK.md": "be24dc511a18966dbe361835c4ff62d3f24f841f629fa7e0d8791c71759c54d5",
-    "check_assignment.py": "d8c1a3809ddaf3f0fd7aa0d6bf8d714e6823e9cdc20cf702d74cf13a5289218d",
+    "check_assignment.py": "fcae068af4c7eccfa9b2022c08cff4e19ecbdd9c7076f50c76e0e19fba1540f1",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
     "data/specimens.csv": "26eeae8d64a2870dc94195a45f924058b777eb1c97f96d2310e86f06403ba605",
     "data/stations_history.csv": "dc6f75e588183d5291abd69b4d5aa856472a711f6ff546b015dd21610d55708c",
@@ -91,9 +91,7 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 REQUIRED_CONTEXT_ENV = {
-    "classroom": "CLASSROOM",
     "assignment": "ASSIGNMENT",
     "submission": "SUBMISSION_TAG",
     "commit": "COMMIT_URL",
@@ -115,7 +113,7 @@ def _context() -> dict[str, str]:
         context[field] = value
     if missing:
         raise InfrastructureError(
-            "missing required Classroom50 context: " + ", ".join(missing)
+            "missing required grading context: " + ", ".join(missing)
         )
     context["review"] = os.environ.get("REVIEW_URL", "").strip() or context["commit"]
     context["datetime"] = datetime.datetime.now(datetime.timezone.utc).strftime(
@@ -328,9 +326,7 @@ def _check_static_contract(root: Path) -> None:
         and path.relative_to(root).parts[0] != ".git"
         and path.relative_to(root).parts[0] != "output"
     }
-    expected_files = STUDENT_PACKAGE_FILES | (actual_files & DELIVERY_FILES)
-    _assert(actual_files == expected_files, "student package inventory differs")
-    _assert(not any((root / relative).is_symlink() for relative in actual_files & DELIVERY_FILES), "delivery metadata must be regular files")
+    _assert(actual_files == STUDENT_PACKAGE_FILES, "student package inventory differs")
     for relative, expected in PROTECTED_FILE_SHA256.items():
         path = root / relative
         _assert(path.is_file(), f"missing protected file: {relative}")
@@ -619,7 +615,7 @@ def _result_test(name: str, maximum: int, error: Exception | None) -> dict:
 
 
 def grade_submission(submission_root: str | Path) -> dict:
-    """Grade one local submission and return a Classroom50 result object."""
+    """Grade one local submission and return the grading result object."""
 
     context = _context()
     root = Path(submission_root).resolve()
@@ -689,7 +685,7 @@ def grade_submission(submission_root: str | Path) -> dict:
     ]
     score = sum(test["score"] for test in tests)
     return {
-        "schema": "classroom50/result/v1",
+        "schema": "datasci217/grading-result/v1",
         **context,
         "score": score,
         "max-score": 90,

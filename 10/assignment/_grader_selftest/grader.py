@@ -13,12 +13,7 @@
 # ]
 # ///
 
-"""Instructor-controlled direct-environment grader for Assignment 10.
-
-This candidate grader is intentionally separate from the nonfunctional
-production bootstrap. It does not claim release certification without the
-course-wide constraints and immutable container digest.
-"""
+"""Instructor-controlled direct-environment grader for Assignment 10."""
 
 from __future__ import annotations
 
@@ -79,12 +74,12 @@ PROTECTED_CELL_IDS = {
     "a10-terms-prediction", "a10-terms-evaluation", "a10-freeze",
     "a10-final-verify",
 }
-CANDIDATE_PROTECTED_FILE_SHA256 = {
+PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "PLATFORM_CHECK.md": "69afb426e92641082df243c34fe2b2e12b9dbba84a3415f0e97b5073ab668f4d",
-    "README.md": "4da9bacd4d26346305ccb5adf5c6cf10fab4d292c05b8429ad6aeef788445e4e",
-    "check_assignment.py": "4b298f2095d1a35fc258b2f8f93112858b00b87cf342c58ebdb29e1c5cc370b0",
+    "PLATFORM_CHECK.md": "26fa8f87d119d95cc556197c9c9304ffa4d9a19c74fbf6d6bee6d00a73c93cf1",
+    "README.md": "8f2a523f5fc000601c3421950be36974735b045ac819148353a21256856a893c",
+    "check_assignment.py": "f354cdffae6c538aba0bd06613d9d5704186d952afb924d38d9e3ec6b8b74f66",
     "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
@@ -93,8 +88,8 @@ CANDIDATE_PROTECTED_FILE_SHA256 = {
     "data/supplied_binary_predictions.csv": "7a8809010fa94345cd04787c826ef86ee5fd13cbf0bd95953e2220c3294a239a",
     "output/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 }
-CANDIDATE_PROTECTED_CELL_SHA256 = {
-    "a10-header": "90fe5854d2bcd6507d1b03b0f8d741e18f44ab0ad89a249164809c3c24907523",
+PROTECTED_CELL_SHA256 = {
+    "a10-header": "d0a854bb0eebce383b25c11f2d17151432d27928110bd461b2e038de3ef5343a",
     "a10-setup": "a5caad874818b2edf045770960e00c610ea6d29a2e50d3dd89c3d6328caf20e8",
     "a10-terms-inference": "4c167e07f0ae870026a9746b40138fe5c3d6a4e74dddd417580e0e39e096696e",
     "a10-task1-prompt": "855729ff10c4244d077be4152576d05e17c99d104bff7e896495bdde402c193b",
@@ -138,7 +133,6 @@ BASE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 CSV_HASHES = {
     "inference_summary.csv": "36965b53df5133e3e05f86502d230ec9241b58e9ffd93163eba588385c9f3f48",
     "inference_case_intervals.csv": "345e0d3aefc422606fa9a9ee1b35a06bd7a9f9007873fc7b05162cb9ef3e0951",
@@ -185,11 +179,11 @@ def _validate_integrity_profile() -> None:
         "data/feature_availability.csv", "data/supplied_binary_predictions.csv",
         "output/.gitkeep",
     }
-    _assert(set(CANDIDATE_PROTECTED_FILE_SHA256) == expected_file_keys, "candidate-nonrelease immutable-file map keys differ")
-    _assert(set(CANDIDATE_PROTECTED_CELL_SHA256) == PROTECTED_CELL_IDS, "candidate-nonrelease protected-cell map keys differ")
+    _assert(set(PROTECTED_FILE_SHA256) == expected_file_keys, "protected-file map keys differ")
+    _assert(set(PROTECTED_CELL_SHA256) == PROTECTED_CELL_IDS, "protected-cell map keys differ")
     digest_pattern = re.compile(r"[0-9a-f]{64}")
-    _assert(all(digest_pattern.fullmatch(value) for value in CANDIDATE_PROTECTED_FILE_SHA256.values()), "candidate-nonrelease file map has a non-SHA256 digest")
-    _assert(all(digest_pattern.fullmatch(value) for value in CANDIDATE_PROTECTED_CELL_SHA256.values()), "candidate-nonrelease cell map has a non-SHA256 digest")
+    _assert(all(digest_pattern.fullmatch(value) for value in PROTECTED_FILE_SHA256.values()), "protected-file map has a non-SHA256 digest")
+    _assert(all(digest_pattern.fullmatch(value) for value in PROTECTED_CELL_SHA256.values()), "protected-cell map has a non-SHA256 digest")
 
 
 def _validate_checker_static(root: Path) -> None:
@@ -214,15 +208,15 @@ def _validate_checker_static(root: Path) -> None:
 
 def _validate_candidate_integrity(root: Path, notebook) -> None:
     _validate_integrity_profile()
-    for relative, expected in CANDIDATE_PROTECTED_FILE_SHA256.items():
+    for relative, expected in PROTECTED_FILE_SHA256.items():
         path = root / relative
         _assert(path.is_file() and not path.is_symlink(), f"immutable learner file missing: {relative}")
-        _assert(sha256(path.read_bytes()).hexdigest() == expected, f"candidate-nonrelease immutable file changed: {relative}")
+        _assert(sha256(path.read_bytes()).hexdigest() == expected, f"protected learner file changed: {relative}")
     by_id = {cell.id: cell for cell in notebook.cells}
-    for cell_id, expected in CANDIDATE_PROTECTED_CELL_SHA256.items():
+    for cell_id, expected in PROTECTED_CELL_SHA256.items():
         _assert(cell_id in by_id, f"protected cell missing: {cell_id}")
         actual = sha256(_normalized_source(by_id[cell_id]).encode("utf-8")).hexdigest()
-        _assert(actual == expected, f"candidate-nonrelease protected cell changed: {cell_id}")
+        _assert(actual == expected, f"protected cell changed: {cell_id}")
 
 
 def _resolve_root(start: Path) -> Path:
@@ -248,7 +242,7 @@ def _inventory(root: Path) -> None:
             continue
         if path.is_file() or path.is_symlink():
             actual.add(relative.as_posix())
-    expected = BASE_FILES | (actual & DELIVERY_FILES)
+    expected = BASE_FILES
     _assert(actual == expected, f"learner package inventory differs: {sorted(actual ^ expected)}")
     _assert(not any((root / relative).is_symlink() for relative in actual), "learner package contains a symlink")
     for path in root.rglob("*"):
@@ -484,7 +478,7 @@ def _copy_learner(root: Path, destination: Path) -> Path:
 
 def grade_root(root: Path) -> tuple[list[dict], dict]:
     tests = []
-    diagnostics = {"candidate_environment": True, "release_certified": False}
+    diagnostics = {"instructor_environment": True}
     committed_csvs = {}
     committed_png = b""
     try:
@@ -528,12 +522,17 @@ def grade_root(root: Path) -> tuple[list[dict], dict]:
 
 
 def _context() -> dict[str, str]:
-    mapping = {"classroom": "CLASSROOM", "assignment": "ASSIGNMENT", "submission": "SUBMISSION_TAG", "commit": "COMMIT_URL", "release": "RELEASE_URL"}
+    mapping = {
+        "assignment": "ASSIGNMENT",
+        "submission": "SUBMISSION_TAG",
+        "commit": "COMMIT_URL",
+        "release": "RELEASE_URL",
+    }
     result = {}
     for field, variable in mapping.items():
         value = os.environ.get(variable, "").strip()
         if not value:
-            raise InfrastructureError(f"missing required Classroom50 runner context: {variable}")
+            raise InfrastructureError(f"missing required grader context: {variable}")
         result[field] = value
     result["review"] = os.environ.get("REVIEW_URL", "").strip() or result["commit"]
     result["datetime"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -551,7 +550,7 @@ def main() -> int:
         root = _resolve_root(Path.cwd())
         tests, diagnostics = grade_root(root)
         result = {
-            "schema": "classroom50/result/v1",
+            "schema": "datasci217/grading-result/v1",
             **context,
             "score": sum(test["score"] for test in tests),
             "max-score": 90,

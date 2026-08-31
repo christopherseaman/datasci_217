@@ -64,13 +64,14 @@ Use these nudges after trying the corresponding phase. They intentionally stop s
 
 ## Q7: Train-Fitted Pipeline
 
-- A `ColumnTransformer` can apply `OneHotEncoder(handle_unknown="ignore")` to station and `SimpleImputer(strategy="median")` to numeric predictors.
+- Revisit [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) for the prerequisite pipeline and validation pattern.
+- A `ColumnTransformer` can apply the required `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` to station and `SimpleImputer(strategy="median")` to numeric predictors.
 - Put preprocessing and the regressor in one `Pipeline`; fitting that object on training data prevents validation leakage.
 - Choose only a regressor included in the pinned scikit-learn version. Do not install XGBoost.
 - Inspect `estimator.get_params(deep=False)` to verify support before setting `random_state=217` or `n_jobs=1`.
 - RMSE is `np.sqrt(mean_squared_error(actual, prediction))`.
 - R2 can be negative for a weak model. That is valid and does not reduce credit.
-- For MAE permutation importance, sklearn's `scoring="neg_mean_absolute_error"` produces a positive importance decrease when permutation worsens MAE.
+- For MAE permutation importance, sklearn's `scoring="neg_mean_absolute_error"` makes `result.importances_mean` positive when permutation worsens MAE. Save the corresponding `importances_mean` and `importances_std` arrays in fixed feature order.
 - Record the regressor's module/class and shallow parameters. Keep fixed feature names joined with `|`.
 
 ## Q8: Test Once

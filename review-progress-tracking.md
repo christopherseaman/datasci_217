@@ -5,8 +5,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: the instructor clarified the non-Classroom grading direction and Assignment 11's two-week final-project schedule. Content approval is now separated from later batch-grading operations; a small set of consistency choices and mechanical repairs remains. Lecture and demo reviews remain complete for their recorded scopes, and course-wide heading normalization remains open.
-- Explicitly out of scope for this checkpoint: implementing the pending consistency choices or merging to `main`; this step clarifies the decision boundary only
+- Current phase: the confirmed Lecture/Demo/Assignment 10 and Assignment 11 consistency repairs are implemented and validated. Active Classroom assumptions are removed from course-facing guidance and grader contracts; the future instructor batch helper remains separate operational work. Lecture and demo reviews remain complete for their recorded scopes, and course-wide heading normalization remains open.
+- Explicitly out of scope for this checkpoint: assignment-duration guidance, notebook-tooling dependency changes, implementation of the future batch-grading helper, or merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
@@ -895,6 +895,70 @@ An independent adversarial recheck passed this clarification with no
 must-correct contradiction. `git diff --check` passed, and Eleventy rendered 30
 pages and copied 124 assets.
 
+## Consistency repair implementation (2026-08-31)
+
+The bounded consistency batch is complete without adding either rejected scope:
+no assignment received duration or pacing language, and no requirements or
+Python-version record was changed to add notebook tooling.
+
+- Lecture 10 now introduces model-agnostic permutation importance after its
+  validation/test guidance. Demo 2 applies it to held-out validation data with
+  negative MAE, and the lecture/demo distinguish predictive reliance from
+  causality and model-specific importance. The p-value, XGBoost, and Keras
+  wording defects are also repaired. All existing Zoolander references remain.
+- Assignment 10 is consistently local-only. Its adversarial workflow mutant no
+  longer crashes on an existing directory, its unique missing-transitive-lock
+  gate is removed, and its instructor bootstrap uses the already pinned direct
+  environment. No learner dependency was added.
+- Assignment 11's release verifier now uses Python rather than GNU-specific
+  checksum and byte-count commands. Q7 explicitly reuses the Lecture 10 Demo 2
+  permutation-importance pattern. The trusted grader reconstructs the declared
+  train-only validation pipeline and train-plus-validation test pipeline, then
+  checks predictions and permutation importance; mismatch mutants cover that
+  contract. Lecture 11 Demo 4 explicitly says that it does not repeat the
+  Lecture 10 pattern. No extra demo, meeting, Colab assignment route, geography
+  requirement, duration, or pacing prescription was added.
+- Term-specific Assignment 01–03 launch URLs are placeholders. The setup guide
+  now describes dedicated assignment repositories and optional Actions
+  feedback. Assignments 04–11 use the neutral
+  `datasci217/grading-result/v1` result schema with `assignment`, `submission`,
+  `commit`, `release`, `review`, and `datetime`; Assignments 05–11 rename the
+  trusted module to `grader.py`. Exact learner-package contracts no longer
+  allow the retired delivery files, and the harnesses exercise those rejection
+  paths.
+- The grader-contract audit now covers Assignments 04–11, including exact
+  instructor-bundle inventories and bootstraps. Historical branch records and
+  generated environments are excluded from the active legacy-reference scan.
+  This extends validation of the existing per-assignment structure; it does not
+  implement the future batch helper.
+
+Validation evidence:
+
+- All Assignment 04–11 pinned instructor harnesses passed. Assignment 10's final
+  rerun produced 90/90 for the canonical, corrected-resubmission, and bootstrap
+  paths, executed at least eight fresh notebooks, exercised seven alternate
+  functions, and rejected 34 adversarial mutants. Assignment 11 produced
+  public/trusted 100/100 for the canonical fixture and 0/100 for the empty one,
+  including prediction/specification mismatch and bootstrap recovery checks.
+- Public pytest wrappers passed on disposable completed exports for Assignments
+  04–10. Assignment 11's public checker and all nine strict Jupytext pairs passed
+  in its pinned harness.
+- The three regenerated Lecture 10 demo notebooks executed under Python 3.12.13
+  and their exact pins, including pandas 3.0.5, scikit-learn 1.9.0, XGBoost
+  2.1.4, and TensorFlow 2.19.1. Strict source/notebook checks passed again after
+  the independent-review repairs; stored outputs are empty and execution counts
+  are null.
+- Changed Python and shell sources compile or parse, changed notebooks are valid
+  JSON, `node --check nav-config.js` passes, `git diff --check` passes, and
+  Eleventy renders 30 pages with 124 copied assets.
+- The focused neutral grader audit reports zero errors across Assignments 04–11.
+  The full course audit still reports its 52 known stale intermediate-state
+  expectations and 13 inherited missing-kernelspec warnings, so it remains a
+  diagnostic rather than a release gate.
+- Two independent adversarial reviews passed after one stale Lecture 10 learning
+  objective, one Lecture 11 demo contradiction, the missing 10/11 audit coverage,
+  and generated-environment warning noise were repaired.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
@@ -935,16 +999,12 @@ pages and copied 124 assets.
 
 ## Next action
 
-1. Implement the confirmed Lecture/Demo/Assignment 10 and Assignment 11
-   consistency repairs together with active Classroom removal. Do not add
-   assignment-duration guidance or notebook-tooling dependencies.
-2. Validate regenerated Lecture 10 notebooks, the complete Assignment 10
-   harness, Assignment 11 Jupytext pairs/checkers/grader, macOS-portable data
-   verification, protected hashes, and exported student inventories.
-3. After standalone assignment repositories exist, implement and pilot the
+1. Preserve this validated consistency checkpoint in Git and push the
+   `2026-refresh` branch. Do not merge to `main` in this review step.
+2. After standalone assignment repositories exist, implement and pilot the
    neutral batch-grading helper on one script and one notebook assignment, then
    populate source coordinates, student mappings, and ref/gradebook policy.
-4. If desired before merge, normalize the 13 remaining nonconforming lecture
+3. If desired before merge, normalize the 13 remaining nonconforming lecture
    pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
    change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
    `HANDOFF.md`, and this tracker during the eventual merge cleanup.
@@ -982,3 +1042,4 @@ pages and copied 124 assets.
 | `ae3f7d9` | Keep the capstone assignment local-only | Remove the unrequested Assignment 11 demo/Colab option and preserve one existing capstone assignment |
 | `4b56fc6` | Record the adversarial assignment review | Overall prerequisite order passes except the A11 permutation-importance mismatch; release remains blocked by verified grading, environment, export, and delivery defects |
 | `dfc5a5b` | Clarify grading and final-project choices | Separate the future non-Classroom batch helper from content approval, close the A11 workload concern with its two-week schedule, and bound the remaining consistency choices |
+| `ab62eea` | Remove invented pacing and tooling work | Preserve Assignment 11's intentional breadth without prescribing duration and reject notebook-tooling dependency churn |

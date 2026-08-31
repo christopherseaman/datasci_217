@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Teacher-controlled Classroom50 central-grader reference for Assignment 09.
+"""Teacher-controlled central-grader reference for Assignment 09.
 
 The grader never imports the student-editable public checker. It validates
 protected sources, clears state and owned output in disposable copies,
@@ -66,7 +66,7 @@ PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "bf1516bddac77a5b8e1003a237b4e954cdccac377f31f237c8ffe39840fb7558",
     "PLATFORM_CHECK.md": "2ada43d46e2d26412f5f13a12a7315ddd24f77e333303a0b071e46662a381c1c",
-    "check_assignment.py": "d83a12ec441a5a13388aa1ff953de9e69044337e4641b2829c5839a79e3cc4e7",
+    "check_assignment.py": "fe1a0f3be6733ae220ffd4a15374bcaa50347a986fe5ad87390eb6c0e17230cc",
     "data/fixture.json": "27558bc4da7738775879501a6f11a0a9d874f3948823e54bb5e82ab91a02d703",
     "data/zone_co2_readings.csv": "c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4",
 }
@@ -85,7 +85,6 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 FUNCTION_SIGNATURES = {
     "prepare_temporal_panel": ["reading_table", "source_timezone"],
     "build_hourly_grid": ["prepared_table"],
@@ -111,7 +110,6 @@ def _assert(condition: bool, message: str) -> None:
 
 def _context() -> dict[str, str]:
     mapping = {
-        "classroom": "CLASSROOM",
         "assignment": "ASSIGNMENT",
         "submission": "SUBMISSION_TAG",
         "commit": "COMMIT_URL",
@@ -121,7 +119,7 @@ def _context() -> dict[str, str]:
     for field, variable in mapping.items():
         value = os.environ.get(variable, "").strip()
         if not value:
-            raise InfrastructureError(f"missing required Classroom50 runner context: {variable}")
+            raise InfrastructureError(f"missing required grading context: {variable}")
         result[field] = value
     result["review"] = os.environ.get("REVIEW_URL", "").strip() or result["commit"]
     result["datetime"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -168,9 +166,7 @@ def _load_and_validate_template(root: Path) -> tuple[dict[str, dict], ast.Module
         and path.relative_to(root).parts[0] != ".git"
         and path.relative_to(root).parts[0] != "output"
     }
-    expected_files = STUDENT_PACKAGE_FILES | (actual_files & DELIVERY_FILES)
-    _assert(actual_files == expected_files, "student package inventory differs")
-    _assert(not any((root / relative).is_symlink() for relative in actual_files & DELIVERY_FILES), "delivery metadata must be regular files")
+    _assert(actual_files == STUDENT_PACKAGE_FILES, "student package inventory differs")
     for relative, digest in PROTECTED_FILE_SHA256.items():
         path = root / relative
         _assert(path.is_file() and sha256(path.read_bytes()).hexdigest() == digest, f"protected file changed: {relative}")
@@ -427,7 +423,7 @@ def _result_test(name: str, maximum: int, error: Exception | None) -> dict:
 
 
 def grade_submission(submission_root: str | Path) -> dict:
-    """Grade a submission and return an official Classroom50 result object."""
+    """Grade a submission and return an official grading result object."""
     context = _context()
     root = Path(submission_root).resolve()
     specs = (
@@ -507,7 +503,7 @@ def grade_submission(submission_root: str | Path) -> dict:
                     except Exception as error:
                         errors[portability_name] = error
     tests = [_result_test(name, maximum, errors[name]) for name, maximum in specs]
-    return {"schema": "classroom50/result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 90, "tests": tests}
+    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 90, "tests": tests}
 
 
 def main() -> int:

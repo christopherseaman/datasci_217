@@ -12,7 +12,7 @@
 # ]
 # ///
 
-"""Independent Classroom50 central-grader candidate for Assignment 07."""
+"""Independent central-grader candidate for Assignment 07."""
 
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "d9bb0b8bb9699a2fee850e72a05e4e69cf5f26af1f74ed64a61b399ab3fe1481",
     "PLATFORM_CHECK.md": "12e9b9ab5ad249c23f50b56c8d393c24af65796e66ad3345df3c18e19f85b7f6",
-    "check_assignment.py": "9b2f4b46cc4eeff5ddb8f2e0d53a5a88f88e6ab3280baf300d3b0d212a6b5e6f",
+    "check_assignment.py": "5143858feea168e921ef8f40a8c095f597d0a651da6f083e154d69a97d5789a2",
     "data/fixture.json": "1c3397cb2d98ae239f6a7cd254bb3aa9980d94cd23af4546c834a9262de0a28c",
     "data/format_completion.csv": "20ad900633154f5f3a2c09cfbc2f890f8423da0897d6345841745332110be66a",
     "data/pathway_checkpoints.csv": "ec9a336b7fb97418a6f058704f2509c8cee6b13d744efb7a6e3e99224ef8c258",
@@ -87,7 +87,6 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 SUPPORTING_HASH = "ec9a336b7fb97418a6f058704f2509c8cee6b13d744efb7a6e3e99224ef8c258"
 REQUIRED_FUNCTIONS = {
     "build_exploratory_chart", "build_critique_redesign",
@@ -104,7 +103,6 @@ BANNED_CALLS = {
     "regplot", "lmplot", "violinplot", "pairplot", "jointplot", "load_dataset",
 }
 REQUIRED_CONTEXT_ENV = {
-    "classroom": "CLASSROOM",
     "assignment": "ASSIGNMENT",
     "submission": "SUBMISSION_TAG",
     "commit": "COMMIT_URL",
@@ -150,7 +148,7 @@ def _context() -> dict[str, str]:
             missing.append(environment_name)
         context[key] = value
     if missing:
-        raise InfrastructureError("missing required Classroom50 context: " + ", ".join(missing))
+        raise InfrastructureError("missing required grading context: " + ", ".join(missing))
     context["review"] = os.environ.get("REVIEW_URL", "").strip() or context["commit"]
     context["datetime"] = datetime.datetime.now(datetime.timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
@@ -291,9 +289,7 @@ def _check_static(root: Path) -> tuple[dict, dict[str, dict]]:
         and path.relative_to(root).parts[0] != ".git"
         and path.relative_to(root).parts[0] != "output"
     }
-    expected_files = STUDENT_PACKAGE_FILES | (actual_files & DELIVERY_FILES)
-    _assert(actual_files == expected_files, "student package inventory differs")
-    _assert(not any((root / relative).is_symlink() for relative in actual_files & DELIVERY_FILES), "delivery metadata must be regular files")
+    _assert(actual_files == STUDENT_PACKAGE_FILES, "student package inventory differs")
     for relative, expected in PROTECTED_FILE_SHA256.items():
         path = root / relative
         _assert(path.is_file() and not path.is_symlink(), f"missing protected file: {relative}")
@@ -634,7 +630,7 @@ def grade_submission(submission_root: str | Path) -> dict:
 
     tests = [_record(name, maximum, errors[name]) for name, maximum in TEST_SPECS]
     return {
-        "schema": "classroom50/result/v1",
+        "schema": "datasci217/grading-result/v1",
         **context,
         "score": sum(test["score"] for test in tests),
         "max-score": 80,

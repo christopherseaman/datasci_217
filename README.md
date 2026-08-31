@@ -21,9 +21,11 @@
 
 ## Assignments
 
-- **Assignment 1:** https://classroom.github.com/a/icjG3z9c
-- **Assignment 2:** https://classroom.github.com/a/wSmf0KE5
-- **Assignment 3:** https://classroom.github.com/a/xvMrhDAi
+- **Assignment 1:** `{{ASSIGNMENT_01_URL}}`
+- **Assignment 2:** `{{ASSIGNMENT_02_URL}}`
+- **Assignment 3:** `{{ASSIGNMENT_03_URL}}`
+
+The instructor supplies these term-specific assignment repository URLs.
 
 ## Lectures
 

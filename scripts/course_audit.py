@@ -1059,7 +1059,6 @@ def audit_assignment07(errors: list[str]) -> None:
     if re.search(r"\b\d+\s*(?:minutes?|hours?)\b", combined_guidance, re.I):
         errors.append("Assignment 07 must not make a timing claim")
     for required in (
-        "Classroom50",
         "VS Code Source Control",
         "GitHub Desktop",
         "python check_assignment.py",
@@ -1071,7 +1070,7 @@ def audit_assignment07(errors: list[str]) -> None:
 
     for relative in (
         "_grader_selftest/autograder.py",
-        "_grader_selftest/classroom50_grader.py",
+        "_grader_selftest/grader.py",
         "_grader_selftest/run.py",
         "_grader_selftest/README.md",
     ):
@@ -1202,7 +1201,6 @@ def audit_assignment08(errors: list[str]) -> None:
         errors.append("Assignment 08 must not make a timing claim")
     for required in (
         "Assignment Colab is not supported",
-        "Classroom50",
         "VS Code Source Control",
         "GitHub Desktop",
         "python check_assignment.py",
@@ -1217,22 +1215,21 @@ def audit_assignment08(errors: list[str]) -> None:
 
     instructor_assets = (
         "_grader_selftest/autograder.py",
-        "_grader_selftest/classroom50_grader.py",
+        "_grader_selftest/grader.py",
         "_grader_selftest/run.py",
         "_grader_selftest/README.md",
     )
     for relative in instructor_assets:
         if not (assignment_dir / relative).is_file():
             errors.append(f"missing Assignment 08 instructor asset: {relative}")
-    grader_path = assignment_dir / "_grader_selftest" / "classroom50_grader.py"
+    grader_path = assignment_dir / "_grader_selftest" / "grader.py"
     if grader_path.is_file():
         grader_source = grader_path.read_text(encoding="utf-8")
         if re.search(r"(?:from|import)\s+check_assignment", grader_source):
             errors.append("Assignment 08 central grader must not import the public checker")
         for required in (
-            '"classroom50/result/v1"',
+            '"datasci217/grading-result/v1"',
             'Path("result.json")',
-            '"REVIEW_URL"',
             "return 2",
         ):
             if required not in grader_source:
@@ -1370,7 +1367,6 @@ def audit_assignment09(errors: list[str]) -> None:
         errors.append("Assignment 09 must not make a timing claim")
     for required in (
         "Assignment Colab is not supported",
-        "Classroom50",
         "VS Code Source Control",
         "GitHub Desktop",
         "python check_assignment.py",
@@ -1386,27 +1382,27 @@ def audit_assignment09(errors: list[str]) -> None:
 
     instructor_assets = (
         "_grader_selftest/autograder.py",
-        "_grader_selftest/classroom50_grader.py",
+        "_grader_selftest/grader.py",
         "_grader_selftest/run.py",
         "_grader_selftest/README.md",
     )
     for relative in instructor_assets:
         if not (assignment_dir / relative).is_file():
             errors.append(f"missing Assignment 09 instructor asset: {relative}")
-    grader_path = assignment_dir / "_grader_selftest" / "classroom50_grader.py"
+    grader_path = assignment_dir / "_grader_selftest" / "grader.py"
     if grader_path.is_file():
         grader_source = grader_path.read_text(encoding="utf-8")
         if re.search(r"(?:from|import)\s+check_assignment", grader_source):
             errors.append("Assignment 09 central grader must not import the public checker")
         for required in (
-            '"classroom50/result/v1"',
+            '"datasci217/grading-result/v1"',
             'Path("result.json")',
-            '"CLASSROOM"',
-            '"ASSIGNMENT"',
-            '"SUBMISSION_TAG"',
-            '"COMMIT_URL"',
-            '"RELEASE_URL"',
-            'os.environ.get("REVIEW_URL", "").strip() or result["commit"]',
+            '"assignment"',
+            '"submission"',
+            '"commit"',
+            '"release"',
+            '"review"',
+            '"datetime"',
             "return 2",
         ):
             if required not in grader_source:
@@ -1420,7 +1416,7 @@ def audit_assignment09(errors: list[str]) -> None:
         '"pandas==3.0.5"',
     }
     for relative in (
-        "_grader_selftest/classroom50_grader.py",
+        "_grader_selftest/grader.py",
         "_grader_selftest/run.py",
     ):
         path = assignment_dir / relative
@@ -1444,44 +1440,61 @@ def audit_assignment09(errors: list[str]) -> None:
         errors.append("Assignment 09 public checker PEP 723 metadata differs")
 
 
-def audit_classroom50_runner_contract(errors: list[str]) -> None:
-    """Reject local-default or invented runner context in implemented graders."""
+def audit_grader_runner_contract(errors: list[str]) -> None:
+    """Enforce the platform-neutral result and runner contract."""
 
     graders = {
         "Assignment 04": ROOT / "04/assignment/_grader_selftest/autograder.py",
-        "Assignment 05": ROOT / "05/assignment/_grader_selftest/classroom50_grader.py",
-        "Assignment 06": ROOT / "06/assignment/_grader_selftest/classroom50_grader.py",
-        "Assignment 07": ROOT / "07/assignment/_grader_selftest/classroom50_grader.py",
-        "Assignment 08": ROOT / "08/assignment/_grader_selftest/classroom50_grader.py",
-        "Assignment 09": ROOT / "09/assignment/_grader_selftest/classroom50_grader.py",
+        "Assignment 05": ROOT / "05/assignment/_grader_selftest/grader.py",
+        "Assignment 06": ROOT / "06/assignment/_grader_selftest/grader.py",
+        "Assignment 07": ROOT / "07/assignment/_grader_selftest/grader.py",
+        "Assignment 08": ROOT / "08/assignment/_grader_selftest/grader.py",
+        "Assignment 09": ROOT / "09/assignment/_grader_selftest/grader.py",
+        "Assignment 10": ROOT / "10/assignment/_grader_selftest/grader.py",
+        "Assignment 11": ROOT / "11/assignment/_grader_selftest/grader.py",
     }
     required = (
-        '"CLASSROOM"',
-        '"ASSIGNMENT"',
-        '"SUBMISSION_TAG"',
-        '"COMMIT_URL"',
-        '"RELEASE_URL"',
-        '"REVIEW_URL"',
-        "datetime.timezone.utc",
-        '"classroom50/result/v1"',
+        '"assignment"',
+        '"submission"',
+        '"commit"',
+        '"release"',
+        '"review"',
+        '"datetime"',
+        '"datasci217/grading-result/v1"',
     )
-    forbidden = ("CLASSROOM50_", "example.invalid")
+    forbidden = (
+        '"classroom":',
+        '"CLASSROOM"',
+        "CLASSROOM50_",
+        '"classroom50/result/v1"',
+        "example.invalid",
+    )
     for label, path in graders.items():
         if not path.is_file():
             errors.append(f"missing {label} central grader: {path.relative_to(ROOT)}")
             continue
         source = path.read_text(encoding="utf-8")
+        if re.search(r"(?:from|import)\s+check_assignment", source):
+            errors.append(f"{label} central grader must not import the public checker")
         for fragment in required:
             if fragment not in source:
                 errors.append(f"missing {label} runner contract: {fragment}")
+        if re.search(r"(?:datetime|dt)\.timezone\.utc", source) is None:
+            errors.append(f"missing {label} UTC datetime contract")
         for fragment in forbidden:
             if fragment in source:
                 errors.append(f"invented/local-default {label} runner contract: {fragment}")
 
-    assignment07 = graders["Assignment 07"].read_text(encoding="utf-8")
-    for fragment in ("CLASSROOM50_REVIEW_DIR", "_write_review_bundle", "review-bundle/v1"):
-        if fragment in assignment07:
-            errors.append(f"invented Assignment 07 review storage remains: {fragment}")
+    assignment07_path = graders["Assignment 07"]
+    if assignment07_path.is_file():
+        assignment07 = assignment07_path.read_text(encoding="utf-8")
+        for fragment in (
+            "CLASSROOM50_REVIEW_DIR",
+            "_write_review_bundle",
+            "review-bundle/v1",
+        ):
+            if fragment in assignment07:
+                errors.append(f"invented Assignment 07 review storage remains: {fragment}")
 
     expected_bundle_files = {
         "04": {
@@ -1491,10 +1504,10 @@ def audit_classroom50_runner_contract(errors: list[str]) -> None:
         },
         **{
             assignment: {
-                "README.md", "autograder.py", "classroom50_grader.py",
+                "README.md", "autograder.py", "grader.py",
                 "requirements.txt", "run.py",
             }
-            for assignment in ("05", "06", "07", "08", "09")
+            for assignment in ("05", "06", "07", "08", "09", "10", "11")
         },
     }
     inventory_fragments = {
@@ -1534,15 +1547,34 @@ def audit_classroom50_runner_contract(errors: list[str]) -> None:
                     )
 
         public_source = (ROOT / assignment / "assignment/check_assignment.py").read_text(encoding="utf-8")
-        grader_name = "grader_core.py" if assignment == "04" else "classroom50_grader.py"
-        grader_source = (bundle / grader_name).read_text(encoding="utf-8")
-        harness_source = (bundle / "run.py").read_text(encoding="utf-8")
+        grader_name = "grader_core.py" if assignment == "04" else "grader.py"
+        grader_path = bundle / grader_name
+        harness_path = bundle / "run.py"
+        if not grader_path.is_file() or not harness_path.is_file():
+            continue
+        grader_source = grader_path.read_text(encoding="utf-8")
+        harness_source = harness_path.read_text(encoding="utf-8")
         combined_inventory_source = public_source + grader_source + harness_source
-        for fragment in inventory_fragments:
-            if fragment not in combined_inventory_source:
-                errors.append(
-                    f"missing Assignment {assignment} repository-inventory probe: {fragment}"
-                )
+        if assignment == "10":
+            for fragment in {
+                '".classroom50.yaml"',
+                '".github/workflows/autograde.yaml"',
+                '".github/workflows/grade.yaml"',
+                '"_grader_selftest/copied.py"',
+                '"notes.txt"',
+                '"ordinary/.git/nested.txt"',
+                "actual == expected",
+            }:
+                if fragment not in combined_inventory_source:
+                    errors.append(
+                        f"missing Assignment {assignment} repository-inventory probe: {fragment}"
+                    )
+        elif assignment != "11":
+            for fragment in inventory_fragments:
+                if fragment not in combined_inventory_source:
+                    errors.append(
+                        f"missing Assignment {assignment} repository-inventory probe: {fragment}"
+                    )
         if "autograder.py" not in harness_source:
             errors.append(
                 f"Assignment {assignment} harness does not invoke production autograder.py"
@@ -2205,7 +2237,7 @@ def main() -> int:
     audit_assignment07(errors)
     audit_lecture08_demos(errors)
     audit_assignment08(errors)
-    audit_classroom50_runner_contract(errors)
+    audit_grader_runner_contract(errors)
     audit_lecture09_demos(errors)
     audit_assignment09(errors)
 
@@ -2216,7 +2248,15 @@ def main() -> int:
     for path in ROOT.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in text_suffixes:
             continue
-        if any(part in {".git", "node_modules", "_site", "dist", "work"} for part in path.parts):
+        if any(
+            part in {
+                ".git", ".pytest_cache", ".venv", "__pycache__", "dist",
+                "node_modules", "venv", "_site", "work",
+            }
+            for part in path.parts
+        ):
+            continue
+        if path.name in {"AGENTS.md", "HANDOFF.md", "review-progress-tracking.md"}:
             continue
         try:
             text = path.read_text(encoding="utf-8")

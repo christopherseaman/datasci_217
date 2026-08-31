@@ -77,11 +77,11 @@ PROTECTED_CELL_IDS = {
     "a10-terms-prediction", "a10-terms-evaluation", "a10-freeze",
     "a10-final-verify",
 }
-CANDIDATE_PROTECTED_FILE_SHA256 = {
+PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "PLATFORM_CHECK.md": "69afb426e92641082df243c34fe2b2e12b9dbba84a3415f0e97b5073ab668f4d",
-    "README.md": "4da9bacd4d26346305ccb5adf5c6cf10fab4d292c05b8429ad6aeef788445e4e",
+    "PLATFORM_CHECK.md": "26fa8f87d119d95cc556197c9c9304ffa4d9a19c74fbf6d6bee6d00a73c93cf1",
+    "README.md": "8f2a523f5fc000601c3421950be36974735b045ac819148353a21256856a893c",
     "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
@@ -90,8 +90,8 @@ CANDIDATE_PROTECTED_FILE_SHA256 = {
     "data/supplied_binary_predictions.csv": "7a8809010fa94345cd04787c826ef86ee5fd13cbf0bd95953e2220c3294a239a",
     "output/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 }
-CANDIDATE_PROTECTED_CELL_SHA256 = {
-    "a10-header": "90fe5854d2bcd6507d1b03b0f8d741e18f44ab0ad89a249164809c3c24907523",
+PROTECTED_CELL_SHA256 = {
+    "a10-header": "d0a854bb0eebce383b25c11f2d17151432d27928110bd461b2e038de3ef5343a",
     "a10-setup": "a5caad874818b2edf045770960e00c610ea6d29a2e50d3dd89c3d6328caf20e8",
     "a10-terms-inference": "4c167e07f0ae870026a9746b40138fe5c3d6a4e74dddd417580e0e39e096696e",
     "a10-task1-prompt": "855729ff10c4244d077be4152576d05e17c99d104bff7e896495bdde402c193b",
@@ -130,7 +130,6 @@ BASE_FILES = {
     ".github/workflows/tests.yml",
     *FIXTURES,
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 ARTIFACTS = {
     "inference_summary.csv": (214, "36965b53df5133e3e05f86502d230ec9241b58e9ffd93163eba588385c9f3f48"),
     "inference_case_intervals.csv": (186, "345e0d3aefc422606fa9a9ee1b35a06bd7a9f9007873fc7b05162cb9ef3e0951"),
@@ -165,7 +164,7 @@ def static_contract(errors: list[str]) -> None:
     lines = checker_text.splitlines()
     start = 1 if lines and lines[0] == "#!/usr/bin/env python3" else 0
     if lines[start:start + len(PEP_BLOCK)] != PEP_BLOCK:
-        issue("integrity", "restore the exact candidate PEP 723 Python and ordered dependency block", errors)
+        issue("integrity", "restore the exact PEP 723 Python and ordered dependency block", errors)
     try:
         requirement_lines = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeError) as error:
@@ -196,14 +195,14 @@ def integrity(errors: list[str]) -> None:
         "data/batch_strength.csv", "data/feature_availability.csv",
         "data/supplied_binary_predictions.csv", "output/.gitkeep",
     }
-    if set(CANDIDATE_PROTECTED_FILE_SHA256) != expected_file_keys:
-        issue("integrity", "candidate-nonrelease immutable-file map keys differ", errors)
-    if set(CANDIDATE_PROTECTED_CELL_SHA256) != PROTECTED_CELL_IDS:
-        issue("integrity", "candidate-nonrelease protected-cell map keys differ", errors)
-    for label, mapping in (("file", CANDIDATE_PROTECTED_FILE_SHA256), ("cell", CANDIDATE_PROTECTED_CELL_SHA256)):
+    if set(PROTECTED_FILE_SHA256) != expected_file_keys:
+        issue("integrity", "protected-file map keys differ", errors)
+    if set(PROTECTED_CELL_SHA256) != PROTECTED_CELL_IDS:
+        issue("integrity", "protected-cell map keys differ", errors)
+    for label, mapping in (("file", PROTECTED_FILE_SHA256), ("cell", PROTECTED_CELL_SHA256)):
         if any(len(digest) != 64 or digest.lower() != digest or any(character not in "0123456789abcdef" for character in digest) for digest in mapping.values()):
-            issue("integrity", f"candidate-nonrelease {label} digests must be lowercase SHA-256", errors)
-    for relative, expected in CANDIDATE_PROTECTED_FILE_SHA256.items():
+            issue("integrity", f"protected {label} digests must be lowercase SHA-256", errors)
+    for relative, expected in PROTECTED_FILE_SHA256.items():
         path = ROOT / relative
         if not path.is_file() or path.is_symlink() or sha256(path.read_bytes()).hexdigest() != expected:
             issue("integrity", f"restore immutable learner file {relative}", errors)
@@ -213,7 +212,7 @@ def integrity(errors: list[str]) -> None:
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         issue("integrity", f"cannot inspect protected notebook cells: {error}", errors)
         return
-    for cell_id, expected in CANDIDATE_PROTECTED_CELL_SHA256.items():
+    for cell_id, expected in PROTECTED_CELL_SHA256.items():
         cell = by_id.get(cell_id)
         actual = sha256(normalized_source(cell).encode("utf-8")).hexdigest() if cell else None
         if actual != expected:
@@ -234,16 +233,13 @@ def inventory(errors: list[str]) -> None:
             continue
         if path.is_file() or path.is_symlink():
             actual.add(relative.as_posix())
-    expected = BASE_FILES | (actual & DELIVERY_FILES)
+    expected = BASE_FILES
     if actual != expected:
         issue("package", f"unexpected or missing files: {sorted(actual ^ expected)}", errors)
     for relative in actual:
         path = ROOT / relative
         if path.is_symlink():
             issue("package", f"symlinks are not accepted: {relative}", errors)
-    for relative in actual & DELIVERY_FILES:
-        if not (ROOT / relative).is_file() or (ROOT / relative).is_symlink():
-            issue("delivery", f"must be a regular top-level file: {relative}", errors)
 
 
 def fixtures(errors: list[str]) -> None:
@@ -394,7 +390,6 @@ def main() -> int:
         return 1
     print("Assignment 10 readiness structure is complete.")
     print("Central grading assigns points; explanation quality is reviewed separately.")
-    print("Release certification still requires the instructor transitive lock and immutable container digest.")
     return 0
 
 

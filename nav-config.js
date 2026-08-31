@@ -20,8 +20,8 @@ const navConfig = {
         { id: "11", label: "Time Series", track: "Extended" }
     ],
     assignments: [
-        { label: "HW 1: Command Line + Python", url: "https://classroom.github.com/..." },
-        { label: "HW 2: Python + Git", url: "https://classroom.github.com/..." }
+        { label: "HW 1: Command Line + Python", url: "{{ASSIGNMENT_01_URL}}" },
+        { label: "HW 2: Python + Git", url: "{{ASSIGNMENT_02_URL}}" }
     ],
     resources: [
         { label: "GitHub Repository", url: "https://github.com/christopherseaman/datasci_217" },

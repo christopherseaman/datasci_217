@@ -13,10 +13,10 @@
 # ]
 # ///
 
-"""Author-side candidate harness for Assignment 10.
+"""Author-side instructor grading harness for Assignment 10.
 
-The correct solution exists only in disposable directories. This harness uses
-the direct candidate environment; it cannot certify the absent release lock.
+The correct solution exists only in disposable directories. The harness uses
+the exact versions declared in the instructor requirements file.
 """
 
 from __future__ import annotations
@@ -36,12 +36,11 @@ from nbclient import NotebookClient
 
 sys.dont_write_bytecode = True
 
-import classroom50_grader as grader
+import grader
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parents[1]
 RUNNER_ENV = {
-    "CLASSROOM": "datasci-217-test",
     "ASSIGNMENT": "assignment-10",
     "SUBMISSION_TAG": "submission-test-001",
     "COMMIT_URL": "https://example.invalid/commit/a10",
@@ -485,9 +484,9 @@ def public_integrity_maps() -> tuple[dict[str, str], dict[str, str]]:
     values = {}
     for node in tree.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            if node.targets[0].id in {"CANDIDATE_PROTECTED_FILE_SHA256", "CANDIDATE_PROTECTED_CELL_SHA256"}:
+            if node.targets[0].id in {"PROTECTED_FILE_SHA256", "PROTECTED_CELL_SHA256"}:
                 values[node.targets[0].id] = ast.literal_eval(node.value)
-    return values["CANDIDATE_PROTECTED_FILE_SHA256"], values["CANDIDATE_PROTECTED_CELL_SHA256"]
+    return values["PROTECTED_FILE_SHA256"], values["PROTECTED_CELL_SHA256"]
 
 
 def replace_first(path: Path, old: str, new: str) -> None:
@@ -497,13 +496,12 @@ def replace_first(path: Path, old: str, new: str) -> None:
 
 
 def main() -> int:
-    assert not (ASSIGNMENT_DIR / "_grader_selftest/constraints.txt").exists(), "candidate must not invent constraints.txt"
     assert grader._resolve_root(ASSIGNMENT_DIR) == ASSIGNMENT_DIR
     starter = run_checker(ASSIGNMENT_DIR, 1)
     assert "scaffold" in starter.stdout.lower() and "output" in starter.stdout.lower()
     public_files, public_cells = public_integrity_maps()
-    assert public_files == {key: value for key, value in grader.CANDIDATE_PROTECTED_FILE_SHA256.items() if key != "check_assignment.py"}
-    assert public_cells == grader.CANDIDATE_PROTECTED_CELL_SHA256
+    assert public_files == {key: value for key, value in grader.PROTECTED_FILE_SHA256.items() if key != "check_assignment.py"}
+    assert public_cells == grader.PROTECTED_CELL_SHA256
     grader._validate_integrity_profile()
 
     with tempfile.TemporaryDirectory() as temporary:
@@ -521,9 +519,9 @@ def main() -> int:
         assert sum(test["score"] for test in tests) == 90 and diagnostics["fresh_runs"] == 2 and diagnostics["alternate_checks"] == 7
         assert {path.name for path in (solution / "output").iterdir()} == {".gitkeep", *grader.CSV_HASHES, "inference_residuals.png"}
 
-        central_script = ASSIGNMENT_DIR / "_grader_selftest/classroom50_grader.py"
+        central_script = ASSIGNMENT_DIR / "_grader_selftest/grader.py"
         integrity_cases = []
-        for relative in grader.CANDIDATE_PROTECTED_FILE_SHA256:
+        for relative in grader.PROTECTED_FILE_SHA256:
             candidate = temporary_root / "integrity files" / relative.replace("/", "_").replace(".", "dot")
             shutil.copytree(solution, candidate)
             mutate_file_byte(candidate, relative)
@@ -549,29 +547,29 @@ def main() -> int:
             integrity_cases.append(f"cell:{cell_id}")
         assert len(integrity_cases) == 20 and "file:README.md" in integrity_cases and "file:check_assignment.py" in integrity_cases and "file:requirements.txt" in integrity_cases and "cell:a10-setup" in integrity_cases
 
-        original_files = dict(grader.CANDIDATE_PROTECTED_FILE_SHA256)
+        original_files = dict(grader.PROTECTED_FILE_SHA256)
         map_logic_cases = []
         try:
-            grader.CANDIDATE_PROTECTED_FILE_SHA256.pop("README.md")
+            grader.PROTECTED_FILE_SHA256.pop("README.md")
             try: grader._validate_integrity_profile()
             except AssertionError: map_logic_cases.append("missing-key")
             else: raise AssertionError("missing integrity-map key accepted")
         finally:
-            grader.CANDIDATE_PROTECTED_FILE_SHA256.clear(); grader.CANDIDATE_PROTECTED_FILE_SHA256.update(original_files)
+            grader.PROTECTED_FILE_SHA256.clear(); grader.PROTECTED_FILE_SHA256.update(original_files)
         try:
-            grader.CANDIDATE_PROTECTED_FILE_SHA256["unexpected.txt"] = "0" * 64
+            grader.PROTECTED_FILE_SHA256["unexpected.txt"] = "0" * 64
             try: grader._validate_integrity_profile()
             except AssertionError: map_logic_cases.append("extra-key")
             else: raise AssertionError("extra integrity-map key accepted")
         finally:
-            grader.CANDIDATE_PROTECTED_FILE_SHA256.clear(); grader.CANDIDATE_PROTECTED_FILE_SHA256.update(original_files)
+            grader.PROTECTED_FILE_SHA256.clear(); grader.PROTECTED_FILE_SHA256.update(original_files)
         try:
-            grader.CANDIDATE_PROTECTED_FILE_SHA256["README.md"] = "0" * 64
+            grader.PROTECTED_FILE_SHA256["README.md"] = "0" * 64
             try: grader._validate_template(solution)
             except AssertionError: map_logic_cases.append("wrong-digest")
             else: raise AssertionError("wrong integrity-map digest accepted")
         finally:
-            grader.CANDIDATE_PROTECTED_FILE_SHA256.clear(); grader.CANDIDATE_PROTECTED_FILE_SHA256.update(original_files)
+            grader.PROTECTED_FILE_SHA256.clear(); grader.PROTECTED_FILE_SHA256.update(original_files)
         assert map_logic_cases == ["missing-key", "extra-key", "wrong-digest"]
 
         pep_cases = {
@@ -617,9 +615,11 @@ def main() -> int:
         rejected = []
         actions = {
             "extra file": lambda root: (root / "notes.txt").write_text("extra"),
-            "alternate workflow": lambda root: ((root / ".github/workflows").mkdir(parents=True), (root / ".github/workflows/grade.yaml").write_text("x")),
+            "legacy Classroom metadata": lambda root: (root / ".classroom50.yaml").write_text("x"),
+            "legacy autograde workflow": lambda root: ((root / ".github/workflows").mkdir(parents=True, exist_ok=True), (root / ".github/workflows/autograde.yaml").write_text("x")),
+            "alternate workflow": lambda root: ((root / ".github/workflows").mkdir(parents=True, exist_ok=True), (root / ".github/workflows/grade.yaml").write_text("x")),
             "nested .git": lambda root: ((root / "ordinary/.git").mkdir(parents=True), (root / "ordinary/.git/nested.txt").write_text("x")),
-            "nested .classroom50": lambda root: ((root / "ordinary").mkdir(exist_ok=True), (root / "ordinary/.classroom50.yaml").write_text("x")),
+            "nested grading metadata": lambda root: ((root / "ordinary").mkdir(exist_ok=True), (root / "ordinary/grading.yaml").write_text("x")),
             "injected instructor bundle": lambda root: ((root / "_grader_selftest").mkdir(), (root / "_grader_selftest/copied.py").write_text("x")),
             "fixture corrupt": lambda root: (root / "data/mixing_runs.csv").write_bytes(b"corrupt\n"),
             "fixture CRLF": lambda root: (root / "data/feature_availability.csv").write_bytes((root / "data/feature_availability.csv").read_bytes().replace(b"\n", b"\r\n")),
@@ -634,7 +634,7 @@ def main() -> int:
             "wrong signature": lambda root: _replace_source(root, "a10-ols-function", "def fit_bounded_ols(data):\n    return data"),
             "student import": lambda root: _replace_source(root, "a10-ols-function", "import os\ndef fit_bounded_ols(inference_table, predictor_columns, outcome_column):\n    return None"),
             "network source": lambda root: _append_source(root, "a10-load", "\nrequests.get('https://example.invalid')"),
-            "absolute Colab path": lambda root: _append_source(root, "a10-load", "\npath = '/content/data.csv'"),
+            "remote-runtime path": lambda root: _append_source(root, "a10-load", "\npath = '/content/data.csv'"),
             "advanced model": lambda root: _append_source(root, "a10-candidates-function", "\nmodel = RandomForestRegressor()"),
             "matrix API": lambda root: _append_source(root, "a10-ols-function", "\nadd_constant = True"),
             "p-value": lambda root: _append_source(root, "a10-task1-run", "\nthing = ols_model.pvalues"),
@@ -648,19 +648,16 @@ def main() -> int:
         for label, action in actions.items():
             expect_rejected(solution, label, action, rejected)
 
-        # Exact delivery-owned regular files and genuine top-level .git descendants are accepted.
+        # Genuine top-level .git descendants are accepted.
         metadata = temporary_root / "metadata accepted"
         shutil.copytree(solution, metadata)
         (metadata / ".git/objects").mkdir(parents=True)
         (metadata / ".git/objects/sentinel").write_text("ignored")
-        (metadata / ".classroom50.yaml").write_text("assignment: a10\n")
-        (metadata / ".github/workflows").mkdir(parents=True)
-        (metadata / ".github/workflows/autograde.yaml").write_text("name: grade\n")
         grader._validate_template(metadata)
         run_checker(metadata, 0)
 
-        # Symlink boundaries reject both ordinary and delivery paths.
-        for relative in ["README.md", ".classroom50.yaml", ".github/workflows/autograde.yaml"]:
+        # Symlink boundaries reject protected and ordinary learner paths.
+        for relative in ["README.md", ".github/test/test_assignment.py", "data/fixture.json"]:
             candidate = temporary_root / ("symlink " + relative.replace("/", "_"))
             shutil.copytree(solution, candidate)
             target = candidate / relative
@@ -691,7 +688,8 @@ def main() -> int:
         assert solved_result["score"] == 90 and solved_result["max-score"] == 90 and len(solved_result["tests"]) == 5
         starter_root = copy_starter(temporary_root / "official starter")
         starter_result = _run_official(central_script, starter_root, RUNNER_ENV)
-        assert starter_result["score"] < 90 and starter_result["schema"] == "classroom50/result/v1"
+        assert starter_result["score"] < 90 and starter_result["schema"] == "datasci217/grading-result/v1"
+        assert set(starter_result) == {"schema", "assignment", "submission", "commit", "release", "review", "datetime", "score", "max-score", "tests"}
         corrected_result = _run_official(central_script, solution, {**RUNNER_ENV, "SUBMISSION_TAG": "submission-corrected-002"})
         assert corrected_result["score"] == 90
 
@@ -706,14 +704,16 @@ def main() -> int:
         blocked_write = subprocess.run([sys.executable, str(central_script)], cwd=unwritable_result, text=True, capture_output=True, check=False, env={**os.environ, **RUNNER_ENV})
         assert blocked_write.returncode == 2 and "[INFRASTRUCTURE]" in blocked_write.stderr and (unwritable_result / "result.json").is_dir()
 
-        # Production bootstrap must refuse this candidate before installation/grading.
+        # The bootstrap provisions the exact instructor requirements and grades.
         bootstrap = subprocess.run([sys.executable, str(ASSIGNMENT_DIR / "_grader_selftest/autograder.py")], cwd=solution, text=True, capture_output=True, check=False, env={**os.environ, **RUNNER_ENV})
-        assert bootstrap.returncode == 2 and "constraints.txt is absent" in bootstrap.stderr and not (solution / "result.json").exists()
+        assert bootstrap.returncode == 0, bootstrap.stdout + bootstrap.stderr
+        bootstrap_result = json.loads((solution / "result.json").read_text(encoding="utf-8"))
+        assert bootstrap_result["score"] == 90 and bootstrap_result["schema"] == "datasci217/grading-result/v1"
+        (solution / "result.json").unlink()
 
-        assert len(rejected) == 32, rejected
+        assert len(rejected) == 34, rejected
         print(json.dumps({
-            "candidate": "pass",
-            "release_certified": False,
+            "harness": "pass",
             "starter_checker_exit": 1,
             "solution_checker_exit": 0,
             "central_score": 90,
@@ -723,13 +723,12 @@ def main() -> int:
             "integrity_mutants": len(integrity_cases),
             "integrity_map_logic_cases": len(map_logic_cases),
             "pep_static_cases": len(pep_static_cases),
-            "candidate_integrity_profile": "candidate-nonrelease",
-            "candidate_protected_file_sha256": grader.CANDIDATE_PROTECTED_FILE_SHA256,
-            "candidate_protected_cell_sha256": grader.CANDIDATE_PROTECTED_CELL_SHA256,
+            "protected_file_sha256": grader.PROTECTED_FILE_SHA256,
+            "protected_cell_sha256": grader.PROTECTED_CELL_SHA256,
             "fresh_notebook_runs_minimum": 8,
             "csv_artifacts": 8,
             "png_artifacts": 1,
-            "production_bootstrap_exit_without_lock": 2,
+            "bootstrap_score": bootstrap_result["score"],
         }, sort_keys=True))
     return 0
 

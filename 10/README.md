@@ -511,6 +511,10 @@ Preprocessing parameters must also be learned without the test set. A `Pipeline`
 
 Carry one task- and cost-aligned measure through the same baseline → training-only validation/CV → one-time test workflow. For regression, MAE is easy to interpret in the target's units and is less sensitive to large errors than squared-error measures; RMSE (or MSE) penalizes large misses more. For classification, accuracy is reasonable only when class and error costs are balanced; precision, recall, F1, a confusion matrix, or a ranking/probability measure such as ROC AUC or average precision may better reflect unequal costs or class imbalance. Decide this measure before comparing candidates, and report any complementary measures needed to expose important failure modes. The test set is still reserved for the final, pre-specified report.
 
+### Permutation importance
+
+Permutation importance is a model-agnostic diagnostic: score a fitted model on held-out data, shuffle one feature while leaving the others unchanged, and measure how much the score deteriorates. During model development, use validation data; do not repeatedly inspect the final test set to choose features or models. In scikit-learn, scorers are oriented so higher is better, so an error measure such as MAE is represented by `neg_mean_absolute_error`; a positive importance then means shuffling increased MAE. Correlated features can substitute for one another, splitting or hiding their individual importances. The result describes the fitted model's predictive reliance under this perturbation, not a causal effect or the feature's intrinsic value.
+
 *"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"*
 
 # The Secret Weapon: Gradient Boosting

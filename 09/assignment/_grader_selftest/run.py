@@ -13,7 +13,7 @@
 
 The harness materializes a disposable correct notebook from the released
 starter, exercises real fresh-kernel entry points, refutes named mutations, and
-tests the official Classroom50 success/failure/infrastructure contract.
+tests the official grading success/failure/infrastructure contract.
 """
 
 from __future__ import annotations
@@ -31,12 +31,11 @@ import tempfile
 import nbformat
 from nbclient import NotebookClient
 
-import classroom50_grader as grader
+import grader
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parents[1]
 RUNNER_ENV = {
-    "CLASSROOM": "datasci-217-test",
     "ASSIGNMENT": "assignment-09",
     "SUBMISSION_TAG": "submission-test-001",
     "COMMIT_URL": "https://example.invalid/commit/a09",
@@ -391,12 +390,8 @@ def _run_cli(grader_path: Path, target: Path, cwd: Path, environment: dict[str, 
 
 
 def _assert_delivery_inventory(correct: Path, temporary: Path) -> None:
-    accepted = temporary / "accepted-delivery"
+    accepted = temporary / "accepted-inventory"
     shutil.copytree(correct, accepted)
-    (accepted / ".classroom50.yaml").write_text("version: 1\n", encoding="utf-8")
-    workflow = accepted / ".github/workflows/autograde.yaml"
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text("name: autograde\n", encoding="utf-8")
     git_config = accepted / ".git/config"
     git_config.parent.mkdir(parents=True)
     git_config.write_text("[core]\n", encoding="utf-8")
@@ -425,13 +420,15 @@ def _assert_delivery_inventory(correct: Path, temporary: Path) -> None:
     (accepted / "result.json").unlink()
 
     for label, relative in (
+        ("legacy-classroom", ".classroom50.yaml"),
+        ("legacy-autograde", ".github/workflows/autograde.yaml"),
         ("extra-root", "notes.txt"),
         ("extra-workflow", ".github/workflows/extra.yaml"),
         ("grader-tree", "_grader_selftest/copied.py"),
         ("nested-git", "ordinary/.git/nested.txt"),
     ):
         rejected = temporary / f"inventory-{label}"
-        shutil.copytree(accepted, rejected)
+        shutil.copytree(correct, rejected)
         path = rejected / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("unexpected\n", encoding="utf-8")
@@ -452,7 +449,7 @@ def _check_pep723() -> None:
     expected = ["ipykernel==6.29.5", "nbclient==0.10.2", "nbformat==5.10.4", "numpy==2.0.2", "pandas==3.0.5"]
     requirements = (ASSIGNMENT_DIR / "_grader_selftest/requirements.txt").read_text().splitlines()
     assert requirements == expected
-    for path in (Path(__file__), ASSIGNMENT_DIR / "_grader_selftest/classroom50_grader.py"):
+    for path in (Path(__file__), ASSIGNMENT_DIR / "_grader_selftest/grader.py"):
         module = ast.parse(path.read_text())
         assert module.body
         source = path.read_text()
@@ -495,7 +492,8 @@ def main() -> int:
         assert starter_result["score"] < 90
         assert sum(test["max-score"] for test in correct_result["tests"]) == 90
         assert all(set(test) == {"test-name", "passed", "score", "max-score"} for test in correct_result["tests"])
-        assert set(correct_result) == {"schema", "classroom", "assignment", "submission", "commit", "release", "review", "datetime", "score", "max-score", "tests"}
+        assert set(correct_result) == {"schema", "assignment", "submission", "commit", "release", "review", "datetime", "score", "max-score", "tests"}
+        assert correct_result["schema"] == "datasci217/grading-result/v1"
         assert correct_result["review"] == RUNNER_ENV["REVIEW_URL"]
         _assert_delivery_inventory(correct, temporary)
 
@@ -581,7 +579,7 @@ def main() -> int:
         assert json.loads((fallback_cwd / "result.json").read_text())["review"] == RUNNER_ENV["COMMIT_URL"]
 
         missing_cwd = temporary / "cli-missing-context"; missing_cwd.mkdir()
-        missing_env = dict(base_env); missing_env.pop("CLASSROOM", None)
+        missing_env = dict(base_env); missing_env.pop("ASSIGNMENT", None)
         missing = _run_cli(grader_path, correct, missing_cwd, missing_env)
         assert missing.returncode != 0 and not (missing_cwd / "result.json").exists()
 

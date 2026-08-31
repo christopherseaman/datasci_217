@@ -139,7 +139,6 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 BANNED_ATTRIBUTES = {
     "apply", "filter", "crosstab", "merge", "join", "pivot", "melt",
     "stack", "unstack", "fillna", "ffill", "bfill", "interpolate",
@@ -180,10 +179,7 @@ def _check_submission_inventory() -> None:
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != ".git"
         and path.relative_to(ASSIGNMENT_DIR).parts[0] != "output"
     }
-    expected = STUDENT_PACKAGE_FILES | (actual & DELIVERY_FILES)
-    _assert(actual == expected, "Remove unexpected submission files; only optional delivery metadata is allowed.")
-    for relative in actual & DELIVERY_FILES:
-        _assert(not (ASSIGNMENT_DIR / relative).is_symlink(), f"{relative} must be a regular delivery-owned file.")
+    _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
 
 
 def _literal_keyword(call: ast.Call, name: str):

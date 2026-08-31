@@ -27,7 +27,7 @@ import subprocess
 import sys
 import tempfile
 
-from classroom50_grader import (
+from grader import (
     OUTPUT_NAMES,
     REQUIRED_CONTEXT_ENV,
     TEST_SPECS,
@@ -417,7 +417,6 @@ def materialize_correct(root: Path) -> None:
 def grader_context():
     old = os.environ.copy()
     values = {
-        "classroom": "datasci-217-2026",
         "assignment": "assignment-07",
         "submission": "submit/2026-07-19T12-00-00Z-a07c0de",
         "commit": "https://git.example.edu/commit/a07-correct",
@@ -436,10 +435,10 @@ def grader_context():
 
 def _assert_result(result: dict, expected_context: dict[str, str], success: bool) -> None:
     assert list(result) == [
-        "schema", "classroom", "assignment", "submission", "commit", "release",
+        "schema", "assignment", "submission", "commit", "release",
         "review", "datetime", "score", "max-score", "tests",
     ]
-    assert result["schema"] == "classroom50/result/v1"
+    assert result["schema"] == "datasci217/grading-result/v1"
     assert {key: result[key] for key in expected_context} == expected_context
     assert UTC_DATETIME.fullmatch(result["datetime"])
     assert result["max-score"] == 80
@@ -597,7 +596,7 @@ def _run_cli_shape(
         result_path = cli_root / "result.json"
         assert result_path.read_bytes().endswith(b"\n")
         result = json.loads(result_path.read_text(encoding="utf-8"))
-        assert result["schema"] == "classroom50/result/v1" and result["max-score"] == 80
+        assert result["schema"] == "datasci217/grading-result/v1" and result["max-score"] == 80
         assert (result["score"] == 80) is success
         assert UTC_DATETIME.fullmatch(result["datetime"])
         return result
@@ -608,12 +607,8 @@ def _assert_delivery_inventory(
     temporary: Path,
     expected_context: dict[str, str],
 ) -> None:
-    accepted = temporary / "accepted-delivery"
+    accepted = temporary / "accepted-inventory"
     _copy_case(correct, accepted)
-    (accepted / ".classroom50.yaml").write_text("version: 1\n", encoding="utf-8")
-    workflow = accepted / ".github/workflows/autograde.yaml"
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text("name: autograde\n", encoding="utf-8")
     git_config = accepted / ".git/config"
     git_config.parent.mkdir(parents=True)
     git_config.write_text("[core]\n", encoding="utf-8")
@@ -639,13 +634,15 @@ def _assert_delivery_inventory(
     (accepted / "result.json").unlink()
 
     for label, relative in (
+        ("legacy-classroom", ".classroom50.yaml"),
+        ("legacy-autograde", ".github/workflows/autograde.yaml"),
         ("extra-root", "notes.txt"),
         ("extra-workflow", ".github/workflows/extra.yaml"),
         ("grader-tree", "_grader_selftest/copied.py"),
         ("nested-git", "ordinary/.git/nested.txt"),
     ):
         rejected = temporary / f"inventory-{label}"
-        _copy_case(accepted, rejected)
+        _copy_case(correct, rejected)
         path = rejected / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("unexpected\n", encoding="utf-8")

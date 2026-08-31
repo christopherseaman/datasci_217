@@ -19,6 +19,8 @@ jupyter:
 
 Choose one regressor from pinned scikit-learn. Fit candidates on training rows only and use validation performance to freeze your choice. A simple model is enough, and it does not need to beat persistence. Do not read any Q6 test file in this notebook.
 
+Prerequisite refresher: [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) cover train-fitted pipelines and validation-based model comparison.
+
 ## Setup
 
 ```python
@@ -55,7 +57,7 @@ NUMERIC_FEATURES = FEATURE_COLUMNS[1:]
 
 ## Pipeline and Model Choice
 
-Build a `ColumnTransformer` that one-hot encodes station and median-imputes numeric features. Put it and one chosen sklearn regressor in a `Pipeline`. Set `random_state=217` and `n_jobs=1` when supported. Candidate fitting uses training only.
+Build a `ColumnTransformer` that uses `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` for station and `SimpleImputer(strategy="median")` for numeric features. Put it and one chosen sklearn regressor in a `Pipeline`. Set `random_state=217` and `n_jobs=1` when supported. Candidate fitting uses training only.
 
 ```python
 # TODO: Import and configure one sklearn regressor.
@@ -79,7 +81,7 @@ METRIC_COLUMNS = ["model", "mae", "rmse", "r2", "n"]
 
 ## Frozen Specification and Permutation Importance
 
-Record the selected regressor class and shallow parameters, not the entire pipeline parameter tree. Compute validation permutation importance through the fitted pipeline using MAE scoring, 10 repeats, and seed 217.
+Record the selected regressor class and shallow parameters, not the entire pipeline parameter tree. Compute validation permutation importance through the fitted pipeline with `scoring="neg_mean_absolute_error"`, 10 repeats, and seed 217. Save `result.importances_mean` as `mean_mae_increase` and `result.importances_std` as `std_mae_increase`; a positive value means that permutation increased MAE.
 
 ```python
 SPEC_COLUMNS = [

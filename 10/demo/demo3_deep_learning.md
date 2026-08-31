@@ -184,7 +184,7 @@ history = model.fit(
 **Understanding training:**
 - **Epoch**: One pass through the entire training dataset
 - **Batch size**: Number of samples processed before updating weights
-- **Validation split**: Hold out some training data to monitor overfitting
+- **Validation data**: The explicit validation set monitors generalization during training
 
 ## Part 6: Evaluate Validation Performance
 

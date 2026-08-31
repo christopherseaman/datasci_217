@@ -1,6 +1,6 @@
 # Assignment 09 grader maintenance
 
-`autograder.py` is the plain-Python production entrypoint. Its standard-library bootstrap installs the exact sibling requirements into the runner interpreter before importing `classroom50_grader.py`; PEP 723 is only local `uv run` provisioning. The grader does not import the editable public checker. `run.py` materializes disposable correct work, fresh-executes all real notebook/grader entry points, exercises the disclosed alternate table and path layouts, refutes named adversarial mutations, and verifies official result success/failure behavior.
+`autograder.py` is the plain-Python production entrypoint. Its standard-library bootstrap installs the exact sibling requirements into the runner interpreter before importing `grader.py`; PEP 723 is only local `uv run` provisioning. The grader does not import the editable public checker. `run.py` materializes disposable correct work, fresh-executes all real notebook/grader entry points, exercises the disclosed alternate table and path layouts, refutes named adversarial mutations, and verifies official result success/failure behavior.
 
 Run from repository root with the exact candidate environment:
 

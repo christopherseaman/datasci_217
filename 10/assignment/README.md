@@ -11,17 +11,13 @@ The records are course-authored synthetic data. They do not describe real people
 ## Work locally
 
 1. Open the `10/assignment` subtree, or its exported standalone assignment repository, with the course-approved Git GUI.
-2. Open this whole assignment folder in the approved local Jupyter environment. A lone notebook upload is not supported because the notebook requires `data/`.
+2. Open this whole assignment folder in the approved local Jupyter environment. The notebook requires the complete local `data/` directory.
 3. Restart the kernel, clear all outputs, and run every cell in order.
 4. From a terminal opened in this assignment folder, run `python check_assignment.py` with the course Python environment.
 5. Run all notebook cells a second time. Run the checker again.
 6. Inspect the notebook and the nine files in `output/` in your Git GUI. Commit and push the notebook and generated outputs through the GUI.
 
 Do not edit protected cells, fixture files, this README, `PLATFORM_CHECK.md`, `requirements.txt`, or `check_assignment.py`. Do not add files. The optional Actions workflow is supplied feedback; it is not a submission artifact.
-
-## Colab boundary
-
-Colab is not part of this repository contract. If the instructor later publishes a launch route, it must place the entire assignment tree, including `data/`, in the runtime; uploading `assignment.ipynb` by itself is not supported.
 
 ## Required output
 

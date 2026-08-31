@@ -22,7 +22,7 @@ import subprocess
 import sys
 import tempfile
 
-from classroom50_grader import (
+from grader import (
     ARTIFACT_SHA256,
     REQUIRED_CONTEXT_ENV,
     _execute_notebook,
@@ -541,17 +541,15 @@ def _run_public(root: Path) -> subprocess.CompletedProcess[str]:
 
 def _assert_result_schema(result: dict, expected_score: int | None = None) -> None:
     required = {
-        "schema", "classroom", "assignment", "submission", "commit",
+        "schema", "assignment", "submission", "commit",
         "release", "review", "datetime", "score", "max-score", "tests",
     }
-    optional = {"owner", "assignment_type", "submitted_by"}
-    assert required.issubset(result)
-    assert set(result).issubset(required | optional)
-    assert result["schema"] == "classroom50/result/v1"
+    assert set(result) == required
+    assert result["schema"] == "datasci217/grading-result/v1"
     assert all(
         isinstance(result[field], str) and result[field]
         for field in (
-            "classroom", "assignment", "submission", "commit", "release",
+            "assignment", "submission", "commit", "release",
             "review", "datetime",
         )
     )
@@ -565,12 +563,6 @@ def _assert_result_schema(result: dict, expected_score: int | None = None) -> No
         assert isinstance(test["test-name"], str) and test["test-name"]
         assert isinstance(test["passed"], bool)
         assert test["score"] in {0, test["max-score"]}
-    if "owner" in result:
-        assert isinstance(result["owner"], str) and result["owner"]
-    if "assignment_type" in result:
-        assert isinstance(result["assignment_type"], str) and result["assignment_type"]
-    if "submitted_by" in result:
-        assert isinstance(result["submitted_by"], dict)
     if expected_score is not None:
         assert result["score"] == expected_score, result
 
@@ -580,25 +572,23 @@ def _clone(source: Path, destination: Path) -> None:
 
 
 def _assert_delivery_inventory(correct: Path, temporary: Path) -> None:
-    accepted = temporary / "accepted-delivery"
+    accepted = temporary / "accepted-inventory"
     _clone(correct, accepted)
-    (accepted / ".classroom50.yaml").write_text("version: 1\n", encoding="utf-8")
-    workflow = accepted / ".github/workflows/autograde.yaml"
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text("name: autograde\n", encoding="utf-8")
     git_config = accepted / ".git/config"
     git_config.parent.mkdir(parents=True)
     git_config.write_text("[core]\n", encoding="utf-8")
     assert _run_public(accepted).returncode == 0
     assert grade_submission(accepted)["score"] == 90
     for label, relative in (
+        ("legacy-classroom", ".classroom50.yaml"),
+        ("legacy-autograde", ".github/workflows/autograde.yaml"),
         ("extra-root", "notes.txt"),
         ("extra-workflow", ".github/workflows/extra.yaml"),
         ("grader-tree", "_grader_selftest/copied.py"),
         ("nested-git", "ordinary/.git/nested.txt"),
     ):
         rejected = temporary / f"inventory-{label}"
-        _clone(accepted, rejected)
+        _clone(correct, rejected)
         path = rejected / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("unexpected\n", encoding="utf-8")
@@ -617,7 +607,6 @@ def _grade_rejected(root: Path, label: str, rejection_log: list[str]) -> dict:
 def main() -> int:
     rejection_log: list[str] = []
     runner_env = {
-        "CLASSROOM": "datasci-217-local",
         "ASSIGNMENT": "assignment-08",
         "SUBMISSION_TAG": "submit/local-correct",
         "COMMIT_URL": "https://example.invalid/commit/correct",
@@ -646,17 +635,6 @@ def main() -> int:
         correct_result = grade_submission(correct)
         _assert_result_schema(correct_result, 90)
         _assert_delivery_inventory(correct, temporary)
-        assert "owner" not in correct_result and "assignment_type" not in correct_result
-        assert "submitted_by" not in correct_result
-
-        runner_stamped = dict(correct_result)
-        runner_stamped.update({
-            "owner": "course-staff",
-            "assignment_type": "individual",
-            "submitted_by": {"username": "local-author", "id": 12345},
-        })
-        _assert_result_schema(runner_stamped, 90)
-
         emitted_env = {
             **os.environ,
             **runner_env,
@@ -1140,8 +1118,8 @@ def main() -> int:
     print(f"rejected-cases={len(rejection_log)}")
     for evidence in rejection_log:
         print(f"REJECT {evidence}")
-    print("result-schema=classroom50/result/v1; result-file=result.json; captured-failure-exit=0")
-    print("runner-optional-fields=accepted-but-not-grader-emitted; review-url=context-supplied")
+    print("result-schema=datasci217/grading-result/v1; result-file=result.json; captured-failure-exit=0")
+    print("review-url=context-supplied")
     print("layouts=flattened+course-root+nested+relocated+spaces; sentinel=preserved-then-extra-rejected")
     print("alternate-functions=5/5; pivot-equivalences=8/8; repeat=deterministic")
     return 0

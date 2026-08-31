@@ -74,8 +74,8 @@ print(results_formula.summary())
 
 **Key things to look for in the summary:**
 - **R-squared**: How well the model fits (0-1, higher is better)
-- **Coefficients**: The estimated effect of each variable
-- **P-values**: Statistical significance (p < 0.05 is typically significant)
+- **Coefficients**: The estimated association for each variable under the model
+- **P-values**: How incompatible data this extreme are with a specified null model; compare them with a pre-specified threshold such as 0.05
 - **Confidence intervals**: Range of plausible values for coefficients
 
 Now let's extract the key statistics programmatically. This is useful when you want to use these values in further analysis or create custom reports.
@@ -96,8 +96,8 @@ print(results_formula.conf_int())
 **Understanding these statistics:**
 - **R-squared** tells us how much variance in the target is explained by the model
 - **Adjusted R-squared** penalizes for model complexity - use this when comparing models with different numbers of predictors
-- **Coefficients** show the estimated effect size of each variable
-- **P-values** indicate statistical significance - values < 0.05 suggest the variable has a real effect
+- **Coefficients** show the estimated association for each variable, conditional on the model and its other predictors
+- **P-values** quantify how incompatible data this extreme are with a specified null model; crossing 0.05 is not proof of a real or causal effect
 - **Confidence intervals** give us a range of plausible values for each coefficient
 
 ## Part 3: Array API - More Control

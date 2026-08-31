@@ -6,7 +6,7 @@
 """Independent central-grader reference for Assignment 05.
 
 This module intentionally does not import the student-editable public checker.
-Production Classroom 50 wiring is external to this repository.
+Production grading-service wiring is external to this repository.
 """
 
 from __future__ import annotations
@@ -127,9 +127,7 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 REQUIRED_CONTEXT_ENV = {
-    "classroom": "CLASSROOM",
     "assignment": "ASSIGNMENT",
     "submission": "SUBMISSION_TAG",
     "commit": "COMMIT_URL",
@@ -151,7 +149,7 @@ def _context() -> dict[str, str]:
         context[field] = value
     if missing:
         raise InfrastructureError(
-            "missing required Classroom50 context: " + ", ".join(missing)
+            "missing required grading context: " + ", ".join(missing)
         )
     context["review"] = os.environ.get("REVIEW_URL", "").strip() or context["commit"]
     context["datetime"] = datetime.datetime.now(datetime.timezone.utc).strftime(
@@ -201,9 +199,7 @@ def _check_static_contract(root: Path) -> None:
         and path.relative_to(root).parts[0] != ".git"
         and path.relative_to(root).parts[0] != "output"
     }
-    expected_files = STUDENT_PACKAGE_FILES | (actual_files & DELIVERY_FILES)
-    _assert(actual_files == expected_files, "student package inventory differs")
-    _assert(not any((root / relative).is_symlink() for relative in actual_files & DELIVERY_FILES), "delivery metadata must be regular files")
+    _assert(actual_files == STUDENT_PACKAGE_FILES, "student package inventory differs")
     _assert((root / ".python-version").read_text() == "3.12.13\n", "wrong Python record")
     _assert(
         (root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.5\n",
@@ -539,7 +535,7 @@ def _result_test(name: str, maximum: int, error: Exception | None) -> dict:
 
 
 def grade_submission(submission_root: str | Path) -> dict:
-    """Grade one local submission and return a Classroom 50 result object."""
+    """Grade one local submission and return the grading result object."""
 
     context = _context()
     root = Path(submission_root).resolve()
@@ -592,7 +588,7 @@ def grade_submission(submission_root: str | Path) -> dict:
 
     score = sum(test["score"] for test in tests)
     return {
-        "schema": "classroom50/result/v1",
+        "schema": "datasci217/grading-result/v1",
         **context,
         "score": score,
         "max-score": 85,

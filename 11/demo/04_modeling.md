@@ -20,8 +20,9 @@ We compare a fixed weekly baseline (`lag_168`) with one transparent scikit-learn
 pipeline. Validation MAE freezes the choice. Only then do we combine train and
 validation, refit the pipeline if selected, and evaluate June exactly once.
 
-There is no performance threshold and no feature-importance requirement. Honest
-evaluation and clear evidence are the goals.
+There is no performance threshold. This demo focuses on model selection and
+evaluation; Assignment Q7 also applies the permutation-importance pattern from
+Lecture 10 Demo 2. Honest evaluation and clear evidence are the goals.
 
 ## One setup cell
 

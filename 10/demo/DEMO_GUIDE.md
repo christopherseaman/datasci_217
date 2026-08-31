@@ -30,7 +30,7 @@ This guide provides an overview of the three demos for Lecture 10.
 - Master the scikit-learn fit/predict pattern
 - Build and evaluate linear regression and random forest models
 - Use XGBoost for gradient boosting
-- Understand feature importance
+- Interpret model-specific and permutation feature importance cautiously
 - Compare model performance
 - Visualize results with Altair
 
@@ -39,7 +39,7 @@ This guide provides an overview of the three demos for Lecture 10.
 - Linear regression with regularization (Ridge, Lasso)
 - Random Forest for non-linear relationships
 - XGBoost gradient boosting
-- Feature importance
+- Model-specific importance and validation-set permutation importance with MAE
 - Early stopping
 - Model comparison
 

@@ -37,7 +37,7 @@ The plans and audit files under `work/` describe intermediate refresh states. Th
 | Lecture | Student-facing changes from `main` | Review status |
 | --- | --- | --- |
 | 01 | Adds a terminal-based readiness assignment with scripts, public tests, and an instructor self-test. No notebook requirement. | Review the new assignment as a complete addition. |
-| 02 | Replaces legacy Classroom workflow/tests with local checks, starter modules, and an instructor self-test. | Instructions and rebuilt package need reconciliation. |
+| 02 | Replaces the retired hosted-autograding workflow/tests with local checks, starter modules, and an instructor self-test. | Instructions and rebuilt package need reconciliation. |
 | 03 | Adds reproducibility terminology and a pinned Python/NumPy recreation path. Adds a smaller NumPy assignment package. | Lecture additions are targeted; assignment instructions and package need reconciliation. |
 | 04 | Rebuilds three demos around notebook state, pandas fundamentals, and portable data I/O. Adds fixed assignment fixtures and grader infrastructure. | Demos are the main intentional teaching change; assignment instructions and package need reconciliation. |
 | 05 | Adds definitions for raw/clean data, schema, provenance, and executable validation. Replaces the large legacy assignment package with one notebook and fixed fixtures. | Assignment scope and its role as a midterm need confirmation. |
@@ -100,14 +100,15 @@ The student-facing checker validates structure and cross-artifact consistency:
 
 - `11/assignment/check_assignment.py`
 
-The instructor-only Classroom 50 bundle applies deterministic reference checks:
+The instructor-only grader bundle applies deterministic reference checks:
 
-- `11/assignment/_grader_selftest/classroom50_grader.py`
+- `11/assignment/_grader_selftest/grader.py`
 - `11/assignment/_grader_selftest/run.py`
 
 Grading is artifact-only. It does not inspect notebook source or ASTs. Passing rows receive deterministic credit; failed or blocked rows are directed to targeted human review. Artifact checks cannot independently prove training-only fitting or the provenance of model-selection decisions.
 
-Legacy GitHub Classroom workflow files and large committed example outputs were removed.
+Files for the retired hosted-autograding workflow and large committed example
+outputs were removed.
 
 The canonical source/starter for each assignment is the corresponding
 `NN/assignment` subtree in this repository. Each subtree now carries a portable
@@ -121,7 +122,7 @@ student-repository exports.
 
 ## Course-wide Infrastructure
 
-- Legacy per-assignment GitHub Classroom workflows were removed from Assignments 02-11.
+- Retired per-assignment hosted-autograding workflows were removed from Assignments 02-11.
 - Local public checkers and instructor self-test bundles were introduced.
 - Assignments 04-11 retain instructor-only grader bundles as migration input;
   they are not part of the learner-facing repository export.
@@ -146,8 +147,6 @@ Assignments and demos are excluded from the generated site. Review whether lectu
 The current site also has concrete content defects to resolve:
 
 - `_data/nav.js` mislabels Lectures 04-11; those labels are also used for generated page titles.
-- `01/README.md` and `06/README.md` contain unresolved `attachment:` image URLs.
-- `06/README.md` contains a legacy GitHub Classroom URL and an unrelated Notion bonus link.
 
 ## Validation Status
 
@@ -161,7 +160,14 @@ The following Lecture 11 checks were completed during implementation:
 - The Eleventy build completed with 27 pages and 124 assets.
 - `git diff --check` passed before the Lecture 11 commit.
 
-The course-wide `scripts/course_audit.py` is not currently a reliable pass/fail release gate. It reports 46 errors because many expectations describe the intermediate rewritten Lectures 04-10 rather than the restored final lecture material. Its repository-wide warnings are still actionable: the current run also reports 22 warnings, including unresolved attachment URLs and legacy Classroom references.
+The course-wide `scripts/course_audit.py` is not yet a reliable pass/fail release
+gate because several expectations describe intermediate rewritten Lectures 04-10
+rather than the restored final lecture material. Its repository-wide warnings
+remain actionable, including unresolved attachment URLs and references to the
+retired assignment platform. The grader-specific audit now follows the neutral
+`grader.py` bundle name, `datasci217/grading-result/v1` result schema, and the
+`assignment`, `submission`, `commit`, `release`, `review`, and `datetime` context
+keys.
 
 ## External Release Gates
 
@@ -170,8 +176,7 @@ These checks require publication or production services and remain open:
 - Publish an immutable annual release tag and replace Lecture 11 URLs that still reference `main`.
 - Run all supported notebooks in a fresh Colab environment.
 - Confirm assignment save-back behavior from Colab.
-- Provision the production Classroom 50 assignments and test submission, score collection, review links, resubmission, and regrading end to end.
-- Confirm the course-wide dependency constraints and immutable grader-container digest.
+- Exercise the production-neutral grading runner end to end, including submission discovery, result collection, review links, resubmission, and regrading.
 - Validate the final deployed Eleventy site, navigation, media, and links.
 
 ## Suggested Review Order

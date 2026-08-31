@@ -39,7 +39,6 @@ REQUIRED_COPY_PATHS = (
     ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 )
-DELIVERY_FILES = {".classroom50.yaml", ".github/workflows/autograde.yaml"}
 REQUIRED_CELL_IDS = {
     "a04-header",
     "a04-supplied-setup",
@@ -114,11 +113,8 @@ def _check_submission_inventory(submission: Path) -> str | None:
         and path.relative_to(submission).parts[0] != ".git"
         and path.relative_to(submission).parts[0] != "output"
     }
-    expected = set(REQUIRED_COPY_PATHS) | (actual & DELIVERY_FILES)
-    if actual != expected:
+    if actual != set(REQUIRED_COPY_PATHS):
         return "student package inventory differs"
-    if any((submission / relative).is_symlink() for relative in actual & DELIVERY_FILES):
-        return "delivery metadata must be regular files"
     return None
 
 

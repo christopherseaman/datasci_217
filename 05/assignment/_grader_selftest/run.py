@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 
-from classroom50_grader import (
+from grader import (
     OUTPUT_FILES,
     REQUIRED_CONTEXT_ENV,
     _execute,
@@ -309,7 +309,6 @@ def _materialize_correct(root: Path) -> None:
 def _assert_result_schema(result: dict) -> None:
     assert set(result) == {
         "schema",
-        "classroom",
         "assignment",
         "submission",
         "commit",
@@ -320,11 +319,10 @@ def _assert_result_schema(result: dict) -> None:
         "max-score",
         "tests",
     }
-    assert result["schema"] == "classroom50/result/v1"
+    assert result["schema"] == "datasci217/grading-result/v1"
     assert all(
         isinstance(result[field], str) and result[field]
         for field in (
-            "classroom",
             "assignment",
             "submission",
             "commit",
@@ -364,16 +362,14 @@ def _clone(source: Path, destination: Path) -> None:
 def _assert_delivery_inventory(correct: Path, temporary: Path) -> None:
     accepted = temporary / "accepted-delivery"
     _clone(correct, accepted)
-    (accepted / ".classroom50.yaml").write_text("version: 1\n", encoding="utf-8")
-    workflow = accepted / ".github/workflows/autograde.yaml"
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text("name: autograde\n", encoding="utf-8")
     git_config = accepted / ".git/config"
     git_config.parent.mkdir(parents=True)
     git_config.write_text("[core]\n", encoding="utf-8")
     assert _run_public(accepted).returncode == 0
     assert grade_submission(accepted)["score"] == 85
     for label, relative in (
+        ("legacy-delivery-metadata", ".classroom50.yaml"),
+        ("autograde-workflow", ".github/workflows/autograde.yaml"),
         ("extra-root", "notes.txt"),
         ("extra-workflow", ".github/workflows/extra.yaml"),
         ("grader-tree", "_grader_selftest/copied.py"),
@@ -401,7 +397,6 @@ def _replace_cell_text(root: Path, cell_id: str, old: str, new: str) -> None:
 
 def main() -> int:
     runner_env = {
-        "CLASSROOM": "datasci-217-local",
         "ASSIGNMENT": "assignment-05",
         "SUBMISSION_TAG": "submit/local-correct",
         "COMMIT_URL": "https://example.invalid/commit/correct",
@@ -610,7 +605,7 @@ def main() -> int:
     print("Assignment 05 grader self-test passed.")
     print("Covered starter, correct, stored-output distrust, relocated and stale/deleted outputs,")
     print("corrupt/missing fixtures, mutation, normalization collision, alternate values/schema,")
-    print("forbidden APIs, public-check independence, and classroom50/result/v1 structure.")
+    print("forbidden APIs, public-check independence, and datasci217/grading-result/v1 structure.")
     return 0
 
 

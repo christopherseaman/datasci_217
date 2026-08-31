@@ -18,7 +18,7 @@ contract.
 | 1. Release, grain, exploration, cleaning | Q1-Q2 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/01_setup.ipynb) |
 | 2. Complete panel and past-only features | Q3-Q4 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/02_wrangling.ipynb) |
 | 3. Training-only patterns and temporal split | Q5-Q6 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/03_model_prep.ipynb) |
-| 4. Baseline, pipeline, frozen choice, report | Q7-Q9 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/04_modeling.ipynb) |
+| 4. Baseline, pipeline, frozen choice, report | Q7-Q9; Q7 reuses Lecture 10 Demo 2's permutation-importance pattern | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/04_modeling.ipynb) |
 | 5. Optional zone-error choropleth | Non-graded | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/05_geo_bonus.ipynb) |
 
 ## Project Contract

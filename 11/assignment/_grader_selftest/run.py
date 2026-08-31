@@ -16,12 +16,12 @@ import zlib
 import numpy as np
 import pandas as pd
 
-import classroom50_grader as grader
+import grader
 
 
 ASSIGNMENT = Path(__file__).resolve().parents[1]
 ENVIRONMENT = {
-    "CLASSROOM": "datasci-217-test", "ASSIGNMENT": "assignment-11",
+    "ASSIGNMENT": "assignment-11",
     "SUBMISSION_TAG": "submission-test-001", "COMMIT_URL": "https://example.invalid/commit/a11",
     "RELEASE_URL": "https://example.invalid/release/a11", "REVIEW_URL": "https://example.invalid/review/a11",
 }
@@ -157,16 +157,18 @@ def _materialize(root: Path) -> None:
         "feature_columns": "|".join(grader.FEATURES), "random_state": 217,
     }])
     _write_csv(spec, root / "output/q7_model_spec.csv")
+    validation_prediction, importance_mean, importance_std = grader._declared_model_results(root, refs, "validation")
     importance = pd.DataFrame({
-        "feature": grader.FEATURES, "mean_mae_increase": np.zeros(len(grader.FEATURES)),
-        "std_mae_increase": np.zeros(len(grader.FEATURES)),
+        "feature": grader.FEATURES, "mean_mae_increase": importance_mean,
+        "std_mae_increase": importance_std,
     })
     _write_csv(importance, root / "output/q7_permutation_importance.csv")
 
     result_metrics = {}
     for split, prefix, test in [("validation", "q7_validation", False), ("test", "q8_test", True)]:
         predictions = refs[f"x_{split}"][["row_id", "station_name", "target_timestamp_utc", "air_temperature_c_t"]].merge(refs[f"y_{split}"], on="row_id", validate="one_to_one").rename(columns={grader.TARGET: "actual", "air_temperature_c_t": "persistence_prediction"})
-        predictions["model_prediction"] = predictions["persistence_prediction"]
+        model_prediction = validation_prediction if split == "validation" else grader._declared_model_results(root, refs, "test")[0]
+        predictions["model_prediction"] = model_prediction
         predictions = predictions[["row_id", "station_name", "target_timestamp_utc", "actual", "persistence_prediction", "model_prediction"]]
         if test:
             predictions["model_error"] = predictions["model_prediction"] - predictions["actual"]
@@ -242,12 +244,12 @@ def _extra_failures(correct: Path) -> None:
     negative = validation.copy(); negative.loc[0, "model_prediction"] = -1.0
     negative_metrics = grader._metrics(negative)
     metric_path = correct / "output/q7_validation_metrics.csv"
-    def verify_negative_finite() -> None:
+    def verify_prediction_mismatch() -> None:
         updated_report = _report(negative_metrics, pd.read_csv(correct / "output/q8_test_metrics.csv"))
         def verify_metrics_and_report() -> None:
-            _replace_temporarily(correct / "report.md", updated_report.encode(), lambda: _assert_score(correct, 100))
+            _replace_temporarily(correct / "report.md", updated_report.encode(), lambda: _assert_score(correct, 72))
         _replace_temporarily(metric_path, negative_metrics.to_csv(index=False, lineterminator="\n").encode(), verify_metrics_and_report)
-    _replace_temporarily(validation_path, negative.to_csv(index=False, lineterminator="\n").encode(), verify_negative_finite)
+    _replace_temporarily(validation_path, negative.to_csv(index=False, lineterminator="\n").encode(), verify_prediction_mismatch)
     nonfinite = validation.copy(); nonfinite.loc[0, "model_prediction"] = -np.inf
     _replace_temporarily(validation_path, nonfinite.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 72)))
     metrics = pd.read_csv(metric_path); metrics.loc[0, "mae"] += 1
@@ -280,6 +282,11 @@ def _extra_failures(correct: Path) -> None:
     spec.loc[0, "estimator_module"] = "sklearn.preprocessing"
     _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 72), _assert_public_score(correct, 72)))
 
+    mismatch = pd.read_csv(spec_path)
+    parameters = json.loads(mismatch.loc[0, "parameters_json"]); parameters["strategy"] = "median"
+    mismatch.loc[0, "parameters_json"] = json.dumps(parameters, sort_keys=True)
+    _replace_temporarily(spec_path, mismatch.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 72))
+
 
 def _assert_score(root: Path, expected: int) -> None:
     actual = _score(root)
@@ -300,10 +307,10 @@ def main() -> int:
     assert (np.__version__, pd.__version__) == ("2.0.2", "3.0.5")
     assert (ASSIGNMENT / "_grader_selftest/requirements.txt").read_text(encoding="utf-8").splitlines() == ["numpy==2.0.2", "pandas==3.0.5", "scikit-learn==1.9.0"]
     public_source = (ASSIGNMENT / "check_assignment.py").read_text(encoding="utf-8")
-    central_source = (ASSIGNMENT / "_grader_selftest/classroom50_grader.py").read_text(encoding="utf-8")
+    central_source = (ASSIGNMENT / "_grader_selftest/grader.py").read_text(encoding="utf-8")
     harness_source = Path(__file__).read_text(encoding="utf-8")
     contract_source = (ASSIGNMENT / "assignment.md").read_text(encoding="utf-8")
-    assert "_grader_selftest" not in public_source and "classroom50_grader" not in public_source
+    assert "_grader_selftest" not in public_source and "grader.py" not in public_source
     assert all(name not in public_source for name in ["_references", "_reference", "_gap_summary"])
     stale_names = ["q4_" + "forecast_features.csv", "q5_" + "monthly_summary.csv", "q5_" + "correlation_matrix.csv"]
     assert all(name not in source for name in stale_names for source in [public_source, central_source, harness_source])
@@ -323,8 +330,8 @@ def main() -> int:
         assert result["score"] == result["max-score"] == 100 and empty_result["score"] == 0
         assert [test["max-score"] for test in result["tests"]] == grader.POINTS
         assert len(result["tests"]) == 9 and all(set(test) == {"test-name", "passed", "score", "max-score"} for test in result["tests"])
-        assert set(result) == {"schema", "classroom", "assignment", "submission", "commit", "release", "review", "datetime", "score", "max-score", "tests"}
-        assert result["schema"] == "classroom50/result/v1" and result["score"] == sum(test["score"] for test in result["tests"])
+        assert set(result) == {"schema", "assignment", "submission", "commit", "release", "review", "datetime", "score", "max-score", "tests"}
+        assert result["schema"] == "datasci217/grading-result/v1" and result["score"] == sum(test["score"] for test in result["tests"])
         assert result["review"] == ENVIRONMENT["REVIEW_URL"]
         dt_value = pd.Timestamp(result["datetime"]); assert dt_value.tzinfo is not None and str(dt_value.tzinfo) == "UTC"
         with _context(include_review=False):
@@ -354,7 +361,7 @@ def main() -> int:
         learner = _run_cli(script, empty, learner_cwd, environment)
         assert learner.returncode == 0 and json.loads((learner_cwd / "result.json").read_text(encoding="utf-8"))["score"] == 0
         context_cwd = temporary / "context-failure"; context_cwd.mkdir()
-        missing_environment = dict(environment); missing_environment.pop("CLASSROOM", None)
+        missing_environment = dict(environment); missing_environment.pop("ASSIGNMENT", None)
         missing = _run_cli(script, correct, context_cwd, missing_environment)
         assert missing.returncode == 2 and not (context_cwd / "result.json").exists()
         bad_bundle = temporary / "bad bundle"; shutil.copytree(ASSIGNMENT / "_grader_selftest", bad_bundle)
@@ -363,8 +370,8 @@ def main() -> int:
         install = _run_cli(bad_bundle / "autograder.py", correct, install_cwd, environment)
         assert install.returncode == 2 and not (install_cwd / "result.json").exists()
 
-        print("Correct fixture: public 100/100; Classroom50 100/100")
-        print("Empty fixture: public 0/100; Classroom50 0/100")
+        print("Correct fixture: public 100/100; trusted grader 100/100")
+        print("Empty fixture: public 0/100; trusted grader 0/100")
         print("Blocking, malformed CSV/PNG/report, prediction, metric, and resubmission checks passed")
         print("Result schema, context/review fallback, and bootstrap install/failure checks passed")
         print("Assignment 11 Chicago Beach Weather artifact grader self-test passed")
