@@ -760,12 +760,8 @@ display(long)
 # 7      Bob  science     90
 # 8  Charlie  science     89
 
-# Now you can easily do:
-long.groupby('subject')['score'].mean()
-# subject
-# english    89.67
-# math       91.67
-# science    90.33
+# The subject label is now a value in a tidy column, ready for a later
+# aggregation or visualization step. Aggregation is introduced in Lecture 08.
 
 ```
 
@@ -811,7 +807,7 @@ In the pandas 3 Copy-on-Write model, treat index changes as transformations: cap
 - Index labels may be unique or duplicated; `.loc[label]` returns every matching row.
 - A default `RangeIndex` is appropriate when rows do not need meaningful labels.
 - Use meaningful labels when label-based selection or alignment serves the task.
-- If an operation requires uniqueness, check `df.index.is_unique` or validate while creating the index.
+- If an operation requires uniqueness, check `df.index.is_unique` after creating the index.
 
 ## set_index(): Moving Columns to Index
 
@@ -822,7 +818,7 @@ In the pandas 3 Copy-on-Write model, treat index changes as transformations: cap
 - `df.set_index('column')` - Make column the new index
 - `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
 - `drop=False` - Keep the column in the DataFrame (default is True, removes it)
-- `verify_integrity=True` - Raise an error if the new index contains duplicates
+- `df.index.is_unique` - Check whether the resulting index labels are unique
 - Capture the returned object, as in `indexed = df.set_index('column')`
 
 **Example:**
@@ -842,7 +838,8 @@ display(employees)
 # 2   E003  Charlie  Engineering   88000
 
 # Make emp_id the index and assert the expected uniqueness
-indexed = employees.set_index('emp_id', verify_integrity=True)
+indexed = employees.set_index('emp_id')
+assert indexed.index.is_unique
 display(indexed)
 #           name   department  salary
 # emp_id
@@ -893,7 +890,8 @@ display(dropped)
 
 ```
 
-**Common use case:** After a groupby operation, you often want to reset_index() to make the grouping columns regular columns again.
+**Common use case:** After an index-based reshape or combination, you may want
+to reset_index() to make index labels regular columns again.
 
 ## Basic MultiIndex Operations
 
@@ -912,19 +910,15 @@ display(dropped)
 ```python
 # Sales data
 sales = pd.DataFrame({
-    'region': ['West', 'West', 'East', 'East', 'West', 'East'],
-    'quarter': ['Q1', 'Q2', 'Q1', 'Q2', 'Q1', 'Q2'],
-    'sales': [100, 150, 120, 180, 110, 190]
+    'region': ['West', 'West', 'East', 'East'],
+    'quarter': ['Q1', 'Q2', 'Q1', 'Q2'],
+    'sales': [100, 150, 120, 180]
 })
 
-# With the default as_index=True, this two-key groupby returns a MultiIndex.
-summary = sales.groupby(['region', 'quarter'])['sales'].sum()
+# Build the two-level index directly from unique row labels.
+summary = sales.set_index(['region', 'quarter']).sort_index()
+assert summary.index.is_unique
 display(summary)
-# region  quarter
-# East    Q1         120  # MultiIndex! Two levels: region and quarter
-#         Q2         370  # (180 + 190)
-# West    Q1         210  # (100 + 110)
-#         Q2         150
 
 # Check the index
 display(summary.index)
@@ -936,7 +930,8 @@ display(summary.index)
 
 ```
 
-**Common pattern:** After groupby with MultiIndex, use `.reset_index()` to convert back to regular columns.
+**Common pattern:** Use `.reset_index()` to convert MultiIndex labels back to
+regular columns.
 
 ```python
 # Convert MultiIndex back to regular columns
@@ -944,8 +939,8 @@ flattened = summary.reset_index()
 display(flattened)
 #   region quarter  sales
 # 0   East      Q1    120
-# 1   East      Q2    370
-# 2   West      Q1    210
+# 1   East      Q2    180
+# 2   West      Q1    100
 # 3   West      Q2    150
 
 # Now easier to work with for most people

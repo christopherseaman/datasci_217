@@ -122,9 +122,11 @@ print(df_filled)  # Missing values replaced with 0
 df_mean = df.fillna(df.mean())
 print(df_mean)  # Missing values replaced with column mean
 
-# Forward fill is appropriate only when row order and entity boundaries justify it
-df_ffill = df.ffill()
-print(df_ffill)  # Missing values replaced with previous value
+# This generic A/B fixture has no date column.  Do not call `ffill()` on it:
+# a fill rule requires a documented row order and entity boundary.  Inspect a
+# date column only after that contract is available, then decide whether to
+# parse, retain, flag, or fill its missing values.
+print('Decision: no forward fill without documented order and entity boundaries.')
 ```
 
 ```
@@ -340,6 +342,11 @@ Converting continuous variables into categories makes data easier to analyze and
 - `pd.qcut(series, q)` - Cut into equal-frequency bins
 - `bins=[0, 18, 35, 50, 100]` - Custom bin edges
 - `labels=['Young', 'Middle', 'Senior']` - Custom labels for bins
+
+`cut` uses supplied value-range edges (equal-width only when you ask for
+equal-width bins); `qcut` derives edges from sample quantiles so bins target
+similar row counts. Ties can make quantile edges duplicate, so inspect the
+result and use an explicit duplicate-edge policy when needed.
 
 **Example:**
 

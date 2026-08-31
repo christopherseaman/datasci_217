@@ -195,6 +195,27 @@ python -c "import numpy as np; print(np.__version__)"
 conda deactivate
 ```
 
+## Shell pipelines and small automation
+
+Before the Python and NumPy examples, use the terminal to inspect a small CSV.
+Run `demo/01_cli_pipeline_demo.sh` from a disposable directory; it creates
+only paths below the current working directory.
+
+Pipes (`|`) send one command's output to the next command. Redirection (`>`
+and `>>`) writes output to a file; `>>` appends. The core bounded pipeline
+skips a header with `tail`, selects a field with `cut`, sorts it for `uniq`,
+counts records with `wc`, and limits displayed output with `head`:
+
+```bash
+tail -n +2 data/raw/students.csv | cut -d',' -f4 | sort | uniq -c | head -n 5
+tail -n +2 data/raw/students.csv | wc -l
+```
+
+Shell variables use `name=value` with no spaces. Capture one timestamp with
+`timestamp=$(date +"%Y%m%d_%H%M%S")`, then reuse `$timestamp` in output names
+and log lines so one run has one identifier. Append a concise status message
+with `echo "${timestamp} complete" >> logs/processing.log`.
+
 ## Brief Python refresher
 
 Lectures 01–02 introduced type checking and f-string formatting. Keep those
@@ -544,59 +565,14 @@ data = rng.random((3, 3))  # Same result every time
 
 ![Learning to Code...](media/learning_to_code.png)
 
-## Optional reference: Command Line Data Processing
+## Optional shell reference
 
-This section is optional reference material, not a new required workflow for
-the lecture. It continues the shell skills from Lectures 01–02 without
-introducing notebooks; the canonical visualization lecture is Lecture 07.
+This reference extends the core activity with `tr`, `sed`, `awk`, and longer
+pipelines. The canonical visualization lecture is Lecture 07.
 
-Command line tools are powerful for quick data processing tasks. Commands can be chained together using pipes (`|`) to create data processing pipelines.
+The advanced examples below are optional reference only.
 
-**Note:** The backslash `\` at the end of a line continues the command on the next line, making long pipelines easier to read.
-
-```mermaid
-graph LR
-    A[Raw Data<br/>data.csv] -->|cat| B[cut -d,]
-    B -->|Extract columns| C[tr lower upper]
-    C -->|Transform| D[sort by comma field 2]
-    D -->|Order| E[head -n 10]
-    E -->|Top results| F[results.csv]
-
-    style A fill:#e1f5ff
-    style F fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
-    style D fill:#fff4e1
-    style E fill:#fff4e1
-```
-
-*Data flows through a series of command line tools, each performing one transformation*
-
-### Text Processing
-
-**Reference:**
-
-```bash
-# cut: Extract columns
-cut -d',' -f1,3 data.csv        # Columns 1 and 3
-cut -c1-10 file.txt             # Characters 1-10
-
-# sort: Sort data
-sort -n data.txt                # Numerical sort
-sort -t',' -k2,2n data.csv      # Numeric sort by comma-delimited field 2
-
-# uniq: Remove duplicate lines (requires sorted input)
-sort data.txt | uniq            # Remove duplicates
-sort data.txt | uniq -c         # Count occurrences
-sort data.txt | uniq -d         # Show only duplicates
-
-# grep: Search and filter
-grep "pattern" file.txt         # Find pattern
-grep -v "pattern" file.txt      # Inverse match
-grep -i "pattern" file.txt      # Case-insensitive
-```
-
-### Advanced Processing
+### Optional: Advanced Processing
 
 **Reference:**
 
@@ -614,7 +590,7 @@ awk '{print $1, $3}' file.txt   # Print columns 1, 3
 awk -F',' '$3 > 50' data.csv    # Filter rows
 ```
 
-### Data Pipelines
+### Optional: Longer Data Pipelines
 
 **Reference:**
 

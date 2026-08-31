@@ -35,17 +35,18 @@ jupyter lab
 **Key Activities**:
 - Wide to long conversion with `melt()`
 - Long to wide conversion with `pivot()`
-- Analysis on long format data
+- Structural filtering and label cleanup on long format data
+- Duplicate-key warning; the bounded `pivot_table()` preview is deferred to Lecture 08
 
 ### Demo 3: Concatenation and Index Management
 **File**: `demo3_concat_timeseries.ipynb`
 **Duration**: 20 minutes
-**Focus**: Combining time series data and managing indexes
+**Focus**: Combining dated tables and managing indexes
 
 **Key Activities**:
 - Vertical and horizontal concatenation
 - Index management strategies
-- Time series data handling
+- Date-label index selection and alignment (resampling is deferred)
 
 ## Learning Objectives
 - Master the three core data wrangling operations

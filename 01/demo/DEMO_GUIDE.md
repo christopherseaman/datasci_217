@@ -105,30 +105,30 @@
    ```bash
    python3 04_control_structures_demo.py
    ```
-   - = assigns, == compares (commented out with fix)
-   - Order-matters error in conditions (commented out with fix)
+   - = assigns, == compares
+   - Specific conditions come before broader conditions in an if/elif chain
 
-2. For Loops
-   - 0-based vs 1-based indexing confusion (commented out with fix)
-   - enumerate() as Python's elegant solution
+2. For Loops and enumerate()
+   - Plain iteration over a list
+   - enumerate() for positions and values
 
 3. While Loops
-   - Commented-out infinite loop (commented out with fix)
-   - Ensuring loops can end
+   - A counter-based while loop
+   - Ensuring the loop variable changes so the loop can end
 
-4. Nested Loops and Comprehensions
-   - List comprehensions as Pythonic approach
-   - Data science application
+4. Nested loops and loop control
+   - Nested loops for a small multiplication table
+   - break to stop early and continue to skip an item
 
 5. Practical Example
-   - Real grading system
-   - Complete logic walkthrough
-   - Edge case handling for empty lists
+   - Small grading analysis using parallel lists
+   - If/elif/else status labels and arithmetic summary
+   - The script uses only Lecture 01 concepts: variables, lists, loops,
+     conditionals, and arithmetic
 
 **Interactive Elements:**
 - Have students predict output before execution
-- Compare different coding approaches
-- Practice identifying logic errors in commented-out code
+- Compare loop and conditional results
 
 # Demo 3: Complete integration
 **Script:** `05_integration_workflow_demo.py`

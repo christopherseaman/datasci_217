@@ -1,6 +1,7 @@
 ---
 jupyter:
   jupytext:
+    notebook_metadata_filter: language_info
     text_representation:
       extension: .md
       format_name: markdown
@@ -77,8 +78,9 @@ df_clean = df.copy()
 # 1. Fix customer names (standardize)
 df_clean['customer'] = df_clean['customer'].str.strip().str.title()
 
-# 2. Fix product names (strip whitespace, title case)
+# 2. Standardize product names; retain blank names as explicitly missing.
 df_clean['product_name'] = df_clean['product_name'].str.strip().str.title()
+df_clean['product_name'] = df_clean['product_name'].replace('', pd.NA)
 
 # 3. Replace negative prices with NaN, then fill with median
 df_clean.loc[df_clean['price'] < 0, 'price'] = np.nan
@@ -87,7 +89,7 @@ df_clean['price'] = df_clean['price'].fillna(df_clean['price'].median())
 # 4. Fill missing quantities with 1
 df_clean['quantity'] = df_clean['quantity'].fillna(1)
 
-# 5. Fix dates - replace invalid with NaT
+# 5. Parse dates; retain invalid values as NaT for source review.
 df_clean['order_date'] = pd.to_datetime(df_clean['order_date'], errors='coerce')
 
 # 6. Standardize status
@@ -114,18 +116,11 @@ print(f"\nUnique statuses: {df_clean['status'].unique()}")
 ## Transform for Analysis
 
 ```python
-# Add calculated fields
+# Add row-level derived fields.  Keep this cleaning workflow independent of
+# grouped summaries; aggregation belongs to the later GroupBy lecture.
 df_clean['total_price'] = df_clean['quantity'] * df_clean['price']
-df_clean['order_month'] = df_clean['order_date'].dt.to_period('M')
-
-# Create customer spending summary
-customer_summary = df_clean.groupby('customer').agg({
-    'order_id': 'count',
-    'total_price': 'sum'
-}).rename(columns={'order_id': 'num_orders', 'total_price': 'total_spent'})
-
-print("\n=== CUSTOMER SUMMARY ===")
-print(customer_summary)
+print("\n=== ROW-LEVEL DERIVED FIELDS ===")
+print(df_clean[['order_id', 'total_price']])
 ```
 
 ## Detect Outliers
@@ -151,10 +146,6 @@ if len(outliers) > 0:
 df_clean.to_csv(output_dir / 'orders_clean.csv', index=False)
 print("\n✓ Saved output/orders_clean.csv")
 
-# Save summary
-customer_summary.to_csv(output_dir / 'customer_summary.csv')
-print("✓ Saved output/customer_summary.csv")
-
 # Create data quality report
 report = f"""DATA CLEANING REPORT
 ====================
@@ -163,16 +154,21 @@ Original rows: {len(df)}
 Cleaned rows: {len(df_clean)}
 Rows removed: {len(df) - len(df_clean)}
 
-Issues fixed:
+Issues handled:
 - Standardized {df['customer'].nunique()} customer names
 - Fixed {(df['price'] < 0).sum()} negative prices
 - Filled {df['quantity'].isnull().sum()} missing quantities
-- Corrected {df['order_date'].str.contains('XX', na=False).sum()} invalid dates
+- Retained {df_clean['order_date'].isnull().sum()} unparseable dates as missing for source review
+- Retained {df_clean['product_name'].isnull().sum()} blank product names as missing for source review
 
 Final data quality:
 - Missing values: {df_clean.isnull().sum().sum()}
 - Duplicate rows: {df_clean.duplicated().sum()}
 - Outliers detected: {len(outliers)}
+
+Decision: resolved numeric and formatting defects passed validation. Missing
+dates and product names remain documented review items and must not be silently
+invented before analysis.
 """
 
 with (output_dir / 'cleaning_report.txt').open('w') as f:
@@ -180,5 +176,5 @@ with (output_dir / 'cleaning_report.txt').open('w') as f:
 print("✓ Saved output/cleaning_report.txt")
 
 print("\n=== WORKFLOW COMPLETE ===")
-print("All files saved. Data is clean and ready for analysis!")
+print("All files saved with unresolved fields documented for review.")
 ```

@@ -38,10 +38,10 @@ jupyter lab
 - Relationship visualization (scatter plots, heatmaps)
 - Styling and themes
 
-### Demo 3: Modern Visualization Tools
+### Demo 3 (Optional): Modern Visualization Tools
 **File**: `demo3_pandas_altair.ipynb` (generated from `demo3_pandas_altair.md`)
 **Duration**: 25 minutes
-**Focus**: Modern visualization libraries and interactivity
+**Focus**: Optional survey of modern visualization libraries and interactivity
 
 **Key Activities**:
 - vega-altair grammar of graphics (chart creation, data encoding, interactivity)

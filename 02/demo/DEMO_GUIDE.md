@@ -1,4 +1,4 @@
-# Lecture 02 Demo Guide: Git, CLI, Functions, and Modules
+# Lecture 02 Demo Guide: Git, Functions, and Modules
 
 Run these scripts from this directory. They create their example files in the
 current directory, so use a disposable copy when you want to repeat a demo.
@@ -17,25 +17,21 @@ without rewriting history. This guide deliberately does not teach `git reset
 disposable repository, an identified backup, and agreement from every affected
 collaborator.
 
-## 2. CLI data-processing pipeline
+## 2. Functions: refactor a script into reusable helpers
 
 ```bash
-bash 02_cli_advanced_demo.sh
-```
-
-The script creates a small project tree, processes CSV files with `head`,
-`tail`, `grep`, `cut`, and `awk`, and writes a timestamped backup under
-`backups/`. It stops on a failed command or failed copy, and falls back to
-`find` for directory displays when `tree` is unavailable.
-
-## 3. Functions and modules
-
-```bash
-python3 03_python_functions_demo.py
-python3 03_module_usage_demo.py
+python3 functions_demo.py
 ```
 
 The functions demo creates `sample_students.csv` and introduces reusable
-functions. The module demo then loads `03_python_functions_demo.py` by its
-actual numbered filename and reuses its functions to create reports. Run both
+functions implemented in the import-safe `student_tools.py` module.
+
+## 3. Modules: import the helpers in a second script
+
+```bash
+python3 module_usage_demo.py
+```
+
+The module demo imports `student_tools.py` as an ordinary module and reuses
+its functions to create reports. Run both
 commands in a disposable directory if you do not want their report files.

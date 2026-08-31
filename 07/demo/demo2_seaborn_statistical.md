@@ -124,9 +124,18 @@ sns.histplot(data=tips, x='total_bill', hue='time',
 axes[1, 0].set_title('Bill Distribution')
 
 # Heatmap
-pivot_data = tips.pivot_table(values='tip', index='day', columns='time')
-sns.heatmap(pivot_data, annot=True, ax=axes[1, 1])
-axes[1, 1].set_title('Tip Heatmap')
+# These illustrative tip-scale values are supplied/pre-shaped for the
+# visualization demo; they are not summaries calculated from `tips`.
+# Constructing an aggregate table from observations is deferred to Lecture 08.
+prepared_tip_scale = pd.DataFrame(
+    {
+        'Lunch': [2.5, 2.8, 3.0, 2.7],
+        'Dinner': [3.1, 3.4, 3.6, 3.2],
+    },
+    index=['Thur', 'Fri', 'Sat', 'Sun'],
+)
+sns.heatmap(prepared_tip_scale, annot=True, ax=axes[1, 1])
+axes[1, 1].set_title('Prepared Illustrative Tip-Scale Table')
 
 plt.tight_layout()
 plt.show()

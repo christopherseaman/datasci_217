@@ -14,10 +14,14 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.inspection import permutation_importance
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import xgboost as xgb
 import altair as alt
 
@@ -94,6 +98,55 @@ print(y_valid.describe())
 - **Test set**: Held untouched until the final, one-time evaluation
 - **60/20/20 split**: A simple teaching split; proportions depend on dataset size
 - **random_state=42**: Ensures reproducible splits (same random seed = same split)
+
+## Interlude: Leakage-Safe Mixed-Type Preprocessing
+
+The housing table is numeric, but many real tables mix numeric and categorical
+predictors. This compact pattern fits every preprocessing step on training rows
+and reuses it unchanged on validation or test rows. `ColumnTransformer` routes
+columns to numeric and categorical branches; the categorical branch imputes
+missing values and ignores categories it did not see during fitting.
+
+```python
+# A small standalone example of the pattern used before model fitting.
+mixed_train = pd.DataFrame({
+    'income': [3.2, 5.1, np.nan, 2.8],
+    'rooms': [4.0, 6.5, 5.2, 3.8],
+    'region': ['north', 'south', 'north', 'south'],
+})
+mixed_target = pd.Series([1.2, 2.4, 1.8, 1.0], name='target')
+mixed_valid = pd.DataFrame({
+    'income': [4.4, 3.0],
+    'rooms': [5.9, np.nan],
+    'region': ['central', 'north'],  # 'central' is unseen during fitting
+})
+
+numeric_branch = Pipeline([
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scale', StandardScaler()),
+])
+categorical_branch = Pipeline([
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('one_hot', OneHotEncoder(handle_unknown='ignore')),
+])
+mixed_preprocess = ColumnTransformer([
+    ('numeric', numeric_branch, ['income', 'rooms']),
+    ('categorical', categorical_branch, ['region']),
+])
+mixed_model = Pipeline([
+    ('preprocess', mixed_preprocess),
+    ('regressor', Ridge(alpha=1.0)),
+])
+mixed_model.fit(mixed_train, mixed_target)
+mixed_predictions = mixed_model.predict(mixed_valid)
+print('Predictions for mixed-type validation rows:', mixed_predictions)
+```
+
+`SimpleImputer` is one documented option when missing predictors need a value;
+it is not automatically required. The important boundary is that the imputer,
+encoder, and scaler learn from training data only. In cross-validation, put the
+whole pipeline inside the candidate being evaluated so each fold has the same
+protection.
 
 ## Part 3: Linear Regression with scikit-learn
 

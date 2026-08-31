@@ -584,6 +584,38 @@ average = total / count
 print(f"Average grade: {average:.1f}")
 ```
 
+### While Loops and Loop Control
+
+A `while` loop repeats as long as its condition is `True`. Update the loop
+variable inside the loop so it can eventually finish:
+
+```python
+count = 1
+while count <= 3:
+    print(f"Count: {count}")
+    count += 1
+```
+
+When a loop needs both a position and a value, `enumerate()` supplies them:
+
+```python
+grades = [85, 92, 78]
+for position, grade in enumerate(grades, start=1):
+    print(f"Assignment {position}: {grade}")
+```
+
+Use `break` to stop a loop early, and `continue` to skip the rest of the
+current iteration and move to the next item:
+
+```python
+for grade in grades:
+    if grade < 80:
+        continue
+    print(f"Processing {grade}")
+    if grade >= 90:
+        break
+```
+
 ## Printing and Basic Input
 
 **Essential Output Formatting for Data Science:**

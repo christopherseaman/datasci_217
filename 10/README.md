@@ -456,30 +456,16 @@ print(f"Feature importance: {importance}")
 
 ## Other `scikit-learn` Methods
 
-`scikit-learn` provides many other algorithms:
+The catalog is broad; choose candidates whose assumptions and decision
+boundaries fit the task, then validate them against a baseline:
 
-**Classification:**
-
-- `LogisticRegression` - Logistic regression for classification
-- `SVC` - Support Vector Machines
-- Candidates when their assumptions and decision boundaries fit the task
-
-**Regression:**
-
-- `Ridge`, `Lasso` - Regularized linear regression
-- Candidates when shrinkage may help with many or correlated features
-
-**Unsupervised Learning:**
-
-- `KMeans` - K-means clustering
-- `PCA` - Principal Component Analysis for dimensionality reduction
-- Candidates for specific unlabeled-data or dimension-reduction questions
-
-**Model Selection:**
-
-- `cross_val_score` - Cross-validation
-- `GridSearchCV` - Hyperparameter tuning
-- Tools for estimating validation performance or selecting hyperparameters within training data
+- Classification: `LogisticRegression` and `SVC`.
+- Regression: `Ridge` and `Lasso` when shrinkage may help with many or
+  correlated features.
+- Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality
+  reduction.
+- Selection: `cross_val_score` for cross-validation and `GridSearchCV` for
+  hyperparameter tuning within the training data.
 
 *Pro tip: Start with a meaningful simple baseline, then add candidates whose assumptions and capabilities fit the problem. Let validation evidence—not a favorite algorithm—decide among them. Blue steel is a style, not a model-selection rule.*
 
@@ -505,7 +491,54 @@ flowchart LR
     style G fill:#ffe1f5
 ```
 
-Preprocessing parameters must also be learned without the test set. A `Pipeline` is the usual way to fit an imputer, encoder, or scaler on each training fold and apply the learned transformation to validation or test rows.
+### A leakage-safe mixed-type preprocessing pattern
+
+Preprocessing parameters are learned from training rows only. A `Pipeline` keeps
+those steps attached to the estimator, while a `ColumnTransformer` routes
+numeric and categorical columns through different branches:
+
+- numeric predictors may use `SimpleImputer` (for example, a median learned on
+  the training rows) and optionally `StandardScaler`;
+- categorical predictors may use an imputer when missing categories need a
+  documented policy, followed by `OneHotEncoder(handle_unknown="ignore")` so a
+  category first seen at validation or prediction time does not crash the
+  pipeline.
+
+Imputation is a general missing-predictor option, not a universal requirement:
+the right policy depends on why values are missing and what the task permits.
+Fit the complete pipeline inside each training fold, then reuse it unchanged
+on validation and test rows. This prevents held-out information from changing
+imputation, scaling, or the category vocabulary.
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import Ridge
+
+numeric = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+    ("scale", StandardScaler()),
+])
+categorical = Pipeline([
+    ("impute", SimpleImputer(strategy="most_frequent")),
+    ("one_hot", OneHotEncoder(handle_unknown="ignore")),
+])
+preprocess = ColumnTransformer([
+    ("numeric", numeric, ["income", "rooms"]),
+    ("categorical", categorical, ["region"]),
+])
+model = Pipeline([
+    ("preprocess", preprocess),
+    ("regressor", Ridge(alpha=1.0)),
+])
+model.fit(train_rows, train_target)
+validation_predictions = model.predict(validation_rows)
+```
+
+The same pattern works for classification by replacing the final estimator;
+the split, fitting boundary, and validation/test reuse remain the same.
 
 ### Choosing an evaluation measure
 
@@ -775,6 +808,12 @@ flowchart TD
 - Good performance optimizations
 
 These strengths may matter in some settings, but framework choice should still reflect measured performance, the target platform, team expertise, and maintenance constraints.
+
+**Dropout** randomly masks (sets aside) a fraction of units during training,
+which can reduce reliance on particular pathways. Those units are active at
+inference, so Dropout is a regularization choice to validate—not a guarantee
+against overfitting. The detailed Keras comparison of Dropout and L2 in Demo 3
+is optional extension material.
 
 **Reference:**
 

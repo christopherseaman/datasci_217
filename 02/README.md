@@ -700,23 +700,6 @@ python3 analysis.py
 python3 -c "import analysis"
 ```
 
-# Optional command-line reference
-
-Lecture 01 covered navigation, file operations, viewing files, and running Python scripts. This compact reference adds a few shell operations used later in the course; Lecture 03 contains optional examples of longer data-processing pipelines.
-
-- `grep "text" file` - Find matching lines in a text file
-- `command > file` - Save output to a file, replacing that file if it exists
-- `command1 | command2` - Send one command's output to the next command
-- `chmod +x script.sh` - Add executable permission to a shell script
-- `./script.sh` - Run that executable script from the current directory
-
-```bash
-grep "error" logfile.txt > errors.txt
-grep "error" logfile.txt | head
-chmod +x download_data.sh
-./download_data.sh
-```
-
 For this lecture's project work, use the VS Code terminal and focus on the Git commands introduced above:
 
 ```bash
@@ -727,4 +710,4 @@ git diff
 git push
 ```
 
-Revisit Lecture 01 for the foundational shell workflow rather than treating this section as a second command-line introduction.
+Lecture 03 owns the next shell pipeline activity; revisit Lecture 01 for the foundational shell workflow.

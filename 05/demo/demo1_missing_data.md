@@ -1,6 +1,7 @@
 ---
 jupyter:
   jupytext:
+    notebook_metadata_filter: language_info
     text_representation:
       extension: .md
       format_name: markdown
@@ -58,12 +59,12 @@ print((df.isnull().sum() / len(df) * 100).round(1))
 print(f"\nRows with missing data: {df.isnull().any(axis=1).sum()} out of {len(df)}")
 ```
 
-## Visual Preview: Missingness Heatmap
+## Optional Visual Preview: Missingness Heatmap
 
-The tabular summary above is the core Lecture 05 activity. For visual learners,
-this optional preview turns the same missingness indicators into a heatmap. It
-is a preview of the visualization workflow formalized in Lecture 07, not a new
-cleaning decision: darker cells simply mean that a value is missing.
+The tabular summary above is the core Lecture 05 activity. This optional
+preview turns the same missingness indicators into a heatmap for visual
+learners. It previews the visualization workflow formalized in Lecture 07;
+darker cells simply mean that a value is missing.
 
 ```python
 missing_by_row = df.isna().sum(axis=1).rename('missing_fields')
@@ -97,10 +98,17 @@ df['age_filled'] = df['age'].fillna(df['age'].median())
 print("\nAge - filled with median:")
 print(df[['patient_id', 'age', 'age_filled']])
 
-# Strategy 2: Forward fill test dates (temporal data)
-df['test_date_filled'] = pd.to_datetime(df['test_date']).ffill()
-print("\nTest dates - forward filled:")
-print(df[['patient_id', 'test_date', 'test_date_filled']])
+# Strategy 2: parse and inspect dates; do not fill without a temporal contract.
+parsed_dates = pd.to_datetime(df['test_date'], errors='coerce')
+date_audit = pd.DataFrame({
+    'patient_id': df['patient_id'],
+    'raw_date': df['test_date'],
+    'parsed_date': parsed_dates,
+    'parse_failed': parsed_dates.isna() & df['test_date'].notna(),
+})
+print("\nParsed test dates and audit flags:")
+print(date_audit)
+print("Decision: retain missing dates; this fixture documents neither chronological row order nor an entity boundary for filling.")
 
 # Strategy 3: Drop rows with critical missing data
 # If BOTH blood_pressure AND cholesterol missing, row is useless
@@ -114,6 +122,6 @@ print(f"\nAfter dropping rows missing both BP and cholesterol: {len(df_complete)
 print("\n=== SUMMARY OF STRATEGIES ===")
 print(f"Original rows: {len(df)}")
 print(f"Age: filled {df['age'].isnull().sum()} missing values with median")
-print(f"Test dates: forward filled {pd.to_datetime(df['test_date']).isnull().sum()} missing dates")
+print(f"Test dates: retained {parsed_dates.isna().sum()} missing dates pending temporal context")
 print(f"Dropped {len(df) - len(df_complete)} rows with both BP and cholesterol missing")
 ```

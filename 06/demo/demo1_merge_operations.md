@@ -1,6 +1,7 @@
 ---
 jupyter:
   jupytext:
+    notebook_metadata_filter: language_info
     text_representation:
       extension: .md
       format_name: markdown
@@ -322,35 +323,26 @@ merged_clear[['product_name', 'units_sold', 'total_inventory', 'turnover_rate']]
 
 ## Real-World Application: Complete Customer Analysis
 
-Combining multiple merge operations to answer: "What's the total spending by city?"
+Combining multiple merge operations to inspect customer coverage and row-level
+purchase data. Aggregation is introduced in Lecture 08.
 
 ```python
 # Step 1: Left join to keep all customers
 customer_purchases = pd.merge(customers, purchases, on='customer_id', how='left')
 
-# Step 2: Fill missing amounts with 0 for customers without purchases
-customer_purchases['amount'] = customer_purchases['amount'].fillna(0)
+# Step 2: Mark whether each merged row has a purchase
+customer_purchases['has_purchase'] = customer_purchases['product'].notna()
 
-# Step 3: Group by city and calculate total spending
-city_spending = customer_purchases.groupby('city').agg({
-    'amount': 'sum',
-    'customer_id': 'nunique',
-    'product': 'count'
-}).round(2)
-
-city_spending.columns = ['total_revenue', 'unique_customers', 'total_transactions']
-city_spending['avg_transaction'] = (city_spending['total_revenue'] /
-                                    city_spending['total_transactions']).round(2)
-
-city_spending.sort_values('total_revenue', ascending=False)
+# Step 3: Inspect row-level purchase data, including customers without matches
+customer_purchases.sort_values(['city', 'amount'], na_position='last')
 ```
 
-**Business insights from our merge:**
-- Seattle generates highest revenue ($1,338.96) from 2 customers
-- Portland has best average transaction value ($84.99)
-- Eugene and Tacoma have customers but no purchases (engagement opportunity)
+**What the merge makes visible:**
+- Customers without a matching purchase remain in the left join.
+- `has_purchase` distinguishes matched and unmatched rows without summarizing.
+- A later aggregation can answer questions such as spending by city.
 
-**Key workflow:** merge → fill missing → group → analyze
+**Key workflow:** merge → inspect matches → derive row-level fields → analyze later
 
 
 ## Key Takeaways

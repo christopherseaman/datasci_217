@@ -94,7 +94,7 @@ def data_directory():
 
 data_dir = data_directory()
 manifest_path = data_dir / "demo_release_manifest.json"
-expected_manifest_sha256 = "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
+expected_manifest_sha256 = "553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6"
 assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
     "Manifest hash mismatch"
 )

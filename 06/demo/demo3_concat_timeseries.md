@@ -1,6 +1,7 @@
 ---
 jupyter:
   jupytext:
+    notebook_metadata_filter: language_info
     text_representation:
       extension: .md
       format_name: markdown
@@ -24,7 +25,7 @@ jupyter:
 - Master `set_index()` and `reset_index()` for index manipulation
 - Handle misaligned indexes during concatenation
 - Combine `concat()` and `merge()` in practical workflows
-- Work with time-based indexes for temporal data
+- Work with date labels while combining tables (time-series analysis is later)
 
 
 ## Setup
@@ -128,7 +129,7 @@ year_sales_indexed
 
 **Advantages of datetime index:**
 - Can select by date: `year_sales_indexed.loc['2023-06']`
-- Easy time-based filtering and resampling
+- Easy time-based filtering
 - More meaningful than numeric index
 
 ```python
@@ -138,14 +139,8 @@ print("Q2 Data (using datetime index):")
 q2_data
 ```
 
-```python
-# Example: Calculate quarterly totals
-quarterly_totals = year_sales_indexed.resample('QE').sum()
-print("\nQuarterly Totals (resample magic!):")
-quarterly_totals
-```
-
-**This is why datetime indexes are powerful for time series!**
+Time-based resampling and aggregation are deferred to Lecture 09. Here the
+datetime index is used only for label-based selection and alignment.
 
 
 ## Horizontal Concatenation: Adding Columns
@@ -349,7 +344,7 @@ print(f"Columns: {list(combined_reset.columns)}")
 - New default numeric index (0, 1, 2, ...) created
 
 **When to use reset_index():**
-- After groupby operations (groups become index)
+- After index-based operations (labels become columns)
 - Before saving to CSV (indexes aren't always preserved)
 - When you need the index as a column for analysis
 
@@ -401,7 +396,7 @@ display(sales_enriched.head())
 ```
 
 ```python
-# Step 4: Calculate metrics and analyze
+# Step 4: Calculate row-level metrics
 sales_enriched['return_rate'] = (sales_enriched['returns'] / 
                                  sales_enriched['units_sold'] * 100).round(2)
 sales_enriched['revenue_per_unit'] = (sales_enriched['revenue'] / 
@@ -412,26 +407,13 @@ display(sales_enriched)
 ```
 
 ```python
-# Step 5: Analyze by product category
-category_summary = sales_enriched.groupby('top_category').agg({
-    'revenue': 'sum',
-    'units_sold': 'sum',
-    'new_customers': 'sum',
-    'return_rate': 'mean'
-}).round(2)
-
-category_summary['avg_revenue_per_unit'] = (
-    category_summary['revenue'] / category_summary['units_sold']
-).round(2)
-
-print("\nStep 5: Category Summary")
-category_summary.sort_values('revenue', ascending=False)
+sales_enriched.sort_values('return_rate', ascending=False)
 ```
 
 **Complete workflow:**
 1. **concat()** - Combine quarterly files (same structure)
 2. **merge()** - Add related data from other sources (different structure)
-3. **groupby()** - Analyze the enriched dataset
+3. **row-level calculations** - Inspect the enriched dataset
 
 **Key insight:** concat for stacking, merge for joining!
 
@@ -491,61 +473,48 @@ q1_2024 = pd.DataFrame({
 # Prepare both years with year label
 q1_2023_labeled = q1_sales.copy()
 q1_2023_labeled['year'] = 2023
+q1_2023_labeled['month_label'] = ['January', 'February', 'March']
 
 q1_2024_labeled = q1_2024.copy()
 q1_2024_labeled['year'] = 2024
+q1_2024_labeled['month_label'] = ['January', 'February', 'March']
 
 # Concatenate both years
 yoy_data = pd.concat([q1_2023_labeled, q1_2024_labeled], ignore_index=True)
-
-# Add month name for grouping
-yoy_data['month_name'] = yoy_data['month'].dt.strftime('%B')
 
 print("Year-Over-Year Q1 Data:")
 yoy_data
 ```
 
 ```python
-# Pivot to compare 2023 vs 2024 side-by-side
-yoy_comparison = yoy_data.pivot_table(
-    index='month_name',
-    columns='year',
-    values=['revenue', 'units_sold']
-)
+# Pivot to compare 2023 vs 2024 revenue side-by-side.
+yoy_comparison = yoy_data.pivot(
+    index='month_label', columns='year', values='revenue'
+).loc[['January', 'February', 'March']]
 
 print("\nYear-Over-Year Comparison (Pivoted):")
 yoy_comparison
 ```
 
 ```python
-# Calculate growth rates
-# Flatten column names for easier access
-yoy_flat = yoy_comparison.copy()
-yoy_flat.columns = ['_'.join(map(str, col)) for col in yoy_flat.columns]
-
-yoy_flat['revenue_growth_%'] = (
-    (yoy_flat['revenue_2024'] - yoy_flat['revenue_2023']) / 
-    yoy_flat['revenue_2023'] * 100
-).round(1)
-
-yoy_flat['units_growth_%'] = (
-    (yoy_flat['units_sold_2024'] - yoy_flat['units_sold_2023']) / 
-    yoy_flat['units_sold_2023'] * 100
+# Calculate revenue growth rates
+yoy_comparison['revenue_growth_%'] = (
+    (yoy_comparison[2024] - yoy_comparison[2023]) /
+    yoy_comparison[2023] * 100
 ).round(1)
 
 print("\nYear-Over-Year Growth Analysis:")
-yoy_flat[['revenue_2023', 'revenue_2024', 'revenue_growth_%',
-          'units_sold_2023', 'units_sold_2024', 'units_growth_%']]
+yoy_comparison
 ```
 
 **Business insights:**
 - February 2024 revenue up **15.2%** vs 2023
-- March 2024 shows strongest growth: **15.9%** revenue, **15.9%** units
+- March 2024 shows strongest revenue growth: **15.9%**
 - Consistent growth across all months
 
 **Workflow used:**
 1. **concat()** - Stack 2023 and 2024 data
-2. **pivot_table()** - Create side-by-side comparison
+2. **pivot()** - Create a side-by-side comparison when keys are unique
 3. Calculate derived metrics (growth rates)
 
 
@@ -557,12 +526,12 @@ yoy_flat[['revenue_2023', 'revenue_2024', 'revenue_growth_%',
    - Use `ignore_index=True` for clean sequential indexing
 
 2. **set_index() makes columns into indexes:**
-   - Essential for time series (use dates as index)
-   - Enables powerful time-based operations
+   - Supports meaningful row labels, including dates
+   - Enables date-label selection and alignment
    - Makes selection more intuitive
 
 3. **reset_index() moves indexes back to columns:**
-   - After groupby operations
+   - After index-based combinations
    - When saving to files
    - Use `drop=True` to discard index
 
@@ -583,7 +552,7 @@ yoy_flat[['revenue_2023', 'revenue_2024', 'revenue_growth_%',
 7. **Index management best practices:**
    - Use datetime indexes for time series
    - Use meaningful indexes (not just 0, 1, 2)
-   - Reset index before groupby results
+   - Reset index before downstream analysis
    - Set index for better selection
 
 **Practice tip:** Think of concat as "stacking LEGO bricks" - vertically or horizontally. Merge is like "connecting LEGO pieces by their studs" (keys)!

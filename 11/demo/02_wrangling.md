@@ -81,7 +81,7 @@ def data_directory():
 data_dir = data_directory()
 manifest_path = data_dir / FILES[0]
 panel_path = data_dir / FILES[1]
-expected_manifest_sha256 = "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
+expected_manifest_sha256 = "553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6"
 expected_panel_sha256 = "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
 
 assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (

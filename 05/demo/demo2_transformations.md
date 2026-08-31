@@ -1,6 +1,7 @@
 ---
 jupyter:
   jupytext:
+    notebook_metadata_filter: language_info
     text_representation:
       extension: .md
       format_name: markdown
@@ -117,6 +118,9 @@ df_clean['age_group'] = pd.cut(
     labels=['Young', 'Middle', 'Senior']
 )
 
+# `cut` uses value-range edges; `qcut` derives edges from sample quantiles.
+# Tied values can duplicate quantile edges, so inspect the result and choose
+# an explicit duplicate-edge policy rather than assuming three bins.
 # This deterministic fixture has repeated income values.  `duplicates="drop"`
 # makes qcut use the distinct quantile edges that are available rather than
 # failing on a tied edge; labels are omitted because their count then depends

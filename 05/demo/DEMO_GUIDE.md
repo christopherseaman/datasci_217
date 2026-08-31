@@ -33,11 +33,11 @@ jupyter nbconvert --to notebook --execute \
 
 Create a small patient table, quantify missingness, inspect a row-level
 summary, and apply context-specific strategies: median imputation for age,
-forward fill for ordered test dates, and a documented drop rule for rows
-missing both critical measurements. The tabular summary is the core activity.
-An optional heatmap preview is included immediately afterward for visual
-learners; it previews the formal visualization workflow in Lecture 07 without
-turning chart interpretation into a Lecture 05 prerequisite.
+explicit date parsing and inspection, and a documented drop rule for rows
+missing both critical measurements. Because the fixture documents neither
+chronological row order nor entity boundaries, it deliberately does not fill
+missing dates. An optional heatmap preview shows the same missingness mask and
+is explicitly a Lecture 07 visualization preview, not a cleaning decision.
 
 ## Demo 2 — Transformation and cleaning pipeline
 
@@ -45,18 +45,20 @@ turning chart interpretation into a Lecture 05 prerequisite.
 
 Clean a survey table by standardizing column names and text, converting bad
 numeric values with an explicit failure policy, replacing sentinels, and
-creating categories, dummy variables, and categorical dtypes. The fixture has
-tied income values, so `qcut(..., duplicates='drop')` is used without assuming
-a fixed number of labels.
+creating categories, dummy variables, and categorical dtypes. The demo briefly
+contrasts range-based `cut` with quantile-based `qcut`; tied income values mean
+`qcut(..., duplicates='drop')` is used without assuming a fixed number of
+labels.
 
 ## Demo 3 — Complete data-cleaning workflow
 
 **Sources:** `demo3_workflow.md` → `demo3_workflow.ipynb`
 
 Run the end-to-end contract-driven sequence: detect issues, transform a copy,
-validate the result, add analysis fields, identify outlier candidates, and
-save cleaned data, summaries, and a report under a disposable `output/`
-directory. This is the practical synthesis at the end of the lecture.
+validate the result, add row-level analysis fields, identify outlier
+candidates, and save cleaned data and a report under a disposable `output/`
+directory. Grouped summaries and temporal feature engineering are deferred to
+later lectures.
 
 ## Instructor checklist
 

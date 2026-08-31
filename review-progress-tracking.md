@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: the confirmed Lecture/Demo/Assignment 10 and Assignment 11 consistency repairs are implemented and validated. Active Classroom assumptions are removed from course-facing guidance and grader contracts; the future instructor batch helper remains separate operational work. Lecture and demo reviews remain complete for their recorded scopes, and course-wide heading normalization remains open.
+- Current phase: the approved lecture/demo prerequisite-alignment repair is implemented, executed, and independently reviewed. Assignments were not changed. The future instructor batch helper remains separate operational work, and course-wide heading normalization remains open.
 - Explicitly out of scope for this checkpoint: assignment-duration guidance, notebook-tooling dependency changes, implementation of the future batch-grading helper, or merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -1021,7 +1021,7 @@ another Lecture 11 demo or meeting, assignment-duration language, or notebook
 tooling dependencies. The review-only checkpoint passed `git diff --check`; the
 Eleventy build rendered 30 pages and copied 124 assets.
 
-### Proposed repair allocation (pending approval)
+### Accepted prerequisite-repair allocation (2026-08-31)
 
 The preferred repair is not a blanket preview-label pass. It moves genuinely
 foundational material earlier, preserves later canonical owners, and replaces
@@ -1033,9 +1033,11 @@ incidental complexity that does not serve a demo's current purpose:
   02; keep the final Lecture 01 integration demo deliberately simple.
 - Reframe Lecture 02 around Git, functions, and modules. Move a trimmed shell
   pipeline activity to early Lecture 03, where the assignment uses it. Make
-  only the bounded `head`/`tail`/`cut`/`sort`/`uniq`/`wc` pipeline core; leave
-  `awk`, command substitution, grouped redirection, timestamped backups, and
-  logging as optional shell enrichment.
+  the bounded `head`/`tail`/`cut`/`sort`/`uniq`/`wc` pipeline core. Retain shell
+  variables, command substitution that captures one timestamp for reuse, and
+  simple `echo`-based append logging as important advanced Lecture 03 material.
+  Leave `awk`, grouped redirection, and elaborate report generation as optional
+  shell enrichment.
 - In Lecture 05, replace the unsafe date forward fill with an explicit decision
   not to impute without entity/order evidence. Remove `to_period()` and
   GroupBy from the cleaning workflow. A two-sentence `cut` versus `qcut`
@@ -1057,11 +1059,74 @@ incidental complexity that does not serve a demo's current purpose:
   pattern. Keep the existing large-demo structure and make no assignment,
   meeting, or duration change.
 
-If implemented, edits to authoritative demo Markdown must be regenerated into
+The user approved this allocation with the clarified shell boundary above. Edits
+to authoritative demo Markdown must be regenerated into
 their paired notebooks and checked for source parity and clean execution. A
 secondary cleanup can replace Lecture 02's dynamic numbered-module loader with
 an ordinarily named importable helper and modernize Lecture 03's compact NumPy
 idioms; neither is part of the prerequisite-blocking batch.
+
+### Prerequisite-repair implementation and validation (2026-08-31)
+
+The approved allocation is implemented without changing an assignment or
+adding a demo, meeting, duration claim, Colab requirement, or notebook-tooling
+dependency:
+
+- Lecture 01 now owns basic `while`, `enumerate`, `break`, and `continue`; its
+  control-flow demo was reduced to Lecture 01 concepts.
+- Lecture 02 now has separate Git, function, and module demos built around an
+  ordinarily named, import-safe `student_tools.py`. The longer CLI activity
+  moved to early Lecture 03. Its core path uses
+  `tail | cut | sort | uniq | head`, plus `wc`; it captures one timestamp for
+  reuse and retains simple `echo >>` logging. `awk`, grouped redirection, and
+  elaborate reports remain optional.
+- Lecture 05 no longer forward-fills dates without a temporal/entity contract
+  or uses GroupBy/Period operations in its cleaning workflow. Its heatmap is an
+  explicit Lecture 07 preview, `cut` versus `qcut` is locally distinguished,
+  and unresolved dates/product names are documented rather than called clean.
+- Lecture 06 demos retain merge, concat, structural reshape, and index
+  alignment while deferring aggregation to Lecture 08 and resampling to
+  Lecture 09. The one bounded `pivot_table` preview remains in the lecture.
+  Core `set_index` examples use the pandas 3.0.5-compatible explicit
+  `index.is_unique` check rather than the deprecated `verify_integrity`
+  parameter. Lecture 07's heatmap consumes an explicitly illustrative,
+  pre-shaped table, and its third demo remains optional.
+- Lecture 10 now owns the leakage-safe mixed-type `Pipeline` /
+  `ColumnTransformer` pattern and an accurate bounded Dropout definition.
+  Lecture 11 applies numeric and categorical imputation branches locally,
+  handles unseen categories, rebuilds derived model tables from the
+  authenticated frozen panel, and keeps its one-capstone-demo structure.
+- The Lecture 11 notebooks and downloader now use the actual tracked manifest
+  SHA-256,
+  `553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6`.
+
+Validation used an ignored project-local environment under
+`scratch/prereq-validation` on the `/home` filesystem: Python 3.12.13, NumPy
+2.0.2, pandas 3.0.5, Matplotlib 3.11.1, seaborn 0.13.2, Altair 5.5.0,
+scikit-learn 1.9.0, XGBoost 2.1.4, TensorFlow 2.19.1, PyArrow 25.0.0, and
+Jupytext 1.18.1. All 14 changed notebook pairs executed; every notebook changed
+after the initial full run was executed again. Strict Jupytext checks pass for
+all 14 pairs, and committed outputs are empty with null execution counts. The
+changed Python demos compile and execute, both changed shell paths parse, the
+Lecture 02 helper imports without output, and the Lecture 03 smoke test confirms
+one timestamp is reused in its summary and log. The pandas index examples pass
+with warnings promoted to errors.
+
+The changed-Markdown structural check passes for balanced fences and resolving
+local links. `git diff --check` passes, and Eleventy renders 30 pages with 124
+copied assets. The full course audit remains at its recorded 52 stale
+intermediate-state expectations and 13 inherited kernelspec warnings; none is a
+new regression from this batch. Four independent adversarial reviews found and
+then cleared the shell-guide ordering, stale MultiIndex output, prepared-table
+labeling, unresolved-cleaning conclusion, regularization wording, Lecture 11
+pipeline, derived-table provenance, and generated-artifact findings.
+
+Storage correction: the two exact validation directories initially created
+under `/tmp` were removed immediately after the instructor's intervention. All
+authoritative reruns used project-local `scratch/` on `/home`; that 2.4 GB
+validation tree and every generated root-level review artifact were removed
+after the final gates. Nothing from this batch remains in `/tmp` or project
+scratch.
 
 ## Validation recovered from the interrupted work
 
@@ -1103,16 +1168,12 @@ idioms; neither is part of the prerequisite-blocking batch.
 
 ## Next action
 
-1. If authorized, run one bounded demo-alignment batch for the confirmed
-   crosswalk findings above. The assignments need no prerequisite-driven
-   expansion; do not turn assignment-specific rules or supplied setup code into
-   new lecture topics.
-2. The validated content and per-assignment harness checkpoint is committed and
-   pushed on `2026-refresh`; do not merge to `main` in this review step.
-3. After standalone assignment repositories exist, implement and pilot the
+1. Commit and push the validated prerequisite-alignment checkpoint on
+   `2026-refresh`; do not merge to `main` in this review step.
+2. After standalone assignment repositories exist, implement and pilot the
    neutral batch-grading helper on one script and one notebook assignment, then
    populate source coordinates, student mappings, and ref/gradebook policy.
-4. If desired before merge, normalize the 13 remaining nonconforming lecture
+3. If desired before merge, normalize the 13 remaining nonconforming lecture
    pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
    change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
    `HANDOFF.md`, and this tracker during the eventual merge cleanup.

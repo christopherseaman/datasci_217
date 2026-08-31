@@ -4,7 +4,7 @@ Run the scripts from `03/demo`. The two student-analysis scripts locate their
 bundled `students.csv` relative to the script, so they also work when launched
 from another directory. Their reports are written to `03/demo/output/`.
 
-## 1. Create the tested environment
+## Setup: Create the tested environment
 
 Lecture 03 uses CPython 3.12.13 and NumPy 2.0.2. With `uv`:
 
@@ -19,6 +19,23 @@ python -c "import sys, numpy as np; print(sys.version.split()[0], np.__version__
 The final command should report `3.12.13 2.0.2`. If `uv` is unavailable, use a
 Python 3.12.13 interpreter to create `.venv`, then install the same pinned
 `requirements.txt` with `python -m pip install -r requirements.txt`.
+
+## 1. Shell pipeline (scripts before Python/NumPy)
+
+Run this from a disposable project-local directory because it creates `data/`,
+`logs/`, and `results/` below the current directory:
+
+```bash
+mkdir -p scratch/lecture03-cli
+cd scratch/lecture03-cli
+bash /path/to/datasci_217/03/demo/01_cli_pipeline_demo.sh
+```
+
+The activity uses a bounded `tail | cut | sort | uniq | head` pipeline, plus
+`wc` for record counts, shell assignment, one captured timestamp reused in
+output names and log lines, and simple `echo >>` append logging. The longer
+`awk`, grouped-redirection, and report-generation variants are optional
+reference material in the lecture.
 
 ## 2. Python refresher and NumPy performance
 
@@ -42,7 +59,7 @@ This end-of-lecture script applies array creation, indexing, masks, arithmetic,
 and reductions to a reproducible grade table. It is the practical bridge to
 the later pandas table workflow.
 
-## Optional script and CLI practice
+## Optional Python script practice
 
 The two plain-Python analysis scripts use the bundled fixture and aggregate all
 subjects they find:

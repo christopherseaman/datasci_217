@@ -87,7 +87,7 @@ def acquire_authenticated_panel():
 
     manifest_path = directory / filenames[0]
     panel_path = directory / filenames[1]
-    expected_manifest_sha256 = "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
+    expected_manifest_sha256 = "553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6"
     expected_panel_sha256 = "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
     assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
         "Manifest hash mismatch"
@@ -120,17 +120,11 @@ def build_model_table(panel):
         ["target_hour_utc", "pickup_zone_id"]
     ).reset_index(drop=True)
 
-local_model_path = Path("output/02_model_table.parquet")
 authenticated_panel = acquire_authenticated_panel()
-if local_model_path.exists():
-    model_table = pd.read_parquet(local_model_path)
-    source_used = str(local_model_path)
-else:
-    model_table = build_model_table(authenticated_panel)
-    source_used = "rebuilt from frozen panel"
+model_table = build_model_table(authenticated_panel)
 
 assert len(model_table) == 50_100
-print("Model table source:", source_used)
+print("Model table source: rebuilt from authenticated frozen panel")
 print("Model table rows:", f"{len(model_table):,}")
 ```
 

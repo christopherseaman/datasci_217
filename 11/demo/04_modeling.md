@@ -62,6 +62,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 RANDOM_STATE = 217  # Ridge is deterministic and has no random_state parameter.
@@ -92,7 +93,7 @@ def acquire_authenticated_panel():
 
     manifest_path = directory / filenames[0]
     panel_path = directory / filenames[1]
-    expected_manifest_sha256 = "9d805f0759b8a5b0b17299cacc19038927de63d9d229bef88ccf22764a0af368"
+    expected_manifest_sha256 = "553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6"
     expected_panel_sha256 = "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
     assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
         "Manifest hash mismatch"
@@ -138,8 +139,20 @@ print({"train": len(train), "validation": len(validation), "test": len(test)})
 
 ## Define metrics, baseline, and one pipeline
 
-Zone is categorical. Numeric fields are standardized before Ridge regression. The
-pipeline keeps preprocessing learned from training attached to the estimator.
+The model receives mixed-type data, so `ColumnTransformer` routes the zone column
+through a categorical branch and the numeric columns through a numeric branch.
+The categorical branch imputes a missing zone label from the training data, then
+uses `OneHotEncoder(handle_unknown="ignore")`: a zone that was absent when the
+model was fitted does not crash validation or test prediction. The numeric branch
+imputes missing values with training medians and then scales the numeric columns.
+This fixture has no missing predictors after feature construction, so the imputers
+are pipeline robustness rather than evidence that missingness was handled here.
+
+Every learned preprocessing value—category levels, numeric medians, and scaling
+statistics—is fitted on training data and reused unchanged for validation and test.
+That keeps later periods from influencing model selection or evaluation. The
+encoder's `sparse_output=False` is a convenience for this small Ridge example;
+dense output is not a universal rule for larger or wider feature matrices.
 
 ```python
 CATEGORICAL = ["pickup_zone_id"]
@@ -150,9 +163,17 @@ NUMERIC = [
 FEATURES = CATEGORICAL + NUMERIC
 TARGET = "pickup_count"
 
+numeric_pipeline = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+    ("scale", StandardScaler()),
+])
+categorical_pipeline = Pipeline([
+    ("impute", SimpleImputer(strategy="most_frequent")),
+    ("one_hot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+])
 preprocessor = ColumnTransformer([
-    ("zone", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
-    ("numeric", StandardScaler(), NUMERIC),
+    ("zone", categorical_pipeline, CATEGORICAL),
+    ("numeric", numeric_pipeline, NUMERIC),
 ])
 ridge_pipeline = Pipeline([
     ("preprocess", preprocessor),

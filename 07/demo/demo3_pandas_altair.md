@@ -1,4 +1,4 @@
-# Demo 3: Modern Visualization Tools
+# Demo 3 (Optional): Modern Visualization Tools
 
 ## Learning Objectives
 - Create interactive visualizations with vega-altair

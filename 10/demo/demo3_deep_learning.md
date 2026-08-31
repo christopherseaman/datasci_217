@@ -396,9 +396,12 @@ print(arch_comparison.to_string(index=False))
 - More neurons (width) increases model capacity but also risk of overfitting
 - Find the right balance for your specific problem
 
-## Part 10: Regularization Techniques
+## Part 10 (Optional Extension): Regularization Techniques
 
-Let's add dropout and L2 regularization to prevent overfitting.
+This optional extension compares Dropout and L2 regularization. Dropout
+randomly masks a fraction of units during training; those units are active again
+at inference. It is a regularization choice to validate, not a guarantee that a
+model will avoid overfitting.
 
 ```python
 # Model with regularization
@@ -489,10 +492,10 @@ print(f"Test Loss: {test_loss:.4f}")
 print(f"Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
 ```
 
-**Regularization techniques:**
+**Optional regularization comparison:**
 - **L2 regularization**: Penalizes large weights
-- **Dropout**: Randomly disables neurons during training (prevents co-adaptation)
-- Both help prevent overfitting
+- **Dropout**: Randomly masks units during training and leaves them active at inference
+- Either can help, but neither is universally required or guaranteed to improve validation performance
 
 ## Key Takeaways
 
@@ -501,7 +504,7 @@ print(f"Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
 3. **Compile step**: Specify optimizer, loss, and metrics
 4. **Training**: Monitor both training and validation metrics
 5. **Architecture matters**: Experiment with depth and width
-6. **Regularization**: Use dropout and L2 to prevent overfitting
+6. **Regularization**: Treat Dropout and L2 as choices to validate, not guarantees
 7. **Deep learning isn't always better**: For tabular data, traditional ML often wins
 8. **Use deep learning when**: You have images, text, sequences, or massive datasets
 
