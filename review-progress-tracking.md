@@ -834,13 +834,13 @@ language and allowances. The manifest-driven batch helper can be implemented
 and populated after the standalone repositories exist; it should not be called
 Classroom or treated as one.
 
-The instructor also confirmed that Assignment 11 occupies two assignment weeks
-and functions like a take-home final. The earlier workload concern is therefore
+The instructor also confirmed that Assignment 11's larger scope is intentional
+and appropriate for its course role. The earlier workload concern is therefore
 closed: retain the nine questions and 100-point breadth without adding a class
-meeting, assignment demo, Colab route, or geographic requirement. The learner
-README should make the schedule explicit, with a suggested Week 1 milestone
-through Q4 and a Week 2 milestone through Q9; the LMS retains the actual due
-date.
+meeting, assignment demo, Colab route, geographic requirement, or prescribed
+duration. The assignment itself does not need pacing language; students can see
+that it is the larger final project, and term scheduling belongs outside this
+reusable source.
 
 ### Repairs that do not require a policy choice
 
@@ -854,8 +854,8 @@ date.
   careful and does not otherwise need redesign.
 - Make Assignment 10's current local-only boundary unambiguous in both learner
   pages.
-- Add the two-week Assignment 11 pacing language and replace GNU-only
-  `sha256sum`/`stat -c` verification with portable Python.
+- Replace Assignment 11's GNU-only `sha256sum`/`stat -c` verification with
+  portable Python; do not add duration or pacing prescriptions.
 - Repair Assignment 11's canonical grader fixture so the declared model really
   produces its predictions, and add a mismatch mutant. Until trusted execution
   or reconstruction proves provenance, a green artifact-only result is triage
@@ -863,20 +863,19 @@ date.
 - Remove remaining student-facing GitHub Classroom language and stop allowing
   `.classroom50.yaml` or `.github/workflows/autograde.yaml` as delivery files.
 
-### Recommended consistency choices awaiting implementation
+### Confirmed consistency choices
 
-1. **Student versus grader environments:** keep exact direct student pins and
-   the recorded Python version in each assignment. Put the fully locked
-   transitive environment/container with the future batch grader rather than
-   making Assignment 10 uniquely “uncertified.” Record JupyterLab and
-   `ipykernel` consistently for notebook assignments so their documented local
-   route is complete.
-2. **Permutation importance:** retain it in the two-week final, teach the
+1. **Student versus grader environments:** keep the existing direct student
+   pins and recorded Python versions. Students necessarily have notebook
+   tooling before they can open and complete these notebooks; adding or
+   standardizing JupyterLab/`ipykernel` records here would be invented work.
+   Put any future fully locked transitive environment/container with the batch
+   grader rather than making Assignment 10 uniquely “uncertified.”
+2. **Permutation importance:** retain it in the final, teach the
    model-agnostic idea briefly in Lecture 10, demonstrate it in the existing
    Lecture 10 modeling demo, and cross-reference that prerequisite from
    Assignment 11. Do not enlarge Assignment 10 merely to assess every lecture
-   topic. The lower-scope alternative is to remove the final's permutation
-   artifact; one of these two choices must replace the current contradiction.
+   topic.
 3. **Trusted-test visibility:** default to discoverable instructor tests in
    this repository, excluded from student exports. The trust boundary should be
    execution ownership and fresh committed checkouts, not secrecy.
@@ -887,9 +886,10 @@ date.
 
 With these clarifications, the content release is not blocked on building a
 production grading platform. Immediate consistency work is bounded to the
-Lecture/Demo/Assignment 10 repairs, Assignment 11 pacing/portability/provenance,
-the selected permutation-importance treatment, notebook tooling records, and
-removal of active Classroom remnants.
+Lecture/Demo/Assignment 10 repairs, Assignment 11 portability/provenance,
+the selected permutation-importance treatment, and removal of active Classroom
+remnants. Do not add assignment-duration guidance or notebook-tooling
+dependencies.
 
 An independent adversarial recheck passed this clarification with no
 must-correct contradiction. `git diff --check` passed, and Eleventy rendered 30
@@ -935,9 +935,9 @@ pages and copied 124 assets.
 
 ## Next action
 
-1. Confirm or revise the recommended permutation-importance and environment
-   choices above, then implement the bounded Lecture/Demo/Assignment 10 and
-   Assignment 11 consistency repairs together with active Classroom removal.
+1. Implement the confirmed Lecture/Demo/Assignment 10 and Assignment 11
+   consistency repairs together with active Classroom removal. Do not add
+   assignment-duration guidance or notebook-tooling dependencies.
 2. Validate regenerated Lecture 10 notebooks, the complete Assignment 10
    harness, Assignment 11 Jupytext pairs/checkers/grader, macOS-portable data
    verification, protected hashes, and exported student inventories.
