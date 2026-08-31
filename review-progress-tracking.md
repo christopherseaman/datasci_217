@@ -934,6 +934,13 @@ Python-version record was changed to add notebook tooling.
 
 Validation evidence:
 
+- Assignment 01's instructor fixture self-test accepted the correct submission
+  and rejected all 14 targeted defects. Assignment 02 rejected all 34 defects
+  and its optional public pytest facade passed 9 tests. Assignment 03 passed its
+  Python 3.12.13/NumPy 2.0.2 harness and its optional public pytest facade passed
+  10 tests. These three assignments intentionally expose public checks plus an
+  instructor fixture self-test; they do not claim the trusted result-schema
+  layer used by Assignments 04–11.
 - All Assignment 04–11 pinned instructor harnesses passed. Assignment 10's final
   rerun produced 90/90 for the canonical, corrected-resubmission, and bootstrap
   paths, executed at least eight fresh notebooks, exercised seven alternate
@@ -999,8 +1006,8 @@ Validation evidence:
 
 ## Next action
 
-1. Preserve this validated consistency checkpoint in Git and push the
-   `2026-refresh` branch. Do not merge to `main` in this review step.
+1. The validated content and per-assignment harness checkpoint is committed and
+   pushed on `2026-refresh`; do not merge to `main` in this review step.
 2. After standalone assignment repositories exist, implement and pilot the
    neutral batch-grading helper on one script and one notebook assignment, then
    populate source coordinates, student mappings, and ref/gradebook policy.
