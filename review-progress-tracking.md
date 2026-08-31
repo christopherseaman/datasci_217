@@ -5,8 +5,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: the full assignment audit is recorded; overall content order passes except for Assignment 11's mapped-demo mismatch, while verified grading, environment, export, and delivery defects block assignment release. Lecture and demo reviews remain complete for their recorded scopes, and course-wide heading normalization remains open.
-- Explicitly out of scope for this checkpoint: changing assignment sources or merging to `main`; this step reviewed and recorded the current packages only
+- Current phase: the instructor clarified the non-Classroom grading direction and Assignment 11's two-week final-project schedule. Content approval is now separated from later batch-grading operations; a small set of consistency choices and mechanical repairs remains. Lecture and demo reviews remain complete for their recorded scopes, and course-wide heading normalization remains open.
+- Explicitly out of scope for this checkpoint: implementing the pending consistency choices or merging to `main`; this step clarifies the decision boundary only
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
@@ -808,6 +808,93 @@ collision.
 - The durable review update passed `git diff --check`; Eleventy rendered all 30
   pages and copied 124 assets successfully.
 
+## Grading and final-project consistency clarification (2026-08-31)
+
+The instructor confirmed that GitHub Classroom and Classroom 50 are not part of
+the semester plan. The earlier phrase “TA runner” meant the instructor's own
+future **batch-grading helper**: a local command that reads assignment/repository
+metadata, pulls committed student repositories, invokes instructor-owned tests,
+and writes a triage report. It is not a Classroom service, and its full roster,
+sandbox, report, and repository-discovery implementation is an operational
+follow-up rather than a blocker to approving lecture/demo/assignment content.
+
+The current `_grader_selftest` bundles mix two things that must now be separated:
+
+- useful instructor QA and trusted behavioral checks, including fresh notebook
+  execution, alternate inputs, artifacts, protected files, and repeatability;
+- obsolete Classroom bootstraps, environment variables, delivery filenames,
+  and `classroom50/result/v1` output schemas.
+
+The portable student shape remains sound: each `NN/assignment` subtree becomes
+the basis for a standalone repository, its Actions/pytest path is optional
+feedback, and instructor grading remains independent. The consistent migration
+is to retain/adapt the valuable trusted checks under a neutral instructor-owned
+`grading/` path, exclude that path from student exports, and remove Classroom
+language and allowances. The manifest-driven batch helper can be implemented
+and populated after the standalone repositories exist; it should not be called
+Classroom or treated as one.
+
+The instructor also confirmed that Assignment 11 occupies two assignment weeks
+and functions like a take-home final. The earlier workload concern is therefore
+closed: retain the nine questions and 100-point breadth without adding a class
+meeting, assignment demo, Colab route, or geographic requirement. The learner
+README should make the schedule explicit, with a suggested Week 1 milestone
+through Q4 and a Week 2 milestone through Q9; the LMS retains the actual due
+date.
+
+### Repairs that do not require a policy choice
+
+- Repair Assignment 10's self-test mutant so it adds an alternate workflow to
+  the existing directory instead of crashing on `mkdir`.
+- Tighten three Lecture 10 demo statements: p-values are evidence under a null
+  and assumptions rather than proof of a “real effect”; XGBoost is a candidate
+  to validate rather than “often the best”; and the explicit Keras
+  `validation_data` is a validation set, not `validation_split`. Regenerate and
+  rerun the paired notebooks. Lecture 10's core explanation is already more
+  careful and does not otherwise need redesign.
+- Make Assignment 10's current local-only boundary unambiguous in both learner
+  pages.
+- Add the two-week Assignment 11 pacing language and replace GNU-only
+  `sha256sum`/`stat -c` verification with portable Python.
+- Repair Assignment 11's canonical grader fixture so the declared model really
+  produces its predictions, and add a mismatch mutant. Until trusted execution
+  or reconstruction proves provenance, a green artifact-only result is triage
+  evidence rather than automatic full credit.
+- Remove remaining student-facing GitHub Classroom language and stop allowing
+  `.classroom50.yaml` or `.github/workflows/autograde.yaml` as delivery files.
+
+### Recommended consistency choices awaiting implementation
+
+1. **Student versus grader environments:** keep exact direct student pins and
+   the recorded Python version in each assignment. Put the fully locked
+   transitive environment/container with the future batch grader rather than
+   making Assignment 10 uniquely “uncertified.” Record JupyterLab and
+   `ipykernel` consistently for notebook assignments so their documented local
+   route is complete.
+2. **Permutation importance:** retain it in the two-week final, teach the
+   model-agnostic idea briefly in Lecture 10, demonstrate it in the existing
+   Lecture 10 modeling demo, and cross-reference that prerequisite from
+   Assignment 11. Do not enlarge Assignment 10 merely to assess every lecture
+   topic. The lower-scope alternative is to remove the final's permutation
+   artifact; one of these two choices must replace the current contradiction.
+3. **Trusted-test visibility:** default to discoverable instructor tests in
+   this repository, excluded from student exports. The trust boundary should be
+   execution ownership and fresh committed checkouts, not secrecy.
+4. **Batch-helper timing:** create the neutral result schema and directory
+   contract now if useful, but defer repository coordinates, fork discovery,
+   roster mappings, deadline/ref policy, and gradebook export until the eleven
+   standalone repositories and semester workflow exist.
+
+With these clarifications, the content release is not blocked on building a
+production grading platform. Immediate consistency work is bounded to the
+Lecture/Demo/Assignment 10 repairs, Assignment 11 pacing/portability/provenance,
+the selected permutation-importance treatment, notebook tooling records, and
+removal of active Classroom remnants.
+
+An independent adversarial recheck passed this clarification with no
+must-correct contradiction. `git diff --check` passed, and Eleventy rendered 30
+pages and copied 124 assets.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
@@ -848,22 +935,15 @@ collision.
 
 ## Next action
 
-1. Repair the assignment release blockers in this order: Assignment 11 grading
-   provenance and the mapped-demo-contradicted permutation-importance
-   requirement; Assignment 10's crashing harness and missing certified lock;
-   one notebook-tooling
-   environment contract; then one deterministic student exporter with
-   root-level smoke tests for all eleven packages.
-2. Implement and pilot the trusted TA runner against exported disposable
-   checkouts. Keep its tests outside student control, disable network access,
-   bound resources and logs, pin source/submission commits, distinguish
-   infrastructure failures from student failures, and preserve human review.
-   Add exported repository coordinates and the private semester roster only
-   when those repositories are created.
-3. Remove the residual Classroom 50 schemas, filename allowances, and Lecture
-   01 promise after the replacement path exists. Resolve the smaller A03,
-   A05–A08, A10, and A11 wording/platform issues, then run exported Actions,
-   macOS, repeatability, and timed novice-pilot gates.
+1. Confirm or revise the recommended permutation-importance and environment
+   choices above, then implement the bounded Lecture/Demo/Assignment 10 and
+   Assignment 11 consistency repairs together with active Classroom removal.
+2. Validate regenerated Lecture 10 notebooks, the complete Assignment 10
+   harness, Assignment 11 Jupytext pairs/checkers/grader, macOS-portable data
+   verification, protected hashes, and exported student inventories.
+3. After standalone assignment repositories exist, implement and pilot the
+   neutral batch-grading helper on one script and one notebook assignment, then
+   populate source coordinates, student mappings, and ref/gradebook policy.
 4. If desired before merge, normalize the 13 remaining nonconforming lecture
    pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
    change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
