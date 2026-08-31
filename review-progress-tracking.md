@@ -1021,6 +1021,48 @@ another Lecture 11 demo or meeting, assignment-duration language, or notebook
 tooling dependencies. The review-only checkpoint passed `git diff --check`; the
 Eleventy build rendered 30 pages and copied 124 assets.
 
+### Proposed repair allocation (pending approval)
+
+The preferred repair is not a blanket preview-label pass. It moves genuinely
+foundational material earlier, preserves later canonical owners, and replaces
+incidental complexity that does not serve a demo's current purpose:
+
+- Add basic `while`, `enumerate`, `break`, and `continue` beside Lecture 01's
+  loop material. Trim its overloaded control-flow demo so functions,
+  dictionaries, comprehensions, exceptions, and `isinstance` remain in Lecture
+  02; keep the final Lecture 01 integration demo deliberately simple.
+- Reframe Lecture 02 around Git, functions, and modules. Move a trimmed shell
+  pipeline activity to early Lecture 03, where the assignment uses it. Make
+  only the bounded `head`/`tail`/`cut`/`sort`/`uniq`/`wc` pipeline core; leave
+  `awk`, command substitution, grouped redirection, timestamped backups, and
+  logging as optional shell enrichment.
+- In Lecture 05, replace the unsafe date forward fill with an explicit decision
+  not to impute without entity/order evidence. Remove `to_period()` and
+  GroupBy from the cleaning workflow. A two-sentence `cut` versus `qcut`
+  distinction is reasonable local polish because categorization belongs here.
+- In Lecture 06, remove `resample()` and ordinary GroupBy from the required
+  demos, use already-taught structural index/source-label operations, and retain
+  at most one clearly bounded duplicate-key `pivot_table()` preview. Lecture 08
+  remains the aggregation owner and Lecture 09 remains the temporal-analysis
+  owner; their already extensive demos do not need duplicate material moved in.
+- Give Lecture 07's heatmap an already-shaped plotting table and explicitly
+  defer construction of that aggregate to Lecture 08.
+- Replace some generic Lecture 10 catalog prose with a compact mixed-type,
+  leakage-safe preprocessing bridge covering `Pipeline`, `ColumnTransformer`,
+  and `OneHotEncoder`; include `SimpleImputer` as the general missing-predictor
+  branch, not as a universal requirement. Add a two- or three-sentence Dropout
+  definition and make the detailed Keras regularization comparison optional.
+- In Lecture 11 Demo 4, briefly explain column routing, unseen-category handling,
+  train-fitted preprocessing, and the exact application of that Lecture 10
+  pattern. Keep the existing large-demo structure and make no assignment,
+  meeting, or duration change.
+
+If implemented, edits to authoritative demo Markdown must be regenerated into
+their paired notebooks and checked for source parity and clean execution. A
+secondary cleanup can replace Lecture 02's dynamic numbered-module loader with
+an ordinarily named importable helper and modernize Lecture 03's compact NumPy
+idioms; neither is part of the prerequisite-blocking batch.
+
 ## Validation recovered from the interrupted work
 
 - At the initial recovered checkpoint, only lecture README files were modified. Later lecture-only reconciliation also updated lecture `BONUS.md` files and `06/POINTS.md`; no demo or assignment file was modified.
