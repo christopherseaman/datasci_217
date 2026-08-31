@@ -981,3 +981,4 @@ pages and copied 124 assets.
 | `af445bf` | Reconcile assignments with lectures and demos | Replace legacy 02–10 contracts and synchronize active assignment sources and protected records |
 | `ae3f7d9` | Keep the capstone assignment local-only | Remove the unrequested Assignment 11 demo/Colab option and preserve one existing capstone assignment |
 | `4b56fc6` | Record the adversarial assignment review | Overall prerequisite order passes except the A11 permutation-importance mismatch; release remains blocked by verified grading, environment, export, and delivery defects |
+| `dfc5a5b` | Clarify grading and final-project choices | Separate the future non-Classroom batch helper from content approval, close the A11 workload concern with its two-week schedule, and bound the remaining consistency choices |
