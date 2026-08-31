@@ -1043,3 +1043,4 @@ Validation evidence:
 | `4b56fc6` | Record the adversarial assignment review | Overall prerequisite order passes except the A11 permutation-importance mismatch; release remains blocked by verified grading, environment, export, and delivery defects |
 | `dfc5a5b` | Clarify grading and final-project choices | Separate the future non-Classroom batch helper from content approval, close the A11 workload concern with its two-week schedule, and bound the remaining consistency choices |
 | `ab62eea` | Remove invented pacing and tooling work | Preserve Assignment 11's intentional breadth without prescribing duration and reject notebook-tooling dependency churn |
+| `45adc20` | Align grading and modeling contracts | Implement and validate the bounded Lecture 10, Assignment 10/11, neutral-grader, URL-placeholder, and active-Classroom cleanup batch |
