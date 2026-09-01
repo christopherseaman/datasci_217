@@ -1269,4 +1269,4 @@ P0-P3 issue or demo/assignment prerequisite regression.
 | `45adc20` | Align grading and modeling contracts | Implement and validate the bounded Lecture 10, Assignment 10/11, neutral-grader, URL-placeholder, and active-Classroom cleanup batch |
 | `ce11716` | Align demos with lecture prerequisites | Move foundational concepts to their owning lectures, remove later-topic demo dependencies, apply the pandas 3 preprocessing/index contracts, and pass execution plus independent review |
 | `d6542ba` | Condense Lecture 10 prose | Remove duplicated framing while preserving protected visuals, references, examples, humor, and prerequisite concepts |
-| pending | Remove final Lecture 10 prose duplicates | Remove the repeated Random Forest capability summary and redundant Keras workflow checklist |
+| `d0a58bb` | Remove final Lecture 10 prose duplicates | Remove the repeated Random Forest capability summary and redundant Keras workflow checklist |
