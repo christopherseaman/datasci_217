@@ -1,10 +1,15 @@
 # Lectures 04–07 curriculum alignment review
 
+> Historical review snapshot. Any Classroom50 or GitHub Classroom language
+> below records a superseded intermediate delivery plan, not current course
+> policy. The release design is one repository per assignment with repo-local
+> pytest/GitHub Actions; no Classroom service is used.
+
 Status: evidence and redesign contract only. This review does not modify lecture, demo, assignment, or test sources.
 
 ## Scope and governing decisions
 
-This artifact applies the review process in `work/lecture_review_workflow.md` to Lectures 04–07 and incorporates the accepted course spine in `work/2026_refresh_audit.md`.
+This artifact applies the review process in `work/lecture_review_workflow.md` to Lectures 04–07 and the course spine in `work/course_dependency_alignment.md`.
 
 The governing decisions for this range are:
 

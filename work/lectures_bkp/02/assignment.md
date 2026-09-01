@@ -1,5 +1,8 @@
 # Git, Markdown, & Packages
 
+> Historical source backup. Classroom references below are superseded and do
+> not describe the current DataSci 217 assignment-delivery policy.
+
 [Assignment 2 on GitHub Classroom](https://classroom.github.com/a/Z2sWwnXF) 
 
 ## Objective

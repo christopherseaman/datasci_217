@@ -5,6 +5,9 @@ paginate: true
 class: invert
 ---
 
+> Historical source backup. Classroom references below are superseded and do
+> not describe the current DataSci 217 assignment-delivery policy.
+
 # Lecture 03
 - Command line
 	- Links

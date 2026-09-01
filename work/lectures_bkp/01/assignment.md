@@ -1,5 +1,8 @@
 # Practical Exercise #1
 
+> Historical source backup. Classroom references below are superseded and do
+> not describe the current DataSci 217 assignment-delivery policy.
+
 1. Get everything installed (or use the cloud) and play around a bit
 2. Create an account on GitHub
 	1. Apply for [GitHub Education](https://docs.github.com/en/education/explore-the-benefits-of-teaching-and-learning-with-github-education/github-education-for-students/apply-to-github-education-as-a-student)

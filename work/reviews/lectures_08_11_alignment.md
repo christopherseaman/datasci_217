@@ -1,11 +1,16 @@
 # Lectures 08–11 content and alignment review
 
+> Historical review snapshot. Any Classroom50 or GitHub Classroom language
+> below records a superseded intermediate delivery plan, not current course
+> policy. The release design is one repository per assignment with repo-local
+> pytest/GitHub Actions; no Classroom service is used.
+
 Status: evidence-backed design proposal; no lecture, demo, assignment, or grader source has been edited.
 
 Reviewed scope:
 
 - Lecture, bonus, demo, assignment, dependency, and current public-test files under 08/ through 11/.
-- The course contracts in work/lecture_review_workflow.md, work/course_dependency_alignment.md, work/course_refresh_2026.md, and work/colab_standard.md.
+- The course contracts in work/lecture_review_workflow.md, work/course_dependency_alignment.md, and work/colab_standard.md.
 - Current pandas behavior where the repository permits an unbounded package upgrade.
 
 The matrices below describe the alignment of the current artifacts against the proposed measurable objectives. A proposed objective is not treated as already taught merely because a current notebook contains code that uses it.

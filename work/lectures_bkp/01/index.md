@@ -4,6 +4,10 @@ theme: sqrl
 paginate: true
 class: invert
 ---
+
+> Historical source backup. Classroom references below are superseded and do
+> not describe the current DataSci 217 assignment-delivery policy.
+
 ## Lecture 1: Introduction to Python and Command Line Basics
 - Getting to the command line
 - Navigating the file system with `*sh`

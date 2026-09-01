@@ -1,5 +1,9 @@
 # Lecture 01 post-edit verification
 
+> Historical review snapshot. Any Classroom50 or GitHub Classroom language
+> below records a superseded intermediate delivery plan, not current course
+> policy. The release design uses no Classroom service.
+
 ## Verdict
 
 **PASS — Lecture 01 is ready for demo and assignment alignment work.**

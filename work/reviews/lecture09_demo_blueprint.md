@@ -1,5 +1,9 @@
 # Lecture 09 demo implementation blueprint
 
+> Historical review snapshot. Any Classroom50 or GitHub Classroom language
+> below records a superseded intermediate delivery plan, not current course
+> policy. The release design uses no Classroom service.
+
 Status: independently reviewed implementation-ready design handoff; **PASS
 after one narrow output-dtype clarification**. The Lecture 09 core/bonus
 narrative and the Lecture 08 to 09 dependency boundary have passed independent

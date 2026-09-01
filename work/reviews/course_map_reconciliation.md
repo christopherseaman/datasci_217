@@ -1,10 +1,15 @@
 # Course map reconciliation
 
-Status: targeted follow-up check of `course_dependency_alignment.md`, `course_refresh_2026.md`, and the three detailed range matrices. No lecture, demo, assignment, or grader source was edited.
+Status: archived follow-up check of the course dependency map, a now-removed intermediate refresh plan, and the three detailed range matrices. No lecture, demo, assignment, or grader source was edited.
+
+> Any Classroom50 or GitHub Classroom language below records a superseded
+> intermediate delivery plan, not current course policy. The release design is
+> one repository per assignment with repo-local pytest/GitHub Actions; no
+> Classroom service is used.
 
 ## Overall result
 
-**Pass — the documentation contradictions are resolved.** The course map, master refresh plan, and range matrices now describe one consistent instructional sequence and environment policy.
+**Pass — the documentation contradictions were resolved.** The course map and range matrices describe one consistent instructional sequence and environment policy; the intermediate master refresh plan was later removed after its Classroom50 assumptions were superseded.
 
 | Check | Result | Current contract |
 |---|---|---|

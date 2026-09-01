@@ -2,7 +2,6 @@ node_modules/
 _site/
 dist/
 .astro/
-src/
 work/
 
 # Per-lecture non-content
@@ -15,16 +14,6 @@ work/
 
 # Other non-content
 README.md
-REVIEW.md
-FIXME.md
-COURSE_REFRESH_2026.md
-nav-config.js
-theme.css
-index.html
-lecture.html
-
-# Old per-lecture index.html files
-*/index.html
 
 # Dotfiles and misc
 .git/

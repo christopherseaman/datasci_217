@@ -1,5 +1,10 @@
 # Lectures 01–03 content and assessment alignment
 
+> Historical review snapshot. Any Classroom50 or GitHub Classroom language
+> below records a superseded intermediate delivery plan, not current course
+> policy. The release design is one repository per assignment with repo-local
+> pytest/GitHub Actions; no Classroom service is used.
+
 ## Review status and fixed decisions
 
 This is an evidence-backed design artifact for the terminal-foundations range. It reviews the current lecture, bonus, demo, assignment, and test files but does not modify student-facing material.

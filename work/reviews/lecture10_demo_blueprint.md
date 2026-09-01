@@ -1,5 +1,9 @@
 # Lecture 10 demo implementation blueprint
 
+> Historical review snapshot. Any Classroom50 or GitHub Classroom language
+> below records a superseded intermediate delivery plan, not current course
+> policy. The release design uses no Classroom service.
+
 Status: author-complete design awaiting independent verification. The Lecture
 10 core and bonus narrative passed independent review on 2026-07-19, and the
 Lecture 09 demo handoff passed independent implementation review. This document

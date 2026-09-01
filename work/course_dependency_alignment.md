@@ -1,6 +1,11 @@
 # DataSci 217 dependency and alignment map
 
-Status: working curriculum contract for the 2026–27 refresh
+Status: historical planning snapshot for the 2026–27 refresh
+
+> Any Classroom50 or GitHub Classroom language below records a superseded
+> intermediate delivery plan, not current course policy. The release design is
+> one repository per assignment with repo-local pytest/GitHub Actions; no
+> Classroom service is used.
 
 This document converts the pedagogical audit into an actionable course sequence. It is the cross-course companion to the detailed range matrices under `work/reviews/`.
 

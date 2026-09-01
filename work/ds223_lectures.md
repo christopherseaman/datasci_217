@@ -1,5 +1,8 @@
 # DS-223: Data Science Applications - Complete Lecture Plan
 
+> Separate-course historical planning reference. Its GitHub Classroom mention
+> does not describe DataSci 217's current assignment delivery.
+
 *Health Data Science Masters Program | 15-20 Self-Contained Lectures*
 
 ---

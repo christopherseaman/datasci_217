@@ -5,7 +5,7 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: lecture, demo, and assignment content has instructor acceptance, and final release preparation is active. Lecture 11 publication URLs, site/deployment consistency, repository navigation, and obsolete review artifacts have been repaired; the final branch-only cleanup remains before the branch is merge-ready.
+- Current phase: lecture, demo, and assignment content has instructor acceptance. Release URLs/site/deployment repairs are committed at `8c0cfe7`; obsolete review and legacy-site artifact cleanup is ready for its checkpoint, followed by the final branch-only cleanup.
 - Explicitly out of scope for this checkpoint: additional curriculum redesign; assignment-duration guidance; notebook-tooling dependency changes; implementation of the future batch-grading helper; optional course-wide heading normalization; fresh remote Colab certification; or the actual merge to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
@@ -1268,7 +1268,7 @@ than the required three-file branch-record cleanup.
 
 ## Next action
 
-1. Commit the release-preparation checkpoint, then remove `AGENTS.md`,
+1. Commit the obsolete-artifact cleanup checkpoint, then remove `AGENTS.md`,
    `HANDOFF.md`, and this tracker in the required dedicated cleanup commit.
    Rebuild from an empty generated-site directory, recheck the merge topology,
    and push the clean `2026-refresh` tip. The actual merge remains a separate
@@ -1318,3 +1318,4 @@ than the required three-file branch-record cleanup.
 | `ce11716` | Align demos with lecture prerequisites | Move foundational concepts to their owning lectures, remove later-topic demo dependencies, apply the pandas 3 preprocessing/index contracts, and pass execution plus independent review |
 | `d6542ba` | Condense Lecture 10 prose | Remove duplicated framing while preserving protected visuals, references, examples, humor, and prerequisite concepts |
 | `d0a58bb` | Remove final Lecture 10 prose duplicates | Remove the repeated Random Forest capability summary and redundant Keras workflow checklist |
+| `8c0cfe7` | Prepare release links and site | Retarget Lecture 11 to `main`, align navigation/runtime/deployment records, track the Eleventy lock, and remove the stale course audit |
