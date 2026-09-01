@@ -9,6 +9,7 @@ Hands-on practice with time series analysis using health and medical research da
 
 ### Demo 1: datetime Fundamentals and Time Series Indexing
 **File**: `demo1_datetime_fundamentals.ipynb` (generated from `demo1_datetime_fundamentals.md`)  
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb)
 **Placement**: After "Shifting and Lagging" section (~1/3 through lecture)  
 **Duration**: 25 minutes  
 **Focus**: Python datetime module, pandas DatetimeIndex, and time series indexing
@@ -24,6 +25,7 @@ Hands-on practice with time series analysis using health and medical research da
 
 ### Demo 2: Resampling and Rolling Window Operations
 **File**: `demo2_indexing_resampling.ipynb` (generated from `demo2_indexing_resampling.md`)  
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb)
 **Placement**: After "Resampling" section (~2/3 through lecture)  
 **Duration**: 25 minutes  
 **Focus**: Resampling operations, rolling windows, and exponentially weighted functions
@@ -39,6 +41,7 @@ Hands-on practice with time series analysis using health and medical research da
 
 ### Demo 3: Time Series Visualization and Integration
 **File**: `demo3_visualization_automation.ipynb` (generated from `demo3_visualization_automation.md`)  
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
 **Placement**: After "Time Zone Handling" section (end of lecture)  
 **Duration**: 25 minutes  
 **Focus**: Time series visualization, combining concepts from earlier lectures

@@ -19,6 +19,7 @@ jupyter lab
 
 ### Demo 1: matplotlib Fundamentals
 **File**: `demo1_matplotlib_basics.ipynb` (generated from `demo1_matplotlib_basics.md`)
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo1_matplotlib_basics.ipynb)
 **Duration**: 25 minutes
 **Focus**: Core matplotlib concepts and customization
 
@@ -29,6 +30,7 @@ jupyter lab
 
 ### Demo 2: pandas Plotting and seaborn Statistical Visualization
 **File**: `demo2_seaborn_statistical.ipynb` (generated from `demo2_seaborn_statistical.md`)
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo2_seaborn_statistical.ipynb)
 **Duration**: 25 minutes
 **Focus**: Quick exploration and statistical plots
 
@@ -40,6 +42,7 @@ jupyter lab
 
 ### Demo 3 (Optional): Modern Visualization Tools
 **File**: `demo3_pandas_altair.ipynb` (generated from `demo3_pandas_altair.md`)
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo3_pandas_altair.ipynb)
 **Duration**: 25 minutes
 **Focus**: Optional survey of modern visualization libraries and interactivity
 

@@ -30,6 +30,7 @@ jupyter nbconvert --to notebook --execute \
 ## Demo 1 — Missing data detective work
 
 **Sources:** `demo1_missing_data.md` → `demo1_missing_data.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb)
 
 Create a small patient table, quantify missingness, inspect a row-level
 summary, and apply context-specific strategies: median imputation for age,
@@ -42,6 +43,7 @@ is explicitly a Lecture 07 visualization preview, not a cleaning decision.
 ## Demo 2 — Transformation and cleaning pipeline
 
 **Sources:** `demo2_transformations.md` → `demo2_transformations.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb)
 
 Clean a survey table by standardizing column names and text, converting bad
 numeric values with an explicit failure policy, replacing sentinels, and
@@ -53,6 +55,7 @@ labels.
 ## Demo 3 — Complete data-cleaning workflow
 
 **Sources:** `demo3_workflow.md` → `demo3_workflow.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
 Run the end-to-end contract-driven sequence: detect issues, transform a copy,
 validate the result, add row-level analysis fields, identify outlier

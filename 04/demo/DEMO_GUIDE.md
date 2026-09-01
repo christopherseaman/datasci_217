@@ -35,6 +35,7 @@ must be selected before running the notebooks.
 ## Demo 1 — Notebook runtime, state, and fresh execution
 
 **Sources:** `demo1_jupyter_basics.md` → `demo1_jupyter_basics.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb)
 
 This demonstration introduces the notebook document/kernel distinction,
 producer and dependent cells, a real stale-state failure, restart-and-run-all,
@@ -46,6 +47,7 @@ clean.
 ## Demo 2 — From NumPy arrays to labeled pandas
 
 **Sources:** `demo2_pandas_basics.md` → `demo2_pandas_basics.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb)
 
 This demonstration starts with the already-taught NumPy array mental model,
 then introduces `Series`, `DataFrame`, bounded inspection, bracket selection,
@@ -57,6 +59,7 @@ visualization material.
 ## Demo 3 — Portable CSV round trip
 
 **Sources:** `demo3_data_io.md` → `demo3_data_io.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)
 
 This demonstration resolves a path relative to the notebook, verifies a
 small committed CSV, reads it with pandas, selects a result, writes it to a

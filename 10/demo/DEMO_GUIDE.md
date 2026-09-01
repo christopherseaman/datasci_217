@@ -5,6 +5,7 @@ This guide provides an overview of the three demos for Lecture 10.
 ## Demo 1: Statistical Modeling with statsmodels
 
 **File:** `demo1_statistical_modeling.md`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb)
 
 **Learning Objectives:**
 - Fit and interpret linear regression models using `statsmodels`
@@ -25,6 +26,7 @@ This guide provides an overview of the three demos for Lecture 10.
 ## Demo 2: Machine Learning with scikit-learn and XGBoost
 
 **File:** `demo2_ml_boosting.md`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_ml_boosting.ipynb)
 
 **Learning Objectives:**
 - Master the scikit-learn fit/predict pattern
@@ -48,6 +50,7 @@ This guide provides an overview of the three demos for Lecture 10.
 ## Demo 3: Deep Learning with TensorFlow/Keras
 
 **File:** `demo3_deep_learning.md`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_deep_learning.ipynb)
 
 **Learning Objectives:**
 - Build neural networks using TensorFlow/Keras

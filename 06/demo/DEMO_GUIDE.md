@@ -19,6 +19,7 @@ jupyter lab
 
 ### Demo 1: Merge Operations
 **File**: `demo1_merge_operations.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb)
 **Duration**: 20 minutes
 **Focus**: Database-style joins with customer, product, and purchase data
 
@@ -29,6 +30,7 @@ jupyter lab
 
 ### Demo 2: Pivot and Melt Operations
 **File**: `demo2_pivot_melt.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo2_pivot_melt.ipynb)
 **Duration**: 20 minutes
 **Focus**: Converting between wide and long data formats
 
@@ -40,6 +42,7 @@ jupyter lab
 
 ### Demo 3: Concatenation and Index Management
 **File**: `demo3_concat_timeseries.ipynb`
+**Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo3_concat_timeseries.ipynb)
 **Duration**: 20 minutes
 **Focus**: Combining dated tables and managing indexes
 
