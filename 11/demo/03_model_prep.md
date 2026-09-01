@@ -65,12 +65,11 @@ print(f"Python {sys.version.split()[0]} | pandas {pd.__version__}")
 ## Rebuild the prerequisite deterministically
 
 If Demo 2's compact Parquet output exists locally, we load it. Otherwise, fresh
-Colab acquires the frozen panel and applies the same deterministic transformation.
-Development URLs use `2026-refresh` while this review is in progress; immutable
-annual-tag replacement is pending freeze.
+Colab acquires the released panel and applies the same deterministic transformation.
+Release URLs use `main` for the published course materials.
 
 ```python
-REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/2026-refresh/11/demo/data"
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 
 def acquire_authenticated_panel():
     filenames = ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_counts.parquet"]

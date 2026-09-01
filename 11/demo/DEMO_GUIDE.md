@@ -1,25 +1,23 @@
 # Lecture 11 Demo Guide
 
-These notebooks form one forecasting story, but every required notebook can run
-top-to-bottom in a fresh local or Colab runtime. Each uses committed compact
+These notebooks form one forecasting story, and every required notebook is
+structured for top-to-bottom use in a local or Colab runtime. Each uses committed compact
 data when available and otherwise downloads it from raw GitHub. No Drive mount
 or manual upload is needed. The optional geography notebook is included in the
 same notebook set and can be run after Demo 4 when its separate setup cell has
 installed the geo packages.
 
-The links below target the public `2026-refresh` branch while this review is in
-progress, so they are the Colab execution option for the current notebooks. At
-release time, retarget them to `main` or an immutable annual tag and recheck the
-remote runtime; that publication check is separate from the local notebook
-contract.
+The links below target the public `main` branch for the released notebooks. They
+provide a Colab execution option; remote runtime behavior should be checked
+separately from the local notebook contract.
 
 | Demo | Assignment pattern | Colab |
 |---|---|---|
-| 1. Release, grain, exploration, cleaning | Q1-Q2 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/01_setup.ipynb) |
-| 2. Complete panel and past-only features | Q3-Q4 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/02_wrangling.ipynb) |
-| 3. Training-only patterns and temporal split | Q5-Q6 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/03_model_prep.ipynb) |
-| 4. Baseline, pipeline, frozen choice, report | Q7-Q9; Q7 reuses Lecture 10 Demo 2's permutation-importance pattern | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/04_modeling.ipynb) |
-| 5. Optional zone-error choropleth | Non-graded | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/2026-refresh/11/demo/05_geo_bonus.ipynb) |
+| 1. Release, grain, exploration, cleaning | Q1-Q2 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/01_setup.ipynb) |
+| 2. Complete panel and past-only features | Q3-Q4 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/02_wrangling.ipynb) |
+| 3. Training-only patterns and temporal split | Q5-Q6 | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/03_model_prep.ipynb) |
+| 4. Baseline, pipeline, frozen choice, report | Q7-Q9; Q7 reuses Lecture 10 Demo 2's permutation-importance pattern | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/04_modeling.ipynb) |
+| 5. Optional zone-error choropleth | Non-graded | [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/05_geo_bonus.ipynb) |
 
 ## Project Contract
 

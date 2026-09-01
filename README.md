@@ -29,49 +29,52 @@ The instructor supplies these term-specific assignment repository URLs.
 
 ## Lectures
 
-1. [1. Python, the Command Line, and VS Code](https://www.notion.so/1-Python-the-Command-Line-and-VS-Code-271d9fdd1a1a805784e1fe68dc985696?pvs=21)
+1. [1. Command Line + Python](01/README.md)
     - Command line navigation and file operations
-    - Python installation and virtual environments
+    - Python installation and basic setup
     - VS Code setup and basic workflows
     - Introduction to development tools
-2. [2. Control Your Versions!](https://www.notion.so/2-Control-Your-Versions-271d9fdd1a1a80369c2bc4a66ae97d9d?pvs=21) (ch 2-3)
+2. [2. Python + Git](02/README.md)
     - Python syntax, variables, and data types
     - Control structures and functions basics
     - Git through VS Code/GitHub (GUI focus)
     - Project organization and collaboration
-3. [3. NumPy & Virtual Environments](https://www.notion.so/3-NumPy-Virtual-Environments-27ed9fdd1a1a80a78532e70d7000dae8?pvs=21) (ch 4)
+3. [3. NumPy + Virtual Environments](03/README.md)
     - N-dimensional arrays and array creation
     - Array operations and universal functions
     - Boolean indexing and fancy indexing
     - Basic mathematical operations
-4. [4. Pandas on Jupyter](https://www.notion.so/sqrlly/Pandas-Getting-Started-281d9fdd1a1a800a897dcafb5971c23f) (ch 5-6)
+4. [4. Jupyter + Pandas](04/README.md)
     - Jupyter notebooks
     - Series and DataFrame creation
     - Data selection and filtering
-    - Reading from common file formats (CSV, Excel)
-    - Advanced file reading/writing operations
-    - Handling messy and missing data
-5. [5. Data Cleaning and Preparation](https://www.notion.so/sqrlly/5-Data-Cleaning-and-Preparation-281d9fdd1a1a8015bcdbc11415191ac2?source=copy_link) (ch 7)
+    - Reading CSV, Excel, and JSON files; inspecting data types, missingness, and duplicate rows
+5. [5. Data Cleaning](05/README.md)
     - Data transformation techniques
     - String operations for data cleaning
     - Handling missing data strategies
     - Data validation and quality assessment
-6. **Data Wrangling (ch 8)**
+6. [6. Joins, Combining + Reshaping](06/README.md)
     - Merge, join, and concatenate operations
     - Reshaping data (pivot, melt, stack/unstack)
-    - Grouping and aggregation
-    - Advanced data transformation patterns
-7. **Plotting and Visualization (ch 9)**
+    - DataFrame indexes and basic MultiIndex structures
+    - Combining and reshaping data with explicit shape and key contracts
+7. [7. Data Visualization](07/README.md)
     - Matplotlib fundamentals
     - Pandas plotting interface
     - Seaborn for statistical visualization
     - Creating effective data visualizations
-8. **Data Aggregation and Group Operations (ch 10)**
+8. [8. Aggregation + Group Operations](08/README.md)
     - GroupBy mechanics and advanced techniques
     - Aggregation functions and transformations
     - Pivot tables and cross-tabulation
-    - Time series basics
-9. **Time Series (ch 11)**
+    - Result-shape choices: aggregation, transform, filter, and apply
+9. [9. Time Series Analysis](09/README.md)
     - Time series data handling and analysis
     - Date/time operations and resampling
-10. **Modeling (ch 12)**
+10. [10. Statistics, Machine Learning + Deep Learning Models](10/README.md)
+    - Statistical modeling, scikit-learn, gradient boosting, and neural-network foundations
+    - Leakage-safe splitting, preprocessing, comparison, and evaluation
+11. [11. From Question to Defensible Result](11/README.md)
+    - A question-led, iterative capstone workflow
+    - Data contracts, provenance, and defensible conclusions

@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# Development URLs use 2026-refresh until the immutable annual release tag is frozen.
-readonly BASE_URL="https://raw.githubusercontent.com/christopherseaman/datasci_217/2026-refresh/11/demo/data"
+# Release URLs use the public main branch for the published course materials.
+readonly BASE_URL="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 readonly DATA_DIR="data"
 
 mkdir -p "$DATA_DIR"

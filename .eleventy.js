@@ -1,4 +1,28 @@
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
+const path = require("path");
+
+const repositoryUrl = "https://github.com/christopherseaman/datasci_217";
+const excludedContent = /^(?:\d{2}\/assignment\/|\d{2}\/demo\/)/;
+
+function renderedMarkdownLink(href, sourcePath) {
+  if (/^(?:[a-z]+:|\/\/|\/|#)/i.test(href)) return href;
+  const match = href.match(/^([^?#]+?)([?#].*)?$/);
+  if (!match) return href;
+
+  const target = path.normalize(path.join(path.dirname(sourcePath), match[1]));
+  const repositoryPath = path.relative(process.cwd(), target).split(path.sep).join("/");
+  const suffix = match[2] || "";
+  if (excludedContent.test(repositoryPath)) {
+    return `${repositoryUrl}/blob/main/${repositoryPath}${suffix}`;
+  }
+  if (!/\.md$/i.test(match[1])) return href;
+
+  let pagePath = repositoryPath.replace(/\/README\.md$/i, "/");
+  pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
+  if (pagePath === repositoryPath) return href;
+  const prefix = (process.env.ELEVENTY_PATH_PREFIX || "/").replace(/\/$/, "");
+  return `${prefix}/${pagePath.replace(/^\//, "")}${suffix}`;
+}
 
 module.exports = function (eleventyConfig) {
   eleventyConfig.addPlugin(syntaxHighlight);
@@ -6,6 +30,17 @@ module.exports = function (eleventyConfig) {
   // Passthrough copy — media folders and CSS
   eleventyConfig.addPassthroughCopy("css");
   eleventyConfig.addPassthroughCopy("*/media/**");
+
+  // Keep source Markdown links GitHub-friendly while routing them to generated
+  // pages (or main-branch blobs for excluded activities) in the built site.
+  eleventyConfig.addTransform("source-markdown-links", function (content, outputPath) {
+    if (!outputPath || !outputPath.endsWith(".html")) return content;
+    const sourcePath = this.page?.inputPath;
+    if (!sourcePath) return content;
+    return content.replace(/(href=["'])([^"']+)(["'])/gi, (_, prefix, href, quote) => {
+      return `${prefix}${renderedMarkdownLink(href, sourcePath)}${quote}`;
+    });
+  });
 
   // Computed data — assign layout and clean URLs without frontmatter
   eleventyConfig.addGlobalData("eleventyComputed", {

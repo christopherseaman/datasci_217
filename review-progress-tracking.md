@@ -5,8 +5,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: the instructor-authorized Lecture 10 prose consolidation is implemented and independently reviewed after the approved lecture/demo prerequisite-alignment repair. No demo or assignment changed. The future instructor batch helper remains separate operational work, and course-wide heading normalization remains open.
-- Explicitly out of scope for this checkpoint: trimming Lecture 10 tables, flowcharts, API reference lists, or fenced examples; assignment-duration guidance; notebook-tooling dependency changes; implementation of the future batch-grading helper; or merging to `main`
+- Current phase: lecture, demo, and assignment content has instructor acceptance, and final release preparation is active. Lecture 11 publication URLs, site/deployment consistency, repository navigation, and obsolete review artifacts have been repaired; the final branch-only cleanup remains before the branch is merge-ready.
+- Explicitly out of scope for this checkpoint: additional curriculum redesign; assignment-duration guidance; notebook-tooling dependency changes; implementation of the future batch-grading helper; optional course-wide heading normalization; fresh remote Colab certification; or the actual merge to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
@@ -1219,18 +1219,66 @@ relative links pass, `git diff --check` passes, and Eleventy renders 30 pages
 with 124 copied assets. An independent adversarial review found no actionable
 P0-P3 issue or demo/assignment prerequisite regression.
 
+## Pre-merge release preparation (2026-09-01)
+
+The instructor accepted the reviewed curriculum and requested merge
+preparation. The release-preparation batch changes publication and repository
+infrastructure only; it does not redesign lecture, demo, or assignment content:
+
+- Lecture 11's Colab links, raw-data fallbacks, environment record, and
+  downloader now target `main`. The four changed Markdown/notebook pairs retain
+  exact code-cell parity, and development/freeze wording is removed.
+- The root interpreter record is exact at Python 3.12.13. The Eleventy
+  dependency lock is now tracked, Pages installs with `npm ci`, and the Pages
+  workflow reads the repository's `.nvmrc` rather than hard-coding another Node
+  major. The GitHub Pages build command now owns its path-prefix environment.
+- Navigation labels and the root course map now match the actual 11-lecture
+  sequence. Repository Markdown keeps local source links, while the generated
+  site routes lecture/bonus pages internally and excluded demo/assignment
+  targets to `main` blobs. Assignment 01–03 launch URLs remain the exact
+  term-specific placeholders; no later assignment URL was invented.
+- The stale failing `scripts/course_audit.py` command, the orphaned Assignment
+  05 legacy tips, obsolete Classroom50 pilot/master plans, and Assignment
+  04–10 Classroom50 blueprints are removed. Retained historical review notes
+  now state that Classroom delivery was superseded by one repository per
+  assignment with optional repo-local pytest/GitHub Actions.
+- The superseded static-site implementation (`index.html`, `lecture.html`,
+  `nav-config.js`, root `theme.css`, and the 11 per-lecture `index.html` files),
+  the stale root `FIXME.md`, and branch review guide `REVIEW.md` are removed.
+  Eleventy remains the sole published-site implementation.
+
+Integrated validation at the uncommitted checkpoint passed: `npm ci
+--ignore-scripts --no-audit --no-fund`; the prefixed Pages build (30 written
+pages, 124 copied assets); a 536-link generated-site crawl with zero missing
+targets; JSON parsing of all 53 tracked notebooks; exact code-cell parity for
+the four changed Lecture 11 pairs; `bash -n 11/demo/download_data.sh`; balanced
+fences and resolving source links across 121 tracked course Markdown files;
+package/lock JSON parsing; workflow YAML parsing; and `git diff --check`.
+`origin/main` remains an ancestor of the branch after a fresh fetch. A clean
+output-directory rebuild, final merge-tree check, and remote sync check remain
+for the dedicated branch-record cleanup.
+
+An independent adversarial release review found one P1 deployment hazard: the
+Pages workflow still accepted pushes from the obsolete `eleventy` branch. It
+now deploys only from `main`. The same review requested explicit historical
+notices on five retained backup/reference files that mention Classroom; those
+notices are now at the top of each file. The targeted follow-up returned GO,
+confirmed that setup-node reads `.nvmrc`, and found no remaining blocker other
+than the required three-file branch-record cleanup.
+
 ## Next action
 
-1. Present the Lecture 10 prose-consolidation checkpoint for instructor review.
-   Do not trim its tables, flowcharts, API reference lists, or fenced examples
-   without further direction, and do not merge to `main` in this review step.
+1. Commit the release-preparation checkpoint, then remove `AGENTS.md`,
+   `HANDOFF.md`, and this tracker in the required dedicated cleanup commit.
+   Rebuild from an empty generated-site directory, recheck the merge topology,
+   and push the clean `2026-refresh` tip. The actual merge remains a separate
+   instructor action.
 2. After standalone assignment repositories exist, implement and pilot the
    neutral batch-grading helper on one script and one notebook assignment, then
    populate source coordinates, student mappings, and ref/gradebook policy.
-3. If desired before merge, normalize the 13 remaining nonconforming lecture
-   pages to one H1 with semantic H2/H3/H4 nesting as a separate lecture-format
-   change. Do not merge to `main`; remove or explicitly exclude `AGENTS.md`,
-   `HANDOFF.md`, and this tracker during the eventual merge cleanup.
+3. If desired later, normalize the 13 remaining nonconforming lecture pages to
+   one H1 with semantic H2/H3/H4 nesting as a separate lecture-format change;
+   it is not a release blocker.
 
 ## Checkpoint log
 
