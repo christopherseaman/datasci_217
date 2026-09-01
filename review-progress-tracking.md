@@ -1266,4 +1266,4 @@ P0-P3 issue or demo/assignment prerequisite regression.
 | `ab62eea` | Remove invented pacing and tooling work | Preserve Assignment 11's intentional breadth without prescribing duration and reject notebook-tooling dependency churn |
 | `45adc20` | Align grading and modeling contracts | Implement and validate the bounded Lecture 10, Assignment 10/11, neutral-grader, URL-placeholder, and active-Classroom cleanup batch |
 | `ce11716` | Align demos with lecture prerequisites | Move foundational concepts to their owning lectures, remove later-topic demo dependencies, apply the pandas 3 preprocessing/index contracts, and pass execution plus independent review |
-| pending | Condense Lecture 10 prose | Remove duplicated framing while preserving protected visuals, references, examples, humor, and prerequisite concepts |
+| `d6542ba` | Condense Lecture 10 prose | Remove duplicated framing while preserving protected visuals, references, examples, humor, and prerequisite concepts |
