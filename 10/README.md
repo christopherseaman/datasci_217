@@ -346,7 +346,7 @@ print(f"R² score: {score:.3f}")
 
 ## Random Forest
 
-Random Forest is an ensemble method that combines randomized decision trees. It can model nonlinear relationships and interactions without feature scaling, and it provides feature-importance summaries that require context.
+Random Forest is an ensemble of randomized decision trees.
 
 *Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works.*
 
@@ -694,14 +694,6 @@ This lecture uses TensorFlow's integrated `tf.keras` API. Its high-level tools a
 - `model.fit(X_train, y_train, epochs, batch_size)` - Train model
 - `model.predict(X_test)` - Make predictions
 - `model.evaluate(X_test, y_test)` - Evaluate model
-
-**Basic Workflow:**
-
-1. **Build model** - Define architecture (layers)
-2. **Compile model** - Specify optimizer, loss function, metrics
-3. **Train model** - Fit on training data
-4. **Evaluate model** - Check performance on test data
-5. **Make predictions** - Use trained model
 
 *During training, you'll see loss decrease and accuracy (or other metrics) improve with each epoch. Monitor both training and validation metrics to detect overfitting.*
 

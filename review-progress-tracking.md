@@ -1206,10 +1206,12 @@ consolidated; the inference/prediction boundary, association/causation and
 uncertainty concepts, train/validation/test contract, temporal leakage rule,
 mixed-type preprocessing pattern, metric choice, permutation importance,
 gradient pseudo-residuals, early stopping, Dropout, and framework caveats all
-remain.
+remain. A follow-up duplication audit identified and removed the remaining
+repeated Random Forest capability sentence and the Keras workflow checklist,
+whose protected API reference and worked example already provide that sequence.
 
-`10/README.md` decreased from 5,769 to 4,581 whitespace-delimited words, a
-1,188-word (20.6%) reduction, placing it just below `main`'s 4,605 words. An
+`10/README.md` decreased from 5,769 to 4,519 whitespace-delimited words, a
+1,250-word (21.7%) reduction, placing it just below `main`'s 4,605 words. An
 exact preservation check passed all 20 fenced blocks, all 49 Markdown table
 rows across eight tables, all eight API reference lists, and all three demo
 markers. Zoolander-term counts match the pre-edit source. Markdown fences and
@@ -1267,3 +1269,4 @@ P0-P3 issue or demo/assignment prerequisite regression.
 | `45adc20` | Align grading and modeling contracts | Implement and validate the bounded Lecture 10, Assignment 10/11, neutral-grader, URL-placeholder, and active-Classroom cleanup batch |
 | `ce11716` | Align demos with lecture prerequisites | Move foundational concepts to their owning lectures, remove later-topic demo dependencies, apply the pandas 3 preprocessing/index contracts, and pass execution plus independent review |
 | `d6542ba` | Condense Lecture 10 prose | Remove duplicated framing while preserving protected visuals, references, examples, humor, and prerequisite concepts |
+| pending | Remove final Lecture 10 prose duplicates | Remove the repeated Random Forest capability summary and redundant Keras workflow checklist |
