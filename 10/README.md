@@ -35,9 +35,7 @@ Before running the examples, install the packages listed in [`demo/requirements.
 
 # The Modeling Ecosystem: A Brief Tour
 
-*Reality check: There are more Python modeling libraries than there are ways to overfit a model. But don't worry - we'll focus on the essential tools that actually matter for daily data science work, from the bread-and-butter statistical methods to the cutting-edge deep learning frameworks.*
-
-The Python modeling landscape has evolved dramatically. From simple linear regression to complex neural networks, each tool has its place. Understanding when to use what is half the battle - the other half is actually getting your model to work (which, let's be honest, is usually the harder part).
+*Reality check: There are more Python modeling libraries than there are ways to overfit a model. This lecture focuses on four families: inferential statistics, traditional machine learning, gradient boosting, and deep learning.*
 
 **The Modeling Spectrum:**
 
@@ -60,16 +58,7 @@ STATISTICAL MODELING          TRADITIONAL ML             DEEP LEARNING
 
 ![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
 
-*More flexible models can be harder to explain, but complexity does not guarantee better performance and interpretability is not all-or-nothing. Compare candidates using the evaluation measure and explanation needs of the intended use.*
-
-**Illustrative starting points:**
-
-- **Need statistical inference?** Consider `statsmodels` and check the model assumptions.
-- **Tabular data, need predictions?** Benchmark a simple baseline and suitable `scikit-learn` or `XGBoost` candidates.
-- **Images, text, or audio?** Consider task-specific baselines and, when justified, deep learning with `TensorFlow`/`Keras` or `PyTorch`.
-- **Choosing a framework?** Account for the data, evaluation goal, interpretability, team expertise, latency, deployment, and maintenance constraints.
-
-These are candidate starting points, not deterministic rules. Select a final approach using training-only validation and the constraints of the intended use.
+Flexible models may be harder to explain, and complexity does not guarantee better performance. Treat the spectrum as a candidate shortlist, then compare models with training-only validation against the task's measure, explanation needs, and deployment constraints.
 
 *Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!*
 
@@ -106,11 +95,11 @@ Statistical modeling focuses on quantifying relationships and making inferences 
 
 ### A small vocabulary bridge
 
-An **association** is a pattern in which variables vary together; **causation** is a claim that changing one variable would change another under a specified intervention. A model coefficient describes the estimated change in fitted outcome associated with a one-unit change in a predictor, holding the other included predictors fixed—it is not automatically a causal effect. Because samples and measurements vary, estimates have **uncertainty**. A **confidence interval** gives a range produced by a stated procedure for the population quantity, while a **p-value** (at this survey depth) measures how surprising data this extreme would be under a specified null model; neither is a probability that a hypothesis is true. Diagnostics and assumptions—such as an appropriate design, functional form, error behavior, and independence—bound what these summaries can support. Treat them as evidence about an association under a model, not as guarantees or proof of causation.
+An **association** means variables vary together; **causation** claims that an intervention changes an outcome. A coefficient estimates the fitted outcome change associated with a one-unit predictor change, holding included predictors fixed—it is not automatically causal. A **confidence interval** is a range produced by a procedure for estimating a population quantity; a **p-value** measures how surprising data this extreme would be under a specified null model, not the probability that a hypothesis is true. Both express uncertainty under assumptions about design, functional form, errors, and independence.
 
 ## Introduction to `statsmodels`
 
-`statsmodels` is Python's comprehensive statistical modeling library. It provides tools for statistical inference, hypothesis testing, and model diagnostics - the bread and butter of statistical analysis.
+`statsmodels` supports statistical inference, hypothesis tests, diagnostics, and pandas inputs and outputs.
 
 **When to use `statsmodels`:**
 
@@ -118,8 +107,6 @@ An **association** is a pattern in which variables vary together; **causation** 
 - You want to estimate and test relationships under stated assumptions (not just predict)
 - You're doing traditional statistical analysis (regression, ANOVA, etc.)
 - You need model diagnostics and assumption checking
-
-**pandas compatibility:** Most `statsmodels` functions work directly with pandas DataFrames. You can pass DataFrames to model constructors, and results are often returned as pandas objects (Series, DataFrames).
 
 **Reference:**
 
@@ -134,13 +121,11 @@ An **association** is a pattern in which variables vary together; **causation** 
 
 ## Linear Regression
 
-Linear regression is the workhorse of statistical modeling. It models the relationship between a dependent variable and one or more independent variables using a linear equation.
+Linear regression models an outcome as a linear function of one or more predictors.
 
 *Think of linear regression as the Derek Zoolander of modeling - it's simple, it's reliable, and it can turn left (or right, or any direction really).*
 
 **Linear Regression: The Blue Steel of Modeling**
-
-Linear regression finds the best-fitting line through your data. It's like finding the perfect pose - simple, elegant, and it works every time (well, most of the time).
 
 ```
 y = β₀ + β₁x₁ + β₂x₂ + ... + ε
@@ -209,8 +194,6 @@ print(results.params)  # Intercept, x1, x2 coefficients
 print(results.pvalues)  # Statistical significance
 ```
 
-*The `summary()` method provides comprehensive output including R-squared, p-values, confidence intervals, and model diagnostics - all the statistical information you need for inference.*
-
 ![xkcd 539: Boyfriend](https://imgs.xkcd.com/comics/boyfriend.png)
 
 ## Other Statistical Methods
@@ -230,15 +213,7 @@ print(results.pvalues)  # Statistical significance
 - Seasonal decomposition
 - Use when: You have temporal dependencies in your data
 
-**When an inferential model is the better fit:**
-
-- You need interpretable coefficients and p-values
-- You have strong theoretical reasons for model structure
-- You need confidence intervals for predictions
-- The sample is limited and a prespecified, parsimonious model has assumptions you can justify
-- You're doing hypothesis testing, not just prediction
-
-*Remember: inferential analyses quantify associations and uncertainty under assumptions; predictive analyses estimate performance on new data. Neither goal alone establishes a causal "why."*
+Choose an inferential model when the question requires interpretable parameters, uncertainty, or hypothesis tests and its design and model assumptions are defensible. Inference quantifies associations under assumptions; prediction estimates performance on new data. Neither alone establishes causation.
 
 ![xkcd 1725: Correlation](https://imgs.xkcd.com/comics/correlation.png)
 
@@ -250,7 +225,7 @@ print(results.pvalues)  # Statistical significance
 
 *Think of `scikit-learn` as the Swiss Army knife of machine learning - it has a tool for almost everything, it's reliable, and it's been around long enough that everyone knows how to use it.*
 
-Machine learning focuses on prediction rather than inference. While statistical models help you understand relationships, ML models help you make accurate predictions on new data.
+This section uses `scikit-learn` for predictive workflows and composable estimators.
 
 ## Introduction to `scikit-learn`
 
@@ -282,19 +257,9 @@ Original Dataset (1000 samples)
 
 *The golden rule: Never evaluate on data the model has seen during training. That's like giving a student the answers before the test and then being surprised they got 100%.*
 
-Keep the test set untouched until the model and preprocessing choices are final. Tune hyperparameters and compare candidate models with cross-validation confined to the training set or with a separate validation set.
+Keep the test set untouched until preprocessing and model choices are final; tune with training-only cross-validation or a separate validation set. For temporal prediction, construct features only from information available at prediction time, then split chronologically or use time-series cross-validation so future conditions cannot leak backward.
 
-For temporal prediction, Lecture 09's information-availability rule comes first: construct each feature only from information available at its prediction timestamp. Then split chronologically (earlier observations for training, later observations for validation/test) or use a time-series cross-validation scheme; a random split can let future conditions inform past predictions.
-
-**Why `scikit-learn` is the ML standard:**
-
-- Consistent API across all models
-- Comprehensive documentation and examples
-- Well-tested and stable
-- Excellent preprocessing tools
-- Works seamlessly with pandas (accepts DataFrames)
-
-**pandas compatibility:** `scikit-learn` functions accept pandas DataFrames and Series directly. However, some operations (like `fit_transform`) may return NumPy arrays, so you may need to convert back to DataFrames if you want to preserve column names.
+`scikit-learn` combines stable documentation, preprocessing tools, pandas-compatible inputs, and a broad estimator ecosystem. Some transformations return NumPy arrays, so preserve column names explicitly when needed.
 
 **Reference:**
 
@@ -308,7 +273,7 @@ For temporal prediction, Lecture 09's information-availability rule comes first:
 
 ## Linear Regression
 
-Linear regression in `scikit-learn` is optimized for prediction rather than inference. It's faster and simpler than `statsmodels` but doesn't provide p-values or detailed diagnostics.
+In `scikit-learn`, linear regression participates in a predictive workflow rather than supplying the inferential output provided by `statsmodels`.
 
 **`statsmodels` vs `scikit-learn` Linear Regression:**
 
@@ -320,8 +285,6 @@ Linear regression in `scikit-learn` is optimized for prediction rather than infe
 | Model diagnostics | ✅ Comprehensive | ❌ Basic |
 | Speed | Slower | Faster |
 | Use when | Need to understand relationships | Need predictions |
-
-*Think of it this way: `statsmodels` emphasizes inference about parameters and uncertainty, while `scikit-learn` emphasizes predictive workflows and out-of-sample evaluation.*
 
 **Reference:**
 
@@ -403,17 +366,7 @@ Tree 100: Predicts Class A
 Final Prediction: Class A (majority vote)
 ```
 
-*For classification, the forest combines class predictions or probabilities; for regression, it averages numerical predictions. The aggregation reduces the instability of relying on one fitted tree, but validation still determines whether the forest works well for the task.*
-
-**Why Random Forest?**
-
-- Models nonlinear relationships and interactions
-- Aggregates randomized trees to reduce variance relative to one tree
-- Usually does not require feature scaling
-- Provides feature-importance summaries, which are not causal effects
-- Good for both classification and regression
-
-The example below uses finite numeric features. Missing or categorical inputs need a preprocessing strategy compatible with the recorded scikit-learn environment.
+For classification, a forest combines class votes or probabilities; for regression, it averages predictions. It can model nonlinear relationships and interactions, usually without feature scaling, while aggregation reduces the instability of one fitted tree. Feature importances are diagnostic, not causal, and missing or categorical inputs still need compatible preprocessing.
 
 **Reference:**
 
@@ -456,8 +409,7 @@ print(f"Feature importance: {importance}")
 
 ## Other `scikit-learn` Methods
 
-The catalog is broad; choose candidates whose assumptions and decision
-boundaries fit the task, then validate them against a baseline:
+Benchmark candidates whose assumptions and decision boundaries fit the task against a meaningful baseline:
 
 - Classification: `LogisticRegression` and `SVC`.
 - Regression: `Ridge` and `Lasso` when shrinkage may help with many or
@@ -467,7 +419,7 @@ boundaries fit the task, then validate them against a baseline:
 - Selection: `cross_val_score` for cross-validation and `GridSearchCV` for
   hyperparameter tuning within the training data.
 
-*Pro tip: Start with a meaningful simple baseline, then add candidates whose assumptions and capabilities fit the problem. Let validation evidence—not a favorite algorithm—decide among them. Blue steel is a style, not a model-selection rule.*
+*Let validation evidence—not a favorite algorithm—decide. Blue steel is a style, not a model-selection rule.*
 
 *"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
 
@@ -493,22 +445,7 @@ flowchart LR
 
 ### A leakage-safe mixed-type preprocessing pattern
 
-Preprocessing parameters are learned from training rows only. A `Pipeline` keeps
-those steps attached to the estimator, while a `ColumnTransformer` routes
-numeric and categorical columns through different branches:
-
-- numeric predictors may use `SimpleImputer` (for example, a median learned on
-  the training rows) and optionally `StandardScaler`;
-- categorical predictors may use an imputer when missing categories need a
-  documented policy, followed by `OneHotEncoder(handle_unknown="ignore")` so a
-  category first seen at validation or prediction time does not crash the
-  pipeline.
-
-Imputation is a general missing-predictor option, not a universal requirement:
-the right policy depends on why values are missing and what the task permits.
-Fit the complete pipeline inside each training fold, then reuse it unchanged
-on validation and test rows. This prevents held-out information from changing
-imputation, scaling, or the category vocabulary.
+Fit preprocessing inside each training fold. `Pipeline` keeps transformations attached to the estimator, while `ColumnTransformer` routes numeric and categorical columns separately. Learn imputation, scaling, and category vocabularies from training rows, then reuse them unchanged on validation and test rows. Imputation policy depends on the missingness and task; `handle_unknown="ignore"` prevents a new category from crashing prediction.
 
 ```python
 from sklearn.compose import ColumnTransformer
@@ -537,16 +474,15 @@ model.fit(train_rows, train_target)
 validation_predictions = model.predict(validation_rows)
 ```
 
-The same pattern works for classification by replacing the final estimator;
-the split, fitting boundary, and validation/test reuse remain the same.
+For classification, replace the final estimator; the fitting boundary remains unchanged.
 
 ### Choosing an evaluation measure
 
-Carry one task- and cost-aligned measure through the same baseline → training-only validation/CV → one-time test workflow. For regression, MAE is easy to interpret in the target's units and is less sensitive to large errors than squared-error measures; RMSE (or MSE) penalizes large misses more. For classification, accuracy is reasonable only when class and error costs are balanced; precision, recall, F1, a confusion matrix, or a ranking/probability measure such as ROC AUC or average precision may better reflect unequal costs or class imbalance. Decide this measure before comparing candidates, and report any complementary measures needed to expose important failure modes. The test set is still reserved for the final, pre-specified report.
+Choose a task- and cost-aligned measure before comparing candidates, then carry it from the baseline through training-only validation/CV to one final test report. For regression, MAE stays in the target's units and is less sensitive to large errors; RMSE or MSE penalizes large misses more. For classification, use accuracy only when class and error costs are balanced; precision, recall, F1, a confusion matrix, ROC AUC, or average precision may better expose unequal costs or imbalance. Report complementary measures when one score hides costly failures.
 
 ### Permutation importance
 
-Permutation importance is a model-agnostic diagnostic: score a fitted model on held-out data, shuffle one feature while leaving the others unchanged, and measure how much the score deteriorates. During model development, use validation data; do not repeatedly inspect the final test set to choose features or models. In scikit-learn, scorers are oriented so higher is better, so an error measure such as MAE is represented by `neg_mean_absolute_error`; a positive importance then means shuffling increased MAE. Correlated features can substitute for one another, splitting or hiding their individual importances. The result describes the fitted model's predictive reliance under this perturbation, not a causal effect or the feature's intrinsic value.
+Permutation importance scores a fitted model on validation data, shuffles one feature, and measures the deterioration; do not repeatedly inspect the final test set. Because scikit-learn scorers are oriented so higher is better, MAE appears as `neg_mean_absolute_error`, and positive importance means shuffling increased error. Correlated features can split or hide their importances. This measures the fitted model's predictive reliance, not causation or a feature's intrinsic value.
 
 *"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"*
 
@@ -554,28 +490,9 @@ Permutation importance is a model-agnostic diagnostic: score a fitted model on h
 
 *Gradient boosting is like the Magnum of machine learning - it's the secret weapon that wins competitions and makes you look like a modeling genius.*
 
-Gradient boosting is widely used in machine learning competitions and applied tabular work. It is often a strong candidate for structured data, including the kinds of tables built with pandas.
-
 ## Why Gradient Boosting?
 
-**Performance on Tabular Data:**
-
-- Often competitive on structured/tabular data
-- Can model nonlinear relationships and interactions among prepared features
-- Provides feature-importance summaries that require careful interpretation
-
-**Reasons to include it among the candidates:**
-
-- You have tabular/structured data (not images, text, sequences)
-- You want fast training and prediction
-- Tree-based diagnostics would help investigate predictions
-- You want a strong tabular benchmark without first building a deep architecture
-
-**Practical strengths:**
-
-- Frequently used in competitive and applied tabular modeling
-- Supported by mature libraries and deployment tooling
-- Often efficient to train, though speed and accuracy depend on the data and configuration
+Gradient boosting is a strong tabular candidate: it can capture nonlinear relationships and interactions, is often efficient, and provides model-diagnostic summaries. Benchmark it when the data, evaluation goal, and operational constraints justify it; speed and predictive performance depend on the dataset and configuration.
 
 *Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind).*
 
@@ -611,7 +528,7 @@ Final: Combine all models (like a modeling ensemble)
 
 ## `XGBoost` Basics
 
-`XGBoost` (Extreme Gradient Boosting) is a widely used gradient-boosting library. It is a strong candidate for many tabular prediction problems, but its performance must be evaluated against appropriate baselines on the data at hand.
+`XGBoost` is a widely used implementation to benchmark against simpler tabular baselines.
 
 **Reference:**
 
@@ -641,11 +558,9 @@ Final: Combine all models (like a modeling ensemble)
 | `learning_rate` | Slow convergence | Unstable training | 0.01-0.3 |
 | `subsample` | Less robust | More variance | 0.8-1.0 |
 
-*These ranges are toy starting points, not universal sweet spots. Validate them against a baseline with the task's chosen measure; the useful range depends on the data, objective, budget, and regularization.* Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash.
+*These are toy starting points, not universal sweet spots; validate them for the data, objective, budget, and regularization.* Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash.
 
-**Early Stopping:** Helps limit overfitting by stopping training when validation performance stops improving.
-
-*Early stopping monitors validation performance during training. When validation metrics stop improving (or start getting worse), training stops automatically. The validation set therefore participates in model selection; keep a separate test set for the one-time final evaluation.*
+**Early stopping** ends training when validation performance stops improving. Because validation participates in model selection, keep a separate test set for one final evaluation.
 
 **Example:**
 
@@ -685,8 +600,6 @@ importance = model.feature_importances_
 print(f"Feature importance: {importance}")
 ```
 
-*Feature importance is returned as an array showing the relative importance of each feature. Higher values indicate more important features for making predictions.*
-
 ## The Boosting Ecosystem
 
 Beyond `XGBoost`, there are other powerful gradient boosting libraries:
@@ -701,7 +614,7 @@ Beyond `XGBoost`, there are other powerful gradient boosting libraries:
 - Provides native mechanisms for categorical features
 - A candidate when the table contains important categorical variables
 
-*Pro tip: Benchmark the libraries that fit the data and constraints rather than choosing from a slogan. Their relative speed and predictive performance depend on the dataset, configuration, and evaluation design. It's like choosing between blue steel, magnum, and le tigre—they're all amazing, just slightly different, so benchmark them on your data.*
+*Benchmark them under the same split, measure, and budget. Blue steel, magnum, and le tigre are all amazing, just slightly different—so test them on your data.*
 
 **The Boosting Family Tree:**
 
@@ -722,37 +635,9 @@ Gradient Boosting
 
 *Deep learning is like the "Derelicte" of modeling - it's cutting-edge, it's flashy, and everyone wants to use it even when they probably shouldn't.*
 
-Deep learning uses neural networks with multiple layers to learn complex patterns. It is widely used for images, text, audio, and other representation-learning tasks.
-
 ## Why Deep Learning?
 
-**Tasks where neural networks are common candidates:**
-
-- Image recognition and computer vision
-- Natural language processing (text)
-- Speech recognition and audio
-- Time series with complex patterns
-- Problems with enough relevant data and compute to evaluate the approach responsibly
-
-**Deep learning and simpler candidates:**
-
-- **Consider deep learning when:**
-    - You have unstructured data (images, text, audio)
-    - You need to learn complex, hierarchical features
-    - Simpler task-appropriate baselines do not meet the evaluation goal
-
-- **Include simpler models when:**
-    - You have tabular/structured data
-    - You need fast training and prediction
-    - You need a transparent baseline or tighter resource use
-
-**Reasons a simpler model may be preferable:**
-
-- The available sample does not support reliable validation of a high-capacity model
-- A simpler approach already meets the goal
-- The explanation requirements are not met by the proposed approach
-- Limited computational resources
-- Tabular data for which simpler and tree-based candidates validate as well or better
+Deep learning uses multilayer neural networks for representation learning. It is a candidate for images, text, audio, complex time series, or other settings with enough data and compute for responsible validation. For tabular data, limited samples or resources, or strong explanation requirements, retain simple and tree-based baselines and choose by validation evidence.
 
 **Overfitting Visualization:**
 
@@ -767,8 +652,6 @@ that generalize well.        data but can't generalize.
 ```
 
 *Overfitting is like memorizing answers to practice problems but failing the actual test. The model performs great on training data but poorly on new data.*
-
-*Remember: Deep learning is powerful, but it's not always the answer. Sometimes a simple model is the right model.*
 
 **Building a candidate shortlist:**
 
@@ -797,23 +680,9 @@ flowchart TD
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
-`TensorFlow` is an open-source machine-learning platform originally developed by Google. This lecture uses its integrated `tf.keras` API to build neural networks.
+This lecture uses TensorFlow's integrated `tf.keras` API. Its high-level tools and deployment ecosystem can be useful, but framework choice depends on measured performance, target platform, expertise, and maintenance.
 
-**Why TensorFlow/Keras may be a candidate:**
-
-- Mature and well-documented
-- Includes tools for multiple deployment targets
-- High-level API makes it easy to get started
-- Extensive ecosystem and community support
-- Good performance optimizations
-
-These strengths may matter in some settings, but framework choice should still reflect measured performance, the target platform, team expertise, and maintenance constraints.
-
-**Dropout** randomly masks (sets aside) a fraction of units during training,
-which can reduce reliance on particular pathways. Those units are active at
-inference, so Dropout is a regularization choice to validate—not a guarantee
-against overfitting. The detailed Keras comparison of Dropout and L2 in Demo 3
-is optional extension material.
+**Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active at inference. It is a regularization choice to validate, not a guarantee against overfitting. Demo 3's Dropout/L2 comparison is optional.
 
 **Reference:**
 
@@ -903,7 +772,7 @@ print(f"Accuracy: {accuracy:.3f}")
 
 ## `PyTorch`: An Open-Source Deep-Learning Framework
 
-`PyTorch` is an open-source deep-learning framework governed by the PyTorch Foundation. Its eager, Python-oriented interface is used in both research and production settings.
+`PyTorch` provides an eager, Python-oriented interface used in research and production.
 
 **PyTorch and TensorFlow/Keras:**
 
@@ -921,22 +790,11 @@ print(f"Accuracy: {accuracy:.3f}")
 - `loss_fn = nn.BCELoss()` - Loss function
 - `model.train()` / `model.eval()` - Set training/evaluation mode
 
-*Note: We're keeping PyTorch brief here because the lecture uses TensorFlow/Keras for its worked example. That is a teaching choice, not a claim that one framework is universally easier or better.*
+*PyTorch stays brief because TensorFlow/Keras owns the worked example—a teaching choice, not a universal ranking.*
 
 ## Other Modern Frameworks
 
-Beyond `TensorFlow` and `PyTorch`, other frameworks support different computational styles:
-
-**`JAX`:**
-
-- NumPy with automatic differentiation and JIT compilation
-- Used for numerical computing and advanced experimentation
-- A candidate when its transformation and accelerator model fits the problem and team
-
-**Other specialized frameworks:**
-
-- Various specialized tools for specific domains
-- Consider them when a concrete domain or platform requirement justifies the extra dependency
+Other frameworks serve different computational styles. `JAX` combines NumPy-like arrays with automatic differentiation and JIT compilation; choose it or another specialized tool when its capabilities and dependency cost fit the task.
 
 **The Deep Learning Ecosystem:**
 
@@ -958,7 +816,7 @@ Deep Learning Frameworks
 | Gradient-boosted trees | Tabular prediction candidate | Flexible nonlinear fits and strong empirical performance | Tuning, calibration, and validation stability |
 | Deep neural networks | Representation-learning candidate | Flexible architectures for images, text, audio, and other complex inputs | Data, compute, deployment, and explanation requirements |
 
-Training time and predictive performance vary with the dataset, implementation, hardware, and tuning budget. Measure them in the intended workflow rather than assigning a universal ranking.
+Measure performance in the intended workflow; dataset, implementation, hardware, and tuning budget prevent universal rankings.
 
 *"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"*
 

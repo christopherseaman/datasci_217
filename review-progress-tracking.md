@@ -5,8 +5,8 @@ This is the durable checkpoint for the `2026-refresh` review. Update it after ev
 ## Branch-only status
 
 - Active branch: `2026-refresh`
-- Current phase: the approved lecture/demo prerequisite-alignment repair is implemented, executed, and independently reviewed. Assignments were not changed. The future instructor batch helper remains separate operational work, and course-wide heading normalization remains open.
-- Explicitly out of scope for this checkpoint: assignment-duration guidance, notebook-tooling dependency changes, implementation of the future batch-grading helper, or merging to `main`
+- Current phase: the instructor-authorized Lecture 10 prose consolidation is implemented and independently reviewed after the approved lecture/demo prerequisite-alignment repair. No demo or assignment changed. The future instructor batch helper remains separate operational work, and course-wide heading normalization remains open.
+- Explicitly out of scope for this checkpoint: trimming Lecture 10 tables, flowcharts, API reference lists, or fenced examples; assignment-duration guidance; notebook-tooling dependency changes; implementation of the future batch-grading helper; or merging to `main`
 - Branch-only working records: `AGENTS.md`, `HANDOFF.md`, and this file
 - Before the eventual merge to `main`: remove or explicitly exclude all three branch-only working records
 
@@ -1195,10 +1195,33 @@ scratch.
 - An independent challenge of the synthesized report caught two overstatements: Lecture 10 already owns baseline/CV/test-split workflow, and Lecture 09's tick example assumes rather than necessarily lacks a `count` column. Both findings were narrowed, and the targeted re-review passed with no remaining material synthesis defect.
 - The repository-wide course audit remains unsuitable as a lecture-only release gate because its demo/assignment expectations target an intermediate branch state. No current audit error was newly introduced by the lecture README changes.
 
+## Lecture 10 prose consolidation (2026-09-01)
+
+The instructor authorized trimming Lecture 10 prose and duplication while
+explicitly preserving its tables, flowcharts, and API reference lists. The
+bounded edit also preserved every fenced example, model family, `LIVE DEMO`
+marker, and Zoolander reference. Repeated model-selection framing, generic
+library praise, and overlapping model-family strength/use-case prose were
+consolidated; the inference/prediction boundary, association/causation and
+uncertainty concepts, train/validation/test contract, temporal leakage rule,
+mixed-type preprocessing pattern, metric choice, permutation importance,
+gradient pseudo-residuals, early stopping, Dropout, and framework caveats all
+remain.
+
+`10/README.md` decreased from 5,769 to 4,581 whitespace-delimited words, a
+1,188-word (20.6%) reduction, placing it just below `main`'s 4,605 words. An
+exact preservation check passed all 20 fenced blocks, all 49 Markdown table
+rows across eight tables, all eight API reference lists, and all three demo
+markers. Zoolander-term counts match the pre-edit source. Markdown fences and
+relative links pass, `git diff --check` passes, and Eleventy renders 30 pages
+with 124 copied assets. An independent adversarial review found no actionable
+P0-P3 issue or demo/assignment prerequisite regression.
+
 ## Next action
 
-1. Commit and push the validated prerequisite-alignment checkpoint on
-   `2026-refresh`; do not merge to `main` in this review step.
+1. Present the Lecture 10 prose-consolidation checkpoint for instructor review.
+   Do not trim its tables, flowcharts, API reference lists, or fenced examples
+   without further direction, and do not merge to `main` in this review step.
 2. After standalone assignment repositories exist, implement and pilot the
    neutral batch-grading helper on one script and one notebook assignment, then
    populate source coordinates, student mappings, and ref/gradebook policy.
@@ -1243,3 +1266,4 @@ scratch.
 | `ab62eea` | Remove invented pacing and tooling work | Preserve Assignment 11's intentional breadth without prescribing duration and reject notebook-tooling dependency churn |
 | `45adc20` | Align grading and modeling contracts | Implement and validate the bounded Lecture 10, Assignment 10/11, neutral-grader, URL-placeholder, and active-Classroom cleanup batch |
 | `ce11716` | Align demos with lecture prerequisites | Move foundational concepts to their owning lectures, remove later-topic demo dependencies, apply the pandas 3 preprocessing/index contracts, and pass execution plus independent review |
+| pending | Condense Lecture 10 prose | Remove duplicated framing while preserving protected visuals, references, examples, humor, and prerequisite concepts |
