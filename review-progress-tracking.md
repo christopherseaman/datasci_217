@@ -73,6 +73,35 @@ The review distinguished intentional pandas 3/API modernization, prerequisite re
 - Lecture 11's old phase/checklist structure was intentionally replaced by a question-led integration path. Its crosswalk preserves cleaning, joins/reshape, aggregation, visualization, time series, modeling/evaluation, and communication without imposing a universal lifecycle.
 - A prose-oriented metric increased for every current core README. The largest gains are Lectures 11, 10, and 03; large line-count reductions in Lectures 02 and 07 principally reflect code/reference consolidation rather than disappearing core concepts. These counts support the pair review but do not by themselves establish pedagogical quality.
 
+### Core-pair refresh at the current branch tip (2026-08-31)
+
+A new read-only comparison at `25a42c1` against the same `main` baseline
+`7b49984` rechecked the 11 core README pairs after the later lecture/demo
+prerequisite work. Four lecture-range reviewers and one cross-course reviewer
+independently confirmed the earlier verdict: every inherited core topic family
+remains represented, and the main change is clearer ownership rather than
+silent deletion.
+
+The current course is less of an API catalog and more contract/decision driven:
+scripts remain explicit through Lecture 03; Lecture 04 owns notebooks and the
+pandas 3 mental model; Lecture 05 owns cleaning judgment; Lecture 06 owns
+structural combination and reshape; Lectures 07–09 own visualization,
+aggregation, and time respectively; Lecture 10 owns evaluation, leakage-safe
+preprocessing, and model comparison; and Lecture 11 applies the sequence in a
+question-led capstone. Sampling is narrowed to inspection in Lecture 05 core,
+notebook automation is signposted from Lecture 04 and detailed in its bonus,
+modern visualization libraries are an optional survey, and specialized time
+series decomposition/forecasting is optional. Lecture 10 preserves every model
+family and Zoolander reference while replacing deterministic tool advice.
+
+Tone across the sequence is more precise, conditional, and evidence-led while
+remaining approachable. Decorative or misleading claims were reduced; humor
+that serves a concept remains. Raw line reductions in Lectures 02 and 07 are
+primarily consolidation of repeated reference/code walkthroughs, while prose
+increased in every core README. No new content finding or edit was produced by
+this refresh; demos, assignments, bonus pages, and points pages remained outside
+the comparison scope.
+
 ### Focused Lecture 05 and Lecture 11 follow-up
 
 The removed Lecture 05 sampling block taught `DataFrame.sample()` by count or fraction, weighted/replacement sampling, shuffling/permutation, a `groupby(...).apply(...)` stratified example, and bootstrap resampling. It was not required by the cleaning progression, and parts of its framing were misleading: a random sample is not automatically representative, shuffling does not safely “break temporal dependencies,” and the stratified example needs pandas-3-specific care. The removed notebook-automation block taught `jupyter nbconvert --execute`, output versus `--inplace`, shell exit handling, sequential notebook execution, and `--allow-errors`. This is operational tooling rather than cleaning content; `--inplace` is destructive and `--allow-errors` can mask a failed pipeline without careful framing. The current recommendation is to leave both large blocks out of core. Add a short pointer only if a later assessed activity actually expects either skill.
