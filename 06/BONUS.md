@@ -21,12 +21,10 @@ See [README.md](README.md) for core data wrangling operations - master those fir
 
 1. **Advanced MultiIndex Operations** - Deep dive into hierarchical indexing with swaplevel(), level-specific sorting, and summary statistics by level
 2. **Merging on Index** - Join DataFrames using index values instead of columns
-3. **DataFrame.join() Method** - Simplified index-based merging
-4. **combine_first() for Patching Missing Data** - Fill gaps by preferentially choosing non-null values
-5. **Advanced concat Options** - Using keys, levels, names, and verify_integrity for complex concatenations
-6. **MultiIndex Creation Methods** - Programmatically build hierarchical indexes with from_tuples(), from_product(), from_arrays()
-7. **Stack/Unstack with dropna Parameter** - Control how missing data is handled during reshaping
-8. **Hierarchical Columns from Pivot** - Create and work with MultiIndex in column headers
+3. **Advanced concat Options** - Using keys, levels, names, and verify_integrity for complex concatenations
+4. **MultiIndex Creation Methods** - Programmatically build hierarchical indexes with from_tuples(), from_product(), from_arrays()
+5. **Stack/Unstack with dropna Parameter** - Control how missing data is handled during reshaping
+6. **Hierarchical Columns from Pivot** - Create and work with MultiIndex in column headers
 
 ---
 
@@ -240,173 +238,7 @@ resulting index structure depends on the join and key choices. Inspect
 
 ---
 
-## 3. DataFrame.join() Method
-
-*DataFrame.join() is a convenience method for index-based merging. It's less flexible than merge() but cleaner for common cases.*
-
-The join() method is an instance method (called on a DataFrame) that defaults to joining on indexes.
-
-**Reference:**
-
-- `left_df.join(right_df)` - Join on indexes (default how='left')
-- `left_df.join(right_df, how='inner')` - Change join type
-- `left_df.join(right_df, on='column')` - Join left's column to right's index
-- `left_df.join([df2, df3, df4])` - Join multiple DataFrames at once
-- Simpler than merge() for index-based joins
-
-**Example:**
-
-```python
-# Product prices (indexed by product_id)
-prices = pd.DataFrame(
-    {'price': [999.99, 25.99, 79.99, 299.99]},
-    index=['P001', 'P002', 'P003', 'P004']
-)
-prices.index.name = 'product_id'
-
-# Product categories (indexed by product_id)
-categories = pd.DataFrame(
-    {'category': ['Electronics', 'Accessories', 'Accessories', 'Electronics']},
-    index=['P001', 'P002', 'P003', 'P004']
-)
-categories.index.name = 'product_id'
-
-# Join prices with categories (both on index)
-products = prices.join(categories)
-print(products)
-#               price     category
-# product_id
-# P001        999.99  Electronics
-# P002         25.99  Accessories
-# P003         79.99  Accessories
-# P004        299.99  Electronics
-
-# Join multiple DataFrames at once
-inventory = pd.DataFrame(
-    {'stock': [5, 50, 20, 3]},
-    index=['P001', 'P002', 'P003', 'P004']
-)
-inventory.index.name = 'product_id'
-
-full_catalog = prices.join([categories, inventory])
-print(full_catalog)
-#               price     category  stock
-# product_id
-# P001        999.99  Electronics      5
-# P002         25.99  Accessories     50
-# P003         79.99  Accessories     20
-# P004        299.99  Electronics      3
-
-# Join column to index (like left_on/right_index)
-orders = pd.DataFrame({
-    'product_id': ['P001', 'P002', 'P001'],
-    'quantity': [2, 5, 1]
-})
-orders_with_prices = orders.join(prices, on='product_id')
-print(orders_with_prices)
-#   product_id  quantity   price
-# 0       P001         2  999.99
-# 1       P002         5   25.99
-# 2       P001         1  999.99
-```
-
-**Comparison to merge():**
-
-```python
-# These are equivalent:
-result1 = left_df.join(right_df, how='left')
-result2 = pd.merge(left_df, right_df, left_index=True, right_index=True, how='left')
-
-# join() is cleaner when:
-# - Joining on indexes (the common case)
-# - Joining multiple DataFrames at once
-# - You prefer method chaining style
-
-# merge() is better when:
-# - Joining on columns
-# - Different column names (left_on/right_on)
-# - You need explicit control over everything
-```
-
----
-
-## 4. combine_first() for Patching Missing Data
-
-*Think of combine_first() as saying "use my data, but if I'm missing something, fill it in from the other DataFrame." It's perfect for data patching and fallback values.*
-
-The combine_first() method fills missing values with corresponding values from another DataFrame or Series.
-
-**Reference:**
-
-- `df1.combine_first(df2)` - Use df1 values; fill NaN from df2
-- Works with both Series and DataFrame
-- Aligns on index automatically
-- Result includes union of both indexes
-- Preserves dtypes when possible
-
-**Example:**
-
-```python
-# Primary survey export (incomplete)
-primary = pd.Series([95.0, np.nan, 88.0, np.nan],
-                    index=['Alice', 'Bob', 'Charlie', 'Diana'])
-
-# Reviewed repair export for the same respondents and measurement
-repair = pd.Series([np.nan, 92.0, np.nan, 85.0],
-                   index=['Alice', 'Bob', 'Charlie', 'Diana'])
-
-print("Primary:", primary)
-# Alice      95.0
-# Bob         NaN
-# Charlie    88.0
-# Diana       NaN
-
-print("Repair:", repair)
-# Alice       NaN
-# Bob        92.0
-# Charlie     NaN
-# Diana      85.0
-
-# Prefer the primary export and fill aligned gaps from the repair export
-combined = primary.combine_first(repair)
-print(combined)
-# Alice      95.0  # From primary
-# Bob        92.0  # Filled from aligned repair
-# Charlie    88.0  # From primary
-# Diana      85.0  # Filled from aligned repair
-
-# Works with DataFrames too
-df1 = pd.DataFrame({
-    'A': [1.0, np.nan, 5.0],
-    'B': [np.nan, 2.0, np.nan],
-    'C': range(2, 14, 4)
-}, index=[0, 1, 2])
-
-df2 = pd.DataFrame({
-    'A': [5.0, 4.0, np.nan, 3.0],
-    'B': [np.nan, 3.0, 4.0, 6.0]
-}, index=[0, 1, 2, 3])
-
-result = df1.combine_first(df2)
-print(result)
-#      A    B     C
-# 0  1.0  NaN   2.0  # A from df1, C from df1
-# 1  4.0  2.0   6.0  # A filled from df2, B from df1
-# 2  5.0  4.0  10.0  # A from df1, B filled from df2
-# 3  3.0  6.0   NaN  # Entire row from df2
-```
-
-**Real-world use cases:**
-- Merging corrected data with original (corrections take priority)
-- Filling data gaps from multiple sources
-- Combining model predictions with actual values
-- Patching incomplete time series
-
-**Gotcha:** combine_first() always prefers the calling DataFrame (left side). If you want different priority, swap the order: `df2.combine_first(df1)` instead.
-
----
-
-## 5. Advanced concat Options
+## 3. Advanced concat Options
 
 *Basic concat is straightforward, but these options give you fine control over how pieces are labeled and validated.*
 
@@ -508,7 +340,7 @@ print(result)
 
 ---
 
-## 6. MultiIndex Creation Methods
+## 4. MultiIndex Creation Methods
 
 *Sometimes you need to build a MultiIndex programmatically rather than getting it from groupby or pivot. These methods give you precise control.*
 
@@ -595,7 +427,7 @@ print(sales)
 
 ---
 
-## 7. Stack/Unstack and Missing Values in pandas 3
+## 5. Stack/Unstack and Missing Values in pandas 3
 
 In pandas 3, `stack()` uses the new implementation and preserves missing combinations. The former `dropna=` argument is no longer accepted. Remove missing values explicitly after stacking when that is the intended analysis.
 
@@ -653,7 +485,7 @@ Keeping the full result lets a later analysis distinguish a recorded missing val
 
 ---
 
-## 8. Hierarchical Columns from Pivot
+## 6. Hierarchical Columns from Pivot
 
 *pivot() can create MultiIndex not just in rows, but in columns too. This happens when you don't specify the values parameter or when pivoting multiple value columns.*
 
@@ -792,17 +624,6 @@ You'll know it's time to come back to these advanced topics when you encounter:
 - After extensive use of set_index()
 - Working with data from databases (often indexed)
 
-**DataFrame.join():**
-- Frequently joining multiple DataFrames by index
-- Building data pipelines with consistent index-based joins
-- Need cleaner syntax than pd.merge() for simple cases
-
-**combine_first():**
-- Patching data gaps from multiple sources
-- Implementing fallback/default values
-- Merging corrected data with original datasets
-- Time series with overlapping coverage
-
 **Advanced concat Options:**
 - Need to track data provenance (which source?)
 - Building complex hierarchical datasets
@@ -828,7 +649,3 @@ You'll know it's time to come back to these advanced topics when you encounter:
 - Building sophisticated summary tables
 
 **Bottom Line:** If the basic operations in the main lecture feel limiting, come back here. These advanced topics solve real problems that emerge in complex data wrangling scenarios.
-
-## Patching Missing Data with combine_first()
-
-See [Section 4](#4-combine_first-for-patching-missing-data) for the substantive example and caller-priority rule. The prerequisite is unchanged: both sources' row and column labels must describe the same observations and variables.

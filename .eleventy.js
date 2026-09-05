@@ -14,7 +14,12 @@ function markdownHeadingSlug(value) {
 }
 
 function renderedSourceLink(url, sourcePath) {
-  if (/^(?:[a-z]+:|\/\/|\/|#)/i.test(url)) return url;
+  const prefix = (process.env.ELEVENTY_PATH_PREFIX || "/").replace(/\/$/, "");
+  if (/^(?:[a-z]+:|\/\/|#)/i.test(url)) return url;
+  if (url.startsWith("/")) {
+    if (!prefix || url === prefix || url.startsWith(`${prefix}/`)) return url;
+    return `${prefix}${url}`;
+  }
   const match = url.match(/^([^?#]+?)([?#].*)?$/);
   if (!match) return url;
 
@@ -26,7 +31,6 @@ function renderedSourceLink(url, sourcePath) {
   }
   let pagePath = repositoryPath.replace(/\/README\.md$/i, "/");
   pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
-  const prefix = (process.env.ELEVENTY_PATH_PREFIX || "/").replace(/\/$/, "");
   const outputPath = pagePath === repositoryPath ? repositoryPath : pagePath;
   return `${prefix}/${outputPath.replace(/^\//, "")}${suffix}`;
 }

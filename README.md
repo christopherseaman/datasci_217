@@ -21,11 +21,10 @@
 
 ## Assignments
 
-- **Assignment 1:** `{{ASSIGNMENT_01_URL}}`
-- **Assignment 2:** `{{ASSIGNMENT_02_URL}}`
-- **Assignment 3:** `{{ASSIGNMENT_03_URL}}`
+Each lecture directory contains the source for its assignment. The instructor
+supplies the term-specific assignment repository URLs separately.
 
-The instructor supplies these term-specific assignment repository URLs.
+Term-specific repository URLs: `#FIXME:ASSIGNMENT_URLS`
 
 ## Lectures
 
