@@ -485,6 +485,8 @@ SSH agent avoids retyping it for every connection.
 A persistent terminal session lets work continue when the network connection or
 laptop disappears. Use whichever tool the server provides:
 
+For a guided introduction, see [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/).
+
 ```bash
 # tmux
 tmux new-session -s analysis

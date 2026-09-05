@@ -33,6 +33,7 @@ examples, and assignments provide independent practice.
 - [Python for Data Analysis](https://wesmckinney.com/book/) (rough basis for Python content)
 - [The Missing Semester](https://missing.csail.mit.edu/) (command line, git, data wrangling)
 - [The Linux Command Line book](http://linuxcommand.org/tlcl.php) (command line in-depth)
+- [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/) (free, beginner-friendly course)
 - [Markdown Guide](https://www.markdownguide.org/) (you can probably figure this one out)
 
 ### Development Tools (free!)
