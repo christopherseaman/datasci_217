@@ -48,9 +48,9 @@ Hands-on practice with time series analysis using health and medical research da
 
 **Key Activities**:
 - Time series visualization with matplotlib and seaborn
-- Combining pandas, matplotlib, and altair for interactive plots
+- Combining pandas, matplotlib, and seaborn for complementary views
 - Time-zone localization and conversion for multi-site reporting
-- Seasonal pattern identification
+- Seasonal pattern visualization with month-based grouping
 - Multi-variable time series visualization
 - Integration with concepts from Lecture 07 (visualization)
 
@@ -68,7 +68,6 @@ Hands-on practice with time series analysis using health and medical research da
 - Python environment with pandas, numpy, matplotlib, seaborn
 - Jupyter notebook interface
 - All demo notebooks are generated from Markdown files using Jupytext; Markdown is authoritative
-- **Note**: altair is optional (commented out in Demo 3) - uncomment if you want interactive visualizations
 
 ## Setup Instructions
 
@@ -130,11 +129,11 @@ jupytext --to notebook --output demo3_visualization_automation.ipynb demo3_visua
 ### Demo 3: Visualization and Integration
 - Combine time series concepts with visualization from Lecture 07
 - Show how different visualization libraries work with time series
-- Demonstrate seasonal pattern identification
+- Demonstrate seasonal pattern visualization with month-based grouping
 - Create publication-quality plots for medical research
 - Integrate resampling, rolling windows, and visualization techniques
 - Teach time-zone localization and conversion after the lecture's time-zone section
-- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently. Altair is optional (commented out) to avoid dependency issues.
+- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently.
 
 ## Common Pitfalls to Address
 - **Timezone confusion**: Address localization and conversion in Demo 3, after the lecture introduces time zones
@@ -145,5 +144,5 @@ jupytext --to notebook --output demo3_visualization_automation.ipynb demo3_visua
 ## Integration with Previous Lectures
 - **Lecture 08 (GroupBy)**: Resampling is similar to groupby but for time intervals
 - **Lecture 06 (Data Wrangling)**: Time series data often needs merging and combining
-- **Lecture 07 (Visualization)**: Time series visualization uses matplotlib, seaborn, and altair
+- **Lecture 07 (Visualization)**: Time series visualization reuses matplotlib and seaborn
 - **Lecture 05 (Data Cleaning)**: Time series data often has missing values and outliers

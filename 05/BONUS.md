@@ -1,3 +1,12 @@
+---
+notion:
+  role: bonus
+  status: mapped
+  page_id: "286d9fdd-1a1a-80ca-b36b-f85d415c2e53"
+  url: "https://app.notion.com/p/286d9fdd1a1a80cab36bf85d415c2e53"
+  note: "Notion files this page under Lecture 04, although its content corresponds to this Lecture 05 bonus file."
+---
+
 Bonus Content: Advanced Data Cleaning
 
 *These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!*
@@ -279,15 +288,18 @@ print(df)
 
 # Optional Reference: Sampling Designs and Resampling
 
-The core lecture uses simple random row samples for manual inspection. The
-techniques below need additional design assumptions and should not be treated as
-automatic routes to representative data.
+The core lecture introduces simple random sampling and names the main tools.
+The techniques below show additional designs and resampling patterns; each one
+answers a different selection question.
 
-## Group-Wise Sampling
+## Stratified Sampling
 
-Use `GroupBy.sample` when the design calls for a fixed number or fraction from each
-defined group. The groups and allocation are analytical choices; every group must
-have enough rows unless sampling with replacement is deliberate.
+Stratified sampling divides the sampling frame into defined strata, then samples
+within each stratum. Use `GroupBy.sample` when the design calls for a fixed number
+or fraction from every group. The strata and allocation are analytical choices;
+every group must have enough rows unless sampling with replacement is deliberate.
+For a train/test split that preserves a label's proportions, see
+`sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
 
 ```python
 frame = pd.DataFrame({
@@ -302,16 +314,50 @@ by_site = frame.groupby('site', group_keys=False).sample(
 print(by_site)
 ```
 
-## Weighted, Systematic, and Replacement Sampling
+## Weighted and Systematic Sampling
 
 - `df.sample(weights='weight')` uses caller-supplied selection weights, which must
   be validated and justified by the sampling design.
-- `df.iloc[::step]` selects every *step*th row, but ordering or periodic structure
-  can make that systematically biased.
-- `df.sample(n=len(df), replace=True)` draws a same-sized resample with expected
-  duplicates. Repeating that operation to estimate a statistic's uncertainty is a
-  bootstrap procedure with assumptions of its own; it is not an ordinary train/test
-  split or proof of representativeness.
+- Systematic sampling chooses a random start and then every *step*th row. Ordering
+  or periodic structure can make it biased, so `df.iloc[start::step]` is only
+  appropriate when that risk has been considered.
+
+```python
+weighted_frame = frame.assign(weight=[1, 1, 1, 1, 2, 2, 2, 2])
+weighted = weighted_frame.sample(n=3, weights='weight', random_state=42)
+
+rng = np.random.default_rng(42)
+step = 2
+start = rng.integers(step)
+systematic = frame.iloc[start::step]
+print(weighted)
+print(systematic)
+```
+
+## Shuffling and Permutation
+
+Shuffling changes row order while retaining every row; it is useful when order is
+not meaningful. `df.sample(frac=1, random_state=42)` returns a shuffled DataFrame.
+`np.random.permutation` returns a permutation of positions, which can be reused to
+reorder aligned arrays or a DataFrame with `.iloc`.
+
+```python
+shuffled = frame.sample(frac=1, random_state=42)
+positions = np.random.default_rng(42).permutation(len(frame))
+same_rows_new_order = frame.iloc[positions]
+print(shuffled)
+print(same_rows_new_order)
+```
+
+Do not shuffle before time-aware analysis or temporal validation, where original
+order is part of the design.
+
+## Bootstrap Sampling
+
+`df.sample(n=len(df), replace=True)` draws a same-sized resample with expected
+duplicates. Repeating the draw to estimate a statistic's uncertainty is a
+bootstrap procedure with assumptions of its own; it is not an ordinary train/test
+split or proof of representativeness.
 
 ```python
 bootstrap_draw = frame.sample(

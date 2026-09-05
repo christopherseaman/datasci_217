@@ -21,7 +21,7 @@ examples are in [README.md](README.md); optional advanced material is in
 
 - matplotlib: figure/axes control and publication customization.
 - pandas: quick DataFrame exploration; seaborn: statistical graphics and distributions.
-- Altair/plotnine: declarative grammar; Bokeh/Plotly: browser interactivity and dashboards.
+- Altair: declarative Vega-Lite charts; plotnine, Bokeh, and Plotly are optional ecosystem examples.
 - Tool choice follows the visualization contract; interactivity supplements, rather than hides, essential values and context.
 
 ## matplotlib
@@ -44,9 +44,15 @@ examples are in [README.md](README.md); optional advanced material is in
 
 ## LIVE DEMO!
 
-## Optional survey: modern libraries
+## Altair: declarative charts and interaction
 
-- Altair, plotnine, Bokeh, and Plotly offer alternate grammars or delivery media. Keep labels, visible context, honest encodings, and text alternatives.
+- Use the explicit path `alt.Chart(data).mark_*().encode(...)`: start with a chart, select a mark, then type every data encoding with `:Q`, `:N`, `:O`, or `:T`.
+- Demonstrate a scatterplot with quantitative positions, a nominal color encoding, and tooltips. `.interactive()` supports inspection and zoom but cannot replace visible labels, context, or the main comparison.
+- Compose compact, already-honest charts with `alt.hconcat()` or `alt.vconcat()` only after the base chart is clear. Demo 3 practices this core path.
+
+## Optional survey: other modern libraries
+
+- plotnine, Bokeh, and Plotly offer alternate grammars or delivery media. Keep labels, visible context, honest encodings, and text alternatives.
 - Refer to [README.md](README.md) for the ecosystem comparison and [BONUS.md](BONUS.md) for extended API examples; this survey is not assessed.
 
 ## LIVE DEMO!

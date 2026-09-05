@@ -1,3 +1,11 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "2b0d9fdd-1a1a-80f4-9871-ff3a726e57c3"
+  url: "https://app.notion.com/p/2b0d9fdd1a1a80f49871ff3a726e57c3"
+---
+
 From Statistics to Deep Learning: The Modern Modeling Landscape
 
 See [BONUS.md](BONUS.md) for advanced topics:
@@ -257,9 +265,9 @@ Original Dataset (1000 samples)
 
 *The golden rule: Never evaluate on data the model has seen during training. That's like giving a student the answers before the test and then being surprised they got 100%.*
 
-Keep the test set untouched until preprocessing and model choices are final; tune with training-only cross-validation or a separate validation set. For temporal prediction, construct features only from information available at prediction time, then split chronologically or use time-series cross-validation so future conditions cannot leak backward.
+Keep the test set untouched until preprocessing and model choices are final; tune with training-only cross-validation or a separate validation set. For temporal prediction, use only information available at prediction time and split chronologically (or with time-series cross-validation) to prevent leakage.
 
-`scikit-learn` combines stable documentation, preprocessing tools, pandas-compatible inputs, and a broad estimator ecosystem. Some transformations return NumPy arrays, so preserve column names explicitly when needed.
+`scikit-learn` combines preprocessing tools, pandas-compatible inputs, and a broad estimator ecosystem. Some transformations return NumPy arrays, so preserve column names explicitly when needed.
 
 **Reference:**
 
@@ -366,7 +374,7 @@ Tree 100: Predicts Class A
 Final Prediction: Class A (majority vote)
 ```
 
-For classification, a forest combines class votes or probabilities; for regression, it averages predictions. It can model nonlinear relationships and interactions, usually without feature scaling, while aggregation reduces the instability of one fitted tree. Feature importances are diagnostic, not causal, and missing or categorical inputs still need compatible preprocessing.
+For classification, a forest combines class votes or probabilities; for regression, it averages predictions. It models nonlinear relationships and interactions, usually without feature scaling, while aggregation reduces the instability of one tree. Feature importances are diagnostic, not causal, and missing or categorical inputs still need compatible preprocessing.
 
 **Reference:**
 
@@ -492,13 +500,13 @@ Permutation importance scores a fitted model on validation data, shuffles one fe
 
 ## Why Gradient Boosting?
 
-Gradient boosting is a strong tabular candidate: it can capture nonlinear relationships and interactions, is often efficient, and provides model-diagnostic summaries. Benchmark it when the data, evaluation goal, and operational constraints justify it; speed and predictive performance depend on the dataset and configuration.
+Gradient boosting is a strong tabular candidate for nonlinear relationships and interactions. Benchmark it when the data, evaluation goal, and operational constraints justify it; performance depends on the dataset and configuration.
 
 *Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind).*
 
 **Gradient Boosting: The Magnum of Machine Learning**
 
-For squared-error regression, this can be pictured as fitting the next tree to ordinary residuals (actual minus current prediction). More generally, gradient boosting fits each new learner to pseudo-residuals—the negative gradient of the chosen loss—so the target is not always an ordinary residual and the loss need not be squared error.
+For squared-error regression, the next tree fits ordinary residuals (actual minus current prediction). More generally, each learner fits pseudo-residuals—the negative gradient of the chosen loss—so the target is not always an ordinary residual.
 
 ```
 Model 1: Makes predictions (with errors)
@@ -637,7 +645,7 @@ Gradient Boosting
 
 ## Why Deep Learning?
 
-Deep learning uses multilayer neural networks for representation learning. It is a candidate for images, text, audio, complex time series, or other settings with enough data and compute for responsible validation. For tabular data, limited samples or resources, or strong explanation requirements, retain simple and tree-based baselines and choose by validation evidence.
+Deep learning uses multilayer neural networks for representation learning. Consider it for images, text, audio, complex time series, or other settings with enough data and compute for responsible validation. For tabular data, limited samples or resources, or strong explanation requirements, retain simple and tree-based baselines and choose by validation evidence.
 
 **Overfitting Visualization:**
 
@@ -680,7 +688,7 @@ flowchart TD
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
-This lecture uses TensorFlow's integrated `tf.keras` API. Its high-level tools and deployment ecosystem can be useful, but framework choice depends on measured performance, target platform, expertise, and maintenance.
+This lecture uses TensorFlow's integrated `tf.keras` API. Framework choice depends on measured performance, target platform, expertise, and maintenance.
 
 **Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active at inference. It is a regularization choice to validate, not a guarantee against overfitting. Demo 3's Dropout/L2 comparison is optional.
 

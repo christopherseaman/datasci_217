@@ -845,75 +845,6 @@ plt.tight_layout()
 plt.show()
 ```
 
-### Performance Analysis
-
-```python
-# Performance comparison with large dataset
-print("=== Performance Analysis ===")
-import time
-
-# Method 1: Multiple groupby operations
-start_time = time.time()
-result1 = sales_df.groupby("Region")["Total_Sales"].sum()
-result2 = sales_df.groupby("Region")["Quantity"].sum()
-result3 = sales_df.groupby("Region")["Unit_Price"].mean()
-method1_time = time.time() - start_time
-
-# Method 2: Single groupby with multiple aggregations
-start_time = time.time()
-result4 = sales_df.groupby("Region").agg({
-    "Total_Sales": "sum",
-    "Quantity": "sum",
-    "Unit_Price": "mean",
-})
-method2_time = time.time() - start_time
-
-# Method 3: Using transform (for comparison)
-start_time = time.time()
-sales_df["Region_Sales_Sum"] = sales_df.groupby("Region")[
-    "Total_Sales"
-].transform("sum")
-sales_df["Region_Qty_Sum"] = sales_df.groupby("Region")["Quantity"].transform(
-    "sum"
-)
-method3_time = time.time() - start_time
-
-print(f"Method 1 (multiple groupby): {method1_time:.6f} seconds")
-print(f"Method 2 (single groupby): {method2_time:.6f} seconds")
-print(f"Method 3 (transform): {method3_time:.6f} seconds")
-print(
-    f"\nPerformance improvement (Method 1 → Method 2): {method1_time / method2_time:.2f}x faster"
-)
-
-# Visualize performance comparison
-fig, ax = plt.subplots(figsize=(10, 6))
-methods = ["Multiple\nGroupBy", "Single\nGroupBy", "Transform"]
-times = [method1_time, method2_time, method3_time]
-colors = ["red", "green", "blue"]
-bars = ax.bar(methods, times, color=colors, alpha=0.7, edgecolor="black")
-ax.set_title(
-    "Performance Comparison: GroupBy Methods", fontsize=14, fontweight="bold"
-)
-ax.set_ylabel("Execution Time (seconds)")
-ax.set_xlabel("Method")
-ax.grid(axis="y", alpha=0.3)
-
-# Add value labels on bars
-for bar, time_val in zip(bars, times):
-    height = bar.get_height()
-    ax.text(
-        bar.get_x() + bar.get_width() / 2.0,
-        height,
-        f"{time_val:.4f}s",
-        ha="center",
-        va="bottom",
-        fontweight="bold",
-    )
-
-plt.tight_layout()
-plt.show()
-```
-
 ## Key Takeaways
 
 1. **Split-Apply-Combine**: The fundamental pattern of data aggregation
@@ -922,11 +853,9 @@ plt.show()
 4. **Filter Operations**: Remove groups based on conditions
 5. **Apply Operations**: Use custom functions on groups
 6. **Hierarchical Grouping**: Work with multi-level group structures
-7. **Performance**: Single groupby with multiple aggregations is more efficient
 
 ## Next Steps
 
 - Practice with your own datasets
 - Experiment with different aggregation functions
 - Learn about pivot tables for multi-dimensional analysis
-- Explore remote computing for large datasets

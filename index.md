@@ -1,6 +1,11 @@
 ---
 title: "Introduction to Python & Data Science Tools"
 permalink: /
+notion:
+  role: course
+  status: mapped
+  page_id: "271d9fdd-1a1a-80c6-ab20-f6065b01e4e3"
+  url: "https://app.notion.com/p/271d9fdd1a1a80c6ab20f6065b01e4e3"
 ---
 
 # Introduction to Python & Data Science Tools

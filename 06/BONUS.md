@@ -1,3 +1,16 @@
+---
+notion:
+  role: bonus
+  status: unmapped
+  page_id: null
+  url: null
+  target:
+    role: dlc_subpage
+    parent_page_id: "293d9fdd-1a1a-801c-bef2-e6140976408c"
+    anchor: top
+  note: "Notion links a generic BONUS.md reference, but no separate matching bonus page was found."
+---
+
 Data Wrangling: Advanced Topics
 
 *These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques.*

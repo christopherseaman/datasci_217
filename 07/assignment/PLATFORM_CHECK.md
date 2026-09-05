@@ -10,7 +10,7 @@ Activate the environment created in `07/assignment`, then run:
 
 ```bash
 python --version
-python -c "import sys, numpy, pandas, matplotlib, seaborn; print(sys.executable); print(numpy.__version__, pandas.__version__, matplotlib.__version__, seaborn.__version__)"
+python -c "import sys, numpy, pandas, matplotlib, seaborn, altair; print(sys.executable); print(numpy.__version__, pandas.__version__, matplotlib.__version__, seaborn.__version__, altair.__version__)"
 ```
 
 Expected versions:
@@ -21,6 +21,7 @@ NumPy 2.0.2
 pandas 3.0.5
 Matplotlib 3.11.1
 seaborn 0.13.2
+Altair 5.5.0
 ```
 
 The printed interpreter path should be inside the environment you activated.
@@ -42,6 +43,7 @@ import numpy as np
 import pandas as pd
 import matplotlib
 import seaborn as sns
+import altair as alt
 
 print(sys.version)
 print(sys.executable)
@@ -49,6 +51,7 @@ print(np.__version__)
 print(pd.__version__)
 print(matplotlib.__version__)
 print(sns.__version__)
+print(alt.__version__)
 ```
 
 The kernel must report the exact versions above, and its interpreter path must

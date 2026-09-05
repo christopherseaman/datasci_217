@@ -20,16 +20,16 @@ instructor cue sheet; examples and API details live in the linked sections.
 
 ## LIVE DEMO!
 
-## Optional remote and performance cues
+## Optional bonus: remote and performance cues
 
 - Remote Jupyter: bind the server to loopback, `jupyter notebook --ip=127.0.0.1 --port=8888 --no-browser`, then forward with `ssh -L 8888:localhost:8888 user@server`.
 - Use screen/tmux for disconnect-safe jobs; follow local security policy and never expose an unauthenticated notebook publicly.
 - Optimize only after measuring. Select numeric columns explicitly before reductions, e.g. `df.groupby('category', observed=True)[['value']].sum()`; do not imply that a generic groupby sum is numeric-only across versions.
 - Chunked workflows must handle no non-empty chunks before calling `pd.concat`; raise a clear input error or return an explicitly documented empty result.
 - Prefer built-in aggregations, reviewed dtype choices, and package-supported out-of-core tools; parallelism can cost more than it saves.
-- Point to [Remote Computing and SSH](README.md#optional-remote-computing-and-ssh) and [Performance Optimization](README.md#optional-performance-optimization).
+- Point to [Basic SSH and Remote Workflow](BONUS.md#basic-ssh-and-remote-workflow) and [Performance Optimization](BONUS.md#performance-optimization).
 
-## LIVE DEMO!
+## OPTIONAL BONUS DEMO!
 
 ## Closing cues
 

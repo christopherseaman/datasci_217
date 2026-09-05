@@ -1,3 +1,16 @@
+---
+notion:
+  role: bonus
+  status: unmapped
+  page_id: null
+  url: null
+  target:
+    role: dlc_subpage
+    parent_page_id: "281d9fdd-1a1a-800a-897d-cafb5971c23f"
+    anchor: top
+  note: "The Notion Lecture 04 page contains advanced material, but no separate matching bonus page was found."
+---
+
 Bonus Content: Jupyter Workflows and Advanced Pandas Operations
 
 *This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, column creation, groupby introductions, and the core CSV workflow before tackling these extensions.*

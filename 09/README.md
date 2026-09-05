@@ -1,3 +1,11 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "2a8d9fdd-1a1a-80ed-828d-e5feb58d5ed9"
+  url: "https://app.notion.com/p/2a8d9fdd1a1a80ed828de5feb58d5ed9"
+---
+
 See [BONUS.md](BONUS.md) for optional topics outside the core Lecture 09 scope:
 
 - Advanced time series decomposition and seasonal analysis
@@ -33,7 +41,7 @@ Time series analysis is the art of understanding temporal patterns in data. The 
 
 *Reality check: Time series data is everywhere in health and medical research - patient vital signs, clinical trial measurements, disease surveillance, environmental monitoring. Understanding how to work with temporal data is essential for any data scientist in the life sciences.*
 
-Time series data is characterized by observations collected over time, where the order and timing of observations matter. Unlike cross-sectional data, time series data has a natural temporal structure that we can exploit for analysis.
+Time series data records observations over time, so order and timing matter; unlike cross-sectional data, its temporal structure supports time-based analysis.
 
 ## Types of Time Series
 
@@ -137,17 +145,14 @@ print("\nDataFrame with datetime index:")
 print(df.head())
 ```
 
-**Important Note:** When setting a datetime column as the index for DataFrames with multiple rows per date (e.g., multiple patients measured on the same date), pandas may have trouble with date range selection using `.loc`. 
+For repeated dates, convert the column, set it as the index, and sort it before
+partial-date `.loc` slicing; a non-monotonic index may not slice reliably:
 
-**Prerequisites:** First, convert your date column to datetime and set it as the index:
 ```python
 df['date'] = pd.to_datetime(df['date'])  # Convert to datetime
 df = df.set_index('date')  # Set as index
+df = df.sort_index()  # Group equal dates in monotonic order
 ```
-
-**The Problem:** If your DataFrame has multiple patients with measurements on the same date, the index might look like `[2023-01-01, 2023-01-02, 2023-01-01, 2023-01-03, ...]` - notice dates aren't in order. Pandas can't reliably slice date ranges on non-monotonic indexes.
-
-**The Solution:** Sort the index: `df = df.sort_index()`. This makes the index monotonic (non-decreasing), so all rows with the same date are grouped together: `[2023-01-01, 2023-01-01, 2023-01-02, 2023-01-03, ...]`. Now date range selection like `df.loc['2023-01':'2023-03']` works correctly.
 
 ## Date Range Generation
 
@@ -404,8 +409,6 @@ weekly_bin_labels = ts_daily.resample('W').asfreq()  # Selection at bin labels
 
 You can apply various aggregation functions when resampling, just like with `groupby()`. The syntax is the same, but instead of grouping by categories, you're grouping by time intervals.
 
-**Important Note:** When resampling DataFrames that contain non-numeric columns (like patient IDs or category labels), you'll get an error if you try to aggregate them with numeric functions like `mean()`. Use `df.select_dtypes(include=[np.number])` to select only numeric columns before resampling, or specify which columns to aggregate in `.agg()`.
-
 **Reference:**
 
 | Function | Description |
@@ -447,6 +450,8 @@ print("\nCustom aggregation:")
 custom_stats = df['temperature'].resample('ME').apply(custom_agg)
 print(custom_stats.head())
 ```
+
+When a DataFrame also contains non-numeric columns, select the numeric columns before using numeric aggregations such as `mean()`, or specify each column's aggregation in `.agg()`; otherwise pandas cannot calculate a numeric summary for identifiers or category labels.
 
 # LIVE DEMO!
 

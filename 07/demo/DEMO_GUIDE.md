@@ -1,7 +1,7 @@
 # Data Visualization Demo Guide
 
 ## Overview
-Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals, seaborn statistical plots, pandas plotting, and modern visualization tools.
+Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals, seaborn statistical plots, pandas plotting, and declarative Altair charts.
 
 Markdown is the authoritative source for each generated notebook. The tested
 activity environment is CPython 3.12.13 with the exact NumPy, pandas,
@@ -40,27 +40,27 @@ jupyter lab
 - Relationship visualization (scatter plots, heatmaps)
 - Styling and themes
 
-### Demo 3 (Optional): Modern Visualization Tools
+### Demo 3: Altair Declarative Charts
 **File**: `demo3_pandas_altair.ipynb` (generated from `demo3_pandas_altair.md`)
 **Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo3_pandas_altair.ipynb)
 **Duration**: 25 minutes
-**Focus**: Optional survey of modern visualization libraries and interactivity
+**Focus**: Core declarative charts, typed encodings, tooltips, basic interaction, and composition
 
 **Key Activities**:
-- vega-altair grammar of graphics (chart creation, data encoding, interactivity)
-- vega-lite specifications and export formats
-- plotnine ggplot2-style plotting
-- Bokeh and Plotly for interactive dashboards
-- Tool comparison and selection criteria
+- `Chart(data).mark_*().encode(...)` grammar
+- quantitative and nominal encodings, with ordinal and temporal shorthands
+  introduced for recognition
+- tooltips and `.interactive()` as supplemental inspection tools
+- horizontal and vertical composition of readable charts
 
 ## Learning Objectives
 - Master matplotlib fundamentals for custom plots
 - Create statistical visualizations with seaborn
-- Explore modern visualization tools (vega-altair, plotnine)
+- Build and inspect an Altair chart using typed encodings and accessible visible context
 - Understand when to use different visualization approaches
 
 ## Required Materials
-- Python environment with matplotlib, seaborn, pandas, altair, plotnine
+- Python environment with matplotlib, seaborn, pandas, and altair
 - Sample datasets (tips, iris, stock data)
 - Jupyter notebook interface
 - Jupytext; Markdown is the authoritative source for each generated notebook

@@ -1,7 +1,9 @@
 # Data Aggregation Demo Guide
 
 ## Overview
-Hands-on practice with data aggregation operations: groupby operations, pivot tables, remote computing, and performance optimization.
+This guide supports executable demonstrations of core data aggregation, remote
+computing, and performance. The lecture page explains the concepts; the generated
+notebooks are their runnable companions.
 
 Markdown is the authoritative source for each generated notebook. The tested
 activity environment is CPython 3.12.13 with NumPy 2.0.2, pandas 3.0.5,
@@ -23,7 +25,7 @@ jupyter lab
 **Duration**: 25 minutes
 **Focus**: Split-apply-combine paradigm and aggregation functions
 
-**Key Activities**:
+**Illustrative topics**:
 - Basic groupby operations and aggregation
 - Transform, filter, and apply operations
 - Hierarchical grouping and MultiIndex
@@ -34,7 +36,7 @@ jupyter lab
 **Duration**: 25 minutes
 **Focus**: Multi-dimensional data analysis
 
-**Key Activities**:
+**Illustrative topics**:
 - Pivot table creation and customization
 - Cross-tabulation analysis
 - Advanced pivot operations
@@ -43,29 +45,31 @@ jupyter lab
 **File**: `demo3_remote_performance.ipynb` (generated from `demo3_remote_performance.md`)
 **Colab:** [Open in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
 **Duration**: 25 minutes
-**Focus**: Large dataset handling and optimization
+**Focus**: Large dataset handling, optimization, and remote computing
 
-**Key Activities**:
+**Illustrative topics**:
 - SSH and remote computing setup
-- Performance optimization techniques
-- Parallel processing with large datasets
+- Performance measurement and dtype/memory experiments
+- Chunking plus a conceptual parallel-processing comparison
 
-## Learning Objectives
+## Core Learning Objectives
 - Master the split-apply-combine paradigm
 - Create pivot tables for multi-dimensional analysis
-- Use remote computing for large datasets
-- Optimize performance for aggregation operations
 - Apply advanced groupby techniques
+- Measure and improve aggregation performance
+- Explain how SSH and a persistent tmux session fit into a remote analysis workflow
 
 ## Required Materials
 - Python environment with pandas, numpy
 - Sample datasets (sales, customer, product data)
 - Jupyter notebook interface
-- Optional: Remote server access for SSH demo
+- No remote server is required; the notebook simulates the SSH workflow so its
+  executable cells run with the recorded environment
 - Jupytext; Markdown is the authoritative source for each generated notebook
 
 ## Instructor Notes
-- Each demo builds aggregation skills progressively
+- Demos 1–3 form the lecture sequence.
 - Focus on practical application over theoretical mastery
-- Encourage students to experiment with different aggregation functions
-- Emphasize real-world scenarios and performance considerations
+- Use the executable examples to demonstrate different aggregation functions.
+- Use the executable examples to connect aggregation performance with the remote
+  workflow presented in the lecture.

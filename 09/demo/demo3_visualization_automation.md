@@ -13,29 +13,23 @@ sns.set_style('whitegrid')
 plt.rcParams['figure.figsize'] = (14, 8)
 plt.rcParams['font.size'] = 10
 
-# Note: altair is optional - uncomment if you want interactive visualizations
-# import altair as alt
-# alt.renderers.enable('default')
 ```
 
-**Library choices**: matplotlib provides the foundation for all plotting, seaborn adds statistical visualizations and better defaults, and altair (optional) provides interactive web-based visualizations. Choose based on your needs - matplotlib for basic plots, seaborn for statistical analysis, altair for interactive dashboards.
+**Library choices**: matplotlib provides the foundation for plotting, while
+seaborn adds statistical views and convenient defaults. This demo combines
+both with pandas time-series operations.
 
 ## Part 1: Multi-Year Disease Surveillance Data
 
-We'll work with realistic disease surveillance data that has trend, seasonality, and noise - typical characteristics of real-world medical time series data.
+We'll work with realistic disease surveillance data that changes over time and varies by season, as is common in real-world medical time series data.
 
 ### Understanding the Data Structure
 
-Disease surveillance data often has multiple components:
-- **Trend**: Long-term direction (e.g., increasing cases over years)
-- **Seasonality**: Repeating patterns (e.g., flu season peaks in winter)
-- **Noise**: Random fluctuations around the pattern
-
-Understanding these components helps you choose appropriate visualization and analysis techniques.
+Disease surveillance data can show long-term changes, recurring seasonal patterns (such as winter flu peaks), and visit-to-visit variation. Visualizations, grouping, resampling, and rolling windows help us inspect those patterns without treating a single plot as a complete explanation.
 
 ### Load and Prepare Data
 
-Let's create realistic disease surveillance data with trend, seasonality, and noise. This simulates multi-year monthly case counts with seasonal patterns.
+Let's create realistic disease surveillance data. This simulates multi-year monthly case counts with seasonal patterns.
 
 ```python
 # Simulate multi-year disease surveillance data (3 years, monthly)
@@ -44,20 +38,17 @@ print("=== Disease Surveillance Data ===\n")
 # Create monthly dates for 3 years
 monthly_dates = pd.date_range('2020-01-01', periods=36, freq='ME')
 
-# Generate realistic disease surveillance data with seasonality
+# Generate realistic disease surveillance data
 n = len(monthly_dates)
 
-# Base trend (slight increase over time)
-trend = np.linspace(100, 120, n)
-
-# Seasonal component (flu season peaks in winter)
-seasonal = 20 * np.sin(2 * np.pi * np.arange(n) / 12) + 10
-
-# Noise component
-noise = np.random.normal(0, 5, n)
-
-# Combine components
-case_counts = trend + seasonal + noise
+# Simulate an upward change, an annual pattern, and ordinary variation.
+case_counts = (
+    100
+    + np.linspace(0, 20, n)
+    + 20 * np.sin(2 * np.pi * np.arange(n) / 12)
+    + 10
+    + np.random.normal(0, 5, n)
+)
 case_counts = np.maximum(case_counts, 0)  # No negative cases
 
 # Create DataFrame with multiple sites
@@ -88,7 +79,7 @@ print(f"\nSample data:")
 print(surveillance_data.head(10))
 ```
 
-Notice how we've created data with multiple components: a gradual trend increase from 100 to 120 cases, a sine wave seasonal pattern peaking in winter months, and random noise fluctuations. This structure is typical of real-world medical data where long-term trends, seasonal patterns, and random variation all contribute to observations.
+This simulated data includes a gradual increase, an annual pattern, and ordinary variation. We will use the visualization tools introduced in the lecture to explore those visible patterns.
 
 ```python
 # Initial visualization of surveillance data
@@ -250,57 +241,7 @@ plt.show()
 
 The scatter plot reveals relationships between temperature and cases, colored by month to show seasonal patterns. The dual-axis plot allows comparison of two variables with different scales on the same plot. The violin plot shows distribution shapes, revealing how case distributions vary by month. The heatmap provides a comprehensive view of patterns across years and months, making seasonal trends obvious.
 
-## Part 4: Visualizing Time Series Components
-
-Real-world time series data often contains multiple components: trend, seasonality, and noise. Visualizing these components separately helps understand the underlying patterns and is a fundamental skill in time series analysis.
-
-### Understanding Time Series Components
-
-Before we can decompose a time series, it's helpful to see how components combine. Let's create a synthetic time series with known components and visualize them separately.
-
-```python
-# Visualize time series components separately
-print("=== Visualizing Time Series Components ===\n")
-
-# Create time series with known components
-dates = pd.date_range('2020-01-01', periods=365, freq='D')
-trend_component = np.linspace(100, 120, 365)  # Long-term trend
-seasonal_component = 10 * np.sin(2 * np.pi * np.arange(365) / 365.25)  # Seasonal pattern
-noise_component = np.random.randn(365) * 3  # Random noise
-combined = trend_component + seasonal_component + noise_component
-ts_combined = pd.Series(combined, index=dates)
-
-# Visualize components separately
-fig, axes = plt.subplots(4, 1, figsize=(14, 12), sharex=True)
-
-# Original combined series
-ts_combined.plot(ax=axes[0], title='Original (Trend + Seasonal + Noise)', color='black', linewidth=2)
-axes[0].set_ylabel('Value')
-axes[0].grid(True, alpha=0.3)
-
-# Trend component
-pd.Series(trend_component, index=dates).plot(ax=axes[1], title='Trend Component', color='blue', linewidth=2)
-axes[1].set_ylabel('Value')
-axes[1].grid(True, alpha=0.3)
-
-# Seasonal component
-pd.Series(seasonal_component, index=dates).plot(ax=axes[2], title='Seasonal Component', color='green', linewidth=2)
-axes[2].set_ylabel('Value')
-axes[2].grid(True, alpha=0.3)
-
-# Noise component
-pd.Series(noise_component, index=dates).plot(ax=axes[3], title='Noise Component', color='red', alpha=0.7, linewidth=1)
-axes[3].set_ylabel('Value')
-axes[3].set_xlabel('Date')
-axes[3].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-
-**Component visualization**: Seeing each component separately helps you understand how they contribute to the overall pattern. The trend shows long-term direction, the seasonal component shows repeating patterns, and the noise shows random variation. This visualization is essential for understanding real-world time series data.
-
-### Seasonal Pattern Analysis
+## Part 4: Seasonal Pattern Visualization
 
 Seasonal patterns are common in medical data - flu season peaks in winter, allergies peak in spring, etc. Identifying and visualizing these patterns is crucial for understanding disease dynamics.
 
@@ -316,39 +257,24 @@ print("Average cases by month:")
 for month, avg in monthly_avg.items():
     print(f"Month {month:2d}: {avg:6.1f} cases (std: {monthly_std[month]:.1f})")
 
-# Visualize seasonal pattern
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+# Visualize the monthly grouping
+fig, ax = plt.subplots(figsize=(10, 6))
 
 # Monthly average bar chart
 month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-axes[0].bar(month_names, monthly_avg.values, yerr=monthly_std.values, 
-           alpha=0.7, color='steelblue', edgecolor='black')
-axes[0].set_title('Average Cases by Month (Seasonal Pattern)', fontsize=14, fontweight='bold')
-axes[0].set_ylabel('Average Cases')
-axes[0].grid(True, alpha=0.3, axis='y')
-
-# Trend extraction from real data
-trend = site_a['cases'].rolling(window=12, center=True).mean()
-seasonal = site_a['cases'] - trend
-residual = seasonal - site_a['cases'].groupby(site_a.index.month).transform('mean')
-
-axes[1].plot(site_a.index, site_a['cases'], alpha=0.5, label='Original', color='gray')
-axes[1].plot(site_a.index, trend, linewidth=2, label='Trend (12-month)', color='blue')
-axes[1].set_title('Trend Component Extraction', fontsize=14, fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Cases')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3)
-axes[1].tick_params(axis='x', rotation=45)
+ax.bar(month_names, monthly_avg.values, yerr=monthly_std.values,
+       alpha=0.7, color='steelblue', edgecolor='black')
+ax.set_title('Average Cases by Month', fontsize=14, fontweight='bold')
+ax.set_xlabel('Month')
+ax.set_ylabel('Average Cases')
+ax.grid(True, alpha=0.3, axis='y')
 
 plt.tight_layout()
 plt.show()
 ```
 
-The monthly averages reveal seasonal patterns - notice how some months consistently have higher or lower case counts. The trend component shows the long-term direction after removing seasonal effects. This decomposition helps you understand what's driving changes in case counts.
-
-*Note: For advanced seasonal decomposition techniques (like STL decomposition), see the BONUS.md section on advanced time series decomposition.*
+The monthly averages reveal recurring seasonal patterns: some months consistently have higher or lower case counts. This grouping is descriptive; it helps compare months but does not establish why the pattern occurs.
 
 ## Part 5: Time Zone Handling for Multi-Site Reporting
 

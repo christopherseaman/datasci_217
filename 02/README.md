@@ -1,9 +1,18 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "271d9fdd-1a1a-8036-9c2b-c4a66ae97d9d"
+  url: "https://app.notion.com/p/271d9fdd1a1a80369c2bc4a66ae97d9d"
+---
+
 # `git gud` with Version Control
 
+See [BONUS.md](BONUS.md) for the optional extensions.
 
 # VS Code Basics (GUI-first)
 
-We'll start in the editor so Git makes visual sense later. No JSON needed—just the VS Code interface.
+We'll start in the editor so Git makes visual sense later.
 
 ## Palette Cleanse: Command Palette & Quick Open
 
@@ -93,27 +102,19 @@ Git tracks every change, letting you see what changed, restore versions, work in
 
 Your project folder that Git tracks. Contains your files plus a hidden `.git` folder with all the version history.
 
-Think: "This entire folder is under Git management."
-
 ### Commit
 
 A saved snapshot of your project at a specific point in time. Like saving a game - you can always come back to this exact state.
-
-Think: "I'm saving my progress with a description of what I accomplished."
 
 ### Remote
 
 The version of your repository stored on GitHub (or similar service). Your local computer has a copy, GitHub has a copy, your teammates have copies.
 
-Think: "The shared version everyone can access."
-
 ### Branch
 
 A parallel timeline for your project. The main branch contains your official version, feature branches contain experimental work.
 
-Think: "I'm trying something new without risking the working version."
-
-*We'll focus on the main branch today - branches come later!*
+*We'll focus on the main branch today—branches come later!*
 
 **Reference:**
 
@@ -200,8 +201,6 @@ git commit -m "minor changes"
 1. Install VS Code (if not already done)
 2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
 3. If first time: VS Code will prompt to configure Git username/email
-
-VS Code's Source Control panel makes version control accessible without memorizing command-line syntax. This integration streamlines daily staging, committing, and managing changes.
 
 **Reference:**
 
@@ -311,8 +310,6 @@ data/raw/*.csv
 !data/processed/important_results.csv
 ```
 
-This prevents accidentally committing sensitive information, large files, or generated content while preserving important project files.
-
 **Brief Example:**
 
 Create repository: github.com → "+" → "New repository" → Name, description, add README → Create.
@@ -357,7 +354,11 @@ print(f"Average grade: {average:.1f}")
 
 # Python Fundamentals (McKinney Ch2+3)
 
-Python emphasizes readability for data analysis. Everything is an object, enabling consistent behavior. Focus is on practical data manipulation.
+![xkcd 1429, “Data”: a grammar joke contrasting polling data with the Star Trek character Data.](media/xkcd_1429.png)
+
+*[Data](https://xkcd.com/1429/) by xkcd — in Python, everything is an object. In Star Trek, Data is too.*
+
+Python emphasizes readable, practical data manipulation. Its values are objects with consistent behavior.
 
 ## What is new in Lecture 02?
 
@@ -367,7 +368,7 @@ Lecture 01 established the command line, Python installation, variables, basic e
 
 ## Brief review: scalars, strings, output, and control flow
 
-Lecture 01 introduced these everyday building blocks. Keep them handy here, but focus on how they support the new topics below rather than relearning them in full.
+Lecture 01 introduced these building blocks; focus here on how they support the new topics.
 
 ```python
 count, average = 150, 87.3
@@ -699,6 +700,21 @@ If this is saved as `analysis.py`, the first command runs `main()` and the secon
 python3 analysis.py
 python3 -c "import analysis"
 ```
+
+# Command-Line Catalog
+
+These are names to recognize from command-line work. The
+[command-line bonus](BONUS.md#command-line-essentials) has short explanations
+and examples.
+
+| Area | Commands | Purpose |
+| --- | --- | --- |
+| Navigation | `pwd`, `ls`, `cd` | Show where you are, list contents, and move between directories. |
+| Files and directories | `mkdir`, `touch`, `cp`, `mv` | Create directories or empty files, copy items, and rename or move them. |
+| Removal | `rm` | Remove a file; destructive, so check the path first. |
+| Inspect and search text | `cat`, `head`, `tail`, `grep`, `wc` | Read, preview, search, and count text. |
+| Directory overview | `tree` | Display a directory hierarchy when the command is available. |
+| Recall and shortcuts | `history`, ↑/↓, `Tab`, `Ctrl+R` | Reuse earlier commands and complete or search command text. |
 
 For this lecture's project work, use the VS Code terminal and focus on the Git commands introduced above:
 

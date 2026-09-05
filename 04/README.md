@@ -1,3 +1,11 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "281d9fdd-1a1a-800a-897d-cafb5971c23f"
+  url: "https://app.notion.com/p/281d9fdd1a1a800a897dcafb5971c23f"
+---
+
 Pandas on Jupyter: Data Structures & I/O
 
 See [BONUS.md](BONUS.md) for advanced topics:
@@ -10,28 +18,28 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 # Jupyter Notebooks: Interactive Data Analysis
 
-In Lectures 1-3, you wrote Python scripts (`.py` files) that run top-to-bottom. Jupyter notebooks (`.ipynb` files) let you run code in any order, see results immediately, and mix code with documentation - perfect for data exploration and analysis. Think of `.py` files for production code and automation, and `.ipynb` files for interactive analysis and storytelling with data.
+In Lectures 1-3, Python scripts (`.py`) ran top-to-bottom. Jupyter notebooks
+(`.ipynb`) arrange code and Markdown in interactive cells, making them useful
+for exploration and explanation; scripts remain the better fit for automation.
 
 The lecture examples use pandas 3.x APIs. Executable demos and assignments record their exact tested package pins in each activity's requirements.
 
-Jupyter notebooks provide an interactive environment for data analysis, combining code execution with rich output display. They're essential for exploratory data analysis, prototyping, and sharing results with stakeholders.
-
-<!-- FIXME: Add screenshot of Jupyter interface in VS Code showing:
-     - Cell types (code/markdown dropdown)
-     - Run button and keyboard shortcuts
-     - Kernel selector (Python 3.x)
-     - Variable explorer panel
-     File: media/jupyter_interface.png -->
-
 ## Jupyter Notebook Interface
 
-Jupyter notebooks organize work into cells that can contain code or markdown. This structure enables iterative analysis and clear documentation of the analytical process.
+This conceptual map names the parts you will use in a Jupyter notebook. The
+exact buttons vary slightly between JupyterLab, VS Code, and other clients.
 
-<!-- FIXME: xkcd 1906 "Making Progress"
-     About learning curves and feeling like you're not making progress
-     Great for students learning Jupyter - normalizes the learning process
-     https://xkcd.com/1906/
-     File: media/xkcd_1906.png -->
+| Notebook part | Purpose |
+| --- | --- |
+| Code / Markdown cell | Run Python, or explain the analysis |
+| Run controls | Execute the selected cell and choose whether to advance |
+| Kernel selector | Choose the Python interpreter that runs the cells |
+| Output area | Inspect the value, table, or error produced by a cell |
+| Variable explorer | Review names and values currently held by the kernel |
+
+![xkcd 1906, “Making Progress”: after hours of work, the same problems are now in a spreadsheet.](media/xkcd_1906.png)
+
+*[Making Progress](https://xkcd.com/1906/) by xkcd — progress, now with columns.*
 
 **Reference:**
 
@@ -137,7 +145,7 @@ execution that preserves the source notebook and stops on failed cells, see
 
 **Warning:** Jupyter notebooks are like that one friend who screenshots everything you text them. They save both your code AND all the outputs (results, data, plots) in the same file.
 
-This means if you accidentally print your password, patient data, or that embarrassing test result, it's now permanently saved in your notebook file. It's like having a photographic memory of your most awkward moments.
+Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too—like having a photographic memory of your most awkward moments.
 
 **Before committing to git (the "digital hygiene" moment):**
 
@@ -155,27 +163,20 @@ print(patient_name, blood_pressure)
 # Clear the output before sharing or committing the notebook.
 ```
 
-**After running this code, the patient data will be visible in your notebook file. Always clear outputs before sharing or committing to git.**
-
 # LIVE DEMO!
 
 (Demo 1: Jupyter Basics - interface, cells, magic commands)
 
 # Introduction to Pandas
 
-Pandas provides powerful data structures and tools for working with structured data. It's built on NumPy but adds labeled axes and missing data handling, making it essential for data analysis workflows.
+Pandas builds labeled Series and DataFrames on NumPy and adds tabular I/O and
+missing-data tools.
 
-<!-- FIXME: Add diagram showing both Series and DataFrame:
-     - Series: 1D labeled array (index + values)
-     - DataFrame: 2D table (row index + column names + data)
-     - Visual comparison showing the relationship
-     File: media/pandas_structures.png -->
+![xkcd 2180, “Spreadsheets”: a joke about spreadsheet formulas becoming
+ unexpectedly elaborate.](media/xkcd_2180.png)
 
-<!-- FIXME: Alternative/Additional - xkcd 2180 "Spreadsheets"
-     Shows why we need better tools than Excel for data
-     Perfect for introducing DataFrames as "spreadsheets done right"
-     https://xkcd.com/2180/
-     File: media/xkcd_2180.png -->
+*[Spreadsheets](https://xkcd.com/2180/) by xkcd — a reminder that a
+DataFrame is useful when the spreadsheet is becoming a program.*
 
 *Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
 
@@ -185,20 +186,19 @@ Pandas is conventionally imported with the short alias `pd`, which the examples 
 import pandas as pd
 ```
 
-## A pandas 3 Mental Model
-
-Two pandas 3 defaults shape how the examples in this lecture behave:
-
-- Ordinary columns inferred from text use the `str` dtype rather than reporting `object`. Explicitly request the nullable `string` dtype when a data contract calls for `pd.NA`-backed text.
-- Copy-on-Write makes a returned Series or DataFrame, including a selected subset, behave independently at the user level. To mutate an owning DataFrame, make the complete assignment in one `.loc[...] = ...` or `.iloc[...] = ...` statement; to produce a changed result, use a method that returns one and reassign it. Chained assignment never updates the original DataFrame.
-
-Use the official [pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html), [string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html), and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html) as the current contract when older books or examples disagree.
-
 ## Pandas Data Structures
 
 A Series is one labeled dimension; a DataFrame combines labeled columns under a shared row index. That shared index is what makes selection and alignment more than simple list positioning.
 
-<!-- FIXME: Add diagram showing Series vs DataFrame relationships (media/pandas_structures.png) -->
+*Think of Series inside DataFrames like Russian nesting dolls: one labeled
+column fits inside the larger labeled table.*
+
+| Structure | Shape | Labels | Example |
+| --- | --- | --- | --- |
+| `Series` | 1D | One index + values | `age['Ada'] → 36` |
+| `DataFrame` | 2D | Row index + column names | `people.loc['Ada', 'age'] → 36` |
+
+One DataFrame column is a Series; several aligned Series form a DataFrame.
 
 **Reference:**
 
@@ -277,6 +277,9 @@ display(df.describe())  # Summary statistics for numeric columns
 
 Now that Series and DataFrames are defined, we can compare notebook output choices. `print()` works in scripts and notebooks and shows plain text. In a Jupyter notebook, `display()` renders a Series or DataFrame as rich HTML, which is usually easier to scan. Use `print()` for simple values or code that should also run as a `.py` script; use `display()` when the notebook presentation matters. A DataFrame or Series written as the last expression in a cell is also displayed automatically.
 
+*Think of `print()` as the reliable Honda Civic—works almost anywhere—while
+`display()` is the sports car: prettier, but happiest in Jupyter.*
+
 **Example:**
 
 ```python
@@ -335,7 +338,8 @@ numeric_data = employees.select_dtypes(include=['number'])
 display(numeric_data.columns)  # ['Age', 'Salary', 'Years_Experience']
 ```
 
-/callout("This is confusing!")
+> **This is confusing!**
+
 **Tips:**
 
 - Use `df['column']` for single columns when you want a Series
@@ -345,38 +349,18 @@ display(numeric_data.columns)  # ['Age', 'Salary', 'Years_Experience']
 
 ## Data Selection and Indexing
 
-Data selection in pandas uses label-based and position-based indexing. Understanding these methods is crucial for data manipulation and analysis.
+Pandas supports both label-based and position-based selection.
 
-<!-- FIXME: Add visual comparing .loc vs .iloc:
-     - Show DataFrame with labeled index (e.g., ['A', 'B', 'C']) AND numeric positions [0, 1, 2]
-     - Side-by-side examples:
-       * df.loc['B', 'Name'] → selects by label
-       * df.iloc[1, 0] → selects by position (same cell)
-     - Highlight: loc uses labels, iloc uses positions
-     - Include slicing behavior difference (loc is inclusive, iloc is exclusive)
-     File: media/loc_vs_iloc.png -->
-
-*Warning: Indexing in pandas is like a choose-your-own-adventure book - there are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
+*Warning: Indexing in pandas is like a choose-your-own-adventure book—there are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
 
 ### .loc vs .iloc
 
-The key difference: **`.loc` uses LABELS, `.iloc` uses POSITIONS** (like list indexing).
+| Selector | Uses | Same cell | Slice ending |
+| --- | --- | --- | --- |
+| `.loc` | Row and column labels | `employees.loc['emp002', 'Name']` → `'Bob'` | `employees.loc['emp001':'emp003']` includes `emp003` |
+| `.iloc` | Integer positions | `employees.iloc[1, 0]` → `'Bob'` | `employees.iloc[0:3]` stops before position `3` |
 
 *Think of it this way: `.loc` is like asking "Give me the data for employee 'Alice'" (using names/labels), while `.iloc` is like saying "Give me the data from the 2nd row" (using positions like 0, 1, 2...).*
-
-**Critical Differences:**
-
-1. **What they use:**
-   - `.loc[row_label, col_label]` — uses index labels and column names
-   - `.iloc[row_position, col_position]` — uses integer positions (0, 1, 2...)
-
-2. **Slicing behavior:**
-   - `.loc[1:3]` — includes BOTH endpoints (1, 2, AND 3)
-   - `.iloc[1:3]` — excludes the end (1, 2, but NOT 3)
-
-3. **When to use:**
-   - Use `.loc` when you know the names/labels
-   - Use `.iloc` when you know the positions
 
 **Reference:**
 
@@ -479,7 +463,12 @@ scores['status'] = 'ok'
 scores.loc[scores['score'] < 75, 'status'] = 'review'
 ```
 
-With Copy-on-Write, a subset behaves independently: mutating it does not mutate `scores`. Chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'` therefore never updates the original DataFrame. Update the owner in one statement with `.loc[row_mask, column] = value` (or `.iloc[...] = value` for positional assignment), as above. When the goal is a separate result, transform the subset and explicitly assign the returned object to a name.
+With Copy-on-Write, a subset behaves independently: mutating it does not mutate `scores`. Therefore, chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'` never updates the original DataFrame. Update the owner in one statement with `.loc[row_mask, column] = value` (or `.iloc[...] = value` for positional assignment), as above; for a separate result, transform the subset and assign the returned object to a name.
+
+For the version-specific details behind these examples, see the official
+[pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html),
+[string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html),
+and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html).
 
 ### Detecting Missing Data at Read Time
 
@@ -699,7 +688,7 @@ display(df.isna().sum())  # Missing values per column
 
 ### Inspection preview (decisions come next lecture)
 
-This short preview shows how to inspect missing values and duplicate rows after the pandas introduction. It identifies evidence only; cleaning decisions and transformations belong to Lecture 05, where they are tied to a documented data contract.
+This short preview shows how to inspect missing values and duplicate rows after the pandas introduction. Cleaning decisions and transformations belong to Lecture 05, where they are tied to a documented data contract.
 
 **Reference:**
 
@@ -719,3 +708,5 @@ Lecture 05 picks up from this inspection and documents the cleaning decisions be
 # LIVE DEMO!
 
 (Demo 3: Data I/O - CSV, Excel, JSON, and quality inspection)
+
+> Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.

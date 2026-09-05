@@ -1,11 +1,21 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "2b0d9fdd-1a1a-8046-a882-cf3930ecf4de"
+  url: "https://app.notion.com/p/2b0d9fdd1a1a8046a882cf3930ecf4de"
+---
+
 # From a Question to a Defensible Result
+
+See [BONUS.md](BONUS.md) for the optional extension notes.
 
 ![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
 
 This capstone lecture is about putting familiar tools together around a real
-question. It is not a claim that every project follows one complete, linear
-"data science lifecycle," and it is not a challenge to use every technique from
-the course.
+question. It offers a flexible checklist for keeping a project oriented, not a
+claim that every project follows one complete, linear "data science lifecycle"
+or a challenge to use every technique from the course.
 
 The approach follows the spirit of McKinney's data analysis examples: understand
 what the records represent, ask a focused question, and let that question determine
@@ -17,6 +27,27 @@ The current live demo uses a compact course release derived from January–June 
 NYC Yellow Taxi trip records. It is one worked example, not a universal project
 template.
 
+## A flexible capstone checklist
+
+Use this as a wayfinding list, not a recipe card. Revisit earlier items whenever
+new evidence changes the question.
+
+1. **Start with a question.** State what you want to learn and what evidence
+   could support or contradict a candidate claim.
+2. **Establish grain and provenance.** Know what a row represents, where the
+   records came from, and which selection rules or keys matter.
+3. **Audit before trusting.** Inspect coverage, types, missingness, and the
+   checks needed to decide whether the data can answer the question.
+4. **Shape and explore the evidence.** Clean, combine, transform, summarize, or
+   visualize only as the question requires; check that the resulting table still
+   means what you think it means.
+5. **Predict only when prediction helps.** If the question calls for it, define
+   the target, what would be known at prediction time, a fair evaluation, and a
+   meaningful comparison. Otherwise, a descriptive result may be the finish line.
+6. **Report evidence and limits.** Give the result, the claim it supports, and
+   the important caveats without making the conclusion wear a cape it has not
+   earned.
+
 ## Learning objectives
 
 By the end of the session, given a dataset and an analytical question, you should
@@ -24,17 +55,13 @@ be able to:
 
 - state an answerable question and a candidate claim that evidence could support
   or contradict;
-- identify the row grain (what each row represents) and candidate key (the field
-  or fields expected to identify each row uniquely) of both a source table and an
-  analysis table, then perform a check that would expose duplicate or missing keys;
-- trace one reported result back through its source, selection rules, and important
-  transformations;
+- identify the row grain, candidate key, provenance, and important selection rules
+  of both source and analysis tables;
 - justify a cleaning, wrangling, aggregation, or visualization decision in terms
-  of the question it helps answer;
+  of the question it helps answer, and trace a result through those decisions;
 - when prediction is appropriate, specify a target, prediction time, available
   features, comparison baseline, split strategy, and evaluation measure; and
-- write a concise conclusion that separates the observed result, the claim it
-  supports, and at least one material limitation.
+- report the observed result, the claim it supports, and a material limitation.
 
 ## What is review, and what is new?
 
@@ -42,27 +69,14 @@ Most of today's code is review. We will reuse DataFrame inspection, missing-valu
 handling, joins, `groupby`, reshaping, datetime operations, visualization, feature
 construction, and the basic scikit-learn estimator interface.
 
-The limited new content is integrative rather than a large new API:
+The new work is integration: keep the question, possible claim, and evidence
+aligned; make grain and provenance explicit; decide whether a model helps; and
+carry the result's limitations into the conclusion. McKinney's examples motivate
+that style of analysis, but the taxi notebooks provide today's concrete walkthrough.
 
-- keeping a question, a possible claim, and the available evidence aligned;
-- making row grain, keys, and provenance (where data came from and how it was
-  constructed) explicit before calculating;
-- recognizing the boundary between a DataFrame built for analysis and a matrix
-  built for a model;
-- deciding whether a model adds anything to the question; and
-- carrying evidence and limitations through to the final communication.
+## The taxi walkthrough: one example
 
-McKinney's Chapter 13 examples model this kind of integration. Different questions
-call for different moves: missing fields become visible during inspection, related
-tables are merged when the desired comparison needs them, and counts are sometimes
-normalized before groups can be compared fairly. Chapter 12 supplies the narrower
-bridge from pandas to modeling: feature engineering often grows out of aggregation
-and transformation, preprocessing must respect the training data, and performance
-is assessed on out-of-sample data. Neither chapter presents a quota of techniques.
-
-## A worked capstone: one question, several connected decisions
-
-### Begin with the question and the possible claim
+### Begin with a question and possible claim
 
 For the taxi example, our working question is:
 
@@ -71,20 +85,11 @@ For the taxi example, our working question is:
 > largest errors?
 
 That question implies a prediction time, an outcome, and a unit of analysis. It
-also suggests a testable candidate claim: recent history, weekly history, and
-calendar position may predict next-hour pickups better than simply repeating the
-count from the same hour one week earlier. The demo does not assume that claim is
-true; the comparison supplies the evidence.
+also suggests a claim the demo can test: recent history, weekly history, and
+calendar position may beat a same-hour-last-week baseline. A descriptive project
+might instead finish with a well-designed table, aggregation, and visualization.
 
-Pause for an in-class choice: what should “how well” mean (which evaluation
-measure), how should we define the selected zones, and what baseline would make
-the comparison meaningful?
-
-A different project might ask a descriptive or comparative question instead. In
-that case, a carefully designed table, aggregation, and visualization may be the
-right endpoint. A model is useful only when it helps answer the question.
-
-### Establish what one row means
+### Establish grain before choosing operations
 
 The taxi release offers two useful views of the same setting:
 
@@ -93,118 +98,48 @@ The taxi release offers two useful views of the same setting:
 | Event sample | one sampled pickup event | `course_row_id` | auditing fields and practicing event-level checks |
 | Zone-hour panel | one selected zone at one UTC hour | (`pickup_zone_id`, `target_hour_utc`) | zone-hour counts, time patterns, and the prediction task |
 
-The event sample is not a random sample for estimating citywide totals. The panel
-was derived separately from the full documented source files. Confusing those two
-grains would produce calculations that run successfully but answer the wrong
-question.
+The event sample cannot estimate citywide totals; the panel was built separately
+from the documented source files. In the walkthrough, we verify the relevant key
+and coverage, distinguish an absent row from an observed zero, use UTC to order
+hours unambiguously, and use New York local time to interpret patterns.
 
-Before analysis, we therefore ask:
+### Let the question choose the work
 
-- What generated these records, and what selection rules were applied?
-- Is the proposed key unique and complete at the grain we need?
-- Does a zero mean no observed pickups, or could it mean no row was recorded?
-- Which timestamp orders events unambiguously, and which is easiest to interpret?
-
-In this example, UTC provides an unambiguous ordering key through daylight-saving
-changes, while New York local time is useful for explaining hourly and weekly
-patterns.
-
-### Audit evidence before changing it
-
-Provenance and data quality are part of the analysis, not setup trivia. The demo
-uses the release manifest—the expected artifact filenames, source identities, and
-checksums—to connect course artifacts to documented source files and verify file
-identities. We then inspect types, missingness, timestamp
-parsing, month membership, zone membership, uniqueness, and coverage.
-
-Cleaning is purposeful. We do not automatically drop every row with a missing
-value or remove every large observation. Instead, we ask whether an issue changes
-the meaning of a row or threatens the intended calculation. When a row is excluded,
-the demo records a reason so that the decision remains auditable.
-
-### Build the table the question needs
-
-The source grain and the question's grain are often different. Here, prediction
-needs a complete zone-hour panel rather than a pile of individual trips. Once that
-grain is established, calendar fields, lagged counts, and rolling summaries can be
-defined with a clear interpretation. Here, a recent lag is the previous hour
-(*t*−1), a weekly lag is the same zone and hour 168 hours earlier (*t*−168), and
-rolling history is a summary such as the mean of earlier hourly counts over a
-specified window.
-
-This is the same general move seen throughout McKinney's examples: merge when facts
-are split across tables, aggregate when the question concerns groups, reshape when
-the comparison is clearer in another layout, and normalize when raw totals would
-be misleading. Those are choices, not mandatory project stages. Each transformation
-should have a sentence explaining what question it serves and a check that the
-result still has the intended grain.
+The first notebook verifies the release, inspects the event-grain records, and
+makes cleaning decisions explicit. The second builds the complete zone-hour panel
+the prediction question needs, then adds calendar fields, lagged counts, and
+rolling summaries based only on earlier hours. Merge, aggregate, reshape, or
+normalize when the question calls for it—and check that the resulting table still
+has the intended grain.
 
 *Your capstone is not Pokémon for obscure ML—you don't have to catch 'em all.*
 
-### Let summaries and plots refine the question
+### Explore, then decide whether modeling helps
 
-Simple summaries usually come before a model. Counts by group, distributions, and
-time profiles can reveal data problems, plausible patterns, and important
-differences between groups. A useful plot has a job: it might compare hourly pickup
-profiles, show changes over time, or expose where prediction errors are concentrated.
-
-The analysis may loop here. An unexpected pattern can motivate a subgroup view, a
-normalization, a revised cleaning decision, or a narrower claim. Exploration is
-productive when each follow-up is tied to the question rather than to a desire to
-generate more charts.
+Counts, distributions, and time profiles can expose problems, plausible patterns,
+and group differences before a model is useful. Each plot should have a job; an
+unexpected pattern may send the analysis back to a subgroup, normalization,
+cleaning decision, or narrower claim.
 
 ![xkcd 2582: Data Trap](https://imgs.xkcd.com/comics/data_trap.png)
 *Analysis should produce understanding, not an unbounded pile of artifacts.*
 
-### Model only under a clear prediction contract
+For prediction, ask what would be known at prediction time. The third notebook
+uses training data to explore patterns and freezes a chronological split. The
+fourth compares a weekly-lag baseline with one scikit-learn pipeline, chooses on
+validation data, evaluates once on the held-out test period, and examines where
+errors concentrate. The final claim is limited to the held-out hours and selected
+zones; it is not a causal explanation or a promise about the future.
 
-For a predictive question, "what would be known at prediction time?" is the key
-boundary. A feature for target hour *t* may use earlier observations, but not the
-target count or information created afterward. Rolling features therefore begin
-with a shift.
+## How the lecture and walkthrough fit together
 
-The current demo uses a time-ordered training, validation, and test design because
-the intended use is prediction of later hours. It compares a weekly-lag baseline
-(a deliberately simple comparison prediction) with one transparent scikit-learn
-pipeline, makes the choice using validation data reserved for model choice, and
-evaluates the selected approach once on the held-out test period. Preprocessing
-and model fitting stay together so that information learned from later data does
-not leak backward.
+| Mode | Focus |
+| --- | --- |
+| Brief framing | the checklist, question and claim, grain and provenance, and prediction contract |
+| Main activity | walk through the four notebooks, pausing at the decisions, checks, artifacts, and conclusions that transfer to another dataset |
 
-These choices fit this question and dataset. Other questions may need a random
-split, grouped split, cross-validation, a statistical model, or no model at all.
-The transferable principle is to make the evaluation resemble the proposed use
-and to compare against a meaningful simple alternative.
-
-### Communicate a result at the strength the evidence allows
-
-A compact conclusion should answer four questions:
-
-1. What did we observe, using what measure or visualization?
-2. What claim does that evidence support—and what stronger claim does it not
-   support?
-3. Where does the result vary or fail?
-4. Which provenance, coverage, measurement, or modeling limitation matters most?
-
-For the taxi demo, prediction error can describe performance on the held-out hours
-and selected zones in this release. By itself, it does not establish a causal
-explanation, guarantee future performance, or describe all NYC taxi activity.
-
-## Session shape: lecture and demo in equal parts
-
-We will spend roughly half the session on the worked reasoning above and half on
-the executable taxi example. The three lecture anchors are question/claim,
-grain/provenance, and the prediction contract; the other subsections serve as
-synthesis and reference for the live example.
-
-| Share of class | Mode | Focus |
-| --- | --- | --- |
-| First ~50% | worked lecture and discussion | question/claim, grain/provenance, and prediction contract, with the other decisions synthesized around them |
-| Second ~50% | live notebook walkthrough | inspect concrete records, build the zone-hour table, prepare past-only features, evaluate a simple comparison, and inspect errors |
-
-The lecture supplies the reasoning that transfers to other datasets. The demo
-shows how one particular set of decisions is implemented and checked; it is not a
-second pass through a required universal checklist.
+The lecture supplies the reasoning; the notebooks show one implementation. The
+final project's own artifact contract determines what students must produce.
 
 ## Demo roadmap
 
@@ -235,15 +170,13 @@ decision should still be justified by the capstone question and data.
 | Time-aware fields and past-only features | Lecture 09, Time Series Analysis | `02_wrangling.ipynb` — construct history features |
 | Candidate models, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb` — freeze the split; `04_modeling.ipynb` — compare and evaluate |
 
-## Transfer to the later assignment
+## Transfer to the final project
 
-The later assignment is a somewhat guided mini research project using a different
-dataset. The transfer is in the reasoning: formulate a question, understand the
-records, choose transformations that serve the question, evaluate claims honestly,
-and communicate limitations. It should not be a search-and-replace copy of the
-taxi notebooks, and it does not need a technique merely because that technique
-appears in today's demo. Follow the assignment's own deliverables while adapting
-the analytical choices to its data and question.
+Assignment 11 is the larger take-home final. It applies the same reasoning to
+Chicago beach-weather sensor data: question, grain, purposeful transformations,
+honest evaluation, and a clear conclusion. It is not a search-and-replace copy of
+the taxi notebooks; do not copy taxi-specific values, features, or outputs. Follow
+the assignment's own artifact contract and adapt the choices to its data.
 
 ## Getting started with the demo
 

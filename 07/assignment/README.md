@@ -104,11 +104,12 @@ accessible, honest, or visually effective.
 State an exploratory question, the one-session row/mark grain, variable roles,
 one observation restricted to the twelve supplied rows, and a limitation that
 rejects causal and generalized conclusions. Implement
-`build_exploratory_chart(session_table, pathway_order)` as one scatterplot of
-activities completed against reflection score. Encode pathway with both color
-and marker shape, preserve the caller's two-label order, label units, and
-return its Figure and Axes without saving a third PNG. Display and inspect the
-live result.
+`build_exploratory_chart(session_table, pathway_order)` as one Altair
+scatterplot specification of activities completed against reflection score.
+Use typed quantitative positions and nominal pathway color and point-shape
+encodings, preserve the caller's two-label order, label units, and include
+tooltips. Return the chart without saving a third PNG, then display and inspect
+the live result.
 
 ## Task 2: critique and redesign
 
@@ -142,11 +143,11 @@ checklist with observable evidence rather than yes/no answers.
 
 ## Scope and assessment boundary
 
-Use the prepared rows directly with Matplotlib and one bounded seaborn
-scatterplot. GroupBy, aggregation and summary calculations; joining, reshaping
+Use the prepared rows directly with one bounded Altair scatterplot and
+Matplotlib for the supplied bar and explanatory line charts. GroupBy, aggregation and summary calculations; joining, reshaping
 and cleaning; time series; modeling or inference; random or remote data;
-interactive charts, dashboards, maps, animations, and additional chart
-families are outside scope.
+dashboards, maps, animations, and additional chart families are outside scope.
+Altair tooltips are permitted in Task 1, but must supplement visible labels and context.
 
 The implementation has a provisional 80-point automated overlay: 10 points for
 fixtures and reproducibility, 15 for Task 1, 25 for Task 2, 25 for Task 3, and

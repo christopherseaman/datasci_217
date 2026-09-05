@@ -806,5 +806,4 @@ print(unstacked)
 
 - Practice with your own datasets
 - Experiment with different aggregation functions
-- Learn about remote computing for large datasets
-- Explore performance optimization techniques
+- Continue with advanced pivot-table and MultiIndex topics in the bonus material

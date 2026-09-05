@@ -5,6 +5,7 @@
 #   "pandas==3.0.5",
 #   "matplotlib==3.11.1",
 #   "seaborn==0.13.2",
+#   "altair==5.5.0",
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
 #   "ipykernel==6.29.5",
@@ -35,6 +36,7 @@ from nbclient.exceptions import CellExecutionError
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import altair as alt
 
 
 EXPECTED_CELL_IDS = [
@@ -53,22 +55,22 @@ MARKDOWN_IDS = {
     "a07-task3-contract", "a07-visual-review",
 }
 PROTECTED_CELL_SHA256 = {
-    "a07-header": "98a0484f819c84e29bd6dc972e5e26b473d5dc840a2344615ef5c58f53691943",
-    "a07-setup": "8e898c45d900d895f092d3fb235460d66e460391bdb83e32ae27cf38da0ec3ff",
-    "a07-terms-data": "f762645fcbbe9d28dbd3d77ae4d124baa9030fdc41a1295be3a5b4d9634dcad4",
+    "a07-header": "d3ec4b0e9c59dafcc8b5eec41c17d06059c6810f81455099b4c325c3e29f785f",
+    "a07-setup": "f7508db32412cddc016b2635c05c823aac4a4e2f94ad5af61a72764f2572030a",
+    "a07-terms-data": "b14274cea7b43e45b41b229a020787836e05c38db6b8f0c299e5a456d04f4676",
     "a07-task2-context": "7ddee594b77784ea7b2684f82f1fb1215bbdf79224ffd153a2269bfec3278fa2",
     "a07-supplied-flawed": "96bfd9dd6114ad84f305dc8567e757ac8ce33cfed55c546447f763bb73bf867b",
-    "a07-final-verify": "990573f70aa3ef7a8cd27cc5db117ffe2c50b55ad1f8cbb7615b46f2c7f2c22d",
+    "a07-final-verify": "88b7c3f14677b07bfce5ec7ac96171e6dad5b35131ca7648bbb39d9e0829577f",
 }
 STUDENT_MARKDOWN_IDS = MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)
 STUDENT_CODE_IDS = set(EXPECTED_CELL_IDS) - MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)
 PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "5072907d928869027f0ab9884599bce2fda548faad48bf8c766bd58998655763",
+    "requirements.txt": "841d58adacd0d8eeeb3e08d6691ed606e4f2f5b273bc87c9f2ed78054e585e2a",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "README.md": "d9bb0b8bb9699a2fee850e72a05e4e69cf5f26af1f74ed64a61b399ab3fe1481",
-    "PLATFORM_CHECK.md": "12e9b9ab5ad249c23f50b56c8d393c24af65796e66ad3345df3c18e19f85b7f6",
-    "check_assignment.py": "5143858feea168e921ef8f40a8c095f597d0a651da6f083e154d69a97d5789a2",
+    "README.md": "b49db5503c23046e863e708879466bfbdb44bc97968c6df83339481e5924e28c",
+    "PLATFORM_CHECK.md": "97ae5dc7479181957c824972c6d5d8a8cdb442ab8bcad726b2062f0a72087b67",
+    "check_assignment.py": "c34911cdf1abea87601ff63998483524f0eb2e334681d1d5b847ebabcbcccef1",
     "data/fixture.json": "1c3397cb2d98ae239f6a7cd254bb3aa9980d94cd23af4546c834a9262de0a28c",
     "data/format_completion.csv": "20ad900633154f5f3a2c09cfbc2f890f8423da0897d6345841745332110be66a",
     "data/pathway_checkpoints.csv": "ec9a336b7fb97418a6f058704f2509c8cee6b13d744efb7a6e3e99224ef8c258",
@@ -206,7 +208,7 @@ def _check_source(by_id: dict[str, dict]) -> None:
     for fragment in (
         "/content", "drive.mount", "files.upload", "http://", "https://",
         "urlopen", "requests.", "np.random", "datetime.now", "plotly",
-        "altair", "bokeh", "holoviews", "streamlit", "animation",
+        "bokeh", "holoviews", "streamlit", "animation",
     ):
         _assert(fragment not in lowered, f"nonportable/out-of-scope code used: {fragment}")
     for line in student_code.splitlines():
@@ -218,7 +220,9 @@ def _check_source(by_id: dict[str, dict]) -> None:
     for filename in ("format_completion.csv", "pathway_checkpoints.csv", "session_observations.csv"):
         _assert(filename in _source(by_id["a07-load"]), f"fixture not loaded: {filename}")
     explore_tree = ast.parse(_source(by_id["a07-explore-function"]))
-    _assert(sum(1 for node in ast.walk(explore_tree) if isinstance(node, ast.Call) and _call_name(node) == "scatterplot") == 1, "exploration needs exactly one scatterplot call")
+    _assert(sum(1 for node in ast.walk(explore_tree) if isinstance(node, ast.Call) and _call_name(node) == "Chart") == 1, "exploration needs exactly one alt.Chart call")
+    explore_source = _source(by_id["a07-explore-function"])
+    _assert("mark_point" in explore_source and all(channel in explore_source for channel in ("alt.X", "alt.Y", "alt.Color", "alt.Shape", "tooltip")), "exploration needs typed position, color, shape, and tooltip encodings")
     _assert(not any(isinstance(node, ast.Call) and _call_name(node) == "savefig" for node in ast.walk(explore_tree)), "exploration saved an unrequested image")
 
 
@@ -308,7 +312,7 @@ def _check_static(root: Path) -> tuple[dict, dict[str, dict]]:
 def _check_grader_runtime() -> None:
     expected = {
         "numpy": "2.0.2", "pandas": "3.0.5", "matplotlib": "3.11.1",
-        "seaborn": "0.13.2", "nbclient": "0.10.2", "nbformat": "5.10.4",
+        "seaborn": "0.13.2", "altair": "5.5.0", "nbclient": "0.10.2", "nbformat": "5.10.4",
         "ipykernel": "6.29.5", "Pillow": "12.3.0",
     }
     observed = {package: metadata.version(package) for package in expected}
@@ -350,14 +354,16 @@ def _marker_geometries(axes):
     return geometries
 
 def _task1():
-    assert exploratory_figure.axes == [exploratory_axes]
-    offsets = exploratory_axes.collections[0].get_offsets()
-    assert len(offsets) == 12
-    assert exploratory_axes.get_xlabel() == 'Activities completed (count)'
-    assert exploratory_axes.get_ylabel() == 'Reflection score (points)'
-    assert exploratory_axes.get_title() == 'Exploratory view of activities completed and reflection score'
-    assert exploratory_axes.get_legend().get_title().get_text() == 'Pathway'
-    assert len(_marker_geometries(exploratory_axes)) == 2
+    spec = exploratory_chart.to_dict()
+    assert spec['mark']['type'] == 'point'
+    assert len(spec['datasets'][spec['data']['name']]) == 12
+    assert spec['encoding']['x']['field'] == 'activities_completed' and spec['encoding']['x']['type'] == 'quantitative'
+    assert spec['encoding']['y']['field'] == 'reflection_score' and spec['encoding']['y']['type'] == 'quantitative'
+    assert spec['encoding']['color']['field'] == 'pathway' and spec['encoding']['color']['type'] == 'nominal'
+    assert spec['encoding']['color']['scale']['range'] == [BLUE, ORANGE]
+    assert spec['encoding']['shape']['field'] == 'pathway' and spec['encoding']['shape']['type'] == 'nominal'
+    assert spec['encoding']['shape']['scale']['range'] == ['circle', 'square']
+    assert len(spec['encoding']['tooltip']) == 3
     assert not (ASSIGNMENT_ROOT / 'output' / 'exploratory.png').exists()
 
     alternate = pd.DataFrame({
@@ -367,12 +373,14 @@ def _task1():
         'reflection_score': pd.Series([71, 60, 75, 54], dtype='int64'),
     })
     snapshot = alternate.copy(deep=True)
-    figure, axes = build_exploratory_chart(alternate, ['Coached', 'Self paced'])
+    chart = build_exploratory_chart(alternate, ['Coached', 'Self paced'])
     assert alternate.equals(snapshot), 'exploration mutated input'
-    assert figure.axes == [axes] and len(axes.collections[0].get_offsets()) == 4
-    assert [text.get_text() for text in axes.get_legend().get_texts()] == ['Coached', 'Self paced']
-    assert len(_marker_geometries(axes)) == 2
-    plt.close(figure)
+    alternate_spec = chart.to_dict()
+    assert len(alternate_spec['datasets'][alternate_spec['data']['name']]) == 4
+    assert alternate_spec['encoding']['color']['scale']['domain'] == ['Coached', 'Self paced']
+    assert alternate_spec['encoding']['color']['scale']['range'] == [BLUE, ORANGE]
+    assert alternate_spec['encoding']['shape']['scale']['range'] == ['circle', 'square']
+    assert alternate_spec['encoding']['shape']['scale']['domain'] == ['Coached', 'Self paced']
     for bad_order in (['Coached'], ['Coached', 'Coached']):
         try:
             build_exploratory_chart(alternate, bad_order)
@@ -527,7 +535,16 @@ def _central_results(root: Path) -> dict:
 
 def _embedded_teaching_images(notebook: nbformat.NotebookNode) -> None:
     by_id = {cell.id: cell for cell in notebook.cells}
-    for cell_id in ("a07-explore-run", "a07-redesign-run", "a07-explanatory-run"):
+    altair_outputs = [
+        output.get("data", {})
+        for output in by_id["a07-explore-run"].get("outputs", [])
+        if output.get("output_type") in {"display_data", "execute_result"}
+    ]
+    _assert(
+        any("vega-embed" in data.get("text/html", "") for data in altair_outputs),
+        "fresh Altair chart was not visibly displayed in a07-explore-run",
+    )
+    for cell_id in ("a07-redesign-run", "a07-explanatory-run"):
         images = [
             output.get("data", {}).get("image/png")
             for output in by_id[cell_id].get("outputs", [])

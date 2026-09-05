@@ -1,3 +1,16 @@
+---
+notion:
+  role: bonus
+  status: unmapped
+  page_id: null
+  url: null
+  target:
+    role: dlc_subpage
+    parent_page_id: "271d9fdd-1a1a-8036-9c2b-c4a66ae97d9d"
+    anchor: top
+  note: "Lecture 02 has optional material in Notion, but no separate bonus page was found."
+---
+
 # Bonus Content: Advanced Git Concepts
 
 *This content is optional and not required for assignments. It's here for students who want to dive deeper into Git.*
@@ -466,3 +479,275 @@ git commit -m "Add data validation to analysis script
 
 Fixes issue #123"
 ```
+
+---
+
+
+# Advanced Python CLI Topics
+
+*Optional reference for students interested in command-line data workflows.*
+
+This page owns shell and CLI-specific extensions. Python function design and
+object-model extensions live in the [Python concepts section](#bonus-python-concepts)
+below; the core lecture already introduces ordinary functions, lambdas, and the
+main guard.
+
+## Command-line essentials
+
+Use these as a reference while practicing in a disposable directory.
+
+### Navigation
+
+```bash
+pwd                 # print the current directory
+ls                  # list its contents
+cd data             # move into data
+cd ..               # move up one directory
+```
+
+### Files and directories
+
+```bash
+mkdir results       # create a directory
+touch notes.txt     # create an empty file (or update its timestamp)
+cp notes.txt copy.txt
+mv copy.txt archive.txt  # rename; use a directory as the destination to move
+rm archive.txt      # remove a file; check the path first
+```
+
+### Inspecting and searching text
+
+```bash
+cat notes.txt           # print a small text file
+head -n 5 data.csv      # first five lines
+tail -n 5 data.csv      # last five lines
+grep -i 'error' log.txt # search, ignoring case
+wc -l data.csv          # count lines
+```
+
+### Directory trees, history, and shortcuts
+
+```bash
+tree .              # show this directory's hierarchy, when tree is installed
+history             # list prior commands
+```
+
+The ↑ and ↓ keys cycle through earlier commands, `Tab` completes names, and
+`Ctrl+R` searches command history.
+
+## Shell scripts with arguments
+
+Shell scripts can turn a repeatable pipeline into a small command-line tool.
+Quote paths and validate inputs before processing them.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    printf 'usage: %s FILE\n' "$0" >&2
+    exit 2
+fi
+
+input=$1
+[[ -f "$input" ]] || { printf 'not a file: %s\n' "$input" >&2; exit 1; }
+
+# grep status 1 means "no matches," which is a valid clean result. Capture the
+# matches so statuses above 1 can still stop the script as real failures.
+if matches=$(grep -i 'error' "$input"); then
+    :
+else
+    status=$?
+    if (( status != 1 )); then
+        exit "$status"
+    fi
+fi
+printf '%s' "$matches" | sort | tee errors.txt
+```
+
+Useful shell variables include `$1` (the first argument), `$@` (all
+arguments), `$#` (argument count), and `$?` (the previous command's status).
+
+## Pipelines, redirection, and process substitution
+
+Pipes connect stdout to stdin. `&&` continues only after success, `||` handles
+failure, and explicit redirections make output destinations clear.
+
+```bash
+grep -i 'error' logfile.txt | wc -l > error-count.txt
+backup_script.sh > backup.log 2>&1
+diff <(sort file1.txt) <(sort file2.txt)
+```
+
+For larger batches, `find` can safely pass null-delimited paths to a loop:
+
+```bash
+find data -name '*.csv' -print0 |
+while IFS= read -r -d '' file; do
+    printf 'processing %s\n' "$file"
+done
+```
+
+## Command-line data processing
+
+Small Unix tools are useful for inspection before a Python program takes over:
+
+```bash
+cut -d',' -f1,3 data.csv |        # select fields
+  tr '[:lower:]' '[:upper:]' |   # normalize case
+  sort -t',' -k2,2n |            # order by field 2
+  head -n 10 > results.csv
+```
+
+`grep`, `cut`, `sort`, `uniq`, `tr`, `sed`, and `awk` each do one focused
+transformation. Check quoting and delimiters for the actual input format.
+
+## Calling Python from a shell
+
+The shell is often the orchestrator while Python owns domain logic. Pass input
+through arguments or standard input rather than relying on hidden state:
+
+```bash
+python3 summarize.py data.csv --output summary.json
+python3 -c 'import sys; print(sum(map(float, sys.stdin)))' < values.txt
+```
+
+## Further directions
+
+Explore `xargs`, `tee`, process substitution, and shell completion in a
+disposable practice directory. For substantial transformations, prefer a
+tested Python script so parsing, errors, and edge cases are explicit.
+
+---
+
+
+# Bonus Python Concepts
+
+*Optional extensions for students who want to explore Python concepts beyond the core lecture.*
+
+## Function design
+
+The core lecture introduces functions and script entry points. These patterns deepen that material without repeating the basic syntax.
+
+### Flexible arguments
+
+```python
+def calculate_stats(*numbers):
+    """Return simple statistics for any number of numeric arguments."""
+    if not numbers:
+        return None
+    total = sum(numbers)
+    return {"sum": total, "average": total / len(numbers), "count": len(numbers)}
+
+
+def create_profile(**details):
+    """Collect arbitrary named fields into a new dictionary."""
+    return dict(details)
+```
+
+Default parameters are evaluated when the function is defined, so use `None` when a mutable default should be created per call:
+
+```python
+def add_tag(tag, tags=None):
+    if tags is None:
+        tags = []
+    tags.append(tag)
+    return tags
+```
+
+### Documentation and validation
+
+Docstrings describe a function's contract. Keep examples and accepted values aligned with the implementation:
+
+```python
+def analyze_data(data, method="mean"):
+    """Return the mean or median of a non-empty numeric sequence."""
+    if not data:
+        raise ValueError("data cannot be empty")
+    if method == "mean":
+        return sum(data) / len(data)
+    if method == "median":
+        ordered = sorted(data)
+        middle = len(ordered) // 2
+        if len(ordered) % 2:
+            return ordered[middle]
+        return (ordered[middle - 1] + ordered[middle]) / 2
+    raise ValueError("method must be 'mean' or 'median'")
+```
+
+## Conditional expressions
+
+A conditional (ternary) expression is useful for a short, readable choice. Prefer a regular `if` statement when conditions become nested or complex.
+
+```python
+age = 25
+status = "adult" if age >= 18 else "minor"
+
+temperatures = [15, 25, 35, 5, 45]
+categories = [
+    "hot" if temp > 30 else "cold" if temp < 10 else "moderate"
+    for temp in temperatures
+]
+```
+
+## Python's object model
+
+In Python, values are objects with a type, identity, and value. `id(value)` exposes an identity token for the lifetime of that object; it is not a promise that the object resides at that numeric memory address.
+
+```python
+value = [1, 2]
+alias = value
+copy = value.copy()
+print(value is alias)  # True
+print(value is copy)   # False
+```
+
+## Mutability and hashability
+
+Mutable objects can change in place; immutable objects cannot. A tuple is immutable, but it is hashable only when all of its elements are hashable. This is why a tuple containing a list cannot be used as a dictionary key.
+
+```python
+items = [1, 2]
+items.append(3)
+
+point = (1, 2)
+lookup = {point: "origin-adjacent"}
+
+unhashable = (1, [2])
+# {unhashable: "not allowed"}  # TypeError: list is unhashable
+```
+
+## Exception handling patterns
+
+Catch the narrowest expected exception, add context, and let unexpected failures remain visible:
+
+```python
+def parse_score(text):
+    try:
+        score = float(text)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid score: {text!r}") from exc
+    if not 0 <= score <= 100:
+        raise ValueError("score must be between 0 and 100")
+    return score
+```
+
+Custom exceptions can make a library's public failure modes clearer:
+
+```python
+class DataValidationError(ValueError):
+    """Raised when input data violates an application contract."""
+
+
+def require_columns(columns, required):
+    missing = set(required) - set(columns)
+    if missing:
+        raise DataValidationError(f"missing columns: {sorted(missing)}")
+```
+
+## Practice prompts
+
+1. Add keyword-only options to a reusable function.
+2. Document and validate a small data-processing function.
+3. Find a mutable-default-argument bug and repair it.
+4. Define a custom exception for one domain-specific validation rule.

@@ -1,4 +1,16 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "271d9fdd-1a1a-8057-84e1-fe68dc985696"
+  url: "https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696"
+---
+
+> San Francisco is a walkable city and I will literally die on this hill
+
 [DLC](https://www.notion.so/DLC-271d9fdd1a1a80cd804fee12a35b4186?pvs=21) 
+
+See [BONUS.md](BONUS.md) for the optional extensions.
 
 ## Class Structure
 
@@ -10,13 +22,13 @@
 
 # Getting Started: Your First Steps
 
-Before we dive into the technical content, let's make sure you have everything you need to succeed. This section covers the essential setup that every data scientist needs.
+This section covers the essential setup for data science.
 
 ## Getting to the Command Line
 
 ![learning to code is kind of like this](media/rocket_packs.png)
 
-The command line is your direct conversation with your computer. The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
+The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
 
 **Windows Users:**
 WSL:
@@ -39,7 +51,7 @@ Native Windows:
 
 ## Installing Python
 
-Python is the language of data science. Here's how to get it on your system:
+Install Python as follows:
 
 **Windows WSL (Ubuntu):**
 
@@ -144,7 +156,7 @@ You don't want to put your email all over the public internet, so GitHub provide
 
 ### Setting up Git in the Command Line
 
-(Shouldn't be necessary if already done through VS Code)
+(Usually unnecessary if already done through VS Code.)
 
 ```bash
 git config --global user.name "<YOUR NAME>"
@@ -157,7 +169,7 @@ Setting up
 
 # Why Both Python and Command Line?
 
-You might wonder: "Why do I need to learn two things at once?" Here's the reality - professional data scientists constantly switch between Python scripts and command line operations. You'll write Python to analyze data, then use command line to organize files, run scripts, and manage projects.
+Professional data scientists switch constantly between Python scripts and command-line operations: Python analyzes data; the command line organizes files, runs scripts, and manages projects.
 
 It's like being bilingual in the data world. Python speaks to your data, command line speaks to your computer.
 
@@ -165,7 +177,7 @@ It's like being bilingual in the data world. Python speaks to your data, command
 
 ## What is the Command Line?
 
-The command line is your direct conversation with your computer. Instead of clicking icons, you type commands. Why? Because it is fast, precise, and reproducible when everyone uses the same shell. This lecture's commands target Bash-compatible shells; PowerShell equivalents can differ.
+Instead of clicking icons, you type commands. This is fast, precise, and reproducible when everyone uses the same shell. This lecture's commands target Bash-compatible shells; PowerShell equivalents can differ.
 
 Think of it as texting your computer instead of playing charades with icons.
 
@@ -827,29 +839,10 @@ Best day: $1750
 
 # Key Takeaways
 
-By the end of today's session, you should feel comfortable with:
-
-1. **Command line navigation** = Your direct conversation with the computer
-    - Navigate directories with `cd`, `pwd`, `ls`
-    - Create project structures with `mkdir`, `touch`
-    - View files with `head`, `tail`, `cat`
-2. **Python fundamentals** = The foundation of data analysis
-    - Variables store different types of data (numbers, text, booleans)
-    - F-strings create professional, readable output
-    - Error messages are your friends - they tell you exactly what's wrong
-3. **Integration workflow** = The data scientist's daily routine
-    - Use command line to organize files and run scripts
-    - Use Python to process data and generate insights
-    - Test small, build incrementally, save your work
-4. **Debugging mindset** = Essential problem-solving skills
-    - Read error messages carefully
-    - Check variable types when things go wrong
-    - Use `print()` statements to understand what's happening
-
-**Why This Matters:**
-These might seem like simple tools, but they're the foundation everything else builds on. Every advanced data science technique - machine learning, statistical analysis, data visualization - starts with these basic skills.
+Use the command line to navigate, create, and inspect files; use Python values,
+control flow, and formatted output to analyze them. Work incrementally: run
+scripts, read errors, inspect types, and save clear results. Next week, Git and
+GitHub make that work shareable.
 
 **Professional Reality Check:**
 Real data scientists spend 80% of their time doing exactly these things: organizing files, reading data, cleaning it up, and generating clear reports. The fancy algorithms are just 20% of the work!
-
-Next week: We'll learn how to save and share our work with Git and GitHub!

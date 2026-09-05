@@ -5,7 +5,3 @@ seaborn==0.13.2
 jupyterlab==4.4.10
 jupytext==1.18.1
 altair==5.5.0
-plotnine==0.15.1
-vl-convert-python==1.8.0
-bokeh==3.7.3
-plotly==6.3.0

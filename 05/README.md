@@ -1,3 +1,11 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "281d9fdd-1a1a-8015-bcdb-c11415191ac2"
+  url: "https://app.notion.com/p/281d9fdd1a1a8015bcdbc11415191ac2"
+---
+
 Data: Care & Feeding
 
 Mid-term: [#FIXME:URL]
@@ -9,27 +17,35 @@ Mid-term: [#FIXME:URL]
 ![Data Pipeline Intro](media/data_pipeline_intro.png)
 *Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
-Lecture 04 ends with an inspection preview: use `isna()` and duplicate counts to identify evidence without changing the table. This lecture turns that evidence into documented cleaning decisions and follows the workflow **define the data contract → audit/detect → decide → transform → validate → save**. Validation happens before a derived artifact is saved; a failed check sends the work back to the audit or decision step. We'll cover each technique individually, then bring it all together in one complete pipeline at the end.
+Lecture 04 ends with an inspection preview. This lecture teaches the pandas tools
+that do the common cleaning work: handle missing values, detect and resolve
+duplicates, replace values, apply functions, convert types, create categories,
+clean strings, sample rows, and validate a result. We will use each operation on
+a small table first, then combine the operations into one pipeline at the end.
 
-## Data contract and schema
+## Three terms that guide the operations
 
-The **source artifact** is the file or bytes as received. A **raw table** is the parsed, unmodified view of that source. Keep a **raw snapshot** for a mutation check, and perform transformations only on a separate **working table**. **Cleaned data** is a derived artifact saved only after the working table satisfies a documented contract. Clean does not mean perfect, complete, or free of unusual values.
-
-**Row meaning** states what one row represents. A **schema** records the expected column names, meanings, data types, allowed or required values, and whether missing values are permitted.
-
-A **candidate identifier** is one column, or a combination of columns, expected to distinguish rows. It is only a candidate until the audit tests its uniqueness and missingness.
-
-**Tidy data** uses one column for each variable, one row for each observation, and one table for each type of observational unit. This is a structural description, not proof that the values are valid or clean. Lecture 06 teaches structural reshaping; Lecture 05 only states the expected row and column meanings. See Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10) for the originating formulation.
-
-**Provenance** records where an artifact came from; a source name and content checksum are two useful pieces of evidence. An **audit trail** records the source, detected issues, decisions, transformations, validation results, and output. Together they make the path from source snapshot to raw table to working table to clean artifact inspectable.
+**Row meaning** states what one row represents. A **schema** records expected
+column names, meanings, data types, allowed or required values, and whether
+missing values are permitted. A **candidate identifier** is one column, or a
+combination of columns, expected to distinguish rows. These terms help you decide
+which columns an operation should affect and how to check its result.
 
 # Handling Missing Data
 
-Missing data is a common problem in real-world datasets. Understanding how to identify, analyze, and handle missing data is crucial for reliable data analysis. Pandas provides powerful tools for working with missing values.
-
 *A missing marker records absence, not its cause. The same blank can mean nonresponse, inapplicability, or a system failure.*
 
-Before naming a missingness mechanism, ask what process could have produced the blank. A value may be missing for reasons unrelated to the data (for example, a sensor failed), because its absence is related to other observed information (for example, a survey question is skipped by a particular group), or because the unobserved value itself affects whether it is recorded (for example, high earners decline to report income). These are commonly called **MCAR** (Missing Completely At Random), **MAR** (Missing At Random), and **MNAR** (Missing Not At Random). The labels organize assumptions; counts alone cannot prove which mechanism applies.
+*Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."*
+
+Start with the operations: detect gaps with `isna()` or `notna()`, remove them
+with `dropna()`, or fill them with `fillna()`, `ffill()`, `bfill()`, or
+`interpolate()`. Measure first; choose an operation only after considering what
+the missing values mean.
+
+The usual mechanism labels are **MCAR** (missingness unrelated to the data),
+**MAR** (related to observed information), and **MNAR** (related to the missing
+value itself). They organize assumptions; counts alone cannot identify the
+mechanism.
 
 ![Missing Data Patterns](media/missing_data_patterns_diagram.png)
 *Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
@@ -38,7 +54,8 @@ Before naming a missingness mechanism, ask what process could have produced the 
 
 ## Missing Data Detection
 
-Missing data detection identifies values pandas recognizes as missing and helps describe their pattern. A Boolean missingness mask does not by itself detect source-specific sentinel codes such as `-9` or `unknown`, establish why values are absent, or determine what to do with them.
+Missingness masks locate values pandas recognizes as absent. Source-specific
+sentinels such as `-9` or `unknown` need explicit handling.
 
 *Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up.*
 
@@ -69,7 +86,8 @@ print(missing_summary)
 
 ## Missing Data Analysis
 
-Missing data analysis describes patterns and prompts investigation of possible mechanisms. Counts and Boolean masks alone cannot establish why values are missing; that requires source knowledge and, often, a substantive assumption. The resulting evidence guides the choice of an appropriate handling strategy.
+Counts and proportions summarize the pattern by row or column; interpreting its
+cause still requires source knowledge.
 
 **Reference:**
 
@@ -96,7 +114,8 @@ print(df_clean.shape)  # (1, 3) - only the first row is complete
 
 ## Missing Data Imputation
 
-Missing data imputation fills in missing values using a stated rule. Whether to impute, retain, flag, or drop a value depends on the variable's meaning, how the value became missing, and the intended analysis. No method below is an automatic default.
+Imputation fills missing values under a stated rule. Whether to fill, retain,
+flag, or drop depends on the variable and analysis.
 
 **Reference:**
 
@@ -544,24 +563,22 @@ names_df = full_names.str.split(' ', expand=True)
 print(names_df)  # Two columns with first and last names
 ```
 
-# Data Validation and Quality Assessment
+# Sampling Rows and Sampling Designs
 
-![xkcd 2239: Data Error](media/xkcd_2239.png)
-*A clean-looking analysis cannot rescue corrupted source data.*
-
-## Sampling Rows for Inspection
-
-A row sample can help a person inspect records that would be missed by looking
-only at the first or last rows. It is a supplement to whole-table validation, not
-proof that the data is representative or correct. Record the sampling frame (the
-rows eligible to be selected), purpose, and random seed when the selected rows
-become part of an audit trail.
+Sampling is useful for inspecting records away from the top of a table, making a
+large table manageable for exploration, creating analysis splits, and resampling
+for procedures such as the bootstrap. A **simple random sample** gives every
+eligible row the same chance of selection. A **sampling design** additionally
+states which rows are eligible and how the selection supports the question.
 
 **Reference:**
 
 - `df.sample(n=5, random_state=42)` - Draw five rows without replacement
 - `df.sample(frac=0.1, random_state=42)` - Draw ten percent of the rows
-- `df.sample(frac=1, random_state=42)` - Permute row order while keeping each row intact
+- `df.sample(n=..., frac=..., replace=..., weights=..., random_state=...)` - pandas sampling controls; choose `n` or `frac`
+- `df.groupby('group').sample(...)` - Sample within groups
+- `np.random.default_rng(seed)` - NumPy random-number generator for reproducible random operations
+- `sklearn.model_selection.train_test_split(..., stratify=...)` - Preserve class proportions in a split
 
 ```python
 records = pd.DataFrame({
@@ -573,9 +590,15 @@ inspection = records.sample(n=3, random_state=42)
 print(inspection)
 ```
 
-Random selection alone does not make a sample representative. Do not shuffle rows
-when order carries meaning—especially before time-series analysis or temporal
-validation. The quality checks below still evaluate the complete table.
+See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
+stratified, weighted, systematic, bootstrap, shuffling, and permutation examples,
+including `np.random.permutation`. Keep the seed when a draw must be reproduced,
+and preserve row order when time or another sequence is part of the question.
+
+# Data Validation and Quality Assessment
+
+![xkcd 2239: Data Error](media/xkcd_2239.png)
+*A clean-looking analysis cannot rescue corrupted source data.*
 
 | Issue | Detection | Possible response after investigation |
 |-------|-----------|---------------------------------------|
@@ -644,7 +667,15 @@ print(valid_emails)  # All rows (emails are valid)
 
 # Data Cleaning Pipeline
 
-A reproducible cleaning workflow keeps detection separate from decisions and transformations. It validates the complete working table before saving a derived artifact.
+## From source to cleaned artifact
+
+Keep the received **source artifact** and parsed **raw table** unchanged;
+transform a separate **working table**, then save its checked result as a derived
+**cleaned table**. **Tidy data** describes structure—not correctness—with one
+variable per column, one observation per row, and one observational-unit type
+per table; Lecture 06 covers reshaping, and Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10)
+formalizes the idea. Record **provenance** and an **audit trail** connecting the
+source, decisions, transformations, checks, and output.
 
 ```mermaid
 graph TD

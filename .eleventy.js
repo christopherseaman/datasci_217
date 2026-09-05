@@ -1,13 +1,22 @@
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
+const markdownItAnchor = require("markdown-it-anchor");
 const path = require("path");
 
 const repositoryUrl = "https://github.com/christopherseaman/datasci_217";
 const excludedContent = /^(?:\d{2}\/assignment\/|\d{2}\/demo\/)/;
 
-function renderedMarkdownLink(href, sourcePath) {
-  if (/^(?:[a-z]+:|\/\/|\/|#)/i.test(href)) return href;
-  const match = href.match(/^([^?#]+?)([?#].*)?$/);
-  if (!match) return href;
+function markdownHeadingSlug(value) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}\s_-]/gu, "")
+    .replace(/\s+/g, "-");
+}
+
+function renderedSourceLink(url, sourcePath) {
+  if (/^(?:[a-z]+:|\/\/|\/|#)/i.test(url)) return url;
+  const match = url.match(/^([^?#]+?)([?#].*)?$/);
+  if (!match) return url;
 
   const target = path.normalize(path.join(path.dirname(sourcePath), match[1]));
   const repositoryPath = path.relative(process.cwd(), target).split(path.sep).join("/");
@@ -15,30 +24,32 @@ function renderedMarkdownLink(href, sourcePath) {
   if (excludedContent.test(repositoryPath)) {
     return `${repositoryUrl}/blob/main/${repositoryPath}${suffix}`;
   }
-  if (!/\.md$/i.test(match[1])) return href;
-
   let pagePath = repositoryPath.replace(/\/README\.md$/i, "/");
   pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
-  if (pagePath === repositoryPath) return href;
   const prefix = (process.env.ELEVENTY_PATH_PREFIX || "/").replace(/\/$/, "");
-  return `${prefix}/${pagePath.replace(/^\//, "")}${suffix}`;
+  const outputPath = pagePath === repositoryPath ? repositoryPath : pagePath;
+  return `${prefix}/${outputPath.replace(/^\//, "")}${suffix}`;
 }
 
 module.exports = function (eleventyConfig) {
   eleventyConfig.addPlugin(syntaxHighlight);
+  eleventyConfig.amendLibrary("md", (markdownLibrary) => {
+    // Match the fragments produced by GitHub-flavored Markdown source links.
+    markdownLibrary.use(markdownItAnchor, { slugify: markdownHeadingSlug });
+  });
 
   // Passthrough copy — media folders and CSS
   eleventyConfig.addPassthroughCopy("css");
   eleventyConfig.addPassthroughCopy("*/media/**");
 
-  // Keep source Markdown links GitHub-friendly while routing them to generated
-  // pages (or main-branch blobs for excluded activities) in the built site.
+  // Keep source Markdown URLs GitHub-friendly while routing links and images
+  // to generated pages, repository assets, or main-branch activity blobs.
   eleventyConfig.addTransform("source-markdown-links", function (content, outputPath) {
     if (!outputPath || !outputPath.endsWith(".html")) return content;
     const sourcePath = this.page?.inputPath;
     if (!sourcePath) return content;
-    return content.replace(/(href=["'])([^"']+)(["'])/gi, (_, prefix, href, quote) => {
-      return `${prefix}${renderedMarkdownLink(href, sourcePath)}${quote}`;
+    return content.replace(/((?:href|src)=["'])([^"']+)(["'])/gi, (_, prefix, url, quote) => {
+      return `${prefix}${renderedSourceLink(url, sourcePath)}${quote}`;
     });
   });
 

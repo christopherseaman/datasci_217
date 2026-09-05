@@ -1,3 +1,11 @@
+---
+notion:
+  role: bonus
+  status: mapped
+  page_id: "271d9fdd-1a1a-80cd-804f-ee12a35b4186"
+  url: "https://app.notion.com/p/271d9fdd1a1a80cd804fee12a35b4186"
+---
+
 # Lecture 01 Bonus Content
 
 These topics are **optional** and not required for future lectures. Explore them if you're curious or want to deepen your understanding!
@@ -8,7 +16,7 @@ Beyond the basic `ls`, there are many useful variations:
 
 ```bash
 ls -la          # Long format with hidden files
-ls -lh          # Human-readable file sizes  
+ls -lh          # Human-readable file sizes
 ls -lt          # Sort by modification time
 ls -lr          # Reverse order
 ls *.py         # List only Python files
@@ -44,7 +52,7 @@ history            # Show recent commands
 
 # Editing shortcuts
 Ctrl+A             # Beginning of line
-Ctrl+E             # End of line  
+Ctrl+E             # End of line
 Ctrl+U             # Clear entire line
 Tab                # Auto-complete (your best friend!)
 ```
@@ -161,7 +169,7 @@ small_number = 1.23e-3   # 0.00123
 These advanced features are powerful, but can be overwhelming when you're just starting. Focus on the core concepts first, then come back to these when:
 
 - You feel comfortable with the basics
-- You encounter a specific need for these features  
+- You encounter a specific need for these features
 - You want to optimize your workflow
 - You're curious about "how the pros do it"
 

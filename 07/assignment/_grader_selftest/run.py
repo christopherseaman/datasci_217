@@ -5,6 +5,7 @@
 #   "pandas==3.0.5",
 #   "matplotlib==3.11.1",
 #   "seaborn==0.13.2",
+#   "altair==5.5.0",
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
 #   "ipykernel==6.29.5",
@@ -71,7 +72,7 @@ exploration_roles = {
 assert all(isinstance(value, str) and value.strip() for value in [exploration_question, exploration_observation, exploration_limitation])
 ''',
     "a07-explore-function": r'''def build_exploratory_chart(session_table, pathway_order):
-    """Return one exploratory Figure and Axes without saving a file."""
+    """Return one validated Altair session-level scatterplot specification."""
     required = ['session_id', 'pathway', 'activities_completed', 'reflection_score']
     missing = [column for column in required if column not in session_table.columns]
     if missing:
@@ -88,47 +89,41 @@ assert all(isinstance(value, str) and value.strip() for value in [exploration_qu
         raise ValueError('session_id must be unique')
     if not pd.api.types.is_integer_dtype(prepared['activities_completed']) or not pd.api.types.is_integer_dtype(prepared['reflection_score']):
         raise ValueError('session quantitative fields must be integers')
-    figure, axes = plt.subplots(figsize=(7.2, 4.6))
-    sns.scatterplot(
-        data=prepared,
-        x='activities_completed',
-        y='reflection_score',
-        hue='pathway',
-        style='pathway',
-        hue_order=labels,
-        style_order=labels,
-        palette={labels[0]: BLUE, labels[1]: ORANGE},
-        markers={labels[0]: 'o', labels[1]: 's'},
-        s=75,
-        ax=axes,
-    )
-    axes.set_xlabel('Activities completed (count)')
-    axes.set_ylabel('Reflection score (points)')
-    axes.set_title('Exploratory view of activities completed and reflection score')
-    axes.legend(title='Pathway')
-    return figure, axes
+    return alt.Chart(prepared).mark_point(filled=True, size=75).encode(
+        x=alt.X('activities_completed:Q', title='Activities completed (count)'),
+        y=alt.Y('reflection_score:Q', title='Reflection score (points)'),
+        color=alt.Color('pathway:N', scale=alt.Scale(domain=labels, range=[BLUE, ORANGE]), title='Pathway'),
+        shape=alt.Shape('pathway:N', scale=alt.Scale(domain=labels, range=['circle', 'square']), title='Pathway'),
+        tooltip=[
+            alt.Tooltip('activities_completed:Q', title='Activities completed'),
+            alt.Tooltip('reflection_score:Q', title='Reflection score'),
+            alt.Tooltip('pathway:N', title='Pathway'),
+        ],
+    ).properties(title='Exploratory view of activities completed and reflection score')
 ''',
     "a07-explore-run": r'''exploratory_order = ['Independent', 'Facilitated']
 exploratory_snapshot = session_observations.copy(deep=True)
-exploratory_figure, exploratory_axes = build_exploratory_chart(session_observations, exploratory_order)
-assert exploratory_figure.axes == [exploratory_axes]
-assert len(exploratory_axes.collections[0].get_offsets()) == 12
-exploratory_colors = {tuple(np.round(color, 6)) for color in exploratory_axes.collections[0].get_facecolors()}
-assert exploratory_colors == {tuple(np.round(matplotlib.colors.to_rgba(BLUE), 6)), tuple(np.round(matplotlib.colors.to_rgba(ORANGE), 6))}
-exploratory_marker_geometry = set()
-for marker_path in exploratory_axes.collections[0].get_paths():
-    exploratory_marker_geometry.add(tuple(tuple(np.round(vertex, 6)) for vertex in marker_path.vertices))
-assert len(exploratory_marker_geometry) == 2
-assert exploratory_axes.get_xlabel() == 'Activities completed (count)'
-assert exploratory_axes.get_ylabel() == 'Reflection score (points)'
-assert exploratory_axes.get_title() == 'Exploratory view of activities completed and reflection score'
-assert exploratory_axes.get_legend().get_title().get_text() == 'Pathway'
+exploratory_chart = build_exploratory_chart(session_observations, exploratory_order)
+exploratory_spec = exploratory_chart.to_dict()
+assert exploratory_spec['mark']['type'] == 'point'
+assert exploratory_spec['encoding']['x']['field'] == 'activities_completed'
+assert exploratory_spec['encoding']['x']['type'] == 'quantitative'
+assert exploratory_spec['encoding']['x']['title'] == 'Activities completed (count)'
+assert exploratory_spec['encoding']['y']['field'] == 'reflection_score'
+assert exploratory_spec['encoding']['y']['type'] == 'quantitative'
+assert exploratory_spec['encoding']['y']['title'] == 'Reflection score (points)'
+assert exploratory_spec['encoding']['color']['field'] == 'pathway'
+assert exploratory_spec['encoding']['color']['scale']['domain'] == exploratory_order
+assert exploratory_spec['encoding']['shape']['field'] == 'pathway'
+assert exploratory_spec['encoding']['shape']['scale']['range'] == ['circle', 'square']
+assert len(exploratory_spec['encoding']['tooltip']) == 3
+assert exploratory_spec['title'] == 'Exploratory view of activities completed and reflection score'
 assert session_observations.equals(exploratory_snapshot)
-display_figure(exploratory_figure)
+exploratory_chart
 ''',
     "a07-task1-reflection": """### Task 1 reflection
 
-The one-session grain means every point is one prepared row, not an average or population estimate. Activities and reflection use position because they are quantitative; pathway uses color plus marker shape because it is categorical, while session ID only identifies rows. The pattern I describe is therefore restricted to visible marks in these twelve rows and is exploratory, not evidence that activities or pathway caused a score.
+The one-session grain means every Altair point is one prepared row, not an average or population estimate. Activities and reflection use typed quantitative positions; pathway uses typed nominal color plus shape, while session ID only identifies rows. Tooltips supplement the visible title and axes rather than hiding the comparison. The pattern I describe is therefore restricted to visible marks in these twelve rows and is exploratory, not evidence that activities or pathway caused a score.
 """,
     "a07-task2-critique": """### Critique
 
@@ -530,8 +525,11 @@ def _static_mutation_cases(correct: Path, cases: Path):
 
 def _behavior_mutation_cases(correct: Path, cases: Path):
     replacements = [
-        ("exploration-dropped-points", "data=prepared,", "data=prepared.iloc[:-1],"),
-        ("exploration-one-encoding", "style='pathway',", "style=None,"),
+        ("exploration-dropped-points", "alt.Chart(prepared)", "alt.Chart(prepared.iloc[:-1])"),
+        ("exploration-duplicate-colors", "range=[BLUE, ORANGE]", "range=[BLUE, BLUE]"),
+        ("exploration-duplicate-shapes", "range=['circle', 'square']", "range=['circle', 'circle']"),
+        ("exploration-one-encoding", "shape=alt.Shape('pathway:N', scale=alt.Scale(domain=labels, range=['circle', 'square']), title='Pathway'),", "shape=alt.value('circle'),"),
+        ("explore-hidden-chart", "exploratory_chart\n", "42\n"),
         ("redesign-truncated", "axes.set_ylim(bottom=0)", "axes.set_ylim(50, 90)"),
         ("redesign-wrong-legend", "loc='upper left', bbox_to_anchor=(1.01, 1), frameon=False", "loc='best', frameon=True"),
         ("explanatory-hardcoded-leader", "title = f'{labels[higher_index]} finishes higher", "title = f'Facilitated finishes higher"),
@@ -540,6 +538,7 @@ def _behavior_mutation_cases(correct: Path, cases: Path):
     ]
     cell_for = {
         "exploration": "a07-explore-function",
+        "explore": "a07-explore-run",
         "redesign": "a07-redesign-function",
         "explanatory": "a07-explanatory-function",
     }
@@ -657,11 +656,31 @@ def _assert_delivery_inventory(
         _assert_result(grade_submission(rejected), expected_context, False)
 
 
+def _check_clean_autograder_bootstrap() -> None:
+    """Prove the declared bootstrap requirements can import the central grader."""
+    requirements = Path(__file__).resolve().parent / "requirements.txt"
+    completed = subprocess.run(
+        [
+            "uv", "run", "--no-project", "--with-requirements", str(requirements),
+            "python", "-c", "import altair, grader; print(altair.__version__)",
+        ],
+        cwd=Path(__file__).resolve().parent,
+        env=os.environ.copy(),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert completed.stdout.strip() == "5.5.0", completed.stdout
+    print("[HARNESS] clean autograder bootstrap imports grader and Altair")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-behavior-mutants", action="store_true")
     parser.add_argument("--only-behavior-mutants", action="store_true")
     args = parser.parse_args()
+    _check_clean_autograder_bootstrap()
     with tempfile.TemporaryDirectory(prefix="a07-release-harness-") as temporary_name:
         temporary = Path(temporary_name)
         correct = temporary / "correct submission"

@@ -1,3 +1,11 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "293d9fdd-1a1a-801c-bef2-e6140976408c"
+  url: "https://app.notion.com/p/293d9fdd1a1a801cbef2e6140976408c"
+---
+
 06) Data Wrangling: Join, Combine, and Reshape
 
 **Assignment 6:** [assignment instructions](assignment/README.md)
@@ -34,13 +42,6 @@ Data wrangling is the art of transforming messy, disconnected datasets into clea
 *Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration.*
 
 Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you’ve worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
-
-**Important difference from SQL:** pandas matches null key values with other
-null key values. SQL usually treats `NULL = NULL` as unknown, so SQL joins do
-not match two null keys. If missing keys should never match, filter them or
-replace missing keys on the left and right with **different** sentinels that
-cannot occur in the data. Never use one shared sentinel—it would recreate the
-same match. Document whichever policy you choose.
 
 **Visual Guide - Join Types:**
 
@@ -122,7 +123,7 @@ merged = pd.merge(customers, purchases, on='customer_id')
 display(merged)  # Same result
 ```
 
-**Why this matters:** Inner join only keeps matching records - customers without purchases are dropped.
+**One difference from SQL:** pandas matches null key values with other null key values, whereas SQL usually does not. If missing keys should never match, filter them or replace missing keys on the left and right with different sentinels that cannot occur in the data; one shared sentinel would recreate the match. Document the policy you choose.
 
 ## Join Types: The Four Horsemen of Data Merging
 
@@ -167,14 +168,12 @@ display(outer)
 
 ```
 
-**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your “master” list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides.
-
-**Why this matters:** Wrong join type = lost data. Use left join to keep all customers.
+**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your “master” list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides. An inner join drops customers without purchases; a left join keeps them.
 
 
-## Merge Cardinality and Integrity Checks
+## Checking Merge Cardinality
 
-Merge cardinality describes whether each key is unique or repeated on the left and right. State the relationship you expect before merging, then ask pandas to validate it.
+Merge cardinality describes whether each key is unique or repeated on the left and right. Use it when the merge needs to enforce an expected relationship or audit which rows matched.
 
 **Reference:**
 
@@ -335,8 +334,6 @@ display(merged)
 An index supplies row labels. When pandas aligns objects, equal labels identify corresponding rows; label order and coverage do not have to match. Unmatched labels are retained or discarded according to the operation and its alignment mode, and retained gaps become `NaN`. Before using index-based combination, confirm that the labels mean the same thing in every object; a shared default `RangeIndex` does not establish shared identity.
 
 ### DataFrame.join(): Index-Based Merging
-
-Lecture 04 introduced labels and alignment, and the later index section builds on this prerequisite with index-management mechanics. Keep the distinction in mind here: `join()` and `combine_first()` match by labels rather than by row position.
 
 `join()` is a simpler alternative to `merge()` when working with indexes: it defaults to a left join on index labels.
 
@@ -707,7 +704,7 @@ display(wide)
 
 ```
 
-**Common error:** If an `index`/`columns` pair identifies more than one value, `pivot()` raises an error because it cannot choose a cell value. First determine whether the duplicates are data errors or repeated observations. Use `pivot_table()` only when an explicit aggregation is part of the question.
+If an `index`/`columns` pair identifies more than one value, `pivot()` raises an error because it cannot choose a cell value. First determine whether the duplicates are data errors or repeated observations; use `pivot_table()` only when an explicit aggregation is part of the question.
 
 ### pivot_table(): Aggregating Before Reshaping (Preview)
 

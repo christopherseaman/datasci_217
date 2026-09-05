@@ -1,3 +1,16 @@
+---
+notion:
+  role: bonus
+  status: unmapped
+  page_id: null
+  url: null
+  target:
+    role: dlc_subpage
+    parent_page_id: "2a8d9fdd-1a1a-80ed-828d-e5feb58d5ed9"
+    anchor: top
+  note: "Notion links a generic BONUS.md reference, but no separate matching bonus page was found."
+---
+
 # Advanced Time Series Analysis Topics
 
 Everything in this document is optional for Lecture 09. It collects specialized material on periods, decomposition, forecasting, high-frequency data, custom frequencies, advanced time zones, and additional visualization.

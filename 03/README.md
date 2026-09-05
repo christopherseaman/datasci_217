@@ -1,8 +1,15 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "27ed9fdd-1a1a-80a7-8532-e70d7000dae8"
+  url: "https://app.notion.com/p/27ed9fdd1a1a80a78532e70d7000dae8"
+---
+
 # NumPy Arrays & Virtual Environments
 
-Lectures 01–02 established script, language, and Git fluency. Lecture 03 now
-focuses on making execution reproducible: first create a known environment,
-then use it for NumPy-based numerical work. Lectures 01–03 use scripts and the
+Lecture 03 makes execution reproducible: create a known environment, then use
+it for NumPy-based numerical work. Lectures 01–03 use scripts and the
 terminal; notebooks begin in Lecture 04.
 
 **LIVE DEMO!**
@@ -315,7 +322,7 @@ num_arr = str_arr.astype(float)
 
 ### Basic Indexing
 
-NumPy's indexing syntax allows you to access and slice array elements using familiar Python notation, extended to work seamlessly across multiple dimensions.
+NumPy extends familiar Python indexing and slicing across multiple dimensions.
 
 **Reference:**
 
@@ -333,7 +340,7 @@ every_other = arr[::2]  # array([0, 2, 4, 6, 8])
 
 ### Multidimensional Indexing
 
-With multidimensional arrays, you can use comma-separated indices to access elements, rows, or columns, making it easy to work with matrices and higher-dimensional data.
+Comma-separated indices access elements, rows, or columns in multidimensional arrays.
 
 **Reference:**
 
@@ -351,7 +358,7 @@ middle_column = arr_2d[:, 1] # Column 1: array([2, 5, 8])
 
 ### Boolean Indexing
 
-Boolean indexing allows you to filter arrays using conditional logic, selecting only elements that meet specific criteria. This is essential for data analysis tasks like finding outliers, filtering datasets, or applying conditional transformations.
+Boolean indexing filters arrays with conditional logic, selecting elements that meet specific criteria.
 
 **Reference:**
 
@@ -372,7 +379,7 @@ filtered = arr[mask]
 
 ### Fancy Indexing
 
-Fancy indexing uses integer arrays to select multiple elements at arbitrary positions in a single operation. This powerful technique enables efficient data reordering, sampling, and custom selection patterns without explicit loops.
+Fancy indexing uses integer arrays to select multiple elements at arbitrary positions without explicit loops.
 
 **Reference:**
 
@@ -390,7 +397,7 @@ selected = arr_2d[[0, 2], [1, 2]]  # array([2, 9])
 
 ### Views vs Copies
 
-Understanding the distinction between views and copies is critical for avoiding unexpected behavior: slicing operations create views that share memory with the original array, while explicit copies create independent arrays.
+Slicing creates views that share memory; explicit copies are independent.
 
 **Reference:**
 
@@ -413,7 +420,7 @@ print(arr)                  # array([1, 2, 3, 4, 5])
 
 ### Arithmetic and Vectorized Operations
 
-NumPy's vectorized operations perform element-wise calculations across entire arrays without explicit loops, providing both cleaner code and significant performance improvements over standard Python operations.
+NumPy's vectorized operations calculate element-wise across arrays without explicit loops.
 
 **Reference:**
 
@@ -434,7 +441,7 @@ result = arr + 10           # Adds 10 to all elements
 
 ### Statistical Operations
 
-NumPy provides built-in statistical functions that operate across entire arrays or along specific axes, enabling quick computation of summary statistics for data analysis.
+NumPy provides built-in statistics across entire arrays or specific axes.
 
 **Reference:**
 

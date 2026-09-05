@@ -1,9 +1,17 @@
+---
+notion:
+  role: lecture
+  status: mapped
+  page_id: "29ad9fdd-1a1a-803c-a031-f791f9043193"
+  url: "https://app.notion.com/p/29ad9fdd1a1a803ca031f791f9043193"
+---
+
 Data Visualization: From Exploration to Communication
 
 See [BONUS.md](BONUS.md) for advanced topics:
 
 - Advanced matplotlib customization and publication-quality plots
-- Interactive visualization with Altair, Bokeh, and Plotly
+- Advanced interactive visualization with Bokeh and Plotly
 - Statistical visualization with seaborn advanced features
 - Custom color palettes and themes
 - Animation and dynamic plots
@@ -20,7 +28,8 @@ This lecture uses prepared plotting tables so you can focus on choosing honest e
 - matplotlib fundamentals (figures, subplots, customization)
 - pandas plotting for quick data exploration
 - seaborn statistical graphics and distribution views
-- Optional survey: modern visualization libraries (Altair, plotnine, Bokeh, Plotly)
+- Altair: declarative charts, typed encodings, tooltips, and basic interaction
+- Optional survey: plotnine, Bokeh, and Plotly
 
 
 ![xkcd 1945: Scientific Paper Graph Quality](https://imgs.xkcd.com/comics/scientific_paper_graph_quality.png)
@@ -35,8 +44,6 @@ A **visualization** maps data values to visible properties so that a reader can 
 2. **Audience and claim:** Who will use the chart, what context do they bring, and what descriptive conclusion should the finished chart support? A visual pattern alone does not prove why that pattern occurred.
 3. **Unit and grain:** What does one mark or summarized position represent, and what does one row in the plotting table represent?
 4. **Variables:** What is each variable's data type, what analytical role does it play, and which visible property will encode it?
-
-For the accessible line-chart example later in this lecture, the four statements could be: (1) compare prepared-score trajectories across five study rounds; (2) help program instructors see the descriptive claim that the guided program rises more and finishes higher, without making a causal claim; (3) each point is a program-round mean and each plotting-table row is one program by round; and (4) round is ordinal and establishes study sequence on x, score is a quantitative measure placed on y, and program is a categorical grouping variable encoded redundantly with color, marker, and line style.
 
 ### State the unit and grain shown
 
@@ -58,6 +65,10 @@ A variable's **role** describes how it participates in this particular analysis:
 An **exploratory visualization** helps the analyst inspect patterns, distributions, or unexpected values while the question is still being refined. It may be quick, but it still needs truthful scales and labels.
 
 An **explanatory visualization** communicates one selected finding to a named audience. It removes irrelevant alternatives, adds context and annotation, and uses a title or caption that states what the reader should notice without overstating the evidence.
+
+![xkcd 1845, “State Word Map”: a satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](https://imgs.xkcd.com/comics/state_word_map.png)
+
+*[xkcd 1845, “State Word Map”](https://xkcd.com/1845/) — If flexible method choices can produce any headline, the chart is not evidence.*
 
 ### Think in marks and encodings
 
@@ -227,8 +238,6 @@ plt.show()
 # The Visualization Ecosystem
 
 *Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart. But don't worry - we'll focus on the essential tools that actually matter for daily data science work.*
-
-Python's visualization landscape has evolved dramatically. While matplotlib remains the foundation, modern tools like seaborn, altair, and plotnine offer more intuitive interfaces for common tasks.
 
 **Visual Guide - Python Visualization Stack:**
 
@@ -416,8 +425,6 @@ plt.show()
 # pandas: Quick Data Exploration
 
 *Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
-
-pandas provides convenient plotting methods that build on matplotlib, perfect for quick data exploration.
 
 **Reference:**
 
@@ -638,20 +645,61 @@ plt.show()
 
 # LIVE DEMO!
 
-# Optional Survey: Modern Visualization Libraries
+# Altair: Declarative Charts and Interaction
+
+Altair expresses a chart as **data → mark → typed encodings**. This makes the
+mapping from a table to visible properties explicit and produces a portable
+Vega-Lite specification. Use type shorthands deliberately: `:Q` for a
+quantitative measure, `:N` for a nominal category, `:O` for an ordered
+category, and `:T` for a temporal value.
+
+```python
+import altair as alt
+import pandas as pd
+
+study = pd.DataFrame({
+    'activities_completed': [1, 2, 3, 4, 5, 6],
+    'reflection_score': [54, 58, 63, 66, 71, 75],
+    'pathway': ['Independent', 'Independent', 'Independent',
+                'Guided', 'Guided', 'Guided'],
+})
+
+scatter = alt.Chart(study).mark_point(filled=True, size=90).encode(
+    x=alt.X('activities_completed:Q', title='Activities completed (count)'),
+    y=alt.Y('reflection_score:Q', title='Reflection score (points)'),
+    color=alt.Color('pathway:N', title='Pathway'),
+    shape=alt.Shape('pathway:N', title='Pathway'),
+    tooltip=['activities_completed:Q', 'reflection_score:Q', 'pathway:N'],
+).properties(title='Prepared sessions: reflection score and activity count')
+
+scatter.interactive()
+```
+
+`Chart(study)` supplies the table, `mark_point(filled=True)` chooses points,
+and the nominal color-plus-shape encodings redundantly identify pathways.
+`encode()` states the mapping. Tooltips and `.interactive()` can help a reader
+inspect a value or zoom, but the title, axes, legend, and main comparison must
+remain visible without hover. For a compact comparison, compose already
+honest charts with `alt.hconcat(left, right)` or `alt.vconcat(top, bottom)`;
+the end-of-lecture demo practices that pattern after the basic path above.
+
+Altair does not replace the visualization contract: state the row grain and
+variable roles first, choose truthful scales and marks, use redundant cues
+when category identity matters, and supply a text alternative for the rendered
+or shared view.
+
+# Optional Survey: Other Modern Visualization Libraries
 
 *The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
 
-This survey is optional and not assessed. It introduces the design space without making every library part of the core lecture contract. Keep using the same visualization contract: choose a truthful encoding, preserve labels and context, add redundant encodings where category identity matters, and provide a useful text alternative. Executable Altair, Bokeh, and Plotly examples live in [BONUS.md](BONUS.md).
+This optional, unassessed survey names alternatives; the same visible-context
+rules still apply. Extended Bokeh and Plotly examples live in [BONUS.md](BONUS.md).
 
 ## Ecosystem at a glance
 
-- **vega-altair** expresses marks and typed encodings declaratively through Vega-Lite. It is a strong fit for concise interactive statistical graphics, faceting, layering, and portable HTML or JSON specifications.
 - **plotnine** brings a layered grammar-of-graphics interface familiar to ggplot2 users.
 - **Bokeh** targets browser-based visualizations, custom interactions, and server applications.
 - **Plotly** offers a high-level Express API plus lower-level graph objects for interactive charts and dashboards.
-
-Interactivity changes the delivery medium, not the analytical obligation. Hover can supplement visible labels but should not carry essential information by itself, and exported or shared views still need usable contrast, context, and a text alternative.
 
 ## Tool Selection Guide
 
