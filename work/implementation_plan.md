@@ -1,6 +1,6 @@
 # DataSci 217 Implementation Plan - UPDATED REQUIREMENTS
 
-> **Archived and superseded for the 2026–27 refresh.** This plan assumes GitHub Classroom, points to the obsolete prerequisite map, and describes structures that do not match the current course. Use [`course_dependency_alignment.md`](course_dependency_alignment.md) and [`lecture_review_workflow.md`](lecture_review_workflow.md) as the active planning sources. Retain this file only as historical design evidence.
+> **Archived and superseded for the 2026–27 refresh.** This plan assumes GitHub Classroom, points to the obsolete prerequisite map, and describes structures that do not match the current course. Use [`lecture_review_workflow.md`](lecture_review_workflow.md) as the active planning source. Retain this file only as historical design evidence.
 
 ## Project Objective (REVISED)
 Reorganize DataSci 217 from existing content into a coherent 11-lecture sequence:

@@ -10,7 +10,7 @@ Status: evidence-backed design proposal; no lecture, demo, assignment, or grader
 Reviewed scope:
 
 - Lecture, bonus, demo, assignment, dependency, and current public-test files under 08/ through 11/.
-- The course contracts in work/lecture_review_workflow.md, work/course_dependency_alignment.md, and work/colab_standard.md.
+- The course contracts in work/lecture_review_workflow.md and work/colab_standard.md.
 - Current pandas behavior where the repository permits an unbounded package upgrade.
 
 The matrices below describe the alignment of the current artifacts against the proposed measurable objectives. A proposed objective is not treated as already taught merely because a current notebook contains code that uses it.

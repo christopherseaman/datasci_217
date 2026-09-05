@@ -1,6 +1,6 @@
 # DS-217: Introduction to Python & Data Science Tools - Refined Curriculum
 
-> **Archived and superseded for the 2026–27 refresh.** This proposal uses a different lecture order from the current 11-lecture repository. Use [`course_dependency_alignment.md`](course_dependency_alignment.md) for the working sequence and the range matrices under `work/reviews/` for current-file evidence.
+> **Archived and superseded for the 2026–27 refresh.** This proposal uses a different lecture order from the current 11-lecture repository. Use the range matrices under `work/reviews/` for current-file evidence.
 
 Health Data Science Masters Program | Flexible 1-2 Credit Course
 

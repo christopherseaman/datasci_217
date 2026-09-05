@@ -9,7 +9,7 @@ Status: evidence and redesign contract only. This review does not modify lecture
 
 ## Scope and governing decisions
 
-This artifact applies the review process in `work/lecture_review_workflow.md` to Lectures 04–07 and the course spine in `work/course_dependency_alignment.md`.
+This artifact applies the review process in `work/lecture_review_workflow.md` to Lectures 04–07.
 
 The governing decisions for this range are:
 

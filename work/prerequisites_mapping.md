@@ -1,6 +1,6 @@
 # DataSci 217: Prerequisites and Dependency Mapping
 
-> **Archived and superseded.** This document describes an earlier proposed sequence that does not match the current course: among other conflicts, it places Jupyter in Lecture 03, NumPy in Lecture 04, and modeling in Lecture 08. Do not use it as the prerequisite source for the 2026–27 refresh. Use [`course_dependency_alignment.md`](course_dependency_alignment.md) and the evidence-backed range matrices under `work/reviews/` instead.
+> **Archived and superseded.** This document describes an earlier proposed sequence that does not match the current course: among other conflicts, it places Jupyter in Lecture 03, NumPy in Lecture 04, and modeling in Lecture 08. Do not use it as the prerequisite source for the 2026–27 refresh. Use the evidence-backed range matrices under `work/reviews/` instead.
 
 ## Course Structure Architect Agent - Dependency Analysis
 
