@@ -1,14 +1,9 @@
 ---
 notion:
   role: bonus
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "29ad9fdd-1a1a-803c-a031-f791f9043193"
-    anchor: top
-  note: "Notion links the repository BONUS.md, but no separate matching bonus page was found."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-8172-a97a-dc1e9e5b577a"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a8172a97adc1e9e5b577a"
 ---
 
 # Advanced Data Visualization Topics

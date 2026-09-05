@@ -1,14 +1,9 @@
 ---
 notion:
   role: bonus
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "271d9fdd-1a1a-8036-9c2b-c4a66ae97d9d"
-    anchor: top
-  note: "Lecture 02 has optional material in Notion, but no separate bonus page was found."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-81b5-99c7-ff49c7654508"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a81b599c7ff49c7654508"
 ---
 
 # Bonus Content: Advanced Git Concepts

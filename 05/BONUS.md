@@ -4,7 +4,6 @@ notion:
   status: mapped
   page_id: "286d9fdd-1a1a-80ca-b36b-f85d415c2e53"
   url: "https://app.notion.com/p/286d9fdd1a1a80cab36bf85d415c2e53"
-  note: "Notion files this page under Lecture 04, although its content corresponds to this Lecture 05 bonus file."
 ---
 
 Bonus Content: Advanced Data Cleaning

@@ -1,14 +1,9 @@
 ---
 notion:
   role: bonus
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "293d9fdd-1a1a-801c-bef2-e6140976408c"
-    anchor: top
-  note: "Notion links a generic BONUS.md reference, but no separate matching bonus page was found."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-810a-9c14-db8f8818cb36"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a810a9c14db8f8818cb36"
 ---
 
 Data Wrangling: Advanced Topics

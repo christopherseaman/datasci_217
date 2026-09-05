@@ -1,14 +1,9 @@
 ---
 notion:
   role: bonus
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "2a1d9fdd-1a1a-80f8-b1e8-f7b20e4a2e84"
-    anchor: top
-  note: "Notion links a generic BONUS.md reference, but no separate matching bonus page was found."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-81b9-9e57-e4de7f2b74da"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a81b99e57e4de7f2b74da"
 ---
 
 # Advanced Data Aggregation Topics

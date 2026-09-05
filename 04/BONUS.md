@@ -1,14 +1,9 @@
 ---
 notion:
   role: bonus
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "281d9fdd-1a1a-800a-897d-cafb5971c23f"
-    anchor: top
-  note: "The Notion Lecture 04 page contains advanced material, but no separate matching bonus page was found."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-8119-83f4-fb2c4b73430e"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a811983f4fb2c4b73430e"
 ---
 
 Bonus Content: Jupyter Workflows and Advanced Pandas Operations

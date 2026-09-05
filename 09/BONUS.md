@@ -1,14 +1,9 @@
 ---
 notion:
   role: bonus
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "2a8d9fdd-1a1a-80ed-828d-e5feb58d5ed9"
-    anchor: top
-  note: "Notion links a generic BONUS.md reference, but no separate matching bonus page was found."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-8164-a3f7-c5c5d3a8617a"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a8164a3f7c5c5d3a8617a"
 ---
 
 # Advanced Time Series Analysis Topics

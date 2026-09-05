@@ -2,14 +2,9 @@
 notion:
   role: bonus
   scope: demo
-  status: unmapped
-  page_id: null
-  url: null
-  target:
-    role: dlc_subpage
-    parent_page_id: "2b0d9fdd-1a1a-8046-a882-cf3930ecf4de"
-    anchor: top
-  note: "This demo-only geography extension has no separate matching Notion page."
+  status: mapped
+  page_id: "3d2d9fdd-1a1a-815e-ab78-c339d96282f1"
+  url: "https://app.notion.com/p/3d2d9fdd1a1a815eab78c339d96282f1"
 ---
 
 # Optional Geography Demo
