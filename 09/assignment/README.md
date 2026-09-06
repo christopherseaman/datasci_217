@@ -6,7 +6,7 @@ Use the supplied synthetic indoor-air readings to build one reproducible tempora
 2. create an entity-scoped hourly grid and a measurement-aware two-hour summary while keeping source-value missingness distinct from grid-created rows; and
 3. create entity-scoped lag, difference, and two past-only window meanings, audit candidate availability at a supplied prediction timestamp, and form a chronological handoff.
 
-The assignment requires clean local Jupyter or the VS Code notebook interface. Assignment Colab is not part of this repository contract; stored notebook output is not execution evidence.
+The assignment may be completed in the supplied notebook or another editor, but the completed notebook/source remains a required coursework deliverable. Assignment Colab is not part of this repository contract; committed CSV artifacts are the automated grading contract and grading does not execute student code.
 
 ## Data and terms
 
@@ -29,9 +29,9 @@ Do not fill or interpolate measurements, pool zones, compute a lead or centered 
 
 1. Follow [PLATFORM_CHECK.md](PLATFORM_CHECK.md) and open `assignment.ipynb` in the assignment environment.
 2. Complete every TODO in order.
-3. Restart the kernel and run all cells.
+3. Create the six CSV artifacts below.
 4. Run `python check_assignment.py` from `09/assignment/`.
-5. In VS Code Source Control or GitHub Desktop, confirm that the notebook and all six CSVs below are visible, then commit and push them.
+5. In VS Code Source Control or GitHub Desktop, confirm that the CSVs are visible, then commit and push them.
 6. Commit the completed subtree or its exported assignment repository. The optional Actions workflow is feedback; use instructor or TA review when revising.
 
 Required GUI-visible artifacts:
@@ -43,4 +43,4 @@ Required GUI-visible artifacts:
 - `output/availability_decisions.csv`
 - `output/chronological_blocks.csv`
 
-The public checker gives structural and artifact feedback only. It does not award a score or judge written reasoning. The central grader clears stored state and fresh-executes a disposable copy. Written explanations receive separate human review.
+The public checker gives artifact feedback only. It does not award a score or judge written reasoning. Written explanations and the submitted notebook/source receive separate human review; grading does not execute student code.

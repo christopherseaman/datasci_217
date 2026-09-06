@@ -1,6 +1,14 @@
 """Run one import-safe NumPy analysis over the supplied fixture."""
 
-from array_analysis import count_at_or_above, create_and_describe, reduction_summary
+from array_analysis import (
+    count_at_or_above,
+    create_and_describe,
+    reduction_summary,
+    reshape_and_transpose,
+    select_parts,
+    vector_operations,
+    view_and_copy,
+)
 from data_loader import load_measurements
 
 

@@ -7,10 +7,9 @@ no credentials, private records, or secret grading rule.
 The production runner invokes standard-library `autograder.py` with plain
 Python from the student checkout. It installs the exact sibling requirements
 into that interpreter before importing `grader.py`; PEP 723 is only
-local `uv run` provisioning. `grader.py` independently protects the assignment contract, removes
-submitted outputs from disposable copies, clears stored notebook state, starts
-fresh Jupyter kernels, checks canonical behavior, and calls all five public
-functions on the disclosed alternate prepared table. It writes the official
+local `uv run` provisioning. `grader.py` independently protects the assignment
+contract and checks committed artifacts. Optional release QA may remove outputs,
+clear notebook state, start fresh kernels, and exercise alternate prepared tables. It writes the official
 `datasci217/grading-result/v1` object to `./result.json`; completed grading exits zero
 even when student checks fail. The automated maximum is 90. Human review of the
 student-authored Markdown uses the runner's context-supplied `review` URL and

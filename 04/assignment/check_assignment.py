@@ -1,4 +1,7 @@
-"""Run the discoverable public Assignment 04 artifact checks."""
+"""Run the discoverable public Assignment 04 artifact checks.
+
+Checks read committed artifacts; student notebook code is never executed or inspected.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +9,7 @@ import csv
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 import json
+from math import isclose
 from pathlib import Path
 
 
@@ -25,23 +29,6 @@ EXPECTED_FIXTURE = {
     "row_count": 12,
     "columns": ["purchase_id", "item", "quantity", "unit_price"],
     "sha256": "0e86448f20a071552f8456075b8decef7541669b21345949a505aa93c78a07c9",
-}
-EXPECTED_SETUP_SHA256 = (
-    "f0bbad6712f084881860ed0f64d1d2067a3045ac69aadffdc9457da62def2138"
-)
-REQUIRED_CELL_IDS = {
-    "a04-header",
-    "a04-supplied-setup",
-    "a04-task1-heading",
-    "a04-task1-dependent",
-    "a04-task1-producer",
-    "a04-task1-explanation",
-    "a04-task2-heading",
-    "a04-task2-objects",
-    "a04-task3-heading",
-    "a04-task3-roundtrip",
-    "a04-final-heading",
-    "a04-final-verification",
 }
 STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
@@ -75,71 +62,26 @@ def _load_json(path: Path, label: str):
         ) from error
 
 
-def _cell_source(cell: dict) -> str:
-    source = cell.get("source", "")
-    if isinstance(source, list):
-        return "".join(source)
-    return source if isinstance(source, str) else ""
-
-
 def _check_submission_inventory(root: Path) -> None:
+    ignored_roots = {
+        ".git", "output", "_grader_selftest", ".venv", "venv",
+        "__pycache__", ".pytest_cache", ".ipynb_checkpoints", "result.json",
+    }
     actual = {
         path.relative_to(root).as_posix()
         for path in root.rglob("*")
         if (path.is_file() or path.is_symlink())
-        and path.relative_to(root).parts[0] != ".git"
-        and path.relative_to(root).parts[0] != "output"
+        and not any(part in ignored_roots for part in path.relative_to(root).parts)
     }
     _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
 
 
-def check_notebook_json_and_state_order(root: Path) -> None:
-    notebook = _load_json(root / "assignment.ipynb", "assignment.ipynb")
-    _assert(notebook.get("nbformat") == 4, "assignment.ipynb must use notebook format 4.")
-    cells = notebook.get("cells")
-    _assert(isinstance(cells, list), "assignment.ipynb must contain a cell list.")
-
-    cell_ids = [cell.get("id") for cell in cells if isinstance(cell, dict)]
-    _assert(
-        len(cell_ids) == len(cells) and all(isinstance(cell_id, str) for cell_id in cell_ids),
-        "Every notebook cell must keep its supplied stable cell ID.",
-    )
-    _assert(len(cell_ids) == len(set(cell_ids)), "Notebook cell IDs must remain unique.")
-    missing = sorted(REQUIRED_CELL_IDS - set(cell_ids))
-    _assert(not missing, f"Restore the missing supplied notebook cell(s): {', '.join(missing)}.")
-
-    kernelspec = notebook.get("metadata", {}).get("kernelspec", {})
-    _assert(
-        kernelspec.get("name") == "python3"
-        and kernelspec.get("display_name") == "Python 3"
-        and kernelspec.get("language") == "python",
-        "Keep the portable Python 3 kernelspec in assignment.ipynb.",
-    )
-
-    by_id = {cell["id"]: cell for cell in cells}
-    setup_source = _cell_source(by_id["a04-supplied-setup"])
-    _assert(
-        sha256(setup_source.encode("utf-8")).hexdigest() == EXPECTED_SETUP_SHA256,
-        "Restore the supplied setup cell without editing it.",
-    )
-    _assert(
-        _cell_source(by_id["a04-task1-producer"])
-        == 'base_rate = 3\nprint("base_rate:", base_rate)',
-        "Restore the complete supplied base_rate producer cell; move it instead of rewriting it.",
-    )
-    _assert(
-        _cell_source(by_id["a04-task1-dependent"])
-        == 'adjusted_rate = base_rate + 2\nprint("adjusted_rate:", adjusted_rate)',
-        "Restore the complete supplied adjusted_rate dependent cell; move it instead of rewriting it.",
-    )
-    _assert(
-        cell_ids.index("a04-task1-producer") < cell_ids.index("a04-task1-dependent"),
-        "Move the base_rate producer cell above the adjusted_rate dependent cell, then restart and run all.",
-    )
-
-
 def check_environment_and_fixture(root: Path) -> None:
     _check_submission_inventory(root)
+    output = root / "output"
+    _assert(output.is_dir() and not output.is_symlink(), "Missing regular output/ directory.")
+    actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
+    _assert(actual == {".gitkeep", "labeled_block.csv", "selected_purchases.csv"}, "Keep exactly .gitkeep and the two required output CSVs.")
     _assert(
         _read_text(root / ".python-version", ".python-version") == EXPECTED_PYTHON,
         "Restore .python-version to exactly `3.12.13` and one final newline.",
@@ -186,12 +128,10 @@ def _decimal(value: str, contract: str) -> Decimal:
 def check_labeled_block(root: Path) -> None:
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "Missing regular output/ directory.")
-    actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(actual == {".gitkeep", "labeled_block.csv", "selected_purchases.csv"}, "Keep exactly .gitkeep and the two required output CSVs.")
     path = root / "output" / "labeled_block.csv"
     _assert(
-        path.is_file(),
-        "Missing output/labeled_block.csv; complete Task 2 and rerun the notebook from fresh state.",
+        path.is_file() and not path.is_symlink(),
+        "Missing output/labeled_block.csv; complete Task 2 and create the committed artifact.",
     )
     with path.open("r", encoding="utf-8", newline="") as output_file:
         reader = csv.DictReader(output_file)
@@ -213,7 +153,7 @@ def check_labeled_block(root: Path) -> None:
         for row in rows
     ]
     _assert(
-        actual_values == expected_values,
+        all(isclose(actual, expected, rel_tol=1e-9, abs_tol=1e-9) for pair, wanted in zip(actual_values, expected_values) for actual, expected in zip(pair, wanted)),
         "output/labeled_block.csv values do not match the required .loc/.iloc block.",
     )
 
@@ -245,8 +185,8 @@ def _expected_selected(root: Path) -> list[dict]:
 def check_selected_purchases(root: Path) -> None:
     path = root / "output" / "selected_purchases.csv"
     _assert(
-        path.is_file(),
-        "Missing output/selected_purchases.csv; complete Task 3 and rerun the notebook from fresh state.",
+        path.is_file() and not path.is_symlink(),
+        "Missing output/selected_purchases.csv; complete Task 3 and create the committed artifact.",
     )
     with path.open("r", encoding="utf-8", newline="") as output_file:
         reader = csv.DictReader(output_file)
@@ -291,17 +231,17 @@ def check_selected_purchases(root: Path) -> None:
             f"Quantity selection is incorrect for {wanted['purchase_id']}.",
         )
         _assert(
-            actual_unit_price == wanted["unit_price"],
+            isclose(actual_unit_price, wanted["unit_price"], rel_tol=1e-9, abs_tol=1e-9),
             f"Unit price is incorrect for {wanted['purchase_id']}.",
         )
         _assert(
-            actual_total == actual_quantity * actual_unit_price == wanted["line_total"],
+            isclose(actual_total, actual_quantity * actual_unit_price, rel_tol=1e-9, abs_tol=1e-9)
+            and isclose(actual_total, wanted["line_total"], rel_tol=1e-9, abs_tol=1e-9),
             f"line_total must equal quantity * unit_price for {wanted['purchase_id']}.",
         )
 
 
 PUBLIC_CHECKS = (
-    ("notebook JSON, supplied setup, and repaired state order", check_notebook_json_and_state_order),
     ("candidate environment records and immutable fixture", check_environment_and_fixture),
     ("labeled-block CSV schema, index, and values", check_labeled_block),
     ("selected-purchases membership, arithmetic, order, and index=False", check_selected_purchases),

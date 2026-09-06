@@ -16,6 +16,7 @@ The starter package contains:
 - `measurement_summary.py`: Question 2 starter;
 - `debug_report.py`: Question 3 starter with exactly three prepared errors;
 - `make_output.py`: supplied output-file wrapper; do not edit it;
+- `output/readiness.txt`: the committed 15-line milestone artifact;
 - `check_assignment.py`: supplied local checker; do not edit it;
 - `.github/test/test_assignment.py`: the public pytest contract used by the optional Actions check; do not edit it.
 
@@ -101,7 +102,7 @@ Run it with:
 python measurement_summary.py
 ```
 
-The grader also runs a temporary copy with different top-level `measurements` and `review_threshold_text` values. Do not assume there are always four measurements, and do not print a prepared answer.
+For your own confidence, try the script after changing the top-level `measurements` and `review_threshold_text` values. Do not assume there are always four measurements, and do not print a prepared answer.
 
 ## Question 3: Read, fix, rerun, and make the output file
 
@@ -115,7 +116,7 @@ Participant count: 4
 Next checkpoint: 5
 ```
 
-The grader also runs a temporary copy with another supplied participant count. Keep the calculation and printed variables rather than replacing them with the displayed answers.
+For your own confidence, try the corrected script with another participant count. Keep the calculation and printed variables rather than replacing them with the displayed answers.
 
 After all three student scripts run cleanly, use the supplied wrapper:
 
@@ -145,7 +146,7 @@ The optional GitHub Actions workflow runs `.github/test/test_assignment.py` with
 
 ## Completion contract
 
-This is a competence-focused pass/fail assignment. A passing Python result requires all public behavior, structure, terminal-evidence, and fresh-output checks to pass. The exact GUI synchronization checklist is required for delivery but is unassessed and has no Git-concept rubric.
+This is a competence-focused pass/fail assignment. Automated grading reads the committed terminal evidence and `output/readiness.txt` artifact directly. Source structure, alternate-input behavior, and the exact GUI synchronization checklist are separate instructional/manual evidence; they are not inferred from code-analysis tests.
 
 Do not add notebooks, third-party packages, shell pipes, or shell redirection. In the three student scripts, do not add:
 

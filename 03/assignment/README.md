@@ -17,6 +17,8 @@ The required GUI delivery sequence is in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md
 - `array_analysis.py`: Task 3 NumPy functions; edit this file.
 - `analysis.py`: Task 3 terminal driver; edit this file.
 - `output/.gitkeep`: keeps the output directory in the starter repository.
+- `output/head_preview.txt`, `output/tail_preview.txt`, `output/site_counts.txt`, and `output/site_count_lines.txt`: committed pipeline milestone artifacts.
+- `output/analysis.txt`: committed NumPy learning transcript.
 - `check_assignment.py` and `_public_checks.py`: supplied checker machinery; do not edit them.
 - `test_assignment.py`: public managed-pytest facade; do not edit it. You do not need pytest locally.
 
@@ -74,7 +76,7 @@ deactivate
 cd ..
 ```
 
-Both `.venv/` directories and `recreation-check/` are generated local state. They are ignored and must never be submitted. The checker can validate the exact records, compare the saved probe with a fresh probe, and reject a tracked `.venv` when Git metadata is available. It cannot prove that you activated the local environment or performed the recreation steps; those are workflow evidence, not facts encoded in Python output.
+Both `.venv/` directories and `recreation-check/` are generated local state. They are ignored and must never be submitted. The checker validates the exact committed records and probe artifact, and rejects a tracked `.venv` when Git metadata is available. It cannot prove that you activated the local environment or performed the recreation steps; those are workflow evidence, not facts encoded in Python output.
 
 ## Task 2: Complete and run the bounded terminal pipeline
 
@@ -97,7 +99,7 @@ The fixture is deliberately bounded: it has one header, no quoted newlines, and 
 1 west
 ```
 
-Use one overwrite redirection (`>`) per command, never append redirection (`>>`). The checker parses the block before executing it in temporary copies. It accepts only the stated `head`, `tail`, `cut`, `sort`, `uniq`, and `wc` commands, pipes, and one final overwrite redirect; it does not pass student text to a shell.
+Use one overwrite redirection (`>`) per command, never append redirection (`>>`). Commit the four saved results. The checker reads those results; it does not execute or parse your `PIPELINE.md` command text. Count-column padding and line endings can vary by supported platform, so the saved count pairs and `wc` fields are checked after whitespace normalization.
 
 ## Task 3: Implement the NumPy functions
 
@@ -189,27 +191,49 @@ First reshape the input to one dimension with `flattened = np.reshape(values, va
 Complete `analysis.py` while keeping its supplied imports and exact main guard. Inside `main()`, in this order:
 
 1. call `load_measurements("observations.csv")` once;
-2. pass that returned array directly to `create_and_describe()` once;
-3. pass the same array directly to `reduction_summary()` once;
-4. pass the same array and scalar `30` directly to `count_at_or_above()` once; and
-5. use those returned results to print the exact eight-line summary below.
+2. use the loaded array with all seven helpers;
+3. print the existing shape, dtype, reduction, and count summary;
+4. print the four selections, the vector-operation results, and the reshape/transposed arrays; and
+5. use a separate copy of the loaded data to print the view and copy before and after changing that copy's first middle value to `-99`.
 
 Do not ignore the returned data, recalculate it in the driver, or hard-code the displayed values. The supplied loader resolves the fixture relative to its own file, so this program works when invoked by absolute path from another working directory.
 
-Running `python analysis.py` must print exactly:
+Running `python analysis.py` must print a readable transcript and capture it as `output/analysis.txt`. Start with the existing six summary lines, then print these labeled learning results in this order:
 
 ```text
 Measurements shape: (6, 2)
 Measurements dtype: float64
 Overall mean: 25.0
 Column means: [20. 30.]
-Column means shape: (2,)
 Row means: [15. 25. 35. 15. 25. 35.]
-Row means shape: (6,)
 Values at or above 30: 6
+First value: 10.0
+Second row: [20. 30.]
+Second column: [20. 30. 20. 20. 30. 40.]
+Top-left block: [[10. 20.]
+ [20. 30.]]
+View before change: [[20. 30.]
+ [30. 40.]]
+Copy before change: [[20. 30.]
+ [30. 40.]]
+View after source change: [[-99.  30.]
+ [ 30.  40.]]
+Copy after source change: [[20. 30.]
+ [30. 40.]]
+Mask at or above 30: [False  True False False  True  True]
+Selected values: [30. 30. 40.]
+Difference from baseline: [10. 10. 10. 10. 10. 10.]
+Adjusted values: [25. 35. 45. 25. 35. 45.]
+Grid: [[10. 20. 20. 30.]
+ [30. 40. 10. 20.]
+ [20. 30. 30. 40.]]
+Transpose: [[10. 30. 20.]
+ [20. 40. 30.]
+ [20. 10. 30.]
+ [30. 20. 40.]]
 ```
 
-Importing `array_analysis`, `data_loader`, or `analysis` must be quiet and must not create, remove, or change any file. The driver writes no report; its output goes only to stdout.
+The committed `output/analysis.txt` contains this transcript. Notebook execution is not part of this assignment; local script execution is only the convenient way to create the required artifacts.
 
 ## Check your work
 
@@ -220,20 +244,20 @@ python analysis.py
 python check_assignment.py
 ```
 
-A complete submission ends with `All public checks passed.` The optional GitHub Actions workflow may run the ten public facade tests with managed pytest. Instructor or TA grading may run the same written contract from a trusted checkout; the workflow is feedback, not a submission requirement.
+A complete submission ends with `All public checks passed.` The optional GitHub Actions workflow may run the two public artifact tests with managed pytest. Instructor or TA grading may run the same written contract from a trusted checkout; the workflow is feedback, not a submission requirement.
 
-The checker fresh-executes the probe, pipeline, imports, functions, and driver in temporary copies. Stored output alone is never treated as proof that current code works.
+The checker reads the committed records and milestone artifacts directly. It does not infer how you produced them or require notebook execution; optional local reruns are useful QA only.
 
 ## Explicit scope boundaries
 
 These are assignment boundaries, not hidden style rules. They apply to `array_analysis.py` and `analysis.py`; the supplied loader and grader machinery may use standard-library facilities needed for their jobs.
 
-- Keep the supplied module docstring and exact top-level layout in both student files. `array_analysis.py` contains only its NumPy import and the seven required functions in the supplied order; `analysis.py` contains only its two supplied imports, `main()`, and the exact main guard. Do not add nested or extra functions or top-level driver state.
+- Keep the supplied module docstring and exact top-level layout in both student files. `array_analysis.py` contains only its NumPy import and the seven required functions in the supplied order; `analysis.py` contains its supplied local imports, `main()`, and the exact main guard. Do not add nested or extra functions or top-level driver state.
 - No `for`/`while` loops, comprehensions, generator expressions or functions, exceptions, classes, lambdas, decorators, async code, annotations, default parameters, `*args`, `**kwargs`, `global`, or `nonlocal`.
 - No `pathlib`, file I/O, CSV parsing, or other parsing in student code. The supplied `data_loader.py` owns the path and CSV boundary.
-- `array_analysis.py` has only `import numpy as np`. `analysis.py` has only the supplied exact local imports.
+- `array_analysis.py` has only `import numpy as np`. `analysis.py` has only the supplied local imports.
 - No indirect or dynamic calls, aliases for calls, attribute lookup used to choose a call, `eval`, `exec`, `compile`, or `__import__`.
-- Do not use augmented assignment, assign through an index or attribute, delete data, or otherwise mutate any input or returned selection during a function call.
+- Do not use augmented assignment, assign through an index or attribute, delete data, or otherwise mutate an input or returned selection inside a helper. The driver may change one indexed value on its separate local copy for the documented view/copy demonstration.
 - Use only the required `np.array`, `.copy()`, `np.mean`, `np.reshape`, `np.sum`, `.T`, basic indexing/slicing, one boolean selection, comparisons, same-shape subtraction, and scalar addition. Do not replace required NumPy calls with methods or hand calculations.
 - No structured arrays, random generation, fancy integer indexing, sorting/ranking, stacking, concatenation, multidimensional broadcasting, pandas, notebook, Colab, or shell script.
 - The pipeline may not use command substitution, variables, append redirection, semicolons, compound commands, extra tools, CLI Git, `awk`, `sed`, or `tr`.

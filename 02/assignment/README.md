@@ -18,6 +18,7 @@ TODO: Replace this line with the exact terminal command that runs the completed 
 - `.gitignore`: Part 1 cache patterns; edit this file.
 - `analysis_utils.py`: Part 2 reusable functions; edit this file.
 - `main.py`: Part 3 driver program; edit this file.
+- `report.txt`: the committed three-line report artifact produced at the Python milestone.
 - `PLATFORM_CHECK.md`: supplied GUI delivery checklist; do not edit it.
 - `check_assignment.py` and `_public_checks.py`: supplied dependency-free checker; do not edit them.
 - `test_assignment.py`: public managed-pytest contract; do not edit it. You do not need pytest locally.
@@ -141,6 +142,9 @@ Overnight mean: no measurements
 
 There is one newline after the final report line. The `Saved report matches` status belongs only in terminal output, not in `report.txt`.
 
+Commit `report.txt` as the Task 3 milestone artifact. Automated checks read its
+exact bytes directly; they do not infer which implementation produced it.
+
 ## Check your work
 
 Run each student script from the assignment directory:
@@ -156,7 +160,7 @@ A complete submission ends with:
 All public checks passed.
 ```
 
-If a check fails, use its message to revise the named student file, rerun `python main.py`, and run the checker again. The checker executes fresh temporary copies and does not trust a stored report as proof that the current program works.
+If a check fails, use its message to revise the named student file, rerun `python main.py` to regenerate `report.txt`, and run the checker again. The checker reads the committed report artifact directly; alternate implementations and reruns are optional instructor QA.
 
 The optional GitHub Actions workflow may run the public `test_assignment.py` contract on pushes and pull requests. Instructor or TA grading may run the same written contract from a trusted checkout; the workflow is feedback, not a submission requirement, and its implementation is not a model for the student code.
 
@@ -184,4 +188,4 @@ The direct-call boundary is also part of the assignment:
 - do not use `exec()`, `eval()`, `compile()`, `__import__()`, or any other unapproved call; and
 - do not add an extra file open, use append mode, call `writelines()`, or perform file I/O through an indirect call. `main()` must contain exactly the two ordered `report.txt` opens described in items 6–7.
 
-These restrictions are explicit course boundaries, not hidden style rules. Every public structure check corresponds to an item above.
+These restrictions are explicit course boundaries, not hidden style rules. The public checker reads the committed report artifact; it does not infer how your implementation reached those values.

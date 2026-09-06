@@ -23,7 +23,9 @@ uv pip install -r requirements.txt
 jupyter lab
 ```
 
-Open `q1_setup_exploration.ipynb` in local Jupyter. Local Jupyter is the grading reference and the only supported execution route for this assignment.
+Open the question files in your preferred editor. Notebook execution is optional
+local QA; the committed CSV/PNG artifacts and `report.md` are the grading
+deliverables.
 
 The release and provenance manifest are committed under `data/`. `download_data.sh` does not download or replace anything; it verifies those committed files.
 
@@ -57,6 +59,12 @@ jupytext --to ipynb --test-strict q*.md
 uv run check_assignment.py
 ```
 
-The central grader deterministically evaluates saved artifacts, not notebook source. The local checker is a structural/readiness check. Central grader test names and diagnostics are discoverable in grading feedback; use them to finish your own assignment rather than copying example content. Passing phase points are retained, and failed or dependency-blocked checks receive targeted human review. Q9 checks structure only, not prose quality.
+The central grader evaluates saved artifacts and requires the nine coursework
+`.md`/`.ipynb` pairs, but does not execute notebooks or refit models. The local checker is a structural/readiness check. Central
+grader test names and diagnostics are discoverable in grading feedback; use
+them to finish your own assignment rather than copying example content. Passing
+phase points are retained, and failed or dependency-blocked checks receive
+targeted human review. Q9's `report.md` is reviewed by a person for reasoning
+and communication; automated checks only verify its required structure and links.
 
 See [`HINTS.md`](HINTS.md) for nudges and [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md) for environment checks.

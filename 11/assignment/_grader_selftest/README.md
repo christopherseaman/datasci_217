@@ -3,15 +3,14 @@
 This directory is instructor-only packaging. Do not include it in the student
 starter or require it from `check_assignment.py`. The public checker applies
 structural, invariant, and cross-artifact readiness checks without publishing a
-copyable reference pipeline. The trusted grader independently applies exact
-deterministic reference checks. Grader discoverability and packaging are
+copyable reference pipeline. The trusted grader applies saved-artifact and
+cross-artifact checks. Grader discoverability and packaging are
 controlled by the course platform rather than by the student starter.
 
-Both graders are artifact-only. They inspect the release, manifest, required CSV
-and PNG outputs, and `report.md`; they do not inspect or execute student source or
-notebooks. Consequently, exact training-only summaries can be checked, but model
-fitting and decision provenance cannot be proven without human source/execution
-review.
+Both graders inspect the release, manifest, required coursework pairs, CSV and PNG
+outputs, and `report.md`; they do not execute student notebooks. Consequently, exact training-only summaries can be checked, but model
+fitting and decision provenance cannot be proven from artifacts. Notebook
+execution is optional QA, and the written report remains human-reviewed.
 
 `autograder.py` is a plain-Python bootstrap. It installs the sibling pinned
 `requirements.txt`, invokes the trusted grader, and writes an exact

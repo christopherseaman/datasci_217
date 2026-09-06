@@ -5,9 +5,11 @@ result explicit. You will choose among three counting operations, create flat
 named summaries, preserve source-row alignment with `transform`, and prove that
 one aggregating pivot agrees with its equivalent two-key GroupBy result.
 
-This assignment uses clean local Jupyter or the VS Code notebook interface. The
-single prepared table is course-authored synthetic support-request data; it has
-no real, identifying, or customer records. Assignment Colab is not supported.
+This is a local-first assignment. The notebook (or an equivalent documented
+source file) remains a required coursework deliverable, though automated grading
+does not execute it. The single
+prepared table is course-authored synthetic support-request data; it has no
+real, identifying, or customer records. Assignment Colab is not supported.
 Do not use manual uploads, Drive mounts, network access, absolute paths, or
 `/content` paths. The supplied setup supports standalone exported assignment
 repositories and full course checkouts, including nested launch directories
@@ -16,8 +18,8 @@ inside the assignment.
 ## Setup
 
 Use CPython 3.12.13. From this directory, create and activate a virtual
-environment, install the two exact dependency records, and open Jupyter or the
-VS Code notebook interface:
+environment, and install the two exact dependency records. If you use the
+notebook, open it through Jupyter or the VS Code notebook interface:
 
 ```bash
 python -m venv .venv
@@ -26,16 +28,13 @@ python -m pip install -r requirements.txt
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
-[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before editing the notebook. Jupyter is
-the host application; the selected notebook kernel must use the environment you
-checked.
+[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before preparing artifacts. If you run
+the notebook, its kernel must use the environment you checked.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all 25
-cells from top to bottom. Commit these six files in the assignment repository:
+Complete every `TODO` in `assignment.ipynb` or your working copy. Create and commit these five CSV milestone artifacts in the assignment repository:
 
-- `assignment.ipynb`
 - `output/center_count_summary.csv`
 - `output/center_summary.csv`
 - `output/requests_with_context.csv`
@@ -43,20 +42,19 @@ cells from top to bottom. Commit these six files in the assignment repository:
 - `output/mean_resolution_pivot.csv`
 
 The five CSVs are intentionally visible in VS Code Source Control and GitHub
-Desktop. Commit them with the notebook. Do not edit `data/`, the supplied
-notebook cells, environment records, checker, or instructions. Stored notebook
-output is not execution evidence: the grader clears it, removes generated CSVs,
-and executes a disposable copy from fresh state.
+Desktop. Commit them with your completed notebook. Do not edit `data/`,
+the supplied notebook cells, environment records, checker, or instructions.
+Automated grading reads the committed CSVs; retain and submit your completed notebook.
 
-After restart-and-run, use the discoverable student check:
+After creating the committed artifacts, use the discoverable student check:
 
 ```bash
 python check_assignment.py
 ```
 
-The checker reads files and notebook source but does not execute notebook code,
+The checker reads files and committed CSVs but does not execute notebook code,
 award points, or judge the quality of your written explanations. Fix each
-`[FIX]` message, rerun the notebook from a fresh kernel, and check again.
+`[FIX]` message, regenerate the artifacts, and check again.
 
 ## Terms and data contract
 
@@ -130,10 +128,10 @@ populated pivot cell with the equivalent GroupBy mean. Keep Harbor--Phone
 missing; do not replace it with zero. Save and read back
 `mean_resolution_pivot.csv`.
 
-The grader publishes an alternate valid prepared table with different category
-labels, values, group sizes, row order, and a shuffled nondefault index. All five
-functions must derive their behavior from their argument rather than canonical
-literals, global data, or files.
+For your own confidence, try the completed functions with a prepared table that
+has different category labels, values, group sizes, row order, and a shuffled
+nondefault index. All five functions should derive their behavior from their
+argument rather than canonical literals, global data, or files.
 
 ## Scope and assessment boundary
 

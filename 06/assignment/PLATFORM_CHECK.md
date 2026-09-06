@@ -1,8 +1,7 @@
-# Assignment 06 local Jupyter platform check
+# Assignment 06 artifact and platform check
 
-Complete this check before editing `assignment.ipynb`. The Python program that
-launches Jupyter and the Python kernel selected inside a notebook can be
-different programs; both must point to your Assignment 06 environment.
+Complete this check before preparing artifacts. Notebook execution is optional
+local QA; the committed CSV artifacts are the assignment contract.
 
 ## 1. Check the terminal interpreter
 
@@ -23,14 +22,13 @@ pandas 3.0.5
 
 The printed interpreter path should be inside the environment you activated.
 
-## 2. Launch Jupyter from that environment
+## 2. Notebook workflow
 
-Launch Jupyter or open the notebook through VS Code only after activating the
-environment. Select a portable Python 3 kernel backed by the same interpreter.
-This assignment is supported in local Jupyter; it has no Colab workflow or
-badge.
+In the supplied notebook, launch Jupyter or open it through VS Code after
+activating the environment. Select a portable Python 3 kernel backed by the
+same interpreter. This assignment has no Colab workflow or badge.
 
-## 3. Check the notebook kernel
+## 3. Optional kernel check
 
 Temporarily run this in a notebook cell, then remove the temporary cell:
 
@@ -45,14 +43,14 @@ print(np.__version__)
 print(pd.__version__)
 ```
 
-The kernel must report CPython 3.12.13, NumPy 2.0.2, and pandas 3.0.5, and its
-interpreter path must match the intended environment. If not, stop and change
-the notebook kernel before doing assignment work.
+When working in the notebook, the kernel must report CPython 3.12.13, NumPy 2.0.2,
+and pandas 3.0.5, and its interpreter path must match the intended environment.
 
 ## 4. Check the portable data root
 
-Run the supplied setup cell without editing it. It must print an assignment root
-and verify fixture set `a06-structural-wrangling-v1`. It works from either:
+Confirm the supplied fixture files and `data/fixture.json` are unchanged. If you
+use the notebook, run its supplied setup cell without editing it; it verifies
+fixture set `a06-structural-wrangling-v1` from either:
 
 - a standalone Assignment 06 repository containing `data/fixture.json`; or
 - the full course repository containing `06/assignment/data/fixture.json`.
@@ -62,8 +60,7 @@ supplied files; do not add a fallback, upload prompt, absolute path, or download
 
 ## 5. Final local check
 
-Restart the kernel, run all 25 cells in order, confirm the five CSVs appear in
-the Git GUI, and run:
+Create the five CSV artifacts, confirm they appear in the Git GUI, and run:
 
 ```bash
 python check_assignment.py

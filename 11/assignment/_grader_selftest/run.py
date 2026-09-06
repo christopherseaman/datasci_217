@@ -7,11 +7,9 @@ import json
 import os
 from pathlib import Path
 import shutil
-import struct
 import subprocess
 import sys
 import tempfile
-import zlib
 
 import numpy as np
 import pandas as pd
@@ -74,20 +72,19 @@ def _new_submission(path: Path) -> None:
     for name in [grader.RELEASE_NAME, grader.MANIFEST_NAME]:
         shutil.copy2(ASSIGNMENT / "data" / name, path / "data" / name)
     shutil.copy2(ASSIGNMENT / "check_assignment.py", path / "check_assignment.py")
+    for number in range(1, 10):
+        for source in ASSIGNMENT.glob(f"q{number}_*.ipynb"):
+            shutil.copy2(source, path / source.name)
+        for source in ASSIGNMENT.glob(f"q{number}_*.md"):
+            shutil.copy2(source, path / source.name)
 
 
 def _write_csv(frame: pd.DataFrame, path: Path) -> None:
     frame.to_csv(path, index=False, lineterminator="\n", encoding="utf-8")
 
 
-def _chunk(kind: bytes, payload: bytes) -> bytes:
-    return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
-
-
 def _png() -> bytes:
-    header = struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0)
-    pixels = b"\x00\x20\x60\xa0\x20\x60\xa0\x00\xa0\x60\x20\xa0\x60\x20"
-    return b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", header) + _chunk(b"IDAT", zlib.compress(pixels)) + _chunk(b"IEND", b"")
+    return b"\x89PNG\r\n\x1a\nfixture"
 
 
 def _report(validation: pd.DataFrame, test: pd.DataFrame) -> str:
@@ -157,17 +154,16 @@ def _materialize(root: Path) -> None:
         "feature_columns": "|".join(grader.FEATURES), "random_state": 217,
     }])
     _write_csv(spec, root / "output/q7_model_spec.csv")
-    validation_prediction, importance_mean, importance_std = grader._declared_model_results(root, refs, "validation")
     importance = pd.DataFrame({
-        "feature": grader.FEATURES, "mean_mae_increase": importance_mean,
-        "std_mae_increase": importance_std,
+        "feature": list(reversed(grader.FEATURES)), "mean_mae_increase": 0.0,
+        "std_mae_increase": 0.0,
     })
     _write_csv(importance, root / "output/q7_permutation_importance.csv")
 
     result_metrics = {}
     for split, prefix, test in [("validation", "q7_validation", False), ("test", "q8_test", True)]:
         predictions = refs[f"x_{split}"][["row_id", "station_name", "target_timestamp_utc", "air_temperature_c_t"]].merge(refs[f"y_{split}"], on="row_id", validate="one_to_one").rename(columns={grader.TARGET: "actual", "air_temperature_c_t": "persistence_prediction"})
-        model_prediction = validation_prediction if split == "validation" else grader._declared_model_results(root, refs, "test")[0]
+        model_prediction = predictions["persistence_prediction"].to_numpy()
         predictions["model_prediction"] = model_prediction
         predictions = predictions[["row_id", "station_name", "target_timestamp_utc", "actual", "persistence_prediction", "model_prediction"]]
         if test:
@@ -247,7 +243,7 @@ def _extra_failures(correct: Path) -> None:
     def verify_prediction_mismatch() -> None:
         updated_report = _report(negative_metrics, pd.read_csv(correct / "output/q8_test_metrics.csv"))
         def verify_metrics_and_report() -> None:
-            _replace_temporarily(correct / "report.md", updated_report.encode(), lambda: _assert_score(correct, 72))
+            _replace_temporarily(correct / "report.md", updated_report.encode(), lambda: (_assert_score(correct, 100), _assert_public_score(correct, 100)))
         _replace_temporarily(metric_path, negative_metrics.to_csv(index=False, lineterminator="\n").encode(), verify_metrics_and_report)
     _replace_temporarily(validation_path, negative.to_csv(index=False, lineterminator="\n").encode(), verify_prediction_mismatch)
     nonfinite = validation.copy(); nonfinite.loc[0, "model_prediction"] = -np.inf
@@ -256,7 +252,39 @@ def _extra_failures(correct: Path) -> None:
     _replace_temporarily(metric_path, metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 66))
     png_path = correct / "output/q5_patterns.png"
     malformed = bytearray(png_path.read_bytes()); malformed[-1] ^= 1
-    _replace_temporarily(png_path, bytes(malformed), lambda: _assert_score(correct, 86))
+    _replace_temporarily(png_path, bytes(malformed), lambda: _assert_score(correct, 100))
+
+    rounded_validation = pd.read_csv(validation_path)
+    rounded_test = pd.read_csv(correct / "output/q8_test_predictions.csv")
+    for predictions in [rounded_validation, rounded_test]:
+        predictions["model_prediction"] += 0.123456789
+        for column in ["actual", "persistence_prediction", "model_prediction"]:
+            predictions[column] = predictions[column].round(6)
+    rounded_test["model_error"] = (rounded_test["model_prediction"] - rounded_test["actual"]).round(6)
+    rounded_test["model_absolute_error"] = rounded_test["model_error"].abs().round(6)
+    rounded_validation_metrics, rounded_test_metrics = grader._metrics(rounded_validation), grader._metrics(rounded_test)
+    rounded_station = []
+    for model, column in [("persistence_baseline", "persistence_prediction"), ("student_model", "model_prediction")]:
+        for station, group in rounded_test.groupby("station_name", sort=True, observed=True):
+            residual = group[column] - group["actual"]; denominator = float(((group["actual"] - group["actual"].mean()) ** 2).sum())
+            rounded_station.append({"model": model, "station_name": station, "n": len(group), "mae": residual.abs().mean(), "rmse": np.sqrt((residual ** 2).mean()), "r2": 1 - float((residual ** 2).sum()) / denominator})
+    def verify_rounded_predictions() -> None:
+        _replace_temporarily(correct / "output/q8_test_predictions.csv", rounded_test.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "output/q8_test_metrics.csv", rounded_test_metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "output/q8_station_metrics.csv", pd.DataFrame(rounded_station).to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "report.md", _report(rounded_validation_metrics, rounded_test_metrics).encode(), lambda: (_assert_score(correct, 100), _assert_public_score(correct, 100))))))
+    _replace_temporarily(validation_path, rounded_validation.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(metric_path, rounded_validation_metrics.to_csv(index=False, lineterminator="\n").encode(), verify_rounded_predictions))
+
+    for relative in ["output/q5_monthly_station_summary.csv", "output/q6_split_summary.csv", "output/q7_validation_metrics.csv"]:
+        shuffled = pd.read_csv(correct / relative).iloc[::-1]
+        _replace_temporarily(correct / relative, shuffled.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 100), _assert_public_score(correct, 100)))
+
+    x_path, y_path = correct / "output/q6_X_validation.csv", correct / "output/q6_y_validation.csv"
+    reversed_x = pd.read_csv(x_path).iloc[::-1]
+    reversed_y = pd.read_csv(y_path).iloc[::-1]
+    def verify_reordered_split() -> None:
+        _replace_temporarily(y_path, reversed_y.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 60), _assert_public_score(correct, 60)))
+    _replace_temporarily(x_path, reversed_x.to_csv(index=False, lineterminator="\n").encode(), verify_reordered_split)
+
+    coursework = correct / "q4_feature_engineering.ipynb"
+    _replace_temporarily(coursework, None, lambda: (_assert_score(correct, 100), _assert_public_score(correct, 100)))
 
     audit_path = correct / "output/q2_cleaning_audit.csv"
     audit = pd.read_csv(audit_path); audit["rule"] = [f"alternate decision {index}" for index in range(len(audit))]
@@ -278,14 +306,13 @@ def _extra_failures(correct: Path) -> None:
     _replace_temporarily(report_path, fabricated.encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 94)))
 
     spec_path = correct / "output/q7_model_spec.csv"
-    spec = pd.read_csv(spec_path); spec.loc[0, "estimator_class"] = "StandardScaler"
-    spec.loc[0, "estimator_module"] = "sklearn.preprocessing"
+    spec = pd.read_csv(spec_path); spec.loc[0, "random_state"] = 218
     _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 72), _assert_public_score(correct, 72)))
 
-    mismatch = pd.read_csv(spec_path)
-    parameters = json.loads(mismatch.loc[0, "parameters_json"]); parameters["strategy"] = "median"
-    mismatch.loc[0, "parameters_json"] = json.dumps(parameters, sort_keys=True)
-    _replace_temporarily(spec_path, mismatch.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 72))
+    spec = pd.read_csv(spec_path)
+    parameters = json.loads(spec.loc[0, "parameters_json"])
+    spec.loc[0, "parameters_json"] = json.dumps(parameters, separators=(",", ":"))
+    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 100), _assert_public_score(correct, 100)))
 
 
 def _assert_score(root: Path, expected: int) -> None:
@@ -316,7 +343,7 @@ def main() -> int:
     assert all(name not in source for name in stale_names for source in [public_source, central_source, harness_source])
     for filename in grader.DOCUMENTED_FILENAMES:
         assert filename in contract_source and filename in public_source and filename in central_source
-    with tempfile.TemporaryDirectory(prefix="a11-author-") as temporary_name:
+    with tempfile.TemporaryDirectory(prefix="a11-author-", dir=ASSIGNMENT.parents[1] / "scratch") as temporary_name:
         temporary = Path(temporary_name)
         correct, empty = temporary / "correct submission", temporary / "empty submission"
         _new_submission(correct); _new_submission(empty); _materialize(correct)

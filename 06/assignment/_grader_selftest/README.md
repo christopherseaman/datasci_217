@@ -1,32 +1,13 @@
-# Assignment 06 instructor grader self-test
+# Assignment 06 artifact-grader regression checks
 
-This directory is instructor-only, discoverable grading infrastructure. Exclude
-it from the student starter and production submission. It contains
-no secrets, credentials, or private fixtures.
+This instructor-only directory is excluded from student assignment repositories. The grader reads committed artifacts and preserves credit for independent milestones. It never executes student code. Notebook explanations are reviewed by a person.
 
-The grading service invokes `autograder.py` with plain Python from the student checkout.
-That standard-library bootstrap installs the exact sibling requirements into
-the same interpreter before importing the grader; PEP 723 is only local `uv`
-tooling. `grader.py` independently protects the assignment contract, clears
-stored notebook state, removes or replaces artifacts in disposable copies,
-starts fresh Jupyter kernels, appends grader-owned checks, and calls all six
-student functions on alternate in-memory tables. It writes the official
-`datasci217/grading-result/v1` object to `./result.json`; captured student-test failures
-still exit zero. The result's automated `max-score` is the provisional 90. The
-pending-policy human 10 points remain outside this file.
-
-Run the full adversarial harness from `06/assignment` with the exact recorded
-Python, NumPy, and pandas environment plus the pinned instructor dependencies:
+Run with the course environment:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 uv run _grader_selftest/run.py
+python 06/assignment/_grader_selftest/run.py
 ```
 
-Production execution requires nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
-`COMMIT_URL`, and `RELEASE_URL`. `REVIEW_URL` falls back to `COMMIT_URL`; the
-grader generates the UTC result `datetime`.
+The self-test uses frozen instructor examples and disposable copies under the course repository's ignored `scratch/` directory. It checks the actual public command and central grading function: empty starter, correct artifacts, equivalent CSV quoting/line endings, a missing milestone, and incorrect values.
 
-The harness builds disposable correct and defective submissions, tests the
-plain-Python production entrypoint and both
-flattened and course-root layouts including paths with spaces, and performs no
-external service configuration or network operation.
+`autograder.py` is the instructor entrypoint and provisions the sibling requirements. The instructor controls this bundle; it does not import a student's checker.

@@ -2,7 +2,7 @@
 
 This assignment is the first required notebook assignment in the course. It checks that you can repair notebook state, construct and select labeled pandas objects, and complete one portable CSV round trip.
 
-Complete it in clean local Jupyter or the VS Code notebook interface. Lecture 04 demos may be shown in Colab, but this assignment is local-first; do not upload it by itself or add a Colab badge.
+Complete and commit the supplied notebook along with its CSV artifacts. Automated grading reads the committed CSVs without executing the notebook.
 
 The repository-delivery steps are in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md). Commit the notebook and generated CSVs in the assignment repository; the optional Actions workflow is feedback only.
 
@@ -15,7 +15,7 @@ The repository-delivery steps are in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md). C
 - `check_assignment.py`: the discoverable public checker; do not edit it; and
 - `PLATFORM_CHECK.md`: the unassessed local-Jupyter and GUI delivery checklist; do not edit it.
 
-The supplied notebook setup cell uses later standard-library code to locate and verify the fixture. Run that cell, but do not edit it. It searches for both a standalone exported layout and this course-repository layout, so it does not need an absolute path, upload, network request, or Drive mount.
+The supplied setup cell locates and verifies the fixture; do not edit it. It supports both a standalone exported layout and this course repository.
 
 ## Candidate environment
 
@@ -30,7 +30,7 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
-Use the course-supported local Jupyter or VS Code host and select this Python 3 environment as the notebook kernel. Jupyter hosting and kernel support are platform tooling, not imports used by your assignment code.
+In the supplied notebook, use the course-supported local Jupyter or VS Code host and select this Python 3 environment as its kernel. Jupyter hosting and kernel support are platform tooling, not imports used by your assignment code.
 
 ## Task 1: repair notebook state
 
@@ -40,7 +40,7 @@ The starter deliberately places this dependent cell first:
 adjusted_rate = base_rate + 2
 ```
 
-The producer cell defining `base_rate = 3` appears later. Move the complete producer cell above the dependent cell. Do not copy the definition into another cell. A restart-and-run-all must produce:
+The producer cell defining `base_rate = 3` appears later. Move the complete producer cell above the dependent cell. Do not copy the definition into another cell. When run, the repaired order should produce:
 
 ```text
 base_rate: 3
@@ -52,9 +52,9 @@ Replace the TODO in the supplied Markdown explanation with a short explanation t
 - visible cell order from actual execution order;
 - the notebook source from retained kernel state;
 - stored output from evidence of a fresh execution; and
-- the repair and restart-and-run-all check you performed.
+- the repair and resulting cell order.
 
-This explanation is human-reviewed. The grader independently checks the fresh executable result and ignores stored output.
+This explanation is human-reviewed. Automated checks read the committed CSV artifacts directly and do not infer how they were produced.
 
 ## Task 2: construct and select labeled pandas objects
 
@@ -142,12 +142,11 @@ Submit exactly these student-authored or generated artifacts:
 2. `output/labeled_block.csv`; and
 3. `output/selected_purchases.csv`.
 
-A generated CSV is a separate file artifact; it is not the same thing as output stored under a notebook cell. Before submission:
+A generated CSV is a separate committed milestone artifact; it is not the same thing as output stored under a notebook cell. Before submission:
 
 1. save the visible notebook source;
-2. restart the kernel;
-3. run all cells from top to bottom;
-4. confirm both CSV files were recreated; and
+2. create or regenerate both CSV files;
+3. confirm both CSV files are committed; and
 5. run the public checker from the assignment directory:
 
 ```bash
@@ -156,10 +155,14 @@ python check_assignment.py
 
 A complete artifact set ends with `All public checks passed.` The public checker derives expected results from the fixture and does not trust editable assertions or displayed notebook output.
 
-The centrally managed grader copies the submission to disposable directories, deletes generated CSVs, clears stored output and execution counts, appends instructor-owned verification to the disposable notebook, and executes a fresh kernel. It also repeats with a relocated checkout and a second valid fixture. Published grader logic is discoverable and enforces only this written contract.
+The automated grader reads the two committed CSV artifacts directly. Optional notebook execution is useful local QA but is not required for grading.
 
 ## Scope and human-review boundary
 
 Do not add cleaning, missing-value decisions, type conversion, dates, joins, concatenation, reshape, GroupBy, aggregation, plotting, modeling, performance work, network access, absolute paths, `/content` paths, or Drive mounts.
 
-Automated checks cover notebook structure and fresh execution, pandas object types and metadata, label/position selection, the mask, arithmetic, deterministic order, fixture integrity, and both CSV artifacts. Human review checks only that the state explanation is understandable, distinguishes source/kernel/execution/output, identifies restart-and-run-all, uses clear task headings, and contains no sensitive information.
+Automated checks cover fixture integrity and both CSV artifacts. Human review checks the state explanation and task headings without assuming a particular implementation.
+
+### Artifact comparison
+
+CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently. Notebook explanations receive human review.

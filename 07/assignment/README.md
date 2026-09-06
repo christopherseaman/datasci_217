@@ -5,9 +5,10 @@ a bounded pattern, diagnose a misleading supplied chart, and communicate one
 descriptive finding to a named audience. You will connect each chart to its
 question, row grain, variable roles, displayed unit, and evidentiary limit.
 
-This is a clean-local-Jupyter assignment. The fixtures are course-authored,
-synthetic, nonidentifying, and different from the Lecture 07 demo data. Do not
-use Colab, manual uploads, Drive mounts, network access, or `/content` paths.
+Complete and submit the local notebook and its saved artifacts. Graders read
+those artifacts without rerunning the notebook. The
+fixtures are course-authored, synthetic, nonidentifying, and different from the
+Lecture 07 demo data. Do not use Colab, manual uploads, Drive mounts, network access, or `/content` paths.
 The portable setup supports both a standalone exported assignment repository
 and this full course repository.
 
@@ -42,8 +43,8 @@ limitation in text.
 ## Setup
 
 Use CPython 3.12.13. From this directory, create and activate a virtual
-environment, install the exact runtime record, and open Jupyter or the VS Code
-notebook interface:
+environment, and install the exact runtime record. If you use the notebook,
+open it through Jupyter or the VS Code notebook interface:
 
 ```bash
 python -m venv .venv
@@ -52,8 +53,8 @@ python -m pip install -r requirements.txt
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
-[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before editing the notebook. The Python
-program that starts Jupyter and the notebook kernel must use this environment.
+[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before preparing artifacts. If you run
+the notebook, its kernel must use this environment.
 
 ## Prepared fixtures
 
@@ -71,10 +72,10 @@ join, reshape, or aggregate these complete assignment fixtures.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all 23
-cells from top to bottom. Commit the notebook and these five regenerated files
-in the assignment repository:
+Complete every `TODO` in `assignment.ipynb` and commit the notebook source.
+Create and commit these six artifact files in the assignment repository:
 
+- `output/exploratory_spec.json`
 - `output/critique_redesign.png`
 - `output/pathway_explanatory.png`
 - `output/explanatory_supporting_data.csv`
@@ -82,20 +83,19 @@ in the assignment repository:
 - `output/explanatory_text_alternative.txt`
 
 These files are intentionally visible in VS Code Source Control and GitHub
-Desktop. Commit and push all six deliverables. Do not edit the data fixtures,
-supplied notebook cells, environment records, checker, or instructions. Stored
-notebook output is useful for human review but is not trusted as execution
-evidence; the central grader clears and executes a disposable copy from fresh
-state.
+Desktop. Commit and push the artifacts and notebook source. Do not
+edit the data fixtures, supplied notebook cells, environment records, checker,
+or instructions. Automated grading reads the committed artifacts directly;
+notebook execution is optional local QA.
 
-After restart-and-run, use the discoverable student check:
+After creating the committed artifacts, use the discoverable student check:
 
 ```bash
 python check_assignment.py
 ```
 
-The checker inspects files and notebook source without executing notebook code.
-Fix each `[FIX]` message, restart and run all, then check again. It screens
+The checker inspects files and committed artifacts without executing notebook code.
+Fix each `[FIX]` message, regenerate the artifacts, then check again. It screens
 machine-readable requirements; it cannot certify that a chart is clear,
 accessible, honest, or visually effective.
 
@@ -108,8 +108,9 @@ rejects causal and generalized conclusions. Implement
 scatterplot specification of activities completed against reflection score.
 Use typed quantitative positions and nominal pathway color and point-shape
 encodings, preserve the caller's two-label order, label units, and include
-tooltips. Return the chart without saving a third PNG, then display and inspect
-the live result.
+tooltips. Export `exploratory_chart.to_dict()` as
+`output/exploratory_spec.json`, embedding the plotted session rows. It is the
+machine-readable Task 1 milestone; no third PNG is required.
 
 ## Task 2: critique and redesign
 
@@ -135,11 +136,10 @@ checkpoint count, final absolute gap, title, and annotation from any valid
 two-pathway input; on a final tie, attach the annotation to the second requested
 pathway. Save the canonical result as `output/pathway_explanatory.png`.
 
-Export the exact evidence JSON and matching one-paragraph text alternative.
-The alternative must name the line chart, both axes and units, both pathways,
-the first-to-last pattern, the nine-point final gap, and the limitation that
-prepared descriptive rows cannot establish cause. Finish the visual-review
-checklist with observable evidence rather than yes/no answers.
+Export the evidence JSON and a matching text alternative. Semantic fields and
+fixture values are machine-checked; prose quality, chart clarity,
+accessibility, and visual integrity are reviewed by a person. Finish the
+visual-review checklist with observable evidence rather than yes/no answers.
 
 ## Scope and assessment boundary
 

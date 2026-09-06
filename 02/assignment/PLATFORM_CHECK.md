@@ -27,10 +27,9 @@ Use VS Code Source Control for these steps. GitHub Desktop is an acceptable equi
 
 ## Commit the Python change
 
-1. Complete `analysis_utils.py` and `main.py`.
-2. Run `python main.py`, then run `python check_assignment.py` until all public checks pass.
+1. Complete `analysis_utils.py` and `main.py`, run `python main.py` once to create the committed `report.txt` artifact, then run `python check_assignment.py` until all public checks pass.
 3. Inspect the Python diffs in Source Control.
-4. Stage `analysis_utils.py`, `main.py`, and the freshly generated `report.txt`.
+4. Stage `analysis_utils.py`, `main.py`, and the committed milestone artifact `report.txt`.
 5. Commit with `Implement reusable measurement summary`.
 6. Select **Publish Branch** or **Sync Changes** so the remote receives the feature-branch commits.
 

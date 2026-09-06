@@ -1,30 +1,13 @@
-# Assignment 05 grader self-test
+# Assignment 05 artifact-grader regression checks
 
-This directory is instructor-only repository infrastructure. Exclude it from
-the student starter and from production submissions. Nothing here
-is secret: the grading contract is discoverable, contains no credentials or
-private data, and depends on behavioral variation rather than hidden answers.
+This instructor-only directory is excluded from student assignment repositories. The grader reads committed artifacts and preserves credit for independent milestones. It never executes student code. Notebook explanations are reviewed by a person.
 
-`autograder.py` is the plain-Python production entrypoint. Its standard-library
-bootstrap installs the exact sibling requirements into the runner interpreter
-before importing `grader.py`; PEP 723 remains local tooling, not production
-provisioning. `grader.py` is the independent central-
-grader reference. It never
-imports the editable student `check_assignment.py`. It executes code cells from
-fresh state, exercises noncanonical tables, and emits a
-`datasci217/grading-result/v1` object for the provisional 85 automated points. The
-remaining 15 points are pending-policy human review.
-
-Run the adversarial harness from the assignment directory in the exact recorded
-environment:
+Run with the course environment:
 
 ```bash
-uv run _grader_selftest/run.py
+python 05/assignment/_grader_selftest/run.py
 ```
 
-Production execution requires nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
-`COMMIT_URL`, and `RELEASE_URL`. `REVIEW_URL` falls back to `COMMIT_URL`; the
-grader generates the UTC result `datetime`.
+The self-test uses frozen instructor examples and disposable copies under the course repository's ignored `scratch/` directory. It checks the actual public command and central grading function: empty starter, correct artifacts, equivalent CSV quoting/line endings, a missing milestone, and incorrect values.
 
-The harness materializes disposable correct and defective submissions. It does
-not configure or contact an external service.
+`autograder.py` is the instructor entrypoint and provisions the sibling requirements. The instructor controls this bundle; it does not import a student's checker.

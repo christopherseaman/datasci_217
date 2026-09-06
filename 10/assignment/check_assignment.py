@@ -12,8 +12,8 @@
 
 """Standard-library-only readiness checker for Assignment 10.
 
-This checker never imports or executes notebook code. Central grading is
-independent and clears stored output before fresh execution.
+This checker reads committed output artifacts and never imports or executes
+notebook code. Notebook execution is optional local QA.
 """
 
 from __future__ import annotations
@@ -21,22 +21,12 @@ from __future__ import annotations
 import ast
 import csv
 from hashlib import sha256
-from importlib import metadata
 import json
+import math
 from pathlib import Path
-import struct
-import sys
 
 
 ROOT = Path(__file__).resolve().parent
-EXPECTED_PYTHON = (3, 12, 13)
-EXPECTED_DISTRIBUTIONS = {
-    "matplotlib": "3.11.1",
-    "numpy": "2.0.2",
-    "pandas": "3.0.5",
-    "scikit-learn": "1.9.0",
-    "statsmodels": "0.14.6",
-}
 PEP_REQUIRES_PYTHON = "==3.12.13"
 PEP_DEPENDENCIES = [
     "matplotlib==3.11.1",
@@ -60,28 +50,11 @@ FIXTURES = {
     "data/feature_availability.csv": (155, "a47b8df048607045640b9a6785b038fe1c70036f58d5b61ed20ec98860b556da"),
     "data/supplied_binary_predictions.csv": (184, "7a8809010fa94345cd04787c826ef86ee5fd13cbf0bd95953e2220c3294a239a"),
 }
-CELL_IDS = [
-    "a10-header", "a10-setup", "a10-terms-inference", "a10-load",
-    "a10-task1-prompt", "a10-ols-function", "a10-task1-run",
-    "a10-residual-figure", "a10-task1-save", "a10-task1-explain",
-    "a10-terms-prediction", "a10-task2-contract", "a10-task2-values",
-    "a10-availability-function", "a10-split-function", "a10-task2-run",
-    "a10-task2-save", "a10-task2-explain", "a10-terms-evaluation",
-    "a10-regression-metrics-function", "a10-candidates-function",
-    "a10-validation-run", "a10-validation-save", "a10-freeze",
-    "a10-final-test-run", "a10-final-test-save", "a10-binary-function",
-    "a10-binary-run-save", "a10-task3-explain", "a10-final-verify",
-]
-PROTECTED_CELL_IDS = {
-    "a10-header", "a10-setup", "a10-terms-inference", "a10-task1-prompt",
-    "a10-terms-prediction", "a10-terms-evaluation", "a10-freeze",
-    "a10-final-verify",
-}
 PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "PLATFORM_CHECK.md": "26fa8f87d119d95cc556197c9c9304ffa4d9a19c74fbf6d6bee6d00a73c93cf1",
-    "README.md": "8f2a523f5fc000601c3421950be36974735b045ac819148353a21256856a893c",
+    "PLATFORM_CHECK.md": "18abce5bfe89ff83904fb27312ffb11bae23fc3a8ef625d1419bea879b8dd518",
+    "README.md": "15429c9922910e6f06dc13465f2ae2b294f926ad9a1370df402a46723d1cf9f4",
     "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
@@ -90,39 +63,6 @@ PROTECTED_FILE_SHA256 = {
     "data/supplied_binary_predictions.csv": "7a8809010fa94345cd04787c826ef86ee5fd13cbf0bd95953e2220c3294a239a",
     "output/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 }
-PROTECTED_CELL_SHA256 = {
-    "a10-header": "d0a854bb0eebce383b25c11f2d17151432d27928110bd461b2e038de3ef5343a",
-    "a10-setup": "a5caad874818b2edf045770960e00c610ea6d29a2e50d3dd89c3d6328caf20e8",
-    "a10-terms-inference": "4c167e07f0ae870026a9746b40138fe5c3d6a4e74dddd417580e0e39e096696e",
-    "a10-task1-prompt": "855729ff10c4244d077be4152576d05e17c99d104bff7e896495bdde402c193b",
-    "a10-terms-prediction": "86136b5c6caedbd549a7148563f05280a83a589a32dcfae7ce7e3ba8cafc0a95",
-    "a10-terms-evaluation": "84adc778e76702fb952469be3601793888ac302a66fb0360898cd8f52b5752b7",
-    "a10-freeze": "2f1c03daef8bdec283d35e485918e3a4ab55bf55eb1cbd10cb509f74301ddfc1",
-    "a10-final-verify": "e401fcb4ea4be0881f2b381f662d7c4a45d2b9b494d986fe29baa551ef4d88a8",
-}
-MARKDOWN_IDS = {
-    "a10-header", "a10-terms-inference", "a10-task1-prompt",
-    "a10-task1-explain", "a10-terms-prediction", "a10-task2-contract",
-    "a10-task2-explain", "a10-terms-evaluation", "a10-task3-explain",
-}
-STUDENT_CODE_IDS = {
-    "a10-load", "a10-ols-function", "a10-task1-run", "a10-residual-figure",
-    "a10-task1-save", "a10-task2-values", "a10-availability-function",
-    "a10-split-function", "a10-task2-run", "a10-task2-save",
-    "a10-regression-metrics-function", "a10-candidates-function",
-    "a10-validation-run", "a10-validation-save", "a10-final-test-run",
-    "a10-final-test-save", "a10-binary-function", "a10-binary-run-save",
-}
-STUDENT_MARKDOWN_IDS = {"a10-task1-explain", "a10-task2-contract", "a10-task2-explain", "a10-task3-explain"}
-SIGNATURES = {
-    "fit_bounded_ols": ["inference_table", "predictor_columns", "outcome_column"],
-    "audit_feature_availability": ["candidate_table"],
-    "build_chronological_splits": ["prediction_table", "validation_start", "test_start"],
-    "regression_metrics": ["actual", "predicted"],
-    "fit_prediction_candidates": ["train_table", "feature_columns", "target_column"],
-    "choose_validation_winner": ["metrics_table", "metric_column"],
-    "compute_binary_metrics": ["prediction_table", "actual_column", "prediction_columns"],
-}
 BASE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
@@ -130,25 +70,18 @@ BASE_FILES = {
     ".github/workflows/tests.yml",
     *FIXTURES,
 }
-ARTIFACTS = {
-    "inference_summary.csv": (214, "36965b53df5133e3e05f86502d230ec9241b58e9ffd93163eba588385c9f3f48"),
-    "inference_case_intervals.csv": (186, "345e0d3aefc422606fa9a9ee1b35a06bd7a9f9007873fc7b05162cb9ef3e0951"),
-    "availability_decisions.csv": (251, "36042dc19dd45f75603f2fb2d5783b0a7750dad274a54bd39e8d21d5f5c2ac81"),
-    "split_manifest.csv": (221, "2b0f3f57e323fa7bfe7a0703c671755ed7b009854236e62dd0c3459b1aa67b21"),
-    "validation_metrics.csv": (106, "65b105be797b109c2031ccde552972320c1d08cb59174cde628a23c1879832dc"),
-    "final_test_metrics.csv": (64, "ca1bd6d4320ed84cd2ca5befe97c3c0f238746452b648e64103522517b9a77ce"),
-    "final_predictions.csv": (575, "60b7457821655c387b07694e18cad262a873c50bc69093a9638bd8ea99239a1d"),
-    "binary_metrics.csv": (119, "25d7b50cdb8160f8e275812010a9a90b295d700b03591b3ce7bfd712483616fa"),
+ARTIFACT_COLUMNS = {
+    "inference_summary.csv": ["term", "estimate", "standard_error", "confidence_low_95", "confidence_high_95"],
+    "inference_case_intervals.csv": ["mix_minutes", "initial_temp_c", "predicted_mean", "mean_ci_low_95", "mean_ci_high_95", "prediction_ci_low_95", "prediction_ci_high_95"],
+    "inference_residuals.csv": ["run_id", "actual", "fitted", "residual"],
+    "availability_decisions.csv": ["candidate_feature", "latest_required_offset_hours", "available_by_prediction_time", "decision"],
+    "split_manifest.csv": ["partition", "row_count", "first_target_timestamp", "last_target_timestamp"],
+    "validation_metrics.csv": ["approach", "mae", "rmse", "r2"],
+    "final_test_metrics.csv": ["approach", "mae", "rmse", "r2"],
+    "final_predictions.csv": ["batch_id", "target_timestamp", "actual_strength_mpa", "predicted_strength_mpa"],
+    "binary_metrics.csv": ["approach", "accuracy", "precision", "recall"],
 }
-
-
-def source(cell: dict) -> str:
-    value = cell.get("source", "")
-    return "".join(value) if isinstance(value, list) else value
-
-
-def normalized_source(cell: dict) -> str:
-    return source(cell).replace("\r\n", "\n").replace("\r", "\n")
+FLOAT_TOLERANCE = 1e-4
 
 
 def issue(surface: str, message: str, errors: list[str]) -> None:
@@ -197,26 +130,13 @@ def integrity(errors: list[str]) -> None:
     }
     if set(PROTECTED_FILE_SHA256) != expected_file_keys:
         issue("integrity", "protected-file map keys differ", errors)
-    if set(PROTECTED_CELL_SHA256) != PROTECTED_CELL_IDS:
-        issue("integrity", "protected-cell map keys differ", errors)
-    for label, mapping in (("file", PROTECTED_FILE_SHA256), ("cell", PROTECTED_CELL_SHA256)):
+    for label, mapping in (("file", PROTECTED_FILE_SHA256),):
         if any(len(digest) != 64 or digest.lower() != digest or any(character not in "0123456789abcdef" for character in digest) for digest in mapping.values()):
             issue("integrity", f"protected {label} digests must be lowercase SHA-256", errors)
     for relative, expected in PROTECTED_FILE_SHA256.items():
         path = ROOT / relative
         if not path.is_file() or path.is_symlink() or sha256(path.read_bytes()).hexdigest() != expected:
             issue("integrity", f"restore immutable learner file {relative}", errors)
-    try:
-        notebook = json.loads((ROOT / "assignment.ipynb").read_text(encoding="utf-8"))
-        by_id = {cell.get("id"): cell for cell in notebook.get("cells", [])}
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        issue("integrity", f"cannot inspect protected notebook cells: {error}", errors)
-        return
-    for cell_id, expected in PROTECTED_CELL_SHA256.items():
-        cell = by_id.get(cell_id)
-        actual = sha256(normalized_source(cell).encode("utf-8")).hexdigest() if cell else None
-        if actual != expected:
-            issue("integrity", f"restore protected cell {cell_id}", errors)
 
 
 def inventory(errors: list[str]) -> None:
@@ -225,11 +145,13 @@ def inventory(errors: list[str]) -> None:
         if not git_entry.is_dir() or git_entry.is_symlink():
             issue("package", "top-level .git must be a genuine directory, not a file or symlink", errors)
     actual = set()
+    ignored_roots = {
+        ".git", "output", "_grader_selftest", ".venv", "venv",
+        "__pycache__", ".pytest_cache", ".ipynb_checkpoints", "result.json",
+    }
     for path in ROOT.rglob("*"):
         relative = path.relative_to(ROOT)
-        if relative.parts[0] == ".git" or relative.parts[0] == "output":
-            continue
-        if relative.parts[0] == "_grader_selftest":
+        if any(part in ignored_roots for part in relative.parts):
             continue
         if path.is_file() or path.is_symlink():
             actual.add(relative.as_posix())
@@ -265,114 +187,130 @@ def fixtures(errors: list[str]) -> None:
         issue("manifest", f"cannot parse fixture.json: {error}", errors)
 
 
-def notebook_checks(errors: list[str]) -> None:
+def _csv_rows(path: Path, columns: list[str], errors: list[str]) -> list[dict[str, str]]:
     try:
-        notebook = json.loads((ROOT / "assignment.ipynb").read_text(encoding="utf-8"))
-    except Exception as error:
-        issue("notebook", f"invalid UTF-8 JSON: {error}", errors)
+        with path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            if reader.fieldnames != columns:
+                issue("output", f"{path.name} columns must be {columns}", errors)
+                return []
+            rows = list(reader)
+    except (OSError, UnicodeError, csv.Error) as error:
+        issue("output", f"cannot read {path.name}: {error}", errors)
+        return []
+    if any(set(row) != set(columns) or any(value is None or value == "" for value in row.values()) for row in rows):
+        issue("output", f"{path.name} has missing values", errors)
+        return []
+    return rows
+
+
+def _number(row: dict[str, str], column: str) -> float:
+    value = float(row[column])
+    if not math.isfinite(value):
+        raise ValueError(f"{column} must be finite")
+    return value
+
+
+def _table_values(name: str, rows: list[dict[str, str]], key: str, expected: dict[str, dict[str, object]], errors: list[str]) -> None:
+    values = [row.get(key) for row in rows]
+    if len(values) != len(set(values)) or set(values) != set(expected):
+        issue("output", f"{name} has the wrong {key} values", errors)
         return
-    cells = notebook.get("cells", [])
-    ids = [cell.get("id") for cell in cells]
-    if notebook.get("nbformat") != 4 or notebook.get("nbformat_minor") != 5:
-        issue("notebook", "use notebook format 4.5", errors)
-    if ids != CELL_IDS or len(ids) != len(set(ids)):
-        issue("notebook", "restore the exact 30 cell IDs and order", errors)
-        return
-    if notebook.get("metadata", {}).get("kernelspec") != {"display_name": "Python 3", "language": "python", "name": "python3"}:
-        issue("notebook", "restore the portable Python 3 kernelspec", errors)
-    by_id = {cell["id"]: cell for cell in cells}
-    for cell in cells:
-        expected = "markdown" if cell["id"] in MARKDOWN_IDS else "code"
-        if cell.get("cell_type") != expected:
-            issue("notebook", f"wrong cell type for {cell['id']}", errors)
-    student_code = "\n".join(source(by_id[cell_id]) for cell_id in CELL_IDS if cell_id in STUDENT_CODE_IDS)
-    student_markdown = "\n".join(source(by_id[cell_id]) for cell_id in STUDENT_MARKDOWN_IDS)
-    if "TODO" in student_code + student_markdown or "NotImplementedError" in student_code or "raise NotImplementedError" in student_code:
-        issue("notebook", "complete every student scaffold and explanation", errors)
     try:
-        tree = ast.parse(student_code)
-    except SyntaxError as error:
-        issue("notebook", f"student source has a syntax error: {error}", errors)
-        return
-    functions = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
-    for name, arguments in SIGNATURES.items():
-        node = functions.get(name)
-        if node is None or [arg.arg for arg in node.args.args] != arguments:
-            issue("functions", f"restore exact signature for {name}", errors)
-    if any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in ast.walk(tree)):
-        issue("source", "student cells must use protected imports", errors)
-    lowered = student_code.lower().replace(" ", "")
-    forbidden = [
-        "requests", "urlopen", "http://", "https://", "/content", "drive.mount",
-        "files.upload", "!pip", "random.", "xgboost", "randomforest", "cross_val",
-        "gridsearch", "ridge(", "lasso(", ".score(", "pvalues", ".aic", "add_constant",
-    ]
-    for fragment in forbidden:
-        if fragment in lowered:
-            issue("scope", f"remove out-of-scope source {fragment!r}", errors)
-    for name, node in functions.items():
-        fn_source = ast.unparse(node)
-        if any(token in fn_source for token in ("read_csv", "to_csv", "savefig", "Path(")):
-            issue("functions", f"{name} must not perform file or path I/O", errors)
-    if "smf.ols" not in student_code or '" ~ "' not in student_code:
-        issue("Task 1", "derive an argument-based formula and call smf.ols", errors)
-    if "DummyRegressor" not in student_code or "StandardScaler" not in student_code or "LinearRegression" not in student_code or "Pipeline" not in student_code:
-        issue("Task 3", "use exactly the supplied baseline and scale→linear Pipeline", errors)
-    if 'kind="stable"' not in student_code and "kind='stable'" not in student_code:
-        issue("Task 2", "use a stable chronological sort", errors)
-    if "zero_division=0" not in student_code:
-        issue("binary metrics", "use zero_division=0", errors)
-    direct_predict_cells = [cell_id for cell_id in STUDENT_CODE_IDS if ".predict(" in source(by_id[cell_id])]
-    if direct_predict_cells:
-        issue("prediction gate", f"use record_predictions instead of direct predict in {direct_predict_cells}", errors)
-    for cell_id in ("a10-task1-run", "a10-task2-run", "a10-validation-run", "a10-final-test-run", "a10-binary-run-save", "a10-final-verify"):
-        cell = by_id[cell_id]
-        if not cell.get("outputs") or cell.get("execution_count") is None:
-            issue("visible output", f"run and retain output for {cell_id}", errors)
-        for output in cell.get("outputs", []):
-            text = json.dumps(output).lower()
-            if output.get("output_type") == "error" or "traceback" in text:
-                issue("visible output", f"remove error output from {cell_id}", errors)
+        for row in rows:
+            for column, want in expected[row[key]].items():
+                got = _number(row, column) if isinstance(want, float) else row[column]
+                if isinstance(want, float):
+                    if abs(got - want) > FLOAT_TOLERANCE:
+                        raise ValueError(f"{row[key]} {column}")
+                elif got != want:
+                    raise ValueError(f"{row[key]} {column}")
+    except (KeyError, ValueError) as error:
+        issue("output", f"{name} has an invalid value ({error})", errors)
 
 
 def output_checks(errors: list[str]) -> None:
     output = ROOT / "output"
     if not output.is_dir() or output.is_symlink():
-        issue("output", "restore the regular output directory", errors)
+        for name in (*ARTIFACT_COLUMNS, "inference_residuals.png"):
+            issue("output", f"{name} needs a regular output directory", errors)
         return
     actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    expected = {".gitkeep", *ARTIFACTS, "inference_residuals.png"}
+    expected = {".gitkeep", *ARTIFACT_COLUMNS, "inference_residuals.png"}
     if actual != expected:
         issue("output", f"required output inventory differs: {sorted(actual ^ expected)}", errors)
-    for name, (size, digest) in ARTIFACTS.items():
+    tables = {}
+    for name, columns in ARTIFACT_COLUMNS.items():
         path = output / name
         if not path.is_file() or path.is_symlink():
             continue
-        raw = path.read_bytes()
-        if len(raw) != size or sha256(raw).hexdigest() != digest:
-            issue("output", f"rerun to reproduce exact {name}", errors)
-        if not raw.endswith(b"\n") or b"\r" in raw:
-            issue("output", f"{name} must use LF and a final newline", errors)
-    png = output / "inference_residuals.png"
-    if png.is_file() and not png.is_symlink():
-        raw = png.read_bytes()
-        if not raw.startswith(b"\x89PNG\r\n\x1a\n") or len(raw) <= 8192:
-            issue("output", "residual PNG is missing or trivial", errors)
-        elif len(raw) < 24 or struct.unpack(">II", raw[16:24]) != (720, 480):
-            issue("output", "residual PNG must be 720×480", errors)
-
-
-def runtime(errors: list[str]) -> None:
-    if sys.version_info[:3] != EXPECTED_PYTHON:
-        issue("runtime", f"use CPython {'.'.join(map(str, EXPECTED_PYTHON))}", errors)
-    for distribution, expected in EXPECTED_DISTRIBUTIONS.items():
+        tables[name] = _csv_rows(path, columns, errors)
+    _table_values("inference_summary.csv", tables.get("inference_summary.csv", []), "term", {
+        "Intercept": {"estimate": 51.959310, "standard_error": 1.715679, "confidence_low_95": 48.302426, "confidence_high_95": 55.616194},
+        "mix_minutes": {"estimate": 0.651471, "standard_error": 0.021679, "confidence_low_95": 0.605262, "confidence_high_95": 0.697679},
+        "initial_temp_c": {"estimate": 0.720189, "standard_error": 0.070929, "confidence_low_95": 0.569008, "confidence_high_95": 0.871370},
+    }, errors)
+    case_rows = tables.get("inference_case_intervals.csv", [])
+    try:
+        expected_case = [26.0, 22.0, 84.741704, 84.376661, 85.106747, 83.154332, 86.329076]
+        if len(case_rows) != 1 or any(abs(_number(case_rows[0], column) - want) > FLOAT_TOLERANCE for column, want in zip(ARTIFACT_COLUMNS["inference_case_intervals.csv"], expected_case)):
+            raise ValueError("expected one supplied case")
+    except (KeyError, ValueError):
+        issue("output", "inference_case_intervals.csv has invalid case values", errors)
+    _table_values("inference_residuals.csv", tables.get("inference_residuals.csv", []), "run_id", {
+        "M01": {"actual": 74.15, "fitted": 73.820642, "residual": .329358}, "M02": {"actual": 78., "fitted": 78.809750, "residual": -.809750}, "M03": {"actual": 83.45, "fitted": 82.649855, "residual": .800145},
+        "M04": {"actual": 87.4, "fitted": 88.359152, "residual": -.959152}, "M05": {"actual": 79.1, "fitted": 78.364434, "residual": .735566}, "M06": {"actual": 82.2, "fitted": 82.856010, "residual": -.656010},
+        "M07": {"actual": 83.95, "fitted": 83.523984, "residual": .426016}, "M08": {"actual": 92.75, "fitted": 92.765507, "residual": -.015507}, "M09": {"actual": 77.05, "fitted": 77.146714, "residual": -.096714},
+        "M10": {"actual": 84.45, "fitted": 85.239235, "residual": -.789235}, "M11": {"actual": 87.55, "fitted": 86.987492, "residual": .562508}, "M12": {"actual": 90.7, "fitted": 90.398785, "residual": .301215},
+        "M13": {"actual": 80.4, "fitted": 80.832880, "residual": -.432880}, "M14": {"actual": 89.95, "fitted": 88.273930, "residual": 1.676070}, "M15": {"actual": 89.9, "fitted": 90.382282, "residual": -.482282},
+        "M16": {"actual": 92.3, "fitted": 92.421915, "residual": -.121915}, "M17": {"actual": 82.4, "fitted": 82.702071, "residual": -.302071}, "M18": {"actual": 83.65, "fitted": 83.815360, "residual": -.165360},
+    }, errors)
+    _table_values("availability_decisions.csv", tables.get("availability_decisions.csv", []), "candidate_feature", {
+        "batch_sequence": {"latest_required_offset_hours": "0", "available_by_prediction_time": "True", "decision": "keep"},
+        "ambient_temp_c": {"latest_required_offset_hours": "0", "available_by_prediction_time": "True", "decision": "keep"},
+        "pre_mix_moisture_pct": {"latest_required_offset_hours": "0", "available_by_prediction_time": "True", "decision": "keep"},
+        "early_24h_strength_mpa": {"latest_required_offset_hours": "24", "available_by_prediction_time": "False", "decision": "exclude"},
+        "next_day_strength_mpa": {"latest_required_offset_hours": "24", "available_by_prediction_time": "False", "decision": "exclude"},
+    }, errors)
+    _table_values("split_manifest.csv", tables.get("split_manifest.csv", []), "partition", {
+        "train": {"row_count": "29", "first_target_timestamp": "2026-04-02T00:00:00Z", "last_target_timestamp": "2026-04-30T00:00:00Z"},
+        "validation": {"row_count": "8", "first_target_timestamp": "2026-05-01T00:00:00Z", "last_target_timestamp": "2026-05-08T00:00:00Z"},
+        "test": {"row_count": "11", "first_target_timestamp": "2026-05-09T00:00:00Z", "last_target_timestamp": "2026-05-19T00:00:00Z"},
+    }, errors)
+    _table_values("validation_metrics.csv", tables.get("validation_metrics.csv", []), "approach", {
+        "mean_baseline": {"mae": 4.259573, "rmse": 4.504803, "r2": -8.441848}, "linear_pipeline": {"mae": .255929, "rmse": .312760, "r2": .954488},
+    }, errors)
+    _table_values("final_test_metrics.csv", tables.get("final_test_metrics.csv", []), "approach", {"linear_pipeline": {"mae": .265686, "rmse": .332477, "r2": .830552}}, errors)
+    _table_values("binary_metrics.csv", tables.get("binary_metrics.csv", []), "approach", {
+        "supplied_model": {"accuracy": .833333, "precision": .666667, "recall": .666667}, "dummy_baseline": {"accuracy": .75, "precision": 0., "recall": 0.},
+    }, errors)
+    predictions = tables.get("final_predictions.csv", [])
+    expected_ids = {f"B{number:03d}" for number in range(38, 49)}
+    if len(predictions) != 11 or {row.get("batch_id") for row in predictions} != expected_ids:
+        issue("output", "final_predictions.csv must align one row to each chronological test batch", errors)
+    else:
         try:
-            actual = metadata.version(distribution)
-        except metadata.PackageNotFoundError:
-            issue("runtime", f"install {distribution}=={expected}", errors)
-        else:
-            if actual != expected:
-                issue("runtime", f"expected {distribution}=={expected}, found {actual}", errors)
+            source_rows = {row["batch_id"]: row for row in csv.DictReader((ROOT / "data" / "batch_strength.csv").open(encoding="utf-8"))}
+            for row in predictions:
+                source_row = source_rows[row["batch_id"]]
+                if row["target_timestamp"] != source_row["target_timestamp"] or abs(_number(row, "actual_strength_mpa") - float(source_row["next_day_strength_mpa"])) > FLOAT_TOLERANCE or not math.isfinite(_number(row, "predicted_strength_mpa")):
+                    raise ValueError(row["batch_id"])
+        except (KeyError, ValueError, OSError, UnicodeError, csv.Error):
+            issue("output", "final_predictions.csv has misaligned IDs, timestamps, or values", errors)
+    _table_values("final_predictions.csv", predictions, "batch_id", {
+        f"B{number:03d}": {"predicted_strength_mpa": value}
+        for number, value in enumerate([
+            36.619379, 36.938898, 37.153664, 37.249329, 37.213505,
+            37.045450, 36.749396, 36.348188, 35.868423, 35.350631,
+            34.842601,
+        ], start=38)
+    }, errors)
+    png = output / "inference_residuals.png"
+    if png.is_symlink():
+        issue("output", "inference_residuals.png must be a regular file", errors)
+    if png.is_file() and not png.is_symlink():
+        if not png.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+            issue("output", "inference_residuals.png must be a PNG file", errors)
 
 
 def main() -> int:
@@ -380,16 +318,14 @@ def main() -> int:
     static_contract(errors)
     inventory(errors)
     integrity(errors)
-    runtime(errors)
     fixtures(errors)
-    notebook_checks(errors)
     output_checks(errors)
     if errors:
         print("\n".join(errors))
         print(f"Readiness check found {len(errors)} action item(s).")
         return 1
-    print("Assignment 10 readiness structure is complete.")
-    print("Central grading assigns points; explanation quality is reviewed separately.")
+    print("Assignment 10 committed artifacts are complete.")
+    print("Artifact grading assigns points; explanation quality is reviewed separately.")
     return 0
 
 

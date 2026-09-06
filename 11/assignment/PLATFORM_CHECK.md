@@ -1,6 +1,7 @@
 # Platform Check
 
-Local Jupyter is the grading reference and the only supported execution route for this assignment.
+Notebook execution is optional local QA for this assignment. The committed
+artifacts and `report.md` are the grading deliverables.
 
 From `11/assignment`, run:
 

@@ -5,17 +5,17 @@ their grain, keys, cardinality, and preservation goal. Then examine vertical and
 horizontal alignment and complete a reversible wide/long reshape without
 aggregation.
 
-This is a local Jupyter assignment. The supplied synthetic fixtures contain no
-human-subject data and are different from the Lecture 06 demo data. Do not use
-Colab, manual uploads, Drive mounts, network access, or `/content` paths. The
+This is a local-first assignment; grading reads committed artifacts without executing the notebook. The
+supplied synthetic fixtures contain no human-subject data and are different from
+the Lecture 06 demo data. Do not use Colab, manual uploads, Drive mounts, network access, or `/content` paths. The
 portable setup supports both a standalone exported assignment repository and
 this full course repository.
 
 ## Setup
 
 Use CPython 3.12.13. From this directory, create and activate a virtual
-environment, install the two exact dependency records, and open Jupyter or the
-VS Code notebook interface:
+environment, and install the two exact dependency records. If you use the
+notebook, open it through Jupyter or the VS Code notebook interface:
 
 ```bash
 python -m venv .venv
@@ -24,15 +24,13 @@ python -m pip install -r requirements.txt
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
-[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before editing the notebook. Jupyter is
-the host application; the notebook kernel must use the environment you checked.
+[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before preparing artifacts. If you run
+the notebook, its kernel must use the environment you checked.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all 25
-cells from top to bottom. Commit these six files in the assignment repository:
+Complete every `TODO` in `assignment.ipynb` and commit the notebook source. Create and commit these five CSV milestone artifacts in the assignment repository:
 
-- `assignment.ipynb`
 - `output/specimen_merge_audit.csv`
 - `output/combined_specimens.csv`
 - `output/aligned_features.csv`
@@ -40,19 +38,19 @@ cells from top to bottom. Commit these six files in the assignment repository:
 - `output/sensor_scores_round_trip.csv`
 
 The required CSVs are intentionally visible in VS Code Source Control and
-GitHub Desktop. Commit them with the notebook. Do not edit the six files in
-`data/`, `data/fixture.json`, the supplied notebook cells, environment records,
-checker, or instructions. Stored notebook output is not evidence that the code
-runs; the grader clears it and executes a disposable copy from fresh state.
+GitHub Desktop. Commit them with the completed notebook source. Do not edit
+the files in `data/`, `data/fixture.json`, supplied notebook cells, environment
+records, checker, or instructions. Automated grading reads the committed CSVs;
+notebook execution is optional local QA.
 
-After restart-and-run, use the discoverable student check:
+After creating the committed artifacts, use the discoverable student check:
 
 ```bash
 python check_assignment.py
 ```
 
-The checker reads files and notebook source but does not execute notebook code.
-Fix each `[FIX]` message, rerun the notebook from a fresh kernel, and check again.
+The checker reads files and committed CSVs but does not execute notebook code.
+Fix each `[FIX]` message, regenerate the artifacts, and check again.
 
 ## Task 1: contract-first validated merge
 
@@ -129,3 +127,7 @@ Task 1, 27 for Task 2, and 23 for Task 3. Ten points of human review cover the
 four explanations, organization, and privacy. The revised syllabus will decide
 how that evidence maps to course policy; the notebook and public checker do not
 declare a pass threshold or grade.
+
+### Artifact comparison
+
+CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently. Notebook explanations receive human review.

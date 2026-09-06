@@ -11,11 +11,10 @@ The records are course-authored synthetic data. They do not describe real people
 ## Work locally
 
 1. Open the `10/assignment` subtree, or its exported standalone assignment repository, with the course-approved Git GUI.
-2. Open this whole assignment folder in the approved local Jupyter environment. The notebook requires the complete local `data/` directory.
-3. Restart the kernel, clear all outputs, and run every cell in order.
+2. Open the supplied notebook in the approved editor. The complete local `data/` directory is supplied.
+3. Create the ten committed files in `output/`.
 4. From a terminal opened in this assignment folder, run `python check_assignment.py` with the course Python environment.
-5. Run all notebook cells a second time. Run the checker again.
-6. Inspect the notebook and the nine files in `output/` in your Git GUI. Commit and push the notebook and generated outputs through the GUI.
+5. Inspect the ten files in `output/` in your Git GUI. Commit and push them with your completed notebook. Graders read the committed artifacts without rerunning your notebook.
 
 Do not edit protected cells, fixture files, this README, `PLATFORM_CHECK.md`, `requirements.txt`, or `check_assignment.py`. Do not add files. The optional Actions workflow is supplied feedback; it is not a submission artifact.
 
@@ -25,6 +24,7 @@ Your completed run must retain `output/.gitkeep` and create exactly:
 
 - `inference_summary.csv`
 - `inference_case_intervals.csv`
+- `inference_residuals.csv` — one row per `run_id`, with `actual`, `fitted`, and `residual`
 - `inference_residuals.png`
 - `availability_decisions.csv`
 - `split_manifest.csv`
@@ -33,17 +33,17 @@ Your completed run must retain `output/.gitkeep` and create exactly:
 - `final_predictions.csv`
 - `binary_metrics.csv`
 
-The public checker checks readiness and structure. It does not execute the notebook, award points, or judge explanation quality. The central grader always clears stored notebook output and executes from a fresh kernel.
+The public checker reads the committed artifacts. CSV rows may be ordered differently and numeric serialization may use reasonable float precision; their schema, IDs, missingness, and values are checked. The residual figure is checked only as a PNG file. It does not execute the notebook, award points, or judge explanation quality. Written interpretation is reviewed separately.
 
 ## Assessment
 
 The central grader reports 90 automated points:
 
-- template, environment, fixtures, and protected integrity: 10
+- submission package and fixture integrity: 10
 - bounded OLS inference and intervals: 20
 - contract, availability, leakage, and chronological split: 25
 - train-only comparison, freeze, final test, and binary metrics: 30
-- portability, visible output, repeatability, and resubmission: 5
+- residual figure saved as a PNG: 5
 
 Human review covers 10 points: Task 1 interpretation (3), Task 2 reasoning (3), and Task 3 evaluation judgment (4).
 

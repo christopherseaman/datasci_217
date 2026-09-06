@@ -19,7 +19,7 @@ Use GitHub Desktop for this first delivery unless the instructor gives you an eq
 Complete the assignment and make `python check_assignment.py` report `All public checks passed.` Then:
 
 1. Return to GitHub Desktop and select the **Changes** tab.
-2. Confirm that the changed-file list contains only your Assignment 01 work. It should include the three student scripts, `terminal-practice/source.txt`, `terminal-practice/path-check.txt`, and `output/readiness.txt`.
+2. Confirm that the changed-file list contains only your Assignment 01 work. It should include the three student scripts, `terminal-practice/source.txt`, `terminal-practice/path-check.txt`, and the committed milestone artifact `output/readiness.txt`.
 3. In the **Summary** box, enter exactly `Complete Assignment 01`.
 4. Select **Commit to main**.
 5. Select **Push origin**.

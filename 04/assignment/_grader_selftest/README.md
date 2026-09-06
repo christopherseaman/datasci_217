@@ -1,21 +1,13 @@
-# Assignment 04 grader self-test
+# Assignment 04 artifact-grader regression checks
 
-This directory is instructor-only course-source material. Exclude the entire `_grader_selftest/` directory from the student starter. The discoverable production bundle may contain `autograder.py`, `grader_core.py`, its pinned grader requirements, protected-file manifest, and alternate fixture, but it stays in instructor-controlled grading infrastructure rather than each student repository.
+This instructor-only directory is excluded from student assignment repositories. The grader reads committed artifacts and preserves credit for independent milestones. It never executes student code. Notebook explanations are reviewed by a person.
 
-The self-test materializes disposable starter, correct, incomplete, stored-output, malformed, path-dependent, hard-coded, and other defective submissions. It verifies fresh notebook execution after deleting generated files and clearing stored output, a relocated nested launch, a second valid fixture, resubmission behavior, and the required `datasci217/grading-result/v1` payload.
-
-Run from the repository root:
+Run with the course environment:
 
 ```bash
-uv run 04/assignment/_grader_selftest/run.py
+python 04/assignment/_grader_selftest/run.py
 ```
 
-Production execution requires nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
-`COMMIT_URL`, and `RELEASE_URL`. `REVIEW_URL` falls back to `COMMIT_URL`; the
-grader generates the UTC result `datetime`. The grading service launches
-`autograder.py` with plain Python from the student checkout. That
-standard-library bootstrap installs the exact sibling `requirements.txt` into
-the same interpreter before importing `grader_core.py`; PEP 723 metadata is
-only a local `uv run` convenience.
+The self-test uses frozen instructor examples and disposable copies under the course repository's ignored `scratch/` directory. It checks the actual public command and central grading function: empty starter, correct artifacts, equivalent CSV quoting/line endings, a missing milestone, and incorrect values.
 
-This is local grader QA, not external service configuration or certification. Published grader logic is discoverable and contains no secret solution, credential, or requirement outside the student README.
+`autograder.py` is the instructor entrypoint and provisions the sibling requirements. The instructor controls this bundle; it does not import a student's checker.

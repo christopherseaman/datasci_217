@@ -100,4 +100,4 @@ jupytext --sync q4_feature_engineering.md
 jupytext --to ipynb --test-strict q4_feature_engineering.md
 ```
 
-Before submission, restart kernels and run notebooks Q1 through Q9 in order. Inspect artifact values and shapes, then clear notebook outputs and run the checks in [`README.md`](README.md).
+Before submission, inspect the committed artifact values and shapes, then run the checks in [`README.md`](README.md). Notebook execution is optional QA.

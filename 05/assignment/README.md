@@ -7,15 +7,15 @@ The work follows the same sequence used in Lecture 05:
 2. record decisions, then transform a copy;
 3. validate, save, and read the artifacts back with explicit schemas.
 
-This is a local Jupyter assignment. Do not use Colab, manual uploads, Drive
-mounts, network access, or `/content` paths. The supplied path finder supports
+This is a local-first assignment. Grading reads committed artifacts without executing the notebook. Do not use
+Colab, manual uploads, Drive mounts, network access, or `/content` paths. The supplied path finder supports
 both a standalone exported assignment repository and this course repository.
 
 ## Setup
 
 Use Python 3.12.13. From this directory, create and activate a virtual
-environment, install the exact dependency records, and open Jupyter or the VS
-Code notebook interface:
+environment, and install the exact dependency records. Open the supplied
+notebook through Jupyter or the VS Code notebook interface:
 
 ```bash
 python -m venv .venv
@@ -29,17 +29,14 @@ notebook.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb`. Restart the kernel and run all
-cells from top to bottom. Commit these four files in the assignment repository:
+Complete every `TODO` in `assignment.ipynb` and commit the notebook source. Create and commit these three CSV milestone artifacts in the assignment repository:
 
-- `assignment.ipynb`
 - `output/issue_audit.csv`
 - `output/cleaned_people.csv`
 - `output/decision_log.csv`
 
 Do not edit `data/people_raw.csv`, `data/fixture.json`, or the two supplied
-notebook cells. Generated output must come from a fresh notebook run; stored
-cell output is not evidence that the code runs.
+notebook cells. The saved CSV files are the automated grading contract; notebook execution is optional local QA.
 
 Run the discoverable checks from this directory:
 
@@ -47,21 +44,19 @@ Run the discoverable checks from this directory:
 python check_assignment.py
 ```
 
-Read every `[FIX]` message, make one focused correction, restart and run all,
-then check again. The checker intentionally ignores stored notebook output and
-re-runs the code in disposable relocated copies.
+Read every `[FIX]` message, make one focused correction, regenerate the CSV artifacts, then check again.
 
 ## Executable contract
 
 Task 1 must define `row_meaning`, `candidate_identifier`, `raw`,
 `raw_snapshot`, `audit_person_records`, `issue_audit`, and `issue_counts`. Read
 the source with `keep_default_na=False`, preserve a deep raw snapshot, and
-return the 15 ordered `issue,count` rows listed in the supplied final cell.
+return the 15 `issue,count` rows listed in the supplied final cell.
 Count exact-row duplication separately from repeated candidate identifiers;
 count lexical and calendar date failures together without treating an empty
 date as a parse failure.
 
-Task 2 must create these eight ordered decision specifications. Write your own
+Task 2 must create these eight decision specifications. Write your own
 nonempty, purpose-grounded `reason` for each row.
 
 | `field` | `issue` | `action` |
@@ -121,3 +116,7 @@ and Task 3 is 30. Of those, 85 points are executable checks and 15 points are
 human review of explanations, decision reasoning, organization, and privacy.
 This policy overlay is pending syllabus adjudication; the technical assignment
 contract is not. This assignment is not labeled as a midterm.
+
+### Artifact comparison
+
+CSV checks compare parsed columns and values, not file hashes or quoting. Rows are matched by record or issue identity; audit and decision-log row order is not graded. Each milestone is assessed independently. Notebook explanations receive human review.

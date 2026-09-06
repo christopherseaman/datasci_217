@@ -25,7 +25,7 @@ Do not use live downloads or external data.
 
 - Write CSV artifacts to `output/` with `index=False` and exactly the listed columns in the listed order.
 - Write UTC timestamps as parseable ISO 8601 values with an explicit UTC offset.
-- Sort station-level row artifacts by UTC timestamp, then station, unless a different order is specified.
+- Panel, feature, and Q6 X/y artifacts must follow their stated chronological/key sequences; summary, metric, correlation, importance, and feature-manifest rows are matched by their documented identifiers.
 - The persistence baseline uses current `air_temperature_c_t` as the next-hour prediction.
 - MAE is the primary metric. Also report RMSE and R2, calculated from unrounded predictions.
 - Choose one regressor from pinned scikit-learn. Do not use XGBoost or add model libraries.
@@ -85,7 +85,7 @@ Exactly seven rows, in this order: `release_filename`, `release_sha256`, `releas
 
 Columns: `station_name`, `expected_hours`, `observed_hours`, `missing_hours`, `coverage_pct`, `first_timestamp`, `last_timestamp`.
 
-Use the full local release window for expected hours and observed, valid localized station-hour keys for observed hours. Sort by station name.
+Use the full local release window for expected hours and observed, valid localized station-hour keys for observed hours. Include each station once.
 
 `output/q1_visualizations.png`
 
@@ -125,7 +125,7 @@ The `rule` value may be any concise, unique, nonblank description. Grading check
 
 `output/q2_missingness.csv`
 
-Columns: `station_name`, `column_name`, `missing_count`, `missing_pct`. Report every sensor measurement column for both stations after cleaning. Sort by station, then release column order.
+Columns: `station_name`, `column_name`, `missing_count`, `missing_pct`. Report every sensor measurement column for both stations; each station/column key must be unique.
 
 ### Q3: Data Wrangling (12 points)
 
@@ -137,7 +137,7 @@ Build every station crossed with every elapsed UTC hour from local `2022-01-01 0
 
 `output/q3_panel_summary.csv`
 
-Columns: `station_name`, `expected_hours`, `observed_hours`, `missing_hours`, `gap_runs`, `longest_gap_hours`. A gap run is a consecutive sequence of unobserved elapsed UTC hours. Sort by station.
+Columns: `station_name`, `expected_hours`, `observed_hours`, `missing_hours`, `gap_runs`, `longest_gap_hours`. A gap run is a consecutive sequence of unobserved elapsed UTC hours. Each station key must be unique.
 
 ### Q4: Feature Engineering (16 points)
 
@@ -174,9 +174,9 @@ A row is `model_eligible` if and only if the current and exact next-hour air tem
 
 `output/q4_feature_manifest.csv`
 
-Columns: `feature_name`, `source`, `earliest_offset_hours`, `latest_offset_hours`, `role`. Include one row for each fixed predictor in fixed order. Use a clear source description and role (`categorical` or `numeric`). Every `latest_offset_hours` must be at most 0.
+Columns: `feature_name`, `source`, `earliest_offset_hours`, `latest_offset_hours`, `role`. Include one uniquely identified row for each fixed predictor. Use a clear source description and role (`categorical` or `numeric`). Every `latest_offset_hours` must be at most 0.
 
-The `source` value may be concise, nonblank student text. Grading fixes feature names, row order, offsets, and roles, but does not require exact prose in `source`.
+The `source` value may be concise, nonblank student text. Grading fixes feature names, offsets, and roles, but does not require exact prose in `source`.
 
 ### Q5: Pattern Analysis (8 points)
 
@@ -184,11 +184,11 @@ Use only rows whose target local time is before 2024 and never use validation/te
 
 `output/q5_monthly_station_summary.csv`
 
-Columns: `station_name`, `year`, `month`, `n_observed`, `mean_air_temperature_c`, `std_air_temperature_c`, `min_air_temperature_c`, `max_air_temperature_c`. Summarize observed target temperatures and sort by station, year, month.
+Columns: `station_name`, `year`, `month`, `n_observed`, `mean_air_temperature_c`, `std_air_temperature_c`, `min_air_temperature_c`, `max_air_temperature_c`. Summarize observed target temperatures with unique station/year/month keys.
 
 `output/q5_correlations.csv`
 
-A square Pearson correlation matrix whose row labels and columns are exactly, in this order: `air_temperature_c_t`, `relative_humidity_pct_t`, `interval_rain_mm_t`, `wind_speed_mps_t`, `maximum_wind_speed_mps_t`, `barometric_pressure_hpa_t`, `solar_radiation_w_m2_t`. Save the row labels as the first CSV column using `index=True`.
+A square Pearson correlation matrix whose row-label identities and columns are exactly: `air_temperature_c_t`, `relative_humidity_pct_t`, `interval_rain_mm_t`, `wind_speed_mps_t`, `maximum_wind_speed_mps_t`, `barometric_pressure_hpa_t`, `solar_radiation_w_m2_t`. Save the row labels as the first CSV column using `index=True`.
 
 `output/q5_patterns.png`
 
@@ -210,7 +210,7 @@ X and y files must have matching unique IDs and row order within each split. Sor
 
 `output/q6_split_summary.csv`
 
-Columns: `split`, `n_rows`, `target_start`, `target_end`, `n_features`. Exactly three rows in train, validation, test order. Ranges are observed inclusive ranges and `n_features` counts all fixed predictors, including station.
+Columns: `split`, `n_rows`, `target_start`, `target_end`, `n_features`. Include one row for each of train, validation, and test. Ranges are observed inclusive ranges and `n_features` counts all fixed predictors, including station.
 
 ### Q7: Modeling (14 points)
 
@@ -219,7 +219,7 @@ Review the pipeline and validation pattern from [Lecture 10](../../10/README.md)
 
 `output/q7_model_spec.csv`
 
-Columns: `estimator_module`, `estimator_class`, `parameters_json`, `feature_columns`, `random_state`. Exactly one row. Record the regressor's importable module and class, JSON from its shallow parameters with sorted keys, fixed feature names joined by `|`, and `217`. The fitted object used for prediction must be a pipeline with the required train-fitted preprocessing.
+Columns: `estimator_module`, `estimator_class`, `parameters_json`, `feature_columns`, `random_state`. Exactly one row. Record the regressor module and class, a JSON object of its shallow parameters, fixed feature names joined by `|`, and `217`. This is documented model metadata: grading does not recreate or refit the estimator, because valid seeded results can differ across implementations, platforms, and feature preparation details. The fitted object used for prediction must be a pipeline with the required train-fitted preprocessing.
 
 `output/q7_validation_predictions.csv`
 
@@ -227,11 +227,11 @@ Columns: `row_id`, `station_name`, `target_timestamp_utc`, `actual`, `persistenc
 
 `output/q7_validation_metrics.csv`
 
-Columns: `model`, `mae`, `rmse`, `r2`, `n`. Exactly two rows, in order: `persistence_baseline`, `student_model`. Use identical validation rows.
+Columns: `model`, `mae`, `rmse`, `r2`, `n`. Include one uniquely identified row for each of `persistence_baseline` and `student_model`. Use identical validation rows.
 
 `output/q7_permutation_importance.csv`
 
-Columns: `feature`, `mean_mae_increase`, `std_mae_increase`. Calculate validation permutation importance through the fitted pipeline with `scoring="neg_mean_absolute_error"`, `n_repeats=10`, and `random_state=217`. Save `importances_mean` as `mean_mae_increase` and `importances_std` as `std_mae_increase`, preserving fixed feature order. With sklearn's negative-MAE scorer, a positive importance means that permutation increased MAE.
+Columns: `feature`, `mean_mae_increase`, `std_mae_increase`. Calculate validation permutation importance through the fitted pipeline with `scoring="neg_mean_absolute_error"`, `n_repeats=10`, and `random_state=217`. Save `importances_mean` as `mean_mae_increase` and `importances_std` as `std_mae_increase` for each uniquely identified fixed feature. With sklearn's negative-MAE scorer, a positive importance means that permutation increased MAE.
 
 ### Q8: Results (14 points)
 
@@ -243,11 +243,11 @@ Columns: `row_id`, `station_name`, `target_timestamp_utc`, `actual`, `persistenc
 
 `output/q8_test_metrics.csv`
 
-Columns: `model`, `mae`, `rmse`, `r2`, `n`. Exactly two rows, in order: `persistence_baseline`, `student_model`.
+Columns: `model`, `mae`, `rmse`, `r2`, `n`. Include one uniquely identified row for each of `persistence_baseline` and `student_model`.
 
 `output/q8_station_metrics.csv`
 
-Columns: `model`, `station_name`, `n`, `mae`, `rmse`, `r2`. Include both models for both stations, ordered by model then station.
+Columns: `model`, `station_name`, `n`, `mae`, `rmse`, `r2`. Include each unique model/station combination.
 
 `output/q8_final_visualizations.png`
 
@@ -272,10 +272,10 @@ Include the accepted six-column metrics table with columns `Evaluation set`, `Mo
 ![Final model results](output/q8_final_visualizations.png)
 ```
 
-Replace all placeholders. Q9 evaluates structural completeness only; prose style and model performance are not scored.
+Q9 automation verifies the required structure, numeric table, and image links. Prose quality is reviewed by a human; model performance is not scored.
 
 ## Points and Grading
 
 Q1 8 + Q2 10 + Q3 12 + Q4 16 + Q5 8 + Q6 12 + Q7 14 + Q8 14 + Q9 6 = **100 points**.
 
-The central grader deterministically validates saved artifacts and does not interpret source code. The local checker is a structural/readiness check, not the central grade. Central grader tests are named and discoverable in grading feedback; use their diagnostics to complete your own assignment rather than copying example content. Points for passing phase checks are retained, while failed or dependency-blocked checks receive targeted human review.
+The central grader validates saved artifacts and requires each Q1–Q9 `.md`/`.ipynb` coursework pair, but does not execute notebooks or refit models. The local checker is a structural/readiness check, not the central grade. Central grader tests are named and discoverable in grading feedback; use their diagnostics to complete your own assignment rather than copying example content. Points for passing phase checks are retained, while failed or dependency-blocked checks receive targeted human review.

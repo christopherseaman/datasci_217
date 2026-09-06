@@ -19,12 +19,10 @@ Use VS Code Source Control. GitHub Desktop is an acceptable equivalent when it e
 
 ## Commit the environment and pipeline records
 
-1. Complete Task 1, including the recreation check, then complete and run the four Task 2 commands.
+1. Complete Task 1, including the recreation check, then complete and run the four Task 2 commands and capture the Task 3 output.
 2. Confirm through the Explorer and Source Control that neither `.venv/` nor `recreation-check/` appears as a submitted change.
-3. Inspect the diffs for `.python-version`, `requirements.txt`, `PIPELINE.md`, and `output/environment_check.txt`.
-4. Stage only those four files and commit with `Record reproducible terminal workflow`.
-
-The four generated pipeline text files may remain untracked working evidence; the checker reruns the documented commands and does not require them as submission artifacts.
+3. Inspect the diffs for `.python-version`, `requirements.txt`, `PIPELINE.md`, and all six text files under `output/`.
+4. Stage those records and milestone artifacts and commit with `Record reproducible terminal workflow`.
 
 ## Commit the NumPy implementation
 

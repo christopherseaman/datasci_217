@@ -19,9 +19,8 @@ Production execution requires nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
 `COMMIT_URL`, and `RELEASE_URL`. `REVIEW_URL` falls back to
 `COMMIT_URL`; the grader generates the UTC result `datetime`. It writes official
 `./result.json`; ordinary student-test failures return process status zero,
-while missing context or grader/kernel infrastructure failure returns nonzero.
+while missing context or grader infrastructure failure returns nonzero.
 
-Fresh central execution proves that committed artifacts equal regenerated
-artifacts. Human review then uses the runner's `REVIEW_URL` to inspect
-the committed notebook Markdown and artifacts; the grader creates no separate
-review-storage service or bundle.
+The central grader reads artifacts directly and never imports the editable
+student checker or executes a notebook. Human review uses `REVIEW_URL` to
+inspect notebook source, prose, and chart quality separately.

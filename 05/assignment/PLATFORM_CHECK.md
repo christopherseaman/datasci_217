@@ -1,6 +1,6 @@
 # Assignment 05 platform check
 
-Complete this check locally before working on the notebook. Colab is not an
+Complete this check locally before preparing the artifacts. Colab is not an
 assignment or submission path for Assignment 05.
 
 1. Open a terminal in the assignment directory.
@@ -15,9 +15,8 @@ assignment or submission path for Assignment 05.
 
    The first command must print `2.0.2 3.0.5`; the second must print `True`.
 
-5. Open `assignment.ipynb` with the `.venv` Python 3 kernel. Restart the kernel
-   and use **Run All**. The supplied setup cell should complete without error.
-6. Run `python check_assignment.py`. The starter should show task-specific
+5. For `assignment.ipynb`, open it with the `.venv` Python 3 kernel; execution is optional local QA.
+6. Create the three CSV artifacts and run `python check_assignment.py`. The starter should show task-specific
    `[FIX]` messages until the TODOs and generated artifacts are complete.
 
 If a version is wrong, recreate the virtual environment rather than installing

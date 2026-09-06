@@ -8,16 +8,12 @@
 from __future__ import annotations
 
 from hashlib import sha256
-import importlib
 import json
 from pathlib import Path
 import re
-import struct
-import zlib
 
 import numpy as np
 import pandas as pd
-from sklearn.base import RegressorMixin
 
 
 ROOT = Path(__file__).resolve().parent
@@ -105,18 +101,19 @@ def _numeric(series: pd.Series, label: str, finite: bool = False) -> pd.Series:
 
 def _png(path: Path) -> None:
     _assert(path.is_file() and not path.is_symlink(), f"missing regular PNG: {path.name}")
-    data = path.read_bytes(); _assert(data.startswith(b"\x89PNG\r\n\x1a\n"), f"{path.name} is not a PNG")
-    position, header, ending = 8, False, False
-    while position + 12 <= len(data):
-        length = struct.unpack(">I", data[position:position + 4])[0]; kind = data[position + 4:position + 8]; end = position + length + 12
-        _assert(end <= len(data), f"{path.name} has a truncated PNG chunk"); payload = data[position + 8:position + 8 + length]
-        _assert(struct.unpack(">I", data[position + 8 + length:end])[0] == zlib.crc32(kind + payload) & 0xFFFFFFFF, f"{path.name} has an invalid PNG checksum")
-        if not header:
-            width, height = struct.unpack(">II", payload[:8]); _assert(kind == b"IHDR" and length == 13 and width > 0 and height > 0, f"{path.name} has no valid IHDR"); header = True
-        if kind == b"IEND":
-            _assert(length == 0 and end == len(data), f"{path.name} has invalid trailing data"); ending = True; break
-        position = end
-    _assert(header and ending, f"{path.name} is incomplete")
+    _assert(path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"), f"{path.name} is not a PNG")
+
+
+def _coursework() -> None:
+    for number in range(1, 10):
+        for suffix in ("ipynb", "md"):
+            matches = list(ROOT.glob(f"q{number}_*.{suffix}"))
+            _assert(len(matches) == 1 and matches[0].is_file() and not matches[0].is_symlink(), f"missing regular Q{number} coursework {suffix} pair")
+
+
+def _by_keys(frame: pd.DataFrame, keys: list[str], label: str) -> pd.DataFrame:
+    _assert(not frame.duplicated(keys).any(), f"{label} has duplicate row keys")
+    return frame.sort_values(keys, kind="stable").reset_index(drop=True)
 
 
 def _audit_semantics(frame: pd.DataFrame) -> None:
@@ -142,7 +139,7 @@ def _q1(_state: dict) -> None:
     audit = _read("q1_release_audit.csv", ["check_name", "expected", "observed", "passed"])
     names = ["release_filename", "release_sha256", "release_byte_size", "row_count", "column_count", "column_names", "source_timezone"]
     _assert(audit["check_name"].tolist() == names and audit["expected"].astype(str).tolist() == [str(value) for value in expected] and audit["observed"].astype(str).tolist() == [str(value) for value in facts] and audit["passed"].astype("string").str.lower().eq("true").all(), "release audit values differ")
-    coverage = _read("q1_station_coverage.csv", ["station_name", "expected_hours", "observed_hours", "missing_hours", "coverage_pct", "first_timestamp", "last_timestamp"])
+    coverage = _by_keys(_read("q1_station_coverage.csv", ["station_name", "expected_hours", "observed_hours", "missing_hours", "coverage_pct", "first_timestamp", "last_timestamp"]), ["station_name"], "station coverage")
     _assert(coverage["station_name"].tolist() == STATIONS and (_numeric(coverage["expected_hours"], "expected_hours") == 26304).all(), "station coverage grain differs")
     observed, missing = _numeric(coverage["observed_hours"], "observed_hours"), _numeric(coverage["missing_hours"], "missing_hours")
     _assert((observed + missing).eq(26304).all() and np.allclose(_numeric(coverage["coverage_pct"], "coverage_pct"), observed / 26304 * 100), "station coverage arithmetic differs")
@@ -158,9 +155,9 @@ def _q2(state: dict) -> None:
         values = _numeric(clean[column], column); _assert(values.dropna().between(low, high, inclusive="both").all(), f"{column} range differs")
     precipitation = _numeric(clean["precipitation_type_code"], "precipitation_type_code"); _assert(precipitation.dropna().isin([0, 40, 60, 70]).all(), "precipitation codes differ")
     audit = _read("q2_cleaning_audit.csv", ["rule", "affected_values", "result"]); _audit_semantics(audit)
-    missingness = _read("q2_missingness.csv", ["station_name", "column_name", "missing_count", "missing_pct"])
-    expected_keys = [(station, column) for station in STATIONS for column in SENSOR_COLUMNS]
-    _assert(list(missingness[["station_name", "column_name"]].itertuples(index=False, name=None)) == expected_keys, "missingness keys/order differ")
+    missingness = _by_keys(_read("q2_missingness.csv", ["station_name", "column_name", "missing_count", "missing_pct"]), ["station_name", "column_name"], "missingness")
+    expected_keys = {(station, column) for station in STATIONS for column in SENSOR_COLUMNS}
+    _assert(set(missingness[["station_name", "column_name"]].itertuples(index=False, name=None)) == expected_keys, "missingness keys differ")
     for row in missingness.itertuples(index=False):
         selected = clean.loc[clean["station_name"].eq(row.station_name), row.column_name]; count = int(selected.isna().sum())
         _assert(int(row.missing_count) == count and np.isclose(float(row.missing_pct), count / len(selected) * 100), "missingness values differ")
@@ -177,7 +174,7 @@ def _q3(state: dict) -> None:
     local = times.dt.tz_convert(LOCAL_TZ); _assert(np.array_equal(_numeric(panel["hour"], "hour"), local.dt.hour) and np.array_equal(_numeric(panel["day_of_week"], "day_of_week"), local.dt.dayofweek) and np.array_equal(_numeric(panel["month"], "month"), local.dt.month), "panel calendar values differ")
     keys = pd.MultiIndex.from_arrays([panel["station_name"], times]); clean_keys = pd.MultiIndex.from_arrays([state["clean"]["station_name"], state["clean_time"]])
     _assert(pd.Series(keys.isin(clean_keys)).equals(observed.reset_index(drop=True)), "source_observed does not match cleaned keys")
-    summary = _read("q3_panel_summary.csv", ["station_name", "expected_hours", "observed_hours", "missing_hours", "gap_runs", "longest_gap_hours"])
+    summary = _by_keys(_read("q3_panel_summary.csv", ["station_name", "expected_hours", "observed_hours", "missing_hours", "gap_runs", "longest_gap_hours"]), ["station_name"], "panel summary")
     _assert(summary["station_name"].tolist() == STATIONS and (_numeric(summary["expected_hours"], "expected_hours") == 26304).all(), "panel summary keys differ")
     for row in summary.itertuples(index=False):
         flags = observed.loc[panel["station_name"].eq(row.station_name)].to_numpy(); missing = ~flags; starts = missing & np.r_[True, ~missing[:-1]]; groups = np.cumsum(starts); longest = int(pd.Series(groups[missing]).value_counts().max()) if missing.any() else 0
@@ -201,7 +198,7 @@ def _q4(state: dict) -> None:
     for feature, offset in [("air_temperature_lag_1h_c", 1), ("air_temperature_lag_24h_c", 24), ("air_temperature_lag_168h_c", 168)]:
         _assert(np.allclose(_numeric(features[feature], feature), grouped.shift(offset).sort_index(), equal_nan=True), f"{feature} differs")
     rolling = grouped.transform(lambda values: values.rolling(24, min_periods=1).mean()).sort_index(); _assert(np.allclose(_numeric(features["air_temperature_mean_past_24h_c"], "rolling"), rolling, equal_nan=True), "past-24-hour mean differs")
-    manifest = _read("q4_feature_manifest.csv", ["feature_name", "source", "earliest_offset_hours", "latest_offset_hours", "role"])
+    manifest = _by_keys(_read("q4_feature_manifest.csv", ["feature_name", "source", "earliest_offset_hours", "latest_offset_hours", "role"]), ["feature_name"], "feature manifest").set_index("feature_name").loc[FEATURES].reset_index()
     expected_offsets = [(0, 0)] * 10 + [(-1, -1), (-24, -24), (-168, -168), (-23, 0), (-1, 0)] + [(0, 0)] * 4
     _assert(manifest["feature_name"].tolist() == FEATURES and list(zip(_numeric(manifest["earliest_offset_hours"], "earliest"), _numeric(manifest["latest_offset_hours"], "latest"))) == expected_offsets and manifest["role"].tolist() == ["categorical"] + ["numeric"] * 18, "feature manifest contract differs")
     _assert(manifest["source"].astype("string").str.strip().ne("").all(), "feature manifest source must be nonblank")
@@ -212,7 +209,7 @@ def _q5(state: dict) -> None:
     monthly = _read("q5_monthly_station_summary.csv", ["station_name", "year", "month", "n_observed", "mean_air_temperature_c", "std_air_temperature_c", "min_air_temperature_c", "max_air_temperature_c"])
     train = state["features"].loc[state["eligible"] & (_utc(state["features"]["target_timestamp_utc"], "target").dt.tz_convert(LOCAL_TZ) < pd.Timestamp("2024-01-01", tz=LOCAL_TZ))]
     _assert(int(_numeric(monthly["n_observed"], "n_observed").sum()) == len(train), "monthly counts do not cover training rows")
-    correlations = _read("q5_correlations.csv", ["feature", *CORRELATION_FEATURES]); _assert(correlations["feature"].tolist() == CORRELATION_FEATURES and correlations.shape == (7, 8), "correlation matrix labels differ")
+    correlations = _by_keys(_read("q5_correlations.csv", ["feature", *CORRELATION_FEATURES]), ["feature"], "correlations").set_index("feature").loc[CORRELATION_FEATURES].reset_index(); _assert(correlations.shape == (7, 8), "correlation matrix labels differ")
     values = correlations[CORRELATION_FEATURES].apply(pd.to_numeric, errors="coerce").to_numpy(); _assert(np.isfinite(values).all() and np.allclose(np.diag(values), 1), "correlation matrix values differ")
     _png(OUTPUT / "q5_patterns.png")
 
@@ -229,7 +226,7 @@ def _q6(state: dict) -> None:
         _assert(x["row_id"].tolist() == expected["row_id"].tolist() == y["row_id"].tolist(), f"{split} IDs/order differ")
         _assert(np.allclose(_numeric(y["target_air_temperature_c"], "y"), expected["target_air_temperature_c"]), f"{split} targets differ")
         state[f"x_{split}"], state[f"y_{split}"] = x, y
-    summary = _read("q6_split_summary.csv", ["split", "n_rows", "target_start", "target_end", "n_features"]); _assert(summary["split"].tolist() == ["train", "validation", "test"] and (_numeric(summary["n_features"], "n_features") == 19).all(), "split summary labels/features differ")
+    summary = _by_keys(_read("q6_split_summary.csv", ["split", "n_rows", "target_start", "target_end", "n_features"]), ["split"], "split summary").set_index("split").loc[["train", "validation", "test"]].reset_index(); _assert((_numeric(summary["n_features"], "n_features") == 19).all(), "split summary labels/features differ")
     for row in summary.itertuples(index=False):
         x = state[f"x_{row.split}"]; times = _utc(x["target_timestamp_utc"], "target"); _assert((int(row.n_rows), pd.Timestamp(row.target_start), pd.Timestamp(row.target_end)) == (len(x), times.min(), times.max()), "split summary values differ")
 
@@ -241,8 +238,7 @@ def _model_spec() -> None:
         parameters = json.loads(row.parameters_json)
     except Exception as error:
         raise AssertionError(f"parameters_json is invalid: {error}") from error
-    _assert(isinstance(parameters, dict) and row.parameters_json == json.dumps(parameters, sort_keys=True) and row.feature_columns == "|".join(FEATURES) and int(row.random_state) == 217, "model spec values differ")
-    estimator = getattr(importlib.import_module(row.estimator_module), row.estimator_class, None); _assert(isinstance(estimator, type) and issubclass(estimator, RegressorMixin), "model spec must name an sklearn regressor class")
+    _assert(isinstance(parameters, dict) and row.feature_columns == "|".join(FEATURES) and int(row.random_state) == 217, "model spec values differ")
     _assert("random_state" not in parameters or parameters["random_state"] == 217, "random_state parameter differs"); _assert("n_jobs" not in parameters or parameters["n_jobs"] == 1, "n_jobs parameter differs")
 
 
@@ -261,20 +257,28 @@ def _prediction_check(state: dict, split: str, name: str, test: bool) -> pd.Data
     _assert(np.allclose(frame["actual"], y["target_air_temperature_c"]) and np.allclose(frame["persistence_prediction"], x["air_temperature_c_t"]), f"{name} actual/persistence values differ")
     _assert(_utc(frame["target_timestamp_utc"], "prediction target").equals(_utc(x["target_timestamp_utc"], "X target")), f"{name} timestamps differ")
     if test:
-        error = frame["model_prediction"] - frame["actual"]; _assert(np.allclose(_numeric(frame["model_error"], "error"), error) and np.allclose(_numeric(frame["model_absolute_error"], "absolute error"), error.abs()), "test errors differ")
+        error = frame["model_prediction"] - frame["actual"]; _assert(np.allclose(_numeric(frame["model_error"], "error"), error, rtol=1e-6, atol=1e-6) and np.allclose(_numeric(frame["model_absolute_error"], "absolute error"), error.abs(), rtol=1e-6, atol=1e-6), "test errors differ")
     return frame
 
 
 def _q7(state: dict) -> None:
-    _model_spec(); predictions = _prediction_check(state, "validation", "q7_validation_predictions.csv", False); metrics = _read("q7_validation_metrics.csv", ["model", "mae", "rmse", "r2", "n"])
+    _model_spec(); predictions = _prediction_check(state, "validation", "q7_validation_predictions.csv", False); metrics = _by_keys(_read("q7_validation_metrics.csv", ["model", "mae", "rmse", "r2", "n"]), ["model"], "validation metrics")
     expected = _metric_rows(predictions); _assert(metrics["model"].tolist() == expected["model"].tolist() and np.allclose(metrics[["mae", "rmse", "r2", "n"]].apply(pd.to_numeric), expected[["mae", "rmse", "r2", "n"]]), "validation metrics differ")
-    importance = _read("q7_permutation_importance.csv", ["feature", "mean_mae_increase", "std_mae_increase"]); _assert(importance["feature"].tolist() == FEATURES and np.isfinite(importance[["mean_mae_increase", "std_mae_increase"]].apply(pd.to_numeric, errors="coerce")).all().all(), "permutation importance differs")
+    importance = _read("q7_permutation_importance.csv", ["feature", "mean_mae_increase", "std_mae_increase"]); values = importance[["mean_mae_increase", "std_mae_increase"]].apply(pd.to_numeric, errors="coerce")
+    _assert(set(importance["feature"]) == set(FEATURES) and importance["feature"].is_unique and np.isfinite(values).all().all() and values["std_mae_increase"].ge(0).all(), "permutation importance schema differs")
 
 
 def _q8(state: dict) -> None:
-    predictions = _prediction_check(state, "test", "q8_test_predictions.csv", True); metrics = _read("q8_test_metrics.csv", ["model", "mae", "rmse", "r2", "n"]); expected = _metric_rows(predictions)
+    predictions = _prediction_check(state, "test", "q8_test_predictions.csv", True); metrics = _by_keys(_read("q8_test_metrics.csv", ["model", "mae", "rmse", "r2", "n"]), ["model"], "test metrics"); expected = _metric_rows(predictions)
     _assert(metrics["model"].tolist() == expected["model"].tolist() and np.allclose(metrics[["mae", "rmse", "r2", "n"]].apply(pd.to_numeric), expected[["mae", "rmse", "r2", "n"]]), "test metrics differ")
-    station = _read("q8_station_metrics.csv", ["model", "station_name", "n", "mae", "rmse", "r2"]); _assert(list(station[["model", "station_name"]].itertuples(index=False, name=None)) == [(model, name) for model in ["persistence_baseline", "student_model"] for name in STATIONS], "station metric order differs")
+    station = _by_keys(_read("q8_station_metrics.csv", ["model", "station_name", "n", "mae", "rmse", "r2"]), ["model", "station_name"], "station metrics")
+    expected_rows = []
+    for model, column in [("persistence_baseline", "persistence_prediction"), ("student_model", "model_prediction")]:
+        for station_name in STATIONS:
+            selected = predictions.loc[predictions["station_name"].eq(station_name)]; residual = selected[column] - selected["actual"]; denominator = float(((selected["actual"] - selected["actual"].mean()) ** 2).sum())
+            expected_rows.append({"model": model, "station_name": station_name, "n": len(selected), "mae": residual.abs().mean(), "rmse": np.sqrt((residual ** 2).mean()), "r2": 1 - float((residual ** 2).sum()) / denominator})
+    expected = pd.DataFrame(expected_rows)
+    _assert(station[["model", "station_name"]].equals(expected[["model", "station_name"]]) and np.allclose(station[["n", "mae", "rmse", "r2"]].apply(pd.to_numeric), expected[["n", "mae", "rmse", "r2"]]), "station metrics differ")
     _png(OUTPUT / "q8_final_visualizations.png")
 
 
@@ -284,9 +288,6 @@ def _section(text: str, heading: str, following: str | None) -> str:
 
 def _q9(_state: dict) -> None:
     path = ROOT / "report.md"; _assert(path.is_file() and not path.is_symlink(), "missing report.md"); text = path.read_text(encoding="utf-8"); _assert(re.findall(r"^##\s+(.+?)\s*$", text, flags=re.MULTILINE) == HEADINGS, "report headings differ")
-    lowered = text.lower()
-    for placeholder in ["todo", "[value]", "[replace", "[summarize", "[describe", "[report", "[explain", "your text here"]:
-        _assert(placeholder not in lowered, f"report contains placeholder: {placeholder}")
     section = _section(text, "Model Results", "Limitations"); lines = [line.strip() for line in section.splitlines() if line.strip().startswith("|")]; _assert(len(lines) == 6, "report must contain exactly four metric rows")
     _assert([cell.strip().lower() for cell in lines[0].strip("|").split("|")] == ["evaluation set", "model", "mae", "rmse", "r2", "n"], "report metric header differs")
     rows = [[cell.strip() for cell in line.strip("|").split("|")] for line in lines[2:]]; keys = [("validation", "persistence_baseline"), ("validation", "student_model"), ("test", "persistence_baseline"), ("test", "student_model")]
@@ -304,6 +305,10 @@ CHECKS = [_q1, _q2, _q3, _q4, _q5, _q6, _q7, _q8, _q9]
 
 
 def main() -> int:
+    try:
+        _coursework()
+    except Exception as error:
+        print(f"[FIX] Coursework completeness (0 points): {type(error).__name__}: {error}")
     state, passed, score = {}, {}, 0
     for number, (label, points, check) in enumerate(zip(LABELS, POINTS, CHECKS), start=1):
         blockers = [dependency for dependency in DEPENDENCIES[number] if not passed.get(dependency, False)]

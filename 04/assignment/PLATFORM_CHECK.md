@@ -1,8 +1,8 @@
 # Assignment 04 platform delivery
 
-This required checklist covers local notebook execution and GUI delivery. It is reviewed separately from the notebook result because a grading checkout cannot prove which local interface you operated. Do not use command-line Git.
+This required checklist covers artifact delivery and GUI workflow. Grading reads the committed CSVs without executing the notebook. Do not use command-line Git.
 
-Assignment 04 must be completed in clean local Jupyter or the VS Code notebook interface. Lecture 04 demos may be shown in Colab, but this assignment is local-first and should not be uploaded by itself.
+Assignment 04 is local-first. Use the supplied notebook or another editor to create the committed CSV artifacts; grading reads committed artifacts without executing the notebook. Lecture 04 demos may be shown in Colab, but this assignment should not be uploaded by itself.
 
 ## Open the assignment repository
 
@@ -10,20 +10,15 @@ Assignment 04 must be completed in clean local Jupyter or the VS Code notebook i
 2. Open that repository locally with GitHub Desktop or VS Code Source Control.
 3. Open the repository folder in VS Code and confirm it contains this `PLATFORM_CHECK.md`.
 4. Switch to `main` if necessary, select **Sync Changes**, and confirm there are no unfinished changes.
-5. Open `assignment.ipynb` in the local notebook interface.
-6. Select the Python 3 environment created from `.python-version` and `requirements.txt`.
+5. For `assignment.ipynb`, open it in the local notebook interface and select the Python 3 environment created from `.python-version` and `requirements.txt`.
 
-## Complete a clean notebook run
+## Create the milestone artifacts
 
-1. Complete the three notebook tasks without editing the supplied setup cell.
-2. Save the notebook.
-3. Use **Restart Kernel and Run All Cells** or the equivalent two local-Jupyter controls.
-4. Confirm that the final cell prints `Assignment 04 fresh-run verification passed`.
-5. Confirm that `output/labeled_block.csv` and `output/selected_purchases.csv` were freshly recreated.
-6. Open a terminal in the assignment directory and run `python check_assignment.py`.
-7. Continue only when the checker prints `All public checks passed.`
+1. Complete the three tasks without editing the supplied setup cell.
+2. Save the completed notebook source, create `output/labeled_block.csv` and `output/selected_purchases.csv`, and run `python check_assignment.py`.
+3. Continue only when the checker prints `All public checks passed.`
 
-Stored notebook output is not grading evidence. The managed grader executes a disposable fresh copy and regenerates the CSV files.
+The automated grader reads the committed CSV files directly. A notebook rerun is optional local QA.
 
 ## Inspect, commit, and push
 

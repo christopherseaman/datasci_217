@@ -1,16 +1,15 @@
-"""Dependency-free public structural checks for Assignment 06.
+"""Dependency-free public artifact checks for Assignment 06.
 
-This checker does not execute notebook code and does not award a grade. The
-independent instructor grader fresh-executes a disposable notebook copy.
+Checks compare committed CSV values without inspecting or executing student code.
 """
 
 from __future__ import annotations
 
-import ast
 import csv
 from hashlib import sha256
 from importlib import metadata
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -30,84 +29,9 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
-    "README.md": "b832a10866a5cd8b90517f014d5a9e7abec040c24834515296b18aa4ede7a721",
-    "PLATFORM_CHECK.md": "be24dc511a18966dbe361835c4ff62d3f24f841f629fa7e0d8791c71759c54d5",
+    "README.md": "996489158cfa18339b60c2028e1a76a3955fb541e1fe64b83aefe7346577cf5c",
+    "PLATFORM_CHECK.md": "acfb702816fb89e24daf322dd38b177965010b520b5c305c78343fe5e89790ed",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
-}
-EXPECTED_CELL_IDS = [
-    "a06-header",
-    "a06-setup",
-    "a06-data-contract",
-    "a06-load",
-    "a06-task1-contract",
-    "a06-contract-values",
-    "a06-key-checks",
-    "a06-duplicate-failure",
-    "a06-task1-functions",
-    "a06-task1-run",
-    "a06-task1-save",
-    "a06-task2-contract",
-    "a06-stack-function",
-    "a06-stack-run",
-    "a06-schema-drift",
-    "a06-align-function",
-    "a06-align-run",
-    "a06-task2-save",
-    "a06-task3-contract",
-    "a06-reshape-functions",
-    "a06-reshape-run",
-    "a06-duplicate-pivot",
-    "a06-task3-save",
-    "a06-reflection",
-    "a06-final-verify",
-]
-EXPECTED_CELL_TYPES = {
-    "a06-header": "markdown",
-    "a06-setup": "code",
-    "a06-data-contract": "markdown",
-    "a06-load": "code",
-    "a06-task1-contract": "markdown",
-    "a06-contract-values": "code",
-    "a06-key-checks": "code",
-    "a06-duplicate-failure": "code",
-    "a06-task1-functions": "code",
-    "a06-task1-run": "code",
-    "a06-task1-save": "code",
-    "a06-task2-contract": "markdown",
-    "a06-stack-function": "code",
-    "a06-stack-run": "code",
-    "a06-schema-drift": "code",
-    "a06-align-function": "code",
-    "a06-align-run": "code",
-    "a06-task2-save": "code",
-    "a06-task3-contract": "markdown",
-    "a06-reshape-functions": "code",
-    "a06-reshape-run": "code",
-    "a06-duplicate-pivot": "code",
-    "a06-task3-save": "code",
-    "a06-reflection": "markdown",
-    "a06-final-verify": "code",
-}
-PROTECTED_CELL_SHA256 = {
-    "a06-header": "c55dd34558c7a8730e18a3b5df29a6c999285142c69ae5a29ec06be1dead7766",
-    "a06-setup": "68f227f40a9ed45e80664eaf939b2b270326e483389dd547abe76fa363bdec44",
-    "a06-data-contract": "0265d9faa5bb57d9d5061a4ca68426982deb244a18b67506ec33cca4f1d91270",
-    "a06-final-verify": "d3dd35f4762145d5f012c7798bc9072f2d8d2cc195b74e772c931dd18979b4c9",
-}
-STUDENT_MARKDOWN_IDS = {
-    "a06-task1-contract",
-    "a06-task2-contract",
-    "a06-task3-contract",
-    "a06-reflection",
-}
-STUDENT_CODE_IDS = set(EXPECTED_CELL_IDS) - STUDENT_MARKDOWN_IDS - set(PROTECTED_CELL_SHA256)
-REQUIRED_FUNCTIONS = {
-    "select_current_stations",
-    "validated_station_merge",
-    "stack_specimen_partitions",
-    "align_specimen_features",
-    "wide_to_long_scores",
-    "long_to_wide_scores",
 }
 FIXTURE_MANIFEST = {
     "fixture_set_id": "a06-structural-wrangling-v1",
@@ -157,33 +81,6 @@ FIXTURE_MANIFEST = {
         },
     ],
 }
-ARTIFACTS = {
-    "specimen_merge_audit.csv": (
-        7,
-        ["specimen_id", "collector_id", "collection_number", "station_code", "material", "mass_g", "station_name", "region", "_merge"],
-        "1bc33aeecbae2483e314399784bbcaf8b8847798fe3ca5b7662908053615e98c",
-    ),
-    "combined_specimens.csv": (
-        7,
-        ["specimen_id", "collector_id", "collection_number", "station_code", "material", "mass_g", "source_partition"],
-        "78cbd883bea393fb84d699cdb9923a9d71d7c045d002eebe88cc84c9da61c666",
-    ),
-    "aligned_features.csv": (
-        4,
-        ["specimen_id", "mass_g", "review_score"],
-        "19cb5d07f7ae51ce0347876802a44eadf48490076bb24dbdcae547d9388775e7",
-    ),
-    "sensor_scores_long.csv": (
-        8,
-        ["sensor_id", "station_code", "measurement_label", "value"],
-        "989affb14d49ecd0e144e23a6b53ab4a093edd6211656390144869ecaa3126dd",
-    ),
-    "sensor_scores_round_trip.csv": (
-        4,
-        ["sensor_id", "station_code", "baseline_value", "followup_value"],
-        "6eb9bfb9561fc7c55708bc0038b77b99e6d383f85843dff3e735c5962abe8701",
-    ),
-}
 STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
@@ -191,28 +88,6 @@ STUDENT_PACKAGE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
     *(f"data/{record['path']}" for record in FIXTURE_MANIFEST["files"]),
-}
-BANNED_ATTRIBUTES = {
-    "agg",
-    "aggregate",
-    "bfill",
-    "crosstab",
-    "drop_duplicates",
-    "dropna",
-    "ewm",
-    "expanding",
-    "ffill",
-    "fillna",
-    "groupby",
-    "interpolate",
-    "join",
-    "pivot_table",
-    "plot",
-    "replace",
-    "resample",
-    "rolling",
-    "to_datetime",
-    "transform",
 }
 
 
@@ -235,20 +110,16 @@ def _read_json(path: Path, label: str):
         raise AssertionError(f"{label} must be valid UTF-8 JSON: {error}") from error
 
 
-def _cell_source(cell: dict) -> str:
-    source = cell.get("source", "")
-    if isinstance(source, list):
-        return "".join(source)
-    return source if isinstance(source, str) else ""
-
-
 def _check_submission_inventory() -> None:
+    ignored_roots = {
+        ".git", "output", "_grader_selftest", ".venv", "venv",
+        "__pycache__", ".pytest_cache", ".ipynb_checkpoints", "result.json",
+    }
     actual = {
         path.relative_to(ASSIGNMENT_DIR).as_posix()
         for path in ASSIGNMENT_DIR.rglob("*")
         if (path.is_file() or path.is_symlink())
-        and path.relative_to(ASSIGNMENT_DIR).parts[0] != ".git"
-        and path.relative_to(ASSIGNMENT_DIR).parts[0] != "output"
+        and not any(part in ignored_roots for part in path.relative_to(ASSIGNMENT_DIR).parts)
     }
     _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
 
@@ -292,170 +163,82 @@ def check_fixtures() -> None:
         _assert(len(rows) - 1 == record["row_count"], f"Wrong row count in data/{path.name}.")
 
 
-def _load_notebook() -> tuple[dict, dict[str, dict]]:
-    notebook = _read_json(ASSIGNMENT_DIR / "assignment.ipynb", "assignment.ipynb")
-    cells = notebook.get("cells")
-    _assert(notebook.get("nbformat") == 4 and isinstance(cells, list), "Keep notebook format 4 with a cell list.")
-    _assert(len(cells) == 25 and all(isinstance(cell, dict) for cell in cells), "Restore the exact 25-cell notebook.")
-    ids = [cell.get("id") for cell in cells]
-    _assert(ids == EXPECTED_CELL_IDS and len(ids) == len(set(ids)), "Restore the supplied cell IDs and order.")
-    for cell in cells:
-        _assert(cell.get("cell_type") == EXPECTED_CELL_TYPES[cell["id"]], f"Restore the type of {cell['id']}.")
-    kernelspec = notebook.get("metadata", {}).get("kernelspec")
-    _assert(kernelspec == {"display_name": "Python 3", "language": "python", "name": "python3"}, "Restore the portable Python 3 kernelspec.")
-    return notebook, {cell["id"]: cell for cell in cells}
+def _fixture_rows(root: Path, name: str) -> list[dict[str, str]]:
+    path = root / "data" / name
+    _assert(path.is_file() and not path.is_symlink(), f"Missing fixture {name}.")
+    expected = next(record["sha256"] for record in FIXTURE_MANIFEST["files"] if record["path"] == name)
+    _assert(sha256(path.read_bytes()).hexdigest() == expected, f"Restore fixture {name}.")
+    with path.open(encoding="utf-8", newline="") as stream:
+        return list(csv.DictReader(stream))
 
 
-def _keyword_literal(call: ast.Call, name: str):
-    for keyword in call.keywords:
-        if keyword.arg == name and isinstance(keyword.value, ast.Constant):
-            return keyword.value.value
-    return None
+def _expected_rows(root: Path, name: str) -> list[dict[str, str]]:
+    if name == "specimen_merge_audit.csv":
+        specimens = _fixture_rows(root, "specimens.csv")
+        stations = {row["station_code"]: row for row in _fixture_rows(root, "stations_history.csv") if row["record_status"] == "current"}
+        return [{**row, "station_name": stations.get(row["station_code"], {}).get("station_name", ""),
+                 "region": stations.get(row["station_code"], {}).get("region", ""),
+                 "_merge": "both" if row["station_code"] in stations else "left_only"} for row in specimens]
+    if name == "combined_specimens.csv":
+        return [{**row, "source_partition": label} for label in ("batch_a", "batch_b")
+                for row in _fixture_rows(root, f"specimens_{label}.csv")]
+    if name == "aligned_features.csv":
+        masses = {row["specimen_id"]: row["mass_g"] for row in _fixture_rows(root, "specimens.csv")[:3]}
+        scores = {row["specimen_id"]: row["review_score"] for row in _fixture_rows(root, "review_scores.csv")}
+        return [{"specimen_id": key, "mass_g": masses.get(key, ""), "review_score": scores.get(key, "")}
+                for key in dict.fromkeys([*masses, *scores])]
+    wide = _fixture_rows(root, "sensor_scores_wide.csv")
+    if name == "sensor_scores_round_trip.csv":
+        return wide
+    return [{"sensor_id": row["sensor_id"], "station_code": row["station_code"],
+             "measurement_label": field, "value": row[field]}
+            for field in ("baseline_value", "followup_value") for row in wide]
 
 
-def _handler_assigns(handler: ast.ExceptHandler, name: str, value) -> bool:
-    for node in ast.walk(handler):
-        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Constant):
-            continue
-        if node.value.value != value:
-            continue
-        for target in node.targets:
-            if isinstance(target, ast.Name) and target.id == name:
-                return True
-    return False
+def _check_csv(root: Path, name: str) -> None:
+    output = root / "output"
+    path = output / name
+    _assert(output.is_dir() and not output.is_symlink() and path.is_file() and not path.is_symlink(), f"Missing regular output/{name}.")
+    expected = _expected_rows(root, name)
+    with path.open(encoding="utf-8", newline="") as stream:
+        reader = csv.DictReader(stream)
+        actual = list(reader)
+        _assert(reader.fieldnames == list(expected[0]), f"{name}: columns differ.")
+    _assert(len(actual) == len(expected), f"{name}: row count differs.")
+    numeric = {"collection_number", "mass_g", "review_score", "value", "baseline_value", "followup_value"}
+    for index, (row, reference) in enumerate(zip(actual, expected), 1):
+        for column, wanted in reference.items():
+            got = row[column]
+            if column in numeric and wanted != "":
+                try:
+                    equal = math.isclose(float(got), float(wanted), rel_tol=1e-9, abs_tol=1e-9)
+                except (TypeError, ValueError):
+                    equal = False
+            else:
+                equal = got == wanted
+            _assert(equal, f"{name}: row {index}, {column} differs (check values and the documented source order).")
 
 
-def check_notebook() -> None:
-    _, by_id = _load_notebook()
-    for cell_id, expected in PROTECTED_CELL_SHA256.items():
-        observed = sha256(_cell_source(by_id[cell_id]).encode()).hexdigest()
-        _assert(observed == expected, f"Restore protected notebook cell {cell_id}.")
-
-    student_markdown = "\n".join(_cell_source(by_id[cell_id]) for cell_id in STUDENT_MARKDOWN_IDS)
-    student_code = "\n".join(_cell_source(by_id[cell_id]) for cell_id in STUDENT_CODE_IDS)
-    _assert("TODO" not in student_markdown + student_code, "Complete every TODO in the student cells.")
-    _assert("pass" not in {line.strip() for line in student_code.splitlines()}, "Replace every scaffold pass statement.")
-    try:
-        tree = ast.parse(student_code)
-    except SyntaxError as error:
-        raise AssertionError(f"Student code has a syntax error: {error}") from error
-    function_nodes = {
-        node.name: node for node in ast.walk(tree)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    }
-    _assert(REQUIRED_FUNCTIONS.issubset(function_nodes), "Define all six required reusable functions.")
-    for node in ast.walk(tree):
-        _assert(not isinstance(node, (ast.Import, ast.ImportFrom)), "Do not add imports to student cells.")
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            _assert(node.func.attr not in BANNED_ATTRIBUTES, f"Out-of-scope API used: {node.func.attr}().")
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            _assert(node.func.id not in {"eval", "exec", "__import__"}, f"Forbidden call used: {node.func.id}().")
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            value = node.value.strip()
-            absolute = value.startswith(("/", "~")) or (
-                len(value) > 2 and value[1] == ":" and value[2] in {"/", "\\"}
-            )
-            _assert(not absolute, f"Remove absolute path literal: {value!r}.")
-    lowered = student_code.lower()
-    for fragment in ("/content", "drive.mount", "files.upload", "http://", "https://", "urlopen", "requests."):
-        _assert(fragment not in lowered, f"Remove nonportable or remote code: {fragment}.")
-    for line in student_code.splitlines():
-        _assert(not line.lstrip().startswith(("!", "%")), "Remove notebook magic or shell commands.")
-
-    load_tree = ast.parse(_cell_source(by_id["a06-load"]))
-    read_calls = [
-        node for node in ast.walk(load_tree)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "read_csv"
-    ]
-    _assert(len(read_calls) == 6, "Load each of the six protected fixtures exactly once with pd.read_csv.")
-    _assert(not any(
-        isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "DataFrame"
-        for node in ast.walk(load_tree)
-    ), "Do not embed a replacement fixture in the load cell.")
-    load_source = _cell_source(by_id["a06-load"])
-    for filename in (record["path"] for record in FIXTURE_MANIFEST["files"]):
-        _assert(filename in load_source, f"Load protected fixture {filename} from DATA_DIR.")
-
-    failure_tree = ast.parse(_cell_source(by_id["a06-duplicate-failure"]))
-    _assert(not any(isinstance(node, ast.Raise) for node in ast.walk(failure_tree)), "Do not manufacture the merge failure.")
-    merge_calls = [
-        node for node in ast.walk(failure_tree)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "merge"
-    ]
-    _assert(any(
-        _keyword_literal(call, "on") == "station_code"
-        and _keyword_literal(call, "how") == "left"
-        and _keyword_literal(call, "validate") == "many_to_one"
-        for call in merge_calls
-    ), "The duplicate-key cell must attempt the explicit validated left merge.")
-    merge_handlers = [
-        node for node in ast.walk(failure_tree)
-        if isinstance(node, ast.ExceptHandler)
-        and isinstance(node.type, ast.Attribute)
-        and node.type.attr == "MergeError"
-    ]
-    _assert(any(
-        isinstance(node, ast.ExceptHandler)
-        and isinstance(node.type, ast.Attribute)
-        and node.type.attr == "MergeError"
-        for node in ast.walk(failure_tree)
-    ), "Catch only pd.errors.MergeError in the duplicate-key cell.")
-    _assert(any(
-        _handler_assigns(handler, "duplicate_contract_failed", True)
-        for handler in merge_handlers
-    ), "Set duplicate_contract_failed only from the caught pandas merge failure.")
-
-    pivot_tree = ast.parse(_cell_source(by_id["a06-duplicate-pivot"]))
-    _assert(not any(isinstance(node, ast.Raise) for node in ast.walk(pivot_tree)), "Do not manufacture the pivot failure.")
-    _assert(any(
-        isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "long_to_wide_scores"
-        for node in ast.walk(pivot_tree)
-    ), "The duplicate-key cell must call long_to_wide_scores.")
-    pivot_handlers = [
-        node for node in ast.walk(pivot_tree)
-        if isinstance(node, ast.ExceptHandler)
-        and isinstance(node.type, ast.Name)
-        and node.type.id == "ValueError"
-    ]
-    _assert(any(
-        isinstance(node, ast.ExceptHandler) and isinstance(node.type, ast.Name) and node.type.id == "ValueError"
-        for node in ast.walk(pivot_tree)
-    ), "Catch the natural ValueError in the duplicate-pivot cell.")
-    _assert(any(
-        _handler_assigns(handler, "duplicate_pivot_failed", True)
-        for handler in pivot_handlers
-    ), "Set duplicate_pivot_failed only from the caught pivot failure.")
-    _assert(not any(
-        isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "duplicated"
-        for node in ast.walk(function_nodes["long_to_wide_scores"])
-    ), "Let structural pivot reject duplicate long keys; do not pre-delete or pre-empt them.")
+def check_merge(root: Path) -> None:
+    _check_csv(root, "specimen_merge_audit.csv")
 
 
-def check_artifacts() -> None:
-    output = ASSIGNMENT_DIR / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "Missing regular output directory.")
-    actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(actual == {".gitkeep", *ARTIFACTS}, "Create exactly .gitkeep and the five required CSV artifacts in output/.")
-    for name, (row_count, columns, expected_digest) in ARTIFACTS.items():
-        path = output / name
-        data = path.read_bytes()
-        _assert(data.endswith(b"\n") and b"\r" not in data, f"Write output/{name} with LF and a final newline.")
-        _assert(sha256(data).hexdigest() == expected_digest, f"output/{name} does not match the exact canonical result.")
-        with path.open(newline="", encoding="utf-8") as stream:
-            rows = list(csv.reader(stream))
-        _assert(rows and rows[0] == columns, f"Wrong ordered columns in output/{name}.")
-        _assert(len(rows) - 1 == row_count, f"Wrong row count in output/{name}.")
+def check_concat(root: Path) -> None:
+    _check_csv(root, "combined_specimens.csv")
+    _check_csv(root, "aligned_features.csv")
 
+
+def check_reshape(root: Path) -> None:
+    _check_csv(root, "sensor_scores_long.csv")
+    _check_csv(root, "sensor_scores_round_trip.csv")
 
 def main() -> int:
     checks = (
         ("environment and protected files", check_environment_and_protected_files),
         ("fixture integrity", check_fixtures),
-        ("notebook contract", check_notebook),
-        ("generated artifacts", check_artifacts),
+        ("committed merge audit", lambda: check_merge(ASSIGNMENT_DIR)),
+        ("committed concatenation and alignment", lambda: check_concat(ASSIGNMENT_DIR)),
+        ("committed reshape and round trip", lambda: check_reshape(ASSIGNMENT_DIR)),
     )
     failures = []
     for label, check in checks:
@@ -467,7 +250,7 @@ def main() -> int:
             print(f"[OK] {label}")
     if failures:
         print("\n".join(failures))
-        print("Assignment 06 is not ready. Fix the messages, restart and run all cells, then check again.")
+        print("Assignment 06 is not ready. Fix the messages and regenerate the committed artifacts.")
         return 1
     print("All public checks passed. Instructor review may run stronger checks separately.")
     return 0

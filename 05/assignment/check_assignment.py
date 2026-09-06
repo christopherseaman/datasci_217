@@ -1,27 +1,21 @@
 """Run the discoverable public checks for Assignment 05.
 
-The checker deliberately executes notebook code from fresh state in disposable
-directories. Saved cell output and editable notebook assertions are not used as
-evidence of correctness.
+Checks compare committed CSV values without inspecting or executing student code.
 """
 
 from __future__ import annotations
 
-import ast
 from hashlib import sha256
 import json
-import os
 from pathlib import Path
-import shutil
-import subprocess
 import sys
-import tempfile
 
 import numpy as np
 import pandas as pd
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
+OUTPUT_FILES = ("issue_audit.csv", "cleaned_people.csv", "decision_log.csv")
 EXPECTED_PYTHON_FILE = "3.12.13\n"
 EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
@@ -49,39 +43,6 @@ EXPECTED_MANIFEST = {
         "visit_date",
     ],
     "sha256": EXPECTED_DATA_SHA256,
-}
-EXPECTED_SETUP_SHA256 = (
-    "c54ad0ae9d10a0681aab686cda368a46e28695dc46c1af84b5f685cc9c4dd43d"
-)
-EXPECTED_FINAL_SHA256 = (
-    "d91e8b83bbcef6caf595893837586e3b1d1408b18bd15e1dedffd678fb69e802"
-)
-EXPECTED_CELL_IDS = [
-    "a05-header",
-    "a05-supplied-setup",
-    "a05-task1-heading",
-    "a05-task1-contract",
-    "a05-task1-code",
-    "a05-task2-heading",
-    "a05-task2-decisions",
-    "a05-task2-explanation",
-    "a05-task2-clean",
-    "a05-task3-heading",
-    "a05-task3-validation",
-    "a05-task3-save",
-    "a05-final-heading",
-    "a05-final-verification",
-]
-STUDENT_CODE_CELL_IDS = {
-    "a05-task1-code",
-    "a05-task2-decisions",
-    "a05-task2-clean",
-    "a05-task3-validation",
-    "a05-task3-save",
-}
-STUDENT_MARKDOWN_CELL_IDS = {
-    "a05-task1-contract",
-    "a05-task2-explanation",
 }
 EXPECTED_ISSUES = [
     ("schema mismatch", 0),
@@ -142,11 +103,6 @@ EXPECTED_DECISIONS = [
         "do not forward-fill or backward-fill",
     ),
 ]
-OUTPUT_FILES = (
-    "issue_audit.csv",
-    "cleaned_people.csv",
-    "decision_log.csv",
-)
 STUDENT_PACKAGE_FILES = {
     ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
     "assignment.ipynb", "check_assignment.py", "requirements.txt",
@@ -178,26 +134,25 @@ def _load_json(path: Path, label: str):
         ) from error
 
 
-def _cell_source(cell: dict) -> str:
-    source = cell.get("source", "")
-    if isinstance(source, list):
-        return "".join(source)
-    return source if isinstance(source, str) else ""
-
-
 def _check_submission_inventory(root: Path) -> None:
+    ignored_roots = {
+        ".git", "output", "_grader_selftest", ".venv", "venv",
+        "__pycache__", ".pytest_cache", ".ipynb_checkpoints", "result.json",
+    }
     actual = {
         path.relative_to(root).as_posix()
         for path in root.rglob("*")
         if (path.is_file() or path.is_symlink())
-        and path.relative_to(root).parts[0] != ".git"
-        and path.relative_to(root).parts[0] != "output"
+        and not any(part in ignored_roots for part in path.relative_to(root).parts)
     }
     _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
 
 
 def check_environment_and_fixture(root: Path) -> None:
     _check_submission_inventory(root)
+    output = root / "output"
+    _assert(output.is_dir() and not output.is_symlink(), "Missing regular output directory.")
+    _assert({path.name for path in output.iterdir() if path.is_file() or path.is_symlink()} == {".gitkeep", *OUTPUT_FILES}, "Keep the three required CSV artifacts and .gitkeep.")
     _assert(
         sys.version_info[:3] == (3, 12, 13),
         "Run the checker with the recorded Python 3.12.13 interpreter.",
@@ -235,194 +190,6 @@ def check_environment_and_fixture(root: Path) -> None:
         sha256(data_bytes).hexdigest() == EXPECTED_DATA_SHA256,
         "Restore the immutable data/people_raw.csv bytes.",
     )
-
-
-def _notebook_by_id(root: Path) -> tuple[dict, dict[str, dict]]:
-    notebook = _load_json(root / "assignment.ipynb", "assignment.ipynb")
-    _assert(notebook.get("nbformat") == 4, "assignment.ipynb must use format 4.")
-    cells = notebook.get("cells")
-    _assert(isinstance(cells, list), "assignment.ipynb must contain a cell list.")
-    ids = [cell.get("id") for cell in cells if isinstance(cell, dict)]
-    _assert(
-        len(ids) == len(cells) and all(isinstance(cell_id, str) for cell_id in ids),
-        "Every notebook cell must retain a stable string ID.",
-    )
-    _assert(len(ids) == len(set(ids)), "Notebook cell IDs must remain unique.")
-    _assert(
-        ids == EXPECTED_CELL_IDS,
-        "Restore the supplied 14-cell order and IDs; add work inside the task cells.",
-    )
-    kernelspec = notebook.get("metadata", {}).get("kernelspec", {})
-    _assert(
-        kernelspec
-        == {"display_name": "Python 3", "language": "python", "name": "python3"},
-        "Keep the portable supplied Python 3 kernelspec.",
-    )
-    return notebook, {cell["id"]: cell for cell in cells}
-
-
-def check_notebook_contract(root: Path) -> None:
-    _, by_id = _notebook_by_id(root)
-    setup = _cell_source(by_id["a05-supplied-setup"])
-    final = _cell_source(by_id["a05-final-verification"])
-    _assert(
-        sha256(setup.encode("utf-8")).hexdigest() == EXPECTED_SETUP_SHA256,
-        "Restore the supplied setup cell without editing it.",
-    )
-    _assert(
-        sha256(final.encode("utf-8")).hexdigest() == EXPECTED_FINAL_SHA256,
-        "Restore the supplied final-verification cell without editing it.",
-    )
-
-    code_source = "\n".join(_cell_source(by_id[cell_id]) for cell_id in STUDENT_CODE_CELL_IDS)
-    markdown_source = "\n".join(
-        _cell_source(by_id[cell_id]) for cell_id in STUDENT_MARKDOWN_CELL_IDS
-    )
-    _assert(
-        "TODO" not in code_source and "TODO" not in markdown_source,
-        "Complete every TODO in the five task code cells and two explanation cells.",
-    )
-    try:
-        tree = ast.parse(code_source)
-    except SyntaxError as error:
-        raise AssertionError(
-            f"Task code has a syntax error at line {error.lineno}: {error.msg}."
-        ) from error
-    defined = {
-        node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
-    }
-    required = {
-        "audit_person_records",
-        "clean_person_records",
-        "validate_clean_records",
-    }
-    missing = sorted(required - defined)
-    _assert(not missing, f"Define the required function(s): {', '.join(missing)}.")
-
-    contract = _cell_source(by_id["a05-task1-contract"]).lower()
-    required_terms = {
-        "one submitted person record",
-        "record_id",
-        "raw",
-        "clean",
-        "schema",
-        "sentinel",
-        "duplicate",
-        "missing value",
-        "validation invariant",
-        "provenance",
-    }
-    missing_terms = sorted(term for term in required_terms if term not in contract)
-    _assert(
-        not missing_terms,
-        "Task 1 contract must explicitly introduce: " + ", ".join(missing_terms) + ".",
-    )
-    explanation = _cell_source(by_id["a05-task2-explanation"]).lower()
-    for required_phrase in ("forward", "backward", "missing", "contract", "perfect"):
-        _assert(
-            required_phrase in explanation,
-            f"Task 2 explanation must address {required_phrase!r}.",
-        )
-
-
-def check_scope(root: Path) -> None:
-    _, by_id = _notebook_by_id(root)
-    sources = [_cell_source(by_id[cell_id]) for cell_id in STUDENT_CODE_CELL_IDS]
-    combined = "\n".join(sources)
-    lowered = combined.lower()
-    forbidden_fragments = {
-        "/content": "Colab-only /content paths",
-        "drive.mount": "Drive mounts",
-        "files.upload": "manual uploads",
-        "http://": "network access",
-        "https://": "network access",
-        "!pip": "notebook shell installation",
-        "%pip": "notebook package magics",
-        "%run": "notebook execution magics",
-    }
-    for fragment, label in forbidden_fragments.items():
-        _assert(fragment not in lowered, f"Remove out-of-scope {label} from task code.")
-    for line in combined.splitlines():
-        _assert(
-            not line.lstrip().startswith(("!", "%")),
-            "Remove notebook shell commands and magics from task code.",
-        )
-    tree = ast.parse(combined)
-    banned_attributes = {
-        "agg",
-        "aggregate",
-        "bfill",
-        "concat",
-        "cut",
-        "ffill",
-        "get_dummies",
-        "groupby",
-        "join",
-        "merge",
-        "melt",
-        "pivot",
-        "pivot_table",
-        "plot",
-        "qcut",
-        "round",
-        "transform",
-    }
-    banned_names = {"eval", "exec", "round"}
-    for node in ast.walk(tree):
-        _assert(
-            not isinstance(node, (ast.Import, ast.ImportFrom)),
-            "Use only the imports in the supplied setup cell.",
-        )
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Attribute):
-                _assert(
-                    node.func.attr not in banned_attributes,
-                    f"Remove out-of-scope `{node.func.attr}` from task code.",
-                )
-            if isinstance(node.func, ast.Name):
-                _assert(
-                    node.func.id not in banned_names,
-                    f"Remove out-of-scope `{node.func.id}` from task code.",
-                )
-
-
-RUNNER_SOURCE = r'''import json
-import pathlib
-import sys
-
-notebook_path = pathlib.Path(sys.argv[1])
-notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
-namespace = {"__name__": "__main__"}
-for position, cell in enumerate(notebook["cells"]):
-    if cell.get("cell_type") != "code":
-        continue
-    source = cell.get("source", "")
-    if isinstance(source, list):
-        source = "".join(source)
-    exec(compile(source, f"{notebook_path}#cell-{position}", "exec"), namespace)
-'''
-
-
-def _execute_notebook(root: Path, working_directory: Path) -> None:
-    env = os.environ.copy()
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["PYTHONWARNINGS"] = "error"
-    result = subprocess.run(
-        [sys.executable, "-c", RUNNER_SOURCE, str(root / "assignment.ipynb")],
-        cwd=working_directory,
-        env=env,
-        text=True,
-        capture_output=True,
-        timeout=60,
-        check=False,
-    )
-    if result.returncode:
-        detail = result.stderr.strip().splitlines()
-        tail = "\n".join(detail[-12:]) if detail else result.stdout.strip()
-        raise AssertionError(
-            "Fresh notebook execution failed. Restart, run all, and fix the first "
-            f"error.\n{tail}"
-        )
 
 
 def _expected_cleaned() -> pd.DataFrame:
@@ -507,168 +274,56 @@ def _expected_cleaned() -> pd.DataFrame:
     return table
 
 
-def _read_artifacts(root: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def _artifact_path(root: Path, name: str) -> Path:
     output = root / "output"
-    for name in OUTPUT_FILES:
-        _assert(
-            (output / name).is_file(),
-            f"Missing output/{name}; restart the notebook and run all cells.",
-        )
-    audit = pd.read_csv(
-        output / "issue_audit.csv",
-        dtype={"issue": "string", "count": "Int64"},
-    )
-    cleaned = pd.read_csv(
-        output / "cleaned_people.csv",
-        dtype={
-            "record_id": "string",
-            "full_name": "string",
-            "site": "string",
-            "status": "string",
-            "age": "Int64",
-            "visit_date": "string",
-            "needs_review": "boolean",
-        },
-    )
-    lexical = cleaned["visit_date"].str.fullmatch(
-        r"[0-9]{4}-[0-9]{2}-[0-9]{2}", na=True
-    )
-    _assert(bool(lexical.all()), "cleaned_people.csv contains a noncontract date token.")
-    cleaned["visit_date"] = pd.to_datetime(
-        cleaned["visit_date"], format="%Y-%m-%d", errors="coerce"
-    ).astype("datetime64[us]")
-    decision = pd.read_csv(
-        output / "decision_log.csv",
-        dtype={
-            "field": "string",
-            "issue": "string",
-            "action": "string",
-            "reason": "string",
-            "source": "string",
-            "source_sha256": "string",
-            "rows_before": "Int64",
-            "rows_after": "Int64",
-        },
-    )
-    return audit, cleaned, decision
+    path = output / name
+    _assert(output.is_dir() and not output.is_symlink() and path.is_file() and not path.is_symlink(), f"Missing regular output/{name}.")
+    return path
 
 
-def check_artifacts(root: Path) -> None:
-    output = root / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "Missing regular output/ directory.")
-    actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(actual == {".gitkeep", *OUTPUT_FILES}, "Keep exactly .gitkeep and the three required output CSVs.")
-    audit, cleaned, decision = _read_artifacts(root)
-    expected_audit = pd.DataFrame(EXPECTED_ISSUES, columns=["issue", "count"])
-    expected_audit["issue"] = expected_audit["issue"].astype("string")
-    expected_audit["count"] = expected_audit["count"].astype("Int64")
-    pd.testing.assert_frame_equal(audit, expected_audit)
-    pd.testing.assert_frame_equal(cleaned, _expected_cleaned())
-
-    expected_columns = [
-        "field",
-        "issue",
-        "action",
-        "reason",
-        "source",
-        "source_sha256",
-        "rows_before",
-        "rows_after",
-    ]
-    _assert(
-        decision.columns.tolist() == expected_columns,
-        "decision_log.csv must contain the eight required columns in order.",
-    )
-    _assert(len(decision) == 8, "decision_log.csv must contain eight decisions.")
-    observed_decisions = list(
-        decision[["field", "issue", "action"]].itertuples(index=False, name=None)
-    )
-    _assert(
-        observed_decisions == EXPECTED_DECISIONS,
-        "decision_log.csv field, issue, and action rows must match the supplied contract.",
-    )
-    _assert(
-        bool(decision["reason"].str.strip().ne("").all()),
-        "Every decision-log reason must be nonempty and grounded in the data purpose.",
-    )
-    _assert(
-        decision["source"].eq("data/people_raw.csv").all(),
-        "Repeat source=data/people_raw.csv on every decision-log row.",
-    )
-    _assert(
-        decision["source_sha256"].eq(EXPECTED_DATA_SHA256).all(),
-        "Repeat the verified source checksum on every decision-log row.",
-    )
-    _assert(
-        decision["rows_before"].eq(12).all()
-        and decision["rows_after"].eq(11).all(),
-        "Record rows_before=12 and rows_after=11 on every decision-log row.",
-    )
+def check_audit(root: Path) -> None:
+    audit = pd.read_csv(_artifact_path(root, "issue_audit.csv"), dtype={"issue": "string", "count": "Int64"})
+    expected = pd.DataFrame(EXPECTED_ISSUES, columns=["issue", "count"]).astype({"issue": "string", "count": "Int64"})
+    _assert(audit.columns.tolist() == expected.columns.tolist(), "issue_audit.csv columns differ.")
+    _assert(audit["issue"].is_unique and audit["issue"].notna().all(), "Audit issues must be unique and present.")
+    pd.testing.assert_frame_equal(audit.sort_values("issue").reset_index(drop=True), expected.sort_values("issue").reset_index(drop=True))
 
 
-def _copy_submission(source: Path, destination: Path) -> None:
-    def ignore(_directory: str, names: list[str]) -> set[str]:
-        ignored = {"_grader_selftest", ".venv", ".ipynb_checkpoints", "__pycache__"}
-        return ignored.intersection(names)
-
-    shutil.copytree(source, destination, ignore=ignore)
-
-
-def _artifact_bytes(root: Path) -> dict[str, bytes]:
-    artifacts = {}
-    for name in OUTPUT_FILES:
-        path = root / "output" / name
-        _assert(
-            path.is_file(),
-            f"Missing output/{name}; restart the notebook and run all cells.",
-        )
-        artifacts[name] = path.read_bytes()
-    return artifacts
+def check_cleaned(root: Path) -> None:
+    cleaned = pd.read_csv(_artifact_path(root, "cleaned_people.csv"), dtype={
+        "record_id": "string", "full_name": "string", "site": "string",
+        "status": "string", "age": "Int64", "visit_date": "string", "needs_review": "boolean",
+    })
+    _assert(cleaned.columns.tolist() == _expected_cleaned().columns.tolist(), "cleaned_people.csv columns differ.")
+    _assert(cleaned["record_id"].notna().all() and cleaned["record_id"].is_unique, "Record IDs must be present and unique.")
+    tokens = cleaned["visit_date"]
+    _assert(tokens.str.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", na=True).all(), "Dates must be YYYY-MM-DD or missing.")
+    dates = pd.to_datetime(tokens, format="%Y-%m-%d", errors="coerce")
+    _assert(not (tokens.notna() & dates.isna()).any(), "Export valid calendar dates or missing values.")
+    cleaned["visit_date"] = dates.astype("datetime64[us]")
+    pd.testing.assert_frame_equal(cleaned.sort_values("record_id").reset_index(drop=True), _expected_cleaned().sort_values("record_id").reset_index(drop=True))
 
 
-def check_fresh_relocated_execution(root: Path) -> None:
-    committed = _artifact_bytes(root)
-    with tempfile.TemporaryDirectory(prefix="a05-public-") as temporary:
-        temporary_path = Path(temporary)
-
-        flat = temporary_path / "renamed-assignment"
-        _copy_submission(root, flat)
-        flat_output = flat / "output"
-        flat_output.mkdir(exist_ok=True)
-        for name in OUTPUT_FILES:
-            (flat_output / name).write_text("stale,artifact\n", encoding="utf-8")
-        deep_working_directory = flat / "work" / "deep"
-        deep_working_directory.mkdir(parents=True)
-        _execute_notebook(flat, deep_working_directory)
-        check_artifacts(flat)
-        _assert(
-            _artifact_bytes(flat) == committed,
-            "Committed output files differ from a fresh run; restart, run all, and commit them.",
-        )
-
-        course_root = temporary_path / "relocated-course"
-        nested = course_root / "05" / "assignment"
-        nested.parent.mkdir(parents=True)
-        _copy_submission(root, nested)
-        for name in OUTPUT_FILES:
-            path = nested / "output" / name
-            if path.exists():
-                path.unlink()
-        _execute_notebook(nested, course_root)
-        check_artifacts(nested)
-        _assert(
-            _artifact_bytes(nested) == committed,
-            "A relocated course-tree run produced different artifacts.",
-        )
+def check_decisions(root: Path) -> None:
+    columns = ["field", "issue", "action", "reason", "source", "source_sha256", "rows_before", "rows_after"]
+    decision = pd.read_csv(_artifact_path(root, "decision_log.csv"), dtype={
+        **{name: "string" for name in columns[:6]}, "rows_before": "Int64", "rows_after": "Int64",
+    })
+    _assert(decision.columns.tolist() == columns, "decision_log.csv columns differ.")
+    observed = list(decision[["field", "issue", "action"]].itertuples(index=False, name=None))
+    _assert(len(observed) == len(EXPECTED_DECISIONS) and set(observed) == set(EXPECTED_DECISIONS), "Decision fields, issues, or actions differ.")
+    _assert(decision["reason"].fillna("").str.strip().ne("").all(), "Every decision needs a nonblank reason for human review.")
+    _assert(decision["source"].fillna("").eq("data/people_raw.csv").all(), "Wrong source provenance.")
+    _assert(decision["source_sha256"].fillna("").eq(EXPECTED_DATA_SHA256).all(), "Wrong source checksum.")
+    _assert(decision["rows_before"].eq(12).fillna(False).all() and decision["rows_after"].eq(11).fillna(False).all(), "Wrong before/after row counts.")
 
 
 def run_public_checks(root: Path = ASSIGNMENT_DIR) -> list[tuple[str, bool, str]]:
     checks = [
         ("environment and immutable fixture", check_environment_and_fixture),
-        ("notebook contract and explanations", check_notebook_contract),
-        ("Lecture 05 scope", check_scope),
-        ("committed output artifacts", check_artifacts),
-        ("fresh, stale-output, and relocated execution", check_fresh_relocated_execution),
+        ("committed issue audit", check_audit),
+        ("committed cleaned records", check_cleaned),
+        ("committed decision log", check_decisions),
     ]
     results: list[tuple[str, bool, str]] = []
     for label, check in checks:

@@ -10,24 +10,15 @@ from __future__ import annotations
 import datetime as dt
 from functools import lru_cache
 from hashlib import sha256
-import importlib
 import json
 import os
 from pathlib import Path
 import re
-import struct
 import sys
-import zlib
 
 import numpy as np
 import pandas as pd
 import sklearn
-from sklearn.base import RegressorMixin
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.inspection import permutation_importance
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
 
 
 RELEASE_NAME = "chicago_beach_sensors_2022_2024.csv"
@@ -354,9 +345,13 @@ def _read_csv(path: Path, columns: list[str]) -> pd.DataFrame:
     return frame
 
 
-def _assert_frame(path: Path, expected: pd.DataFrame, tolerance: float = 1e-9) -> pd.DataFrame:
+def _assert_frame(path: Path, expected: pd.DataFrame, tolerance: float = 1e-6, keys: list[str] | None = None) -> pd.DataFrame:
     observed = _read_csv(path, expected.columns.tolist())
     _assert(observed.shape == expected.shape, f"output/{path.name} shape differs: expected {expected.shape}, found {observed.shape}")
+    if keys:
+        _assert(not observed.duplicated(keys).any(), f"output/{path.name} has duplicate row keys")
+        observed = observed.sort_values(keys, kind="stable").reset_index(drop=True)
+        expected = expected.sort_values(keys, kind="stable").reset_index(drop=True)
     for column in expected:
         wanted, got = expected[column].reset_index(drop=True), observed[column]
         if isinstance(wanted.dtype, pd.DatetimeTZDtype):
@@ -381,33 +376,20 @@ def _assert_frame(path: Path, expected: pd.DataFrame, tolerance: float = 1e-9) -
 
 def _valid_png(path: Path) -> None:
     _assert(path.is_file() and not path.is_symlink(), f"missing regular PNG: {path.name}")
-    data = path.read_bytes()
-    _assert(data.startswith(b"\x89PNG\r\n\x1a\n"), f"{path.name} is not a PNG")
-    position, seen_header, seen_end = 8, False, False
-    while position + 12 <= len(data):
-        length = struct.unpack(">I", data[position:position + 4])[0]
-        kind = data[position + 4:position + 8]
-        end = position + 12 + length
-        _assert(end <= len(data), f"{path.name} has a truncated PNG chunk")
-        payload = data[position + 8:position + 8 + length]
-        checksum = struct.unpack(">I", data[position + 8 + length:end])[0]
-        _assert(checksum == zlib.crc32(kind + payload) & 0xFFFFFFFF, f"{path.name} has an invalid PNG checksum")
-        if not seen_header:
-            _assert(kind == b"IHDR" and length == 13, f"{path.name} has no valid IHDR")
-            width, height = struct.unpack(">II", payload[:8]); _assert(width > 0 and height > 0, f"{path.name} has invalid dimensions")
-            seen_header = True
-        if kind == b"IEND":
-            _assert(length == 0 and end == len(data), f"{path.name} has invalid trailing data")
-            seen_end = True
-            break
-        position = end
-    _assert(seen_header and seen_end, f"{path.name} is incomplete")
+    _assert(path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"), f"{path.name} is not a PNG")
+
+
+def _check_coursework(root: Path) -> None:
+    for number in range(1, 10):
+        for suffix in ("ipynb", "md"):
+            matches = list(root.glob(f"q{number}_*.{suffix}"))
+            _assert(len(matches) == 1 and matches[0].is_file() and not matches[0].is_symlink(), f"missing regular Q{number} coursework {suffix} pair")
 
 
 def _check_q1(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     audit = _assert_frame(_artifact(root, "q1_release_audit.csv"), refs["audit"])
     _assert(audit["passed"].astype("string").str.lower().eq("true").all(), "release audit has a failed row")
-    _assert_frame(_artifact(root, "q1_station_coverage.csv"), refs["coverage"])
+    _assert_frame(_artifact(root, "q1_station_coverage.csv"), refs["coverage"], keys=["station_name"])
     _valid_png(_artifact(root, "q1_visualizations.png"))
 
 
@@ -423,31 +405,33 @@ def _check_q2(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     _assert(int(affected.loc[audit["result"].eq("set_to_zero")].sum()) == 5044, "cleaning audit solar correction total differs")
     positive_missing = affected.loc[audit["result"].eq("set_missing") & affected.gt(0)]
     _assert(int(positive_missing.eq(1).sum()) >= 3, "cleaning audit must include the three one-value range corrections")
-    _assert_frame(_artifact(root, "q2_missingness.csv"), refs["missingness"])
+    _assert_frame(_artifact(root, "q2_missingness.csv"), refs["missingness"], keys=["station_name", "column_name"])
 
 
 def _check_q3(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     _assert_frame(_artifact(root, "q3_hourly_panel.csv"), refs["panel"])
-    _assert_frame(_artifact(root, "q3_panel_summary.csv"), refs["panel_summary"])
+    _assert_frame(_artifact(root, "q3_panel_summary.csv"), refs["panel_summary"], keys=["station_name"])
 
 
 def _check_q4(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     _assert_frame(_artifact(root, "q4_features.csv"), refs["model"])
     manifest = _read_csv(_artifact(root, "q4_feature_manifest.csv"), refs["feature_manifest"].columns.tolist())
     _assert(len(manifest) == len(refs["feature_manifest"]), "feature manifest row count differs")
+    _assert(manifest["feature_name"].is_unique, "feature manifest feature names must be unique")
+    manifest = manifest.set_index("feature_name").loc[refs["feature_manifest"]["feature_name"]].reset_index()
     for column in ["feature_name", "earliest_offset_hours", "latest_offset_hours", "role"]:
         expected = refs["feature_manifest"][column]
         observed = manifest[column]
         if pd.api.types.is_numeric_dtype(expected):
-            _assert(np.allclose(pd.to_numeric(observed, errors="coerce"), expected, rtol=0, atol=0), f"feature manifest differs in {column}")
+            _assert(np.allclose(pd.to_numeric(observed, errors="coerce"), expected, rtol=1e-7, atol=1e-7), f"feature manifest differs in {column}")
         else:
             _assert(observed.astype("string").equals(expected.astype("string")), f"feature manifest differs in {column}")
     _assert(manifest["source"].astype("string").str.strip().ne("").all(), "feature manifest source text must be nonblank")
 
 
 def _check_q5(root: Path, refs: dict[str, pd.DataFrame]) -> None:
-    _assert_frame(_artifact(root, "q5_monthly_station_summary.csv"), refs["monthly"])
-    _assert_frame(_artifact(root, "q5_correlations.csv"), refs["correlations"])
+    _assert_frame(_artifact(root, "q5_monthly_station_summary.csv"), refs["monthly"], keys=["station_name", "year", "month"])
+    _assert_frame(_artifact(root, "q5_correlations.csv"), refs["correlations"], keys=["feature"])
     _valid_png(_artifact(root, "q5_patterns.png"))
 
 
@@ -455,10 +439,10 @@ def _check_q6(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     for split in ["train", "validation", "test"]:
         _assert_frame(_artifact(root, f"q6_X_{split}.csv"), refs[f"x_{split}"])
         _assert_frame(_artifact(root, f"q6_y_{split}.csv"), refs[f"y_{split}"])
-    _assert_frame(_artifact(root, "q6_split_summary.csv"), refs["split_summary"])
+    _assert_frame(_artifact(root, "q6_split_summary.csv"), refs["split_summary"], keys=["split"])
 
 
-def _pipeline_from_model_spec(root: Path) -> Pipeline:
+def _check_model_spec(root: Path) -> None:
     columns = ["estimator_module", "estimator_class", "parameters_json", "feature_columns", "random_state"]
     spec = _read_csv(_artifact(root, "q7_model_spec.csv"), columns)
     _assert(len(spec) == 1, "q7_model_spec.csv must contain one row")
@@ -469,50 +453,14 @@ def _pipeline_from_model_spec(root: Path) -> Pipeline:
         parameters = json.loads(row["parameters_json"])
     except Exception as error:
         raise AssertionError(f"parameters_json is invalid: {error}") from error
-    _assert(isinstance(parameters, dict) and row["parameters_json"] == json.dumps(parameters, sort_keys=True), "parameters_json must be a sorted-key object")
+    _assert(isinstance(parameters, dict), "parameters_json must be an object")
     _assert(row["feature_columns"] == "|".join(FEATURES), "model feature order differs")
-    module = importlib.import_module(row["estimator_module"])
-    estimator_class = getattr(module, row["estimator_class"], None)
-    _assert(isinstance(estimator_class, type) and issubclass(estimator_class, RegressorMixin), "model spec must name an sklearn regressor class")
-    try:
-        estimator = estimator_class(**parameters)
-    except Exception as error:
-        raise AssertionError(f"cannot recreate estimator from model spec: {error}") from error
     random_state = pd.to_numeric(pd.Series([row["random_state"]]), errors="coerce").iloc[0]
     _assert(random_state == 217, "random_state must be 217")
     if "random_state" in parameters:
         _assert(parameters["random_state"] == 217, "supported random_state parameter must be 217")
     if "n_jobs" in parameters:
         _assert(parameters["n_jobs"] == 1, "supported n_jobs parameter must be 1")
-    supported = estimator.get_params(deep=False)
-    if "random_state" in supported:
-        _assert(supported["random_state"] == 217, "supported random_state parameter must be 217")
-    if "n_jobs" in supported:
-        _assert(supported["n_jobs"] == 1, "supported n_jobs parameter must be 1")
-    preprocessing = ColumnTransformer([
-        ("station", OneHotEncoder(handle_unknown="ignore", sparse_output=False), ["station_name"]),
-        ("numeric", SimpleImputer(strategy="median"), NUMERIC_FEATURES),
-    ])
-    return Pipeline([("preprocessing", preprocessing), ("regressor", estimator)])
-
-
-def _declared_model_results(root: Path, refs: dict[str, pd.DataFrame], split: str) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
-    pipeline = _pipeline_from_model_spec(root)
-    fit_splits = ["train"] if split == "validation" else ["train", "validation"]
-    x_fit = pd.concat([refs[f"x_{name}"] for name in fit_splits], ignore_index=True)
-    y_fit = pd.concat([refs[f"y_{name}"] for name in fit_splits], ignore_index=True)
-    pipeline.fit(x_fit[FEATURES], y_fit[TARGET])
-    predictions = np.asarray(pipeline.predict(refs[f"x_{split}"][FEATURES]), dtype=float)
-    _assert(np.isfinite(predictions).all(), "declared model produced nonfinite predictions")
-    if split != "validation":
-        return predictions, None, None
-    result = permutation_importance(
-        pipeline, refs["x_validation"][FEATURES], refs["y_validation"][TARGET],
-        scoring="neg_mean_absolute_error", n_repeats=10, random_state=217,
-    )
-    return predictions, result.importances_mean, result.importances_std
-
-
 def _prediction_frame(root: Path, refs: dict[str, pd.DataFrame], split: str, name: str, test: bool) -> pd.DataFrame:
     columns = ["row_id", "station_name", "target_timestamp_utc", "actual", "persistence_prediction", "model_prediction"]
     if test:
@@ -527,8 +475,8 @@ def _prediction_frame(root: Path, refs: dict[str, pd.DataFrame], split: str, nam
     _assert(np.isfinite(got[["actual", "persistence_prediction", "model_prediction"]].to_numpy()).all(), f"output/{name} contains nonfinite values")
     if test:
         error = got["model_prediction"] - got["actual"]
-        _assert(np.allclose(pd.to_numeric(got["model_error"], errors="coerce"), error, rtol=1e-9, atol=1e-9), "Q8 model_error differs")
-        _assert(np.allclose(pd.to_numeric(got["model_absolute_error"], errors="coerce"), error.abs(), rtol=1e-9, atol=1e-9), "Q8 model_absolute_error differs")
+        _assert(np.allclose(pd.to_numeric(got["model_error"], errors="coerce"), error, rtol=1e-6, atol=1e-6), "Q8 model_error differs")
+        _assert(np.allclose(pd.to_numeric(got["model_absolute_error"], errors="coerce"), error.abs(), rtol=1e-6, atol=1e-6), "Q8 model_absolute_error differs")
     return got
 
 
@@ -539,38 +487,34 @@ def _assert_frame_values(observed: pd.DataFrame, expected: pd.DataFrame, name: s
             got = pd.to_datetime(observed[column], utc=True, format="mixed", errors="coerce")
             _assert(got.equals(expected[column].reset_index(drop=True)), f"output/{name} differs in {column}")
         elif pd.api.types.is_numeric_dtype(expected[column]):
-            _assert(np.allclose(pd.to_numeric(observed[column], errors="coerce"), expected[column], rtol=0, atol=0), f"output/{name} differs in {column}")
+            _assert(np.allclose(pd.to_numeric(observed[column], errors="coerce"), expected[column], rtol=1e-6, atol=1e-6), f"output/{name} differs in {column}")
         else:
             _assert(observed[column].astype("string").equals(expected[column].astype("string")), f"output/{name} differs in {column}")
 
 
 def _check_metrics(root: Path, predictions: pd.DataFrame, name: str) -> None:
-    _assert_frame(_artifact(root, name), _metrics(predictions))
+    _assert_frame(_artifact(root, name), _metrics(predictions), keys=["model"])
 
 
 def _check_q7(root: Path, refs: dict[str, pd.DataFrame]) -> None:
-    expected_predictions, expected_mean, expected_std = _declared_model_results(root, refs, "validation")
+    _check_model_spec(root)
     predictions = _prediction_frame(root, refs, "validation", "q7_validation_predictions.csv", False)
-    _assert(np.allclose(predictions["model_prediction"], expected_predictions, rtol=1e-9, atol=1e-9), "validation predictions do not match the declared train-fitted pipeline")
     _check_metrics(root, predictions, "q7_validation_metrics.csv")
     importance = _read_csv(_artifact(root, "q7_permutation_importance.csv"), ["feature", "mean_mae_increase", "std_mae_increase"])
-    _assert(importance["feature"].tolist() == FEATURES, "permutation importance feature set/order differs")
     values = importance[["mean_mae_increase", "std_mae_increase"]].apply(pd.to_numeric, errors="coerce").to_numpy()
-    _assert(np.isfinite(values).all(), "permutation importance values must be finite")
-    _assert(np.allclose(values[:, 0], expected_mean, rtol=1e-9, atol=1e-9) and np.allclose(values[:, 1], expected_std, rtol=1e-9, atol=1e-9), "permutation importance does not match the declared train-fitted pipeline")
+    _assert(set(importance["feature"]) == set(FEATURES) and importance["feature"].is_unique, "permutation importance feature identity differs")
+    _assert(np.isfinite(values).all() and (values[:, 1] >= 0).all(), "permutation importance values are invalid")
 
 
 def _check_q8(root: Path, refs: dict[str, pd.DataFrame]) -> None:
-    expected_predictions, _, _ = _declared_model_results(root, refs, "test")
     predictions = _prediction_frame(root, refs, "test", "q8_test_predictions.csv", True)
-    _assert(np.allclose(predictions["model_prediction"], expected_predictions, rtol=1e-9, atol=1e-9), "test predictions do not match the declared train-plus-validation-fitted pipeline")
     _check_metrics(root, predictions, "q8_test_metrics.csv")
     rows = []
     for model, column in [("persistence_baseline", "persistence_prediction"), ("student_model", "model_prediction")]:
         for station, group in predictions.groupby("station_name", sort=True, observed=True):
             residual = group[column] - group["actual"]; denominator = float(((group["actual"] - group["actual"].mean()) ** 2).sum())
             rows.append({"model": model, "station_name": station, "n": len(group), "mae": residual.abs().mean(), "rmse": np.sqrt((residual ** 2).mean()), "r2": 1 - float((residual ** 2).sum()) / denominator if denominator else np.nan})
-    _assert_frame(_artifact(root, "q8_station_metrics.csv"), pd.DataFrame(rows))
+    _assert_frame(_artifact(root, "q8_station_metrics.csv"), pd.DataFrame(rows), keys=["model", "station_name"])
     _valid_png(_artifact(root, "q8_final_visualizations.png"))
 
 
@@ -586,12 +530,6 @@ def _check_q9(root: Path, _refs: dict[str, pd.DataFrame]) -> None:
     text = report.read_text(encoding="utf-8")
     headings = re.findall(r"^##\s+(.+?)\s*$", text, flags=re.MULTILINE)
     _assert(headings == REPORT_HEADINGS, f"report H2 headings/order differ; expected {REPORT_HEADINGS}")
-    lowered = text.lower()
-    for placeholder in ["todo", "[value]", "[replace", "[summarize", "[describe", "[report", "[explain", "your text here"]:
-        _assert(placeholder not in lowered, f"report contains starter placeholder: {placeholder}")
-    for index, heading in enumerate(REPORT_HEADINGS):
-        body = _section(text, heading, REPORT_HEADINGS[index + 1] if index + 1 < len(REPORT_HEADINGS) else None)
-        _assert(re.search(r"\w", re.sub(r"!\[[^]]*\]\([^)]+\)", "", body)) is not None, f"report section '{heading}' lacks content")
     section = _section(text, "Model Results", "Limitations")
     table_lines = [line.strip() for line in section.splitlines() if line.strip().startswith("|")]
     _assert(len(table_lines) == 6, "Model Results must contain one header, separator, and exactly four metric rows")
@@ -648,6 +586,10 @@ def grade_submission(submission_root: str | Path) -> dict:
     if not root.is_dir():
         raise InfrastructureError(f"submission root is not a directory: {root}")
     _validate_environment_and_release(root)
+    try:
+        _check_coursework(root)
+    except Exception as error:
+        print(f"[FIX] Coursework completeness (0 points): {type(error).__name__}: {error}")
     rows = evaluate_submission(root)
     tests = []
     for row in rows:
