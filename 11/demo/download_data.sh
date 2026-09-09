@@ -34,6 +34,6 @@ download_and_verify "yellow_taxi_2023_h1_zone_hour_counts.parquet" \
 download_and_verify "taxi_zone_lookup.csv" \
     "1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed"
 download_and_verify "demo_release_manifest.json" \
-    "553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6"
+    "3f68d35fd157d53c0ae88f3119faa7bf9896515d153664227db3384d219aaa79"
 
 printf 'Frozen Lecture 11 data are ready in %s/\n' "$DATA_DIR"

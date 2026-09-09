@@ -64,10 +64,10 @@ sudo apt install python3 python3-pip python3-venv
 
 ```powershell
 # Option 1: Official installer from python.org
-# Download Python 3.12+ from <https://python.org>
+# Download Python 3.14+ from <https://python.org>
 
 # Option 2: Using winget (Windows Package Manager)
-winget install -e --id Python.Python.3.12
+winget install -e --id Python.Python.3.14
 ```
 
 **Mac:**
@@ -78,7 +78,7 @@ winget install -e --id Python.Python.3.12
 brew install python3
 
 # Option 2: Official installer from python.org
-# Download Python 3.12+ from <https://python.org>
+# Download Python 3.14+ from <https://python.org>
 ```
 
 **Verify Installation:**
@@ -86,7 +86,7 @@ brew install python3
 ```bash
 # WSL, macOS, or Codespaces
 python3 --version
-# Should show: Python 3.12.x (or similar)
+# Should show: Python 3.14.x (or similar)
 ```
 
 In native Windows PowerShell, use `py --version` (or `python --version` if that is the command your installer configured). Until we activate a virtual environment later in the course, Bash examples use `python3`; native PowerShell users should substitute `py`. Inside an activated environment, `python` will refer to that environment's interpreter.

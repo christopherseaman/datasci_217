@@ -7,11 +7,11 @@ top-to-bottom in a fresh kernel.
 
 ## Tested environment
 
-Use CPython 3.12.13 with NumPy 2.0.2, pandas 3.0.5, JupyterLab 4.4.10, and
+Use CPython 3.14 with NumPy 2.3.3, pandas 3.0.5, JupyterLab 4.4.10, and
 Jupytext 1.18.1, as recorded in `requirements.txt`:
 
 ```bash
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 jupyter lab

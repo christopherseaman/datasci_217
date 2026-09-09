@@ -16,8 +16,8 @@ python -c "import sys, numpy, pandas; print(sys.executable); print(numpy.__versi
 Expected versions:
 
 ```text
-Python 3.12.13
-NumPy 2.0.2
+Python 3.14
+NumPy 2.3.3
 pandas 3.0.5
 ```
 
@@ -44,7 +44,7 @@ print(np.__version__)
 print(pd.__version__)
 ```
 
-If you run the notebook, the kernel must report CPython 3.12.13, NumPy 2.0.2,
+If you run the notebook, the kernel must report CPython 3.14, NumPy 2.3.3,
 and pandas 3.0.5, and its interpreter must match the intended environment.
 
 ## 4. Check the portable assignment root

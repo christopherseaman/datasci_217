@@ -188,9 +188,9 @@ From the course repository:
 
 ```bash
 cd 11/demo
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate
-python --version  # should report Python 3.12.13
+python --version  # should report Python 3.14
 uv pip install -r requirements.txt
 chmod +x download_data.sh
 ./download_data.sh

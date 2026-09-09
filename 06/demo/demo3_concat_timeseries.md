@@ -13,7 +13,7 @@ jupyter:
     name: python3
   language_info:
     name: python
-    version: 3.12.13
+    version: 3.14
 ---
 
 # Demo 3: Time Series Concatenation and Index Management

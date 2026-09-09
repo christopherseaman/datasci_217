@@ -33,7 +33,7 @@ import subprocess
 import sys
 
 REQUIRED = {
-    "numpy": "2.0.2",
+    "numpy": "2.3.3",
     "pandas": "3.0.5",
     "matplotlib": "3.11.1",
     "geopandas": "1.1.1",

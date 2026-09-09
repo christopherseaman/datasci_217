@@ -15,8 +15,8 @@ import sys
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
-EXPECTED_PYTHON = "3.12.13\n"
-EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
+EXPECTED_PYTHON = "3.14\n"
+EXPECTED_REQUIREMENTS = "numpy==2.3.3\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
     ".venv/\n"
     ".ipynb_checkpoints/\n"
@@ -26,11 +26,11 @@ EXPECTED_GITIGNORE = (
     "result.json\n"
 )
 PROTECTED_FILE_SHA256 = {
-    ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
+    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
+    "requirements.txt": "dba7ebcc237068a6bfd7c7035b2c8d67ed138deae244d4ec6ac2d4d1d3476e47",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
-    "README.md": "e7aedbc4f7a83dad34db24209a1490ead92e6a1e8c6dd68763eb235a51c2d573",
-    "PLATFORM_CHECK.md": "acfb702816fb89e24daf322dd38b177965010b520b5c305c78343fe5e89790ed",
+    "README.md": "32e85a999eaddb00baa7df8ed099acef87bde0f70cadff9745c46d56d84e3bff",
+    "PLATFORM_CHECK.md": "24133fd511c51c8c489f4d8bc30da70a714cd68d05d9f537b8583a5a99a3a4fc",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
 }
 FIXTURE_MANIFEST = {
@@ -127,10 +127,10 @@ def _check_submission_inventory() -> None:
 def check_environment_and_protected_files() -> None:
     _check_submission_inventory()
     _assert(
-        sys.version_info[:3] == (3, 12, 13),
-        "Run this checker with the Assignment 06 CPython 3.12.13 interpreter.",
+        sys.version_info[:2] == (3, 14),
+        "Run this checker with the Assignment 06 CPython 3.14 interpreter.",
     )
-    for package, expected in (("numpy", "2.0.2"), ("pandas", "3.0.5")):
+    for package, expected in (("numpy", "2.3.3"), ("pandas", "3.0.5")):
         try:
             observed = metadata.version(package)
         except metadata.PackageNotFoundError as error:

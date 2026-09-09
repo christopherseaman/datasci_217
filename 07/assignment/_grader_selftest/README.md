@@ -9,7 +9,7 @@ Python from the student checkout. It installs the exact sibling requirements
 into that interpreter before importing `grader.py`; PEP 723 is only
 local `uv run` provisioning.
 
-Run the harness from the pinned CPython 3.12.13 environment:
+Run the harness from the pinned CPython 3.14 environment:
 
 ```bash
 uv run _grader_selftest/run.py

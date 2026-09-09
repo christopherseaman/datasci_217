@@ -10,8 +10,9 @@
 
 ## Setup
 
-**Important:** Use the course's tested Python 3.12.13 environment and the exact
-package versions in `requirements.txt`.
+**Important:** Use Python 3.13 for this demo because the stable TensorFlow
+2.21.0 wheel does not support Python 3.14. Keep the exact package versions in
+`requirements.txt`.
 
 ```python
 import pandas as pd
@@ -396,9 +397,9 @@ print(arch_comparison.to_string(index=False))
 - More neurons (width) increases model capacity but also risk of overfitting
 - Find the right balance for your specific problem
 
-## Part 10 (Optional Extension): Regularization Techniques
+## Part 10: Regularization Techniques
 
-This optional extension compares Dropout and L2 regularization. Dropout
+This section compares Dropout and L2 regularization. Dropout
 randomly masks a fraction of units during training; those units are active again
 at inference. It is a regularization choice to validate, not a guarantee that a
 model will avoid overfitting.
@@ -492,7 +493,7 @@ print(f"Test Loss: {test_loss:.4f}")
 print(f"Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
 ```
 
-**Optional regularization comparison:**
+**Regularization comparison:**
 - **L2 regularization**: Penalizes large weights
 - **Dropout**: Randomly masks units during training and leaves them active at inference
 - Either can help, but neither is universally required or guaranteed to improve validation performance

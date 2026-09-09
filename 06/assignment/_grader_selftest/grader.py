@@ -1,7 +1,7 @@
 # /// script
-# requires-python = "==3.12.13"
+# requires-python = ">=3.14,<3.15"
 # dependencies = [
-#   "numpy==2.0.2",
+#   "numpy==2.3.3",
 #   "pandas==3.0.5",
 # ]
 # ///
@@ -27,12 +27,12 @@ import pandas as pd
 
 
 PROTECTED_FILE_SHA256 = {
-    ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
+    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
+    "requirements.txt": "dba7ebcc237068a6bfd7c7035b2c8d67ed138deae244d4ec6ac2d4d1d3476e47",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
-    "README.md": "e7aedbc4f7a83dad34db24209a1490ead92e6a1e8c6dd68763eb235a51c2d573",
-    "PLATFORM_CHECK.md": "acfb702816fb89e24daf322dd38b177965010b520b5c305c78343fe5e89790ed",
-    "check_assignment.py": "4285d5f12ab499117194105e6b3dcd7004da7f5fcd1651e8f8a5fa4640a25703",
+    "README.md": "32e85a999eaddb00baa7df8ed099acef87bde0f70cadff9745c46d56d84e3bff",
+    "PLATFORM_CHECK.md": "24133fd511c51c8c489f4d8bc30da70a714cd68d05d9f537b8583a5a99a3a4fc",
+    "check_assignment.py": "1030667c202275bfeb36161430d09d904ef0719e731b0759c9d4d7dd9935196b",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
     "data/specimens.csv": "26eeae8d64a2870dc94195a45f924058b777eb1c97f96d2310e86f06403ba605",
     "data/stations_history.csv": "dc6f75e588183d5291abd69b4d5aa856472a711f6ff546b015dd21610d55708c",
@@ -90,8 +90,8 @@ def _assert(condition: bool, message: str) -> None:
 
 
 def _check_static_contract(root: Path) -> None:
-    _assert(sys.version_info[:3] == (3, 12, 13), "grader must use Python 3.12.13")
-    _assert(np.__version__ == "2.0.2", "grader must use NumPy 2.0.2")
+    _assert(sys.version_info[:2] == (3, 14), "grader must use Python 3.14")
+    _assert(np.__version__ == "2.3.3", "grader must use NumPy 2.3.3")
     _assert(pd.__version__ == "3.0.5", "grader must use pandas 3.0.5")
     actual_files = {
         path.relative_to(root).as_posix()
@@ -105,8 +105,8 @@ def _check_static_contract(root: Path) -> None:
         path = root / relative
         _assert(path.is_file(), f"missing protected file: {relative}")
         _assert(sha256(path.read_bytes()).hexdigest() == expected, f"protected file changed: {relative}")
-    _assert((root / ".python-version").read_text() == "3.12.13\n", "wrong Python record")
-    _assert((root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.5\n", "wrong dependency records")
+    _assert((root / ".python-version").read_text() == "3.14\n", "wrong Python record")
+    _assert((root / "requirements.txt").read_text() == "numpy==2.3.3\npandas==3.0.5\n", "wrong dependency records")
     gitignore = (root / ".gitignore").read_text()
     _assert("output/" not in gitignore and "*.csv" not in gitignore, "required CSV artifacts are ignored")
     actual_fixtures = {path.name for path in (root / "data").glob("*.csv") if path.is_file()}

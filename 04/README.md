@@ -22,7 +22,7 @@ In Lectures 1-3, Python scripts (`.py`) ran top-to-bottom. Jupyter notebooks
 (`.ipynb`) arrange code and Markdown in interactive cells, making them useful
 for exploration and explanation; scripts remain the better fit for automation.
 
-The lecture examples use pandas 3.x APIs. Executable demos and assignments record their exact tested package pins in each activity's requirements.
+The lecture examples use pandas 3.0.5 APIs. Executable demos and assignments record their exact tested package pins in each activity's requirements.
 
 ## Jupyter Notebook Interface
 
@@ -526,7 +526,7 @@ display(df['C'])  # [1.0, NaN, 4.0]
 
 # LIVE DEMO!
 
-(Demo 2: Pandas DataFrames - selection, filtering, groupby, operations)
+(Demo 2: Pandas DataFrames - selection, filtering, and derived columns)
 
 # Essential Pandas Operations
 
@@ -707,6 +707,6 @@ Lecture 05 picks up from this inspection and documents the cleaning decisions be
 
 # LIVE DEMO!
 
-(Demo 3: Data I/O - CSV, Excel, JSON, and quality inspection)
+(Demo 3: CSV round trip and quality inspection)
 
 > Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.

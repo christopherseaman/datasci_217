@@ -1,6 +1,6 @@
 # /// script
-# requires-python = "==3.12.13"
-# dependencies = ["numpy==2.0.2", "pandas==3.0.5"]
+# requires-python = ">=3.14,<3.15"
+# dependencies = ["numpy==2.3.3", "pandas==3.0.5"]
 # ///
 
 """Independent central-grader reference for Assignment 05.
@@ -166,8 +166,8 @@ def _assert(condition: bool, message: str) -> None:
 
 
 def _check_static_contract(root: Path) -> None:
-    _assert(sys.version_info[:3] == (3, 12, 13), "grader must use Python 3.12.13")
-    _assert(np.__version__ == "2.0.2", "grader must use NumPy 2.0.2")
+    _assert(sys.version_info[:2] == (3, 14), "grader must use Python 3.14")
+    _assert(np.__version__ == "2.3.3", "grader must use NumPy 2.3.3")
     _assert(pd.__version__ == "3.0.5", "grader must use pandas 3.0.5")
     actual_files = {
         path.relative_to(root).as_posix()
@@ -177,9 +177,9 @@ def _check_static_contract(root: Path) -> None:
         and path.relative_to(root).parts[0] != "output"
     }
     _assert(STUDENT_PACKAGE_FILES <= actual_files, "required student package files are missing")
-    _assert((root / ".python-version").read_text() == "3.12.13\n", "wrong Python record")
+    _assert((root / ".python-version").read_text() == "3.14\n", "wrong Python record")
     _assert(
-        (root / "requirements.txt").read_text() == "numpy==2.0.2\npandas==3.0.5\n",
+        (root / "requirements.txt").read_text() == "numpy==2.3.3\npandas==3.0.5\n",
         "wrong dependency records",
     )
     manifest_path = root / "data" / "fixture.json"

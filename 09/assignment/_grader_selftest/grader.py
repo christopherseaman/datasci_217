@@ -1,10 +1,10 @@
 # /// script
-# requires-python = "==3.12.13"
+# requires-python = ">=3.14,<3.15"
 # dependencies = [
 #   "ipykernel==6.29.5",
 #   "nbclient==0.10.2",
 #   "nbformat==5.10.4",
-#   "numpy==2.0.2",
+#   "numpy==2.3.3",
 #   "pandas==3.0.5",
 # ]
 # ///
@@ -29,11 +29,11 @@ import pandas as pd
 
 
 PROTECTED_FILE_SHA256 = {
-    ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
+    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
+    "requirements.txt": "dba7ebcc237068a6bfd7c7035b2c8d67ed138deae244d4ec6ac2d4d1d3476e47",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     "README.md": "4491b423eb0e8f3a67bd6ec195f8726fdec6f17ca6571b98fb0b603b656ee9cc",
-    "PLATFORM_CHECK.md": "f3aa2d2dc6eff93a637177fec91aded84fad799e1a64b1180744fc36e1d2ad8e",
+    "PLATFORM_CHECK.md": "aab823b0a8ca580e5094263ca2d8a1417ce3248884dd58a88ba233c0c86cf68d",
     "check_assignment.py": "d8c7a2d0a21a261f7f2c12fe2df5205b80bf4ec212a8f298a13296c3444cc0b8",
     "data/fixture.json": "27558bc4da7738775879501a6f11a0a9d874f3948823e54bb5e82ab91a02d703",
     "data/zone_co2_readings.csv": "c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4",

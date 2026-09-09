@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = "==3.12.13"
+# requires-python = ">=3.14,<3.15"
 # dependencies = [
 #   "matplotlib==3.11.1",
-#   "numpy==2.0.2",
+#   "numpy==2.3.3",
 #   "pandas==3.0.5",
 #   "scikit-learn==1.9.0",
 #   "statsmodels==0.14.6",
@@ -27,10 +27,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-PEP_REQUIRES_PYTHON = "==3.12.13"
+PEP_REQUIRES_PYTHON = ">=3.14,<3.15"
 PEP_DEPENDENCIES = [
     "matplotlib==3.11.1",
-    "numpy==2.0.2",
+    "numpy==2.3.3",
     "pandas==3.0.5",
     "scikit-learn==1.9.0",
     "statsmodels==0.14.6",
@@ -52,10 +52,10 @@ FIXTURES = {
 }
 PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
-    "PLATFORM_CHECK.md": "18abce5bfe89ff83904fb27312ffb11bae23fc3a8ef625d1419bea879b8dd518",
+    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
+    "PLATFORM_CHECK.md": "384047ae73eeced17d91de75e883173998be1b882f334336a65aeb27e072d1c3",
     "README.md": "9fd0f40047e0e2cb42266c76c463892ff1639c366ab2138e6bc8111009930861",
-    "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
+    "requirements.txt": "740a377ce40a7c62f5c544b0873b224a071d50effb7484a2b9bef6b36f5e0fe3",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
     "data/batch_strength.csv": "f14faf7da64347dfc255aa84b14e79eef7f2d0de94b394c747323319d937baa3",

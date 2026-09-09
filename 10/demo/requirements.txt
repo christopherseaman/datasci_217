@@ -1,10 +1,10 @@
-numpy==2.0.2
+numpy==2.3.3
 pandas==3.0.5
 statsmodels==0.14.6
 scikit-learn==1.9.0
 altair==5.5.0
 xgboost==2.1.4
-tensorflow==2.19.1
+tensorflow==2.21.0; python_version < "3.14"
 jupyterlab==4.4.10
 jupytext==1.18.1
 ipykernel==6.29.5

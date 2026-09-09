@@ -20,8 +20,8 @@ nine result rows, zero points for failed or blocked rows, and console diagnostic
 Provisioning, context, release, or grader-startup failures exit 2 and remove any
 result file. `REVIEW_URL` falls back to `COMMIT_URL`; result datetimes are UTC.
 
-Run the real release harness with CPython 3.12.13:
+Run the real release harness with CPython 3.14:
 
 ```bash
-uv run --python 3.12.13 --with-requirements 11/assignment/_grader_selftest/requirements.txt python 11/assignment/_grader_selftest/run.py
+uv run --python 3.14 --with-requirements 11/assignment/_grader_selftest/requirements.txt python 11/assignment/_grader_selftest/run.py
 ```

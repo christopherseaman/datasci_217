@@ -38,7 +38,7 @@
   "published_at_utc": "2026-07-22T21:00:00Z",
   "builder": {
     "script": "scripts/build_assignment11_data.py",
-    "python": "3.12.13",
+    "python": "3.14",
     "pandas": "3.0.5"
   }
 }

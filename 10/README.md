@@ -690,7 +690,11 @@ flowchart TD
 
 This lecture uses TensorFlow's integrated `tf.keras` API. Framework choice depends on measured performance, target platform, expertise, and maintenance.
 
-**Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active at inference. It is a regularization choice to validate, not a guarantee against overfitting. Demo 3's Dropout/L2 comparison is optional.
+The course runtime is Python 3.14, but the current stable TensorFlow release
+does not publish Python 3.14 wheels. Demo 3 therefore uses its own Python 3.13
+environment with TensorFlow 2.21.0; this is the one runtime exception.
+
+**Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active at inference. It is a regularization choice to validate, not a guarantee against overfitting. Demo 3 compares Dropout and L2 as regularization choices.
 
 **Reference:**
 

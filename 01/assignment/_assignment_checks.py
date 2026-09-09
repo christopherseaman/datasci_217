@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-EXPECTED_READINESS = """Python family: 3.12
+EXPECTED_READINESS = """Python family: 3.14
 Project: DataSci 217 Assignment 01
 Script: readiness.py
 First measurement: 18

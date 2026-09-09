@@ -1,6 +1,6 @@
-# Lecture 03 tested environment: CPython 3.12.13 with NumPy 2.0.2.
+# Lecture 03 tested environment: CPython 3.14 with NumPy 2.3.3.
 # Install with: uv pip install -r requirements.txt
-numpy==2.0.2
+numpy==2.3.3
 
 # Optional terminal tool for the CLI reference (not required by the demos).
 # Uncomment if you want to run sparklines examples:

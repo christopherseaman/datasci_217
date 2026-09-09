@@ -4,12 +4,12 @@
 Hands-on practice with Python's visualization ecosystem: matplotlib fundamentals, seaborn statistical plots, pandas plotting, and declarative Altair charts.
 
 Markdown is the authoritative source for each generated notebook. The tested
-activity environment is CPython 3.12.13 with the exact NumPy, pandas,
+activity environment is CPython 3.14 with the exact NumPy, pandas,
 Matplotlib, Seaborn, Altair, and supporting-library pins in `requirements.txt`.
 Create it before launching Jupyter:
 
 ```bash
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 jupyter lab

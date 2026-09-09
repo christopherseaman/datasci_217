@@ -36,7 +36,7 @@ import subprocess
 import sys
 
 REQUIRED = {
-    "numpy": "2.0.2",
+    "numpy": "2.3.3",
     "pandas": "3.0.5",
     "pyarrow": "25.0.0",
 }
@@ -93,7 +93,7 @@ def data_directory():
 
 data_dir = data_directory()
 manifest_path = data_dir / "demo_release_manifest.json"
-expected_manifest_sha256 = "553a1d732c0e0bdee9b8d79d7262a3f361109c23af6c33776f79ae661bca5fc6"
+expected_manifest_sha256 = "3f68d35fd157d53c0ae88f3119faa7bf9896515d153664227db3384d219aaa79"
 assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
     "Manifest hash mismatch"
 )

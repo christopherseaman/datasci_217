@@ -75,7 +75,7 @@ Hands-on practice with time series analysis using health and medical research da
 
 ```bash
 # Create the tested virtual environment
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 
 # Activate environment
 source .venv/bin/activate  # On macOS/Linux
@@ -94,8 +94,8 @@ jupytext --to notebook --output demo3_visualization_automation.ipynb demo3_visua
 ### Using Standard venv
 
 ```bash
-# Create the tested virtual environment with Python 3.12.13
-python3.12 -m venv .venv
+# Create the tested virtual environment with Python 3.14
+python3.14 -m venv .venv
 
 # Activate environment
 source .venv/bin/activate  # On macOS/Linux

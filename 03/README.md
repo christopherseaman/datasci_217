@@ -34,10 +34,10 @@ terminal; notebooks begin in Lecture 04.
 
 This lecture uses one tested course candidate:
 
-- CPython 3.12.13
+- CPython 3.14
 - a project environment stored in `.venv`
-- NumPy 2.0.2 as the core lecture examples' only direct Python dependency
-- a deliberate `requirements.txt` containing only `numpy==2.0.2`
+- NumPy 2.3.3 as the core lecture examples' only direct Python dependency
+- a deliberate `requirements.txt` containing only `numpy==2.3.3`
 
 These versions define the tested candidate for this lecture's NumPy work, not a permanent dependency set for every later lecture. Later activities may add packages through their own recorded requirements. The primary setup below uses uv. The standard-library `venv` and Conda sections are alternatives for comparison; here they reproduce the same version, directory, and dependency contract rather than defining separate learning outcomes.
 
@@ -79,7 +79,7 @@ A **lock artifact** records exact resolved direct and transitive versions for a 
 For the candidate environment, create `requirements.txt` in VS Code with exactly:
 
 ```text
-numpy==2.0.2
+numpy==2.3.3
 ```
 
 `==` pins the direct dependency to one exact candidate version. It can be changed later only as an intentional, tested course update.
@@ -109,8 +109,8 @@ The environment is recreated from instructions and requirements; it is not synch
 uv --version
 
 # Record and create the exact candidate environment
-uv python pin 3.12.13
-uv venv --python 3.12.13 .venv
+uv python pin 3.14
+uv venv --python 3.14 .venv
 
 # Activate (macOS/Linux/WSL Bash)
 source .venv/bin/activate
@@ -140,7 +140,7 @@ An import from the first environment proves only that the first environment work
 mkdir recreation-check
 cp requirements.txt recreation-check/requirements.txt
 cd recreation-check
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 python --version
@@ -149,11 +149,11 @@ deactivate
 cd ..
 ```
 
-The recreated environment should independently report Python 3.12.13 and NumPy 2.0.2.
+The recreated environment should independently report Python 3.14 and NumPy 2.3.3.
 
 ### Using standard-library venv (alternative)
 
-Use this concise fallback only when uv is unavailable and the candidate Python interpreter is already installed. Confirm that `python` reports 3.12.13 before creating the environment:
+Use this concise fallback only when uv is unavailable and the candidate Python interpreter is already installed. Confirm that `python` reports 3.14 before creating the environment:
 
 ```bash
 python --version
@@ -185,7 +185,7 @@ Conda is not the course's primary setup route. Use it only if the configured cha
 
 ```bash
 # Create the exact candidate environment
-conda create --prefix ./.venv python=3.12.13 pip
+conda create --prefix ./.venv python=3.14 pip
 
 # Activate (Mac/Linux)
 conda activate ./.venv

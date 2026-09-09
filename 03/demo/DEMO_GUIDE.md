@@ -6,18 +6,18 @@ from another directory. Their reports are written to `03/demo/output/`.
 
 ## Setup: Create the tested environment
 
-Lecture 03 uses CPython 3.12.13 and NumPy 2.0.2. With `uv`:
+Lecture 03 uses CPython 3.14 and NumPy 2.3.3. With `uv`:
 
 ```bash
 cd 03/demo
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
-python -c "import sys, numpy as np; print(sys.version.split()[0], np.__version__)"
+python -c "import sys, numpy as np; print(f'{sys.version_info.major}.{sys.version_info.minor}', np.__version__)"
 ```
 
-The final command should report `3.12.13 2.0.2`. If `uv` is unavailable, use a
-Python 3.12.13 interpreter to create `.venv`, then install the same pinned
+The final command should report `3.14 2.3.3`. If `uv` is unavailable, use a
+Python 3.14 interpreter to create `.venv`, then install the same pinned
 `requirements.txt` with `python -m pip install -r requirements.txt`.
 
 ## 1. Shell pipeline (scripts before Python/NumPy)

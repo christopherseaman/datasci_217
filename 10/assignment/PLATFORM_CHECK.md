@@ -1,6 +1,6 @@
 # Platform check
 
-Use CPython 3.12.13 and the exact direct versions in `requirements.txt`.
+Use CPython 3.14 and the exact direct versions in `requirements.txt`.
 
 Before submission:
 

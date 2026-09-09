@@ -628,6 +628,54 @@ print("\nEastern DataFrame:")
 print(df_tz)
 ```
 
+# Entity-Aware Features and Past-Only Windows
+
+A **panel** contains one ordered history per entity: a patient, sensor, site,
+or other unit observed repeatedly. Sort within each entity before creating
+lags or windows, and never let one entity's history leak into another's.
+
+```python
+panel = pd.DataFrame({
+    'entity': ['north', 'north', 'north', 'south', 'south', 'south'],
+    'timestamp': pd.to_datetime([
+        '2024-01-01 09:00', '2024-01-01 10:00', '2024-01-01 11:00',
+        '2024-01-01 09:00', '2024-01-01 10:00', '2024-01-01 11:00',
+    ], utc=True),
+    'value': [10, 12, 11, 20, 19, 21],
+}).sort_values(['entity', 'timestamp'])
+
+grouped = panel.groupby('entity', sort=False)['value']
+panel['lag_1'] = grouped.transform(lambda values: values.shift(1))
+panel['difference'] = panel['value'] - panel['lag_1']
+panel['past_mean_3'] = grouped.transform(
+    lambda values: values.shift(1).rolling(window=3, min_periods=1).mean()
+)
+panel['available_at'] = panel['timestamp'] + pd.Timedelta(minutes=15)
+prediction_time = pd.Timestamp('2024-01-01 11:00', tz='UTC')
+usable = panel['available_at'] <= prediction_time
+```
+
+These are **past-only** features: the current observation is excluded before
+the window is calculated. A row-count window such as the previous three
+observations answers “how many readings back?” A time-based window such as the
+previous two hours answers “what elapsed time was available?” In pandas, use a
+time offset such as `.rolling('2h', closed='left')` on a datetime index for that
+elapsed-time meaning. Both require chronological order within each entity. A centered window
+(`center=True`) looks forward as well as backward, so it is useful for
+describing a completed series but is future leakage when a feature must be
+available at prediction time.
+
+Availability is a separate check from timestamp order. If a measurement has an
+`available_at` timestamp, use it—not merely its observation time—to decide
+whether it can be used at `prediction_time`:
+
+```python
+usable = panel['available_at'] <= prediction_time
+```
+
+The same audit applies to lagged values, rolling summaries, resampled values,
+and any feature assembled from another table.
+
 # Time Series Visualization
 
 This section applies the plotting principles from Lecture 07 to temporal structure. Put time on the x-axis, preserve chronological order, choose a scale that makes gaps visible, and label the time zone when it matters. The goal is to compare raw observations with a time-based summary, not to reteach general plotting.

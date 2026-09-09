@@ -1,7 +1,7 @@
 # /// script
-# requires-python = "==3.12.13"
+# requires-python = ">=3.14,<3.15"
 # dependencies = [
-#   "numpy==2.0.2",
+#   "numpy==2.3.3",
 #   "pandas==3.0.5",
 #   "pyarrow==25.0.0",
 # ]
@@ -241,7 +241,7 @@ def main() -> None:
         "panel_rows": len(panel),
         "builder": {
             "script": "scripts/build_lecture11_demo_data.py",
-            "python": "3.12.13",
+            "python": "3.14",
             "numpy": np.__version__,
             "pandas": pd.__version__,
             "pyarrow": pyarrow.__version__,

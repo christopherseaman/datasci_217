@@ -14,8 +14,8 @@ from pathlib import Path
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
-EXPECTED_PYTHON = "3.12.13\n"
-EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
+EXPECTED_PYTHON = "3.14\n"
+EXPECTED_REQUIREMENTS = "numpy==2.3.3\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
     ".venv/\n"
     ".ipynb_checkpoints/\n"
@@ -84,12 +84,12 @@ def check_environment_and_fixture(root: Path) -> None:
     _assert({".gitkeep", "labeled_block.csv", "selected_purchases.csv"} <= actual, "Required output artifacts are missing.")
     _assert(
         _read_text(root / ".python-version", ".python-version") == EXPECTED_PYTHON,
-        "Restore .python-version to exactly `3.12.13` and one final newline.",
+        "Restore .python-version to exactly `3.14` and one final newline.",
     )
     _assert(
         _read_text(root / "requirements.txt", "requirements.txt")
         == EXPECTED_REQUIREMENTS,
-        "Restore requirements.txt to the exact NumPy 2.0.2 and pandas 3.0.5 records.",
+        "Restore requirements.txt to the exact NumPy 2.3.3 and pandas 3.0.5 records.",
     )
     _assert(
         _read_text(root / ".gitignore", ".gitignore") == EXPECTED_GITIGNORE,

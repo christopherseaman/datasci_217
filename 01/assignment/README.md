@@ -2,7 +2,7 @@
 
 This assignment checks the Lecture 01 skills you will use throughout the course: working from the intended directory, running terminal Python scripts, using values and a list, writing one decision and one loop, and correcting beginner errors from tracebacks.
 
-Complete the work in a POSIX-style terminal with Python 3.12. Do not use a notebook or Google Colab. Use `python3` instead of `python` only if that is the command established during onboarding.
+Complete the work in a POSIX-style terminal with Python 3.14. Do not use a notebook or Google Colab. Use `python3` instead of `python` only if that is the command established during onboarding.
 
 The repository-delivery steps are in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md). They are required so your work reaches the course system, but Git concepts are not part of this assignment's Python result. Lecture 02 explains the Git model and workflow.
 
@@ -55,7 +55,7 @@ Do not edit the supplied block at the top of `readiness.py`. It obtains three va
 Replace the three `TODO` output lines so the script prints exactly these labels and values when run as `readiness.py`:
 
 ```text
-Python family: 3.12
+Python family: 3.14
 Project: DataSci 217 Assignment 01
 Script: readiness.py
 ```

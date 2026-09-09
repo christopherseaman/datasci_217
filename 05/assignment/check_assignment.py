@@ -41,8 +41,8 @@ exact_duplicate_rows=1
 candidate_id_duplicate_rows=1
 clean_rows=11
 """
-EXPECTED_PYTHON_FILE = "3.12.13\n"
-EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
+EXPECTED_PYTHON_FILE = "3.14\n"
+EXPECTED_REQUIREMENTS = "numpy==2.3.3\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
     ".venv/\n"
     ".ipynb_checkpoints/\n"
@@ -179,15 +179,15 @@ def check_environment_and_fixture(root: Path) -> None:
     _assert(output.is_dir() and not output.is_symlink(), "Missing regular output directory.")
     _assert({".gitkeep", *OUTPUT_FILES} <= {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}, "Required output artifacts are missing.")
     _assert(
-        sys.version_info[:3] == (3, 12, 13),
-        "Run the checker with the recorded Python 3.12.13 interpreter.",
+        sys.version_info[:2] == (3, 14),
+        "Run the checker with the recorded Python 3.14 interpreter.",
     )
-    _assert(np.__version__ == "2.0.2", "Install the recorded NumPy 2.0.2.")
+    _assert(np.__version__ == "2.3.3", "Install the recorded NumPy 2.3.3.")
     _assert(pd.__version__ == "3.0.5", "Install the recorded pandas 3.0.5.")
     _assert(
         _read_text(root / ".python-version", ".python-version")
         == EXPECTED_PYTHON_FILE,
-        "Restore .python-version to exactly 3.12.13 and one final newline.",
+        "Restore .python-version to exactly 3.14 and one final newline.",
     )
     _assert(
         _read_text(root / "requirements.txt", "requirements.txt")

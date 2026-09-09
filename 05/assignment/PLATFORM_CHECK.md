@@ -4,7 +4,7 @@ Complete this check locally before preparing the artifacts. Colab is not an
 assignment or submission path for Assignment 05.
 
 1. Open a terminal in the assignment directory.
-2. Confirm `python --version` reports `Python 3.12.13`.
+2. Confirm `python --version` reports `Python 3.14`.
 3. Activate a fresh `.venv` and run `python -m pip install -r requirements.txt`.
 4. Run the following commands:
 
@@ -13,7 +13,7 @@ assignment or submission path for Assignment 05.
    python -c "from pathlib import Path; print(Path('data/people_raw.csv').is_file())"
    ```
 
-   The first command must print `2.0.2 3.0.5`; the second must print `True`.
+   The first command must print `2.3.3 3.0.5`; the second must print `True`.
 
 5. For `assignment.ipynb`, open it with the `.venv` Python 3 kernel; execution is optional local QA.
 6. Create the three CSV artifacts and run `python check_assignment.py`. The starter should show task-specific

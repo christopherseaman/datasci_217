@@ -35,7 +35,7 @@ separately from the local notebook contract.
 From `11/demo/`:
 
 ```bash
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 jupyter lab

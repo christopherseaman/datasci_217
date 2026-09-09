@@ -1,5 +1,5 @@
 # /// script
-# requires-python = "==3.12.13"
+# requires-python = ">=3.14,<3.15"
 # dependencies = ["pandas==3.0.5"]
 # ///
 """Build the frozen Chicago Beach Weather release for Assignment 11."""
@@ -138,7 +138,7 @@ def main() -> None:
         "published_at_utc": PUBLISHED_AT_UTC,
         "builder": {
             "script": "scripts/build_assignment11_data.py",
-            "python": "3.12.13",
+            "python": "3.14",
             "pandas": pd.__version__,
         },
     }

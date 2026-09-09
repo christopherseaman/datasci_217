@@ -16,7 +16,7 @@ both a standalone exported assignment repository and this course repository.
 
 ## Setup
 
-Use Python 3.12.13. From this directory, create and activate a virtual
+Use Python 3.14. From this directory, create and activate a virtual
 environment, and install the exact dependency records. Open the supplied
 notebook through Jupyter or the VS Code notebook interface:
 

@@ -96,8 +96,8 @@
   "panel_rows": 52116,
   "builder": {
     "script": "scripts/build_lecture11_demo_data.py",
-    "python": "3.12.13",
-    "numpy": "2.0.2",
+    "python": "3.14",
+    "numpy": "2.3.3",
     "pandas": "3.0.5",
     "pyarrow": "25.0.0"
   }

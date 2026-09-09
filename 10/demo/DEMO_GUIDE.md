@@ -65,7 +65,7 @@ This guide provides an overview of the three demos for Lecture 10.
 - Building neural networks with Sequential API
 - Compiling models (optimizer, loss, metrics)
 - Training and monitoring
-- Optional regularization comparison (Dropout, L2)
+- Regularization comparison (Dropout, L2)
 - Architecture experimentation
 - When to use deep learning vs traditional ML
 
@@ -75,23 +75,27 @@ This guide provides an overview of the three demos for Lecture 10.
 
 ### Prerequisites
 
-1. Create a virtual environment using the tested course candidate, Python 3.12.13:
+1. Create a virtual environment using the tested course candidate, Python 3.14:
 ```bash
-# Use the course's tested Python and create the local environment
-uv venv --python 3.12.13 .venv
+# Use Python 3.14 for Demos 1–2; use Python 3.13 for Demo 3.
+uv venv --python 3.14 .venv
+# uv venv --python 3.13 .venv  # Demo 3 instead
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 ```
 
 **Important:** The exact pins in `requirements.txt` are the supported demo matrix.
-They were tested with Python 3.12.13; use a separate, explicitly tested matrix
-before substituting another Python or package version.
+The tabular demos use Python 3.14. Demo 3 is the one exception: stable
+TensorFlow currently requires Python 3.13, so use a separate Python 3.13
+environment for that notebook.
 
 2. Install dependencies:
 ```bash
 uv pip install -r requirements.txt
 ```
 
-This will install all packages including TensorFlow for Demo 3.
+On Python 3.14 this installs the tabular-demo packages; the TensorFlow line is
+skipped by its marker. For Demo 3, recreate the environment with Python 3.13
+before installing the same requirements so that TensorFlow is included.
 
 ### Converting Markdown to Notebooks
 
@@ -121,7 +125,7 @@ jupyter notebook
 
 - **Demo 1**: Emphasize the difference between statistical inference (statsmodels) and prediction (scikit-learn)
 - **Demo 2**: Highlight the consistent scikit-learn API and when to use each model type
-- **Demo 3**: Stress that deep learning isn't always better; treat the Dropout/L2 comparison as optional extension material
+- **Demo 3**: Stress that deep learning isn't always better; treat the Dropout/L2 comparison as a regularization choice to validate
 - Demos 1–2 download California Housing (20,640 California census block groups from the 1990 census); Demo 3 uses scikit-learn's bundled Wine recognition dataset (178 samples)
 - The demos build complexity gradually - don't skip ahead
 - Encourage students to experiment with hyperparameters and see how results change

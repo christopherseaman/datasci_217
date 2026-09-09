@@ -6,12 +6,12 @@ computing, and performance. The lecture page explains the concepts; the generate
 notebooks are their runnable companions.
 
 Markdown is the authoritative source for each generated notebook. The tested
-activity environment is CPython 3.12.13 with NumPy 2.0.2, pandas 3.0.5,
+activity environment is CPython 3.14 with NumPy 2.3.3, pandas 3.0.5,
 Matplotlib 3.11.1, Seaborn 0.13.2, JupyterLab 4.4.10, Jupytext 1.18.1, and
 psutil 7.0.0 as pinned in `requirements.txt`:
 
 ```bash
-uv venv --python 3.12.13 .venv
+uv venv --python 3.14 .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 jupyter lab

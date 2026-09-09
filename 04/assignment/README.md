@@ -19,13 +19,13 @@ The supplied setup cell locates and verifies the fixture; do not edit it. It sup
 
 ## Candidate environment
 
-The implementation candidate is Python 3.12.13, NumPy 2.0.2, and pandas 3.0.5. These exact records are the tested assignment contract.
+The implementation candidate is Python 3.14, NumPy 2.3.3, and pandas 3.0.5. These exact records are the tested assignment contract.
 
 From the assignment directory, create the environment and install the two deliberate notebook dependencies:
 
 ```bash
-uv python install 3.12.13
-uv venv --python 3.12.13 .venv
+uv python install 3.14
+uv venv --python 3.14 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 ```

@@ -15,8 +15,8 @@ python -c "import sys, numpy, pandas, matplotlib, seaborn, altair; print(sys.exe
 Expected versions:
 
 ```text
-Python 3.12.13
-NumPy 2.0.2
+Python 3.14
+NumPy 2.3.3
 pandas 3.0.5
 Matplotlib 3.11.1
 seaborn 0.13.2
