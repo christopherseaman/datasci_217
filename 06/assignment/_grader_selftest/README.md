@@ -1,6 +1,6 @@
 # Assignment 06 artifact-grader regression checks
 
-This instructor-only directory is excluded from student assignment repositories. The grader reads committed artifacts and preserves credit for independent milestones. It never executes student code. Notebook explanations are reviewed by a person.
+This instructor-only directory is excluded from student assignment repositories. The grader reads committed artifacts and preserves credit for independent milestones. It never executes student code.
 
 Run with the course environment:
 

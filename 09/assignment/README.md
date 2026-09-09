@@ -32,7 +32,7 @@ Do not fill or interpolate measurements, pool zones, compute a lead or centered 
 3. Create the six CSV artifacts below.
 4. Run `python check_assignment.py` from `09/assignment/`.
 5. In VS Code Source Control or GitHub Desktop, confirm that the CSVs are visible, then commit and push them.
-6. Commit the completed subtree or its exported assignment repository. The optional Actions workflow is feedback; use instructor or TA review when revising.
+6. Commit the completed subtree or its exported assignment repository. The optional Actions workflow is feedback.
 
 Required GUI-visible artifacts:
 
@@ -43,4 +43,5 @@ Required GUI-visible artifacts:
 - `output/availability_decisions.csv`
 - `output/chronological_blocks.csv`
 
-The public checker gives artifact feedback only. It does not award a score or judge written reasoning. Written explanations and the submitted notebook/source receive separate human review; grading does not execute student code.
+The public checker gives artifact feedback only. It does not execute student
+code or award points; the central artifact grader reports the automated score.

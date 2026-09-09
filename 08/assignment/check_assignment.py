@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
-PROTECTED = {".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b", "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21", ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95", "README.md": "d6c4750d13084b15e49774e077d5ad02d772670139f74cc054f75d520976ed46", "PLATFORM_CHECK.md": "c33b3fad9a28183df02ea4a911a890ea6ae18a1089c6fae4b12c39dc3540ba02", "data/fixture.json": "b2fee1c48fb678b81318d2f085c42e2f9b480bd6c4eed6f07ef118b9bfd70860", "data/support_requests.csv": "a9136161332c5da9f8f1251d869bbd014ed762751675fb757f81a79cff5352d6"}
+PROTECTED = {".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b", "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21", ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95", "README.md": "b6be8a99c77cb4b0651552d5192c270bcc4e023c95ca642ca26620e85c0f8a00", "PLATFORM_CHECK.md": "c33b3fad9a28183df02ea4a911a890ea6ae18a1089c6fae4b12c39dc3540ba02", "data/fixture.json": "b2fee1c48fb678b81318d2f085c42e2f9b480bd6c4eed6f07ef118b9bfd70860", "data/support_requests.csv": "a9136161332c5da9f8f1251d869bbd014ed762751675fb757f81a79cff5352d6"}
 ARTIFACTS = {"center_count_summary.csv": (3, ["center", "request_count", "satisfaction_count", "unique_agent_count"]), "center_summary.csv": (3, ["center", "request_count", "satisfaction_count", "unique_agent_count", "total_resolution_minutes", "mean_resolution_minutes"]), "requests_with_context.csv": (15, ["request_id", "center", "agent_id", "channel", "resolution_minutes", "satisfaction_score", "center_mean_resolution_minutes", "difference_from_center_mean"]), "center_channel_summary.csv": (8, ["center", "channel", "request_count", "mean_resolution_minutes"]), "mean_resolution_pivot.csv": (3, ["center", "Email", "Phone", "Chat"])}
 def check_environment_and_protected_files() -> None:
     for name, digest in PROTECTED.items():
@@ -16,7 +16,7 @@ def check_environment_and_protected_files() -> None:
         assert path.is_file() and sha256(path.read_bytes()).hexdigest()==digest, f"Restore protected {name}."
 def check_artifacts() -> None:
     output=ROOT/"output"; assert output.is_dir() and not output.is_symlink(), "Missing regular output/ directory."
-    assert {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()}==set(ARTIFACTS)|{".gitkeep"}, "Keep exactly five required CSVs plus output/.gitkeep."
+    assert set(ARTIFACTS)|{".gitkeep"} <= {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()}, "Required CSV artifacts or output/.gitkeep are missing."
     for name, (rows, columns) in ARTIFACTS.items():
         path=output/name; assert path.is_file() and not path.is_symlink(), f"output/{name} must be regular."
         with path.open(newline="", encoding="utf-8") as handle: parsed=list(csv.reader(handle))

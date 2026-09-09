@@ -253,7 +253,7 @@ Columns: `model`, `station_name`, `n`, `mae`, `rmse`, `r2`. Include each unique 
 
 One readable multi-panel figure containing a validation baseline/model comparison, test actual-versus-predicted view, and residual diagnostics.
 
-### Q9: Writeup (6 points)
+### Q9: Writeup (6 human-review points)
 
 Complete root `report.md` with exactly these level-two headings, in order:
 
@@ -272,10 +272,12 @@ Include the accepted six-column metrics table with columns `Evaluation set`, `Mo
 ![Final model results](output/q8_final_visualizations.png)
 ```
 
-Q9 automation verifies the required structure, numeric table, and image links. Prose quality is reviewed by a human; model performance is not scored.
+Q9's automated check verifies the required structure, numeric table, and image
+links as readiness feedback. The 6 points are human review of reasoning and
+communication; model performance is not scored.
 
 ## Points and Grading
 
-Q1 8 + Q2 10 + Q3 12 + Q4 16 + Q5 8 + Q6 12 + Q7 14 + Q8 14 + Q9 6 = **100 points**.
+Q1 8 + Q2 10 + Q3 12 + Q4 16 + Q5 8 + Q6 12 + Q7 14 + Q8 14 + Q9 6 human = **100 points**.
 
-The central grader validates saved artifacts and requires each Q1–Q9 `.md`/`.ipynb` coursework pair, but does not execute notebooks or refit models. The local checker is a structural/readiness check, not the central grade. Central grader tests are named and discoverable in grading feedback; use their diagnostics to complete your own assignment rather than copying example content. Points for passing phase checks are retained, while failed or dependency-blocked checks receive targeted human review.
+The central grader validates saved artifacts and requires each Q1–Q9 `.md`/`.ipynb` coursework pair, but does not execute notebooks or refit models. Its automated result is 94 points; Q9's 6 points are human review. The local checker is a structural/readiness check, not the central grade. Central grader tests are named and discoverable in grading feedback; use their diagnostics to complete your own assignment rather than copying example content.

@@ -15,7 +15,7 @@ ASSIGNMENT = Path(__file__).resolve().parents[1]
 REPO = ASSIGNMENT.parents[1]
 ARTIFACTS = {'labeled_block.csv': 'record_id,baseline_c,follow_up_c\nsite-102,15,23\nsite-103,10,17\n', 'selected_purchases.csv': 'purchase_id,item,quantity,unit_price,line_total\nP008,Laptop Stand,2,20.0,40.0\nP003,Water Bottle,3,10.0,30.0\nP004,Desk Lamp,2,15.0,30.0\nP006,Headphones,4,7.5,30.0\nP001,USB Cable,2,8.0,16.0\nP011,USB Hub,2,8.0,16.0\nP007,Webcam Cover,5,3.0,15.0\nP009,Cable Tie,3,5.0,15.0\nP012,Notebook,3,5.0,15.0\n'}
 NUMBER = "04"
-POINTS = [2, 3, 5]
+POINTS = [20, 30, 50]
 MUTATION = ('selected_purchases.csv', 'line_total')
 
 

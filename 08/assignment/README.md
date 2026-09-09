@@ -140,11 +140,7 @@ use `GroupBy.apply`, manipulate MultiIndex, create crosstabs, visualize, analyze
 dates/time series, calculate statistics or models, access remote/performance
 tools, fetch network data, generate random data, or depend on a mutable date.
 
-The provisional automated result has a maximum of 90: 20 for Task 1, 35 for
-Task 2, 20 for Task 3, and 15 for shared integrity and portability. A separate
-10-point human review covers only the grain/count, aggregate/transform, pivot,
-privacy, and readability reasoning in your Markdown. Instructor or TA review
-handles those qualitative criteria separately from the optional automated
-feedback. The revised syllabus will decide how this diagnostic evidence maps to
-course pass/fail policy; this notebook and checker do not declare a threshold
-or grade conversion.
+Automated grading totals 100 points: 10 for fixture integrity, 25 for Task 1,
+40 for Task 2, 20 for Task 3, and 5 for artifact inventory. There are no
+separate human-review points; the grain/count, aggregate/transform, pivot,
+privacy, and readability explanations remain required coursework context.

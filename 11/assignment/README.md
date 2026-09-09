@@ -41,7 +41,7 @@ The release and provenance manifest are committed under `data/`. `download_data.
 | Q6 | 12 | [`q6_modeling_preparation.ipynb`](q6_modeling_preparation.ipynb) | Create fixed chronological splits |
 | Q7 | 14 | [`q7_modeling.ipynb`](q7_modeling.ipynb) | Select and validate one sklearn model |
 | Q8 | 14 | [`q8_results.ipynb`](q8_results.ipynb) | Evaluate the untouched test period |
-| Q9 | 6 | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` |
+| Q9 | 6 human | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` |
 
 Lecture 11 demonstrates the workflow. Geographic material is outside this
 assignment: do not add maps, coordinates, spatial joins, geographic features,
@@ -63,8 +63,8 @@ The central grader evaluates saved artifacts and requires the nine coursework
 `.md`/`.ipynb` pairs, but does not execute notebooks or refit models. The local checker is a structural/readiness check. Central
 grader test names and diagnostics are discoverable in grading feedback; use
 them to finish your own assignment rather than copying example content. Passing
-phase points are retained, and failed or dependency-blocked checks receive
-targeted human review. Q9's `report.md` is reviewed by a person for reasoning
-and communication; automated checks only verify its required structure and links.
+phase points are retained. The trusted artifact grader reports 94 automated
+points; Q9's 6 points are human review of `report.md` reasoning and
+communication. Its automated structure check is readiness feedback only.
 
 See [`HINTS.md`](HINTS.md) for nudges and [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md) for environment checks.

@@ -44,7 +44,7 @@ BASE_FILES = {
     ".github/test/requirements.txt", ".github/test/test_assignment.py",
     ".github/workflows/tests.yml",
 }
-POINTS = [10, 20, 25, 30, 5]
+POINTS = [10, 25, 30, 30, 5]
 TEST_NAMES = [
     "Submission package and fixture integrity",
     "Task 1 bounded inference and intervals",
@@ -87,13 +87,8 @@ def _inventory(root: Path) -> None:
         if path.is_file() or path.is_symlink():
             actual.add(relative.as_posix())
     expected = BASE_FILES
-    _assert(actual == expected, f"learner package inventory differs: {sorted(actual ^ expected)}")
-    _assert(not any((root / relative).is_symlink() for relative in actual), "learner package contains a symlink")
-    for path in root.rglob("*"):
-        relative = path.relative_to(root)
-        if relative.parts[0] == ".git":
-            continue
-        _assert(not path.is_symlink(), f"symlink rejected: {relative.as_posix()}")
+    _assert(expected <= actual, f"required learner package files are missing: {sorted(expected - actual)}")
+    _assert(not any((root / relative).is_symlink() for relative in expected), "required learner package contains a symlink")
     for relative, digest in FIXTURES.items():
         _assert(sha256((root / relative).read_bytes()).hexdigest() == digest,
                 f"restore immutable fixture {relative}")
@@ -169,8 +164,8 @@ def output_checks(root: Path, errors: list[str]) -> None:
         return
     actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
     expected = {".gitkeep", *ARTIFACT_COLUMNS, "inference_residuals.png"}
-    if actual != expected:
-        issue("output", f"required output inventory differs: {sorted(actual ^ expected)}", errors)
+    if not expected <= actual:
+        issue("output", f"required output artifacts are missing: {sorted(expected - actual)}", errors)
     tables = {}
     for name, columns in ARTIFACT_COLUMNS.items():
         path = output / name
@@ -304,11 +299,11 @@ def main() -> int:
             "schema": "datasci217/grading-result/v1",
             **context,
             "score": sum(test["score"] for test in tests),
-            "max-score": 90,
+            "max-score": 100,
             "tests": tests,
         }
         result_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-        print(json.dumps({"score": result["score"], "max-score": 90, **diagnostics}, sort_keys=True))
+        print(json.dumps({"score": result["score"], "max-score": 100, **diagnostics}, sort_keys=True))
         return 0
     except InfrastructureError as error:
         if result_path.is_file() or result_path.is_symlink():

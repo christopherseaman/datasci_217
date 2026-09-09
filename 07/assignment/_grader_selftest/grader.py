@@ -12,7 +12,7 @@ from pathlib import Path
 import sys
 
 
-TEST_SPECS = (("Fixtures and reproducibility", 10), ("Task 1 bounded exploration", 15), ("Task 2 critique and redesign", 25), ("Task 3 explanatory evidence", 25), ("Artifact integrity", 5))
+TEST_SPECS = (("Fixtures and reproducibility", 15), ("Task 1 bounded exploration", 20), ("Task 2 critique and redesign", 30), ("Task 3 explanatory evidence", 30), ("Artifact integrity", 5))
 REQUIRED_CONTEXT_ENV = {"assignment": "ASSIGNMENT", "submission": "SUBMISSION_TAG", "commit": "COMMIT_URL", "release": "RELEASE_URL"}
 OUTPUT_NAMES = {"exploratory_spec.json", "critique_redesign.png", "pathway_explanatory.png", "explanatory_supporting_data.csv", "visualization_evidence.json", "explanatory_text_alternative.txt"}
 SESSION_COLUMNS = ("session_id", "pathway", "activities_completed", "reflection_score")
@@ -174,7 +174,7 @@ def grade_submission(submission_root: str | Path) -> dict:
         else:
             print(f"[PASS] {name}")
             tests.append(_record(name, maximum, None))
-    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 80, "tests": tests}
+    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 100, "tests": tests}
 
 
 def main() -> int:

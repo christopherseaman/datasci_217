@@ -8,4 +8,4 @@ Run from repository root with the exact candidate environment:
 PYTHONDONTWRITEBYTECODE=1 uv run --python 3.12.13 --with-requirements 09/assignment/_grader_selftest/requirements.txt python 09/assignment/_grader_selftest/run.py
 ```
 
-The student template excludes this directory. The grader bundle is discoverable and contains no solution, credential, private record, or secrecy-dependent test. Human review is separate from the automated 90 points and follows the runner-supplied `review` URL.
+The student template excludes this directory. The grader bundle is discoverable and contains no solution, credential, private record, or secrecy-dependent test. Automated grading totals 100 points.

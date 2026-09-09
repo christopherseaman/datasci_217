@@ -30,9 +30,9 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
-    "README.md": "996489158cfa18339b60c2028e1a76a3955fb541e1fe64b83aefe7346577cf5c",
+    "README.md": "e7aedbc4f7a83dad34db24209a1490ead92e6a1e8c6dd68763eb235a51c2d573",
     "PLATFORM_CHECK.md": "acfb702816fb89e24daf322dd38b177965010b520b5c305c78343fe5e89790ed",
-    "check_assignment.py": "ce23c05ee8b085f09e14342bf0dfc0a8611a77c504987f053fdd32a25113ac42",
+    "check_assignment.py": "4285d5f12ab499117194105e6b3dcd7004da7f5fcd1651e8f8a5fa4640a25703",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
     "data/specimens.csv": "26eeae8d64a2870dc94195a45f924058b777eb1c97f96d2310e86f06403ba605",
     "data/stations_history.csv": "dc6f75e588183d5291abd69b4d5aa856472a711f6ff546b015dd21610d55708c",
@@ -100,7 +100,7 @@ def _check_static_contract(root: Path) -> None:
         and path.relative_to(root).parts[0] != ".git"
         and path.relative_to(root).parts[0] != "output"
     }
-    _assert(actual_files == STUDENT_PACKAGE_FILES, "student package inventory differs")
+    _assert(STUDENT_PACKAGE_FILES <= actual_files, "required student package files are missing")
     for relative, expected in PROTECTED_FILE_SHA256.items():
         path = root / relative
         _assert(path.is_file(), f"missing protected file: {relative}")
@@ -110,11 +110,11 @@ def _check_static_contract(root: Path) -> None:
     gitignore = (root / ".gitignore").read_text()
     _assert("output/" not in gitignore and "*.csv" not in gitignore, "required CSV artifacts are ignored")
     actual_fixtures = {path.name for path in (root / "data").glob("*.csv") if path.is_file()}
-    _assert(actual_fixtures == FIXTURE_NAMES, "fixture inventory changed")
+    _assert(FIXTURE_NAMES <= actual_fixtures, "required fixture files are missing")
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "missing regular output directory")
     actual_outputs = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(actual_outputs == {".gitkeep", *OUTPUT_NAMES}, "submission must contain exactly .gitkeep and five artifacts")
+    _assert({".gitkeep", *OUTPUT_NAMES} <= actual_outputs, "required submission outputs are missing")
     return
 
 
@@ -136,9 +136,9 @@ def grade_submission(submission_root: str | Path) -> dict:
     context = _context()
     root = Path(submission_root).resolve()
     test_specs = (
-        ("Task 1 automated", 40),
-        ("Task 2 automated", 27),
-        ("Task 3 automated", 23),
+        ("Task 1 automated", 45),
+        ("Task 2 automated", 30),
+        ("Task 3 automated", 25),
     )
     errors: dict[str, Exception | None] = {name: None for name, _ in test_specs}
     package_error = None
@@ -164,7 +164,7 @@ def grade_submission(submission_root: str | Path) -> dict:
         "schema": "datasci217/grading-result/v1",
         **context,
         "score": score,
-        "max-score": 90,
+        "max-score": 100,
         "tests": tests,
     }
 

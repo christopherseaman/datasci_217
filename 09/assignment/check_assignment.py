@@ -7,14 +7,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 ROOT=Path(__file__).resolve().parent
-PROTECTED={".python-version":"aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b","requirements.txt":"90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",".gitignore":"835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95","README.md":"1f0ef949d7fd678e00fe58d8bb94d6af0e75e3fd5fd73a5715b6e965d5aed18c","PLATFORM_CHECK.md":"f3aa2d2dc6eff93a637177fec91aded84fad799e1a64b1180744fc36e1d2ad8e","data/fixture.json":"27558bc4da7738775879501a6f11a0a9d874f3948823e54bb5e82ab91a02d703","data/zone_co2_readings.csv":"c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4"}
+PROTECTED={".python-version":"aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b","requirements.txt":"90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",".gitignore":"835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95","README.md":"4491b423eb0e8f3a67bd6ec195f8726fdec6f17ca6571b98fb0b603b656ee9cc","PLATFORM_CHECK.md":"f3aa2d2dc6eff93a637177fec91aded84fad799e1a64b1180744fc36e1d2ad8e","data/fixture.json":"27558bc4da7738775879501a6f11a0a9d874f3948823e54bb5e82ab91a02d703","data/zone_co2_readings.csv":"c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4"}
 ARTIFACTS={"prepared_panel.csv":(12,["zone","recorded_at","co2_ppm","source_row"]),"hourly_grid.csv":(16,["zone","recorded_at","co2_ppm","source_row","grid_created_row","source_value_missing"]),"two_hour_summary.csv":(8,["zone","recorded_at","mean_co2_ppm","reading_count"]),"temporal_features.csv":(12,["zone","recorded_at","co2_ppm","co2_lag_1","co2_difference","mean_previous_2_observations","mean_previous_2h"]),"availability_decisions.csv":(4,["candidate","latest_required_timestamp","available_by_prediction_time","decision"]),"chronological_blocks.csv":(12,["zone","recorded_at","co2_ppm","source_row","block"])}
 def check_environment_and_files():
     for name,digest in PROTECTED.items():
         path=ROOT/name; assert path.is_file() and sha256(path.read_bytes()).hexdigest()==digest, f"Restore protected {name}."
 def check_artifacts():
     output=ROOT/"output"; assert output.is_dir() and not output.is_symlink(),"Missing regular output/ directory."
-    assert {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()}==set(ARTIFACTS)|{".gitkeep"},"Keep exactly six required CSVs plus output/.gitkeep."
+    assert set(ARTIFACTS)|{".gitkeep"} <= {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()},"Required CSV artifacts or output/.gitkeep are missing."
     for name,(rows,columns) in ARTIFACTS.items():
         path=output/name; assert path.is_file() and not path.is_symlink(),f"output/{name} must be regular."
         with path.open(newline="",encoding="utf-8") as handle: parsed=list(csv.reader(handle))

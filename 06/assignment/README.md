@@ -122,12 +122,10 @@ of scope. GroupBy and aggregation begin in Lecture 08.
 
 ## Assessment boundary
 
-The implementation has a provisional 90-point automated overlay: 40 points for
-Task 1, 27 for Task 2, and 23 for Task 3. Ten points of human review cover the
-four explanations, organization, and privacy. The revised syllabus will decide
-how that evidence maps to course policy; the notebook and public checker do not
-declare a pass threshold or grade.
+Automated grading totals 100 points: 45 for Task 1, 30 for Task 2, and 25 for
+Task 3. There are no separate human-review points; the four explanations and
+privacy constraints remain required coursework context.
 
 ### Artifact comparison
 
-CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently. Notebook explanations receive human review.
+CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently.

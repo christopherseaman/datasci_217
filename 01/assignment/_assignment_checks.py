@@ -40,8 +40,8 @@ def check_terminal_practice(root: Path) -> None:
     practice = root / "terminal-practice"
     _assert(practice.is_dir() and not practice.is_symlink(), "Create a regular terminal-practice directory.")
     names = {path.name for path in practice.iterdir()}
-    _assert(names == {"source.txt", "path-check.txt"}, "terminal-practice must contain only source.txt and path-check.txt.")
-    for name in names:
+    _assert({"source.txt", "path-check.txt"} <= names, "terminal-practice is missing source.txt or path-check.txt.")
+    for name in ("source.txt", "path-check.txt"):
         _assert((practice / name).is_file() and not (practice / name).is_symlink(), f"terminal-practice/{name} must be a regular file.")
 
 
@@ -49,7 +49,7 @@ def check_output_artifact(root: Path) -> None:
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
     names = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(names == {".gitkeep", "readiness.txt"}, "Commit exactly output/.gitkeep and output/readiness.txt.")
+    _assert({".gitkeep", "readiness.txt"} <= names, "Commit output/.gitkeep and output/readiness.txt.")
     report = output / "readiness.txt"
     _assert(report.is_file() and not report.is_symlink(), "Commit output/readiness.txt as a regular file.")
     try:

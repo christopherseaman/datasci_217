@@ -136,11 +136,13 @@ Write `selected_purchases` to `SELECTED_OUTPUT_PATH` with `index=False`. Read th
 
 ## Generated artifacts and execution evidence
 
-Submit exactly these student-authored or generated artifacts:
+Submit these required student-authored or generated artifacts:
 
 1. `assignment.ipynb`;
 2. `output/labeled_block.csv`; and
 3. `output/selected_purchases.csv`.
+
+Additional input or diagnostic files are allowed; grading checks the required artifacts and ignores extras.
 
 A generated CSV is a separate committed milestone artifact; it is not the same thing as output stored under a notebook cell. Before submission:
 
@@ -157,12 +159,12 @@ A complete artifact set ends with `All public checks passed.` The public checker
 
 The automated grader reads the two committed CSV artifacts directly. Optional notebook execution is useful local QA but is not required for grading.
 
-## Scope and human-review boundary
+## Scope and assessment
 
 Do not add cleaning, missing-value decisions, type conversion, dates, joins, concatenation, reshape, GroupBy, aggregation, plotting, modeling, performance work, network access, absolute paths, `/content` paths, or Drive mounts.
 
-Automated checks cover fixture integrity and both CSV artifacts. Human review checks the state explanation and task headings without assuming a particular implementation.
+Automated grading totals 100 points: 20 for the protected package and fixture, 30 for the labeled-block artifact, and 50 for the selected-purchases artifact. There are no separate human-review points; the notebook explanation and task headings remain required coursework context.
 
 ### Artifact comparison
 
-CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently. Notebook explanations receive human review.
+CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently.

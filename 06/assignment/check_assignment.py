@@ -29,7 +29,7 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "2d857aeb38b492c9cac001ba2bef86d2287357f7f5b3f1203d929ac1e79fa138",
-    "README.md": "996489158cfa18339b60c2028e1a76a3955fb541e1fe64b83aefe7346577cf5c",
+    "README.md": "e7aedbc4f7a83dad34db24209a1490ead92e6a1e8c6dd68763eb235a51c2d573",
     "PLATFORM_CHECK.md": "acfb702816fb89e24daf322dd38b177965010b520b5c305c78343fe5e89790ed",
     "data/fixture.json": "12b8d3375e4895b6cb443c156794dc9598f5598e64920d2f2818b50883a99f55",
 }
@@ -121,7 +121,7 @@ def _check_submission_inventory() -> None:
         if (path.is_file() or path.is_symlink())
         and not any(part in ignored_roots for part in path.relative_to(ASSIGNMENT_DIR).parts)
     }
-    _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
+    _assert(STUDENT_PACKAGE_FILES <= actual, "Required submission files are missing.")
 
 
 def check_environment_and_protected_files() -> None:
@@ -151,7 +151,7 @@ def check_fixtures() -> None:
     _assert(manifest == FIXTURE_MANIFEST, "Restore the exact fixture manifest.")
     expected_names = {record["path"] for record in FIXTURE_MANIFEST["files"]}
     actual_names = {path.name for path in (ASSIGNMENT_DIR / "data").glob("*.csv") if path.is_file()}
-    _assert(actual_names == expected_names, "Restore the exact six-file fixture inventory.")
+    _assert(expected_names <= actual_names, "Required fixture files are missing.")
     for record in FIXTURE_MANIFEST["files"]:
         path = ASSIGNMENT_DIR / "data" / record["path"]
         data = path.read_bytes()

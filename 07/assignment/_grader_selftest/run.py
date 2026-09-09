@@ -67,17 +67,17 @@ def main() -> int:
             _sample(base)
             public = subprocess.run([sys.executable, str(base / "check_assignment.py")], cwd=base, text=True, capture_output=True)
             assert public.returncode == 0, public.stdout + public.stderr
-            assert _score(base) == [10, 15, 25, 25, 5]
+            assert _score(base) == [15, 20, 30, 30, 5]
             altered = Path(temporary) / "altered"
             shutil.copytree(base, altered)
             data = json.loads((altered / "output" / "exploratory_spec.json").read_text())
             data["data"]["values"][0]["activities_completed"] = 999
             (altered / "output" / "exploratory_spec.json").write_text(json.dumps(data), encoding="utf-8")
-            assert _score(altered) == [10, 0, 25, 25, 5]
+            assert _score(altered) == [15, 0, 30, 30, 5]
             missing = Path(temporary) / "missing"
             shutil.copytree(base, missing)
             (missing / "output" / "critique_redesign.png").unlink()
-            assert _score(missing) == [10, 15, 0, 25, 0]
+            assert _score(missing) == [15, 20, 0, 30, 0]
             for label, mutate in (
                 ("empty-text", lambda evidence: evidence.__setitem__("question", "  ")),
                 ("wrong-role", lambda evidence: evidence.__setitem__("variable_roles", {})),
@@ -88,11 +88,11 @@ def main() -> int:
                 evidence = json.loads(evidence_path.read_text())
                 mutate(evidence)
                 evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
-                assert _score(invalid) == [10, 15, 25, 0, 5]
+                assert _score(invalid) == [15, 20, 30, 0, 5]
             mismatch = Path(temporary) / "mismatched-sidecar"
             shutil.copytree(base, mismatch)
             (mismatch / "output" / "explanatory_text_alternative.txt").write_text("Different text.\n", encoding="utf-8")
-            assert _score(mismatch) == [10, 15, 25, 0, 5]
+            assert _score(mismatch) == [15, 20, 30, 0, 5]
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
         os.environ.clear()

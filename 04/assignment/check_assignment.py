@@ -73,7 +73,7 @@ def _check_submission_inventory(root: Path) -> None:
         if (path.is_file() or path.is_symlink())
         and not any(part in ignored_roots for part in path.relative_to(root).parts)
     }
-    _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
+    _assert(STUDENT_PACKAGE_FILES <= actual, "Required submission files are missing.")
 
 
 def check_environment_and_fixture(root: Path) -> None:
@@ -81,7 +81,7 @@ def check_environment_and_fixture(root: Path) -> None:
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "Missing regular output/ directory.")
     actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(actual == {".gitkeep", "labeled_block.csv", "selected_purchases.csv"}, "Keep exactly .gitkeep and the two required output CSVs.")
+    _assert({".gitkeep", "labeled_block.csv", "selected_purchases.csv"} <= actual, "Required output artifacts are missing.")
     _assert(
         _read_text(root / ".python-version", ".python-version") == EXPECTED_PYTHON,
         "Restore .python-version to exactly `3.12.13` and one final newline.",

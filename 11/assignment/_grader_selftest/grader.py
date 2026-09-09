@@ -59,7 +59,7 @@ DOCUMENTED_FILENAMES = [
     "q7_validation_predictions.csv", "q7_validation_metrics.csv", "q7_permutation_importance.csv",
     "q8_test_predictions.csv", "q8_test_metrics.csv", "q8_station_metrics.csv", "q8_final_visualizations.png",
 ]
-POINTS = [8, 10, 12, 16, 8, 12, 14, 14, 6]
+POINTS = [8, 10, 12, 16, 8, 12, 14, 14, 0]
 TEST_NAMES = [
     "Q1 release audit and coverage", "Q2 deterministic cleaned observations",
     "Q3 complete elapsed-UTC station panel", "Q4 past-only next-hour features",
@@ -596,7 +596,7 @@ def grade_submission(submission_root: str | Path) -> dict:
         score = row["points"] if row["passed"] else 0
         print(f"[{row['status']}] {row['name']} ({row['points']} points): {row['detail']}")
         tests.append({"test-name": row["name"], "passed": row["passed"], "score": score, "max-score": row["points"]})
-    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 100, "tests": tests}
+    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(test["score"] for test in tests), "max-score": 94, "tests": tests}
 
 
 def main() -> int:

@@ -149,9 +149,7 @@ and cleaning; time series; modeling or inference; random or remote data;
 dashboards, maps, animations, and additional chart families are outside scope.
 Altair tooltips are permitted in Task 1, but must supplement visible labels and context.
 
-The implementation has a provisional 80-point automated overlay: 10 points for
-fixtures and reproducibility, 15 for Task 1, 25 for Task 2, 25 for Task 3, and
-5 for artifact integrity. A separate 20-point human review covers contract fit,
-visual integrity, accessibility, annotation, text alternative, organization,
-and limitations. Course policy will decide how this diagnostic evidence maps
-to a grade; the notebook and public checker declare no pass threshold.
+Automated grading totals 100 points: 15 for fixtures and reproducibility, 20
+for Task 1, 30 for Task 2, 30 for Task 3, and 5 for artifact integrity. There
+are no separate human-review points; contract fit, accessibility, annotations,
+text alternatives, organization, and limitations remain required deliverables.

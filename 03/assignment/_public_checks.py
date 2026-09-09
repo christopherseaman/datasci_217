@@ -77,7 +77,7 @@ def check_pipeline_artifacts(root: Path) -> None:
     _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
     names = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
     expected_names = {".gitkeep", "environment_check.txt", "head_preview.txt", "tail_preview.txt", "site_counts.txt", "site_count_lines.txt", "analysis.txt"}
-    _assert(names == expected_names, "Commit output/.gitkeep and the six documented text artifacts.")
+    _assert(expected_names <= names, "Commit output/.gitkeep and the six documented text artifacts.")
     _assert(_lines(root, "output/head_preview.txt") == EXPECTED_HEAD, "head_preview.txt must show the first three fixture lines.")
     _assert(_lines(root, "output/tail_preview.txt") == EXPECTED_TAIL, "tail_preview.txt must show the final two fixture lines.")
     counts = [line.split() for line in _lines(root, "output/site_counts.txt")]

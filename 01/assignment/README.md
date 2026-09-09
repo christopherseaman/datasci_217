@@ -42,6 +42,7 @@ ls terminal-practice
 ```
 
 The final `terminal-practice` directory must contain `source.txt` and `path-check.txt`, but not `remove-me.txt`. These named-file operations provide path-practice evidence without recursive removal.
+Additional input or diagnostic files are allowed; the checker only requires the named evidence files.
 
 ### B. Complete `readiness.py`
 

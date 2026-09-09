@@ -22,5 +22,4 @@ Production execution requires nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
 while missing context or grader infrastructure failure returns nonzero.
 
 The central grader reads artifacts directly and never imports the editable
-student checker or executes a notebook. Human review uses `REVIEW_URL` to
-inspect notebook source, prose, and chart quality separately.
+student checker or executes a notebook.

@@ -69,8 +69,8 @@ def _check_submission_inventory(submission: Path) -> str | None:
         and path.relative_to(submission).parts[0] != ".git"
         and path.relative_to(submission).parts[0] != "output"
     }
-    if actual != set(REQUIRED_COPY_PATHS):
-        return "student package inventory differs"
+    if not set(REQUIRED_COPY_PATHS) <= actual:
+        return "required student package files are missing"
     return None
 
 
@@ -79,10 +79,10 @@ def grade_submission(submission: Path) -> list[GradeTest]:
     protected_error = _check_protected_files(submission)
     inventory_error = _check_submission_inventory(submission)
     package_detail = "; ".join(detail for detail in (inventory_error, protected_error) if detail)
-    tests = [GradeTest("protected package and required files", 2, not package_detail, package_detail)]
+    tests = [GradeTest("protected package and required files", 20, not package_detail, package_detail)]
     for name, points, check in (
-        ("committed labeled-block artifact", 3, _check_labeled),
-        ("committed selected-purchases artifact", 5, _check_selected),
+        ("committed labeled-block artifact", 30, _check_labeled),
+        ("committed selected-purchases artifact", 50, _check_selected),
     ):
         try:
             check(submission)

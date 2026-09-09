@@ -137,37 +137,37 @@ def main() -> int:
         root = fresh_export(Path(temporary) / "fresh export")
         public(root, 0)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 20, 25, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 30, 5], result
         quote_and_reverse(root / "output" / "inference_summary.csv")
         quote_and_reverse(root / "output" / "final_predictions.csv")
         (root / "output" / "inference_residuals.png").write_bytes(TINY_PNG)
         public(root, 0)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 20, 25, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 30, 5], result
         replace_value(root / "output" / "inference_summary.csv", "51.959310", "99.000000")
         public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 0, 25, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [10, 0, 30, 30, 5], result
         root = fresh_export(Path(temporary) / "missing artifact")
         replace_value(root / "output" / "validation_metrics.csv", "4.259573", "99.000000")
         public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 20, 25, 0, 5], result
+        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 0, 5], result
         root = fresh_export(Path(temporary) / "missing artifact second")
         (root / "output" / "validation_metrics.csv").unlink()
         public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 20, 25, 0, 5], result
+        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 0, 5], result
         root = fresh_export(Path(temporary) / "changed fixture")
         (root / "data" / "mixing_runs.csv").write_text("changed\n", encoding="utf-8")
         public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [0, 20, 25, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [0, 25, 30, 30, 5], result
         root = fresh_export(Path(temporary) / "wrong predictions")
         replace_value(root / "output" / "final_predictions.csv", "36.619379", "99.000000")
         public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 20, 25, 0, 5], result
+        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 0, 5], result
     print(json.dumps({"artifact_regression": "pass", "cases": 7}, sort_keys=True))
     return 0
 

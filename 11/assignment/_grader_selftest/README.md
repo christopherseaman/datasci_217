@@ -10,7 +10,8 @@ controlled by the course platform rather than by the student starter.
 Both graders inspect the release, manifest, required coursework pairs, CSV and PNG
 outputs, and `report.md`; they do not execute student notebooks. Consequently, exact training-only summaries can be checked, but model
 fitting and decision provenance cannot be proven from artifacts. Notebook
-execution is optional QA, and the written report remains human-reviewed.
+execution is optional QA. The trusted grader reports 94 automated points; the
+written report supplies the separate 6 human-review points.
 
 `autograder.py` is a plain-Python bootstrap. It installs the sibling pinned
 `requirements.txt`, invokes the trusted grader, and writes an exact

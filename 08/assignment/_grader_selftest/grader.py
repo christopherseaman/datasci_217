@@ -12,9 +12,7 @@
 """Independent central-grader reference for Assignment 08.
 
 Production grading reads the five committed CSV artifacts directly. Notebook
-execution and alternate-input checks remain optional release QA. Human review
-remains outside the automated 90 points and uses the context-supplied
-``review`` URL.
+execution and alternate-input checks remain optional release QA.
 """
 
 from __future__ import annotations
@@ -34,9 +32,9 @@ PROTECTED_FILE_SHA256 = {
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "requirements.txt": "90933f178a0a459399ff6696e8fe9407463cc65bbffd567f3e7b44cc9230ee21",
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "README.md": "d6c4750d13084b15e49774e077d5ad02d772670139f74cc054f75d520976ed46",
+    "README.md": "b6be8a99c77cb4b0651552d5192c270bcc4e023c95ca642ca26620e85c0f8a00",
     "PLATFORM_CHECK.md": "c33b3fad9a28183df02ea4a911a890ea6ae18a1089c6fae4b12c39dc3540ba02",
-    "check_assignment.py": "b698fcc206907521fc9a7e05e388d8eac2663d95ebb527d4b71df49b71be2b8c",
+    "check_assignment.py": "d603a7b780d837f38a2ab2cd4fde5d08852c67586f0d5611c5cb58ec2428dd12",
     "data/fixture.json": "b2fee1c48fb678b81318d2f085c42e2f9b480bd6c4eed6f07ef118b9bfd70860",
     "data/support_requests.csv": "a9136161332c5da9f8f1251d869bbd014ed762751675fb757f81a79cff5352d6",
 }
@@ -136,7 +134,7 @@ def _artifact_inventory(root: Path) -> None:
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "missing regular output directory")
     actual = {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()}
-    _assert(actual == ARTIFACT_NAMES | {".gitkeep"}, "wrong output inventory")
+    _assert(ARTIFACT_NAMES | {".gitkeep"} <= actual, "required output artifacts are missing")
 
 
 def _task1_artifacts(root: Path, source: pd.DataFrame) -> None:
@@ -162,7 +160,7 @@ def _task3_artifacts(root: Path, source: pd.DataFrame) -> None:
 def grade_submission(submission_root: str | Path) -> dict:
     """Grade only committed, trusted CSV artifacts; never execute student code."""
     context = _context(); root = Path(submission_root).resolve()
-    specs = (("Fixture integrity", 10, lambda s: _fixture(root)), ("Task 1 count semantics", 20, lambda s: _task1_artifacts(root, s)), ("Task 2 grouped and aligned results", 35, lambda s: _task2_artifacts(root, s)), ("Task 3 pivot equivalence", 20, lambda s: _task3_artifacts(root, s)), ("Visible artifact inventory", 5, lambda s: _artifact_inventory(root)))
+    specs = (("Fixture integrity", 10, lambda s: _fixture(root)), ("Task 1 count semantics", 25, lambda s: _task1_artifacts(root, s)), ("Task 2 grouped and aligned results", 40, lambda s: _task2_artifacts(root, s)), ("Task 3 pivot equivalence", 20, lambda s: _task3_artifacts(root, s)), ("Visible artifact inventory", 5, lambda s: _artifact_inventory(root)))
     source: pd.DataFrame | None = None; tests = []
     for name, maximum, check in specs:
         try:
@@ -172,7 +170,7 @@ def grade_submission(submission_root: str | Path) -> dict:
             tests.append(_result_test(name, maximum, error))
         else:
             tests.append(_result_test(name, maximum, None))
-    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(t["score"] for t in tests), "max-score": 90, "tests": tests}
+    return {"schema": "datasci217/grading-result/v1", **context, "score": sum(t["score"] for t in tests), "max-score": 100, "tests": tests}
 
 
 if __name__ == "__main__":

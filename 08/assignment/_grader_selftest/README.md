@@ -11,9 +11,7 @@ local `uv run` provisioning. `grader.py` independently protects the assignment
 contract and checks committed artifacts. Optional release QA may remove outputs,
 clear notebook state, start fresh kernels, and exercise alternate prepared tables. It writes the official
 `datasci217/grading-result/v1` object to `./result.json`; completed grading exits zero
-even when student checks fail. The automated maximum is 90. Human review of the
-student-authored Markdown uses the runner's context-supplied `review` URL and
-remains outside this result.
+even when student checks fail. The automated maximum is 100.
 
 The grader consumes nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
 `COMMIT_URL`, and `RELEASE_URL`; `REVIEW_URL` falls back to `COMMIT_URL`, and

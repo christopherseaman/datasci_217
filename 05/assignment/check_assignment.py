@@ -1,6 +1,6 @@
 """Run the discoverable public checks for Assignment 05.
 
-Checks compare committed CSV values without inspecting or executing student code.
+Checks compare committed artifact values without inspecting or executing student code.
 """
 
 from __future__ import annotations
@@ -15,7 +15,32 @@ import pandas as pd
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
-OUTPUT_FILES = ("issue_audit.csv", "cleaned_people.csv", "decision_log.csv")
+OUTPUT_FILES = (
+    "raw_preview.txt",
+    "numpy_age_summary.csv",
+    "pandas_selection.csv",
+    "pipeline_summary.txt",
+    "issue_audit.csv",
+    "cleaned_people.csv",
+    "decision_log.csv",
+)
+EXPECTED_RAW_PREVIEW = """$ head -n 4 data/people_raw.csv
+record_id,full_name,site,status,age_text,visit_date
+R001, Alice Smith , North ,Active,34,2026-01-15
+R002,BOB JONES,north,active,unknown,2026-02-30
+R002,BOB JONES,north,active,unknown,2026-02-30
+$ tail -n 2 data/people_raw.csv
+R010,Jamie Okafor,West,Complete,28,2026-07-15
+R011,Kai Patel,south, pending ,0,2026-08-01
+"""
+EXPECTED_NUMPY_SUMMARY = [("count", 6), ("min", 0), ("max", 52), ("sum", 198), ("mean", 33.0)]
+EXPECTED_PANDAS_SELECTION = [("R001", " North ", "Active"), ("R003", "SOUTH", "pending"), ("R010", "West", "Complete")]
+EXPECTED_PIPELINE_SUMMARY = """raw_rows=12
+raw_columns=6
+exact_duplicate_rows=1
+candidate_id_duplicate_rows=1
+clean_rows=11
+"""
 EXPECTED_PYTHON_FILE = "3.12.13\n"
 EXPECTED_REQUIREMENTS = "numpy==2.0.2\npandas==3.0.5\n"
 EXPECTED_GITIGNORE = (
@@ -145,14 +170,14 @@ def _check_submission_inventory(root: Path) -> None:
         if (path.is_file() or path.is_symlink())
         and not any(part in ignored_roots for part in path.relative_to(root).parts)
     }
-    _assert(actual == STUDENT_PACKAGE_FILES, "Remove unexpected submission files.")
+    _assert(STUDENT_PACKAGE_FILES <= actual, "Required submission files are missing.")
 
 
 def check_environment_and_fixture(root: Path) -> None:
     _check_submission_inventory(root)
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "Missing regular output directory.")
-    _assert({path.name for path in output.iterdir() if path.is_file() or path.is_symlink()} == {".gitkeep", *OUTPUT_FILES}, "Keep the three required CSV artifacts and .gitkeep.")
+    _assert({".gitkeep", *OUTPUT_FILES} <= {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}, "Required output artifacts are missing.")
     _assert(
         sys.version_info[:3] == (3, 12, 13),
         "Run the checker with the recorded Python 3.12.13 interpreter.",
@@ -289,6 +314,15 @@ def check_audit(root: Path) -> None:
     pd.testing.assert_frame_equal(audit.sort_values("issue").reset_index(drop=True), expected.sort_values("issue").reset_index(drop=True))
 
 
+def check_foundations(root: Path) -> None:
+    assert _artifact_path(root, "raw_preview.txt").read_text(encoding="utf-8") == EXPECTED_RAW_PREVIEW, "raw_preview.txt does not match the required terminal evidence."
+    assert _artifact_path(root, "pipeline_summary.txt").read_text(encoding="utf-8") == EXPECTED_PIPELINE_SUMMARY, "pipeline_summary.txt does not match the required Python summary."
+    summary = pd.read_csv(_artifact_path(root, "numpy_age_summary.csv"), dtype={"metric": "string", "value": "float64"})
+    assert list(summary.itertuples(index=False, name=None)) == EXPECTED_NUMPY_SUMMARY, "numpy_age_summary.csv values differ."
+    selection = pd.read_csv(_artifact_path(root, "pandas_selection.csv"), dtype="string")
+    assert list(selection.itertuples(index=False, name=None)) == EXPECTED_PANDAS_SELECTION, "pandas_selection.csv values differ."
+
+
 def check_cleaned(root: Path) -> None:
     cleaned = pd.read_csv(_artifact_path(root, "cleaned_people.csv"), dtype={
         "record_id": "string", "full_name": "string", "site": "string",
@@ -312,7 +346,7 @@ def check_decisions(root: Path) -> None:
     _assert(decision.columns.tolist() == columns, "decision_log.csv columns differ.")
     observed = list(decision[["field", "issue", "action"]].itertuples(index=False, name=None))
     _assert(len(observed) == len(EXPECTED_DECISIONS) and set(observed) == set(EXPECTED_DECISIONS), "Decision fields, issues, or actions differ.")
-    _assert(decision["reason"].fillna("").str.strip().ne("").all(), "Every decision needs a nonblank reason for human review.")
+    _assert(decision["reason"].fillna("").str.strip().ne("").all(), "Every decision needs a nonblank reason.")
     _assert(decision["source"].fillna("").eq("data/people_raw.csv").all(), "Wrong source provenance.")
     _assert(decision["source_sha256"].fillna("").eq(EXPECTED_DATA_SHA256).all(), "Wrong source checksum.")
     _assert(decision["rows_before"].eq(12).fillna(False).all() and decision["rows_after"].eq(11).fillna(False).all(), "Wrong before/after row counts.")
@@ -321,6 +355,7 @@ def check_decisions(root: Path) -> None:
 def run_public_checks(root: Path = ASSIGNMENT_DIR) -> list[tuple[str, bool, str]]:
     checks = [
         ("environment and immutable fixture", check_environment_and_fixture),
+        ("cumulative foundation artifacts", check_foundations),
         ("committed issue audit", check_audit),
         ("committed cleaned records", check_cleaned),
         ("committed decision log", check_decisions),

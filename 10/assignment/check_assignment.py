@@ -54,7 +54,7 @@ PROTECTED_FILE_SHA256 = {
     ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
     ".python-version": "aa0d6581054e6e4ff3f91839deca7a854ad37221b8784d060b42d0f847ff1a3b",
     "PLATFORM_CHECK.md": "18abce5bfe89ff83904fb27312ffb11bae23fc3a8ef625d1419bea879b8dd518",
-    "README.md": "15429c9922910e6f06dc13465f2ae2b294f926ad9a1370df402a46723d1cf9f4",
+    "README.md": "9fd0f40047e0e2cb42266c76c463892ff1639c366ab2138e6bc8111009930861",
     "requirements.txt": "4c6d9eaa5d730c7dfb71124d1576070dfabefe9162124c74162d4bb172c77984",
     "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
     "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
@@ -156,9 +156,9 @@ def inventory(errors: list[str]) -> None:
         if path.is_file() or path.is_symlink():
             actual.add(relative.as_posix())
     expected = BASE_FILES
-    if actual != expected:
-        issue("package", f"unexpected or missing files: {sorted(actual ^ expected)}", errors)
-    for relative in actual:
+    if not expected <= actual:
+        issue("package", f"required files are missing: {sorted(expected - actual)}", errors)
+    for relative in expected:
         path = ROOT / relative
         if path.is_symlink():
             issue("package", f"symlinks are not accepted: {relative}", errors)
@@ -237,8 +237,8 @@ def output_checks(errors: list[str]) -> None:
         return
     actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
     expected = {".gitkeep", *ARTIFACT_COLUMNS, "inference_residuals.png"}
-    if actual != expected:
-        issue("output", f"required output inventory differs: {sorted(actual ^ expected)}", errors)
+    if not expected <= actual:
+        issue("output", f"required output artifacts are missing: {sorted(expected - actual)}", errors)
     tables = {}
     for name, columns in ARTIFACT_COLUMNS.items():
         path = output / name
