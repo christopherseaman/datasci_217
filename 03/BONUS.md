@@ -2,8 +2,8 @@
 notion:
   role: bonus
   status: mapped
-  page_id: "27ed9fdd-1a1a-8028-9e47-d90e3c28e11c"
-  url: "https://app.notion.com/p/27ed9fdd1a1a80289e47d90e3c28e11c"
+  page_id: "3d6d9fdd-1a1a-8129-8a17-fb53e6f1afe8"
+  url: "https://app.notion.com/p/3d6d9fdd1a1a81298a17fb53e6f1afe8"
 ---
 
 NumPy Bonus Content: Advanced Topics

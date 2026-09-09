@@ -8,7 +8,7 @@ notion:
 
 > San Francisco is a walkable city and I will literally die on this hill
 
-[DLC](https://www.notion.so/DLC-271d9fdd1a1a80cd804fee12a35b4186?pvs=21) 
+[DLC](https://app.notion.com/p/3d6d9fdd1a1a81d097abc3098e3d1397)
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
