@@ -16,7 +16,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Extended I/O and performance tips (Excel, JSON, chunked reads)
 - Safe non-interactive notebook execution and failure handling
 
-[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)
 
 # Jupyter Notebooks: Interactive Data Analysis
 

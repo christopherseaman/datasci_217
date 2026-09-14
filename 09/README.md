@@ -14,7 +14,7 @@ See [BONUS.md](BONUS.md) for optional topics outside the core Lecture 09 scope:
 - High-frequency data analysis and tick data
 - Custom frequency classes and time zone complexities
 
-[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
 
 # Time Series Analysis: Temporal Data and Trends
 

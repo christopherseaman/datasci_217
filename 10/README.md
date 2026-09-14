@@ -16,7 +16,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Production deployment considerations
 - Advanced deep learning architectures
 
-[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_ml_boosting.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_deep_learning.ipynb)
 
 Before running the examples, install the packages listed in [`demo/requirements.txt`](demo/requirements.txt). Optional material in `BONUS.md` may name additional packages that are not part of that recorded environment.
 

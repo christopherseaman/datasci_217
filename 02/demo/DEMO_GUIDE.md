@@ -1,13 +1,14 @@
 # Lecture 02 Demo Guide: Git, Functions, and Modules
 
-Run these scripts from this directory. They create their example files in the
-current directory, so use a disposable copy when you want to repeat a demo.
+This is three demonstrations, not one script: a Git workflow, a functions
+script, and a module-reuse script. Run the Python scripts from a disposable
+copy because they create example files and reports.
 
 ```bash
 cd 02/demo
 ```
 
-## 1. Git workflow discussion
+## 1. Git workflow (command-line or GUI)
 
 Use a small practice repository to demonstrate `git status`, `git add`,
 `git commit`, branches, merges, and `git log --oneline --graph --all`.
@@ -23,7 +24,7 @@ collaborator.
 python3 functions_demo.py
 ```
 
-The functions demo creates `sample_students.csv` and introduces reusable
+`functions_demo.py` creates `sample_students.csv` and introduces reusable
 functions implemented in the import-safe `student_tools.py` module.
 
 ## 3. Modules: import the helpers in a second script
@@ -32,6 +33,6 @@ functions implemented in the import-safe `student_tools.py` module.
 python3 module_usage_demo.py
 ```
 
-The module demo imports `student_tools.py` as an ordinary module and reuses
-its functions to create reports. Run both
-commands in a disposable directory if you do not want their report files.
+`module_usage_demo.py` imports `student_tools.py` as an ordinary module and
+reuses its functions to create reports. Run Demo 2 first so
+`sample_students.csv` exists.

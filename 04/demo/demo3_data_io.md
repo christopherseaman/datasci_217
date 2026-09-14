@@ -24,7 +24,7 @@ jupyter:
 - Select explicit rows and columns, create an output directory, and write one CSV.
 - Read the output back and verify the round trip in fresh state.
 
-Colab is the default launch experience; local Jupyter runs the same cells. See `DEMO_GUIDE.md` for launch links and path-case checks. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
+Colab is the default launch experience; local Jupyter runs the same cells. Run this notebook from a fresh kernel and follow its path and round-trip checks. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
 
 Compatibility candidate: Python 3.14, NumPy 2.3.3, pandas 3.0.5. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
 

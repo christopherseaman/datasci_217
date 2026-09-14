@@ -26,10 +26,10 @@ jupyter:
 
 A **notebook** is a document made of Markdown cells and code cells. A **kernel** is the Python process that executes code. The kernel's **state** is the collection of names and values currently held in memory. A Colab **runtime** includes that kernel and its runtime-local files. **Stored output** is text or another result saved beneath a cell; it can remain visible even when it no longer describes current state.
 
-Colab is the default launch experience; local Jupyter uses the equivalent restart-kernel and run-all controls. See `DEMO_GUIDE.md` for the live mutation protocol. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
+Colab is the default launch experience; local Jupyter uses the equivalent restart-kernel and run-all controls. The live mutation protocol is described in the cells below. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
 
 The later pandas demonstrations use the pinned activity environment documented
-in `DEMO_GUIDE.md`. This notebook deliberately stays with notebook mechanics
+in this notebook. It deliberately stays with notebook mechanics
 and core Python; it does not import pandas before the lecture introduces it.
 Never place credentials, tokens, protected records, or identifying data in
 notebook source or output.
@@ -44,7 +44,7 @@ print("Python:", sys.version.split()[0])
 
 Markdown cells explain, predict, and interpret. Code cells send Python to the kernel. Running a code cell can change state and create stored output; merely editing its visible source does neither.
 
-For the live demonstration, use a disposable copy to insert one prediction Markdown cell and one harmless code cell. Remove those scratch cells before the stale-state sequence described in the guide.
+For the live demonstration, use a disposable copy to insert one prediction Markdown cell and one harmless code cell. Remove those scratch cells before the stale-state sequence below.
 
 
 ## Producer and dependent cells

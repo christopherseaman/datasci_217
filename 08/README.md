@@ -17,7 +17,7 @@ See [BONUS.md](BONUS.md) for advanced extensions:
 - Custom aggregation functions and transformations
 - Advanced pivot table operations
 
-[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_pivot_tables.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
 
 # Outline
 
@@ -537,4 +537,4 @@ files, memory, and CPU are remote.
 
 # LIVE DEMO!
 
-Use [Demo 3](demo/DEMO_GUIDE.md#demo-3-remote-computing-and-performance) for the performance and remote-computing walkthrough.
+Use [Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb) for the performance and remote-computing walkthrough.
