@@ -244,9 +244,9 @@ python analysis.py
 python check_assignment.py
 ```
 
-A complete submission ends with `All public checks passed.` The optional GitHub Actions workflow may run the two public artifact tests with managed pytest. Instructor or TA grading may run the same written contract from a trusted checkout; the workflow is feedback, not a submission requirement.
+A complete submission ends with `All public checks passed.` The optional GitHub Actions workflow invokes the same public `check_assignment.py` entrypoint with managed pytest. An instructor or TA runs a trusted copy against submitted artifacts and never executes student code; the workflow is feedback, not a submission requirement.
 
-The checker reads the committed records and milestone artifacts directly. It does not infer how you produced them or require notebook execution; optional local reruns are useful QA only.
+The checker reads the committed records and milestone artifacts directly. This is pass/fail automated grading: 100 points only when every public artifact check passes, with zero-point diagnostic checks for feedback. It does not infer how you produced them or require notebook execution; optional local reruns are useful QA only.
 
 ## Explicit scope boundaries
 

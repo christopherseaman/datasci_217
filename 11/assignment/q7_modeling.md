@@ -15,7 +15,7 @@ jupyter:
 
 # Q7: Modeling
 
-**14 points** | Phase 8
+**13 points** | Phase 8
 
 Choose one regressor from pinned scikit-learn. Fit candidates on training rows only and use validation performance to freeze your choice. A simple model is enough, and it does not need to beat persistence. Do not read any Q6 test file in this notebook.
 

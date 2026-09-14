@@ -52,9 +52,7 @@ After creating the committed artifacts, use the discoverable student check:
 python check_assignment.py
 ```
 
-The checker reads files and committed CSVs but does not execute notebook code,
-award points, or judge the quality of your written explanations. Fix each
-`[FIX]` message, regenerate the artifacts, and check again.
+The shared checker reads committed CSVs and reports milestone points without executing notebook code or judging written explanations. Fix each failed check, regenerate the artifacts, and check again.
 
 ## Terms and data contract
 
@@ -144,3 +142,11 @@ Automated grading totals 100 points: 10 for fixture integrity, 25 for Task 1,
 40 for Task 2, 20 for Task 3, and 5 for artifact inventory. There are no
 separate human-review points; the grain/count, aggregate/transform, pivot,
 privacy, and readability explanations remain required coursework context.
+
+## Public automated grading
+
+grading.py is the shared ruleset for students, pytest, and graders. Run
+python check_assignment.py [submission_dir], or add --json for a
+datasci217/grading-result/v1 result. It reads committed artifacts only, never
+notebooks or submission code. The visible tests award fixture integrity (10),
+Task 1 (25), Task 2 (40), Task 3 (20), and artifact inventory (5).

@@ -23,3 +23,7 @@ If a version is wrong, recreate the virtual environment rather than installing
 additional unrecorded packages. If the data check is false, return to the
 assignment directory; do not replace the portable path logic with an absolute
 path.
+
+Public grading uses the same grading.py ruleset for students, pytest, and
+graders. Run python check_assignment.py [submission_dir] or add --json for a
+machine-readable datasci217/grading-result/v1 result; it reads artifacts only.

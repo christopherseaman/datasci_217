@@ -1,5 +1,7 @@
 # Assignment 03 platform delivery
 
+The public checker is the grading contract: graders run a trusted copy against submitted artifacts and never execute student code.
+
 This required GUI delivery workflow is an unassessed platform checklist, separate from the public code checker. A grading checkout can validate files and behavior, but it cannot prove local environment activation/recreation or which Git interface you operated.
 
 Use VS Code Source Control. GitHub Desktop is an acceptable equivalent when it exposes the same working-tree, diff, staging, commit, branch, merge, and remote states. Do not use command-line Git.

@@ -129,3 +129,11 @@ privacy constraints remain required coursework context.
 ### Artifact comparison
 
 CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently.
+
+## Public automated grading
+
+grading.py is the shared ruleset for students, pytest, and graders. Run
+python check_assignment.py [submission_dir], or add --json for a
+datasci217/grading-result/v1 result. It reads committed artifacts only, never
+notebooks or submission code. The visible tests award Task 1 (45), Task 2
+(30), and Task 3 (25), for 100 points.

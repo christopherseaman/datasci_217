@@ -1,5 +1,7 @@
 # Assignment 02 platform delivery
 
+The public checker is the grading contract: graders run a trusted copy against submitted artifacts and never execute student code.
+
 This is the required GUI delivery workflow for Assignment 02. It is reviewed separately from the public Python checker because a grading checkout may not preserve every branch reference or enough history to certify GUI competence.
 
 Use VS Code Source Control for these steps. GitHub Desktop is an acceptable equivalent when it exposes the same working-tree, diff, staging, commit, branch, merge, and remote states. Do not use command-line Git and do not create another repository.

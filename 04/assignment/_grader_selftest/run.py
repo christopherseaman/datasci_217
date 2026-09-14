@@ -4,7 +4,6 @@ from __future__ import annotations
 import csv
 import importlib.util
 import io
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -22,8 +21,6 @@ MUTATION = ('selected_purchases.csv', 'line_total')
 def run() -> None:
     scratch = REPO / "scratch"
     scratch.mkdir(exist_ok=True)
-    for key in ("ASSIGNMENT", "SUBMISSION_TAG", "COMMIT_URL", "RELEASE_URL"):
-        os.environ[key] = "artifact-regression"
     path = Path(__file__).with_name("grader_core.py" if NUMBER == "04" else "grader.py")
     spec = importlib.util.spec_from_file_location(f"a{NUMBER}_regression_grader", path)
     grader = importlib.util.module_from_spec(spec)
@@ -31,16 +28,13 @@ def run() -> None:
     spec.loader.exec_module(grader)
 
     def scores(root):
-        result = grader.grade_submission(root)
-        if NUMBER == "04":
-            return [test.score for test in result]
-        return [test["score"] for test in result["tests"]]
+        return [test["score"] for test in grader.grade_submission(root)["tests"]]
 
     def public(root, expected):
         result = subprocess.run(
             [sys.executable, "-B", "check_assignment.py"], cwd=root,
             text=True, capture_output=True,
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            env={"PYTHONDONTWRITEBYTECODE": "1"},
         )
         assert (result.returncode == 0) == expected, result.stdout + result.stderr
 

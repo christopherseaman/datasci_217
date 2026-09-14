@@ -1,7 +1,7 @@
-# Assignment 10 instructor self-test
+# Assignment 10 grading regression checks
 
-This directory is instructor-only and must never enter a learner submission.
+This directory contains development QA fixtures, not a separate grading policy. The public `grading.py` module is the single source of scoring rules for students and graders.
 
-`run.py` creates fresh temporary learner exports from frozen instructor-owned artifacts embedded in the harness. It checks public and central grading for accepted CSV serialization/row order, a minimal valid PNG, isolated missing artifacts, and wrong numeric values. It never executes learner notebook code or depends on ignored scratch output.
+`run.py` creates fresh temporary submissions from frozen examples embedded in the harness. It checks the shared grader for accepted CSV serialization/row order, a minimal valid PNG, isolated missing artifacts, and wrong numeric values. It never executes student notebook code or depends on old scratch output.
 
-`autograder.py` provisions the exact versions in the instructor-only `requirements.txt` and then invokes `grader.py`. The learner package retains its existing direct pins and does not receive a separate dependency lock.
+`autograder.py` and `grader.py` are compatibility entrypoints to the same public grader; they do not provision packages or require runner metadata. Use the assignment's declared environment and run `python 10/assignment/_grader_selftest/run.py` from the course repository.

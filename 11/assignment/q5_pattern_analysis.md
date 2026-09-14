@@ -15,7 +15,7 @@ jupyter:
 
 # Q5: Pattern Analysis
 
-**8 points** | Phase 6
+**7 points** | Phase 6
 
 Exploration can leak future information. Restrict this phase to targets before local 2024, then describe seasonal and hourly behavior without looking ahead to validation or test outcomes.
 

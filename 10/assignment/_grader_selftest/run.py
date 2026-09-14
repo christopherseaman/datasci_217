@@ -112,9 +112,9 @@ def public(root: Path, expected: int) -> None:
 
 
 def central(root: Path) -> dict:
-    result = subprocess.run([sys.executable, str(ASSIGNMENT_DIR / "_grader_selftest" / "grader.py")], cwd=root, text=True, capture_output=True, env={**os.environ, **RUNNER_ENV})
-    assert result.returncode == 0, result.stdout + result.stderr
-    return json.loads((root / "result.json").read_text(encoding="utf-8"))
+    result = subprocess.run([sys.executable, str(root / "check_assignment.py"), str(root), "--json"], cwd=root, text=True, capture_output=True, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+    assert result.returncode in {0, 1}, result.stdout + result.stderr
+    return json.loads(result.stdout)
 
 
 def quote_and_reverse(path: Path) -> None:

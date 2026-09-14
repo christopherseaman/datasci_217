@@ -1,5 +1,7 @@
 # Assignment 01 platform checkpoint
 
+The public checker is the grading contract: graders run a trusted copy against submitted artifacts and never execute student code.
+
 This is one exact, guided GUI synchronization checklist whose sole purpose is to deliver Assignment 01. It is required but unassessed. You are not expected to explain repositories, staging, commits, branches, remotes, push, or pull yet; Lecture 02 defines and practices those concepts.
 
 Use GitHub Desktop for this first delivery unless the instructor gives you an equivalent accessibility workflow.

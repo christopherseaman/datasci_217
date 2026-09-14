@@ -93,3 +93,7 @@ artifacts, rerun `python check_assignment.py`, inspect the deliverables in the
 Git GUI, commit, push, and resubmit according to the course
 policy. Automated results do not replace the separate human
 visual and communication review.
+
+Public grading uses the same grading.py ruleset for students, pytest, and
+graders. Run python check_assignment.py [submission_dir] or add --json for a
+machine-readable datasci217/grading-result/v1 result; it reads artifacts only.

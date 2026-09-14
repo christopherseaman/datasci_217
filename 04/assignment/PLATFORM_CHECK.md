@@ -1,6 +1,6 @@
 # Assignment 04 platform delivery
 
-This required checklist covers artifact delivery and GUI workflow. Grading reads the committed CSVs without executing the notebook. Do not use command-line Git.
+This required checklist covers artifact delivery and GUI workflow. The public checker is the grading contract: graders run a trusted copy against committed CSVs without executing the notebook. Do not use command-line Git.
 
 Assignment 04 is local-first. Use the supplied notebook or another editor to create the committed CSV artifacts; grading reads committed artifacts without executing the notebook. Lecture 04 demos may be shown in Colab, but this assignment should not be uploaded by itself.
 

@@ -15,7 +15,7 @@ jupyter:
 
 # Q3: Data Wrangling
 
-**12 points** | Phase 4
+**11 points** | Phase 4
 
 An absent source row is different from a measured zero. Build a complete station-by-elapsed-hour panel so later lags refer to exact hours and sensor dropouts remain visible.
 

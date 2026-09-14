@@ -74,6 +74,12 @@ def run() -> None:
         public(root, True)
         baseline = scores(root)
         assert baseline == POINTS, baseline
+        (root / ".gitignore").write_text("output/\n", encoding="utf-8")
+        assert not grader.grade_submission(root)["tests"][0]["passed"]
+        (root / ".gitignore").write_text(
+            ".venv/\n.ipynb_checkpoints/\n__pycache__/\n*.py[cod]\n.pytest_cache/\n",
+            encoding="utf-8",
+        )
         for name in ARTIFACTS:
             if not name.endswith(".csv"):
                 continue

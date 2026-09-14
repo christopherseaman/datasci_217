@@ -43,5 +43,4 @@ Required GUI-visible artifacts:
 - `output/availability_decisions.csv`
 - `output/chronological_blocks.csv`
 
-The public checker gives artifact feedback only. It does not execute student
-code or award points; the central artifact grader reports the automated score.
+Students, GitHub Actions, and graders use the same public artifact checks and 100-point rubric through `check_assignment.py`. It reports milestone scores without executing student code. Graders use a trusted assignment copy with `python check_assignment.py /path/to/submission --json`; no runner metadata or separate grading mode changes the result.

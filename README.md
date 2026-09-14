@@ -36,6 +36,14 @@ supplies the term-specific assignment repository URLs separately.
 
 Term-specific repository URLs: `#FIXME:ASSIGNMENT_URLS`
 
+### Grading
+
+Students and graders use the same public artifact checks, milestone points, and rubric. From an assignment directory, run `python check_assignment.py`; GitHub Actions runs the same checks through pytest. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions.
+
+For grading another submission, run the trusted assignment's `check_assignment.py /path/to/submission --json`. Use the published assignment version and its dependencies, not checker code supplied by the submission. The JSON report contains the same milestone results and automated score shown to students; batch collection and reporting do not change grading criteria.
+
+Assignments 01–04 and 06–10 have 100 automated points. Both exams, Assignments 05 and 11, have 85 automated points plus 15 human-review points. Both exams publish their tests and full rubrics, including human-review criteria. Passing automated checks does not award human-review points. Exam test visibility may be revisited before the midterm; there is no separate student/grader scoring mode.
+
 ## Lectures
 
 1. [1. Command Line + Python](01/README.md)

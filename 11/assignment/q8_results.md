@@ -15,7 +15,7 @@ jupyter:
 
 # Q8: Results
 
-**14 points** | Phase 9
+**13 points** | Phase 9
 
 Your Q7 estimator, parameters, and feature order are frozen. Recreate the same pipeline, refit on training plus validation, and evaluate the July-December 2024 test period once. Test diagnostics describe the final result; they are not another tuning opportunity.
 

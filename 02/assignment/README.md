@@ -162,11 +162,11 @@ All public checks passed.
 
 If a check fails, use its message to revise the named student file, rerun `python main.py` to regenerate `report.txt`, and run the checker again. The checker reads the committed report artifact directly; alternate implementations and reruns are optional instructor QA.
 
-The optional GitHub Actions workflow may run the public `test_assignment.py` contract on pushes and pull requests. Instructor or TA grading may run the same written contract from a trusted checkout; the workflow is feedback, not a submission requirement, and its implementation is not a model for the student code.
+The optional GitHub Actions workflow may run the public `test_assignment.py` contract on pushes and pull requests. It invokes the same public `check_assignment.py` entrypoint; an instructor or TA runs a trusted copy against submitted artifacts and never executes student code. The workflow is feedback, not a submission requirement.
 
 ## Scope boundaries
 
-This is a competence-focused pass/fail assignment. Do not add a shell script, notebook, dependency file, third-party package, CSV/JSON input, second repository, command-line Git workflow, or forced merge conflict.
+This is a competence-focused pass/fail assignment: automated grading is 100 points only when every public artifact check passes, with zero-point diagnostic checks for feedback. Do not add a shell script, notebook, dependency file, third-party package, CSV/JSON input, second repository, command-line Git workflow, or forced merge conflict.
 
 In the two student Python files, do not add:
 

@@ -67,3 +67,7 @@ python check_assignment.py
 ```
 
 Submit only after the public checker reports that all checks passed.
+
+Public grading uses the same grading.py ruleset for students, pytest, and
+graders. Run python check_assignment.py [submission_dir] or add --json for a
+machine-readable datasci217/grading-result/v1 result; it reads artifacts only.

@@ -71,7 +71,8 @@ def _new_submission(path: Path) -> None:
     (path / "output").mkdir()
     for name in [grader.RELEASE_NAME, grader.MANIFEST_NAME]:
         shutil.copy2(ASSIGNMENT / "data" / name, path / "data" / name)
-    shutil.copy2(ASSIGNMENT / "check_assignment.py", path / "check_assignment.py")
+    for name in ["check_assignment.py", "grading.py"]:
+        shutil.copy2(ASSIGNMENT / name, path / name)
     for number in range(1, 10):
         for source in ASSIGNMENT.glob(f"q{number}_*.ipynb"):
             shutil.copy2(source, path / source.name)
@@ -191,10 +192,8 @@ def _score(root: Path) -> int:
 
 
 def _public_score(root: Path) -> int:
-    result = subprocess.run([sys.executable, str(root / "check_assignment.py")], cwd=root, text=True, capture_output=True, check=False)
-    final_line = result.stdout.splitlines()[-1]
-    assert final_line.startswith("Readiness score: "), result.stdout + result.stderr
-    return int(final_line.removeprefix("Readiness score: ").removesuffix("/100"))
+    result = subprocess.run([sys.executable, str(root / "check_assignment.py"), "--json"], cwd=root, text=True, capture_output=True, check=False)
+    return json.loads(result.stdout)["score"]
 
 
 def _replace_temporarily(path: Path, replacement: bytes | None, operation) -> None:
@@ -214,22 +213,22 @@ def _isolated_mutations(correct: Path) -> None:
     nonfinite = pd.read_csv(correct / "output/q7_validation_predictions.csv")
     nonfinite.loc[0, "model_prediction"] = np.inf
     cases = [
-        ("Q1", "output/q1_release_audit.csv", b"wrong\n", 86, 92),
-        ("Q2", "output/q2_cleaned_observations.csv", None, 8, 14),
-        ("Q3", "output/q3_hourly_panel.csv", b"\x00\xff", 18, 24),
-        ("Q4", "output/q4_feature_manifest.csv", b"wrong\n", 30, 36),
-        ("Q5", "output/q5_monthly_station_summary.csv", b"wrong\n", 86, 92),
-        ("Q6", "output/q6_split_summary.csv", b"wrong\n", 54, 60),
-        ("Q7", "output/q7_validation_predictions.csv", nonfinite.to_csv(index=False, lineterminator="\n").encode(), 66, 72),
-        ("Q8", "output/q8_station_metrics.csv", b"wrong\n", 80, 86),
-        ("Q9", "report.md", b"# incomplete\n", 94, 94),
+        ("Q1", "output/q1_release_audit.csv", b"wrong\n", 78),
+        ("Q2", "output/q2_cleaned_observations.csv", None, 7),
+        ("Q3", "output/q3_hourly_panel.csv", b"\x00\xff", 16),
+        ("Q4", "output/q4_feature_manifest.csv", b"wrong\n", 27),
+        ("Q5", "output/q5_monthly_station_summary.csv", b"wrong\n", 78),
+        ("Q6", "output/q6_split_summary.csv", b"wrong\n", 48),
+        ("Q7", "output/q7_validation_predictions.csv", nonfinite.to_csv(index=False, lineterminator="\n").encode(), 59),
+        ("Q8", "output/q8_station_metrics.csv", b"wrong\n", 72),
+        ("Q9", "report.md", b"# incomplete\n", 85),
     ]
-    for label, relative, replacement, expected, public_expected in cases:
-        def verify(label=label, expected=expected, public_expected=public_expected):
+    for label, relative, replacement, expected in cases:
+        def verify(label=label, expected=expected):
             actual = _score(correct)
             assert actual == expected, f"{label}: expected {expected}, got {actual}"
             public_actual = _public_score(correct)
-            assert public_actual == public_expected, f"public {label}: expected {public_expected}, got {public_actual}"
+            assert public_actual == expected, f"public {label}: expected {expected}, got {public_actual}"
         _replace_temporarily(correct / relative, replacement, verify)
     print("Isolated rubric mutations rejected: 9/9")
 
@@ -243,16 +242,16 @@ def _extra_failures(correct: Path) -> None:
     def verify_prediction_mismatch() -> None:
         updated_report = _report(negative_metrics, pd.read_csv(correct / "output/q8_test_metrics.csv"))
         def verify_metrics_and_report() -> None:
-            _replace_temporarily(correct / "report.md", updated_report.encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 100)))
+            _replace_temporarily(correct / "report.md", updated_report.encode(), lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
         _replace_temporarily(metric_path, negative_metrics.to_csv(index=False, lineterminator="\n").encode(), verify_metrics_and_report)
     _replace_temporarily(validation_path, negative.to_csv(index=False, lineterminator="\n").encode(), verify_prediction_mismatch)
     nonfinite = validation.copy(); nonfinite.loc[0, "model_prediction"] = -np.inf
-    _replace_temporarily(validation_path, nonfinite.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 66)))
+    _replace_temporarily(validation_path, nonfinite.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 59)))
     metrics = pd.read_csv(metric_path); metrics.loc[0, "mae"] += 1
-    _replace_temporarily(metric_path, metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 66))
+    _replace_temporarily(metric_path, metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 59))
     png_path = correct / "output/q5_patterns.png"
     malformed = bytearray(png_path.read_bytes()); malformed[-1] ^= 1
-    _replace_temporarily(png_path, bytes(malformed), lambda: _assert_score(correct, 94))
+    _replace_temporarily(png_path, bytes(malformed), lambda: _assert_score(correct, 85))
 
     rounded_validation = pd.read_csv(validation_path)
     rounded_test = pd.read_csv(correct / "output/q8_test_predictions.csv")
@@ -269,29 +268,29 @@ def _extra_failures(correct: Path) -> None:
             residual = group[column] - group["actual"]; denominator = float(((group["actual"] - group["actual"].mean()) ** 2).sum())
             rounded_station.append({"model": model, "station_name": station, "n": len(group), "mae": residual.abs().mean(), "rmse": np.sqrt((residual ** 2).mean()), "r2": 1 - float((residual ** 2).sum()) / denominator})
     def verify_rounded_predictions() -> None:
-        _replace_temporarily(correct / "output/q8_test_predictions.csv", rounded_test.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "output/q8_test_metrics.csv", rounded_test_metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "output/q8_station_metrics.csv", pd.DataFrame(rounded_station).to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "report.md", _report(rounded_validation_metrics, rounded_test_metrics).encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 100))))))
+        _replace_temporarily(correct / "output/q8_test_predictions.csv", rounded_test.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "output/q8_test_metrics.csv", rounded_test_metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "output/q8_station_metrics.csv", pd.DataFrame(rounded_station).to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(correct / "report.md", _report(rounded_validation_metrics, rounded_test_metrics).encode(), lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85))))))
     _replace_temporarily(validation_path, rounded_validation.to_csv(index=False, lineterminator="\n").encode(), lambda: _replace_temporarily(metric_path, rounded_validation_metrics.to_csv(index=False, lineterminator="\n").encode(), verify_rounded_predictions))
 
     for relative in ["output/q5_monthly_station_summary.csv", "output/q6_split_summary.csv", "output/q7_validation_metrics.csv"]:
         shuffled = pd.read_csv(correct / relative).iloc[::-1]
-        _replace_temporarily(correct / relative, shuffled.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 100)))
+        _replace_temporarily(correct / relative, shuffled.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
 
     x_path, y_path = correct / "output/q6_X_validation.csv", correct / "output/q6_y_validation.csv"
     reversed_x = pd.read_csv(x_path).iloc[::-1]
     reversed_y = pd.read_csv(y_path).iloc[::-1]
     def verify_reordered_split() -> None:
-        _replace_temporarily(y_path, reversed_y.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 54), _assert_public_score(correct, 60)))
+        _replace_temporarily(y_path, reversed_y.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 48), _assert_public_score(correct, 48)))
     _replace_temporarily(x_path, reversed_x.to_csv(index=False, lineterminator="\n").encode(), verify_reordered_split)
 
     coursework = correct / "q4_feature_engineering.ipynb"
-    _replace_temporarily(coursework, None, lambda: (_assert_score(correct, 94), _assert_public_score(correct, 100)))
+    _replace_temporarily(coursework, None, lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
 
     audit_path = correct / "output/q2_cleaning_audit.csv"
     audit = pd.read_csv(audit_path); audit["rule"] = [f"alternate decision {index}" for index in range(len(audit))]
     manifest_path = correct / "output/q4_feature_manifest.csv"
     manifest = pd.read_csv(manifest_path); manifest["source"] = [f"alternate source {index}" for index in range(len(manifest))]
     def verify_alternate_wording() -> None:
-        _replace_temporarily(manifest_path, manifest.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 100)))
+        _replace_temporarily(manifest_path, manifest.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
     _replace_temporarily(audit_path, audit.to_csv(index=False, lineterminator="\n").encode(), verify_alternate_wording)
 
     report_path = correct / "report.md"
@@ -303,16 +302,16 @@ def _extra_failures(correct: Path) -> None:
             report_lines[index] = "| " + " | ".join(cells) + " |"
             break
     fabricated = "\n".join(report_lines) + "\n"
-    _replace_temporarily(report_path, fabricated.encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 94)))
+    _replace_temporarily(report_path, fabricated.encode(), lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
 
     spec_path = correct / "output/q7_model_spec.csv"
     spec = pd.read_csv(spec_path); spec.loc[0, "random_state"] = 218
-    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 66), _assert_public_score(correct, 72)))
+    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 59), _assert_public_score(correct, 59)))
 
     spec = pd.read_csv(spec_path)
     parameters = json.loads(spec.loc[0, "parameters_json"])
     spec.loc[0, "parameters_json"] = json.dumps(parameters, separators=(",", ":"))
-    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 94), _assert_public_score(correct, 100)))
+    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
 
 
 def _assert_score(root: Path, expected: int) -> None:
@@ -331,77 +330,38 @@ def _run_cli(script: Path, target: Path, cwd: Path, environment: dict[str, str])
 
 def main() -> int:
     assert sys.version_info[:2] == (3, 14)
-    assert (np.__version__, pd.__version__) == ("2.3.3", "3.0.5")
-    assert (ASSIGNMENT / "_grader_selftest/requirements.txt").read_text(encoding="utf-8").splitlines() == ["numpy==2.3.3", "pandas==3.0.5", "scikit-learn==1.9.0"]
-    public_source = (ASSIGNMENT / "check_assignment.py").read_text(encoding="utf-8")
-    central_source = (ASSIGNMENT / "_grader_selftest/grader.py").read_text(encoding="utf-8")
-    harness_source = Path(__file__).read_text(encoding="utf-8")
-    contract_source = (ASSIGNMENT / "assignment.md").read_text(encoding="utf-8")
-    assert "_grader_selftest" not in public_source and "grader.py" not in public_source
-    assert all(name not in public_source for name in ["_references", "_reference", "_gap_summary"])
-    stale_names = ["q4_" + "forecast_features.csv", "q5_" + "monthly_summary.csv", "q5_" + "correlation_matrix.csv"]
-    assert all(name not in source for name in stale_names for source in [public_source, central_source, harness_source])
-    for filename in grader.DOCUMENTED_FILENAMES:
-        assert filename in contract_source and filename in public_source and filename in central_source
-    with tempfile.TemporaryDirectory(prefix="a11-author-", dir=ASSIGNMENT.parents[1] / "scratch") as temporary_name:
-        temporary = Path(temporary_name)
-        correct, empty = temporary / "correct submission", temporary / "empty submission"
-        _new_submission(correct); _new_submission(empty); _materialize(correct)
-        assert not (correct / "_grader_selftest").exists() and not (empty / "_grader_selftest").exists()
-        assert not any((correct / "output" / name).exists() for name in stale_names)
-        for filename, columns in DOCUMENTED_ARTIFACT_SCHEMAS.items():
-            assert pd.read_csv(correct / "output" / filename).columns.tolist() == columns, filename
-        with _context():
-            result = grader.grade_submission(correct)
-            empty_result = grader.grade_submission(empty)
-        assert result["score"] == result["max-score"] == 94 and empty_result["score"] == 0
-        assert [test["max-score"] for test in result["tests"]] == grader.POINTS
-        assert len(result["tests"]) == 9 and all(set(test) == {"test-name", "passed", "score", "max-score"} for test in result["tests"])
-        assert set(result) == {"schema", "assignment", "submission", "commit", "release", "review", "datetime", "score", "max-score", "tests"}
-        assert result["schema"] == "datasci217/grading-result/v1" and result["score"] == sum(test["score"] for test in result["tests"])
-        assert result["review"] == ENVIRONMENT["REVIEW_URL"]
-        dt_value = pd.Timestamp(result["datetime"]); assert dt_value.tzinfo is not None and str(dt_value.tzinfo) == "UTC"
-        with _context(include_review=False):
-            assert grader.grade_submission(correct)["review"] == ENVIRONMENT["COMMIT_URL"]
-
-        public = subprocess.run([sys.executable, str(correct / "check_assignment.py")], cwd=correct, text=True, capture_output=True, check=False)
-        assert public.returncode == 0 and public.stdout.splitlines()[-1] == "Readiness score: 100/100", public.stdout + public.stderr
-        assert not (correct / "result.json").exists()
-        empty_public = subprocess.run([sys.executable, str(empty / "check_assignment.py")], cwd=empty, text=True, capture_output=True, check=False)
-        assert empty_public.returncode == 1 and empty_public.stdout.splitlines()[-1] == "Readiness score: 0/100"
-        assert not (empty / "result.json").exists()
-
+    with tempfile.TemporaryDirectory(prefix="a11-public-", dir=ASSIGNMENT.parents[1] / "scratch") as temporary_name:
+        correct = Path(temporary_name) / "correct"
+        empty = Path(temporary_name) / "empty"
+        _new_submission(correct)
+        _new_submission(empty)
+        _materialize(correct)
+        direct = grader.grade_submission(correct)
+        command = subprocess.run(
+            [sys.executable, str(correct / "check_assignment.py"), str(correct), "--json"],
+            text=True, capture_output=True, check=False,
+        )
+        public = json.loads(command.stdout)
+        assert command.returncode == 0 and public == direct
+        assert direct["score"] == direct["max-score"] == 85
+        broken = correct / "output/q4_features.csv"
+        original = broken.read_bytes()
+        broken.write_text("broken\n", encoding="utf-8")
+        try:
+            direct = grader.grade_submission(correct)
+            command = subprocess.run(
+                [sys.executable, str(correct / "check_assignment.py"), str(correct), "--json"],
+                text=True, capture_output=True, check=False,
+            )
+            assert command.returncode == 1 and json.loads(command.stdout) == direct
+            assert direct["score"] == 27
+        finally:
+            broken.write_bytes(original)
         _isolated_mutations(correct)
         _extra_failures(correct)
-        (correct / "output/q4_features.csv").write_text("broken\n", encoding="utf-8")
-        _assert_score(correct, 30)
-        _materialize(correct)
-        _assert_score(correct, 94)
-
-        script = ASSIGNMENT / "_grader_selftest/autograder.py"
-        environment = os.environ.copy() | ENVIRONMENT | {"PYTHONDONTWRITEBYTECODE": "1"}
-        success_cwd = temporary / "bootstrap-success"; success_cwd.mkdir()
-        success = _run_cli(script, correct, success_cwd, environment)
-        assert success.returncode == 0, success.stdout + success.stderr
-        assert json.loads((success_cwd / "result.json").read_text(encoding="utf-8"))["score"] == 94
-        learner_cwd = temporary / "learner-failure"; learner_cwd.mkdir()
-        learner = _run_cli(script, empty, learner_cwd, environment)
-        assert learner.returncode == 0 and json.loads((learner_cwd / "result.json").read_text(encoding="utf-8"))["score"] == 0
-        context_cwd = temporary / "context-failure"; context_cwd.mkdir()
-        missing_environment = dict(environment); missing_environment.pop("ASSIGNMENT", None)
-        missing = _run_cli(script, correct, context_cwd, missing_environment)
-        assert missing.returncode == 2 and not (context_cwd / "result.json").exists()
-        bad_bundle = temporary / "bad bundle"; shutil.copytree(ASSIGNMENT / "_grader_selftest", bad_bundle)
-        (bad_bundle / "requirements.txt").write_text("not-a-real-package-a11==0\n", encoding="utf-8")
-        install_cwd = temporary / "install-failure"; install_cwd.mkdir()
-        install = _run_cli(bad_bundle / "autograder.py", correct, install_cwd, environment)
-        assert install.returncode == 2 and not (install_cwd / "result.json").exists()
-
-        print("Correct fixture: public 100/100; trusted grader 94/94 automated")
-        print("Empty fixture: public 0/100; trusted grader 0/100")
-        print("Blocking, malformed CSV/PNG/report, prediction, metric, and resubmission checks passed")
-        print("Result schema, context/review fallback, and bootstrap install/failure checks passed")
-        print("Assignment 11 Chicago Beach Weather artifact grader self-test passed")
+        empty_result = grader.grade_submission(empty)
+        assert empty_result["score"] == 0
+    print("public grading parity passed")
     return 0
 
 

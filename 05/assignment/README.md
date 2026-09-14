@@ -159,3 +159,11 @@ CSV checks compare parsed columns and values, not file hashes or quoting. The
 two text artifacts are compared to their exact required content. Rows are
 matched by record or issue identity; audit and decision-log row order is not
 graded. Each milestone is assessed independently.
+
+## Public automated grading
+
+grading.py is the shared public ruleset for students, pytest, and graders. Run
+python check_assignment.py [submission_dir] for readable results or add --json
+for the datasci217/grading-result/v1 result object. It reads committed artifacts
+only, never notebooks or submission code. Automated tests award 25, 35, and 25
+points; the published 15-point human midterm rubric above remains separate.

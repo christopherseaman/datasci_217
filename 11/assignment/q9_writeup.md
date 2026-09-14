@@ -15,9 +15,17 @@ jupyter:
 
 # Q9: Writeup
 
-**6 points**
+**15 human-review points**
 
-Complete root [`report.md`](report.md) using facts from your saved artifacts. This is a structural completeness check, not a subjective prose score. Concise, factual writing is welcome, and the student model does not need to beat persistence.
+Complete root [`report.md`](report.md) using facts from your saved artifacts. Automated checks assess structure; the human review assesses the rubric below. Concise, factual writing is welcome, and the student model does not need to beat persistence.
+
+## Human Review Rubric
+
+| Criterion | Points |
+|---|---:|
+| Justified analysis, cleaning, and forecast decisions | 5 |
+| Interpretation tied to reported evidence | 5 |
+| Limitations and clear communication | 5 |
 
 ## Required Structure
 

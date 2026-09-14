@@ -153,3 +153,11 @@ Automated grading totals 100 points: 15 for fixtures and reproducibility, 20
 for Task 1, 30 for Task 2, 30 for Task 3, and 5 for artifact integrity. There
 are no separate human-review points; contract fit, accessibility, annotations,
 text alternatives, organization, and limitations remain required deliverables.
+
+## Public automated grading
+
+grading.py is the shared ruleset for students, pytest, and graders. Run
+python check_assignment.py [submission_dir], or add --json for a
+datasci217/grading-result/v1 result. It reads committed artifacts only, never
+notebooks or submission code. The visible tests award fixtures (15), Task 1
+(20), Task 2 (30), Task 3 (30), and artifact integrity (5).

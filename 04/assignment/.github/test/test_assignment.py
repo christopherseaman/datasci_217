@@ -1,8 +1,7 @@
 """Portable pytest entrypoint for Assignment 04.
 
-The public checker is intentionally invoked as a subprocess so the exported
-assignment repository has one visible pytest contract without importing the
-instructor-only grader bundle.
+The public checker is invoked as a subprocess so pytest uses the same artifact
+checks and scoring rules as students and graders.
 """
 
 from pathlib import Path

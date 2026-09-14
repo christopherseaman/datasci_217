@@ -73,7 +73,7 @@ Finish model and feature selection in Q7 without accessing test rows, labels, pr
 
 ## Artifact Contract
 
-### Q1: Setup and Exploration (8 points)
+### Q1: Setup and Exploration (7 points)
 
 `output/q1_release_audit.csv`
 
@@ -91,7 +91,7 @@ Use the full local release window for expected hours and observed, valid localiz
 
 One readable figure containing an ordinary sensor distribution and a station time-series preview, with labels.
 
-### Q2: Data Cleaning (10 points)
+### Q2: Data Cleaning (9 points)
 
 `output/q2_cleaned_observations.csv`
 
@@ -127,7 +127,7 @@ The `rule` value may be any concise, unique, nonblank description. Grading check
 
 Columns: `station_name`, `column_name`, `missing_count`, `missing_pct`. Report every sensor measurement column for both stations; each station/column key must be unique.
 
-### Q3: Data Wrangling (12 points)
+### Q3: Data Wrangling (11 points)
 
 `output/q3_hourly_panel.csv`
 
@@ -139,7 +139,7 @@ Build every station crossed with every elapsed UTC hour from local `2022-01-01 0
 
 Columns: `station_name`, `expected_hours`, `observed_hours`, `missing_hours`, `gap_runs`, `longest_gap_hours`. A gap run is a consecutive sequence of unobserved elapsed UTC hours. Each station key must be unique.
 
-### Q4: Feature Engineering (16 points)
+### Q4: Feature Engineering (14 points)
 
 `output/q4_features.csv`
 
@@ -178,7 +178,7 @@ Columns: `feature_name`, `source`, `earliest_offset_hours`, `latest_offset_hours
 
 The `source` value may be concise, nonblank student text. Grading fixes feature names, offsets, and roles, but does not require exact prose in `source`.
 
-### Q5: Pattern Analysis (8 points)
+### Q5: Pattern Analysis (7 points)
 
 Use only rows whose target local time is before 2024 and never use validation/test labels.
 
@@ -194,7 +194,7 @@ A square Pearson correlation matrix whose row-label identities and columns are e
 
 One readable figure showing training-only monthly and local-hour temperature patterns.
 
-### Q6: Modeling Preparation (12 points)
+### Q6: Modeling Preparation (11 points)
 
 Use eligible Q4 rows and the target-time split boundaries.
 
@@ -212,7 +212,7 @@ X and y files must have matching unique IDs and row order within each split. Sor
 
 Columns: `split`, `n_rows`, `target_start`, `target_end`, `n_features`. Include one row for each of train, validation, and test. Ranges are observed inclusive ranges and `n_features` counts all fixed predictors, including station.
 
-### Q7: Modeling (14 points)
+### Q7: Modeling (13 points)
 
 Use training rows to fit candidates and validation rows to select one final model. Do not access any test artifact in this phase.
 Review the pipeline and validation pattern from [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) before starting this phase.
@@ -233,7 +233,7 @@ Columns: `model`, `mae`, `rmse`, `r2`, `n`. Include one uniquely identified row 
 
 Columns: `feature`, `mean_mae_increase`, `std_mae_increase`. Calculate validation permutation importance through the fitted pipeline with `scoring="neg_mean_absolute_error"`, `n_repeats=10`, and `random_state=217`. Save `importances_mean` as `mean_mae_increase` and `importances_std` as `std_mae_increase` for each uniquely identified fixed feature. With sklearn's negative-MAE scorer, a positive importance means that permutation increased MAE.
 
-### Q8: Results (14 points)
+### Q8: Results (13 points)
 
 Freeze the Q7 choice, recreate its pipeline, refit on training plus validation, and evaluate test exactly once.
 
@@ -253,7 +253,7 @@ Columns: `model`, `station_name`, `n`, `mae`, `rmse`, `r2`. Include each unique 
 
 One readable multi-panel figure containing a validation baseline/model comparison, test actual-versus-predicted view, and residual diagnostics.
 
-### Q9: Writeup (6 human-review points)
+### Q9: Writeup (15 human-review points)
 
 Complete root `report.md` with exactly these level-two headings, in order:
 
@@ -273,11 +273,17 @@ Include the accepted six-column metrics table with columns `Evaluation set`, `Mo
 ```
 
 Q9's automated check verifies the required structure, numeric table, and image
-links as readiness feedback. The 6 points are human review of reasoning and
-communication; model performance is not scored.
+links as readiness feedback. The 15 points are human review; model performance
+is not scored.
+
+| Criterion | Points |
+|---|---:|
+| Justified analysis, cleaning, and forecast decisions | 5 |
+| Interpretation tied to reported evidence | 5 |
+| Limitations and clear communication | 5 |
 
 ## Points and Grading
 
-Q1 8 + Q2 10 + Q3 12 + Q4 16 + Q5 8 + Q6 12 + Q7 14 + Q8 14 + Q9 6 human = **100 points**.
+Q1 7 + Q2 9 + Q3 11 + Q4 14 + Q5 7 + Q6 11 + Q7 13 + Q8 13 = **85 automated points**; Q9 = **15 human-review points**; total = **100 points**.
 
-The central grader validates saved artifacts and requires each Q1–Q9 `.md`/`.ipynb` coursework pair, but does not execute notebooks or refit models. Its automated result is 94 points; Q9's 6 points are human review. The local checker is a structural/readiness check, not the central grade. Central grader tests are named and discoverable in grading feedback; use their diagnostics to complete your own assignment rather than copying example content.
+`python check_assignment.py [submission_dir] [--json]` is the one public artifact grader. It validates saved artifacts and requires each Q1–Q9 `.md`/`.ipynb` coursework pair, but does not execute notebooks or refit models. It reports the 85 automated points above; Q9's 15 points are human review. Its named tests and diagnostics are public grading criteria; use them to complete your own assignment rather than copying example content.

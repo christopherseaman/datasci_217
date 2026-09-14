@@ -1,27 +1,13 @@
-# Assignment 11 Instructor Grader
+# Assignment 11 grading regression checks
 
-This directory is instructor-only packaging. Do not include it in the student
-starter or require it from `check_assignment.py`. The public checker applies
-structural, invariant, and cross-artifact readiness checks without publishing a
-copyable reference pipeline. The trusted grader applies saved-artifact and
-cross-artifact checks. Grader discoverability and packaging are
-controlled by the course platform rather than by the student starter.
+This directory contains development QA examples, not a separate student/grader policy. The public `grading.py` module supplies the same artifact checks and point allocations through `check_assignment.py` for everyone.
 
-Both graders inspect the release, manifest, required coursework pairs, CSV and PNG
-outputs, and `report.md`; they do not execute student notebooks. Consequently, exact training-only summaries can be checked, but model
-fitting and decision provenance cannot be proven from artifacts. Notebook
-execution is optional QA. The trusted grader reports 94 automated points; the
-written report supplies the separate 6 human-review points.
+The grader reads the release, manifest, coursework pairs, CSV/PNG outputs, and `report.md`; it does not execute submitted code or refit models. It reports 85 automated points. The published rubric assigns the remaining 15 points to human review of the report's reasoning and communication; artifact checks cannot prove how modeling decisions were made.
 
-`autograder.py` is a plain-Python bootstrap. It installs the sibling pinned
-`requirements.txt`, invokes the trusted grader, and writes an exact
-`datasci217/grading-result/v1` `result.json`. Learner artifact failures exit 0 with all
-nine result rows, zero points for failed or blocked rows, and console diagnostics.
-Provisioning, context, release, or grader-startup failures exit 2 and remove any
-result file. `REVIEW_URL` falls back to `COMMIT_URL`; result datetimes are UTC.
+`autograder.py` and `grader.py` are compatibility entrypoints to the public implementation. They do not install dependencies or require runner metadata. Use `check_assignment.py [submission_dir] --json` for the same machine-readable results available to students.
 
-Run the real release harness with CPython 3.14:
+Run the regression harness in the declared CPython 3.14 environment:
 
 ```bash
-uv run --python 3.14 --with-requirements 11/assignment/_grader_selftest/requirements.txt python 11/assignment/_grader_selftest/run.py
+python 11/assignment/_grader_selftest/run.py
 ```

@@ -15,7 +15,7 @@ jupyter:
 
 # Q1: Setup and Exploration
 
-**8 points** | Phases 1-2
+**7 points** | Phases 1-2
 
 Before analyzing Chicago beach weather, confirm that you have the same frozen release as everyone else. Then get acquainted with station coverage, ordinary sensor distributions, and the shape of the time series.
 

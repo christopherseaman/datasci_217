@@ -1,23 +1,30 @@
-"""Run the supplied public Assignment 03 checks without local pytest."""
+"""Run the public, artifact-only Assignment 03 grader."""
 
+from __future__ import annotations
+
+import argparse
+import json
 from pathlib import Path
 
-from _public_checks import run_public_checks
+from grading import grade_submission
 
 
-assignment_dir = Path(__file__).resolve().parent
-results = run_public_checks(assignment_dir)
-failure_count = 0
-
-for name, error in results:
-    if error is None:
-        print(f"[PASS] {name}")
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("submission_dir", nargs="?", type=Path, default=Path(__file__).resolve().parent)
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+    result = grade_submission(args.submission_dir)
+    if args.json:
+        print(json.dumps(result))
     else:
-        failure_count += 1
-        print(f"[FIX]  {name}: {error}")
+        for test in result["tests"]:
+            print(f"[{'PASS' if test['passed'] else 'FIX'}]  {test['test-name']}" + (f": {test['detail']}" if test["detail"] else ""))
+        print(f"\nScore: {result['score']}/{result['max-score']}")
+        if result["score"] == result["max-score"]:
+            print("All public checks passed.")
+    return 0 if all(test["passed"] for test in result["tests"]) else 1
 
-if failure_count:
-    print(f"\n{failure_count} public check(s) still need attention.")
-    raise SystemExit(1)
 
-print("\nAll public checks passed.")
+if __name__ == "__main__":
+    raise SystemExit(main())

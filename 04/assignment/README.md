@@ -12,7 +12,7 @@ The repository-delivery steps are in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md). C
 - `.python-version` and `requirements.txt`: the candidate environment records; do not edit them;
 - `data/purchases.csv` and `data/fixture.json`: the immutable synthetic input and its manifest; do not edit them;
 - `output/.gitkeep`: keeps the generated-output directory in the starter repository;
-- `check_assignment.py`: the discoverable public checker; do not edit it; and
+- `check_assignment.py` and `grading.py`: the discoverable public checker and scoring rules; do not edit them; and
 - `PLATFORM_CHECK.md`: the unassessed local-Jupyter and GUI delivery checklist; do not edit it.
 
 The supplied setup cell locates and verifies the fixture; do not edit it. It supports both a standalone exported layout and this course repository.
@@ -155,7 +155,7 @@ A generated CSV is a separate committed milestone artifact; it is not the same t
 python check_assignment.py
 ```
 
-A complete artifact set ends with `All public checks passed.` The public checker derives expected results from the fixture and does not trust editable assertions or displayed notebook output.
+A complete artifact set ends with `All public checks passed.` The public checker derives expected results from the fixture and does not trust editable assertions or displayed notebook output. It is also the grader contract: instructors run a trusted copy against submitted artifacts and never execute the notebook.
 
 The automated grader reads the two committed CSV artifacts directly. Optional notebook execution is useful local QA but is not required for grading.
 

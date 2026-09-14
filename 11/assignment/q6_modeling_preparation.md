@@ -15,7 +15,7 @@ jupyter:
 
 # Q6: Modeling Preparation
 
-**12 points** | Phase 7
+**11 points** | Phase 7
 
 Random splitting would allow future weather into training. Keep only eligible forecast rows and create the fixed train, validation, and test periods from each target instant.
 

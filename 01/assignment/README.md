@@ -143,11 +143,11 @@ All public checks passed.
 
 If a check fails, fix the student file named in the message, rerun that script, rerun `python make_output.py` when requested, and then run the checker again. You do not need to install pytest locally.
 
-The optional GitHub Actions workflow runs `.github/test/test_assignment.py` with pytest on pushes and pull requests. Those public tests use the same checks as `check_assignment.py`; the workflow is feedback, not a submission requirement. Additional instructor checks, if any, remain outside the student repository.
+The optional GitHub Actions workflow runs `.github/test/test_assignment.py` with pytest on pushes and pull requests. It invokes the same public `check_assignment.py` entrypoint; a grader runs a trusted copy of that checker against the submitted artifacts and never executes student code. The workflow is feedback, not a submission requirement.
 
 ## Completion contract
 
-This is a competence-focused pass/fail assignment. Automated grading reads the committed terminal evidence and `output/readiness.txt` artifact directly. Source structure, alternate-input behavior, and the exact GUI synchronization checklist are separate instructional/manual evidence; they are not inferred from code-analysis tests.
+This is a competence-focused pass/fail assignment. Automated grading is 100 points only when every public artifact check passes (the individual diagnostic checks are zero-point feedback). It reads the committed terminal evidence and `output/readiness.txt` artifact directly. Source structure, alternate-input behavior, and the exact GUI synchronization checklist are separate instructional/manual evidence; they are not inferred from code-analysis tests.
 
 Do not add notebooks, third-party packages, shell pipes, or shell redirection. In the three student scripts, do not add:
 

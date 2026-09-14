@@ -1,32 +1,9 @@
-# Assignment 08 instructor grader self-test
+# Assignment 08 artifact-grader regression checks
 
-This directory is instructor-only and must be excluded from the student starter
-and production submission. It contains discoverable release QA,
-no credentials, private records, or secret grading rule.
+This development QA directory is not a hidden assessment. It exercises the public canonical grading.py ruleset against disposable artifact fixtures; it never executes submission code or provisions dependencies.
 
-The production runner invokes standard-library `autograder.py` with plain
-Python from the student checkout. It installs the exact sibling requirements
-into that interpreter before importing `grader.py`; PEP 723 is only
-local `uv run` provisioning. `grader.py` independently protects the assignment
-contract and checks committed artifacts. Optional release QA may remove outputs,
-clear notebook state, start fresh kernels, and exercise alternate prepared tables. It writes the official
-`datasci217/grading-result/v1` object to `./result.json`; completed grading exits zero
-even when student checks fail. The automated maximum is 100.
-
-The grader consumes nonempty `ASSIGNMENT`, `SUBMISSION_TAG`,
-`COMMIT_URL`, and `RELEASE_URL`; `REVIEW_URL` falls back to `COMMIT_URL`, and
-the grader generates the UTC result `datetime`.
-
-Run the full adversarial author harness from `08/assignment` with the exact
-recorded runtime and instructor dependencies:
+Run with the course Python 3.14 environment:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 uv run _grader_selftest/run.py
+python 08/assignment/_grader_selftest/run.py
 ```
-
-The harness builds only disposable completed/defective submissions. It covers
-fresh canonical and alternate behavior, feasible flattened/course-root/nested/
-relocated/path-with-spaces layouts, deterministic repeat, fixture failure before
-cleanup, unrelated-sentinel preservation separately from extra-file rejection,
-official result shapes/exits, corrected resubmission, and representative
-operation/scope defects. It performs no network or external grading-system write.

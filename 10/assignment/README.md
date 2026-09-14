@@ -33,11 +33,11 @@ Your completed run must retain `output/.gitkeep` and create these required artif
 - `final_predictions.csv`
 - `binary_metrics.csv`
 
-The public checker reads the committed artifacts. CSV rows may be ordered differently and numeric serialization may use reasonable float precision; their schema, IDs, missingness, and values are checked. The residual figure is checked only as a PNG file. It does not execute the notebook, award points, or judge explanation quality. Written interpretation is reviewed separately.
+The shared public checker reads the committed artifacts and reports the automated score. CSV rows may be ordered differently and numeric serialization may use reasonable float precision; their schema, IDs, missingness, and values are checked. The residual figure is checked only as a PNG file. It does not execute the notebook or judge explanation quality.
 
 ## Assessment
 
-The central grader reports 100 automated points:
+Students, GitHub Actions, and graders use the same public 100-point rubric:
 
 - submission package and fixture integrity: 10
 - bounded OLS inference and intervals: 25
@@ -48,5 +48,7 @@ The central grader reports 100 automated points:
 There are no separate human-review points. The notebook and written
 interpretation remain required coursework artifacts, but the automated score is
 based on the committed artifacts.
+
+Graders run the trusted assignment copy with `python check_assignment.py /path/to/submission --json`. It uses the same `grading.py` rules and points as local student checks, without runner metadata or separate grading settings.
 
 Advanced models, regularization, cross-validation, model search, feature importance, classifier fitting, and test-set model selection are outside this assignment.

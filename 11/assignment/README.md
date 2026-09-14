@@ -33,15 +33,15 @@ The release and provenance manifest are committed under `data/`. `download_data.
 
 | Question | Points | Notebook | Main result |
 |---|---:|---|---|
-| Q1 | 8 | [`q1_setup_exploration.ipynb`](q1_setup_exploration.ipynb) | Audit and explore the frozen release |
-| Q2 | 10 | [`q2_data_cleaning.ipynb`](q2_data_cleaning.ipynb) | Clean timestamps and sensor values |
-| Q3 | 12 | [`q3_data_wrangling.ipynb`](q3_data_wrangling.ipynb) | Build a complete station-hour panel |
-| Q4 | 16 | [`q4_feature_engineering.ipynb`](q4_feature_engineering.ipynb) | Build leakage-safe forecast features |
-| Q5 | 8 | [`q5_pattern_analysis.ipynb`](q5_pattern_analysis.ipynb) | Describe training-only patterns |
-| Q6 | 12 | [`q6_modeling_preparation.ipynb`](q6_modeling_preparation.ipynb) | Create fixed chronological splits |
-| Q7 | 14 | [`q7_modeling.ipynb`](q7_modeling.ipynb) | Select and validate one sklearn model |
-| Q8 | 14 | [`q8_results.ipynb`](q8_results.ipynb) | Evaluate the untouched test period |
-| Q9 | 6 human | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` |
+| Q1 | 7 | [`q1_setup_exploration.ipynb`](q1_setup_exploration.ipynb) | Audit and explore the frozen release |
+| Q2 | 9 | [`q2_data_cleaning.ipynb`](q2_data_cleaning.ipynb) | Clean timestamps and sensor values |
+| Q3 | 11 | [`q3_data_wrangling.ipynb`](q3_data_wrangling.ipynb) | Build a complete station-hour panel |
+| Q4 | 14 | [`q4_feature_engineering.ipynb`](q4_feature_engineering.ipynb) | Build leakage-safe forecast features |
+| Q5 | 7 | [`q5_pattern_analysis.ipynb`](q5_pattern_analysis.ipynb) | Describe training-only patterns |
+| Q6 | 11 | [`q6_modeling_preparation.ipynb`](q6_modeling_preparation.ipynb) | Create fixed chronological splits |
+| Q7 | 13 | [`q7_modeling.ipynb`](q7_modeling.ipynb) | Select and validate one sklearn model |
+| Q8 | 13 | [`q8_results.ipynb`](q8_results.ipynb) | Evaluate the untouched test period |
+| Q9 | 15 human | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` |
 
 Lecture 11 demonstrates the workflow. Geographic material is outside this
 assignment: do not add maps, coordinates, spatial joins, geographic features,
@@ -59,12 +59,8 @@ jupytext --to ipynb --test-strict q*.md
 uv run check_assignment.py
 ```
 
-The central grader evaluates saved artifacts and requires the nine coursework
-`.md`/`.ipynb` pairs, but does not execute notebooks or refit models. The local checker is a structural/readiness check. Central
-grader test names and diagnostics are discoverable in grading feedback; use
-them to finish your own assignment rather than copying example content. Passing
-phase points are retained. The trusted artifact grader reports 94 automated
-points; Q9's 6 points are human review of `report.md` reasoning and
-communication. Its automated structure check is readiness feedback only.
+Students, GitHub Actions, and graders use the same public `grading.py` rules through `check_assignment.py`. The checker reads saved artifacts and requires the nine coursework `.md`/`.ipynb` pairs, but does not execute notebooks or refit models. Passing phase points are retained: the automated maximum is 85, with Q9's 15 points awarded by human review of `report.md` reasoning and communication. Automated report-structure checks award no human-review points. The full rubric and tests are public.
+
+Graders run the trusted assignment copy against a submission with `python check_assignment.py /path/to/submission --json`. No grader-only settings or required runner metadata change the score. Use the public diagnostics to complete your own assignment rather than copying example content.
 
 See [`HINTS.md`](HINTS.md) for nudges and [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md) for environment checks.

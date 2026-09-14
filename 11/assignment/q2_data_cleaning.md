@@ -15,7 +15,7 @@ jupyter:
 
 # Q2: Data Cleaning
 
-**10 points** | Phase 3
+**9 points** | Phase 3
 
 Sensor readings can contain invalid values without making the entire observation useless. In this phase, reject invalid station-time keys, preserve valid rows, and turn only out-of-range sensor values into missing data. Do not smooth away real gaps or unusual but valid weather.
 

@@ -6,6 +6,7 @@ Checks read committed artifacts; student notebook code is never executed or insp
 from __future__ import annotations
 
 import csv
+import argparse
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 import json
@@ -260,21 +261,24 @@ def run_public_checks(root: Path) -> list[tuple[str, str | None]]:
     return results
 
 
-def main() -> None:
-    results = run_public_checks(ASSIGNMENT_DIR)
-    failure_count = 0
-    for name, error in results:
-        if error is None:
-            print(f"[PASS] {name}")
-        else:
-            failure_count += 1
-            print(f"[FIX]  {name}: {error}")
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("submission_dir", nargs="?", type=Path, default=ASSIGNMENT_DIR)
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+    from grading import grade_submission
 
-    if failure_count:
-        print(f"\n{failure_count} public check(s) still need attention.")
-        raise SystemExit(1)
-    print("\nAll public checks passed.")
+    result = grade_submission(args.submission_dir)
+    if args.json:
+        print(json.dumps(result))
+    else:
+        for test in result["tests"]:
+            print(f"[{'PASS' if test['passed'] else 'FIX'}]  {test['test-name']}" + (f": {test['detail']}" if test["detail"] else ""))
+        print(f"\nScore: {result['score']}/{result['max-score']}")
+        if result["score"] == result["max-score"]:
+            print("All public checks passed.")
+    return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
