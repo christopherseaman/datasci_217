@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/286d9fdd1a1a80cab36bf85d415c2e53"
 ---
 
-Bonus Content: Advanced Data Cleaning
+# DLC: Advanced Data Cleaning
 
 *These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!*
 

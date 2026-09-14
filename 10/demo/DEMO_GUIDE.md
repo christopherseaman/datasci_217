@@ -121,15 +121,6 @@ jupyter notebook
 
 3. Run all cells sequentially
 
-## Tips for Instructors
-
-- **Demo 1**: Emphasize the difference between statistical inference (statsmodels) and prediction (scikit-learn)
-- **Demo 2**: Highlight the consistent scikit-learn API and when to use each model type
-- **Demo 3**: Stress that deep learning isn't always better; treat the Dropout/L2 comparison as a regularization choice to validate
-- Demos 1–2 download California Housing (20,640 California census block groups from the 1990 census); Demo 3 uses scikit-learn's bundled Wine recognition dataset (178 samples)
-- The demos build complexity gradually - don't skip ahead
-- Encourage students to experiment with hyperparameters and see how results change
-
 ## Common Issues
 
 - **Import errors**: Make sure all packages are installed in the correct environment

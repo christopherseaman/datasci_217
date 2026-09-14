@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a81b599c7ff49c7654508"
 ---
 
-# Bonus Content: Advanced Git Concepts
+# DLC: Advanced Git Concepts
 
 *This content is optional and not required for assignments. It's here for students who want to dive deeper into Git.*
 

@@ -60,9 +60,3 @@ jupyter lab
 - Python environment with pandas
 - Sample datasets (customers, products, purchases)
 - Jupyter notebook interface
-
-## Instructor Notes
-- Each demo builds on the previous one
-- Focus on practical application over theoretical mastery
-- Encourage students to experiment with different parameters
-- Emphasize real-world scenarios and common pitfalls

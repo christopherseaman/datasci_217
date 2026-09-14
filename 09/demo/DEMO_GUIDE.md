@@ -109,33 +109,7 @@ jupytext --to notebook --output demo2_indexing_resampling.ipynb demo2_indexing_r
 jupytext --to notebook --output demo3_visualization_automation.ipynb demo3_visualization_automation.md
 ```
 
-## Instructor Notes
-
-### Demo 1: datetime Fundamentals
-- Emphasize the transition from Python's datetime to pandas DatetimeIndex
-- Show how datetime indexing makes time series selection intuitive
-- Use real clinical scenarios (patient visit schedules, lab test dates)
-- Demonstrate diff() and pct_change() for analyzing temporal changes
-- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently
-
-### Demo 2: Resampling and Rolling Windows
-- Connect resampling to the `groupby()` concepts from Lecture 08
-- Demonstrate how rolling windows smooth noisy medical data
-- Show practical applications: detecting trends in patient outcomes
-- Compare different window sizes and their effects
-- Explain EWM parameters (span, alpha, halflife) and when to use them
-- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently
-
-### Demo 3: Visualization and Integration
-- Combine time series concepts with visualization from Lecture 07
-- Show how different visualization libraries work with time series
-- Demonstrate seasonal pattern visualization with month-based grouping
-- Create publication-quality plots for medical research
-- Integrate resampling, rolling windows, and visualization techniques
-- Teach time-zone localization and conversion after the lecture's time-zone section
-- **Note**: This demo includes comprehensive pedagogical context (Introduction sections and explanatory paragraphs) to help students understand concepts independently.
-
-## Common Pitfalls to Address
+## Common Pitfalls
 - **Timezone confusion**: Address localization and conversion in Demo 3, after the lecture introduces time zones
 - **Frequency mismatches**: Demonstrate what happens when resampling irregular data
 - **Rolling window edge effects**: Explain NaN values at the beginning of series

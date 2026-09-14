@@ -10,6 +10,8 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extension notes.
 
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+
 ![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
 
 This capstone lecture is about putting familiar tools together around a real

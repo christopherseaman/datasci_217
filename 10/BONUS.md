@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a8135b60ccf029cc707a7"
 ---
 
-# Advanced Modeling Topics
+# DLC: Advanced Modeling Topics
 
 ## Hyperparameter Tuning Strategies
 

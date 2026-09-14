@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a8164a3f7c5c5d3a8617a"
 ---
 
-# Advanced Time Series Analysis Topics
+# DLC: Advanced Time Series Analysis Topics
 
 Everything in this document is optional for Lecture 09. It collects specialized material on periods, decomposition, forecasting, high-frequency data, custom frequencies, advanced time zones, and additional visualization.
 

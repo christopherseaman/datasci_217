@@ -62,15 +62,3 @@ validate the result, add row-level analysis fields, identify outlier
 candidates, and save cleaned data and a report under a disposable `output/`
 directory. Grouped summaries and temporal feature engineering are deferred to
 later lectures.
-
-## Instructor checklist
-
-- Run each notebook from a fresh kernel in order: missingness → transformations
-  → complete workflow.
-- Keep the original table separate from the working copy and explain why each
-  cleaning decision is appropriate.
-- Treat the exact pins in `requirements.txt` as the activity contract.
-- Keep notebook automation (batch execution, failure handling, and output
-  policies) with Lecture 04's optional Jupyter material; it is not repeated
-  here.
-- Clear outputs before committing; repository notebooks are output-free.

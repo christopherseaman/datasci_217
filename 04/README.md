@@ -16,6 +16,8 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Extended I/O and performance tips (Excel, JSON, chunked reads)
 - Safe non-interactive notebook execution and failure handling
 
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+
 # Jupyter Notebooks: Interactive Data Analysis
 
 In Lectures 1-3, Python scripts (`.py`) ran top-to-bottom. Jupyter notebooks

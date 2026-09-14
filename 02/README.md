@@ -10,6 +10,8 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
+[Live Demo Guide](demo/DEMO_GUIDE.md)
+
 # VS Code Basics (GUI-first)
 
 We'll start in the editor so Git makes visual sense later.

@@ -14,6 +14,8 @@ terminal; notebooks begin in Lecture 04.
 
 **LIVE DEMO!**
 
+[Live Demo Guide](demo/DEMO_GUIDE.md)
+
 ## Virtual Environments
 
 ![xkcd 1987: Python Environment](media/xkcd_1987.png)

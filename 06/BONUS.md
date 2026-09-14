@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a810a9c14db8f8818cb36"
 ---
 
-Data Wrangling: Advanced Topics
+# DLC: Advanced Data Wrangling
 
 *These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques.*
 

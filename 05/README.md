@@ -10,7 +10,7 @@ Data: Care & Feeding
 
 Mid-term: [#FIXME:URL]
 
-[Live Demo!](demo/DEMO_GUIDE.md)
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
 
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 

@@ -64,9 +64,3 @@ jupyter lab
 - Sample datasets (tips, iris, stock data)
 - Jupyter notebook interface
 - Jupytext; Markdown is the authoritative source for each generated notebook
-
-## Instructor Notes
-- Each demo builds visualization skills progressively
-- Focus on practical application over theoretical mastery
-- Encourage students to experiment with different plot types
-- Emphasize choosing the right chart for the data and message

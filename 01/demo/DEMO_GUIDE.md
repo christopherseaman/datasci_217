@@ -1,167 +1,89 @@
-# Live Demo!
+# Lecture 01 Live Demo Guide
 
-# Demo 1: Setup and command-line navigation
-**Guide:** `01_github_vscode_setup_guide.md` (Live walkthrough, no script)
+There are three live demos, grouped from five runnable pieces:
 
-**Key Steps:**
-1. GitHub account creation
-   - Professional identity in tech
-   - Username best practices
-   - Employers look at GitHub profiles
+1. Setup, VS Code, and shell navigation (`01_github_vscode_setup_guide.md` plus `02_cli_navigation_demo.sh`)
+2. Python basics and control structures (`03_python_basics_demo.py` plus `04_control_structures_demo.py`)
+3. A small end-to-end workflow (`05_integration_workflow_demo.py`)
 
-2. Email privacy and GitHub Education
-   - Noreply email setup
-   - Email privacy in commits
-   - GitHub Student Pack: https://education.github.com/students
-   - Free tools and resources available
+These are scripts and walkthroughs, not notebooks. Run them from a disposable
+copy if you want to keep the repository clean.
 
-3. VS Code setup
-   - Coding environment for students
-   - Python extension installation
-   - Widespread industry adoption
+## Demo 1: Setup, VS Code, and shell navigation
 
-4. Git configuration in VS Code
-   ```bash
-   git config --global user.name "Your Name"
-   git config --global user.email "noreply@users..."
-   ```
-   - Create and run hello.py
-   - Integration between tools
+### Setup and VS Code walkthrough
 
-**Check Understanding:**
-- Verify students can see their noreply email
-- Confirm hello.py runs successfully
+Use [VS Code](https://code.visualstudio.com/) as the editor and terminal for
+the walkthrough. On Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
+for the Bash commands in this course; run `wsl --install` from Administrator
+PowerShell, restart if prompted, and open the Ubuntu terminal.
 
-## Command-line navigation
-**Script:** `02_cli_navigation_demo.sh`
+Work through `01_github_vscode_setup_guide.md`:
 
-**Key Steps:**
-1. Basic navigation commands
-   - pwd (where am I?)
-   - ls (what's here?)
-   - mkdir (create directories)
-   - cd (change directories)
+- create or open a GitHub account and find the privacy-preserving `noreply` email;
+- install the Python extension in VS Code;
+- configure Git with your name and GitHub `noreply` email;
+- create `hello.py` containing `print("Hello, Data Science!")` and run it;
+- verify `python3 --version`, `git --version`, and `pwd` in the VS Code terminal.
 
-2. Quick project creation
-   ```bash
-   ./02_cli_navigation_demo.sh
-   ```
-   - Simple directory structure
-   - File creation with echo redirection
+### Shell navigation script
 
-3. File viewing
-   - cat command to display file contents
-   - Basic CSV data example
+Run the script from a disposable directory:
 
-4. Path problem demonstration
-   - The first run captures the expected wrong-path error
-   - The script rewrites the path and reruns successfully
-   - Teaches relative path concept
+```bash
+mkdir -p scratch/lecture01-cli
+cd scratch/lecture01-cli
+bash /path/to/datasci_217/01/demo/02_cli_navigation_demo.sh
+```
 
-**Discussion Points:**
-- Why the Python script couldn't find the file
-- How file paths work from different directories
+It practices `pwd`, `ls`, `mkdir`, `cd`, `cat`, `echo`-based file creation,
+and relative paths. The intentional path failure is part of the exercise: read
+the error, identify the working directory, and rerun with the corrected path.
 
-# Demo 2: Python basics, debugging, and control structures
-**Script:** `03_python_basics_demo.py`
+**Try it:** Before running the script, predict which files and directories it
+will create. Afterward, use `find` or `ls -R` to check your prediction.
 
-**Key Steps:**
-1. Set expectations
-   - Intentional mistakes in demo
-   - Learning exercise to spot and understand fixes
+## Demo 2: Python basics and control structures
 
-2. Variables and Types
-   ```bash
-   python3 03_python_basics_demo.py
-   ```
-   - Typo error shown: "student_naem" (commented out with fix)
-   - Error message explanations and debugging tips
+### Python basics and debugging
 
-3. F-strings
-   - Missing 'f' mistake (commented out with fix)
-   - Common error pattern
-   - Professional formatting
+```bash
+python3 03_python_basics_demo.py
+```
 
-4. Indentation and Lists
-   - Python's unique indentation-based syntax
-   - IndexError: lists start at 0, not 1 (commented out with fix)
+The script covers variables, types, f-strings, lists, arithmetic, and reading
+tracebacks. Several mistakes are commented out beside their fixes so you can
+predict the error before enabling a line.
 
-5. Basic Operations and Error Handling
-   - Math operations and string handling
-   - Division by zero and off-by-one errors (commented out with fixes)
-   - Step-by-step debugging approach
-   - Data type checking importance
+**Try it:** Explain the typo, missing `f` prefix, zero-based index, and
+division-by-zero guard before reading the printed explanation.
 
-**Interactive Elements:**
-- Have students identify errors as they occur (now shown as commented-out code)
-- Discuss data types and their importance
-- Practice reading error messages and understanding fixes
+### Control structures
 
-## Control structures
-**Script:** `04_control_structures_demo.py`
+```bash
+python3 04_control_structures_demo.py
+```
 
-**Key Steps:**
-1. Comparisons and If Statements
-   ```bash
-   python3 04_control_structures_demo.py
-   ```
-   - = assigns, == compares
-   - Specific conditions come before broader conditions in an if/elif chain
+The script practices comparisons, `if`/`elif`/`else`, `for`, `enumerate`,
+`while`, nested loops, `break`, `continue`, and a small grading summary using
+only Lecture 01 concepts.
 
-2. For Loops and enumerate()
-   - Plain iteration over a list
-   - enumerate() for positions and values
+**Try it:** Predict the output of one loop and one conditional branch before
+running the script. Then change a threshold and rerun it.
 
-3. While Loops
-   - A counter-based while loop
-   - Ensuring the loop variable changes so the loop can end
+## Demo 3: Complete integration
 
-4. Nested loops and loop control
-   - Nested loops for a small multiplication table
-   - break to stop early and continue to skip an item
+```bash
+python3 05_integration_workflow_demo.py
+```
 
-5. Practical Example
-   - Small grading analysis using parallel lists
-   - If/elif/else status labels and arithmetic summary
-   - The script uses only Lecture 01 concepts: variables, lists, loops,
-     conditionals, and arithmetic
+This list-based fixture combines the command line, variables, lists, loops,
+conditionals, arithmetic, and redirected output:
 
-**Interactive Elements:**
-- Have students predict output before execution
-- Compare loop and conditional results
+```bash
+python3 05_integration_workflow_demo.py > results.txt
+```
 
-# Demo 3: Complete integration
-**Script:** `05_integration_workflow_demo.py`
-
-**Key Steps:**
-1. Set the scene
-   - Everything comes together
-   - Day-in-the-life of a data scientist
-
-2. Project Setup and Data Creation
-   ```bash
-   python3 05_integration_workflow_demo.py
-   ```
-   - A small list-based fixture keeps attention on the workflow
-   - The command line supplies the project location; Python analyzes the values
-   - The script uses only Lecture 01 variables, lists, loops, conditionals, and arithmetic
-
-3. Analysis
-   - Print each student's status using a loop and a threshold
-   - Calculate class average, minimum, maximum, and passing count
-
-4. Saving Results
-   - Redirect the script's printed report to `results.txt`
-   - Re-run the same script whenever the input list changes
-
-**Discussion Points:**
-- Potential additions to the analysis
-- Scaling considerations for larger datasets
-
-# Take-away Message:
-
-1. **Errors are teachers** - "Every error message is a learning opportunity"
-2. **Organization matters** - "Start clean, stay clean"
-3. **Test small, build big** - "Always verify each piece works"
-4. **Debugging is detective work** - "Use print(), check types, read errors"
-5. **This is real** - "You've seen actual data science workflow"
+The script prints each student's status, then reports the average, minimum,
+maximum, and passing count. Change one input value and rerun the command to see
+how the result changes.

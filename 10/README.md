@@ -16,6 +16,8 @@ See [BONUS.md](BONUS.md) for advanced topics:
 - Production deployment considerations
 - Advanced deep learning architectures
 
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+
 Before running the examples, install the packages listed in [`demo/requirements.txt`](demo/requirements.txt). Optional material in `BONUS.md` may name additional packages that are not part of that recorded environment.
 
 *Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*

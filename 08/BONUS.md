@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a81b99e57e4de7f2b74da"
 ---
 
-# Advanced Data Aggregation Topics
+# DLC: Advanced Data Aggregation Topics
 
 ## Advanced GroupBy Operations
 

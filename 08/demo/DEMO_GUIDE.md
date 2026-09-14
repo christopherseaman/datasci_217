@@ -66,10 +66,3 @@ jupyter lab
 - No remote server is required; the notebook simulates the SSH workflow so its
   executable cells run with the recorded environment
 - Jupytext; Markdown is the authoritative source for each generated notebook
-
-## Instructor Notes
-- Demos 1–3 form the lecture sequence.
-- Focus on practical application over theoretical mastery
-- Use the executable examples to demonstrate different aggregation functions.
-- Use the executable examples to connect aggregation performance with the remote
-  workflow presented in the lecture.

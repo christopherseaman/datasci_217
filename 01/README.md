@@ -12,6 +12,8 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
+[Live Demo!](demo/DEMO_GUIDE.md)
+
 ## Class Structure
 
 - **Lectures** cover new material

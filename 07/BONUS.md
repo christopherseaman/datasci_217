@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a8172a97adc1e9e5b577a"
 ---
 
-# Advanced Data Visualization Topics
+# DLC: Advanced Data Visualization Topics
 
 ## Annotations and Drawing on Plots
 

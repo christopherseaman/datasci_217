@@ -14,6 +14,8 @@ See [BONUS.md](BONUS.md) for optional topics outside the core Lecture 09 scope:
 - High-frequency data analysis and tick data
 - Custom frequency classes and time zone complexities
 
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+
 # Time Series Analysis: Temporal Data and Trends
 
 *Fun fact: Time series analysis is like being a detective for data - you're looking for patterns, trends, and clues that reveal the story of how things change over time. It's the difference between knowing what happened and understanding why it happened.*

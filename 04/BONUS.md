@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a811983f4fb2c4b73430e"
 ---
 
-Bonus Content: Jupyter Workflows and Advanced Pandas Operations
+# DLC: Jupyter Workflows and Advanced Pandas Operations
 
 *This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, column creation, groupby introductions, and the core CSV workflow before tackling these extensions.*
 

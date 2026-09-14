@@ -17,6 +17,8 @@ See [BONUS.md](BONUS.md) for advanced extensions:
 - Custom aggregation functions and transformations
 - Advanced pivot table operations
 
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
+
 # Outline
 
 - groupby split-apply-combine essentials

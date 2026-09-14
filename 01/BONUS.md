@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d6d9fdd1a1a81d097abc3098e3d1397"
 ---
 
-# Lecture 01 Bonus Content
+# DLC: Python, the Command Line, and VS Code
 
 These topics are **optional** and not required for future lectures. Explore them if you're curious or want to deepen your understanding!
 

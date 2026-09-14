@@ -7,7 +7,7 @@ notion:
   url: "https://app.notion.com/p/3d2d9fdd1a1a815eab78c339d96282f1"
 ---
 
-# Optional Geography Demo
+# DLC: Optional Geography Demo
 
 `05_geo_bonus.ipynb` is a demo-only, non-graded extension. It is not assumed prior
 knowledge and is not referenced by assignment requirements or the grader.

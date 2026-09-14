@@ -67,14 +67,3 @@ separate output path, reads it back, and checks the round trip. It belongs at
 the end of Lecture 04 after file I/O, dtype inspection, and quality checks have
 been introduced. The fixture is intentionally local and small, so execution
 does not require a network connection or an untracked input file.
-
-## Instructor checklist
-
-- Demonstrate each notebook from a fresh kernel and run cells top-to-bottom.
-- Keep the three demonstrations in lecture order: notebook state → labeled
-  data structures → portable file I/O.
-- Clear outputs before committing any notebook; the repository copies are kept
-  output-free.
-- Treat the exact pins in `requirements.txt` as the activity contract. Update
-  the Markdown source and regenerate its notebook together when the contract
-  changes.

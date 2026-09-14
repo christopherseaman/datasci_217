@@ -6,7 +6,7 @@ notion:
   url: "https://app.notion.com/p/3d6d9fdd1a1a81298a17fb53e6f1afe8"
 ---
 
-NumPy Bonus Content: Advanced Topics
+# DLC: Advanced NumPy Topics
 
 This file contains advanced NumPy topics beyond daily data science operations.
 

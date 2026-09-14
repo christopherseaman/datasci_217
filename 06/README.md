@@ -10,7 +10,7 @@ notion:
 
 **Assignment 6:** [assignment instructions](assignment/README.md)
 
-[LIVE DEMO!](demo/DEMO_GUIDE.md)
+[Live Demo Guide and Colab notebooks](demo/DEMO_GUIDE.md)
 
 See [BONUS.md](BONUS.md) for advanced topics:
 
