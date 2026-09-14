@@ -8,10 +8,25 @@ copy because they create example files and reports.
 cd 02/demo
 ```
 
-## 1. Git workflow (command-line or GUI)
+## 1. Git workflow (GUI first, CLI alongside)
 
-Use a small practice repository to demonstrate `git status`, `git add`,
-`git commit`, branches, merges, and `git log --oneline --graph --all`.
+Use a small practice repository in VS Code. Start in **View → Source Control**:
+open or initialize the repository, edit a file, review the diff, stage the
+change, enter a commit message, and commit. Use the branch menu in the status
+bar to create or switch branches, then use the Source Control menu to merge and
+sync. The GUI is the primary path; the equivalent commands make each action
+visible:
+
+```bash
+git status
+git add path/to/file.py
+git commit -m "Describe the change"
+git switch -c experiment
+git merge experiment
+git log --oneline --graph --all
+git push
+```
+
 For an already shared commit, prefer `git revert <commit>`: it records an undo
 without rewriting history. This guide deliberately does not teach `git reset
 --hard` or force-pushing. Those recovery operations require a verified
