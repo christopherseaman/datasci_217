@@ -239,8 +239,6 @@ Row growth alone does not prove a many-to-many merge: an intended one-to-many me
 
 # LIVE DEMO!
 
-(Demo 1: Customer Purchase Analysis)
-
 ## Merging on Multiple Columns
 
 Sometimes a single column isn’t enough to uniquely identify matches - you need to match on multiple columns together (like matching on BOTH store_id AND date).
@@ -787,8 +785,6 @@ If a reshape feels mysterious, write down what one row represents before choosin
 
 # LIVE DEMO!
 
-(Demo 2: Survey Data Reshaping)
-
 # Working with DataFrame Indexes
 
 *Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it’s all about what you need to access quickly!*
@@ -943,4 +939,4 @@ display(flattened)
 
 *“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”*
 
-# LIVE DEMO! (Demo 3: Index Management and Concatenation)
+# LIVE DEMO!

@@ -143,7 +143,7 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
     5   [NaN]             5     15 ←┘ from 15             5   [NaN] no later rows
 ```
 
-**LIVE DEMO!** (Demo 1: Missing Data - detection, analysis, and imputation strategies)
+# LIVE DEMO!
 
 # Data Transformation Techniques
 
@@ -464,7 +464,7 @@ dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='in
 print(dummies)  # Only color_green and color_red (blue is the reference)
 ```
 
-**LIVE DEMO!** (Demo 2: Transformations - categorical encoding and string operations)
+# LIVE DEMO!
 
 # String Manipulation
 
@@ -785,5 +785,4 @@ Keep genuinely changeable rules separate from the transformation logic, but do n
 - Document where each cleaning rule came from
 
 
-# **LIVE DEMO!**
-(Demo 3: Complete Workflow - end-to-end data cleaning pipeline)
+# LIVE DEMO!

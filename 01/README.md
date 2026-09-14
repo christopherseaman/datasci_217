@@ -26,7 +26,9 @@ notion:
 
 The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
 
-**Windows Users:** WSL:
+### Windows Users
+
+**WSL:**
 
 - **Windows Subsystem for Linux (WSL)** (recommended): Run `wsl --install` in PowerShell as Administrator
 
@@ -35,25 +37,25 @@ Native Windows:
 - **PowerShell** (built-in): Press `Win + X`, then select "Terminal" or "Windows PowerShell." You can run Git and Python there, but Bash-specific examples such as `touch`, brace expansion, and `find -exec` do not transfer unchanged.
 - **GitHub Codespaces** (cloud option): No installation needed
 
-**Mac Users:**
+### Mac Users
 
 - **Terminal** (built-in): Press `Cmd + Space`, type "Terminal", press Enter
 - **GitHub Codespaces** (cloud option): No installation needed
 
-**Cloud Options:**
+### Cloud Options
 
 - **GitHub Codespaces**: Free tier available, works on any device with internet
 
 ## Installing Python
 
-**Windows WSL (Ubuntu):**
+### Windows WSL (Ubuntu)
 
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip python3-venv
 ```
 
-**Windows Native:**
+### Windows Native
 
 ```powershell
 # Option 1: Official installer from python.org
@@ -63,7 +65,9 @@ sudo apt install python3 python3-pip python3-venv
 winget install -e --id Python.Python.3.14
 ```
 
-**Mac:**
+### Mac
+
+After installing Homebrew, run the PATH setup commands printed under **Next steps** so your shell can find `brew`. Use the commands shown for your machine, not someone else's home-directory path.
 
 ```bash
 # Option 1: Using Homebrew (recommended)
@@ -74,7 +78,7 @@ brew install python3
 # Download Python 3.14+ from <https://python.org>
 ```
 
-**Verify Installation:**
+### Verify Installation
 
 ```bash
 # WSL, macOS, or Codespaces
@@ -86,14 +90,14 @@ In native Windows PowerShell, use `py --version` (or `python --version` if that 
 
 ## Text Editor Options
 
-**Visual Studio Code (Recommended):**
+### Visual Studio Code (Recommended)
 
 - Free, powerful, and perfect for data science
 - Available on all platforms
 - Built-in Python support
 - Can open files from command line with `code filename.py`
 
-**Other Options:**
+### Other Editors
 
 - **Sublime Text**: Fast and lightweight
 - **PyCharm**: Full-featured Python IDE
@@ -156,13 +160,13 @@ git config --global user.email "<YOUR GITHUB PROXY EMAIL>"
 
 # LIVE DEMO!
 
-Setting up
-
 # Why Both Python and Command Line?
 
 Professional data scientists switch constantly between Python scripts and command-line operations: Python analyzes data; the command line organizes files, runs scripts, and manages projects.
 
 It's like being bilingual in the data world. Python speaks to your data, command line speaks to your computer.
+
+**Reality check:** Organizing files, inspecting data, and explaining results are part of the analysis—not chores you finish before the “real” work starts.
 
 # Command Line Essentials
 
@@ -305,8 +309,6 @@ Sometimes you need to stop what you're doing:
 
 # LIVE DEMO!
 
-*Command line tools*
-
 # Python Basics
 
 ![xkcd_353.png](media/xkcd_353.png)
@@ -346,7 +348,9 @@ python3 my_script.py
 
 ## Python Syntax Overview
 
-**Indentation Matters!** Python uses indentation to group code together. Use four spaces per indentation level rather than mixing spaces and tabs:
+### Indentation Matters!
+
+Python uses indentation to group code together. Use four spaces per indentation level rather than mixing spaces and tabs:
 
 This is a preview of an `if` conditional; the Control Structures section below explains how the condition works.
 
@@ -364,7 +368,9 @@ if x > 0:
 print("This will cause an IndentationError")
 ```
 
-**Comments Use `#`**
+To fix the second example, indent the `print()` line four spaces beneath `if`, as in the first example.
+
+### Comments Use `#`
 
 ```python
 # This is a comment - Python ignores this line
@@ -616,7 +622,9 @@ for grade in grades:
 
 ## Printing and Basic Input
 
-**Essential Output Formatting for Data Science:**
+### Printing and F-Strings
+
+F-strings put values, labels, and units together: `87.3` is a number; `Score: 87.3%` tells the reader what it means. Choose precision that helps interpretation rather than printing every available digit.
 
 ```python
 # Basic printing - your daily communication tool
@@ -636,7 +644,7 @@ print(f"Score: {test_score:.0f}%")                   # No decimals: 87%
 print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
 ```
 
-**Formatting Patterns for Data Analysis:**
+### Formatting Patterns for Data Analysis
 
 ```python
 # Currency formatting (useful for business data)
@@ -657,7 +665,7 @@ print(f"{'Alice':<15} {87.3:>8.1f} {'B+':>8}")      # Left/right aligned data
 print(f"{'Bob':<15} {92.1:>8.1f} {'A-':>8}")
 ```
 
-**Basic Input (Rare in Data Science, but Good to Know):**
+### Interactive Input
 
 ```python
 # Interactive input - mainly for testing and debugging
@@ -678,150 +686,80 @@ print(type(actual_number))                           # <class 'float'>
 
 ![Programming is doing something wrong over and over until you do something right](media/it_works.png)
 
-**Reading Python Error Messages (Essential Skill!):**
+### Reading a Traceback
 
-When Python encounters a problem, it tells you exactly what went wrong. Learning to read these messages will save you hours of frustration.
+An error reports where execution stopped and what operation failed—not necessarily the underlying cause.
+
+1. Read the final line for the error type and message.
+2. Find the referenced line in your script.
+3. Inspect the relevant values with `print()` and their types with `type()`.
+4. Make one correction, save, and rerun. The next error may only become visible after this one is fixed.
+
+### NameError: Check the Name and Its Definition
 
 ```python
-# Common error: trying to use an undefined variable
-print(student_naem)  # Typo in variable name
+print(student_naem)
 ```
 
-```
+A traceback for this one-line script looks like:
+
+```text
+Traceback (most recent call last):
+  File "analysis.py", line 1, in <module>
+    print(student_naem)
 NameError: name 'student_naem' is not defined
 ```
 
-**How to Read This Error:**
+**Diagnosis:** Python cannot find that name. Check its spelling and whether the assignment ran before this line.
 
-1. **Error Type**: `NameError` - Python doesn't recognize the variable name
-2. **Error Message**: tells you exactly what's wrong
-3. **Your Action**: Check spelling, make sure you defined the variable first
-
-**More Common Errors You'll Encounter:**
+**Correction:**
 
 ```python
-# Type errors - mixing incompatible data types
-age = "25"                    # This is text, not a number
-next_year = age + 1          # Can't add number to text
-
+student_name = "Alice"
+print(student_name)
 ```
 
+### TypeError: Check the Operation and Types
+
+```python
+age = "25"
+next_year = age + 1
 ```
+
+```text
 TypeError: can only concatenate str (not "int") to str
-
 ```
 
-**How to Fix It:**
+**Diagnosis:** `print(age, type(age))` reveals text. We want arithmetic, so convert numeric text before adding:
 
 ```python
-age = "25"                    # Text
-age_number = int(age)         # Convert to number
-next_year = age_number + 1    # Now this works!
+age = "25"
+age_number = int(age)
+next_year = age_number + 1
 print(f"Next year you'll be {next_year}")
-
 ```
 
-**Value Errors - Wrong Type of Value:**
+### ValueError: Check the Actual Value
 
 ```python
-bad_number = int("hello")     # Can't convert "hello" to a number
-
+raw_age = "hello"
+age = int(raw_age)
 ```
 
-```
+```text
 ValueError: invalid literal for int() with base 10: 'hello'
-
 ```
 
-**Debugging Strategy for Beginners:**
+**Diagnosis:** `int()` accepts numeric text such as `"25"`, but `"hello"` is not an integer representation. Checking only `type(raw_age)` would miss the difference; inspect its value and where it came from.
 
-1. **Read the error message carefully** - Python is usually very specific
-2. **Check variable names for typos** - most common beginner mistake
-3. **Use `print()` to check variable values and types**
-4. **Check your data types** with `type(variable_name)`
-
-**Defensive Programming Example:**
+**Correction:** If the wrong field was selected, select the age field. If the source value is wrong, correct it only when you know the intended value. For this example, suppose the source confirms an age of 25:
 
 ```python
-# Always check what type your data is when debugging
-user_input = "42"
-print(f"Input: {user_input}")
-print(f"Type: {type(user_input)}")       # Shows: <class 'str'>
-
-# Convert and verify
-number = int(user_input)
-print(f"Converted: {number}")
-print(f"New type: {type(number)}")       # Shows: <class 'int'>
-
-# Now you can safely do math
-result = number * 2
-print(f"Result: {result}")
-
+raw_age = "25"
+age = int(raw_age)
+print(f"Age: {age}")
 ```
 
-**Error Prevention Tips:**
-
-- **Use descriptive variable names** - reduces typos
-- **Check types when debugging** - use `type()` function
-- **Test with small examples first** - don't write 50 lines then run
-- **One step at a time** - add complexity gradually
+Do not replace unknown ages with invented numbers just to make the error disappear. Lecture 02 introduces `try`/`except` for responding to expected failures.
 
 # LIVE DEMO!
-
-Python basics and debugging
-
-# Simple Workflow Example
-
-**Basic Data Calculation Workflow:**
-
-```bash
-# Command line: Set up workspace
-mkdir data_analysis
-cd data_analysis
-touch calculate_stats.py
-```
-
-```python
-# Python: calculate_stats.py
-# Simple statistical analysis
-sales_data = [1200, 1500, 1800, 1100, 1650, 1750]
-total_sales = sum(sales_data)
-average_sales = total_sales / len(sales_data)
-best_day = max(sales_data)
-
-print(f"Weekly Sales Analysis")
-print(f"Total sales: ${total_sales:,}")
-print(f"Average daily sales: ${average_sales:.2f}")
-print(f"Best day: ${best_day}")
-
-```
-
-```bash
-# Command line: Run the analysis
-python3 calculate_stats.py
-
-```
-
-**Output:**
-
-```
-Weekly Sales Analysis
-Total sales: $9,000
-Average daily sales: $1,500.00
-Best day: $1750
-
-```
-
-**Key Workflow Principles:**
-
-1. **Start small** - test logic with simple data first
-2. **Build incrementally** - add complexity step by step
-3. **Test frequently** - run your code after every few changes
-4. **Save your work** - use meaningful file names and organize results
-5. **Document as you go** - use print statements to explain what's happening
-
-# Key Takeaways
-
-Use the command line to navigate, create, and inspect files; use Python values, control flow, and formatted output to analyze them. Work incrementally: run scripts, read errors, inspect types, and save clear results. Next week, Git and GitHub make that work shareable.
-
-**Professional Reality Check:** Real data scientists spend 80% of their time doing exactly these things: organizing files, reading data, cleaning it up, and generating clear reports. The fancy algorithms are just 20% of the work!

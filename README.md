@@ -6,6 +6,8 @@ Notion is the primary publishing surface. Write lectures and bonus pages with `#
 
 When syncing, preserve heading levels exactly. Resolve local links and media URLs for Notion, preserve native child pages, and omit navigation links already represented by those child pages. YAML mapping metadata stays local. Notebook demos remain Markdown sources generated into `.ipynb` files, with Colab links targeting the notebooks.
 
+Use bare live-demo markers without descriptions beneath them. The final demo comes after all lecture content, including any closing humor. Do not append summaries, worked examples, key takeaways, or meta-content after it; integrated walkthroughs belong in the demos, and optional reference material belongs in the bonus page.
+
 From the repository root, run `python3 scripts/notion_publish.py SOURCE.md CURRENT_NOTION_CONTENT.md` to prepare a page from a fresh Notion content snapshot. It preserves headings and paragraphs; only links, native tables, child-page navigation, and metadata need publishing adaptation. The optional `notion.title_line` identifies the exact local title to omit because Notion already displays its page title. Review the output before publishing, then fetch the page again to verify its structure.
 
 ## Resources

@@ -163,8 +163,6 @@ print(patient_name, blood_pressure)
 
 # LIVE DEMO!
 
-(Demo 1: Jupyter Basics - interface, cells, magic commands)
-
 # Introduction to Pandas
 
 Pandas builds labeled Series and DataFrames on NumPy and adds tabular I/O and missing-data tools.
@@ -516,8 +514,6 @@ display(df['C'])  # [1.0, NaN, 4.0]
 
 # LIVE DEMO!
 
-(Demo 2: Pandas DataFrames - selection, filtering, and derived columns)
-
 # Essential Pandas Operations
 
 ## Sorting Data
@@ -695,8 +691,6 @@ display(df.duplicated().sum()) # Number of duplicate rows
 
 Lecture 05 picks up from this inspection and documents the cleaning decisions before transforming and validating a working table.
 
-# LIVE DEMO!
-
-(Demo 3: CSV round trip and quality inspection)
-
 > Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.
+
+# LIVE DEMO!

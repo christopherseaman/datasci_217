@@ -523,5 +523,3 @@ ssh -N -L 8888:127.0.0.1:8888 username@server.example
 Leave the tunnel running and open the tokenized local URL printed by Jupyter, such as `http://127.0.0.1:8888/lab?token=...`. The browser is local; the kernel, files, memory, and CPU are remote.
 
 # LIVE DEMO!
-
-Use [Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb) for the performance and remote-computing walkthrough.

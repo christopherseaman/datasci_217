@@ -726,3 +726,5 @@ git push
 ```
 
 Lecture 03 owns the next shell pipeline activity; revisit Lecture 01 for the foundational shell workflow.
+
+# LIVE DEMO!

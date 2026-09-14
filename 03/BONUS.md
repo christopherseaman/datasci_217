@@ -1,15 +1,15 @@
 ---
 notion:
-  title_line: "# DLC: Advanced NumPy Topics"
+  title_line: "# DLC: Advanced NumPy and Shell Reference"
   role: bonus
   status: mapped
   page_id: "3d6d9fdd-1a1a-8129-8a17-fb53e6f1afe8"
   url: "https://app.notion.com/p/3d6d9fdd1a1a81298a17fb53e6f1afe8"
 ---
 
-# DLC: Advanced NumPy Topics
+# DLC: Advanced NumPy and Shell Reference
 
-This file contains advanced NumPy topics beyond daily data science operations.
+Advanced NumPy topics and optional shell-processing reference.
 
 # Advanced Universal Functions (ufuncs)
 
@@ -269,3 +269,80 @@ loaded_mmap = np.memmap('large_array.dat', dtype='float64', mode='r', shape=shap
 ```
 
 These advanced topics are useful for specialized applications but not required for daily data science work.
+
+# Optional shell reference
+
+This reference extends the core activity with `tr`, `sed`, `awk`, and longer pipelines. The canonical visualization lecture is Lecture 07.
+
+The advanced examples below are optional reference only.
+
+## Optional: Advanced Processing
+
+**Reference:**
+
+```bash
+# tr: Translate characters
+tr 'a-z' 'A-Z' < file.txt       # Uppercase
+tr -d ' ' < file.txt            # Delete spaces
+
+# sed: Stream editor
+sed 's/old/new/g' file.txt      # Replace all
+sed '/pattern/d' file.txt       # Delete lines
+
+# awk: Pattern processing
+awk '{print $1, $3}' file.txt   # Print columns 1, 3
+awk -F',' '$3 > 50' data.csv    # Filter rows
+```
+
+## Optional: Longer Data Pipelines
+
+**Reference:**
+
+```bash
+# Complex pipeline
+cat data.csv | \
+  cut -d',' -f2,4 | \
+  tr '[:lower:]' '[:upper:]' | \
+  sort -t',' -k2,2n | \
+  head -n 10 > results.csv
+```
+
+## Optional reference: Quick Data Visualization
+
+Terminal visualization is also optional/reference-only. Lecture 07 is the canonical place for visualization; these commands are included only as a quick shell-based supplement.
+
+Command line tools for quick data visualization without leaving the terminal.
+
+**Reference:**
+
+```bash
+# sparklines: Inline Unicode graphs
+# Install: pip install sparklines
+
+# Visualize grade trends inline
+cut -d',' -f3 students.csv | tail -n +2 | sparklines
+#     Extract column 3 -> Skip header (line 1) -> Graph
+#     tail -n +2 means "start at line 2" (skip the header)
+# Output: ▅█▃▆▇▄▇▂▆▅
+
+# With statistics
+cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
+
+# gnuplot: Create terminal plots (optional - many dependencies)
+# Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
+
+# Simple plot of grades
+cut -d',' -f3 students.csv | tail -n +2 | \
+  gnuplot -e "set terminal dumb; plot '-' with linespoints"
+
+# Bar chart: count students by subject
+cut -d',' -f4 students.csv | tail -n +2 | sort | uniq -c | \
+  gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
+```
+
+Use cases:
+
+- Quick trend checks in terminal sessions
+- Data quality sanity checks
+- Pipeline debugging visualization
+- Terminal dashboards

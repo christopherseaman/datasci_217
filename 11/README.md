@@ -146,3 +146,5 @@ Then open `01_setup.ipynb` and continue through `04_modeling.ipynb` in order. Ea
 - [GameShell](https://github.com/phyver/GameShell) — a game for practicing the Unix shell.
 
 ![xkcd 1513: Code Quality](media/xkcd_1513.png)
+
+# LIVE DEMO!

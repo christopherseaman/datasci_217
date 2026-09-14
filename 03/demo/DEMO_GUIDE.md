@@ -35,7 +35,7 @@ cd scratch/lecture03-cli
 bash /path/to/datasci_217/03/demo/01_cli_pipeline_demo.sh
 ```
 
-The activity uses a bounded `tail | cut | sort | uniq | head` pipeline, plus `wc` for record counts, shell assignment, one captured timestamp reused in output names and log lines, and simple `echo >>` append logging. The longer `awk`, grouped-redirection, and report-generation variants are optional reference material in the lecture.
+The activity uses a bounded `tail | cut | sort | uniq | head` pipeline, plus `wc` for record counts, shell assignment, one captured timestamp reused in output names and log lines, and simple `echo >>` append logging. The longer shell-processing examples are optional reference material in the [bonus page](../BONUS.md).
 
 ## 2. Python refresher and NumPy performance
 
