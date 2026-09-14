@@ -1,0 +1,17 @@
+{
+  "term": "2026-fall",
+  "source_commit": "411a9f8",
+  "assignments": [
+    {"number": "01", "source": "01/assignment", "repository": "UCSF-DataSci/ds217-26f-01"},
+    {"number": "02", "source": "02/assignment", "repository": "UCSF-DataSci/ds217-26f-02"},
+    {"number": "03", "source": "03/assignment", "repository": "UCSF-DataSci/ds217-26f-03"},
+    {"number": "04", "source": "04/assignment", "repository": "UCSF-DataSci/ds217-26f-04"},
+    {"number": "05", "source": "05/assignment", "repository": "UCSF-DataSci/ds217-26f-05"},
+    {"number": "06", "source": "06/assignment", "repository": "UCSF-DataSci/ds217-26f-06"},
+    {"number": "07", "source": "07/assignment", "repository": "UCSF-DataSci/ds217-26f-07"},
+    {"number": "08", "source": "08/assignment", "repository": "UCSF-DataSci/ds217-26f-08"},
+    {"number": "09", "source": "09/assignment", "repository": "UCSF-DataSci/ds217-26f-09"},
+    {"number": "10", "source": "10/assignment", "repository": "UCSF-DataSci/ds217-26f-10"},
+    {"number": "11", "source": "11/assignment", "repository": "UCSF-DataSci/ds217-26f-11"}
+  ]
+}

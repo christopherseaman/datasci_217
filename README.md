@@ -36,6 +36,8 @@ supplies the term-specific assignment repository URLs separately.
 
 Term-specific repository URLs: `#FIXME:ASSIGNMENT_URLS`
 
+The Fall 2026 repositories are listed in [assignments-26f.json](assignments-26f.json) for graders and future fork collection. Each public `UCSF-DataSci/ds217-26f-##` repository contains the corresponding assignment directory, excluding development-only `_grader_selftest` fixtures. Students fork the repository and commit their completed artifacts. GitHub Actions runs the public checks on pushes (including `main`), pull requests, or manual dispatch; incomplete starter submissions are expected to fail. Students may need to enable Actions in their fork's Actions tab. Course lecture links remain term-neutral placeholders.
+
 ### Grading
 
 Students and graders use the same public artifact checks, milestone points, and rubric. From an assignment directory, run `python check_assignment.py`; GitHub Actions runs the same checks through pytest. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions.
