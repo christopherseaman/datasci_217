@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Jupyter Workflows and Advanced Pandas Operations"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-8119-83f4-fb2c4b73430e"
@@ -10,14 +11,10 @@ notion:
 
 *This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, column creation, groupby introductions, and the core CSV workflow before tackling these extensions.*
 
----
 
-## Running Notebooks Non-Interactively
+# Running Notebooks Non-Interactively
 
-Notebooks are interactive by default, but a reviewed notebook can also be executed
-from the command line for a reproducibility check or a batch workflow. This is an
-optional notebook skill, not a requirement that lecture pages run top-to-bottom.
-Executable activities still own their tested environments, paths, and commands.
+Notebooks are interactive by default, but a reviewed notebook can also be executed from the command line for a reproducibility check or a batch workflow. This is an optional notebook skill, not a requirement that lecture pages run top-to-bottom. Executable activities still own their tested environments, paths, and commands.
 
 ```bash
 # Execute every cell in order and write a separate output notebook.
@@ -25,9 +22,7 @@ jupyter nbconvert --execute --to notebook \
     --output executed_analysis.ipynb analysis.ipynb
 ```
 
-By default, a cell error makes the command fail. Automation should treat that
-nonzero exit status as a stop signal rather than continuing with later work. A
-shell pipeline can make that policy explicit:
+By default, a cell error makes the command fail. Automation should treat that nonzero exit status as a stop signal rather than continuing with later work. A shell pipeline can make that policy explicit:
 
 ```bash
 #!/usr/bin/env bash
@@ -39,15 +34,10 @@ jupyter nbconvert --execute --to notebook \
     --output executed_analyze.ipynb analyze.ipynb
 ```
 
-Keep the source notebook unchanged by writing a distinct output file. Avoid
-`--inplace` unless overwriting the source is deliberate and recoverable. Avoid
-`--allow-errors` in validation or production workflows because it can produce an
-output notebook containing failed cells. The working directory, selected kernel,
-and installed packages are part of the execution contract.
+Keep the source notebook unchanged by writing a distinct output file. Avoid `--inplace` unless overwriting the source is deliberate and recoverable. Avoid `--allow-errors` in validation or production workflows because it can produce an output notebook containing failed cells. The working directory, selected kernel, and installed packages are part of the execution contract.
 
----
 
-## Data Alignment and Broadcasting
+# Data Alignment and Broadcasting
 
 See the lecture for baseline Series/DataFrame comparisons. This section deepens alignment control for mismatched labels, explicit reindexing, and DataFrame↔Series broadcasting so multi-source arithmetic remains predictable.
 
@@ -91,9 +81,8 @@ targets_for_metrics = targets.reindex(metrics.columns, fill_value=0)
 print(metrics.add(targets_for_metrics, axis='columns'))
 ```
 
----
 
-## Function Application and Method Chaining
+# Function Application and Method Chaining
 
 The lecture covers vectorized operations; reach for the tools below when you need custom logic or pipeline readability. Combine `apply`/`map` with chaining helpers to keep transformations compact and transparent.
 
@@ -119,9 +108,8 @@ summary = (
 print(summary)
 ```
 
----
 
-## Ranking Strategies
+# Ranking Strategies
 
 Go beyond simple sorting by assigning ranks, controlling tie behavior, and ranking across rows or columns. Pair these techniques with the lecture's descriptions of sorting and unique values when you need ordered analytics.
 
@@ -141,9 +129,8 @@ print(s.rank(method='first'))   # First occurrence gets the better rank
 print(s.rank(ascending=False))  # Reverse order ranking
 ```
 
----
 
-## Handling Duplicate Index Labels
+# Handling Duplicate Index Labels
 
 The lecture covers duplicate detection at the column level. This section focuses on index semantics when labels repeat, plus tactics for normalizing or exploiting duplicates in time-series and log pipelines.
 
@@ -167,13 +154,12 @@ df = pd.DataFrame(np.random.randn(5, 3), index=['a', 'a', 'b', 'b', 'c'])
 print(df.loc['b'])        # DataFrame with the duplicate rows
 ```
 
----
 
-## Extended I/O and Performance
+# Extended I/O and Performance
 
 Revisit the lecture for core CSV ingestion/export. Use this section when you need alternate formats, iterative processing, or performance tuning. Each technique notes the scenarios where it adds value. See the lecture for baseline syntax before layering these extensions.
 
-### Excel Integration
+## Excel Integration
 
 Ideal for business spreadsheets or multi-sheet workbooks.
 
@@ -192,7 +178,7 @@ df_sales.to_excel('sales_summary.xlsx', sheet_name='Summary', index=False)
 
 Use when you need Excel-native formatting or your stakeholders expect `.xlsx` outputs.
 
-### JSON and Semi-Structured Data
+## JSON and Semi-Structured Data
 
 Designed for API payloads or nested records.
 
@@ -203,7 +189,7 @@ df.to_json('output.json', orient='records', indent=2)
 
 Switch the `orient` parameter (`'records'`, `'columns'`, `'table'`, etc.) based on the consumer. JSON is great for web services and lightweight integrations.
 
-### SQL Databases
+## SQL Databases
 
 Ideal when data already resides in transactional stores. Requires a SQLAlchemy engine or DB-API connection.
 
@@ -216,7 +202,7 @@ Ideal when data already resides in transactional stores. Requires a SQLAlchemy e
 
 Once records are in a DataFrame, downstream cleaning and analysis mirrors the lecture workflow.
 
-### Reading Large Files in Chunks
+## Reading Large Files in Chunks
 
 Break massive files into bite-sized pieces without exhausting RAM.
 
@@ -233,7 +219,7 @@ final = pd.concat(results, axis=0).groupby(level=0).sum()
 
 Use chunking when files exceed memory or when you only need aggregated results. See lecture fundamentals for basic `read_csv`; layer this pattern when datasets push RAM limits.
 
-### Advanced CSV Options
+## Advanced CSV Options
 
 Tame messy inputs with custom NA markers, delimiters, or sampling.
 
@@ -249,5 +235,3 @@ print(preview.head())
 ```
 
 Start with the lecture’s clean CSV example, then layer these options as you encounter real-world quirks.
-
----

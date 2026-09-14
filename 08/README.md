@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "Data Aggregation and Group Operations"
   role: lecture
   status: mapped
   page_id: "2a1d9fdd-1a1a-80f8-b1e8-f7b20e4a2e84"
@@ -384,8 +385,7 @@ def configured_groupby(df, group_cols, agg_cols, dtype_map=None):
     return working.groupby(group_cols, observed=True)[agg_cols].sum()
 ```
 
-Supply `dtype_map` only after deciding that its numeric precision or category
-semantics fit the data. Omitting it preserves the input dtypes.
+Supply `dtype_map` only after deciding that its numeric precision or category semantics fit the data. Omitting it preserves the input dtypes.
 
 ## Chunked Processing
 
@@ -409,9 +409,7 @@ def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
               .sum())
 ```
 
-Chunking helps when the input does not fit in memory, but it is not automatically
-faster. The partial result must be mathematically composable: sums can be summed;
-means need both partial sums and counts.
+Chunking helps when the input does not fit in memory, but it is not automatically faster. The partial result must be mathematically composable: sums can be summed; means need both partial sums and counts.
 
 ## Parallel Processing
 
@@ -437,8 +435,7 @@ def parallel_groupby(df, n_processes=4):
     return pd.concat(results).groupby(level=0, observed=True)[['value']].sum()
 ```
 
-Parallel work adds process startup, serialization, and merge costs. Measure the
-complete operation; more processes do not guarantee a faster result.
+Parallel work adds process startup, serialization, and merge costs. Measure the complete operation; more processes do not guarantee a faster result.
 
 # Remote Computing with SSH
 
@@ -446,10 +443,7 @@ complete operation; more processes do not guarantee a faster result.
 
 *When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
 
-SSH gives you an encrypted shell on another computer. The basic workflow is:
-connect, move the needed files, run the work there, and retrieve the results.
-Use the hostname, account, and authentication instructions supplied by whoever
-operates the server.
+SSH gives you an encrypted shell on another computer. The basic workflow is: connect, move the needed files, run the work there, and retrieve the results. Use the hostname, account, and authentication instructions supplied by whoever operates the server.
 
 ## Connect and Copy Files
 
@@ -477,15 +471,13 @@ scp data.csv username@server.example:~/data/
 scp username@server.example:~/results/analysis.csv ./
 ```
 
-The private key stays private; do not upload or commit it. A passphrase plus an
-SSH agent avoids retyping it for every connection.
+The private key stays private; do not upload or commit it. A passphrase plus an SSH agent avoids retyping it for every connection.
 
 ## Keep Long Jobs Alive with tmux or screen
 
 ![Punk vs. Process](media/punk.png)
 
-A persistent terminal session lets work continue when the network connection or
-laptop disappears. Use whichever tool the server provides:
+A persistent terminal session lets work continue when the network connection or laptop disappears. Use whichever tool the server provides:
 
 For a guided introduction, see [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/).
 
@@ -501,8 +493,7 @@ screen -S analysis
 screen -r analysis
 ```
 
-Inside the persistent session, activate the server's project environment and run
-the analysis. The shell's `time` command is a useful first measurement:
+Inside the persistent session, activate the server's project environment and run the analysis. The shell's `time` command is a useful first measurement:
 
 ```bash
 time python analysis.py
@@ -510,15 +501,13 @@ time python analysis.py
 
 ## Run Jupyter Through an SSH Tunnel
 
-Keep Jupyter bound to the remote machine's loopback interface, then forward a
-local port through SSH:
+Keep Jupyter bound to the remote machine's loopback interface, then forward a local port through SSH:
 
 ```text
 local browser :8888  ── encrypted SSH tunnel ──>  remote Jupyter :8888
 ```
 
-For a notebook that should survive a disconnect, start a persistent session on
-the remote server first, then launch Jupyter inside it:
+For a notebook that should survive a disconnect, start a persistent session on the remote server first, then launch Jupyter inside it:
 
 ```bash
 tmux new-session -s notebooks
@@ -531,9 +520,7 @@ In a second, local terminal:
 ssh -N -L 8888:127.0.0.1:8888 username@server.example
 ```
 
-Leave the tunnel running and open the tokenized local URL printed by Jupyter,
-such as `http://127.0.0.1:8888/lab?token=...`. The browser is local; the kernel,
-files, memory, and CPU are remote.
+Leave the tunnel running and open the tokenized local URL printed by Jupyter, such as `http://127.0.0.1:8888/lab?token=...`. The browser is local; the kernel, files, memory, and CPU are remote.
 
 # LIVE DEMO!
 

@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Modeling Topics"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-8135-b60c-cf029cc707a7"
@@ -8,9 +9,9 @@ notion:
 
 # DLC: Advanced Modeling Topics
 
-## Hyperparameter Tuning Strategies
+# Hyperparameter Tuning Strategies
 
-### Grid Search and Random Search
+## Grid Search and Random Search
 
 **Reference:**
 
@@ -41,7 +42,7 @@ print(f"Best parameters: {grid_search.best_params_}")
 print(f"Best score: {grid_search.best_score_}")
 ```
 
-### Bayesian Optimization
+## Bayesian Optimization
 
 **Reference:**
 
@@ -76,9 +77,9 @@ result = gp_minimize(objective, space, n_calls=20, random_state=42)
 print(f"Best parameters: {result.x}")
 ```
 
-## Model Interpretability and Explainability
+# Model Interpretability and Explainability
 
-### SHAP Values
+## SHAP Values
 
 This optional example requires SHAP, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install shap` before running the example.
 
@@ -111,7 +112,7 @@ shap.plots.beeswarm(shap_values)
 shap.plots.bar(shap_values)
 ```
 
-### Partial Dependence Plots
+## Partial Dependence Plots
 
 **Reference:**
 
@@ -136,9 +137,9 @@ PartialDependenceDisplay.from_estimator(
 )
 ```
 
-## Advanced Statistical Modeling
+# Advanced Statistical Modeling
 
-### Mixed Effects Models
+## Mixed Effects Models
 
 **Reference:**
 
@@ -157,7 +158,7 @@ result = model.fit()
 print(result.summary())
 ```
 
-### Generalized Additive Models (GAMs)
+## Generalized Additive Models (GAMs)
 
 **Reference:**
 
@@ -184,9 +185,9 @@ for i in range(X_train.shape[1]):
     plt.fill_between(XX[:, i], confi[:, 0], confi[:, 1], alpha=0.3)
 ```
 
-## Advanced Deep Learning
+# Advanced Deep Learning
 
-### Transfer Learning
+## Transfer Learning
 
 **Reference:**
 
@@ -218,7 +219,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
 ```
 
-### Sequence attention with a documented Keras layer
+## Sequence attention with a documented Keras layer
 
 **Reference:**
 
@@ -242,9 +243,9 @@ model = keras.Model(inputs, outputs)
 model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
 ```
 
-## Model Ensembling
+# Model Ensembling
 
-### Stacking
+## Stacking
 
 **Reference:**
 
@@ -278,7 +279,7 @@ stacker.fit(X_train, y_train)
 predictions = stacker.predict(X_test)
 ```
 
-### Blending
+## Blending
 
 **Reference:**
 
@@ -309,9 +310,9 @@ blended = sum(weights[name] * predictions[name] for name in weights.keys())
 final_predictions = np.argmax(blended, axis=1)
 ```
 
-## Time Series Modeling
+# Time Series Modeling
 
-### ARIMA Models
+## ARIMA Models
 
 **Reference:**
 
@@ -338,7 +339,7 @@ forecast = result.forecast(steps=10)
 conf_int = result.get_forecast(steps=10).conf_int()
 ```
 
-### Prophet for Time Series
+## Prophet for Time Series
 
 **Reference:**
 
@@ -371,9 +372,9 @@ forecast = model.predict(future)
 model.plot(forecast)
 ```
 
-## Production Deployment Considerations
+# Production Deployment Considerations
 
-### Model Serialization
+## Model Serialization
 
 **Reference:**
 
@@ -407,7 +408,7 @@ model = loaded['model']
 
 Pickle/joblib files can execute arbitrary code while loading. Load them only from a trusted, integrity-checked source in a compatible environment; never treat an uploaded or untrusted pickle as data. For Keras, use `keras.models.load_model('model.keras')` for the native format; use the exported SavedModel with a serving/runtime tool rather than passing it to `load_model`.
 
-### Model Versioning
+## Model Versioning
 
 **Reference:**
 
@@ -438,9 +439,9 @@ with mlflow.start_run():
     mlflow.sklearn.log_model(model, "model")
 ```
 
-## Advanced Feature Engineering
+# Advanced Feature Engineering
 
-### Automated Feature Engineering
+## Automated Feature Engineering
 
 **Reference:**
 
@@ -485,7 +486,7 @@ feature_matrix, feature_defs = ft.dfs(
 )
 ```
 
-### Polynomial and Interaction Features
+## Polynomial and Interaction Features
 
 **Reference:**
 
@@ -511,9 +512,9 @@ pipeline = Pipeline([
 pipeline.fit(X_train, y_train)
 ```
 
-## Model Monitoring and Maintenance
+# Model Monitoring and Maintenance
 
-### Drift Detection
+## Drift Detection
 
 **Reference:**
 
@@ -554,7 +555,7 @@ for batch in data_batches:
         # against the current model before any deployment decision.
 ```
 
-### A/B Testing for Models
+## A/B Testing for Models
 
 **Reference:**
 

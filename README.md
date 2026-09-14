@@ -1,5 +1,13 @@
 # Introduction to Python & Data Science Tools
 
+## Lecture authoring
+
+Notion is the primary publishing surface. Write lectures and bonus pages with `#` for major sections, `##` for subsections, and `###` for deeper topics; multiple H1 sections are intentional. Keep each prose paragraph on one physical line, with no line-length limit. Preserve code-block formatting and list nesting. Do not add horizontal rules or prose that merely repeats a heading. Preserve humor.
+
+When syncing, preserve heading levels exactly. Resolve local links and media URLs for Notion, preserve native child pages, and omit navigation links already represented by those child pages. YAML mapping metadata stays local. Notebook demos remain Markdown sources generated into `.ipynb` files, with Colab links targeting the notebooks.
+
+From the repository root, run `python3 scripts/notion_publish.py SOURCE.md CURRENT_NOTION_CONTENT.md` to prepare a page from a fresh Notion content snapshot. It preserves headings and paragraphs; only links, native tables, child-page navigation, and metadata need publishing adaptation. The optional `notion.title_line` identifies the exact local title to omit because Notion already displays its page title. Review the output before publishing, then fetch the page again to verify its structure.
+
 ## Resources
 
 - Canonical URL - https://not.badmath.org/ds217

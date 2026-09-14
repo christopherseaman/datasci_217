@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# `git gud` with Version Control"
   role: lecture
   status: mapped
   page_id: "271d9fdd-1a1a-8036-9c2b-c4a66ae97d9d"
@@ -44,7 +45,7 @@ We'll start in the editor so Git makes visual sense later.
 - Source Control: View → Source Control (Cmd+Shift+G)
 - Run & Debug: Run → Start Debugging (F5) or View → Run (Ctrl+Shift+D)
 - Extensions: View → Extensions (Cmd+Shift+X)
-- Terminal: View → Terminal (Ctrl+`)
+- Terminal: View → Terminal (Ctrl + grave accent key)
 - Split Editor: View → Editor Layout → Split Right (or Cmd+\)
 
 ## Settings (GUI) you’ll toggle today
@@ -256,8 +257,7 @@ git push origin main
 git branch -d feature/data-analysis
 ```
 
-**Merge Conflict Resolution:**
-When Git cannot automatically merge changes, it creates merge conflicts that must be resolved manually:
+**Merge Conflict Resolution:** When Git cannot automatically merge changes, it creates merge conflicts that must be resolved manually:
 
 1. Open conflicted files in VS Code
 2. Choose which changes to keep
@@ -279,8 +279,7 @@ GitHub's web interface manages repositories, enables collaboration, and organize
 - **Project Settings**: Settings tab for permissions, branches, and integrations
 - **Code Review**: Comment on specific lines, approve/request changes
 
-**Gitignore Files:**
-A `.gitignore` file specifies which files and directories Git should ignore when tracking changes. This is crucial for data science projects to avoid committing sensitive data, large datasets, or generated files.
+**Gitignore Files:** A `.gitignore` file specifies which files and directories Git should ignore when tracking changes. This is crucial for data science projects to avoid committing sensitive data, large datasets, or generated files.
 
 **Reference:**
 
@@ -336,7 +335,7 @@ Markdown is a lightweight markup language for formatted text, essential for docu
 
 **Brief Example:**
 
-````markdown
+```markdown
 # Data Analysis Report
 
 ## Overview
@@ -347,12 +346,12 @@ Analyzes study time vs. performance.
 - Regular habits help
 
 ## Code Example
-```python
+~~~python
 grades = [85, 92, 78]
 average = sum(grades) / len(grades)
 print(f"Average grade: {average:.1f}")
+~~~
 ```
-````
 
 # Python Fundamentals (McKinney Ch2+3)
 
@@ -705,9 +704,7 @@ python3 -c "import analysis"
 
 # Command-Line Catalog
 
-These are names to recognize from command-line work. The
-[command-line bonus](BONUS.md#command-line-essentials) has short explanations
-and examples.
+These are names to recognize from command-line work. The [command-line bonus](BONUS.md#command-line-essentials) has short explanations and examples.
 
 | Area | Commands | Purpose |
 | --- | --- | --- |

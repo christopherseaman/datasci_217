@@ -1,10 +1,17 @@
+---
+notion:
+  title_line: "# Lecture 03 Demo Guide: Environments and NumPy"
+  role: demo
+  status: mapped
+  page_id: "3a4d9fdd-1a1a-812d-9372-edd7cbeb8303"
+  url: "https://app.notion.com/p/3a4d9fdd1a1a812d9372edd7cbeb8303"
+---
+
 # Lecture 03 Demo Guide: Environments and NumPy
 
-Run the scripts from `03/demo`. The two student-analysis scripts locate their
-bundled `students.csv` relative to the script, so they also work when launched
-from another directory. Their reports are written to `03/demo/output/`.
+Run the scripts from `03/demo`. The two student-analysis scripts locate their bundled `students.csv` relative to the script, so they also work when launched from another directory. Their reports are written to `03/demo/output/`.
 
-## Setup: Create the tested environment
+# Setup: Create the tested environment
 
 Lecture 03 uses CPython 3.14 and NumPy 2.3.3. With `uv`:
 
@@ -16,14 +23,11 @@ uv pip install -r requirements.txt
 python -c "import sys, numpy as np; print(f'{sys.version_info.major}.{sys.version_info.minor}', np.__version__)"
 ```
 
-The final command should report `3.14 2.3.3`. If `uv` is unavailable, use a
-Python 3.14 interpreter to create `.venv`, then install the same pinned
-`requirements.txt` with `python -m pip install -r requirements.txt`.
+The final command should report `3.14 2.3.3`. If `uv` is unavailable, use a Python 3.14 interpreter to create `.venv`, then install the same pinned `requirements.txt` with `python -m pip install -r requirements.txt`.
 
 ## 1. Shell pipeline (scripts before Python/NumPy)
 
-Run this from a disposable project-local directory because it creates `data/`,
-`logs/`, and `results/` below the current directory:
+Run this from a disposable project-local directory because it creates `data/`, `logs/`, and `results/` below the current directory:
 
 ```bash
 mkdir -p scratch/lecture03-cli
@@ -31,11 +35,7 @@ cd scratch/lecture03-cli
 bash /path/to/datasci_217/03/demo/01_cli_pipeline_demo.sh
 ```
 
-The activity uses a bounded `tail | cut | sort | uniq | head` pipeline, plus
-`wc` for record counts, shell assignment, one captured timestamp reused in
-output names and log lines, and simple `echo >>` append logging. The longer
-`awk`, grouped-redirection, and report-generation variants are optional
-reference material in the lecture.
+The activity uses a bounded `tail | cut | sort | uniq | head` pipeline, plus `wc` for record counts, shell assignment, one captured timestamp reused in output names and log lines, and simple `echo >>` append logging. The longer `awk`, grouped-redirection, and report-generation variants are optional reference material in the lecture.
 
 ## 2. Python refresher and NumPy performance
 
@@ -44,10 +44,7 @@ python demo2_python_potpourri.py
 python demo3_numpy_performance.py
 ```
 
-The first script refreshes type checking and f-string formatting before the
-NumPy examples. The second contrasts a Python loop with vectorized array
-arithmetic. Performance ratios vary by machine; focus on the vectorized
-operations rather than a fixed speedup.
+The first script refreshes type checking and f-string formatting before the NumPy examples. The second contrasts a Python loop with vectorized array arithmetic. Performance ratios vary by machine; focus on the vectorized operations rather than a fixed speedup.
 
 ## 3. NumPy student-grade analysis
 
@@ -55,22 +52,18 @@ operations rather than a fixed speedup.
 python demo3_student_analysis.py
 ```
 
-This end-of-lecture script applies array creation, indexing, masks, arithmetic,
-and reductions to a reproducible grade table. It is the practical bridge to
-the later pandas table workflow.
+This end-of-lecture script applies array creation, indexing, masks, arithmetic, and reductions to a reproducible grade table. It is the practical bridge to the later pandas table workflow.
 
 ## Optional Python script practice
 
-The two plain-Python analysis scripts use the bundled fixture and aggregate all
-subjects they find:
+The two plain-Python analysis scripts use the bundled fixture and aggregate all subjects they find:
 
 ```bash
 python demo1a_data_analysis.py
 python demo1b_data_analysis_functions.py
 ```
 
-For an optional terminal-data-processing discussion, inspect the fixture with
-commands such as:
+For an optional terminal-data-processing discussion, inspect the fixture with commands such as:
 
 ```bash
 head students.csv
@@ -78,5 +71,4 @@ cut -d',' -f4 students.csv | tail -n +2 | sort | uniq -c
 awk -F',' 'NR > 1 {sum += $3; count += 1} END {print sum / count}' students.csv
 ```
 
-`sparklines` is not part of this lecture's tested environment; install and use
-it only as an optional, separate terminal tool.
+`sparklines` is not part of this lecture's tested environment; install and use it only as an optional, separate terminal tool.

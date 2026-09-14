@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "Data Visualization: From Exploration to Communication"
   role: lecture
   status: mapped
   page_id: "29ad9fdd-1a1a-803c-a031-f791f9043193"
@@ -47,11 +48,11 @@ A **visualization** maps data values to visible properties so that a reader can 
 3. **Unit and grain:** What does one mark or summarized position represent, and what does one row in the plotting table represent?
 4. **Variables:** What is each variable's data type, what analytical role does it play, and which visible property will encode it?
 
-### State the unit and grain shown
+## State the unit and grain shown
 
 The **unit displayed** is what one mark or summarized position in the chart represents. Its **grain** is the corresponding row meaning in the plotting table. State both because a chart made from participant rows answers a different question from a chart made from program summaries.
 
-### Separate data type from role
+## Separate data type from role
 
 A variable's **data type** describes the meaning and valid operations of its values:
 
@@ -62,7 +63,7 @@ A variable's **data type** describes the meaning and valid operations of its val
 
 A variable's **role** describes how it participates in this particular analysis: for example, a quantitative column can be the measure being compared, a categorical column can define groups, and a temporal column can establish observation order. An identifier labels or links records; even when stored as a number, it is not automatically a quantitative measure. The same data type can play different roles in different charts, so record both type and role before choosing x, y, color, or another encoding.
 
-### Separate exploratory and explanatory work
+## Separate exploratory and explanatory work
 
 An **exploratory visualization** helps the analyst inspect patterns, distributions, or unexpected values while the question is still being refined. It may be quick, but it still needs truthful scales and labels.
 
@@ -72,7 +73,7 @@ An **explanatory visualization** communicates one selected finding to a named au
 
 *[xkcd 1845, “State Word Map”](https://xkcd.com/1845/) — If flexible method choices can produce any headline, the chart is not evidence.*
 
-### Think in marks and encodings
+## Think in marks and encodings
 
 A **mark** is a visible object such as a point, line, or rectangle. An **encoding** maps a data value to a visible property such as horizontal position, vertical position, length, color, marker shape, or line style.
 
@@ -649,11 +650,7 @@ plt.show()
 
 # Altair: Declarative Charts and Interaction
 
-Altair expresses a chart as **data → mark → typed encodings**. This makes the
-mapping from a table to visible properties explicit and produces a portable
-Vega-Lite specification. Use type shorthands deliberately: `:Q` for a
-quantitative measure, `:N` for a nominal category, `:O` for an ordered
-category, and `:T` for a temporal value.
+Altair expresses a chart as **data → mark → typed encodings**. This makes the mapping from a table to visible properties explicit and produces a portable Vega-Lite specification. Use type shorthands deliberately: `:Q` for a quantitative measure, `:N` for a nominal category, `:O` for an ordered category, and `:T` for a temporal value.
 
 ```python
 import altair as alt
@@ -677,25 +674,15 @@ scatter = alt.Chart(study).mark_point(filled=True, size=90).encode(
 scatter.interactive()
 ```
 
-`Chart(study)` supplies the table, `mark_point(filled=True)` chooses points,
-and the nominal color-plus-shape encodings redundantly identify pathways.
-`encode()` states the mapping. Tooltips and `.interactive()` can help a reader
-inspect a value or zoom, but the title, axes, legend, and main comparison must
-remain visible without hover. For a compact comparison, compose already
-honest charts with `alt.hconcat(left, right)` or `alt.vconcat(top, bottom)`;
-the end-of-lecture demo practices that pattern after the basic path above.
+`Chart(study)` supplies the table, `mark_point(filled=True)` chooses points, and the nominal color-plus-shape encodings redundantly identify pathways. `encode()` states the mapping. Tooltips and `.interactive()` can help a reader inspect a value or zoom, but the title, axes, legend, and main comparison must remain visible without hover. For a compact comparison, compose already honest charts with `alt.hconcat(left, right)` or `alt.vconcat(top, bottom)`; the end-of-lecture demo practices that pattern after the basic path above.
 
-Altair does not replace the visualization contract: state the row grain and
-variable roles first, choose truthful scales and marks, use redundant cues
-when category identity matters, and supply a text alternative for the rendered
-or shared view.
+Altair does not replace the visualization contract: state the row grain and variable roles first, choose truthful scales and marks, use redundant cues when category identity matters, and supply a text alternative for the rendered or shared view.
 
 # Optional Survey: Other Modern Visualization Libraries
 
 *The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
 
-This optional, unassessed survey names alternatives; the same visible-context
-rules still apply. Extended Bokeh and Plotly examples live in [BONUS.md](BONUS.md).
+This optional, unassessed survey names alternatives; the same visible-context rules still apply. Extended Bokeh and Plotly examples live in [BONUS.md](BONUS.md).
 
 ## Ecosystem at a glance
 

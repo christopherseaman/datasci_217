@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "06) Data Wrangling: Join, Combine, and Reshape"
   role: lecture
   status: mapped
   page_id: "293d9fdd-1a1a-801c-bef2-e6140976408c"
@@ -23,9 +24,7 @@ See [BONUS.md](BONUS.md) for advanced topics:
 *Fun fact: The word “wrangling” comes from the Old English “wranglian” meaning “to dispute or argue.” This is surprisingly accurate - data wrangling is basically arguing with your data until it finally agrees to cooperate.*
 
 
-Join keys are the table's name tags: if two rows share a tag, pandas brings
-their columns together. A good key makes matching boring; a bad key turns the
-merge into an enthusiastic photocopier.
+Join keys are the table's name tags: if two rows share a tag, pandas brings their columns together. A good key makes matching boring; a bad key turns the merge into an enthusiastic photocopier.
 
 Data wrangling is the art of transforming messy, disconnected datasets into clean, analysis-ready structures. This lecture focuses on the three fundamental operations you’ll use every single day: **merging datasets**, **concatenating DataFrames**, and **reshaping data formats**.
 
@@ -784,8 +783,7 @@ Wide: subject columns         Long: subject stored as a value
 ```
 
 
-If a reshape feels mysterious, write down what one row represents before
-choosing `pivot()` or `melt()`—your future self will thank you for the labels.
+If a reshape feels mysterious, write down what one row represents before choosing `pivot()` or `melt()`—your future self will thank you for the labels.
 
 # LIVE DEMO!
 
@@ -887,8 +885,7 @@ display(dropped)
 
 ```
 
-**Common use case:** After an index-based reshape or combination, you may want
-to reset_index() to make index labels regular columns again.
+**Common use case:** After an index-based reshape or combination, you may want to reset_index() to make index labels regular columns again.
 
 ## Basic MultiIndex Operations
 
@@ -927,8 +924,7 @@ display(summary.index)
 
 ```
 
-**Common pattern:** Use `.reset_index()` to convert MultiIndex labels back to
-regular columns.
+**Common pattern:** Use `.reset_index()` to convert MultiIndex labels back to regular columns.
 
 ```python
 # Convert MultiIndex back to regular columns

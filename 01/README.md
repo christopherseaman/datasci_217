@@ -6,15 +6,11 @@ notion:
   url: "https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696"
 ---
 
+[DLC](BONUS.md) · [Live Demo!](demo/DEMO_GUIDE.md)
+
+# Class Structure
+
 > San Francisco is a walkable city and I will literally die on this hill
-
-[DLC](https://app.notion.com/p/3d6d9fdd1a1a81d097abc3098e3d1397)
-
-See [BONUS.md](BONUS.md) for the optional extensions.
-
-[Live Demo!](demo/DEMO_GUIDE.md)
-
-## Class Structure
 
 - **Lectures** cover new material
 - **Assignments** after each lecture (caveats apply)
@@ -24,16 +20,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 # Getting Started: Your First Steps
 
-This section covers the essential setup for data science.
-
 ## Getting to the Command Line
 
 ![learning to code is kind of like this](media/rocket_packs.png)
 
 The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
 
-**Windows Users:**
-WSL:
+**Windows Users:** WSL:
 
 - **Windows Subsystem for Linux (WSL)** (recommended): Run `wsl --install` in PowerShell as Administrator
 
@@ -52,8 +45,6 @@ Native Windows:
 - **GitHub Codespaces**: Free tier available, works on any device with internet
 
 ## Installing Python
-
-Install Python as follows:
 
 **Windows WSL (Ubuntu):**
 
@@ -95,8 +86,6 @@ In native Windows PowerShell, use `py --version` (or `python --version` if that 
 
 ## Text Editor Options
 
-You'll need a good text editor to write Python code. Here are your options:
-
 **Visual Studio Code (Recommended):**
 
 - Free, powerful, and perfect for data science
@@ -109,12 +98,13 @@ You'll need a good text editor to write Python code. Here are your options:
 - **Sublime Text**: Fast and lightweight
 - **PyCharm**: Full-featured Python IDE
 - **nano**: Simple command-line editor for quick fixes
+- **Vim / Neovim**: Modal terminal editors; use `vim filename.py` or `nvim filename.py`. Press `i` to insert text, then `Esc` and `:wq` to save and quit.
 
-## Why VS Code?
+### Why VS Code?
 
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-VS Code strikes the perfect balance between simplicity and power. It's what most professional data scientists use, and it's what we'll use in this course.
+We'll use VS Code for its editor, integrated terminal, debugger, and Git interface.
 
 ## Starting with GitHub
 
@@ -136,8 +126,7 @@ VS Code strikes the perfect balance between simplicity and power. It's what most
 - Keep it professional? - future employers will see this
 - You can change it later, but links might break
 
-GitHub Student Pack (Optional Bonus)
-With your .edu email, you can get free premium features. We don't need them for class, but they're nice to have!
+GitHub Student Pack (Optional Bonus) With your .edu email, you can get free premium features. We don't need them for class, but they're nice to have!
 
 ### Setting Up Git in VS Code
 
@@ -206,7 +195,7 @@ pwd                    # Shows: /Users/yourname/Documents
 
 ```
 
-# File and Directory Operations
+## File and Directory Operations
 
 **Reference:**
 
@@ -270,7 +259,7 @@ mkdir data              # Create data subfolder
 
 ```
 
-# Viewing Files
+## Viewing Files
 
 **Reference:**
 
@@ -288,7 +277,7 @@ tail -n 5 results.txt   # See the last few results
 
 ```
 
-# Getting Help
+## Getting Help
 
 **Reference:**
 
@@ -357,10 +346,7 @@ python3 my_script.py
 
 ## Python Syntax Overview
 
-Python has some unique syntax rules that are essential to understand:
-
-**Indentation Matters!**
-Python uses indentation to group code together. Use four spaces per indentation level rather than mixing spaces and tabs:
+**Indentation Matters!** Python uses indentation to group code together. Use four spaces per indentation level rather than mixing spaces and tabs:
 
 This is a preview of an `if` conditional; the Control Structures section below explains how the condition works.
 
@@ -396,7 +382,7 @@ print("This is code")  # Comments can also go at the end of lines
 
 Python stores information in variables - think of them as labeled boxes that you can put different types of information in.
 
-# Numbers - The Foundation of Data Science
+### Numbers - The Foundation of Data Science
 
 ```python
 # Integers (whole numbers)
@@ -414,7 +400,7 @@ population = 1.4e9          # 1.4 billion
 atom_mass = 1.67e-27        # Very small number
 ```
 
-# Text - Essential for Data Labels and Categories
+### Text - Essential for Data Labels and Categories
 
 ```python
 # Strings for text data
@@ -429,7 +415,7 @@ name_title = student_name.title()        # "Alice Johnson"
 clean_name = "  Bob Smith  ".strip()     # Removes whitespace: "Bob Smith"
 ```
 
-# Boolean - Essential for Data Filtering
+### Boolean - Essential for Data Filtering
 
 ```python
 # True/False values for logical operations
@@ -439,7 +425,7 @@ analysis_ready = True and has_complete_data    # True
 needs_cleaning = missing_values or not analysis_ready  # False
 ```
 
-**Variable Naming Best Practices:**
+### Variable Naming Best Practices
 
 ```python
 # Good variable names (descriptive and clear)
@@ -453,7 +439,7 @@ x1 = 85.7              # Meaningless variable name
 temp = "grades.csv"     # 'temp' usually means temporary
 ```
 
-**Understanding Variable Types (Debugging Foundation):**
+### Understanding Variable Types (Debugging Foundation)
 
 ```python
 # Check what type a variable is (essential for debugging!)
@@ -600,8 +586,7 @@ print(f"Average grade: {average:.1f}")
 
 ### While Loops and Loop Control
 
-A `while` loop repeats as long as its condition is `True`. Update the loop
-variable inside the loop so it can eventually finish:
+A `while` loop repeats as long as its condition is `True`. Update the loop variable inside the loop so it can eventually finish:
 
 ```python
 count = 1
@@ -618,8 +603,7 @@ for position, grade in enumerate(grades, start=1):
     print(f"Assignment {position}: {grade}")
 ```
 
-Use `break` to stop a loop early, and `continue` to skip the rest of the
-current iteration and move to the next item:
+Use `break` to stop a loop early, and `continue` to skip the rest of the current iteration and move to the next item:
 
 ```python
 for grade in grades:
@@ -690,10 +674,7 @@ print(type(actual_number))                           # <class 'float'>
 
 ```
 
-**Why F-Strings Matter in Data Science:**
-F-strings let you create clear, readable output that tells the story of your data. Instead of printing raw numbers, you can provide context, explanations, and professional formatting that makes your analysis understandable to anyone.
-
-# Debugging and Error Handling Basics
+## Debugging and Error Handling Basics
 
 ![Programming is doing something wrong over and over until you do something right](media/it_works.png)
 
@@ -841,10 +822,6 @@ Best day: $1750
 
 # Key Takeaways
 
-Use the command line to navigate, create, and inspect files; use Python values,
-control flow, and formatted output to analyze them. Work incrementally: run
-scripts, read errors, inspect types, and save clear results. Next week, Git and
-GitHub make that work shareable.
+Use the command line to navigate, create, and inspect files; use Python values, control flow, and formatted output to analyze them. Work incrementally: run scripts, read errors, inspect types, and save clear results. Next week, Git and GitHub make that work shareable.
 
-**Professional Reality Check:**
-Real data scientists spend 80% of their time doing exactly these things: organizing files, reading data, cleaning it up, and generating clear reports. The fancy algorithms are just 20% of the work!
+**Professional Reality Check:** Real data scientists spend 80% of their time doing exactly these things: organizing files, reading data, cleaning it up, and generating clear reports. The fancy algorithms are just 20% of the work!

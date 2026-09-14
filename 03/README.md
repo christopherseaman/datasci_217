@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# NumPy Arrays & Virtual Environments"
   role: lecture
   status: mapped
   page_id: "27ed9fdd-1a1a-80a7-8532-e70d7000dae8"
@@ -8,21 +9,19 @@ notion:
 
 # NumPy Arrays & Virtual Environments
 
-Lecture 03 makes execution reproducible: create a known environment, then use
-it for NumPy-based numerical work. Lectures 01–03 use scripts and the
-terminal; notebooks begin in Lecture 04.
+Lecture 03 makes execution reproducible: create a known environment, then use it for NumPy-based numerical work. Lectures 01–03 use scripts and the terminal; notebooks begin in Lecture 04.
 
 **LIVE DEMO!**
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-## Virtual Environments
+# Virtual Environments
 
 ![xkcd 1987: Python Environment](media/xkcd_1987.png)
 
 *Virtual environments prevent package chaos*
 
-### Why Virtual Environments?
+## Why Virtual Environments?
 
 **The Problem:** Different projects need different package versions.
 
@@ -32,7 +31,7 @@ terminal; notebooks begin in Lecture 04.
 
 **The Solution:** Each project gets its own Python environment.
 
-### Lecture 03 candidate environment
+## Lecture 03 candidate environment
 
 This lecture uses one tested course candidate:
 
@@ -43,11 +42,11 @@ This lecture uses one tested course candidate:
 
 These versions define the tested candidate for this lecture's NumPy work, not a permanent dependency set for every later lecture. Later activities may add packages through their own recorded requirements. The primary setup below uses uv. The standard-library `venv` and Conda sections are alternatives for comparison; here they reproduce the same version, directory, and dependency contract rather than defining separate learning outcomes.
 
-### Reproducibility vocabulary
+## Reproducibility vocabulary
 
 A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs.
 
-#### Interpreter
+### Interpreter
 
 The Python **interpreter** is the executable program that reads and runs Python code. Two terminals can resolve the command `python` to different interpreter files, so both version and location matter.
 
@@ -65,7 +64,7 @@ python -c "import sys; print(sys.executable)"
 
 The `-c` option runs the short Python string that follows it.
 
-#### Package, module, and dependency
+### Package, module, and dependency
 
 A **module** is a Python file that can be imported. A **package** is installable software that can provide one or more modules. NumPy is a package; code normally loads its top-level module with `import numpy`.
 
@@ -86,7 +85,7 @@ numpy==2.3.3
 
 `==` pins the direct dependency to one exact candidate version. It can be changed later only as an intentional, tested course update.
 
-#### Environment and activation
+### Environment and activation
 
 An **environment** is the interpreter plus the packages available to it. A **virtual environment** is an isolated directory containing a project-specific Python command and package installation location.
 
@@ -100,7 +99,7 @@ The environment is recreated from instructions and requirements; it is not synch
 
 **Activation** changes the current shell so `python` and installed commands resolve to the selected environment. Activation does not install a package and does not change Python source files.
 
-### Using uv (course candidate)
+## Using uv (course candidate)
 
 [uv documentation](https://docs.astral.sh/uv/)
 
@@ -134,7 +133,7 @@ In native Windows PowerShell, replace the Bash activation line with:
 .\.venv\Scripts\Activate.ps1
 ```
 
-### Recreate instead of assuming
+## Recreate instead of assuming
 
 An import from the first environment proves only that the first environment works. Recreate the dependency set in a separate disposable directory to test the recorded instructions:
 
@@ -153,7 +152,7 @@ cd ..
 
 The recreated environment should independently report Python 3.14 and NumPy 2.3.3.
 
-### Using standard-library venv (alternative)
+## Using standard-library venv (alternative)
 
 Use this concise fallback only when uv is unavailable and the candidate Python interpreter is already installed. Confirm that `python` reports 3.14 before creating the environment:
 
@@ -177,7 +176,7 @@ In native Windows PowerShell, replace the Bash activation line with:
 
 The outcome is the same: an activated `.venv` created from the deliberate direct-dependency file. Choose one setup route; do not nest one environment inside another.
 
-### Using Conda (alternative comparison)
+## Using Conda (alternative comparison)
 
 [Conda documentation](https://docs.conda.io/)
 
@@ -204,32 +203,22 @@ python -c "import numpy as np; print(np.__version__)"
 conda deactivate
 ```
 
-## Shell pipelines and small automation
+# Shell pipelines and small automation
 
-Before the Python and NumPy examples, use the terminal to inspect a small CSV.
-Run `demo/01_cli_pipeline_demo.sh` from a disposable directory; it creates
-only paths below the current working directory.
+Before the Python and NumPy examples, use the terminal to inspect a small CSV. Run `demo/01_cli_pipeline_demo.sh` from a disposable directory; it creates only paths below the current working directory.
 
-Pipes (`|`) send one command's output to the next command. Redirection (`>`
-and `>>`) writes output to a file; `>>` appends. The core bounded pipeline
-skips a header with `tail`, selects a field with `cut`, sorts it for `uniq`,
-counts records with `wc`, and limits displayed output with `head`:
+Pipes (`|`) send one command's output to the next command. Redirection (`>` and `>>`) writes output to a file; `>>` appends. The core bounded pipeline skips a header with `tail`, selects a field with `cut`, sorts it for `uniq`, counts records with `wc`, and limits displayed output with `head`:
 
 ```bash
 tail -n +2 data/raw/students.csv | cut -d',' -f4 | sort | uniq -c | head -n 5
 tail -n +2 data/raw/students.csv | wc -l
 ```
 
-Shell variables use `name=value` with no spaces. Capture one timestamp with
-`timestamp=$(date +"%Y%m%d_%H%M%S")`, then reuse `$timestamp` in output names
-and log lines so one run has one identifier. Append a concise status message
-with `echo "${timestamp} complete" >> logs/processing.log`.
+Shell variables use `name=value` with no spaces. Capture one timestamp with `timestamp=$(date +"%Y%m%d_%H%M%S")`, then reuse `$timestamp` in output names and log lines so one run has one identifier. Append a concise status message with `echo "${timestamp} complete" >> logs/processing.log`.
 
-## Brief Python refresher
+# Brief Python refresher
 
-Lectures 01–02 introduced type checking and f-string formatting. Keep those
-core-Python tools available while reading the NumPy examples below; no NumPy
-objects are needed for this refresher.
+Lectures 01–02 introduced type checking and f-string formatting. Keep those core-Python tools available while reading the NumPy examples below; no NumPy objects are needed for this refresher.
 
 ```python
 name = "Alice"
@@ -241,7 +230,7 @@ print(f"Student {name} earned {grade:.1f}%")
 
 ![It's pronounced...](media/numpy.webp)
 
-## Why NumPy Matters
+# Why NumPy Matters
 
 Python is famously slow for numerical computing:
 
@@ -258,20 +247,20 @@ result = my_array * 2  # 0.3 ms - 150x faster!
 
 **NumPy is 10-100x faster** than pure Python for numerical operations.
 
-### The NumPy Solution
+## The NumPy Solution
 
 - **ndarray**: Fast, memory-efficient multidimensional arrays
 - **Vectorized operations**: Apply functions to entire arrays at once
 - **Broadcasting**: Smart handling of different-sized arrays
 - **Universal functions (ufuncs)**: Fast element-wise operations
 
-## NumPy Arrays
+# NumPy Arrays
 
-### NumPy Quick Reference
+## NumPy Quick Reference
 
 ![NumPy Cheatsheet](media/nparray_cheatsheet.png)
 
-### Creating Arrays
+## Creating Arrays
 
 **Reference:**
 
@@ -289,7 +278,7 @@ range_arr = np.arange(10)        # array([0, 1, 2, ..., 9])
 full = np.full((2, 3), 7)        # 2x3 array filled with 7
 ```
 
-### Array Properties
+## Array Properties
 
 **Reference:**
 
@@ -302,7 +291,7 @@ print(arr.size)       # 6 - total elements
 print(arr.dtype)      # int64 - data type
 ```
 
-### Data Types
+## Data Types
 
 **Reference:**
 
@@ -320,9 +309,9 @@ str_arr = np.array(["1.25", "-9.6", "42"])
 num_arr = str_arr.astype(float)
 ```
 
-## Array Indexing and Slicing
+# Array Indexing and Slicing
 
-### Basic Indexing
+## Basic Indexing
 
 NumPy extends familiar Python indexing and slicing across multiple dimensions.
 
@@ -340,7 +329,7 @@ subset = arr[2:7]       # array([2, 3, 4, 5, 6])
 every_other = arr[::2]  # array([0, 2, 4, 6, 8])
 ```
 
-### Multidimensional Indexing
+## Multidimensional Indexing
 
 Comma-separated indices access elements, rows, or columns in multidimensional arrays.
 
@@ -358,7 +347,7 @@ first_two_rows = arr_2d[:2]  # First 2 rows
 middle_column = arr_2d[:, 1] # Column 1: array([2, 5, 8])
 ```
 
-### Boolean Indexing
+## Boolean Indexing
 
 Boolean indexing filters arrays with conditional logic, selecting elements that meet specific criteria.
 
@@ -379,7 +368,7 @@ mask = (arr > 2) & (arr < 8)
 filtered = arr[mask]
 ```
 
-### Fancy Indexing
+## Fancy Indexing
 
 Fancy indexing uses integer arrays to select multiple elements at arbitrary positions without explicit loops.
 
@@ -397,7 +386,7 @@ arr_2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 selected = arr_2d[[0, 2], [1, 2]]  # array([2, 9])
 ```
 
-### Views vs Copies
+## Views vs Copies
 
 Slicing creates views that share memory; explicit copies are independent.
 
@@ -418,9 +407,9 @@ copy[0] = 99                # Doesn't affect original
 print(arr)                  # array([1, 2, 3, 4, 5])
 ```
 
-## NumPy Operations
+# NumPy Operations
 
-### Arithmetic and Vectorized Operations
+## Arithmetic and Vectorized Operations
 
 NumPy's vectorized operations calculate element-wise across arrays without explicit loops.
 
@@ -441,7 +430,7 @@ arr = np.array([[1, 2, 3], [4, 5, 6]])
 result = arr + 10           # Adds 10 to all elements
 ```
 
-### Statistical Operations
+## Statistical Operations
 
 NumPy provides built-in statistics across entire arrays or specific axes.
 
@@ -461,7 +450,7 @@ student_avg = grades.mean(axis=1)  # Average per student
 test_avg = grades.mean(axis=0)     # Average per test
 ```
 
-### Array Reshaping
+## Array Reshaping
 
 Reshaping operations change an array's dimensions. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
@@ -478,12 +467,11 @@ arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
 transposed = arr_2d.T         # Shape (2,3) -> (3,2)
 ```
 
-## Semi-Advanced NumPy
+# Semi-Advanced NumPy
 
-The following short reference keeps a few useful NumPy operations visible;
-the more specialized material is collected in [the bonus page](BONUS.md).
+The following short reference keeps a few useful NumPy operations visible; the more specialized material is collected in [the bonus page](BONUS.md).
 
-### Universal Functions (ufuncs)
+## Universal Functions (ufuncs)
 
 **Reference:**
 
@@ -500,7 +488,7 @@ arr2 = np.array([4, 2, 6])
 max_arr = np.maximum(arr1, arr2) # array([4, 5, 6])
 ```
 
-### Conditional Logic
+## Conditional Logic
 
 **Reference:**
 
@@ -514,7 +502,7 @@ result = np.where(arr > 0, arr, 0)  # Replace negatives with 0
 np.where(arr > 0, 'positive', 'negative')
 ```
 
-### Boolean Array Methods
+## Boolean Array Methods
 
 **Reference:**
 
@@ -531,7 +519,7 @@ any_above_90 = (grades > 90).any()  # True
 all_above_80 = (grades > 80).all()  # False (78 is not above 80)
 ```
 
-### Sorting
+## Sorting
 
 **Reference:**
 
@@ -551,7 +539,7 @@ arr_2d.sort(axis=0)     # Sort columns
 arr_2d.sort(axis=1)     # Sort rows
 ```
 
-### Random Number Generation
+## Random Number Generation
 
 **Reference:**
 
@@ -574,14 +562,13 @@ data = rng.random((3, 3))  # Same result every time
 
 ![Learning to Code...](media/learning_to_code.png)
 
-## Optional shell reference
+# Optional shell reference
 
-This reference extends the core activity with `tr`, `sed`, `awk`, and longer
-pipelines. The canonical visualization lecture is Lecture 07.
+This reference extends the core activity with `tr`, `sed`, `awk`, and longer pipelines. The canonical visualization lecture is Lecture 07.
 
 The advanced examples below are optional reference only.
 
-### Optional: Advanced Processing
+## Optional: Advanced Processing
 
 **Reference:**
 
@@ -599,7 +586,7 @@ awk '{print $1, $3}' file.txt   # Print columns 1, 3
 awk -F',' '$3 > 50' data.csv    # Filter rows
 ```
 
-### Optional: Longer Data Pipelines
+## Optional: Longer Data Pipelines
 
 **Reference:**
 
@@ -612,11 +599,9 @@ cat data.csv | \
   head -n 10 > results.csv
 ```
 
-### Optional reference: Quick Data Visualization
+## Optional reference: Quick Data Visualization
 
-Terminal visualization is also optional/reference-only. Lecture 07 is the
-canonical place for visualization; these commands are included only as a
-quick shell-based supplement.
+Terminal visualization is also optional/reference-only. Lecture 07 is the canonical place for visualization; these commands are included only as a quick shell-based supplement.
 
 Command line tools for quick data visualization without leaving the terminal.
 

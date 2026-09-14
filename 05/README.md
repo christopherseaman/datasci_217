@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "Data: Care & Feeding"
   role: lecture
   status: mapped
   page_id: "281d9fdd-1a1a-8015-bcdb-c11415191ac2"
@@ -17,19 +18,11 @@ Mid-term: [#FIXME:URL]
 ![Data Pipeline Intro](media/data_pipeline_intro.png)
 *Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
 
-Lecture 04 ends with an inspection preview. This lecture teaches the pandas tools
-that do the common cleaning work: handle missing values, detect and resolve
-duplicates, replace values, apply functions, convert types, create categories,
-clean strings, sample rows, and validate a result. We will use each operation on
-a small table first, then combine the operations into one pipeline at the end.
+Lecture 04 ends with an inspection preview. This lecture teaches the pandas tools that do the common cleaning work: handle missing values, detect and resolve duplicates, replace values, apply functions, convert types, create categories, clean strings, sample rows, and validate a result. We will use each operation on a small table first, then combine the operations into one pipeline at the end.
 
-## Three terms that guide the operations
+# Three terms that guide the operations
 
-**Row meaning** states what one row represents. A **schema** records expected
-column names, meanings, data types, allowed or required values, and whether
-missing values are permitted. A **candidate identifier** is one column, or a
-combination of columns, expected to distinguish rows. These terms help you decide
-which columns an operation should affect and how to check its result.
+**Row meaning** states what one row represents. A **schema** records expected column names, meanings, data types, allowed or required values, and whether missing values are permitted. A **candidate identifier** is one column, or a combination of columns, expected to distinguish rows. These terms help you decide which columns an operation should affect and how to check its result.
 
 # Handling Missing Data
 
@@ -37,15 +30,9 @@ which columns an operation should affect and how to check its result.
 
 *Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."*
 
-Start with the operations: detect gaps with `isna()` or `notna()`, remove them
-with `dropna()`, or fill them with `fillna()`, `ffill()`, `bfill()`, or
-`interpolate()`. Measure first; choose an operation only after considering what
-the missing values mean.
+Start with the operations: detect gaps with `isna()` or `notna()`, remove them with `dropna()`, or fill them with `fillna()`, `ffill()`, `bfill()`, or `interpolate()`. Measure first; choose an operation only after considering what the missing values mean.
 
-The usual mechanism labels are **MCAR** (missingness unrelated to the data),
-**MAR** (related to observed information), and **MNAR** (related to the missing
-value itself). They organize assumptions; counts alone cannot identify the
-mechanism.
+The usual mechanism labels are **MCAR** (missingness unrelated to the data), **MAR** (related to observed information), and **MNAR** (related to the missing value itself). They organize assumptions; counts alone cannot identify the mechanism.
 
 ![Missing Data Patterns](media/missing_data_patterns_diagram.png)
 *Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
@@ -54,8 +41,7 @@ mechanism.
 
 ## Missing Data Detection
 
-Missingness masks locate values pandas recognizes as absent. Source-specific
-sentinels such as `-9` or `unknown` need explicit handling.
+Missingness masks locate values pandas recognizes as absent. Source-specific sentinels such as `-9` or `unknown` need explicit handling.
 
 *Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up.*
 
@@ -86,8 +72,7 @@ print(missing_summary)
 
 ## Missing Data Analysis
 
-Counts and proportions summarize the pattern by row or column; interpreting its
-cause still requires source knowledge.
+Counts and proportions summarize the pattern by row or column; interpreting its cause still requires source knowledge.
 
 **Reference:**
 
@@ -114,8 +99,7 @@ print(df_clean.shape)  # (1, 3) - only the first row is complete
 
 ## Missing Data Imputation
 
-Imputation fills missing values under a stated rule. Whether to fill, retain,
-flag, or drop depends on the variable and analysis.
+Imputation fills missing values under a stated rule. Whether to fill, retain, flag, or drop depends on the variable and analysis.
 
 **Reference:**
 
@@ -362,10 +346,7 @@ Converting continuous variables into categories makes data easier to analyze and
 - `bins=[0, 18, 35, 50, 100]` - Custom bin edges
 - `labels=['Young', 'Middle', 'Senior']` - Custom labels for bins
 
-`cut` uses supplied value-range edges (equal-width only when you ask for
-equal-width bins); `qcut` derives edges from sample quantiles so bins target
-similar row counts. Ties can make quantile edges duplicate, so inspect the
-result and use an explicit duplicate-edge policy when needed.
+`cut` uses supplied value-range edges (equal-width only when you ask for equal-width bins); `qcut` derives edges from sample quantiles so bins target similar row counts. Ties can make quantile edges duplicate, so inspect the result and use an explicit duplicate-edge policy when needed.
 
 **Example:**
 
@@ -565,11 +546,7 @@ print(names_df)  # Two columns with first and last names
 
 # Sampling Rows and Sampling Designs
 
-Sampling is useful for inspecting records away from the top of a table, making a
-large table manageable for exploration, creating analysis splits, and resampling
-for procedures such as the bootstrap. A **simple random sample** gives every
-eligible row the same chance of selection. A **sampling design** additionally
-states which rows are eligible and how the selection supports the question.
+Sampling is useful for inspecting records away from the top of a table, making a large table manageable for exploration, creating analysis splits, and resampling for procedures such as the bootstrap. A **simple random sample** gives every eligible row the same chance of selection. A **sampling design** additionally states which rows are eligible and how the selection supports the question.
 
 **Reference:**
 
@@ -590,10 +567,7 @@ inspection = records.sample(n=3, random_state=42)
 print(inspection)
 ```
 
-See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
-stratified, weighted, systematic, bootstrap, shuffling, and permutation examples,
-including `np.random.permutation`. Keep the seed when a draw must be reproduced,
-and preserve row order when time or another sequence is part of the question.
+See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for stratified, weighted, systematic, bootstrap, shuffling, and permutation examples, including `np.random.permutation`. Keep the seed when a draw must be reproduced, and preserve row order when time or another sequence is part of the question.
 
 # Data Validation and Quality Assessment
 
@@ -669,13 +643,7 @@ print(valid_emails)  # All rows (emails are valid)
 
 ## From source to cleaned artifact
 
-Keep the received **source artifact** and parsed **raw table** unchanged;
-transform a separate **working table**, then save its checked result as a derived
-**cleaned table**. **Tidy data** describes structure—not correctness—with one
-variable per column, one observation per row, and one observational-unit type
-per table; Lecture 06 covers reshaping, and Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10)
-formalizes the idea. Record **provenance** and an **audit trail** connecting the
-source, decisions, transformations, checks, and output.
+Keep the received **source artifact** and parsed **raw table** unchanged; transform a separate **working table**, then save its checked result as a derived **cleaned table**. **Tidy data** describes structure—not correctness—with one variable per column, one observation per row, and one observational-unit type per table; Lecture 06 covers reshaping, and Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10) formalizes the idea. Record **provenance** and an **audit trail** connecting the source, decisions, transformations, checks, and output.
 
 ```mermaid
 graph TD

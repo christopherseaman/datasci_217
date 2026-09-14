@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Python, the Command Line, and VS Code"
   role: bonus
   status: mapped
   page_id: "3d6d9fdd-1a1a-81d0-97ab-c3098e3d1397"
@@ -10,7 +11,7 @@ notion:
 
 These topics are **optional** and not required for future lectures. Explore them if you're curious or want to deepen your understanding!
 
-## Advanced ls Options
+# Advanced ls Options
 
 Beyond the basic `ls`, there are many useful variations:
 
@@ -23,7 +24,7 @@ ls *.py         # List only Python files
 ls -R           # Recursive (show subdirectories too)
 ```
 
-## Python REPL Advanced Features
+# Python REPL Advanced Features
 
 The interactive Python environment has helpful features:
 
@@ -39,7 +40,7 @@ type(variable)     # Check variable type
 len(text)          # Length of strings/lists
 ```
 
-## Command History and Shortcuts
+# Command History and Shortcuts
 
 Make your command line experience smoother:
 
@@ -57,7 +58,7 @@ Ctrl+U             # Clear entire line
 Tab                # Auto-complete (your best friend!)
 ```
 
-## Python help() and dir() Functions
+# Python help() and dir() Functions
 
 These built-in functions are incredibly useful for learning:
 
@@ -76,7 +77,7 @@ print.__doc__      # Function documentation
 str.upper.__doc__   # Method documentation
 ```
 
-## File Permissions Basics
+# File Permissions Basics
 
 Understanding what you can and can't do with files:
 
@@ -90,7 +91,7 @@ chmod 644 file.txt # Set specific permissions
 # 644 = owner can read/write, others can read
 ```
 
-## Environment Variables Preview
+# Environment Variables Preview
 
 Your computer stores settings in environment variables:
 
@@ -106,7 +107,7 @@ import os
 print(os.environ['HOME'])    # Access environment variable
 ```
 
-## Advanced Python String Operations
+# Advanced Python String Operations
 
 Strings have many useful methods:
 
@@ -128,7 +129,7 @@ text.strip()           # Remove whitespace from ends
 text.replace("Hello", "Hi")  # Replace text
 ```
 
-## Command Line Wildcards and Patterns
+# Command Line Wildcards and Patterns
 
 Advanced file selection:
 
@@ -140,7 +141,7 @@ ls [abc]*          # Files starting with a, b, or c
 ls *[0-9].csv      # CSV files ending with a number
 ```
 
-## Python Number Formats and Operations
+# Python Number Formats and Operations
 
 More mathematical operations:
 
@@ -164,7 +165,7 @@ large_number = 1.23e6    # 1,230,000
 small_number = 1.23e-3   # 0.00123
 ```
 
-## Why These Topics Are Bonus
+# Why These Topics Are Bonus
 
 These advanced features are powerful, but can be overwhelming when you're just starting. Focus on the core concepts first, then come back to these when:
 
@@ -175,7 +176,7 @@ These advanced features are powerful, but can be overwhelming when you're just s
 
 Remember: Being productive with the basics is better than being confused by the advanced features!
 
-## When You Might Need These
+# When You Might Need These
 
 - **Advanced ls**: When working with large directories or complex file structures
 - **REPL features**: When exploring new Python libraries or debugging
@@ -187,7 +188,7 @@ Remember: Being productive with the basics is better than being confused by the 
 - **Wildcards**: When working with many files with similar names
 - **Advanced math**: When doing complex calculations
 
-## Practice Suggestions
+# Practice Suggestions
 
 If you want to explore these topics:
 

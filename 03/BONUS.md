@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced NumPy Topics"
   role: bonus
   status: mapped
   page_id: "3d6d9fdd-1a1a-8129-8a17-fb53e6f1afe8"

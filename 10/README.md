@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "From Statistics to Deep Learning: The Modern Modeling Landscape"
   role: lecture
   status: mapped
   page_id: "2b0d9fdd-1a1a-80f4-9871-ff3a726e57c3"
@@ -103,7 +104,7 @@ flowchart TD
 
 Statistical modeling focuses on quantifying relationships and making inferences about populations, while machine learning often prioritizes prediction on new data. A fitted association does not by itself explain *why* something happens: causal conclusions require an appropriate study design plus explicit identification assumptions.
 
-### A small vocabulary bridge
+## A small vocabulary bridge
 
 An **association** means variables vary together; **causation** claims that an intervention changes an outcome. A coefficient estimates the fitted outcome change associated with a one-unit predictor change, holding included predictors fixed—it is not automatically causal. A **confidence interval** is a range produced by a procedure for estimating a population quantity; a **p-value** measures how surprising data this extreme would be under a specified null model, not the probability that a hypothesis is true. Both express uncertainty under assumptions about design, functional form, errors, and independence.
 
@@ -422,12 +423,9 @@ print(f"Feature importance: {importance}")
 Benchmark candidates whose assumptions and decision boundaries fit the task against a meaningful baseline:
 
 - Classification: `LogisticRegression` and `SVC`.
-- Regression: `Ridge` and `Lasso` when shrinkage may help with many or
-  correlated features.
-- Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality
-  reduction.
-- Selection: `cross_val_score` for cross-validation and `GridSearchCV` for
-  hyperparameter tuning within the training data.
+- Regression: `Ridge` and `Lasso` when shrinkage may help with many or correlated features.
+- Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction.
+- Selection: `cross_val_score` for cross-validation and `GridSearchCV` for hyperparameter tuning within the training data.
 
 *Let validation evidence—not a favorite algorithm—decide. Blue steel is a style, not a model-selection rule.*
 
@@ -692,9 +690,7 @@ flowchart TD
 
 This lecture uses TensorFlow's integrated `tf.keras` API. Framework choice depends on measured performance, target platform, expertise, and maintenance.
 
-The course runtime is Python 3.14, but the current stable TensorFlow release
-does not publish Python 3.14 wheels. Demo 3 therefore uses its own Python 3.13
-environment with TensorFlow 2.21.0; this is the one runtime exception.
+The course runtime is Python 3.14, but the current stable TensorFlow release does not publish Python 3.14 wheels. Demo 3 therefore uses its own Python 3.13 environment with TensorFlow 2.21.0; this is the one runtime exception.
 
 **Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active at inference. It is a regularization choice to validate, not a guarantee against overfitting. Demo 3 compares Dropout and L2 as regularization choices.
 

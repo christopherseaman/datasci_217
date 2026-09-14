@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Data Cleaning"
   role: bonus
   status: mapped
   page_id: "286d9fdd-1a1a-80ca-b36b-f85d415c2e53"
@@ -10,13 +11,13 @@ notion:
 
 *These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!*
 
-## Modern Pandas Extension Types
+# Modern Pandas Extension Types
 
 The core lecture introduces nullable `Int64` because whole-number columns sometimes contain missing values. This bonus extends the same idea to nullable floats, booleans, and strings, then explores their broader memory and interoperability implications.
 
 *Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
 
-### Extension Types for Better Missing Data Handling
+## Extension Types for Better Missing Data Handling
 
 Traditional NumPy-based types couldn't represent missing integers or booleans. Extension types provide proper NA support across all data types.
 
@@ -46,7 +47,7 @@ bools = pd.Series([True, False, None], dtype='boolean')
 print(bools)  # [True, False, <NA>]
 ```
 
-### Why Use Extension Types?
+## Why Use Extension Types?
 
 Extension types provide consistent missing-data semantics and can improve memory use or performance for some workloads. Measure those properties on the actual data and operations rather than assuming every extension type is smaller or faster.
 
@@ -78,7 +79,7 @@ print(df.dtypes)
 print(df)
 ```
 
-## Advanced Regular Expressions for Text Data
+# Advanced Regular Expressions for Text Data
 
 Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks.
 
@@ -116,7 +117,7 @@ valid = emails.str.match(email_pattern)
 print(valid)  # [True, False, True]
 ```
 
-## Advanced Outlier Detection Methods
+# Advanced Outlier Detection Methods
 
 Beyond simple threshold-based outlier detection, statistical methods can identify unusual values.
 
@@ -147,7 +148,7 @@ z_scores = np.abs(stats.zscore(df['value']))
 outliers_z = df[z_scores > 3]
 ```
 
-## Complex String Transformations
+# Complex String Transformations
 
 Advanced string operations for specialized text cleaning tasks.
 
@@ -178,7 +179,7 @@ normalized = text.str.normalize('NFKD').str.encode('ascii', errors='ignore').str
 print(normalized)  # ['cafe', 'naive', 'resume']
 ```
 
-## Advanced Duplicate Handling
+# Advanced Duplicate Handling
 
 More sophisticated approaches to finding and handling duplicates.
 
@@ -214,7 +215,7 @@ def find_similar(s, threshold=80):
 find_similar(names)
 ```
 
-## Data Type Optimization
+# Data Type Optimization
 
 Reduce memory usage by choosing optimal data types.
 
@@ -241,7 +242,7 @@ df['B'] = df['B'].astype('category')
 print(f"Optimized memory: {df.memory_usage(deep=True).sum() / 1024:.1f} KB")
 ```
 
-## Conditional Data Replacement
+# Conditional Data Replacement
 
 Use `np.where()` and `np.select()` for complex conditional replacements.
 
@@ -271,7 +272,7 @@ df['letter_grade'] = np.select(conditions, choices, default='F')
 print(df)
 ```
 
-## When to Use These Techniques
+# When to Use These Techniques
 
 **Regular Expressions:** Email validation, phone number extraction, parsing log files, complex text cleaning.
 
@@ -287,18 +288,11 @@ print(df)
 
 # Optional Reference: Sampling Designs and Resampling
 
-The core lecture introduces simple random sampling and names the main tools.
-The techniques below show additional designs and resampling patterns; each one
-answers a different selection question.
+The core lecture introduces simple random sampling and names the main tools. The techniques below show additional designs and resampling patterns; each one answers a different selection question.
 
 ## Stratified Sampling
 
-Stratified sampling divides the sampling frame into defined strata, then samples
-within each stratum. Use `GroupBy.sample` when the design calls for a fixed number
-or fraction from every group. The strata and allocation are analytical choices;
-every group must have enough rows unless sampling with replacement is deliberate.
-For a train/test split that preserves a label's proportions, see
-`sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
+Stratified sampling divides the sampling frame into defined strata, then samples within each stratum. Use `GroupBy.sample` when the design calls for a fixed number or fraction from every group. The strata and allocation are analytical choices; every group must have enough rows unless sampling with replacement is deliberate. For a train/test split that preserves a label's proportions, see `sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
 
 ```python
 frame = pd.DataFrame({
@@ -315,11 +309,8 @@ print(by_site)
 
 ## Weighted and Systematic Sampling
 
-- `df.sample(weights='weight')` uses caller-supplied selection weights, which must
-  be validated and justified by the sampling design.
-- Systematic sampling chooses a random start and then every *step*th row. Ordering
-  or periodic structure can make it biased, so `df.iloc[start::step]` is only
-  appropriate when that risk has been considered.
+- `df.sample(weights='weight')` uses caller-supplied selection weights, which must be validated and justified by the sampling design.
+- Systematic sampling chooses a random start and then every *step*th row. Ordering or periodic structure can make it biased, so `df.iloc[start::step]` is only appropriate when that risk has been considered.
 
 ```python
 weighted_frame = frame.assign(weight=[1, 1, 1, 1, 2, 2, 2, 2])
@@ -335,10 +326,7 @@ print(systematic)
 
 ## Shuffling and Permutation
 
-Shuffling changes row order while retaining every row; it is useful when order is
-not meaningful. `df.sample(frac=1, random_state=42)` returns a shuffled DataFrame.
-`np.random.permutation` returns a permutation of positions, which can be reused to
-reorder aligned arrays or a DataFrame with `.iloc`.
+Shuffling changes row order while retaining every row; it is useful when order is not meaningful. `df.sample(frac=1, random_state=42)` returns a shuffled DataFrame. `np.random.permutation` returns a permutation of positions, which can be reused to reorder aligned arrays or a DataFrame with `.iloc`.
 
 ```python
 shuffled = frame.sample(frac=1, random_state=42)
@@ -348,15 +336,11 @@ print(shuffled)
 print(same_rows_new_order)
 ```
 
-Do not shuffle before time-aware analysis or temporal validation, where original
-order is part of the design.
+Do not shuffle before time-aware analysis or temporal validation, where original order is part of the design.
 
 ## Bootstrap Sampling
 
-`df.sample(n=len(df), replace=True)` draws a same-sized resample with expected
-duplicates. Repeating the draw to estimate a statistic's uncertainty is a
-bootstrap procedure with assumptions of its own; it is not an ordinary train/test
-split or proof of representativeness.
+`df.sample(n=len(df), replace=True)` draws a same-sized resample with expected duplicates. Repeating the draw to estimate a statistic's uncertainty is a bootstrap procedure with assumptions of its own; it is not an ordinary train/test split or proof of representativeness.
 
 ```python
 bootstrap_draw = frame.sample(

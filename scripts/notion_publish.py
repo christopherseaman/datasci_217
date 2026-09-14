@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Prepare mapped Markdown for a Notion page; never performs network writes."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+
+REPO = "https://github.com/christopherseaman/datasci_217"
+RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main"
+CHILD = re.compile(r"<(?:page|database|file)\b[^>]*>.*?</(?:page|database|file)>|<(?:page|database|file)\b[^>]*/>", re.I | re.S)
+LINK = re.compile(r"(!?)\[([^]]*)\]\(([^)]+)\)")
+
+
+def frontmatter(text: str) -> tuple[dict[str, str], str]:
+    if not text.startswith("---\n"):
+        return {}, text
+    end = text.find("\n---", 4)
+    if end < 0:
+        return {}, text
+    block, body = text[4:end], text[end + 4 :]
+    values = {}
+    for key, value in re.findall(r"^\s*(page_id|url|title|title_line):\s*([^\n]+)", block, re.M):
+        values[key] = json.loads(value) if value.startswith('"') else value.strip("'")
+    return values, body.lstrip("\n")
+
+
+def _child_blocks(text: str) -> tuple[list[str], str]:
+    blocks = CHILD.findall(text)
+    return blocks, CHILD.sub("", text)
+
+
+def _child_urls(blocks: list[str]) -> set[str]:
+    urls: set[str] = set()
+    for block in blocks:
+        urls.update(re.findall(r"(?:url|href)\s*=\s*[\"']([^\"']+)", block, re.I))
+    return urls
+
+
+def _mapped_url(path: Path, target: str) -> str | None:
+    local = (path.parent / target.split("#", 1)[0]).resolve()
+    if local.suffix.lower() not in {".md", ".markdown"} or not local.is_file():
+        return None
+    meta, _ = frontmatter(local.read_text(encoding="utf-8"))
+    return meta.get("url")
+
+
+def _link_url(path: Path, target: str, image: bool) -> str:
+    if target.startswith(("http://", "https://", "mailto:", "#", "file:", "data:")):
+        return target
+    if target.startswith("/"):
+        return "https://not.badmath.org/ds217" + target
+    target, hash_sep, fragment = target.partition("#")
+    mapped = _mapped_url(path, target)
+    if mapped:
+        return mapped + (hash_sep + fragment if hash_sep else "")
+    resolved = (path.parent / target).resolve()
+    try:
+        repo_path = resolved.relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        repo_path = resolved.relative_to(path.parent).as_posix()
+    base = RAW if image or Path(target).suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"} else REPO + "/blob/main"
+    return f"{base}/{repo_path}" + (hash_sep + fragment if hash_sep else "")
+
+
+def _replace_links(line: str, path: Path) -> str:
+    # Match the whole link first, even when its label contains inline code.
+    tokens = re.compile(r"(`+)(?!`)(.*?)\1(?!`)|!?\[[^]]*\]\([^)]+\)")
+    def replace(match):
+        link = LINK.fullmatch(match[0])
+        if link is None:
+            return match[0]
+        return link[1] + f"[{link[2]}]({_link_url(path, link[3], bool(link[1]))})"
+    return tokens.sub(replace, line)
+
+
+def _is_nav_line(line: str, path: Path, child_urls: set[str]) -> bool:
+    links = list(LINK.finditer(line.strip()))
+    remainder = LINK.sub("", line.strip())
+    boilerplate = re.fullmatch(r"See\s+for (?:the )?optional (?:extensions|extension notes)\.", remainder)
+    if not links or (not boilerplate and re.sub(r"[\s·|,;:/-]", "", remainder)):
+        return False
+    return all(not m.group(1) and _link_url(path, m.group(3), False) in child_urls for m in links)
+
+
+def table(block: list[str]) -> str:
+    """The Notion API requires table blocks rather than pipe-table syntax."""
+    rows = [re.split(r"(?<!\\)\|", line.strip().strip("|")) for line in block]
+    if len(rows) < 2 or not all(re.fullmatch(r"\s*:?-{3,}:?\s*", cell) for cell in rows[1]):
+        return "".join(block)
+    width = len(rows[0])
+    if any(len(row) != width for row in rows):
+        raise ValueError("Unequal table row widths; escape literal pipes as \\|")
+    return '<table header-row="true">\n' + "\n".join(
+        "<tr>" + "".join("<td>" + cell.strip() + "</td>" for cell in row) + "</tr>"
+        for row in [rows[0], *rows[2:]]
+    ) + "\n</table>\n"
+
+
+def prepare(source: Path, current: Path) -> str:
+    metadata, body = frontmatter(source.read_text(encoding="utf-8"))
+    current_text = current.read_text(encoding="utf-8")
+    _, current_body = frontmatter(current_text)
+    blocks, _ = _child_blocks(current_body)
+    child_urls = _child_urls(blocks)
+
+    lines: list[str] = []
+    fence: tuple[str, int] | None = None
+    local_title: str | None = metadata.get("title_line")
+    table_lines: list[str] = []
+    for line in body.splitlines(keepends=True):
+        if fence is None and line.startswith("|"):
+            table_lines.append(_replace_links(line, source))
+            continue
+        if table_lines:
+            lines.append(table(table_lines))
+            table_lines = []
+        marker = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if marker and fence is None:
+            fence = (marker.group(1)[0], len(marker.group(1)))
+            lines.append(line)
+            continue
+        if marker and fence and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= fence[1] and not line[marker.end():].strip():
+            fence = None
+            lines.append(line)
+            continue
+        if fence is None and _is_nav_line(line, source, child_urls):
+            continue
+        if fence is None and line.strip() == local_title:
+            local_title = None
+            continue
+        if fence is None:
+            line = _replace_links(line, source)
+        lines.append(line)
+
+    if table_lines:
+        lines.append(table(table_lines))
+    if fence:
+        raise ValueError("Unclosed code fence")
+    content = "".join(lines)
+    prefix = "\n".join(blocks)
+    if prefix:
+        prefix += "\n\n"
+    return prefix + content.lstrip("\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", type=Path)
+    parser.add_argument("current", type=Path, help="fetched Notion page content")
+    args = parser.parse_args()
+    print(prepare(args.source, args.current), end="")
+
+
+if __name__ == "__main__":
+    main()

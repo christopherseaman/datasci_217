@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Git Concepts"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-81b5-99c7-ff49c7654508"
@@ -10,11 +11,11 @@ notion:
 
 *This content is optional and not required for assignments. It's here for students who want to dive deeper into Git.*
 
-## Command Line Git (Power User Track)
+# Command Line Git (Power User Track)
 
 While VS Code's Git interface is excellent for daily use, command line Git offers more power and precision. Here's what power users should know:
 
-### Essential Command Line Git
+## Essential Command Line Git
 
 **Repository Setup:**
 ```bash
@@ -59,9 +60,9 @@ git diff --staged        # Staging vs last commit
 git diff HEAD~1          # Compare with previous commit
 ```
 
-## Advanced Branching Strategies
+# Advanced Branching Strategies
 
-### Feature Branch Workflow
+## Feature Branch Workflow
 
 ```bash
 # Create and switch to new branch
@@ -85,14 +86,14 @@ git merge feature/user-authentication
 git branch -d feature/user-authentication
 ```
 
-### Why Use Feature Branches?
+## Why Use Feature Branches?
 
 1. **Isolation:** Work on features without affecting main code
 2. **Collaboration:** Multiple people can work on different features
 3. **Review:** Feature branches enable pull request reviews
 4. **Rollback:** Easy to abandon a feature if it doesn't work out
 
-### Git Flow Model
+## Git Flow Model
 
 For larger projects, consider the Git Flow model:
 
@@ -112,9 +113,9 @@ git merge feature/data-visualization
 git branch -d feature/data-visualization
 ```
 
-## Advanced Git Operations
+# Advanced Git Operations
 
-### Undoing Changes
+## Undoing Changes
 
 **Review before undoing working-directory changes:**
 ```bash
@@ -140,7 +141,7 @@ git revert HEAD                    # Create new commit that undoes last commit
 git revert abc123                  # Revert specific commit by hash
 ```
 
-### Interactive Rebase
+## Interactive Rebase
 
 Clean up commit history before sharing:
 
@@ -156,7 +157,7 @@ Options in interactive rebase:
 - **squash:** Combine with previous commit
 - **drop:** Delete commit entirely
 
-### Stashing Changes
+## Stashing Changes
 
 Temporarily save work without committing:
 
@@ -176,9 +177,9 @@ git stash apply                    # Apply but keep stash
 git stash push -m "Message" file1.txt file2.txt
 ```
 
-## Git Hooks and Automation
+# Git Hooks and Automation
 
-### Pre-commit Hooks
+## Pre-commit Hooks
 
 Automate code quality checks:
 
@@ -206,7 +207,7 @@ fi
 echo "All checks passed!"
 ```
 
-### Using pre-commit Framework
+## Using pre-commit Framework
 
 Install the pre-commit package:
 ```bash
@@ -238,9 +239,9 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-## SSH Keys vs HTTPS
+# SSH Keys vs HTTPS
 
-### Setting Up SSH Keys
+## Setting Up SSH Keys
 
 More secure and convenient than HTTPS with passwords:
 
@@ -263,7 +264,7 @@ Add the public key to your GitHub account:
 2. New SSH key → paste public key
 3. Test: `ssh -T git@github.com`
 
-### Convert HTTPS to SSH
+## Convert HTTPS to SSH
 
 ```bash
 # Check current remote
@@ -273,9 +274,9 @@ git remote -v
 git remote set-url origin git@github.com:username/repo.git
 ```
 
-## Advanced Collaboration
+# Advanced Collaboration
 
-### Pull Request Best Practices
+## Pull Request Best Practices
 
 1. **Small, Focused PRs:** Easier to review and less likely to have conflicts
 2. **Descriptive Titles:** Summarize what the PR does
@@ -283,7 +284,7 @@ git remote set-url origin git@github.com:username/repo.git
 4. **Link Issues:** Reference related issues with #123
 5. **Request Reviewers:** Get feedback before merging
 
-### Handling Merge Conflicts
+## Handling Merge Conflicts
 
 ```bash
 # When merge conflicts occur
@@ -301,7 +302,7 @@ git add conflicted_file.txt
 git commit -m "Resolve merge conflict in conflicted_file.txt"
 ```
 
-### Advanced Merging Strategies
+## Advanced Merging Strategies
 
 ```bash
 # Merge without fast-forward (preserves branch history)
@@ -318,9 +319,9 @@ git checkout main
 git merge feature-branch
 ```
 
-## Git Configuration
+# Git Configuration
 
-### Global Configuration
+## Global Configuration
 
 ```bash
 # User information
@@ -341,7 +342,7 @@ git config --global alias.unstage 'reset HEAD --'
 git config --global alias.last 'log -1 HEAD'
 ```
 
-### Repository-Specific Configuration
+## Repository-Specific Configuration
 
 ```bash
 # Set different email for work projects
@@ -351,9 +352,9 @@ git config user.email "work.email@company.com"
 git config merge.tool vimdiff
 ```
 
-## Git Performance and Large Files
+# Git Performance and Large Files
 
-### Speeding Up Git
+## Speeding Up Git
 
 ```bash
 # For large repositories
@@ -365,7 +366,7 @@ git config gc.auto 256
 git clone --depth 1 https://github.com/user/huge-repo.git
 ```
 
-### Git LFS (Large File Storage)
+## Git LFS (Large File Storage)
 
 For tracking large files (datasets, models, media):
 
@@ -387,9 +388,9 @@ git add large_dataset.csv
 git commit -m "Add training dataset"
 ```
 
-## Troubleshooting Common Issues
+# Troubleshooting Common Issues
 
-### Detached HEAD State
+## Detached HEAD State
 
 ```bash
 # If you're in detached HEAD
@@ -399,7 +400,7 @@ git merge temp-branch              # Merge your work
 git branch -d temp-branch          # Clean up
 ```
 
-### Accidental Commits
+## Accidental Commits
 
 ```bash
 # Undo last commit but keep changes
@@ -416,22 +417,18 @@ git add forgotten_file.txt
 git commit --amend --no-edit
 ```
 
-### Large Repository Issues
+## Large Repository Issues
 
-For sensitive or oversized files accidentally committed, stop and coordinate
-with the repository administrator. History rewriting affects every clone; do
-not treat legacy history-rewrite commands as routine recipes. Make a verified
-backup and follow the hosting provider's current removal workflow in a
-disposable clone.
+For sensitive or oversized files accidentally committed, stop and coordinate with the repository administrator. History rewriting affects every clone; do not treat legacy history-rewrite commands as routine recipes. Make a verified backup and follow the hosting provider's current removal workflow in a disposable clone.
 
-## When NOT to Use These Advanced Features
+# When NOT to Use These Advanced Features
 
 - **Don't rebase public branches:** Others might have based work on them
 - **Don't force push to shared branches:** it can cause others to lose work.
 - **Don't rewrite history casually:** coordinate, back up, and use a disposable clone.
 - **Don't overcomplicate:** Simple workflows are often better for small teams
 
-## Resources for Deep Learning
+# Resources for Deep Learning
 
 - **Official Git Documentation:** https://git-scm.com/docs
 - **Pro Git Book:** https://git-scm.com/book (free online)
@@ -439,7 +436,7 @@ disposable clone.
 - **Git Flow Tutorial:** https://github.com/nvie/gitflow
 - **Advanced Git Videos:** Search for "Advanced Git" on YouTube
 
-## Practice Exercises
+# Practice Exercises
 
 1. Create a feature branch, make commits, and practice different merge strategies
 2. Set up pre-commit hooks for a Python project
@@ -449,7 +446,7 @@ disposable clone.
 
 Remember: These are power-user features. Master the basics first!
 
-## Professional Git Workflow
+# Professional Git Workflow
 
 Professional Git workflows emphasize clear commit messages, logical change organization, and effective collaboration patterns. These practices ensure project history remains understandable and maintainable.
 
@@ -475,17 +472,13 @@ git commit -m "Add data validation to analysis script
 Fixes issue #123"
 ```
 
----
 
 
 # Advanced Python CLI Topics
 
 *Optional reference for students interested in command-line data workflows.*
 
-This page owns shell and CLI-specific extensions. Python function design and
-object-model extensions live in the [Python concepts section](#bonus-python-concepts)
-below; the core lecture already introduces ordinary functions, lambdas, and the
-main guard.
+This page owns shell and CLI-specific extensions. Python function design and object-model extensions live in the [Python concepts section](#bonus-python-concepts) below; the core lecture already introduces ordinary functions, lambdas, and the main guard.
 
 ## Command-line essentials
 
@@ -527,13 +520,11 @@ tree .              # show this directory's hierarchy, when tree is installed
 history             # list prior commands
 ```
 
-The ↑ and ↓ keys cycle through earlier commands, `Tab` completes names, and
-`Ctrl+R` searches command history.
+The ↑ and ↓ keys cycle through earlier commands, `Tab` completes names, and `Ctrl+R` searches command history.
 
 ## Shell scripts with arguments
 
-Shell scripts can turn a repeatable pipeline into a small command-line tool.
-Quote paths and validate inputs before processing them.
+Shell scripts can turn a repeatable pipeline into a small command-line tool. Quote paths and validate inputs before processing them.
 
 ```bash
 #!/usr/bin/env bash
@@ -560,13 +551,11 @@ fi
 printf '%s' "$matches" | sort | tee errors.txt
 ```
 
-Useful shell variables include `$1` (the first argument), `$@` (all
-arguments), `$#` (argument count), and `$?` (the previous command's status).
+Useful shell variables include `$1` (the first argument), `$@` (all arguments), `$#` (argument count), and `$?` (the previous command's status).
 
 ## Pipelines, redirection, and process substitution
 
-Pipes connect stdout to stdin. `&&` continues only after success, `||` handles
-failure, and explicit redirections make output destinations clear.
+Pipes connect stdout to stdin. `&&` continues only after success, `||` handles failure, and explicit redirections make output destinations clear.
 
 ```bash
 grep -i 'error' logfile.txt | wc -l > error-count.txt
@@ -594,13 +583,11 @@ cut -d',' -f1,3 data.csv |        # select fields
   head -n 10 > results.csv
 ```
 
-`grep`, `cut`, `sort`, `uniq`, `tr`, `sed`, and `awk` each do one focused
-transformation. Check quoting and delimiters for the actual input format.
+`grep`, `cut`, `sort`, `uniq`, `tr`, `sed`, and `awk` each do one focused transformation. Check quoting and delimiters for the actual input format.
 
 ## Calling Python from a shell
 
-The shell is often the orchestrator while Python owns domain logic. Pass input
-through arguments or standard input rather than relying on hidden state:
+The shell is often the orchestrator while Python owns domain logic. Pass input through arguments or standard input rather than relying on hidden state:
 
 ```bash
 python3 summarize.py data.csv --output summary.json
@@ -609,11 +596,8 @@ python3 -c 'import sys; print(sum(map(float, sys.stdin)))' < values.txt
 
 ## Further directions
 
-Explore `xargs`, `tee`, process substitution, and shell completion in a
-disposable practice directory. For substantial transformations, prefer a
-tested Python script so parsing, errors, and edge cases are explicit.
+Explore `xargs`, `tee`, process substitution, and shell completion in a disposable practice directory. For substantial transformations, prefer a tested Python script so parsing, errors, and edge cases are explicit.
 
----
 
 
 # Bonus Python Concepts

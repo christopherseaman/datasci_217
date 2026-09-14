@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Data Aggregation Topics"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-81b9-9e57-e4de7f2b74da"
@@ -8,9 +9,9 @@ notion:
 
 # DLC: Advanced Data Aggregation Topics
 
-## Advanced GroupBy Operations
+# Advanced GroupBy Operations
 
-### Custom Aggregation Functions
+## Custom Aggregation Functions
 
 **Reference:**
 
@@ -29,7 +30,7 @@ summary = df.groupby('category').agg(
 )
 ```
 
-### Lambda Functions in GroupBy
+## Lambda Functions in GroupBy
 
 **Reference:**
 
@@ -52,7 +53,7 @@ df.groupby('category').agg({
 })
 ```
 
-### GroupBy with Time Windows
+## GroupBy with Time Windows
 
 **Reference:**
 
@@ -72,9 +73,9 @@ df.groupby(pd.Grouper(freq='7D')).agg({
 })
 ```
 
-## Advanced Pivot Table Operations
+# Advanced Pivot Table Operations
 
-### Multi-Level Pivot Tables
+## Multi-Level Pivot Tables
 
 **Reference:**
 
@@ -92,7 +93,7 @@ pivot = pd.pivot_table(df,
 pivot.columns = ['_'.join(col).strip() for col in pivot.columns]
 ```
 
-### Pivot Table with Custom Functions
+## Pivot Table with Custom Functions
 
 **Reference:**
 
@@ -113,7 +114,7 @@ if weight_totals.eq(0).any().any():
 pivot = weighted['weighted_value'].unstack('region').div(weight_totals)
 ```
 
-### Pivot Table with Missing Data Handling
+## Pivot Table with Missing Data Handling
 
 **Reference:**
 
@@ -136,9 +137,9 @@ pivot_interpolated = pivot.interpolate()     # Linear interpolation
 pivot_dropped = pivot.dropna()               # Drop missing rows
 ```
 
-## Hierarchical Grouping and MultiIndex
+# Hierarchical Grouping and MultiIndex
 
-### MultiIndex Operations
+## MultiIndex Operations
 
 **Reference:**
 
@@ -162,7 +163,7 @@ df_multi.loc[('A', 'X')]  # Access specific combination
 df_multi.xs('A', level=0)  # Cross-section
 ```
 
-### Advanced MultiIndex Grouping
+## Advanced MultiIndex Grouping
 
 **Reference:**
 
@@ -187,9 +188,9 @@ def hierarchical_analysis(df):
     return result
 ```
 
-## Advanced Statistical Aggregations
+# Advanced Statistical Aggregations
 
-### Rolling Statistics
+## Rolling Statistics
 
 **Reference:**
 
@@ -204,7 +205,7 @@ df['expanding_sum'] = grouped_values.transform(lambda s: s.expanding().sum())
 df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 ```
 
-### Percentile Aggregations
+## Percentile Aggregations
 
 **Reference:**
 
@@ -225,7 +226,7 @@ def percentile_agg(series):
 df.groupby('category')['value'].apply(percentile_agg)
 ```
 
-### Statistical Tests in Groups
+## Statistical Tests in Groups
 
 This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Install it in the active notebook environment with `%pip install scipy` before running the example.
 
@@ -257,9 +258,9 @@ def statistical_tests(group):
 df.groupby('category').apply(statistical_tests)
 ```
 
-## Advanced Pivot Table Features
+# Advanced Pivot Table Features
 
-### Pivot Table with Custom Index
+## Pivot Table with Custom Index
 
 **Reference:**
 
@@ -279,7 +280,7 @@ pivot = pd.pivot_table(df,
                       aggfunc='sum')
 ```
 
-### Pivot Table with Time Index
+## Pivot Table with Time Index
 
 **Reference:**
 
@@ -297,17 +298,13 @@ pivot = pd.pivot_table(df,
                       fill_value=0)
 ```
 
-### Pivot Table with Custom Aggregation
+## Pivot Table with Custom Aggregation
 
-The grouped weighted-mean workflow in
-[Pivot Table with Custom Functions](#pivot-table-with-custom-functions) is the
-canonical example. It computes and validates the numerator and denominator
-before reshaping because `pivot_table(values='value')` does not pass the
-separate `weight` column to its aggregator.
+The grouped weighted-mean workflow in [Pivot Table with Custom Functions](#pivot-table-with-custom-functions) is the canonical example. It computes and validates the numerator and denominator before reshaping because `pivot_table(values='value')` does not pass the separate `weight` column to its aggregator.
 
-## Advanced GroupBy Transformations
+# Advanced GroupBy Transformations
 
-### Ranking Within Groups
+## Ranking Within Groups
 
 **Reference:**
 
@@ -322,7 +319,7 @@ df['rank_min'] = df.groupby('category')['value'].rank(method='min')
 df['rank_max'] = df.groupby('category')['value'].rank(method='max')
 ```
 
-### Lag and Lead Operations
+## Lag and Lead Operations
 
 **Reference:**
 
@@ -339,7 +336,7 @@ df['value_diff'] = df.groupby('category')['value'].diff()
 df['value_pct_change'] = df.groupby('category')['value'].pct_change()
 ```
 
-### Window Functions
+## Window Functions
 
 **Reference:**
 
@@ -352,9 +349,9 @@ df['expanding_sum'] = grouped_values.transform(lambda s: s.expanding().sum())
 df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 ```
 
-## Custom GroupBy Classes
+# Custom GroupBy Classes
 
-### Custom GroupBy Aggregator
+## Custom GroupBy Aggregator
 
 **Reference:**
 
@@ -388,13 +385,11 @@ custom_gb = CustomGroupBy(df, ['category'])
 result = custom_gb.custom_agg('value', lambda x: x.quantile(0.95))
 ```
 
-## Advanced Remote Computing
+# Advanced Remote Computing
 
-The core lecture introduces SSH, file transfer, Jupyter port forwarding, and
-persistent terminal sessions. The tools below extend that workflow to distributed
-and cloud-managed data processing.
+The core lecture introduces SSH, file transfer, Jupyter port forwarding, and persistent terminal sessions. The tools below extend that workflow to distributed and cloud-managed data processing.
 
-### Distributed Computing
+## Distributed Computing
 
 **Reference:**
 
@@ -414,7 +409,7 @@ result = df.groupby('category').agg({
 result.to_csv('distributed_results.csv')
 ```
 
-### Cloud Computing
+## Cloud Computing
 
 **Reference:**
 
@@ -437,7 +432,6 @@ result.to_csv('s3://bucket/results.csv')
 These advanced topics will help you handle complex aggregation scenarios and optimize performance for large datasets in your data science work.
 
 
----
 
 
 # Bonus: Advanced Data Analysis Debugging and Profiling

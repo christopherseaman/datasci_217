@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Data Visualization Topics"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-8172-a97a-dc1e9e5b577a"
@@ -8,9 +9,9 @@ notion:
 
 # DLC: Advanced Data Visualization Topics
 
-## Annotations and Drawing on Plots
+# Annotations and Drawing on Plots
 
-### Adding Text and Annotations
+## Adding Text and Annotations
 
 **Reference:**
 
@@ -41,7 +42,7 @@ ax.axhline(y=data.mean(), color='gray', linestyle='--', alpha=0.7)
 ax.axvline(x=50, color='gray', linestyle='--', alpha=0.7)
 ```
 
-### Drawing Shapes and Patches
+## Drawing Shapes and Patches
 
 **Reference:**
 
@@ -58,9 +59,9 @@ ax.add_patch(circle)
 ax.add_patch(polygon)
 ```
 
-## matplotlib Configuration
+# matplotlib Configuration
 
-### Global Configuration
+## Global Configuration
 
 **Reference:**
 
@@ -89,7 +90,7 @@ fig, ax = plt.subplots()
 ax.plot(data)
 ```
 
-### Style Sheets
+## Style Sheets
 
 **Reference:**
 
@@ -111,9 +112,9 @@ plt.style.use({
 })
 ```
 
-## Advanced pandas Plotting
+# Advanced pandas Plotting
 
-### Subplot Layouts
+## Subplot Layouts
 
 **Reference:**
 
@@ -123,7 +124,7 @@ df.plot(subplots=True, layout=(2, 2), sharex=True, sharey=True)
 df.plot(subplots=True, figsize=(12, 8), title='Custom Title')
 ```
 
-### Stacked and Grouped Plots
+## Stacked and Grouped Plots
 
 **Reference:**
 
@@ -138,9 +139,9 @@ df.plot.bar(x='category', y='value', color=['red', 'blue', 'green'])
 df.plot.area(alpha=0.7, stacked=True)
 ```
 
-## Advanced seaborn Features
+# Advanced seaborn Features
 
-### Statistical Visualization
+## Statistical Visualization
 
 **Reference:**
 
@@ -173,7 +174,7 @@ correlation_matrix = df.corr()
 sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
 ```
 
-### Facet Grids and Categorical Plots
+## Facet Grids and Categorical Plots
 
 **Reference:**
 
@@ -187,7 +188,7 @@ g = sns.FacetGrid(df, col='category', row='group')
 g.map(sns.scatterplot, 'x', 'y')
 ```
 
-### Custom Themes and Styles
+## Custom Themes and Styles
 
 **Reference:**
 
@@ -209,9 +210,9 @@ custom_style = {
 sns.set_style("white", rc=custom_style)
 ```
 
-## Advanced matplotlib Customization
+# Advanced matplotlib Customization
 
-### Publication-Quality Plots
+## Publication-Quality Plots
 
 **Reference:**
 
@@ -251,7 +252,7 @@ plt.savefig('publication_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
 ```
 
-### Custom Color Palettes
+## Custom Color Palettes
 
 **Reference:**
 
@@ -273,9 +274,9 @@ plt.imshow(data, cmap=cmap)
 plt.colorbar()
 ```
 
-## Interactive Visualizations
+# Interactive Visualizations
 
-### Altair for Declarative Interactive Charts
+## Altair for Declarative Interactive Charts
 
 **Reference:**
 
@@ -298,7 +299,7 @@ chart = (
 chart.save('interactive_chart.html')
 ```
 
-### Bokeh for Interactive Plots
+## Bokeh for Interactive Plots
 
 **Reference:**
 
@@ -331,7 +332,7 @@ p.circle(x, y, size=10, alpha=0.6, color='blue')
 show(p)
 ```
 
-### Plotly for Interactive Dashboards
+## Plotly for Interactive Dashboards
 
 **Reference:**
 
@@ -352,9 +353,9 @@ fig = px.scatter(df, x='total_bill', y='tip',
 fig.show()
 ```
 
-## Animation and Dynamic Plots
+# Animation and Dynamic Plots
 
-### matplotlib Animation
+## matplotlib Animation
 
 **Reference:**
 
@@ -382,7 +383,7 @@ anim = FuncAnimation(fig, animate, frames=100,
 anim.save('sine_wave.gif', writer='pillow', fps=20)
 ```
 
-### Real-time Data Visualization
+## Real-time Data Visualization
 
 **Reference:**
 
@@ -416,9 +417,9 @@ while time.time() - start_time < 10:
     update_plot()
 ```
 
-## Advanced Color Theory
+# Advanced Color Theory
 
-### Colorblind-Friendly Palettes
+## Colorblind-Friendly Palettes
 
 **Reference:**
 
@@ -434,7 +435,7 @@ colorblind_palettes = {
 sns.set_palette(colorblind_palettes['viridis'])
 ```
 
-### Color Psychology in Data Visualization
+## Color Psychology in Data Visualization
 
 **Reference:**
 
@@ -459,9 +460,9 @@ def choose_color_for_data(data_type, value):
         return emotional_colors['trust']
 ```
 
-## Performance Optimization
+# Performance Optimization
 
-### Large Dataset Visualization
+## Large Dataset Visualization
 
 **Reference:**
 
@@ -483,7 +484,7 @@ plt.hexbin(df['x'], df['y'], gridsize=50, cmap='Blues')
 plt.colorbar()
 ```
 
-### Memory-Efficient Plotting
+## Memory-Efficient Plotting
 
 **Reference:**
 
@@ -502,9 +503,9 @@ def memory_efficient_plotting():
     gc.collect()
 ```
 
-## Export and Sharing
+# Export and Sharing
 
-### Multiple Format Export
+## Multiple Format Export
 
 **Reference:**
 
@@ -522,7 +523,7 @@ def export_plot(fig, filename_base):
     fig.savefig(f'{filename_base}.jpg', dpi=150, bbox_inches='tight')
 ```
 
-### Interactive HTML Export
+## Interactive HTML Export
 
 **Reference:**
 
@@ -537,9 +538,9 @@ fig = px.scatter(df, x='x', y='y')
 pyo.plot(fig, filename='interactive_plot.html', auto_open=False)
 ```
 
-## Advanced Statistical Visualization
+# Advanced Statistical Visualization
 
-### Confidence Intervals
+## Confidence Intervals
 
 **Reference:**
 
@@ -568,7 +569,7 @@ def plot_with_confidence(y, ax):
             transform=ax.transAxes, va='top')
 ```
 
-### Statistical Annotations
+## Statistical Annotations
 
 **Reference:**
 
@@ -586,9 +587,9 @@ def add_statistical_annotations(ax, x, y):
             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 ```
 
-## Custom Plot Types
+# Custom Plot Types
 
-### Waterfall Charts
+## Waterfall Charts
 
 **Reference:**
 
@@ -616,7 +617,7 @@ def create_waterfall_chart(data, labels):
     plt.show()
 ```
 
-### Sankey Diagrams
+## Sankey Diagrams
 
 **Reference:**
 
@@ -648,9 +649,9 @@ def create_sankey_diagram():
     fig.show()
 ```
 
-## Visualization Testing and Validation
+# Visualization Testing and Validation
 
-### Automated Plot Testing
+## Automated Plot Testing
 
 **Reference:**
 
@@ -675,7 +676,7 @@ def test_plot_properties(fig, expected_properties):
         assert xlim[1] == expected_properties['xlim'][1]
 ```
 
-### Plot Quality Metrics
+## Plot Quality Metrics
 
 **Reference:**
 

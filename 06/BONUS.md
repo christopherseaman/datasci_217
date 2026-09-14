@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Data Wrangling"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-810a-9c14-db8f8818cb36"
@@ -12,7 +13,7 @@ notion:
 
 See [README.md](README.md) for core data wrangling operations - master those first!
 
-## Advanced Topics Covered
+# Advanced Topics Covered
 
 1. **Advanced MultiIndex Operations** - Deep dive into hierarchical indexing with swaplevel(), level-specific sorting, and summary statistics by level
 2. **Merging on Index** - Join DataFrames using index values instead of columns
@@ -21,13 +22,12 @@ See [README.md](README.md) for core data wrangling operations - master those fir
 5. **Stack/Unstack with dropna Parameter** - Control how missing data is handled during reshaping
 6. **Hierarchical Columns from Pivot** - Create and work with MultiIndex in column headers
 
----
 
-## 1. Advanced MultiIndex Operations
+# 1. Advanced MultiIndex Operations
 
 *You've seen basic MultiIndex - now let's go deeper. MultiIndex becomes essential when working with hierarchical data like time series with multiple metrics, or nested business hierarchies.*
 
-### Swapping and Reordering Index Levels
+## Swapping and Reordering Index Levels
 
 When you have multiple index levels, you may need to change their order for different analyses.
 
@@ -91,9 +91,8 @@ result = data.swaplevel(0, 1).sort_index(level=0)
 
 **Gotcha:** Sorting is critical for performance with MultiIndex. Always sort after creating or modifying MultiIndex for faster .loc[] operations.
 
----
 
-### Summary Statistics by Level
+## Summary Statistics by Level
 
 Aggregate data at specific levels of a MultiIndex without flattening the entire structure.
 
@@ -152,9 +151,8 @@ print(by_color)
 - Time series: Monthly totals from daily data with Year/Month/Day index
 - Organizational data: Department totals ignoring individual teams
 
----
 
-## 2. Merging on Index
+# 2. Merging on Index
 
 *Sometimes your "key" isn't a column - it's the index itself. This is common with time series or when you've already structured data with meaningful indexes.*
 
@@ -225,15 +223,10 @@ print(both_index)
 - After set_index() operations
 - Joining dimension tables to fact tables (data warehouse style)
 
-**Gotcha:** An index used as a merge key is not automatically preserved as the
-result's index in every merge. Column-key merges generally create a new result
-index; index-key merges use the participating index labels as keys, but the
-resulting index structure depends on the join and key choices. Inspect
-`result.index` or call `reset_index()` when you need a predictable column form.
+**Gotcha:** An index used as a merge key is not automatically preserved as the result's index in every merge. Column-key merges generally create a new result index; index-key merges use the participating index labels as keys, but the resulting index structure depends on the join and key choices. Inspect `result.index` or call `reset_index()` when you need a predictable column form.
 
----
 
-## 3. Advanced concat Options
+# 3. Advanced concat Options
 
 *Basic concat is straightforward, but these options give you fine control over how pieces are labeled and validated.*
 
@@ -333,9 +326,8 @@ print(result)
 - **verify_integrity**: Ensuring no accidental duplicates in production
 - **join='inner'**: Only keeping columns common to all DataFrames
 
----
 
-## 4. MultiIndex Creation Methods
+# 4. MultiIndex Creation Methods
 
 *Sometimes you need to build a MultiIndex programmatically rather than getting it from groupby or pivot. These methods give you precise control.*
 
@@ -420,9 +412,8 @@ print(sales)
 - Setting up templates for data entry
 - Programmatically generating report structures
 
----
 
-## 5. Stack/Unstack and Missing Values in pandas 3
+# 5. Stack/Unstack and Missing Values in pandas 3
 
 In pandas 3, `stack()` uses the new implementation and preserves missing combinations. The former `dropna=` argument is no longer accepted. Remove missing values explicitly after stacking when that is the intended analysis.
 
@@ -478,9 +469,8 @@ print(len(stacked_all.dropna()))   # 6 observed values
 
 Keeping the full result lets a later analysis distinguish a recorded missing value from a combination removed from the table.
 
----
 
-## 6. Hierarchical Columns from Pivot
+# 6. Hierarchical Columns from Pivot
 
 *pivot() can create MultiIndex not just in rows, but in columns too. This happens when you don't specify the values parameter or when pivoting multiple value columns.*
 
@@ -601,9 +591,8 @@ print(swapped)
 2. Use .xs() to extract just the metric/dimension you need
 3. Restructure the data to long format and avoid hierarchical columns
 
----
 
-## When to Revisit These Topics
+# When to Revisit These Topics
 
 You'll know it's time to come back to these advanced topics when you encounter:
 

@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# Time Series Analysis: Temporal Data and Trends"
   role: lecture
   status: mapped
   page_id: "2a8d9fdd-1a1a-80ed-828d-e5feb58d5ed9"
@@ -147,8 +148,7 @@ print("\nDataFrame with datetime index:")
 print(df.head())
 ```
 
-For repeated dates, convert the column, set it as the index, and sort it before
-partial-date `.loc` slicing; a non-monotonic index may not slice reliably:
+For repeated dates, convert the column, set it as the index, and sort it before partial-date `.loc` slicing; a non-monotonic index may not slice reliably:
 
 ```python
 df['date'] = pd.to_datetime(df['date'])  # Convert to datetime
@@ -632,9 +632,7 @@ print(df_tz)
 
 # Entity-Aware Features and Past-Only Windows
 
-A **panel** contains one ordered history per entity: a patient, sensor, site,
-or other unit observed repeatedly. Sort within each entity before creating
-lags or windows, and never let one entity's history leak into another's.
+A **panel** contains one ordered history per entity: a patient, sensor, site, or other unit observed repeatedly. Sort within each entity before creating lags or windows, and never let one entity's history leak into another's.
 
 ```python
 panel = pd.DataFrame({
@@ -657,26 +655,15 @@ prediction_time = pd.Timestamp('2024-01-01 11:00', tz='UTC')
 usable = panel['available_at'] <= prediction_time
 ```
 
-These are **past-only** features: the current observation is excluded before
-the window is calculated. A row-count window such as the previous three
-observations answers “how many readings back?” A time-based window such as the
-previous two hours answers “what elapsed time was available?” In pandas, use a
-time offset such as `.rolling('2h', closed='left')` on a datetime index for that
-elapsed-time meaning. Both require chronological order within each entity. A centered window
-(`center=True`) looks forward as well as backward, so it is useful for
-describing a completed series but is future leakage when a feature must be
-available at prediction time.
+These are **past-only** features: the current observation is excluded before the window is calculated. A row-count window such as the previous three observations answers “how many readings back?” A time-based window such as the previous two hours answers “what elapsed time was available?” In pandas, use a time offset such as `.rolling('2h', closed='left')` on a datetime index for that elapsed-time meaning. Both require chronological order within each entity. A centered window (`center=True`) looks forward as well as backward, so it is useful for describing a completed series but is future leakage when a feature must be available at prediction time.
 
-Availability is a separate check from timestamp order. If a measurement has an
-`available_at` timestamp, use it—not merely its observation time—to decide
-whether it can be used at `prediction_time`:
+Availability is a separate check from timestamp order. If a measurement has an `available_at` timestamp, use it—not merely its observation time—to decide whether it can be used at `prediction_time`:
 
 ```python
 usable = panel['available_at'] <= prediction_time
 ```
 
-The same audit applies to lagged values, rolling summaries, resampled values,
-and any feature assembled from another table.
+The same audit applies to lagged values, rolling summaries, resampled values, and any feature assembled from another table.
 
 # Time Series Visualization
 

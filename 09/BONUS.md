@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "# DLC: Advanced Time Series Analysis Topics"
   role: bonus
   status: mapped
   page_id: "3d2d9fdd-1a1a-8164-a3f7-c5c5d3a8617a"
@@ -12,11 +13,11 @@ Everything in this document is optional for Lecture 09. It collects specialized 
 
 **Optional preview/reference ahead of Lecture 10:** The forecasting, stationarity, and temporal-modeling material below is optional for Lecture 09. Use it as specialized reference or as a preview of the broader modeling and evaluation ideas introduced in Lecture 10; it is not required lecture content.
 
-## Period Arithmetic and Fiscal Year Handling
+# Period Arithmetic and Fiscal Year Handling
 
 *Periods represent time spans, not specific moments. Understanding periods is crucial for fiscal year analysis and business reporting.*
 
-### Period Basics
+## Period Basics
 
 **Reference:**
 
@@ -55,7 +56,7 @@ print("\nPeriod-indexed Series:")
 print(ts)
 ```
 
-### Converting Between Timestamps and Periods
+## Converting Between Timestamps and Periods
 
 **Reference:**
 
@@ -84,11 +85,11 @@ print("\nBack to timestamps:")
 print(ts_back)
 ```
 
-## Advanced Time Series Decomposition
+# Advanced Time Series Decomposition
 
 *Decomposition separates time series into trend, seasonal, and residual components, revealing underlying patterns.*
 
-### Seasonal Decomposition
+## Seasonal Decomposition
 
 **Reference:**
 
@@ -132,7 +133,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-### STL Decomposition
+## STL Decomposition
 
 **Reference:**
 
@@ -152,11 +153,11 @@ result.seasonal  # Seasonal component
 result.resid     # Residual component
 ```
 
-## Time Series Forecasting
+# Time Series Forecasting
 
 *Forecasting uses historical patterns to predict future values. Always be honest about uncertainty and prediction intervals.*
 
-### ARIMA Models
+## ARIMA Models
 
 **Reference:**
 
@@ -189,7 +190,7 @@ def fit_arima(series, order=(1, 1, 1)):
     return fitted_model, forecast, forecast_ci
 ```
 
-### Exponential Smoothing
+## Exponential Smoothing
 
 **Reference:**
 
@@ -212,11 +213,11 @@ fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, smoothing_seasonal=
 forecast = fitted.forecast(steps=30)
 ```
 
-## Advanced Resampling Operations
+# Advanced Resampling Operations
 
 *Resampling with periods requires careful handling of period boundaries and conventions.*
 
-### Resampling with Periods
+## Resampling with Periods
 
 **Reference:**
 
@@ -243,7 +244,7 @@ annual = frame.resample('Y-DEC').mean()
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
 ```
 
-### Grouped Time Resampling
+## Grouped Time Resampling
 
 **Reference:**
 
@@ -262,11 +263,11 @@ time_key = Grouper(freq='5min')
 resampled = df.set_index('time').groupby(['key', time_key]).sum()
 ```
 
-## High-Frequency Data Analysis
+# High-Frequency Data Analysis
 
 *High-frequency data requires special handling for irregular intervals and tick data.*
 
-### Tick Data Processing
+## Tick Data Processing
 
 **Reference:**
 
@@ -292,11 +293,11 @@ def process_tick_data(df, freq='1min'):
     return resampled
 ```
 
-## Advanced Time Zone Operations
+# Advanced Time Zone Operations
 
 *Time zones can be complex, especially with daylight saving time transitions and historical data.*
 
-### Time Zone Localization and Conversion
+## Time Zone Localization and Conversion
 
 **Reference:**
 
@@ -312,7 +313,7 @@ ts = ts.tz_localize('US/Eastern', ambiguous='infer')
 ts = ts.tz_localize('US/Eastern', nonexistent='NaT')
 ```
 
-### Operations Between Different Time Zones
+## Operations Between Different Time Zones
 
 **Reference:**
 
@@ -324,7 +325,7 @@ ts2 = ts1[2:].tz_convert('Europe/Moscow')
 result = ts1 + ts2  # Result is in UTC
 ```
 
-## Custom Frequency Classes
+# Custom Frequency Classes
 
 *For specialized time series needs, you can create custom frequency classes, though this is rarely necessary.*
 
@@ -338,9 +339,9 @@ custom_bday = CustomBusinessDay(holidays=['2023-12-25'])
 dates = pd.date_range('2023-12-01', '2023-12-31', freq=custom_bday)
 ```
 
-## Time Series Visualization
+# Time Series Visualization
 
-### Interactive Time Series Plots
+## Interactive Time Series Plots
 
 **Reference:**
 
@@ -359,7 +360,7 @@ fig.add_trace(go.Scatter(
 fig.show()
 ```
 
-### Autocorrelation and Partial Autocorrelation
+## Autocorrelation and Partial Autocorrelation
 
 **Reference:**
 

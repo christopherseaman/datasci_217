@@ -1,5 +1,6 @@
 ---
 notion:
+  title_line: "Pandas on Jupyter: Data Structures & I/O"
   role: lecture
   status: mapped
   page_id: "281d9fdd-1a1a-800a-897d-cafb5971c23f"
@@ -20,16 +21,13 @@ See [BONUS.md](BONUS.md) for advanced topics:
 
 # Jupyter Notebooks: Interactive Data Analysis
 
-In Lectures 1-3, Python scripts (`.py`) ran top-to-bottom. Jupyter notebooks
-(`.ipynb`) arrange code and Markdown in interactive cells, making them useful
-for exploration and explanation; scripts remain the better fit for automation.
+In Lectures 1-3, Python scripts (`.py`) ran top-to-bottom. Jupyter notebooks (`.ipynb`) arrange code and Markdown in interactive cells, making them useful for exploration and explanation; scripts remain the better fit for automation.
 
 The lecture examples use pandas 3.0.5 APIs. Executable demos and assignments record their exact tested package pins in each activity's requirements.
 
 ## Jupyter Notebook Interface
 
-This conceptual map names the parts you will use in a Jupyter notebook. The
-exact buttons vary slightly between JupyterLab, VS Code, and other clients.
+This conceptual map names the parts you will use in a Jupyter notebook. The exact buttons vary slightly between JupyterLab, VS Code, and other clients.
 
 | Notebook part | Purpose |
 | --- | --- |
@@ -139,9 +137,7 @@ When to restart your kernel:
 - "It worked before but now it doesn't"
 - Before submitting assignments (test it runs from top to bottom!)
 
-`Restart & Run All` is the interactive reproducibility check. For optional batch
-execution that preserves the source notebook and stops on failed cells, see
-[Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
+`Restart & Run All` is the interactive reproducibility check. For optional batch execution that preserves the source notebook and stops on failed cells, see [Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
 
 ## Notebook Outputs and Git: The Memory Problem
 
@@ -171,14 +167,11 @@ print(patient_name, blood_pressure)
 
 # Introduction to Pandas
 
-Pandas builds labeled Series and DataFrames on NumPy and adds tabular I/O and
-missing-data tools.
+Pandas builds labeled Series and DataFrames on NumPy and adds tabular I/O and missing-data tools.
 
-![xkcd 2180, “Spreadsheets”: a joke about spreadsheet formulas becoming
- unexpectedly elaborate.](media/xkcd_2180.png)
+![xkcd 2180, “Spreadsheets”: a joke about spreadsheet formulas becoming unexpectedly elaborate.](media/xkcd_2180.png)
 
-*[Spreadsheets](https://xkcd.com/2180/) by xkcd — a reminder that a
-DataFrame is useful when the spreadsheet is becoming a program.*
+*[Spreadsheets](https://xkcd.com/2180/) by xkcd — a reminder that a DataFrame is useful when the spreadsheet is becoming a program.*
 
 *Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
 
@@ -192,8 +185,7 @@ import pandas as pd
 
 A Series is one labeled dimension; a DataFrame combines labeled columns under a shared row index. That shared index is what makes selection and alignment more than simple list positioning.
 
-*Think of Series inside DataFrames like Russian nesting dolls: one labeled
-column fits inside the larger labeled table.*
+*Think of Series inside DataFrames like Russian nesting dolls: one labeled column fits inside the larger labeled table.*
 
 | Structure | Shape | Labels | Example |
 | --- | --- | --- | --- |
@@ -279,8 +271,7 @@ display(df.describe())  # Summary statistics for numeric columns
 
 Now that Series and DataFrames are defined, we can compare notebook output choices. `print()` works in scripts and notebooks and shows plain text. In a Jupyter notebook, `display()` renders a Series or DataFrame as rich HTML, which is usually easier to scan. Use `print()` for simple values or code that should also run as a `.py` script; use `display()` when the notebook presentation matters. A DataFrame or Series written as the last expression in a cell is also displayed automatically.
 
-*Think of `print()` as the reliable Honda Civic—works almost anywhere—while
-`display()` is the sports car: prettier, but happiest in Jupyter.*
+*Think of `print()` as the reliable Honda Civic—works almost anywhere—while `display()` is the sports car: prettier, but happiest in Jupyter.*
 
 **Example:**
 
@@ -291,7 +282,7 @@ display(df)     # Rich table output in Jupyter
 print(len(df))  # A simple value: 2
 ```
 
-### Selecting Columns from a DataFrame
+## Selecting Columns from a DataFrame
 
 Thankfully, we don't have to use the whole DataFrame at all times. We can select subsets of columns to work with instead.
 
@@ -467,10 +458,7 @@ scores.loc[scores['score'] < 75, 'status'] = 'review'
 
 With Copy-on-Write, a subset behaves independently: mutating it does not mutate `scores`. Therefore, chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'` never updates the original DataFrame. Update the owner in one statement with `.loc[row_mask, column] = value` (or `.iloc[...] = value` for positional assignment), as above; for a separate result, transform the subset and assign the returned object to a name.
 
-For the version-specific details behind these examples, see the official
-[pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html),
-[string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html),
-and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html).
+For the version-specific details behind these examples, see the official [pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html), [string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html), and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html).
 
 ### Detecting Missing Data at Read Time
 
