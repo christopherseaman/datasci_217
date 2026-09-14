@@ -16,7 +16,7 @@ def test_canonical_cli_json_schema():
         capture_output=True,
         check=False,
     )
-    assert result.returncode in {0, 1}, result.stderr
+    assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout)
     assert payload["schema"] == "datasci217/grading-result/v1"
     assert payload["score"] == sum(test["score"] for test in payload["tests"])
