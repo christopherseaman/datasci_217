@@ -8,9 +8,13 @@ notion:
 
 [DLC](BONUS.md) · [Live Demo!](demo/DEMO_GUIDE.md)
 
-# Class Structure
+<callout icon="🌉" color="green_bg">
+	#### *San Francisco is a walkable city and I will literally die on this hill*
+</callout>
 
-> San Francisco is a walkable city and I will literally die on this hill
+This course started as a Python introduction plus as much of the practical stuff I learned on the job—but never in a course—as I could fit. Halfway through preparing the first version, I found [The Missing Semester](https://missing.csail.mit.edu/). Apparently, I wasn't the only one who noticed the gap.
+
+# Class Structure
 
 - **Lectures** cover new material
 - **Assignments** after each lecture (caveats apply)
@@ -172,9 +176,19 @@ It's like being bilingual in the data world. Python speaks to your data, command
 
 ## What is the Command Line?
 
-Instead of clicking icons, you type commands. This is fast, precise, and reproducible when everyone uses the same shell. This lecture's commands target Bash-compatible shells; PowerShell equivalents can differ.
+The **command line (CLI)** is a text-based interface.
 
 Think of it as texting your computer instead of playing charades with icons.
+
+- **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal.
+- **Shell:** The command interpreter running inside it—Bash, Zsh, or PowerShell.
+- **Directories** are folders; **paths** locate files and folders.
+- **Working directory (cwd):** Where your shell is now. `pwd` shows it; `cd` changes it.
+- **Paths:** `/home/alice/data.csv` is absolute; `data/data.csv` is relative to cwd.
+    - `.` = current directory
+    - `..` = parent directory
+    - `~` = home directory
+- **Command + parameters:** `ls -l data` = list, detailed option, target folder. Separate parts with spaces; quote paths containing spaces.
 
 ![Unix System Reference](media/its-a-unix-system.jpeg)
 
@@ -293,19 +307,10 @@ tail -n 5 results.txt   # See the last few results
 - A buddy?
 - Course EA's and myself
 
-## Make it Stop!
+## Ctrl+C: Make it Stop!
 
-Sometimes you need to stop what you're doing:
-
-**Command Line:**
-
-- `Control-c` - Cancel the current command
-- `exit` - Close the terminal
-
-**Python:**
-
-- `Control-c` - Cancel the current operation
-- `exit()` - Quit interactive Python
+- **Build the reflex: Ctrl+C to cancel** a running command or unfinished input. On Mac, Control—not Command.
+- **Windows habit to unlearn:** Ctrl+C interrupts here, not copies; terminal copy is often Ctrl+Shift+C.
 
 # LIVE DEMO!
 
