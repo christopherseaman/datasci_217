@@ -6,26 +6,15 @@ execution and alternate-input checks remain optional release QA.
 
 from __future__ import annotations
 
-from hashlib import sha256
 import json
 from pathlib import Path
-import sys
 import argparse
 
 import numpy as np
 import pandas as pd
 
 
-PROTECTED_FILE_SHA256 = {
-    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
-    "requirements.txt": "dba7ebcc237068a6bfd7c7035b2c8d67ed138deae244d4ec6ac2d4d1d3476e47",
-    ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "README.md": "9cd7ed79bc91d45ee7c60dbb024d4149fb71cd7d5ae49dcf078f3f3c6a4b513f",
-    "PLATFORM_CHECK.md": "cd8f7d7a8406db7b0236698c18e3cc85efc97c8b786705d532790114027d5a0a",
-    "data/fixture.json": "b2fee1c48fb678b81318d2f085c42e2f9b480bd6c4eed6f07ef118b9bfd70860",
-    "data/support_requests.csv": "a9136161332c5da9f8f1251d869bbd014ed762751675fb757f81a79cff5352d6",
-}
-ARTIFACT_NAMES = {"center_count_summary.csv", "center_summary.csv", "requests_with_context.csv", "center_channel_summary.csv", "mean_resolution_pivot.csv"}
+REFERENCE_ROOT = Path(__file__).resolve().parent
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -71,22 +60,9 @@ def _same(actual: pd.DataFrame, expected: pd.DataFrame, keys: list[str], label: 
 
 
 def _fixture(root: Path) -> pd.DataFrame:
-    path = root / "data" / "support_requests.csv"
-    _assert(path.is_file() and sha256(path.read_bytes()).hexdigest() == PROTECTED_FILE_SHA256["data/support_requests.csv"], "fixture changed")
+    path = REFERENCE_ROOT / "data" / "support_requests.csv"
+    _assert(path.is_file() and not path.is_symlink(), "trusted fixture is missing")
     return pd.read_csv(path, dtype={"request_id": "string", "center": "string", "agent_id": "string", "channel": "string", "resolution_minutes": "int64", "satisfaction_score": "Int64"})
-
-
-def _protected(root: Path) -> None:
-    for relative, digest in PROTECTED_FILE_SHA256.items():
-        path = root / relative
-        _assert(path.is_file() and sha256(path.read_bytes()).hexdigest() == digest, f"protected file changed: {relative}")
-
-
-def _artifact_inventory(root: Path) -> None:
-    output = root / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "missing regular output directory")
-    actual = {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()}
-    _assert(ARTIFACT_NAMES | {".gitkeep"} <= actual, "required output artifacts are missing")
 
 
 def _task1_artifacts(root: Path, source: pd.DataFrame) -> None:
@@ -112,7 +88,7 @@ def _task3_artifacts(root: Path, source: pd.DataFrame) -> None:
 def grade_submission(submission_root: str | Path) -> dict:
     """Grade only committed, trusted CSV artifacts; never execute student code."""
     root = Path(submission_root).resolve()
-    specs = (("Fixture integrity", 10, lambda s: (_protected(root), _fixture(root))[1]), ("Task 1 count semantics", 25, lambda s: _task1_artifacts(root, s)), ("Task 2 grouped and aligned results", 40, lambda s: _task2_artifacts(root, s)), ("Task 3 pivot equivalence", 20, lambda s: _task3_artifacts(root, s)), ("Visible artifact inventory", 5, lambda s: _artifact_inventory(root)))
+    specs = (("Task 1 count semantics", 29, lambda s: _task1_artifacts(root, s)), ("Task 2 grouped and aligned results", 47, lambda s: _task2_artifacts(root, s)), ("Task 3 pivot equivalence", 24, lambda s: _task3_artifacts(root, s)))
     source: pd.DataFrame | None = None; tests = []
     for name, maximum, check in specs:
         try:

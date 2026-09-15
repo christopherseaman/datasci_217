@@ -1,23 +1,17 @@
 """Artifact-only regression checks for Assignment 09."""
 from __future__ import annotations
-import os
 from pathlib import Path
-import shutil
-import subprocess
-import sys
 import tempfile
 import grader
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-ENV = {"ASSIGNMENT": "a09", "SUBMISSION_TAG": "selftest", "COMMIT_URL": "https://example.invalid/c", "RELEASE_URL": "https://example.invalid/r"}
-
 def copy_case(work: Path, name: str, *, completed: bool = True) -> Path:
     target = work / name
-    shutil.copytree(ROOT, target, ignore=shutil.ignore_patterns("_grader_selftest", ".venv", "__pycache__", "result.json"))
+    target.mkdir(); output = target / "output"; output.mkdir()
     if completed:
-        source = grader._fixture(target); output = target / "output"
+        source = grader._fixture()
         source.to_csv(output / "prepared_panel.csv", index=False)
         hourly = source.set_index("recorded_at").groupby("zone")[["co2_ppm", "source_row"]].resample("h").asfreq().reset_index()
         hourly["grid_created_row"] = hourly["source_row"].isna(); hourly["source_value_missing"] = hourly["source_row"].eq(1) & hourly["co2_ppm"].isna()
@@ -32,23 +26,18 @@ def copy_case(work: Path, name: str, *, completed: bool = True) -> Path:
     return target
 
 def score(root: Path) -> int:
-    saved = os.environ.copy(); os.environ.update(ENV)
-    try:
-        score = grader.grade_submission(root)["score"]
-        result = subprocess.run([sys.executable, "-B", "check_assignment.py"], cwd=root, text=True, capture_output=True)
-        assert result.returncode == (0 if score == 100 else 1), result.stdout + result.stderr
-        return score
-    finally: os.environ.clear(); os.environ.update(saved)
+    return grader.grade_submission(root)["score"]
 
 def main() -> int:
     (ROOT.parents[1] / "scratch").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=ROOT.parents[1] / "scratch", prefix="a09-artifacts-") as temporary:
-        work = Path(temporary); starter = copy_case(work, "starter", completed=False); assert score(starter) < 100
+        work = Path(temporary); starter = copy_case(work, "starter", completed=False); assert score(starter) == 0
         accepted = copy_case(work, "accepted"); assert score(accepted) == 100
+        (accepted / "unrelated.txt").write_text("allowed\n"); assert score(accepted) == 100
         portable = copy_case(work, "portable"); path = portable / "output/availability_decisions.csv"
         path.write_bytes(path.read_bytes().replace(b"calendar hour", b'"calendar hour"').replace(b"\n", b"\r\n")); assert score(portable) == 100
         broken = copy_case(work, "broken"); path = broken / "output/chronological_blocks.csv"; rows = path.read_text().splitlines()
-        path.write_text("\n".join([rows[0], *reversed(rows[1:])]) + "\n"); assert score(broken) == 70
+        path.write_text("\n".join([rows[0], *reversed(rows[1:])]) + "\n"); assert score(broken) == 65
     print("artifact regressions passed"); return 0
 
 if __name__ == "__main__": raise SystemExit(main())

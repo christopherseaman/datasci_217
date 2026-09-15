@@ -3,16 +3,14 @@
 from __future__ import annotations
 
 import csv
-from hashlib import sha256
 import json
 import math
 from pathlib import Path
-import sys
 import argparse
 
 
-TEST_SPECS = (("Fixtures and reproducibility", 15), ("Task 1 bounded exploration", 20), ("Task 2 critique and redesign", 30), ("Task 3 explanatory evidence", 30), ("Artifact integrity", 5))
-OUTPUT_NAMES = {"exploratory_spec.json", "critique_redesign.png", "pathway_explanatory.png", "explanatory_supporting_data.csv", "visualization_evidence.json", "explanatory_text_alternative.txt"}
+TEST_SPECS = (("Task 1 bounded exploration", 25), ("Task 2 critique and redesign", 37), ("Task 3 explanatory evidence", 38))
+REFERENCE_ROOT = Path(__file__).resolve().parent
 SESSION_COLUMNS = ("session_id", "pathway", "activities_completed", "reflection_score")
 PATHWAY_COLUMNS = ("pathway", "checkpoint_number", "completion_percent")
 VARIABLE_ROLES = {"pathway": "categorical", "checkpoint_number": "ordered", "completion_percent": "quantitative"}
@@ -78,20 +76,12 @@ def _values(spec: dict) -> list | None:
     return None
 
 
-def _fixtures(root: Path) -> None:
-    _assert((root / "assignment.ipynb").is_file(), "student notebook source is missing")
-    _assert(_rows(root / "data" / "session_observations.csv", SESSION_COLUMNS), "empty session fixture")
-    _assert(_rows(root / "data" / "pathway_checkpoints.csv", PATHWAY_COLUMNS), "empty pathway fixture")
-    manifest = _json(root / "data" / "fixture.json")
-    _assert(isinstance(manifest, dict) and manifest.get("fixture_set_id") == "a07-visualization-v1", "fixture manifest changed")
-
-
 def _task1(root: Path) -> None:
     spec = _json(root / "output" / "exploratory_spec.json")
     _assert(isinstance(spec, dict), "spec is not an object")
     mark = spec.get("mark")
     _assert((mark.get("type") if isinstance(mark, dict) else mark) == "point", "exploration must use point marks")
-    expected = _rows(root / "data" / "session_observations.csv", SESSION_COLUMNS)
+    expected = _rows(REFERENCE_ROOT / "data" / "session_observations.csv", SESSION_COLUMNS)
     values = _values(spec)
     _assert(isinstance(values, list), "spec does not embed data")
     seen = {_row(row, SESSION_COLUMNS) for row in values if isinstance(row, dict)}
@@ -117,7 +107,7 @@ def _task2(root: Path) -> None:
 
 def _task3(root: Path) -> None:
     _png(root / "output" / "pathway_explanatory.png")
-    _assert(_rows(root / "output" / "explanatory_supporting_data.csv", PATHWAY_COLUMNS) == _rows(root / "data" / "pathway_checkpoints.csv", PATHWAY_COLUMNS), "supporting values differ from fixture")
+    _assert(_rows(root / "output" / "explanatory_supporting_data.csv", PATHWAY_COLUMNS) == _rows(REFERENCE_ROOT / "data" / "pathway_checkpoints.csv", PATHWAY_COLUMNS), "supporting values differ from fixture")
     evidence = _json(root / "output" / "visualization_evidence.json")
     _assert(isinstance(evidence, dict), "evidence is not an object")
     for key in ("question", "audience", "intended_claim", "displayed_unit", "grain", "text_alternative"):
@@ -128,23 +118,13 @@ def _task3(root: Path) -> None:
     _assert(_text(text.read_text(encoding="utf-8"), "text alternative") == _text(evidence["text_alternative"], "evidence text_alternative"), "text alternative differs from evidence")
 
 
-def _integrity(root: Path) -> None:
-    output = root / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "output directory missing")
-    actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert(OUTPUT_NAMES <= actual, "required artifact missing")
-    _assert(not any((output / name).is_symlink() for name in OUTPUT_NAMES), "artifact symlink used")
-    for relative in ("check_assignment.py", "grading.py"):
-        _assert((root / relative).is_file(), f"missing public grader file: {relative}")
-
-
 def _record(name: str, maximum: int, error: Exception | None) -> dict:
     return {"test-name": name, "passed": error is None, "score": maximum if error is None else 0, "max-score": maximum}
 
 
 def grade_submission(submission_root: str | Path) -> dict:
     root = Path(submission_root).resolve()
-    checks = (_fixtures, _task1, _task2, _task3, _integrity)
+    checks = (_task1, _task2, _task3)
     tests = []
     for (name, maximum), check in zip(TEST_SPECS, checks, strict=True):
         try:

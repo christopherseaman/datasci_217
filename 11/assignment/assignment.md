@@ -286,4 +286,4 @@ is not scored.
 
 Q1 7 + Q2 9 + Q3 11 + Q4 14 + Q5 7 + Q6 11 + Q7 13 + Q8 13 = **85 automated points**; Q9 = **15 human-review points**; total = **100 points**.
 
-`python check_assignment.py [submission_dir] [--json]` is the one public artifact grader. It validates saved artifacts and requires each Q1–Q9 `.md`/`.ipynb` coursework pair, but does not execute notebooks or refit models. It reports the 85 automated points above; Q9's 15 points are human review. Its named tests and diagnostics are public grading criteria; use them to complete your own assignment rather than copying example content.
+`python check_assignment.py [submission_dir] [--json]` is the one public artifact grader. It validates the saved `output/` artifacts and `report.md`, using the trusted grader's release data. It does not require coursework pairs or supplied files in the grading target, execute notebooks, or refit models. Each milestone is evaluated independently. It reports the 85 automated points above; Q9's 15 points are human review. Its named tests and diagnostics are public grading criteria; use them to complete your own assignment rather than copying example content.

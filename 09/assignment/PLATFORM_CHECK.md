@@ -1,6 +1,6 @@
 # Assignment 09 local platform check
 
-The completed notebook/source is required coursework, but automated grading does not execute it. Assignment Colab is not part of this repository contract.
+Automated grading reads only the six saved CSV artifacts. It does not execute or require a notebook, source, fixture copy, or project configuration. Assignment Colab is not part of this repository contract.
 
 ## Prepare the environment
 
@@ -34,4 +34,4 @@ fails, regenerate the artifacts, rerun the public checker,
 then commit and push the corrected files. Command-line Git is optional bonus
 knowledge and is not assessed here.
 
-Do not add private data, credentials, notebook checkpoints, environments, or extra output files. Colab save-back and submission are not claimed by this assignment.
+Do not add private data, credentials, notebook checkpoints, or environments. Extra files do not affect artifact grading. Colab save-back and submission are not claimed by this assignment.

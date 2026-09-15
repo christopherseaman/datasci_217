@@ -7,7 +7,7 @@ from pathlib import Path
 from check_assignment import run_public_checks
 
 
-POINTS = (20, 30, 50)
+POINTS = (40, 60)
 
 
 def grade_submission(submission_dir: Path) -> dict:

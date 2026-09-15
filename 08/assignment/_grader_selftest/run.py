@@ -31,8 +31,9 @@ def score(root: Path) -> int:
     saved = os.environ.copy(); os.environ.update(ENV)
     try:
         score = grader.grade_submission(root)["score"]
-        result = subprocess.run([sys.executable, "-B", "check_assignment.py"], cwd=root, text=True, capture_output=True)
-        assert result.returncode == (0 if score == 100 else 1), result.stdout + result.stderr
+        if (root / "check_assignment.py").is_file():
+            result = subprocess.run([sys.executable, "-B", "check_assignment.py"], cwd=root, text=True, capture_output=True)
+            assert result.returncode == (0 if score == 100 else 1), result.stdout + result.stderr
         return score
     finally: os.environ.clear(); os.environ.update(saved)
 
@@ -41,12 +42,17 @@ def main() -> int:
     with tempfile.TemporaryDirectory(dir=ROOT.parents[1] / "scratch", prefix="a08-artifacts-") as temporary:
         work = Path(temporary); starter = copy_case(work, "starter", completed=False); assert score(starter) < 100
         accepted = copy_case(work, "accepted"); assert score(accepted) == 100
+        artifact_only = work / "artifact-only"; (artifact_only / "output").mkdir(parents=True)
+        for artifact in (accepted / "output").iterdir(): shutil.copy2(artifact, artifact_only / "output" / artifact.name)
+        (artifact_only / "data").mkdir(); (artifact_only / "data" / "support_requests.csv").write_text("poison\n")
+        assert score(artifact_only) == 100
         portable = copy_case(work, "portable"); path = portable / "output/center_count_summary.csv"
         path.write_bytes(path.read_bytes().replace(b"Central", b'"Central"').replace(b"\n", b"\r\n")); assert score(portable) == 100
         shuffled = copy_case(work, "shuffled"); path = shuffled / "output/center_summary.csv"; rows = path.read_text().splitlines()
         path.write_text("\n".join([rows[0], *reversed(rows[1:])]) + "\n"); assert score(shuffled) == 100
         broken = copy_case(work, "broken"); path = broken / "output/center_count_summary.csv"
-        path.write_text(path.read_text().replace("Central,5,4,3", "Central,999,4,3")); assert score(broken) == 75
+        path.write_text(path.read_text().replace("Central,5,4,3", "Central,999,4,3")); assert score(broken) == 71
+        missing = copy_case(work, "missing"); (missing / "output" / "mean_resolution_pivot.csv").unlink(); assert score(missing) == 76
     print("artifact regressions passed"); return 0
 
 if __name__ == "__main__": raise SystemExit(main())

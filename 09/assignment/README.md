@@ -6,7 +6,7 @@ Use the supplied synthetic indoor-air readings to build one reproducible tempora
 2. create an entity-scoped hourly grid and a measurement-aware two-hour summary while keeping source-value missingness distinct from grid-created rows; and
 3. create entity-scoped lag, difference, and two past-only window meanings, audit candidate availability at a supplied prediction timestamp, and form a chronological handoff.
 
-The assignment may be completed in the supplied notebook or another editor, but the completed notebook/source remains a required coursework deliverable. Assignment Colab is not part of this repository contract; committed CSV artifacts are the automated grading contract and grading does not execute student code.
+The assignment may be completed in the supplied notebook or another editor. Committed CSV artifacts are the automated grading contract; grading does not execute or require a notebook, source, fixture copy, or project configuration.
 
 ## Data and terms
 
@@ -31,8 +31,7 @@ Do not fill or interpolate measurements, pool zones, compute a lead or centered 
 2. Complete every TODO in order.
 3. Create the six CSV artifacts below.
 4. Run `python check_assignment.py` from `09/assignment/`.
-5. In VS Code Source Control or GitHub Desktop, confirm that the CSVs are visible, then commit and push them.
-6. Commit the completed subtree or its exported assignment repository. The optional Actions workflow is feedback.
+5. In VS Code Source Control or GitHub Desktop, confirm that the CSVs are visible, then commit and push them. The optional Actions workflow is feedback.
 
 Required GUI-visible artifacts:
 
@@ -43,4 +42,4 @@ Required GUI-visible artifacts:
 - `output/availability_decisions.csv`
 - `output/chronological_blocks.csv`
 
-Students, GitHub Actions, and graders use the same public artifact checks and 100-point rubric through `check_assignment.py`. It reports milestone scores without executing student code. Graders use a trusted assignment copy with `python check_assignment.py /path/to/submission --json`; no runner metadata or separate grading mode changes the result.
+Students, GitHub Actions, and graders use the same public artifact checks and 100-point rubric through `check_assignment.py`. Task 1 is 30 points, Task 2 is 35, and Task 3 is 35. It reports milestone scores without executing student code. Graders use trusted fixture inputs from their own assignment copy with `python check_assignment.py /path/to/submission --json`; no runner metadata or separate grading mode changes the result.

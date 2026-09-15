@@ -15,7 +15,7 @@ ASSIGNMENT = Path(__file__).resolve().parents[1]
 REPO = ASSIGNMENT.parents[1]
 ARTIFACTS = {'specimen_merge_audit.csv': 'specimen_id,collector_id,collection_number,station_code,material,mass_g,station_name,region,_merge\nSP101,C01,1,R,soil,12.5,River Station,north,both\nSP102,C01,2,R,water,8.0,River Station,north,both\nSP103,C02,1,S,soil,10.5,Shore Station,south,both\nSP104,C03,1,T,water,9.0,Trail Station,west,both\nSP105,C04,1,R,soil,11.5,River Station,north,both\nSP106,C05,1,X,air,4.0,,,left_only\nSP107,C06,1,S,water,7.5,Shore Station,south,both\n', 'combined_specimens.csv': 'specimen_id,collector_id,collection_number,station_code,material,mass_g,source_partition\nSP101,C01,1,R,soil,12.5,batch_a\nSP102,C01,2,R,water,8.0,batch_a\nSP103,C02,1,S,soil,10.5,batch_a\nSP104,C03,1,T,water,9.0,batch_a\nSP105,C04,1,R,soil,11.5,batch_b\nSP106,C05,1,X,air,4.0,batch_b\nSP107,C06,1,S,water,7.5,batch_b\n', 'aligned_features.csv': 'specimen_id,mass_g,review_score\nSP101,12.5,\nSP102,8.0,7.0\nSP103,10.5,9.0\nSP108,,6.0\n', 'sensor_scores_long.csv': 'sensor_id,station_code,measurement_label,value\nSN01,R,baseline_value,10.0\nSN02,S,baseline_value,8.5\nSN03,T,baseline_value,11.0\nSN04,R,baseline_value,9.5\nSN01,R,followup_value,12.5\nSN02,S,followup_value,9.0\nSN03,T,followup_value,13.5\nSN04,R,followup_value,10.5\n', 'sensor_scores_round_trip.csv': 'sensor_id,station_code,baseline_value,followup_value\nSN01,R,10.0,12.5\nSN02,S,8.5,9.0\nSN03,T,11.0,13.5\nSN04,R,9.5,10.5\n'}
 NUMBER = "06"
-POINTS = [0, 45, 30, 25]
+POINTS = [45, 30, 25]
 MUTATION = ('combined_specimens.csv', 'mass_g')
 
 
@@ -66,7 +66,7 @@ def run() -> None:
         (root / "output" / first).unlink()
         public(root, False)
         partial = scores(root)
-        assert partial[1] == 0 and partial[2:] == POINTS[2:], partial
+        assert partial[0] == 0 and partial[1:] == POINTS[1:], partial
         (root / "output" / first).write_text(ARTIFACTS[first], encoding="utf-8")
 
         name, column = MUTATION
@@ -79,7 +79,15 @@ def run() -> None:
         path.write_text(stream.getvalue(), encoding="utf-8")
         public(root, False)
         partial = scores(root)
-        assert partial[1] == POINTS[1] and partial[2] == 0, partial
+        assert partial[0] == POINTS[0] and partial[1] == 0, partial
+
+        artifact_only = Path(temporary) / "artifact-only"
+        (artifact_only / "output").mkdir(parents=True)
+        for artifact, content in ARTIFACTS.items():
+            (artifact_only / "output" / artifact).write_text(content, encoding="utf-8")
+        (artifact_only / "data").mkdir()
+        (artifact_only / "data" / "specimens.csv").write_text("poison\n", encoding="utf-8")
+        assert scores(artifact_only) == POINTS
     print(f"Assignment {NUMBER}: starter, complete, equivalent CSV, missing milestone, and wrong-value regressions passed.")
 
 

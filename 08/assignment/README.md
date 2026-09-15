@@ -33,7 +33,7 @@ the notebook, its kernel must use the environment you checked.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb` or your working copy. Create and commit these five CSV milestone artifacts in the assignment repository:
+Complete every `TODO` in `assignment.ipynb` or your working copy. Create these five CSV milestone artifacts:
 
 - `output/center_count_summary.csv`
 - `output/center_summary.csv`
@@ -41,18 +41,16 @@ Complete every `TODO` in `assignment.ipynb` or your working copy. Create and com
 - `output/center_channel_summary.csv`
 - `output/mean_resolution_pivot.csv`
 
-The five CSVs are intentionally visible in VS Code Source Control and GitHub
-Desktop. Commit them with your completed notebook. Do not edit `data/`,
-the supplied notebook cells, environment records, checker, or instructions.
-Automated grading reads the committed CSVs; retain and submit your completed notebook.
+Additional files are allowed and ignored. Automated grading reads the saved
+CSVs; retain your completed notebook for coursework.
 
-After creating the committed artifacts, use the discoverable student check:
+After creating the saved artifacts, use the discoverable student check:
 
 ```bash
 python check_assignment.py
 ```
 
-The shared checker reads committed CSVs and reports milestone points without executing notebook code or judging written explanations. Fix each failed check, regenerate the artifacts, and check again.
+The shared checker reads saved CSVs and reports milestone points without executing notebook code or judging written explanations. Fix each failed check, regenerate the artifacts, and check again.
 
 ## Terms and data contract
 
@@ -138,8 +136,8 @@ use `GroupBy.apply`, manipulate MultiIndex, create crosstabs, visualize, analyze
 dates/time series, calculate statistics or models, access remote/performance
 tools, fetch network data, generate random data, or depend on a mutable date.
 
-Automated grading totals 100 points: 10 for fixture integrity, 25 for Task 1,
-40 for Task 2, 20 for Task 3, and 5 for artifact inventory. There are no
+Automated grading totals 100 points: 29 for Task 1, 47 for Task 2, and 24 for
+Task 3. There are no
 separate human-review points; the grain/count, aggregate/transform, pivot,
 privacy, and readability explanations remain required coursework context.
 
@@ -147,6 +145,6 @@ privacy, and readability explanations remain required coursework context.
 
 grading.py is the shared ruleset for students, pytest, and graders. Run
 python check_assignment.py [submission_dir], or add --json for a
-datasci217/grading-result/v1 result. It reads committed artifacts only, never
-notebooks or submission code. The visible tests award fixture integrity (10),
-Task 1 (25), Task 2 (40), Task 3 (20), and artifact inventory (5).
+datasci217/grading-result/v1 result. It reads saved artifacts only, never
+notebooks or submission code. The visible tests award Task 1 (29), Task 2
+(47), and Task 3 (24).

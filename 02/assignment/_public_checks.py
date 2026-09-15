@@ -29,15 +29,30 @@ def check_project_documents(root: Path) -> None:
     readme = (root / "README.md").read_text(encoding="utf-8")
     description = re.search(r"## Project description\n\n([^\n]+)", readme)
     run = re.search(r"## Run\n\n([^\n]+)", readme)
-    _assert(description is not None and "TODO" not in description.group(1), "Replace the project-description TODO line.")
+    _assert(
+        description is not None
+        and 30 <= len(description.group(1).strip()) <= 300
+        and "measurement" in description.group(1).lower(),
+        "Write a 30–300 character project description containing `measurement`.",
+    )
     _assert(run is not None and run.group(1) == "python main.py", "Put exactly `python main.py` in the Run section.")
-    _assert((root / ".gitignore").read_text(encoding="utf-8") == "__pycache__/\n*.pyc\n", "Set .gitignore to the two documented cache patterns.")
 
 
 def check_git_state_answers(root: Path) -> None:
     answers = (root / "GIT_STATE_CHECK.md").read_text(encoding="utf-8")
     answer_block = re.search(r"<!-- ANSWERS START -->(.*?)<!-- ANSWERS END -->", answers, re.DOTALL)
-    _assert(answer_block is not None and "TODO" not in answer_block.group(1), "Replace every TODO in the GIT_STATE_CHECK.md answer block.")
+    _assert(answer_block is not None, "Complete the four documented Git state answers.")
+    lines = [line.strip() for line in answer_block.group(1).strip().splitlines()]
+    expected = (
+        ("1.", ("working tree", "diff")),
+        ("2.", ("staging area", "commit")),
+        ("3.", ("local branch", "remote", "synchronize")),
+        ("4.", ("merge", "conflict")),
+    )
+    _assert(len(lines) == len(expected), "Complete the four documented Git state answers.")
+    for line, (number, terms) in zip(lines, expected, strict=True):
+        actual = tuple(part.strip().casefold() for part in line.removeprefix(number).split(";"))
+        _assert(line.startswith(number) and actual == terms, "Complete the four documented Git state answers.")
 
 
 def check_report_artifact(root: Path) -> None:
@@ -51,7 +66,7 @@ def check_report_artifact(root: Path) -> None:
 
 
 PUBLIC_CHECKS = (
-    PublicCheck("project description, run command, and gitignore", check_project_documents),
+    PublicCheck("project description and run command", check_project_documents),
     PublicCheck("Git state snapshots", check_git_state_answers),
     PublicCheck("committed report artifact", check_report_artifact),
 )

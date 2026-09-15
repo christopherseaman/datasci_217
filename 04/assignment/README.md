@@ -138,9 +138,8 @@ Write `selected_purchases` to `SELECTED_OUTPUT_PATH` with `index=False`. Read th
 
 Submit these required student-authored or generated artifacts:
 
-1. `assignment.ipynb`;
-2. `output/labeled_block.csv`; and
-3. `output/selected_purchases.csv`.
+1. `output/labeled_block.csv`; and
+2. `output/selected_purchases.csv`.
 
 Additional input or diagnostic files are allowed; grading checks the required artifacts and ignores extras.
 
@@ -163,7 +162,7 @@ The automated grader reads the two committed CSV artifacts directly. Optional no
 
 Do not add cleaning, missing-value decisions, type conversion, dates, joins, concatenation, reshape, GroupBy, aggregation, plotting, modeling, performance work, network access, absolute paths, `/content` paths, or Drive mounts.
 
-Automated grading totals 100 points: 20 for the protected package and fixture, 30 for the labeled-block artifact, and 50 for the selected-purchases artifact. There are no separate human-review points; the notebook explanation and task headings remain required coursework context.
+Automated grading totals 100 points: 40 for the labeled-block artifact and 60 for the selected-purchases artifact. The trusted grader supplies its own fixture; it does not require starter files, the notebook, or protected package files in a submission. There are no separate human-review points; the notebook explanation and task headings remain required coursework context.
 
 ### Artifact comparison
 

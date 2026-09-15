@@ -10,7 +10,7 @@ Work in this order:
 3. record decisions, then transform a copy;
 4. validate, save, and read the artifacts back with explicit schemas.
 
-This is a local-first assignment. Grading reads committed artifacts without executing the notebook. Do not use
+This is a local-first assignment. Grading reads saved artifacts without executing the notebook. Do not use
 Colab, manual uploads, Drive mounts, network access, or `/content` paths. The supplied path finder supports
 both a standalone exported assignment repository and this course repository.
 
@@ -33,8 +33,7 @@ notebook.
 ## Deliverables
 
 Complete every `TODO` in `assignment.ipynb`, including the cumulative midterm
-checkpoint, and commit the notebook source. Create and commit these four
-cumulative foundation artifacts before the cleaning artifacts:
+checkpoint. Create these four cumulative foundation artifacts before the cleaning artifacts:
 
 - `output/raw_preview.txt` — the exact `head -n 4` and `tail -n 2` terminal
   evidence shown in the notebook contract.
@@ -55,16 +54,14 @@ cumulative foundation artifacts before the cleaning artifacts:
 - `output/pandas_selection.csv` — header `record_id,site,status`, followed by
   the raw rows for `R001`, `R003`, and `R010` in that order.
 
-Then create and commit these three cleaning milestone artifacts:
+Then create these three cleaning milestone artifacts:
 
 - `output/issue_audit.csv`
 - `output/cleaned_people.csv`
 - `output/decision_log.csv`
 
-Do not edit `data/people_raw.csv`, `data/fixture.json`, or the supplied setup
-and final-verification notebook cells. The saved artifacts are the automated
 Additional input files or diagnostic artifacts are allowed and ignored by the
-grader; only the required files and their contents are assessed.
+grader; only the required artifacts and their contents are assessed.
 
 Run the discoverable checks from this directory:
 
@@ -164,6 +161,6 @@ graded. Each milestone is assessed independently.
 
 grading.py is the shared public ruleset for students, pytest, and graders. Run
 python check_assignment.py [submission_dir] for readable results or add --json
-for the datasci217/grading-result/v1 result object. It reads committed artifacts
+for the datasci217/grading-result/v1 result object. It reads saved artifacts
 only, never notebooks or submission code. Automated tests award 25, 35, and 25
 points; the published 15-point human midterm rubric above remains separate.

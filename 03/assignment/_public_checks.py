@@ -66,7 +66,7 @@ def _lines(root: Path, filename: str) -> tuple[str, ...]:
         raise AssertionError(f"{filename} must be UTF-8 text.") from error
 
 
-def check_runtime_records_and_probe(root: Path) -> None:
+def check_environment_artifacts(root: Path) -> None:
     _assert((root / ".python-version").read_text(encoding="utf-8") == EXPECTED_PYTHON_RECORD, "Replace .python-version with exactly `3.14` and one final newline.")
     _assert((root / "requirements.txt").read_text(encoding="utf-8") == EXPECTED_REQUIREMENTS, "Replace requirements.txt with exactly `numpy==2.3.3` and one final newline.")
     _assert(_lines(root, "output/environment_check.txt") == EXPECTED_ENVIRONMENT_OUTPUT, "output/environment_check.txt must record the documented Python and NumPy versions.")
@@ -75,20 +75,21 @@ def check_runtime_records_and_probe(root: Path) -> None:
 def check_pipeline_artifacts(root: Path) -> None:
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
-    names = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    expected_names = {".gitkeep", "environment_check.txt", "head_preview.txt", "tail_preview.txt", "site_counts.txt", "site_count_lines.txt", "analysis.txt"}
-    _assert(expected_names <= names, "Commit output/.gitkeep and the six documented text artifacts.")
     _assert(_lines(root, "output/head_preview.txt") == EXPECTED_HEAD, "head_preview.txt must show the first three fixture lines.")
     _assert(_lines(root, "output/tail_preview.txt") == EXPECTED_TAIL, "tail_preview.txt must show the final two fixture lines.")
     counts = [line.split() for line in _lines(root, "output/site_counts.txt")]
     _assert(counts == [["3", "north"], ["2", "south"], ["1", "west"]], "site_counts.txt must record the three documented count/name pairs.")
     _assert((root / "output/site_count_lines.txt").read_text(encoding="utf-8").split() == ["3", "output/site_counts.txt"], "site_count_lines.txt must record the documented wc result.")
+
+
+def check_analysis_artifact(root: Path) -> None:
     _assert(_lines(root, "output/analysis.txt") == EXPECTED_ANALYSIS, "analysis.txt must contain the documented NumPy learning transcript.")
 
 
 PUBLIC_CHECKS = (
-    PublicCheck("committed environment records and probe", check_runtime_records_and_probe),
-    PublicCheck("committed pipeline and analysis artifacts", check_pipeline_artifacts),
+    PublicCheck("committed environment records and probe", check_environment_artifacts),
+    PublicCheck("committed pipeline artifacts", check_pipeline_artifacts),
+    PublicCheck("committed analysis transcript", check_analysis_artifact),
 )
 
 

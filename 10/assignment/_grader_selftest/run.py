@@ -20,18 +20,13 @@ from __future__ import annotations
 import base64
 import csv
 import json
-import os
 from pathlib import Path
-import shutil
-import subprocess
-import sys
 import tempfile
 
 import grader
 
 
 ASSIGNMENT_DIR = Path(__file__).resolve().parents[1]
-RUNNER_ENV = {"ASSIGNMENT": "assignment-10", "SUBMISSION_TAG": "artifact-regression", "COMMIT_URL": "https://example.invalid/commit/a10", "RELEASE_URL": "https://example.invalid/release/a10"}
 ARTIFACTS = {'availability_decisions.csv': 'candidate_feature,latest_required_offset_hours,available_by_prediction_time,decision\n'
                                'batch_sequence,0,True,keep\n'
                                'ambient_temp_c,0,True,keep\n'
@@ -92,29 +87,17 @@ TINY_PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADEl
 
 def fresh_export(destination: Path) -> Path:
     destination.mkdir(parents=True)
-    for relative in grader.BASE_FILES:
-        target = destination / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ASSIGNMENT_DIR / relative, target)
     output = destination / "output"
     output.mkdir()
     for name, content in ARTIFACTS.items():
         (output / name).write_text(content, encoding="utf-8")
-    (output / ".gitkeep").touch()
     (output / "inference_residuals.png").write_bytes(TINY_PNG)
     (destination / "output" / "inference_residuals.csv").write_text(RESIDUALS, encoding="utf-8", newline="\n")
     return destination
 
 
-def public(root: Path, expected: int) -> None:
-    result = subprocess.run([sys.executable, "-B", str(root / "check_assignment.py")], cwd=root, text=True, capture_output=True, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
-    assert result.returncode == expected, result.stdout + result.stderr
-
-
 def central(root: Path) -> dict:
-    result = subprocess.run([sys.executable, str(root / "check_assignment.py"), str(root), "--json"], cwd=root, text=True, capture_output=True, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
-    assert result.returncode in {0, 1}, result.stdout + result.stderr
-    return json.loads(result.stdout)
+    return grader.grade_submission(root)
 
 
 def quote_and_reverse(path: Path) -> None:
@@ -135,39 +118,30 @@ def main() -> int:
     scratch.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=scratch) as temporary:
         root = fresh_export(Path(temporary) / "fresh export")
-        public(root, 0)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [30, 35, 30, 5], result
+        (root / "unrelated.txt").write_text("allowed\n", encoding="utf-8")
+        assert central(root)["score"] == 100
         quote_and_reverse(root / "output" / "inference_summary.csv")
         quote_and_reverse(root / "output" / "final_predictions.csv")
         (root / "output" / "inference_residuals.png").write_bytes(TINY_PNG)
-        public(root, 0)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [30, 35, 30, 5], result
         replace_value(root / "output" / "inference_summary.csv", "51.959310", "99.000000")
-        public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 0, 30, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [0, 35, 30, 5], result
         root = fresh_export(Path(temporary) / "missing artifact")
         replace_value(root / "output" / "validation_metrics.csv", "4.259573", "99.000000")
-        public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 0, 5], result
+        assert [test["score"] for test in result["tests"]] == [30, 35, 0, 5], result
         root = fresh_export(Path(temporary) / "missing artifact second")
         (root / "output" / "validation_metrics.csv").unlink()
-        public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 0, 5], result
-        root = fresh_export(Path(temporary) / "changed fixture")
-        (root / "data" / "mixing_runs.csv").write_text("changed\n", encoding="utf-8")
-        public(root, 1)
-        result = central(root)
-        assert [test["score"] for test in result["tests"]] == [0, 25, 30, 30, 5], result
+        assert [test["score"] for test in result["tests"]] == [30, 35, 0, 5], result
         root = fresh_export(Path(temporary) / "wrong predictions")
         replace_value(root / "output" / "final_predictions.csv", "36.619379", "99.000000")
-        public(root, 1)
         result = central(root)
-        assert [test["score"] for test in result["tests"]] == [10, 25, 30, 0, 5], result
+        assert [test["score"] for test in result["tests"]] == [30, 35, 0, 5], result
     print(json.dumps({"artifact_regression": "pass", "cases": 7}, sort_keys=True))
     return 0
 

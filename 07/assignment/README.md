@@ -5,7 +5,7 @@ a bounded pattern, diagnose a misleading supplied chart, and communicate one
 descriptive finding to a named audience. You will connect each chart to its
 question, row grain, variable roles, displayed unit, and evidentiary limit.
 
-Complete and submit the local notebook and its saved artifacts. Graders read
+Complete the local notebook and its saved artifacts. Graders read
 those artifacts without rerunning the notebook. The
 fixtures are course-authored, synthetic, nonidentifying, and different from the
 Lecture 07 demo data. Do not use Colab, manual uploads, Drive mounts, network access, or `/content` paths.
@@ -72,8 +72,7 @@ join, reshape, or aggregate these complete assignment fixtures.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb` and commit the notebook source.
-Create and commit these six artifact files in the assignment repository:
+Complete every `TODO` in `assignment.ipynb`. Create these six artifact files:
 
 - `output/exploratory_spec.json`
 - `output/critique_redesign.png`
@@ -82,19 +81,16 @@ Create and commit these six artifact files in the assignment repository:
 - `output/visualization_evidence.json`
 - `output/explanatory_text_alternative.txt`
 
-These files are intentionally visible in VS Code Source Control and GitHub
-Desktop. Commit and push the artifacts and notebook source. Do not
-edit the data fixtures, supplied notebook cells, environment records, checker,
-or instructions. Automated grading reads the committed artifacts directly;
-notebook execution is optional local QA.
+Additional files are allowed and ignored. Automated grading reads the saved
+artifacts directly; notebook execution is optional local QA.
 
-After creating the committed artifacts, use the discoverable student check:
+After creating the saved artifacts, use the discoverable student check:
 
 ```bash
 python check_assignment.py
 ```
 
-The checker inspects files and committed artifacts without executing notebook code.
+The checker inspects saved artifacts without executing notebook code.
 Fix each `[FIX]` message, regenerate the artifacts, then check again. It screens
 machine-readable requirements; it cannot certify that a chart is clear,
 accessible, honest, or visually effective.
@@ -149,15 +145,15 @@ and cleaning; time series; modeling or inference; random or remote data;
 dashboards, maps, animations, and additional chart families are outside scope.
 Altair tooltips are permitted in Task 1, but must supplement visible labels and context.
 
-Automated grading totals 100 points: 15 for fixtures and reproducibility, 20
-for Task 1, 30 for Task 2, 30 for Task 3, and 5 for artifact integrity. There
-are no separate human-review points; contract fit, accessibility, annotations,
-text alternatives, organization, and limitations remain required deliverables.
+Automated grading totals 100 points: 25 for Task 1, 37 for Task 2, and 38 for
+Task 3. There are no separate human-review points; contract fit, accessibility,
+annotations, text alternatives, organization, and limitations remain required
+deliverables.
 
 ## Public automated grading
 
 grading.py is the shared ruleset for students, pytest, and graders. Run
 python check_assignment.py [submission_dir], or add --json for a
-datasci217/grading-result/v1 result. It reads committed artifacts only, never
-notebooks or submission code. The visible tests award fixtures (15), Task 1
-(20), Task 2 (30), Task 3 (30), and artifact integrity (5).
+datasci217/grading-result/v1 result. It reads saved artifacts only, never
+notebooks or submission code. The visible tests award Task 1 (25), Task 2
+(37), and Task 3 (38).

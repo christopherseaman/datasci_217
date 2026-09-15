@@ -59,7 +59,7 @@ jupytext --to ipynb --test-strict q*.md
 uv run check_assignment.py
 ```
 
-Students, GitHub Actions, and graders use the same public `grading.py` rules through `check_assignment.py`. The checker reads saved artifacts and requires the nine coursework `.md`/`.ipynb` pairs, but does not execute notebooks or refit models. Passing phase points are retained: the automated maximum is 85, with Q9's 15 points awarded by human review of `report.md` reasoning and communication. Automated report-structure checks award no human-review points. The full rubric and tests are public.
+Students, GitHub Actions, and graders use the same public `grading.py` rules through `check_assignment.py`. The checker grades the saved artifacts under `output/` and the root `report.md`, not notebook pairs or supplied files. It uses the trusted grader's data for expected results and does not execute notebooks or refit models. Each milestone earns points independently: the automated maximum is 85, with Q9's 15 points awarded by human review of `report.md` reasoning and communication. Automated report-structure checks award no human-review points. The full rubric and tests are public.
 
 Graders run the trusted assignment copy against a submission with `python check_assignment.py /path/to/submission --json`. No grader-only settings or required runner metadata change the score. Use the public diagnostics to complete your own assignment rather than copying example content.
 

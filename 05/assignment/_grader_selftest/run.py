@@ -36,7 +36,7 @@ ARTIFACTS.update({
     ),
 })
 NUMBER = "05"
-POINTS = [0, 25, 35, 25]
+POINTS = [25, 35, 25]
 MUTATION = ('cleaned_people.csv', 'age')
 
 
@@ -74,12 +74,6 @@ def run() -> None:
         public(root, True)
         baseline = scores(root)
         assert baseline == POINTS, baseline
-        (root / ".gitignore").write_text("output/\n", encoding="utf-8")
-        assert not grader.grade_submission(root)["tests"][0]["passed"]
-        (root / ".gitignore").write_text(
-            ".venv/\n.ipynb_checkpoints/\n__pycache__/\n*.py[cod]\n.pytest_cache/\n",
-            encoding="utf-8",
-        )
         for name in ARTIFACTS:
             if not name.endswith(".csv"):
                 continue
@@ -95,7 +89,7 @@ def run() -> None:
         (root / "output" / first).unlink()
         public(root, False)
         partial = scores(root)
-        assert partial[1] == 0 and partial[2:] == POINTS[2:], partial
+        assert partial[0] == 0 and partial[1:] == POINTS[1:], partial
         (root / "output" / first).write_text(ARTIFACTS[first], encoding="utf-8")
 
         name, column = MUTATION
@@ -108,7 +102,15 @@ def run() -> None:
         path.write_text(stream.getvalue(), encoding="utf-8")
         public(root, False)
         partial = scores(root)
-        assert partial[1] == POINTS[1] and partial[2] == 0, partial
+        assert partial[0] == POINTS[0] and partial[1] == 0, partial
+
+        artifact_only = Path(temporary) / "artifact-only"
+        (artifact_only / "output").mkdir(parents=True)
+        for artifact, content in ARTIFACTS.items():
+            (artifact_only / "output" / artifact).write_text(content, encoding="utf-8")
+        (artifact_only / "data").mkdir()
+        (artifact_only / "data" / "people_raw.csv").write_text("poison\n", encoding="utf-8")
+        assert scores(artifact_only) == POINTS
     print(f"Assignment {NUMBER}: starter, complete, equivalent CSV, missing milestone, and wrong-value regressions passed.")
 
 

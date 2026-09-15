@@ -6,10 +6,8 @@ Production grading-service wiring is external to this repository.
 
 from __future__ import annotations
 
-from hashlib import sha256
 import json
 from pathlib import Path
-import sys
 import argparse
 
 import numpy as np
@@ -17,22 +15,6 @@ import pandas as pd
 
 
 EXPECTED_SHA256 = "d13dc9676519c81729b33d53ffc2e8fec92e645c6978af7ebf325fcd7147753b"
-EXPECTED_MANIFEST = {
-    "fixture_id": "a05-people-cleaning-v1",
-    "provenance": "course-authored synthetic teaching data; no real people",
-    "row_meaning": "one submitted person record",
-    "candidate_identifier": ["record_id"],
-    "row_count": 12,
-    "raw_columns": [
-        "record_id",
-        "full_name",
-        "site",
-        "status",
-        "age_text",
-        "visit_date",
-    ],
-    "sha256": EXPECTED_SHA256,
-}
 EXPECTED_ISSUES = [
     ("schema mismatch", 0),
     ("empty full-name tokens", 1),
@@ -84,15 +66,6 @@ EXPECTED_DECISIONS = [
         "do not forward-fill or backward-fill",
     ),
 ]
-OUTPUT_FILES = (
-    "raw_preview.txt",
-    "numpy_age_summary.csv",
-    "pandas_selection.csv",
-    "pipeline_summary.txt",
-    "issue_audit.csv",
-    "cleaned_people.csv",
-    "decision_log.csv",
-)
 EXPECTED_RAW_PREVIEW = """$ head -n 4 data/people_raw.csv
 record_id,full_name,site,status,age_text,visit_date
 R001, Alice Smith , North ,Active,34,2026-01-15
@@ -116,57 +89,11 @@ exact_duplicate_rows=1
 candidate_id_duplicate_rows=1
 clean_rows=11
 """
-EXPECTED_GITIGNORE = (
-    ".venv/\n"
-    ".ipynb_checkpoints/\n"
-    "__pycache__/\n"
-    "*.py[cod]\n"
-    ".pytest_cache/\n"
-)
-STUDENT_PACKAGE_FILES = {
-    ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
-    "assignment.ipynb", "check_assignment.py", "grading.py", "requirements.txt",
-    "data/fixture.json", "data/people_raw.csv",
-    ".github/test/requirements.txt", ".github/test/test_assignment.py",
-    ".github/workflows/tests.yml",
-}
 
 
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
-
-
-def _check_static_contract(root: Path) -> None:
-    _assert(sys.version_info[:2] == (3, 14), "grader must use Python 3.14")
-    _assert(np.__version__ == "2.3.3", "grader must use NumPy 2.3.3")
-    _assert(pd.__version__ == "3.0.5", "grader must use pandas 3.0.5")
-    actual_files = {
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*")
-        if (path.is_file() or path.is_symlink())
-        and path.relative_to(root).parts[0] != ".git"
-        and path.relative_to(root).parts[0] != "output"
-    }
-    _assert(STUDENT_PACKAGE_FILES <= actual_files, "required student package files are missing")
-    _assert((root / ".python-version").read_text() == "3.14\n", "wrong Python record")
-    _assert(
-        (root / "requirements.txt").read_text() == "numpy==2.3.3\npandas==3.0.5\n",
-        "wrong dependency records",
-    )
-    _assert((root / ".gitignore").read_text() == EXPECTED_GITIGNORE, "wrong .gitignore record")
-    manifest_path = root / "data" / "fixture.json"
-    data_path = root / "data" / "people_raw.csv"
-    _assert(manifest_path.is_file(), "missing fixture manifest")
-    _assert(data_path.is_file(), "missing data fixture")
-    _assert(json.loads(manifest_path.read_text()) == EXPECTED_MANIFEST, "fixture manifest changed")
-    data = data_path.read_bytes()
-    _assert(len(data) == 570 and sha256(data).hexdigest() == EXPECTED_SHA256, "fixture bytes changed")
-    output = root / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "missing regular output directory")
-    actual_outputs = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    _assert({".gitkeep", *OUTPUT_FILES} <= actual_outputs, "required submission outputs are missing")
-    return
 
 
 def _expected_cleaned() -> pd.DataFrame:
@@ -277,12 +204,6 @@ def grade_submission(submission_root: str | Path) -> dict:
 
     root = Path(submission_root).resolve()
     tests: list[dict] = []
-    package_error: Exception | None = None
-    try:
-        _check_static_contract(root)
-    except Exception as error:
-        package_error = error
-    tests.append(_result_test("Submission package", 0, package_error))
     for name, points, check in (
         ("Task 1 cumulative foundations and audit", 25, check_audit),
         ("Task 2 committed cleaning", 35, check_cleaned),

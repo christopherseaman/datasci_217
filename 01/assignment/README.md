@@ -147,7 +147,7 @@ The optional GitHub Actions workflow runs `.github/test/test_assignment.py` with
 
 ## Completion contract
 
-This is a competence-focused pass/fail assignment. Automated grading is 100 points only when every public artifact check passes (the individual diagnostic checks are zero-point feedback). It reads the committed terminal evidence and `output/readiness.txt` artifact directly. Source structure, alternate-input behavior, and the exact GUI synchronization checklist are separate instructional/manual evidence; they are not inferred from code-analysis tests.
+Automated grading totals 100 points: 20 for the documented `terminal-practice/source.txt` and `terminal-practice/path-check.txt` evidence, and 80 for `output/readiness.txt`. The grader reads these saved student-created artifacts and never executes student code.
 
 Do not add notebooks, third-party packages, shell pipes, or shell redirection. In the three student scripts, do not add:
 

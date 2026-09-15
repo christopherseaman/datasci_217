@@ -6,7 +6,6 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -67,17 +66,7 @@ def _context(include_review: bool = True):
 
 
 def _new_submission(path: Path) -> None:
-    (path / "data").mkdir(parents=True)
-    (path / "output").mkdir()
-    for name in [grader.RELEASE_NAME, grader.MANIFEST_NAME]:
-        shutil.copy2(ASSIGNMENT / "data" / name, path / "data" / name)
-    for name in ["check_assignment.py", "grading.py"]:
-        shutil.copy2(ASSIGNMENT / name, path / name)
-    for number in range(1, 10):
-        for source in ASSIGNMENT.glob(f"q{number}_*.ipynb"):
-            shutil.copy2(source, path / source.name)
-        for source in ASSIGNMENT.glob(f"q{number}_*.md"):
-            shutil.copy2(source, path / source.name)
+    (path / "output").mkdir(parents=True)
 
 
 def _write_csv(frame: pd.DataFrame, path: Path) -> None:
@@ -125,15 +114,15 @@ Artifact-only grading cannot establish model-fitting provenance or prove that ex
 """
 
 
-def _references(root: Path) -> dict[str, pd.DataFrame]:
+def _references() -> dict[str, pd.DataFrame]:
     return grader._references(
-        str((root / "data" / grader.RELEASE_NAME).resolve()),
-        str((root / "data" / grader.MANIFEST_NAME).resolve()),
+        str((ASSIGNMENT / "data" / grader.RELEASE_NAME).resolve()),
+        str((ASSIGNMENT / "data" / grader.MANIFEST_NAME).resolve()),
     )
 
 
 def _materialize(root: Path) -> None:
-    refs = _references(root)
+    refs = _references()
     artifacts = {
         "q1_release_audit.csv": refs["audit"], "q1_station_coverage.csv": refs["coverage"],
         "q2_cleaned_observations.csv": refs["clean"], "q2_cleaning_audit.csv": refs["cleaning_audit"],
@@ -192,7 +181,7 @@ def _score(root: Path) -> int:
 
 
 def _public_score(root: Path) -> int:
-    result = subprocess.run([sys.executable, str(root / "check_assignment.py"), "--json"], cwd=root, text=True, capture_output=True, check=False)
+    result = subprocess.run([sys.executable, str(ASSIGNMENT / "check_assignment.py"), str(root), "--json"], cwd=root, text=True, capture_output=True, check=False)
     return json.loads(result.stdout)["score"]
 
 
@@ -214,12 +203,12 @@ def _isolated_mutations(correct: Path) -> None:
     nonfinite.loc[0, "model_prediction"] = np.inf
     cases = [
         ("Q1", "output/q1_release_audit.csv", b"wrong\n", 78),
-        ("Q2", "output/q2_cleaned_observations.csv", None, 7),
-        ("Q3", "output/q3_hourly_panel.csv", b"\x00\xff", 16),
-        ("Q4", "output/q4_feature_manifest.csv", b"wrong\n", 27),
+        ("Q2", "output/q2_cleaned_observations.csv", None, 76),
+        ("Q3", "output/q3_hourly_panel.csv", b"\x00\xff", 74),
+        ("Q4", "output/q4_feature_manifest.csv", b"wrong\n", 71),
         ("Q5", "output/q5_monthly_station_summary.csv", b"wrong\n", 78),
-        ("Q6", "output/q6_split_summary.csv", b"wrong\n", 48),
-        ("Q7", "output/q7_validation_predictions.csv", nonfinite.to_csv(index=False, lineterminator="\n").encode(), 59),
+        ("Q6", "output/q6_split_summary.csv", b"wrong\n", 74),
+        ("Q7", "output/q7_validation_predictions.csv", nonfinite.to_csv(index=False, lineterminator="\n").encode(), 72),
         ("Q8", "output/q8_station_metrics.csv", b"wrong\n", 72),
         ("Q9", "report.md", b"# incomplete\n", 85),
     ]
@@ -246,9 +235,9 @@ def _extra_failures(correct: Path) -> None:
         _replace_temporarily(metric_path, negative_metrics.to_csv(index=False, lineterminator="\n").encode(), verify_metrics_and_report)
     _replace_temporarily(validation_path, negative.to_csv(index=False, lineterminator="\n").encode(), verify_prediction_mismatch)
     nonfinite = validation.copy(); nonfinite.loc[0, "model_prediction"] = -np.inf
-    _replace_temporarily(validation_path, nonfinite.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 59)))
+    _replace_temporarily(validation_path, nonfinite.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 72)))
     metrics = pd.read_csv(metric_path); metrics.loc[0, "mae"] += 1
-    _replace_temporarily(metric_path, metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 59))
+    _replace_temporarily(metric_path, metrics.to_csv(index=False, lineterminator="\n").encode(), lambda: _assert_score(correct, 72))
     png_path = correct / "output/q5_patterns.png"
     malformed = bytearray(png_path.read_bytes()); malformed[-1] ^= 1
     _replace_temporarily(png_path, bytes(malformed), lambda: _assert_score(correct, 85))
@@ -279,11 +268,8 @@ def _extra_failures(correct: Path) -> None:
     reversed_x = pd.read_csv(x_path).iloc[::-1]
     reversed_y = pd.read_csv(y_path).iloc[::-1]
     def verify_reordered_split() -> None:
-        _replace_temporarily(y_path, reversed_y.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 48), _assert_public_score(correct, 48)))
+        _replace_temporarily(y_path, reversed_y.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 74), _assert_public_score(correct, 74)))
     _replace_temporarily(x_path, reversed_x.to_csv(index=False, lineterminator="\n").encode(), verify_reordered_split)
-
-    coursework = correct / "q4_feature_engineering.ipynb"
-    _replace_temporarily(coursework, None, lambda: (_assert_score(correct, 85), _assert_public_score(correct, 85)))
 
     audit_path = correct / "output/q2_cleaning_audit.csv"
     audit = pd.read_csv(audit_path); audit["rule"] = [f"alternate decision {index}" for index in range(len(audit))]
@@ -306,7 +292,7 @@ def _extra_failures(correct: Path) -> None:
 
     spec_path = correct / "output/q7_model_spec.csv"
     spec = pd.read_csv(spec_path); spec.loc[0, "random_state"] = 218
-    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 59), _assert_public_score(correct, 59)))
+    _replace_temporarily(spec_path, spec.to_csv(index=False, lineterminator="\n").encode(), lambda: (_assert_score(correct, 72), _assert_public_score(correct, 72)))
 
     spec = pd.read_csv(spec_path)
     parameters = json.loads(spec.loc[0, "parameters_json"])
@@ -338,29 +324,37 @@ def main() -> int:
         _materialize(correct)
         direct = grader.grade_submission(correct)
         command = subprocess.run(
-            [sys.executable, str(correct / "check_assignment.py"), str(correct), "--json"],
+            [sys.executable, str(ASSIGNMENT / "check_assignment.py"), str(correct), "--json"],
             text=True, capture_output=True, check=False,
         )
         public = json.loads(command.stdout)
         assert command.returncode == 0 and public == direct
         assert direct["score"] == direct["max-score"] == 85
+        assert {path.name for path in correct.iterdir()} == {"output", "report.md"}
+        (correct / "data").mkdir()
+        (correct / "data" / grader.RELEASE_NAME).write_text("untrusted extra input\n", encoding="utf-8")
+        (correct / "grading.py").write_text("raise RuntimeError('must not execute submission code')\n", encoding="utf-8")
+        (correct / "output" / "extra-notes.txt").write_text("Additional student notes.\n", encoding="utf-8")
+        assert grader.grade_submission(correct) == direct
+        assert _public_score(correct) == 85
         broken = correct / "output/q4_features.csv"
         original = broken.read_bytes()
         broken.write_text("broken\n", encoding="utf-8")
         try:
             direct = grader.grade_submission(correct)
             command = subprocess.run(
-                [sys.executable, str(correct / "check_assignment.py"), str(correct), "--json"],
+                [sys.executable, str(ASSIGNMENT / "check_assignment.py"), str(correct), "--json"],
                 text=True, capture_output=True, check=False,
             )
             assert command.returncode == 1 and json.loads(command.stdout) == direct
-            assert direct["score"] == 27
+            assert direct["score"] == 71
         finally:
             broken.write_bytes(original)
         _isolated_mutations(correct)
         _extra_failures(correct)
         empty_result = grader.grade_submission(empty)
         assert empty_result["score"] == 0
+        assert grader.grade_submission(ASSIGNMENT)["score"] == 0
     print("public grading parity passed")
     return 0
 

@@ -42,6 +42,8 @@ The Fall 2026 repositories are listed in [assignments-26f.json](assignments-26f.
 
 Students and graders use the same public artifact checks, milestone points, and rubric. From an assignment directory, run `python check_assignment.py`; GitHub Actions runs the same checks through pytest. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions.
 
+Points are awarded only for documented student grading materials, not supplied notebooks, input files, grader files, or repository bookkeeping. A grading target can contain just the required outputs and written responses; extra files are ignored. Expected results use the trusted grader's input data. Untouched starters earn zero. Run `python scripts/test_assignment_grading.py` with the assignment grading dependencies installed to verify the empty/starter contract across all eleven assignments; each assignment's `_grader_selftest` exercises completed and incorrect artifacts.
+
 For grading another submission, run the trusted assignment's `check_assignment.py /path/to/submission --json`. Use the published assignment version and its dependencies, not checker code supplied by the submission. The JSON report contains the same milestone results and automated score shown to students; batch collection and reporting do not change grading criteria.
 
 Assignments 01–04 and 06–10 have 100 automated points. Both exams, Assignments 05 and 11, have 85 automated points plus 15 human-review points. Both exams publish their tests and full rubrics, including human-review criteria. Passing automated checks does not award human-review points. Exam test visibility may be revisited before the midterm; there is no separate student/grader scoring mode.

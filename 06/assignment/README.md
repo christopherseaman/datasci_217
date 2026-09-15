@@ -5,7 +5,7 @@ their grain, keys, cardinality, and preservation goal. Then examine vertical and
 horizontal alignment and complete a reversible wide/long reshape without
 aggregation.
 
-This is a local-first assignment; grading reads committed artifacts without executing the notebook. The
+This is a local-first assignment; grading reads saved artifacts without executing the notebook. The
 supplied synthetic fixtures contain no human-subject data and are different from
 the Lecture 06 demo data. Do not use Colab, manual uploads, Drive mounts, network access, or `/content` paths. The
 portable setup supports both a standalone exported assignment repository and
@@ -29,7 +29,7 @@ the notebook, its kernel must use the environment you checked.
 
 ## Deliverables
 
-Complete every `TODO` in `assignment.ipynb` and commit the notebook source. Create and commit these five CSV milestone artifacts in the assignment repository:
+Complete every `TODO` in `assignment.ipynb`. Create these five CSV milestone artifacts:
 
 - `output/specimen_merge_audit.csv`
 - `output/combined_specimens.csv`
@@ -37,19 +37,16 @@ Complete every `TODO` in `assignment.ipynb` and commit the notebook source. Crea
 - `output/sensor_scores_long.csv`
 - `output/sensor_scores_round_trip.csv`
 
-The required CSVs are intentionally visible in VS Code Source Control and
-GitHub Desktop. Commit them with the completed notebook source. Do not edit
-the files in `data/`, `data/fixture.json`, supplied notebook cells, environment
-records, checker, or instructions. Automated grading reads the committed CSVs;
-notebook execution is optional local QA.
+Additional files are allowed and ignored. Automated grading reads the saved
+CSVs; notebook execution is optional local QA.
 
-After creating the committed artifacts, use the discoverable student check:
+After creating the saved artifacts, use the discoverable student check:
 
 ```bash
 python check_assignment.py
 ```
 
-The checker reads files and committed CSVs but does not execute notebook code.
+The checker reads saved CSVs but does not execute notebook code.
 Fix each `[FIX]` message, regenerate the artifacts, and check again.
 
 ## Task 1: contract-first validated merge
@@ -134,6 +131,6 @@ CSV checks compare parsed columns and values, not file hashes or quoting. Preser
 
 grading.py is the shared ruleset for students, pytest, and graders. Run
 python check_assignment.py [submission_dir], or add --json for a
-datasci217/grading-result/v1 result. It reads committed artifacts only, never
+datasci217/grading-result/v1 result. It reads saved artifacts only, never
 notebooks or submission code. The visible tests award Task 1 (45), Task 2
 (30), and Task 3 (25), for 100 points.

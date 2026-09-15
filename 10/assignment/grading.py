@@ -22,36 +22,15 @@ execution and alternate-input checks remain optional release QA.
 from __future__ import annotations
 
 import csv
-from hashlib import sha256
 import json
 import math
 from pathlib import Path
 import sys
 
 
-FIXTURES = {
-    "data/fixture.json": "aa50eeffc2b07c5d98cb56a0e3d18115909958f777899d5d403cf6323dd1de41",
-    "data/mixing_runs.csv": "00b8a1ce84110f4a7fa85620742283c82a4b9d600dbe0ebea0d4721956938957",
-    "data/batch_strength.csv": "f14faf7da64347dfc255aa84b14e79eef7f2d0de94b394c747323319d937baa3",
-    "data/feature_availability.csv": "a47b8df048607045640b9a6785b038fe1c70036f58d5b61ed20ec98860b556da",
-    "data/supplied_binary_predictions.csv": "7a8809010fa94345cd04787c826ef86ee5fd13cbf0bd95953e2220c3294a239a",
-}
-PROTECTED_FILE_SHA256 = {
-    "README.md": "708992f0fe369b56897ed578e3667d32d11dcba884f7adbc7c8e6e31406b6123",
-    "PLATFORM_CHECK.md": "384047ae73eeced17d91de75e883173998be1b882f334336a65aeb27e072d1c3",
-    ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
-    "requirements.txt": "740a377ce40a7c62f5c544b0873b224a071d50effb7484a2b9bef6b36f5e0fe3",
-}
-BASE_FILES = {
-    ".gitignore", ".python-version", "PLATFORM_CHECK.md", "README.md",
-    "assignment.ipynb", "check_assignment.py", "grading.py", "requirements.txt", *FIXTURES,
-    ".github/test/requirements.txt", ".github/test/test_assignment.py",
-    ".github/workflows/tests.yml",
-}
-POINTS = [10, 25, 30, 30, 5]
+GRADER_ROOT = Path(__file__).resolve().parent
+POINTS = [30, 35, 30, 5]
 TEST_NAMES = [
-    "Submission package and fixture integrity",
     "Task 1 bounded inference and intervals",
     "Task 2 contract, availability, leakage, chronological split",
     "Task 3 train-only comparison, freeze, final test, binary metrics",
@@ -66,41 +45,6 @@ class InfrastructureError(RuntimeError):
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
-
-
-def _resolve_root(start: Path) -> Path:
-    start = start.resolve()
-    for base in (start, *start.parents):
-        for candidate in (base, base / "10" / "assignment"):
-            if (candidate / "assignment.ipynb").is_file() and (candidate / "data/fixture.json").is_file():
-                return candidate.resolve()
-    raise InfrastructureError("cannot locate the complete Assignment 10 learner package")
-
-
-def _inventory(root: Path) -> None:
-    git_entry = root / ".git"
-    if git_entry.exists() or git_entry.is_symlink():
-        _assert(git_entry.is_dir() and not git_entry.is_symlink(), "top-level .git must be a genuine directory")
-    output_entry = root / "output"
-    _assert(output_entry.is_dir() and not output_entry.is_symlink(), "output must be a genuine directory")
-    _assert(not (root / "_grader_selftest").exists() and not (root / "_grader_selftest").is_symlink(), "instructor bundle entered learner package")
-    actual = set()
-    for path in root.rglob("*"):
-        relative = path.relative_to(root)
-        if relative.parts[0] in {".git", "output"}:
-            continue
-        if path.is_file() or path.is_symlink():
-            actual.add(relative.as_posix())
-    expected = BASE_FILES
-    _assert(expected <= actual, f"required learner package files are missing: {sorted(expected - actual)}")
-    _assert(not any((root / relative).is_symlink() for relative in expected), "required learner package contains a symlink")
-    for relative, digest in FIXTURES.items():
-        _assert(sha256((root / relative).read_bytes()).hexdigest() == digest,
-                f"restore immutable fixture {relative}")
-    for relative, digest in PROTECTED_FILE_SHA256.items():
-        path = root / relative
-        _assert(path.is_file() and not path.is_symlink() and sha256(path.read_bytes()).hexdigest() == digest,
-                f"restore immutable course file {relative}")
 
 
 ARTIFACT_COLUMNS = {
@@ -171,10 +115,6 @@ def output_checks(root: Path, errors: list[str]) -> None:
         for name in (*ARTIFACT_COLUMNS, "inference_residuals.png"):
             issue("output", f"{name} needs a regular output directory", errors)
         return
-    actual = {path.name for path in output.iterdir() if path.is_file() or path.is_symlink()}
-    expected = {".gitkeep", *ARTIFACT_COLUMNS, "inference_residuals.png"}
-    if not expected <= actual:
-        issue("output", f"required output artifacts are missing: {sorted(expected - actual)}", errors)
     tables = {}
     for name, columns in ARTIFACT_COLUMNS.items():
         path = output / name
@@ -226,7 +166,7 @@ def output_checks(root: Path, errors: list[str]) -> None:
         issue("output", "final_predictions.csv must align one row to each chronological test batch", errors)
     else:
         try:
-            source_rows = {row["batch_id"]: row for row in csv.DictReader((root / "data" / "batch_strength.csv").open(encoding="utf-8"))}
+            source_rows = {row["batch_id"]: row for row in csv.DictReader((GRADER_ROOT / "data" / "batch_strength.csv").open(encoding="utf-8"))}
             for row in predictions:
                 source_row = source_rows[row["batch_id"]]
                 if row["target_timestamp"] != source_row["target_timestamp"] or abs(_number(row, "actual_strength_mpa") - float(source_row["next_day_strength_mpa"])) > FLOAT_TOLERANCE or not math.isfinite(_number(row, "predicted_strength_mpa")):
@@ -242,9 +182,9 @@ def output_checks(root: Path, errors: list[str]) -> None:
         ], start=38)
     }, errors)
     png = output / "inference_residuals.png"
-    if png.is_symlink():
+    if not png.is_file() or png.is_symlink():
         issue("output", "inference_residuals.png must be a regular file", errors)
-    if png.is_file() and not png.is_symlink():
+    else:
         if not png.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
             issue("output", "inference_residuals.png must be a PNG file", errors)
 
@@ -257,20 +197,15 @@ def _artifact_errors(root: Path) -> list[str]:
 
 def grade_root(root: Path) -> tuple[list[dict], dict]:
     diagnostics = {"instructor_environment": True, "artifact_only": True, "fresh_runs": 0}
-    try:
-        _inventory(root)
-        template_test = {"name": TEST_NAMES[0], "score": POINTS[0], "max-score": POINTS[0], "output": "candidate package inventory passes"}
-    except Exception as error:
-        template_test = {"name": TEST_NAMES[0], "score": 0, "max-score": POINTS[0], "output": str(error)}
     errors = _artifact_errors(root)
     groups = [
-        (POINTS[1], {"inference_summary.csv", "inference_case_intervals.csv", "inference_residuals.csv"}),
-        (POINTS[2], {"availability_decisions.csv", "split_manifest.csv"}),
-        (POINTS[3], {"validation_metrics.csv", "final_test_metrics.csv", "final_predictions.csv", "binary_metrics.csv"}),
-        (POINTS[4], {"inference_residuals.png"}),
+        (POINTS[0], {"inference_summary.csv", "inference_case_intervals.csv", "inference_residuals.csv"}),
+        (POINTS[1], {"availability_decisions.csv", "split_manifest.csv"}),
+        (POINTS[2], {"validation_metrics.csv", "final_test_metrics.csv", "final_predictions.csv", "binary_metrics.csv"}),
+        (POINTS[3], {"inference_residuals.png"}),
     ]
-    tests = [template_test]
-    for name, (points, artifacts) in zip(TEST_NAMES[1:], groups):
+    tests = []
+    for name, (points, artifacts) in zip(TEST_NAMES, groups):
         relevant = [error for error in errors if any(artifact in error for artifact in artifacts)]
         tests.append({"name": name, "score": 0 if relevant else points, "max-score": points, "output": "; ".join(relevant) if relevant else "committed artifact values pass"})
     return tests, diagnostics

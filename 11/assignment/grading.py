@@ -64,7 +64,6 @@ TEST_NAMES = [
     "Q5 training-only patterns", "Q6 fixed chronological model files",
     "Q7 validation evaluation", "Q8 test evaluation", "Q9 report contract",
 ]
-DEPENDENCIES = {1: [], 2: [], 3: [2], 4: [3], 5: [4], 6: [4], 7: [6], 8: [6, 7], 9: []}
 REPORT_HEADINGS = [
     "Executive Summary", "Data and Cleaning", "Patterns", "Forecast Design",
     "Model Results", "Limitations",
@@ -361,13 +360,6 @@ def _valid_png(path: Path) -> None:
     _assert(path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"), f"{path.name} is not a PNG")
 
 
-def _check_coursework(root: Path) -> None:
-    for number in range(1, 10):
-        for suffix in ("ipynb", "md"):
-            matches = list(root.glob(f"q{number}_*.{suffix}"))
-            _assert(len(matches) == 1 and matches[0].is_file() and not matches[0].is_symlink(), f"missing regular Q{number} coursework {suffix} pair")
-
-
 def _check_q1(root: Path, refs: dict[str, pd.DataFrame]) -> None:
     audit = _assert_frame(_artifact(root, "q1_release_audit.csv"), refs["audit"])
     _assert(audit["passed"].astype("string").str.lower().eq("true").all(), "release audit has a failed row")
@@ -544,20 +536,16 @@ CHECKS = [_check_q1, _check_q2, _check_q3, _check_q4, _check_q5, _check_q6, _che
 
 
 def evaluate_submission(root: Path) -> list[dict]:
-    refs = _references(str(_release_path(root).resolve()), str((root / "data" / MANIFEST_NAME).resolve()))
-    rows, passed = [], {}
+    source = Path(__file__).resolve().parent
+    refs = _references(str(_release_path(source)), str(source / "data" / MANIFEST_NAME))
+    rows = []
     for number, (name, points, check) in enumerate(zip(TEST_NAMES, POINTS, CHECKS), start=1):
-        blockers = [dependency for dependency in DEPENDENCIES[number] if not passed.get(dependency, False)]
-        if blockers:
-            ok, status, detail = False, "BLOCKED", "blocked by failed " + ", ".join(f"Q{item}" for item in blockers)
+        try:
+            check(root, refs)
+        except Exception as error:
+            ok, status, detail = False, "FIX", f"{type(error).__name__}: {error}"
         else:
-            try:
-                check(root, refs)
-            except Exception as error:
-                ok, status, detail = False, "FIX", f"{type(error).__name__}: {error}"
-            else:
-                ok, status, detail = True, "PASS", "artifact contract passed"
-        passed[number] = ok
+            ok, status, detail = True, "PASS", "artifact contract passed"
         rows.append({"number": number, "name": name, "points": points, "passed": ok, "status": status, "detail": detail})
     return rows
 
@@ -566,18 +554,7 @@ def grade_submission(submission_root: str | Path) -> dict:
     root = Path(submission_root).resolve()
     if not root.is_dir():
         raise InfrastructureError(f"submission root is not a directory: {root}")
-    try:
-        _validate_environment_and_release(root)
-    except Exception as error:
-        tests = [{"test-name": name, "passed": False, "score": 0,
-                  "max-score": points, "detail": f"{type(error).__name__}: {error}"}
-                 for name, points in zip(TEST_NAMES, POINTS)]
-        return {"schema": "datasci217/grading-result/v1", "score": 0,
-                "max-score": sum(POINTS), "tests": tests}
-    try:
-        _check_coursework(root)
-    except Exception:
-        pass
+    _validate_environment_and_release(Path(__file__).resolve().parent)
     rows = evaluate_submission(root)
     tests = []
     for row in rows:

@@ -1,36 +1,44 @@
-"""Smoke-test Assignment 03's saved-artifact contract."""
+"""Regression checks for Assignment 03 saved artifacts only."""
 
 from pathlib import Path
-import shutil
 import sys
-from uuid import uuid4
+import tempfile
 
 
-SOURCE = Path(__file__).resolve().parents[1]
-SCRATCH = SOURCE.parents[1] / "scratch" / f"a03-artifacts-{uuid4().hex}"
-SCRATCH.parent.mkdir(exist_ok=True)
-shutil.copytree(SOURCE, SCRATCH, ignore=shutil.ignore_patterns("_grader_selftest", "__pycache__"))
-sys.path.insert(0, str(SCRATCH))
-from _public_checks import (
-    EXPECTED_ANALYSIS,
-    EXPECTED_ENVIRONMENT_OUTPUT,
-    EXPECTED_HEAD,
-    EXPECTED_TAIL,
-    check_pipeline_artifacts,
-)
+ASSIGNMENT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ASSIGNMENT))
+from _public_checks import EXPECTED_ANALYSIS, EXPECTED_ENVIRONMENT_OUTPUT, EXPECTED_HEAD, EXPECTED_TAIL
+from grading import grade_submission
 
 
-(SCRATCH / "output" / "environment_check.txt").write_text("\n".join(EXPECTED_ENVIRONMENT_OUTPUT) + "\n", encoding="utf-8")
-(SCRATCH / "output" / "head_preview.txt").write_text("\n".join(EXPECTED_HEAD) + "\n", encoding="utf-8")
-(SCRATCH / "output" / "tail_preview.txt").write_text("\n".join(EXPECTED_TAIL) + "\n", encoding="utf-8")
-(SCRATCH / "output" / "site_counts.txt").write_text("3 north\n2 south\n1 west\n", encoding="utf-8")
-(SCRATCH / "output" / "site_count_lines.txt").write_text("3 output/site_counts.txt\n", encoding="utf-8")
-(SCRATCH / "output" / "analysis.txt").write_text("\n".join(EXPECTED_ANALYSIS) + "\n", encoding="utf-8")
-check_pipeline_artifacts(SCRATCH)
-(SCRATCH / "output" / "analysis.txt").write_text("wrong\n", encoding="utf-8")
-try:
-    check_pipeline_artifacts(SCRATCH)
-except AssertionError:
-    print("[PASS] accepted saved pipeline results and transcript, then rejected a mutation")
-else:
-    raise AssertionError("Mutated analysis transcript was accepted")
+def write(path: Path, lines: tuple[str, ...] | str) -> None:
+    path.write_text(("\n".join(lines) if isinstance(lines, tuple) else lines) + "\n", encoding="utf-8")
+
+
+def run() -> None:
+    with tempfile.TemporaryDirectory(dir=ASSIGNMENT.parents[1] / "scratch", prefix="a03-artifacts-") as temporary:
+        root = Path(temporary) / "submission"
+        root.mkdir()
+        assert grade_submission(root)["score"] == 0
+        write(root / ".python-version", "3.14")
+        write(root / "requirements.txt", "numpy==2.3.3")
+        output = root / "output"
+        output.mkdir()
+        write(output / "environment_check.txt", EXPECTED_ENVIRONMENT_OUTPUT)
+        write(output / "head_preview.txt", EXPECTED_HEAD)
+        write(output / "tail_preview.txt", EXPECTED_TAIL)
+        write(output / "site_counts.txt", "3 north\n2 south\n1 west")
+        write(output / "site_count_lines.txt", "3 output/site_counts.txt")
+        write(output / "analysis.txt", EXPECTED_ANALYSIS)
+        assert grade_submission(root)["score"] == 100
+        (root / "notes.md").write_text("allowed\n", encoding="utf-8")
+        assert grade_submission(root)["score"] == 100
+        write(output / "analysis.txt", "wrong")
+        assert grade_submission(root)["score"] == 60
+        (output / "head_preview.txt").unlink()
+        assert grade_submission(root)["score"] == 20
+    print("Assignment 03: starter, artifact-only, extra-file, missing, and wrong-artifact regressions passed.")
+
+
+if __name__ == "__main__":
+    run()

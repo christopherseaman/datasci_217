@@ -17,7 +17,6 @@ execution and alternate-input checks remain optional release QA.
 
 from __future__ import annotations
 
-from hashlib import sha256
 import json
 from pathlib import Path
 import sys
@@ -26,16 +25,7 @@ import numpy as np
 import pandas as pd
 
 
-PROTECTED_FILE_SHA256 = {
-    "README.md": "53239ddf66ba146a14229cf8ad9791e34ca108ab1001c1e4be07b2363c42319d",
-    "PLATFORM_CHECK.md": "aab823b0a8ca580e5094263ca2d8a1417ce3248884dd58a88ba233c0c86cf68d",
-    ".python-version": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
-    "requirements.txt": "dba7ebcc237068a6bfd7c7035b2c8d67ed138deae244d4ec6ac2d4d1d3476e47",
-    ".gitignore": "835739aa7952d6845749187c103a4942aa441d5e8bcbfcb3006de7b1d0924c95",
-    "data/fixture.json": "27558bc4da7738775879501a6f11a0a9d874f3948823e54bb5e82ab91a02d703",
-    "data/zone_co2_readings.csv": "c21c8571b4fe9a1e84a5224c7bffce972bb6f9517df172d92b3661a2bf9452f4",
-}
-ARTIFACT_NAMES = {"prepared_panel.csv", "hourly_grid.csv", "two_hour_summary.csv", "temporal_features.csv", "availability_decisions.csv", "chronological_blocks.csv"}
+GRADER_ROOT = Path(__file__).resolve().parent
 
 
 class InfrastructureError(RuntimeError):
@@ -84,25 +74,12 @@ def _same(actual: pd.DataFrame, expected: pd.DataFrame, keys: list[str], label: 
             _assert(left.fillna("<missing>").astype(str).equals(right.fillna("<missing>").astype(str)), f"{label} values differ: {column}")
 
 
-def _fixture(root: Path) -> pd.DataFrame:
-    path = root / "data" / "zone_co2_readings.csv"
-    _assert(path.is_file() and sha256(path.read_bytes()).hexdigest() == PROTECTED_FILE_SHA256["data/zone_co2_readings.csv"], "fixture changed")
+def _fixture() -> pd.DataFrame:
+    path = GRADER_ROOT / "data" / "zone_co2_readings.csv"
     source = pd.read_csv(path, dtype={"zone": "string", "recorded_at": "string", "co2_ppm": "float64"})
     source["recorded_at"] = pd.to_datetime(source["recorded_at"], format="%Y-%m-%d %H:%M").dt.tz_localize("America/New_York").dt.tz_convert("UTC")
     source["source_row"] = 1
     return source.sort_values(["zone", "recorded_at"], kind="stable").reset_index(drop=True)
-
-
-def _integrity(root: Path) -> None:
-    for name, digest in PROTECTED_FILE_SHA256.items():
-        path = root / name
-        _assert(path.is_file() and not path.is_symlink() and sha256(path.read_bytes()).hexdigest() == digest,
-                f"restore immutable course file: {name}")
-
-
-def _inventory(root: Path) -> None:
-    output = root / "output"; _assert(output.is_dir() and not output.is_symlink(), "missing regular output directory")
-    _assert(ARTIFACT_NAMES | {".gitkeep"} <= {p.name for p in output.iterdir() if p.is_file() or p.is_symlink()}, "required output artifacts are missing")
 
 
 def _task1(root: Path, source: pd.DataFrame) -> None:
@@ -133,11 +110,11 @@ def _task3(root: Path, source: pd.DataFrame) -> None:
 def grade_submission(submission_root: str | Path) -> dict:
     """Grade committed artifacts only; student notebooks are never executed."""
     root = Path(submission_root).resolve(); source: pd.DataFrame | None = None
-    specs = (("Fixture integrity", 10, lambda s: _integrity(root)), ("Task 1 temporal preparation", 25, lambda s: _task1(root, s)), ("Task 2 temporal summaries", 30, lambda s: _task2(root, s)), ("Task 3 past-only chronology", 30, lambda s: _task3(root, s)), ("Visible artifact inventory", 5, lambda s: _inventory(root)))
+    specs = (("Task 1 temporal preparation", 30, lambda s: _task1(root, s)), ("Task 2 temporal summaries", 35, lambda s: _task2(root, s)), ("Task 3 past-only chronology", 35, lambda s: _task3(root, s)))
     tests = []
     for name, maximum, check in specs:
         try:
-            if source is None: source = _fixture(root)
+            if source is None: source = _fixture()
             check(source)
         except Exception as error: tests.append(_result_test(name, maximum, error))
         else: tests.append(_result_test(name, maximum, None))

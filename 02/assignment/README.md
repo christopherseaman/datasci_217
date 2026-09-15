@@ -166,7 +166,7 @@ The optional GitHub Actions workflow may run the public `test_assignment.py` con
 
 ## Scope boundaries
 
-This is a competence-focused pass/fail assignment: automated grading is 100 points only when every public artifact check passes, with zero-point diagnostic checks for feedback. Do not add a shell script, notebook, dependency file, third-party package, CSV/JSON input, second repository, command-line Git workflow, or forced merge conflict.
+Automated grading totals 100 points: 30 for the completed README answers, 30 for `GIT_STATE_CHECK.md`, and 40 for `report.txt`. It reads those saved student-authored materials directly and never executes student code. Do not add a shell script, notebook, dependency file, third-party package, CSV/JSON input, second repository, command-line Git workflow, or forced merge conflict.
 
 In the two student Python files, do not add:
 
