@@ -48,12 +48,20 @@ We'll start in the editor so Git makes visual sense later.
 - Terminal: View → Terminal (Ctrl + grave accent key)
 - Split Editor: View → Editor Layout → Split Right (or Cmd+\)
 
+![VS Code's integrated terminal with command history](media/vscode-integrated-terminal.png)
+
+The terminal accepts the same shell commands as your standalone terminal. Screenshot: [VS Code terminal documentation](https://code.visualstudio.com/docs/terminal/basics).
+
 ## Settings (GUI) you’ll toggle today
 
 - Format on Save: Code → Settings → Settings → Search “Format on Save” → check
 - Python Interpreter: Click bottom‑right “Python” status or Cmd+Shift+P → “Python: Select Interpreter”
 - Default Formatter (optional): Settings → Search “Default Formatter” → choose “Black” or “Ruff” if installed
 - Markdown Preview: Right‑click a .md → “Open Preview to the Side” (Cmd+K V)
+
+![The Python Select Interpreter menu in VS Code](media/vscode-selected-interpreter.png)
+
+Choose the Python 3.13 interpreter installed for the course; this documentation screenshot shows example versions and paths. Source: [VS Code Python environments](https://code.visualstudio.com/docs/python/environments).
 
 ## Recommended Extensions (install via View → Extensions)
 
@@ -66,7 +74,7 @@ We'll start in the editor so Git makes visual sense later.
 - GitHub Markdown Preview
 - Bonus mentions: Error Lens, YAML, indent‑rainbow, GitLens
 
-## Break(points) the Ice: 5‑minute hands‑on
+## Break(points) the Ice
 
 1) Change the Color Theme (Preferences: Color Theme)
 2) Install “Python” and “Markdown All in One”
@@ -74,6 +82,10 @@ We'll start in the editor so Git makes visual sense later.
 4) Open a `.py` file → add a breakpoint (click gutter) → Run → Start Debugging
 5) Open a `.md` file → right‑click → Open Preview to the Side
 6) Make a small edit → View → Source Control → stage, commit (GUI)
+
+![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
+
+The highlighted line runs next. Inspect **Variables**, then step forward to see what changes. Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial); the status bar shows the example's older interpreter.
 
 # Git Version Control
 
@@ -119,16 +131,18 @@ A parallel timeline for your project. The main branch contains your official ver
 
 *We'll focus on the main branch today—branches come later!*
 
-**Reference:**
+### Reference Card: Git Vocabulary
 
-- **Repository**: Collection of objects and references
-- **Commit**: Snapshot with metadata (author, message, parents)
-- **Blob**: File content
-- **Tree**: Directory structure
-- **Reference**: Human-readable name pointing to commit
-- **HEAD**: Current commit reference
-- **Branch**: Movable reference to commit
-- **Remote**: Reference to repository on another machine
+| Item | Purpose |
+| --- | --- |
+| **Repository** | Collection of objects and references |
+| **Commit** | Snapshot with metadata (author, message, parents) |
+| **Blob** | File content |
+| **Tree** | Directory structure |
+| **Reference** | Human-readable name pointing to commit |
+| **HEAD** | Current commit reference |
+| **Branch** | Movable reference to commit |
+| **Remote** | Reference to repository on another machine |
 
 ![Git Branches](media/git_branches.png)
 
@@ -136,30 +150,25 @@ A parallel timeline for your project. The main branch contains your official ver
 
 Basic Git commands let you control what changes are committed using a three-stage workflow: working directory, staging area, repository.
 
-**Reference:**
+### Reference Card: Essential Git Commands
 
-Essential:
+| Task | Command | Result |
+| --- | --- | --- |
+| Start locally | `git init` | A local repository |
+| Copy a remote | `git clone URL` | A working folder linked to the remote |
+| Inspect work | `git status`, `git diff` | Changed-file list and line differences |
+| Stage a file | `git add FILE` | File changes included in the next commit |
+| Save a snapshot | `git commit -m "message"` | A local commit |
+| Send commits | `git push REMOTE BRANCH` | Remote branch updated |
+| Retrieve commits | `git fetch REMOTE` | Remote-tracking references updated |
+| Retrieve and integrate | `git pull REMOTE BRANCH` | Incoming work integrated into the current branch |
+| Connect a remote | `git remote add NAME URL` | Named remote; inspect with `git remote -v` |
+| Inspect history | `git log` | Commits with messages and authors |
+| Create a branch | `git branch NAME` | New branch at the current commit |
+| Switch versions | `git checkout BRANCH_OR_COMMIT` | Working copy changes to that version |
+| Integrate a branch | `git merge BRANCH` | Branch changes combined with the current branch |
 
-- `git init` - Initialize repository
-- `git clone [url]` - Copy remote repository
-- `git status` - Show working directory status
-- `git add [file]` - Stage changes
-- `git commit -m "message"` - Create commit
-- `git push [remote] [branch]` - Send commits to remote
-- `git pull [remote] [branch]` - Fetch and merge from remote
-
-Helpful but less essential:
-
-- `git remote add [name] [url]` - Add remote
-- `git fetch [remote]` - Download commits without merging
-- `git remote -v` - List remotes
-- `git log` - Show commit history
-- `git diff` - Show changes
-- `git checkout [commit/branch]` - Switch to commit or branch
-- `git branch [name]` - Create branch
-- `git merge [branch]` - Merge branch
-
-**Brief Example:**
+### Code Snippet: Essential Git Commands
 
 ```bash
 # Local repository workflow
@@ -197,22 +206,32 @@ git commit -m "minor changes"
 
 ## VS Code Git Integration
 
-### Setting Up Git in VS Code
+Review a change, stage the files to include, commit the snapshot, then sync it to GitHub.
 
-**Reference:**
+![Stage a changed file using the plus button in VS Code](media/vscode-stage.png)
+
+![Enter a message and commit the staged files](media/vscode-commit.png)
+
+![Sync committed changes with the GitHub copy](media/vscode-sync.png)
+
+Screenshots: [VS Code source control documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+
+### Setting Up Git in VS Code
 
 1. Install VS Code (if not already done)
 2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
 3. If first time: VS Code will prompt to configure Git username/email
 
-**Reference:**
+#### Reference Card: VS Code Git Actions
 
-- **Source Control Panel**: `Ctrl+Shift+G` (Windows/Linux) or `Cmd+Shift+G` (Mac)
-- **Stage Changes**: Click `+` next to files in "Changes" section
-- **Commit**: Type message in text box, press `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac)
-- **View Differences**: Click on modified files to see changes
-- **Branch Management**: Click branch name in status bar to switch/create branches
-- **Push/Pull**: Use sync button or command palette (`Ctrl+Shift+P`)
+| Item | Purpose |
+| --- | --- |
+| **Source Control Panel** | `Ctrl+Shift+G` (Windows/Linux) or `Cmd+Shift+G` (Mac) |
+| **Stage Changes** | Click `+` next to files in "Changes" section |
+| **Commit** | Type message in text box, press `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac) |
+| **View Differences** | Click on modified files to see changes |
+| **Branch Management** | Click branch name in status bar to switch/create branches |
+| **Push/Pull** | Use sync button or command palette (`Ctrl+Shift+P`) |
 
 **VS Code Git Workflow:**
 
@@ -229,14 +248,16 @@ git commit -m "minor changes"
 
 Git branching develops features in isolation before merging to main, enabling parallel development and safe experimentation.
 
-**Reference:**
+### Reference Card: Git Workflow: Branching and Merging
 
-- `git branch [name]` - Create new branch
-- `git checkout [branch]` - Switch to branch
-- `git checkout -b [name]` - Create and switch to new branch
-- `git merge [branch]` - Merge branch into current branch
-- `git branch -d [name]` - Delete branch
-- `git push origin [branch]` - Push branch to remote
+| Item | Purpose |
+| --- | --- |
+| `git branch [name]` | Create new branch |
+| `git checkout [branch]` | Switch to branch |
+| `git checkout -b [name]` | Create and switch to new branch |
+| `git merge [branch]` | Merge branch into current branch |
+| `git branch -d [name]` | Delete branch |
+| `git push origin [branch]` | Push branch to remote |
 
 **Branching Workflow:**
 
@@ -269,29 +290,34 @@ git branch -d feature/data-analysis
 
 GitHub's web interface manages repositories, enables collaboration, and organizes projects.
 
-**Reference:**
+### Reference Card: GitHub Web Interface
 
-- **Repository Creation**: "New repository" button, choose name and settings
-- **File Management**: "Add file" → "Create new file" or "Upload files"
-- **Commit via Web**: Edit files directly, add commit message, commit
-- **Pull Requests**: "Pull requests" tab → "New pull request"
-- **Issues**: "Issues" tab → "New issue" for bug reports and feature requests
-- **Project Settings**: Settings tab for permissions, branches, and integrations
-- **Code Review**: Comment on specific lines, approve/request changes
+| Item | Purpose |
+| --- | --- |
+| **Repository Creation** | "New repository" button, choose name and settings |
+| **File Management** | "Add file" → "Create new file" or "Upload files" |
+| **Commit via Web** | Edit files directly, add commit message, commit |
+| **Pull Requests** | "Pull requests" tab → "New pull request" |
+| **Issues** | "Issues" tab → "New issue" for bug reports and feature requests |
+| **Project Settings** | Settings tab for permissions, branches, and integrations |
+| **Code Review** | Comment on specific lines, approve/request changes |
 
-**Gitignore Files:** A `.gitignore` file specifies which files and directories Git should ignore when tracking changes. This is crucial for data science projects to avoid committing sensitive data, large datasets, or generated files.
+### Gitignore Files
 
-**Reference:**
+A `.gitignore` file lists patterns for untracked files Git should ignore. Adding a pattern does not untrack files already committed.
 
-- `.gitignore` patterns use glob patterns
-- `#` for comments
-- `*` matches any characters
-- `?` matches single character
-- `[abc]` matches any character in brackets
-- `!` negates pattern
-- `**/` matches directories recursively
+#### Reference Card: Ignore Patterns
 
-**Brief Example:**
+| Item | Purpose |
+| --- | --- |
+| `# comment` | Explain a pattern |
+| `*.csv` | Match CSV filenames |
+| `file?.txt` | Match one character, such as `file1.txt` |
+| `[abc].txt` | Match `a.txt`, `b.txt`, or `c.txt` |
+| `!keep.csv` | Re-include a file matched by an earlier pattern |
+| `**/cache/` | Match cache directories at any depth |
+
+#### Code Snippet: A Project's `.gitignore`
 
 ```
 # Python cache files
@@ -311,7 +337,7 @@ data/raw/*.csv
 !data/processed/important_results.csv
 ```
 
-**Brief Example:**
+### Create and Edit Files on GitHub
 
 Create repository: github.com → "+" → "New repository" → Name, description, add README → Create.
 
@@ -321,19 +347,21 @@ Add files: "Add file" → "Create new file" → Name, add code, commit message �
 
 Markdown is a lightweight markup language for formatted text, essential for documentation and project communication. Files are human-readable and render beautifully on GitHub.
 
-**Reference:**
+## Reference Card: Markdown Documentation
 
-- Headers: `# H1`, `## H2`, `### H3`
-- Bold: `**bold text**`
-- Italic: `*italic text*`
-- Code: `` `inline code` ``
-- Code blocks: ```language
-- Lists: `- item` or `1. item`
-- Links: `[text](url)`
-- Images: `![alt](url)`
-- Tables: `| col1 | col2 |`
+| Item | Purpose |
+| --- | --- |
+| `# H1`, `## H2`, `### H3` | Headings at decreasing levels |
+| `**bold text**` | Strong emphasis |
+| `*italic text*` | Emphasis |
+| `` `inline code` `` | Literal code within a sentence |
+| Three backticks, then a language name | Start a fenced code block; close with three backticks |
+| `- item` or `1. item` | Unordered or ordered list |
+| `[text](url)` | Clickable link |
+| `![alt](url)` | Image with descriptive alternative text |
+| `\| col1 \| col2 \|` | Table row; follow the header with a separator row |
 
-**Brief Example:**
+## Code Snippet: Markdown Documentation
 
 ```markdown
 # Data Analysis Report
@@ -357,7 +385,7 @@ print(f"Average grade: {average:.1f}")
 
 ![xkcd 1429, “Data”: a grammar joke contrasting polling data with the Star Trek character Data.](media/xkcd_1429.png)
 
-*[Data](https://xkcd.com/1429/) by xkcd — in Python, everything is an object. In Star Trek, Data is too.*
+*Data* by xkcd — in Python, everything is an object. In Star Trek, Data is too.
 
 Python emphasizes readable, practical data manipulation. Its values are objects with consistent behavior.
 
@@ -366,6 +394,85 @@ Python emphasizes readable, practical data manipulation. Its values are objects 
 Lecture 01 established the command line, Python installation, variables, basic expressions, and introductory scripts. This lecture uses that foundation in VS Code and Git, then moves into Python’s object model, imports, collections and mutability, functions, file I/O, targeted exceptions, and the `__main__` entry-point pattern.
 
 ![Python Import](media/python_import.webp)
+
+## Printing and Basic Input
+
+An f-string starts with `f` and inserts the value of each expression inside `{}`. Formatting controls how those values appear; `input()` reads typed text for interactive scripts.
+
+### Reference Card: Printing and Formatting
+
+| Syntax | Purpose | Example output |
+| --- | --- | --- |
+| `print("Score:", score)` | Print separate values with spaces | `Score: 87.3` |
+| `f"{score}"` | Insert a value into text | `87.3` |
+| `f"{score:.1f}"` | One decimal place | `87.3` |
+| `f"{score:.0f}"` | No decimal places | `87` |
+| `f"{revenue:,.2f}"` | Thousands separator and two decimals | `15,432.50` |
+| `f"{success_rate:.1%}"` | Display a fraction as a percentage | `84.7%` |
+| `f"{population:.2e}"` | Scientific notation | `1.40e+09` |
+| `f"{name:<15}"` / `f"{score:>8}"` | Left/right alignment | Padded text |
+| `input("Name: ")` | Read typed input as a string | User's text |
+| `int(text)` / `float(text)` | Convert numeric text | A number |
+
+### Code Snippet: Printing and F-Strings
+
+F-strings put values, labels, and units together: `87.3` is a number; `Score: 87.3%` tells the reader what it means. Choose precision that helps interpretation rather than printing every available digit.
+
+```python
+# Basic printing - your daily communication tool
+print("Hello world")                    # Basic printing
+print("Value:", 42)                     # Multiple values
+print("Processing complete!")           # Status updates
+
+# F-string formatting - the data scientist's best friend
+student_name = "Alice"
+test_score = 87.3
+class_average = 82.1
+
+print(f"Student: {student_name}")                    # Basic variable insertion
+print(f"Score: {test_score}")                        # Number display
+print(f"Score: {test_score:.1f}")                    # One decimal place: 87.3
+print(f"Score: {test_score:.0f}%")                   # No decimals: 87%
+print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
+```
+
+### Formatting Patterns for Data Analysis
+
+```python
+# Currency formatting (useful for business data)
+revenue = 15432.50
+print(f"Revenue: ${revenue:,.2f}")                   # $15,432.50
+
+# Percentage formatting
+success_rate = 0.847
+print(f"Success rate: {success_rate:.1%}")           # 84.7%
+
+# Scientific notation for very large/small numbers
+population = 1400000000
+print(f"Population: {population:.2e}")               # 1.40e+09
+
+# Padding and alignment for clean output tables
+print(f"{'Name':<15} {'Score':>8} {'Grade':>8}")    # Column headers
+print(f"{'Alice':<15} {87.3:>8.1f} {'B+':>8}")      # Left/right aligned data
+print(f"{'Bob':<15} {92.1:>8.1f} {'A-':>8}")
+```
+
+### Interactive Input
+
+```python
+# Interactive input - mainly for testing and debugging
+name = input("Enter your name: ")                    # Gets text from user
+age_str = input("Enter your age: ")                  # Always returns string!
+age = int(age_str)                                   # Convert to number
+print(f"Hello {name}, you are {age} years old")
+
+# Be careful: input() always returns strings
+user_number = input("Enter a number: ")              # This is text: "42"
+print(type(user_number))                             # <class 'str'>
+actual_number = float(user_number)                   # Convert to number: 42.0
+print(type(actual_number))                           # <class 'float'>
+
+```
 
 ## Brief review: scalars, strings, output, and control flow
 
@@ -390,15 +497,18 @@ Useful reminders: `int`, `float`, `str`, `bool`, and `None` are common scalar ty
 
 Python uses indentation for code structure, creating clean code. Every value is an object with type information, enabling dynamic behavior.
 
-**Reference:**
-- Indentation defines code blocks (4 spaces recommended)
-- `#` for comments
-- `type(object)` - Get object type
-- `isinstance(object, type)` - Type checking
-- `id(object)` - Get object identity
-- `dir(object)` - List object attributes
+### Reference Card: Language Semantics and Object Model
 
-**Brief Example:**
+| Item | Purpose |
+| --- | --- |
+| Indentation defines code blocks (4 spaces recommended) | Group statements inside functions, loops, and conditionals |
+| `#` for comments | Explain code; Python ignores the rest of that line |
+| `type(object)` | Get object type |
+| `isinstance(object, type)` | Type checking |
+| `id(object)` | Get object identity |
+| `dir(object)` | List object attributes |
+
+### Code Snippet: Language Semantics and Object Model
 ```python
 # Indentation matters
 x = 3
@@ -414,38 +524,25 @@ print(isinstance("hello", str))  # True
 
 Object introspection examines objects at runtime—their type, attributes, and methods. Valuable for unknown datasets and flexible code.
 
-Python uses **duck typing**: "If it walks like a duck and quacks like a duck, then it must be a duck." If an object supports the needed operations, you can use it—regardless of its actual type.
+### Reference Card: Object Introspection and Dynamic Type Checking
 
-![Duck Typing](media/duck_typing.jpg)
-
-This means functions work with any object that behaves as expected, not just those of a specific type.
-
-**Reference:**
-
-- `type(object)` - Returns the object's type
-- `dir(object)` - Lists attributes and methods
-- `help(object)` - Shows documentation
-
-```python
-# Duck typing: unrelated types can support the same operation.
-label = "dataset"
-grades = [85, 92, 78]
-
-print(len(label))   # str provides a length: 7
-print(len(grades))  # list also provides a length: 3
-```
-
-Neither value is converted to the other's type. Python attempts the operation the code requests; an unsupported operation usually raises `TypeError`.
+| Item | Purpose |
+| --- | --- |
+| `type(object)` | Returns the object's type |
+| `dir(object)` | Lists attributes and methods |
+| `help(object)` | Shows documentation |
 
 ## Imports and Modules
 
 A **module** is a Python file that provides reusable names. An `import` loads a module and binds a name for it in the current program. Modules in the standard library ship with Python; third-party modules must be installed in the active environment first.
 
-**Reference:**
+### Reference Card: Imports and Modules
 
-- `import module` - Import a module and use `module.name`
-- `import module as alias` - Bind a shorter local name; this does not copy the module
-- `from module import name` - Import one specific name
+| Item | Purpose |
+| --- | --- |
+| `import module` | Import a module and use `module.name` |
+| `import module as alias` | Bind a shorter local name; this does not copy the module |
+| `from module import name` | Import one specific name |
 
 ```python
 import math
@@ -467,20 +564,22 @@ python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"
 
 Lists provide mutable sequences for data. Tuples offer immutable sequences useful for fixed records.
 
-**Reference:**
+### Reference Card: Data Structures: Lists and Tuples
 
-- `list()` - Create list
-- `[item1, item2, ...]` - List literal
-- `list[index]` - Access one item using a zero-based index
-- `list[start:stop]` - Slice from `start` up to, but not including, `stop`
-- `list.append(item)` - Add to end
-- `list.insert(index, item)` - Insert at position
-- `list.remove(item)` - Remove first occurrence
-- `list.pop(index)` - Remove and return item
-- `tuple()` - Create tuple
-- `(item1, item2, ...)` - Tuple literal
+| Item | Purpose |
+| --- | --- |
+| `list()` | Create list |
+| `[item1, item2, ...]` | List literal |
+| `list[index]` | Access one item using a zero-based index |
+| `list[start:stop]` | Slice from `start` up to, but not including, `stop` |
+| `list.append(item)` | Add to end |
+| `list.insert(index, item)` | Insert at position |
+| `list.remove(item)` | Remove first occurrence |
+| `list.pop(index)` | Remove and return item |
+| `tuple()` | Create tuple |
+| `(item1, item2, ...)` | Tuple literal |
 
-**Brief Example:**
+### Code Snippet: Data Structures: Lists and Tuples
 
 ```python
 # Lists - mutable sequences
@@ -526,18 +625,20 @@ Use `==` to compare values. Use `is` for object identity, most commonly in a che
 
 Dictionaries provide key-value storage for structured data. Sets offer unique collections with mathematical operations.
 
-**Reference:**
+### Reference Card: Data Structures: Dictionaries and Sets
 
-- `dict()` - Create dictionary
-- `{key: value, ...}` - Dictionary literal
-- `dict[key]` - Access value
-- `dict.get(key, default)` - Safe access
-- `dict.keys()`, `dict.values()`, `dict.items()` - Iteration
-- `set()` - Create set
-- `{item1, item2, ...}` - Set literal
-- `set.union()`, `set.intersection()`, `set.difference()` - Set operations
+| Item | Purpose |
+| --- | --- |
+| `dict()` | Create dictionary |
+| `{key: value, ...}` | Dictionary literal |
+| `dict[key]` | Access value |
+| `dict.get(key, default)` | Safe access |
+| `dict.keys()`, `dict.values()`, `dict.items()` | Iteration |
+| `set()` | Create set |
+| `{item1, item2, ...}` | Set literal |
+| `set.union()`, `set.intersection()`, `set.difference()` | Set operations |
 
-**Brief Example:**
+### Code Snippet: Data Structures: Dictionaries and Sets
 
 ```python
 # Dictionaries - key-value storage
@@ -551,27 +652,25 @@ cs_students = {"Alice", "Diana", "Eve"}
 both_subjects = math_students & cs_students  # Intersection
 ```
 
-## List Comprehensions and Sequence Functions
+## Sequence Functions
 
-List comprehensions provide concise syntax for creating lists through transformation and filtering. Sequence functions offer efficient operations.
+Sequence functions combine, order, and summarize collections. Lecture 03 introduces comprehensions for constructing new lists.
 
-**Reference:**
+### Reference Card: Sequence Functions
 
-- `[expr for item in iterable if condition]` - List comprehension
-- `enumerate(iterable)` - Get index and value pairs
-- `zip(iterable1, iterable2)` - Combine sequences
-- `sorted(iterable)` - Create sorted list
-- `reversed(iterable)` - Reverse sequence
-- `sum()`, `min()`, `max()`, `len()` - Aggregation functions
+| Item | Purpose |
+| --- | --- |
+| `enumerate(iterable)` | Get index and value pairs |
+| `zip(iterable1, iterable2)` | Combine sequences |
+| `sorted(iterable)` | Create sorted list |
+| `reversed(iterable)` | Reverse sequence |
+| `sum()`, `min()`, `max()`, `len()` | Aggregation functions |
 
-**Brief Example:**
+### Code Snippet: Sequence Functions
 
 ```python
-# List comprehensions
-grades = [85, 92, 78, 96, 88]
-passing_grades = [g for g in grades if g >= 80]
-
 # Sequence functions
+grades = [85, 92, 78, 96, 88]
 for index, grade in enumerate(grades):
     print(f"Student {index + 1}: {grade}")
 
@@ -585,14 +684,16 @@ for name, score in zip(names, scores):
 
 Functions organize code into reusable units with clear interfaces. They enable reuse, testing, and modular design.
 
-**Reference:**
+### Reference Card: Functions
 
-- `def function_name(parameters): ...` - Function definition
-- `return value` - Return value
-- Function calls: `result = function_name(arguments)`
-- Default parameters: `def func(param=default_value):`
+| Item | Purpose |
+| --- | --- |
+| `def function_name(parameters): ...` | Function definition |
+| `return value` | Return value |
+| Function calls: `result = function_name(arguments)` | Run a function with arguments and store its return value |
+| Default parameters: `def func(param=default_value):` | Use a fallback value when the caller omits an argument |
 
-**Brief Example:**
+### Code Snippet: Functions
 
 ```python
 # Function definition
@@ -612,21 +713,23 @@ print(f"Average grade: {average:.1f}")
 
 File I/O operations are essential for data science. Python provides simple tools for reading and writing files.
 
-**Reference:**
+### Reference Card: Basic File I/O Operations
 
-- `open(file, mode)` - Open file with specified mode
-- `'r'` - Read mode (default)
-- `'w'` - Write mode (overwrites existing files)
-- `'a'` - Append mode (adds to existing files)
-- `'x'` - Create mode (fails if file exists)
-- `file.read()` - Read entire file content
-- `file.readline()` - Read single line
-- `file.readlines()` - Read all lines into list
-- `file.write(string)` - Write string to file
-- `file.close()` - Close file handle
-- `with open(...) as file:` - Close the handle automatically when the block ends
+| Item | Purpose |
+| --- | --- |
+| `open(file, mode)` | Open file with specified mode |
+| `'r'` | Read mode (default) |
+| `'w'` | Write mode (overwrites existing files) |
+| `'a'` | Append mode (adds to existing files) |
+| `'x'` | Create mode (fails if file exists) |
+| `file.read()` | Read entire file content |
+| `file.readline()` | Read single line |
+| `file.readlines()` | Read all lines into list |
+| `file.write(string)` | Write string to file |
+| `file.close()` | Close file handle |
+| `with open(...) as file:` | Close the handle automatically when the block ends |
 
-**Brief Example:**
+### Code Snippet: Basic File I/O Operations
 
 ```python
 # Reading from a file

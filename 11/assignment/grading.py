@@ -92,8 +92,8 @@ def _release_path(root: Path) -> Path:
 
 
 def _validate_environment_and_release(root: Path) -> None:
-    if sys.version_info[:2] != (3, 14):
-        raise InfrastructureError(f"grader requires Python 3.14; found {sys.version.split()[0]}")
+    if sys.version_info[:2] != (3, 13):
+        raise InfrastructureError(f"grader requires Python 3.13; found {sys.version.split()[0]}")
     if (np.__version__, pd.__version__, sklearn.__version__) != ("2.3.3", "3.0.5", "1.9.0"):
         raise InfrastructureError(f"dependency versions differ: numpy={np.__version__}, pandas={pd.__version__}, sklearn={sklearn.__version__}")
     release, manifest = _release_path(root), root / "data" / MANIFEST_NAME

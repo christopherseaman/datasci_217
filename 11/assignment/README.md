@@ -16,7 +16,7 @@ Start with [`assignment.md`](assignment.md), which is the exact artifact contrac
 From `11/assignment`:
 
 ```bash
-uv venv --python 3.14
+uv venv --python 3.13
 source .venv/bin/activate
 uv pip install -r requirements.txt
 ./download_data.sh

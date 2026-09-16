@@ -6,7 +6,7 @@ The grader reads CSV/PNG outputs and `report.md` from the submission, using the 
 
 `autograder.py` and `grader.py` are compatibility entrypoints to the public implementation. They do not install dependencies or require runner metadata. Use `check_assignment.py [submission_dir] --json` for the same machine-readable results available to students.
 
-Run the regression harness in the declared CPython 3.14 environment:
+Run the regression harness in the declared CPython 3.13 environment:
 
 ```bash
 python 11/assignment/_grader_selftest/run.py

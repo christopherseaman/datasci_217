@@ -21,7 +21,7 @@ See [BONUS.md](BONUS.md) for optional topics outside the core Lecture 09 scope:
 
 *Fun fact: Time series analysis is like being a detective for data - you're looking for patterns, trends, and clues that reveal the story of how things change over time. It's the difference between knowing what happened and understanding why it happened.*
 
-![xkcd 2048: Curve-Fitting](https://imgs.xkcd.com/comics/curve_fitting.png)
+![xkcd 2048: Curve-Fitting](media/xkcd_2048.png)
 
 *"Cauchy-Lorentz: 'Something alarmingly mathematical is happening, and you should probably stop.'" - A reminder that not every pattern in time series data is meaningful, and overfitting is always lurking.*
 
@@ -39,6 +39,25 @@ Time series analysis is the art of understanding temporal patterns in data. The 
 - Understand exponentially weighted functions
 - Handle basic time zone operations
 - Apply Lecture 07 visualization principles to temporal structure
+
+### Reference Card: Time-Series Workflow
+
+| Task | Main tool | What it produces |
+| :--- | :--- | :--- |
+| Parse and order timestamps | `pd.to_datetime()` + `sort_index()` | Chronological `DatetimeIndex` |
+| Select a period | `.loc[...]`, `between_time()`, `at_time()` | A time-filtered Series/DataFrame |
+| Change frequency | `.resample(freq)` or `.asfreq(freq)` | Aggregated or aligned time grid |
+| Build history-aware features | `.shift()`, `.rolling()`, `.ewm()` | Lag, window, or smoothed columns |
+| Compare temporal structure | `Series.plot()` / `DataFrame.plot()` | Labeled time-series figure |
+
+### Code Snippet: Minimal Time-Series Setup
+
+```python
+df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
+df = df.set_index('timestamp').sort_index()
+weekly = df['value'].resample('W').mean()
+weekly.plot(title='Weekly mean value', ylabel='value')
+```
 
 # Understanding Time Series Data
 
@@ -71,7 +90,7 @@ Time series data records observations over time, so order and timing matter; unl
 
 The Python standard library provides `datetime` for working with dates and times. Understanding these basics is essential before moving to `pandas`. *Think of it as learning to walk before you can run - except in this case, walking is parsing dates and running is resampling multi-site clinical trial data.*
 
-**Reference:**
+### Reference Card: Python `datetime`
 
 | Function | Description |
 |----------|-------------|
@@ -81,7 +100,7 @@ The Python standard library provides `datetime` for working with dates and times
 | `datetime.strftime(format)` | Format datetime to string |
 | `timedelta(days=1)` | Time differences |
 
-**Example:**
+### Code Snippet: Python `datetime`
 
 ```python
 from datetime import datetime, timedelta
@@ -112,7 +131,7 @@ print(f"Age in days: {time_diff.days}")
 
 `pandas` provides powerful datetime functionality through `DatetimeIndex`, which is optimized for time series operations.
 
-**Reference:**
+### Reference Card: DatetimeIndex Setup
 
 | Function | Description |
 |----------|-------------|
@@ -122,7 +141,7 @@ print(f"Age in days: {time_diff.days}")
 | `df.set_index('date')` | Set datetime index |
 | `df.index` | Access datetime index |
 
-**Example:**
+### Code Snippet: DatetimeIndex Setup
 
 ```python
 import numpy as np
@@ -160,7 +179,7 @@ df = df.sort_index()  # Group equal dates in monotonic order
 
 `pandas` provides flexible date range generation for creating regular time series. *Want every Monday? Got it. Business days only? No problem. Last Friday of each month? Absolutely. Third Wednesday? Why not! `pandas` can generate pretty much any date pattern you can imagine - and some you probably can't.*
 
-**Reference:**
+### Reference Card: Date Range Generation
 
 | Function | Frequency Code | Description |
 |----------|----------------|-------------|
@@ -173,7 +192,7 @@ df = df.sort_index()  # Group equal dates in monotonic order
 
 *Note: Use lowercase `'h'` for hourly frequency. The uppercase `'H'` alias was removed in pandas 3.*
 
-**Example:**
+### Code Snippet: Date Ranges
 
 ```python
 # Different date range types for clinical data
@@ -198,7 +217,7 @@ print(monthly)
 
 You can infer the frequency of a time series and convert between frequencies.
 
-**Reference:**
+### Reference Card: Frequency and Alignment
 
 | Function | Description |
 |----------|-------------|
@@ -206,7 +225,7 @@ You can infer the frequency of a time series and convert between frequencies.
 | `ts.asfreq(freq)` | Conform to a new timestamp grid without combining observations |
 | `ts.resample(freq).asfreq()` | Select observations at resample bin labels without aggregation |
 
-**Example:**
+### Code Snippet: Frequency Inference
 
 ```python
 # Create time series with inferred frequency
@@ -230,17 +249,17 @@ Shifting allows you to create lagged or leading versions of your time series, es
 
 *Visual demonstration of shifting operations showing lag (looking back), lead (looking ahead), and differences (day-to-day changes).*
 
-**Reference:**
+### Reference Card: Lagged Features
 
 | Function | Description |
 |----------|-------------|
 | `ts.shift(1)` | Shift by 1 period (lag) |
 | `ts.shift(-1)` | Shift by -1 period (lead) |
 | `ts.diff()` | First difference |
-| `ts.pct_change()` | Percentage change |
+| `ts.pct_change()` | Fractional change: `0.1` means 10%; multiply by 100 for percent |
 | `ts.shift(1, freq='D')` | Shift by 1 day (with timestamp) |
 
-**Example:**
+### Code Snippet: Lagged Features
 
 ```python
 # Create sample data (patient weight measurements)
@@ -271,7 +290,7 @@ print(weight_features[['weight', 'lag_1', 'diff', 'pct_change']].head())
 
 *Examples of time-based selection showing how to slice data by year, month, or date range. Notice how `pandas` interprets string dates like a human would.*
 
-**Reference:**
+### Reference Card: Calendar Selection
 
 | Operation | Description |
 |-----------|-------------|
@@ -282,7 +301,7 @@ print(weight_features[['weight', 'lag_1', 'diff', 'pct_change']].head())
 | `ts.loc['2023-01-01']` | Label-based selection |
 | `ts.iloc[0:10]` | Position-based selection |
 
-**Example:**
+### Code Snippet: Calendar Selection
 
 ```python
 # Create sample time series (year of patient data)
@@ -311,18 +330,20 @@ print(ts['2023-01'].head())
 
 For time series with time components, you can select based on time of day. This is useful for selecting data from business hours or specific times of day.
 
-**Reference:**
+### Reference Card: Time-of-Day Selection
 
 | Function | Description |
 |----------|-------------|
 | `ts.between_time('09:00', '17:00')` | Select time range |
 | `ts.at_time('12:00')` | Select specific time |
-| `ts.loc[:start_date + pd.Timedelta(days=9)]` | First 10 days |
-| `ts.loc[end_date - pd.Timedelta(days=9):]` | Last 10 days |
+| `ts.loc[ts.index < start_date + pd.Timedelta(days=10)]` | First 10 days, where `start_date` is the first timestamp |
+| `ts.loc[ts.index > end_date - pd.Timedelta(days=10)]` | Last 10 days, where `end_date` is the last timestamp |
 | `ts.truncate(before='2023-06-01')` | Truncate before date (requires sorted index) |
 | `ts.truncate(after='2023-06-30')` | Truncate after date (requires sorted index) |
 
-**Example:**
+### Code Snippet: Time-of-Day Selection
+
+Timestamp slices include both endpoints. Use a strict boundary below to select exactly 72 hourly readings for each three-day window.
 
 ```python
 # Create hourly time series (ICU monitoring)
@@ -342,11 +363,11 @@ print(noon_data.head())
 
 # Select first and last periods using .loc
 print("\nFirst 3 days:")
-first_3_days = ts_hourly.loc[:ts_hourly.index.min() + pd.Timedelta(days=2)]
+first_3_days = ts_hourly.loc[ts_hourly.index < ts_hourly.index.min() + pd.Timedelta(days=3)]
 print(first_3_days.head())
 
 print("\nLast 3 days:")
-last_3_days = ts_hourly.loc[ts_hourly.index.max() - pd.Timedelta(days=2):]
+last_3_days = ts_hourly.loc[ts_hourly.index > ts_hourly.index.max() - pd.Timedelta(days=3)]
 print(last_3_days.head())
 ```
 
@@ -364,7 +385,7 @@ Resampling converts time series from one frequency to another. **Downsampling** 
 
 The `resample()` method is the workhorse for frequency conversion, similar to `groupby()` but for time intervals.
 
-**Reference:**
+### Reference Card: Resampling Frequencies
 
 | Frequency Code | Description |
 |----------------|-------------|
@@ -375,7 +396,7 @@ The `resample()` method is the workhorse for frequency conversion, similar to `g
 | `ts.resample('YE')` | Annual resampling (year end) |
 | `ts.resample('h')` | Hourly resampling |
 
-**Example:**
+### Code Snippet: Basic Resampling
 
 ```python
 # Create daily time series (patient vital signs)
@@ -411,7 +432,7 @@ weekly_bin_labels = ts_daily.resample('W').asfreq()  # Selection at bin labels
 
 You can apply various aggregation functions when resampling, just like with `groupby()`. The syntax is the same, but instead of grouping by categories, you're grouping by time intervals.
 
-**Reference:**
+### Reference Card: Resampling Aggregations
 
 | Function | Description |
 |----------|-------------|
@@ -422,7 +443,7 @@ You can apply various aggregation functions when resampling, just like with `gro
 | `ts.resample('D').std()` | Standard deviation |
 | `ts.resample('D').agg(['mean', 'std', 'min', 'max'])` | Multiple aggregations |
 
-**Example:**
+### Code Snippet: Resampling Aggregations
 
 ```python
 # Create sample data with multiple columns (patient metrics)
@@ -457,7 +478,7 @@ When a DataFrame also contains non-numeric columns, select the numeric columns b
 
 # LIVE DEMO!
 
-![xkcd 2289: Scenario 4](https://imgs.xkcd.com/comics/scenario_4.png)
+![xkcd 2289: Scenario 4](media/xkcd_2289.png)
 
 # Rolling Window Operations
 
@@ -471,7 +492,7 @@ The `rolling()` method creates a rolling window object that can be used with var
 
 *Demonstration of rolling window operations showing how a 7-day window smooths out daily fluctuations while preserving the underlying trend. The shaded area shows the standard deviation - wider means more variability, narrower means more consistent.*
 
-**Reference:**
+### Reference Card: Rolling Windows
 
 | Function | Description |
 |----------|-------------|
@@ -482,7 +503,7 @@ The `rolling()` method creates a rolling window object that can be used with var
 | `ts.rolling(window=5).min()` | Rolling minimum |
 | `ts.rolling(window=5).max()` | Rolling maximum |
 
-**Example:**
+### Code Snippet: Rolling Statistics
 
 ```python
 # Create sample data (patient temperature over time)
@@ -504,7 +525,7 @@ print(rolling_features[['temperature', 'rolling_mean', 'rolling_std']].head(10))
 
 Rolling windows can be centered, have minimum periods, and use custom functions. Centered windows look both backward and forward from each point. Minimum periods allow calculations even before you have a full window.
 
-**Reference:**
+### Reference Card: Rolling and EWM Options
 
 | Function | Description |
 |----------|-------------|
@@ -513,9 +534,9 @@ Rolling windows can be centered, have minimum periods, and use custom functions.
 | `ts.rolling(window=5).quantile(0.5)` | Rolling median |
 | `ts.rolling(window=5).apply(custom_func)` | Custom rolling function |
 | `ts.expanding()` | Expanding window (from start to current) |
-| `ts.ewm(span=5)` | Exponentially weighted moving average |
+| `ts.ewm(span=5)` | Exponentially weighted window; call `.mean()` to calculate an average |
 
-**Example:**
+### Code Snippet: Advanced Rolling Features
 
 ```python
 # Advanced rolling operations
@@ -543,16 +564,16 @@ Exponentially weighted functions give more weight to recent observations, making
 
 *Comparison of exponentially weighted moving average (EWM) with simple moving average. Notice how EWM responds faster to recent changes.*
 
-**Reference:**
+### Reference Card: Exponentially Weighted Windows
 
 | Function | Description |
 |----------|-------------|
-| `ts.ewm(span=5).mean()` | Exponentially weighted moving average |
-| `ts.ewm(alpha=0.3).mean()` | EWM with alpha parameter |
-| `ts.ewm(halflife=2).mean()` | EWM with half-life |
+| `ts.ewm(span=5).mean()` | Weighted mean with decay `alpha = 2 / (span + 1)`; larger span means slower decay |
+| `ts.ewm(alpha=0.3).mean()` | Weighted mean; larger `alpha` gives recent observations more relative weight |
+| `ts.ewm(halflife=2).mean()` | Weighted mean whose weights halve every two observations |
 | `ts.ewm(span=5).std()` | Exponentially weighted standard deviation |
 
-**Example:**
+### Code Snippet: Exponentially Weighted Features
 
 ```python
 # Create sample data (patient blood pressure)
@@ -590,7 +611,7 @@ print(blood_pressure_features[['blood_pressure', 'ewm_mean', 'ewm_std']].head(10
 
 **Best Practice:** When working with time zones, use UTC (Coordinated Universal Time) as your base timezone. UTC has no daylight saving time, avoiding ambiguity issues. Store data in UTC, and convert to local timezones only when needed for display or analysis.
 
-**Reference:**
+### Reference Card: Time Zone Operations
 
 | Function | Description |
 |----------|-------------|
@@ -603,7 +624,7 @@ print(blood_pressure_features[['blood_pressure', 'ewm_mean', 'ewm_std']].head(10
 
 Named timezones require an IANA timezone database. If `US/Eastern` is unavailable in the active notebook environment, install the `tzdata` package with `%pip install tzdata` before running the example.
 
-**Example:**
+### Code Snippet: Time Zone Conversion
 
 ```python
 # Create timezone-aware datetime (clinical trial data)
@@ -673,7 +694,7 @@ This section applies the plotting principles from Lecture 07 to temporal structu
 
 Use a line plot for ordered observations and overlay a rolling summary when it helps reveal change over time. Keep the raw series visible so the smoother does not hide variation.
 
-**Reference:**
+### Reference Card: Time Series Plotting
 
 | Function | Description |
 |----------|-------------|
@@ -683,7 +704,7 @@ Use a line plot for ordered observations and overlay a rolling summary when it h
 | `ts.plot(style='-', marker='o')` | Plot with custom style and markers |
 | `ax = ts.plot()` | Get axes for further customization |
 
-**Example:**
+### Code Snippet: Time-Series Plotting
 
 ```python
 import matplotlib.pyplot as plt

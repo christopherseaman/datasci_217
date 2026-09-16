@@ -26,10 +26,14 @@ function renderedSourceLink(url, sourcePath) {
   const target = path.normalize(path.join(path.dirname(sourcePath), match[1]));
   const repositoryPath = path.relative(process.cwd(), target).split(path.sep).join("/");
   const suffix = match[2] || "";
+  if (/^\d{2}\/assignment\/media\//.test(repositoryPath)) {
+    return `${prefix}/${repositoryPath}${suffix}`;
+  }
   if (excludedContent.test(repositoryPath)) {
     return `${repositoryUrl}/blob/main/${repositoryPath}${suffix}`;
   }
-  let pagePath = repositoryPath.replace(/\/README\.md$/i, "/");
+  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/" };
+  let pagePath = coursePages[repositoryPath] ?? repositoryPath.replace(/\/README\.md$/i, "/");
   pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
   const outputPath = pagePath === repositoryPath ? repositoryPath : pagePath;
   return `${prefix}/${outputPath.replace(/^\//, "")}${suffix}`;
@@ -45,6 +49,7 @@ module.exports = function (eleventyConfig) {
   // Passthrough copy — media folders and CSS
   eleventyConfig.addPassthroughCopy("css");
   eleventyConfig.addPassthroughCopy("*/media/**");
+  eleventyConfig.addPassthroughCopy("*/assignment/media/**");
 
   // Keep source Markdown URLs GitHub-friendly while routing links and images
   // to generated pages, repository assets, or main-branch activity blobs.

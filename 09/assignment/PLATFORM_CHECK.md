@@ -7,11 +7,11 @@ Automated grading reads only the six saved CSV artifacts. It does not execute or
 From the repository root, create or refresh the Assignment 09 environment with the Python version recorded in `.python-version` and the packages in `requirements.txt`. The course uses `uv`:
 
 ```text
-uv venv --python 3.14
+uv venv --python 3.13
 uv pip install -r 09/assignment/requirements.txt
 ```
 
-Select that interpreter as the `Python 3` kernel in VS Code/Jupyter. The first notebook code cell verifies Python 3.14, NumPy 2.3.3, and pandas 3.0.5; it does not install packages.
+Select that interpreter as the `Python 3` kernel in VS Code/Jupyter. The first notebook code cell verifies Python 3.13, NumPy 2.3.3, and pandas 3.0.5; it does not install packages.
 
 ## Prepare the artifacts
 

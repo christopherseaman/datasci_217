@@ -78,12 +78,12 @@
   "artifacts": {
     "sample": {
       "filename": "yellow_taxi_2023_h1_event_sample.parquet",
-      "sha256": "750bcc85f0267f9189dc9842ef44827168c384d4a7e5a8678e9a996348fc4b7d",
+      "sha256": "0a2fdc27ce787c5d042dc73b71eecd7d7dca326c97cebd3a78f9e68d2fe4c16f",
       "byte_size": 545541
     },
     "panel": {
       "filename": "yellow_taxi_2023_h1_zone_hour_counts.parquet",
-      "sha256": "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574",
+      "sha256": "f1f55ea809119757ee26995ae1eae4ff6be21b70273194c35aa388cfbfe13ad3",
       "byte_size": 138733
     },
     "lookup": {
@@ -96,7 +96,7 @@
   "panel_rows": 52116,
   "builder": {
     "script": "scripts/build_lecture11_demo_data.py",
-    "python": "3.14",
+    "python": "3.13",
     "numpy": "2.3.3",
     "pandas": "3.0.5",
     "pyarrow": "25.0.0"

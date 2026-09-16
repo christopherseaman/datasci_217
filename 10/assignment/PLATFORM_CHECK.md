@@ -1,6 +1,6 @@
 # Platform check
 
-Use CPython 3.14 and the exact direct versions in `requirements.txt`.
+Use CPython 3.13 and the exact direct versions in `requirements.txt`.
 
 To produce the artifacts locally:
 

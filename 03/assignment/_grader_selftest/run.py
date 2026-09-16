@@ -20,7 +20,7 @@ def run() -> None:
         root = Path(temporary) / "submission"
         root.mkdir()
         assert grade_submission(root)["score"] == 0
-        write(root / ".python-version", "3.14")
+        write(root / ".python-version", "3.13")
         write(root / "requirements.txt", "numpy==2.3.3")
         output = root / "output"
         output.mkdir()

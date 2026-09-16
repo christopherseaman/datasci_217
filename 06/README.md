@@ -42,7 +42,9 @@ Data wrangling is the art of transforming messy, disconnected datasets into clea
 
 Joining (or merging) DataFrames combines data from multiple sources by linking rows using shared keys. If you’ve worked with SQL databases, this will feel familiar - pandas implements database-style join operations.
 
-**Visual Guide - Join Types:**
+Before merging, write down the expected key cardinality. `validate=` turns that expectation into a check, while `indicator=True` makes unmatched keys visible.
+
+### Visual Guide: Join types
 
 ```
 Table A: customers          Table B: purchases
@@ -81,16 +83,18 @@ RIGHT JOIN (how='right')     OUTER JOIN (how='outer')
 
 The `pd.merge()` function is your workhorse for combining datasets. At its simplest, it links two DataFrames based on shared column values.
 
-**Reference:**
+### Reference Card: `merge()` keys and options
 
-- `pd.merge(left, right)` - Merge two DataFrames (auto-detects common columns)
-- `pd.merge(left, right, on='key')` - Merge on specific column (explicit is better!)
-- `pd.merge(left, right, left_on='key1', right_on='key2')` - Different column names
-- `pd.merge(left, right, how='inner')` - Join type: inner (default), left, right, outer
-- `pd.merge(left, right, on=['col1', 'col2'])` - Merge on multiple columns
-- `pd.merge(left, right, suffixes=('_left', '_right'))` - Handle overlapping column names
+| Argument | Purpose | Typical output |
+| --- | --- | --- |
+| `left`, `right` | Input tables | Combined `DataFrame` |
+| `on='key'` | Shared key column | Key-based matches |
+| `left_on`, `right_on` | Different key names | Matches equivalent fields |
+| `how` | `inner`, `left`, `right`, `outer` | Controls retained rows |
+| `validate` / `indicator` | Check cardinality / match status | Error or `_merge` audit column |
+| `suffixes` | Rename overlapping non-key columns | Unambiguous columns |
 
-**Example:**
+### Code Snippet: Merge on a key
 
 ```python
 import pandas as pd
@@ -128,16 +132,18 @@ display(merged)  # Same result
 
 Understanding join types is crucial. Each type answers a different question about your data.
 
-**Reference:**
+### Reference Card: Join types
 
-- `how='inner'` - Only rows with matching keys in BOTH DataFrames (intersection)
-- `how='left'` - ALL rows from left DataFrame, matching rows from right (left dominates)
-- `how='right'` - ALL rows from right DataFrame, matching rows from left (right dominates)
-- `how='outer'` - ALL rows from BOTH DataFrames (union)
+| `how` | Retains | Unmatched side |
+| --- | --- | --- |
+| `inner` | Matching keys only | Dropped |
+| `left` | Every left row | Right fields become `NaN` |
+| `right` | Every right row | Left fields become `NaN` |
+| `outer` | Every row from both | Missing fields become `NaN` |
 
 
 
-**Example:**
+### Code Snippet: Compare join types
 
 ```python
 # Inner join (default) - only customers with purchases
@@ -174,16 +180,17 @@ display(outer)
 
 Merge cardinality describes whether each key is unique or repeated on the left and right. Use it when the merge needs to enforce an expected relationship or audit which rows matched.
 
-**Reference:**
+### Reference Card: Merge cardinality and audit
 
-- **One-to-one**: Keys are unique in both DataFrames
-- **One-to-many**: Left keys are unique; right keys may repeat
-- **Many-to-one**: Left keys may repeat; right keys are unique
-- **Many-to-many**: Keys may repeat on both sides; each matching key produces every pair of rows
-- `validate='one_to_one'`, `'one_to_many'`, or `'many_to_one'` — raise an error if the expected uniqueness is violated
-- `indicator=True` — add a `_merge` column showing `left_only`, `right_only`, or `both`
+| Contract | Meaning | Check |
+| --- | --- | --- |
+| One-to-one | Unique keys on both sides | `validate='one_to_one'` |
+| One-to-many | Unique left keys; repeated right keys allowed | `validate='one_to_many'` |
+| Many-to-one | Repeated left keys; unique right keys | `validate='many_to_one'` |
+| Many-to-many | Repeated keys on both sides | `validate='many_to_many'` documents, not constrains |
+| Match audit | Show `left_only`, `right_only`, `both` | `indicator=True` |
 
-**Example:**
+### Code Snippet: Validate a merge
 
 ```python
 # One-to-one: each customer_id occurs at most once on both sides
@@ -243,13 +250,16 @@ Row growth alone does not prove a many-to-many merge: an intended one-to-many me
 
 Sometimes a single column isn’t enough to uniquely identify matches - you need to match on multiple columns together (like matching on BOTH store_id AND date).
 
-**Reference:**
+### Reference Card: Composite keys
 
-- `on=['col1', 'col2', 'col3']` - Match on multiple columns simultaneously
-- All specified columns must match for rows to merge
-- Useful for hierarchical data (year + month, store + date, etc.)
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.merge(left, right, on=['store_id', 'quarter'])` | Require both key values to match | `DataFrame` joined on the composite key |
+
+Every listed key column must match. Composite keys are useful for hierarchical identifiers such as year plus month, or store plus date.
+
+### Code Snippet: Merge on multiple columns
 
 ```python
 # Sales data by store and date
@@ -283,13 +293,16 @@ display(merged)
 
 When both DataFrames have columns with the same name (besides the merge key), pandas adds suffixes to distinguish them.
 
-**Reference:**
+### Reference Card: Overlapping columns
 
-- Default suffixes: `_x` (left DataFrame) and `_y` (right DataFrame)
-- `suffixes=('_left', '_right')` - Custom suffixes for clarity
-- `suffixes=('_old', '_new')` - Useful for comparing versions
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | Suffixed output columns |
+| `suffixes=('_left', '_right')` | Custom suffixes for clarity | Clear left/right column names |
+| `suffixes=('_old', '_new')` | Useful for comparing versions | Clear version column names |
+
+### Code Snippet: Name overlapping columns
 
 ```python
 # Both DataFrames have 'total' column
@@ -334,12 +347,15 @@ An index supplies row labels. When pandas aligns objects, equal labels identify 
 
 `join()` is a simpler alternative to `merge()` when working with indexes: it defaults to a left join on index labels.
 
-**Reference:**
-- `df1.join(df2)` - Left join on index (default)
-- `df1.join(df2, how='outer')` - Outer join on index
-- `df1.join(df2, on='key')` - Join df2's index to df1's 'key' column
+### Reference Card: Index-based combination
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df1.join(df2)` | Left join on index (default) | Index-aligned DataFrame |
+| `df1.join(df2, how='outer')` | Outer join on index | Index-aligned DataFrame |
+| `df1.join(df2, on='key')` | Match df1's key column against df2's index | Joined `DataFrame`, retaining df1's index |
+
+### Code Snippet: Join aligned indexes
 
 ```python
 # Time series data with dates as index
@@ -361,14 +377,17 @@ display(combined)
 
 Use `combine_first()` when two aligned sources represent the same variables and the caller is the authoritative source while the other is a fallback. This is a label-based patch operation, not a way to combine observations from different periods.
 
-**Reference:**
+### Reference Card: `combine_first()`
 
-- `df1.combine_first(df2)` - Fill missing values in df1 with values from df2
-- Works by index alignment - matching index values are combined
-- Preserves non-null values from calling DataFrame
-- Fills NaN values with values from other DataFrame
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df1.combine_first(df2)` | Fill gaps using the same row and column labels in df2 | New `DataFrame`; non-null df1 values win |
+| Row and column coverage | Keep the union of both sets of labels | Rows or columns found only in df2 are included |
+
+The calling DataFrame keeps its non-null values; missing values are filled from the fallback.
+
+### Code Snippet: Patch from a fallback source
 
 ```python
 # A primary extract plus a lower-priority repair source, keyed by product
@@ -403,7 +422,13 @@ It's important to make sure your analysis destroys as much information as it pro
 
 Concatenation combines DataFrames by stacking them together, either adding rows (vertical) or columns (horizontal). Unlike merging, concatenation doesn’t use keys - it simply glues DataFrames together.
 
-**Visual Guide - Concatenation Types:**
+| Goal | Call | Alignment rule | Main risk |
+| --- | --- | --- | --- |
+| Add observations | `pd.concat(frames, ignore_index=True)` | Rows are appended | Duplicate or incompatible columns |
+| Add measured fields | `pd.concat(frames, axis=1)` | Index labels align | Unrelated indexes appear to match |
+| Keep only shared fields | `pd.concat(frames, join='inner')` | Columns intersect | Silent loss of columns |
+
+### Visual Guide: Concatenation axes
 
 ```
 VERTICAL CONCATENATION (axis=0)     HORIZONTAL CONCATENATION (axis=1)
@@ -438,15 +463,16 @@ DataFrame B:                               =
 
 The most common use case - combining datasets with the same columns.
 
-**Reference:**
+### Reference Card: Vertical `concat()`
 
-- `pd.concat([df1, df2, df3])` - Stack DataFrames vertically (default axis=0)
-- `pd.concat([df1, df2], axis=0)` - Explicit vertical stacking
-- `pd.concat([df1, df2], ignore_index=True)` - Reset index to 0, 1, 2, …
-- `pd.concat([df1, df2], join='outer')` - Union of columns (default)
-- `pd.concat([df1, df2], join='inner')` - Intersection of columns only
+| Call | Purpose | Result |
+| --- | --- | --- |
+| `pd.concat([df1, df2])` | Stack rows (`axis=0`) | Appended rows; indexes may repeat |
+| `ignore_index=True` | Replace source indexes | Fresh `RangeIndex` |
+| `join='outer'` | Keep union of columns | Missing fields become `NaN` |
+| `join='inner'` | Keep intersection of columns | Non-shared fields dropped |
 
-**Example:**
+### Code Snippet: Stack rows
 
 ```python
 # Sales data from different months
@@ -497,14 +523,15 @@ display(combined)
 
 Horizontal concatenation is useful for adding related columns side-by-side when both objects already use the same row labels.
 
-**Reference:**
+### Reference Card: Horizontal `concat()`
 
-- `pd.concat([df1, df2], axis=1)` - Stack DataFrames horizontally
-- Indexes are aligned - matching index values are joined
-- Missing indexes result in NaN values
-- Use only when index labels represent the same row identity in every object
+| Call / rule | Purpose | Result |
+| --- | --- | --- |
+| `pd.concat([df1, df2], axis=1)` | Add columns | Index labels align rows |
+| Shared index labels | Define row identity | Matching labels share a row |
+| Missing labels | Preserve unmatched rows | `NaN` in absent fields |
 
-**Example:**
+### Code Snippet: Align columns by index
 
 ```python
 # Put the real identity in the index before aligning independent sources.
@@ -538,12 +565,15 @@ Do not rely on default `RangeIndex` values from independently loaded tables: two
 
 For the vertical concatenation shown here, `join=` is the **column-set alignment mode**, not a relational join. It tells `concat()` whether to keep the union or intersection of columns on the non-concatenation axis.
 
-**Reference:**
+### Reference Card: `concat(join=...)`
 
-- `join='outer'` (default) - Keep ALL columns from both DataFrames (union)
-- `join='inner'` - Keep only COMMON columns (intersection)
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `join='outer'` (default) | Keep all columns from both frames | Union of columns |
+| `join='inner'` | Keep only columns shared by all inputs | Stacked `DataFrame` with the column intersection |
+
+### Code Snippet: Choose a column set
 
 ```python
 # Different columns in each DataFrame
@@ -589,7 +619,12 @@ display(inner)
 
 The same observations can often be represented in **wide** or **long** form. In the student-score example below, wide form gives each subject its own column, while long form gives each student-subject observation its own row. Neither shape is universally better; choose the shape required by the next operation.
 
-**Visual Guide - Wide vs Long Format:**
+| Shape | One row represents | Best for | Conversion |
+| --- | --- | --- | --- |
+| Wide | One entity with several measured columns | Side-by-side comparison | `melt()` to long |
+| Long | One entity/variable observation | Grouping and tidy plotting | `pivot()` to wide |
+
+### Visual Guide: Wide and long formats
 
 ```
 WIDE FORMAT (subject columns)       LONG FORMAT (subject-value rows)
@@ -617,7 +652,7 @@ Useful for: matrix-like comparisons            Useful for: grouping/filtering by
 
 In this example, wide format has one row per student and a separate column for each subject. In other datasets, the row meaning may be different; “wide” describes values spread across columns, not a universal one-row-per-entity rule.
 
-**Example:**
+### Code Snippet: Inspect wide data
 
 ```python
 # Wide format: Student test scores
@@ -642,7 +677,7 @@ display(wide_data)
 
 Here, long format records one measured value per row: the `student` and `subject` columns identify the observation, and `score` contains its value.
 
-**Example:**
+### Code Snippet: Inspect long data
 
 ```python
 # Long format: Same data, different structure
@@ -675,15 +710,15 @@ display(long_data)
 
 The `pivot()` method reshapes long data to wide form without aggregating values.
 
-**Reference:**
+### Reference Card: `pivot()`
 
-- `df.pivot(index='row_labels', columns='col_labels', values='data')` - Basic pivot
-- `index` - Column to use for row labels
-- `columns` - Column to use for column labels
-- `values` - Column containing the data values
-- **Critical:** Works only when index/columns combinations are unique!
+| Argument | Purpose | Constraint / output |
+| --- | --- | --- |
+| `index` | Column becoming row labels | One row per index value |
+| `columns` | Column becoming headers | One column per value |
+| `values` | Column filling cells | Duplicate index/column pairs raise an error |
 
-**Example:**
+### Code Snippet: Pivot long data
 
 ```python
 # Convert long format to wide format
@@ -725,15 +760,16 @@ sales_pivot = pd.pivot_table(sales, values='amount',
 
 The `melt()` function reshapes selected wide columns into variable-value rows.
 
-**Reference:**
+### Reference Card: `melt()`
 
-- `pd.melt(df, id_vars=['id_col'], value_vars=['col1', 'col2'])` - Basic melt
-- `id_vars` - Columns to keep as identifier variables
-- `value_vars` - Columns to unpivot (if None, uses all columns except id_vars)
-- `var_name` - Name for the new ‘variable’ column (default: ‘variable’)
-- `value_name` - Name for the new ‘value’ column (default: ‘value’)
+| Argument | Purpose | Output |
+| --- | --- | --- |
+| `id_vars` | Columns to keep fixed | Identifier columns repeated |
+| `value_vars` | Columns to unpivot | One row per source row and selected value column |
+| `var_name` | Name for former column labels | Variable column |
+| `value_name` | Name for former cell values | Value column |
 
-**Example:**
+### Code Snippet: Melt wide data
 
 ```python
 # Convert wide format to long format
@@ -763,7 +799,7 @@ display(long)
 
 **Why this matters:** Reshaping changes structure, not the underlying observations; the appropriate form depends on the plotting, grouping, or modeling interface you are using.
 
-**Visual guide - Wide to Long to Wide workflow:**
+### Visual Guide: Reshape workflow
 
 ```
 WIDE FORMAT                           LONG FORMAT
@@ -804,15 +840,17 @@ In the pandas 3 Copy-on-Write model, treat index changes as transformations: cap
 
 `set_index()` moves one or more columns into the row labels, enabling label-based selection and alignment on those values.
 
-**Reference:**
+### Reference Card: `set_index()`
 
-- `df.set_index('column')` - Make column the new index
-- `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
-- `drop=False` - Keep the column in the DataFrame (default is True, removes it)
-- `df.index.is_unique` - Check whether the resulting index labels are unique
-- Capture the returned object, as in `indexed = df.set_index('column')`
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.set_index('column')` | Make column the new index | DataFrame with new index |
+| `df.set_index(['col1', 'col2'])` | Create MultiIndex from multiple columns | DataFrame with new index |
+| `drop=False` | Keep the column in the DataFrame (default is True, removes it) | DataFrame retains the source column |
+| `df.index.is_unique` | Test that all row labels are unique | `True` when no labels repeat; otherwise `False` |
+
+### Code Snippet: Set an identifier index
 
 ```python
 # Employee data
@@ -852,13 +890,15 @@ display(indexed.loc['E002'])  # Bob's record
 
 The opposite operation - converts index back to a regular column.
 
-**Reference:**
+### Reference Card: `reset_index()`
 
-- `df.reset_index()` - Move index to column(s)
-- `drop=True` - Discard the index instead of converting to column
-- Capture or reassign the returned object, as in `flat = df.reset_index()`
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.reset_index()` | Move index labels into columns | New `DataFrame` with a default `RangeIndex` |
+| `df.reset_index(drop=True)` | Discard old labels instead of saving them as columns | New `DataFrame` with a default `RangeIndex` |
+
+### Code Snippet: Restore an identifier column
 
 ```python
 # Move index back to a column
@@ -887,15 +927,18 @@ display(dropped)
 
 *MultiIndex (hierarchical indexing) represents each row or column label with more than one level, such as a `(region, quarter)` pair.*
 
-**Reference:**
+### Reference Card: MultiIndex basics
 
-- `df.set_index(['col1', 'col2'])` - Create MultiIndex from multiple columns
-- `df.index.names = ['level1', 'level2']` - Name the index levels
-- `df.loc[('key1', 'key2'), :]` - Access a specific two-level row label
-- `df.swaplevel(0, 1)` - Swap index levels
-- `df.sort_index(level=0)` - Sort by specific level
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.set_index(['col1', 'col2'])` | Create MultiIndex from multiple columns | DataFrame with new index |
+| `df.index.names = ['level1', 'level2']` | Set metadata names for the two levels | Updates level names; label values stay the same |
+| `df.loc[('key1', 'key2'), :]` | Access a specific two-level row label | Selected row or rows |
+| `df.swaplevel(0, 1)` | Exchange the two index levels without sorting rows | New `DataFrame` with reordered index levels |
+| `df.sort_index(level=0)` | Sort by specific level | Sorted DataFrame |
+
+### Code Snippet: Build a MultiIndex
 
 ```python
 # Sales data

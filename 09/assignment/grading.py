@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.14,<3.15"
+# requires-python = ">=3.13,<3.14"
 # dependencies = [
 #   "ipykernel==6.29.5",
 #   "nbclient==0.10.2",

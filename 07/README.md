@@ -35,7 +35,7 @@ This lecture uses prepared plotting tables so you can focus on choosing honest e
 - Optional survey: plotnine, Bokeh, and Plotly
 
 
-![xkcd 1945: Scientific Paper Graph Quality](https://imgs.xkcd.com/comics/scientific_paper_graph_quality.png)
+![xkcd 1945: Scientific Paper Graph Quality](media/xkcd_1945.png)
 
 *"The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn't support our hypothesis."*
 
@@ -69,15 +69,37 @@ An **exploratory visualization** helps the analyst inspect patterns, distributio
 
 An **explanatory visualization** communicates one selected finding to a named audience. It removes irrelevant alternatives, adds context and annotation, and uses a title or caption that states what the reader should notice without overstating the evidence.
 
-![xkcd 1845, “State Word Map”: a satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](https://imgs.xkcd.com/comics/state_word_map.png)
+![xkcd 1845, “State Word Map”: a satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](media/xkcd_1845.png)
 
-*[xkcd 1845, “State Word Map”](https://xkcd.com/1845/) — If flexible method choices can produce any headline, the chart is not evidence.*
+*xkcd 1845, “State Word Map”* — If flexible method choices can produce any headline, the chart is not evidence.
 
 ## Think in marks and encodings
 
 A **mark** is a visible object such as a point, line, or rectangle. An **encoding** maps a data value to a visible property such as horizontal position, vertical position, length, color, marker shape, or line style.
 
 Position along a common scale usually supports more precise comparison than area or decorative volume. Color can distinguish categories, but color alone is fragile: some readers cannot distinguish the selected hues, and grayscale reproduction may remove the distinction. When category identity matters, pair color with a redundant encoding such as marker shape, line style, direct labeling, or position.
+
+### Reference Card: Visualization Contract
+
+| Question | What to record | Useful output |
+| :--- | :--- | :--- |
+| **Question** | The comparison or pattern the reader should inspect | One-sentence chart claim |
+| **Audience** | Who will use the chart and what context they have | Appropriate labels and annotation |
+| **Unit and grain** | What one mark and one plotting-table row represent | A defensible aggregation level |
+| **Variable role** | Type plus role: measure, group, time, or identifier | Candidate x, y, color, or shape encoding |
+| **Accessibility** | A redundant cue and text alternative for the main comparison | A chart usable without color or hover |
+
+### Code Snippet: State the Contract Before Plotting
+
+```python
+plot_spec = {
+    "question": "Do guided sessions finish with higher prepared scores?",
+    "unit": "one program-by-round summary",
+    "measure": "mean prepared score",
+    "group": "pathway",
+    "encoding": "x=round, y=score, color+marker=pathway",
+}
+```
 
 # Edward Tufte's Principles of Data Visualization
 
@@ -90,7 +112,7 @@ Edward Tufte, the pioneer of information design, established fundamental princip
 **Essential Reading:**
 
 - [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi) - Tufte's seminal work
-- [Envisioning Information](https://www.edwardtufte.com/tufte/books_ei) - Color, layering, and detail
+- [Envisioning Information](https://www.edwardtufte.com/book/envisioning-information/) - Color, layering, and detail
 - [Tufte's website](https://www.edwardtufte.com/) - Essays and resources
 
 **1. Data-Ink Ratio: Maximize the Data-Ink**
@@ -151,6 +173,15 @@ Use small, repeated charts with the same scale to enable easy comparison across 
 
 Show as much detail as the data allows - don't oversimplify or aggregate unnecessarily.
 
+### Reference Card: Tufte's Checks
+
+| Check | Ask | Typical remedy |
+| :--- | :--- | :--- |
+| **Data-ink** | Does every prominent mark carry information? | Remove decoration, heavy grids, and redundant labels |
+| **Lie factor** | Does visual effect size match the data effect? | Use honest limits, units, and an appropriate baseline |
+| **Small multiples** | Are repeated groups comparable? | Keep scale and encoding consistent across panels |
+| **Resolution** | Did aggregation hide meaningful variation? | Show raw points or label the summary clearly |
+
 ## Before/After Examples: Applying Tufte's Principles
 
 ### Example 1: Bar Chart Redesign
@@ -179,7 +210,7 @@ Different data types require different color strategies:
 
 **Additional Resources:**
 - [ColorBrewer 2.0](https://colorbrewer2.org/) - Interactive color advice for maps and visualizations
-- [Colorblind-Safe Palettes](https://personal.sron.nl/~pault/) - Paul Tol's color schemes
+- [Colorblind-Safe Palettes](https://sronpersonalpages.nl/~pault/) - Paul Tol's color schemes
 - [Adobe Color](https://color.adobe.com/) - Create and explore color schemes
 
 ## The Right Chart for the Job
@@ -242,35 +273,16 @@ plt.show()
 
 *Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart. But don't worry - we'll focus on the essential tools that actually matter for daily data science work.*
 
-**Visual Guide - Python Visualization Stack:**
+**Visual Guide - Plotting Backends:**
 
 ```
-FOUNDATION LAYER
-┌─────────────────────────────────────┐
-│           matplotlib                │  ← Low-level, highly customizable
-│     (The foundation of everything)   │
-└─────────────────────────────────────┘
-                    ↑
-                    │
-            PANDAS LAYER
-┌─────────────────────────────────────┐
-│         pandas.plot()              │  ← Quick exploration, built on matplotlib
-│     (DataFrame/Series plotting)     │
-└─────────────────────────────────────┘
-                    ↑
-                    │
-            STATISTICAL LAYER
-┌─────────────────────────────────────┐
-│           seaborn                   │  ← Statistical plots, beautiful defaults
-│     (Built on matplotlib)           │
-└─────────────────────────────────────┘
-                    ↑
-                    │
-            MODERN LAYER
-┌─────────────────────────────────────┐
-│    altair (vega-lite)               │  ← Grammar of graphics, interactive
-│    plotnine (ggplot2)               │  ← R's ggplot2 in Python
-└─────────────────────────────────────┘
+matplotlib ← pandas .plot() (default backend)
+           ← seaborn
+           ← plotnine
+
+Vega-Lite  ← Altair
+
+Arrows mean “renders through,” not a required learning order.
 ```
 
 ## Choosing the Right Tool
@@ -295,15 +307,17 @@ matplotlib is the bedrock of Python visualization. While it can be verbose, unde
 
 Every matplotlib plot lives within a `Figure` object, which can contain multiple `subplots` (individual plot areas).
 
-**Reference:**
+### Reference Card: Figures and Subplots
 
-- `plt.figure(figsize=(width, height))` - Create a new figure
-- `fig.add_subplot(rows, cols, position)` - Add subplot to figure
-- `plt.subplots(rows, cols)` - Create figure with multiple subplots
-- `fig.savefig('filename.png', dpi=300)` - Save figure to file
-- `plt.show()` - Display the plot
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `plt.figure(figsize=(w, h))` | Create a figure, with dimensions in inches | `Figure` |
+| `plt.subplots(rows, cols, figsize=(w, h))` | Create a figure and grid of axes | Figure plus one Axes or an array of Axes |
+| `fig.add_subplot(rows, cols, position)` | Add one axes to an existing figure | `Axes` |
+| `fig.savefig(path, dpi=300)` | Save the current figure at a chosen resolution | Image file |
+| `plt.show()` | Render the figure in an interactive session | Displayed figure |
 
-**Example:**
+### Code Snippet: Figure and Subplot Layout
 
 ```python
 import matplotlib.pyplot as plt
@@ -337,18 +351,17 @@ plt.show()
 
 matplotlib's power comes from its extensive customization options.
 
-**Reference:**
+### Reference Card: Axes Customization
 
-- `ax.set_title('Title')` - Set plot title
-- `ax.set_xlabel('X Label')` - Set x-axis label
-- `ax.set_ylabel('Y Label')` - Set y-axis label
-- `ax.set_xlim(min, max)` - Set x-axis limits
-- `ax.set_ylim(min, max)` - Set y-axis limits
-- `ax.grid(True)` - Add grid lines
-- `ax.legend()` - Add legend
-- `plt.style.use('ggplot')` - Set a matplotlib style before creating figures
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `ax.set(title=..., xlabel=..., ylabel=...)` | Set visible context for the reader | Updated `Axes` |
+| `ax.set_xlim(left, right)` / `ax.set_ylim(bottom, top)` | Control displayed ranges; use deliberately | Updated limits |
+| `ax.grid(axis='y', alpha=0.3)` | Add restrained reference lines | Updated `Axes` |
+| `ax.legend()` | Decode labeled series when direct labels are not enough | Legend artist |
+| `plt.style.use(name)` | Apply a named style before creating figures | Global style setting |
 
-**Example:**
+### Code Snippet: Axes Customization
 
 ```python
 # Create a customized plot
@@ -382,20 +395,15 @@ plt.show()
 
 matplotlib offers extensive control over visual elements.
 
-**Reference:**
+### Reference Card: Colors, Markers, and Line Styles
 
-**Colors:**
-- Named colors: `'red'`, `'blue'`, `'green'`
-- Hex colors: `'#FF5733'`, `'#2E8B57'`
-- RGB tuples: `(0.1, 0.2, 0.5)`
+| Property | Examples | Use |
+| :--- | :--- | :--- |
+| **Color** | `'steelblue'`, `'#0072B2'`, `(0.1, 0.2, 0.5)` | Distinguish categories or encode magnitude |
+| **Line style** | `'-'`, `'--'`, `'-.'`, `':'` | Reinforce series identity or meaning |
+| **Marker** | `'o'`, `'s'`, `'^'`, `'*'` | Reinforce category identity and show observations |
 
-**Line Styles:**
-- `'-'` solid, `'--'` dashed, `'-.'` dash-dot, `':'` dotted
-
-**Markers:**
-- `'o'` circle, `'s'` square, `'^'` triangle, `'*'` star
-
-**Example:**
+### Code Snippet: Visual Styles
 
 ```python
 # Demonstrate different styles
@@ -419,7 +427,7 @@ plt.show()
 
 *matplotlib provides extensive options for colors, markers, and line styles to create visually distinct data series.*
 
-![xkcd 833: Convincing](https://imgs.xkcd.com/comics/convincing.png)
+![xkcd 833: Convincing](media/xkcd_833.png)
 
 *"And if you don't label your axes, I'm leaving you." - The importance of proper chart labeling, illustrated.*
 
@@ -429,16 +437,18 @@ plt.show()
 
 *Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
 
-**Reference:**
+### Reference Card: pandas Plotting
 
-- `df.plot()` - Line plot (default)
-- `df.plot(kind='bar')` - Bar chart
-- `df.plot(kind='hist')` - Histogram
-- `df.plot(kind='scatter', x='col1', y='col2')` - Scatter plot
-- `df.plot(kind='box')` - Box plot
-- `df.plot(kind='pie', y='col')` - Pie chart for one named DataFrame column
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `df.plot()` | Quick line plot of numeric columns | `Axes` |
+| `df.plot(kind='bar')` | Compare values across categories | `Axes` |
+| `df.plot(kind='hist', bins=...)` | Inspect numeric distributions | `Axes` |
+| `df.plot(kind='scatter', x='col1', y='col2')` | Inspect a two-variable relationship | `Axes` |
+| `df.plot(kind='box')` | Compare distributions and outliers | `Axes` |
+| `df.plot(kind='pie', y='col')` | Show nonnegative values as parts of their total | `Axes` |
 
-**Example:**
+### Code Snippet: Quick pandas Plots
 
 ```python
 import pandas as pd
@@ -477,17 +487,16 @@ plt.show()
 
 ## DataFrame Plotting Options
 
-**Reference:**
+### Reference Card: DataFrame Plot Options
 
-- `subplots=True` - Create separate subplots for each column
-- `figsize=(width, height)` - Set figure size
-- `title='Title'` - Set plot title
-- `xlabel='X Label'` - Set x-axis label
-- `ylabel='Y Label'` - Set y-axis label
-- `legend=True` - Show legend
-- `grid=True` - Add grid lines
+| Option | Purpose and arguments | Output |
+| :--- | :--- | :--- |
+| `subplots=True` | Give each selected column its own axes | Array of `Axes` |
+| `figsize=(width, height)` | Set figure dimensions in inches | Larger or smaller figure |
+| `title=...`, `xlabel=...`, `ylabel=...` | Add reader-facing context | Labeled plot |
+| `legend=True`, `grid=True` | Decode series or add restrained guides | Updated `Axes` |
 
-**Example:**
+### Code Snippet: DataFrame Plot Options
 
 ```python
 # Sales data example
@@ -515,17 +524,18 @@ plt.show()
 
 seaborn builds on matplotlib to provide beautiful statistical visualizations with minimal code. It's the go-to choice for most data analysis tasks.
 
-**Reference:**
+### Reference Card: seaborn Statistical Graphics
 
-- `sns.set_style('whitegrid')` - Set plot style
-- `sns.set_palette('husl')` - Set color palette
-- `sns.scatterplot(x='col1', y='col2', data=df)` - Scatter plot
-- `sns.lineplot(x='col1', y='col2', data=df)` - Line plot
-- `sns.histplot(data=df, x='col')` - Histogram
-- `sns.boxplot(data=df, x='col1', y='col2')` - Box plot
-- `sns.heatmap(data=df)` - Heatmap
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `sns.set_style(name)` / `sns.set_palette(name)` | Set defaults for readable plots | Updated seaborn defaults |
+| `sns.scatterplot(data=df, x=..., y=..., hue=...)` | Show relationships and optional groups | `Axes` |
+| `sns.lineplot(data=df, x=..., y=..., hue=...)` | Show ordered trends and summaries | `Axes` |
+| `sns.histplot(data=df, x=..., kde=True)` | Show distribution, optionally with density | `Axes` |
+| `sns.boxplot(data=df, x=..., y=...)` | Compare distributions and outliers | `Axes` |
+| `sns.heatmap(data=df)` | Encode a matrix as color | `Axes` |
 
-**Example:**
+### Code Snippet: Statistical Plots
 
 ```python
 import seaborn as sns
@@ -563,15 +573,17 @@ plt.show()
 
 The following figure-level and distribution tools are an optional extension; the core lecture uses the axes-level plots above.
 
-**Reference:**
+### Reference Card: Optional seaborn Extensions
 
-- `sns.pairplot(df)` - Pairwise relationships
-- `sns.jointplot(x='col1', y='col2', data=df)` - Joint distribution
-- `sns.violinplot(data=df, x='col1', y='col2')` - Violin plot
-- `sns.stripplot(data=df, x='col1', y='col2')` - Strip plot
-- `sns.catplot(kind='box', data=df, x='col1', y='col2')` - Categorical plot
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `sns.pairplot(df, hue=...)` | Compare every numeric pair | Figure-level grid |
+| `sns.jointplot(data=df, x=..., y=..., kind=...)` | Combine a relationship with marginal distributions | Figure-level plot |
+| `sns.violinplot(data=df, x=..., y=...)` | Show distribution shape by category | `Axes` |
+| `sns.stripplot(data=df, x=..., y=..., hue=...)` | Show individual observations by category | `Axes` |
+| `sns.catplot(kind='box', data=df, x=..., y=...)` | Build a faceted categorical plot | Figure-level grid |
 
-**Example:**
+### Code Snippet: Optional seaborn Extensions
 
 ```python
 # Advanced seaborn visualizations
@@ -603,13 +615,17 @@ plt.show()
 
 Density plots (also called KDE - Kernel Density Estimation) provide a smooth representation of data distribution.
 
-**Reference:**
+![KDE curves for a normal sample centered near zero and a bimodal sample with peaks near minus two and two.](media/distribution_reference.png)
 
-- `df.plot.density()` - Create density plot
-- `sns.histplot(data=df, x='col', kde=True)` - Histogram with density overlay
-- `sns.kdeplot(data=df, x='col')` - Pure density plot
+### Reference Card: Distribution Plots
 
-**Example:**
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `df.plot.density()` | Quick KDE for numeric columns | `Axes` |
+| `sns.histplot(data=df, x='col', kde=True)` | Compare bins with a smooth density estimate | `Axes` |
+| `sns.kdeplot(data=df, x='col')` | Show a smoothed distribution alone | `Axes` |
+
+### Code Snippet: Density Comparisons
 
 ```python
 # Create sample data with different distributions
@@ -651,6 +667,21 @@ plt.show()
 # Altair: Declarative Charts and Interaction
 
 Altair expresses a chart as **data → mark → typed encodings**. This makes the mapping from a table to visible properties explicit and produces a portable Vega-Lite specification. Use type shorthands deliberately: `:Q` for a quantitative measure, `:N` for a nominal category, `:O` for an ordered category, and `:T` for a temporal value.
+
+![Six sessions show reflection scores increasing with activities completed; color and shape distinguish independent and guided pathways. This tiny example demonstrates encodings, not a causal effect.](media/altair_study_reference.png)
+
+### Reference Card: Altair chart construction
+
+| Call | Purpose / arguments | Result |
+| :--- | :--- | :--- |
+| `alt.Chart(study)` | Supply the source DataFrame | Chart to configure |
+| `.mark_point(filled=True, size=90)` | Choose filled points and their area | Chart with point marks |
+| `.encode(x='field:Q', color='group:N')` | Map quantitative and categorical fields to visible properties | Encoded chart |
+| `.encode(tooltip=['field:Q'])` | Choose values shown on hover | Chart with tooltips |
+| `.interactive()` | Add scale-bound pan/zoom interaction | Interactive chart |
+| `alt.hconcat(left, right)` | Place two charts side by side | Compound chart |
+
+### Code Snippet: Encode the study table
 
 ```python
 import altair as alt
@@ -713,7 +744,7 @@ This optional, unassessed survey names alternatives; the same visible-context ru
 | plotly | Dashboards, web applications | Medium | High | HTML/JS | Declarative |
 
 
-![xkcd 1138: Heatmap](https://imgs.xkcd.com/comics/heatmap.png)
+![xkcd 1138: Heatmap](media/xkcd_1138.png)
 
 *"Every single map of the United States looks the same because it's just a population density map." - A reminder that your visualization should show meaningful patterns, not just expected distributions.*
 

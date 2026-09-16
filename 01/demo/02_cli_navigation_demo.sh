@@ -1,66 +1,36 @@
 #!/bin/bash
-set -euo pipefail
 
 echo "=========================================="
-echo "CLI NAVIGATION DEMO"
+echo "DEMO 2: COMMAND-LINE NAVIGATION"
 echo "=========================================="
-
+echo "The shell organizes files; Python will analyze data later."
+echo
 echo "Where am I?"
 pwd
-
-echo -e "\nWhat's here?"
+echo
+echo "What is here?"
 ls
-
-echo -e "\nLet's create a project:"
-mkdir data_project
-cd data_project
-echo "Now in: $(pwd)"
-
-echo -e "\nCreate some structure:"
-mkdir data scripts
-echo "Created directories:"
+echo
+echo "Make a small project and enter it:"
+mkdir cli_practice
+cd cli_practice
+pwd
+echo "Create folders and an empty note:"
+mkdir data scripts results
+touch README.txt
 ls
-
-echo -e "\nMake a data file:"
-echo "name,score" > data/grades.csv
-echo "Alice,95" >> data/grades.csv
-echo "Bob,87" >> data/grades.csv
-
-echo -e "\nView the file:"
-cat data/grades.csv
-
-echo -e "\nTry to analyze it:"
-cat > scripts/analyze.py << 'EOF'
-with open('grades.csv', 'r') as f:
-    # with open('data/grades.csv', 'r') as f:  # <- FIXED
-    print(f.read())
-EOF
-
-echo "Running analysis script..."
-cd scripts
-if python3 analyze.py 2>../path_error.txt; then
-    echo "Unexpected success: inspect the working directory and path."
-else
-    echo "Expected path error captured (the script continues so we can fix it):"
-    cat ../path_error.txt
-fi
-
-cat > analyze.py << 'EOF'
-with open('../data/grades.csv', 'r') as f:
-    print(f.read())
-EOF
-
-echo "Running the corrected analysis script..."
-python3 analyze.py
-
-echo -e "\n💡 Fix: the data path is relative to the scripts/ directory"
-
-echo -e "\nCleanup:"
-cd ../..
-echo "Back to: $(pwd)"
-echo "To remove project after verifying your location: rm -r data_project"
-
-echo -e "\n=========================================="
-echo "Key commands: pwd, ls, mkdir, cd, cat"
-echo "Remember: Check your location with pwd!"
-echo "=========================================="
+echo "Inspect the empty note file:"
+cat README.txt
+echo "Copy and rename the note:"
+cp README.txt results/notes.txt
+mv results/notes.txt results/lecture_notes.txt
+ls results
+echo
+echo "Move back to the starting directory:"
+cd ..
+pwd
+echo "The practice folder is still here:"
+ls cli_practice
+echo
+echo "Key commands: pwd, ls, cd, mkdir, touch, cp, mv, cat"
+echo "Tip: use pwd whenever you are unsure where a relative path starts."

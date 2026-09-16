@@ -13,17 +13,17 @@ Run the scripts from `03/demo`. The two student-analysis scripts locate their bu
 
 # Setup: Create the tested environment
 
-Lecture 03 uses CPython 3.14 and NumPy 2.3.3. With `uv`:
+Lecture 03 uses CPython 3.13 and NumPy 2.3.3. With `uv`:
 
 ```bash
 cd 03/demo
-uv venv --python 3.14 .venv
+uv venv --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 python -c "import sys, numpy as np; print(f'{sys.version_info.major}.{sys.version_info.minor}', np.__version__)"
 ```
 
-The final command should report `3.14 2.3.3`. If `uv` is unavailable, use a Python 3.14 interpreter to create `.venv`, then install the same pinned `requirements.txt` with `python -m pip install -r requirements.txt`.
+The final command should report `3.13 2.3.3`. If `uv` is unavailable, use a Python 3.13 interpreter to create `.venv`, then install the same pinned `requirements.txt` with `python -m pip install -r requirements.txt`.
 
 ## 1. Shell pipeline (scripts before Python/NumPy)
 

@@ -16,7 +16,7 @@ Mid-term: [#FIXME:URL]
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 
 ![Data Pipeline Intro](media/data_pipeline_intro.png)
-*Shows the reality that data cleaning is most of the work - perfect intro to data cleaning lecture*
+*The source-to-analysis path usually includes a substantial cleaning step.*
 
 Lecture 04 ends with an inspection preview. This lecture teaches the pandas tools that do the common cleaning work: handle missing values, detect and resolve duplicates, replace values, apply functions, convert types, create categories, clean strings, sample rows, and validate a result. We will use each operation on a small table first, then combine the operations into one pipeline at the end.
 
@@ -45,15 +45,16 @@ Missingness masks locate values pandas recognizes as absent. Source-specific sen
 
 *Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up.*
 
-**Reference:**
+### Reference Card: Missingness detection
 
-- `df.isna()` - Boolean DataFrame: True for missing values
-- `df.notna()` - Boolean DataFrame: True for non-missing values
-- `df.isna().sum()` - Count missing values per column
-- `df.isna().any()` - True if any missing values in column
-- `df.isna().all()` - True if all values missing in column
+| Tool | Purpose | Output |
+| --- | --- | --- |
+| `df.isna()` / `df.notna()` | Locate missing / observed cells | Boolean `DataFrame` |
+| `df.isna().sum()` | Count gaps per column | Count `Series` |
+| `df.isna().any()` | Test whether a column has a gap | Boolean `Series` indexed by column |
+| `df.isna().all()` | Test whether every value is missing | Boolean `Series` indexed by column |
 
-**Example:**
+### Code Snippet: Count missing values
 
 ```python
 # Check for missing values
@@ -74,16 +75,15 @@ print(missing_summary)
 
 Counts and proportions summarize the pattern by row or column; interpreting its cause still requires source knowledge.
 
-**Reference:**
+### Reference Card: Missingness analysis
 
-- `df.isna().sum()` - Count missing values per column
-- `df.isna().sum(axis=1)` - Count missing values per row
-- `df.isna().mean()` - Proportion of missing values per column
-- `df.dropna()` - Remove rows with any missing values
-- `df.dropna(axis=1)` - Remove columns with any missing values
-- `df.dropna(thresh=n)` - Keep rows with at least n non-null values
+| Tool | Arguments | Output / effect |
+| --- | --- | --- |
+| `df.isna().sum()` | `axis=0` or `1` | Missing counts by column or row |
+| `df.isna().mean()` | — | Missing fraction by column |
+| `df.dropna()` | `axis=0` drops rows; `subset` limits columns checked; `thresh` requires a non-null count | `DataFrame`; by default drops any row containing a gap |
 
-**Example:**
+### Code Snippet: Compare missingness by row and column
 
 ```python
 # Analyze missing data patterns
@@ -101,17 +101,18 @@ print(df_clean.shape)  # (1, 3) - only the first row is complete
 
 Imputation fills missing values under a stated rule. Whether to fill, retain, flag, or drop depends on the variable and analysis.
 
-**Reference:**
+### Reference Card: Missingness imputation
 
-- `df.fillna(value)` - Fill missing values with constant
-- `df.ffill()` - Forward fill (use the previous value)
-- `df.bfill()` - Backward fill (use the next value)
-- `df.fillna(df.mean())` - Fill with column mean
-- `df.fillna(df.median())` - Fill with column median
-- `df.fillna(df.mode().iloc[0])` - Fill with column mode
-- `df.interpolate()` - Interpolate missing values
+| Tool | Rule / arguments | Output / caution |
+| --- | --- | --- |
+| `df.fillna(value)` | Constant or per-column mapping | New `DataFrame` with gaps filled |
+| `df.ffill()` / `df.bfill()` | Previous / next observed value | Fill depends on row order and boundaries |
+| `df.fillna(df.mean(numeric_only=True))` | Fill numeric gaps with column means | `DataFrame`; nonnumeric gaps remain |
+| `df.fillna(df.median(numeric_only=True))` | Fill numeric gaps with column medians | `DataFrame`; medians resist extreme values |
+| `df.fillna(df.mode().iloc[0])` | Fill with the first mode per column | Requires at least one observed value; decide how to handle ties |
+| `df.interpolate()` | Linear interpolation on numeric data by default | `DataFrame`; assumes equally spaced positions unless another method is chosen |
 
-**Example:**
+### Code Snippet: Apply a documented fill rule
 
 ```python
 # Fill missing values
@@ -125,11 +126,9 @@ print(df_filled)  # Missing values replaced with 0
 df_mean = df.fillna(df.mean())
 print(df_mean)  # Missing values replaced with column mean
 
-# This generic A/B fixture has no date column.  Do not call `ffill()` on it:
-# a fill rule requires a documented row order and entity boundary.  Inspect a
-# date column only after that contract is available, then decide whether to
-# parse, retain, flag, or fill its missing values.
-print('Decision: no forward fill without documented order and entity boundaries.')
+# One sensor, already in time order; carry its last reading through one gap.
+readings = pd.Series([10.0, None, None, 15.0])
+print(readings.ffill(limit=1))  # [10.0, 10.0, NaN, 15.0]
 ```
 
 ```
@@ -147,20 +146,25 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
 
 # Data Transformation Techniques
 
+Cleaning operations change meaning only when their rule is explicit. Keep the raw table, transform a working copy, and validate the resulting schema before saving it.
+
 ## Detecting and Resolving Duplicates
 
 Repeated rows or identifiers are evidence to investigate, not an instruction to delete. Use the row meaning, candidate identifier, source process, and any timestamps or version fields to decide whether records are redundant, conflicting, or valid repeated observations.
 
 *Fun fact: Duplicates are like that one song that gets stuck in your head - they keep showing up everywhere, even when you think you've gotten rid of them all.*
 
-**Reference:**
+### Reference Card: Duplicate detection
 
-- `df.duplicated()` - Check for duplicate rows
-- `df.drop_duplicates()` - Remove duplicate rows
-- `df.drop_duplicates(subset=['col1', 'col2'])` - Remove duplicates in specific columns
-- `df.drop_duplicates(keep='first')` - Keep first occurrence of duplicates
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.duplicated()` | Flag identical rows after the first occurrence | Boolean `Series`; index labels are ignored |
+| `df.drop_duplicates()` | Remove duplicate rows | Deduplicated DataFrame |
+| `df.drop_duplicates(subset=['col1', 'col2'])` | Compare only these columns; keep the first matching row | Deduplicated `DataFrame`, retaining all columns |
+| `df.drop_duplicates(keep='first')` | Keep first occurrence of duplicates | Deduplicated DataFrame |
+
+### Code Snippet: Resolve repeated rows
 
 ```python
 # Check for duplicates
@@ -178,15 +182,18 @@ The `replace()` method provides a flexible way to substitute specific values or 
 
 *Think of `replace()` as find-and-replace for your data - but way more powerful than Word's version!*
 
-**Reference:**
+### Reference Card: Value replacement
 
-- `df.replace(old, new)` - Replace single value
-- `df.replace([val1, val2], new)` - Replace multiple values with same replacement
-- `df.replace([val1, val2], [new1, new2])` - Replace multiple values with different replacements
-- `df.replace({val1: new1, val2: new2})` - Dictionary mapping
-- `df.replace(regex=True)` - Use regular expressions
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.replace(old, new)` | Replace one exact value | New `DataFrame` with replacements |
+| `df.replace([val1, val2], new)` | Replace several values with one value | New `DataFrame` with replacements |
+| `df.replace([val1, val2], [new1, new2])` | Pair old and new values by position | New `DataFrame`; lists must have equal lengths |
+| `df.replace({val1: new1, val2: new2})` | Map old values to replacements | New `DataFrame` with replacements |
+| `df.replace(pattern, replacement, regex=True)` | Replace regex matches in text values | New `DataFrame` with replacements |
+
+### Code Snippet: Replace sentinels and labels
 
 ```python
 # Replace sentinel values with NaN
@@ -196,8 +203,8 @@ print(df_clean)  # [1.0, NaN, 2.0, NaN, NaN, 3.0]
 
 # Different replacement for each value
 df = pd.Series(['low', 'medium', 'high', 'low'])
-df_mapped = df.replace({'low': 1, 'medium': 2, 'high': 3})
-print(df_mapped)  # [1, 2, 3, 1]
+df_mapped = df.replace({'low': 'L', 'medium': 'M', 'high': 'H'})
+print(df_mapped)  # ['L', 'M', 'H', 'L']
 
 # Column-specific replacement in DataFrame
 df = pd.DataFrame({'A': [1, 2, 3], 'B': ['x', 'y', 'z']})
@@ -208,21 +215,24 @@ print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
 ## Applying Custom Functions
 
 ![xkcd 1205 "Is It Worth the Time?"](media/xkcd_1205_apply.png)
-*Classic time-saving calculation chart - perfect for .apply() section*
+*A reminder to compare the time spent automating with the time it saves.*
 
 Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis.
 
 **Quick lambda primer**: A `lambda` is a one-line anonymous function, perfect for simple transformations: `lambda x: x * 2` is equivalent to `def double(x): return x * 2`, just more concise for one-time use.
 
-**Reference:**
+### Reference Card: Custom functions
 
-- `series.map(dict_or_func)` - Map individual Series values with a function or dictionary
-- `df.map(func)` - Map individual elements across the entire DataFrame
-- `series.apply(func)` - Invoke a function along a Series
-- `df.apply(func, axis=0)` - Invoke a function on each column (`axis=0`, the default)
-- `df.apply(func, axis=1)` - Invoke a function on each row (`axis=1`)
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.map(dict_or_func)` | Transform values or look them up in a dictionary | `Series`; unmatched dictionary keys become missing |
+| `df.map(func)` | Pass each individual cell value to a function | `DataFrame` with the same shape |
+| `series.apply(func)` | An ordinary Python callable receives each value by default | Usually a `Series`; returned Series values expand into a `DataFrame` |
+| `df.apply(func, axis=0)` | Pass each column as a Series | Scalar returns produce a `Series` indexed by column |
+| `df.apply(func, axis=1)` | Pass each row as a Series | Scalar returns produce a `Series` indexed by row |
+
+### Code Snippet: Map and apply transformations
 
 ```python
 # Apply custom numeric logic along a Series
@@ -270,16 +280,19 @@ Converting data to the correct types is essential for proper analysis. This incl
 
 *Warning: Data type conversion is like trying to fit a square peg in a round hole - sometimes it works perfectly, sometimes you need to shave off a few corners, and sometimes you just need to find a different hole entirely.*
 
-**Reference:**
+### Reference Card: Type conversion
 
-- `df.astype('int64')` - Convert to integer
-- `series.astype('Int64')` - Convert to pandas' nullable integer type
-- `df.astype('float64')` - Convert to float
-- `series.astype('string')` - Explicitly request nullable string data
-- `pd.to_datetime(df['date_column'])` - Convert to datetime
-- `pd.to_numeric(df['column'], errors='coerce')` - Convert to numeric, errors become NaN
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.astype('int64')` | Convert all columns to NumPy integers | `DataFrame`; missing values cannot be represented |
+| `series.astype('Int64')` | Convert to pandas' nullable integer type | Integer `Series` that supports `pd.NA` |
+| `df.astype('float64')` | Convert all columns to floating point | Converted `DataFrame` |
+| `series.astype('string')` | Request nullable string data | `Series` with `pd.NA` for missing values |
+| `pd.to_datetime(df['date_column'])` | Convert to datetime | Datetime Series |
+| `pd.to_numeric(df['column'], errors='coerce')` | Parse numbers and mark invalid values missing | Numeric `Series`; missing marker is `NaN` or `pd.NA`, depending on dtype |
+
+### Code Snippet: Convert nullable values
 
 ```python
 # Convert strings and whole-valued floats to integers
@@ -300,16 +313,19 @@ NumPy's lowercase `int64` cannot represent a missing value. Pandas' capital-I nu
 
 Renaming changes row or column labels without modifying data. This is essential for making your data more readable and standardizing column names.
 
-**Reference:**
+### Reference Card: Renaming labels
 
-- `df.rename(index={old: new})` - Rename rows
-- `df.rename(columns={old: new})` - Rename columns
-- `df.rename(columns=str.lower)` - Apply function to all columns
-- `df.rename(columns=str.strip)` - Remove whitespace from column names
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.rename(index={old: new})` | Rename rows | DataFrame with revised labels |
+| `df.rename(columns={old: new})` | Rename columns | DataFrame with revised labels |
+| `df.rename(columns=str.lower)` | Lowercase every string column label | `DataFrame` with revised labels |
+| `df.rename(columns=str.strip)` | Remove whitespace from column names | DataFrame with revised labels |
 
 Prefer assigning the returned object, as below. For targeted value changes, assign directly with `.loc`; these forms are clear under pandas 3 Copy-on-Write behavior.
 
-**Example:**
+### Code Snippet: Rename columns and index labels
 
 ```python
 # Rename specific columns
@@ -338,17 +354,20 @@ Converting continuous variables into categories makes data easier to analyze and
 
 *Pro tip: Categories are like putting your data in organized boxes - everything has its place, and you can find things much faster when you know exactly which box to look in.*
 
-**Reference:**
+### Reference Card: Categorical variables
 
-- `pd.cut(series, bins=4)` - Cut the value range into four equal-width bins
-- `pd.cut(series, bins=[...])` - Cut at explicitly supplied edges (not necessarily equal-width)
-- `pd.qcut(series, q)` - Cut into equal-frequency bins
-- `bins=[0, 18, 35, 50, 100]` - Custom bin edges
-- `labels=['Young', 'Middle', 'Senior']` - Custom labels for bins
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.cut(series, bins=4)` | Cut the value range into four equal-width bins | Categorical Series of bins |
+| `pd.cut(series, bins=[...])` | Cut at explicitly supplied edges (not necessarily equal-width) | Categorical Series of bins |
+| `pd.qcut(series, q)` | Use quantiles to target equal-frequency bins | Categorical `Series`; duplicate edges raise by default |
+| `bins=[0, 30, 50, 100]` | Supply three explicit intervals | `(0, 30]`, `(30, 50]`, `(50, 100]` by default |
+| `labels=['Young', 'Middle', 'Senior']` | Name the three bins | One label per bin is required |
 
 `cut` uses supplied value-range edges (equal-width only when you ask for equal-width bins); `qcut` derives edges from sample quantiles so bins target similar row counts. Ties can make quantile edges duplicate, so inspect the result and use an explicit duplicate-edge policy when needed.
 
-**Example:**
+### Code Snippet: Create ordered categories
 
 ```python
 # Create age groups
@@ -361,16 +380,19 @@ print(age_groups)  # [Young, Young, Middle, Senior, Senior]
 
 Outliers are extreme values that may represent errors, rare but valid observations, or important anomalies. A statistical rule can flag candidates, but source evidence, domain meaning, and analysis purpose determine whether to keep, correct, cap, or exclude them.
 
-![IQR Method for Outlier Detection](https://upload.wikimedia.org/wikipedia/commons/8/89/Boxplot_vs_PDF.png)
+![IQR Method for Outlier Detection](media/boxplot_vs_pdf.png)
 
-**Reference:**
+### Reference Card: Outlier checks
 
-- `df[df['col'] > threshold]` - Filter by threshold
-- `df.clip(lower, upper)` - Cap values at bounds
-- `df.quantile([0.25, 0.75])` - Find quartiles for IQR method
-- `df[df['col'].between(lower, upper)]` - Keep rows whose selected value is within bounds
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df[df['col'] > threshold]` | Filter by threshold | Filtered DataFrame |
+| `df.clip(lower, upper)` | Cap comparable values at bounds | `DataFrame` with values limited to the bounds |
+| `df.quantile([0.25, 0.75], numeric_only=True)` | Find numeric quartiles for the IQR method | `DataFrame` indexed by quantile |
+| `df[df['col'].between(lower, upper)]` | Keep rows whose selected value is within inclusive bounds | Filtered `DataFrame` |
+
+### Code Snippet: Flag unusual values
 
 ```python
 # Flag values beyond 3 standard deviations
@@ -408,14 +430,18 @@ The categorical type represents a finite set of values and optional ordering. It
 ![Categorical Encoding](media/categorical_encoding_diagram.png)
 *Visual showing categorical encoding: Original values → Categories → Codes, with a storage comparison*
 
-**Reference:**
+### Reference Card: Categorical dtype
 
-- `astype('category')` - Convert to categorical
-- `cat.categories` - View categories
-- `cat.codes` - View numeric codes
-- Use for: Repeated string values, ordered categories
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.astype('category')` | Convert values to categorical storage | Categorical `Series` |
+| `series.cat.categories` | View the category vocabulary | `Index` of category labels |
+| `series.cat.codes` | Inspect each value's category position | Integer `Series`; missing values use code `-1` |
+
+Use the categorical dtype for repeated string values or an explicitly ordered set of categories.
+
+### Code Snippet: Store repeated categories efficiently
 
 ```python
 # Compare storage for repeated values
@@ -438,14 +464,18 @@ Indicator variables convert categories into binary (0/1) columns, which is essen
 
 With `drop_first=True`, one category becomes the reference: a row in that category has 0 in every retained indicator. This avoids carrying a redundant set of columns into a model; Lecture 10 explains the modeling implications in more detail.
 
-**Reference:**
+### Reference Card: Indicator variables
 
-- `pd.get_dummies(series)` - Create dummy variables
-- `prefix='category'` - Add prefix to column names
-- `drop_first=True` - Omit one category so the remaining indicators use it as the reference level; this can avoid redundant model inputs
-- `dtype='int64'` - Request numeric 0/1 indicator columns; pandas' nullable `boolean` dtype can represent `pd.NA` when a three-state result is needed
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.get_dummies(series)` | Create one indicator column per category | Boolean `DataFrame` by default |
+| `prefix='color'` | Prefix the output labels | Names such as `color_blue` |
+| `drop_first=True` | Omit the first category as the reference | `k - 1` columns for `k` categories |
+| `dtype='int64'` | Request integer indicators | Columns containing `0` and `1` |
+| `dummy_na=True` | Give missing values their own indicator | Extra missing-value column; otherwise missing rows are all zero |
+
+### Code Snippet: Encode categories
 
 ```python
 # Create dummy variables
@@ -494,19 +524,22 @@ Input: "  Alice Smith  "
 ```
 
 ![xkcd 1171 "Perl Problems"](media/xkcd_1171.png)
-*"I got 99 problems, so I used regex. Now I have 100 problems." - Perfect humor for string manipulation complexity*
+*"I got 99 problems, so I used regex. Now I have 100 problems."*
 
-**Reference:**
+### Reference Card: String operations
 
-- `series.str.upper()` - Convert to uppercase
-- `series.str.lower()` - Convert to lowercase
-- `series.str.strip()` - Remove leading/trailing whitespace
-- `series.str.replace(old, new)` - Replace substrings
-- `series.str.contains(pattern)` - Check if string contains pattern
-- `series.str.startswith(prefix)` - Check if string starts with prefix
-- `series.str.endswith(suffix)` - Check if string ends with suffix
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.str.upper()` | Convert to uppercase | String `Series` |
+| `series.str.lower()` | Convert to lowercase | String `Series` |
+| `series.str.strip()` | Remove leading/trailing whitespace | String `Series` |
+| `series.str.replace(old, new, regex=False)` | Replace literal substrings | String `Series` |
+| `series.str.contains(pattern, na=False)` | Search for a regex; use `regex=False` for literal text | Boolean `Series`; missing becomes `False` |
+| `series.str.startswith(prefix, na=False)` | Test a literal prefix | Boolean `Series` |
+| `series.str.endswith(suffix, na=False)` | Test a literal suffix | Boolean `Series` |
+
+### Code Snippet: Normalize text fields
 
 ```python
 # Clean text data
@@ -524,14 +557,17 @@ print(has_gmail)  # [False, False]
 
 Splitting and joining strings is common when working with structured text data like addresses, names, or delimited values.
 
-**Reference:**
+### Reference Card: String splitting
 
-- `series.str.split(sep)` - Split strings by separator
-- `series.str.split(sep, expand=True)` - Split into separate columns
-- `series.str.cat(sep=' ')` - Join strings with separator
-- `series.str.join(sep)` - Join list elements with separator
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.str.split(sep, regex=False)` | Split on a literal separator | `Series` of lists |
+| `series.str.split(sep, expand=True, regex=False)` | Expand split parts into columns | `DataFrame` |
+| `series.str.cat(sep=' ')` | Combine all non-missing strings into one | One string |
+| `series.str.join(sep)` | Join the strings within each list value | String `Series` |
+
+### Code Snippet: Split a compound field
 
 ```python
 # Split strings
@@ -548,14 +584,17 @@ print(names_df)  # Two columns with first and last names
 
 Sampling is useful for inspecting records away from the top of a table, making a large table manageable for exploration, creating analysis splits, and resampling for procedures such as the bootstrap. A **simple random sample** gives every eligible row the same chance of selection. A **sampling design** additionally states which rows are eligible and how the selection supports the question.
 
-**Reference:**
+### Reference Card: Sampling rows
 
-- `df.sample(n=5, random_state=42)` - Draw five rows without replacement
-- `df.sample(frac=0.1, random_state=42)` - Draw ten percent of the rows
-- `df.sample(n=..., frac=..., replace=..., weights=..., random_state=...)` - pandas sampling controls; choose `n` or `frac`
-- `df.groupby('group').sample(...)` - Sample within groups
-- `np.random.default_rng(seed)` - NumPy random-number generator for reproducible random operations
-- `sklearn.model_selection.train_test_split(..., stratify=...)` - Preserve class proportions in a split
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.sample(n=5, random_state=42)` | Draw five rows without replacement | Five-row `DataFrame`; requires at least five rows |
+| `df.sample(frac=0.1, random_state=42)` | Draw ten percent of the rows | Random sample DataFrame |
+| `replace`, `weights`, `random_state` | Allow repeated draws, set selection weights, and seed a sample | Options for `df.sample()`; choose either `n` or `frac` |
+| `df.groupby('group').sample(...)` | Sample within groups | Random sample DataFrame |
+| `np.random.default_rng(seed)` | NumPy random-number generator for reproducible random operations | Seeded random generator |
+| `sklearn.model_selection.train_test_split(..., stratify=...)` | Preserve class proportions in a split | Train/test split preserving class proportions |
 
 ```python
 records = pd.DataFrame({
@@ -586,19 +625,17 @@ See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
 
 Data quality checks identify issues like missing values, duplicates, outliers, and data type inconsistencies. These checks are essential for ensuring reliable analysis results.
 
-**Reference:**
+### Reference Card: Data quality checks
 
-- `df.isna().sum()` - Count missing values per column
-- `df.duplicated().sum()` - Count duplicate rows
-- `df.nunique()` - Count unique values per column
-- `df.dtypes` - Data types per column
-- `df.describe()` - Summary statistics (numeric columns only by default)
-- `df.describe(include='all')` - Summary statistics for all columns (numeric + categorical)
-- `df.describe(include=['str', 'category'])` - Summary statistics for text and categorical columns
-- `df.info()` - Detailed information
-- `df.memory_usage()` - Memory usage per column
+| Check | Tool | Output |
+| --- | --- | --- |
+| Missingness | `df.isna().sum()` | Count per column |
+| Duplicates | `df.duplicated().sum()` | Number of repeated rows |
+| Cardinality | `df.nunique()` | Distinct values per column |
+| Types and size | `df.dtypes`, `df.info()` | Schema and memory summary |
+| Distribution | `df.describe(include='all')` | Numeric and categorical summary |
 
-**Example:**
+### Code Snippet: Audit a table
 
 ```python
 # Data quality assessment
@@ -613,17 +650,20 @@ print(df.dtypes)  # Data types per column
 
 Data validation rules ensure data meets business requirements and constraints. These rules help maintain data integrity and prevent analysis errors.
 
-**Reference:**
+### Reference Card: Validation rules
 
-- `df[condition]` - Filter rows meeting condition
-- `series.between(left, right)` - Check whether Series values are between bounds
-- `df.isin(values)` - Check if values are in list
-- `series.str.contains(pattern)` - Check if Series strings contain pattern
-- `series.str.match(pattern)` - Check if Series strings match pattern
-- `series.str.len()` - Get Series string lengths
-- `series.str.isdigit()` - Check if Series strings are digits
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df[row_mask]` | Keep rows selected by a Boolean Series | Filtered `DataFrame` |
+| `series.between(left, right)` | Check whether Series values are between bounds | Boolean range mask |
+| `df.isin(values)` | Test membership cell by cell | Boolean `DataFrame` |
+| `series.str.contains(pattern, na=False)` | Search anywhere for a regex match | Boolean `Series` |
+| `series.str.match(pattern, na=False)` | Match a regex at the start; use `fullmatch` for the entire value | Boolean `Series` |
+| `series.str.len()` | Count characters in each string | Numeric `Series`; missing values remain missing |
+| `series.str.isdigit()` | Test nonempty strings for all digit characters | Boolean results; missing handling depends on string dtype |
+
+### Code Snippet: Check declared constraints
 
 ```python
 # Data validation rules
@@ -777,12 +817,9 @@ Configuration files can make repeated pipelines more maintainable and reproducib
 
 Keep genuinely changeable rules separate from the transformation logic, but do not turn every implementation constant into an option. Changing a rule still requires a documented decision and a fresh validation run.
 
-**Reference:**
+### Configuration guidance
 
-- Use Python dictionaries for simple configurations
-- Store parameters in separate files (CSV, JSON, or simple text)
-- Keep cleaning logic in functions
-- Document where each cleaning rule came from
+Use a Python dictionary for a small, local configuration; use a reviewed CSV, JSON, or text file when parameters must be shared. Keep transformations in functions and document the source of each cleaning rule.
 
 
 # LIVE DEMO!

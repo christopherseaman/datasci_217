@@ -13,7 +13,7 @@ this full course repository.
 
 ## Setup
 
-Use CPython 3.14. From this directory, create and activate a virtual
+Use CPython 3.13. From this directory, create and activate a virtual
 environment, and install the two exact dependency records. If you use the
 notebook, open it through Jupyter or the VS Code notebook interface:
 

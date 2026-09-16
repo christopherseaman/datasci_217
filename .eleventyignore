@@ -21,3 +21,5 @@ README.md
 .claude/
 .nojekyll
 *.py
+AGENTS.md
+.pytest_cache/**

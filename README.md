@@ -2,9 +2,13 @@
 
 ## Lecture authoring
 
+The course runtime is Python 3.13 across lectures, demos, assignments, and grading, with pandas 3.0.5 where used. Create environments with `uv venv --python 3.13` and install the relevant directory's pinned requirements.
+
 Notion is the primary publishing surface. Write lectures and bonus pages with `#` for major sections, `##` for subsections, and `###` for deeper topics; multiple H1 sections are intentional. Keep each prose paragraph on one physical line, with no line-length limit. Preserve code-block formatting and list nesting. Do not add horizontal rules or prose that merely repeats a heading. Preserve humor.
 
 When syncing, preserve heading levels exactly. Resolve local links and media URLs for Notion, preserve native child pages, and omit navigation links already represented by those child pages. YAML mapping metadata stays local. Notebook demos remain Markdown sources generated into `.ipynb` files, with Colab links targeting the notebooks.
+
+Keep course navigation inside Notion: link to mapped Markdown sources, not website routes. Outbound links are for external references (including documentation and software), Colab notebook demos, and assignments. Embedded media and attached demo scripts remain inline. `index.md`, `references.md`, and `shell_workout.md` are mapped course pages alongside lectures, bonus pages, and the Lecture 01–03 demo guides.
 
 Use bare live-demo markers without descriptions beneath them. The final demo comes after all lecture content, including any closing humor. Do not append summaries, worked examples, key takeaways, or meta-content after it; integrated walkthroughs belong in the demos, and optional reference material belongs in the bonus page.
 
@@ -12,7 +16,6 @@ From the repository root, run `python3 scripts/notion_publish.py SOURCE.md CURRE
 
 ## Resources
 
-- Canonical URL - https://not.badmath.org/ds217
 - GitHub repo - https://github.com/christopherseaman/datasci_217
 
 #### References
@@ -26,8 +29,8 @@ From the repository root, run `python3 scripts/notion_publish.py SOURCE.md CURRE
 
 - [VS Code](https://code.visualstudio.com/) (it’s pretty good)
 - [Python](https://www.python.org/) (great docs & tutorials, too!)
-- [GitHub Codespaces](https://cli.github.com/manual/gh_codespace_ssh) (free IDE in a browser)
-- [Google Cloud Shell](https://cloud.google.com/free/docs/compute-getting-started) (practice command line anywhere)
+- [GitHub Codespaces](https://github.com/features/codespaces) (IDE in a browser; free usage quota)
+- [Google Cloud Shell](https://cloud.google.com/shell/docs) (practice command line anywhere)
 
 ## Assignments
 

@@ -17,7 +17,7 @@ if command -v python >/dev/null 2>&1; then
 elif command -v python3 >/dev/null 2>&1; then
     PYTHON_COMMAND=(python3)
 elif command -v uv >/dev/null 2>&1; then
-    PYTHON_COMMAND=(uv run --no-project --python 3.14 python)
+    PYTHON_COMMAND=(uv run --no-project --python 3.13 python)
 else
     printf 'Python or uv is required to verify the release manifest.\n' >&2
     exit 1

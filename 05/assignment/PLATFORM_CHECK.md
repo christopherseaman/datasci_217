@@ -4,7 +4,7 @@ Complete this check locally before preparing the artifacts. Colab is not an
 assignment or submission path for Assignment 05.
 
 1. Open a terminal in the assignment directory.
-2. Confirm `python --version` reports `Python 3.14`.
+2. Confirm `python --version` reports `Python 3.13`.
 3. Activate a fresh `.venv` and run `python -m pip install -r requirements.txt`.
 4. Run the following commands:
 

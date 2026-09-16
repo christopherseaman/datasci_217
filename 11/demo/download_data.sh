@@ -28,12 +28,12 @@ download_and_verify() {
 }
 
 download_and_verify "yellow_taxi_2023_h1_event_sample.parquet" \
-    "750bcc85f0267f9189dc9842ef44827168c384d4a7e5a8678e9a996348fc4b7d"
+    "0a2fdc27ce787c5d042dc73b71eecd7d7dca326c97cebd3a78f9e68d2fe4c16f"
 download_and_verify "yellow_taxi_2023_h1_zone_hour_counts.parquet" \
-    "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
+    "f1f55ea809119757ee26995ae1eae4ff6be21b70273194c35aa388cfbfe13ad3"
 download_and_verify "taxi_zone_lookup.csv" \
     "1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed"
 download_and_verify "demo_release_manifest.json" \
-    "3f68d35fd157d53c0ae88f3119faa7bf9896515d153664227db3384d219aaa79"
+    "558c28a8ab5a16769ac6ef9d170e7bd7f4ae4ef5d2a9e2b11fd2fb84d79b2c9d"
 
 printf 'Frozen Lecture 11 data are ready in %s/\n' "$DATA_DIR"

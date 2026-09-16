@@ -80,17 +80,17 @@ APPLY FUNCTION (e.g., mean)      COMBINE RESULTS
 
 # Basic GroupBy Operations
 
-**Reference:**
+### Reference Card: GroupBy Aggregation
 
-- `df.groupby('column')` - Group by single column
-- `df.groupby(['col1', 'col2'])` - Group by multiple columns
-- `grouped.mean()` - Calculate mean for each group
-- `grouped.sum()` - Calculate sum for each group
-- `grouped.count()` - Count non-null values
-- `grouped.size()` - Count all values (including nulls)
-- `grouped.agg(['mean', 'sum', 'count'])` - Multiple aggregations
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `df.groupby('column')` | Split by one key; pass a list for multiple keys | `DataFrameGroupBy` |
+| `grouped.mean()` / `grouped.sum()` | Reduce each group to a numeric summary | One row per group |
+| `grouped.count()` | Count non-null values by column | Per-column counts |
+| `grouped.size()` | Count rows, including null values | One count per group |
+| `grouped.agg(['mean', 'sum', 'count'])` | Compute several named summaries | Summary table |
 
-**Example:**
+### Code Snippet: GroupBy Aggregation
 
 ```python
 import pandas as pd
@@ -142,14 +142,16 @@ When missing group keys should form a group, add `dropna=False`; the default exc
 
 Transform operations apply a function to each group and return a result with the same shape as the original data.
 
-**Reference:**
+### Reference Card: Transform Operations
 
-- `grouped.transform('mean')` - Apply mean to each group
-- `grouped.transform('std')` - Apply standard deviation to each group
-- `grouped.transform(lambda x: x - x.mean())` - Custom transform function
-- `grouped.agg(['mean', 'std'])` - Compute multiple group-level summaries; unlike transform, this reduces to one row per group
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `grouped.transform('mean')` | Broadcast each group's mean to its original rows | Series aligned to original index |
+| `grouped.transform('std')` | Broadcast within-group spread | Series aligned to original index |
+| `grouped.transform(lambda x: x - x.mean())` | Compute a custom within-group value | Same row count as input |
+| `grouped.agg(['mean', 'std'])` | Compare with a reducing summary | One row per group |
 
-**Example:**
+### Code Snippet: Transform Operations
 
 ```python
 # Transform: Add group means as new column
@@ -165,13 +167,15 @@ print(df[['Department', 'Employee', 'Salary', 'Salary_Mean', 'Salary_Std', 'Sala
 
 Filter operations remove entire groups based on a condition.
 
-**Reference:**
+### Reference Card: Filter Operations
 
-- `grouped.filter(lambda x: len(x) > n)` - Keep groups with more than n rows
-- `grouped.filter(lambda x: x['col'].sum() > threshold)` - Keep groups meeting condition
-- `grouped.filter(lambda x: x['col'].mean() > threshold)` - Filter by group statistics
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `grouped.filter(lambda x: len(x) > n)` | Keep groups with more than `n` rows | Original rows from passing groups |
+| `grouped.filter(lambda x: x['col'].sum() > threshold)` | Keep groups meeting a total threshold | Filtered DataFrame |
+| `grouped.filter(lambda x: x['col'].mean() > threshold)` | Keep groups meeting a mean threshold | Filtered DataFrame |
 
-**Example:**
+### Code Snippet: Filter Operations
 
 ```python
 # Filter: Keep only departments with more than 1 employee
@@ -189,13 +193,15 @@ print(high_salary_depts)
 
 Apply operations let you use custom functions on each group.
 
-**Reference:**
+### Reference Card: Apply Operations
 
-- `grouped.apply(func, include_groups=False)` - Apply a custom function to each group
-- `grouped.apply(lambda x: x.sort_values('col'), include_groups=False)` - Sort each group
-- `grouped.apply(lambda x: x.nlargest(2, 'col'), include_groups=False)` - Get top 2 from each group
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `grouped.apply(func, include_groups=False)` | Run custom per-group logic; keep grouping columns out of callable input | Depends on `func` |
+| `grouped.apply(lambda x: x.sort_values('col'), include_groups=False)` | Sort rows inside each group | Combined DataFrame |
+| `grouped.apply(lambda x: x.nlargest(2, 'col'), include_groups=False)` | Keep top two rows in each group | Combined DataFrame |
 
-**Example:**
+### Code Snippet: Apply Operations
 
 ```python
 # Apply: Custom function for salary statistics
@@ -227,14 +233,19 @@ In pandas 3, `DataFrameGroupBy.apply()` excludes grouping columns from the DataF
 
 # Hierarchical Grouping
 
-**Reference:**
+Grouping by multiple keys creates a GroupBy object. Aggregate first to get a MultiIndex summary, then reshape or reorder that result.
 
-- `df.groupby(['level1', 'level2'])` - Multi-level grouping
-- `grouped.unstack()` - Convert to wide format
-- `grouped.stack()` - Convert to long format
-- `grouped.swaplevel(0, 1)` - Swap grouping levels
+### Reference Card: Hierarchical Grouping
 
-**Example:**
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `df.groupby(['level1', 'level2'])` | Split by combinations of keys | GroupBy object |
+| `summary = df.groupby(['level1', 'level2'])[['value']].sum()` | Aggregate each key combination | MultiIndex DataFrame |
+| `wide = summary.unstack()` | Move one index level into columns | Wide DataFrame |
+| `wide.stack()` | Move the innermost column level into the index | Long DataFrame |
+| `summary.swaplevel(0, 1)` | Reorder MultiIndex levels | Same values, new level order |
+
+### Code Snippet: Hierarchical Grouping
 
 ```python
 # Create hierarchical data
@@ -283,15 +294,17 @@ LONG FORMAT (Original)              WIDE FORMAT (Pivoted)
 
 ## Basic Pivot Tables
 
-**Reference:**
+### Reference Card: Pivot Tables and Crosstabs
 
-- `pd.pivot_table(df, values='col', index='row', columns='col')` - Basic pivot
-- `pd.pivot_table(df, aggfunc='mean')` - Specify aggregation function
-- `pd.pivot_table(df, fill_value=0)` - Fill missing values
-- `pd.pivot_table(df, margins=True)` - Add totals
-- `pd.crosstab(index, columns)` - Cross-tabulation
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `pd.pivot_table(df, values=..., index=..., columns=...)` | Reshape long data while aggregating cells | DataFrame with row/column keys |
+| `pd.pivot_table(df, aggfunc='mean')` | Choose the cell aggregation | Aggregated cells |
+| `pd.pivot_table(df, fill_value=0)` | Replace missing combinations after aggregation | Filled DataFrame |
+| `pd.pivot_table(df, margins=True)` | Add row and column totals | Table with totals |
+| `pd.crosstab(index, columns)` | Count combinations of categorical values | Frequency table |
 
-**Example:**
+### Code Snippet: Pivot Tables
 
 ```python
 # Create sample sales data
@@ -322,14 +335,16 @@ print(pivot_multi)
 
 ## Advanced Pivot Operations
 
-**Reference:**
+### Reference Card: Advanced Pivot Options
 
-- `pivot_table(..., margins=True, margins_name='Total')` - Add totals
-- `pivot_table(..., fill_value=0)` - Fill missing values
-- `pivot_table(..., dropna=False)` - Retain all-NA result columns and include NA-key rows when computing margins
-- `pivot_table(..., observed=True)` - pandas 3 default for categorical groupers: show only observed category values/combinations; use `observed=False` only for every defined category combination
+| Option | Purpose and key arguments | Output effect |
+| :--- | :--- | :--- |
+| `margins=True, margins_name='Total'` | Add named row and column totals | Extra total labels |
+| `fill_value=0` | Replace missing result cells | No-NA display cells |
+| `dropna=False` | Retain all-NA result columns and NA-key rows for margins | Wider, more complete table |
+| `observed=True` | Show only category combinations present in the data | Smaller categorical result |
 
-**Example:**
+### Code Snippet: Advanced Pivot Operations
 
 ```python
 # Advanced pivot with totals and missing value handling
@@ -356,7 +371,7 @@ print(crosstab)
 
 # Performance Optimization
 
-![xkcd 2533: Slope Hypothesis Testing](https://imgs.xkcd.com/comics/slope_hypothesis_testing.png)
+![xkcd 2533: Slope Hypothesis Testing](media/xkcd_2533.png)
 
 Optimize only after measuring the real workload. Performance depends on the pandas version, data types, group cardinality, memory, and hardware, so any benchmark is illustrative rather than a promise for every dataset.
 
@@ -374,7 +389,14 @@ def efficient_groupby(df, group_cols, agg_spec):
 
 ## Dtype-Aware GroupBy
 
-**Reference:**
+### Reference Card: Performance Choices
+
+| Technique | Use when | Output or trade-off |
+| :--- | :--- | :--- |
+| Explicit `.agg(agg_spec)` | The aggregation is known and measurable | Clear, often efficient summary |
+| Dtype conversion | Numeric/category semantics or memory use justify it | Changed working dtypes |
+| Chunked `read_csv(..., chunksize=...)` | Input does not fit comfortably in memory | Composable partial summaries |
+| Multiprocessing | Profiling shows CPU work dominates overhead | Faster only when merge/startup costs are worthwhile |
 
 ```python
 # GroupBy with caller-validated dtype choices
@@ -439,7 +461,7 @@ Parallel work adds process startup, serialization, and merge costs. Measure the 
 
 # Remote Computing with SSH
 
-![xkcd 2523: Endangered Data](https://imgs.xkcd.com/comics/endangered_2x.png)
+![xkcd 2523: Endangered Data](media/xkcd_2523.png)
 
 *When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
 
@@ -447,15 +469,17 @@ SSH gives you an encrypted shell on another computer. The basic workflow is: con
 
 ## Connect and Copy Files
 
-**Reference:**
+### Reference Card: SSH File and Shell Commands
 
-- `ssh username@hostname` - Open a remote shell
-- `ssh -p port username@hostname` - Connect through a nondefault port
-- `ssh username@hostname 'command'` - Run one command remotely
-- `scp local_file username@hostname:remote_path` - Copy a file to the server
-- `scp username@hostname:remote_file local_path` - Copy a file from the server
-- `ssh-keygen -t ed25519` - Create a modern public/private key pair
-- `ssh-copy-id username@hostname` - Install the public key where supported
+| Command | Purpose and key arguments | Result |
+| :--- | :--- | :--- |
+| `ssh user@host` | Open a remote shell | Remote prompt |
+| `ssh -p port user@host` | Connect through a nondefault port | Remote prompt |
+| `ssh user@host 'command'` | Run one command remotely | Command output locally |
+| `scp local user@host:path` | Copy a local file to the server | Remote file |
+| `scp user@host:path local` | Copy a remote file back | Local file |
+| `ssh-keygen -t ed25519` | Create a public/private key pair | Key files |
+| `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
 
 ```bash
 # Create a key once, then follow the server's instructions to install the public key

@@ -32,6 +32,17 @@ Use this as a wayfinding list, not a recipe card. Revisit earlier items whenever
 5. **Predict only when prediction helps.** If the question calls for it, define the target, what would be known at prediction time, a fair evaluation, and a meaningful comparison. Otherwise, a descriptive result may be the finish line.
 6. **Report evidence and limits.** Give the result, the claim it supports, and the important caveats without making the conclusion wear a cape it has not earned.
 
+### Reference Card: project contract
+
+| Stage | Ask | Evidence to keep |
+| :--- | :--- | :--- |
+| Question | What could the data support or contradict? | Focused question and candidate claim |
+| Grain | What does one row represent, and how is it identified? | Grain, key, provenance, and selection rules |
+| Audit | Can these records answer the question? | Coverage, types, missingness, and validation checks |
+| Analysis | Which transformations answer the question without changing row meaning? | Purposeful table, summary, plot, or feature |
+| Prediction | What is known at prediction time, and what is a fair comparison? | Target, baseline, split, measure, and held-out result |
+| Report | What does the evidence support, and what remains uncertain? | Result, claim, and material limitation |
+
 # Learning objectives
 
 By the end of the session, given a dataset and an analytical question, you should be able to:
@@ -81,7 +92,7 @@ The first notebook verifies the release, inspects the event-grain records, and m
 
 Counts, distributions, and time profiles can expose problems, plausible patterns, and group differences before a model is useful. Each plot should have a job; an unexpected pattern may send the analysis back to a subgroup, normalization, cleaning decision, or narrower claim.
 
-![xkcd 2582: Data Trap](https://imgs.xkcd.com/comics/data_trap.png)
+![xkcd 2582: Data Trap](media/xkcd_2582.png)
 *Analysis should produce understanding, not an unbounded pile of artifacts.*
 
 For prediction, ask what would be known at prediction time. The third notebook uses training data to explore patterns and freezes a chronological split. The fourth compares a weekly-lag baseline with one scikit-learn pipeline, chooses on validation data, evaluates once on the held-out test period, and examines where errors concentrate. The final claim is limited to the held-out hours and selected zones; it is not a causal explanation or a promise about the future.
@@ -130,9 +141,9 @@ From the course repository:
 
 ```bash
 cd 11/demo
-uv venv --python 3.14 .venv
+uv venv --python 3.13 .venv
 source .venv/bin/activate
-python --version  # should report Python 3.14
+python --version  # should report Python 3.13
 uv pip install -r requirements.txt
 chmod +x download_data.sh
 ./download_data.sh

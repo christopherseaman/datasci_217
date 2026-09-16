@@ -1,4 +1,4 @@
-# Lecture 03 tested environment: CPython 3.14 with NumPy 2.3.3.
+# Lecture 03 tested environment: CPython 3.13 with NumPy 2.3.3.
 # Install with: uv pip install -r requirements.txt
 numpy==2.3.3
 

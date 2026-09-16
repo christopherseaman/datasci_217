@@ -141,7 +141,7 @@ ls [abc]*          # Files starting with a, b, or c
 ls *[0-9].csv      # CSV files ending with a number
 ```
 
-# Python Number Formats and Operations
+# Python Number Operations
 
 More mathematical operations:
 
@@ -153,12 +153,6 @@ math.sqrt(16)      # Square root: 4.0
 math.ceil(4.3)     # Round up: 5
 math.floor(4.7)    # Round down: 4
 math.pi            # 3.141592653589793
-
-# Number formatting
-value = 3.14159
-f"{value:.2f}"     # "3.14" (2 decimal places)
-f"{value:.0f}"     # "3" (no decimal places)
-f"{1234:,}"        # "1,234" (comma separator)
 
 # Scientific notation
 large_number = 1.23e6    # 1,230,000

@@ -14,6 +14,13 @@ notion:
 
 This course started as a Python introduction plus as much of the practical stuff I learned on the job—but never in a course—as I could fit. Halfway through preparing the first version, I found [The Missing Semester](https://missing.csail.mit.edu/). Apparently, I wasn't the only one who noticed the gap.
 
+**Quick references**
+
+- [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
+- [Python cheat sheet](https://cheatsheets.zip/python)
+- [futurecoder](https://futurecoder.io/) — Python basics with in-browser exercises and feedback.
+- [Official Python tutorial](https://docs.python.org/3/tutorial/) — reference, not assigned homework.
+
 # Class Structure
 
 - **Lectures** cover new material
@@ -54,19 +61,25 @@ Native Windows:
 
 ### Windows WSL (Ubuntu)
 
+Use uv's installer to get the course Python version. The first command installs uv; the next commands install Python 3.13 and put it on your shell's PATH. We'll use uv to manage project environments in Lecture 03.
+
 ```bash
-sudo apt update
-sudo apt install python3 python3-pip python3-venv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME/.local/bin/env"
+uv python install 3.13 --default
+uv python update-shell
 ```
+
+Open a new terminal before verifying Python below.
 
 ### Windows Native
 
 ```powershell
 # Option 1: Official installer from python.org
-# Download Python 3.14+ from <https://python.org>
+# Download Python 3.13.x from <https://python.org>
 
 # Option 2: Using winget (Windows Package Manager)
-winget install -e --id Python.Python.3.14
+winget install -e --id Python.Python.3.13
 ```
 
 ### Mac
@@ -76,21 +89,24 @@ After installing Homebrew, run the PATH setup commands printed under **Next step
 ```bash
 # Option 1: Using Homebrew (recommended)
 # First install Homebrew from <https://brew.sh>
-brew install python3
+brew install python@3.13
+export PATH="$(brew --prefix python@3.13)/libexec/bin:$PATH"
 
 # Option 2: Official installer from python.org
-# Download Python 3.14+ from <https://python.org>
+# Download Python 3.13.x from <https://python.org>
 ```
+
+For Homebrew, add the `export PATH=...` line to your shell startup file (`~/.zshrc` on a default macOS setup) so new terminals also use Python 3.13.
 
 ### Verify Installation
 
 ```bash
 # WSL, macOS, or Codespaces
 python3 --version
-# Should show: Python 3.14.x (or similar)
+# Should show: Python 3.13.x
 ```
 
-In native Windows PowerShell, use `py --version` (or `python --version` if that is the command your installer configured). Until we activate a virtual environment later in the course, Bash examples use `python3`; native PowerShell users should substitute `py`. Inside an activated environment, `python` will refer to that environment's interpreter.
+In native Windows PowerShell, use `py -3.13 --version`. Until we activate a virtual environment later in the course, Bash examples use `python3`; native PowerShell users should substitute `py -3.13`. Inside an activated environment, `python` will refer to that environment's interpreter.
 
 ## Text Editor Options
 
@@ -118,7 +134,7 @@ We'll use VS Code for its editor, integrated terminal, debugger, and Git interfa
 
 ### Creating Your GitHub Account
 
-**Reference:**
+#### Account Setup
 
 1. Go to [github.com](http://github.com/)
 2. Sign up with your UCSF email (or personal email)
@@ -162,6 +178,31 @@ git config --global user.name "<YOUR NAME>"
 git config --global user.email "<YOUR GITHUB PROXY EMAIL>"
 ```
 
+## Get Your Assignment Copy
+
+A **fork** is your copy on GitHub; a **clone** is the working copy on your computer. Follow these steps to start Assignment 01. Lecture 02 explains the Git concepts behind them.
+
+### Fork on GitHub
+
+1. Open the assignment repository linked for this term and sign in to GitHub.
+2. Select **Fork**, choose your account as the owner, and select **Create fork**.
+
+![GitHub's Fork button](assignment/media/github-fork.png)
+
+### Clone Your Fork in VS Code
+
+1. On **your fork**, select **Code → HTTPS** and copy the URL. The owner in the URL should be your GitHub username.
+
+![Copy your fork's HTTPS URL from the Code menu](assignment/media/github-clone-url.png)
+
+2. In VS Code, open **View → Command Palette**, choose **Git: Clone**, paste that URL, choose a folder on your computer, and open the cloned repository. Sign in if prompted.
+
+![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
+
+The screenshots use example repositories; paste your own fork's URL. Keep your assignment work in this folder. The assignment's submission checklist shows how to send the completed files back to your fork.
+
+Screenshot sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+
 # LIVE DEMO!
 
 # Why Both Python and Command Line?
@@ -194,16 +235,18 @@ Think of it as texting your computer instead of playing charades with icons.
 
 ## Navigation Commands
 
-**Reference:**
+### Reference Card: Navigation Commands
 
-- `pwd` - Print working directory (where am I?)
-- `ls` - List contents (what's here?)
-- `ls -la` - List with details (show me everything)
-- `cd [path]` - Change directory (go somewhere)
-- `cd ..` - Go up one level
-- `cd ~` - Go to home directory
+| Item | Purpose |
+| --- | --- |
+| `pwd` | Print working directory (where am I?) |
+| `ls` | List contents (what's here?) |
+| `ls -la` | List with details (show me everything) |
+| `cd [path]` | Change directory (go somewhere) |
+| `cd ..` | Go up one level |
+| `cd ~` | Go to home directory |
 
-**Brief Example:**
+### Code Snippet: Navigation Commands
 
 ```bash
 pwd                    # Shows: /Users/yourname
@@ -215,17 +258,19 @@ pwd                    # Shows: /Users/yourname/Documents
 
 ## File and Directory Operations
 
-**Reference:**
+### Reference Card: File and Directory Operations
 
-- `mkdir [name]` - Make directory
-- `mkdir -p [path/to/nested]` - Make nested directories
-- `touch [filename]` - Create empty file
-- `cp [source] [destination]` - Copy file
-- `mv [source] [destination]` - Move/rename file
-- `rm [filename]` - Remove file (careful!)
-- `rm -r [directory]` - Remove directory and contents (very careful!)
+| Item | Purpose |
+| --- | --- |
+| `mkdir [name]` | Make directory |
+| `mkdir -p [path/to/nested]` | Make nested directories |
+| `touch [filename]` | Create empty file |
+| `cp [source] [destination]` | Copy file |
+| `mv [source] [destination]` | Move/rename file |
+| `rm [filename]` | Remove file (careful!) |
+| `rm -r [directory]` | Remove directory and contents (very careful!) |
 
-**Extended Examples for Data Science Workflows:**
+### Code Snippet: Extended Examples for Data Science Workflows
 
 ```bash
 # Create a typical data science project structure
@@ -250,24 +295,7 @@ mv scripts/analysis.py scripts/customer_analysis.py
 
 ```
 
-**Common File Operation Patterns:**
-
-```bash
-# Pattern 1: Organizing downloaded data files
-mkdir -p project/data/{raw,processed,cleaned}
-mv ~/Downloads/*.csv project/data/raw/
-
-# Pattern 2: Creating dated backup directories
-mkdir backups/$(date +%Y-%m-%d)
-cp -r project/ backups/$(date +%Y-%m-%d)/
-
-# Pattern 3: Finding and organizing files by type
-mkdir analysis/{python,jupyter,results}
-find . -name "*.py" -exec cp {} analysis/python/ \;
-
-```
-
-**Brief Example:**
+### Code Snippet: File and Directory Operations
 
 ```bash
 mkdir my_data_project     # Create project folder
@@ -279,15 +307,17 @@ mkdir data              # Create data subfolder
 
 ## Viewing Files
 
-**Reference:**
+### Reference Card: Viewing Files
 
-- `cat [filename]` - Show entire file contents
-- `head [filename]` - Show first 10 lines
-- `head -n 5 [filename]` - Show first 5 lines
-- `tail [filename]` - Show last 10 lines
-- `tail -n 20 [filename]` - Show last 20 lines
+| Item | Purpose |
+| --- | --- |
+| `cat [filename]` | Show entire file contents |
+| `head [filename]` | Show first 10 lines |
+| `head -n 5 [filename]` | Show first 5 lines |
+| `tail [filename]` | Show last 10 lines |
+| `tail -n 20 [filename]` | Show last 20 lines |
 
-**Brief Example:**
+### Code Snippet: Viewing Files
 
 ```bash
 head data.csv           # Quick peek at data file
@@ -297,15 +327,15 @@ tail -n 5 results.txt   # See the last few results
 
 ## Getting Help
 
-**Reference:**
+### Reference Card: Getting Help
 
-- `man [command]` - Manual page for command
-- `[command] --help` - Quick help for command
-- `which [command]` - Find where command is located
-- Books! (see the syllabus)
-- Your favorite LLM
-- A buddy?
-- Course EA's and myself
+| Item | Purpose |
+| --- | --- |
+| `man [command]` | Manual page for command |
+| `[command] --help` | Quick help for command |
+| `which [command]` | Find where command is located |
+
+Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 
 ## Ctrl+C: Make it Stop!
 
@@ -320,6 +350,12 @@ tail -n 5 results.txt   # See the last few results
 
 ## Running Python
 
+In VS Code, save a `.py` file and click the triangle at its top right to run it in the integrated terminal.
+
+![Run a Python file with VS Code's triangle button](media/vscode-run-python-file.png)
+
+Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial).
+
 For Lectures 01–03, you will use two Python modes:
 
 1. **Interactive mode** (REPL): Type `python3` and start experimenting
@@ -327,7 +363,7 @@ For Lectures 01–03, you will use two Python modes:
 
 **Jupyter notebooks** are another way to run Python, but we'll meet them later. They are future material, so use the REPL and script workflow for these first lectures.
 
-**Reference:**
+### Code Snippet: Running Python
 
 ```bash
 python3                 # Start interactive Python
@@ -392,6 +428,17 @@ print("This is code")  # Comments can also go at the end of lines
 ## Variables and Data Types
 
 Python stores information in variables - think of them as labeled boxes that you can put different types of information in.
+
+### Reference Card: Values and Types
+
+| Value / operation | Meaning | Example |
+| --- | --- | --- |
+| `int` | Whole number | `22` |
+| `float` | Number with a decimal part | `87.5` |
+| `str` | Text in quotes | `"Alice"` |
+| `bool` | True or false | `True` |
+| `type(value)` | Inspect a value's type | `type(22)` → `<class 'int'>` |
+| `name = value` | Assign a value to a name | `age = 22` |
 
 ### Numbers - The Foundation of Data Science
 
@@ -467,11 +514,36 @@ mysterious_data = "22"       # Looks like a number, but it's text
 print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 ```
 
+### Duck Typing: Behavior Over Labels
+
+Python is dynamically typed: a variable can refer to values of different types, and code often cares more about what an object can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck.
+
+![Duck Typing](media/duck_typing.jpg)
+
+```python
+label = "dataset"
+grades = [85, 92, 78]
+
+print(len(label))   # 7
+print(len(grades))  # 3
+```
+
+Both objects support `len()`. Python checks the operation when it runs; unsupported operations raise `TypeError`.
+
 ## Basic Operations
 
-An **f-string** begins with `f` and evaluates expressions inside `{}`. The Printing section below develops its formatting options.
+### Reference Card: Plain Output
 
-**Reference:**
+| Syntax | Purpose | Output |
+| --- | --- | --- |
+| `print("Hello")` | Display text | `Hello` |
+| `print(2 + 3)` | Display a calculation | `5` |
+| `print("Score:", 85)` | Display a label and value | `Score: 85` |
+
+
+Use `print()` to display a value or several values separated by commas. Python puts spaces between them.
+
+### Code Snippet: Arithmetic and Strings
 
 ```python
 # Math operations
@@ -488,28 +560,41 @@ first = "Ada"
 last = "Lovelace"
 name = first
 full_name = first + " " + last        # Concatenation
-message = f"Hello {name}!"            # f-string formatting (preferred)
+print("Hello", name)                 # Print text and a value
 ```
 
-**Brief Example:**
+### Code Snippet: Calculate BMI
 
 ```python
 # Calculate BMI
 weight_kg = 70
 height_m = 1.75
 bmi = weight_kg / (height_m ** 2)
-print(f"BMI is {bmi:.1f}")
+print("BMI is", bmi)
 ```
 
-![xkcd 1654: Universal Install Script](https://imgs.xkcd.com/comics/universal_install_script.png)
+![xkcd 1654: Universal Install Script](media/xkcd_1654.png)
+
+# LIVE DEMO!
 
 ## Control Structures
 
 Control structures let your programs make decisions and repeat actions - essential for data analysis!
 
+### Reference Card: Decisions and Repetition
+
+| Construct | Purpose |
+| --- | --- |
+| `if` / `elif` / `else` | Choose which block runs based on a condition |
+| `for value in values:` | Visit each item in order |
+| `range(5)` | Supply integers 0 through 4 |
+| `while condition:` | Repeat while the condition stays true |
+| `enumerate(values, start=1)` | Supply each position and value |
+| `break` / `continue` | Stop a loop / skip to its next iteration |
+
 ### Comparison Operators
 
-**Reference:**
+#### Code Snippet: Comparison Operators
 
 ```python
 # Equality and inequality
@@ -531,7 +616,7 @@ Square brackets create a **list**, an ordered collection. The loop examples belo
 
 ### If Statements
 
-**Basic If Statements:**
+#### Code Snippet: Basic If Statements
 
 ```python
 # Simple decision making
@@ -547,7 +632,7 @@ else:
     print("Grade: F")
 ```
 
-**Compound Conditions:**
+#### Code Snippet: Compound Conditions
 
 ```python
 # Multiple conditions with and/or
@@ -566,20 +651,20 @@ else:
 
 `range(5)` supplies the integers from 0 through 4. A list supplies its items in order; Lecture 02 covers lists in more depth.
 
-**Basic For Loops:**
+#### Code Snippet: Basic For Loops
 
 ```python
 # Count from 0 to 4
 for i in range(5):
-    print(f"Count: {i}")
+    print("Count:", i)
 
 # Loop through a list
 grades = [85, 92, 78, 96, 88]
 for grade in grades:
-    print(f"Grade: {grade}")
+    print("Grade:", grade)
 ```
 
-**Practical Data Science Example:**
+#### Code Snippet: Practical Data Science Example
 
 ```python
 # Calculate average grade
@@ -592,7 +677,7 @@ for grade in grades:
     count += 1
 
 average = total / count
-print(f"Average grade: {average:.1f}")
+print("Average grade:", average)
 ```
 
 ### While Loops and Loop Control
@@ -602,7 +687,7 @@ A `while` loop repeats as long as its condition is `True`. Update the loop varia
 ```python
 count = 1
 while count <= 3:
-    print(f"Count: {count}")
+    print("Count:", count)
     count += 1
 ```
 
@@ -611,7 +696,7 @@ When a loop needs both a position and a value, `enumerate()` supplies them:
 ```python
 grades = [85, 92, 78]
 for position, grade in enumerate(grades, start=1):
-    print(f"Assignment {position}: {grade}")
+    print("Assignment", position, "grade:", grade)
 ```
 
 Use `break` to stop a loop early, and `continue` to skip the rest of the current iteration and move to the next item:
@@ -620,71 +705,9 @@ Use `break` to stop a loop early, and `continue` to skip the rest of the current
 for grade in grades:
     if grade < 80:
         continue
-    print(f"Processing {grade}")
+    print("Processing", grade)
     if grade >= 90:
         break
-```
-
-## Printing and Basic Input
-
-### Printing and F-Strings
-
-F-strings put values, labels, and units together: `87.3` is a number; `Score: 87.3%` tells the reader what it means. Choose precision that helps interpretation rather than printing every available digit.
-
-```python
-# Basic printing - your daily communication tool
-print("Hello world")                    # Basic printing
-print("Value:", 42)                     # Multiple values
-print("Processing complete!")           # Status updates
-
-# F-string formatting - the data scientist's best friend
-student_name = "Alice"
-test_score = 87.3
-class_average = 82.1
-
-print(f"Student: {student_name}")                    # Basic variable insertion
-print(f"Score: {test_score}")                        # Number display
-print(f"Score: {test_score:.1f}")                    # One decimal place: 87.3
-print(f"Score: {test_score:.0f}%")                   # No decimals: 87%
-print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
-```
-
-### Formatting Patterns for Data Analysis
-
-```python
-# Currency formatting (useful for business data)
-revenue = 15432.50
-print(f"Revenue: ${revenue:,.2f}")                   # $15,432.50
-
-# Percentage formatting
-success_rate = 0.847
-print(f"Success rate: {success_rate:.1%}")           # 84.7%
-
-# Scientific notation for very large/small numbers
-population = 1400000000
-print(f"Population: {population:.2e}")               # 1.40e+09
-
-# Padding and alignment for clean output tables
-print(f"{'Name':<15} {'Score':>8} {'Grade':>8}")    # Column headers
-print(f"{'Alice':<15} {87.3:>8.1f} {'B+':>8}")      # Left/right aligned data
-print(f"{'Bob':<15} {92.1:>8.1f} {'A-':>8}")
-```
-
-### Interactive Input
-
-```python
-# Interactive input - mainly for testing and debugging
-name = input("Enter your name: ")                    # Gets text from user
-age_str = input("Enter your age: ")                  # Always returns string!
-age = int(age_str)                                   # Convert to number
-print(f"Hello {name}, you are {age} years old")
-
-# Be careful: input() always returns strings
-user_number = input("Enter a number: ")              # This is text: "42"
-print(type(user_number))                             # <class 'str'>
-actual_number = float(user_number)                   # Convert to number: 42.0
-print(type(actual_number))                           # <class 'float'>
-
 ```
 
 ## Debugging and Error Handling Basics
@@ -741,7 +764,7 @@ TypeError: can only concatenate str (not "int") to str
 age = "25"
 age_number = int(age)
 next_year = age_number + 1
-print(f"Next year you'll be {next_year}")
+print("Next year you'll be", next_year)
 ```
 
 ### ValueError: Check the Actual Value
@@ -762,7 +785,7 @@ ValueError: invalid literal for int() with base 10: 'hello'
 ```python
 raw_age = "25"
 age = int(raw_age)
-print(f"Age: {age}")
+print("Age:", age)
 ```
 
 Do not replace unknown ages with invented numbers just to make the error disappear. Lecture 02 introduces `try`/`except` for responding to expected failures.

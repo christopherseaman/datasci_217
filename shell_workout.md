@@ -1,11 +1,17 @@
 ---
 title: Shell Workout
 permalink: /shell-workout/
+notion:
+  title_line: "# Command Line Workout"
+  role: practice
+  status: mapped
+  page_id: "3dcd9fdd-1a1a-810a-b648-cd52775b2e5c"
+  url: "https://app.notion.com/p/3dcd9fdd1a1a810ab648cd52775b2e5c"
 ---
 
 # Command Line Workout
 
-## Basic Exercises
+# Basic Exercises
 
 1. **Print a String with Quotation Marks**
     - Write a command to print the string `Use " man echo"` _including the quotation marks_
@@ -41,7 +47,7 @@ permalink: /shell-workout/
     - Write a shell script that greets the user
     - **Hint:** The current user is stored in the `$USER` environment variable in most shells
 
-## Intermediate Exercises
+# Intermediate Exercises
 
 9. **File Content Extraction**
     - Use `head` and `tail` to display:
@@ -84,7 +90,7 @@ permalink: /shell-workout/
         - Sort them by size
         - Display the top 5 largest files
 
-## Advanced Exercises
+# Advanced Exercises
 
 16. **Backup Utility Script**
     - Create a shell script that acts as a simple backup utility:
@@ -120,7 +126,7 @@ permalink: /shell-workout/
         - Allows removing an existing environment variable
         - Displays all current environment variables
 
-## Bonus Challenges
+# Bonus Challenges
 
 21. **tmux Monitoring Session**
     - Create a tmux session script that:

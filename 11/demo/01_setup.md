@@ -93,7 +93,7 @@ def data_directory():
 
 data_dir = data_directory()
 manifest_path = data_dir / "demo_release_manifest.json"
-expected_manifest_sha256 = "3f68d35fd157d53c0ae88f3119faa7bf9896515d153664227db3384d219aaa79"
+expected_manifest_sha256 = "558c28a8ab5a16769ac6ef9d170e7bd7f4ae4ef5d2a9e2b11fd2fb84d79b2c9d"
 assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
     "Manifest hash mismatch"
 )
@@ -106,7 +106,7 @@ for artifact in manifest["artifacts"].values():
     assert path.stat().st_size == artifact["byte_size"]
 
 assert manifest["artifacts"]["sample"]["sha256"] == (
-    "750bcc85f0267f9189dc9842ef44827168c384d4a7e5a8678e9a996348fc4b7d"
+    "0a2fdc27ce787c5d042dc73b71eecd7d7dca326c97cebd3a78f9e68d2fe4c16f"
 )
 
 print(f"Verified release: {manifest['release_id']}")

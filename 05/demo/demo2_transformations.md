@@ -13,7 +13,7 @@ jupyter:
     name: python3
   language_info:
     name: python
-    version: 3.14
+    version: 3.13
 ---
 
 # Data Transformation and Cleaning Pipeline

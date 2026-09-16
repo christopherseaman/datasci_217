@@ -1,32 +1,34 @@
-# Assignment 01 platform checkpoint
+# Assignment 01: Work in Your Fork
 
-The public checker is the grading contract: graders run a trusted copy against submitted artifacts and never execute student code.
+A fork is your copy on GitHub; a clone is the working copy on your computer. Complete and submit the assignment in your fork.
 
-This is one exact, guided GUI synchronization checklist whose sole purpose is to deliver Assignment 01. It is required but unassessed. You are not expected to explain repositories, staging, commits, branches, remotes, push, or pull yet; Lecture 02 defines and practices those concepts.
+## Fork and open the assignment
 
-Use GitHub Desktop for this first delivery unless the instructor gives you an equivalent accessibility workflow.
+1. Open the assignment repository URL and sign in to GitHub.
+2. Select **Fork**, choose your own account as the owner, and select **Create fork**.
 
-## Open the assigned repository
+    ![GitHub's Fork button](media/github-fork.png)
 
-1. Open the Assignment 01 repository URL supplied by the instructor and sign in with the course GitHub account.
-2. Open the repository and confirm that it contains the Assignment 01 files.
-3. On that repository page, select **Code → Open with GitHub Desktop**.
-4. Approve the browser prompt to open GitHub Desktop.
-5. In GitHub Desktop, choose a local folder you can find again and select **Clone**.
-6. Select **Repository → Open in Visual Studio Code**.
-7. In VS Code, open **Terminal → New Terminal**, run `pwd`, and confirm that the terminal is in the assigned repository before beginning the assignment.
+3. On your fork, select **Code → HTTPS** and copy the URL. Check that the owner is your username.
+
+    ![Copy the HTTPS URL from your fork's Code menu](media/github-clone-url.png)
+
+4. In VS Code's Command Palette, run **Git: Clone**, paste your fork's URL, choose a local folder, and open the cloned repository. Sign in to GitHub if prompted.
+
+    ![VS Code's Clone from URL prompt; paste your fork's GitHub URL here](media/vscode-clone.png)
+
+5. Open **Terminal → New Terminal**. Use `pwd` and `ls` to confirm that you are in the folder containing this assignment's `README.md`.
+
+Screenshots show example repositories; use your own fork's URL. Sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
 
 ## Deliver the completed files
 
-Complete the assignment and make `python check_assignment.py` report `All public checks passed.` Then:
+After generating `output/readiness.txt` and passing `python3 check_assignment.py`:
 
-1. Return to GitHub Desktop and select the **Changes** tab.
-2. Confirm that the changed-file list contains only your Assignment 01 work. It should include the three student scripts, `terminal-practice/source.txt`, `terminal-practice/path-check.txt`, and the committed milestone artifact `output/readiness.txt`.
-3. In the **Summary** box, enter exactly `Complete Assignment 01`.
-4. Select **Commit to main**.
-5. Select **Push origin**.
-6. Return to the assigned repository page in the browser and refresh it.
-7. Open `output/readiness.txt` on the repository page and confirm that its final line is `Next checkpoint: 5`.
-8. Optionally open the repository's **Actions** tab to inspect the public pytest feedback; a green run is useful evidence but is not a submission requirement.
+1. Open VS Code's **Source Control** view and review your changes.
+2. Stage (**+**) the three student scripts, `terminal-practice/source.txt`, `terminal-practice/path-check.txt`, `output/readiness.txt`, and `output/student_identity.txt`.
+3. Enter a descriptive message, such as `Complete Assignment 01`, and select **Commit** on `main`.
+4. Select **Sync Changes** to push to your fork.
+5. Open your fork on GitHub and confirm that `output/readiness.txt` ends with `Next checkpoint: 5`.
 
-If any named button is unavailable, stop before trying terminal Git commands. Record a screenshot and the exact message, then contact the instructor. The delivery checkpoint is handled separately from the Python pass/fail result.
+Your fork is the submission; no pull request to the course repository is needed. The optional **Actions** check provides feedback on the committed artifacts. Lecture 02 explains the Git model behind this workflow.

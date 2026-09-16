@@ -10,9 +10,7 @@
 
 ## Setup
 
-**Important:** Use Python 3.13 for this demo because the stable TensorFlow
-2.21.0 wheel does not support Python 3.14. Keep the exact package versions in
-`requirements.txt`.
+Use the course Python 3.13 runtime with TensorFlow 2.21.0 and the exact package versions in `requirements.txt`.
 
 ```python
 import pandas as pd

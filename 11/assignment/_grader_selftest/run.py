@@ -315,7 +315,7 @@ def _run_cli(script: Path, target: Path, cwd: Path, environment: dict[str, str])
 
 
 def main() -> int:
-    assert sys.version_info[:2] == (3, 14)
+    assert sys.version_info[:2] == (3, 13)
     with tempfile.TemporaryDirectory(prefix="a11-public-", dir=ASSIGNMENT.parents[1] / "scratch") as temporary_name:
         correct = Path(temporary_name) / "correct"
         empty = Path(temporary_name) / "empty"

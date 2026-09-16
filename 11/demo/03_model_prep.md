@@ -86,8 +86,8 @@ def acquire_authenticated_panel():
 
     manifest_path = directory / filenames[0]
     panel_path = directory / filenames[1]
-    expected_manifest_sha256 = "3f68d35fd157d53c0ae88f3119faa7bf9896515d153664227db3384d219aaa79"
-    expected_panel_sha256 = "6c5658bd1d076930a9c552372fb3fb3d5dd71efbc4e4a736b5695e14f5d7b574"
+    expected_manifest_sha256 = "558c28a8ab5a16769ac6ef9d170e7bd7f4ae4ef5d2a9e2b11fd2fb84d79b2c9d"
+    expected_panel_sha256 = "f1f55ea809119757ee26995ae1eae4ff6be21b70273194c35aa388cfbfe13ad3"
     assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == expected_manifest_sha256, (
         "Manifest hash mismatch"
     )

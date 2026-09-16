@@ -29,7 +29,7 @@ The supplied loader and checker use later Python features internally. Run them, 
 Replace the single `TODO` line in `.python-version` with exactly:
 
 ```text
-3.14
+3.13
 ```
 
 Replace the single `TODO` line in `requirements.txt` with the only deliberate direct dependency:
@@ -43,9 +43,9 @@ Do not add uv, pytest, or transitive packages to `requirements.txt`. The file re
 From the assignment directory, use uv to install/pin the interpreter, create the named local environment, activate it, install the direct requirement, and verify the selected interpreter:
 
 ```bash
-uv python install 3.14
-uv python pin 3.14
-uv venv --python 3.14 .venv
+uv python install 3.13
+uv python pin 3.13
+uv venv --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 python --version
@@ -57,7 +57,7 @@ cat output/environment_check.txt
 The exact saved probe is:
 
 ```text
-Python: 3.14
+Python: 3.13
 NumPy: 2.3.3
 ```
 
@@ -68,7 +68,7 @@ deactivate
 mkdir recreation-check
 cp .python-version requirements.txt environment_check.py recreation-check/
 cd recreation-check
-uv venv --python 3.14 .venv
+uv venv --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 python environment_check.py

@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-EXPECTED_PYTHON_RECORD = "3.14\n"
+EXPECTED_PYTHON_RECORD = "3.13\n"
 EXPECTED_REQUIREMENTS = "numpy==2.3.3\n"
-EXPECTED_ENVIRONMENT_OUTPUT = ("Python: 3.14", "NumPy: 2.3.3")
+EXPECTED_ENVIRONMENT_OUTPUT = ("Python: 3.13", "NumPy: 2.3.3")
 EXPECTED_HEAD = ("site,baseline,follow_up", "north,10,20", "south,20,30")
 EXPECTED_TAIL = ("south,20,30", "north,30,40")
 EXPECTED_ANALYSIS = (
@@ -67,7 +67,7 @@ def _lines(root: Path, filename: str) -> tuple[str, ...]:
 
 
 def check_environment_artifacts(root: Path) -> None:
-    _assert((root / ".python-version").read_text(encoding="utf-8") == EXPECTED_PYTHON_RECORD, "Replace .python-version with exactly `3.14` and one final newline.")
+    _assert((root / ".python-version").read_text(encoding="utf-8") == EXPECTED_PYTHON_RECORD, "Replace .python-version with exactly `3.13` and one final newline.")
     _assert((root / "requirements.txt").read_text(encoding="utf-8") == EXPECTED_REQUIREMENTS, "Replace requirements.txt with exactly `numpy==2.3.3` and one final newline.")
     _assert(_lines(root, "output/environment_check.txt") == EXPECTED_ENVIRONMENT_OUTPUT, "output/environment_check.txt must record the documented Python and NumPy versions.")
 

@@ -12,7 +12,7 @@ jupyter:
     name: python3
   language_info:
     name: python
-    version: 3.14
+    version: 3.13
 ---
 
 # Demo 2 — From NumPy arrays to labeled pandas
@@ -26,7 +26,7 @@ jupyter:
 
 Colab is the default launch experience; local Jupyter runs the same cells. Run this notebook from a fresh kernel and follow its checkpoints. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
 
-Compatibility candidate: Python 3.14, NumPy 2.3.3, pandas 3.0.5. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
+Compatibility candidate: Python 3.13, NumPy 2.3.3, pandas 3.0.5. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
 
 ```python
 from importlib.metadata import version

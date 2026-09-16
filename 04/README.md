@@ -29,6 +29,10 @@ The lecture examples use pandas 3.0.5 APIs. Executable demos and assignments rec
 
 This conceptual map names the parts you will use in a Jupyter notebook. The exact buttons vary slightly between JupyterLab, VS Code, and other clients.
 
+![JupyterLab: file browser at left, notebook cells and output in the center](media/jupyterlab-interface.png)
+
+Screenshot: [JupyterLab interface documentation](https://jupyterlab.readthedocs.io/en/latest/user/interface.html).
+
 | Notebook part | Purpose |
 | --- | --- |
 | Code / Markdown cell | Run Python, or explain the analysis |
@@ -39,18 +43,18 @@ This conceptual map names the parts you will use in a Jupyter notebook. The exac
 
 ![xkcd 1906, “Making Progress”: after hours of work, the same problems are now in a spreadsheet.](media/xkcd_1906.png)
 
-*[Making Progress](https://xkcd.com/1906/) by xkcd — progress, now with columns.*
+*Making Progress* by xkcd — progress, now with columns.
 
-**Reference:**
+### Reference Card: Notebook controls
 
-- **Code cells**: Execute Python code and display output
-- **Markdown cells**: Write documentation and explanations
-- **Cell execution**: `Shift+Enter` (run and advance), `Ctrl+Enter` (run and stay)
-- **Cell management**: `A` (add above), `B` (add below), `DD` (delete cell)
-- **Magic commands**: `%pwd`, `%ls`, `%timeit`, and `%pip` (notebook utilities)
-- **Kernel**: Python interpreter that executes code cells
+| Task | Control | Result |
+| --- | --- | --- |
+| Run code | Code cell; `Shift+Enter` or `Ctrl+Enter` | Output appears below; kernel state changes |
+| Explain work | Markdown cell | Rendered documentation |
+| Add or delete cells | `A`, `B`, `DD` in command mode | Notebook structure changes |
+| Choose Python | Kernel selector | Selected interpreter runs cells |
 
-**Example:**
+### Code Snippet: A notebook cell
 
 ```python
 # Cell 1: Core Python values
@@ -70,16 +74,18 @@ Magic commands are like cheat codes for Jupyter - they give you special powers t
 
 Magic commands provide special functionality for notebook environments. They start with `%` and extend Jupyter's capabilities for data analysis.
 
-**Reference:**
+### Reference Card: Magic commands
 
-- `%pwd` - Print current working directory
-- `%ls` - List directory contents
-- `%timeit expression` - Time a Python expression
-- `%pip install -r requirements.txt` - Install an activity's recorded packages into the notebook kernel environment
-- `%pip list` - List installed packages
-- `%pip show package_name` - Show package information
+| Command | Arguments | Typical output / effect |
+| --- | --- | --- |
+| `%pwd` | None | Current working directory |
+| `%ls` | None | Directory contents |
+| `%timeit expression` | Python expression | Timing summary |
+| `%pip install -r requirements.txt` | Requirements path | Packages installed into the active kernel |
+| `%pip list` | None | Installed packages |
+| `%pip show package_name` | Package name | Package metadata |
 
-**Example:**
+### Code Snippet: Inspecting the notebook environment
 
 ```python
 # These examples use only notebook mechanics and core Python.
@@ -95,20 +101,25 @@ Plotting is deferred until Lecture 07, after the plotting libraries and workflow
 
 ## Jupyter Notebooks in VS Code
 
+![VS Code notebook: add code or Markdown, run cells, run all, and select a kernel](media/vscode-jupyter-kernel-picker.png)
+
+Use **Select Kernel** at the top right to choose the activity's Python environment. **Run All** executes the notebook in order. Screenshot: [VS Code notebook documentation](https://code.visualstudio.com/docs/datascience/jupyter-notebooks).
+
 VS Code provides excellent Jupyter notebook support with integrated terminal, git management, and debugging capabilities. Understanding how to work with notebooks in VS Code is essential for modern data science workflows.
 
-**Reference:**
+### Reference Card: VS Code notebook actions
 
-- **Create notebook**: `Ctrl+Shift+P` → "Jupyter: Create New Jupyter Notebook"
-- **Open notebook**: `Ctrl+O` → Select `.ipynb` file
-- **Run cell**: `Shift+Enter` (run and advance), `Ctrl+Enter` (run and stay)
-- **Add cell**: Click `+` button above cells, or right-click → "Insert Cell Above/Below"
-- **Delete cell**: Right-click cell → "Delete Cell", or select cell and press `Delete` key
-- **Save**: `Ctrl+S` (auto-saves frequently)
+| Task | Control | Result |
+| --- | --- | --- |
+| Create | `Ctrl+Shift+P` → “Jupyter: Create New Jupyter Notebook” | New `.ipynb` file |
+| Open | `Ctrl+O` → select `.ipynb` | Notebook opens in the editor |
+| Run | `Shift+Enter` / `Ctrl+Enter` | Run-and-advance / run-and-stay |
+| Add or delete | `+` or right-click cell menu | Cell inserted or removed |
+| Save | `Ctrl+S` | Notebook file is written |
 
 **Note:** Keyboard shortcuts like `A` and `DD` only work in command mode (when cell is selected but not editing). For beginners, using the GUI buttons and right-click menu is more reliable.
 
-**Example:**
+### Code Snippet: Running a notebook cell
 
 ```python
 # VS Code automatically detects .ipynb files
@@ -121,14 +132,15 @@ print(message)
 
 The kernel is the Python interpreter running your code. Sometimes it gets stuck or needs a fresh start.
 
-**Reference:**
+### Reference Card: Kernel actions
 
-- **Restart Kernel**: Clears all variables from memory, fresh start
-- **Run All**: Executes all cells from top to bottom
-- **Restart & Run All**: Combines both - useful for testing if code works from scratch
-- Common issues: Variable conflicts, memory issues, stuck computations
+| Action | Purpose | Result |
+| --- | --- | --- |
+| Restart Kernel | Clear variables and recover from a stuck computation | Fresh interpreter |
+| Run All | Execute cells from top to bottom | Rebuilt notebook state |
+| Restart & Run All | Test reproducibility from a clean state | Fresh state plus outputs |
 
-**Example:**
+### When to restart the kernel
 
 When to restart your kernel:
 
@@ -151,7 +163,7 @@ Accidentally printed passwords, patient data, or embarrassing test results are s
 2. **Check for sensitive data** - Make sure no personal information, passwords, or confidential data is visible
 3. **Save the notebook** - The outputs will be removed from the file
 
-**Example:**
+### Code Snippet: Clear sensitive output before commit
 
 ```python
 # This output contains sensitive data and will be saved in the notebook
@@ -169,7 +181,7 @@ Pandas builds labeled Series and DataFrames on NumPy and adds tabular I/O and mi
 
 ![xkcd 2180, “Spreadsheets”: a joke about spreadsheet formulas becoming unexpectedly elaborate.](media/xkcd_2180.png)
 
-*[Spreadsheets](https://xkcd.com/2180/) by xkcd — a reminder that a DataFrame is useful when the spreadsheet is becoming a program.*
+*Spreadsheets* by xkcd — a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
 
 *Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
 
@@ -192,31 +204,35 @@ A Series is one labeled dimension; a DataFrame combines labeled columns under a 
 
 One DataFrame column is a Series; several aligned Series form a DataFrame.
 
-**Reference:**
+### Reference Card: Series and DataFrame structure
 
-- `pd.Series(data, index=None, name=None)` — create a labeled vector
-- `pd.DataFrame(data, index=None, columns=None)` — create a table with labeled axes
-- `.index`, `.columns`, `.shape`, `.dtypes` — inspect structure metadata
-- `.info()`, `.describe()` — quick structure and summary diagnostics
+| Object | Construct | Useful inspection | Typical result |
+| --- | --- | --- | --- |
+| `Series` | `pd.Series(data, index=None, name=None)` | `.index`, `.dtype`, `.head()` | One labeled column |
+| `DataFrame` | `pd.DataFrame(data, index=None, columns=None)` | `.shape`, `.dtypes`, `.info()` | Labeled table |
+| Both | — | `.describe()` | Summary statistics for supported columns |
 
 ### Series
 
 A Series is a one-dimensional labeled array that can hold any data type. It's like a column in a spreadsheet with an index that labels each value, enabling powerful data manipulation and analysis.
 
-**Reference:**
+### Reference Card: Series attributes and methods
 
-- `pd.Series(data, index=None, name=None)` - Create Series
-- `series.index` - Access index labels
-- `series.values` - Get values as NumPy array
-- `series.name` - Get/set Series name
-- `series.dtype` - Get data type
-- `series.size` - Number of elements
-- `series.head(n=5)` - First n elements
-- `series.tail(n=5)` - Last n elements
-- `series.describe()` - Summary statistics
-- `series.value_counts()` - Value frequencies
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.Series(data, index=None, name=None)` | Supply values and optional labels/name | New `Series` |
+| `series.index` | Access index labels | Index labels |
+| `series.values` | Access underlying values without labels | NumPy array or extension array, depending on dtype |
+| `series.name` | Get/set Series name | Series name |
+| `series.dtype` | Get data type | Data type |
+| `series.size` | Number of elements | Integer element count |
+| `series.head(n=5)` | First n elements | `Series` with original labels |
+| `series.tail(n=5)` | Last n elements | `Series` with original labels |
+| `series.describe()` | Summarize values according to dtype | Statistics as a `Series` |
+| `series.value_counts()` | Value frequencies | Frequency Series |
+
+### Code Snippet: Create and inspect a Series
 
 ```python
 # Create Series
@@ -236,21 +252,24 @@ A DataFrame is a two-dimensional labeled data structure with columns of potentia
 
 *Pro tip: DataFrames are like Excel spreadsheets, but with superpowers. They can handle millions of rows without breaking a sweat, and they never ask you to "save as" or complain about circular references.*
 
-**Reference:**
+### Reference Card: DataFrame attributes and methods
 
-- `pd.DataFrame(data, index=None, columns=None)` - Create DataFrame
-- `df.index` - Access row index
-- `df.columns` - Access column names
-- `df.values` - Get values as NumPy array
-- `df.shape` - (rows, columns) tuple
-- `df.dtypes` - Data types per column
-- `df.info()` - Detailed information
-- `df.describe()` - Summary statistics
-- `df.head(n=5)` - First n rows
-- `df.tail(n=5)` - Last n rows
-- `df.sample(n=5)` - Random n rows
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.DataFrame(data, index=None, columns=None)` | Supply data and optional row/column labels | New `DataFrame` |
+| `df.index` | Access row index | Index labels |
+| `df.columns` | Access column names | Column labels |
+| `df.values` | Get values as NumPy array | NumPy array of values |
+| `df.shape` | (rows, columns) tuple | `(rows, columns)` tuple |
+| `df.dtypes` | Data types per column | Series of column dtypes |
+| `df.info()` | Inspect types, non-null counts, and memory | Prints a summary; returns `None` |
+| `df.describe()` | Summary statistics | Summary table |
+| `df.head(n=5)` | First n rows | `DataFrame` with original labels |
+| `df.tail(n=5)` | Last n rows | `DataFrame` with original labels |
+| `df.sample(n=5)` | Random n rows | Random sample DataFrame |
+
+### Code Snippet: Create and inspect a DataFrame
 
 ```python
 # Create DataFrame
@@ -271,7 +290,7 @@ Now that Series and DataFrames are defined, we can compare notebook output choic
 
 *Think of `print()` as the reliable Honda Civic—works almost anywhere—while `display()` is the sports car: prettier, but happiest in Jupyter.*
 
-**Example:**
+### Code Snippet: Choose notebook output
 
 ```python
 df = pd.DataFrame({"Name": ["Alice", "Bob"], "Age": [25, 30]})
@@ -286,14 +305,16 @@ Thankfully, we don't have to use the whole DataFrame at all times. We can select
 
 *Think of column selection like picking your team for dodgeball - sometimes you want just your star player (single column), sometimes you want your entire A-team (multiple columns), and sometimes you want everyone except that one person who always gets you out (column exclusion).*
 
-**Reference:**
+### Reference Card: Column selection
 
-- `df['column_name']` - Select single column (returns Series)
-- `df[['col1', 'col2']]` - Select multiple columns (returns DataFrame)
-- `df.column_name` - Dot notation for single column (if name has no spaces/special chars)
-- `df.select_dtypes(include=['number'])` - Select by data type
+| Expression | Arguments | Output |
+| --- | --- | --- |
+| `df['column_name']` | One label | `Series` |
+| `df[['col1', 'col2']]` | List of labels | `DataFrame` |
+| `df.column_name` | Identifier that does not conflict with an attribute | `Series` (prefer brackets for safety) |
+| `df.select_dtypes(include=['number'])` | Dtype selector | Matching-column `DataFrame` |
 
-**Example:**
+### Code Snippet: Select Series and DataFrames
 
 ```python
 # Create sample DataFrame
@@ -353,15 +374,19 @@ Pandas supports both label-based and position-based selection.
 
 *Think of it this way: `.loc` is like asking "Give me the data for employee 'Alice'" (using names/labels), while `.iloc` is like saying "Give me the data from the 2nd row" (using positions like 0, 1, 2...).*
 
-**Reference:**
+### Reference Card: Selection and indexing
 
-- `df.loc[row_labels, column_labels]` — label-based selection
-- `df.iloc[row_positions, column_positions]` — position-based selection
-- `df.query("expression")` — filter with readable expressions
-- `df[df['column'] > value]` — boolean masking
-- `df.isin(sequence)` / `df['column'].between(left, right)` — membership and range tests
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.loc[row_labels, column_labels]` | Select by labels; label slices include the endpoint | Scalar, `Series`, or `DataFrame`, depending on selectors |
+| `df.iloc[row_positions, column_positions]` | Select by integer position; slice stop is excluded | Scalar, `Series`, or `DataFrame`, depending on selectors |
+| `df.query("expression")` | filter with readable expressions | Filtered DataFrame |
+| `df[df['column'] > value]` | boolean masking | Boolean-filtered DataFrame |
+| `df.isin(sequence)` | Test membership cell by cell | Boolean `DataFrame` |
+| `df['column'].between(left, right)` | Test an inclusive range | Boolean `Series` |
+
+### Code Snippet: Compare label and position selection
 
 ```python
 # Create DataFrame with custom index to show the difference clearly
@@ -409,14 +434,17 @@ high_earners = employees.loc[employees['Salary'] > 60000]  # Charlie
 
 Derived columns capture new features and align automatically with existing indexes. Mutate the owning DataFrame directly when that is the intent; use `.assign()` and bind its returned DataFrame when you want a new result.
 
-**Reference:**
+### Reference Card: Adding columns
 
-- `df['column_name'] = expression` — insert or overwrite a column
-- `df.assign(name=lambda d: ...)` — add columns while returning a new DataFrame
-- `df.insert(loc, column, value)` — control column ordering
-- `df.eval("new = ...")` — expression syntax for simple arithmetic
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df['column_name'] = expression` | Insert or replace a column | Updates `df`; Series values align by index |
+| `df.assign(name=lambda d: ...)` | Compute columns using the current DataFrame | New `DataFrame` with assigned columns |
+| `df.insert(loc, column, value)` | Insert a column at integer position `loc` | Updates `df`; returns `None` |
+| `df.eval("new = ...")` | expression syntax for simple arithmetic | DataFrame with evaluated column |
+
+### Code Snippet: Derive columns
 
 ```python
 salaries = pd.DataFrame({
@@ -464,13 +492,16 @@ Missing-data work begins by telling pandas which source tokens represent missing
 
 Inspect dtypes and missing-value counts together. In pandas 3, ordinary inferred text columns report `str`; use an explicit nullable `string` dtype only when that distinction is part of the data contract.
 
-**Reference:**
+### Reference Card: Read-time missing values
 
-- `pd.read_csv(..., na_values=[...], keep_default_na=True)` — define missing tokens while reading
-- `series.isna()`, `series.notna()` — null diagnostics
-- `df.isna().sum()` — column-level null counts
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.read_csv(path, na_values=[...], keep_default_na=True)` | Add source-specific tokens to the default missing markers | Parsed `DataFrame` |
+| `series.isna()`, `series.notna()` | Test missing / observed values | Boolean `Series` |
+| `df.isna().sum()` | Count missing values per column | Count `Series` indexed by column |
+
+### Code Snippet: Parse missing tokens
 
 ```python
 survey = pd.read_csv(
@@ -489,15 +520,18 @@ display(survey.dtypes)
 
 Converting data to the correct types is essential for proper analysis. This short section introduces the mechanics; Lecture 05 ties each conversion to a data contract and decides what to do with invalid or lossy values.
 
-**Reference:**
+### Reference Card: Type conversion
 
-- `df.astype('int64')` - Convert to integer
-- `df.astype('float64')` - Convert to float
-- `series.astype('string')` - Explicitly request nullable string data
-- `pd.to_datetime(df['date_column'])` - Convert to datetime
-- `pd.to_numeric(df['column'], errors='coerce')` - Convert to numeric, errors become NaN
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.astype('int64')` | Convert all columns to NumPy integers | `DataFrame`; missing values cannot be represented |
+| `df.astype('float64')` | Convert all columns to floating point | Converted `DataFrame` |
+| `series.astype('string')` | Request nullable string data | `Series` with `pd.NA` for missing values |
+| `pd.to_datetime(df['date_column'])` | Convert to datetime | Datetime Series |
+| `pd.to_numeric(df['column'], errors='coerce')` | Parse numbers and mark invalid values missing | Numeric `Series`; missing marker is `NaN` or `pd.NA`, depending on dtype |
+
+### Code Snippet: Convert columns
 
 ```python
 # Convert text digits and whole-valued floats
@@ -520,14 +554,17 @@ display(df['C'])  # [1.0, NaN, 4.0]
 
 Sorting organizes your data by values or index, making it easier to find patterns and outliers. This is one of the most common operations in data analysis.
 
-**Reference:**
+### Reference Card: Sorting
 
-- `df.sort_values('column')` - Sort by column values
-- `df.sort_values(['col1', 'col2'])` - Sort by multiple columns
-- `ascending=False` - Sort in descending order
-- `df.sort_index()` - Sort by index
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.sort_values('column')` | Sort by column values | Sorted DataFrame |
+| `df.sort_values(['col1', 'col2'])` | Sort by multiple columns | Sorted DataFrame |
+| `ascending=False` | Sort in descending order | Sorted DataFrame |
+| `df.sort_index()` | Sort by index | Sorted DataFrame |
+
+### Code Snippet: Sort rows
 
 ```python
 # Sort by age
@@ -540,14 +577,17 @@ df.sort_values('Age', ascending=False)  # Sort by age (oldest first)
 
 Exploring unique values helps you understand your data and identify categories. This is essential for data exploration and cleaning.
 
-**Reference:**
+### Reference Card: Unique values
 
-- `series.unique()` - Get unique values
-- `series.nunique()` - Count unique values
-- `series.value_counts()` - Count how often each value appears
-- `series.isin(['A', 'B'])` - Check if values are in a list
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.unique()` | Get unique values | Array of unique values |
+| `series.nunique()` | Count distinct values; missing excluded by default | Integer count |
+| `series.value_counts()` | Count how often each value appears | Frequency Series |
+| `series.isin(['A', 'B'])` | Check if values are in a list | Boolean membership mask |
+
+### Code Snippet: Inspect categories
 
 ```python
 # Find unique values
@@ -563,7 +603,7 @@ display(categories.isin(['A', 'B']))  # [True, True, True, False, True]
 
 GroupBy follows a split-apply-combine idea: split rows by a key, compute within each group, and combine the results. For a first glimpse, this calculates one mean per department:
 
-**Example:**
+### Code Snippet: Preview grouping
 
 ```python
 pay = pd.DataFrame({
@@ -585,24 +625,15 @@ CSV files are the most common format for data analysis. Pandas makes it easy to 
 
 *Fun fact: CSV stands for "Comma-Separated Values," but in reality, it's more like "Comma-Separated Values (unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day)."*
 
-**Reference:**
+### Reference Card: CSV input and output
 
-Reading
+| Operation | Arguments | Output / side effect |
+| --- | --- | --- |
+| `pd.read_csv(path)` | `sep`, `header`, `index_col`, `na_values` | New `DataFrame` |
+| `df.to_csv(path)` | `index`, `columns`, `na_rep` | CSV file on disk |
+| `pd.read_csv(path, sep=';')` | Custom delimiter | Parsed semicolon-separated table |
 
-- `pd.read_csv('filename.csv')` - Read CSV file
-- `pd.read_csv('filename.csv', sep=';')` - Custom separator
-- `pd.read_csv('filename.csv', header=0)` - Specify header row
-- `pd.read_csv('filename.csv', index_col=0)` - Use first column as index
-- `pd.read_csv(path, sep=',', header=0, index_col=None)` — all options
-
-Writing
-
-- `df.to_csv('asdf.csv')` - no frills
-- `df.to_csv('tab_separated.tsv', sep='\t')`
-- `df.to_csv(path, index=False, na_rep='')` — write cleaned results
-- `df.to_csv(path, columns=[...])` — export selected columns
-
-**Example:**
+### Code Snippet: Read and write CSV
 
 ```python
 # Basic CSV reading
@@ -612,23 +643,23 @@ display(df.head())
 # Custom options
 df = pd.read_csv('data.csv', sep=';', index_col=0)
 display(df.head())
+
+# Save a derived table without adding the row index as a CSV column
+df.to_csv('data_export.csv', index=False)
 ```
 
 ## Reading and Writing Other Formats
 
-**Reference:**
+### Reference Card: Excel and JSON I/O
 
-Excel
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.read_excel(path, sheet_name=0, usecols=None)` | Read one worksheet; optionally select columns | `DataFrame`; `sheet_name=None` instead returns a dict of sheets |
+| `df.to_excel(path, sheet_name='Summary', index=False)` | Write a named worksheet without row labels | Excel file written; returns `None` |
+| `pd.read_json(path_or_buf, orient='records')` | parse structured payloads | DataFrame parsed from JSON |
+| `df.to_json(path_or_buf, orient='records', indent=2)` | export API-friendly data | JSON output written |
 
-- `pd.read_excel(path, sheet_name=0, usecols=None)` — ingest worksheets
-- `df.to_excel(path, sheet_name='Summary', index=False)` — share spreadsheets
-
-JSON
-
-- `pd.read_json(path_or_buf, orient='records')` — parse structured payloads
-- `df.to_json(path_or_buf, orient='records', indent=2)` — export API-friendly data
-
-**Example:**
+### Code Snippet: Read and write other formats
 
 ```python
 #Excel
@@ -650,17 +681,20 @@ Summary statistics provide a quick overview of your data's distribution and char
 
 *Remember: Correlation does not imply causation! (But it's still useful for understanding patterns in your data)*
 
-**Reference:**
+### Reference Card: Summary statistics
 
-- `df.describe()` - Summary statistics for numeric columns
-- `df.info()` - Data types and memory usage
-- `df.shape` - (rows, columns) tuple
-- `df.count()` - Non-null values per column
-- `df.nunique()` - Unique values per column
-- `df.memory_usage()` - Memory usage per column
-- `df.isna().sum()` - Missing values per column
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.describe()` | Summary statistics for numeric columns | Summary table |
+| `df.info()` | Data types and memory usage | Prints a summary; returns `None` |
+| `df.shape` | (rows, columns) tuple | `(rows, columns)` tuple |
+| `df.count()` | Count non-null values per column | Count `Series` indexed by column |
+| `df.nunique()` | Count distinct non-null values per column | Count `Series` indexed by column |
+| `df.memory_usage(deep=True)` | Estimate bytes per column, including stored object data | Byte-count `Series`; includes the index by default |
+| `df.isna().sum()` | Count missing values per column | Count `Series` indexed by column |
+
+### Code Snippet: Inspect a dataset
 
 ```python
 # Summary statistics
@@ -676,12 +710,15 @@ display(df.isna().sum())  # Missing values per column
 
 This short preview shows how to inspect missing values and duplicate rows after the pandas introduction. Cleaning decisions and transformations belong to Lecture 05, where they are tied to a documented data contract.
 
-**Reference:**
+### Reference Card: Inspection checks
 
-- `df.isna().sum()` - Count missing values per column
-- `df.duplicated().sum()` - Count duplicate rows
 
-**Example:**
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.isna().sum()` | Count missing values per column | Count `Series` indexed by column |
+| `df.duplicated().sum()` | Count repeated rows after the first occurrence | Integer count |
+
+### Code Snippet: Run an inspection preview
 
 ```python
 # Inspect without changing the table

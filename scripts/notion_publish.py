@@ -51,7 +51,7 @@ def _link_url(path: Path, target: str, image: bool) -> str:
     if target.startswith(("http://", "https://", "mailto:", "#", "file:", "data:")):
         return target
     if target.startswith("/"):
-        return "https://not.badmath.org/ds217" + target
+        return f"{REPO}/tree/main{target}"
     target, hash_sep, fragment = target.partition("#")
     mapped = _mapped_url(path, target)
     if mapped:
@@ -105,6 +105,8 @@ def prepare(source: Path, current: Path) -> str:
     _, current_body = frontmatter(current_text)
     blocks, _ = _child_blocks(current_body)
     child_urls = _child_urls(blocks)
+    child_by_url = {url: block for block in blocks for url in _child_urls([block])}
+    placed_children: set[str] = set()
 
     lines: list[str] = []
     fence: tuple[str, int] | None = None
@@ -126,8 +128,17 @@ def prepare(source: Path, current: Path) -> str:
             fence = None
             lines.append(line)
             continue
-        if fence is None and _is_nav_line(line, source, child_urls):
-            continue
+        if fence is None:
+            link = LINK.fullmatch(line.strip())
+            if link and not link[1]:
+                child = child_by_url.get(_link_url(source, link[3], False))
+                if child:
+                    if child not in placed_children:
+                        lines.append(child + "\n")
+                        placed_children.add(child)
+                    continue
+            if _is_nav_line(line, source, child_urls):
+                continue
         if fence is None and line.strip() == local_title:
             local_title = None
             continue
@@ -140,7 +151,7 @@ def prepare(source: Path, current: Path) -> str:
     if fence:
         raise ValueError("Unclosed code fence")
     content = "".join(lines)
-    prefix = "\n".join(blocks)
+    prefix = "\n".join(block for block in blocks if block not in placed_children)
     if prefix:
         prefix += "\n\n"
     return prefix + content.lstrip("\n")

@@ -7,7 +7,7 @@ notion:
   url: "https://app.notion.com/p/2b0d9fdd1a1a80f49871ff3a726e57c3"
 ---
 
-From Statistics to Deep Learning: The Modern Modeling Landscape
+# From Statistics to Deep Learning: The Modern Modeling Landscape
 
 See [BONUS.md](BONUS.md) for advanced topics:
 
@@ -23,7 +23,7 @@ Before running the examples, install the packages listed in [`demo/requirements.
 
 *Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*
 
-![xkcd 1838: Machine Learning](https://imgs.xkcd.com/comics/machine_learning.png)
+![xkcd 1838: Machine Learning](media/xkcd_1838.png)
 
 *"I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."*
 
@@ -94,7 +94,7 @@ flowchart TD
 
 *"But why models?" "Seriously? I just told you that a moment ago."*
 
-![xkcd 882: Significantly](https://imgs.xkcd.com/comics/significant.png)
+![xkcd 882: Significantly](media/xkcd_882.png)
 
 *"We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"*
 
@@ -119,16 +119,15 @@ An **association** means variables vary together; **causation** claims that an i
 - You're doing traditional statistical analysis (regression, ANOVA, etc.)
 - You need model diagnostics and assumption checking
 
-**Reference:**
+### Reference Card: `statsmodels` essentials
 
-- `import statsmodels.api as sm` - Array-based API
-- `import statsmodels.formula.api as smf` - Formula-based API (R-like syntax)
-- `sm.OLS(y, X)` - Ordinary Least Squares regression
-- `smf.ols('y ~ x1 + x2', data=df)` - Formula-based OLS
-- `model.fit()` - Fit the model
-- `results.summary()` - Print model summary
-- `results.params` - Model coefficients
-- `results.pvalues` - P-values for coefficients
+| Method / attribute | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `sm.OLS(y, X)` | Build an array-based ordinary least-squares model. Add an intercept with `sm.add_constant(X)`. | Unfitted model |
+| `smf.ols("y ~ x1 + x2", data=df)` | Build a formula-based OLS model from a DataFrame. | Unfitted model |
+| `model.fit()` | Estimate coefficients from the model data. | Results object |
+| `results.summary()` | Print coefficients, uncertainty, fit statistics, and diagnostics. | Formatted text table |
+| `results.params` / `results.pvalues` | Read coefficient estimates and p-values by term. | Array or Series, depending on input |
 
 ## Linear Regression
 
@@ -150,36 +149,24 @@ Where:
 
 **Visual Example: Simple Linear Regression**
 
-```
-y (target)
-  ↑
-  |     ●
-  |   ●   ●
-  | ●       ●
-  |●         ●
-  |_____________→ x (feature)
-  
-Best-fit line: y = 2.0 + 1.5x
-```
+![Observed points, their fitted straight line, and dashed vertical residuals. The line minimizes the sum of squared residuals rather than passing through every point.](media/ols_residuals.png)
 
 *OLS minimizes the sum of squared vertical residuals (`observed y - fitted y`), not the geometric distance from each point to the line. That's what "least squares" means here.*
 
 *"I can turn left, I can turn right, I can even turn... statistically significant!"*
 
-**Reference:**
+### Reference Card: OLS results
 
-- `sm.OLS(y, X)` - Create OLS model (array-based)
-- `smf.ols('y ~ x1 + x2', data=df)` - Create OLS model (formula-based)
-- `sm.add_constant(X)` - Add intercept column to design matrix
-- `results = model.fit()` - Fit the model
-- `results.summary()` - Comprehensive model summary
-- `results.params` - Coefficient estimates (Series)
-- `results.rsquared` - R-squared value
-- `results.pvalues` - P-values for coefficients
-- `results.conf_int()` - Confidence intervals
-- `results.predict(X_new)` - Make predictions
+| Method / attribute | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `sm.add_constant(X)` | Add an intercept column to a design matrix. | Array or DataFrame with constant column |
+| `results.params` | Read fitted intercept and coefficient estimates. | Array or Series |
+| `results.rsquared` | Read the in-sample proportion of outcome variation explained by the fitted linear model. | Float |
+| `results.pvalues` | Read p-values for coefficient tests under the model assumptions. | Array or Series |
+| `results.conf_int()` | Calculate confidence intervals for coefficients. | Array or DataFrame |
+| `results.predict(X_new)` | Predict outcomes for new rows with matching columns. | Array or Series |
 
-**Example:**
+### Code Snippet: OLS with the formula API
 
 ```python
 import statsmodels.api as sm
@@ -205,7 +192,7 @@ print(results.params)  # Intercept, x1, x2 coefficients
 print(results.pvalues)  # Statistical significance
 ```
 
-![xkcd 539: Boyfriend](https://imgs.xkcd.com/comics/boyfriend.png)
+![xkcd 539: Boyfriend](media/xkcd_539.png)
 
 ## Other Statistical Methods
 
@@ -226,7 +213,7 @@ print(results.pvalues)  # Statistical significance
 
 Choose an inferential model when the question requires interpretable parameters, uncertainty, or hypothesis tests and its design and model assumptions are defensible. Inference quantifies associations under assumptions; prediction estimates performance on new data. Neither alone establishes causation.
 
-![xkcd 1725: Correlation](https://imgs.xkcd.com/comics/correlation.png)
+![xkcd 1725: Correlation](media/xkcd_1725.png)
 
 *"Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."*
 
@@ -272,15 +259,15 @@ Keep the test set untouched until preprocessing and model choices are final; tun
 
 `scikit-learn` combines preprocessing tools, pandas-compatible inputs, and a broad estimator ecosystem. Some transformations return NumPy arrays, so preserve column names explicitly when needed.
 
-**Reference:**
+### Reference Card: the estimator workflow
 
-- `from sklearn.model_selection import train_test_split` - Split data
-- `from sklearn.preprocessing import StandardScaler` - Scale features
-- `from sklearn.linear_model import LinearRegression` - Linear regression
-- `from sklearn.ensemble import RandomForestClassifier` - Random forest
-- `model.fit(X, y)` - Train model
-- `model.predict(X)` - Make predictions
-- `model.score(X, y)` - Calculate accuracy/R²
+| Function / method | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `train_test_split(X, y, test_size=..., random_state=...)` | Make reproducible train/test partitions. | `X_train, X_test, y_train, y_test` |
+| `StandardScaler().fit(X_train)` | Learn feature means and scales from training rows. | Fitted transformer |
+| `model.fit(X, y)` | Learn parameters from features and targets. | Fitted estimator (`model`) |
+| `model.predict(X)` | Generate predictions for new rows. | Array of predictions |
+| `model.score(X, y)` | Return the estimator's default score (often R² or accuracy). | Float |
 
 ## Linear Regression
 
@@ -297,17 +284,15 @@ In `scikit-learn`, linear regression participates in a predictive workflow rathe
 | Speed | Slower | Faster |
 | Use when | Need to understand relationships | Need predictions |
 
-**Reference:**
+### Reference Card: linear estimators
 
-- `from sklearn.linear_model import LinearRegression` - Basic linear regression
-- `from sklearn.linear_model import Ridge` - Ridge regression (L2 regularization)
-- `from sklearn.linear_model import Lasso` - Lasso regression (L1 regularization)
-- `model = LinearRegression()` - Create model
-- `model.fit(X_train, y_train)` - Train model
-- `model.predict(X_test)` - Make predictions
-- `model.coef_` - Model coefficients
-- `model.intercept_` - Model intercept
-- `model.score(X, y)` - R² score
+| Class / attribute | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `LinearRegression()` | Fit an unregularized linear prediction model. | Estimator |
+| `Ridge(alpha=...)` | Fit a linear model with an L2 coefficient penalty. | Estimator |
+| `Lasso(alpha=...)` | Fit a linear model with an L1 penalty that may set coefficients to zero. | Estimator |
+| `model.coef_` / `model.intercept_` | Read fitted slopes and intercept after `.fit(...)`. | Array / scalar |
+| `model.score(X, y)` | Calculate the estimator's default regression score, R². | Float |
 
 **Regularization:** Ridge and Lasso add penalty terms to prevent overfitting. Ridge (L2) shrinks coefficients, Lasso (L1) can zero out coefficients (feature selection).
 
@@ -319,7 +304,7 @@ In `scikit-learn`, linear regression participates in a predictive workflow rathe
 | Ridge (L2) | Sum of squares | Shrinks all coefficients | Many features, multicollinearity |
 | Lasso (L1) | Sum of absolute values | Can zero out coefficients | Feature selection needed |
 
-**Example:**
+### Code Snippet: linear regression with a held-out test set
 
 ```python
 from sklearn.linear_model import LinearRegression
@@ -379,18 +364,18 @@ Final Prediction: Class A (majority vote)
 
 For classification, a forest combines class votes or probabilities; for regression, it averages predictions. It models nonlinear relationships and interactions, usually without feature scaling, while aggregation reduces the instability of one tree. Feature importances are diagnostic, not causal, and missing or categorical inputs still need compatible preprocessing.
 
-**Reference:**
+### Reference Card: random forests
 
-- `from sklearn.ensemble import RandomForestClassifier` - Classification
-- `from sklearn.ensemble import RandomForestRegressor` - Regression
-- `model = RandomForestClassifier(n_estimators=100)` - Create model
-- `model.fit(X_train, y_train)` - Train model
-- `model.predict(X_test)` - Class predictions
-- `model.predict_proba(X_test)` - Probability predictions
-- `model.feature_importances_` - Feature importance scores
-- `model.score(X, y)` - Accuracy/R² score
+| Class / method | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `RandomForestClassifier(n_estimators=..., random_state=...)` | Build a classification forest from randomized trees. | Estimator |
+| `RandomForestRegressor(n_estimators=..., random_state=...)` | Build a regression forest from randomized trees. | Estimator |
+| `model.fit(X_train, y_train)` | Fit the trees on training data. | Fitted estimator |
+| `model.predict(X_test)` | Return class labels or numeric predictions. | Array |
+| `model.predict_proba(X_test)` | Return class probabilities (classification only). | 2-D array |
+| `model.feature_importances_` | Read impurity-based feature importance scores. | Array; not causal evidence |
 
-**Example:**
+### Code Snippet: random-forest classification
 
 ```python
 from sklearn.ensemble import RandomForestClassifier
@@ -510,10 +495,10 @@ For squared-error regression, the next tree fits ordinary residuals (actual minu
 
 ```
 Model 1: Makes predictions (with errors)
-Model 2: Predicts the errors of Model 1
-Model 3: Predicts the errors of Model 2
+Model 2: Fits residuals of Model 1
+Model 3: Fits residuals of the combined Models 1 + 2
 ...
-Final: Combine all models (like a modeling ensemble)
+Final: Initial prediction + learning-rate-scaled updates
 ```
 
 **Gradient Boosting Step-by-Step:**
@@ -523,14 +508,14 @@ Final: Combine all models (like a modeling ensemble)
 | 1 | Initial model makes predictions | Predicts: [5.0, 3.0, 7.0] |
 | 2 | Calculate the next-step targets | For squared-error regression, residuals: [0.5, 0.2, -0.2] |
 | 3 | New model predicts those targets | Example fitted updates: [0.4, 0.3, -0.1] |
-| 4 | Add error predictions to original | New predictions: [5.4, 3.3, 6.9] |
-| 5 | Repeat until errors are minimized | Continue for N rounds |
+| 4 | Add a scaled update to the current ensemble | With learning rate 1: [5.4, 3.3, 6.9] |
+| 5 | Recompute targets from the updated ensemble | Continue for N rounds or use validation-based early stopping |
 
-*Each new model focuses on what the previous model got wrong. It's like having a tutor who only helps with your mistakes!*
+*Each new model focuses on what the ensemble so far got wrong. It's like having a tutor who only helps with your mistakes!*
 
 *"What is this? A model for ants? It needs to be at least... three times more accurate!"*
 
-![xkcd 2400: Statistics](https://imgs.xkcd.com/comics/statistics.png)
+![xkcd 2400: Statistics](media/xkcd_2400.png)
 
 *"Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."*
 
@@ -538,18 +523,18 @@ Final: Combine all models (like a modeling ensemble)
 
 `XGBoost` is a widely used implementation to benchmark against simpler tabular baselines.
 
-**Reference:**
+### Reference Card: XGBoost
 
-- `import xgboost as xgb` - Import XGBoost
-- `model = xgb.XGBClassifier()` - Classification model
-- `model = xgb.XGBRegressor()` - Regression model
-- `model.fit(X_train, y_train)` - Train model
-- `model.predict(X_test)` - Make predictions
-- `model.predict_proba(X_test)` - Probability predictions (classification)
-- `model.feature_importances_` - Feature importance
-- `early_stopping_rounds` - Early stopping to help limit overfitting
+| Class / parameter | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `xgb.XGBClassifier(...)` | Build a gradient-boosted classifier. | Estimator |
+| `xgb.XGBRegressor(...)` | Build a gradient-boosted regressor. | Estimator |
+| `model.fit(X_train, y_train, eval_set=[(...)])` | Fit trees and optionally monitor validation data. | Fitted estimator |
+| `model.predict(X_test)` / `predict_proba(X_test)` | Return predictions or class probabilities. | Array |
+| `early_stopping_rounds` | Stop after validation performance fails to improve for the given rounds. | Selected iteration |
+| `model.feature_importances_` | Summarize fitted tree usage; do not interpret as causation. | Array |
 
-**Key Hyperparameters:**
+### Reference Card: XGBoost hyperparameters
 
 - `n_estimators` - Number of boosting rounds (trees)
 - `max_depth` - Maximum tree depth
@@ -570,7 +555,7 @@ Final: Combine all models (like a modeling ensemble)
 
 **Early stopping** ends training when validation performance stops improving. Because validation participates in model selection, keep a separate test set for one final evaluation.
 
-**Example:**
+### Code Snippet: XGBoost with early stopping
 
 ```python
 import xgboost as xgb
@@ -682,7 +667,7 @@ flowchart TD
 
 *"But why deep learning models?" "Seriously? I just told you that a moment ago."*
 
-![xkcd 2169: Predictive Models](https://imgs.xkcd.com/comics/predictive_models_2x.png)
+![xkcd 2169: Predictive Models](media/xkcd_2169.png)
 
 *"Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."*
 
@@ -690,20 +675,20 @@ flowchart TD
 
 This lecture uses TensorFlow's integrated `tf.keras` API. Framework choice depends on measured performance, target platform, expertise, and maintenance.
 
-The course runtime is Python 3.14, but the current stable TensorFlow release does not publish Python 3.14 wheels. Demo 3 therefore uses its own Python 3.13 environment with TensorFlow 2.21.0; this is the one runtime exception.
+Demo 3 uses the course Python 3.13 runtime with TensorFlow 2.21.0.
 
 **Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active at inference. It is a regularization choice to validate, not a guarantee against overfitting. Demo 3 compares Dropout and L2 as regularization choices.
 
-**Reference:**
+### Reference Card: `tf.keras`
 
-- `import tensorflow as tf` - Import TensorFlow
-- `from tensorflow import keras` - Import Keras
-- `model = keras.Sequential([...])` - Sequential model (linear stack)
-- `model.add(keras.layers.Dense(units, activation))` - Add dense layer
-- `model.compile(optimizer, loss, metrics)` - Configure training
-- `model.fit(X_train, y_train, epochs, batch_size)` - Train model
-- `model.predict(X_test)` - Make predictions
-- `model.evaluate(X_test, y_test)` - Evaluate model
+| Method / class | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `keras.Sequential([...])` | Build a linear stack of layers. | Keras model |
+| `keras.layers.Dense(units, activation=...)` | Add a fully connected layer. | Layer |
+| `model.compile(optimizer, loss, metrics)` | Configure optimization, loss, and reported metrics. | Configured model |
+| `model.fit(X_train, y_train, epochs=..., batch_size=..., validation_split=...)` | Train for epochs and optionally hold out part of training data for validation. | History object |
+| `model.predict(X_test)` | Generate predictions for new rows. | NumPy array |
+| `model.evaluate(X_test, y_test)` | Calculate loss and configured metrics on held-out data. | Scalar or list |
 
 *During training, you'll see loss decrease and accuracy (or other metrics) improve with each epoch. Monitor both training and validation metrics to detect overfitting.*
 
@@ -719,7 +704,7 @@ Hidden Layer 2 (32 neurons, ReLU)
 Output Layer (1 neuron, Sigmoid)
 ```
 
-**What Each Layer Does:**
+### Reference Card: layer roles
 
 | Layer | Purpose | Example |
 |-------|---------|---------|
@@ -730,7 +715,7 @@ Output Layer (1 neuron, Sigmoid)
 
 *"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN backpropagate!"*
 
-**Example:**
+### Code Snippet: a small Keras classifier
 
 ```python
 import tensorflow as tf
@@ -783,14 +768,22 @@ print(f"Accuracy: {accuracy:.3f}")
 - **Both:** Used for research and production; neither role belongs exclusively to one framework
 - **Choice:** Depends on required libraries, deployment target, team expertise, maintenance, and measured performance
 
-**Reference:**
+### Reference Card: PyTorch essentials
 
-- `import torch` - Import PyTorch
-- `import torch.nn as nn` - Neural network modules
-- `model = nn.Sequential([...])` - Sequential model
-- `optimizer = torch.optim.Adam(model.parameters())` - Optimizer
-- `loss_fn = nn.BCELoss()` - Loss function
-- `model.train()` / `model.eval()` - Set training/evaluation mode
+| Function / method | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `nn.Sequential(...)` | Build a simple ordered neural-network stack. | Module |
+| `torch.optim.Adam(model.parameters(), lr=...)` | Update model parameters using Adam. | Optimizer |
+| `nn.BCELoss()` | Calculate binary cross-entropy for probability outputs. | Loss function |
+| `model.train()` / `model.eval()` | Switch behavior for training or evaluation (for example, Dropout). | Module state change |
+
+### Code Snippet: PyTorch evaluation mode
+
+```python
+model.eval()
+with torch.no_grad():
+    predictions = model(X_test)
+```
 
 *PyTorch stays brief because TensorFlow/Keras owns the worked example—a teaching choice, not a universal ranking.*
 
