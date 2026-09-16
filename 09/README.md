@@ -92,13 +92,11 @@ The Python standard library provides `datetime` for working with dates and times
 
 ### Reference Card: Python `datetime`
 
-| Function | Description |
-|----------|-------------|
-| `datetime.now()` | Current date and time |
-| `datetime(year, month, day)` | Create specific date |
-| `datetime.strptime(string, format)` | Parse string to datetime |
-| `datetime.strftime(format)` | Format datetime to string |
-| `timedelta(days=1)` | Time differences |
+- `datetime.now()`: Current date and time
+- `datetime(year, month, day)`: Create specific date
+- `datetime.strptime(string, format)`: Parse string to datetime
+- `datetime.strftime(format)`: Format datetime to string
+- `timedelta(days=1)`: Time differences
 
 ### Code Snippet: Python `datetime`
 
@@ -133,13 +131,11 @@ print(f"Age in days: {time_diff.days}")
 
 ### Reference Card: DatetimeIndex Setup
 
-| Function | Description |
-|----------|-------------|
-| `pd.to_datetime()` | Convert to datetime |
-| `pd.date_range()` | Create date range |
-| `pd.DatetimeIndex()` | Create datetime index |
-| `df.set_index('date')` | Set datetime index |
-| `df.index` | Access datetime index |
+- `pd.to_datetime()`: Convert to datetime
+- `pd.date_range()`: Create date range
+- `pd.DatetimeIndex()`: Create datetime index
+- `df.set_index('date')`: Set datetime index
+- `df.index`: Access datetime index
 
 ### Code Snippet: DatetimeIndex Setup
 
@@ -219,11 +215,9 @@ You can infer the frequency of a time series and convert between frequencies.
 
 ### Reference Card: Frequency and Alignment
 
-| Function | Description |
-|----------|-------------|
-| `pd.infer_freq(ts.index)` | Infer frequency from time series |
-| `ts.asfreq(freq)` | Conform to a new timestamp grid without combining observations |
-| `ts.resample(freq).asfreq()` | Select observations at resample bin labels without aggregation |
+- `pd.infer_freq(ts.index)`: Infer frequency from time series
+- `ts.asfreq(freq)`: Conform to a new timestamp grid without combining observations
+- `ts.resample(freq).asfreq()`: Select observations at resample bin labels without aggregation
 
 ### Code Snippet: Frequency Inference
 
@@ -251,13 +245,11 @@ Shifting allows you to create lagged or leading versions of your time series, es
 
 ### Reference Card: Lagged Features
 
-| Function | Description |
-|----------|-------------|
-| `ts.shift(1)` | Shift by 1 period (lag) |
-| `ts.shift(-1)` | Shift by -1 period (lead) |
-| `ts.diff()` | First difference |
-| `ts.pct_change()` | Fractional change: `0.1` means 10%; multiply by 100 for percent |
-| `ts.shift(1, freq='D')` | Shift by 1 day (with timestamp) |
+- `ts.shift(1)`: Shift by 1 period (lag)
+- `ts.shift(-1)`: Shift by -1 period (lead)
+- `ts.diff()`: First difference
+- `ts.pct_change()`: Fractional change: `0.1` means 10%; multiply by 100 for percent
+- `ts.shift(1, freq='D')`: Shift by 1 day (with timestamp)
 
 ### Code Snippet: Lagged Features
 
@@ -292,14 +284,12 @@ print(weight_features[['weight', 'lag_1', 'diff', 'pct_change']].head())
 
 ### Reference Card: Calendar Selection
 
-| Operation | Description |
-|-----------|-------------|
-| `ts['2023-01-01']` | Select specific date |
-| `ts['2023-01-01':'2023-01-31']` | Select date range |
-| `ts['2023']` | Select entire year |
-| `ts['2023-01']` | Select specific month |
-| `ts.loc['2023-01-01']` | Label-based selection |
-| `ts.iloc[0:10]` | Position-based selection |
+- `ts['2023-01-01']`: Select specific date
+- `ts['2023-01-01':'2023-01-31']`: Select date range
+- `ts['2023']`: Select entire year
+- `ts['2023-01']`: Select specific month
+- `ts.loc['2023-01-01']`: Label-based selection
+- `ts.iloc[0:10]`: Position-based selection
 
 ### Code Snippet: Calendar Selection
 
@@ -332,14 +322,12 @@ For time series with time components, you can select based on time of day. This 
 
 ### Reference Card: Time-of-Day Selection
 
-| Function | Description |
-|----------|-------------|
-| `ts.between_time('09:00', '17:00')` | Select time range |
-| `ts.at_time('12:00')` | Select specific time |
-| `ts.loc[ts.index < start_date + pd.Timedelta(days=10)]` | First 10 days, where `start_date` is the first timestamp |
-| `ts.loc[ts.index > end_date - pd.Timedelta(days=10)]` | Last 10 days, where `end_date` is the last timestamp |
-| `ts.truncate(before='2023-06-01')` | Truncate before date (requires sorted index) |
-| `ts.truncate(after='2023-06-30')` | Truncate after date (requires sorted index) |
+- `ts.between_time('09:00', '17:00')`: Select time range
+- `ts.at_time('12:00')`: Select specific time
+- `ts.loc[ts.index < start_date + pd.Timedelta(days=10)]`: First 10 days, where `start_date` is the first timestamp
+- `ts.loc[ts.index > end_date - pd.Timedelta(days=10)]`: Last 10 days, where `end_date` is the last timestamp
+- `ts.truncate(before='2023-06-01')`: Truncate before date (requires sorted index)
+- `ts.truncate(after='2023-06-30')`: Truncate after date (requires sorted index)
 
 ### Code Snippet: Time-of-Day Selection
 
@@ -387,14 +375,12 @@ The `resample()` method is the workhorse for frequency conversion, similar to `g
 
 ### Reference Card: Resampling Frequencies
 
-| Frequency Code | Description |
-|----------------|-------------|
-| `ts.resample('D')` | Daily resampling |
-| `ts.resample('W')` | Weekly resampling |
-| `ts.resample('ME')` | Monthly resampling (Month End) |
-| `ts.resample('QE')` | Quarterly resampling (quarter end) |
-| `ts.resample('YE')` | Annual resampling (year end) |
-| `ts.resample('h')` | Hourly resampling |
+- `ts.resample('D')`: Daily resampling
+- `ts.resample('W')`: Weekly resampling
+- `ts.resample('ME')`: Monthly resampling (Month End)
+- `ts.resample('QE')`: Quarterly resampling (quarter end)
+- `ts.resample('YE')`: Annual resampling (year end)
+- `ts.resample('h')`: Hourly resampling
 
 ### Code Snippet: Basic Resampling
 
@@ -434,14 +420,12 @@ You can apply various aggregation functions when resampling, just like with `gro
 
 ### Reference Card: Resampling Aggregations
 
-| Function | Description |
-|----------|-------------|
-| `ts.resample('D').mean()` | Mean aggregation |
-| `ts.resample('D').sum()` | Sum aggregation |
-| `ts.resample('D').max()` | Maximum aggregation |
-| `ts.resample('D').min()` | Minimum aggregation |
-| `ts.resample('D').std()` | Standard deviation |
-| `ts.resample('D').agg(['mean', 'std', 'min', 'max'])` | Multiple aggregations |
+- `ts.resample('D').mean()`: Mean aggregation
+- `ts.resample('D').sum()`: Sum aggregation
+- `ts.resample('D').max()`: Maximum aggregation
+- `ts.resample('D').min()`: Minimum aggregation
+- `ts.resample('D').std()`: Standard deviation
+- `ts.resample('D').agg(['mean', 'std', 'min', 'max'])`: Multiple aggregations
 
 ### Code Snippet: Resampling Aggregations
 
@@ -494,14 +478,12 @@ The `rolling()` method creates a rolling window object that can be used with var
 
 ### Reference Card: Rolling Windows
 
-| Function | Description |
-|----------|-------------|
-| `ts.rolling(window=5)` | 5-period rolling window |
-| `ts.rolling(window=5).mean()` | Rolling mean |
-| `ts.rolling(window=5).std()` | Rolling standard deviation |
-| `ts.rolling(window=5).sum()` | Rolling sum |
-| `ts.rolling(window=5).min()` | Rolling minimum |
-| `ts.rolling(window=5).max()` | Rolling maximum |
+- `ts.rolling(window=5)`: 5-period rolling window
+- `ts.rolling(window=5).mean()`: Rolling mean
+- `ts.rolling(window=5).std()`: Rolling standard deviation
+- `ts.rolling(window=5).sum()`: Rolling sum
+- `ts.rolling(window=5).min()`: Rolling minimum
+- `ts.rolling(window=5).max()`: Rolling maximum
 
 ### Code Snippet: Rolling Statistics
 
@@ -527,14 +509,12 @@ Rolling windows can be centered, have minimum periods, and use custom functions.
 
 ### Reference Card: Rolling and EWM Options
 
-| Function | Description |
-|----------|-------------|
-| `ts.rolling(window=5, center=True)` | Centered rolling window |
-| `ts.rolling(window=5, min_periods=3)` | Minimum periods required |
-| `ts.rolling(window=5).quantile(0.5)` | Rolling median |
-| `ts.rolling(window=5).apply(custom_func)` | Custom rolling function |
-| `ts.expanding()` | Expanding window (from start to current) |
-| `ts.ewm(span=5)` | Exponentially weighted window; call `.mean()` to calculate an average |
+- `ts.rolling(window=5, center=True)`: Centered rolling window
+- `ts.rolling(window=5, min_periods=3)`: Minimum periods required
+- `ts.rolling(window=5).quantile(0.5)`: Rolling median
+- `ts.rolling(window=5).apply(custom_func)`: Custom rolling function
+- `ts.expanding()`: Expanding window (from start to current)
+- `ts.ewm(span=5)`: Exponentially weighted window; call `.mean()` to calculate an average
 
 ### Code Snippet: Advanced Rolling Features
 
@@ -566,12 +546,10 @@ Exponentially weighted functions give more weight to recent observations, making
 
 ### Reference Card: Exponentially Weighted Windows
 
-| Function | Description |
-|----------|-------------|
-| `ts.ewm(span=5).mean()` | Weighted mean with decay `alpha = 2 / (span + 1)`; larger span means slower decay |
-| `ts.ewm(alpha=0.3).mean()` | Weighted mean; larger `alpha` gives recent observations more relative weight |
-| `ts.ewm(halflife=2).mean()` | Weighted mean whose weights halve every two observations |
-| `ts.ewm(span=5).std()` | Exponentially weighted standard deviation |
+- `ts.ewm(span=5).mean()`: Weighted mean with decay `alpha = 2 / (span + 1)`; larger span means slower decay
+- `ts.ewm(alpha=0.3).mean()`: Weighted mean; larger `alpha` gives recent observations more relative weight
+- `ts.ewm(halflife=2).mean()`: Weighted mean whose weights halve every two observations
+- `ts.ewm(span=5).std()`: Exponentially weighted standard deviation
 
 ### Code Snippet: Exponentially Weighted Features
 
@@ -613,12 +591,10 @@ print(blood_pressure_features[['blood_pressure', 'ewm_mean', 'ewm_std']].head(10
 
 ### Reference Card: Time Zone Operations
 
-| Function | Description |
-|----------|-------------|
-| `ts.index.tz_localize('UTC')` | Add timezone to naive datetime |
-| `ts.index.tz_convert('US/Eastern')` | Convert timezone |
-| `pd.Timestamp.now(tz='UTC')` | Current time in timezone |
-| `pd.date_range(..., tz='UTC')` | Create timezone-aware date range |
+- `ts.index.tz_localize('UTC')`: Add timezone to naive datetime
+- `ts.index.tz_convert('US/Eastern')`: Convert timezone
+- `pd.Timestamp.now(tz='UTC')`: Current time in timezone
+- `pd.date_range(..., tz='UTC')`: Create timezone-aware date range
 
 `tz_localize()` attaches a timezone interpretation to naive clock readings without moving those clock values. `tz_convert()` requires timezone-aware values and changes their displayed clock time while preserving the same instants. Localize using the timezone in which naive source timestamps were recorded; convert to UTC for storage or to a local zone for display.
 
@@ -696,13 +672,11 @@ Use a line plot for ordered observations and overlay a rolling summary when it h
 
 ### Reference Card: Time Series Plotting
 
-| Function | Description |
-|----------|-------------|
-| `ts.plot()` | Basic line plot of time series |
-| `ts.plot(figsize=(12, 6))` | Plot with custom figure size |
-| `ts.plot(title='Title')` | Plot with title |
-| `ts.plot(style='-', marker='o')` | Plot with custom style and markers |
-| `ax = ts.plot()` | Get axes for further customization |
+- `ts.plot()`: Basic line plot of time series
+- `ts.plot(figsize=(12, 6))`: Plot with custom figure size
+- `ts.plot(title='Title')`: Plot with title
+- `ts.plot(style='-', marker='o')`: Plot with custom style and markers
+- `ax = ts.plot()`: Get axes for further customization
 
 ### Code Snippet: Time-Series Plotting
 

@@ -133,16 +133,14 @@ A parallel timeline for your project. The main branch contains your official ver
 
 ### Reference Card: Git Vocabulary
 
-| Item | Purpose |
-| --- | --- |
-| **Repository** | Collection of objects and references |
-| **Commit** | Snapshot with metadata (author, message, parents) |
-| **Blob** | File content |
-| **Tree** | Directory structure |
-| **Reference** | Human-readable name pointing to commit |
-| **HEAD** | Current commit reference |
-| **Branch** | Movable reference to commit |
-| **Remote** | Reference to repository on another machine |
+- **Repository**: Collection of objects and references
+- **Commit**: Snapshot with metadata (author, message, parents)
+- **Blob**: File content
+- **Tree**: Directory structure
+- **Reference**: Human-readable name pointing to commit
+- **HEAD**: Current commit reference
+- **Branch**: Movable reference to commit
+- **Remote**: Reference to repository on another machine
 
 ![Git Branches](media/git_branches.png)
 
@@ -224,14 +222,12 @@ Screenshots: [VS Code source control documentation](https://code.visualstudio.co
 
 #### Reference Card: VS Code Git Actions
 
-| Item | Purpose |
-| --- | --- |
-| **Source Control Panel** | `Ctrl+Shift+G` (Windows/Linux) or `Cmd+Shift+G` (Mac) |
-| **Stage Changes** | Click `+` next to files in "Changes" section |
-| **Commit** | Type message in text box, press `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac) |
-| **View Differences** | Click on modified files to see changes |
-| **Branch Management** | Click branch name in status bar to switch/create branches |
-| **Push/Pull** | Use sync button or command palette (`Ctrl+Shift+P`) |
+- **Source Control Panel**: `Ctrl+Shift+G` (Windows/Linux) or `Cmd+Shift+G` (Mac)
+- **Stage Changes**: Click `+` next to files in "Changes" section
+- **Commit**: Type message in text box, press `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac)
+- **View Differences**: Click on modified files to see changes
+- **Branch Management**: Click branch name in status bar to switch/create branches
+- **Push/Pull**: Use sync button or command palette (`Ctrl+Shift+P`)
 
 **VS Code Git Workflow:**
 
@@ -250,14 +246,12 @@ Git branching develops features in isolation before merging to main, enabling pa
 
 ### Reference Card: Git Workflow: Branching and Merging
 
-| Item | Purpose |
-| --- | --- |
-| `git branch [name]` | Create new branch |
-| `git checkout [branch]` | Switch to branch |
-| `git checkout -b [name]` | Create and switch to new branch |
-| `git merge [branch]` | Merge branch into current branch |
-| `git branch -d [name]` | Delete branch |
-| `git push origin [branch]` | Push branch to remote |
+- `git branch [name]`: Create new branch
+- `git checkout [branch]`: Switch to branch
+- `git checkout -b [name]`: Create and switch to new branch
+- `git merge [branch]`: Merge branch into current branch
+- `git branch -d [name]`: Delete branch
+- `git push origin [branch]`: Push branch to remote
 
 **Branching Workflow:**
 
@@ -292,15 +286,13 @@ GitHub's web interface manages repositories, enables collaboration, and organize
 
 ### Reference Card: GitHub Web Interface
 
-| Item | Purpose |
-| --- | --- |
-| **Repository Creation** | "New repository" button, choose name and settings |
-| **File Management** | "Add file" → "Create new file" or "Upload files" |
-| **Commit via Web** | Edit files directly, add commit message, commit |
-| **Pull Requests** | "Pull requests" tab → "New pull request" |
-| **Issues** | "Issues" tab → "New issue" for bug reports and feature requests |
-| **Project Settings** | Settings tab for permissions, branches, and integrations |
-| **Code Review** | Comment on specific lines, approve/request changes |
+- **Repository Creation**: "New repository" button, choose name and settings
+- **File Management**: "Add file" → "Create new file" or "Upload files"
+- **Commit via Web**: Edit files directly, add commit message, commit
+- **Pull Requests**: "Pull requests" tab → "New pull request"
+- **Issues**: "Issues" tab → "New issue" for bug reports and feature requests
+- **Project Settings**: Settings tab for permissions, branches, and integrations
+- **Code Review**: Comment on specific lines, approve/request changes
 
 ### Gitignore Files
 
@@ -308,14 +300,12 @@ A `.gitignore` file lists patterns for untracked files Git should ignore. Adding
 
 #### Reference Card: Ignore Patterns
 
-| Item | Purpose |
-| --- | --- |
-| `# comment` | Explain a pattern |
-| `*.csv` | Match CSV filenames |
-| `file?.txt` | Match one character, such as `file1.txt` |
-| `[abc].txt` | Match `a.txt`, `b.txt`, or `c.txt` |
-| `!keep.csv` | Re-include a file matched by an earlier pattern |
-| `**/cache/` | Match cache directories at any depth |
+- `# comment`: Explain a pattern
+- `*.csv`: Match CSV filenames
+- `file?.txt`: Match one character, such as `file1.txt`
+- `[abc].txt`: Match `a.txt`, `b.txt`, or `c.txt`
+- `!keep.csv`: Re-include a file matched by an earlier pattern
+- `**/cache/`: Match cache directories at any depth
 
 #### Code Snippet: A Project's `.gitignore`
 
@@ -349,17 +339,15 @@ Markdown is a lightweight markup language for formatted text, essential for docu
 
 ## Reference Card: Markdown Documentation
 
-| Item | Purpose |
-| --- | --- |
-| `# H1`, `## H2`, `### H3` | Headings at decreasing levels |
-| `**bold text**` | Strong emphasis |
-| `*italic text*` | Emphasis |
-| `` `inline code` `` | Literal code within a sentence |
-| Three backticks, then a language name | Start a fenced code block; close with three backticks |
-| `- item` or `1. item` | Unordered or ordered list |
-| `[text](url)` | Clickable link |
-| `![alt](url)` | Image with descriptive alternative text |
-| `\| col1 \| col2 \|` | Table row; follow the header with a separator row |
+- `# H1`, `## H2`, `### H3`: Headings at decreasing levels
+- `**bold text**`: Strong emphasis
+- `*italic text*`: Emphasis
+- `` `inline code` ``: Literal code within a sentence
+- Three backticks, then a language name: Start a fenced code block; close with three backticks
+- `- item` or `1. item`: Unordered or ordered list
+- `[text](url)`: Clickable link
+- `![alt](url)`: Image with descriptive alternative text
+- `\| col1 \| col2 \|`: Table row; follow the header with a separator row
 
 ## Code Snippet: Markdown Documentation
 
@@ -499,14 +487,12 @@ Python uses indentation for code structure, creating clean code. Every value is 
 
 ### Reference Card: Language Semantics and Object Model
 
-| Item | Purpose |
-| --- | --- |
-| Indentation defines code blocks (4 spaces recommended) | Group statements inside functions, loops, and conditionals |
-| `#` for comments | Explain code; Python ignores the rest of that line |
-| `type(object)` | Get object type |
-| `isinstance(object, type)` | Type checking |
-| `id(object)` | Get object identity |
-| `dir(object)` | List object attributes |
+- Indentation defines code blocks (4 spaces recommended): Group statements inside functions, loops, and conditionals
+- `#` for comments: Explain code; Python ignores the rest of that line
+- `type(object)`: Get object type
+- `isinstance(object, type)`: Type checking
+- `id(object)`: Get object identity
+- `dir(object)`: List object attributes
 
 ### Code Snippet: Language Semantics and Object Model
 ```python
@@ -526,11 +512,9 @@ Object introspection examines objects at runtime—their type, attributes, and m
 
 ### Reference Card: Object Introspection and Dynamic Type Checking
 
-| Item | Purpose |
-| --- | --- |
-| `type(object)` | Returns the object's type |
-| `dir(object)` | Lists attributes and methods |
-| `help(object)` | Shows documentation |
+- `type(object)`: Returns the object's type
+- `dir(object)`: Lists attributes and methods
+- `help(object)`: Shows documentation
 
 ## Imports and Modules
 
@@ -538,11 +522,9 @@ A **module** is a Python file that provides reusable names. An `import` loads a 
 
 ### Reference Card: Imports and Modules
 
-| Item | Purpose |
-| --- | --- |
-| `import module` | Import a module and use `module.name` |
-| `import module as alias` | Bind a shorter local name; this does not copy the module |
-| `from module import name` | Import one specific name |
+- `import module`: Import a module and use `module.name`
+- `import module as alias`: Bind a shorter local name; this does not copy the module
+- `from module import name`: Import one specific name
 
 ```python
 import math
@@ -566,18 +548,16 @@ Lists provide mutable sequences for data. Tuples offer immutable sequences usefu
 
 ### Reference Card: Data Structures: Lists and Tuples
 
-| Item | Purpose |
-| --- | --- |
-| `list()` | Create list |
-| `[item1, item2, ...]` | List literal |
-| `list[index]` | Access one item using a zero-based index |
-| `list[start:stop]` | Slice from `start` up to, but not including, `stop` |
-| `list.append(item)` | Add to end |
-| `list.insert(index, item)` | Insert at position |
-| `list.remove(item)` | Remove first occurrence |
-| `list.pop(index)` | Remove and return item |
-| `tuple()` | Create tuple |
-| `(item1, item2, ...)` | Tuple literal |
+- `list()`: Create list
+- `[item1, item2, ...]`: List literal
+- `list[index]`: Access one item using a zero-based index
+- `list[start:stop]`: Slice from `start` up to, but not including, `stop`
+- `list.append(item)`: Add to end
+- `list.insert(index, item)`: Insert at position
+- `list.remove(item)`: Remove first occurrence
+- `list.pop(index)`: Remove and return item
+- `tuple()`: Create tuple
+- `(item1, item2, ...)`: Tuple literal
 
 ### Code Snippet: Data Structures: Lists and Tuples
 
@@ -627,16 +607,14 @@ Dictionaries provide key-value storage for structured data. Sets offer unique co
 
 ### Reference Card: Data Structures: Dictionaries and Sets
 
-| Item | Purpose |
-| --- | --- |
-| `dict()` | Create dictionary |
-| `{key: value, ...}` | Dictionary literal |
-| `dict[key]` | Access value |
-| `dict.get(key, default)` | Safe access |
-| `dict.keys()`, `dict.values()`, `dict.items()` | Iteration |
-| `set()` | Create set |
-| `{item1, item2, ...}` | Set literal |
-| `set.union()`, `set.intersection()`, `set.difference()` | Set operations |
+- `dict()`: Create dictionary
+- `{key: value, ...}`: Dictionary literal
+- `dict[key]`: Access value
+- `dict.get(key, default)`: Safe access
+- `dict.keys()`, `dict.values()`, `dict.items()`: Iteration
+- `set()`: Create set
+- `{item1, item2, ...}`: Set literal
+- `set.union()`, `set.intersection()`, `set.difference()`: Set operations
 
 ### Code Snippet: Data Structures: Dictionaries and Sets
 
@@ -658,13 +636,11 @@ Sequence functions combine, order, and summarize collections. Lecture 03 introdu
 
 ### Reference Card: Sequence Functions
 
-| Item | Purpose |
-| --- | --- |
-| `enumerate(iterable)` | Get index and value pairs |
-| `zip(iterable1, iterable2)` | Combine sequences |
-| `sorted(iterable)` | Create sorted list |
-| `reversed(iterable)` | Reverse sequence |
-| `sum()`, `min()`, `max()`, `len()` | Aggregation functions |
+- `enumerate(iterable)`: Get index and value pairs
+- `zip(iterable1, iterable2)`: Combine sequences
+- `sorted(iterable)`: Create sorted list
+- `reversed(iterable)`: Reverse sequence
+- `sum()`, `min()`, `max()`, `len()`: Aggregation functions
 
 ### Code Snippet: Sequence Functions
 
@@ -686,12 +662,10 @@ Functions organize code into reusable units with clear interfaces. They enable r
 
 ### Reference Card: Functions
 
-| Item | Purpose |
-| --- | --- |
-| `def function_name(parameters): ...` | Function definition |
-| `return value` | Return value |
-| Function calls: `result = function_name(arguments)` | Run a function with arguments and store its return value |
-| Default parameters: `def func(param=default_value):` | Use a fallback value when the caller omits an argument |
+- `def function_name(parameters): ...`: Function definition
+- `return value`: Return value
+- Function calls: `result = function_name(arguments)`: Run a function with arguments and store its return value
+- Default parameters: `def func(param=default_value):`: Use a fallback value when the caller omits an argument
 
 ### Code Snippet: Functions
 
@@ -715,19 +689,17 @@ File I/O operations are essential for data science. Python provides simple tools
 
 ### Reference Card: Basic File I/O Operations
 
-| Item | Purpose |
-| --- | --- |
-| `open(file, mode)` | Open file with specified mode |
-| `'r'` | Read mode (default) |
-| `'w'` | Write mode (overwrites existing files) |
-| `'a'` | Append mode (adds to existing files) |
-| `'x'` | Create mode (fails if file exists) |
-| `file.read()` | Read entire file content |
-| `file.readline()` | Read single line |
-| `file.readlines()` | Read all lines into list |
-| `file.write(string)` | Write string to file |
-| `file.close()` | Close file handle |
-| `with open(...) as file:` | Close the handle automatically when the block ends |
+- `open(file, mode)`: Open file with specified mode
+- `'r'`: Read mode (default)
+- `'w'`: Write mode (overwrites existing files)
+- `'a'`: Append mode (adds to existing files)
+- `'x'`: Create mode (fails if file exists)
+- `file.read()`: Read entire file content
+- `file.readline()`: Read single line
+- `file.readlines()`: Read all lines into list
+- `file.write(string)`: Write string to file
+- `file.close()`: Close file handle
+- `with open(...) as file:`: Close the handle automatically when the block ends
 
 ### Code Snippet: Basic File I/O Operations
 

@@ -19,9 +19,9 @@ Use this checklist to prepare the tools used in Lecture 01. The commands are saf
 2. Install the **Python** extension by Microsoft.
 3. Optional extensions: GitLens and Rainbow CSV.
 4. Open a course or practice folder in VS Code.
-5. Open the integrated terminal with **Terminal → New Terminal**.
+5. Open the integrated terminal with **Terminal → New Terminal** (`Ctrl+Shift+backtick` on all platforms).
 
-Useful interface areas are Explorer, Search, Source Control, Run and Debug, and Extensions. The keyboard shortcuts vary by operating system.
+Useful interface areas are Explorer, Search, Source Control, Run and Debug, and Extensions. Open the Command Palette with **View → Command Palette** (`Ctrl+Shift+P` on Windows/Linux; `Cmd+Shift+P` on macOS). Open Source Control with **View → Source Control** (`Ctrl+Shift+G` on all platforms, including macOS).
 
 ## 3. Choose a shell
 
@@ -67,12 +67,12 @@ Confirm that the displayed email is the privacy-preserving GitHub address.
 
     ![Copy the HTTPS URL from your fork](../assignment/media/github-clone-url.png)
 
-3. In VS Code's Command Palette, choose **Git: Clone**, paste the URL, choose a local folder, and open it.
+3. Open **View → Command Palette** (`Ctrl+Shift+P` on Windows/Linux; `Cmd+Shift+P` on macOS), choose **Git: Clone**, paste the URL, choose a local folder, and open it.
 
     ![VS Code's Clone from URL prompt](../assignment/media/vscode-clone.png)
 
 4. In Explorer, create `practice.txt` and write a sentence about what you want to learn.
-5. Open **Source Control**, review the change, stage it with **+**, enter a commit message, and select **Commit**.
+5. Open **View → Source Control** (`Ctrl+Shift+G` on all platforms, including macOS), review the change, stage it with **+**, enter a commit message, and select **Commit**.
 6. Select **Sync Changes**, then check your fork on GitHub to see the file there.
 
 You have a copy on GitHub and a working copy on your computer. Lecture 02 develops the Git concepts behind this workflow.

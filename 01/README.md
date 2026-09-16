@@ -37,7 +37,7 @@ This course started as a Python introduction plus as much of the practical stuff
 
 The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
 
-Use [VS Code](https://code.visualstudio.com/)'s **Terminal → New Terminal** for course commands. Open your project folder first; the terminal starts there. On Windows, use the terminal dropdown's **Select Default Profile → Ubuntu (WSL)**, then open a new terminal. If WSL is not installed yet, use the setup step below.
+Use [VS Code](https://code.visualstudio.com/)'s **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac) for course commands. Open your project folder first; the terminal starts there. On Windows, use the terminal dropdown's **Select Default Profile → Ubuntu (WSL)**, then open a new terminal. If WSL is not installed yet, use the setup step below.
 
 The native terminal apps below are alternatives and can also handle initial installation before VS Code is ready. Use `cd` to enter your project folder when working in a separate terminal.
 
@@ -140,17 +140,15 @@ Open the assignment folder with **File → Open Folder** so the editor, terminal
 
 ![VS Code's labeled interface showing the Activity Bar, Primary Side Bar, editor, Panel, and Status Bar.](media/vscode-workspace.png)
 
-| Task | Where / how |
-| --- | --- |
-| Open or create a file | **Explorer** at left; click a filename or the **New File** icon. Keep `.py` on Python filenames. |
-| Edit and save | Type in the editor; **File → Save** or Ctrl+S (Cmd+S on Mac). Save before running. |
-| Enable Python support | **Extensions** at left; install **Python** by Microsoft. |
-| Choose Python | Command Palette → **Python: Select Interpreter**; select the installed Python 3.13. |
-| Run a command | **Terminal → New Terminal**; type the command at the prompt and press Enter. |
-| Find an editor action | **View → Command Palette**; type its name, such as `Git: Clone`. |
-| Review changed files | **Source Control** at left; click a file to see its changes. |
+- Open or create a file: **Explorer** at left; click a filename or the **New File** icon. Keep `.py` on Python filenames.
+- Edit and save: Type in the editor; **File → Save** or Ctrl+S (Cmd+S on Mac). Save before running.
+- Enable Python support: **Extensions** at left; install **Python** by Microsoft.
+- Choose Python: Command Palette → **Python: Select Interpreter**; select the installed Python 3.13.
+- Run a command: **Terminal → New Terminal**, or Ctrl+Shift+backtick (also Control on Mac); type the command at the prompt and press Enter.
+- Find an editor action: **View → Command Palette**, or Ctrl+Shift+P (Cmd+Shift+P on Mac); type its name, such as `Git: Clone`.
+- Review changed files: **View → Source Control**, or Ctrl+Shift+G (also Control on Mac); click a file to see its changes.
 
-The editor changes files; the terminal runs commands. Saving a file does not run it or upload it to GitHub. Screenshot: [VS Code interface](https://code.visualstudio.com/docs/editing/getting-started/userinterface).
+The editor changes files; the terminal runs commands. Saving a file does not run it or upload it to GitHub. Screenshot: [VS Code interface](https://code.visualstudio.com/docs/editing/getting-started/userinterface). **Help → Keyboard Shortcuts Reference** lists your platform's [default shortcuts](https://code.visualstudio.com/docs/reference/default-keybindings).
 
 ## Starting with GitHub
 
@@ -179,13 +177,13 @@ GitHub Student Pack (Optional Bonus) With your .edu email, you can get free prem
 Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code.
 
 1. Install VS Code (if not already done)
-2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
+2. Open **View → Source Control**, or Ctrl+Shift+G (also Control on Mac)
 3. If first time: VS Code will prompt to configure Git username/email
 
 Git configuration (one-time setup):
 
-- Full Name: Christopher Seaman
-- Email: [86775+christopherseaman@users.noreply.github.com](mailto:86775+christopherseaman@users.noreply.github.com)
+- Full Name: your name
+- Email: your GitHub `noreply` address from **GitHub → Settings → Emails**
 
 ### DON'T USE YOUR REAL EMAIL IN GIT CONFIG
 
@@ -198,20 +196,23 @@ You don't want to put your email all over the public internet, so GitHub provide
 (Usually unnecessary if already done through VS Code.)
 
 ```bash
-git config --global user.name "<YOUR NAME>"
-git config --global user.email "<YOUR GITHUB PROXY EMAIL>"
+git config --global user.name "YOUR NAME"
+git config --global user.email "YOUR GITHUB PROXY EMAIL"
 ```
 
-## Get Your Assignment Copy
+## Getting the First Assignment
 
 A **fork** is your copy on GitHub; a **clone** is the working copy on your computer. Follow these steps to start Assignment 01. Lecture 02 explains the Git concepts behind them.
 
 ### Fork on GitHub
 
-1. Open the assignment repository linked for this term and sign in to GitHub.
-2. Select **Fork**, choose your account as the owner, and select **Create fork**.
+1. Open the assignment repository linked for this term, sign in, and select **Fork**.
 
 ![GitHub's Fork button](assignment/media/github-fork.png)
+
+2. Choose **your account** as Owner, keep the repository name and **Copy the main branch only** checked, then select **Create fork**.
+
+![GitHub's Create a new fork form: select your account as Owner, keep the repository name, and click Create fork.](assignment/media/github-create-fork.png)
 
 ### Clone Your Fork in VS Code
 
@@ -219,7 +220,7 @@ A **fork** is your copy on GitHub; a **clone** is the working copy on your compu
 
 ![Copy your fork's HTTPS URL from the Code menu](assignment/media/github-clone-url.png)
 
-2. In VS Code, open **View → Command Palette**, choose **Git: Clone**, paste that URL, choose a folder on your computer, and open the cloned repository. Sign in if prompted.
+2. In VS Code, open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste that URL, choose a folder on your computer, and open the cloned repository. Sign in if prompted.
 
 ![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
 
@@ -229,7 +230,7 @@ Screenshot sources: [GitHub Docs](https://docs.github.com/en/pull-requests/colla
 
 ## Submit Your Assignment Files
 
-A **commit** saves a version locally; **push** sends it to GitHub. Use either route below after completing the assignment's checkpoints.
+A **commit** saves a version; **push** sends local commits to GitHub. To submit the first assignment, use **VS Code to commit and push**, or **the GitHub website to upload and commit directly**, as shown below.
 
 ### VS Code: Commit and Sync
 
@@ -294,14 +295,12 @@ Think of it as texting your computer instead of playing charades with icons.
 
 ### Reference Card: Navigation Commands
 
-| Item | Purpose |
-| --- | --- |
-| `pwd` | Print working directory (where am I?) |
-| `ls` | List contents (what's here?) |
-| `ls -la` | List with details (show me everything) |
-| `cd [path]` | Change directory (go somewhere) |
-| `cd ..` | Go up one level |
-| `cd ~` | Go to home directory |
+- `pwd`: Print working directory (where am I?)
+- `ls`: List contents (what's here?)
+- `ls -la`: List with details (show me everything)
+- `cd [path]`: Change directory (go somewhere)
+- `cd ..`: Go up one level
+- `cd ~`: Go to home directory
 
 ### Code Snippet: Navigation Commands
 
@@ -317,15 +316,13 @@ pwd                    # Shows: /Users/yourname/Documents
 
 ### Reference Card: File and Directory Operations
 
-| Item | Purpose |
-| --- | --- |
-| `mkdir [name]` | Make directory |
-| `mkdir -p [path/to/nested]` | Make nested directories |
-| `touch [filename]` | Create empty file |
-| `cp [source] [destination]` | Copy file |
-| `mv [source] [destination]` | Move/rename file |
-| `rm [filename]` | Remove file (careful!) |
-| `rm -r [directory]` | Remove directory and contents (very careful!) |
+- `mkdir [name]`: Make directory
+- `mkdir -p [path/to/nested]`: Make nested directories
+- `touch [filename]`: Create empty file
+- `cp [source] [destination]`: Copy file
+- `mv [source] [destination]`: Move/rename file
+- `rm [filename]`: Remove file (careful!)
+- `rm -r [directory]`: Remove directory and contents (very careful!)
 
 ### Code Snippet: Extended Examples for Data Science Workflows
 
@@ -366,13 +363,11 @@ mkdir data              # Create data subfolder
 
 ### Reference Card: Viewing Files
 
-| Item | Purpose |
-| --- | --- |
-| `cat [filename]` | Show entire file contents |
-| `head [filename]` | Show first 10 lines |
-| `head -n 5 [filename]` | Show first 5 lines |
-| `tail [filename]` | Show last 10 lines |
-| `tail -n 20 [filename]` | Show last 20 lines |
+- `cat [filename]`: Show entire file contents
+- `head [filename]`: Show first 10 lines
+- `head -n 5 [filename]`: Show first 5 lines
+- `tail [filename]`: Show last 10 lines
+- `tail -n 20 [filename]`: Show last 20 lines
 
 ### Code Snippet: Viewing Files
 
@@ -386,11 +381,9 @@ tail -n 5 results.txt   # See the last few results
 
 ### Reference Card: Getting Help
 
-| Item | Purpose |
-| --- | --- |
-| `man [command]` | Manual page for command |
-| `[command] --help` | Quick help for command |
-| `which [command]` | Find where command is located |
+- `man [command]`: Manual page for command
+- `[command] --help`: Quick help for command
+- `which [command]`: Find where command is located
 
 Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 
@@ -478,7 +471,7 @@ To fix the second example, indent the `print()` line four spaces beneath `if`, a
 print("This is code")  # Comments can also go at the end of lines
 ```
 
-**Key Syntax Rules:**
+### Reference Card: Python Syntax
 
 - Use 4 spaces for indentation (not tabs)
 - No semicolons needed at the end of lines (but you can have them if you REALLY want them)
@@ -520,6 +513,14 @@ atom_mass = 1.67e-27        # Very small number
 
 ### Text - Essential for Data Labels and Categories
 
+#### Reference Card: Strings
+
+- `text.upper()` / `text.lower()`: return uppercase / lowercase text.
+- `text.title()`: return text with each word capitalized.
+- `text.strip()`: remove leading and trailing whitespace.
+- `len(text)`: count characters, including spaces.
+- String methods return new text; assign the result to keep it.
+
 ```python
 # Strings for text data
 student_name = "Alice Johnson"
@@ -534,6 +535,13 @@ clean_name = "  Bob Smith  ".strip()     # Removes whitespace: "Bob Smith"
 ```
 
 ### Boolean - Essential for Data Filtering
+
+#### Reference Card: Boolean Logic
+
+- `True` / `False`: the two Boolean values.
+- `a and b`: true when both are true.
+- `a or b`: true when at least one is true.
+- `not a`: reverse a Boolean value.
 
 ```python
 # True/False values for logical operations
@@ -603,6 +611,15 @@ Both objects support `len()`. Python checks the operation when it runs; unsuppor
 
 Use `print()` to display a value or several values separated by commas. Python puts spaces between them.
 
+### Reference Card: Arithmetic
+
+- `+`, `-`, `*`: add, subtract, multiply. For strings, `+` joins text.
+- `/`: divide; `15 / 4` gives `3.75`.
+- `//`: floor division; `15 // 4` gives `3`.
+- `%`: remainder; `15 % 4` gives `3`.
+- `**`: power; `2 ** 3` gives `8`.
+- `(...)`: group an expression to control calculation order.
+
 ### Code Snippet: Arithmetic and Strings
 
 ```python
@@ -643,16 +660,21 @@ Control structures let your programs make decisions and repeat actions - essenti
 
 ### Reference Card: Decisions and Repetition
 
-| Construct | Purpose |
-| --- | --- |
-| `if` / `elif` / `else` | Choose which block runs based on a condition |
-| `for value in values:` | Visit each item in order |
-| `range(5)` | Supply integers 0 through 4 |
-| `while condition:` | Repeat while the condition stays true |
-| `enumerate(values, start=1)` | Supply each position and value |
-| `break` / `continue` | Stop a loop / skip to its next iteration |
+- `if` / `elif` / `else`: Choose which block runs based on a condition
+- `for value in values:`: Visit each item in order
+- `range(5)`: Supply integers 0 through 4
+- `while condition:`: Repeat while the condition stays true
+- `enumerate(values, start=1)`: Supply each position and value
+- `break` / `continue`: Stop a loop / skip to its next iteration
 
 ### Comparison Operators
+
+#### Reference Card: Comparisons
+
+- `==` / `!=`: equal / not equal. Unlike `=`, these compare rather than assign.
+- `<`, `<=`, `>`, `>=`: less than, at most, greater than, at least.
+- `in` / `not in`: test whether a value belongs to a collection.
+- Each comparison returns `True` or `False`.
 
 #### Code Snippet: Comparison Operators
 
@@ -782,6 +804,15 @@ An error reports where execution stopped and what operation failed—not necessa
 2. Find the referenced line in your script.
 3. Inspect the relevant values with `print()` and their types with `type()`.
 4. Make one correction, save, and rerun. The next error may only become visible after this one is fixed.
+
+### Reference Card: Inspecting and Converting Values
+
+- `print(value)`: inspect the actual value.
+- `type(value)`: inspect its type.
+- `int("25")` / `float("25.5")`: convert numeric text to an integer / decimal number.
+- `NameError`: a name is undefined; check spelling and execution order.
+- `TypeError`: an operation does not support these types.
+- `ValueError`: the type is accepted, but the value cannot be used as requested.
 
 ### NameError: Check the Name and Its Definition
 

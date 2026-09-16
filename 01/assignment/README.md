@@ -2,7 +2,7 @@
 
 ## Setup
 
-Fork and clone the assignment using the [Lecture 01 instructions](https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696). Open your clone in VS Code, then **Terminal → New Terminal**. Use `pwd` and `ls` to confirm that you are in the folder containing this `README.md`. Use Python 3.13; the commands below use `python3`, as in Lecture 01.
+Fork and clone the assignment using the [Lecture 01 instructions](https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696). Open your clone in VS Code, then **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). Use `pwd` and `ls` to confirm that you are in the folder containing this `README.md`. Use Python 3.13; the commands below use `python3`, as in Lecture 01.
 
 ```text
 assignment/

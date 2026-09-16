@@ -16,7 +16,7 @@ There are four live breaks:
 3. Python basics (`03_python_basics_demo.py`)
 4. Control structures and debugging (`04_control_structures_demo.py`, then `05_integration_workflow_demo.py`)
 
-Run the commands in VS Code's **Terminal → New Terminal**. A separate Terminal or WSL Ubuntu window also works; use `cd` to enter your working folder first.
+Run the commands in VS Code's **Terminal → New Terminal** (`Ctrl+Shift+backtick` on all platforms). A separate Terminal or WSL Ubuntu window also works; use `cd` to enter your working folder first.
 
 ## Break 1: Git setup
 

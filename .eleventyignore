@@ -22,4 +22,5 @@ README.md
 .nojekyll
 *.py
 AGENTS.md
+FIXME.md
 .pytest_cache/**
