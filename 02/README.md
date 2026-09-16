@@ -28,29 +28,37 @@ See [BONUS.md](BONUS.md) for the optional extensions.
     - "GitHub Dark High Contrast"
 - Toggle icons: Command Palette → **Preferences: File Icon Theme**.
 
-## Meet the Main Bars
+## Reference Card: Finding Your Way Around
 
-- Activity Bar (left): Explorer, Search, Source Control, Run & Debug, Extensions
-- Side Bar: Toggle via View → Appearance → Show Side Bar
-- Panel (bottom): Problems, Output, Debug Console, Terminal (**View → Appearance → Panel** toggles visibility)
-- Secondary Side Bar (right): View → Appearance → Show Secondary Side Bar
-- Breadcrumbs: View → Appearance → Show Breadcrumbs
-- Zen Mode: View → Appearance → Zen Mode (Esc Esc to exit)
-
-## Core Panes You’ll Use
-
-- Explorer: **View → Explorer**, Ctrl+Shift+E (Windows/Linux), Cmd+Shift+E (macOS).
-- Source Control: **View → Source Control**, Ctrl+Shift+G (including Control on macOS).
-- Run & Debug: **View → Run**, Ctrl+Shift+D (Windows/Linux), Cmd+Shift+D (macOS); **Run → Start Debugging**, F5.
-- Extensions: **View → Extensions**, Ctrl+Shift+X (Windows/Linux), Cmd+Shift+X (macOS).
-- New terminal: **Terminal → New Terminal**, Ctrl+Shift+backtick (including Control on macOS).
-- Split Editor: **View → Editor Layout → Split Right**, Ctrl+backslash (Windows/Linux), Cmd+backslash (macOS).
+- **Activity Bar** (left): Explorer, Search, Source Control, Run & Debug, and Extensions.
+- **Panel** (bottom): Terminal, Problems, Output, and Debug Console; toggle via **View → Appearance → Panel**.
+- Split an editor: **View → Editor Layout → Split Right**, **Ctrl+backslash** (**Cmd+backslash** on Mac).
+- Start debugging: **Run → Start Debugging**, **F5**.
+- Hide distractions: **View → Appearance → Zen Mode**; press **Esc** twice to leave.
 
 Full shortcut list: **Help → Keyboard Shortcuts Reference** ([VS Code reference](https://code.visualstudio.com/docs/reference/default-keybindings)).
 
 ![VS Code's integrated terminal with command history](media/vscode-integrated-terminal.png)
 
 The terminal accepts the same shell commands as your standalone terminal. Screenshot: [VS Code terminal documentation](https://code.visualstudio.com/docs/terminal/basics).
+
+## Less Typing, More Doing
+
+Edit and reuse commands in **VS Code's terminal** instead of retyping them.
+
+### Reference Card: Shell Shortcuts
+
+- **Tab:** Complete a command or path; if ambiguous, press again to see choices.
+- **↑ / ↓:** Recall previous/next commands.
+- **← / →:** Move one character.
+- **Ctrl+A / Ctrl+E:** Move to the beginning/end of the line.
+- **Ctrl+← / Ctrl+→** (Windows/Linux): Move by word. On Mac, use **Esc**, then **B** or **F**; **Option+← / Option+→** also work when VS Code's **Terminal › Integrated: Mac Option Is Meta** setting is enabled.
+- **Ctrl+R:** Search command history; type part of a command, then press again for older matches.
+- **Ctrl+W:** Delete the preceding word.
+- **Ctrl+K:** Delete from the cursor to the end of the line.
+- **Ctrl+L:** Clear the view without deleting command history.
+
+These are Bash/Zsh's usual editing bindings, with the terminal focused. **Ctrl** means Control even on Mac. If word-arrow keys are intercepted, press **Esc**, then **B** or **F**, for backward/forward word movement. Press **Enter** to run the edited command; **Ctrl+C** cancels it. [Shell editing reference](https://www.gnu.org/software/bash/manual/html_node/Readline-Movement-Commands.html).
 
 ## Settings
 
@@ -466,24 +474,7 @@ print(type(actual_number))                           # <class 'float'>
 
 ```
 
-## Brief review: scalars, strings, output, and control flow
-
-Lecture 01 introduced these building blocks; focus here on how they support the new topics.
-
-```python
-count = 150
-average = 87.3
-name = "  Alice Johnson  ".strip()
-analysis_ready = count > 0 and average > 0
-
-if analysis_ready:
-    print(f"{name}: {average:.1f}%")
-
-for number in range(3):
-    print(number)
-```
-
-`int`, `float`, `str`, and `bool` are familiar types. `None` is a value meaning “no result”; test it with `value is None`.
+## More String Operations
 
 ### Reference Card: More String Operations
 
@@ -494,6 +485,8 @@ for number in range(3):
 - `text.isalpha()`: Test whether nonempty text contains only letters; spaces are not letters.
 
 ## Language Semantics and Object Model
+
+`None` means “no result”; test it with `value is None`.
 
 
 Python uses indentation for code structure, creating clean code. Every value is an object with type information, enabling dynamic behavior.

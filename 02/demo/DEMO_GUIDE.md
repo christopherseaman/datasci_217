@@ -43,6 +43,15 @@ git log --oneline             # shows both commits; press q if needed
 cd ../../02/demo
 ```
 
+## Less typing: recall and edit
+
+Open `scratch/git-practice` with **File → Open Folder**, then **Terminal → New Terminal**:
+
+1. Type `cat no`, press **Tab** to complete `notes.md`, then **Enter**. Expect the practice heading and experiment note.
+2. Press **↑** to recall it, then **Ctrl+A** to move to the start. Press **Delete** three times to remove `cat` (on Mac, **Fn+Delete**), type `git diff --`, and press **Ctrl+E**. The line should read `git diff -- notes.md`.
+3. Press **Enter**. Expect no output: you already committed and merged those changes.
+4. Press **Ctrl+R**, type `cat no`, and check that `cat notes.md` appears. Press **Esc** to accept the match, then **Enter** to run it again.
+
 For the Python demos, open the course's `02/demo` folder in VS Code and use **Terminal → New Terminal** (Ctrl+Shift+backtick).
 
 # 2. Functions: refactor repeated work into helpers
