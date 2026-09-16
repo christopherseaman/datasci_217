@@ -12,7 +12,10 @@ EXPECTED_REPORT = """Morning mean: 21.0
 Evening mean: 22.7
 Overnight mean: no measurements
 """
-RUN_COMMAND = re.compile(r"(?<![\w.-])(?:python(?:3(?:\.13)?)?|py\s+-3\.13)\s+(?:\./)?main\.py(?=$|[\s`])")
+RUN_COMMAND = re.compile(
+    r"^\s*(?:[$>]\s*)?`?(?:python(?:3(?:\.13)?)?|py\s+-3\.13)\s+(?:\./)?main\.py`?\s*$",
+    re.MULTILINE,
+)
 
 
 @dataclass(frozen=True)
@@ -28,11 +31,11 @@ def _assert(condition: bool, message: str) -> None:
 
 def check_project_documents(root: Path) -> None:
     readme = (root / "README.md").read_text(encoding="utf-8")
-    description = re.search(r"## Project description\n\n([^\n]+)", readme)
+    description = re.search(r"## Project description\n\n(.*?)(?=\n## |\Z)", readme, re.DOTALL)
     run = re.search(r"## Run\n\n(.*?)(?=\n## |\Z)", readme, re.DOTALL)
     _assert(
         description is not None
-        and 30 <= len(description.group(1).strip()) <= 300
+        and 30 <= len(" ".join(description.group(1).split())) <= 300
         and "measurement" in description.group(1).lower(),
         "Write a 30–300 character project description containing the word `measurement`.",
     )

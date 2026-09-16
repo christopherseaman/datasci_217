@@ -26,11 +26,24 @@ def run() -> None:
         for command in (
             "`python main.py`",
             "```bash\npython3.13 ./main.py\n```",
-            "Run `py -3.13 main.py` from native Windows PowerShell.",
+            "$ py -3.13 main.py",
         ):
             (root / "README.md").write_text(README.replace("python3 main.py", command), encoding="utf-8")
             assert grade_submission(root)["score"] == 100
-        for command in ("python wrong.py", "xpython3 main.py", "python3 main.py.bak"):
+        wrapped = README.replace(
+            "A measurement summary project for saved readings.",
+            "A measurement summary project for\n"
+            "saved readings with a deliberately wrapped Markdown paragraph.",
+        )
+        (root / "README.md").write_text(wrapped, encoding="utf-8")
+        assert grade_submission(root)["score"] == 100
+        for command in (
+            "python wrong.py",
+            "xpython3 main.py",
+            "python3 main.py.bak",
+            "echo python3 main.py",
+            "Run `python3 main.py` now",
+        ):
             (root / "README.md").write_text(README.replace("python3 main.py", command), encoding="utf-8")
             assert grade_submission(root)["score"] == 70
         (root / "README.md").write_text(README, encoding="utf-8")

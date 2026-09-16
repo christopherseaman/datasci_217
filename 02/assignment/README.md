@@ -40,10 +40,10 @@ Open `GIT_STATE_CHECK.md`. For each scenario, replace only the `TODO` terms in t
 Replace the two TODO lines near the top of this file:
 
 - Write a 30–300 character project description after trimming surrounding whitespace that contains the word `measurement`.
-- Put one Python 3.13 command that runs `main.py` in the Run section: `python3 main.py` in Bash, `py -3.13 main.py` in native Windows PowerShell, or `python main.py` in an activated Python 3.13 environment.
+- Put one standalone Python 3.13 command that runs `main.py` on its own line in the Run section: `python3 main.py` in Bash, `py -3.13 main.py` in native Windows PowerShell, or `python main.py` in an activated Python 3.13 environment. You may put the command in a fenced code block or inline code on its own line.
 
 > **Checkpoint — `README.md`**
-> Save the description and exact Run command under their existing headings.
+> Save the description and Run command under their existing headings.
 
 ### 1.3 Complete `.gitignore`
 
