@@ -6,7 +6,7 @@ TODO: Replace this line with a 30–300 character description of what this measu
 
 ## Run
 
-TODO: Replace this line with the exact terminal command that runs the completed program.
+TODO: Replace this line with a Python 3.13 terminal command that runs the completed program.
 
 ## Files
 
@@ -39,8 +39,8 @@ Open `GIT_STATE_CHECK.md`. For each scenario, replace only the `TODO` terms in t
 
 Replace the two TODO lines near the top of this file:
 
-- Write a project description containing 30–300 characters after trimming surrounding whitespace and the word `measurement`.
-- Put the exact command `python main.py` in the Run section.
+- Write a 30–300 character project description after trimming surrounding whitespace that contains the word `measurement`.
+- Put one Python 3.13 command that runs `main.py` in the Run section: `python3 main.py` in Bash, `py -3.13 main.py` in native Windows PowerShell, or `python main.py` in an activated Python 3.13 environment.
 
 > **Checkpoint — `README.md`**
 > Save the description and exact Run command under their existing headings.
@@ -86,12 +86,12 @@ Importing `analysis_utils` must be silent and must not create or change files.
 Complete `main.py` using the supplied `format_summary` import, records, and main guard.
 
 1. In `main()`, call `format_summary()` for each supplied record in order.
-2. Join the resulting lines into `report_text`, with a newline after every line.
+2. Build `report_text` in the loop, with a newline after every formatted line.
 3. Open `report.txt` in text write mode with UTF-8 encoding and write `report_text`.
 4. Read the saved text back into another variable.
 5. Print the saved report and whether the read-back text equals `report_text`.
 
-Importing `main` must print nothing and must not create `report.txt`. Running `python main.py` must overwrite a stale report and print exactly:
+Importing `main` must print nothing and must not create `report.txt`. Running your Python 3.13 command must overwrite a stale report and print exactly:
 
 ```text
 Morning mean: 21.0
@@ -111,15 +111,15 @@ Overnight mean: no measurements
 There is one newline after the final report line. The `Saved report matches` status belongs only in terminal output, not in `report.txt`.
 
 > **Checkpoint — `report.txt`**
-> Run `python main.py` and save the three report lines above, including the final newline. Keep the read-back status in terminal output only.
+> Run your Python 3.13 command and save the three report lines above, including the final newline. Keep the read-back status in terminal output only.
 
 ## Check your work
 
 Run each student script from the assignment directory:
 
 ```bash
-python main.py
-python check_assignment.py
+python3 main.py
+python3 check_assignment.py
 ```
 
 A complete submission passes every check. If a check fails, revise the named artifact, regenerate `report.txt` if needed, and check again.
@@ -130,12 +130,12 @@ Commit these files at the assignment repository root. Grading totals 100 points 
 
 | Artifact | Format and completion criteria | Points |
 |---|---|---:|
-| `README.md` | Markdown with the existing Project description and Run headings; a 30–300 character description after trimming, containing `measurement`, and the exact Run line `python main.py`. | 30 |
+| `README.md` | Markdown with the existing Project description and Run headings; a 30–300 character description after trimming that contains the word `measurement`, and one Python 3.13 command that runs `main.py`. | 30 |
 | `GIT_STATE_CHECK.md` | Four numbered, semicolon-separated answers inside the supplied answer markers, using the terms for each snapshot. | 30 |
 | `report.txt` | UTF-8 text containing the three report lines in Part 3, with a final newline. | 40 |
 
 ## Submit
 
-Inspect the Python files and report in VS Code Source Control. Stage `analysis_utils.py`, `main.py`, and `report.txt`, then commit with `Implement reusable measurement summary`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes, switch to `main`, run **Git: Merge...**, and select `feature/measurement-summary`. Resolve any unexpected conflict, inspect the resolution, and sync. Confirm in the repository browser that `main` contains the completed documentation, both Python files, and `report.txt`.
+Inspect the Python files and report in VS Code Source Control. Stage `analysis_utils.py`, `main.py`, and `report.txt`, then commit with `Implement reusable measurement summary`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes, switch to `main`, run **Git: Merge Branch…**, and select `feature/measurement-summary`. Resolve any unexpected conflict, inspect the resolution, and sync. Confirm in the repository browser that `main` contains the completed documentation, both Python files, and `report.txt`.
 
 GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a required VS Code control is unavailable, record its message and contact the instructor.

@@ -9,40 +9,91 @@ notion:
 
 # Lecture 02 Demo Guide: Git, Functions, and Modules
 
-This is three demonstrations, not one script: a Git workflow, a functions script, and a module-reuse script. Run the Python scripts from a disposable copy because they create example files and reports.
+# 1. Git workflow
+
+From the repository root, create `scratch/git-practice`, then use **File → Open Folder…** to open it in VS Code. Open **View → Source Control** (Ctrl+Shift+G, including Control on macOS) and select **Initialize Repository**. If the initial branch is not `main`, open **View → Command Palette…** (Ctrl+Shift+P on Windows/Linux, Cmd+Shift+P on macOS), select **Git: Create Branch**, and name it `main`.
+
+Create `notes.md` with `# Practice notes`. In Source Control, stage it with the `+` button, enter `Start practice notes`, and select the visible **Commit** button. The changes list is empty after the commit: the working tree is clean.
+
+Click the branch name in the status bar → **Create new branch…** → `experiment`. Add `Experiment: compare two grade summaries.` to `notes.md`. The Source Control view now shows a working (unstaged) change; select the file to inspect its diff. Stage it: the file moves to **Staged Changes**. Enter `Add experiment note` and select **Commit**; the lists are empty again.
+
+Click the branch name → select `main`. Open the Command Palette, select **Git: Merge Branch…**, and choose `experiment`. The experiment change is now committed on `main`.
+
+Alternatively, start at the repository root (with a `scratch` directory) and create the practice repository using terminal commands:
 
 ```bash
-cd 02/demo
-```
-
-# 1. Git workflow (GUI first, CLI alongside)
-
-Use a small practice repository in VS Code. Start in **View → Source Control**: open or initialize the repository, edit a file, review the diff, stage the change, enter a commit message, and commit. Use the branch menu in the status bar to create or switch branches, then use the Source Control menu to merge and sync. The GUI is the primary path; the equivalent commands make each action visible:
-
-```bash
-git status
-git add path/to/file.py
-git commit -m "Describe the change"
-git switch -c experiment
+mkdir scratch/git-practice
+cd scratch/git-practice
+git init
+git checkout -b main
+echo "# Practice notes" > notes.md
+git add notes.md
+git commit -m "Start practice notes"
+git checkout -b experiment
+echo "Experiment: compare two grade summaries." >> notes.md
+git status                    # working: notes.md is modified, not staged
+git diff                      # working: shows the new line
+git add notes.md
+git status                    # staged: notes.md is ready to commit
+git commit -m "Add experiment note"
+git status                    # committed: working tree clean
+git checkout main
 git merge experiment
-git log --oneline --graph --all
-git push
+git log --oneline             # shows both commits; press q if needed
+cd ../../02/demo
 ```
 
-For an already shared commit, prefer `git revert <commit>`: it records an undo without rewriting history. This guide deliberately does not teach `git reset --hard` or force-pushing. Those recovery operations require a verified disposable repository, an identified backup, and agreement from every affected collaborator.
+For the Python demos, open the course's `02/demo` folder in VS Code and use **Terminal → New Terminal** (Ctrl+Shift+backtick).
 
-# 2. Functions: refactor a script into reusable helpers
+# 2. Functions: refactor repeated work into helpers
 
 ```bash
 python3 functions_demo.py
 ```
 
-`functions_demo.py` creates `sample_students.csv` and introduces reusable functions implemented in the import-safe `student_tools.py` module.
+The complete scripts are [functions_demo.py](functions_demo.py) and [student_tools.py](student_tools.py). The demo starts with student records in memory, then calls helpers to get grades, calculate an average, and find the highest grade.
 
-# 3. Modules: import the helpers in a second script
+```python
+grades = get_grades(students)
+print(f"Average grade: {calculate_average(grades):.1f}")
+print(f"Highest grade: {find_highest_grade(grades)}")
+```
+
+`get_grades()` uses an ordinary `for` loop and `.append()`, so the same extraction work has one name instead of being copied into every analysis.
+
+Expected checkpoints:
+
+```text
+Before loop extracted: [85, 92, 78]
+After get_grades() extracted: [85, 92, 78]
+Average grade: 85.0
+Highest grade: 92
+```
+
+# 3. Modules: reuse helpers in an import-safe script
 
 ```bash
+python3 -c "import module_usage_demo"
 python3 module_usage_demo.py
 ```
 
-`module_usage_demo.py` imports `student_tools.py` as an ordinary module and reuses its functions to create reports. Run Demo 2 first so `sample_students.csv` exists.
+The first command is intentionally silent: importing does not run `main()` or create a report. The complete script is [module_usage_demo.py](module_usage_demo.py). It reuses those helpers, writes `grade_report.txt`, reads it back, and confirms that the saved text matches.
+
+```python
+if __name__ == "__main__":
+    main()
+```
+
+Expected output:
+
+```text
+Read back from grade_report.txt:
+Alice: 85
+Bob: 92
+Charlie: 78
+Average grade: 85.0
+Highest grade: 92
+Saved report matches: True
+```
+
+Open `grade_report.txt` in the Explorer: it contains the five report lines, without the terminal's heading or verification message.

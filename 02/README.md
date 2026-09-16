@@ -13,51 +13,51 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-# VS Code Basics (GUI-first)
-
-We'll start in the editor so Git makes visual sense later.
+# VS Code Basics
 
 ## Palette Cleanse: Command Palette & Quick Open
 
-- Open Command Palette: View → Command Palette… (Cmd+Shift+P)
-- Quick Open files: (Cmd+P)
-- Search across files: View → Search (Cmd+Shift+F)
+- Open Command Palette: **View → Command Palette…**, Ctrl+Shift+P (Windows/Linux), Cmd+Shift+P (macOS).
+- Quick Open files: **Go → Go to File…**, Ctrl+P (Windows/Linux), Cmd+P (macOS).
+- Search across files: **View → Search**, Ctrl+Shift+F (Windows/Linux), Cmd+Shift+F (macOS).
 
 ## Themes and Schemes: Make it Py‑pretty
 
-- Change Color Theme: Code → Settings → Theme → Color Theme (or Cmd+K, Cmd+T). I am a fan of:
+- Change Color Theme: Command Palette → **Preferences: Color Theme** (Ctrl+K then Ctrl+T on Windows/Linux; Cmd+K then Cmd+T on macOS). I am a fan of:
     - "Tomorrow Night Bright"
     - "GitHub Dark High Contrast"
-- Toggle icons: Code → Settings → Theme → File Icon Theme
+- Toggle icons: Command Palette → **Preferences: File Icon Theme**.
 
 ## Meet the Main Bars
 
 - Activity Bar (left): Explorer, Search, Source Control, Run & Debug, Extensions
 - Side Bar: Toggle via View → Appearance → Show Side Bar
-- Panel (bottom): Problems, Output, Debug Console, Terminal (toggle: View → Appearance → Panel Position)
+- Panel (bottom): Problems, Output, Debug Console, Terminal (**View → Appearance → Panel** toggles visibility)
 - Secondary Side Bar (right): View → Appearance → Show Secondary Side Bar
 - Breadcrumbs: View → Appearance → Show Breadcrumbs
 - Zen Mode: View → Appearance → Zen Mode (Esc Esc to exit)
 
 ## Core Panes You’ll Use
 
-- Explorer: View → Explorer (Cmd+Shift+E)
-- Source Control: View → Source Control (Cmd+Shift+G)
-- Run & Debug: Run → Start Debugging (F5) or View → Run (Ctrl+Shift+D)
-- Extensions: View → Extensions (Cmd+Shift+X)
-- Terminal: View → Terminal (Ctrl + grave accent key)
-- Split Editor: View → Editor Layout → Split Right (or Cmd+\)
+- Explorer: **View → Explorer**, Ctrl+Shift+E (Windows/Linux), Cmd+Shift+E (macOS).
+- Source Control: **View → Source Control**, Ctrl+Shift+G (including Control on macOS).
+- Run & Debug: **View → Run**, Ctrl+Shift+D (Windows/Linux), Cmd+Shift+D (macOS); **Run → Start Debugging**, F5.
+- Extensions: **View → Extensions**, Ctrl+Shift+X (Windows/Linux), Cmd+Shift+X (macOS).
+- New terminal: **Terminal → New Terminal**, Ctrl+Shift+backtick (including Control on macOS).
+- Split Editor: **View → Editor Layout → Split Right**, Ctrl+backslash (Windows/Linux), Cmd+backslash (macOS).
+
+Full shortcut list: **Help → Keyboard Shortcuts Reference** ([VS Code reference](https://code.visualstudio.com/docs/reference/default-keybindings)).
 
 ![VS Code's integrated terminal with command history](media/vscode-integrated-terminal.png)
 
 The terminal accepts the same shell commands as your standalone terminal. Screenshot: [VS Code terminal documentation](https://code.visualstudio.com/docs/terminal/basics).
 
-## Settings (GUI) you’ll toggle today
+## Settings
 
-- Format on Save: Code → Settings → Settings → Search “Format on Save” → check
-- Python Interpreter: Click bottom‑right “Python” status or Cmd+Shift+P → “Python: Select Interpreter”
-- Default Formatter (optional): Settings → Search “Default Formatter” → choose “Black” or “Ruff” if installed
-- Markdown Preview: Right‑click a .md → “Open Preview to the Side” (Cmd+K V)
+- Settings: Command Palette → **Preferences: Open Settings (UI)**, or Ctrl+, (Windows/Linux), Cmd+, (macOS). Search **Format on Save** to enable it.
+- Python Interpreter: Command Palette → **Python: Select Interpreter**.
+- Default Formatter: In Settings, search **Default Formatter** and select an installed formatter such as Black or Ruff.
+- Markdown Preview: Right-click an open `.md` editor tab → **Open Preview to the Side**, Ctrl+K then V (Windows/Linux), Cmd+K then V (macOS).
 
 ![The Python Select Interpreter menu in VS Code](media/vscode-selected-interpreter.png)
 
@@ -66,7 +66,7 @@ Choose the Python 3.13 interpreter installed for the course; this documentation 
 ## Recommended Extensions (install via View → Extensions)
 
 - Python
-- Pylance (can help with debugging later, I prefer ruff)
+- Pylance (Python type information and completion); Ruff (linting and formatting)
 - Jupyter (we'll use this a lot later)
 - Markdown All in One
 - markdownlint
@@ -81,7 +81,6 @@ Choose the Python 3.13 interpreter installed for the course; this documentation 
 3) Turn on “Format on Save” in Settings (GUI)
 4) Open a `.py` file → add a breakpoint (click gutter) → Run → Start Debugging
 5) Open a `.md` file → right‑click → Open Preview to the Side
-6) Make a small edit → View → Source Control → stage, commit (GUI)
 
 ![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
 
@@ -129,11 +128,14 @@ The version of your repository stored on GitHub (or similar service). Your local
 
 A parallel timeline for your project. The main branch contains your official version, feature branches contain experimental work.
 
-*We'll focus on the main branch today—branches come later!*
+Create an experimental branch, commit a change there, then merge it into `main`.
 
 ### Reference Card: Git Vocabulary
 
-- **Repository**: Collection of objects and references
+- **Working tree**: Your current files, including edits not yet committed
+- **Diff**: Line-by-line comparison of two versions
+- **Staging area**: Selected content for the next commit; later edits need staging again
+- **Repository**: Files and their recorded history
 - **Commit**: Snapshot with metadata (author, message, parents)
 - **Blob**: File content
 - **Tree**: Directory structure
@@ -141,6 +143,7 @@ A parallel timeline for your project. The main branch contains your official ver
 - **HEAD**: Current commit reference
 - **Branch**: Movable reference to commit
 - **Remote**: Reference to repository on another machine
+- **Synchronize**: VS Code's Sync Changes action pulls incoming commits and pushes outgoing commits
 
 ![Git Branches](media/git_branches.png)
 
@@ -184,7 +187,7 @@ git pull origin main          # Pull updates
 
 ![Git Clone](media/git_clone.png)
 
-**Good vs. Bad Commit Messages**
+### Good vs. Bad Commit Messages
 
 ```bash
 # Good commit message
@@ -218,31 +221,33 @@ Screenshots: [VS Code source control documentation](https://code.visualstudio.co
 
 1. Install VS Code (if not already done)
 2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
-3. If first time: VS Code will prompt to configure Git username/email
+3. If Git reports a missing name/email, use the Git identity setup from Lecture 01.
 
 #### Reference Card: VS Code Git Actions
 
-- **Source Control Panel**: `Ctrl+Shift+G` (Windows/Linux) or `Cmd+Shift+G` (Mac)
+- **Source Control Panel**: **View → Source Control**, Ctrl+Shift+G (including Control on macOS)
 - **Stage Changes**: Click `+` next to files in "Changes" section
-- **Commit**: Type message in text box, press `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac)
+- **Commit**: Type a message and select **Commit**
 - **View Differences**: Click on modified files to see changes
 - **Branch Management**: Click branch name in status bar to switch/create branches
-- **Push/Pull**: Use sync button or command palette (`Ctrl+Shift+P`)
+- **Push/Pull**: Select **Sync Changes**, or Command Palette → **Git: Push** / **Git: Pull**
 
-**VS Code Git Workflow:**
+### VS Code Git Workflow
 
 ```
 1. Edit files (e.g., analysis.py)
 2. Ctrl+Shift+G → Open Source Control panel
 3. Click + next to changed files to stage
 4. Type commit message: "Add data validation to analysis script"
-5. Ctrl+Enter to commit
-6. Click sync button to push to GitHub
+5. Select Commit
+6. Select Sync Changes to pull incoming commits and push yours
 ```
 
 ## Git Workflow: Branching and Merging
 
 Git branching develops features in isolation before merging to main, enabling parallel development and safe experimentation.
+
+In VS Code, open the Command Palette and select **Git: Create Branch**, then name it. After editing and committing, select the branch name in the status bar to switch to `main`. Run **Git: Merge Branch…** and choose the feature branch. **Publish Branch** sends a new branch to GitHub; **Sync Changes** synchronizes an already published branch.
 
 ### Reference Card: Git Workflow: Branching and Merging
 
@@ -253,7 +258,7 @@ Git branching develops features in isolation before merging to main, enabling pa
 - `git branch -d [name]`: Delete branch
 - `git push origin [branch]`: Push branch to remote
 
-**Branching Workflow:**
+### Code Snippet: Branching Workflow
 
 ```bash
 # Create feature branch
@@ -272,7 +277,9 @@ git push origin main
 git branch -d feature/data-analysis
 ```
 
-**Merge Conflict Resolution:** When Git cannot automatically merge changes, it creates merge conflicts that must be resolved manually:
+### Merge Conflict Resolution
+
+When Git cannot automatically combine overlapping changes, it creates a **conflict**:
 
 1. Open conflicted files in VS Code
 2. Choose which changes to keep
@@ -361,13 +368,13 @@ Analyzes study time vs. performance.
 - More hours → higher grades
 - Regular habits help
 
-## Code Example
+## Example Output
 ~~~python
-grades = [85, 92, 78]
-average = sum(grades) / len(grades)
-print(f"Average grade: {average:.1f}")
+print("Analysis complete")
 ~~~
 ```
+
+# LIVE DEMO!
 
 # Python Fundamentals (McKinney Ch2+3)
 
@@ -376,10 +383,6 @@ print(f"Average grade: {average:.1f}")
 *Data* by xkcd — in Python, everything is an object. In Star Trek, Data is too.
 
 Python emphasizes readable, practical data manipulation. Its values are objects with consistent behavior.
-
-## What is new in Lecture 02?
-
-Lecture 01 established the command line, Python installation, variables, basic expressions, and introductory scripts. This lecture uses that foundation in VS Code and Git, then moves into Python’s object model, imports, collections and mutability, functions, file I/O, targeted exceptions, and the `__main__` entry-point pattern.
 
 ![Python Import](media/python_import.webp)
 
@@ -392,6 +395,7 @@ An f-string starts with `f` and inserts the value of each expression inside `{}`
 | Syntax | Purpose | Example output |
 | --- | --- | --- |
 | `print("Score:", score)` | Print separate values with spaces | `Score: 87.3` |
+| `print(text, end="")` | Print without adding a newline, useful when `text` already ends with one | Text unchanged |
 | `f"{score}"` | Insert a value into text | `87.3` |
 | `f"{score:.1f}"` | One decimal place | `87.3` |
 | `f"{score:.0f}"` | No decimal places | `87` |
@@ -467,18 +471,27 @@ print(type(actual_number))                           # <class 'float'>
 Lecture 01 introduced these building blocks; focus here on how they support the new topics.
 
 ```python
-count, average = 150, 87.3
+count = 150
+average = 87.3
 name = "  Alice Johnson  ".strip()
 analysis_ready = count > 0 and average > 0
 
-if name.endswith("son") and analysis_ready:
+if analysis_ready:
     print(f"{name}: {average:.1f}%")
 
 for number in range(3):
     print(number)
 ```
 
-Useful reminders: `int`, `float`, `str`, `bool`, and `None` are common scalar types; use arithmetic, comparisons, and `and`/`or`/`not` as needed; strings provide methods such as `.strip()`, `.lower()`, `.split()`, `.replace()`, and `.isalpha()`; and `print()` with f-strings makes results readable. Indentation, `if`/`elif`/`else`, `for`, `while`, `break`, and `continue` control execution.
+`int`, `float`, `str`, and `bool` are familiar types. `None` is a value meaning “no result”; test it with `value is None`.
+
+### Reference Card: More String Operations
+
+- `text.split(",")`: Split text at commas into a list: `"a,b"` → `["a", "b"]`.
+- `"\n".join(lines)`: Combine a list of strings with newlines between them; add `+ "\n"` for a final newline.
+- `text.replace("old", "new")`: Return text with matching parts replaced.
+- `text.endswith("son")`: Test whether text ends with a suffix, returning `True` or `False`.
+- `text.isalpha()`: Test whether nonempty text contains only letters; spaces are not letters.
 
 ## Language Semantics and Object Model
 
@@ -546,12 +559,20 @@ python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"
 
 Lists provide mutable sequences for data. Tuples offer immutable sequences useful for fixed records.
 
+| Position | First | Second | Third | Fourth |
+| --- | --- | --- | --- | --- |
+| Value | 85 | 92 | 78 | 96 |
+| Index | 0 | 1 | 2 | 3 |
+| Negative index | -4 | -3 | -2 | -1 |
+
+For this list, `[1:3]` selects `[92, 78]`: start included, stop excluded.
+
 ### Reference Card: Data Structures: Lists and Tuples
 
 - `list()`: Create list
 - `[item1, item2, ...]`: List literal
 - `list[index]`: Access one item using a zero-based index
-- `list[start:stop]`: Slice from `start` up to, but not including, `stop`
+- `list[start:stop:step]`: Slice up to, but not including, `stop`; omitted bounds use the ends, and `step` defaults to 1
 - `list.append(item)`: Add to end
 - `list.insert(index, item)`: Insert at position
 - `list.remove(item)`: Remove first occurrence
@@ -584,6 +605,13 @@ name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
 Assignment binds a name to an object; it does not automatically copy the object. Lists, dictionaries, and sets are **mutable**, so they can change in place. Numbers, strings, and tuples are **immutable**, so an operation produces a new value instead of changing the existing object.
 
 Two names are **aliases** when they refer to the same object. A mutation through either alias is visible through the other:
+
+```text
+grades ───────┐
+              ├──> [85, 92, 78]   one shared list
+same_grades ──┘
+copied_grades ────> [85, 92, 78]   a separate outer list
+```
 
 ```python
 grades = [85, 92, 78]
@@ -660,12 +688,19 @@ for name, score in zip(names, scores):
 
 Functions organize code into reusable units with clear interfaces. They enable reuse, testing, and modular design.
 
+```text
+[85, 92, 78] → calculate_average(grades) → 85.0
+  argument         parameter             return value
+```
+
 ### Reference Card: Functions
 
 - `def function_name(parameters): ...`: Function definition
 - `return value`: Return value
 - Function calls: `result = function_name(arguments)`: Run a function with arguments and store its return value
 - Default parameters: `def func(param=default_value):`: Use a fallback value when the caller omits an argument
+- `"""Description."""` as the first line inside a function: A docstring describing its purpose and return value
+- `if not values:`: An empty collection is false; handle it before dividing by its length
 
 ### Code Snippet: Functions
 
@@ -683,13 +718,21 @@ average = calculate_average(grades)
 print(f"Average grade: {average:.1f}")
 ```
 
+# LIVE DEMO!
+
 ## Basic File I/O Operations
 
 File I/O operations are essential for data science. Python provides simple tools for reading and writing files.
 
+```text
+Python text → write → grades.txt → read → saved text
+     └──────────── compare with == ───────────┘
+```
+
 ### Reference Card: Basic File I/O Operations
 
 - `open(file, mode)`: Open file with specified mode
+- `encoding="utf-8"`: Use UTF-8 text encoding explicitly when reading or writing
 - `'r'`: Read mode (default)
 - `'w'`: Write mode (overwrites existing files)
 - `'a'`: Append mode (adds to existing files)
@@ -711,31 +754,19 @@ with open('data.txt', 'r') as file:
 
 # Writing to a file
 results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
-with open('grades.txt', 'w') as file:
+with open('grades.txt', 'w', encoding='utf-8') as file:
     for result in results:
         file.write(f"{result}\n")
 
-# Appending to a file
-with open('log.txt', 'a') as file:
-    file.write("2023-12-01: Analysis completed\n")
+# Read back and compare
+with open('grades.txt', 'r', encoding='utf-8') as file:
+    saved_text = file.read()
+expected_text = "\n".join(results) + "\n"
+print("Saved text matches:", saved_text == expected_text)
 
-# Print to file examples
-score = 87.3
-with open('results.txt', 'w') as file:
-    print("Analysis Results", file=file)
-    print(f"Average score: {score:.1f}", file=file)
-
-# Avoid print(..., file=open(...)): that pattern leaves closing the file
-# handle implicit. Use a with block so the handle is always closed.
-with open('debug.log', 'a') as log_file:
-    print("Debug info", file=log_file)
-
-# Multiple outputs to same file
-data = [85, 92, 78]
-with open('report.txt', 'w') as report:
-    print("Data Science Report", file=report)
-    print("=" * 20, file=report)
-    print(f"Total samples: {len(data)}", file=report)
+# Append with print instead of write; print adds a newline
+with open('log.txt', 'a', encoding='utf-8') as file:
+    print("Analysis completed", file=file)
 ```
 
 ## Minimal Exception Handling
@@ -753,7 +784,7 @@ else:
     print(f"Parsed score: {score:.1f}")
 ```
 
-Opening a missing path raises `FileNotFoundError`; converting invalid numeric text raises `ValueError`. The optional `else` block runs only when the `try` block succeeds.
+Opening a missing path raises `FileNotFoundError`; `OSError` covers file-system errors including missing paths and denied permissions. Converting invalid numeric text raises `ValueError`. The optional `else` block runs only when the `try` block succeeds.
 
 ## `__main__` for script execution
 

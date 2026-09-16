@@ -12,6 +12,7 @@ EXPECTED_REPORT = """Morning mean: 21.0
 Evening mean: 22.7
 Overnight mean: no measurements
 """
+RUN_COMMAND = re.compile(r"(?<![\w.-])(?:python(?:3(?:\.13)?)?|py\s+-3\.13)\s+(?:\./)?main\.py(?=$|[\s`])")
 
 
 @dataclass(frozen=True)
@@ -28,14 +29,17 @@ def _assert(condition: bool, message: str) -> None:
 def check_project_documents(root: Path) -> None:
     readme = (root / "README.md").read_text(encoding="utf-8")
     description = re.search(r"## Project description\n\n([^\n]+)", readme)
-    run = re.search(r"## Run\n\n([^\n]+)", readme)
+    run = re.search(r"## Run\n\n(.*?)(?=\n## |\Z)", readme, re.DOTALL)
     _assert(
         description is not None
         and 30 <= len(description.group(1).strip()) <= 300
         and "measurement" in description.group(1).lower(),
-        "Write a 30–300 character project description containing `measurement`.",
+        "Write a 30–300 character project description containing the word `measurement`.",
     )
-    _assert(run is not None and run.group(1) == "python main.py", "Put exactly `python main.py` in the Run section.")
+    _assert(
+        run is not None and RUN_COMMAND.search(run.group(1)),
+        "Put a Python 3.13 command that runs main.py in the Run section.",
+    )
 
 
 def check_git_state_answers(root: Path) -> None:
