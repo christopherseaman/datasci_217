@@ -1,4 +1,4 @@
-name: Assignment 10 public tests
+name: Assignment 10 artifact checks
 
 on:
   push:
@@ -33,5 +33,5 @@ jobs:
             python -m pip install -r requirements.txt
           fi
 
-      - name: Run public pytest contract
+      - name: Check assignment artifacts
         run: python -m pytest .github/test/test_assignment.py -q --tb=short

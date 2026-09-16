@@ -1,17 +1,19 @@
 # Assignment 06: Validated Combination and Structural Reshaping
 
-Build one reproducible pandas notebook that combines tables only after stating
-their grain, keys, cardinality, and preservation goal. Then examine vertical and
-horizontal alignment and complete a reversible wide/long reshape without
-aggregation.
+## Files
 
-This is a local-first assignment; grading reads saved artifacts without executing the notebook. The
-supplied synthetic fixtures contain no human-subject data and are different from
-the Lecture 06 demo data. Do not use Colab, manual uploads, Drive mounts, network access, or `/content` paths. The
-portable setup supports both a standalone exported assignment repository and
-this full course repository.
+```text
+assignment/
+├── assignment.ipynb                 # notebook scaffold to complete
+├── .python-version, requirements.txt # supplied environment records
+├── data/                            # supplied synthetic CSVs and fixture manifest
+├── check_assignment.py, grading.py  # supplied checker; keep unchanged
+└── output/                         # generate and commit five CSV artifacts
+```
 
 ## Setup
+
+Open **Terminal → New Terminal** in VS Code at the assignment directory. If you use a native terminal or WSL Ubuntu instead, first `cd` into the assignment directory.
 
 Use CPython 3.13. From this directory, create and activate a virtual
 environment, and install the two exact dependency records. If you use the
@@ -23,9 +25,14 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
-[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before preparing artifacts. If you run
-the notebook, its kernel must use the environment you checked.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Select the same environment as the local notebook kernel. Run:
+
+```bash
+python --version
+python -c "import sys, numpy, pandas; print(sys.executable); print(numpy.__version__); print(pandas.__version__)"
+```
+
+Expect Python 3.13, NumPy 2.3.3, and pandas 3.0.5, with an interpreter inside your activated environment. Run the supplied setup cell unchanged; it verifies fixture set `a06-structural-wrangling-v1` in either the standalone repository or `06/assignment`. Restore missing or checksum-mismatched fixtures before continuing. Use the synthetic course data locally and keep private information out of source and output.
 
 ## Deliverables
 
@@ -37,19 +44,9 @@ Complete every `TODO` in `assignment.ipynb`. Create these five CSV milestone art
 - `output/sensor_scores_long.csv`
 - `output/sensor_scores_round_trip.csv`
 
-Additional files are allowed and ignored. Automated grading reads the saved
-CSVs; notebook execution is optional local QA.
-
-After creating the saved artifacts, use the discoverable student check:
-
-```bash
-python check_assignment.py
-```
-
-The checker reads saved CSVs but does not execute notebook code.
-Fix each `[FIX]` message, regenerate the artifacts, and check again.
-
 ## Task 1: contract-first validated merge
+
+### 1.1 State and test the merge contract
 
 State the row grain, primary/candidate/foreign keys, predicted cardinality,
 preservation goal, join type, and predicted row count before combining tables.
@@ -59,6 +56,8 @@ station-history key visible.
 Attempt the unfiltered left merge with explicit `on="station_code"` and
 `validate="many_to_one"`. Catch the pandas `MergeError` that the duplicated
 right key naturally causes. Do not manufacture the failure flag.
+
+### 1.2 Select current stations and merge
 
 Implement:
 
@@ -70,9 +69,14 @@ Implement:
 
 The canonical result preserves all seven specimens. Its indicator counts are
 six `both`, one `left_only`, and zero `right_only`; `SP106`/`X` is the only
-orphan. Save and explicitly read back `specimen_merge_audit.csv`.
+orphan. Save and explicitly read back the merge audit.
+
+> **Checkpoint — `output/specimen_merge_audit.csv`**
+> Save all seven specimens in source order, with station fields and the merge indicator.
 
 ## Task 2: concatenation and label alignment
+
+### 2.1 Stack the partitions
 
 Implement `stack_specimen_partitions(partition_map)`. For each insertion-ordered
 mapping entry, copy the table, add the source label as an ordinary string
@@ -85,21 +89,31 @@ disposable copies, remove `mass_g` from batch B and add `review_note` only to
 batch B. The resulting three missing masses and four missing notes demonstrate
 column-label alignment; observe them without cleaning them.
 
+> **Checkpoint — `output/combined_specimens.csv`**
+> Save the seven canonical rows, with `source_partition` labels `batch_a` and `batch_b`.
+
+### 2.2 Align feature columns
+
 Implement `align_specimen_features(mass_table, review_table)`. Validate unique,
 nonmissing `specimen_id` keys, build named indexes, and concatenate the feature
 columns horizontally with outer label alignment. Preserve first-seen union order
 without resetting indexes before alignment. The canonical index is `SP101`,
-`SP102`, `SP103`, `SP108`. Save and read back `combined_specimens.csv` and
-`aligned_features.csv`; only the latter intentionally serializes its named
-index.
+`SP102`, `SP103`, `SP108`. Save and read back both artifacts; only the aligned features intentionally serialize their named index.
+
+> **Checkpoint — `output/aligned_features.csv`**
+> Save columns `specimen_id,mass_g,review_score` in the canonical index order above. Leave structural missingness as empty fields.
 
 ## Task 3: reversible structural reshape
+
+### 3.1 Reshape and validate the keys
 
 Implement `wide_to_long_scores(wide_table)` with `melt` and
 `long_to_wide_scores(long_table, ordered_columns)` with `pivot`. Validate the
 wide (`sensor_id`, `station_code`) key and the long (`sensor_id`,
 `station_code`, `measurement_label`) key, preserve first-seen row order, and do
 not mutate inputs.
+
+### 3.2 Verify the round trip and duplicate failure
 
 The canonical long table has eight rows: four `baseline_value` rows followed by
 four `followup_value` rows. Its structural key is unique, and pivoting it back
@@ -109,28 +123,36 @@ catch the natural `ValueError` when the wide function rejects that ambiguity.
 Do not delete or aggregate the duplicate. Save and read back the long and
 round-trip artifacts.
 
-## Scope boundary
+> **Checkpoint — `output/sensor_scores_long.csv`**
+> Save eight rows with columns `sensor_id,station_code,measurement_label,value`, preserving source order within each measurement label.
 
-Use explicit keys, merge validation and indicators, `concat`, `melt`, and
-structural `pivot`. General cleaning decisions, arbitrary deduplication,
-GroupBy, aggregation, `transform`, `pivot_table`, crosstabs, plotting, dates,
-time series, modeling, remote data, notebook magics, and shell commands are out
-of scope. GroupBy and aggregation begin in Lecture 08.
+> **Checkpoint — `output/sensor_scores_round_trip.csv`**
+> Save the four reconstructed rows with the original wide columns and source order.
 
-## Assessment boundary
+## Check your work
 
-Automated grading totals 100 points: 45 for Task 1, 30 for Task 2, and 25 for
-Task 3. There are no separate human-review points; the four explanations and
-privacy constraints remain required coursework context.
+Regenerate the five CSV artifacts and run from the assignment directory:
 
-### Artifact comparison
+```bash
+python check_assignment.py
+```
 
-CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently.
+Correct any reported artifact and repeat until every check passes.
 
-## Public automated grading
+### Completion contract
 
-grading.py is the shared ruleset for students, pytest, and graders. Run
-python check_assignment.py [submission_dir], or add --json for a
-datasci217/grading-result/v1 result. It reads saved artifacts only, never
-notebooks or submission code. The visible tests award Task 1 (45), Task 2
-(30), and Task 3 (25), for 100 points.
+Grading totals 100 points and reads the five UTF-8 CSVs below. Column order, row order, text values, and empty fields must match the specified results. Numeric values are compared with tolerance; quoting may vary.
+
+| Artifacts | Columns and completion criteria | Points |
+|---|---|---:|
+| `output/specimen_merge_audit.csv` | Original specimen columns followed by `station_name,region,_merge`; seven rows in source order, current station values, six `both` rows and orphan `SP106`/`X` as `left_only`. | 45 |
+| `output/combined_specimens.csv`, `output/aligned_features.csv` | Combined: original specimen columns then `source_partition`, batch A followed by B, seven rows. Aligned: `specimen_id,mass_g,review_score`, rows `SP101,SP102,SP103,SP108`, source values and empty unmatched fields. | 30 |
+| `output/sensor_scores_long.csv`, `output/sensor_scores_round_trip.csv` | Long: `sensor_id,station_code,measurement_label,value`, four baseline rows then four follow-up rows. Round trip: `sensor_id,station_code,baseline_value,followup_value`, reproducing all four source rows and values. | 25 |
+
+Additional files are allowed and ignored by the artifact checks.
+
+## Submit
+
+Save the notebook, inspect the notebook and five CSV diffs in VS Code Source Control, commit them, and sync. Confirm all six files appear in your assignment repository.
+
+GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork.

@@ -10,5 +10,7 @@
 - Demo content must use material taught before its corresponding break. Lecture 01 has four breaks: Git/GitHub setup, shell commands, Python basics, control structures/debugging. Use plain `print()` in Lecture 01; formatting with f-strings starts in Lecture 02.
 - Lectures 01–03 use scripts and Notion demo walkthroughs. Lectures 04–11 use Markdown-authored, generated notebooks linked through Colab.
 - Assignments assess committed output artifacts. Graders do not inspect student source patterns or run student code. Keep artifact instructions, checker expectations, and point totals consistent.
+- Keep assignments task-first: annotated scaffold trees, numbered subtasks, and prominent artifact checkpoints. Put a positive, artifact-based Completion Contract under Check Your Work. Avoid preambles, forbidden-code lists, and instructor-facing notes. Call the shared grading rules “checks,” not “public checks.”
+- Use VS Code's integrated terminal by default, with native-terminal instructions as a fallback. Assignment checks run automatically on every GitHub push; a new fork may need Actions enabled once.
 - Use ignored `scratch/` or `tmp/` within this repository for completion tests; do not use the small system temporary disk.
 - Keep screenshots and images local and verify their contents before embedding. Preserve current Notion edits when syncing.

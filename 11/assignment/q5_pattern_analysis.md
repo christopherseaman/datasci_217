@@ -15,11 +15,11 @@ jupyter:
 
 # Q5: Pattern Analysis
 
-**7 points** | Phase 6
+**7 points**
 
-Exploration can leak future information. Restrict this phase to targets before local 2024, then describe seasonal and hourly behavior without looking ahead to validation or test outcomes.
+Use Q4 rows with `model_eligible=True` and target local time before `2024-01-01 00:00:00` in `America/Chicago`. Use this same training subset for the monthly summary, correlations, and pattern figure.
 
-## Setup
+## 5.1 Setup
 
 ```python
 from pathlib import Path
@@ -33,10 +33,10 @@ features = pd.read_csv(
     parse_dates=["cutoff_timestamp_utc", "target_timestamp_utc"],
 )
 
-# TODO: Create training_rows from target instants before local 2024.
+# TODO: Create training_rows from model_eligible rows with target instants before local 2024.
 ```
 
-## Monthly Station Summary
+## 5.2 Monthly Station Summary
 
 Summarize observed target air temperatures by station and local target year/month. `n_observed` counts nonmissing targets.
 
@@ -50,9 +50,11 @@ SUMMARY_COLUMNS = [
 # TODO: Aggregate and save output/q5_monthly_station_summary.csv.
 ```
 
-## Current-Predictor Correlations
+> **Checkpoint — `output/q5_monthly_station_summary.csv`**
 
-Create the required square Pearson matrix in the listed order. Correlation is descriptive, not proof that a predictor improves forecasts.
+## 5.3 Current-Predictor Correlations
+
+Create the required square Pearson matrix in the listed order. Save its row labels in the first CSV column named `feature`, using `to_csv(..., index=True, index_label="feature")`. Correlation is descriptive, not proof that a predictor improves forecasts.
 
 ```python
 CORRELATION_FEATURES = [
@@ -65,7 +67,9 @@ CORRELATION_FEATURES = [
 # output/q5_correlations.csv with row labels as the first column.
 ```
 
-## Pattern Figure
+> **Checkpoint — `output/q5_correlations.csv`**
+
+## 5.4 Pattern Figure
 
 Make one labeled figure that shows both monthly and local-hour temperature patterns from training rows only.
 
@@ -73,9 +77,11 @@ Make one labeled figure that shows both monthly and local-hour temperature patte
 # TODO: Save the combined figure as output/q5_patterns.png.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q5_patterns.png`**
 
-- [ ] Every calculation uses only targets before local 2024.
+## Check Your Work
+
+- [ ] Every calculation uses only model_eligible rows with targets before local 2024.
 - [ ] Monthly counts count observed targets, not all panel rows.
 - [ ] Correlation rows and columns have the exact required names and order.
 - [ ] The figure includes monthly and local-hour patterns.

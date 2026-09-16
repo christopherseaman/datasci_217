@@ -15,11 +15,11 @@ jupyter:
 
 # Q6: Modeling Preparation
 
-**11 points** | Phase 7
+**11 points**
 
 Random splitting would allow future weather into training. Keep only eligible forecast rows and create the fixed train, validation, and test periods from each target instant.
 
-## Setup
+## 6.1 Setup
 
 ```python
 from pathlib import Path
@@ -49,7 +49,7 @@ X_COLUMNS = ID_COLUMNS + FIXED_PREDICTORS[1:]
 Y_COLUMNS = ["row_id", "target_air_temperature_c"]
 ```
 
-## Fixed Chronological Splits
+## 6.2 Fixed Chronological Splits
 
 Apply the contract boundaries to eligible rows by target instant. Keep missing predictor values; Q7's train-fitted imputer handles them.
 
@@ -58,7 +58,7 @@ Apply the contract boundaries to eligible rows by target instant. Keep missing p
 # the target instant corresponding to each America/Chicago boundary.
 ```
 
-## Save X and y Handoffs
+## 6.3 Save X and y Handoffs
 
 For each split, sort by target UTC then station. X and y must use the same unique row IDs in the same order.
 
@@ -67,7 +67,19 @@ For each split, sort by target UTC then station. X and y must use the same uniqu
 # TODO: Save q6_y_train/validation/test.csv with Y_COLUMNS.
 ```
 
-## Split Summary
+> **Checkpoint — `output/q6_X_train.csv`**
+
+> **Checkpoint — `output/q6_X_validation.csv`**
+
+> **Checkpoint — `output/q6_X_test.csv`**
+
+> **Checkpoint — `output/q6_y_train.csv`**
+
+> **Checkpoint — `output/q6_y_validation.csv`**
+
+> **Checkpoint — `output/q6_y_test.csv`**
+
+## 6.4 Split Summary
 
 ```python
 SUMMARY_COLUMNS = ["split", "n_rows", "target_start", "target_end", "n_features"]
@@ -75,7 +87,9 @@ SUMMARY_COLUMNS = ["split", "n_rows", "target_start", "target_end", "n_features"
 # TODO: Save output/q6_split_summary.csv in train, validation, test order.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q6_split_summary.csv`**
+
+## Check Your Work
 
 - [ ] Only eligible Q4 rows enter Q6.
 - [ ] Splits use target instants and exact local boundaries.

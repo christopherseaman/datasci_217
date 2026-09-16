@@ -8,6 +8,6 @@ import sys
 ASSIGNMENT_DIR = Path(__file__).resolve().parent
 
 
-def test_public_checker():
+def test_assignment_artifacts():
     result = subprocess.run([sys.executable, "-B", "check_assignment.py"], cwd=ASSIGNMENT_DIR, text=True, capture_output=True)
     assert result.returncode == 0, result.stdout + result.stderr

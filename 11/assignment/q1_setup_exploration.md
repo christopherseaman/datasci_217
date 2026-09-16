@@ -15,13 +15,13 @@ jupyter:
 
 # Q1: Setup and Exploration
 
-**7 points** | Phases 1-2
+**7 points**
 
 Before analyzing Chicago beach weather, confirm that you have the same frozen release as everyone else. Then get acquainted with station coverage, ordinary sensor distributions, and the shape of the time series.
 
 Read the exact Q1 schemas in [`assignment.md`](assignment.md). Produce all three Q1 artifacts.
 
-## Setup
+## 1.1 Setup
 
 ```python
 from pathlib import Path
@@ -43,7 +43,7 @@ weather = pd.read_csv(DATA_PATH)
 weather.head()
 ```
 
-## Release Audit
+## 1.2 Release Audit
 
 Observe file facts independently rather than copying all manifest values into both sides of the comparison.
 
@@ -58,7 +58,9 @@ AUDIT_CHECKS = [
 # TODO: Save output/q1_release_audit.csv with AUDIT_COLUMNS and index=False.
 ```
 
-## Station Coverage
+> **Checkpoint — `output/q1_release_audit.csv`**
+
+## 1.3 Station Coverage
 
 Parse and localize timestamps only for this coverage audit. The cleaned handoff is Q2's job.
 
@@ -73,7 +75,9 @@ SOURCE_TIMEZONE = "America/Chicago"
 # TODO: Save output/q1_station_coverage.csv in station-name order.
 ```
 
-## First Visualizations
+> **Checkpoint — `output/q1_station_coverage.csv`**
+
+## 1.4 First Visualizations
 
 Create one figure with at least two labeled panels: an ordinary distribution and a station time-series preview. A short slice or aggregated preview is easier to read than every point.
 
@@ -81,7 +85,9 @@ Create one figure with at least two labeled panels: an ordinary distribution and
 # TODO: Build the two-panel figure and save output/q1_visualizations.png.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q1_visualizations.png`**
+
+## Check Your Work
 
 - [ ] Seven independently observed release checks pass in the required order.
 - [ ] Coverage uses the full release window and valid localized station-hour keys.

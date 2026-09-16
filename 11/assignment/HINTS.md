@@ -85,7 +85,7 @@ Use these nudges after trying the corresponding phase. They intentionally stop s
 
 ## Q9: Report
 
-- Keep exactly the six required level-two headings from the starter.
+- Keep exactly the six required level-two headings from the scaffold.
 - Replace every bracketed placeholder.
 - Include numeric validation and/or test MAE, RMSE, and R2 values in a Markdown table.
 - Keep all three required image paths unchanged so the structural check can find them.

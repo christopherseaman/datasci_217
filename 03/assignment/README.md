@@ -1,30 +1,25 @@
 # Assignment 03: Reproducible Terminal NumPy Analysis
 
-This assignment is the final terminal-and-script assignment before Lecture 04 introduces Jupyter and Google Colab. It combines the exact candidate environment records, one bounded POSIX terminal pipeline, and ordinary homogeneous NumPy arrays.
+## Files
 
-Work in the `03/assignment` directory, or in the standalone assignment repository created from this subtree. Use the supported POSIX-style shell from Lecture 01 and terminal-executed `.py` files. Do not create a notebook.
+```text
+assignment/
+├── .python-version, requirements.txt  # environment records to complete
+├── PIPELINE.md                        # command scaffold to complete
+├── array_analysis.py, analysis.py     # Python scaffolds to complete
+├── observations.csv                   # supplied input; keep unchanged
+├── environment_check.py, data_loader.py # supplied helpers; keep unchanged
+├── .gitignore, check_assignment.py     # supplied configuration/checker
+└── output/                            # generate and commit six text artifacts
+```
 
-The required GUI delivery sequence is in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md). It is an unassessed platform checklist, separate from the public code checks, because a grading checkout cannot prove that you activated or recreated an environment, operated a GUI, or followed a particular local workflow.
+## Task 1: Record, verify, and recreate the environment
 
-## Starter files
+Work in `03/assignment` or its standalone repository with the Lecture 01 POSIX-style shell. In VS Code, sync `main`, finish outstanding changes, and use **Git: Create Branch** to create `feature/numpy-analysis`.
 
-- `.python-version` and `requirements.txt`: Task 1 records; edit both.
-- `.gitignore`: supplied recreation/environment exclusions; do not edit it.
-- `environment_check.py`: supplied version probe; do not edit it.
-- `PIPELINE.md`: Task 2 command block; edit only its four `TODO` lines.
-- `observations.csv`: supplied deterministic seven-line fixture; do not edit it.
-- `data_loader.py`: supplied CSV-to-ndarray boundary; do not edit it.
-- `array_analysis.py`: Task 3 NumPy functions; edit this file.
-- `analysis.py`: Task 3 terminal driver; edit this file.
-- `output/.gitkeep`: keeps the output directory in the starter repository.
-- `output/head_preview.txt`, `output/tail_preview.txt`, `output/site_counts.txt`, and `output/site_count_lines.txt`: committed pipeline milestone artifacts.
-- `output/analysis.txt`: committed NumPy learning transcript.
-- `check_assignment.py` and `_public_checks.py`: supplied checker machinery; do not edit them.
-- `test_assignment.py`: public managed-pytest facade; do not edit it. You do not need pytest locally.
+Open **Terminal → New Terminal** in VS Code at the assignment directory. If you use a native terminal or WSL Ubuntu instead, first `cd` into the assignment directory.
 
-The supplied loader and checker use later Python features internally. Run them, but do not copy their implementation patterns into the two student Python files.
-
-## Task 1: Record, verify, and recreate the candidate environment
+### 1.1 Record the environment
 
 Replace the single `TODO` line in `.python-version` with exactly:
 
@@ -38,7 +33,15 @@ Replace the single `TODO` line in `requirements.txt` with the only deliberate di
 numpy==2.3.3
 ```
 
-Do not add uv, pytest, or transitive packages to `requirements.txt`. The file records what this project deliberately imports, not everything installed in one environment.
+The file records the project's direct dependency.
+
+> **Checkpoint — `.python-version`**
+> Save `3.13` with a final newline.
+
+> **Checkpoint — `requirements.txt`**
+> Save `numpy==2.3.3` with a final newline.
+
+### 1.2 Verify and recreate the environment
 
 From the assignment directory, use uv to install/pin the interpreter, create the named local environment, activate it, install the direct requirement, and verify the selected interpreter:
 
@@ -61,6 +64,9 @@ Python: 3.13
 NumPy: 2.3.3
 ```
 
+> **Checkpoint — `output/environment_check.txt`**
+> Save the two version lines above.
+
 There is one newline after each line. Leave the environment and recreate it from only the committed records and supplied probe:
 
 ```bash
@@ -76,9 +82,11 @@ deactivate
 cd ..
 ```
 
-Both `.venv/` directories and `recreation-check/` are generated local state. They are ignored and must never be submitted. The checker validates the exact committed records and probe artifact, and rejects a tracked `.venv` when Git metadata is available. It cannot prove that you activated the local environment or performed the recreation steps; those are workflow evidence, not facts encoded in Python output.
+Both `.venv/` directories and `recreation-check/` are generated local state. Keep them ignored and out of your submission.
 
 ## Task 2: Complete and run the bounded terminal pipeline
+
+### 2.1 Complete the pipeline
 
 Replace the four `TODO` lines inside the fenced block in `PIPELINE.md` with these exact commands, in this order:
 
@@ -88,6 +96,20 @@ tail -n 2 observations.csv > output/tail_preview.txt
 tail -n +2 observations.csv | cut -d',' -f1 | sort | uniq -c > output/site_counts.txt
 wc -l output/site_counts.txt > output/site_count_lines.txt
 ```
+
+> **Checkpoint — `output/head_preview.txt`**
+> Save the first three fixture lines.
+
+> **Checkpoint — `output/tail_preview.txt`**
+> Save the last two fixture lines.
+
+> **Checkpoint — `output/site_counts.txt`**
+> Save the three site counts shown below.
+
+> **Checkpoint — `output/site_count_lines.txt`**
+> Save the `wc` result: `3 output/site_counts.txt` (spacing may vary).
+
+### 2.2 Run and inspect the results
 
 Run the four commands from the assignment directory. They preview the fixed input, remove its one-line header, select the site field, put equal site names next to one another, count adjacent equal names, and save the number of count lines.
 
@@ -99,13 +121,13 @@ The fixture is deliberately bounded: it has one header, no quoted newlines, and 
 1 west
 ```
 
-Use one overwrite redirection (`>`) per command, never append redirection (`>>`). Commit the four saved results. The checker reads those results; it does not execute or parse your `PIPELINE.md` command text. Count-column padding and line endings can vary by supported platform, so the saved count pairs and `wc` fields are checked after whitespace normalization.
+Commit the four saved results. Count-column padding may vary by platform; the checker normalizes whitespace in the site counts and `wc` result.
 
 ## Task 3: Implement the NumPy functions
 
-Complete the seven functions in `array_analysis.py`. Keep every exact signature, replace each one-line TODO docstring, and return the named dictionaries or scalar. Do not print or mutate an input.
+Complete the seven functions in `array_analysis.py`. Document their behavior and return the dictionaries or scalar described below, leaving inputs unchanged.
 
-### `create_and_describe(values)`
+### 3.1 create_and_describe(values)
 
 Create `array = np.array(values, dtype=np.float64)` and return:
 
@@ -119,7 +141,7 @@ Create `array = np.array(values, dtype=np.float64)` and return:
 }
 ```
 
-### `select_parts(values)`
+### 3.2 select_parts(values)
 
 For a 2D ndarray with at least two rows and two columns, return selections made directly from `values`:
 
@@ -132,7 +154,7 @@ For a 2D ndarray with at least two rows and two columns, return selections made 
 }
 ```
 
-### `view_and_copy(values)`
+### 3.3 view_and_copy(values)
 
 Create `middle_view = values[1:3]` and `middle_copy = values[1:3].copy()`. Return both without mutating either result or `values` during the call:
 
@@ -142,7 +164,7 @@ Create `middle_view = values[1:3]` and `middle_copy = values[1:3].copy()`. Retur
 
 The returned view must share memory with the input. The returned copy must not share memory with the input or view.
 
-### `vector_operations(values, baseline, threshold, offset)`
+### 3.4 vector_operations(values, baseline, threshold, offset)
 
 The two array inputs are 1D and have the same shape; `threshold` and `offset` are scalars. Create one boolean `mask = values >= threshold`, select `values[mask]`, calculate `difference = values - baseline`, and apply the scalar broadcast `adjusted = values + offset`. Return:
 
@@ -155,7 +177,7 @@ The two array inputs are 1D and have the same shape; `threshold` and `offset` ar
 }
 ```
 
-### `reduction_summary(values)`
+### 3.5 reduction_summary(values)
 
 For a 2D ndarray, calculate `np.mean(values)`, `np.mean(values, axis=0)`, and `np.mean(values, axis=1)`. Return:
 
@@ -169,7 +191,7 @@ For a 2D ndarray, calculate `np.mean(values)`, `np.mean(values, axis=0)`, and `n
 }
 ```
 
-### `reshape_and_transpose(values, rows, columns)`
+### 3.6 reshape_and_transpose(values, rows, columns)
 
 Create `grid = np.reshape(values, (rows, columns))`, then `transposed = grid.T`. Return:
 
@@ -182,13 +204,13 @@ Create `grid = np.reshape(values, (rows, columns))`, then `transposed = grid.T`.
 }
 ```
 
-### `count_at_or_above(values, threshold)`
+### 3.7 count_at_or_above(values, threshold)
 
-First reshape the input to one dimension with `flattened = np.reshape(values, values.size)`. Then create the scalar-comparison mask `flattened >= threshold` and return its whole count with `np.sum(...)`. Do not reduce one original axis separately.
+Reshape the input to one dimension with `flattened = np.reshape(values, values.size)`. Create the scalar-comparison mask `flattened >= threshold` and return its count with `np.sum(...)`.
 
-## Task 3 driver
+### 3.8 Complete the driver
 
-Complete `analysis.py` while keeping its supplied imports and exact main guard. Inside `main()`, in this order:
+Complete `analysis.py` using its supplied imports and main guard. Inside `main()`, in this order:
 
 1. call `load_measurements("observations.csv")` once;
 2. use the loaded array with all seven helpers;
@@ -196,7 +218,7 @@ Complete `analysis.py` while keeping its supplied imports and exact main guard. 
 4. print the four selections, the vector-operation results, and the reshape/transposed arrays; and
 5. use a separate copy of the loaded data to print the view and copy before and after changing that copy's first middle value to `-99`.
 
-Do not ignore the returned data, recalculate it in the driver, or hard-code the displayed values. The supplied loader resolves the fixture relative to its own file, so this program works when invoked by absolute path from another working directory.
+Use the values returned by the helpers for the displayed results.
 
 Running `python analysis.py` must print a readable transcript and capture it as `output/analysis.txt`. Start with the existing six summary lines, then print these labeled learning results in this order:
 
@@ -233,7 +255,8 @@ Transpose: [[10. 30. 20.]
  [30. 20. 40.]]
 ```
 
-The committed `output/analysis.txt` contains this transcript. Notebook execution is not part of this assignment; local script execution is only the convenient way to create the required artifacts.
+> **Checkpoint — `output/analysis.txt`**
+> Run `python analysis.py > output/analysis.txt` to save the complete transcript above.
 
 ## Check your work
 
@@ -244,20 +267,20 @@ python analysis.py
 python check_assignment.py
 ```
 
-A complete submission ends with `All public checks passed.` The optional GitHub Actions workflow invokes the same public `check_assignment.py` entrypoint with managed pytest. An instructor or TA runs a trusted copy against submitted artifacts and never executes student code; the workflow is feedback, not a submission requirement.
+A complete submission passes every check. Correct the named artifacts, regenerate them, and check again.
 
-The checker reads saved student materials directly: 20 points for the environment records and probe, 40 for the pipeline artifacts, and 40 for `output/analysis.txt`. It does not inspect or execute student code, require the supplied fixture in a submission, or infer how the artifacts were produced; optional local reruns are useful QA only.
+### Completion contract
 
-## Explicit scope boundaries
+Grading totals 100 points and reads these files relative to the assignment root.
 
-These are assignment boundaries, not hidden style rules. They apply to `array_analysis.py` and `analysis.py`; the supplied loader and grader machinery may use standard-library facilities needed for their jobs.
+| Artifacts | Format and completion criteria | Points |
+|---|---|---:|
+| `.python-version`, `requirements.txt`, `output/environment_check.txt` | Exact environment records with final newlines and the two probe lines in Task 1. | 20 |
+| `output/head_preview.txt`, `output/tail_preview.txt`, `output/site_counts.txt`, `output/site_count_lines.txt` | UTF-8 text with the specified fixture previews, ordered site/count pairs, and `3 output/site_counts.txt`. Whitespace is normalized for counts and `wc` fields. | 40 |
+| `output/analysis.txt` | UTF-8 text with every transcript line shown in Task 3, in that order, including array spacing. | 40 |
 
-- Keep the supplied module docstring and exact top-level layout in both student files. `array_analysis.py` contains only its NumPy import and the seven required functions in the supplied order; `analysis.py` contains its supplied local imports, `main()`, and the exact main guard. Do not add nested or extra functions or top-level driver state.
-- No `for`/`while` loops, comprehensions, generator expressions or functions, exceptions, classes, lambdas, decorators, async code, annotations, default parameters, `*args`, `**kwargs`, `global`, or `nonlocal`.
-- No `pathlib`, file I/O, CSV parsing, or other parsing in student code. The supplied `data_loader.py` owns the path and CSV boundary.
-- `array_analysis.py` has only `import numpy as np`. `analysis.py` has only the supplied local imports.
-- No indirect or dynamic calls, aliases for calls, attribute lookup used to choose a call, `eval`, `exec`, `compile`, or `__import__`.
-- Do not use augmented assignment, assign through an index or attribute, delete data, or otherwise mutate an input or returned selection inside a helper. The driver may change one indexed value on its separate local copy for the documented view/copy demonstration.
-- Use only the required `np.array`, `.copy()`, `np.mean`, `np.reshape`, `np.sum`, `.T`, basic indexing/slicing, one boolean selection, comparisons, same-shape subtraction, and scalar addition. Do not replace required NumPy calls with methods or hand calculations.
-- No structured arrays, random generation, fancy integer indexing, sorting/ranking, stacking, concatenation, multidimensional broadcasting, pandas, notebook, Colab, or shell script.
-- The pipeline may not use command substitution, variables, append redirection, semicolons, compound commands, extra tools, CLI Git, `awk`, `sed`, or `tr`.
+## Submit
+
+In VS Code Source Control, inspect and stage the environment records, `PIPELINE.md`, and all six output text files. Keep `.venv/` and `recreation-check/` ignored. Commit with `Record reproducible terminal workflow`. Inspect and stage `array_analysis.py` and `analysis.py`, then commit with `Implement NumPy array analysis`.
+
+Publish or sync the branch. With no unfinished changes, switch to `main`, run **Git: Merge...**, and select `feature/numpy-analysis`. Resolve any unexpected conflict, inspect the resolution, and sync. Confirm the completed records, pipeline, six output files, and Python files on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a required VS Code control is unavailable, record its message and contact the instructor.

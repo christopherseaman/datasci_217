@@ -1,25 +1,21 @@
 # Assignment 04: Fresh Notebooks and Labeled pandas Data
 
-This assignment is the first required notebook assignment in the course. It checks that you can repair notebook state, construct and select labeled pandas objects, and complete one portable CSV round trip.
+## Files
 
-Complete and commit the supplied notebook along with its CSV artifacts. Automated grading reads the committed CSVs without executing the notebook.
+```text
+assignment/
+├── assignment.ipynb                 # notebook scaffold to complete
+├── .python-version, requirements.txt # supplied environment records
+├── data/purchases.csv, data/fixture.json # supplied synthetic input/manifest
+├── check_assignment.py, grading.py  # supplied checker; keep unchanged
+└── output/                         # generate and commit two CSV artifacts
+```
 
-The repository-delivery steps are in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md). Commit the notebook and generated CSVs in the assignment repository; the optional Actions workflow is feedback only.
+## Setup
 
-## Starter files
+Open **Terminal → New Terminal** in VS Code at the assignment directory. If you use a native terminal or WSL Ubuntu instead, first `cd` into the assignment directory.
 
-- `assignment.ipynb`: the notebook you repair and complete;
-- `.python-version` and `requirements.txt`: the candidate environment records; do not edit them;
-- `data/purchases.csv` and `data/fixture.json`: the immutable synthetic input and its manifest; do not edit them;
-- `output/.gitkeep`: keeps the generated-output directory in the starter repository;
-- `check_assignment.py` and `grading.py`: the discoverable public checker and scoring rules; do not edit them; and
-- `PLATFORM_CHECK.md`: the unassessed local-Jupyter and GUI delivery checklist; do not edit it.
-
-The supplied setup cell locates and verifies the fixture; do not edit it. It supports both a standalone exported layout and this course repository.
-
-## Candidate environment
-
-The implementation candidate is Python 3.13, NumPy 2.3.3, and pandas 3.0.5. These exact records are the tested assignment contract.
+Use Python 3.13, NumPy 2.3.3, and pandas 3.0.5. Open `04/assignment` or its standalone repository in VS Code. Sync `main` and finish outstanding changes before editing.
 
 From the assignment directory, create the environment and install the two deliberate notebook dependencies:
 
@@ -30,11 +26,13 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
-In the supplied notebook, use the course-supported local Jupyter or VS Code host and select this Python 3 environment as its kernel. Jupyter hosting and kernel support are platform tooling, not imports used by your assignment code.
+In the supplied notebook, use the course-supported local Jupyter or VS Code host and select this Python 3 environment as its kernel. Keep the work local and use the supplied synthetic data. Never include credentials or private information in notebook source or output.
 
 ## Task 1: repair notebook state
 
-The starter deliberately places this dependent cell first:
+### 1.1 Reorder the cells
+
+The scaffold deliberately places this dependent cell first:
 
 ```python
 adjusted_rate = base_rate + 2
@@ -47,6 +45,8 @@ base_rate: 3
 adjusted_rate: 5
 ```
 
+### 1.2 Explain the repair
+
 Replace the TODO in the supplied Markdown explanation with a short explanation that distinguishes:
 
 - visible cell order from actual execution order;
@@ -54,9 +54,10 @@ Replace the TODO in the supplied Markdown explanation with a short explanation t
 - stored output from evidence of a fresh execution; and
 - the repair and resulting cell order.
 
-This explanation is human-reviewed. Automated checks read the committed CSV artifacts directly and do not infer how they were produced.
 
 ## Task 2: construct and select labeled pandas objects
+
+### 2.1 Construct the labeled objects
 
 Keep the supplied arrays. Complete the Task 2 code cell using the exact variable names below.
 
@@ -80,6 +81,8 @@ baseline_table = measurement_table[["baseline_c"]]
 
 `baseline_series` must be a Series. `baseline_table` must be a one-column DataFrame.
 
+### 2.2 Select and save the block
+
 Use label selection for:
 
 ```python
@@ -93,7 +96,12 @@ Use the equivalent positional selection for `position_block` with `.iloc[1:3, 0:
 
 Verify that the two blocks contain the same values. Write `label_block` to `LABELED_OUTPUT_PATH` while preserving its named row index. Reading `output/labeled_block.csv` as an ordinary CSV must produce the columns `record_id`, `baseline_c`, and `follow_up_c`.
 
+> **Checkpoint — `output/labeled_block.csv`**
+> Save the two selected rows with the named `record_id` index and both measurement columns.
+
 ## Task 3: portable CSV round trip
+
+### 3.1 Read and select purchases
 
 Read the immutable input exactly through the supplied path:
 
@@ -119,6 +127,8 @@ Copy that selection, then add one arithmetic derived column:
 line_total = quantity * unit_price
 ```
 
+### 3.2 Sort, save, and read back
+
 Sort deterministically with the exact keys and directions:
 
 ```python
@@ -134,36 +144,30 @@ P008, P003, P004, P006, P001, P011, P007, P009, P012
 
 Write `selected_purchases` to `SELECTED_OUTPUT_PATH` with `index=False`. Read that file back through the same supplied path into `round_trip`. The final supplied verification cell checks the exact schema, nine-row count, mask condition, arithmetic, and deterministic order.
 
-## Generated artifacts and execution evidence
+> **Checkpoint — `output/selected_purchases.csv`**
+> Save the nine selected purchases in the order above with `index=False`, then read the CSV back.
 
-Submit these required student-authored or generated artifacts:
+## Check your work
 
-1. `output/labeled_block.csv`; and
-2. `output/selected_purchases.csv`.
-
-Additional input or diagnostic files are allowed; grading checks the required artifacts and ignores extras.
-
-A generated CSV is a separate committed milestone artifact; it is not the same thing as output stored under a notebook cell. Before submission:
-
-1. save the visible notebook source;
-2. create or regenerate both CSV files;
-3. confirm both CSV files are committed; and
-5. run the public checker from the assignment directory:
+Save the notebook, regenerate both CSVs, and run from the assignment directory:
 
 ```bash
 python check_assignment.py
 ```
 
-A complete artifact set ends with `All public checks passed.` The public checker derives expected results from the fixture and does not trust editable assertions or displayed notebook output. It is also the grader contract: instructors run a trusted copy against submitted artifacts and never execute the notebook.
+Correct any reported artifact and repeat until every check passes.
 
-The automated grader reads the two committed CSV artifacts directly. Optional notebook execution is useful local QA but is not required for grading.
+### Completion contract
 
-## Scope and assessment
+Grading totals 100 points and reads the two UTF-8 CSV files below. Column and row order matter; numeric values are compared with tolerance, while CSV quoting may vary.
 
-Do not add cleaning, missing-value decisions, type conversion, dates, joins, concatenation, reshape, GroupBy, aggregation, plotting, modeling, performance work, network access, absolute paths, `/content` paths, or Drive mounts.
+| Artifact | Columns and completion criteria | Points |
+|---|---|---:|
+| `output/labeled_block.csv` | `record_id,baseline_c,follow_up_c`; rows `site-102,15,23` and `site-103,10,17`, in that order. | 40 |
+| `output/selected_purchases.csv` | `purchase_id,item,quantity,unit_price,line_total`; the nine fixture purchases with quantity at least 2, their unchanged item/quantity/price values, and correct line totals. Sort by total descending and ID ascending as specified in Task 3. | 60 |
 
-Automated grading totals 100 points: 40 for the labeled-block artifact and 60 for the selected-purchases artifact. The trusted grader supplies its own fixture; it does not require starter files, the notebook, or protected package files in a submission. There are no separate human-review points; the notebook explanation and task headings remain required coursework context.
+Additional files are allowed and ignored by the artifact checks.
 
-### Artifact comparison
+## Submit
 
-CSV checks compare parsed columns and values, not file hashes or quoting. Preserve the row order explicitly requested for selection, sorting, concatenation, and reshaping. Each milestone is assessed independently.
+In VS Code Source Control, inspect the notebook and CSV diffs and confirm they contain only synthetic course data. Keep the supplied fixture, environment records, and checker unchanged. Stage `assignment.ipynb` and both CSV files, commit with `Complete Assignment 04 notebook`, and select **Sync Changes**. Confirm all three files in the assignment repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a required local notebook or VS Code control is unavailable, record its message and contact the instructor.

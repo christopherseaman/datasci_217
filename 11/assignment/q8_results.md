@@ -15,11 +15,11 @@ jupyter:
 
 # Q8: Results
 
-**13 points** | Phase 9
+**13 points**
 
 Your Q7 estimator, parameters, and feature order are frozen. Recreate the same pipeline, refit on training plus validation, and evaluate the July-December 2024 test period once. Test diagnostics describe the final result; they are not another tuning opportunity.
 
-## Setup
+## 8.1 Setup
 
 ```python
 from pathlib import Path
@@ -41,7 +41,7 @@ validation_predictions = pd.read_csv("output/q7_validation_predictions.csv")
 # TODO: Load Q6 train, validation, and test X/y files and verify ID alignment.
 ```
 
-## Refit and Test Once
+## 8.2 Refit and Test Once
 
 Import the frozen estimator class from the model specification, restore its recorded parameters, recreate the required preprocessing pipeline, and fit train plus validation. Then predict test once.
 
@@ -57,7 +57,11 @@ METRIC_COLUMNS = ["model", "mae", "rmse", "r2", "n"]
 # TODO: Save q8_test_predictions.csv and q8_test_metrics.csv.
 ```
 
-## Station Metrics
+> **Checkpoint — `output/q8_test_predictions.csv`**
+
+> **Checkpoint — `output/q8_test_metrics.csv`**
+
+## 8.3 Station Metrics
 
 Calculate both models over identical test observations within each station.
 
@@ -67,7 +71,9 @@ STATION_METRIC_COLUMNS = ["model", "station_name", "n", "mae", "rmse", "r2"]
 # TODO: Save output/q8_station_metrics.csv ordered by model then station.
 ```
 
-## Final Visualizations
+> **Checkpoint — `output/q8_station_metrics.csv`**
+
+## 8.4 Final Visualizations
 
 Create one readable multi-panel figure containing a validation comparison, a test actual-versus-predicted view, and residual panels.
 
@@ -75,7 +81,9 @@ Create one readable multi-panel figure containing a validation comparison, a tes
 # TODO: Save output/q8_final_visualizations.png.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q8_final_visualizations.png`**
+
+## Check Your Work
 
 - [ ] The Q7 estimator, parameters, and feature order stayed fixed.
 - [ ] Final preprocessing and fitting used train plus validation only.

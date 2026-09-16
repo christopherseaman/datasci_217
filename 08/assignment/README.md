@@ -1,56 +1,32 @@
 # Assignment 08: Grouped Results with an Explicit Grain
 
-Build one reproducible pandas notebook that makes the grain of every grouped
-result explicit. You will choose among three counting operations, create flat
-named summaries, preserve source-row alignment with `transform`, and prove that
-one aggregating pivot agrees with its equivalent two-key GroupBy result.
+## Files
 
-This is a local-first assignment. The notebook (or an equivalent documented
-source file) remains a required coursework deliverable, though automated grading
-does not execute it. The single
-prepared table is course-authored synthetic support-request data; it has no
-real, identifying, or customer records. Assignment Colab is not supported.
-Do not use manual uploads, Drive mounts, network access, absolute paths, or
-`/content` paths. The supplied setup supports standalone exported assignment
-repositories and full course checkouts, including nested launch directories
-inside the assignment.
+```text
+assignment/
+├── assignment.ipynb     # Provided notebook scaffold to complete
+├── data/                # Provided fixtures
+├── requirements.txt     # Provided pinned environment
+├── check_assignment.py  # Provided completion checker
+└── output/              # Generated artifacts to submit
+```
 
 ## Setup
 
-Use CPython 3.13. From this directory, create and activate a virtual
-environment, and install the two exact dependency records. If you use the
-notebook, open it through Jupyter or the VS Code notebook interface:
+In VS Code, open the assignment folder and choose **Terminal → New Terminal**. You can also use your native terminal or WSL Ubuntu; change to the assignment directory before running these commands.
+
+From this assignment directory, create a Python 3.13 environment and install the pinned requirements:
 
 ```bash
-python -m venv .venv
+uv venv --python 3.13
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+uv pip install -r requirements.txt
+python --version
 ```
 
-On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
-[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before preparing artifacts. If you run
-the notebook, its kernel must use the environment you checked.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Python 3.13 is missing, run `uv python install 3.13`. Select this environment as the kernel when opening the notebook in VS Code or Jupyter. The course uses pandas 3.0.5.
 
-## Deliverables
-
-Complete every `TODO` in `assignment.ipynb` or your working copy. Create these five CSV milestone artifacts:
-
-- `output/center_count_summary.csv`
-- `output/center_summary.csv`
-- `output/requests_with_context.csv`
-- `output/center_channel_summary.csv`
-- `output/mean_resolution_pivot.csv`
-
-Additional files are allowed and ignored. Automated grading reads the saved
-CSVs; retain your completed notebook for coursework.
-
-After creating the saved artifacts, use the discoverable student check:
-
-```bash
-python check_assignment.py
-```
-
-The shared checker reads saved CSVs and reports milestone points without executing notebook code or judging written explanations. Fix each failed check, regenerate the artifacts, and check again.
+Keep the supplied `data/` files unchanged. Open the complete assignment directory; the setup cell locates and verifies its fixtures in either a standalone assignment repository or the course repository. Restore missing or checksum-mismatched fixtures before continuing.
 
 ## Terms and data contract
 
@@ -82,69 +58,75 @@ The shared checker reads saved CSVs and reports milestone points without executi
 - An **absent combination** has no input row for its key combination. It is not
   a measured zero.
 
-The fixture grain is one synthetic support request. `request_id` identifies a
-row; `center` is the first grouping key; `channel` is the second; `agent_id` may
-repeat; `resolution_minutes` is a complete measurement; and
-`satisfaction_score` is optional. Center order is Central, Harbor, Ridge,
-Valley; channel order is Email, Phone, Chat. Valley is an unused category.
-Harbor--Phone is absent, and three satisfaction scores are missing. These are
-prepared facts to analyze, not cleaning decisions.
+The fixture grain is one synthetic support request. `request_id` identifies a row; `center` is the first grouping key; `channel` is the second; `agent_id` may repeat; `resolution_minutes` is a complete measurement; and `satisfaction_score` is optional. Center order is Central, Harbor, Ridge, Valley; channel order is Email, Phone, Chat. Valley is an unused category. Harbor--Phone is absent, and three satisfaction scores are missing. These are prepared facts to analyze, not cleaning decisions.
 
-## Task 1: grain and count semantics
+## Question 1: Grain and count semantics
 
-Before grouping, state the input grain, grouping key and unit, predicted observed
-groups, observed-category policy, and output grain. Choose the operation that
-answers each question:
+### 1.1 Count observed requests, scores, and agents
+
+Before grouping, state the input grain, grouping key and unit, predicted observed groups, observed-category policy, and output grain. Choose the operation that answers each question:
 
 - How many support-request rows were recorded? Use `size`.
 - How many requests have a recorded satisfaction score? Use selected-column
   `count`.
 - How many distinct agents appear? Use selected-column `nunique`.
 
-Implement `build_count_summary(request_table)` with explicit
-`observed=True`, `sort=True`, and `dropna=True`. Return one flat row per observed
-center and save/read back `center_count_summary.csv`.
+Implement `build_count_summary(request_table)` with explicit `observed=True`, `sort=True`, and `dropna=True`. Return one flat row per observed center and save/read back `center_count_summary.csv`.
 
-## Task 2: aggregation, transform, and two keys
+> **Checkpoint — `output/center_count_summary.csv`**
 
-Implement `build_center_summary(request_table)` with flat named aggregation and
-deliberate `as_index=False`. Implement `add_center_context(request_table)` with
-selected-Series `transform("mean")`; its result must preserve the input row count
-and exact index. Implement `build_center_channel_summary(request_table)` as one
-bounded flat two-key summary. Do not mutate inputs or round results. Save and
-read back all three Task 2 outputs.
+## Question 2: Aggregation, transform, and two keys
 
-## Task 3: one aggregating pivot and equivalence
+### 2.1 Create the center summary
 
-Implement `build_resolution_pivot(request_table)` with the assignment's only
-`pd.pivot_table` call. Its five roles are `index="center"`,
-`columns="channel"`, `values="resolution_minutes"`, `aggfunc="mean"`, and
-`observed=True`; also use explicit `sort=True` and `dropna=True`. Compare every
-populated pivot cell with the equivalent GroupBy mean. Keep Harbor--Phone
-missing; do not replace it with zero. Save and read back
-`mean_resolution_pivot.csv`.
+Implement `build_center_summary(request_table)` with flat named aggregation and deliberate `as_index=False`. Save and read back the center summary without rounding results.
 
-For your own confidence, try the completed functions with a prepared table that
-has different category labels, values, group sizes, row order, and a shuffled
-nondefault index. All five functions should derive their behavior from their
-argument rather than canonical literals, global data, or files.
+> **Checkpoint — `output/center_summary.csv`**
 
-## Scope and assessment boundary
+### 2.2 Add request context
 
-Required work does not clean, impute, join, structurally reshape, filter groups,
-use `GroupBy.apply`, manipulate MultiIndex, create crosstabs, visualize, analyze
-dates/time series, calculate statistics or models, access remote/performance
-tools, fetch network data, generate random data, or depend on a mutable date.
+Implement `add_center_context(request_table)` with selected-Series `transform("mean")`; its result must preserve the input row count and exact index. Save and read back the request-level result without mutating the source table.
 
-Automated grading totals 100 points: 29 for Task 1, 47 for Task 2, and 24 for
-Task 3. There are no
-separate human-review points; the grain/count, aggregate/transform, pivot,
-privacy, and readability explanations remain required coursework context.
+> **Checkpoint — `output/requests_with_context.csv`**
 
-## Public automated grading
+### 2.3 Summarize center/channel pairs
 
-grading.py is the shared ruleset for students, pytest, and graders. Run
-python check_assignment.py [submission_dir], or add --json for a
-datasci217/grading-result/v1 result. It reads saved artifacts only, never
-notebooks or submission code. The visible tests award Task 1 (29), Task 2
-(47), and Task 3 (24).
+Implement `build_center_channel_summary(request_table)` as one flat two-key summary. Save and read back the result without rounding values.
+
+> **Checkpoint — `output/center_channel_summary.csv`**
+
+## Question 3: Aggregating pivot and equivalence
+
+### 3.1 Compare the pivot with grouped means
+
+Implement `build_resolution_pivot(request_table)` with the assignment's only `pd.pivot_table` call. Its five roles are `index="center"`, `columns="channel"`, `values="resolution_minutes"`, `aggfunc="mean"`, and `observed=True`; also use explicit `sort=True` and `dropna=True`. Compare every populated pivot cell with the equivalent GroupBy mean. Keep Harbor--Phone missing; do not replace it with zero. Save and read back `mean_resolution_pivot.csv`.
+
+> **Checkpoint — `output/mean_resolution_pivot.csv`**
+
+## Check Your Work
+
+Run this from the assignment directory after saving your artifacts:
+
+```bash
+python check_assignment.py
+```
+
+Fix each failed check, regenerate the affected files, and run the checker again. It reads saved artifacts without running your code.
+
+### Completion contract
+
+Save these five CSVs in `output/` with the columns below in order and no extra index column. Row identities must be unique and match the supplied requests; row order may differ. Values and missingness must match the requested calculations; retain full calculation precision when exporting.
+
+| Artifact | Columns in order and completion criteria |
+|---|---|
+| `output/center_count_summary.csv` | `center`, `request_count`, `satisfaction_count`, `unique_agent_count`: one row per observed center, counting requests, recorded satisfaction values, and distinct agents. |
+| `output/center_summary.csv` | The four count-summary columns, then `total_resolution_minutes`, `mean_resolution_minutes`: source-derived sum and mean per observed center. |
+| `output/requests_with_context.csv` | Original columns `request_id`, `center`, `agent_id`, `channel`, `resolution_minutes`, `satisfaction_score`, then `center_mean_resolution_minutes`, `difference_from_center_mean`: every original request and its center mean and resolution-minus-mean difference. |
+| `output/center_channel_summary.csv` | `center`, `channel`, `request_count`, `mean_resolution_minutes`: one row per observed center/channel pair. |
+| `output/mean_resolution_pivot.csv` | `center`, `Email`, `Phone`, `Chat`: mean resolution minutes per observed center/channel pair; Harbor–Phone stays missing. |
+
+Task 1 is worth 29 points, Task 2 is worth 47, and Task 3 is worth 24: 100 total.
+
+## Submit
+
+In VS Code Source Control, inspect your completed notebook and required `output/` files, then commit and push them. Alternatively, use **Add file → Upload files** on the GitHub website and commit the files at their required paths. Keep private data, credentials, virtual environments, and notebook checkpoints out of your submission. GitHub Actions runs the assignment checks automatically on every push. If your fork has Actions disabled, enable it once in the Actions tab. Review the feedback, then regenerate, check, commit, and push corrected artifacts if needed.

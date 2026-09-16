@@ -1,4 +1,4 @@
-"""Run the discoverable public Assignment 04 artifact checks.
+"""Run the Assignment 04 artifact checks.
 
 Checks read committed artifacts; student notebook code is never executed or inspected.
 """
@@ -185,7 +185,7 @@ def main() -> int:
             print(f"[{'PASS' if test['passed'] else 'FIX'}]  {test['test-name']}" + (f": {test['detail']}" if test["detail"] else ""))
         print(f"\nScore: {result['score']}/{result['max-score']}")
         if result["score"] == result["max-score"]:
-            print("All public checks passed.")
+            print("All checks passed.")
     return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 

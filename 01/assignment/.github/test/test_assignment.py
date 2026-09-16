@@ -1,6 +1,6 @@
 """Portable pytest entrypoint for Assignment 01.
 
-The assignment source keeps the public tests at repository root for local
+The assignment source keeps the tests at repository root for local
 backwards compatibility. This wrapper makes the same tests discoverable from
 the standalone repository's conventional .github/test path.
 """
@@ -15,7 +15,7 @@ sys.path.insert(0, str(ASSIGNMENT_DIR))
 
 _spec = spec_from_file_location("_assignment_public_tests", PUBLIC_TESTS)
 if _spec is None or _spec.loader is None:
-    raise ImportError(f"Cannot load public tests from {PUBLIC_TESTS}")
+    raise ImportError(f"Cannot load tests from {PUBLIC_TESTS}")
 _module = module_from_spec(_spec)
 _spec.loader.exec_module(_module)
 

@@ -12,7 +12,7 @@ notion:
 	#### *San Francisco is a walkable city and I will literally die on this hill*
 </callout>
 
-This course started as a Python introduction plus as much of the practical stuff I learned on the job—but never in a course—as I could fit. Halfway through preparing the first version, I found [The Missing Semester](https://missing.csail.mit.edu/). Apparently, I wasn't the only one who noticed the gap.
+This course started as a Python introduction plus as much of the practical stuff I learned on the job but never in a course as I could fit. Halfway through preparing the first version, I found [The Missing Semester](https://missing.csail.mit.edu/). Apparently, I wasn't the only one who noticed the gap.
 
 **Quick references**
 
@@ -37,6 +37,10 @@ This course started as a Python introduction plus as much of the practical stuff
 
 The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
 
+Use [VS Code](https://code.visualstudio.com/)'s **Terminal → New Terminal** for course commands. Open your project folder first; the terminal starts there. On Windows, use the terminal dropdown's **Select Default Profile → Ubuntu (WSL)**, then open a new terminal. If WSL is not installed yet, use the setup step below.
+
+The native terminal apps below are alternatives and can also handle initial installation before VS Code is ready. Use `cd` to enter your project folder when working in a separate terminal.
+
 ### Windows Users
 
 **WSL:**
@@ -45,7 +49,7 @@ The shell examples in this lecture use POSIX commands in Bash (or a compatible s
 
 Native Windows:
 
-- **PowerShell** (built-in): Press `Win + X`, then select "Terminal" or "Windows PowerShell." You can run Git and Python there, but Bash-specific examples such as `touch`, brace expansion, and `find -exec` do not transfer unchanged.
+- **PowerShell** (built-in): Press `Win + X`, then select "Terminal" or "Windows PowerShell." Use it to install WSL; use the Ubuntu terminal for the course's Bash commands.
 - **GitHub Codespaces** (cloud option): No installation needed
 
 ### Mac Users
@@ -114,7 +118,7 @@ In native Windows PowerShell, use `py -3.13 --version`. Until we activate a virt
 
 - Free, powerful, and perfect for data science
 - Available on all platforms
-- Built-in Python support
+- Python support through Microsoft's Python extension
 - Can open files from command line with `code filename.py`
 
 ### Other Editors
@@ -129,6 +133,24 @@ In native Windows PowerShell, use `py -3.13 --version`. Until we activate a virt
 ![IDE Choice Guidance](media/IDE_choice.png)
 
 We'll use VS Code for its editor, integrated terminal, debugger, and Git interface.
+
+### VS Code Basics
+
+Open the assignment folder with **File → Open Folder** so the editor, terminal, and Source Control all use the same project.
+
+![VS Code's labeled interface showing the Activity Bar, Primary Side Bar, editor, Panel, and Status Bar.](media/vscode-workspace.png)
+
+| Task | Where / how |
+| --- | --- |
+| Open or create a file | **Explorer** at left; click a filename or the **New File** icon. Keep `.py` on Python filenames. |
+| Edit and save | Type in the editor; **File → Save** or Ctrl+S (Cmd+S on Mac). Save before running. |
+| Enable Python support | **Extensions** at left; install **Python** by Microsoft. |
+| Choose Python | Command Palette → **Python: Select Interpreter**; select the installed Python 3.13. |
+| Run a command | **Terminal → New Terminal**; type the command at the prompt and press Enter. |
+| Find an editor action | **View → Command Palette**; type its name, such as `Git: Clone`. |
+| Review changed files | **Source Control** at left; click a file to see its changes. |
+
+The editor changes files; the terminal runs commands. Saving a file does not run it or upload it to GitHub. Screenshot: [VS Code interface](https://code.visualstudio.com/docs/editing/getting-started/userinterface).
 
 ## Starting with GitHub
 
@@ -153,6 +175,8 @@ We'll use VS Code for its editor, integrated terminal, debugger, and Git interfa
 GitHub Student Pack (Optional Bonus) With your .edu email, you can get free premium features. We don't need them for class, but they're nice to have!
 
 ### Setting Up Git in VS Code
+
+Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code.
 
 1. Install VS Code (if not already done)
 2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
@@ -199,9 +223,42 @@ A **fork** is your copy on GitHub; a **clone** is the working copy on your compu
 
 ![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
 
-The screenshots use example repositories; paste your own fork's URL. Keep your assignment work in this folder. The assignment's submission checklist shows how to send the completed files back to your fork.
+The screenshots use example repositories; paste your own fork's URL. Keep your assignment work in this folder.
 
 Screenshot sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+
+## Submit Your Assignment Files
+
+A **commit** saves a version locally; **push** sends it to GitHub. Use either route below after completing the assignment's checkpoints.
+
+### VS Code: Commit and Sync
+
+1. Save your files. Open **Source Control** and click each changed file to review it. Stage the completed scripts and checkpoint artifacts with **+**; for Assignment 01, include both files in `terminal-practice/` and both in `output/`.
+
+![VS Code Source Control with the plus button highlighted to stage a file.](assignment/media/vscode-stage.png)
+
+2. Enter a message such as `Complete Assignment 01`, then select **Commit**.
+
+![VS Code's message field and Commit button above the staged changes.](assignment/media/vscode-commit.png)
+
+3. Select **Sync Changes** to send your commit to your fork. Sign in to GitHub if prompted.
+
+![VS Code's Sync Changes button highlighted.](assignment/media/vscode-sync.png)
+
+### GitHub Website: Upload Files
+
+1. Open **your fork** on GitHub, on `main`. Select **Add file → Upload files**.
+
+![GitHub's Add file menu with Upload files highlighted.](assignment/media/github-upload-files.png)
+
+2. Drag in the completed scripts and the `terminal-practice` and `output` folders. Keep the folders intact so paths such as `output/readiness.txt` stay correct. Upload the assignment files, not the whole project folder.
+3. Enter `Complete Assignment 01`, choose **Commit directly to the main branch**, and click **Commit changes**. Web upload commits directly on GitHub; no separate push is needed.
+
+### Verify on GitHub
+
+Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** to see the automatic checks; enable workflows once if prompted in a new fork. Your fork is the submission—no pull request to the course repository.
+
+Screenshot sources: [VS Code source control](https://code.visualstudio.com/docs/sourcecontrol/quickstart) and [GitHub file uploads](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository).
 
 # LIVE DEMO!
 

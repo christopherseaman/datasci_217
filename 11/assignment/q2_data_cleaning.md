@@ -15,11 +15,11 @@ jupyter:
 
 # Q2: Data Cleaning
 
-**9 points** | Phase 3
+**9 points**
 
 Sensor readings can contain invalid values without making the entire observation useless. In this phase, reject invalid station-time keys, preserve valid rows, and turn only out-of-range sensor values into missing data. Do not smooth away real gaps or unusual but valid weather.
 
-## Setup
+## 2.1 Setup
 
 ```python
 from pathlib import Path
@@ -40,7 +40,7 @@ RELEASE_COLUMNS = manifest["columns"]
 SENSOR_COLUMNS = RELEASE_COLUMNS[2:]
 ```
 
-## Valid Station-Time Keys
+## 2.2 Valid Station-Time Keys
 
 Parse naive local timestamps, localize with `ambiguous="NaT"` and `nonexistent="NaT"`, and convert accepted timestamps to UTC. Reject invalid/unparseable keys, including the six ambiguous fall-back rows.
 
@@ -49,7 +49,7 @@ Parse naive local timestamps, localize with `ambiguous="NaT"` and `nonexistent="
 # measurement_timestamp_utc to retained rows.
 ```
 
-## Sensor Rules
+## 2.3 Sensor Rules
 
 Apply every inclusive range and code rule in [`assignment.md`](assignment.md). Coerce unparseable values to missing. Do not interpolate, fill, or clip. Only solar values in `[-20, 0)` become zero; solar values outside `[-20, 1500]` become missing.
 
@@ -64,7 +64,9 @@ MISSINGNESS_COLUMNS = [
 # TODO: Sort by UTC then station and save output/q2_cleaned_observations.csv.
 ```
 
-## Audit and Missingness
+> **Checkpoint — `output/q2_cleaned_observations.csv`**
+
+## 2.4 Audit and Missingness
 
 Use concise, unique, nonblank rule descriptions and clear result categories. Your `rule` wording does not need to match a prescribed phrase: grading checks the required result categories and affected counts, not exact prose. Report post-cleaning missingness for every station and every sensor measurement column.
 
@@ -73,7 +75,11 @@ Use concise, unique, nonblank rule descriptions and clear result categories. You
 # TODO: Save output/q2_missingness.csv in station and release-column order.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q2_cleaning_audit.csv`**
+
+> **Checkpoint — `output/q2_missingness.csv`**
+
+## Check Your Work
 
 - [ ] The exact 15 source columns are followed only by UTC timestamp.
 - [ ] Exactly the invalid keys, including six ambiguous rows, were rejected.

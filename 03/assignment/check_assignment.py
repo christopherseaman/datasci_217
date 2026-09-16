@@ -1,4 +1,4 @@
-"""Run the public, artifact-only Assignment 03 grader."""
+"""Run the artifact-only Assignment 03 grader."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def main() -> int:
             print(f"[{'PASS' if test['passed'] else 'FIX'}]  {test['test-name']}" + (f": {test['detail']}" if test["detail"] else ""))
         print(f"\nScore: {result['score']}/{result['max-score']}")
         if result["score"] == result["max-score"]:
-            print("All public checks passed.")
+            print("All checks passed.")
     return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 

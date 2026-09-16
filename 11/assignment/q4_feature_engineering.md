@@ -15,11 +15,11 @@ jupyter:
 
 # Q4: Feature Engineering
 
-**14 points** | Phase 5
+**14 points**
 
 At each cutoff, you may use measurements available at or before that hour. The answer is air temperature exactly one elapsed hour later. Build features on the complete panel so every lag has an exact temporal meaning.
 
-## Setup
+## 4.1 Setup
 
 ```python
 from pathlib import Path
@@ -32,7 +32,7 @@ panel = pd.read_csv(PANEL_PATH, parse_dates=["measurement_timestamp_utc"])
 panel = panel.sort_values(["station_name", "measurement_timestamp_utc"])
 ```
 
-## Forecast Rows and Features
+## 4.2 Forecast Rows and Features
 
 Use grouped shifts and rolling operations so station histories never mix. The 24-hour mean includes cutoff and its prior 23 rows, ignores missing values, and uses `min_periods=1`.
 
@@ -56,7 +56,9 @@ FEATURE_COLUMNS = [
 # output/q4_features.csv without dropping ineligible panel rows.
 ```
 
-## Feature Manifest
+> **Checkpoint — `output/q4_features.csv`**
+
+## 4.3 Feature Manifest
 
 Document one row per fixed predictor. Offsets are relative to cutoff; predictors may use offset 0 or earlier but never later. The `source` field may contain any concise, nonblank student description. Feature names, row order, offsets, and roles are fixed; exact `source` prose is not.
 
@@ -70,14 +72,16 @@ MANIFEST_COLUMNS = [
 # output/q4_feature_manifest.csv.
 ```
 
-## Timing Checks
+> **Checkpoint — `output/q4_feature_manifest.csv`**
+
+## 4.4 Timing Checks
 
 ```python
 # TODO: Assert at least one exact lag value, one exact next-hour target, and
 # that every manifest latest_offset_hours is <= 0.
 ```
 
-## Checkpoint
+## Check Your Work
 
 - [ ] Features and targets restart within station and use elapsed UTC hours.
 - [ ] Rolling mean timing and missing-value behavior match the contract.

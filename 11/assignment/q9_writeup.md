@@ -27,7 +27,7 @@ Complete root [`report.md`](report.md) using facts from your saved artifacts. Au
 | Interpretation tied to reported evidence | 5 |
 | Limitations and clear communication | 5 |
 
-## Required Structure
+## 9.1 Required Structure
 
 Use exactly these level-two headings, in order:
 
@@ -44,7 +44,7 @@ Include the accepted six-column Markdown table with columns `Evaluation set`, `M
 - `![Training patterns](output/q5_patterns.png)`
 - `![Final model results](output/q8_final_visualizations.png)`
 
-## Artifact Cross-Check
+## 9.2 Artifact Cross-Check
 
 ```python
 from pathlib import Path
@@ -66,10 +66,12 @@ display(station_metrics)
 
 Use displayed artifact values rather than hand-recalculating results.
 
-## Final Checklist
+> **Checkpoint — `report.md`**
+
+## Check Your Work
 
 - [ ] The six required headings appear exactly and in order.
-- [ ] No bracketed starter placeholder remains.
+- [ ] No bracketed scaffold placeholder remains.
 - [ ] The six-column, four-row metrics table agrees with the Q7 and Q8 artifacts.
 - [ ] All three required figure paths exist and render.
 - [ ] Limitations are tied to this dataset and evaluation design.

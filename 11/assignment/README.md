@@ -1,17 +1,23 @@
 # Final Project: Chicago Beach Weather Forecasting
 
-**Total:** 100 points
-**Data:** Chicago Beach Weather Stations, 2022-2024
+## Files
 
-## Overview
+```text
+assignment/
+├── assignment.md          # Provided artifact schemas and forecasting rules
+├── q1_*.md … q9_*.md       # Provided question scaffolds
+├── q1_*.ipynb … q9_*.ipynb # Paired notebook scaffolds
+├── report.md              # Provided report scaffold to complete
+├── data/                  # Provided frozen release and provenance
+├── requirements.txt       # Provided pinned environment
+├── download_data.sh        # Provided release verification helper
+├── check_assignment.py    # Provided completion checker
+└── output/                # Generated CSV and PNG artifacts to submit
+```
 
-In this project, you will complete a nine-phase data science workflow with hourly observations from the Foster and Oak Street weather stations. Your goal is practical: for each station and cutoff hour, predict the air temperature one elapsed hour later.
+## Setup
 
-You will audit a frozen release, clean sensor values, construct a complete hourly panel, engineer past-only features, explore training data, make chronological splits, compare one scikit-learn model with a persistence baseline, and communicate the result. There is no performance threshold. Careful, reproducible work matters more than finding a complicated model.
-
-Start with [`assignment.md`](assignment.md), which is the exact artifact contract, then work through the nine notebook pairs in order.
-
-## Quick Start
+In VS Code, open the assignment folder and choose **Terminal → New Terminal**. You can also use your native terminal or WSL Ubuntu; change to the assignment directory before running these commands.
 
 From `11/assignment`:
 
@@ -19,17 +25,16 @@ From `11/assignment`:
 uv venv --python 3.13
 source .venv/bin/activate
 uv pip install -r requirements.txt
+python --version
 ./download_data.sh
 jupyter lab
 ```
 
-Open the question files in your preferred editor. Notebook execution is optional
-local QA; the committed CSV/PNG artifacts and `report.md` are the grading
-deliverables.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Python 3.13 is missing, run `uv python install 3.13`. Select this environment as the notebook kernel. The pinned versions are NumPy 2.3.3, pandas 3.0.5, scikit-learn 1.9.0, Matplotlib 3.11.1, JupyterLab 4.4.10, and Jupytext 1.18.1.
 
-The release and provenance manifest are committed under `data/`. `download_data.sh` does not download or replace anything; it verifies those committed files.
+The release and provenance manifest are committed under `data/`. `download_data.sh` verifies these files without downloading or replacing them. Start with [`assignment.md`](assignment.md) for the forecasting question, fixed inputs, and artifact schemas, then complete the nine notebook scaffolds in order. See [`HINTS.md`](HINTS.md) for nudges.
 
-## Nine Phases
+## Questions
 
 | Question | Points | Notebook | Main result |
 |---|---:|---|---|
@@ -43,24 +48,22 @@ The release and provenance manifest are committed under `data/`. `download_data.
 | Q8 | 13 | [`q8_results.ipynb`](q8_results.ipynb) | Evaluate the untouched test period |
 | Q9 | 15 human | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` |
 
-Lecture 11 demonstrates the workflow. Geographic material is outside this
-assignment: do not add maps, coordinates, spatial joins, geographic features,
-or geographic dependencies.
+## Check Your Work
 
-## Submission
-
-Commit the nine `.md`/`.ipynb` pairs, `report.md`, and all required artifacts under `output/`. Do not modify files under `data/`. Keep notebook outputs cleared in the submitted notebooks; generated CSV and PNG artifacts remain in `output/`.
-
-Before submitting:
+From this assignment directory:
 
 ```bash
 ./download_data.sh
 jupytext --to ipynb --test-strict q*.md
-uv run check_assignment.py
+python check_assignment.py
 ```
 
-Students, GitHub Actions, and graders use the same public `grading.py` rules through `check_assignment.py`. The checker grades the saved artifacts under `output/` and the root `report.md`, not notebook pairs or supplied files. It uses the trusted grader's data for expected results and does not execute notebooks or refit models. Each milestone earns points independently: the automated maximum is 85, with Q9's 15 points awarded by human review of `report.md` reasoning and communication. Automated report-structure checks award no human-review points. The full rubric and tests are public.
+### Completion contract
 
-Graders run the trusted assignment copy against a submission with `python check_assignment.py /path/to/submission --json`. No grader-only settings or required runner metadata change the score. Use the public diagnostics to complete your own assignment rather than copying example content.
+Submit every CSV and PNG listed under Q1–Q8 in the [artifact contract](assignment.md#artifact-contract), at its exact `output/` path, and complete root `report.md` as specified under Q9. The contract gives each filename, column sequence, row identity, calculation, timestamp convention, and missing-value rule. CSVs use no extra index except the labeled Q5 correlation matrix. Predictions must align with the documented split rows, and metrics must agree with the saved predictions. The PNG check verifies file format; inspect the images yourself for readable labels and the requested content.
 
-See [`HINTS.md`](HINTS.md) for nudges and [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md) for environment checks.
+The saved artifacts earn up to 85 automated points: Q1 7, Q2 9, Q3 11, Q4 14, Q5 7, Q6 11, Q7 13, and Q8 13. Q9's `report.md` earns 15 human-review points: 5 for justified decisions, 5 for evidence-based interpretation, and 5 for limitations and clear communication. Its automated structure, metrics-table, and image-link checks are readiness feedback. There is no model-performance threshold.
+
+## Submit
+
+Commit and push the nine `.md`/`.ipynb` pairs, root `report.md`, and all required files under `output/` using VS Code Source Control. Alternatively, use **Add file → Upload files** on the GitHub website and commit the files at their required paths. Clear notebook outputs before submission; retain the CSV and PNG files. Keep supplied `data/` files unchanged. GitHub Actions runs the checks automatically on every push. If your fork has Actions disabled, enable it once in the Actions tab. Review the feedback, then regenerate, check, commit, and push corrected artifacts if needed.

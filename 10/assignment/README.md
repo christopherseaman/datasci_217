@@ -1,52 +1,118 @@
 # Assignment 10: bounded modeling and honest evaluation
 
-This assignment is one notebook with three cumulative tasks:
+## Files
 
-1. fit and interpret one bounded multivariable OLS model;
-2. write a prediction contract, audit feature availability, and make a chronological split;
-3. compare a mean baseline with one train-only linear pipeline on validation, freeze the choice, and evaluate it once on test.
+```text
+assignment/
+├── assignment.ipynb     # Provided notebook scaffold to complete
+├── data/                # Provided fixtures
+├── requirements.txt     # Provided pinned environment
+├── check_assignment.py  # Provided completion checker
+└── output/              # Generated artifacts to submit
+```
 
-The records are course-authored synthetic data. They do not describe real people, customers, or operations.
+## Setup
 
-## Work locally
+In VS Code, open the assignment folder and choose **Terminal → New Terminal**. You can also use your native terminal or WSL Ubuntu; change to the assignment directory before running these commands.
 
-1. Open the `10/assignment` subtree, or its exported standalone assignment repository, with the course-approved Git GUI.
-2. Open the supplied notebook in the approved editor. The complete local `data/` directory is supplied.
-3. Create the ten files in `output/`.
-4. From a terminal opened in this assignment folder, run `python check_assignment.py` with the course Python environment.
-5. Inspect the ten files in `output/` in your Git GUI. Commit and push them. Graders read the committed artifacts without rerunning or requiring your notebook.
+From this assignment directory, create a Python 3.13 environment and install the pinned requirements:
 
-Additional input or diagnostic files are allowed; only the required artifacts are graded. The optional Actions workflow is supplied feedback; it is not a submission artifact.
+```bash
+uv venv --python 3.13
+source .venv/bin/activate
+uv pip install -r requirements.txt
+python --version
+```
 
-## Required output
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Python 3.13 is missing, run `uv python install 3.13`. Select this environment as the kernel when opening the notebook in VS Code or Jupyter. The course uses pandas 3.0.5.
 
-Create these required artifacts:
+Keep the supplied `data/` files unchanged. Open the complete assignment directory; the setup cell locates and verifies its fixtures in either a standalone assignment repository or the course repository. Restore missing or checksum-mismatched fixtures before continuing.
 
-- `inference_summary.csv`
-- `inference_case_intervals.csv`
-- `inference_residuals.csv` — one row per `run_id`, with `actual`, `fitted`, and `residual`
-- `inference_residuals.png`
-- `availability_decisions.csv`
-- `split_manifest.csv`
-- `validation_metrics.csv`
-- `final_test_metrics.csv`
-- `final_predictions.csv`
-- `binary_metrics.csv`
+The supplied records are course-authored synthetic data and do not describe real people, customers, or operations. Complete the scaffold in `assignment.ipynb`.
 
-The shared public checker reads the committed artifacts and reports the automated score. CSV rows may be ordered differently and numeric serialization may use reasonable float precision; their schema, IDs, missingness, and values are checked. The residual figure is checked only as a PNG file. It does not execute the notebook or judge explanation quality.
+## Question 1: Bounded OLS inference
 
-## Assessment
+### 1.1 Fit and interpret the model
 
-Students, GitHub Actions, and graders use the same public 100-point rubric:
+Fit `finish_quality_score ~ mix_minutes + initial_temp_c` with an intercept. Export the coefficient summary, intervals for the supplied new case, and residuals for each run. Interpret the conditional associations and interval meanings.
 
-- bounded OLS inference and intervals: 30
-- contract, availability, leakage, and chronological split: 35
-- train-only comparison, freeze, final test, and binary metrics: 30
-- residual figure saved as a PNG: 5
+> **Checkpoint — `output/inference_summary.csv`**
 
-There are no separate human-review points. The automated score is based only
-on the saved artifacts.
+> **Checkpoint — `output/inference_case_intervals.csv`**
 
-Graders run the trusted assignment copy with `python check_assignment.py /path/to/submission --json`. It uses trusted fixture inputs from that grader copy and the same `grading.py` rules and points as local student checks, without runner metadata or separate grading settings.
+> **Checkpoint — `output/inference_residuals.csv`**
 
-Advanced models, regularization, cross-validation, model search, feature importance, classifier fitting, and test-set model selection are outside this assignment.
+### 1.2 Inspect residuals
+
+Save a residuals-versus-fitted figure and explain one assumption it can probe.
+
+> **Checkpoint — `output/inference_residuals.png`**
+
+## Question 2: Prediction contract and chronological split
+
+### 2.1 Audit feature availability
+
+State the prediction unit, prediction time, target, and target time. Record when each supplied candidate becomes available and whether to keep it.
+
+> **Checkpoint — `output/availability_decisions.csv`**
+
+### 2.2 Split chronologically
+
+Create the supplied train, validation, and test periods and save their row counts and target-time ranges.
+
+> **Checkpoint — `output/split_manifest.csv`**
+
+## Question 3: Compare, freeze, and evaluate
+
+### 3.1 Compare on validation
+
+Fit a mean baseline and the linear pipeline using training rows. Compare their validation MAE, RMSE, and R2, then freeze the validation winner.
+
+> **Checkpoint — `output/validation_metrics.csv`**
+
+### 3.2 Evaluate the frozen choice
+
+Evaluate the frozen approach on test once and export aligned predictions and metrics.
+
+> **Checkpoint — `output/final_test_metrics.csv`**
+
+> **Checkpoint — `output/final_predictions.csv`**
+
+### 3.3 Interpret supplied binary predictions
+
+Calculate accuracy, precision, and recall for the supplied model and dummy baseline, using zero precision when there are no predicted positives.
+
+> **Checkpoint — `output/binary_metrics.csv`**
+
+## Check Your Work
+
+Run this from the assignment directory after saving your artifacts:
+
+```bash
+python check_assignment.py
+```
+
+Fix each failed check, regenerate the affected files, and run the checker again. It reads saved artifacts without running your code.
+
+### Completion contract
+
+Save the nine CSVs and one PNG below in `output/`. CSV columns must match the listed order, with no extra index or missing values. IDs and category rows must match the supplied data; row order may differ. Numeric results must match the requested calculations within 0.0001.
+
+| Artifact | Columns in order | Completion criteria |
+|---|---|---|
+| `output/inference_summary.csv` | `term`, `estimate`, `standard_error`, `confidence_low_95`, `confidence_high_95` | Three OLS terms: Intercept, mix_minutes, initial_temp_c; estimates, standard errors, and 95% confidence bounds from the supplied inference data. |
+| `output/inference_case_intervals.csv` | `mix_minutes`, `initial_temp_c`, `predicted_mean`, `mean_ci_low_95`, `mean_ci_high_95`, `prediction_ci_low_95`, `prediction_ci_high_95` | One supplied case (26.0 minutes, 22.0 °C), with fitted mean, mean-response interval, and individual prediction interval. |
+| `output/inference_residuals.csv` | `run_id`, `actual`, `fitted`, `residual` | All 18 run IDs M01–M18 with observed, fitted, and observed-minus-fitted values. |
+| `output/availability_decisions.csv` | `candidate_feature`, `latest_required_offset_hours`, `available_by_prediction_time`, `decision` | All five candidate features, with offsets 0 or 24, Boolean availability, and keep/exclude decisions. |
+| `output/split_manifest.csv` | `partition`, `row_count`, `first_target_timestamp`, `last_target_timestamp` | Train: 29 target rows, April 2–30; validation: 8, May 1–8; test: 11, May 9–19, 2026. Timestamp strings use YYYY-MM-DDT00:00:00Z. |
+| `output/validation_metrics.csv` | `approach`, `mae`, `rmse`, `r2` | MAE, RMSE, and R2 for mean_baseline and linear_pipeline on the same validation rows. |
+| `output/final_test_metrics.csv` | `approach`, `mae`, `rmse`, `r2` | MAE, RMSE, and R2 for the frozen linear_pipeline on test. |
+| `output/final_predictions.csv` | `batch_id`, `target_timestamp`, `actual_strength_mpa`, `predicted_strength_mpa` | One aligned row per test batch B038–B048, with its source target timestamp, actual strength, and final prediction. |
+| `output/binary_metrics.csv` | `approach`, `accuracy`, `precision`, `recall` | Accuracy, precision, and recall for supplied_model and dummy_baseline from the supplied binary predictions. |
+| `output/inference_residuals.png` | PNG file | Saved residuals-versus-fitted figure; the check verifies PNG format. |
+
+Question 1 is worth 30 points, Question 2 is worth 35, Question 3 is worth 30, and the PNG is worth 5: 100 total.
+
+## Submit
+
+In VS Code Source Control, inspect your completed notebook and required `output/` files, then commit and push them. Alternatively, use **Add file → Upload files** on the GitHub website and commit the files at their required paths. Keep private data, credentials, virtual environments, and notebook checkpoints out of your submission. GitHub Actions runs the assignment checks automatically on every push. If your fork has Actions disabled, enable it once in the Actions tab. Review the feedback, then regenerate, check, commit, and push corrected artifacts if needed.

@@ -1,4 +1,4 @@
-"""Check every public grader's empty/starter contract without executing submissions.
+"""Check every grader's empty/scaffold contract without executing submissions.
 
 Run with the assignment grading dependencies installed:
     python scripts/test_assignment_grading.py
@@ -34,7 +34,7 @@ def main():
                 assert sum(test["max-score"] for test in report["tests"]) == report["max-score"], report
                 assert sum(test["score"] for test in report["tests"]) == 0, report
                 assert "submission code must not run" not in result.stdout + result.stderr, report
-            print(f"Assignment {number:02}: empty and starter earn zero; point total and trusted CLI pass")
+            print(f"Assignment {number:02}: empty and scaffold earn zero; point total and trusted CLI pass")
 
 
 if __name__ == "__main__":

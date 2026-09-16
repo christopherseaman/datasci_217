@@ -1,60 +1,32 @@
 # Assignment 07: Visualization Critique, Redesign, and Explanation
 
-Use prepared synthetic data to move through three visualization roles: inspect
-a bounded pattern, diagnose a misleading supplied chart, and communicate one
-descriptive finding to a named audience. You will connect each chart to its
-question, row grain, variable roles, displayed unit, and evidentiary limit.
+## Files
 
-Complete the local notebook and its saved artifacts. Graders read
-those artifacts without rerunning the notebook. The
-fixtures are course-authored, synthetic, nonidentifying, and different from the
-Lecture 07 demo data. Do not use Colab, manual uploads, Drive mounts, network access, or `/content` paths.
-The portable setup supports both a standalone exported assignment repository
-and this full course repository.
-
-## Core vocabulary
-
-A **visualization** maps data values to visible properties so a reader can make
-a comparison. The **question** states what the chart should help the reader
-compare or understand. The **audience** is who will use it and the context they
-bring. An **intended claim** is the bounded descriptive conclusion the final
-chart should support. The **displayed unit** names the magnitude reported by an
-axis or mark, while the **grain** says what one row and corresponding mark or
-position represents.
-
-In this assignment, variables have four roles: **categorical** values identify
-groups, **quantitative** values report numerical magnitudes, **ordered** values
-have a meaningful sequence, and an **identifier** distinguishes one record.
-An **exploratory visualization** is a truthful view used to inspect a pattern
-while refining a question. An **explanatory visualization** is a focused chart
-that communicates one selected finding to a named audience.
-
-A **mark** is a visible point, line, or rectangle. An **encoding** maps a value
-to position, length, color, marker, hatch, or line style. A **redundant
-encoding** adds a second cue for the same important category identity. **Visual
-integrity** means visible comparisons faithfully represent the data, scale,
-context, and claim. **Accessibility** means design choices let more readers
-recover the comparison. A Matplotlib **Figure** is the complete saved canvas;
-an **Axes** is one plotting area with scales, labels, title, and marks. An
-**annotation** attaches focused context to a selected mark or position. A
-**text alternative** names the chart, axes, main pattern, and relevant
-limitation in text.
+```text
+assignment/
+├── assignment.ipynb     # Provided notebook scaffold to complete
+├── data/                # Provided fixtures
+├── requirements.txt     # Provided pinned environment
+├── check_assignment.py  # Provided completion checker
+└── output/              # Generated artifacts to submit
+```
 
 ## Setup
 
-Use CPython 3.13. From this directory, create and activate a virtual
-environment, and install the exact runtime record. If you use the notebook,
-open it through Jupyter or the VS Code notebook interface:
+In VS Code, open the assignment folder and choose **Terminal → New Terminal**. You can also use your native terminal or WSL Ubuntu; change to the assignment directory before running these commands.
+
+From this assignment directory, create a Python 3.13 environment and install the pinned requirements:
 
 ```bash
-python -m venv .venv
+uv venv --python 3.13
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+uv pip install -r requirements.txt
+python --version
 ```
 
-On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Complete
-[PLATFORM_CHECK.md](PLATFORM_CHECK.md) before preparing artifacts. If you run
-the notebook, its kernel must use this environment.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. If Python 3.13 is missing, run `uv python install 3.13`. Select this environment as the kernel when opening the notebook in VS Code or Jupyter. The course uses pandas 3.0.5.
+
+Keep the supplied `data/` files unchanged. Open the complete assignment directory; the setup cell locates and verifies its fixtures in either a standalone assignment repository or the course repository. Restore missing or checksum-mismatched fixtures before continuing.
 
 ## Prepared fixtures
 
@@ -66,94 +38,73 @@ the notebook, its kernel must use this environment.
   categorical pathway, ordered checkpoint, and quantitative prepared
   completion percent.
 
-The rows describe only the prepared fixtures. They do not establish cause,
-population effects, prediction, or general patterns. Do not generate, clean,
-join, reshape, or aggregate these complete assignment fixtures.
+The rows describe only the prepared fixtures. They do not establish cause, population effects, prediction, or general patterns.
 
-## Deliverables
+## Question 1: Bounded exploration
 
-Complete every `TODO` in `assignment.ipynb`. Create these six artifact files:
+### 1.1 Build and export the exploratory chart
 
-- `output/exploratory_spec.json`
-- `output/critique_redesign.png`
-- `output/pathway_explanatory.png`
-- `output/explanatory_supporting_data.csv`
-- `output/visualization_evidence.json`
-- `output/explanatory_text_alternative.txt`
+State an exploratory question, the one-session row/mark grain, variable roles, one observation restricted to the twelve supplied rows, and a limitation that rejects causal and generalized conclusions. Implement `build_exploratory_chart(session_table, pathway_order)` as one Altair scatterplot specification of activities completed against reflection score. Use typed quantitative positions and nominal pathway color and point-shape encodings, preserve the caller's two-label order, label units, and include tooltips. Export `exploratory_chart.to_dict()` as `output/exploratory_spec.json`, embedding the plotted session rows.
 
-Additional files are allowed and ignored. Automated grading reads the saved
-artifacts directly; notebook execution is optional local QA.
+> **Checkpoint — `output/exploratory_spec.json`**
 
-After creating the saved artifacts, use the discoverable student check:
+## Question 2: Critique and redesign
+
+### 2.1 Explain and repair the supplied chart
+
+Inspect the supplied four-bar comparison for a learning-support coordinator. It intentionally has an unsupported causal title, truncated baseline, missing unit, color-only category encoding, and distracting decoration. Explain each problem and a repair without changing the prepared values.
+
+Implement `build_critique_redesign(summary_table, format_order, stage_order)`. Use a zero baseline, explicit percentage unit, course colors plus hatches, value labels, restrained decoration, and an outside legend. Preserve arbitrary valid caller labels and order. Save the canonical result as `output/critique_redesign.png`.
+
+> **Checkpoint — `output/critique_redesign.png`**
+
+## Question 3: Audience-focused explanation
+
+### 3.1 Prepare the supporting evidence
+
+State the question, learning-support coordinator audience and follow-up use, bounded intended claim, unit, grain, roles, comparison, chart rationale, and causal limitation. Copy and export the exact supporting data.
+
+> **Checkpoint — `output/explanatory_supporting_data.csv`**
+
+### 3.2 Build the explanatory chart
+
+Implement `build_explanatory_chart(checkpoint_table, pathway_order)` so the two ordered paths have redundant color, marker, and line-style cues. Derive the leader, checkpoint count, final absolute gap, title, and annotation from any valid two-pathway input; on a final tie, attach the annotation to the second requested pathway. Save the canonical result as `output/pathway_explanatory.png`.
+
+> **Checkpoint — `output/pathway_explanatory.png`**
+
+### 3.3 Export the explanation and inspect the chart
+
+Export the evidence JSON and a matching text alternative. Finish the visual-review checklist with observable evidence rather than yes/no answers.
+
+> **Checkpoint — `output/visualization_evidence.json`**
+
+> **Checkpoint — `output/explanatory_text_alternative.txt`**
+
+## Check Your Work
+
+Run this from the assignment directory after saving your artifacts:
 
 ```bash
 python check_assignment.py
 ```
 
-The checker inspects saved artifacts without executing notebook code.
-Fix each `[FIX]` message, regenerate the artifacts, then check again. It screens
-machine-readable requirements; it cannot certify that a chart is clear,
-accessible, honest, or visually effective.
+Fix each failed check, regenerate the affected files, and run the checker again. It reads saved artifacts without running your code.
 
-## Task 1: bounded exploration
+### Completion contract
 
-State an exploratory question, the one-session row/mark grain, variable roles,
-one observation restricted to the twelve supplied rows, and a limitation that
-rejects causal and generalized conclusions. Implement
-`build_exploratory_chart(session_table, pathway_order)` as one Altair
-scatterplot specification of activities completed against reflection score.
-Use typed quantitative positions and nominal pathway color and point-shape
-encodings, preserve the caller's two-label order, label units, and include
-tooltips. Export `exploratory_chart.to_dict()` as
-`output/exploratory_spec.json`, embedding the plotted session rows. It is the
-machine-readable Task 1 milestone; no third PNG is required.
+All six files below are graded. JSON and text files use UTF-8; the CSV contains the supplied data with its named columns and no duplicate rows.
 
-## Task 2: critique and redesign
+| Artifact | Completion criteria |
+|---|---|
+| `output/exploratory_spec.json` | An Altair point specification embedding exactly the 12 session rows. Encode `activities_completed` and `reflection_score` as quantitative x/y, and `pathway` as nominal color and shape. |
+| `output/critique_redesign.png` | The saved redesign in PNG format. |
+| `output/pathway_explanatory.png` | The saved explanatory chart in PNG format. |
+| `output/explanatory_supporting_data.csv` | Exactly the supplied pathway rows and columns `pathway`, `checkpoint_number`, `completion_percent`. |
+| `output/visualization_evidence.json` | An object with five `critique` entries, one per category: `unsupported claim`, `truncated baseline`, `missing unit`, `color-only encoding`, `distracting decoration`; each has nonblank `problem` and `repair`. Include nonblank `question`, `audience`, `intended_claim`, `displayed_unit`, `grain`, and `text_alternative`; `variable_roles` maps `pathway` to `categorical`, `checkpoint_number` to `ordered`, and `completion_percent` to `quantitative`. |
+| `output/explanatory_text_alternative.txt` | Nonblank text matching the JSON `text_alternative`, allowing different line endings and trailing newlines. |
 
-Inspect the supplied four-bar comparison for a learning-support coordinator.
-It intentionally has an unsupported causal title, truncated baseline, missing
-unit, color-only category encoding, and distracting decoration. Explain each
-problem and a repair without changing the prepared values.
+Task 1 is worth 25 points, Task 2 is worth 37, and Task 3 is worth 38: 100 total. The PNG check verifies file format; inspect your charts for clarity, accessibility, honest scales, clipping, and overlap.
 
-Implement `build_critique_redesign(summary_table, format_order, stage_order)`.
-Use a zero baseline, explicit percentage unit, course colors plus hatches,
-value labels, restrained decoration, and an outside legend. Preserve arbitrary
-valid caller labels and order. Save the canonical result as
-`output/critique_redesign.png`.
+## Submit
 
-## Task 3: audience-focused explanation
-
-State the question, learning-support coordinator audience and follow-up use,
-bounded intended claim, unit, grain, roles, comparison, chart rationale, and
-causal limitation. Copy and export the exact supporting data. Implement
-`build_explanatory_chart(checkpoint_table, pathway_order)` so the two ordered
-paths have redundant color, marker, and line-style cues. Derive the leader,
-checkpoint count, final absolute gap, title, and annotation from any valid
-two-pathway input; on a final tie, attach the annotation to the second requested
-pathway. Save the canonical result as `output/pathway_explanatory.png`.
-
-Export the evidence JSON and a matching text alternative. Semantic fields and
-fixture values are machine-checked; prose quality, chart clarity,
-accessibility, and visual integrity are reviewed by a person. Finish the
-visual-review checklist with observable evidence rather than yes/no answers.
-
-## Scope and assessment boundary
-
-Use the prepared rows directly with one bounded Altair scatterplot and
-Matplotlib for the supplied bar and explanatory line charts. GroupBy, aggregation and summary calculations; joining, reshaping
-and cleaning; time series; modeling or inference; random or remote data;
-dashboards, maps, animations, and additional chart families are outside scope.
-Altair tooltips are permitted in Task 1, but must supplement visible labels and context.
-
-Automated grading totals 100 points: 25 for Task 1, 37 for Task 2, and 38 for
-Task 3. There are no separate human-review points; contract fit, accessibility,
-annotations, text alternatives, organization, and limitations remain required
-deliverables.
-
-## Public automated grading
-
-grading.py is the shared ruleset for students, pytest, and graders. Run
-python check_assignment.py [submission_dir], or add --json for a
-datasci217/grading-result/v1 result. It reads saved artifacts only, never
-notebooks or submission code. The visible tests award Task 1 (25), Task 2
-(37), and Task 3 (38).
+In VS Code Source Control, inspect your completed notebook and required `output/` files, then commit and push them. Alternatively, use **Add file → Upload files** on the GitHub website and commit the files at their required paths. Keep private data, credentials, virtual environments, and notebook checkpoints out of your submission. GitHub Actions runs the assignment checks automatically on every push. If your fork has Actions disabled, enable it once in the Actions tab. Review the feedback, then regenerate, check, commit, and push corrected artifacts if needed.

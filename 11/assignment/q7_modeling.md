@@ -15,13 +15,13 @@ jupyter:
 
 # Q7: Modeling
 
-**13 points** | Phase 8
+**13 points**
 
 Choose one regressor from pinned scikit-learn. Fit candidates on training rows only and use validation performance to freeze your choice. A simple model is enough, and it does not need to beat persistence. Do not read any Q6 test file in this notebook.
 
 Prerequisite refresher: [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) cover train-fitted pipelines and validation-based model comparison.
 
-## Setup
+## 7.1 Setup
 
 ```python
 from pathlib import Path
@@ -55,7 +55,7 @@ CATEGORICAL_FEATURES = ["station_name"]
 NUMERIC_FEATURES = FEATURE_COLUMNS[1:]
 ```
 
-## Pipeline and Model Choice
+## 7.2 Pipeline and Model Choice
 
 Build a `ColumnTransformer` that uses `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` for station and `SimpleImputer(strategy="median")` for numeric features. Put it and one chosen sklearn regressor in a `Pipeline`. Set `random_state=217` and `n_jobs=1` when supported. Candidate fitting uses training only.
 
@@ -65,7 +65,7 @@ Build a `ColumnTransformer` that uses `OneHotEncoder(handle_unknown="ignore", sp
 # and use validation results to freeze one final pipeline.
 ```
 
-## Validation Predictions and Metrics
+## 7.3 Validation Predictions and Metrics
 
 The persistence prediction is current `air_temperature_c_t`. Calculate MAE, RMSE, and R2 from identical unrounded rows for both models.
 
@@ -79,7 +79,11 @@ METRIC_COLUMNS = ["model", "mae", "rmse", "r2", "n"]
 # TODO: Save q7_validation_predictions.csv and q7_validation_metrics.csv.
 ```
 
-## Frozen Specification and Permutation Importance
+> **Checkpoint — `output/q7_validation_predictions.csv`**
+
+> **Checkpoint — `output/q7_validation_metrics.csv`**
+
+## 7.4 Frozen Specification and Permutation Importance
 
 Record the selected regressor class and shallow parameters, not the entire pipeline parameter tree. Compute validation permutation importance through the fitted pipeline with `scoring="neg_mean_absolute_error"`, 10 repeats, and seed 217. Save `result.importances_mean` as `mean_mae_increase` and `result.importances_std` as `std_mae_increase`; a positive value means that permutation increased MAE.
 
@@ -94,7 +98,11 @@ IMPORTANCE_COLUMNS = ["feature", "mean_mae_increase", "std_mae_increase"]
 # TODO: Save q7_permutation_importance.csv in fixed feature order.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q7_model_spec.csv`**
+
+> **Checkpoint — `output/q7_permutation_importance.csv`**
+
+## Check Your Work
 
 - [ ] No test file or outcome was accessed.
 - [ ] All preprocessing was fit on training rows through a pipeline.

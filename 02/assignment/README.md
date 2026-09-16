@@ -1,9 +1,5 @@
 # Assignment 02: Reusable Measurement Summary
 
-This assignment combines the Lecture 02 Git state model with a small function-to-module refactor. Work in the `02/assignment` directory, or in the standalone assignment repository created from this subtree. Do not create a second project repository.
-
-Complete the work with terminal-executed Python scripts. Use VS Code Source Control or GitHub Desktop for all required Git actions. The delivery sequence is in [`PLATFORM_CHECK.md`](PLATFORM_CHECK.md); it is required but graded separately from the files below.
-
 ## Project description
 
 TODO: Replace this line with a 30–300 character description of what this measurement-summary project does.
@@ -12,35 +8,44 @@ TODO: Replace this line with a 30–300 character description of what this measu
 
 TODO: Replace this line with the exact terminal command that runs the completed program.
 
-## Starter files
+## Files
 
-- `GIT_STATE_CHECK.md`: Part 1 state-model answers; edit this file.
-- `.gitignore`: Part 1 cache patterns; edit this file.
-- `analysis_utils.py`: Part 2 reusable functions; edit this file.
-- `main.py`: Part 3 driver program; edit this file.
-- `report.txt`: the committed three-line report artifact produced at the Python milestone.
-- `PLATFORM_CHECK.md`: supplied GUI delivery checklist; do not edit it.
-- `check_assignment.py` and `_public_checks.py`: supplied dependency-free checker; do not edit them.
-- `test_assignment.py`: public managed-pytest contract; do not edit it. You do not need pytest locally.
+```text
+assignment/
+├── README.md                  # complete description and Run answers
+├── GIT_STATE_CHECK.md          # complete state answers
+├── .gitignore                 # complete cache exclusions
+├── analysis_utils.py, main.py  # Python scaffolds to complete
+├── check_assignment.py        # supplied checker; keep unchanged
+└── report.txt                 # generated report to commit
+```
 
-The supplied checking files use later Python features internally. Run them, but do not treat their implementation as a model for your Lecture 02 code.
+## Setup
+
+Open **Terminal → New Terminal** in VS Code at the assignment directory. If you use a native terminal or WSL Ubuntu instead, first `cd` into the assignment directory.
+
+Use Python 3.13 and terminal-executed scripts in `02/assignment` or its standalone assignment repository. Open the repository in VS Code, switch to `main`, select **Sync Changes**, and finish any outstanding changes. Use **Git: Create Branch** to create `feature/measurement-summary` from `main`.
 
 ## Part 1: Repository state and documentation
 
-### Complete the state snapshots
+### 1.1 Complete the state snapshots
 
 Open `GIT_STATE_CHECK.md`. For each scenario, replace only the `TODO` terms in the answer block. Use each defined Lecture 02 term where it describes the snapshot: working tree, diff, staging area, commit, local branch, remote, synchronize, merge, and conflict.
 
-### Complete the README
+> **Checkpoint — `GIT_STATE_CHECK.md`**
+> Save the four numbered answers inside the supplied answer block.
+
+### 1.2 Complete the README
 
 Replace the two TODO lines near the top of this file:
 
-- Write a project description containing 30–300 non-whitespace characters and the word `measurement`.
+- Write a project description containing 30–300 characters after trimming surrounding whitespace and the word `measurement`.
 - Put the exact command `python main.py` in the Run section.
 
-Do not rewrite the rest of the assignment contract.
+> **Checkpoint — `README.md`**
+> Save the description and exact Run command under their existing headings.
 
-### Complete `.gitignore`
+### 1.3 Complete `.gitignore`
 
 Replace its TODO comments so its complete contents are exactly:
 
@@ -49,38 +54,19 @@ __pycache__/
 *.pyc
 ```
 
-No environment pattern is required in this assignment.
-
-The repository actions in `PLATFORM_CHECK.md` assess practical delivery separately. The Python checker does not infer GUI competence from commit counts, branch references, or history shape.
+Inspect the diffs in VS Code Source Control, stage `README.md`, `.gitignore`, and `GIT_STATE_CHECK.md`, and commit with `Complete repository documentation`.
 
 ## Part 2: Reusable calculations
 
-Complete exactly two functions in `analysis_utils.py`.
+Complete the two functions in `analysis_utils.py`, documenting what each returns.
 
-### `mean(values)`
+### 2.1 Calculate `mean(values)`
 
-Its interface and behavior are:
+Return `None` for an empty list. Otherwise, accumulate the values with a `for` loop and return the total divided by `len(values)`. Leave the input unchanged.
 
-- Signature: `mean(values)` with no default value or annotation.
-- First statement: a one-line docstring without `TODO`.
-- Begin with `if not values:` and return `None` in that branch.
-- Next initialize the local accumulator with `total = 0`.
-- Use exactly one direct `for` loop over `values`. Its body must directly update `total` with the current loop value; do not put the required update in a nested or dead branch.
-- After that loop, return exactly `total / len(values)`.
-- Return the result; do not print it.
-- Do not mutate `values` or retain accumulated state between calls.
+### 2.2 Format `format_summary(record)`
 
-### `format_summary(record)`
-
-Its interface and behavior are:
-
-- Signature: `format_summary(record)` with no default value or annotation.
-- First statement: a one-line docstring without `TODO`.
-- Use only the dictionary keys `"label"` and `"values"`.
-- Assign one direct `mean(record["values"])` call to a local result. Do not loop, call `sum()`, or repeat arithmetic in this function.
-- Test that local result with `is None`; if true, return `<label> mean: no measurements`.
-- Otherwise build `<label> mean: <value>` with exactly one decimal place from that same local result.
-- Return the string; do not print it or mutate the record.
+Call `mean(record["values"])`. If the result is `None`, return `<label> mean: no measurements`. Otherwise return `<label> mean: <value>` with one decimal place. Use the record's `"label"` in the returned string.
 
 Required examples:
 
@@ -95,33 +81,15 @@ Importing `analysis_utils` must be silent and must not create or change files.
 
 ## Part 3: Import-safe driver and report
 
-Complete `main.py` without changing the supplied import, three records, or main guard.
+### 3.1 Complete the driver
 
-The completed file must:
+Complete `main.py` using the supplied `format_summary` import, records, and main guard.
 
-1. import `format_summary` with `from analysis_utils import format_summary`;
-2. define exactly `main()` with no parameters, defaults, or annotations and a one-line docstring without `TODO`;
-3. keep these supplied records in this order:
-
-   ```python
-   records = [
-       {"label": "Morning", "values": [18, 21, 24]},
-       {"label": "Evening", "values": [20, 22, 26]},
-       {"label": "Overnight", "values": []},
-   ]
-   ```
-
-4. call the imported `format_summary()` once per record, in order;
-5. build the three-line report in a local name `report_text`, with a newline after every line;
-6. use the exact context-manager form `with open("report.txt", "w", encoding="utf-8") as report_file:`, then write it with exactly `report_file.write(report_text)`—not `writelines()`;
-7. use a second block with the exact form `with open("report.txt", "r", encoding="utf-8") as report_file:`, then assign one no-argument `report_file.read()` result to a different local name;
-8. print the saved report, then print whether that read-back text equals `report_text`. Either print the equality comparison inline or first assign it to a local name such as `matches` and print that name; and
-9. keep the exact guard:
-
-   ```python
-   if __name__ == "__main__":
-       main()
-   ```
+1. In `main()`, call `format_summary()` for each supplied record in order.
+2. Join the resulting lines into `report_text`, with a newline after every line.
+3. Open `report.txt` in text write mode with UTF-8 encoding and write `report_text`.
+4. Read the saved text back into another variable.
+5. Print the saved report and whether the read-back text equals `report_text`.
 
 Importing `main` must print nothing and must not create `report.txt`. Running `python main.py` must overwrite a stale report and print exactly:
 
@@ -142,8 +110,8 @@ Overnight mean: no measurements
 
 There is one newline after the final report line. The `Saved report matches` status belongs only in terminal output, not in `report.txt`.
 
-Commit `report.txt` as the Task 3 milestone artifact. Automated checks read its
-exact bytes directly; they do not infer which implementation produced it.
+> **Checkpoint — `report.txt`**
+> Run `python main.py` and save the three report lines above, including the final newline. Keep the read-back status in terminal output only.
 
 ## Check your work
 
@@ -154,38 +122,20 @@ python main.py
 python check_assignment.py
 ```
 
-A complete submission ends with:
+A complete submission passes every check. If a check fails, revise the named artifact, regenerate `report.txt` if needed, and check again.
 
-```text
-All public checks passed.
-```
+### Completion contract
 
-If a check fails, use its message to revise the named student file, rerun `python main.py` to regenerate `report.txt`, and run the checker again. The checker reads the committed report artifact directly; alternate implementations and reruns are optional instructor QA.
+Commit these files at the assignment repository root. Grading totals 100 points and reads their saved contents.
 
-The optional GitHub Actions workflow may run the public `test_assignment.py` contract on pushes and pull requests. It invokes the same public `check_assignment.py` entrypoint; an instructor or TA runs a trusted copy against submitted artifacts and never executes student code. The workflow is feedback, not a submission requirement.
+| Artifact | Format and completion criteria | Points |
+|---|---|---:|
+| `README.md` | Markdown with the existing Project description and Run headings; a 30–300 character description after trimming, containing `measurement`, and the exact Run line `python main.py`. | 30 |
+| `GIT_STATE_CHECK.md` | Four numbered, semicolon-separated answers inside the supplied answer markers, using the terms for each snapshot. | 30 |
+| `report.txt` | UTF-8 text containing the three report lines in Part 3, with a final newline. | 40 |
 
-## Scope boundaries
+## Submit
 
-Automated grading totals 100 points: 30 for the completed README answers, 30 for `GIT_STATE_CHECK.md`, and 40 for `report.txt`. It reads those saved student-authored materials directly and never executes student code. Do not add a shell script, notebook, dependency file, third-party package, CSV/JSON input, second repository, command-line Git workflow, or forced merge conflict.
+Inspect the Python files and report in VS Code Source Control. Stage `analysis_utils.py`, `main.py`, and `report.txt`, then commit with `Implement reusable measurement summary`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes, switch to `main`, run **Git: Merge...**, and select `feature/measurement-summary`. Resolve any unexpected conflict, inspect the resolution, and sync. Confirm in the repository browser that `main` contains the completed documentation, both Python files, and `report.txt`.
 
-In the two student Python files, do not add:
-
-- comprehensions or generator expressions;
-- `lambda`, classes, async functions, decorators, type annotations, default parameters, keyword-only parameters, `*args`, or `**kwargs`;
-- `try`/`except`, `global`, or `nonlocal`;
-- imports other than the supplied `from analysis_utils import format_summary` line in `main.py`;
-- `sum()` in place of the required local total and plain `for` loop;
-- printing or file I/O in `analysis_utils.py`;
-- dictionary keys other than `"label"` and `"values"` in `format_summary()`; or
-- driver statements at module top level outside the exact main guard.
-
-The direct-call boundary is also part of the assignment:
-
-- `mean()` may directly call only `len()`;
-- `format_summary()` may directly call only `mean()`;
-- `main()` may directly call only the supplied `format_summary()`, `open()`, and `print()`, plus `write()` and `read()` on the matching report-file handles;
-- do not replace those call names, select a call indirectly or dynamically, or call through an assigned alias, an attribute lookup, a subscript, or `__builtins__[...]`;
-- do not use `exec()`, `eval()`, `compile()`, `__import__()`, or any other unapproved call; and
-- do not add an extra file open, use append mode, call `writelines()`, or perform file I/O through an indirect call. `main()` must contain exactly the two ordered `report.txt` opens described in items 6–7.
-
-These restrictions are explicit course boundaries, not hidden style rules. The public checker reads the committed report artifact; it does not infer how your implementation reached those values.
+GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a required VS Code control is unavailable, record its message and contact the instructor.

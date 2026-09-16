@@ -15,11 +15,11 @@ jupyter:
 
 # Q3: Data Wrangling
 
-**11 points** | Phase 4
+**11 points**
 
 An absent source row is different from a measured zero. Build a complete station-by-elapsed-hour panel so later lags refer to exact hours and sensor dropouts remain visible.
 
-## Setup
+## 3.1 Setup
 
 ```python
 from pathlib import Path
@@ -42,7 +42,7 @@ SENSOR_COLUMNS = [
 clean = pd.read_csv(INPUT_PATH, parse_dates=["measurement_timestamp_utc"])
 ```
 
-## Complete Hourly Panel
+## 3.2 Complete Hourly Panel
 
 Construct UTC endpoints from local `2022-01-01 00:00:00` and local `2025-01-01 00:00:00`. Cross every elapsed UTC hour with both stations, then left join observations. Do not fill structural sensor gaps.
 
@@ -56,7 +56,9 @@ PANEL_COLUMNS = [
 # TODO: Sort by UTC then station and save output/q3_hourly_panel.csv.
 ```
 
-## Gap Summary
+> **Checkpoint — `output/q3_hourly_panel.csv`**
+
+## 3.3 Gap Summary
 
 A gap run is one or more consecutive `source_observed == False` rows within a station. Count runs and the longest run in elapsed hours.
 
@@ -70,7 +72,9 @@ SUMMARY_COLUMNS = [
 # TODO: Save output/q3_panel_summary.csv in station-name order.
 ```
 
-## Checkpoint
+> **Checkpoint — `output/q3_panel_summary.csv`**
+
+## Check Your Work
 
 - [ ] Both stations have exactly the same complete UTC-hour sequence.
 - [ ] `source_observed` distinguishes source rows from structural gaps.
