@@ -35,6 +35,8 @@ Run commands in **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control
 
 ## 1.2 Install and open VS Code
 
+For browser-only setup, use the **Alternative: Codespaces** subsection in [Lecture 01](../README.md). Then run the Python setup in 1.4, skip 1.5 (your fork is already open), and continue at 1.6.
+
 1. Install [Visual Studio Code](https://code.visualstudio.com/).
 2. Open **View → Extensions** (Ctrl+Shift+X; Cmd+Shift+X on Mac) and install **Python** by Microsoft. GitLens and Rainbow CSV are optional.
 3. Open a course or practice folder with **File → Open Folder**.
@@ -46,18 +48,20 @@ Open the Command Palette with **View → Command Palette** (Ctrl+Shift+P; Cmd+Sh
 
 A **terminal** displays the session; a **shell** interprets your commands. Use VS Code's terminal with Bash or Zsh for these demos.
 
-- **Windows:** In Administrator PowerShell, run `wsl --install`, restart if prompted, and finish Ubuntu's username/password setup. In VS Code's terminal dropdown, choose **Select Default Profile → Ubuntu (WSL)** and open a new terminal.
+- **Windows:** For initial setup, run `wsl --install` in Administrator PowerShell, restart if prompted, and finish Ubuntu's username/password setup. Then return to VS Code:
+    1. Open **View → Extensions** (**Ctrl+Shift+X**) and install **WSL** by Microsoft.
+    2. Open **View → Command Palette** (**Ctrl+Shift+P**) → **WSL: Connect to WSL**. Expect **WSL: Ubuntu** in the lower-left corner.
+    3. Install Microsoft's **Python** extension in WSL when prompted. Choose **Terminal → New Terminal** in this window; use it for the commands below and clone/open your project in this same window.
 - **Mac:** VS Code's default terminal usually runs Zsh, which supports these commands.
-- **Separate app:** macOS Terminal or Windows Terminal's Ubuntu profile also works. Use `cd` to enter your working folder.
-- **Cloud:** GitHub Codespaces provides a browser-based VS Code terminal.
+- **Separate app fallback:** macOS Terminal or Windows Terminal's Ubuntu profile also works for commands; use `cd` to enter your working folder. Keep VS Code connected to WSL on Windows.
 
 [WSL installation help](https://learn.microsoft.com/en-us/windows/wsl/install)
 
 ## 1.4 Install Python and Git
 
-### Python: macOS and WSL Ubuntu
+### Python: macOS, WSL Ubuntu, and Codespaces
 
-Paste these commands into your Mac or Ubuntu (WSL) terminal one at a time. [uv](https://docs.astral.sh/uv/guides/install-python/) installs Python **3.13**; Lecture 03 explains environment management.
+Paste these commands into **VS Code's integrated terminal** one at a time (in the WSL-connected window on Windows). [uv](https://docs.astral.sh/uv/guides/install-python/) installs Python **3.13**; Lecture 03 explains environment management.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -93,7 +97,7 @@ Open **View → Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac), ch
 
     ![Copy the HTTPS URL from your fork](../assignment/media/github-clone-url.png)
 
-4. Open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste the URL, choose a local folder, and open it.
+4. Open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste the URL, choose a folder, and open it. On Windows, do this in the **WSL: Ubuntu** window and choose a folder in your Linux home directory.
 
     ![VS Code's Clone from URL prompt](../assignment/media/vscode-clone.png)
 
@@ -423,7 +427,7 @@ From your shell:
 python3 04d_debugging.py
 ```
 
-Run the corrected version first: expect 440, 26, and 42. Then enter one commented error line at the Python prompt without its `#`. Read the error, identify its cause, and enter the correction below it: fix the misspelled name, convert text with `int()`, or supply numeric text.
+Run the corrected version first: expect 440, 26, and 42. Then, one at a time, remove the `#` from an error line in `04d_debugging.py`, save it, and run the script again. Read the error, use the corrected line below it to identify the fix, then restore the `#` before trying the next error: fix the misspelled name, convert text with `int()`, or supply numeric text.
 
 ## 4.5 Combine the pieces
 

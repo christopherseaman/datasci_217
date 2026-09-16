@@ -33,41 +33,57 @@ This course started as a Python introduction plus as much of the practical stuff
 
 # Getting Started: Your First Steps
 
+## What is the Command Line?
+
+The **command line (CLI)** is a text-based interface.
+
+Think of it as texting your computer instead of playing charades with icons.
+
+- **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
+- **Shell:** The command interpreter running inside it—Bash, Zsh, or PowerShell.
+- **Directories** are folders; **paths** locate files and folders.
+- **Working directory (cwd):** Where your shell is now. `pwd` shows it; `cd` changes it.
+- **Paths:** `/home/alice/data.csv` is absolute; `data/data.csv` is relative to cwd.
+    - `.` = current directory
+    - `..` = parent directory
+    - `~` = home directory
+- **Command + parameters:** `ls -l data` = list, detailed option, target folder. Separate parts with spaces; quote paths containing spaces.
+
 ## Getting to the Command Line
 
 ![learning to code is kind of like this](media/rocket_packs.png)
 
-The shell examples in this lecture use POSIX commands in Bash (or a compatible shell). On Windows, WSL gives you that environment; native PowerShell uses different commands and syntax in several places.
+Install [VS Code](https://code.visualstudio.com/) and use its **Terminal → New Terminal** (**Ctrl+Shift+backtick**, also Control on Mac) for course commands. Open your project folder first; the terminal starts there. The examples use Bash or Zsh, shells with compatible POSIX command syntax.
 
-Use [VS Code](https://code.visualstudio.com/)'s **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac) for course commands. Open your project folder first; the terminal starts there. On Windows, use the terminal dropdown's **Select Default Profile → Ubuntu (WSL)**, then open a new terminal. If WSL is not installed yet, use the setup step below.
+### Windows: connect VS Code to WSL
 
-The native terminal apps below are alternatives and can also handle initial installation before VS Code is ready. Use `cd` to enter your project folder when working in a separate terminal.
+1. For initial setup only, open **PowerShell as Administrator**, run `wsl --install`, restart if prompted, and finish Ubuntu's username/password setup.
+2. In VS Code, open **View → Extensions** (**Ctrl+Shift+X**) and install **WSL** by Microsoft.
+3. Open **View → Command Palette** (**Ctrl+Shift+P**) → **WSL: Connect to WSL**. Check that the lower-left corner shows **WSL: Ubuntu**.
+4. In that window, install Microsoft's **Python** extension in WSL when prompted. Use **Terminal → New Terminal** for the installation commands below and clone/open your project in this WSL-connected window.
 
-### Windows Users
+WSL supplies Linux underneath; you work in VS Code, not a separate Ubuntu terminal. [VS Code's WSL setup](https://code.visualstudio.com/docs/remote/wsl).
 
-**WSL:**
+### Mac
 
-- **Windows Subsystem for Linux (WSL)** (recommended): Run `wsl --install` in PowerShell as Administrator
+VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space**, type `Terminal`) is a fallback; use `cd` to enter your project folder there.
 
-Native Windows:
+### Alternative: Codespaces instead of a local VS Code installation
 
-- **PowerShell** (built-in): Press `Win + X`, then select "Terminal" or "Windows PowerShell." Use it to install WSL; use the Ubuntu terminal for the course's Bash commands.
-- **GitHub Codespaces** (cloud option): No installation needed
+[GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser.
 
-### Mac Users
+1. Create your GitHub account and fork the assignment repository using **Creating Your GitHub Account** and **Fork on GitHub** below.
+2. On **your fork**, select **Code → Codespaces → Create codespace on main**. Your repository opens automatically; skip local cloning.
+3. Open **Terminal → New Terminal** and run the shared uv/Python installation below. Check `python3 --version` for **3.13.x**, then choose **Python: Select Interpreter** from the Command Palette.
+4. Edit, run, commit, and sync in the browser just as in desktop VS Code. Stop the codespace when finished; usage allowances are limited.
 
-- **Terminal** (built-in): Press `Cmd + Space`, type "Terminal", press Enter
-- **GitHub Codespaces** (cloud option): No installation needed
-
-### Cloud Options
-
-- **GitHub Codespaces**: Free tier available, works on any device with internet
+Skip local VS Code, WSL, and Homebrew installation for this route.
 
 ## Installing Python
 
-### macOS and Windows WSL (Ubuntu)
+### macOS, Windows WSL, and Codespaces
 
-Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13** on both platforms. On Windows, run these commands in **Ubuntu (WSL)**, not PowerShell. We'll cover uv environments and packages in Lecture 03.
+Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13** in any of these environments. Run these commands in **VS Code's integrated terminal**. On Windows, use the **WSL-connected window**, not PowerShell. We'll cover uv environments and packages in Lecture 03.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -205,7 +221,7 @@ A **fork** is your copy on GitHub; a **clone** is the working copy on your compu
 
 ![Copy your fork's HTTPS URL from the Code menu](assignment/media/github-clone-url.png)
 
-2. In VS Code, open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste that URL, choose a folder on your computer, and open the cloned repository. Sign in if prompted.
+2. In VS Code, open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste that URL, choose a folder, and open the cloned repository. On Windows, use the **WSL: Ubuntu** window and choose a folder in your Linux home directory. Sign in if prompted.
 
 ![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
 
@@ -253,22 +269,6 @@ It's like being bilingual in the data world. Python speaks to your data, command
 **Reality check:** Organizing files, inspecting data, and explaining results are part of the analysis—not chores you finish before the “real” work starts.
 
 # Command Line Essentials
-
-## What is the Command Line?
-
-The **command line (CLI)** is a text-based interface.
-
-Think of it as texting your computer instead of playing charades with icons.
-
-- **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
-- **Shell:** The command interpreter running inside it—Bash, Zsh, or PowerShell.
-- **Directories** are folders; **paths** locate files and folders.
-- **Working directory (cwd):** Where your shell is now. `pwd` shows it; `cd` changes it.
-- **Paths:** `/home/alice/data.csv` is absolute; `data/data.csv` is relative to cwd.
-    - `.` = current directory
-    - `..` = parent directory
-    - `~` = home directory
-- **Command + parameters:** `ls -l data` = list, detailed option, target folder. Separate parts with spaces; quote paths containing spaces.
 
 ![Unix System Reference](media/its-a-unix-system.jpeg)
 
@@ -587,6 +587,8 @@ print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 
 Python is dynamically typed: a variable can refer to values of different types, and code often cares more about what an object can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck.
 
+Square brackets create a **list**, an ordered collection. `len()` counts its items. Lecture 02 develops indexing and slicing.
+
 ```python
 label = "dataset"
 grades = [85, 92, 78]
@@ -693,8 +695,6 @@ x >= y          # Greater than or equal
 x in [1, 2, 3]  # Is x in the list?
 x not in [1, 2, 3]  # Is x NOT in the list?
 ```
-
-Square brackets create a **list**, an ordered collection. The loop examples below introduce the list operations needed today; Lecture 02 develops indexing and slicing.
 
 ### If Statements
 
