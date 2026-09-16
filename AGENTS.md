@@ -23,6 +23,7 @@ Adapted from DataSci 223's student-facing lecture and demo style. The course-spe
 
 ## Demos and visible checkpoints
 
+- Students must be able to complete demos independently after missing lecture or when repeating them: provide setup, accessible source links, run instructions, expected outputs, and any intentional-error corrections. For short script demos, include the walkthrough and code inline; for longer demos, use linked runnable files or notebooks with the full context and instructions.
 - Keep demo markers unadorned. No descriptions underneath, recaps, time estimates, instructor instructions, or content after the final demo break.
 - Demo content must use material taught before its corresponding break. Lecture 01 has four breaks: Git/GitHub setup, shell commands, Python basics, control structures/debugging. Use plain `print()` in Lecture 01; formatting with f-strings starts in Lecture 02.
 - Lectures 01–03 use scripts and Notion demo walkthroughs. Lectures 04–11 use Markdown-authored, generated notebooks linked through Colab.
