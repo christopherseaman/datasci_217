@@ -359,6 +359,18 @@ mkdir data              # Create data subfolder
 
 ```
 
+### Reference Card: Shell Output
+
+- `echo "text"`: Print a line of text.
+- `>`: Send command output to a file, replacing its contents.
+- `>>`: Append command output to a file.
+
+```bash
+echo "# Practice notes" > notes.md
+echo "Experiment: compare two grade summaries." >> notes.md
+cat notes.md
+```
+
 ## Viewing Files
 
 ### Reference Card: Viewing Files
