@@ -65,9 +65,9 @@ Native Windows:
 
 ## Installing Python
 
-### Windows WSL (Ubuntu)
+### macOS and Windows WSL (Ubuntu)
 
-Use uv's installer to get the course Python version. The first command installs uv; the next commands install Python 3.13 and put it on your shell's PATH. We'll use uv to manage project environments in Lecture 03.
+Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13** on both platforms. On Windows, run these commands in **Ubuntu (WSL)**, not PowerShell. We'll cover uv environments and packages in Lecture 03.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -76,43 +76,31 @@ uv python install 3.13 --default
 uv python update-shell
 ```
 
-Open a new terminal before verifying Python below.
-
-### Windows Native
-
-```powershell
-# Option 1: Official installer from python.org
-# Download Python 3.13.x from <https://python.org>
-
-# Option 2: Using winget (Windows Package Manager)
-winget install -e --id Python.Python.3.13
-```
-
-### Mac
-
-After installing Homebrew, run the PATH setup commands printed under **Next steps** so your shell can find `brew`. Use the commands shown for your machine, not someone else's home-directory path.
+Open a new terminal, then check:
 
 ```bash
-# Option 1: Using Homebrew (recommended)
-# First install Homebrew from <https://brew.sh>
-brew install python@3.13
-export PATH="$(brew --prefix python@3.13)/libexec/bin:$PATH"
-
-# Option 2: Official installer from python.org
-# Download Python 3.13.x from <https://python.org>
-```
-
-For Homebrew, add the `export PATH=...` line to your shell startup file (`~/.zshrc` on a default macOS setup) so new terminals also use Python 3.13.
-
-### Verify Installation
-
-```bash
-# WSL, macOS, or Codespaces
 python3 --version
 # Should show: Python 3.13.x
 ```
 
-In native Windows PowerShell, use `py -3.13 --version`. Until we activate a virtual environment later in the course, Bash examples use `python3`; native PowerShell users should substitute `py -3.13`. Inside an activated environment, `python` will refer to that environment's interpreter.
+[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv, not Homebrew, for the course Python installation.
+
+### Native Windows PowerShell alternative
+
+For Python outside WSL, install uv in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Open a new PowerShell terminal, then run:
+
+```powershell
+uv python install 3.13 --default
+uv python update-shell
+```
+
+Reopen the terminal and check `python --version`. Use `python` in place of `python3` in this environment. The course shell demos still require WSL.
 
 ## Text Editor Options
 
@@ -143,12 +131,12 @@ Open the assignment folder with **File → Open Folder** so the editor, terminal
 ![VS Code's labeled interface showing the Activity Bar, Primary Side Bar, editor, Panel, and Status Bar.](media/vscode-workspace.png)
 
 - Open or create a file: **Explorer** at left; click a filename or the **New File** icon. Keep `.py` on Python filenames.
-- Edit and save: Type in the editor; **File → Save** or Ctrl+S (Cmd+S on Mac). Save before running.
+- Edit and save: Type in the editor; **File → Save** or **Ctrl+S** (**Cmd+S** on Mac). Save before running.
 - Enable Python support: **Extensions** at left; install **Python** by Microsoft.
 - Choose Python: Command Palette → **Python: Select Interpreter**; select the installed Python 3.13.
-- Run a command: **Terminal → New Terminal**, or Ctrl+Shift+backtick (also Control on Mac); type the command at the prompt and press Enter.
-- Find an editor action: **View → Command Palette**, or Ctrl+Shift+P (Cmd+Shift+P on Mac); type its name, such as `Git: Clone`.
-- Review changed files: **View → Source Control**, or Ctrl+Shift+G (also Control on Mac); click a file to see its changes.
+- Run a command: **Terminal → New Terminal**, or **Ctrl+Shift+backtick** (also Control on Mac); type the command at the prompt and press Enter.
+- Find an editor action: **View → Command Palette**, or **Ctrl+Shift+P** (**Cmd+Shift+P** on Mac); type its name, such as `Git: Clone`.
+- Review changed files: **View → Source Control**, or **Ctrl+Shift+G** (also Control on Mac); click a file to see its changes.
 
 The editor changes files; the terminal runs commands. Saving a file does not run it or upload it to GitHub. Screenshot: [VS Code interface](https://code.visualstudio.com/docs/editing/getting-started/userinterface). **Help → Keyboard Shortcuts Reference** lists your platform's [default shortcuts](https://code.visualstudio.com/docs/reference/default-keybindings).
 
@@ -272,7 +260,7 @@ The **command line (CLI)** is a text-based interface.
 
 Think of it as texting your computer instead of playing charades with icons.
 
-- **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal.
+- **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
 - **Shell:** The command interpreter running inside it—Bash, Zsh, or PowerShell.
 - **Directories** are folders; **paths** locate files and folders.
 - **Working directory (cwd):** Where your shell is now. `pwd` shows it; `cd` changes it.
@@ -431,7 +419,7 @@ python3                 # Start interactive Python
 python3 script.py       # Run a Python script
 ```
 
-These are Bash commands. In native Windows PowerShell, substitute `py` for `python3`. At the Python `>>>` prompt, enter `exit()` to leave the REPL.
+These are Bash commands. In native Windows PowerShell, substitute `python` for `python3`. At the Python `>>>` prompt, enter `exit()` to leave the REPL.
 
 **Interactive Mode Example:**
 

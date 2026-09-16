@@ -30,11 +30,9 @@ A **terminal** displays the session; a **shell** interprets your commands. Use V
 
 ## 1.4 Install Python and Git
 
-Use Python **3.13**. If `python3 --version` already reports `3.13.x`, skip the Python installation.
+### Python: macOS and WSL Ubuntu
 
-### WSL Ubuntu
-
-Paste these commands into the Ubuntu terminal one at a time. [uv](https://docs.astral.sh/uv/guides/install-python/) installs the requested Python version; Lecture 03 explains environment management.
+Paste these commands into your Mac or Ubuntu (WSL) terminal one at a time. [uv](https://docs.astral.sh/uv/guides/install-python/) installs Python **3.13**; Lecture 03 explains environment management.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -43,32 +41,18 @@ uv python install 3.13 --default
 uv python update-shell
 ```
 
-Open a new terminal. If `git --version` reports a missing command, install Git:
+Open a new terminal, then run `python3 --version`. Expect `Python 3.13.x`.
 
-```bash
-sudo apt update
-sudo apt install git
-```
+### Git
 
-### macOS
+Run `git --version`. If Git is missing:
 
-Install [Homebrew](https://brew.sh/) and follow its **Next steps** to put `brew` on your PATH. Then run:
+- **WSL Ubuntu:** Run `sudo apt update`, then `sudo apt install git`.
+- **Mac:** Install [Homebrew](https://brew.sh/), follow its **Next steps** to put `brew` on your PATH, then run `brew install git`. Homebrew is recommended for other command-line tools; Python comes from uv.
 
-```bash
-brew install python@3.13 git
-export PATH="$(brew --prefix python@3.13)/libexec/bin:$PATH"
-```
+### Select Python in VS Code
 
-Add the `export PATH=...` line to `~/.zshrc` using VS Code so new terminals also find Python 3.13. The [python.org installer](https://www.python.org/downloads/) is another installation option; choose Python 3.13.
-
-### Check the installation
-
-```bash
-python3 --version
-git --version
-```
-
-Expect `Python 3.13.x` and a Git version. In VS Code, open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Python: Select Interpreter**, and select Python 3.13. Run the demos in the terminal you checked above.
+Open **View → Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac), choose **Python: Select Interpreter**, and select Python 3.13. Run the demos in the terminal you checked above.
 
 ## 1.5 Fork and clone
 

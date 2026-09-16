@@ -1,0 +1,3 @@
+# Package-management alignment
+
+- Update later package/environment lectures, demos, and assignment instructions for the shared uv-installed Python 3.13 setup. Explain `uv pip install` versus `python -m pip install`: uv's installer does not need pip installed in the environment. Use `uv venv --python 3.13 --seed .venv` when teaching workflows that need pip (including `python -m pip` or notebook `%pip`); plain `uv venv` does not seed pip. Show activation and verify that installation targets the intended environment. On Python 3.13, `--seed` installs pip, not setuptools/wheel. Check Lecture 03 onward and regenerate affected notebooks. [uv environments](https://docs.astral.sh/uv/pip/environments/), [uv venv reference](https://docs.astral.sh/uv/reference/cli/#uv-venv).
