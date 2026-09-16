@@ -6,28 +6,30 @@ notion:
   url: "https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696"
 ---
 
-[DLC](BONUS.md) · [Live Demo!](demo/DEMO_GUIDE.md)
+**Quick references**
+
+[DLC](BONUS.md)
+
+[Live Demo!](demo/DEMO_GUIDE.md)
+
+- [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
+- [Python cheat sheet](https://cheatsheets.zip/python)
+- [futurecoder](https://futurecoder.io/) — Python basics with in-browser exercises and feedback
+- [Official Python tutorial](https://docs.python.org/3/tutorial/) — tutorials straight from the source
 
 <callout icon="🌉" color="green_bg">
 	#### *San Francisco is a walkable city and I will literally die on this hill*
 </callout>
 
-This course started as a Python introduction plus as much of the practical stuff I learned on the job but never in a course as I could fit. Halfway through preparing the first version, I found [The Missing Semester](https://missing.csail.mit.edu/). Apparently, I wasn't the only one who noticed the gap.
-
-**Quick references**
-
-- [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
-- [Python cheat sheet](https://cheatsheets.zip/python)
-- [futurecoder](https://futurecoder.io/) — Python basics with in-browser exercises and feedback.
-- [Official Python tutorial](https://docs.python.org/3/tutorial/) — reference, not assigned homework.
-
 # Class Structure
+
+This course started as a Python introduction plus as much of the practical stuff I learned on the job but never in a course as I could fit. Halfway through preparing the first version, I found [The Missing Semester](https://missing.csail.mit.edu/). Apparently, I wasn't the only one who noticed the gap.
 
 - **Lectures** cover new material
 - **Assignments** after each lecture (caveats apply)
 - **Lab** for hands-on help completing the practical assignment
-- **Assignments** are always due the following week unless otherwise noted
-- **Two exams** (or just one for 1-unit course)
+- **Assignments (60%)** are always due the following week unless otherwise noted
+- **Two exams (40%)** or just one for 1-unit course at weeks 5 and 11
 
 # Getting Started: Your First Steps
 
@@ -172,37 +174,32 @@ The editor changes files; the terminal runs commands. Saving a file does not run
 
 GitHub Student Pack (Optional Bonus) With your .edu email, you can get free premium features. We don't need them for class, but they're nice to have!
 
-### Setting Up Git in VS Code
-
-Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code.
-
-1. Install VS Code (if not already done)
-2. Open **View → Source Control**, or Ctrl+Shift+G (also Control on Mac)
-3. If first time: VS Code will prompt to configure Git username/email
-
-Git configuration (one-time setup):
-
-- Full Name: your name
-- Email: your GitHub `noreply` address from **GitHub → Settings → Emails**
-
 ### DON'T USE YOUR REAL EMAIL IN GIT CONFIG
 
 You don't want to put your email all over the public internet, so GitHub provides a proxy service. You can see the proxy email address in your [GitHub email settings https://github.com/settings/emails](https://github.com/settings/emails).
 
 ![GitHub Email Setup](media/github_email.png)
 
-### Setting up Git in the Command Line
+### Setting Up Git in VS Code
 
-(Usually unnecessary if already done through VS Code.)
+Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code.
+
+Sign in to GitHub through VS Code when **Clone from GitHub** or **Sync Changes** prompts you: choose **Sign in with GitHub**, authorize in your browser, then return to VS Code.
+
+If a commit reports a missing name or email, open **Terminal → New Terminal** in your cloned folder and run these once, using your GitHub `noreply` email:
 
 ```bash
-git config --global user.name "YOUR NAME"
-git config --global user.email "YOUR GITHUB PROXY EMAIL"
+git config user.name "Your Name"
+git config user.email "YOUR GITHUB NOREPLY EMAIL"
 ```
+
+GitHub login authorizes access to your repositories; these settings identify the author of your commits.
 
 ## Getting the First Assignment
 
-A **fork** is your copy on GitHub; a **clone** is the working copy on your computer. Follow these steps to start Assignment 01. Lecture 02 explains the Git concepts behind them.
+Lecture 02 explains Git concepts but here’s what you’ll need to complete the first assignment
+
+A **fork** is your copy on GitHub; a **clone** is the working copy on your computer. Follow these steps to start Assignment 01.
 
 ### Fork on GitHub
 
@@ -225,8 +222,6 @@ A **fork** is your copy on GitHub; a **clone** is the working copy on your compu
 ![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
 
 The screenshots use example repositories; paste your own fork's URL. Keep your assignment work in this folder.
-
-Screenshot sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
 
 ## Submit Your Assignment Files
 
@@ -253,13 +248,11 @@ A **commit** saves a version; **push** sends local commits to GitHub. To submit 
 ![GitHub's Add file menu with Upload files highlighted.](assignment/media/github-upload-files.png)
 
 2. Drag in the completed scripts and the `terminal-practice` and `output` folders. Keep the folders intact so paths such as `output/readiness.txt` stay correct. Upload the assignment files, not the whole project folder.
-3. Enter `Complete Assignment 01`, choose **Commit directly to the main branch**, and click **Commit changes**. Web upload commits directly on GitHub; no separate push is needed.
+3. Enter `Complete Assignment 01` or another description, choose **Commit directly to the main branch**, and click **Commit changes**. Web upload commits directly on GitHub; no separate push is needed.
 
 ### Verify on GitHub
 
 Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** to see the automatic checks; enable workflows once if prompted in a new fork. Your fork is the submission—no pull request to the course repository.
-
-Screenshot sources: [VS Code source control](https://code.visualstudio.com/docs/sourcecontrol/quickstart) and [GitHub file uploads](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository).
 
 # LIVE DEMO!
 
@@ -353,9 +346,9 @@ mv scripts/analysis.py scripts/customer_analysis.py
 
 ```bash
 mkdir my_data_project     # Create project folder
-cd my_data_project       # Enter the folder
-touch analysis.py        # Create Python file
-mkdir data              # Create data subfolder
+cd my_data_project        # Enter the folder
+touch analysis.py         # Create Python file
+mkdir data                # Create data subfolder
 
 ```
 
@@ -389,6 +382,14 @@ tail -n 5 results.txt   # See the last few results
 
 ```
 
+## Create a Script by Pasting
+
+1. Run `cat > file.sh` in your shell. `>` replaces that file if it exists.
+2. Paste the script, press **Enter** if needed to reach a new line, then **Ctrl+D** to finish input (EOF, end of file).
+3. Inspect with `cat file.sh`, then run with `bash file.sh`.
+
+Enter ends a line; Ctrl+D finishes input. Ctrl+C interrupts `cat`; text already written remains.
+
 ## Getting Help
 
 ### Reference Card: Getting Help
@@ -416,14 +417,12 @@ In VS Code, save a `.py` file and click the triangle at its top right to run it 
 
 ![Run a Python file with VS Code's triangle button](media/vscode-run-python-file.png)
 
-Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial).
-
-For Lectures 01–03, you will use two Python modes:
+For Lectures 01–03, we will use two Python modes:
 
 1. **Interactive mode** (REPL): Type `python3` and start experimenting
 2. **Script mode**: Write code in a file, run with `python3 filename.py`
 
-**Jupyter notebooks** are another way to run Python, but we'll meet them later. They are future material, so use the REPL and script workflow for these first lectures.
+**Jupyter notebooks** are another way to run Python, but we'll meet them later.
 
 ### Code Snippet: Running Python
 
@@ -594,11 +593,11 @@ mysterious_data = "22"       # Looks like a number, but it's text
 print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 ```
 
+![Duck Typing](media/duck_typing.jpg)
+
 ### Duck Typing: Behavior Over Labels
 
 Python is dynamically typed: a variable can refer to values of different types, and code often cares more about what an object can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck.
-
-![Duck Typing](media/duck_typing.jpg)
 
 ```python
 label = "dataset"
@@ -610,6 +609,8 @@ print(len(grades))  # 3
 
 Both objects support `len()`. Python checks the operation when it runs; unsupported operations raise `TypeError`.
 
+![Duck typing animation](media/duck_typing_animation.gif)
+
 ## Basic Operations
 
 ### Reference Card: Plain Output
@@ -619,7 +620,6 @@ Both objects support `len()`. Python checks the operation when it runs; unsuppor
 | `print("Hello")` | Display text | `Hello` |
 | `print(2 + 3)` | Display a calculation | `5` |
 | `print("Score:", 85)` | Display a label and value | `Score: 85` |
-
 
 Use `print()` to display a value or several values separated by commas. Python puts spaces between them.
 

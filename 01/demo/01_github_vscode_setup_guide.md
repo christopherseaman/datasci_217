@@ -1,80 +1,112 @@
 # GitHub, VS Code, and WSL Setup
 
-Use this checklist to prepare the tools used in Lecture 01. The commands are safe to repeat, except where GitHub asks you to choose an account name.
-
-## 1. GitHub account and email privacy
+## 1.1 GitHub account and email privacy
 
 1. Open [github.com](https://github.com/) and create or open your account.
 2. Choose a professional username; it will be part of your public portfolio.
 3. Open [GitHub email settings](https://github.com/settings/emails).
-4. Enable **Keep my email addresses private** and copy your GitHub `noreply`
-   address. Use that address in Git configuration instead of your personal
-   email.
-5. The [GitHub Student Developer Pack](https://education.github.com/students)
-   is optional.
+4. Enable **Keep my email addresses private** and copy your GitHub `noreply` address for your Git configuration.
+5. The [GitHub Student Developer Pack](https://education.github.com/students) is optional.
 
-## 2. Install and open VS Code
+## 1.2 Install and open VS Code
 
 1. Install [Visual Studio Code](https://code.visualstudio.com/).
-2. Install the **Python** extension by Microsoft.
-3. Optional extensions: GitLens and Rainbow CSV.
-4. Open a course or practice folder in VS Code.
-5. Open the integrated terminal with **Terminal → New Terminal** (`Ctrl+Shift+backtick` on all platforms).
+2. Open **View → Extensions** (Ctrl+Shift+X; Cmd+Shift+X on Mac) and install **Python** by Microsoft. GitLens and Rainbow CSV are optional.
+3. Open a course or practice folder with **File → Open Folder**.
+4. Open **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac).
 
-Useful interface areas are Explorer, Search, Source Control, Run and Debug, and Extensions. Open the Command Palette with **View → Command Palette** (`Ctrl+Shift+P` on Windows/Linux; `Cmd+Shift+P` on macOS). Open Source Control with **View → Source Control** (`Ctrl+Shift+G` on all platforms, including macOS).
+Open the Command Palette with **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac). Explorer edits files; the terminal runs commands; Source Control saves versions.
 
-## 3. Choose a shell
+## 1.3 Choose a terminal and shell
 
-The course shell examples use Bash or a compatible POSIX shell.
+A **terminal** displays the session; a **shell** interprets your commands. Use VS Code's terminal with Bash or Zsh for these demos.
 
-- In VS Code, open your project folder, then **Terminal → New Terminal**.
-- Windows: install [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
-  from Administrator PowerShell with `wsl --install`, restart if prompted,
-  and choose **Ubuntu (WSL)** as VS Code's default terminal profile.
-- Native-terminal alternative: open Terminal on macOS/Linux or Ubuntu on Windows, then `cd` to your project folder.
-- Any platform: GitHub Codespaces is an optional browser-based alternative.
+- **Windows:** In Administrator PowerShell, run `wsl --install`, restart if prompted, and finish Ubuntu's username/password setup. In VS Code's terminal dropdown, choose **Select Default Profile → Ubuntu (WSL)** and open a new terminal.
+- **Mac:** VS Code's default terminal usually runs Zsh, which supports these commands.
+- **Separate app:** macOS Terminal or Windows Terminal's Ubuntu profile also works. Use `cd` to enter your working folder.
+- **Cloud:** GitHub Codespaces provides a browser-based VS Code terminal.
 
-In the shell, check that the basic commands are available:
+[WSL installation help](https://learn.microsoft.com/en-us/windows/wsl/install)
+
+## 1.4 Install Python and Git
+
+Use Python **3.13**. If `python3 --version` already reports `3.13.x`, skip the Python installation.
+
+### WSL Ubuntu
+
+Paste these commands into the Ubuntu terminal one at a time. [uv](https://docs.astral.sh/uv/guides/install-python/) installs the requested Python version; Lecture 03 explains environment management.
 
 ```bash
-pwd
-ls
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME/.local/bin/env"
+uv python install 3.13 --default
+uv python update-shell
+```
+
+Open a new terminal. If `git --version` reports a missing command, install Git:
+
+```bash
+sudo apt update
+sudo apt install git
+```
+
+### macOS
+
+Install [Homebrew](https://brew.sh/) and follow its **Next steps** to put `brew` on your PATH. Then run:
+
+```bash
+brew install python@3.13 git
+export PATH="$(brew --prefix python@3.13)/libexec/bin:$PATH"
+```
+
+Add the `export PATH=...` line to `~/.zshrc` using VS Code so new terminals also find Python 3.13. The [python.org installer](https://www.python.org/downloads/) is another installation option; choose Python 3.13.
+
+### Check the installation
+
+```bash
 python3 --version
 git --version
 ```
 
-Native Windows PowerShell uses different command names and syntax. Use WSL for the Bash examples in this course, or translate each command deliberately.
+Expect `Python 3.13.x` and a Git version. In VS Code, open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Python: Select Interpreter**, and select Python 3.13. Run the demos in the terminal you checked above.
 
-## 4. Configure Git in the VS Code terminal
+## 1.5 Fork and clone
 
-Replace the placeholders with your own name and GitHub `noreply` address:
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "12345+yourusername@users.noreply.github.com"
-git config --list --global
-```
-
-Confirm that the displayed email is the privacy-preserving GitHub address.
-
-## 5. Fork, clone, and save a change
-
-1. Open the assignment repository on GitHub. Select **Fork**, choose your account, and select **Create fork**.
+1. Open the assignment repository linked for this term on GitHub and select **Fork**.
 
     ![GitHub's Fork button](../assignment/media/github-fork.png)
 
-2. From your fork, copy **Code → HTTPS**. Confirm that the URL contains your username as the owner.
+2. Choose your account as Owner, keep the repository name, and select **Create fork**.
+
+    ![Create a new fork under your account](../assignment/media/github-create-fork.png)
+
+3. From your fork, copy **Code → HTTPS**. Confirm that the URL contains your username as the owner.
 
     ![Copy the HTTPS URL from your fork](../assignment/media/github-clone-url.png)
 
-3. Open **View → Command Palette** (`Ctrl+Shift+P` on Windows/Linux; `Cmd+Shift+P` on macOS), choose **Git: Clone**, paste the URL, choose a local folder, and open it.
+4. Open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste the URL, choose a local folder, and open it.
 
     ![VS Code's Clone from URL prompt](../assignment/media/vscode-clone.png)
 
-4. In Explorer, create `practice.txt` and write a sentence about what you want to learn.
-5. Open **View → Source Control** (`Ctrl+Shift+G` on all platforms, including macOS), review the change, stage it with **+**, enter a commit message, and select **Commit**.
-6. Select **Sync Changes**, then check your fork on GitHub to see the file there.
+Screenshots show example repositories; paste your own fork's URL. Sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+
+## 1.6 Sign in to GitHub in VS Code
+
+Sign in to GitHub through VS Code when **Clone from GitHub** or **Sync Changes** prompts you: choose **Sign in with GitHub**, authorize in your browser, then return to VS Code.
+
+If a commit reports a missing name or email, open **Terminal → New Terminal** in your cloned folder and run these once, using your GitHub `noreply` email:
+
+```bash
+git config user.name "Your Name"
+git config user.email "YOUR GITHUB NOREPLY EMAIL"
+```
+
+GitHub login authorizes access to your repositories; these settings identify the author of your commits.
+
+## 1.7 Save a change on GitHub
+
+1. In Explorer, create `practice.txt`, write a sentence about what you want to learn, and save it (**File → Save**, Ctrl+S; Cmd+S on Mac).
+2. Open **View → Source Control** (Ctrl+Shift+G, including Control on Mac), review the change, stage it with **+**, enter a commit message, and select **Commit**.
+3. Select **Sync Changes**, sign in if prompted, then check your fork on GitHub. It should now contain `practice.txt` with your sentence.
 
 You have a copy on GitHub and a working copy on your computer. Lecture 02 develops the Git concepts behind this workflow.
-
-Screenshots show example repositories; paste your own fork's URL. Sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
