@@ -448,7 +448,10 @@ python3 my_script.py
 
 ### Indentation Matters!
 
-Python uses indentation to group code together. Use four spaces per indentation level rather than mixing spaces and tabs:
+<callout icon="⚠️" color="green_bg">
+	Python uses indentation to group code together.
+	**Recommendation: Use four spaces per indentation level.**
+</callout>
 
 This is a preview of an `if` conditional; the Control Structures section below explains how the condition works.
 
