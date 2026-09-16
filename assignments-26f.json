@@ -1,6 +1,6 @@
 {
   "term": "2026-fall",
-  "source_commit": "2027bbe68e4511c3c866b1c63ce1037bcebc197c",
+  "source_commit": "3425078d2b72564f625aa84b56d68ab57f05ba34",
   "assignments": [
     {"number": "01", "source": "01/assignment", "repository": "UCSF-DataSci/ds217-26f-01"},
     {"number": "02", "source": "02/assignment", "repository": "UCSF-DataSci/ds217-26f-02"},
