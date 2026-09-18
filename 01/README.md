@@ -8,6 +8,8 @@ notion:
 
 **Quick references**
 
+[WSL Troubleshooting](../wsl_troubleshooting.md)
+
 [DLC](BONUS.md)
 
 [Live Demo!](demo/DEMO_GUIDE.md)
@@ -258,7 +260,11 @@ A **commit** saves a version; **push** sends local commits to GitHub. To submit 
 
 Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** to see the automatic checks; enable workflows once if prompted in a new fork. Your fork is the submission—no pull request to the course repository.
 
+<synced_block url="https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696#3dcd9fdd1a1a806b8fb4fffbf0fdabab">
+
 # LIVE DEMO!
+
+</synced_block>
 
 # Why Both Python and Command Line?
 

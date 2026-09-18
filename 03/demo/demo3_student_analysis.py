@@ -8,13 +8,13 @@ import numpy as np
 
 def create_sample_data():
     """Create realistic student grade data."""
-    np.random.seed(42)  # Reproducible results
+    rng = np.random.default_rng(42)  # Reproducible results
 
     n_students = 100
     n_assignments = 5
 
     # Generate grades (70-100 range)
-    grades = np.random.randint(70, 101, size=(n_students, n_assignments))
+    grades = rng.integers(70, 101, size=(n_students, n_assignments))
 
     print(f"Created data: {n_students} students, {n_assignments} assignments")
     print(f"Array shape: {grades.shape}")
@@ -82,7 +82,7 @@ def demo_array_reshaping(grades):
     print("=== Array Reshaping ===")
 
     # Get first 12 grades
-    sample = grades.flat[:12]
+    sample = grades.flatten()[:12]
     print(f"Flattened sample (12 grades): {sample}")
 
     # Reshape to different dimensions

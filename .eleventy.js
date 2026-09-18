@@ -32,7 +32,7 @@ function renderedSourceLink(url, sourcePath) {
   if (excludedContent.test(repositoryPath)) {
     return `${repositoryUrl}/blob/main/${repositoryPath}${suffix}`;
   }
-  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/" };
+  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/", "wsl_troubleshooting.md": "wsl-troubleshooting/" };
   let pagePath = coursePages[repositoryPath] ?? repositoryPath.replace(/\/README\.md$/i, "/");
   pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
   const outputPath = pagePath === repositoryPath ? repositoryPath : pagePath;
@@ -48,6 +48,7 @@ module.exports = function (eleventyConfig) {
 
   // Passthrough copy — media folders and CSS
   eleventyConfig.addPassthroughCopy("css");
+  eleventyConfig.addPassthroughCopy("media/wsl-troubleshooting");
   eleventyConfig.addPassthroughCopy("*/media/**");
   eleventyConfig.addPassthroughCopy("*/assignment/media/**");
 

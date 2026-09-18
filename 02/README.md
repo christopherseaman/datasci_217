@@ -17,13 +17,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ## Palette Cleanse: Command Palette & Quick Open
 
-- Open Command Palette: **View → Command Palette…**, Ctrl+Shift+P (Windows/Linux), Cmd+Shift+P (macOS).
-- Quick Open files: **Go → Go to File…**, Ctrl+P (Windows/Linux), Cmd+P (macOS).
-- Search across files: **View → Search**, Ctrl+Shift+F (Windows/Linux), Cmd+Shift+F (macOS).
+- Open Command Palette: **View → Command Palette…**, **Ctrl+Shift+P** (Windows/Linux), **Cmd+Shift+P** (macOS).
+- Quick Open files: **Go → Go to File…**, **Ctrl+P** (Windows/Linux), **Cmd+P** (macOS).
+- Search across files: **View → Search**, **Ctrl+Shift+F** (Windows/Linux), **Cmd+Shift+F** (macOS).
 
 ## Themes and Schemes: Make it Py‑pretty
 
-- Change Color Theme: Command Palette → **Preferences: Color Theme** (Ctrl+K then Ctrl+T on Windows/Linux; Cmd+K then Cmd+T on macOS). I am a fan of:
+- Change Color Theme: Command Palette → **Preferences: Color Theme** (**Ctrl+K** then **Ctrl+T** on Windows/Linux; **Cmd+K** then **Cmd+T** on macOS). I am a fan of:
     - "Tomorrow Night Bright"
     - "GitHub Dark High Contrast"
 - Toggle icons: Command Palette → **Preferences: File Icon Theme**.
@@ -38,13 +38,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 Full shortcut list: **Help → Keyboard Shortcuts Reference** ([VS Code reference](https://code.visualstudio.com/docs/reference/default-keybindings)).
 
-![VS Code's integrated terminal with command history](media/vscode-integrated-terminal.png)
-
-The terminal accepts the same shell commands as your standalone terminal. Screenshot: [VS Code terminal documentation](https://code.visualstudio.com/docs/terminal/basics).
-
 ## Less Typing, More Doing
 
 Edit and reuse commands in **VS Code's terminal** instead of retyping them.
+
+![VS Code's integrated terminal with command history](media/vscode-integrated-terminal.png)
+
+The terminal accepts the same shell commands as your standalone terminal. Screenshot: [VS Code terminal documentation](https://code.visualstudio.com/docs/terminal/basics).
 
 ### Reference Card: Shell Shortcuts
 
@@ -62,10 +62,10 @@ These are Bash/Zsh's usual editing bindings, with the terminal focused. **Ctrl**
 
 ## Settings
 
-- Settings: Command Palette → **Preferences: Open Settings (UI)**, or Ctrl+, (Windows/Linux), Cmd+, (macOS). Search **Format on Save** to enable it.
+- Settings: Command Palette → **Preferences: Open Settings (UI)**, or **Ctrl+,** (Windows/Linux), **Cmd+,** (macOS). Search **Format on Save** to enable it.
 - Python Interpreter: Command Palette → **Python: Select Interpreter**.
 - Default Formatter: In Settings, search **Default Formatter** and select an installed formatter such as Black or Ruff.
-- Markdown Preview: Right-click an open `.md` editor tab → **Open Preview to the Side**, Ctrl+K then V (Windows/Linux), Cmd+K then V (macOS).
+- Markdown Preview: Right-click an open `.md` editor tab → **Open Preview to the Side**, **Ctrl+K** then **V** (Windows/Linux), **Cmd+K** then **V** (macOS).
 
 ![The Python Select Interpreter menu in VS Code](media/vscode-selected-interpreter.png)
 
@@ -84,15 +84,26 @@ Choose the Python 3.13 interpreter installed for the course; this documentation 
 
 ## Break(points) the Ice
 
-1) Change the Color Theme (Preferences: Color Theme)
-2) Install “Python” and “Markdown All in One”
-3) Turn on “Format on Save” in Settings (GUI)
-4) Open a `.py` file → add a breakpoint (click gutter) → Run → Start Debugging
-5) Open a `.md` file → right‑click → Open Preview to the Side
-
 ![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
 
 The highlighted line runs next. Inspect **Variables**, then step forward to see what changes. Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial); the status bar shows the example's older interpreter.
+
+1. Open a `.py` file and click beside a line number to add a breakpoint.
+2. Select **Run → Start Debugging** (**F5**).
+3. Inspect **Variables**, then **Run → Step Over** (**F10**) to execute one line. Use **Run → Continue** (**F5**) to reach the next breakpoint.
+
+## Command-Line Catalog
+
+These are names to recognize from command-line work. The [command-line bonus](BONUS.md#command-line-essentials) has short explanations and examples.
+
+| Area | Commands | Purpose |
+| --- | --- | --- |
+| Navigation | `pwd`, `ls`, `cd` | Show where you are, list contents, and move between directories. |
+| Files and directories | `mkdir`, `touch`, `cp`, `mv` | Create directories or empty files, copy items, and rename or move them. |
+| Removal | `rm` | Remove a file; destructive, so check the path first. |
+| Inspect and search text | `cat`, `head`, `tail`, `grep`, `wc` | Read, preview, search, and count text. |
+| Directory overview | `tree` | Display a directory hierarchy when the command is available. |
+| Recall and shortcuts | `history`, ↑/↓, `Tab`, `Ctrl+R` | Reuse earlier commands and complete or search command text. |
 
 # Git Version Control
 
@@ -153,7 +164,43 @@ Create an experimental branch, commit a change there, then merge it into `main`.
 - **Remote**: Reference to repository on another machine
 - **Synchronize**: VS Code's Sync Changes action pulls incoming commits and pushes outgoing commits
 
-![Git Branches](media/git_branches.png)
+![Git branches split into parallel histories and merge back together](media/git_branches.png)
+
+Each dot is a commit. This illustration calls its main branch `master`; our repositories use `main`.
+
+## VS Code Git Integration
+
+Review a change, stage the files to include, commit the snapshot, then sync it to GitHub.
+
+![Stage a changed file using the plus button in VS Code](media/vscode-stage.png)
+
+![Enter a message and commit the staged files](media/vscode-commit.png)
+
+![Sync committed changes with the GitHub copy](media/vscode-sync.png)
+
+Screenshots: [VS Code source control documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+
+### Setting Up Git in VS Code
+
+1. Install VS Code (if not already done)
+2. Open VS Code → View → Source Control (or **Ctrl+Shift+G**)
+3. If Git reports a missing name/email, use the Git identity setup from Lecture 01.
+
+### Reference Card: VS Code Git Actions
+
+- **Source Control Panel**: **View → Source Control**, **Ctrl+Shift+G** (including Control on macOS)
+- **Stage Changes**: Click `+` next to files in "Changes" section
+- **Commit**: Type a message and select **Commit**
+- **View Differences**: Click on modified files to see changes
+- **Branch Management**: Click branch name in status bar to switch/create branches
+- **Push/Pull**: Select **Sync Changes**, or Command Palette → **Git: Push** / **Git: Pull**
+
+### From Edit to GitHub
+
+```text
+Working files → Staged changes → Local commit → GitHub
+                 Stage (+)        Commit         Push
+```
 
 ## Essential Git Commands
 
@@ -177,6 +224,8 @@ Basic Git commands let you control what changes are committed using a three-stag
 | Switch versions | `git checkout BRANCH_OR_COMMIT` | Working copy changes to that version |
 | Integrate a branch | `git merge BRANCH` | Branch changes combined with the current branch |
 
+![Git Clone](media/git_clone.png)
+
 ### Code Snippet: Essential Git Commands
 
 ```bash
@@ -192,8 +241,6 @@ git clone https://github.com/user/repo.git  # Clone existing repo
 git push origin main          # Push changes
 git pull origin main          # Pull updates
 ```
-
-![Git Clone](media/git_clone.png)
 
 ### Good vs. Bad Commit Messages
 
@@ -212,44 +259,6 @@ git commit -m "minor changes"
 ```
 
 ![xkcd 1296: Git Commit](media/xkcd_1296.png)
-
-## VS Code Git Integration
-
-Review a change, stage the files to include, commit the snapshot, then sync it to GitHub.
-
-![Stage a changed file using the plus button in VS Code](media/vscode-stage.png)
-
-![Enter a message and commit the staged files](media/vscode-commit.png)
-
-![Sync committed changes with the GitHub copy](media/vscode-sync.png)
-
-Screenshots: [VS Code source control documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
-
-### Setting Up Git in VS Code
-
-1. Install VS Code (if not already done)
-2. Open VS Code → View → Source Control (or Ctrl+Shift+G)
-3. If Git reports a missing name/email, use the Git identity setup from Lecture 01.
-
-#### Reference Card: VS Code Git Actions
-
-- **Source Control Panel**: **View → Source Control**, Ctrl+Shift+G (including Control on macOS)
-- **Stage Changes**: Click `+` next to files in "Changes" section
-- **Commit**: Type a message and select **Commit**
-- **View Differences**: Click on modified files to see changes
-- **Branch Management**: Click branch name in status bar to switch/create branches
-- **Push/Pull**: Select **Sync Changes**, or Command Palette → **Git: Push** / **Git: Pull**
-
-### VS Code Git Workflow
-
-```
-1. Edit files (e.g., analysis.py)
-2. Ctrl+Shift+G → Open Source Control panel
-3. Click + next to changed files to stage
-4. Type commit message: "Add data validation to analysis script"
-5. Select Commit
-6. Select Sync Changes to pull incoming commits and push yours
-```
 
 ## Git Workflow: Branching and Merging
 
@@ -309,11 +318,17 @@ GitHub's web interface manages repositories, enables collaboration, and organize
 - **Project Settings**: Settings tab for permissions, branches, and integrations
 - **Code Review**: Comment on specific lines, approve/request changes
 
-### Gitignore Files
+### Create and Edit Files on GitHub
+
+Create repository: github.com → "+" → "New repository" → Name, description, add README → Create.
+
+Add files: "Add file" → "Create new file" → Name, add code, commit message → Commit.
+
+## Gitignore Files
 
 A `.gitignore` file lists patterns for untracked files Git should ignore. Adding a pattern does not untrack files already committed.
 
-#### Reference Card: Ignore Patterns
+### Reference Card: Ignore Patterns
 
 - `# comment`: Explain a pattern
 - `*.csv`: Match CSV filenames
@@ -322,9 +337,9 @@ A `.gitignore` file lists patterns for untracked files Git should ignore. Adding
 - `!keep.csv`: Re-include a file matched by an earlier pattern
 - `**/cache/`: Match cache directories at any depth
 
-#### Code Snippet: A Project's `.gitignore`
+### Code Snippet: A Project's `.gitignore`
 
-```
+```gitignore
 # Python cache files
 __pycache__/
 *.pyc
@@ -341,12 +356,6 @@ data/raw/*.csv
 # Track important files
 !data/processed/important_results.csv
 ```
-
-### Create and Edit Files on GitHub
-
-Create repository: github.com → "+" → "New repository" → Name, description, add README → Create.
-
-Add files: "Add file" → "Create new file" → Name, add code, commit message → Commit.
 
 # Markdown Documentation
 
@@ -390,10 +399,6 @@ print("Analysis complete")
 
 *Data* by xkcd — in Python, everything is an object. In Star Trek, Data is too.
 
-Python emphasizes readable, practical data manipulation. Its values are objects with consistent behavior.
-
-![Python Import](media/python_import.webp)
-
 ## Printing and Basic Input
 
 An f-string starts with `f` and inserts the value of each expression inside `{}`. Formatting controls how those values appear; `input()` reads typed text for interactive scripts.
@@ -419,59 +424,23 @@ An f-string starts with `f` and inserts the value of each expression inside `{}`
 F-strings put values, labels, and units together: `87.3` is a number; `Score: 87.3%` tells the reader what it means. Choose precision that helps interpretation rather than printing every available digit.
 
 ```python
-# Basic printing - your daily communication tool
-print("Hello world")                    # Basic printing
-print("Value:", 42)                     # Multiple values
-print("Processing complete!")           # Status updates
-
 # F-string formatting - the data scientist's best friend
 student_name = "Alice"
 test_score = 87.3
 class_average = 82.1
 
 print(f"Student: {student_name}")                    # Basic variable insertion
-print(f"Score: {test_score}")                        # Number display
 print(f"Score: {test_score:.1f}")                    # One decimal place: 87.3
-print(f"Score: {test_score:.0f}%")                   # No decimals: 87%
 print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
 ```
 
-### Formatting Patterns for Data Analysis
+### Code Snippet: Text In, Number Out
 
 ```python
-# Currency formatting (useful for business data)
-revenue = 15432.50
-print(f"Revenue: ${revenue:,.2f}")                   # $15,432.50
-
-# Percentage formatting
-success_rate = 0.847
-print(f"Success rate: {success_rate:.1%}")           # 84.7%
-
-# Scientific notation for very large/small numbers
-population = 1400000000
-print(f"Population: {population:.2e}")               # 1.40e+09
-
-# Padding and alignment for clean output tables
-print(f"{'Name':<15} {'Score':>8} {'Grade':>8}")    # Column headers
-print(f"{'Alice':<15} {87.3:>8.1f} {'B+':>8}")      # Left/right aligned data
-print(f"{'Bob':<15} {92.1:>8.1f} {'A-':>8}")
-```
-
-### Interactive Input
-
-```python
-# Interactive input - mainly for testing and debugging
-name = input("Enter your name: ")                    # Gets text from user
-age_str = input("Enter your age: ")                  # Always returns string!
-age = int(age_str)                                   # Convert to number
-print(f"Hello {name}, you are {age} years old")
-
-# Be careful: input() always returns strings
-user_number = input("Enter a number: ")              # This is text: "42"
-print(type(user_number))                             # <class 'str'>
-actual_number = float(user_number)                   # Convert to number: 42.0
-print(type(actual_number))                           # <class 'float'>
-
+raw_score = input("Score: ")       # Typing 87.3 produces the string "87.3"
+score = float(raw_score)           # Convert to the number 87.3
+print(type(score))                 # <class 'float'>
+print(f"Score: {score:.1f}")        # Score: 87.3
 ```
 
 ## More String Operations
@@ -484,53 +453,19 @@ print(type(actual_number))                           # <class 'float'>
 - `text.endswith("son")`: Test whether text ends with a suffix, returning `True` or `False`.
 - `text.isalpha()`: Test whether nonempty text contains only letters; spaces are not letters.
 
-## Language Semantics and Object Model
-
-`None` means “no result”; test it with `value is None`.
-
-
-Python uses indentation for code structure, creating clean code. Every value is an object with type information, enabling dynamic behavior.
-
-### Reference Card: Language Semantics and Object Model
-
-- Indentation defines code blocks (4 spaces recommended): Group statements inside functions, loops, and conditionals
-- `#` for comments: Explain code; Python ignores the rest of that line
-- `type(object)`: Get object type
-- `isinstance(object, type)`: Type checking
-- `id(object)`: Get object identity
-- `dir(object)`: List object attributes
-
-### Code Snippet: Language Semantics and Object Model
-```python
-# Indentation matters
-x = 3
-if x > 0:
-    print("Positive")
-    y = x * 2
-
-print(type(42))        # <class 'int'>
-print(isinstance("hello", str))  # True
-```
-
-## Object Introspection and Dynamic Type Checking
-
-Object introspection examines objects at runtime—their type, attributes, and methods. Valuable for unknown datasets and flexible code.
-
-### Reference Card: Object Introspection and Dynamic Type Checking
-
-- `type(object)`: Returns the object's type
-- `dir(object)`: Lists attributes and methods
-- `help(object)`: Shows documentation
-
 ## Imports and Modules
 
 A **module** is a Python file that provides reusable names. An `import` loads a module and binds a name for it in the current program. Modules in the standard library ship with Python; third-party modules must be installed in the active environment first.
+
+![Python Import](media/python_import.webp)
 
 ### Reference Card: Imports and Modules
 
 - `import module`: Import a module and use `module.name`
 - `import module as alias`: Bind a shorter local name; this does not copy the module
 - `from module import name`: Import one specific name
+
+### Code Snippet: Use a Module
 
 ```python
 import math
@@ -550,7 +485,7 @@ python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"
 
 ## Data Structures: Lists and Tuples
 
-Lists provide mutable sequences for data. Tuples offer immutable sequences useful for fixed records.
+Lists are **mutable**: their contents can change. Tuples are **immutable**: their entries cannot be replaced, making them useful for fixed records.
 
 | Position | First | Second | Third | Fourth |
 | --- | --- | --- | --- | --- |
@@ -593,38 +528,15 @@ coordinates = (40.7128, -74.0060)
 name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
 ```
 
-## Names, Aliasing, and Mutability
-
-Assignment binds a name to an object; it does not automatically copy the object. Lists, dictionaries, and sets are **mutable**, so they can change in place. Numbers, strings, and tuples are **immutable**, so an operation produces a new value instead of changing the existing object.
-
-Two names are **aliases** when they refer to the same object. A mutation through either alias is visible through the other:
-
-```text
-grades ───────┐
-              ├──> [85, 92, 78]   one shared list
-same_grades ──┘
-copied_grades ────> [85, 92, 78]   a separate outer list
-```
-
-```python
-grades = [85, 92, 78]
-same_grades = grades
-same_grades[0] = 90
-
-print(grades)                 # [90, 92, 78]
-print(same_grades is grades)  # True: same object
-
-copied_grades = grades.copy()
-copied_grades[0] = 75
-print(grades)                 # Still [90, 92, 78]
-print(copied_grades)          # [75, 92, 78]
-```
-
-Use `==` to compare values. Use `is` for object identity, most commonly in a check such as `value is None`. `list.copy()` makes a new outer list; mutable objects nested inside it are still shared.
-
 ## Data Structures: Dictionaries and Sets
 
 Dictionaries provide key-value storage for structured data. Sets offer unique collections with mathematical operations.
+
+```text
+Dictionary: "name"  → "Alice"     lookup by key
+            "grade" → 85
+Set:        {"Math", "Science"}   distinct values, no duplicates
+```
 
 ### Reference Card: Data Structures: Dictionaries and Sets
 
@@ -651,35 +563,18 @@ cs_students = {"Alice", "Diana", "Eve"}
 both_subjects = math_students & cs_students  # Intersection
 ```
 
-## Sequence Functions
+## Reference Card: Summarize a Collection
 
-Sequence functions combine, order, and summarize collections. Lecture 03 introduces comprehensions for constructing new lists.
+For `grades = [85, 92, 78]`:
 
-### Reference Card: Sequence Functions
-
-- `enumerate(iterable)`: Get index and value pairs
-- `zip(iterable1, iterable2)`: Combine sequences
-- `sorted(iterable)`: Create sorted list
-- `reversed(iterable)`: Reverse sequence
-- `sum()`, `min()`, `max()`, `len()`: Aggregation functions
-
-### Code Snippet: Sequence Functions
-
-```python
-# Sequence functions
-grades = [85, 92, 78, 96, 88]
-for index, grade in enumerate(grades):
-    print(f"Student {index + 1}: {grade}")
-
-names = ["Alice", "Bob", "Charlie"]
-scores = [85, 92, 78]
-for name, score in zip(names, scores):
-    print(f"{name}: {score}")
-```
+- `sum(grades)`: Total, `255`.
+- `len(grades)`: Number of items, `3`.
+- `min(grades)` / `max(grades)`: Smallest/largest value, `78` / `92`.
+- `sorted(grades)`: New ordered list, `[78, 85, 92]`; leaves `grades` unchanged.
 
 ## Functions
 
-Functions organize code into reusable units with clear interfaces. They enable reuse, testing, and modular design.
+Functions give reusable work a name: pass in **arguments**, receive a **return value**. In the definition, the argument names are called **parameters**.
 
 ```text
 [85, 92, 78] → calculate_average(grades) → 85.0
@@ -689,11 +584,12 @@ Functions organize code into reusable units with clear interfaces. They enable r
 ### Reference Card: Functions
 
 - `def function_name(parameters): ...`: Function definition
-- `return value`: Return value
+- `return value`: Send a result back to the caller; without a value, the result is `None`
 - Function calls: `result = function_name(arguments)`: Run a function with arguments and store its return value
 - Default parameters: `def func(param=default_value):`: Use a fallback value when the caller omits an argument
 - `"""Description."""` as the first line inside a function: A docstring describing its purpose and return value
 - `if not values:`: An empty collection is false; handle it before dividing by its length
+- `value is None`: Test for “no result,” distinct from a numeric zero
 
 ### Code Snippet: Functions
 
@@ -713,9 +609,11 @@ print(f"Average grade: {average:.1f}")
 
 # LIVE DEMO!
 
+# Files and Reusable Scripts
+
 ## Basic File I/O Operations
 
-File I/O operations are essential for data science. Python provides simple tools for reading and writing files.
+File **I/O** means input/output: read saved text into Python or write results for later use.
 
 ```text
 Python text → write → grades.txt → read → saved text
@@ -766,6 +664,8 @@ with open('log.txt', 'a', encoding='utf-8') as file:
 
 An **exception** reports a problem that interrupts normal execution. Use `try`/`except` around the operation that can fail, and catch the specific exception you expect rather than hiding every error.
 
+### Code Snippet: Handle Invalid Numeric Text
+
 ```python
 raw_score = "not available"
 
@@ -782,6 +682,8 @@ Opening a missing path raises `FileNotFoundError`; `OSError` covers file-system 
 ## `__main__` for script execution
 
 When Python runs a file directly, its special `__name__` variable is set to `"__main__"`. When another file imports it as a module, `__name__` is the module's name. A guard keeps script-only work from running during import:
+
+### Code Snippet: Run Directly or Import
 
 ```python
 def main():
@@ -800,30 +702,5 @@ If this is saved as `analysis.py`, the first command runs `main()` and the secon
 python3 analysis.py
 python3 -c "import analysis"
 ```
-
-# Command-Line Catalog
-
-These are names to recognize from command-line work. The [command-line bonus](BONUS.md#command-line-essentials) has short explanations and examples.
-
-| Area | Commands | Purpose |
-| --- | --- | --- |
-| Navigation | `pwd`, `ls`, `cd` | Show where you are, list contents, and move between directories. |
-| Files and directories | `mkdir`, `touch`, `cp`, `mv` | Create directories or empty files, copy items, and rename or move them. |
-| Removal | `rm` | Remove a file; destructive, so check the path first. |
-| Inspect and search text | `cat`, `head`, `tail`, `grep`, `wc` | Read, preview, search, and count text. |
-| Directory overview | `tree` | Display a directory hierarchy when the command is available. |
-| Recall and shortcuts | `history`, ↑/↓, `Tab`, `Ctrl+R` | Reuse earlier commands and complete or search command text. |
-
-For this lecture's project work, use the VS Code terminal and focus on the Git commands introduced above:
-
-```bash
-git status
-git add path/to/file.py
-git commit -m "Describe the change"
-git diff
-git push
-```
-
-Lecture 03 owns the next shell pipeline activity; revisit Lecture 01 for the foundational shell workflow.
 
 # LIVE DEMO!

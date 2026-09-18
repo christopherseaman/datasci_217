@@ -15,9 +15,9 @@ def measure_python_list():
     data = list(range(1_000_000))
 
     # Time the operation
-    start = time.time()
+    start = time.perf_counter()
     result = [x * 2 for x in data]
-    end = time.time()
+    end = time.perf_counter()
 
     elapsed_ms = (end - start) * 1000
     print(f"Time: {elapsed_ms:.2f} ms")
@@ -33,9 +33,9 @@ def measure_numpy_array():
     data = np.arange(1_000_000)
 
     # Time the operation
-    start = time.time()
+    start = time.perf_counter()
     result = data * 2
-    end = time.time()
+    end = time.perf_counter()
 
     elapsed_ms = (end - start) * 1000
     print(f"Time: {elapsed_ms:.2f} ms")
@@ -57,7 +57,7 @@ def main():
     print("\n" + "=" * 40)
     print(f"Speedup: {python_time / numpy_time:.1f}x faster!")
     print(f"Time saved: {python_time - numpy_time:.2f} ms")
-    print("\n✅ NumPy is 10-100x faster for numerical operations")
+    print("\nTiming is machine-dependent; vectorized arithmetic does the work in array operations.")
 
 if __name__ == "__main__":
     main()
