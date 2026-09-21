@@ -13,7 +13,7 @@ notion:
 
 # Modern Pandas Extension Types
 
-The core lecture introduces nullable `Int64` because whole-number columns sometimes contain missing values. This bonus extends the same idea to nullable floats, booleans, and strings, then explores their broader memory and interoperability implications.
+The core lecture introduces nullable `Int64`, `string`, and `boolean`. This bonus adds nullable floats and their memory and interoperability implications.
 
 *Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
 
@@ -81,7 +81,7 @@ print(df)
 
 # Advanced Regular Expressions for Text Data
 
-Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks.
+Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks. The core lecture uses `[0-9]` and `{n}` with `str.fullmatch()`; the syntax below goes further.
 
 *Warning: Regular expressions are write-only code - you write them once, and six months later you have no idea what they do. Comment generously!*
 
@@ -97,6 +97,7 @@ Regular expressions (regex) are powerful for complex pattern matching, but they 
 - `^` - Start of string
 - `$` - End of string
 - `()` - Capture group
+- `df.replace(pattern, replacement, regex=True)` - Replace regex matches in text values
 
 **Brief Example:**
 
@@ -181,26 +182,15 @@ print(normalized)  # ['cafe', 'naive', 'resume']
 
 # Advanced Duplicate Handling
 
-More sophisticated approaches to finding and handling duplicates.
+The core lecture finds exact repeats and repeated identifiers with `duplicated()`. Near-duplicates, such as `John Smith` and `Jon Smith`, differ by a typo, so exact comparison misses them.
 
 **Reference:**
 
-- `subset=['col1', 'col2']` - Check specific columns only
-- `keep='first'` - Keep first occurrence (default)
-- `keep='last'` - Keep last occurrence
-- `keep=False` - Mark all duplicates as True
 - Fuzzy matching for near-duplicates (requires `fuzzywuzzy` or similar)
 
 **Brief Example:**
 
 ```python
-# Find ALL duplicates (including first occurrence)
-df = pd.DataFrame({'name': ['Alice', 'Bob', 'Alice', 'Charlie', 'Bob'],
-                   'score': [85, 90, 88, 92, 90]})
-
-all_dupes = df[df.duplicated(subset=['name'], keep=False)]
-print(all_dupes)  # Shows all Alice and Bob rows
-
 # Fuzzy string matching for near-duplicates
 from fuzzywuzzy import fuzz
 names = pd.Series(['John Smith', 'Jon Smith', 'Jane Doe'])
@@ -250,8 +240,6 @@ Use `np.where()` and `np.select()` for complex conditional replacements.
 
 - `np.where(condition, if_true, if_false)` - Simple if-else
 - `np.select(conditions_list, choices_list, default)` - Multiple conditions
-- `pd.Series.where(condition, other)` - Keep values where True
-- `pd.Series.mask(condition, other)` - Replace values where True
 
 **Brief Example:**
 
@@ -272,6 +260,16 @@ df['letter_grade'] = np.select(conditions, choices, default='F')
 print(df)
 ```
 
+# Configuration-Driven Cleaning
+
+Configuration files can make repeated pipelines more maintainable and reproducible. If a pipeline is reused across sources, a small dictionary or reviewed configuration file can hold genuinely changeable contract values so transformation and validation do not drift apart.
+
+Keep genuinely changeable rules separate from the transformation logic, but do not turn every implementation constant into an option. Changing a rule still requires a documented decision and a fresh validation run.
+
+## Configuration Guidance
+
+Use a Python dictionary for a small, local configuration; use a reviewed CSV, JSON, or text file when parameters must be shared. Keep transformations in functions and document the source of each cleaning rule.
+
 # When to Use These Techniques
 
 **Regular Expressions:** Email validation, phone number extraction, parsing log files, complex text cleaning.
@@ -286,13 +284,15 @@ print(df)
 
 **Conditional Replacement:** Complex business logic, deriving new categories, data validation with multiple rules.
 
+**Configuration-Driven Cleaning:** The same cleaning rules reused across sites, sources, or repeated data deliveries.
+
 # Optional Reference: Sampling Designs and Resampling
 
-The core lecture introduces simple random sampling and names the main tools. The techniques below show additional designs and resampling patterns; each one answers a different selection question.
+The core lecture uses `df.sample()` to spot-check rows. The techniques below show additional designs and resampling patterns; each one answers a different selection question.
 
 ## Stratified Sampling
 
-Stratified sampling divides the sampling frame into defined strata, then samples within each stratum. Use `GroupBy.sample` when the design calls for a fixed number or fraction from every group. The strata and allocation are analytical choices; every group must have enough rows unless sampling with replacement is deliberate. For a train/test split that preserves a label's proportions, see `sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
+Stratified sampling divides the sampling frame into defined strata, then samples within each stratum. Use `GroupBy.sample` when the design calls for a fixed number or fraction from every group ([Lecture 08](../08/README.md#basic-groupby-operations) teaches `groupby()`). The strata and allocation are analytical choices; every group must have enough rows unless sampling with replacement is deliberate. For a train/test split that preserves a label's proportions, see `sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
 
 ```python
 frame = pd.DataFrame({

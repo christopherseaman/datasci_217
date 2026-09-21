@@ -9,6 +9,43 @@ notion:
 
 # DLC: Advanced Modeling Topics
 
+# More scikit-learn Tools
+
+The lecture's main path uses linear models, random forests, and gradient boosting. Once that workflow feels routine, benchmark other candidates whose assumptions fit the task, always against the same baseline, split, and metric:
+
+- Classification: `SVC`, a support vector classifier that looks for the widest possible boundary between classes, beside the lecture's `LogisticRegression`.
+- Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
+- Selection: `cross_val_score` for cross-validation and `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
+
+**Cross-validation** splits the training rows into k parts (folds), fits on k - 1 of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on.
+
+*Let validation evidence—not a favorite algorithm—decide. Blue steel is a style, not a model-selection rule.*
+
+# Other Boosting Libraries
+
+Beyond `XGBoost`, two other gradient-boosting libraries are common. Neither is part of Lecture 10's recorded environment; install them in the active notebook environment with `%pip install lightgbm catboost` before trying them.
+
+## `LightGBM`
+
+- Designed for efficient training and memory use
+- A candidate when scale or training speed is an important constraint
+
+## `CatBoost`
+
+- Provides native mechanisms for categorical features
+- A candidate when the table contains important categorical variables
+
+## The Boosting Family Tree
+
+```
+Gradient Boosting
+├── XGBoost (widely used general implementation)
+├── LightGBM (efficiency-oriented implementation)
+└── CatBoost (native categorical-feature support)
+```
+
+*Benchmark them under the same split, measure, and budget. Blue steel, magnum, and le tigre are all amazing, just slightly different—so test them on your data.*
+
 # Hyperparameter Tuning Strategies
 
 ## Grid Search and Random Search
@@ -139,6 +176,17 @@ PartialDependenceDisplay.from_estimator(
 
 # Advanced Statistical Modeling
 
+Choose an inferential model when the question requires interpretable parameters, uncertainty, or hypothesis tests and its design and model assumptions are defensible. Inference quantifies associations under assumptions; prediction estimates performance on new data. Neither alone establishes causation.
+
+## Generalized Linear Models (GLMs)
+
+Linear regression suits a numeric outcome that scatters evenly around the fitted line. **Generalized linear models** keep the same formula interface but change how the outcome is modeled:
+
+- Logistic regression for binary outcomes
+- Poisson regression for count data
+- Other exponential family distributions
+- Use when: You need statistical inference for non-normal data
+
 ## Mixed Effects Models
 
 **Reference:**
@@ -243,6 +291,57 @@ model = keras.Model(inputs, outputs)
 model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
 ```
 
+# Other Deep-Learning Frameworks
+
+The lecture uses TensorFlow/Keras for its worked example—a teaching choice, not a universal ranking.
+
+## `PyTorch`
+
+`PyTorch` provides an eager, Python-oriented interface used in research and production. It is not part of Lecture 10's recorded environment; install it in the active notebook environment with `%pip install torch` before running the example.
+
+- **PyTorch:** Eager execution and a Python-oriented modeling ecosystem
+- **TensorFlow/Keras:** High-level Keras APIs within TensorFlow's broader modeling and deployment ecosystem
+- **Both:** Used for research and production; neither role belongs exclusively to one framework
+- **Choice:** Depends on required libraries, deployment target, team expertise, maintenance, and measured performance
+
+### Reference Card: PyTorch Essentials
+
+| Function / method | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `nn.Sequential(...)` | Build a simple ordered neural-network stack. | Module |
+| `torch.optim.Adam(model.parameters(), lr=...)` | Update model parameters using Adam. | Optimizer |
+| `nn.BCELoss()` | Calculate binary cross-entropy for probability outputs. | Loss function |
+| `model.train()` / `model.eval()` | Switch behavior for training or evaluation (for example, Dropout). | Module state change |
+
+### Code Snippet: PyTorch Evaluation Mode
+
+```python
+import torch
+from torch import nn
+
+model = nn.Sequential(
+    nn.Linear(10, 32), nn.ReLU(),
+    nn.Linear(32, 1), nn.Sigmoid(),
+)
+X_test = torch.randn(5, 10)  # 5 rows, 10 features
+
+model.eval()                 # inference behavior for layers such as Dropout
+with torch.no_grad():        # skip gradient tracking while predicting
+    predictions = model(X_test)
+print(predictions.shape)     # torch.Size([5, 1])
+```
+
+## Other Modern Frameworks
+
+Other frameworks serve different computational styles. `JAX` combines NumPy-like arrays with automatic differentiation and JIT compilation; choose it or another specialized tool when its capabilities and dependency cost fit the task.
+
+```
+Deep Learning Frameworks
+├── TensorFlow/Keras (high-level modeling and deployment ecosystem)
+├── PyTorch (eager, Python-oriented modeling ecosystem)
+└── JAX (array programming with transformations and JIT compilation)
+```
+
 # Model Ensembling
 
 ## Stacking
@@ -311,6 +410,14 @@ final_predictions = np.argmax(blended, axis=1)
 ```
 
 # Time Series Modeling
+
+When each observation depends on the ones just before it, `statsmodels` offers dedicated time-series tools:
+
+- ARIMA models for time series forecasting
+- Seasonal decomposition
+- Use when: You have temporal dependencies in your data
+
+Lecture 09's bonus has worked examples of [decomposition](../09/BONUS.md#advanced-time-series-decomposition) and [ARIMA and exponential smoothing](../09/BONUS.md#time-series-forecasting).
 
 ## ARIMA Models
 

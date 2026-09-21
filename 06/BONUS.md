@@ -16,7 +16,7 @@ See [README.md](README.md) for core data wrangling operations - master those fir
 # Advanced Topics Covered
 
 1. **Advanced MultiIndex Operations** - Deep dive into hierarchical indexing with swaplevel(), level-specific sorting, and summary statistics by level
-2. **Merging on Index** - Join DataFrames using index values instead of columns
+2. **Merging on Index** - Join DataFrames using index values instead of columns, including the `DataFrame.join()` shorthand
 3. **Advanced concat Options** - Using keys, levels, names, and verify_integrity for complex concatenations
 4. **MultiIndex Creation Methods** - Programmatically build hierarchical indexes with from_tuples(), from_product(), from_arrays()
 5. **Stack/Unstack with dropna Parameter** - Control how missing data is handled during reshaping
@@ -33,6 +33,7 @@ When you have multiple index levels, you may need to change their order for diff
 
 **Reference:**
 
+- `df.index.names = ['level1', 'level2']` - Name the levels; the labels themselves stay the same
 - `df.swaplevel(0, 1)` - Exchange two index levels by position
 - `df.swaplevel('level1', 'level2')` - Exchange by name
 - `df.sort_index(level=0)` - Sort by specific level
@@ -224,6 +225,36 @@ print(both_index)
 - Joining dimension tables to fact tables (data warehouse style)
 
 **Gotcha:** An index used as a merge key is not automatically preserved as the result's index in every merge. Column-key merges generally create a new result index; index-key merges use the participating index labels as keys, but the resulting index structure depends on the join and key choices. Inspect `result.index` or call `reset_index()` when you need a predictable column form.
+
+## DataFrame.join(): Shorthand for Index Merges
+
+`join()` is a shorter way to write an index merge. `df1.join(df2)` is a left join on index labels, so it suits tables that already share a meaningful index, such as dates.
+
+### Reference Card: `join()`
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df1.join(df2)` | Left join on index (default) | Index-aligned `DataFrame` |
+| `df1.join(df2, how='outer')` | Outer join on index | Index-aligned `DataFrame`; missing fields become `NaN` |
+| `df1.join(df2, on='key')` | Match df1's key column against df2's index | Joined `DataFrame`, retaining df1's index |
+
+### Code Snippet: Join aligned indexes
+
+```python
+# Time series data with dates as index
+prices = pd.DataFrame({'price': [100, 101, 102]},
+                      index=pd.to_datetime(['2023-01', '2023-02', '2023-03']))
+volumes = pd.DataFrame({'volume': [1000, 1100, 1200]},
+                       index=pd.to_datetime(['2023-01', '2023-02', '2023-03']))
+
+# Join on index
+combined = prices.join(volumes)
+print(combined)
+#             price  volume
+# 2023-01-01    100    1000
+# 2023-02-01    101    1100
+# 2023-03-01    102    1200
+```
 
 
 # 3. Advanced concat Options

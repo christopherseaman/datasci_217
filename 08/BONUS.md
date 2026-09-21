@@ -80,17 +80,18 @@ df.groupby(pd.Grouper(freq='7D')).agg({
 **Reference:**
 
 ```python
-# Multi-level pivot tables
+# Multi-level pivot tables. No fill_value: 'profit' is a mean, and an
+# absent cell is not a profit of 0.
 pivot = pd.pivot_table(df,
                       values=['sales', 'profit'],
                       index=['region', 'product'],
                       columns=['quarter', 'year'],
                       aggfunc={'sales': 'sum', 'profit': 'mean'},
-                      fill_value=0,
                       margins=True)
 
-# Flatten multi-level columns
-pivot.columns = ['_'.join(col).strip() for col in pivot.columns]
+# Flatten multi-level columns; str() handles integer years, and rstrip('_')
+# tidies the margin columns, whose lower levels are empty
+pivot.columns = ['_'.join(map(str, col)).rstrip('_') for col in pivot.columns]
 ```
 
 ## Pivot Table with Custom Functions
@@ -118,24 +119,42 @@ pivot = weighted['weighted_value'].unstack('region').div(weight_totals)
 
 **Reference:**
 
-In pandas 3, categorical groupers default to `observed=True`. Use `observed=False` only when a table must include every defined category or category combination.
+A `NaN` cell means no rows had that combination. In a mean table, leave it `NaN`: nothing was measured, and 0 would report a measurement that never happened. Use `fill_value=0` only for counts and sums, where an absent combination really is zero rows. Print a count table beside the mean table so readers can see which cells are empty or rest on only a few rows.
+
+In pandas 3, categorical groupers default to `observed=True`. Use `observed=False` only when a table must include every defined category or category combination. In a mean table, an unused category is an all-`NaN` row, which the default `dropna=True` removes, so also pass `dropna=False`. That also keeps rows with a missing key as a `NaN` row.
 
 ```python
-# Advanced missing data handling
-pivot = pd.pivot_table(df,
-                      values='value',
-                      index='category',
-                      columns='region',
-                      aggfunc='mean',
-                      fill_value=0,           # Fill missing with 0
-                      dropna=False,           # Retain all-NaN result columns
-                      observed=True)          # Show only observed categorical groups
+df = pd.DataFrame({
+    'category': pd.Categorical(['A', 'A', 'B', 'B'], categories=['A', 'B', 'C']),
+    'region': ['North', 'South', 'North', 'North'],
+    'value': [10.0, 12.0, 8.0, 6.0],
+})
 
-# Handle missing data in different ways
-pivot_filled = pivot.ffill()                 # Forward fill
-pivot_interpolated = pivot.interpolate()     # Linear interpolation
-pivot_dropped = pivot.dropna()               # Drop missing rows
+# Mean: absent cells stay NaN; C has no rows, so its whole row is NaN
+means = pd.pivot_table(df, values='value', index='category', columns='region',
+                       aggfunc='mean', observed=False, dropna=False)
+
+# Count: an absent combination really is 0 rows
+counts = pd.pivot_table(df, values='value', index='category', columns='region',
+                        aggfunc='count', fill_value=0, observed=False)
+print(means)
+print(counts)
 ```
+
+```text
+region    North  South
+category
+A          10.0   12.0
+B           7.0    NaN
+C           NaN    NaN
+region    North  South
+category
+A             1      1
+B             2      0
+C             0      0
+```
+
+Forward-filling or interpolating fabricates values the same way: `means.ffill()` copies A's South mean (12.0) into B and C, which have no South rows. To keep only complete rows, use `means.dropna()` (here, only A).
 
 # Hierarchical Grouping and MultiIndex
 
@@ -304,6 +323,8 @@ The grouped weighted-mean workflow in [Pivot Table with Custom Functions](#pivot
 
 # Advanced GroupBy Transformations
 
+Lecture 09 teaches grouped lags and rolling windows for time-ordered rows, including past-only windows for prediction: [Entity-Aware Features and Past-Only Windows](../09/README.md#entity-aware-features-and-past-only-windows).
+
 ## Ranking Within Groups
 
 **Reference:**
@@ -383,6 +404,62 @@ class CustomGroupBy:
 # Usage
 custom_gb = CustomGroupBy(df, ['category'])
 result = custom_gb.custom_agg('value', lambda x: x.quantile(0.95))
+```
+
+# Scaling Past Memory: Chunks and Processes
+
+The lecture's first moves are to measure, compute several summaries in one `.agg()` call, prefer built-in aggregations, and store repeated text keys as `category`. When a file is still too large to load, or one CPU core is the bottleneck, two further options exist. Both add complexity, so time the complete operation before and after.
+
+## Chunked Processing
+
+`pd.read_csv(path, chunksize=n)` reads a file `n` rows at a time, so only one chunk is in memory at once. Summarize each chunk, then combine the partial summaries. The partial results must combine correctly: chunk sums add up to the total sum and chunk counts to the total count, but averaging chunk means gives the wrong mean unless you keep each chunk's sum and count. Chunking saves memory; it is not automatically faster.
+
+```python
+import pandas as pd
+
+def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
+    """Sum groups from a CSV that is read in chunks."""
+    results = []
+
+    for chunk in pd.read_csv(file_path, chunksize=chunk_size):
+        if not chunk.empty:
+            results.append(chunk.groupby(group_cols)[agg_cols].sum())
+
+    if not results:
+        raise ValueError("input file must contain at least one data row")
+
+    levels = list(range(results[0].index.nlevels))
+    return pd.concat(results).groupby(level=levels)[agg_cols].sum()
+```
+
+## Parallel Processing
+
+`multiprocessing.Pool` runs a function on several CPU cores at once, each in a separate Python process. Parallel work adds process startup, copying data between processes, and merge costs, so more processes do not guarantee a faster result.
+
+Each worker process must be able to find the worker function (`process_chunk` below). In a notebook, that works only with the `fork` start method, the default on Linux (including Colab). macOS and Windows use `spawn`: a worker function defined in a notebook makes the workers fail and the cell can hang. There, put the worker function in a `.py` file and import it, and start the pool from a script under `if __name__ == "__main__":`.
+
+```python
+from multiprocessing import Pool
+
+import pandas as pd
+
+def process_chunk(chunk):
+    return chunk.groupby('category')[['value']].sum()
+
+def parallel_groupby(df, n_processes=4):
+    if n_processes < 1:
+        raise ValueError("n_processes must be at least 1")
+    if df.empty:
+        raise ValueError("df must contain at least one row")
+
+    chunk_size = max(1, len(df) // n_processes)
+    chunks = [df.iloc[i:i + chunk_size]
+              for i in range(0, len(df), chunk_size)]
+
+    with Pool(n_processes) as pool:
+        results = pool.map(process_chunk, chunks)
+
+    return pd.concat(results).groupby(level=0)[['value']].sum()
 ```
 
 # Advanced Remote Computing

@@ -22,4 +22,6 @@ README.md
 .nojekyll
 *.py
 AGENTS.md
+CLAUDE.md
+HANDOFF.md
 .pytest_cache/**

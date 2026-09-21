@@ -461,7 +461,7 @@ if x > 0:
     print("Still positive")  # This line is also indented
 ```
 
-```text
+```python
 # Wrong indentation (will cause an error)
 if x > 0:
 print("This will cause an IndentationError")

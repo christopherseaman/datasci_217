@@ -11,36 +11,41 @@ notion:
 
 # Annotations and Drawing on Plots
 
-## Adding Text and Annotations
+## Reference Lines and Shaded Spans
 
-**Reference:**
+The lecture's annotation card covers `ax.text()` and `ax.annotate()` for labeling one point. Reference lines and shaded spans mark context that runs across the whole Axes, such as a season average, the week a program started, or an outbreak period.
 
-- `ax.text(x, y, 'text')` - Add text at coordinates
-- `ax.annotate('text', xy=(x, y), xytext=(x2, y2))` - Add annotation with arrow
-- `ax.arrow(x, y, dx, dy)` - Add arrow
-- `ax.axhline(y=value)` - Add horizontal line
-- `ax.axvline(x=value)` - Add vertical line
+### Reference Card: Reference Lines and Spans
 
-**Example:**
+- `ax.axhline(y, color='gray', linestyle='--')`: Draw a horizontal line across the whole Axes, such as a target or a mean.
+- `ax.axvline(x, linestyle=':')`: Draw a vertical line across the whole Axes, such as the week an intervention started.
+- `ax.axhspan(ymin, ymax, alpha=0.2)` / `ax.axvspan(xmin, xmax, alpha=0.2)`: Shade a horizontal or vertical band, such as a normal range or an outbreak period.
+- `ax.arrow(x, y, dx, dy)`: Draw a bare arrow from `(x, y)` that moves `dx` across and `dy` up; `ax.annotate()` is usually easier because it pairs the arrow with text.
+
+### Code Snippet: Mark a Mean, an Event, and a Period
 
 ```python
-# Annotate important points
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(data)
+import matplotlib.pyplot as plt
+import numpy as np
 
-# Add text annotation
-ax.text(50, data[50], 'Peak Value', fontsize=12, ha='center')
+weeks = np.arange(1, 13)  # weeks 1 through 12
+flu_visits = np.array([40, 42, 45, 51, 60, 72, 80, 76, 64, 55, 48, 44])
+print(round(flu_visits.mean(), 1))  # 56.4
 
-# Add arrow annotation
-ax.annotate('Important Event', 
-           xy=(100, data[100]), 
-           xytext=(150, data[100] + 10),
-           arrowprops=dict(arrowstyle='->', color='red'))
-
-# Add reference lines
-ax.axhline(y=data.mean(), color='gray', linestyle='--', alpha=0.7)
-ax.axvline(x=50, color='gray', linestyle='--', alpha=0.7)
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(weeks, flu_visits, marker='o')
+ax.axhline(flu_visits.mean(), color='gray', linestyle='--')
+ax.text(1, flu_visits.mean() + 2, 'Season mean')
+ax.axvline(3, color='gray', linestyle=':')
+ax.text(3.1, 85, 'Vaccine clinic opens')
+ax.axvspan(6, 8, color='orange', alpha=0.2)
+ax.text(7, 30, 'Outbreak', ha='center')
+ax.set(xlabel='Week', ylabel='Flu clinic visits', ylim=(0, 90))
+ax.spines[['top', 'right']].set_visible(False)
+plt.show()
 ```
+
+Expected output: `56.4` prints, and the plot shows twelve weekly points with a dashed gray line labeled "Season mean" at 56.4, a dotted line at week 3 labeled "Vaccine clinic opens", and weeks 6 through 8 shaded and labeled "Outbreak".
 
 ## Drawing Shapes and Patches
 
@@ -143,36 +148,20 @@ df.plot.area(alpha=0.7, stacked=True)
 
 ## Statistical Visualization
 
-**Reference:**
+**Figure-level** functions such as `pairplot()`, `jointplot()`, `catplot()`, and `clustermap()` build a whole Figure of their own, so they do not take `ax=` and cannot share a `plt.subplots()` grid. The other functions below draw into one Axes, like the plots in the lecture.
 
-- `sns.pairplot()` - Pairwise relationships
-- `sns.jointplot()` - Joint distributions
-- `sns.violinplot()` - Distribution shapes
-- `sns.heatmap()` - Correlation matrices
-- `sns.clustermap()` - Hierarchical clustering heatmap
-- `sns.regplot()` - Scatter plot with fitted regression
-- `sns.residplot()` - Residual diagnostic plot
-- `sns.kdeplot()` - One- or two-dimensional density estimate
+### Reference Card: More seaborn Plot Types
 
-**Example:**
-
-```python
-# Advanced seaborn statistical plots
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-
-# Pair plot for correlation analysis
-sns.pairplot(df, hue='category')
-
-# Joint plot with regression
-sns.jointplot(data=df, x='x', y='y', kind='reg')
-
-# Violin plot for distribution comparison
-sns.violinplot(data=df, x='category', y='value')
-
-# Heatmap for correlation matrix
-correlation_matrix = df.corr()
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
-```
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `sns.pairplot(df, hue=...)` | Compare every numeric pair | Figure-level grid |
+| `sns.jointplot(data=df, x=..., y=..., kind=...)` | Combine a relationship with marginal distributions | Figure-level plot |
+| `sns.catplot(kind='box', data=df, x=..., y=...)` | Build a faceted categorical plot | Figure-level grid |
+| `sns.clustermap(matrix)` | Heatmap with rows and columns reordered by hierarchical clustering (needs SciPy) | Figure-level grid |
+| `sns.violinplot(data=df, x=..., y=...)` | Show distribution shape by category | `Axes` |
+| `sns.stripplot(data=df, x=..., y=..., hue=...)` | Show individual observations by category | `Axes` |
+| `sns.regplot(data=df, x=..., y=...)` | Scatter plot with a fitted regression line and its confidence band | `Axes` |
+| `sns.residplot(data=df, x=..., y=...)` | Residuals from that fitted line, to check for leftover pattern | `Axes` |
 
 ## Facet Grids and Categorical Plots
 
@@ -275,6 +264,28 @@ plt.colorbar()
 ```
 
 # Interactive Visualizations
+
+*The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
+
+This survey names alternatives to the lecture's tools; the same visible-context rules still apply. Extended Altair, Bokeh, and Plotly examples follow it.
+
+## Ecosystem at a Glance
+
+- **plotnine** brings a layered grammar-of-graphics interface familiar to ggplot2 users.
+- **Bokeh** targets browser-based visualizations, custom interactions, and server applications.
+- **Plotly** offers a high-level Express API plus lower-level graph objects for interactive charts and dashboards.
+
+## Tool Selection Guide
+
+| Tool | Best For | Learning Curve | Interactivity | Output Formats | Grammar |
+|------|----------|----------------|---------------|----------------|---------|
+| matplotlib | Custom plots, publication quality | High | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Imperative |
+| seaborn | Statistical plots, beautiful defaults | Low | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Imperative |
+| pandas | Quick exploration, basic charts | Very Low | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Imperative |
+| altair | Interactive plots, grammar of graphics | Medium | Built-in | PNG/SVG/HTML/JSON | Declarative |
+| plotnine | R users, layered approach | Medium | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Declarative |
+| bokeh | Interactive web visualizations | High | High | HTML/JS | Imperative |
+| plotly | Dashboards, web applications | Medium | High | HTML/JS | Declarative |
 
 ## Altair for Declarative Interactive Charts
 
@@ -701,4 +712,16 @@ def calculate_plot_quality(fig):
     return metrics
 ```
 
-These advanced topics will help you create professional, publication-ready visualizations and handle complex visualization challenges in your data science work.
+# Further Reading
+
+## Tufte's Books and Essays
+
+- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi) - Tufte's seminal work
+- [Envisioning Information](https://www.edwardtufte.com/book/envisioning-information/) - Color, layering, and detail
+- [Tufte's website](https://www.edwardtufte.com/) - Essays and resources
+
+## Color Tools
+
+- [ColorBrewer 2.0](https://colorbrewer2.org/) - Interactive color advice for maps and visualizations
+- [Colorblind-Safe Palettes](https://sronpersonalpages.nl/~pault/) - Paul Tol's color schemes
+- [Adobe Color](https://color.adobe.com/) - Create and explore color schemes

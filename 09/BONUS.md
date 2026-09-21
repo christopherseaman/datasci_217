@@ -244,25 +244,6 @@ annual = frame.resample('Y-DEC').mean()
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
 ```
 
-## Grouped Time Resampling
-
-**Reference:**
-
-```python
-from pandas import Grouper
-
-# Resample multiple time series by group
-df = pd.DataFrame({
-    'time': times.repeat(3),
-    'key': np.tile(['a', 'b', 'c'], N),
-    'value': np.arange(N * 3.)
-})
-
-# Group by key and resample by time
-time_key = Grouper(freq='5min')
-resampled = df.set_index('time').groupby(['key', time_key]).sum()
-```
-
 # High-Frequency Data Analysis
 
 *High-frequency data requires special handling for irregular intervals and tick data.*
@@ -297,21 +278,42 @@ def process_tick_data(df, freq='1min'):
 
 *Time zones can be complex, especially with daylight saving time transitions and historical data.*
 
-## Time Zone Localization and Conversion
+## Resolving Clock-Change Times
+
+The lecture sets repeated (fall-back) and skipped (spring-forward) clock times to `NaT` so they can be counted and set aside. When the data carry enough context, pandas can resolve them instead.
 
 **Reference:**
 
+| Argument | Effect |
+|----------|--------|
+| `ambiguous='infer'` | For a sorted run of readings that passes through the repeated hour, assign the first pass to daylight time and the second to standard time |
+| `ambiguous=[True, False, ...]` | State for each reading whether it is daylight time (`True`) or standard time (`False`) |
+| `nonexistent='shift_forward'` | Move a skipped time to the first valid time after the gap |
+
+**Example:**
+
 ```python
-# Localize naive timestamps
-ts_utc = ts.tz_localize('UTC')
+import pandas as pd
 
-# Convert between time zones
-ts_eastern = ts_utc.tz_convert('US/Eastern')
+# A sorted run of readings that passes through 01:00-01:59 twice
+fall_back = pd.DatetimeIndex(['2024-11-03 00:30', '2024-11-03 01:00', '2024-11-03 01:30',
+                              '2024-11-03 01:00', '2024-11-03 01:30', '2024-11-03 02:00'])
+print(fall_back.tz_localize('America/New_York', ambiguous='infer'))
 
-# Handle ambiguous times (DST transitions)
-ts = ts.tz_localize('US/Eastern', ambiguous='infer')
-ts = ts.tz_localize('US/Eastern', nonexistent='NaT')
+# A skipped spring-forward time moved to 03:00
+spring = pd.DatetimeIndex(['2024-03-10 02:30'])
+print(spring.tz_localize('America/New_York', nonexistent='shift_forward'))
 ```
+
+```text
+DatetimeIndex(['2024-11-03 00:30:00-04:00', '2024-11-03 01:00:00-04:00',
+               '2024-11-03 01:30:00-04:00', '2024-11-03 01:00:00-05:00',
+               '2024-11-03 01:30:00-05:00', '2024-11-03 02:00:00-05:00'],
+              dtype='datetime64[us, America/New_York]', freq=None)
+DatetimeIndex(['2024-03-10 03:00:00-04:00'], dtype='datetime64[us, America/New_York]', freq=None)
+```
+
+`'infer'` relies on the readings being in recording order: it raises `ValueError` when it cannot see the clock repeat, and it can guess wrong if the rows were shuffled. `ambiguous='NaT'` from the lecture is the safer default.
 
 ## Operations Between Different Time Zones
 
@@ -319,10 +321,12 @@ ts = ts.tz_localize('US/Eastern', nonexistent='NaT')
 
 ```python
 # Combining time series with different time zones
-# Result automatically converts to UTC
-ts1 = ts[:7].tz_localize('Europe/London')
-ts2 = ts1[2:].tz_convert('Europe/Moscow')
-result = ts1 + ts2  # Result is in UTC
+dates = pd.date_range('2024-03-01 09:00', periods=4, freq='D')
+ts = pd.Series(range(4), index=dates)
+ts1 = ts.tz_localize('Europe/London')
+ts2 = ts1.iloc[2:].tz_convert('Europe/Moscow')
+result = ts1 + ts2  # Aligned on the same instants
+print(result.index.tz)  # UTC
 ```
 
 # Custom Frequency Classes

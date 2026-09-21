@@ -9,127 +9,117 @@ notion:
 
 Data: Care & Feeding
 
-Mid-term: [#FIXME:URL]
+See [BONUS.md](BONUS.md) for the optional extensions.
+
+**Midterm (Assignment 5):** [assignment instructions](assignment/README.md)
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
 *Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
 
-![Data Pipeline Intro](media/data_pipeline_intro.png)
-*The source-to-analysis path usually includes a substantial cleaning step.*
+Lecture 04 showed how to spot problems; this lecture decides what to do about them and proves the result.
 
-Lecture 04 ends with an inspection preview. This lecture teaches the pandas tools that do the common cleaning work: handle missing values, detect and resolve duplicates, replace values, apply functions, convert types, create categories, clean strings, sample rows, and validate a result. We will use each operation on a small table first, then combine the operations into one pipeline at the end.
+# What Clean Means: The Data Contract
 
-# Three terms that guide the operations
+Before changing a single value, write down what the table is supposed to look like. Clean does not mean perfect; it means the data matches a stated description, the **data contract**. Three terms make the contract concrete:
 
-**Row meaning** states what one row represents. A **schema** records expected column names, meanings, data types, allowed or required values, and whether missing values are permitted. A **candidate identifier** is one column, or a combination of columns, expected to distinguish rows. These terms help you decide which columns an operation should affect and how to check its result.
+- **Row meaning**: what one row represents. Below, one row is one clinic visit, not one patient.
+- **Candidate identifier**: the column, or combination of columns, that should be unique for each row. `patient_id` alone repeats (P003 visited twice), so the identifier is `patient_id` + `visit_date`.
+- **Schema**: each column's meaning, dtype, allowed values, and whether blanks are allowed.
+
+| patient_id | visit_date | sbp |
+| --- | --- | --- |
+| P001 | 2026-01-05 | 120 |
+| P002 | 2026-01-06 | 135 |
+| P003 | 2026-01-07 | 118 |
+| P003 | 2026-02-10 | 122 |
+
+| Column | Meaning | dtype | Rule |
+| --- | --- | --- | --- |
+| `patient_id` | study patient | `str` | `P` + three digits; never blank |
+| `visit_date` | visit day | `datetime64` | a real calendar date |
+| `sbp` | systolic blood pressure (mmHg) | `Int64` | 60-250 when present |
+
+Two dtypes here are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. Data Type Conversion below shows how to convert columns to both.
+
+Every operation in this lecture either checks a rule like these or changes the data to satisfy one.
 
 # Handling Missing Data
 
-*A missing marker records absence, not its cause. The same blank can mean nonresponse, inapplicability, or a system failure.*
+A blank blood-pressure cell might mean the cuff failed, the nurse skipped the step, or the patient left before vitals. The blank looks the same in every case, but the right response differs. Gaps are also easy to overlook: pandas statistics skip them by default, so `pd.Series([140, None, 160]).mean()` returns `150.0` as if only two patients existed.
+
+pandas calls a **missing value** NA (*not available*). The marker it prints depends on the column's dtype:
+
+| Column dtype | Marker shown | Example |
+| --- | --- | --- |
+| `float64` numbers | `NaN` (*Not a Number*) | `pd.Series([120.0, None])` |
+| `str` text | `NaN` | `pd.Series(['north', None])` |
+| Nullable `Int64`, `string`, `boolean` (see Data Type Conversion below) | `<NA>` (the value `pd.NA`) | `pd.Series([34, None], dtype='Int64')` |
+| `datetime64` dates | `NaT` (*Not a Time*) | `pd.to_datetime(pd.Series(['2026-01-15', None]))` |
+
+`isna()` recognizes all of these, so use it instead of `==` (`np.nan == np.nan` is `False`). Source systems also invent their own codes for "nothing recorded", such as `-9`, `-999`, or `unknown`. These are **sentinel values** (sentinels): stand-ins that mean missing. pandas treats them as real data until you convert them. Lecture 04's `na_values=` converts them at read time; `replace()` converts them afterward.
+
+Why a value is missing matters more than how many are missing:
+
+- **MCAR** (missing completely at random): unrelated to anything, like a lab analyzer that failed on random days.
+- **MAR** (missing at random): explained by something you recorded, like younger patients skipping an optional survey.
+- **MNAR** (missing not at random): related to the missing value itself, like the heaviest drinkers skipping the alcohol question.
+
+Counts cannot tell these apart; knowing how the data was collected can.
+
+![MCAR, MAR, and MNAR: where missing cells fall relative to observed and unobserved values](media/data_cleaning_workflow.png)
+*Dark gray cells are missing. The shade of each other cell shows its value.*
 
 *Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."*
 
-Start with the operations: detect gaps with `isna()` or `notna()`, remove them with `dropna()`, or fill them with `fillna()`, `ffill()`, `bfill()`, or `interpolate()`. Measure first; choose an operation only after considering what the missing values mean.
+## Find and Count Missing Values
 
-The usual mechanism labels are **MCAR** (missingness unrelated to the data), **MAR** (related to observed information), and **MNAR** (related to the missing value itself). They organize assumptions; counts alone cannot identify the mechanism.
-
-![Missing Data Patterns](media/missing_data_patterns_diagram.png)
-*Common missing data patterns: MCAR (Missing Completely At Random), MAR (Missing At Random), MNAR (Missing Not At Random)*
-
-![Data Cleaning Workflow](media/data_cleaning_workflow.png)
-
-## Missing Data Detection
-
-Missingness masks locate values pandas recognizes as absent. Source-specific sentinels such as `-9` or `unknown` need explicit handling.
+Count before you decide. A per-column count shows which variables have gaps; a per-row count shows which records are incomplete.
 
 *Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up.*
 
-### Reference Card: Missingness detection
+### Reference Card: Finding missing values
 
-| Tool | Purpose | Output |
+| Task | Code | Output |
 | --- | --- | --- |
-| `df.isna()` / `df.notna()` | Locate missing / observed cells | Boolean `DataFrame` |
-| `df.isna().sum()` | Count gaps per column | Count `Series` |
-| `df.isna().any()` | Test whether a column has a gap | Boolean `Series` indexed by column |
-| `df.isna().all()` | Test whether every value is missing | Boolean `Series` indexed by column |
+| Mark gaps | `df.isna()` / `df.notna()` (older aliases: `isnull()` / `notnull()`) | Boolean `DataFrame`, same shape as `df` |
+| Count per column | `df.isna().sum()` | Count `Series` indexed by column |
+| Fraction per column | `df.isna().mean()` | `0.25` means 25% missing |
+| Percent per column | `(df.isna().mean() * 100).round(1)` | `25.0`; `.round(1)` keeps one decimal, like Python's `round(x, 1)` for one number |
+| Count per row | `df.isna().sum(axis=1)` | Count `Series` indexed by row |
+| Rows with any gap | `df.isna().any(axis=1)` | Boolean `Series`; `.sum()` counts incomplete rows |
 
-### Code Snippet: Count missing values
+### Code Snippet: Count gaps by column and row
 
 ```python
-# Check for missing values
-df = pd.DataFrame({'A': [1, 2, None, 4], 'B': [5, None, 7, 8]})
-print(df.isna().sum())  # A: 1, B: 1
-print(df.isna().any())  # A: True, B: True
-print(df.isna().all())  # A: False, B: False
-
-# Keep the first inspection tabular; charting is introduced in Lecture 07.
-missing_summary = pd.DataFrame({
-    'missing_count': df.isna().sum(),
-    'missing_fraction': df.isna().mean(),
+labs = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P004'],
+    'glucose': [98.0, None, 110.0, None],
+    'hba1c': [5.4, 6.1, None, None],
 })
-print(missing_summary)
+print(labs.isna().sum())        # gaps per column
+print(labs.isna().sum(axis=1))  # gaps per row
 ```
 
-## Missing Data Analysis
-
-Counts and proportions summarize the pattern by row or column; interpreting its cause still requires source knowledge.
-
-### Reference Card: Missingness analysis
-
-| Tool | Arguments | Output / effect |
-| --- | --- | --- |
-| `df.isna().sum()` | `axis=0` or `1` | Missing counts by column or row |
-| `df.isna().mean()` | — | Missing fraction by column |
-| `df.dropna()` | `axis=0` drops rows; `subset` limits columns checked; `thresh` requires a non-null count | `DataFrame`; by default drops any row containing a gap |
-
-### Code Snippet: Compare missingness by row and column
-
-```python
-# Analyze missing data patterns
-df = pd.DataFrame({'A': [1, 2, None, 4], 'B': [5, None, 7, 8], 'C': [9, 10, 11, None]})
-print(df.isna().sum())  # Missing values per column
-print(df.isna().mean())  # Proportion missing per column
-print(df.isna().sum(axis=1))  # Missing values per row
-
-# Remove rows with missing values
-df_clean = df.dropna()
-print(df_clean.shape)  # (1, 3) - only the first row is complete
+```text
+patient_id    0
+glucose       2
+hba1c         2
+dtype: int64
+0    0
+1    1
+2    1
+3    2
+dtype: int64
 ```
 
-## Missing Data Imputation
+Row 3 (P004) is missing both labs.
 
-Imputation fills missing values under a stated rule. Whether to fill, retain, flag, or drop depends on the variable and analysis.
+## Drop or Fill Missing Values
 
-### Reference Card: Missingness imputation
+Once you know where the gaps are, you can leave them (pandas statistics skip them), drop rows, or fill them. **Imputation** means filling a gap with a value chosen by a stated rule, such as the column median. A filled table looks complete, but every filled value is a guess, so record the rule you used.
 
-| Tool | Rule / arguments | Output / caution |
-| --- | --- | --- |
-| `df.fillna(value)` | Constant or per-column mapping | New `DataFrame` with gaps filled |
-| `df.ffill()` / `df.bfill()` | Previous / next observed value | Fill depends on row order and boundaries |
-| `df.fillna(df.mean(numeric_only=True))` | Fill numeric gaps with column means | `DataFrame`; nonnumeric gaps remain |
-| `df.fillna(df.median(numeric_only=True))` | Fill numeric gaps with column medians | `DataFrame`; medians resist extreme values |
-| `df.fillna(df.mode().iloc[0])` | Fill with the first mode per column | Requires at least one observed value; decide how to handle ties |
-| `df.interpolate()` | Linear interpolation on numeric data by default | `DataFrame`; assumes equally spaced positions unless another method is chosen |
-
-### Code Snippet: Apply a documented fill rule
-
-```python
-# Fill missing values
-df = pd.DataFrame({'A': [1, 2, None, 4], 'B': [5, None, 7, 8]})
-
-# Fill with constant
-df_filled = df.fillna(0)
-print(df_filled)  # Missing values replaced with 0
-
-# Fill with mean
-df_mean = df.fillna(df.mean())
-print(df_mean)  # Missing values replaced with column mean
-
-# One sensor, already in time order; carry its last reading through one gap.
-readings = pd.Series([10.0, None, None, 15.0])
-print(readings.ffill(limit=1))  # [10.0, 10.0, NaN, 15.0]
-```
+Forward fill copies the last observed value down; backward fill copies the next one up. Both depend on row order, so use them only when rows are in time order for one patient or one sensor.
 
 ```
 Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
@@ -142,48 +132,101 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
     5   [NaN]             5     15 ←┘ from 15             5   [NaN] no later rows
 ```
 
-# LIVE DEMO!
+### Reference Card: Dropping and filling
 
-# Data Transformation Techniques
+| Task | Code | Output / caution |
+| --- | --- | --- |
+| Drop incomplete rows | `df.dropna()` | New `DataFrame` without any row that has a gap; can remove most rows |
+| Drop rows empty in key columns | `df.dropna(subset=['glucose', 'hba1c'], how='all')` | Drops a row only when every listed column is empty; keeps rows with at least one lab |
+| Drop sparse rows | `df.dropna(thresh=n)` | Keeps rows with at least `n` non-missing values |
+| Fill with a constant | `df.fillna(value)` or `df.fillna({'col': value})` | New `DataFrame` with gaps filled |
+| Fill with a column summary | `df.fillna(df.median(numeric_only=True))` | Numeric gaps get their column median (resists extreme values); `mean` works the same way |
+| Fill with the most common value | `df.fillna(df.mode().iloc[0])` | First mode per column; ties are broken by sort order |
+| Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one gap in a row |
+| Fill between neighbors | `df['col'].interpolate()` | Linear interpolation; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
 
-Cleaning operations change meaning only when their rule is explicit. Keep the raw table, transform a working copy, and validate the resulting schema before saving it.
+### Code Snippet: Drop, fill, and carry forward
+
+```python
+# Drop a patient only when both labs are missing
+print(labs.dropna(subset=['glucose', 'hba1c'], how='all'))
+
+# Fill each lab with its column median
+print(labs.fillna(labs.median(numeric_only=True)))
+
+# One sensor, already in time order; carry its last reading through one gap
+readings = pd.Series([10.0, None, None, 15.0])
+print(readings.ffill(limit=1))
+```
+
+```text
+  patient_id  glucose  hba1c
+0       P001     98.0    5.4
+1       P002      NaN    6.1
+2       P003    110.0    NaN
+  patient_id  glucose  hba1c
+0       P001     98.0   5.40
+1       P002    104.0   6.10
+2       P003    110.0   5.75
+3       P004    104.0   5.75
+0    10.0
+1    10.0
+2     NaN
+3    15.0
+dtype: float64
+```
+
+# Repeated Rows, Sentinels, and Wrong Types
+
+Blanks are not the only problem an audit finds. Three more hide in the same table: the same record entered twice, missing values disguised as numbers such as `-999`, and numbers or dates stored as text. Each one silently changes counts and averages, so check for them before you trust a mean or a fill.
 
 ## Detecting and Resolving Duplicates
 
-Repeated rows or identifiers are evidence to investigate, not an instruction to delete. Use the row meaning, candidate identifier, source process, and any timestamps or version fields to decide whether records are redundant, conflicting, or valid repeated observations.
+An **exact duplicate** is a row identical to an earlier row in every column. Repeated rows or identifiers are evidence to investigate, not an instruction to delete. Use the row meaning and candidate identifier from the data contract: an exact copy of a visit is usually a double entry, but two rows that share a `patient_id` may be two real visits.
 
 *Fun fact: Duplicates are like that one song that gets stuck in your head - they keep showing up everywhere, even when you think you've gotten rid of them all.*
 
 ### Reference Card: Duplicate detection
 
-
-| Item | Purpose / arguments | Output / note |
+| Task | Code | Output / note |
 | --- | --- | --- |
-| `df.duplicated()` | Flag identical rows after the first occurrence | Boolean `Series`; index labels are ignored |
-| `df.drop_duplicates()` | Remove duplicate rows | Deduplicated DataFrame |
-| `df.drop_duplicates(subset=['col1', 'col2'])` | Compare only these columns; keep the first matching row | Deduplicated `DataFrame`, retaining all columns |
-| `df.drop_duplicates(keep='first')` | Keep first occurrence of duplicates | Deduplicated DataFrame |
+| Flag repeats | `df.duplicated()` | Boolean `Series`; `True` for each row identical to an earlier row |
+| Flag every row in a repeated set | `df.duplicated(keep=False)` | Also marks the first copy; `.sum()` counts all rows involved |
+| Check an identifier | `df.duplicated(subset=['patient_id', 'visit_date'], keep=False)` | Compares only those columns; finds rows that share an ID but may differ elsewhere |
+| Remove exact repeats | `df.drop_duplicates(keep='first')` | New `DataFrame` keeping the first copy; `keep='last'` keeps the last |
 
-### Code Snippet: Resolve repeated rows
+### Code Snippet: Tell a repeated entry from a repeat visit
 
 ```python
-# Check for duplicates
-df = pd.DataFrame({'A': [1, 2, 2, 3], 'B': [4, 5, 5, 6]})
-print(df.duplicated().sum())  # Number of duplicate rows
+visits = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P002', 'P003', 'P003'],
+    'visit_date': ['2026-01-05', '2026-01-06', '2026-01-06', '2026-01-07', '2026-02-10'],
+    'sbp': [120, 135, 135, 118, 122],
+})
+print(visits.duplicated().sum())                                   # P002 entered twice
+print(visits.duplicated(keep=False).sum())                         # both P002 rows
+print(visits.duplicated(subset=['patient_id'], keep=False).sum())  # P002 and P003 repeat an ID
+print(visits.drop_duplicates())                                    # P003's two real visits both stay
+```
 
-# This fixture defines identical A/B rows as repeated ingestion, so keep one
-df_clean = df.drop_duplicates(keep='first')
-print(df_clean)
+```text
+1
+2
+4
+  patient_id  visit_date  sbp
+0       P001  2026-01-05  120
+1       P002  2026-01-06  135
+3       P003  2026-01-07  118
+4       P003  2026-02-10  122
 ```
 
 ## Replacing Values
 
-The `replace()` method provides a flexible way to substitute specific values or patterns in your data.
+The sentinel values from the missing-data introduction, such as `-999` for "nothing recorded", look like real measurements to pandas, so it averages them in: `pd.Series([140, -999, 160]).mean()` is `-233.0`. `replace()` swaps exact cell values for others. Replacing the sentinel with `np.nan` restores the correct mean of `150.0`. When the bad values follow a rule rather than a fixed code, such as any age above 120, `mask()` blanks every value where a condition is `True`.
 
 *Think of `replace()` as find-and-replace for your data - but way more powerful than Word's version!*
 
 ### Reference Card: Value replacement
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
@@ -191,38 +234,98 @@ The `replace()` method provides a flexible way to substitute specific values or 
 | `df.replace([val1, val2], new)` | Replace several values with one value | New `DataFrame` with replacements |
 | `df.replace([val1, val2], [new1, new2])` | Pair old and new values by position | New `DataFrame`; lists must have equal lengths |
 | `df.replace({val1: new1, val2: new2})` | Map old values to replacements | New `DataFrame` with replacements |
-| `df.replace(pattern, replacement, regex=True)` | Replace regex matches in text values | New `DataFrame` with replacements |
+| `df.replace({'age': {-9: np.nan}})` | Replace a code in one column only, when it is a sentinel there but a real value elsewhere | New `DataFrame`; other columns unchanged |
+| `series.mask(condition)` / `series.where(condition)` | `mask` blanks values where the condition is `True`; `where` keeps values where `True` and blanks the rest | `Series` with missing values in the blanked positions; unlike Lecture 03's `np.where`, no second value is needed |
 
 ### Code Snippet: Replace sentinels and labels
 
 ```python
-# Replace sentinel values with NaN
-df = pd.Series([1, -999, 2, -999, -1000, 3])
-df_clean = df.replace([-999, -1000], np.nan)
-print(df_clean)  # [1.0, NaN, 2.0, NaN, NaN, 3.0]
+# Replace sentinel codes with NaN
+sbp = pd.Series([140, -999, 160, -1000])
+print(sbp.replace([-999, -1000], np.nan))
 
-# Different replacement for each value
-df = pd.Series(['low', 'medium', 'high', 'low'])
-df_mapped = df.replace({'low': 'L', 'medium': 'M', 'high': 'H'})
-print(df_mapped)  # ['L', 'M', 'H', 'L']
+# A different replacement for each value
+levels = pd.Series(['low', 'medium', 'high', 'low'])
+print(levels.replace({'low': 'L', 'medium': 'M', 'high': 'H'}))
 
-# Column-specific replacement in DataFrame
-df = pd.DataFrame({'A': [1, 2, 3], 'B': ['x', 'y', 'z']})
-df = df.replace({'A': {1: 100}, 'B': {'x': 'alpha'}})
-print(df)  # A: [100, 2, 3], B: ['alpha', 'y', 'z']
+# Blank values that break a rule
+ages = pd.Series([34, 150, 52])
+print(ages.mask(ages > 120))
 ```
+
+```text
+0    140.0
+1      NaN
+2    160.0
+3      NaN
+dtype: float64
+0    L
+1    M
+2    H
+3    L
+dtype: str
+0    34.0
+1     NaN
+2    52.0
+dtype: float64
+```
+
+## Data Type Conversion
+
+A column that should hold numbers often arrives as text. Lecture 04 showed a single `?` turning a whole CSV column into `str`; hand-typed entries such as `'forty'` or `'unknown'` do the same. Text cannot be averaged or compared by size, so convert it. `pd.to_numeric()` and `pd.to_datetime()` parse text into numbers and dates, and `errors='coerce'` turns anything they cannot parse into a missing value instead of stopping with an error. `astype()` changes the type of a column whose values are already valid.
+
+NumPy's `int64` cannot hold a missing value, which is why a whole-number column with one gap reads as `float64` (`34.0`). pandas adds **nullable** types (capital-I `Int64`, `string`, and `boolean`) that store `<NA>` alongside real values. Dates bring one more trap: `2026-02-30` looks like a date but does not exist.
+
+*Warning: Data type conversion is like trying to fit a square peg in a round hole - sometimes it works perfectly, sometimes you need to shave off a few corners, and sometimes you just need to find a different hole entirely.*
+
+### Reference Card: Converting messy columns
+
+| Task | Code | Output / note |
+| --- | --- | --- |
+| Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN` |
+| Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert; `int64` cannot hold missing values |
+| Check for whole numbers first | `s.mod(1).eq(0)` | `True` where the value has no fractional part; `False` for missing |
+| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; `40.5` raises `TypeError` rather than rounding |
+| Text with gaps | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
+| Dates in a known format | `pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')` | `%Y` year, `%m` month, `%d` day; `datetime64[us]`; impossible dates such as `2026-02-30` become `NaT`, but single-digit parts such as `2026-7-01` are still accepted (exact check: Data Validation Rules) |
+| True/false with unknowns | `s.astype('boolean')` | Nullable `True` / `False` / `<NA>` |
+
+### Code Snippet: Convert an export's text columns
+
+```python
+visits = pd.DataFrame({
+    'age_text': ['34', 'unknown', '52'],
+    'visit_date': ['2026-01-15', '2026-02-30', '2026-03-01'],
+})
+visits['age'] = pd.to_numeric(visits['age_text'], errors='coerce').astype('Int64')
+visits['visit_date'] = pd.to_datetime(visits['visit_date'], format='%Y-%m-%d', errors='coerce')
+visits['needs_review'] = (visits['age'].isna() | visits['visit_date'].isna()).astype('boolean')
+print(visits)
+```
+
+```text
+  age_text visit_date   age  needs_review
+0       34 2026-01-15    34         False
+1  unknown        NaT  <NA>          True
+2       52 2026-03-01    52         False
+```
+
+# LIVE DEMO!
+
+# Data Transformation Techniques
+
+The tools so far repair values that are missing, repeated, or stored as the wrong type. The next ones change how correct values are expressed: turn a text answer into a score, give columns consistent names, or group exact ages into bands. Each follows a rule you choose, so write the rule where others can read it: a dictionary, a function from Lecture 02, or a list of bin edges. Each returns a new object; assign the result to keep it.
 
 ## Applying Custom Functions
 
-![xkcd 1205 "Is It Worth the Time?"](media/xkcd_1205_apply.png)
+![xkcd 1205: Is It Worth the Time?](media/xkcd_1205_apply.png)
 *A reminder to compare the time spent automating with the time it saves.*
 
 Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis.
 
-**Quick lambda primer**: A `lambda` is a one-line anonymous function, perfect for simple transformations: `lambda x: x * 2` is equivalent to `def double(x): return x * 2`, just more concise for one-time use.
+A **`lambda`** is a one-line function without a name: `lambda x: x * 2` does the same as `def double(x): return x * 2`, and is handy for one-time use.
 
 ### Reference Card: Custom functions
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
@@ -274,88 +377,61 @@ print(df_squared)
 # 2  9  36
 ```
 
-## Data Type Conversion
-
-Converting data to the correct types is essential for proper analysis. This includes converting strings to numbers, dates, and other appropriate types.
-
-*Warning: Data type conversion is like trying to fit a square peg in a round hole - sometimes it works perfectly, sometimes you need to shave off a few corners, and sometimes you just need to find a different hole entirely.*
-
-### Reference Card: Type conversion
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.astype('int64')` | Convert all columns to NumPy integers | `DataFrame`; missing values cannot be represented |
-| `series.astype('Int64')` | Convert to pandas' nullable integer type | Integer `Series` that supports `pd.NA` |
-| `df.astype('float64')` | Convert all columns to floating point | Converted `DataFrame` |
-| `series.astype('string')` | Request nullable string data | `Series` with `pd.NA` for missing values |
-| `pd.to_datetime(df['date_column'])` | Convert to datetime | Datetime Series |
-| `pd.to_numeric(df['column'], errors='coerce')` | Parse numbers and mark invalid values missing | Numeric `Series`; missing marker is `NaN` or `pd.NA`, depending on dtype |
-
-### Code Snippet: Convert nullable values
-
-```python
-# Convert strings and whole-valued floats to integers
-df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.0, 5.0, 6.0]})
-df['A'] = df['A'].astype('int64')  # Convert string to integer
-df['B'] = df['B'].astype('int64')  # Values are already mathematically whole
-print(df.dtypes)  # A: int64, B: int64
-
-# Capital-I Int64 stores whole numbers while still allowing pd.NA
-ages = pd.Series(['34', None, '52'], dtype='string')
-ages = pd.to_numeric(ages, errors='coerce').astype('Int64')
-print(ages.dtype)  # Int64
-```
-
-NumPy's lowercase `int64` cannot represent a missing value. Pandas' capital-I nullable `Int64` dtype stores integers plus `pd.NA`; it is the appropriate contract when whole-number data may be missing. Converting a fractional value such as `40.5` to `Int64` is not a rounding policy, so decide how to handle fractional values before casting.
-
 ## Renaming Axis Indexes
 
-Renaming changes row or column labels without modifying data. This is essential for making your data more readable and standardizing column names.
+Exports rarely arrive with tidy column names. A clinic extract might label its columns `'Patient ID '`, `'SBP (mmHg)'`, and `'VisitDate'`. Every Lecture 04 selection, `df['col']` or `df.loc[rows, 'col']`, must spell a label exactly, so the trailing space alone makes `df['Patient ID']` raise `KeyError`. A table has two **axis indexes**: the row labels (`df.index`) and the column labels (`df.columns`). **Renaming** changes those labels without touching any values. Choose one naming style, such as lowercase words joined by underscores (`patient_id`, `sbp`, `visit_date`), and rename right after loading so every later step can type the names without guessing.
+
+`rename()` takes the same two kinds of rule as `map()` above: a dictionary of old-to-new labels (Lecture 02), or a function such as `str.lower` that it calls on every label.
 
 ### Reference Card: Renaming labels
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
 | `df.rename(index={old: new})` | Rename rows | DataFrame with revised labels |
 | `df.rename(columns={old: new})` | Rename columns | DataFrame with revised labels |
 | `df.rename(columns=str.lower)` | Lowercase every string column label | `DataFrame` with revised labels |
-| `df.rename(columns=str.strip)` | Remove whitespace from column names | DataFrame with revised labels |
+| `df.rename(columns=str.strip)` | Remove leading/trailing whitespace from each column label | DataFrame with revised labels |
+| `series.rename('new_name')` | Set a Series' name; it becomes the column header when the Series turns into a table column, as after `reset_index()` | `Series` with the new name |
 
 Prefer assigning the returned object, as below. For targeted value changes, assign directly with `.loc`; these forms are clear under pandas 3 Copy-on-Write behavior.
 
 ### Code Snippet: Rename columns and index labels
 
 ```python
-# Rename specific columns
-df = pd.DataFrame({'OldName': [1, 2, 3], 'Another_Old': [4, 5, 6]})
-df_renamed = df.rename(columns={'OldName': 'new_name', 'Another_Old': 'better_name'})
-print(df_renamed.columns)  # ['new_name', 'better_name']
-
-# Apply functions to all columns
-labels_df = pd.DataFrame({
-    'First Column': [1, 2, 3],
-    ' Second ': [4, 5, 6],
-    'THIRD': [7, 8, 9],
+visits = pd.DataFrame({
+    'Patient ID ': ['P001', 'P002'],
+    'SBP (mmHg)': [128, 141],
+    'VisitDate': ['2026-01-15', '2026-02-02'],
 })
-df_clean = labels_df.rename(columns=str.lower)  # Lowercase all
-df_clean = df_clean.rename(columns=str.strip)  # Remove spaces
-print(df_clean.columns)  # ['first column', 'second', 'third']
 
-# Rename index
-df.index = ['a', 'b', 'c']
-df_reindexed = df.rename(index={'a': 'row_1', 'b': 'row_2'})
+# A dictionary renames specific columns
+visits = visits.rename(columns={'Patient ID ': 'patient_id', 'SBP (mmHg)': 'sbp', 'VisitDate': 'visit_date'})
+print(visits.columns)
+
+# A function rule applies to every label; spaces inside a label stay
+labels_df = pd.DataFrame({'First Column': [1], ' Second ': [2], 'THIRD': [3]})
+print(labels_df.rename(columns=str.strip).rename(columns=str.lower).columns)
+
+# Row labels use index=
+visits = visits.rename(index={0: 'first_visit', 1: 'second_visit'})
+print(visits)
+```
+
+```text
+Index(['patient_id', 'sbp', 'visit_date'], dtype='str')
+Index(['first column', 'second', 'third'], dtype='str')
+             patient_id  sbp  visit_date
+first_visit        P001  128  2026-01-15
+second_visit       P002  141  2026-02-02
 ```
 
 ## Creating Categories
 
-Converting continuous variables into categories makes data easier to analyze and visualize. This is especially useful for age groups, income brackets, and other meaningful categories.
+Table 1 of almost every clinical paper reports age in bands rather than single years. **Binning** assigns each value to an interval. `pd.cut()` uses edges you choose, so bands can match a clinical definition. `pd.qcut()` picks edges from the data so each bin gets about the same number of rows, as in quartiles. pandas writes an interval as `(30, 50]`: the round bracket means 30 is not included, and the square bracket means 50 is.
 
 *Pro tip: Categories are like putting your data in organized boxes - everything has its place, and you can find things much faster when you know exactly which box to look in.*
 
 ### Reference Card: Categorical variables
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
@@ -365,81 +441,161 @@ Converting continuous variables into categories makes data easier to analyze and
 | `bins=[0, 30, 50, 100]` | Supply three explicit intervals | `(0, 30]`, `(30, 50]`, `(50, 100]` by default |
 | `labels=['Young', 'Middle', 'Senior']` | Name the three bins | One label per bin is required |
 
-`cut` uses supplied value-range edges (equal-width only when you ask for equal-width bins); `qcut` derives edges from sample quantiles so bins target similar row counts. Ties can make quantile edges duplicate, so inspect the result and use an explicit duplicate-edge policy when needed.
+Ties can make quantile edges duplicate, so inspect the result and use an explicit duplicate-edge policy (`duplicates='drop'` in Demo 2) when needed.
 
 ### Code Snippet: Create ordered categories
 
 ```python
-# Create age groups
 ages = pd.Series([25, 30, 45, 60, 75])
-age_groups = pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior'])
-print(age_groups)  # [Young, Young, Middle, Senior, Senior]
+print(pd.cut(ages, bins=[0, 30, 50, 100]))  # 30 falls in (0, 30]
+print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))
 ```
 
-## Detecting and Filtering Outliers
+```text
+0      (0, 30]
+1      (0, 30]
+2     (30, 50]
+3    (50, 100]
+4    (50, 100]
+dtype: category
+Categories (3, interval[int64, right]): [(0, 30] < (30, 50] < (50, 100]]
+0     Young
+1     Young
+2    Middle
+3    Senior
+4    Senior
+dtype: category
+Categories (3, str): ['Young' < 'Middle' < 'Senior']
+```
 
-Outliers are extreme values that may represent errors, rare but valid observations, or important anomalies. A statistical rule can flag candidates, but source evidence, domain meaning, and analysis purpose determine whether to keep, correct, cap, or exclude them.
+# String Manipulation
 
-![IQR Method for Outlier Detection](media/boxplot_vs_pdf.png)
+In Lecture 01 you cleaned one string at a time: `'  Alice  '.strip()`, `name.lower()`, `name.title()`. A column can hold thousands of strings. The **`.str` accessor** applies those same methods to every value in a Series at once; missing values stay missing instead of raising an error.
 
-### Reference Card: Outlier checks
+Text columns are where inconsistent categories hide. A hand-typed site column might hold `'North'`, `' north'`, and `'NORTH'`: three spellings of one clinic. Lecture 04's `value_counts()` counts them as different sites until you normalize them:
 
+| Raw value | Count before | After `.str.strip().str.lower()` | Count after |
+| --- | --- | --- | --- |
+| `'North'` | 1 | `'north'` | 3 |
+| `' north'` | 1 | `'north'` | (same group) |
+| `'NORTH'` | 1 | `'north'` | (same group) |
+| `'south'` | 1 | `'south'` | 1 |
+
+*Pro tip: The `.str` accessor is like having a Swiss Army knife for text data. It can split, join, replace, extract, and transform text in ways that would make a regex wizard jealous.*
+
+## Basic String Operations
+
+![String Operations Reference](media/string_operations_reference.png)
+*Python's built-in string methods from Lecture 01; the .str accessor applies them to a whole column.*
+
+```
+Input: "  Alice Smith  "
+   │
+   ├─ .strip() ────────────► "Alice Smith"
+   │                              │
+   │                              ├─ .lower() ────────► "alice smith"
+   │                              │                          │
+   │                              │                          └─ .replace(' ', '_') ──► "alice_smith"
+   │                              │
+   │                              └─ .split(' ') ────────► ['Alice', 'Smith']
+   │                                     │
+   │                                     └─ [0] ──────────► 'Alice'
+   │
+   └─ .title() ────────────► "Alice Smith"
+```
+
+### Reference Card: String operations
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `df[df['col'] > threshold]` | Filter by threshold | Filtered DataFrame |
-| `df.clip(lower, upper)` | Cap comparable values at bounds | `DataFrame` with values limited to the bounds |
-| `df.quantile([0.25, 0.75], numeric_only=True)` | Find numeric quartiles for the IQR method | `DataFrame` indexed by quantile |
-| `df[df['col'].between(lower, upper)]` | Keep rows whose selected value is within inclusive bounds | Filtered `DataFrame` |
+| `series.str.strip()` | Remove leading/trailing whitespace | String `Series` |
+| `series.str.lower()` / `series.str.upper()` | Convert to lowercase / uppercase | String `Series` |
+| `series.str.title()` | Capitalize each word (Lecture 01's `str.title()` for a whole column) | String `Series` |
+| `series.str.replace(old, new, regex=False)` | Replace literal substrings | String `Series` |
+| `df.columns.str.replace(' ', '_')` | The same `.str` methods work on column labels | New `Index` of labels; assign it back to `df.columns` |
+| `series.str.contains(pattern, na=False)` | Test whether each value contains `pattern`, read as a **regular expression** (regex): a text pattern in which plain letters and digits match themselves; `regex=False` searches for literal text | Boolean `Series`; missing becomes `False` |
+| `series.str.startswith(prefix, na=False)` | Test a literal prefix | Boolean `Series` |
+| `series.str.endswith(suffix, na=False)` | Test a literal suffix | Boolean `Series` |
 
-### Code Snippet: Flag unusual values
+### Code Snippet: Normalize text fields
 
 ```python
-# Flag values beyond 3 standard deviations
-df = pd.DataFrame({'value': [1, 2, 3, 4, 5] * 4 + [100]})
-mean, std = df['value'].mean(), df['value'].std()
-three_sd_flag = abs(df['value'] - mean) > 3 * std
-print(df.loc[three_sd_flag])  # Flags 100 for investigation
+names = pd.Series(['  alice smith ', 'BOB JONES', None])
+print(names.str.strip().str.title())
 
-# Exclude a flagged row only after evidence supports that decision
-df_clean = df.loc[~three_sd_flag]
+tests = pd.Series(['fasting glucose', 'random glucose', 'HbA1c'])
+print(tests.str.contains('fasting'))
+```
 
-# Cap extreme values
-capped = df.assign(value=df['value'].clip(lower=0, upper=10))
-print(capped)  # Values capped at 0-10 range
+```text
+0    Alice Smith
+1      Bob Jones
+2            NaN
+dtype: str
+0     True
+1    False
+2    False
+dtype: bool
+```
 
-# IQR method for outlier detection
-Q1 = df['value'].quantile(0.25)
-Q3 = df['value'].quantile(0.75)
-IQR = Q3 - Q1
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-df_no_outliers = df[(df['value'] >= lower_bound) & (df['value'] <= upper_bound)]
+![xkcd 1171: Perl Problems](media/xkcd_1171.png)
+*"I got 99 problems, so I used regular expressions. Now I have 100 problems."*
+
+## String Splitting and Joining
+
+Splitting and joining strings is common when working with structured text data like addresses, names, or delimited values.
+
+### Reference Card: String splitting
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.str.split(sep, regex=False)` | Split on a literal separator | `Series` of lists |
+| `series.str.split(sep, expand=True, regex=False)` | Expand split parts into columns | `DataFrame` |
+| `series.str.cat(sep=' ')` | Combine all non-missing strings into one | One string |
+| `series.str.join(sep)` | Join the strings within each list value | String `Series` |
+
+### Code Snippet: Split a compound field
+
+```python
+full_names = pd.Series(['Alice Smith', 'Bob Jones', 'Charlie Brown'])
+print(full_names.str.split(' '))               # a list per value
+print(full_names.str.split(' ', expand=True))  # one column per part
+```
+
+```text
+0      [Alice, Smith]
+1        [Bob, Jones]
+2    [Charlie, Brown]
+dtype: object
+         0      1
+0    Alice  Smith
+1      Bob  Jones
+2  Charlie  Brown
 ```
 
 # Categorical Data Encoding
 
-Working with categorical data is common in data analysis. Pandas provides two main approaches: the categorical data type for efficient storage, and dummy variables for machine learning models.
+Many health variables take one of a few fixed labels: smoking status (`never`, `former`, `current`), blood type, study site, or the age bands `pd.cut()` produced above. A **categorical variable** is a column like this, where a short list of labels repeats down every row. Lecture 04's `value_counts()` shows that list, and the string tools above make sure each label is spelled only one way.
+
+How to store the labels depends on the next job:
+
+- Keep them as labels, stored compactly and optionally in a meaningful order: the **categorical dtype** (`category`). The `pd.cut()` output above already printed `dtype: category` with the ordered labels `['Young' < 'Middle' < 'Senior']`.
+- Give them to a regression or machine-learning model, which computes only with numbers (Lecture 10): **indicator variables**, one 0/1 column per label.
 
 *Pro tip: Categorical encoding is like translating between languages - categories can be stored efficiently as codes (integers) or expanded into binary columns for models. Choose the right translation for your task!*
 
 ## Categorical Data Type
 
-The categorical type represents a finite set of values and optional ordering. It can reduce memory for repeated low-cardinality text, but measure that effect on the actual data.
-
-![Categorical Encoding](media/categorical_encoding_diagram.png)
-*Visual showing categorical encoding: Original values → Categories → Codes, with a storage comparison*
+A `category` column stores each distinct label once and gives every row a small integer **code** that points to its label. That can shrink a column with few distinct labels, but measure the effect on the actual data.
 
 ### Reference Card: Categorical dtype
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
 | `series.astype('category')` | Convert values to categorical storage | Categorical `Series` |
 | `series.cat.categories` | View the category vocabulary | `Index` of category labels |
 | `series.cat.codes` | Inspect each value's category position | Integer `Series`; missing values use code `-1` |
-
-Use the categorical dtype for repeated string values or an explicitly ordered set of categories.
+| `series.memory_usage(deep=True)` | Measure storage, including the text itself | Bytes as an integer; compare before and after `astype('category')` |
 
 ### Code Snippet: Store repeated categories efficiently
 
@@ -458,14 +614,16 @@ print(colors_cat.cat.codes[:5])   # [2, 0, 2, 1, 0]
 
 ## Creating Indicator (Dummy) Variables
 
-Indicator variables convert categories into binary (0/1) columns, which is essential for machine learning models that require numeric input.
+`pd.get_dummies()` gives each label its own column, marking rows with that label `True` (1) and every other row `False` (0); `dtype='int64'` stores the marks as 0/1 integers.
+
+![Categorical Encoding](media/categorical_encoding_diagram.png)
+*One-hot encoding: each category becomes its own 0/1 column.*
 
 *Think of dummy variables as translating categories into a language that models can understand - instead of "red", "blue", "green", you get three columns of 1s and 0s indicating which color each row has.*
 
 With `drop_first=True`, one category becomes the reference: a row in that category has 0 in every retained indicator. This avoids carrying a redundant set of columns into a model; Lecture 10 explains the modeling implications in more detail.
 
 ### Reference Card: Indicator variables
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
@@ -474,144 +632,39 @@ With `drop_first=True`, one category becomes the reference: a row in that catego
 | `drop_first=True` | Omit the first category as the reference | `k - 1` columns for `k` categories |
 | `dtype='int64'` | Request integer indicators | Columns containing `0` and `1` |
 | `dummy_na=True` | Give missing values their own indicator | Extra missing-value column; otherwise missing rows are all zero |
+| `pd.concat([df, dummies], axis=1)` | Place the indicator columns beside the original table (Lecture 06 covers concatenation) | `DataFrame` with the original and indicator columns |
 
 ### Code Snippet: Encode categories
 
 ```python
-# Create dummy variables
 df = pd.DataFrame({'color': ['red', 'blue', 'red', 'green']})
-dummies = pd.get_dummies(df['color'], prefix='color', dtype='int64')
-print(dummies)
-# Creates: color_blue, color_green, color_red columns with 0/1 values
+print(pd.get_dummies(df['color'], prefix='color', dtype='int64'))
 
-# Add to original DataFrame
-df_with_dummies = pd.concat([df, dummies], axis=1)
-print(df_with_dummies)
+# Drop the first category; blue becomes the reference (all zeros)
+print(pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64'))
+```
 
-# Drop one category and use blue as the reference level. Lecture 10 explains
-# the modeling reason for this choice in more detail.
-dummies = pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64')
-print(dummies)  # Only color_green and color_red (blue is the reference)
+```text
+   color_blue  color_green  color_red
+0           0            0          1
+1           1            0          0
+2           0            0          1
+3           0            1          0
+   color_green  color_red
+0            0          1
+1            0          0
+2            0          1
+3            1          0
 ```
 
 # LIVE DEMO!
-
-# String Manipulation
-
-*Pro tip: The `.str` accessor is like having a Swiss Army knife for text data. It can split, join, replace, extract, and transform text in ways that would make a regex wizard jealous.*
-
-## Basic String Operations
-
-String operations are essential for cleaning text data. Pandas provides easy-to-use string methods that work on Series containing text.
-
-![String Operations Reference](media/string_operations_reference.png)
-*Quick reference card for common string operations: .upper()/.lower(), .strip()/.replace(), .split()/.contains()*
-
-```
-Input: "  Alice Smith  "
-   │
-   ├─ .strip() ────────────► "Alice Smith"
-   │                              │
-   │                              ├─ .lower() ────────► "alice smith"
-   │                              │                          │
-   │                              │                          └─ .replace(' ', '_') ──► "alice_smith"
-   │                              │
-   │                              └─ .split(' ') ────────► ['Alice', 'Smith']
-   │                                     │
-   │                                     └─ [0] ──────────► 'Alice'
-   │
-   └─ .title() ────────────► "Alice Smith"
-```
-
-![xkcd 1171 "Perl Problems"](media/xkcd_1171.png)
-*"I got 99 problems, so I used regex. Now I have 100 problems."*
-
-### Reference Card: String operations
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `series.str.upper()` | Convert to uppercase | String `Series` |
-| `series.str.lower()` | Convert to lowercase | String `Series` |
-| `series.str.strip()` | Remove leading/trailing whitespace | String `Series` |
-| `series.str.replace(old, new, regex=False)` | Replace literal substrings | String `Series` |
-| `series.str.contains(pattern, na=False)` | Search for a regex; use `regex=False` for literal text | Boolean `Series`; missing becomes `False` |
-| `series.str.startswith(prefix, na=False)` | Test a literal prefix | Boolean `Series` |
-| `series.str.endswith(suffix, na=False)` | Test a literal suffix | Boolean `Series` |
-
-### Code Snippet: Normalize text fields
-
-```python
-# Clean text data
-names = pd.Series(['  Alice  ', 'bob', 'CHARLIE'])
-clean_names = names.str.strip()
-print(clean_names)  # ['Alice', 'bob', 'CHARLIE']
-
-# Check patterns
-emails = pd.Series(['alice@example.com', 'bob@test.org'])
-has_gmail = emails.str.contains('gmail')
-print(has_gmail)  # [False, False]
-```
-
-## String Splitting and Joining
-
-Splitting and joining strings is common when working with structured text data like addresses, names, or delimited values.
-
-### Reference Card: String splitting
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `series.str.split(sep, regex=False)` | Split on a literal separator | `Series` of lists |
-| `series.str.split(sep, expand=True, regex=False)` | Expand split parts into columns | `DataFrame` |
-| `series.str.cat(sep=' ')` | Combine all non-missing strings into one | One string |
-| `series.str.join(sep)` | Join the strings within each list value | String `Series` |
-
-### Code Snippet: Split a compound field
-
-```python
-# Split strings
-full_names = pd.Series(['Alice Smith', 'Bob Jones', 'Charlie Brown'])
-names_split = full_names.str.split(' ')
-print(names_split)  # [['Alice', 'Smith'], ['Bob', 'Jones'], ['Charlie', 'Brown']]
-
-# Split into columns
-names_df = full_names.str.split(' ', expand=True)
-print(names_df)  # Two columns with first and last names
-```
-
-# Sampling Rows and Sampling Designs
-
-Sampling is useful for inspecting records away from the top of a table, making a large table manageable for exploration, creating analysis splits, and resampling for procedures such as the bootstrap. A **simple random sample** gives every eligible row the same chance of selection. A **sampling design** additionally states which rows are eligible and how the selection supports the question.
-
-### Reference Card: Sampling rows
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.sample(n=5, random_state=42)` | Draw five rows without replacement | Five-row `DataFrame`; requires at least five rows |
-| `df.sample(frac=0.1, random_state=42)` | Draw ten percent of the rows | Random sample DataFrame |
-| `replace`, `weights`, `random_state` | Allow repeated draws, set selection weights, and seed a sample | Options for `df.sample()`; choose either `n` or `frac` |
-| `df.groupby('group').sample(...)` | Sample within groups | Random sample DataFrame |
-| `np.random.default_rng(seed)` | NumPy random-number generator for reproducible random operations | Seeded random generator |
-| `sklearn.model_selection.train_test_split(..., stratify=...)` | Preserve class proportions in a split | Train/test split preserving class proportions |
-
-```python
-records = pd.DataFrame({
-    'record_id': ['R001', 'R002', 'R003', 'R004', 'R005'],
-    'status': ['active', 'pending', 'active', 'complete', 'pending'],
-})
-
-inspection = records.sample(n=3, random_state=42)
-print(inspection)
-```
-
-See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for stratified, weighted, systematic, bootstrap, shuffling, and permutation examples, including `np.random.permutation`. Keep the seed when a draw must be reproduced, and preserve row order when time or another sequence is part of the question.
 
 # Data Validation and Quality Assessment
 
 ![xkcd 2239: Data Error](media/xkcd_2239.png)
 *A clean-looking analysis cannot rescue corrupted source data.*
+
+Lecture 04 ended with a first look at a loaded table: count gaps with `isna().sum()` and repeats with `duplicated().sum()`. Inspection describes a table; **validation** checks it against the data contract. A **validation rule** is a yes/no question asked of every row, such as "is the age between 0 and 120?" or "does the patient ID look like `P` plus three digits?" Rows that fail are listed for review rather than deleted: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
 
 | Issue | Detection | Possible response after investigation |
 |-------|-----------|---------------------------------------|
@@ -623,203 +676,282 @@ See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
 
 ## Data Quality Checks
 
-Data quality checks identify issues like missing values, duplicates, outliers, and data type inconsistencies. These checks are essential for ensuring reliable analysis results.
-
-### Reference Card: Data quality checks
-
-| Check | Tool | Output |
-| --- | --- | --- |
-| Missingness | `df.isna().sum()` | Count per column |
-| Duplicates | `df.duplicated().sum()` | Number of repeated rows |
-| Cardinality | `df.nunique()` | Distinct values per column |
-| Types and size | `df.dtypes`, `df.info()` | Schema and memory summary |
-| Distribution | `df.describe(include='all')` | Numeric and categorical summary |
+Rerun the Lecture 04 inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning and compare the outputs; counts should change only where you meant them to.
 
 ### Code Snippet: Audit a table
 
 ```python
-# Data quality assessment
-df = pd.DataFrame({'A': [1, 2, 2, 4], 'B': [5, 6, 6, 8], 'C': [9, 10, 11, 12]})
-print(df.isna().sum())  # Missing values per column
-print(df.duplicated().sum())  # Number of duplicate rows
-print(df.nunique())  # Unique values per column
-print(df.dtypes)  # Data types per column
+df = pd.DataFrame({'A': [1, 2, 2, 4], 'B': [5, 6, 6, 8], 'C': [9, 10, 10, 12]})
+print(df.isna().sum())        # Missing values per column
+print(df.duplicated().sum())  # Rows 1 and 2 are identical
+print(df.nunique())           # Distinct values per column
+print(df.dtypes)              # Data types per column
+```
+
+```text
+A    0
+B    0
+C    0
+dtype: int64
+1
+A    3
+B    3
+C    3
+dtype: int64
+A    int64
+B    int64
+C    int64
+dtype: object
 ```
 
 ## Data Validation Rules
 
-Data validation rules ensure data meets business requirements and constraints. These rules help maintain data integrity and prevent analysis errors.
+Each rule below returns one `True`/`False` per row; combine rules with `&` and `|` from Lecture 03.
 
 ### Reference Card: Validation rules
 
+| Task | Code | Output / note |
+| --- | --- | --- |
+| Inclusive range | `series.between(low, high)` | Boolean `Series`; `True` when `low <= value <= high` |
+| Allowed list | `series.isin(['north', 'south', 'west'])` | Boolean `Series`; `True` for listed values |
+| Describe a pattern | `r'P[0-9]{3}'` | A regular expression: `P`, then `[0-9]` (any digit) exactly `{3}` times; the `r` prefix (raw string) is the usual way to write patterns |
+| Whole-value pattern | `series.str.fullmatch(pattern)` | `True` only when the whole value matches |
+| Start-only pattern | `series.str.match(pattern)` | Checks the start only, so `'P0012'` passes `P[0-9]{3}`; prefer `fullmatch` for rules |
+| Exact date text | `series.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')` | `True` only for exact `YYYY-MM-DD` text; needed because `to_datetime(..., format='%Y-%m-%d')` still accepts `2026-7-01` |
+| Length and digits | `series.str.len()` / `series.str.isdigit()` | Characters per value / `True` when every character is a digit |
+| Combine rules | `rule_a & rule_b` / `rule_a \| rule_b` | Both must pass / either passes |
+| Rows that fail | `df[~mask]` | `~` flips `True` and `False`, so this keeps the rows that fail |
+
+### Code Snippet: List the rows that break a rule
+
+```python
+patients = pd.DataFrame({
+    'patient_id': ['P001', 'P02', 'P003', 'P004'],
+    'age': [34, 41, 150, 29],
+})
+valid_age = patients['age'].between(0, 120)                    # inclusive range
+valid_id = patients['patient_id'].str.fullmatch(r'P[0-9]{3}')  # P + three digits
+print(patients[~(valid_age & valid_id)])                       # rows to review
+```
+
+```text
+  patient_id  age
+1        P02   41
+2       P003  150
+```
+
+### Code Snippet: Accept only exact dates
+
+```python
+dates = pd.Series(['2026-01-15', '2026-7-01', '2026-02-30'])
+exact = dates.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')  # four digits, dash, two, dash, two
+parsed = pd.to_datetime(dates.where(exact), format='%Y-%m-%d', errors='coerce')
+print(parsed)
+```
+
+```text
+0   2026-01-15
+1          NaT
+2          NaT
+dtype: datetime64[us]
+```
+
+`2026-7-01` fails the text check; `2026-02-30` passes it but is not a real date, so `to_datetime` makes it `NaT`.
+
+## Detecting and Filtering Outliers
+
+Outliers are extreme values that may represent errors, rare but valid observations, or important anomalies. A statistical rule can flag candidates, but source evidence, domain meaning, and analysis purpose determine whether to keep, correct, cap, or exclude them.
+
+![IQR Method for Outlier Detection](media/boxplot_vs_pdf.png)
+
+### Reference Card: Outlier checks
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `df[row_mask]` | Keep rows selected by a Boolean Series | Filtered `DataFrame` |
-| `series.between(left, right)` | Check whether Series values are between bounds | Boolean range mask |
-| `df.isin(values)` | Test membership cell by cell | Boolean `DataFrame` |
-| `series.str.contains(pattern, na=False)` | Search anywhere for a regex match | Boolean `Series` |
-| `series.str.match(pattern, na=False)` | Match a regex at the start; use `fullmatch` for the entire value | Boolean `Series` |
-| `series.str.len()` | Count characters in each string | Numeric `Series`; missing values remain missing |
-| `series.str.isdigit()` | Test nonempty strings for all digit characters | Boolean results; missing handling depends on string dtype |
+| `df[df['col'] > threshold]` | Filter by threshold | Filtered DataFrame |
+| `df.quantile([0.25, 0.75], numeric_only=True)` | Find numeric quartiles for the IQR method | `DataFrame` indexed by quantile |
+| `(s < q1 - 1.5 * iqr) \| (s > q3 + 1.5 * iqr)` | Flag values beyond 1.5 IQRs from the quartiles | Boolean `Series` |
+| `df[df['col'].between(lower, upper)]` | Keep rows whose selected value is within inclusive bounds | Filtered `DataFrame` |
+| `df.clip(lower, upper)` | Cap comparable values at bounds | `DataFrame` with values limited to the bounds |
 
-### Code Snippet: Check declared constraints
+### Code Snippet: Flag unusual values
 
 ```python
-# Data validation rules
-df = pd.DataFrame({'Age': [25, 30, 35, 40], 'Email': ['alice@test.com', 'bob@example.org', 'charlie@test.com', 'diana@example.org']})
+df = pd.DataFrame({'value': [1, 2, 3, 4, 5] * 4 + [100]})
 
-# Age validation (18-65)
-valid_ages = df[df['Age'].between(18, 65)]
-print(valid_ages)  # All rows (ages are valid)
+# Flag values beyond 3 standard deviations
+mean, std = df['value'].mean(), df['value'].std()
+three_sd_flag = abs(df['value'] - mean) > 3 * std
+print(df.loc[three_sd_flag])  # Flags 100 for investigation
 
-# Email validation
-email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-valid_emails = df[df['Email'].str.match(email_pattern)]
-print(valid_emails)  # All rows (emails are valid)
+# IQR method: quartiles are 2 and 4, so the fences are -1 and 7
+Q1 = df['value'].quantile(0.25)
+Q3 = df['value'].quantile(0.75)
+IQR = Q3 - Q1
+iqr_flag = (df['value'] < Q1 - 1.5 * IQR) | (df['value'] > Q3 + 1.5 * IQR)
+print(iqr_flag.sum())
+
+# Exclude a flagged row only after evidence supports that decision
+df_clean = df.loc[~iqr_flag]
+
+# Or cap extreme values instead of dropping them
+capped = df['value'].clip(lower=0, upper=10)
+print(capped.max())
 ```
+
+```text
+    value
+20    100
+1
+10
+```
+
+## Spot-Check Random Rows
+
+`head()` only shows the first rows, and problems often hide further down: a site misspelled only in March records, or a date format that changes halfway through the file. `df.sample()` draws rows at random so you can look at the middle of the table. A **simple random sample** gives every row the same chance of selection, and `random_state` fixes the draw so everyone sees the same rows.
+
+### Reference Card: Sampling rows
+
+- `df.sample(n=5, random_state=42)`: Five random rows without replacement; errors if `df` has fewer than five rows.
+- `df.sample(frac=0.1, random_state=42)`: Ten percent of the rows.
+
+### Code Snippet: Draw three rows to inspect
+
+```python
+records = pd.DataFrame({
+    'record_id': ['R001', 'R002', 'R003', 'R004', 'R005'],
+    'status': ['active', 'pending', 'active', 'complete', 'pending'],
+})
+print(records.sample(n=3, random_state=42))
+```
+
+```text
+  record_id   status
+1      R002  pending
+4      R005  pending
+2      R003   active
+```
+
+See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for stratified, weighted, systematic, and bootstrap sampling.
 
 # Data Cleaning Pipeline
 
-## From source to cleaned artifact
+![xkcd 2054: Data Pipeline](media/data_pipeline_intro.png)
+*A pipeline that collapses on the first weird input is why the last step is validation.*
 
-Keep the received **source artifact** and parsed **raw table** unchanged; transform a separate **working table**, then save its checked result as a derived **cleaned table**. **Tidy data** describes structure—not correctness—with one variable per column, one observation per row, and one observational-unit type per table; Lecture 06 covers reshaping, and Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10) formalizes the idea. Record **provenance** and an **audit trail** connecting the source, decisions, transformations, checks, and output.
+Treat the file you received like an original lab specimen: you never write on it. Load it into a **raw table** and leave that table untouched. Make every change on a **working copy**, and save the result as a new **cleaned table** only after it passes validation. Keeping the raw table lets you rerun the cleaning from the start and prove nothing changed by accident. Record where the file came from (its **provenance**) and each decision you made, such as one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
+
+## From Source to Cleaned Table
 
 ```mermaid
 graph TD
     A[Define the data contract] --> B[Load source and preserve raw table]
     B --> C[Audit and detect]
     C --> D[Decide and record rationale]
-    D --> E[Transform a working table]
-    E --> F{Validate explicit invariants}
+    D --> E[Transform the working copy]
+    E --> F{Check validation rules}
     F -->|Failed| C
-    F -->|Passed| G[Save clean table]
+    F -->|Passed| G[Save cleaned table]
 ```
 
-The example stays intentionally small. One source row represents one submitted person record, and `record_id` is the candidate identifier. The printed audit is an orientation, not an exhaustive detector; the validation stage below performs the authoritative identifier, category, type, and range checks before saving.
+### Reference Card: Keep the raw table unchanged
 
-| Column | Clean meaning | Rule used in this fixture |
-|--------|---------------|---------------------------|
-| `record_id` | record identifier | `R` followed by three digits; present and unique |
-| `full_name` | submitted name | trim surrounding whitespace; blank is missing |
-| `site` | collection site | normalize to `north`, `south`, or `west` |
-| `status` | record status | normalize case; `NA` is a documented missing sentinel |
-| `age_text` → `age` | age in years | `unknown` and `-9` are documented missing sentinels; otherwise a whole number from 0 through 120 |
-| `visit_date` | visit date | parse exact `YYYY-MM-DD` text; invalid or blank values remain missing for review |
+- `pd.read_csv(path, dtype='string', keep_default_na=False)`: Read every column as text, keeping blanks and codes such as `NA` exactly as written, so the audit can count them.
+- `raw.copy(deep=True)`: An independent copy; changes to it never reach `raw`.
+- `raw.equals(raw_snapshot)`: `True` when values and dtypes are identical.
 
-The data dictionary also identifies the repeated identical `R002` row as an ingestion duplicate. Those source facts justify this example's decisions; similar-looking values in another dataset may mean something different.
+### Code Snippet: Load once, change only the copy
 
-## A compact audit-to-save example
+`intake.csv`:
+
+```text
+record_id,site,status
+R001, North ,Active
+R002,south,NA
+R003,,pending
+```
 
 ```python
-from io import StringIO
-
-import pandas as pd
-
-source_csv = """record_id,full_name,site,status,age_text,visit_date
-R001, Alice Smith , north,Active,34,2026-01-15
-R002,BOB JONES,North,active,unknown,2026-02-30
-R002,BOB JONES,North,active,unknown,2026-02-30
-R003, Carla Ruiz ,SOUTH,pending,-9,2026-03-01
-R004,,south,NA,45,
-R005,Evan Li,west,complete,52,2026-02-14
-"""
-
-# LOAD: raw is the parsed source table; working is the table we may change.
-raw = pd.read_csv(StringIO(source_csv), dtype="string", keep_default_na=False)
+raw = pd.read_csv('intake.csv', dtype='string', keep_default_na=False)
 raw_snapshot = raw.copy(deep=True)
 working = raw.copy(deep=True)
-
-# AUDIT/DETECT: inspect without mutating either table.
-audit = pd.Series(
-    {
-        "blank fields": int(raw.eq("").sum().sum()),
-        "exact duplicate rows": int(raw.duplicated(keep="first").sum()),
-        "distinct age markers": sorted(raw["age_text"].unique().tolist()),
-        "distinct status markers": sorted(raw["status"].unique().tolist()),
-    },
-    name="observed",
-)
-print(audit)
-
-# DECIDE: these actions come from this fixture's data dictionary.
-decisions = {
-    "exact duplicate": "keep its first occurrence",
-    "unknown, -9, blank, or NA sentinel": "represent as missing",
-    "full_name whitespace": "trim; preserve submitted spelling and case",
-    "documented site/status case variants": "normalize",
-    "invalid date": "retain the row and store a missing date for review",
-}
-print(pd.Series(decisions, name="decision"))
-
-# TRANSFORM: change only the working copy.
-working = working.drop_duplicates(keep="first")
-working["record_id"] = working["record_id"].str.strip().str.upper()
-working["full_name"] = working["full_name"].str.strip()
-working["full_name"] = working["full_name"].mask(working["full_name"].eq(""))
-working["site"] = working["site"].str.strip().str.lower()
-working["status"] = working["status"].str.strip().str.lower()
-working["status"] = working["status"].mask(working["status"].isin({"", "na"}))
-
-age_text = working["age_text"].str.strip().str.lower()
-age_text = age_text.mask(age_text.isin({"", "unknown", "-9"}))
-age_numeric = pd.to_numeric(age_text, errors="coerce")
-valid_age = age_numeric.mod(1).eq(0) & age_numeric.between(0, 120)
-working["age"] = age_numeric.where(valid_age).astype("Int64")
-working = working.drop(columns="age_text")
-
-visit_text = working["visit_date"].str.strip().mask(
-    working["visit_date"].str.strip().eq("")
-)
-working["visit_date"] = pd.to_datetime(
-    visit_text,
-    format="%Y-%m-%d",
-    errors="coerce",
-)
-
-# VALIDATE: stop before saving if any declared contract is false.
-checks = pd.Series(
-    {
-        "raw table unchanged": raw.equals(raw_snapshot),
-        "only the documented duplicate was removed": len(working) == 5,
-        "record IDs present": working["record_id"].notna().all()
-        and working["record_id"].ne("").all(),
-        "record IDs match the format": working["record_id"].str.fullmatch(
-            r"R[0-9]{3}", na=False
-        ).all(),
-        "record IDs unique": working["record_id"].is_unique,
-        "sites allowed": working["site"].isin({"north", "south", "west"}).all(),
-        "statuses allowed when present": working["status"].dropna().isin(
-            {"active", "pending", "complete"}
-        ).all(),
-        "age uses nullable integers": str(working["age"].dtype) == "Int64",
-        "ages in range when present": working["age"].dropna().between(0, 120).all(),
-        "visit date is datetime": pd.api.types.is_datetime64_any_dtype(
-            working["visit_date"]
-        ),
-    },
-    name="passed",
-)
-failed = checks[~checks]
-if not failed.empty:
-    raise ValueError(f"cleaning validation failed:\n{failed}")
-
-# SAVE: this line is reached only after every invariant passes.
-working.to_csv("cleaned_people.csv", index=False)
-print(checks)
+working['site'] = working['site'].str.strip().str.lower()
+print(raw)                       # NA and the blank site stay as text
+print(working)
+print(raw.equals(raw_snapshot))  # the raw table is untouched
 ```
 
-A **validation invariant** is a condition that must be true before declaring the working table clean. These checks catch violations of the stated contract; they do not prove that the underlying cleaning decisions were wise. That judgment still depends on source documentation and domain knowledge.
+```text
+  record_id     site   status
+0      R001   North    Active
+1      R002    south       NA
+2      R003           pending
+  record_id   site   status
+0      R001  north   Active
+1      R002  south       NA
+2      R003         pending
+True
+```
 
-## Configuration-Driven Processing
+## Validate Before You Save
 
-Configuration files can make repeated pipelines more maintainable and reproducible. If a pipeline is reused across sources, a small dictionary or reviewed configuration file can hold genuinely changeable contract values so transformation and validation do not drift apart.
+The validation rules above list the rows that break a rule. Before saving, ask each rule once of the whole table. A **validation invariant** is a rule that must be true before a table counts as clean: IDs are unique, every site is on the allowed list, every recorded age is between 0 and 120. Write each invariant as one `True`/`False` check, and collect the checks in a Series so they print as a report.
 
-Keep genuinely changeable rules separate from the transformation logic, but do not turn every implementation constant into an option. Changing a rule still requires a documented decision and a fresh validation run.
+Python's **`assert`** statement turns that report into a gate. `assert condition, message` does nothing when the condition is `True`. When it is `False`, the program stops with an `AssertionError` that shows `message`. Put the `assert` directly before `to_csv()`, so a failed check means no file is written. Passing checks show the table matches its contract; they cannot show that the cleaning decisions were wise.
 
-### Configuration guidance
+### Reference Card: Validation checks
 
-Use a Python dictionary for a small, local configuration; use a reviewed CSV, JSON, or text file when parameters must be shared. Keep transformations in functions and document the source of each cleaning rule.
+- `series.is_unique`: `True` when no value repeats; use it on an identifier column. It is an attribute, so it takes no parentheses.
+- `series.isin(allowed).all()`: `True` when every value is on the allowed list.
+- `series.dropna().between(low, high).all()`: `True` when every recorded value is in the inclusive range.
+- `pd.Series({'rule name': result, ...})`: One named `True`/`False` per rule; prints as a validation report.
+- `assert checks.all(), checks[~checks]`: Stops with `AssertionError` listing the failed rules; nothing after it runs.
+- `clean.reset_index(drop=True)`: Renumber rows 0, 1, 2, ... after rows were dropped. A CSV saved with `index=False` reads back numbered this way.
+- `pd.read_csv(path, dtype={'patient_id': 'string', 'age': 'Int64', 'needs_review': 'boolean'}, parse_dates=['visit_date'])`: Read a saved file back with the intended types. Dates go in `parse_dates` because `dtype=` cannot parse them.
+- `round_trip.equals(clean)`: `True` only when values, dtypes, and row labels all match. A `str` column read back as `string` compares unequal.
 
+### Code Snippet: Stop before saving a bad table
+
+```python
+clean = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003'],
+    'site': ['north', 'south', 'west'],
+    'age': pd.Series([34, None, 52], dtype='Int64'),
+})
+
+checks = pd.Series({
+    'patient IDs unique': clean['patient_id'].is_unique,
+    'sites allowed': clean['site'].isin(['north', 'south', 'west']).all(),
+    'ages 0-120 when present': clean['age'].dropna().between(0, 120).all(),
+})
+print(checks)
+assert checks.all(), checks[~checks]  # a False check stops here
+clean.to_csv('clean_patients.csv', index=False)
+```
+
+```text
+patient IDs unique         True
+sites allowed              True
+ages 0-120 when present    True
+dtype: bool
+```
+
+Change `'south'` to `'South'` and rerun. `sites allowed` becomes `False`, `assert` raises `AssertionError: sites allowed    False`, and no file is written.
+
+### Code Snippet: Read the saved file back
+
+```python
+round_trip = pd.read_csv('clean_patients.csv', dtype={'age': 'Int64'})
+print(round_trip.dtypes)
+print(round_trip.equals(clean))  # same values, dtypes, and row labels
+```
+
+```text
+patient_id      str
+site            str
+age           Int64
+dtype: object
+True
+```
 
 # LIVE DEMO!
