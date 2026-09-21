@@ -1,18 +1,21 @@
 ---
 notion:
+  title_line: "# Python, the Command Line, and VS Code"
   role: lecture
   status: mapped
   page_id: "271d9fdd-1a1a-8057-84e1-fe68dc985696"
   url: "https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696"
 ---
 
+# Python, the Command Line, and VS Code
+
+See [BONUS.md](BONUS.md) for the optional extensions.
+
+[Live Demo Guide](demo/DEMO_GUIDE.md)
+
 **Quick references**
 
 [WSL Troubleshooting](../wsl_troubleshooting.md)
-
-[DLC](BONUS.md)
-
-[Live Demo!](demo/DEMO_GUIDE.md)
 
 - [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
 - [Python cheat sheet](https://cheatsheets.zip/python)
@@ -43,13 +46,6 @@ Think of it as texting your computer instead of playing charades with icons.
 
 - **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
 - **Shell:** The command interpreter running inside it—Bash, Zsh, or PowerShell.
-- **Directories** are folders; **paths** locate files and folders.
-- **Working directory (cwd):** Where your shell is now. `pwd` shows it; `cd` changes it.
-- **Paths:** `/home/alice/data.csv` is absolute; `data/data.csv` is relative to cwd.
-    - `.` = current directory
-    - `..` = parent directory
-    - `~` = home directory
-- **Command + parameters:** `ls -l data` = list, detailed option, target folder. Separate parts with spaces; quote paths containing spaces.
 
 ## Getting to the Command Line
 
@@ -68,7 +64,7 @@ WSL supplies Linux underneath; you work in VS Code, not a separate Ubuntu termin
 
 ### Mac
 
-VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space**, type `Terminal`) is a fallback; use `cd` to enter your project folder there.
+VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space**, type `Terminal`) is a fallback; use `cd` (moves the terminal into a folder; see Command Line Essentials below for the full treatment) to enter your project folder there.
 
 ### Alternative: Codespaces instead of a local VS Code installation
 
@@ -171,7 +167,7 @@ The editor changes files; the terminal runs commands. Saving a file does not run
 3. Choose a professional username (you'll use this for years!)
 4. Verify your email address
 
-**Username Tips:**
+#### Username Tips
 
 - Use your name or initials: `alice-smith`, `asmith-the-best-one-ever`
 - Avoid hard-to-remember numbers: `alice_smith_9847`
@@ -231,7 +227,7 @@ The screenshots use example repositories; paste your own fork's URL. Keep your a
 
 ## Submit Your Assignment Files
 
-A **commit** saves a version; **push** sends local commits to GitHub. To submit the first assignment, use **VS Code to commit and push**, or **the GitHub website to upload and commit directly**, as shown below.
+A **commit** saves a version of your files. **Staging** a file (the **+** button in Source Control) chooses which changes go into the next commit. **Push** sends local commits to GitHub; VS Code's **Sync Changes** pushes your commits and pulls any new ones from GitHub in one click. To submit the first assignment, use **VS Code to commit and push**, or **the GitHub website to upload and commit directly**, as shown below.
 
 ### VS Code: Commit and Sync
 
@@ -266,17 +262,49 @@ Open your fork's `output/readiness.txt` and `output/student_identity.txt` and ch
 
 </synced_block>
 
-# Why Both Python and Command Line?
-
-Professional data scientists switch constantly between Python scripts and command-line operations: Python analyzes data; the command line organizes files, runs scripts, and manages projects.
-
-It's like being bilingual in the data world. Python speaks to your data, command line speaks to your computer.
-
-**Reality check:** Organizing files, inspecting data, and explaining results are part of the analysis—not chores you finish before the “real” work starts.
-
 # Command Line Essentials
 
 ![Unix System Reference](media/its-a-unix-system.jpeg)
+
+Professional data scientists switch constantly between Python scripts and the command line: Python analyzes data; the command line organizes files, runs scripts, and manages projects. It's like being bilingual in the data world. Python speaks to your data, command line speaks to your computer.
+
+Picture a clinic study that arrives as a folder of CSV exports. From the shell you can make a project folder, copy the raw files somewhere safe, peek at the first rows, and run your analysis script—the same few commands every time, with nothing to click and nothing to forget.
+
+**Reality check:** Organizing files, inspecting data, and explaining results are part of the analysis—not chores you finish before the “real” work starts.
+
+## How the Shell Reads a Command
+
+The shell shows a **prompt**, such as `alice@laptop:~/datasci217$`, and waits. Type a command and press Enter; the shell runs it, prints any output, and shows a new prompt. It splits your line at spaces: the first word is the program to run, words starting with `-` are **options** that change how it behaves, and the rest are **arguments**, usually the files or folders to act on.
+
+```text
+ls  -l  data
+│   │   └── argument: which folder to list
+│   └────── option: long, detailed format
+└────────── command: list directory contents
+```
+
+Quote an argument that contains spaces: `cd "My Documents"`.
+
+## Where You Are: Paths and the Working Directory
+
+A folder is called a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the *You are here* dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
+
+A **path** names a file or folder. An **absolute path** starts at the top of the file system, `/`, like a full street address; it works from anywhere. A **relative path** starts from your working directory, like directions from where you are standing.
+
+```text
+/home/alice/                ← ~ (your home directory)
+└── datasci217/             ← working directory: pwd prints /home/alice/datasci217
+    ├── data/
+    │   └── visits.csv      ← relative path from here: data/visits.csv
+    └── scripts/
+        └── clean.py
+```
+
+- `.` = current directory
+- `..` = parent directory, one level up
+- `~` = home directory (`/home/alice` on Linux and WSL; `/Users/alice` on macOS)
+
+From `datasci217`, `data/visits.csv` and `/home/alice/datasci217/data/visits.csv` name the same file. After `cd scripts`, the relative path becomes `../data/visits.csv`.
 
 ## Navigation Commands
 
@@ -292,12 +320,21 @@ It's like being bilingual in the data world. Python speaks to your data, command
 ### Code Snippet: Navigation Commands
 
 ```bash
-pwd                    # Shows: /Users/yourname
-ls                     # Shows files in current directory
-cd Documents           # Move to Documents folder
-pwd                    # Shows: /Users/yourname/Documents
-
+cd ~        # go to your home directory
+pwd
+cd ..       # up one level
+pwd
+cd ~        # back home
+pwd
 ```
+
+```text
+/home/alice
+/home
+/home/alice
+```
+
+Your username replaces `alice`; macOS prints `/Users/alice` and `/Users`.
 
 ## File and Directory Operations
 
@@ -311,78 +348,67 @@ pwd                    # Shows: /Users/yourname/Documents
 - `rm [filename]`: Remove file (careful!)
 - `rm -r [directory]`: Remove directory and contents (very careful!)
 
-### Code Snippet: Extended Examples for Data Science Workflows
-
-```bash
-# Create a typical data science project structure
-mkdir data-science-project
-cd data-science-project
-mkdir data scripts results docs
-
-# Create placeholder files for our project
-touch data/raw_data.csv
-touch scripts/analysis.py
-touch docs/project_notes.md
-
-# View our project structure
-ls -la
-# You'll see: data/ scripts/ results/ docs/ and our files
-
-# Copy important files to backup location
-cp data/raw_data.csv data/raw_data_backup.csv
-
-# Rename a file to be more descriptive
-mv scripts/analysis.py scripts/customer_analysis.py
-
-```
-
 ### Code Snippet: File and Directory Operations
 
 ```bash
-mkdir my_data_project     # Create project folder
-cd my_data_project        # Enter the folder
-touch analysis.py         # Create Python file
-mkdir data                # Create data subfolder
-
+mkdir clinic_project
+cd clinic_project
+mkdir data results
+touch data/visits.csv                        # empty placeholder file
+cp data/visits.csv data/backup.csv           # copy
+mv data/backup.csv results/visits_copy.csv   # move and rename
+touch results/draft.txt
+rm results/draft.txt                         # delete; there is no trash can
+ls data results
 ```
 
-### Reference Card: Shell Output
+```text
+data:
+visits.csv
+
+results:
+visits_copy.csv
+```
+
+## Writing and Viewing Text Files
+
+`echo` prints text; `>` and `>>` **redirect** that output into a file instead of the screen. `cat`, `head`, and `tail` show what a file holds. `head` is the quick way to check a large data file's column names without opening it.
+
+### Reference Card: Writing and Viewing Files
 
 - `echo "text"`: Print a line of text.
-- `>`: Send command output to a file, replacing its contents.
-- `>>`: Append command output to a file.
+- `echo "text" > FILE`: Write the line to `FILE`, replacing its contents.
+- `echo "text" >> FILE`: Append the line to the end of `FILE`.
+- `cat FILE`: Show the entire file.
+- `head FILE` / `head -n 5 FILE`: Show the first 10 / first 5 lines.
+- `tail FILE` / `tail -n 20 FILE`: Show the last 10 / last 20 lines.
+
+### Code Snippet: Build and Inspect a Small CSV
 
 ```bash
-echo "# Practice notes" > notes.md
-echo "Experiment: compare two grade summaries." >> notes.md
-cat notes.md
+echo "patient_id,systolic" > visits.csv
+echo "P001,118" >> visits.csv
+echo "P002,142" >> visits.csv
+echo "P003,131" >> visits.csv
+head -n 2 visits.csv
+tail -n 1 visits.csv
 ```
 
-## Viewing Files
-
-### Reference Card: Viewing Files
-
-- `cat [filename]`: Show entire file contents
-- `head [filename]`: Show first 10 lines
-- `head -n 5 [filename]`: Show first 5 lines
-- `tail [filename]`: Show last 10 lines
-- `tail -n 20 [filename]`: Show last 20 lines
-
-### Code Snippet: Viewing Files
-
-```bash
-head data.csv           # Quick peek at data file
-tail -n 5 results.txt   # See the last few results
-
+```text
+patient_id,systolic
+P001,118
+P003,131
 ```
 
 ## Create a Script by Pasting
 
 1. Run `cat > file.sh` in your shell. `>` replaces that file if it exists.
-2. Paste the script, press **Enter** if needed to reach a new line, then **Ctrl+D** to finish input (EOF, end of file).
+2. Paste the script, press **Enter** to reach a new line, then **Ctrl+C** to finish (Control, not Command, on Mac; see Ctrl+C: Make it Stop! below).
 3. Inspect with `cat file.sh`, then run with `bash file.sh`.
 
-Enter ends a line; Ctrl+D finishes input. Ctrl+C interrupts `cat`; text already written remains.
+Enter ends a line; Ctrl+C stops `cat`, and the text already written stays in the file.
+
+A **shell script** is a text file of shell commands that Bash runs top to bottom. Its first line, `#!/bin/bash`, records which shell the script expects; when you run `bash file.sh`, Bash treats it like any other `#` comment.
 
 ## Getting Help
 
@@ -405,16 +431,23 @@ Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 
 ![xkcd_353.png](media/xkcd_353.png)
 
+Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files; Python computes with what is inside them—one patient's BMI, then the same calculation for every row of a clinic export.
+
+You can give Python code in two ways:
+
+- **Interactive mode**, or the **REPL** (read–evaluate–print loop): run `python3`, then type one line at the `>>>` prompt. Python evaluates it and shows the result right away, which is good for quick experiments.
+- **Script mode**: save code in a `.py` file and run the whole file with `python3 file.py` from the folder that contains it (check with `pwd` and `ls`). A script is a record you can rerun, fix, and commit to GitHub. It shows output only where you call `print()`.
+
+Two kinds of calls appear throughout this lecture:
+
+- A **function** does a job when you call it with parentheses: `print("Hello")`, `len("Alice")`, `type(22)`. The values inside the parentheses are its **arguments**, like a shell command's arguments.
+- A **method** is a function that belongs to a value and is called with a dot: `"alice".upper()` returns `"ALICE"`.
+
 ## Running Python
 
 In VS Code, save a `.py` file and click the triangle at its top right to run it in the integrated terminal.
 
 ![Run a Python file with VS Code's triangle button](media/vscode-run-python-file.png)
-
-For Lectures 01–03, we will use two Python modes:
-
-1. **Interactive mode** (REPL): Type `python3` and start experimenting
-2. **Script mode**: Write code in a file, run with `python3 filename.py`
 
 **Jupyter notebooks** are another way to run Python, but we'll meet them later.
 
@@ -427,16 +460,18 @@ python3 script.py       # Run a Python script
 
 These are Bash commands. In native Windows PowerShell, substitute `python` for `python3`. At the Python `>>>` prompt, enter `exit()` to leave the REPL.
 
-**Interactive Mode Example:**
+#### Interactive Mode Example
 
 ```console
 $ python3
 >>> print("Hello, World!")
 Hello, World!
+>>> 70 / 1.75 ** 2
+22.857142857142858
 >>> exit()
 ```
 
-**Script Mode Example:**
+#### Script Mode Example
 
 ```bash
 python3 my_script.py
@@ -469,6 +504,8 @@ print("This will cause an IndentationError")
 
 To fix the second example, indent the `print()` line four spaces beneath `if`, as in the first example.
 
+At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in, and later lines keep that indentation. Type the block without adding spaces yourself, press **Backspace** once for each level you want to move back out (before an `elif` or `else`, for example), and press **Enter** on an empty `...` line to finish the block. In a `.py` file you type the four spaces yourself.
+
 ### Comments Use `#`
 
 ```python
@@ -485,7 +522,7 @@ print("This is code")  # Comments can also go at the end of lines
 
 ## Variables and Data Types
 
-Python stores information in variables - think of them as labeled boxes that you can put different types of information in.
+A **variable** is a name for a value, created with `=`: `age = 67` means "let the name `age` refer to 67." Think of a name tag stuck on a value rather than a box: later you can move the tag to a different value, even one of another type. Every value has a **type** that decides what you can do with it. You can add two numbers, but adding a number to text raises an error (see Debugging below). One patient record already mixes four types: an ID (`"P001"`, text), an age (`67`, whole number), a temperature (`37.8`, decimal), and whether consent is on file (`True`).
 
 ### Reference Card: Values and Types
 
@@ -587,13 +624,23 @@ mysterious_data = "22"       # Looks like a number, but it's text
 print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 ```
 
+### Lists: Ordered Collections
+
+A **list** holds several values in order inside square brackets, such as one patient's systolic readings across three visits: `[118, 142, 131]`. For now, create a list, count its items with `len()`, and visit each item with a `for` loop (Control Structures, below). Lecture 02 adds indexing and slicing.
+
+#### Reference Card: Lists So Far
+
+- `[value1, value2, ...]`: Create a list; `[]` is an empty list.
+- `len(items)`: Count the items; `len([118, 142, 131])` gives `3`.
+- `for item in items:`: Visit each item in order.
+
 ![Duck Typing](media/duck_typing.jpg)
 
 ### Duck Typing: Behavior Over Labels
 
 Python is dynamically typed: a variable can refer to values of different types, and code often cares more about what an object can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck.
 
-Square brackets create a **list**, an ordered collection. `len()` counts its items. Lecture 02 develops indexing and slicing.
+A string and a list are different types, yet both support `len()`:
 
 ```python
 label = "dataset"
@@ -603,7 +650,7 @@ print(len(label))   # 7
 print(len(grades))  # 3
 ```
 
-Both objects support `len()`. Python checks the operation when it runs; unsupported operations raise `TypeError`.
+Python checks the operation when it runs; unsupported operations raise `TypeError`.
 
 ![Duck typing animation](media/duck_typing_animation.gif)
 
@@ -627,6 +674,7 @@ Use `print()` to display a value or several values separated by commas. Python p
 - `%`: remainder; `15 % 4` gives `3`.
 - `**`: power; `2 ** 3` gives `8`.
 - `(...)`: group an expression to control calculation order.
+- `total += 5`: Shorthand for `total = total + 5`; `-=` and `*=` work the same way.
 
 ### Code Snippet: Arithmetic and Strings
 
@@ -658,13 +706,25 @@ bmi = weight_kg / (height_m ** 2)
 print("BMI is", bmi)
 ```
 
+```text
+BMI is 22.857142857142858
+```
+
 ![xkcd 1654: Universal Install Script](media/xkcd_1654.png)
 
 # LIVE DEMO!
 
-## Control Structures
+# Control Structures
 
-Control structures let your programs make decisions and repeat actions - essential for data analysis!
+So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to every reading, whether there are 4 or 4,000). **Control flow** statements change that top-to-bottom order.
+
+- A **condition** is an expression that is either `True` or `False`, such as `systolic >= 140`. The comparison operators below build conditions; `and`, `or`, and `not` from the Boolean card combine them.
+- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python checks the conditions from top to bottom and runs only the first block whose condition is `True`.
+- A `for` loop runs its block once for each item in a list, giving the current item a name: `for grade in grades:`. A `while` loop repeats as long as its condition stays `True`.
+
+Indentation, from Python Syntax Overview, is how Python knows which lines belong to the `if` or the loop.
+
+## Decisions and Repetition
 
 ### Reference Card: Decisions and Repetition
 
@@ -675,36 +735,40 @@ Control structures let your programs make decisions and repeat actions - essenti
 - `enumerate(values, start=1)`: Supply each position and value
 - `break` / `continue`: Stop a loop / skip to its next iteration
 
-### Comparison Operators
+## Comparison Operators
 
-#### Reference Card: Comparisons
+### Reference Card: Comparisons
 
 - `==` / `!=`: equal / not equal. Unlike `=`, these compare rather than assign.
 - `<`, `<=`, `>`, `>=`: less than, at most, greater than, at least.
 - `in` / `not in`: test whether a value belongs to a collection.
 - Each comparison returns `True` or `False`.
 
-#### Code Snippet: Comparison Operators
+### Code Snippet: Comparison Operators
 
 ```python
-# Equality and inequality
 x = 2
 y = 3
-x == y          # Equal to
-x != y          # Not equal to
-x < y           # Less than
-x > y           # Greater than
-x <= y          # Less than or equal
-x >= y          # Greater than or equal
-
-# Membership testing
-x in [1, 2, 3]  # Is x in the list?
-x not in [1, 2, 3]  # Is x NOT in the list?
+print(x == y, x != y)                       # False True
+print(x < y, x > y)                         # True False
+print(x <= y, x >= y)                       # True False
+print(x in [1, 2, 3], x not in [1, 2, 3])   # True False
 ```
 
-### If Statements
+At the `>>>` prompt Python shows a bare expression's value; in a script, only `print()` shows it.
 
-#### Code Snippet: Basic If Statements
+## If Statements
+
+### Which Branch Runs?
+
+| `score` | First condition that is `True` | Output |
+| --- | --- | --- |
+| 95 | `score >= 90` | `Grade: A` |
+| 85 | `score >= 80` | `Grade: B` |
+| 72 | `score >= 70` | `Grade: C` |
+| 50 | none, so `else` runs | `Grade: F` |
+
+### Code Snippet: Basic If Statements
 
 ```python
 # Simple decision making
@@ -720,7 +784,11 @@ else:
     print("Grade: F")
 ```
 
-#### Code Snippet: Compound Conditions
+```text
+Grade: B
+```
+
+### Code Snippet: Compound Conditions
 
 ```python
 # Multiple conditions with and/or
@@ -735,11 +803,15 @@ else:
     print("Cannot drive")
 ```
 
-### For Loops
+```text
+Can drive
+```
+
+## For Loops
 
 `range(5)` supplies the integers from 0 through 4. A list supplies its items in order; Lecture 02 covers lists in more depth.
 
-#### Code Snippet: Basic For Loops
+### Code Snippet: Basic For Loops
 
 ```python
 # Count from 0 to 4
@@ -752,7 +824,34 @@ for grade in grades:
     print("Grade:", grade)
 ```
 
-#### Code Snippet: Practical Data Science Example
+```text
+Count: 0
+Count: 1
+Count: 2
+Count: 3
+Count: 4
+Grade: 85
+Grade: 92
+Grade: 78
+Grade: 96
+Grade: 88
+```
+
+### Tracing a Loop
+
+Each pass through the loop in the next snippet updates two running values:
+
+| Pass | `grade` | `total` after | `count` after |
+| --- | --- | --- | --- |
+| 1 | 85 | 85 | 1 |
+| 2 | 92 | 177 | 2 |
+| 3 | 78 | 255 | 3 |
+| 4 | 96 | 351 | 4 |
+| 5 | 88 | 439 | 5 |
+
+To check a loop you wrote, add a temporary `print("grade:", grade, "total:", total)` inside it and compare with a table like this.
+
+### Code Snippet: Practical Data Science Example
 
 ```python
 # Calculate average grade
@@ -768,7 +867,11 @@ average = total / count
 print("Average grade:", average)
 ```
 
-### While Loops and Loop Control
+```text
+Average grade: 87.8
+```
+
+## While Loops and Loop Control
 
 A `while` loop repeats as long as its condition is `True`. Update the loop variable inside the loop so it can eventually finish:
 
@@ -779,6 +882,12 @@ while count <= 3:
     count += 1
 ```
 
+```text
+Count: 1
+Count: 2
+Count: 3
+```
+
 When a loop needs both a position and a value, `enumerate()` supplies them:
 
 ```python
@@ -787,22 +896,34 @@ for position, grade in enumerate(grades, start=1):
     print("Assignment", position, "grade:", grade)
 ```
 
+```text
+Assignment 1 grade: 85
+Assignment 2 grade: 92
+Assignment 3 grade: 78
+```
+
 Use `break` to stop a loop early, and `continue` to skip the rest of the current iteration and move to the next item:
 
 ```python
+grades = [85, 72, 92, 78]
 for grade in grades:
     if grade < 80:
-        continue
+        continue          # skip 72 and move on to the next grade
     print("Processing", grade)
     if grade >= 90:
-        break
+        break             # stop at 92; 78 is never visited
 ```
 
-## Debugging and Error Handling Basics
+```text
+Processing 85
+Processing 92
+```
+
+# Debugging and Error Handling Basics
 
 ![Programming is doing something wrong over and over until you do something right](media/it_works.png)
 
-### Reading a Traceback
+## Reading a Traceback
 
 An error reports where execution stopped and what operation failed—not necessarily the underlying cause.
 
@@ -816,11 +937,37 @@ An error reports where execution stopped and what operation failed—not necessa
 - `print(value)`: inspect the actual value.
 - `type(value)`: inspect its type.
 - `int("25")` / `float("25.5")`: convert numeric text to an integer / decimal number.
+- `IndentationError`: a line ending in `:` has no indented block after it, or the indentation is misaligned; nothing in the file runs until it is fixed.
 - `NameError`: a name is undefined; check spelling and execution order.
 - `TypeError`: an operation does not support these types.
 - `ValueError`: the type is accepted, but the value cannot be used as requested.
 
-### NameError: Check the Name and Its Definition
+## IndentationError: Check the Block Under the Colon
+
+```python
+score = 85
+if score >= 80:
+print("Grade: B")
+```
+
+```text
+  File "/home/alice/datasci217/analysis.py", line 3
+    print("Grade: B")
+    ^^^^^
+IndentationError: expected an indented block after 'if' statement on line 2
+```
+
+**Diagnosis:** A line ending in `:` must be followed by at least one indented line. Python checks the whole file's structure before it runs anything, so this error has no `Traceback (most recent call last)` header and nothing in the script runs, not even the lines above the mistake. A `NameError` or `TypeError` appears only when Python reaches the bad line, after earlier lines have already printed.
+
+**Correction:** Indent the block four spaces, as in Python Syntax Overview:
+
+```python
+score = 85
+if score >= 80:
+    print("Grade: B")
+```
+
+## NameError: Check the Name and Its Definition
 
 ```python
 print(student_naem)
@@ -830,10 +977,13 @@ A traceback for this one-line script looks like:
 
 ```text
 Traceback (most recent call last):
-  File "analysis.py", line 1, in <module>
+  File "/home/alice/datasci217/analysis.py", line 1, in <module>
     print(student_naem)
+          ^^^^^^^^^^^^
 NameError: name 'student_naem' is not defined
 ```
+
+The `^^^^` markers point at the part of the line that failed. When a similar name exists, Python 3.13 adds a hint such as `Did you mean: 'student_name'?`.
 
 **Diagnosis:** Python cannot find that name. Check its spelling and whether the assignment ran before this line.
 
@@ -844,7 +994,7 @@ student_name = "Alice"
 print(student_name)
 ```
 
-### TypeError: Check the Operation and Types
+## TypeError: Check the Operation and Types
 
 ```python
 age = "25"
@@ -864,7 +1014,7 @@ next_year = age_number + 1
 print("Next year you'll be", next_year)
 ```
 
-### ValueError: Check the Actual Value
+## ValueError: Check the Actual Value
 
 ```python
 raw_age = "hello"

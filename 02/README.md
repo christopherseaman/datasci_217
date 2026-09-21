@@ -13,7 +13,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
+[Lecture 01 catch-up](LECTURE_01_CATCHUP.md) covers material added to Lecture 01 after it was delivered.
+
 # VS Code Basics
+
+In Lecture 01 you opened a folder in VS Code, ran commands in its terminal, and committed with Source Control. Today's work (Git branches, Python scripts that import each other) means more files and more commands, so this section is about moving faster: find any action by name, reuse commands instead of retyping them, and make sure the editor runs the right Python.
+
+The **Command Palette** is the one to remember. Every VS Code action is listed there by name; type part of the name instead of hunting through menus.
 
 ## Palette Cleanse: Command Palette & Quick Open
 
@@ -21,14 +27,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 - Quick Open files: **Go → Go to File…**, **Ctrl+P** (Windows/Linux), **Cmd+P** (macOS).
 - Search across files: **View → Search**, **Ctrl+Shift+F** (Windows/Linux), **Cmd+Shift+F** (macOS).
 
-## Themes and Schemes: Make it Py‑pretty
-
-- Change Color Theme: Command Palette → **Preferences: Color Theme** (**Ctrl+K** then **Ctrl+T** on Windows/Linux; **Cmd+K** then **Cmd+T** on macOS). I am a fan of:
-    - "Tomorrow Night Bright"
-    - "GitHub Dark High Contrast"
-- Toggle icons: Command Palette → **Preferences: File Icon Theme**.
-
-## Reference Card: Finding Your Way Around
+### Reference Card: Finding Your Way Around
 
 - **Activity Bar** (left): Explorer, Search, Source Control, Run & Debug, and Extensions.
 - **Panel** (bottom): Terminal, Problems, Output, and Debug Console; toggle via **View → Appearance → Panel**.
@@ -37,6 +36,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 - Hide distractions: **View → Appearance → Zen Mode**; press **Esc** twice to leave.
 
 Full shortcut list: **Help → Keyboard Shortcuts Reference** ([VS Code reference](https://code.visualstudio.com/docs/reference/default-keybindings)).
+
+## Themes and Schemes: Make it Py‑pretty
+
+- Change Color Theme: Command Palette → **Preferences: Color Theme** (**Ctrl+K** then **Ctrl+T** on Windows/Linux; **Cmd+K** then **Cmd+T** on macOS). I am a fan of:
+    - "Tomorrow Night Bright"
+    - "GitHub Dark High Contrast"
+- Toggle icons: Command Palette → **Preferences: File Icon Theme**.
 
 ## Less Typing, More Doing
 
@@ -51,25 +57,14 @@ The terminal accepts the same shell commands as your standalone terminal. Screen
 - **Tab:** Complete a command or path; if ambiguous, press again to see choices.
 - **↑ / ↓:** Recall previous/next commands.
 - **← / →:** Move one character.
-- **Ctrl+A / Ctrl+E:** Move to the beginning/end of the line.
+- **Ctrl+A:** Move to the beginning of the line.
+- **Ctrl+E:** Move to the end of the line. On Windows/Linux, VS Code claims **Ctrl+E** for Quick Open, so press **End** there.
 - **Ctrl+← / Ctrl+→** (Windows/Linux): Move by word. On Mac, use **Esc**, then **B** or **F**; **Option+← / Option+→** also work when VS Code's **Terminal › Integrated: Mac Option Is Meta** setting is enabled.
 - **Ctrl+R:** Search command history; type part of a command, then press again for older matches.
 - **Ctrl+W:** Delete the preceding word.
-- **Ctrl+K:** Delete from the cursor to the end of the line.
 - **Ctrl+L:** Clear the view without deleting command history.
 
-These are Bash/Zsh's usual editing bindings, with the terminal focused. **Ctrl** means Control even on Mac. If word-arrow keys are intercepted, press **Esc**, then **B** or **F**, for backward/forward word movement. Press **Enter** to run the edited command; **Ctrl+C** cancels it. [Shell editing reference](https://www.gnu.org/software/bash/manual/html_node/Readline-Movement-Commands.html).
-
-## Settings
-
-- Settings: Command Palette → **Preferences: Open Settings (UI)**, or **Ctrl+,** (Windows/Linux), **Cmd+,** (macOS). Search **Format on Save** to enable it.
-- Python Interpreter: Command Palette → **Python: Select Interpreter**.
-- Default Formatter: In Settings, search **Default Formatter** and select an installed formatter such as Black or Ruff.
-- Markdown Preview: Right-click an open `.md` editor tab → **Open Preview to the Side**, **Ctrl+K** then **V** (Windows/Linux), **Cmd+K** then **V** (macOS).
-
-![The Python Select Interpreter menu in VS Code](media/vscode-selected-interpreter.png)
-
-Choose the Python 3.13 interpreter installed for the course; this documentation screenshot shows example versions and paths. Source: [VS Code Python environments](https://code.visualstudio.com/docs/python/environments).
+These are Bash/Zsh's usual editing bindings, with the terminal focused. **Ctrl** means Control even on Mac. If word-arrow keys are intercepted, press **Esc**, then **B** or **F**, for backward/forward word movement. Press **Enter** to run the edited command. Typed something that isn't right? Press **Ctrl+C**: the line is abandoned without running, and you get a fresh prompt to start over. [Shell editing reference](https://www.gnu.org/software/bash/manual/html_node/Readline-Movement-Commands.html).
 
 ## Recommended Extensions (install via View → Extensions)
 
@@ -82,15 +77,15 @@ Choose the Python 3.13 interpreter installed for the course; this documentation 
 - GitHub Markdown Preview
 - Bonus mentions: Error Lens, YAML, indent‑rainbow, GitLens
 
-## Break(points) the Ice
+## Settings
 
-![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
+- Settings: Command Palette → **Preferences: Open Settings (UI)**, or **Ctrl+,** (Windows/Linux), **Cmd+,** (macOS). Search **Format on Save** to enable it.
+- Python Interpreter: Command Palette → **Python: Select Interpreter**.
+- Default Formatter: In Settings, search **Default Formatter** and select an installed formatter such as Ruff.
 
-The highlighted line runs next. Inspect **Variables**, then step forward to see what changes. Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial); the status bar shows the example's older interpreter.
+![The Python Select Interpreter menu in VS Code](media/vscode-selected-interpreter.png)
 
-1. Open a `.py` file and click beside a line number to add a breakpoint.
-2. Select **Run → Start Debugging** (**F5**).
-3. Inspect **Variables**, then **Run → Step Over** (**F10**) to execute one line. Use **Run → Continue** (**F5**) to reach the next breakpoint.
+Choose the Python 3.13 interpreter installed for the course; this documentation screenshot shows example versions and paths. Source: [VS Code Python environments](https://code.visualstudio.com/docs/python/environments).
 
 ## Command-Line Catalog
 
@@ -131,42 +126,37 @@ Git tracks every change, letting you see what changed, restore versions, work in
 
 ## Git Concepts - The Mental Model
 
-### Repository (Repo)
+In Lecture 01 you already saved a version of your assignment: you staged files with **+**, selected **Commit**, then **Sync Changes**. This section explains what each of those buttons did.
 
-Your project folder that Git tracks. Contains your files plus a hidden `.git` folder with all the version history.
+Git records your project as a series of **snapshots**. Each **commit** is one snapshot of every tracked file, plus who made it, when, and a message saying why. Like saving a game: you can always come back to this exact state.
 
-### Commit
+Git does not snapshot whatever happens to be on disk. You choose what goes into each snapshot:
 
-A saved snapshot of your project at a specific point in time. Like saving a game - you can always come back to this exact state.
+- The **working tree** is your files as they are right now, including edits Git has not recorded.
+- The **staging area** holds the changes you selected for the next commit.
+- The **repository** is the recorded history of commits, kept in the hidden `.git` folder.
 
-### Remote
+Why the extra step? Suppose you finished fixing a bug in `bp_cleaning.py` and, in the same sitting, started an unfinished draft of `bp_plot.py` that isn't ready to share. Stage `bp_cleaning.py` and commit it; leave `bp_plot.py` unstaged until it earns its own commit.
 
-The version of your repository stored on GitHub (or similar service). Your local computer has a copy, GitHub has a copy, your teammates have copies.
-
-### Branch
-
-A parallel timeline for your project. The main branch contains your official version, feature branches contain experimental work.
-
-Create an experimental branch, commit a change there, then merge it into `main`.
+```text
+edit files        select changes       record snapshot       share
+working tree  →   staging area     →   local commit      →   GitHub (remote)
+               Stage (+)            Commit                 Sync Changes
+```
 
 ### Reference Card: Git Vocabulary
 
-- **Working tree**: Your current files, including edits not yet committed
-- **Diff**: Line-by-line comparison of two versions
-- **Staging area**: Selected content for the next commit; later edits need staging again
-- **Repository**: Files and their recorded history
-- **Commit**: Snapshot with metadata (author, message, parents)
-- **Blob**: File content
-- **Tree**: Directory structure
-- **Reference**: Human-readable name pointing to commit
-- **HEAD**: Current commit reference
-- **Branch**: Movable reference to commit
-- **Remote**: Reference to repository on another machine
-- **Synchronize**: VS Code's Sync Changes action pulls incoming commits and pushes outgoing commits
-
-![Git branches split into parallel histories and merge back together](media/git_branches.png)
-
-Each dot is a commit. This illustration calls its main branch `master`; our repositories use `main`.
+- **Working tree**: Your current files, including edits not yet committed.
+- **Diff**: Line-by-line comparison of two versions; click a changed file in Source Control to see it.
+- **Staging area**: Changes selected for the next commit; edit the file again and the new edit needs staging too.
+- **Commit**: A snapshot with author, time, and message.
+- **Repository (repo)**: Your files plus their recorded history in `.git`.
+- **Branch**: A named line of commits; `main` holds the official version.
+- **Local branch**: The branch in the repository on your computer; it can be ahead of or behind GitHub.
+- **Remote**: The copy of the repository on GitHub, usually named `origin`.
+- **Synchronize**: VS Code's **Sync Changes** pulls incoming commits and pushes outgoing ones.
+- **Merge**: Combine another branch's commits into the current branch.
+- **Conflict**: Both branches changed the same lines, so Git asks you to choose.
 
 ## VS Code Git Integration
 
@@ -189,144 +179,122 @@ Screenshots: [VS Code source control documentation](https://code.visualstudio.co
 ### Reference Card: VS Code Git Actions
 
 - **Source Control Panel**: **View → Source Control**, **Ctrl+Shift+G** (including Control on macOS)
+- **Initialize Repository**: The Source Control button shown in a folder that is not a repository yet; the same as `git init`
 - **Stage Changes**: Click `+` next to files in "Changes" section
 - **Commit**: Type a message and select **Commit**
 - **View Differences**: Click on modified files to see changes
-- **Branch Management**: Click branch name in status bar to switch/create branches
 - **Push/Pull**: Select **Sync Changes**, or Command Palette → **Git: Push** / **Git: Pull**
-
-### From Edit to GitHub
-
-```text
-Working files → Staged changes → Local commit → GitHub
-                 Stage (+)        Commit         Push
-```
-
-## Essential Git Commands
-
-Basic Git commands let you control what changes are committed using a three-stage workflow: working directory, staging area, repository.
-
-### Reference Card: Essential Git Commands
-
-| Task | Command | Result |
-| --- | --- | --- |
-| Start locally | `git init` | A local repository |
-| Copy a remote | `git clone URL` | A working folder linked to the remote |
-| Inspect work | `git status`, `git diff` | Changed-file list and line differences |
-| Stage a file | `git add FILE` | File changes included in the next commit |
-| Save a snapshot | `git commit -m "message"` | A local commit |
-| Send commits | `git push REMOTE BRANCH` | Remote branch updated |
-| Retrieve commits | `git fetch REMOTE` | Remote-tracking references updated |
-| Retrieve and integrate | `git pull REMOTE BRANCH` | Incoming work integrated into the current branch |
-| Connect a remote | `git remote add NAME URL` | Named remote; inspect with `git remote -v` |
-| Inspect history | `git log` | Commits with messages and authors |
-| Create a branch | `git branch NAME` | New branch at the current commit |
-| Switch versions | `git checkout BRANCH_OR_COMMIT` | Working copy changes to that version |
-| Integrate a branch | `git merge BRANCH` | Branch changes combined with the current branch |
-
-![Git Clone](media/git_clone.png)
-
-### Code Snippet: Essential Git Commands
-
-```bash
-# Local repository workflow
-git init                      # Start new repository
-git add analysis.py           # Stage file
-git commit -m "Add analysis script"  # Create commit
-git branch feature-analysis  # Create branch
-git checkout feature-analysis # Switch to branch
-
-# Remote repository workflow
-git clone https://github.com/user/repo.git  # Clone existing repo
-git push origin main          # Push changes
-git pull origin main          # Pull updates
-```
 
 ### Good vs. Bad Commit Messages
 
-```bash
-# Good commit message
-git commit -m "Add data validation to analysis script
-
-- Validate input file exists before processing
-- Check data format matches expected schema
-- Add error handling for malformed data
-
-Fixes issue #123"
-
-# Bad commit message
-git commit -m "minor changes"
-```
+Type the message in the Source Control box. Start with a short summary that finishes the sentence "This commit will…": `Add blood pressure range check`, not `minor changes`. If it needs more, leave a blank line, then explain why.
 
 ![xkcd 1296: Git Commit](media/xkcd_1296.png)
 
 ## Git Workflow: Branching and Merging
 
-Git branching develops features in isolation before merging to main, enabling parallel development and safe experimentation.
+A **branch** is a separate line of commits. Try a new way to flag abnormal lab values on a branch while `main` keeps the version your team trusts. If the experiment works, **merge** it into `main`; if not, switch back and leave the branch alone.
 
-In VS Code, open the Command Palette and select **Git: Create Branch**, then name it. After editing and committing, select the branch name in the status bar to switch to `main`. Run **Git: Merge Branch…** and choose the feature branch. **Publish Branch** sends a new branch to GitHub; **Sync Changes** synchronizes an already published branch.
-
-### Reference Card: Git Workflow: Branching and Merging
-
-- `git branch [name]`: Create new branch
-- `git checkout [branch]`: Switch to branch
-- `git checkout -b [name]`: Create and switch to new branch
-- `git merge [branch]`: Merge branch into current branch
-- `git branch -d [name]`: Delete branch
-- `git push origin [branch]`: Push branch to remote
-
-### Code Snippet: Branching Workflow
-
-```bash
-# Create feature branch
-git checkout -b feature/data-analysis
-# Make changes, commit
-git add .
-git commit -m "Add data analysis functionality"
-git push origin feature/data-analysis
-
-# Switch back to main and merge
-git checkout main
-git merge feature/data-analysis
-git push origin main
-
-# Clean up feature branch
-git branch -d feature/data-analysis
+```text
+main        A ─── B ─── E ─────────── M
+                   \                 /
+feature/…           C ─── D ─────────
 ```
 
-### Merge Conflict Resolution
+Each letter is a commit. `C` and `D` exist only on the feature branch; the merge commit `M` brings them into `main`.
 
-When Git cannot automatically combine overlapping changes, it creates a **conflict**:
+### Reference Card: Branches in VS Code
 
-1. Open conflicted files in VS Code
-2. Choose which changes to keep
-3. Remove conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
-4. Stage resolved files: `git add [file]`
-5. Complete merge: `git commit`
+- **Git: Create Branch…** (Command Palette): Name the branch, such as `feature/measurement-summary`; VS Code switches to it.
+- Branch name in the status bar (lower left): Shows the current branch; click it to switch branches or to select **Create new branch…**.
+- **Publish Branch** (Source Control): Send a new branch to GitHub; afterwards **Sync Changes** keeps it up to date.
+- **Git: Merge Branch…** (Command Palette): Combine the chosen branch's commits into the branch you are on.
+
+### VS Code: Branch, Commit, Merge
+
+1. **Git: Create Branch…** → `feature/measurement-summary`. The status bar shows the new name.
+2. Edit and save a file, stage it with **+**, and commit.
+3. Click the branch name → `main`. Your edit disappears from the editor: it exists only on the feature branch.
+4. **Git: Merge Branch…** → `feature/measurement-summary`. The edit is back, now on `main`.
+5. **Sync Changes** to send `main` to GitHub.
+
+`main` never gained a commit of its own during these steps, so step 4 is a **fast-forward**: Git just moves the `main` pointer forward to the feature branch's latest commit. No merge commit like `M` in the diagram above appears; those only show up when both branches gained commits before merging.
+
+### Merge Conflicts
+
+A **conflict** happens when both branches changed the same lines, so Git cannot tell which version is right. Git stops the merge, keeps both versions in the file, and marks them:
+
+```text
+# Practice notes
+<<<<<<< HEAD
+Experiment: compare median grades.
+=======
+Experiment: compare three grade summaries.
+>>>>>>> experiment
+```
+
+- Between `<<<<<<< HEAD` and `=======`: the branch you are on (**Current Change**).
+- Between `=======` and `>>>>>>> experiment`: the branch you are merging in (**Incoming Change**).
+
+1. Open the file listed under **Merge Changes** in Source Control. Above the block, choose **Accept Current Change**, **Accept Incoming Change**, or **Accept Both Changes**, or edit the lines yourself.
+2. Check that no `<<<<<<<`, `=======`, or `>>>>>>>` lines remain, then save.
+3. Stage the file with **+** and select **Commit** to finish the merge.
+
+## Alternative: Git in the Terminal
+
+Every Source Control button runs a Git command. Demo 1's terminal path uses these; the [bonus page](BONUS.md) covers the rest.
+
+### Reference Card: Git in the Terminal
+
+| Task | Command | Result |
+| --- | --- | --- |
+| Start a repository | `git init` | A hidden `.git` folder |
+| Check state | `git status` | Modified, staged, or "working tree clean" |
+| Inspect edits | `git diff` | Unstaged line changes: `+` added, `-` removed |
+| Stage | `git add FILE` | FILE's changes go into the next commit |
+| Commit | `git commit -m "message"` | A new local commit |
+| Create and switch | `git checkout -b NAME` | A new branch at the current commit |
+| Switch | `git checkout NAME` | Files change to that branch's version |
+| Merge | `git merge NAME` | NAME's commits added to the current branch |
+| History | `git log --oneline` | One line per commit; press `q` if the list fills the screen |
+| Share | `git push` / `git pull` | Send / receive commits on a branch already linked to GitHub |
 
 ## GitHub Web Interface
 
-GitHub's web interface manages repositories, enables collaboration, and organizes projects.
+GitHub's website shows the remote copy. Use it to check what actually arrived after **Sync Changes**, to make a quick edit without cloning, or to upload files as in Lecture 01. An edit made on the website is a commit on the remote, so select **Sync Changes** in VS Code before you keep working locally.
 
 ### Reference Card: GitHub Web Interface
 
-- **Repository Creation**: "New repository" button, choose name and settings
-- **File Management**: "Add file" → "Create new file" or "Upload files"
-- **Commit via Web**: Edit files directly, add commit message, commit
-- **Pull Requests**: "Pull requests" tab → "New pull request"
-- **Issues**: "Issues" tab → "New issue" for bug reports and feature requests
-- **Project Settings**: Settings tab for permissions, branches, and integrations
-- **Code Review**: Comment on specific lines, approve/request changes
-
-### Create and Edit Files on GitHub
-
-Create repository: github.com → "+" → "New repository" → Name, description, add README → Create.
-
-Add files: "Add file" → "Create new file" → Name, add code, commit message → Commit.
+- **Code** tab and branch menu: See the files on `main` or any published branch.
+- **Add file → Create new file / Upload files**: Commit new files directly on GitHub.
+- Pencil icon on a file: Edit it in the browser, then **Commit changes**.
+- **Actions** tab: Results of the automatic assignment checks.
+- **+ → New repository**: Create an empty remote with a README.
 
 ## Gitignore Files
 
-A `.gitignore` file lists patterns for untracked files Git should ignore. Adding a pattern does not untrack files already committed.
+Never commit protected health information (**PHI**), personally identifiable information (**PII**), passwords, or keys. Not once. A commit is permanent: deleting the file later leaves it in every earlier snapshot and every clone, and anyone can read a public repository. PHI work belongs in your institution's approved storage (UCSF has an internal GitHub for it), never on public GitHub.
+
+A **`.gitignore`** file lists **patterns** for files and folders Git should not track. Matching files stay on your computer but never appear under **Changes**, so you cannot stage them by accident. It also hides clutter: running a script that imports your own module creates a `__pycache__/` folder of compiled `.pyc` files.
+
+Adding a pattern does not untrack files already committed.
+
+`git status --short` marks untracked files with `??`. Before adding a `.gitignore`:
+
+```text
+?? __pycache__/
+?? analysis_utils.py
+?? data/
+?? main.py
+```
+
+After a `.gitignore` containing `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
+
+```text
+?? .gitignore
+?? analysis_utils.py
+?? main.py
+```
 
 ### Reference Card: Ignore Patterns
 
@@ -357,40 +325,6 @@ data/raw/*.csv
 !data/processed/important_results.csv
 ```
 
-# Markdown Documentation
-
-Markdown is a lightweight markup language for formatted text, essential for documentation and project communication. Files are human-readable and render beautifully on GitHub.
-
-## Reference Card: Markdown Documentation
-
-- `# H1`, `## H2`, `### H3`: Headings at decreasing levels
-- `**bold text**`: Strong emphasis
-- `*italic text*`: Emphasis
-- `` `inline code` ``: Literal code within a sentence
-- Three backticks, then a language name: Start a fenced code block; close with three backticks
-- `- item` or `1. item`: Unordered or ordered list
-- `[text](url)`: Clickable link
-- `![alt](url)`: Image with descriptive alternative text
-- `\| col1 \| col2 \|`: Table row; follow the header with a separator row
-
-## Code Snippet: Markdown Documentation
-
-```markdown
-# Data Analysis Report
-
-## Overview
-Analyzes study time vs. performance.
-
-## Key Findings
-- More hours → higher grades
-- Regular habits help
-
-## Example Output
-~~~python
-print("Analysis complete")
-~~~
-```
-
 # LIVE DEMO!
 
 # Python Fundamentals (McKinney Ch2+3)
@@ -399,9 +333,11 @@ print("Analysis complete")
 
 *Data* by xkcd — in Python, everything is an object. In Star Trek, Data is too.
 
+Lecture 01 stored one value per variable and looped over a short list of grades. Health data needs more structure: a patient has a list of blood-pressure readings, a visit record has an ID and a date, and a study has a set of clinics that sent data. Python's containers hold these (lists, tuples, dictionaries, sets); f-strings print results people can read; functions name a job you repeat.
+
 ## Printing and Basic Input
 
-An f-string starts with `f` and inserts the value of each expression inside `{}`. Formatting controls how those values appear; `input()` reads typed text for interactive scripts.
+In Lecture 01, `print("BMI is", bmi)` printed every digit: `BMI is 22.857142857142858`. An **f-string**, a string with `f` before the opening quote, puts values inside the text and controls how they look: `print(f"BMI: {bmi:.1f}")` prints `BMI: 22.9`. The part after the colon is the **format spec**; `.1f` means one digit after the decimal point. `input()` works the other way: it reads what someone types, always as text.
 
 ### Reference Card: Printing and Formatting
 
@@ -421,7 +357,7 @@ An f-string starts with `f` and inserts the value of each expression inside `{}`
 
 ### Code Snippet: Printing and F-Strings
 
-F-strings put values, labels, and units together: `87.3` is a number; `Score: 87.3%` tells the reader what it means. Choose precision that helps interpretation rather than printing every available digit.
+F-strings put values, labels, and units together: `87.3` is a number; `Above average by 5.2 points` tells the reader what it means. Choose precision that helps interpretation rather than printing every available digit.
 
 ```python
 # F-string formatting - the data scientist's best friend
@@ -434,6 +370,12 @@ print(f"Score: {test_score:.1f}")                    # One decimal place: 87.3
 print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
 ```
 
+```text
+Student: Alice
+Score: 87.3
+Above average by 5.2 points
+```
+
 ### Code Snippet: Text In, Number Out
 
 ```python
@@ -441,46 +383,6 @@ raw_score = input("Score: ")       # Typing 87.3 produces the string "87.3"
 score = float(raw_score)           # Convert to the number 87.3
 print(type(score))                 # <class 'float'>
 print(f"Score: {score:.1f}")        # Score: 87.3
-```
-
-## More String Operations
-
-### Reference Card: More String Operations
-
-- `text.split(",")`: Split text at commas into a list: `"a,b"` → `["a", "b"]`.
-- `"\n".join(lines)`: Combine a list of strings with newlines between them; add `+ "\n"` for a final newline.
-- `text.replace("old", "new")`: Return text with matching parts replaced.
-- `text.endswith("son")`: Test whether text ends with a suffix, returning `True` or `False`.
-- `text.isalpha()`: Test whether nonempty text contains only letters; spaces are not letters.
-
-## Imports and Modules
-
-A **module** is a Python file that provides reusable names. An `import` loads a module and binds a name for it in the current program. Modules in the standard library ship with Python; third-party modules must be installed in the active environment first.
-
-![Python Import](media/python_import.webp)
-
-### Reference Card: Imports and Modules
-
-- `import module`: Import a module and use `module.name`
-- `import module as alias`: Bind a shorter local name; this does not copy the module
-- `from module import name`: Import one specific name
-
-### Code Snippet: Use a Module
-
-```python
-import math
-import statistics as stats
-from math import pi
-
-print(math.sqrt(16))
-print(stats.mean([85, 92, 78]))
-print(pi)
-```
-
-For a quick import check from a Bash terminal, `-c` runs the Python code supplied as a string:
-
-```bash
-python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"
 ```
 
 ## Data Structures: Lists and Tuples
@@ -508,25 +410,52 @@ For this list, `[1:3]` selects `[92, 78]`: start included, stop excluded.
 - `tuple()`: Create tuple
 - `(item1, item2, ...)`: Tuple literal
 
+### Reference Card: Summarize a Collection
+
+For `grades = [85, 92, 78]`:
+
+- `sum(grades)`: Total, `255`.
+- `len(grades)`: Number of items, `3`.
+- `min(grades)` / `max(grades)`: Smallest/largest value, `78` / `92`.
+- `sorted(grades)`: New ordered list, `[78, 85, 92]`; leaves `grades` unchanged.
+
 ### Code Snippet: Data Structures: Lists and Tuples
 
 ```python
-# Lists - mutable sequences
-grades = [85, 92, 78, 96, 88]
-grades.append(90)
-grades.insert(1, 87)
-total = sum(grades)
+grades = [85, 92, 78, 96]
+print(grades[0], grades[-1])   # 85 96
+print(grades[1:3])             # [92, 78]
+grades.append(88)
+print(grades)                  # [85, 92, 78, 96, 88]
 
-# Indexing and slicing
-first_grade = grades[0]
-last_grade = grades[-1]
-middle_grades = grades[1:4]  # Indices 1, 2, and 3
-every_other_grade = grades[::2]
-
-# Tuples - immutable sequences
-coordinates = (40.7128, -74.0060)
-name, age, gpa = ("Alice", 22, 3.8)  # Unpacking
+visit = ("P001", "2026-09-18")  # a fixed record: patient ID and visit date
+patient_id, visit_date = visit  # unpacking
+print(patient_id)               # P001
 ```
+
+## More String Operations
+
+Data often arrives as one line of text per record, such as a row of a CSV file. String methods take the line apart and put it back together.
+
+### Reference Card: More String Operations
+
+- `text.split(",")`: Split text at commas into a list: `"a,b"` → `["a", "b"]`.
+- `"\n".join(lines)`: Combine a list of strings with newlines between them; add `+ "\n"` for a final newline.
+- `text.replace("old", "new")`: Return text with matching parts replaced.
+- `text.endswith("son")`: Test whether text ends with a suffix, returning `True` or `False`.
+
+### Code Snippet: Split a CSV Row
+
+```python
+line = "Alice,22,85,Math"
+fields = line.split(",")
+print(fields)                          # ['Alice', '22', '85', 'Math']
+name, age, grade, subject = fields     # unpack the four fields
+print(name, int(grade) + 5)            # Alice 90
+print("grades.csv".endswith(".csv"))   # True
+```
+
+The fields are still text; convert with `int()` before doing arithmetic.
 
 ## Data Structures: Dictionaries and Sets
 
@@ -548,37 +477,29 @@ Set:        {"Math", "Science"}   distinct values, no duplicates
 - `set()`: Create set
 - `{item1, item2, ...}`: Set literal
 - `set.union()`, `set.intersection()`, `set.difference()`: Set operations
+- `a & b`, `a | b`, `a - b`: Items in both / either / only the first set; same as `.intersection()`, `.union()`, `.difference()`
 
 ### Code Snippet: Data Structures: Dictionaries and Sets
 
 ```python
-# Dictionaries - key-value storage
-student = {"name": "Alice", "grade": 85, "major": "Data Science"}
-print(student["name"])  # "Alice"
-print(student.get("gpa", 0.0))  # Safe access
+student = {"name": "Alice", "grade": 85}
+print(student["name"])                # Alice
+print(student.get("gpa", "missing"))  # missing
 
-# Sets - unique collections
 math_students = {"Alice", "Bob", "Charlie"}
 cs_students = {"Alice", "Diana", "Eve"}
-both_subjects = math_students & cs_students  # Intersection
+print(math_students & cs_students)    # {'Alice'}
 ```
 
-## Reference Card: Summarize a Collection
-
-For `grades = [85, 92, 78]`:
-
-- `sum(grades)`: Total, `255`.
-- `len(grades)`: Number of items, `3`.
-- `min(grades)` / `max(grades)`: Smallest/largest value, `78` / `92`.
-- `sorted(grades)`: New ordered list, `[78, 85, 92]`; leaves `grades` unchanged.
+A set has no order, so print a larger result with `sorted()` when you need the same display every time.
 
 ## Functions
 
-Functions give reusable work a name: pass in **arguments**, receive a **return value**. In the definition, the argument names are called **parameters**.
+Every analysis repeats small jobs: average a patient's readings, find the highest value, format a line for a report. Copy the loop into every script and you will have to fix every copy when you find a bug. A **function** gives the job a name so you write it once and call it everywhere. Pass values in as **arguments** (inside the definition they are called **parameters**) and get back a **return value**. A function that reaches its end without `return` gives back `None`, Python's value for "nothing here."
 
 ```text
-[85, 92, 78] → calculate_average(grades) → 85.0
-  argument         parameter             return value
+[118, 124, 130] → mean_reading(readings) → 124.0
+    argument          parameter           return value
 ```
 
 ### Reference Card: Functions
@@ -594,26 +515,89 @@ Functions give reusable work a name: pass in **arguments**, receive a **return v
 ### Code Snippet: Functions
 
 ```python
-# Function definition
-def calculate_average(grades):
-    """Calculate the average of a list of grades."""
-    if not grades:
-        return 0
-    return sum(grades) / len(grades)
+def mean_reading(readings):
+    """Return the average reading, or None when there are no readings."""
+    if not readings:
+        return None
+    return sum(readings) / len(readings)
 
-# Function usage
-grades = [85, 92, 78, 96, 88]
-average = calculate_average(grades)
-print(f"Average grade: {average:.1f}")
+print(mean_reading([118, 124, 130]))  # 124.0
+print(mean_reading([]))               # None
+print(mean_reading([0, 0]))           # 0.0
 ```
+
+Why `None` instead of `0`? A mean of 0 can be real (zero steps recorded); `None` says there was nothing to average. `if not result:` treats `0.0` as missing too, so test for missing values with `result is None`.
+
+## Imports and Modules
+
+A **module** is a Python file that provides reusable names. An `import` loads a module and binds a name for it in the current program. Modules in the standard library ship with Python; third-party modules must be installed in the active environment first.
+
+![Meme: Java insists you write your own code; Python replies from python.goes import brrrrr](media/python_import.webp)
+
+### Reference Card: Imports and Modules
+
+- `import module`: Import a module and use `module.name`
+- `import module as alias`: Bind a shorter local name; this does not copy the module
+- `from module import name`: Import one specific name
+
+### Code Snippet: Use a Module
+
+```python
+import math
+import statistics as stats
+from math import pi
+
+print(math.sqrt(16))              # 4.0
+print(stats.mean([85, 92, 78]))   # 85
+print(pi)                         # 3.141592653589793
+```
+
+For a quick import check from a Bash terminal, `-c` runs the Python code supplied as a string:
+
+```bash
+python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"   # 2
+```
+
+### Code Snippet: Import Your Own Module
+
+Any `.py` file is a module. Save a helper in `student_tools.py`:
+
+```python
+# student_tools.py
+def calculate_average(grades):
+    return sum(grades) / len(grades)
+```
+
+Import it from another script in the same folder:
+
+```python
+# report.py
+from student_tools import calculate_average
+
+print(calculate_average([85, 92, 78]))  # 85.0
+```
+
+Run `python3 report.py` from that folder. Python finds `student_tools.py` because it sits beside the script; the module name is the filename without `.py`. The first import also creates a `__pycache__/` folder of compiled files, which your `.gitignore` keeps out of Git.
+
+## Break(points) the Ice
+
+![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
+
+The highlighted line runs next. Inspect **Variables**, then step forward to see what changes. Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial); the status bar shows the example's older interpreter.
+
+1. Open a `.py` file that calls a function and click left of a line number inside that function to add a breakpoint (a red dot).
+2. Select **Run → Start Debugging** (**F5**).
+3. Inspect **Variables**, then **Run → Step Over** (**F10**) to execute one line. Use **Run → Continue** (**F5**) to reach the next breakpoint.
 
 # LIVE DEMO!
 
 # Files and Reusable Scripts
 
+Variables disappear when a script ends. To keep a result (a summary for your PI, a log of what ran), write it to a file and read it back to confirm what was saved. To reuse a script's functions elsewhere, make it safe to import, and document how to run it in a README. This block builds on Demo 2's helpers: save results to a file, check what was saved, handle bad input values without crashing, keep imports quiet, and write the command that runs the script.
+
 ## Basic File I/O Operations
 
-File **I/O** means input/output: read saved text into Python or write results for later use.
+File **I/O** means input/output: read saved text into Python or write results for later use. `open()` returns a **file handle**, Python's connection to the file; a `with` block closes it for you. Mode `"w"` replaces the whole file, so double-check the name.
 
 ```text
 Python text → write → grades.txt → read → saved text
@@ -635,34 +619,48 @@ Python text → write → grades.txt → read → saved text
 - `file.close()`: Close file handle
 - `with open(...) as file:`: Close the handle automatically when the block ends
 
-### Code Snippet: Basic File I/O Operations
+### Code Snippet: Write, Read Back, Append
 
 ```python
-# Reading from a file
-with open('data.txt', 'r') as file:
-    content = file.read()
-    print(f"File content: {content}")
-
-# Writing to a file
 results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
-with open('grades.txt', 'w', encoding='utf-8') as file:
+
+# Write: "w" creates grades.txt, or replaces it if it exists
+with open("grades.txt", "w", encoding="utf-8") as file:
     for result in results:
         file.write(f"{result}\n")
 
 # Read back and compare
-with open('grades.txt', 'r', encoding='utf-8') as file:
+with open("grades.txt", "r", encoding="utf-8") as file:
     saved_text = file.read()
+print(saved_text, end="")
 expected_text = "\n".join(results) + "\n"
 print("Saved text matches:", saved_text == expected_text)
 
-# Append with print instead of write; print adds a newline
-with open('log.txt', 'a', encoding='utf-8') as file:
+# Append: "a" adds to the end; print(..., file=file) adds the newline
+with open("log.txt", "a", encoding="utf-8") as file:
     print("Analysis completed", file=file)
 ```
 
+```text
+Alice: 95
+Bob: 87
+Charlie: 92
+Saved text matches: True
+```
+
+`log.txt` gains one line every time you run the script: `"a"` never removes what is already there.
+
 ## Minimal Exception Handling
 
-An **exception** reports a problem that interrupts normal execution. Use `try`/`except` around the operation that can fail, and catch the specific exception you expect rather than hiding every error.
+In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback. Real data has entries like `"not available"` in a numeric column. An **exception** is Python's report of that kind of problem; `try`/`except` lets your script respond instead of stopping. Catch only the exception you expect, so real bugs still show up.
+
+### Reference Card: Exceptions You Will Meet
+
+- `ValueError`: Right type, unusable value, such as `float("not available")`.
+- `FileNotFoundError`: `open()` on a path that does not exist.
+- `OSError`: Any file-system failure, including missing paths and denied permissions.
+- `try:` / `except ValueError as error:`: Run the risky line; on that error only, run the handler with the message in `error`.
+- `else:`: Runs only when the `try` block succeeded.
 
 ### Code Snippet: Handle Invalid Numeric Text
 
@@ -677,7 +675,9 @@ else:
     print(f"Parsed score: {score:.1f}")
 ```
 
-Opening a missing path raises `FileNotFoundError`; `OSError` covers file-system errors including missing paths and denied permissions. Converting invalid numeric text raises `ValueError`. The optional `else` block runs only when the `try` block succeeds.
+```text
+Could not parse score: could not convert string to float: 'not available'
+```
 
 ## `__main__` for script execution
 
@@ -702,5 +702,45 @@ If this is saved as `analysis.py`, the first command runs `main()` and the secon
 python3 analysis.py
 python3 -c "import analysis"
 ```
+
+The first prints `Average grade: 87.8`. The second prints nothing: importing ran the `def` but skipped `main()`.
+
+## Document How to Run It
+
+Every repository needs a note that says what it is and how to run it. On GitHub that note is `README.md`, shown below the file list on the repository's front page. The `.md` means **Markdown**: plain text with a few symbols that mark formatting. The raw file stays readable in any editor, and GitHub, VS Code's preview, Notion, and the course site all render it as formatted text.
+
+### Reference Card: Markdown Documentation
+
+- `# Title`, `## Section`, `### Subsection`: Headings, from largest to smallest.
+- `**bold text**`: Strong emphasis, shown as **bold text**.
+- `*italic text*`: Emphasis, shown as *italic text*.
+- Single backticks around text, such as `mean()`: Code within a sentence, shown in code font.
+- Three backticks on their own line, optionally followed by a language name such as `bash`: Start a code block; close it with three backticks.
+- `~~~` on its own line: Also opens and closes a code block. The snippet below uses it because the whole example already sits inside a backtick code block; in your own files either works.
+- `- item` or `1. item`: Bulleted or numbered list.
+- `[text](url)`: Clickable link.
+- `![alt](url)`: Image with descriptive alternative text.
+- `| col1 | col2 |`: Table row; follow the header row with a separator row such as `| --- | --- |`.
+- Right-click an open `.md` editor tab → **Open Preview to the Side**, or **Ctrl+K** then **V** (**Cmd+K** then **V** on Mac): Open the rendered preview beside the file.
+
+### Code Snippet: Markdown Documentation
+
+```markdown
+# Data Analysis Report
+
+## Overview
+Analyzes study time vs. performance.
+
+## Key Findings
+- More hours → higher grades
+- Regular habits help
+
+## Example Output
+~~~python
+print("Analysis complete")
+~~~
+```
+
+In the preview this becomes a large title, three section headings, a short paragraph, a two-item bulleted list, and a shaded code block.
 
 # LIVE DEMO!

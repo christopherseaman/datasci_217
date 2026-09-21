@@ -54,7 +54,7 @@ history            # Show recent commands
 # Editing shortcuts
 Ctrl+A             # Beginning of line
 Ctrl+E             # End of line
-Ctrl+U             # Clear entire line
+Ctrl+U             # Delete from cursor back to start of line
 Tab                # Auto-complete (your best friend!)
 ```
 

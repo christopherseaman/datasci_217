@@ -241,7 +241,8 @@ print(s.index.is_unique)  # False
 print(s['a'])             # Series with two values
 print(s['c'])             # Scalar
 
-df = pd.DataFrame(np.random.randn(5, 3), index=['a', 'a', 'b', 'b', 'c'])
+rng = np.random.default_rng(42)
+df = pd.DataFrame(rng.standard_normal((5, 3)), index=['a', 'a', 'b', 'b', 'c'])
 print(df.loc['b'])        # DataFrame with the duplicate rows
 ```
 

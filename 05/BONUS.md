@@ -21,7 +21,7 @@ The core lecture introduces nullable `Int64`, `string`, and `boolean`. This bonu
 
 Traditional NumPy-based types couldn't represent missing integers or booleans. Extension types provide proper NA support across all data types.
 
-**Reference:**
+### Reference Card: Nullable extension types
 
 - `astype('Int64')` - Nullable integer (note capital I)
 - `astype('Float64')` - Nullable float
@@ -30,7 +30,7 @@ Traditional NumPy-based types couldn't represent missing integers or booleans. E
 - `pd.NA` - Missing value marker used by nullable extension types
 - `np.nan` - Floating missing-value sentinel also used by pandas 3's inferred `str` dtype
 
-**Brief Example:**
+### Code Snippet: Old vs. new missing-data handling
 
 ```python
 # Old way: integers become floats with missing data
@@ -53,14 +53,15 @@ Extension types provide consistent missing-data semantics and can improve memory
 
 Under pandas 3, inferred text uses the `str` dtype. Its storage may be backed by PyArrow when PyArrow is installed; otherwise pandas uses its non-PyArrow implementation. An explicit `string` dtype remains useful when nullable-string semantics are part of the data contract. Neither representation is guaranteed to use less memory than `object` for every dataset.
 
-**When to use:**
+### Choosing an extension type
+
 - **Int64, Int32, Int16, Int8**: Integer data that might have missing values
 - **Float64, Float32**: When you need explicit control over precision
 - **boolean**: Boolean data with potential missing values
 - **str or string**: Text data; choose explicit `string` when nullable-string semantics are required, and measure memory for the actual backing and data
 - **category**: Repeated low-cardinality values when category semantics fit; measure the memory effect
 
-**Brief Example:**
+### Code Snippet: Convert a DataFrame to extension types
 
 ```python
 # Convert existing DataFrame to extension types
@@ -85,7 +86,9 @@ Regular expressions (regex) are powerful for complex pattern matching, but they 
 
 *Warning: Regular expressions are write-only code - you write them once, and six months later you have no idea what they do. Comment generously!*
 
-**Reference:**
+## Regex syntax and extraction
+
+### Reference Card: Regex syntax
 
 - `\d` - Any digit (0-9)
 - `\w` - Any word character (letter, digit, underscore)
@@ -99,7 +102,7 @@ Regular expressions (regex) are powerful for complex pattern matching, but they 
 - `()` - Capture group
 - `df.replace(pattern, replacement, regex=True)` - Replace regex matches in text values
 
-**Brief Example:**
+### Code Snippet: Extract phone numbers and validate emails
 
 ```python
 # Extract phone numbers from text
@@ -122,16 +125,22 @@ print(valid)  # [True, False, True]
 
 Beyond simple threshold-based outlier detection, statistical methods can identify unusual values.
 
-**Reference:**
+## Statistical outlier methods
+
+### Reference Card: Outlier detection methods
 
 - **IQR Method**: Values beyond Q1 - 1.5×IQR or Q3 + 1.5×IQR
 - **Z-Score Method**: Values with |z-score| > 3
 - **Modified Z-Score**: More robust for skewed data
 - **Isolation Forest**: Machine learning approach (sklearn)
 
-**Brief Example:**
+### Code Snippet: Flag outliers with IQR and z-score
 
 ```python
+# Twenty patients' cholesterol readings (mg/dL); two are far outside the rest
+df = pd.DataFrame({'value': [180, 190, 175, 185, 195, 200, 178, 182, 188, 192,
+                              176, 184, 198, 179, 186, 191, 183, 450, 460, 187]})
+
 # IQR-based outlier detection
 Q1 = df['value'].quantile(0.25)
 Q3 = df['value'].quantile(0.75)
@@ -153,7 +162,9 @@ outliers_z = df[z_scores > 3]
 
 Advanced string operations for specialized text cleaning tasks.
 
-**Reference:**
+## Extracting and normalizing text
+
+### Reference Card: Advanced string methods
 
 - `str.extract(pattern, expand=True)` - Extract regex groups into columns
 - `str.extractall(pattern)` - Extract all matches (returns MultiIndex)
@@ -161,7 +172,7 @@ Advanced string operations for specialized text cleaning tasks.
 - `str.translate(table)` - Character-level replacement
 - `str.encode()` / `str.decode()` - Character encoding conversion
 
-**Brief Example:**
+### Code Snippet: Parse addresses and normalize unicode
 
 ```python
 # Extract multiple components from structured text
@@ -184,11 +195,13 @@ print(normalized)  # ['cafe', 'naive', 'resume']
 
 The core lecture finds exact repeats and repeated identifiers with `duplicated()`. Near-duplicates, such as `John Smith` and `Jon Smith`, differ by a typo, so exact comparison misses them.
 
-**Reference:**
+## Fuzzy matching for near-duplicates
+
+### Reference Card: Fuzzy matching
 
 - Fuzzy matching for near-duplicates (requires `fuzzywuzzy` or similar)
 
-**Brief Example:**
+### Code Snippet: Find near-duplicate names
 
 ```python
 # Fuzzy string matching for near-duplicates
@@ -209,14 +222,16 @@ find_similar(names)
 
 Reduce memory usage by choosing optimal data types.
 
-**Reference:**
+## Downcasting numbers and categorizing strings
+
+### Reference Card: Memory-efficient dtypes
 
 - `pd.to_numeric(downcast='integer')` - Use smallest int type
 - `pd.to_numeric(downcast='float')` - Use smallest float type
 - `astype('category')` - For repeated string values
 - `astype('Int8')`, `astype('Int16')`, etc. - Specific sizes
 
-**Brief Example:**
+### Code Snippet: Shrink a DataFrame's memory footprint
 
 ```python
 # Before optimization
@@ -236,12 +251,14 @@ print(f"Optimized memory: {df.memory_usage(deep=True).sum() / 1024:.1f} KB")
 
 Use `np.where()` and `np.select()` for complex conditional replacements.
 
-**Reference:**
+## Vectorized conditional logic
+
+### Reference Card: np.where and np.select
 
 - `np.where(condition, if_true, if_false)` - Simple if-else
 - `np.select(conditions_list, choices_list, default)` - Multiple conditions
 
-**Brief Example:**
+### Code Snippet: Assign pass/fail and letter grades
 
 ```python
 # Simple conditional replacement
@@ -272,19 +289,13 @@ Use a Python dictionary for a small, local configuration; use a reviewed CSV, JS
 
 # When to Use These Techniques
 
-**Regular Expressions:** Email validation, phone number extraction, parsing log files, complex text cleaning.
-
-**Advanced Outlier Detection:** Financial data, scientific measurements, when IQR/percentile methods aren't appropriate.
-
-**Complex String Operations:** Parsing addresses, standardizing names, cleaning web-scraped data.
-
-**Fuzzy Matching:** Merging datasets with typos, de-duplicating user input, matching company names.
-
-**Memory Optimization:** Working with large datasets (>1GB), when speed is critical, preparing data for deployment.
-
-**Conditional Replacement:** Complex business logic, deriving new categories, data validation with multiple rules.
-
-**Configuration-Driven Cleaning:** The same cleaning rules reused across sites, sources, or repeated data deliveries.
+- **Regular Expressions**: Email validation, phone number extraction, parsing log files, complex text cleaning.
+- **Advanced Outlier Detection**: Financial data, scientific measurements, when IQR/percentile methods aren't appropriate.
+- **Complex String Operations**: Parsing addresses, standardizing names, cleaning web-scraped data.
+- **Fuzzy Matching**: Merging datasets with typos, de-duplicating user input, matching company names.
+- **Memory Optimization**: Working with large datasets (>1GB), when speed is critical, preparing data for deployment.
+- **Conditional Replacement**: Complex business logic, deriving new categories, data validation with multiple rules.
+- **Configuration-Driven Cleaning**: The same cleaning rules reused across sites, sources, or repeated data deliveries.
 
 # Optional Reference: Sampling Designs and Resampling
 
@@ -326,7 +337,7 @@ print(systematic)
 
 ## Shuffling and Permutation
 
-Shuffling changes row order while retaining every row; it is useful when order is not meaningful. `df.sample(frac=1, random_state=42)` returns a shuffled DataFrame. `np.random.permutation` returns a permutation of positions, which can be reused to reorder aligned arrays or a DataFrame with `.iloc`.
+Shuffling changes row order while retaining every row; it is useful when order is not meaningful. `df.sample(frac=1, random_state=42)` returns a shuffled DataFrame. `np.random.default_rng().permutation()` returns a permutation of positions, which can be reused to reorder aligned arrays or a DataFrame with `.iloc`.
 
 ```python
 shuffled = frame.sample(frac=1, random_state=42)

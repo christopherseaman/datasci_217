@@ -167,7 +167,7 @@ From that same practice folder, run:
 cat > 02_cli_navigation_demo.sh
 ```
 
-Paste the script below. Press **Enter** if needed to reach a new line, then **Ctrl+D** to finish input. Enter ends a line; Ctrl+D signals **EOF** (end of file). Ctrl+C interrupts `cat` instead; it leaves text already written in the file. `>` replaces any previous contents.
+Paste the script below. Press **Enter** to reach a new line, then **Ctrl+C** to finish. Enter ends a line; Ctrl+C stops `cat`, and the text already written stays in the file. `>` replaces any previous contents.
 
 [02_cli_navigation_demo.sh on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/02_cli_navigation_demo.sh)
 
