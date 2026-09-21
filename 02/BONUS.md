@@ -17,7 +17,8 @@ While VS Code's Git interface is excellent for daily use, command line Git offer
 
 ## Essential Command Line Git
 
-**Repository Setup:**
+### Repository Setup
+
 ```bash
 # Initialize new repository
 git init
@@ -27,9 +28,13 @@ git clone https://github.com/username/repo.git
 
 # Add remote origin
 git remote add origin https://github.com/username/repo.git
+
+# List the remotes this repository knows about
+git remote -v
 ```
 
-**Daily Workflow:**
+### Daily Workflow
+
 ```bash
 # Check status
 git status
@@ -45,10 +50,15 @@ git commit -am "Stage and commit modified files"
 
 # Push/pull changes
 git push origin main
+git push origin feature/data-analysis   # any branch name works
 git pull origin main
+
+# Download remote commits without changing your files
+git fetch origin
 ```
 
-**Viewing History:**
+### Viewing History
+
 ```bash
 # Show commit history
 git log --oneline
@@ -59,6 +69,15 @@ git diff                 # Working directory vs staging
 git diff --staged        # Staging vs last commit
 git diff HEAD~1          # Compare with previous commit
 ```
+
+### Visiting an older version
+
+```bash
+# Check out one commit by its hash, read-only
+git checkout abc123
+```
+
+This leaves you in a detached HEAD state, described under **Troubleshooting Common Issues** below; `git checkout main` returns you to the branch.
 
 # Advanced Branching Strategies
 
@@ -103,6 +122,10 @@ For larger projects, consider the Git Flow model:
 - **release/*:** Release preparation
 - **hotfix/*:** Critical fixes to production
 
+![Git Flow diagram: master, hotfix, release, develop, and two feature branches splitting and merging](media/git_branches.png)
+
+Each dot is a commit. This illustration calls its main branch `master`; our repositories use `main`.
+
 ```bash
 # Example Git Flow workflow
 git checkout develop
@@ -115,27 +138,41 @@ git branch -d feature/data-visualization
 
 # Advanced Git Operations
 
+## Git's Data Model
+
+Under the hood, Git stores a project as a handful of object types. Knowing their names makes Git's own error messages readable.
+
+- **Blob**: The contents of one file.
+- **Tree**: A directory: names pointing to blobs and other trees.
+- **Commit**: A top-level tree plus author, message, and parent commits.
+- **Reference**: A readable name, such as `main`, pointing to a commit.
+- **HEAD**: Where you are now; usually points to your current branch.
+
 ## Undoing Changes
 
-**Review before undoing working-directory changes:**
+### Review Working-Directory Changes
+
 ```bash
 git diff file.txt                  # Review edits first
 git restore --staged file.txt     # Unstage, keep edits
 ```
 
-**Undo staged changes:**
+### Undo Staged Changes
+
 ```bash
 git reset file.txt                 # Unstage file
 git reset                          # Unstage all files
 ```
 
-**Undo commits:**
+### Undo Commits
+
 ```bash
 git reset --soft HEAD~1            # Undo last commit, keep changes staged
 git reset --mixed HEAD~1           # Undo last commit, unstage changes
 ```
 
-**Revert published commits:**
+### Revert Published Commits
+
 ```bash
 git revert HEAD                    # Create new commit that undoes last commit
 git revert abc123                  # Revert specific commit by hash
@@ -284,19 +321,33 @@ git remote set-url origin git@github.com:username/repo.git
 4. **Link Issues:** Reference related issues with #123
 5. **Request Reviewers:** Get feedback before merging
 
+## Collaborating on the GitHub Website
+
+Beyond the Code and Actions tabs the lecture uses, a shared repository is run from these pages:
+
+- **Pull Requests**: "Pull requests" tab → "New pull request" to propose merging one branch into another
+- **Issues**: "Issues" tab → "New issue" for bug reports and feature requests
+- **Code Review**: Comment on specific lines of a pull request, then approve or request changes
+- **Project Settings**: Settings tab for permissions, branch protection, and integrations
+
 ## Handling Merge Conflicts
 
 ```bash
 # When merge conflicts occur
 git status                         # See which files have conflicts
+```
 
-# Edit conflicted files, look for:
+Edit conflicted files, look for:
+
+```text
 <<<<<<< HEAD
 Your changes
 =======
 Their changes
 >>>>>>> branch-name
+```
 
+```bash
 # After resolving conflicts
 git add conflicted_file.txt
 git commit -m "Resolve merge conflict in conflicted_file.txt"
@@ -450,7 +501,7 @@ Remember: These are power-user features. Master the basics first!
 
 Professional Git workflows emphasize clear commit messages, logical change organization, and effective collaboration patterns. These practices ensure project history remains understandable and maintainable.
 
-**Reference:**
+## Reference Card: Professional Workflow Practices
 
 - **Commit Messages**: Present tense, descriptive, under 50 characters
 - **Atomic Commits**: One logical change per commit
@@ -459,7 +510,7 @@ Professional Git workflows emphasize clear commit messages, logical change organ
 - **Conflict Resolution**: Merge conflicts handled systematically
 - **History Management**: Clean, linear history when possible
 
-**Brief Example:**
+## Code Snippet: Multi-line Commit Message
 
 ```bash
 # Good commit message format
@@ -478,7 +529,7 @@ Fixes issue #123"
 
 *Optional reference for students interested in command-line data workflows.*
 
-This page owns shell and CLI-specific extensions. Python function design and object-model extensions live in the [Python concepts section](#bonus-python-concepts) below; the core lecture already introduces ordinary functions, lambdas, and the main guard.
+This page owns shell and CLI-specific extensions. Python function design and object-model extensions live in the [Python concepts section](#bonus-python-concepts) below; the core lecture already introduces ordinary functions and the main guard.
 
 ## Command-line essentials
 
