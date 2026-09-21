@@ -1,13 +1,13 @@
 ---
 notion:
-  title_line: "Data: Care & Feeding"
+  title_line: "# Data: Care & Feeding"
   role: lecture
   status: mapped
   page_id: "281d9fdd-1a1a-8015-bcdb-c11415191ac2"
   url: "https://app.notion.com/p/281d9fdd1a1a8015bcdbc11415191ac2"
 ---
 
-Data: Care & Feeding
+# Data: Care & Feeding
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 

@@ -1,13 +1,13 @@
 ---
 notion:
-  title_line: "Data Visualization: From Exploration to Communication"
+  title_line: "# Data Visualization: From Exploration to Communication"
   role: lecture
   status: mapped
   page_id: "29ad9fdd-1a1a-803c-a031-f791f9043193"
   url: "https://app.notion.com/p/29ad9fdd1a1a803ca031f791f9043193"
 ---
 
-Data Visualization: From Exploration to Communication
+# Data Visualization: From Exploration to Communication
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 

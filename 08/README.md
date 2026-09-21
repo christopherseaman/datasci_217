@@ -1,13 +1,13 @@
 ---
 notion:
-  title_line: "Data Aggregation and Group Operations"
+  title_line: "# Data Aggregation and Group Operations"
   role: lecture
   status: mapped
   page_id: "2a1d9fdd-1a1a-80f8-b1e8-f7b20e4a2e84"
   url: "https://app.notion.com/p/2a1d9fdd1a1a80f8b1e8f7b20e4a2e84"
 ---
 
-Data Aggregation and Group Operations
+# Data Aggregation and Group Operations
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 

@@ -1,13 +1,13 @@
 ---
 notion:
-  title_line: "Pandas on Jupyter: Data Structures & I/O"
+  title_line: "# Pandas on Jupyter: Data Structures & I/O"
   role: lecture
   status: mapped
   page_id: "281d9fdd-1a1a-800a-897d-cafb5971c23f"
   url: "https://app.notion.com/p/281d9fdd1a1a800a897dcafb5971c23f"
 ---
 
-Pandas on Jupyter: Data Structures & I/O
+# Pandas on Jupyter: Data Structures & I/O
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 

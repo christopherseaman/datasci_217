@@ -1,13 +1,13 @@
 ---
 notion:
-  title_line: "06) Data Wrangling: Join, Combine, and Reshape"
+  title_line: "# 06) Data Wrangling: Join, Combine, and Reshape"
   role: lecture
   status: mapped
   page_id: "293d9fdd-1a1a-801c-bef2-e6140976408c"
   url: "https://app.notion.com/p/293d9fdd1a1a801cbef2e6140976408c"
 ---
 
-06) Data Wrangling: Join, Combine, and Reshape
+# 06) Data Wrangling: Join, Combine, and Reshape
 
 **Assignment 6:** [assignment instructions](assignment/README.md)
 

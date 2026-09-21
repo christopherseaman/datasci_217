@@ -51,14 +51,14 @@ Adapt introductions and examples from the course sources rather than inventing t
 ````markdown
 ---
 notion:
-  title_line: "Lecture Title"
+  title_line: "# Lecture Title"
   role: lecture
   status: mapped
   page_id: "…"
   url: "…"
 ---
 
-Lecture Title
+# Lecture Title
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
@@ -93,7 +93,7 @@ print(result)  # expected output
 # Next Topic
 ````
 
-- Opening lines: the Notion front matter, the local title line (it must match `title_line`; publishing omits it because the Notion page title replaces it), the exact line `See [BONUS.md](BONUS.md) for the optional extensions.`, and the demo link: `[Live Demo Guide](demo/DEMO_GUIDE.md)` for Lectures 01–03 or one `**Live notebooks in Colab:**` line for Lectures 04–11. The publishing script replaces the BONUS and demo-guide lines with their Notion child pages. A comic or one-sentence hook may follow; do not add outline, learning-objective, or recap lists, because Notion's page outline already lists the headings.
+- Opening lines: the Notion front matter, the local title line as a `#` heading that exactly matches `title_line` (the course site renders it as the page's title heading, and publishing omits it because it matches `title_line`; the Notion page title is set in Notion), the exact line `See [BONUS.md](BONUS.md) for the optional extensions.`, and the demo link: `[Live Demo Guide](demo/DEMO_GUIDE.md)` for Lectures 01–03 or one `**Live notebooks in Colab:**` line for Lectures 04–11. The publishing script replaces the BONUS and demo-guide lines with their Notion child pages. A comic or one-sentence hook may follow; do not add outline, learning-objective, or recap lists, because Notion's page outline already lists the headings.
 - Notion-native Markdown: multiple `#` topic headings, `##` subtopics, `###` for reference cards, code snippets, and minor subsections, and `####` only when a `###` subsection needs its own children. Do not skip a level. Use real headings rather than bold labels, no hard wrapping within paragraphs, four-space nesting for lists, and no horizontal rules.
 - Demo breaks: exactly `# LIVE DEMO!`, identical at every break, with nothing beneath it. The next line starts a new `#` topic because any `##` heading would nest under the demo marker in Notion. Nothing follows the final marker.
 - Name subsections `Reference Card: ...` and `Code Snippet: ...` after the task or concept they cover. Put visuals before code.
