@@ -65,9 +65,9 @@ Why a value is missing matters more than how many are missing:
 
 Counts cannot tell these apart; knowing how the data was collected can.
 
-![Dark gray cells are missing. The shade of each other cell shows its value.](media/data_cleaning_workflow.png)
-
 *Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."*
+
+![Dark gray cells are missing. The shade of each other cell shows its value.](media/data_cleaning_workflow.png)
 
 ## Find and Count Missing Values
 

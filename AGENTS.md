@@ -149,7 +149,7 @@ Review content organization first and styling last.
 1. Map the lecture: its topics in order, the parts each topic has, and the topic block that leads to each demo.
 2. Lecture organization: Does each topic blend concepts, reference material, and practical examples? Is the order incremental, with nothing used before it is taught and the working path before safeguards? Where a section develops one tool, does it move from problem to tool to options to pitfalls? Does each block build to its demo, and does the demo use only earlier material? Is the lecture lean, with essential tools in the lecture and advanced material in `BONUS.md`? Does it teach what its demos and assignment need?
 3. Topics: Does the introduction explain the concept, draw an analogy where one helps, connect it to earlier lectures, and define new terms, or does the topic jump straight to an API list? Is there a visual or concrete output before code? Does the reference card cover the task? Are snippets minimal and correct for Python 3.13 and pandas 3.0.5, with stated outputs that match real output?
-4. Styling: fix violations of the rules above, not matters of taste.
+4. Styling: fix violations of the rules above, not matters of taste. `python3 scripts/lecture_lint.py` checks the mechanical ones — heading levels, demo markers, pseudo-headings, horizontal rules, and captions — and exits non-zero when a page breaks one.
 
 Fix substance: add the missing explanation, visual, or example, adapted from the course sources, and reorder or move material when the organization is wrong.
 

@@ -32,9 +32,9 @@ The same model serves two questions, and the question decides how you judge it:
 
 Python's modeling libraries line up from inference toward flexible prediction. Moving right usually buys predictive power and costs interpretability:
 
-![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
-
 *Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!*
+
+![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
 
 ### Reference Card: Which Library for Which Question
 
