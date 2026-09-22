@@ -153,6 +153,169 @@ South             NaN  25.0
 
 East had no new-patient visits, so East–New is `NaN`. There was nothing to average, which is not the same as a zero-minute wait.
 
+# Pivot Tables and Cross-Tabulations
+
+![The greatest research skill you can have is being a nosy bitch who wants to find out — a pivot table is how you find out](media/research.png)
+
+In Lecture 06, `pivot()` rearranged a long table into a wide one and raised an error when an index/column pair appeared more than once. A **pivot table** handles those repeats: it groups rows by one key for the rows and another for the columns, aggregates each combination, and lays the results out as a grid. It is the two-key `groupby(...).mean().unstack()` you just built, in a single call, with optional row and column totals called **margins**. A **cross-tabulation** (crosstab) is the special case that counts rows in each combination.
+
+```text
+LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
+clinic  visit_type  wait_min               visit_type  Follow-up   New
+North   New         12                     clinic
+North   Follow-up   15  ┐ mean → 10.5      East              9.0   NaN   ← no East new-patient visits
+North   Follow-up    6  ┘                  North            10.5  12.0
+South   New         20  ┐ mean → 25.0      South             NaN  25.0
+South   New         30  ┘
+East    Follow-up    9
+```
+
+## Basic Pivot Tables
+
+### Reference Card: Pivot Tables and Crosstabs
+
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `pd.pivot_table(df, values=..., index=..., columns=..., aggfunc='mean')` | Group by the `index` and `columns` keys and summarize `values` in each cell; `aggfunc` picks the summary (`'mean'`, `'sum'`, `'count'`, ...) | Wide table; absent combinations are `NaN` |
+| `pd.pivot_table(..., aggfunc=['sum', 'mean'])` | Several summaries at once; `result['sum']` selects one | Two-level column labels |
+| `pd.pivot_table(..., sort=True)` | Order the rows and columns by key (the default); `sort=False` leaves both in first-appearance order | Predictable row and column order |
+| `pd.crosstab(df['a'], df['b'])` | Count rows for each combination of two columns; pass a list such as `[df['a'], df['c']]` for two-level rows | Counts; absent combinations are 0 |
+| `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
+| `pd.crosstab(df['a'], df['b'], margins=True)` | Add an `All` row and column of totals | Counts with totals |
+
+### Code Snippet: A Pivot Table and Its GroupBy Twin
+
+```python
+mean_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
+                           columns='visit_type', aggfunc='mean')
+print(mean_wait)
+
+same = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean().unstack()
+print(mean_wait.equals(same))   # True
+
+print(pd.crosstab(visits['clinic'], visits['visit_type'], margins=True))
+```
+
+```text
+visit_type  Follow-up   New
+clinic
+East              9.0   NaN
+North            10.5  12.0
+South             NaN  25.0
+True
+visit_type  Follow-up  New  All
+clinic
+East                1    0    1
+North               2    1    3
+South               0    2    2
+All                 3    3    6
+```
+
+### Missing Cells: Absent Is Not Zero
+
+A `NaN` cell means no rows had that combination. `fill_value=0` is right for counts and sums, where "no visits" really is 0 visits (the crosstab above already shows 0). It is wrong for means, minimums, or other measurements: filling East–New with 0 would report a zero-minute wait that never happened.
+
+## Totals and Absent Cells
+
+### Reference Card: Pivot Table Totals and Fills
+
+| Option | Purpose and key arguments | Output effect |
+| :--- | :--- | :--- |
+| `margins=True, margins_name='Total'` | Add a row and column of totals computed from the underlying rows; `margins_name` labels them (default `All`) | Extra `Total` row and column |
+| `fill_value=0` | Replace absent cells with 0, only for counts and sums | No-`NaN` cells |
+
+### Code Snippet: Totals Where Zero Is Real
+
+```python
+total_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
+                            columns='visit_type', aggfunc='sum',
+                            fill_value=0, margins=True, margins_name='Total')
+print(total_wait)
+```
+
+```text
+visit_type  Follow-up  New  Total
+clinic
+East                9    0      9
+North              21   12     33
+South               0   50     50
+Total              30   62     92
+```
+
+East had no new-patient visits, so its total new-patient wait really is 0 minutes. The mean table above correctly leaves that cell `NaN`.
+
+# LIVE DEMO!
+
+# Which Groups Appear in a Summary
+
+A fourth clinic opens in March and sees nobody in April. The April report you just built, with `groupby` or with `pivot_table`, lists three clinics, and nothing in the output says the fourth is missing. Rows whose clinic was never recorded vanish just as quietly. Two defaults decide which groups a summary contains, and neither one warns you, so set both on purpose in anything you hand to someone else.
+
+## Missing Keys and Unused Categories
+
+Rows with a missing key are left out before the split. For a categorical key (Lecture 05), only the categories that occur in the data become groups, so the clinic with no visits yet never reaches the report. Declaring the categories yourself also sets the order of the results: with the default `sort=True`, groups follow the order you list in `categories=`, not alphabetical order.
+
+| What April actually held | The default summary | What a handed-off report should show |
+| --- | --- | --- |
+| North 3, South 2, East 1 visits | three rows, alphabetical | three rows, in your reporting order |
+| West opened in March, no visits yet | no West row at all | `West 0` |
+| One visit with no clinic recorded | dropped before the split, uncounted | a `NaN` row you can see and explain |
+
+### Reference Card: Group Coverage Options
+
+- `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
+- `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present. For plain text keys, `observed` does nothing.
+- `pd.Categorical(values, categories=[...], ordered=True)`: Declare the allowed values and their reporting order; `ordered=True` records that the order is meaningful. Prints `Categories (4, str): ['North' < 'South' < 'East' < 'West']` under the values. A value missing from `categories=` becomes `NaN` with a warning, so list every value that occurs.
+- `pd.pivot_table(..., observed=False, dropna=False)`: The same two choices for a pivot table's rows and columns, plus one extra job for `dropna=`. The default, `dropna=True`, also drops any row or column whose cells all came out `NaN`. Counting an unused category gives `0`, so it stays; averaging one gives `NaN`, so it disappears unless you pass `dropna=False`. The kept `NaN` row is not always last: with a categorical key, `observed=False`, and a `columns=` key it comes out first, so find it by its label.
+
+### Code Snippet: A Reporting Order and an Unused Clinic
+
+```python
+levels = ['North', 'South', 'East', 'West']   # reporting order; West has no visits yet
+cat_visits = visits.copy()
+cat_visits['clinic'] = pd.Categorical(visits['clinic'], categories=levels, ordered=True)
+print(cat_visits.groupby('clinic', observed=True)['wait_min'].count())
+print(cat_visits.groupby('clinic', observed=False)['wait_min'].count())
+```
+
+```text
+clinic
+North    3
+South    2
+East     1
+Name: wait_min, dtype: int64
+clinic
+North    3
+South    2
+East     1
+West     0
+Name: wait_min, dtype: int64
+```
+
+The categories set the order, so the report reads North, South, East, West instead of alphabetically, and `observed=False` gives West the `0` that says "open, no visits."
+
+### Code Snippet: A Visit with No Clinic Recorded
+
+```python
+unrecorded = visits.copy()
+unrecorded.loc[5, 'clinic'] = None     # the clinic was not written down for this visit
+print(unrecorded.groupby('clinic')['wait_min'].count())
+print(unrecorded.groupby('clinic', dropna=False)['wait_min'].count())
+```
+
+```text
+clinic
+North    3
+South    2
+Name: wait_min, dtype: int64
+clinic
+North    3
+South    2
+NaN      1
+Name: wait_min, dtype: int64
+```
+
+That visit was East's only one, so East leaves the report entirely: six visits went in, five are counted, and nothing says so. `dropna=False` keeps the unrecorded visit as its own `NaN` group, listed last, so the gap is visible before anyone acts on the numbers.
+
 # GroupBy Result-Shape Choices
 
 Before choosing a method, decide what one row of the answer should represent: its grain. Aggregation changes the grain; transform and filter keep the original rows.
@@ -279,140 +442,6 @@ South  4        P04        30
 ```
 
 The index has two levels: the clinic and each row's original index. `include_groups=False` means your function does not receive the `clinic` column. It is the only setting pandas 3 allows; writing it out makes pandas 2.2, which still passes the column by default, give the same result.
-
-# LIVE DEMO!
-
-# Which Groups Appear in a Summary
-
-A fourth clinic opens in March and sees nobody in April. The April report, built with `groupby`, lists three clinics, and nothing in the output says the fourth is missing. Rows whose clinic was never recorded vanish just as quietly. Two defaults decide which groups a summary contains, and neither one warns you, so set both on purpose in anything you hand to someone else.
-
-## Missing Keys and Unused Categories
-
-Rows with a missing key are left out before the split. For a categorical key (Lecture 05), only the categories that occur in the data become groups, so the clinic with no visits yet never reaches the report. Declaring the categories yourself also sets the order of the results: with the default `sort=True`, groups follow the order you list in `categories=`, not alphabetical order.
-
-### Reference Card: Group Coverage Options
-
-- `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
-- `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present. For plain text keys, `observed` does nothing.
-- `pd.Categorical(values, categories=[...], ordered=True)`: Declare the allowed values and their reporting order; `ordered=True` records that the order is meaningful. Prints `Categories (4, str): ['North' < 'South' < 'East' < 'West']` under the values. A value missing from `categories=` becomes `NaN` with a warning, so list every value that occurs.
-
-### Code Snippet: A Reporting Order and an Unused Clinic
-
-```python
-levels = ['North', 'South', 'East', 'West']   # reporting order; West has no visits yet
-cat_visits = visits.copy()
-cat_visits['clinic'] = pd.Categorical(visits['clinic'], categories=levels, ordered=True)
-print(cat_visits.groupby('clinic', observed=True)['wait_min'].count())
-print(cat_visits.groupby('clinic', observed=False)['wait_min'].count())
-```
-
-```text
-clinic
-North    3
-South    2
-East     1
-Name: wait_min, dtype: int64
-clinic
-North    3
-South    2
-East     1
-West     0
-Name: wait_min, dtype: int64
-```
-
-The same order carries into `pivot_table` rows and columns.
-
-# Pivot Tables and Cross-Tabulations
-
-![The greatest research skill you can have is being a nosy bitch who wants to find out — a pivot table is how you find out](media/research.png)
-
-In Lecture 06, `pivot()` rearranged a long table into a wide one and raised an error when an index/column pair appeared more than once. A **pivot table** handles those repeats: it groups rows by one key for the rows and another for the columns, aggregates each combination, and lays the results out as a grid. It is the two-key `groupby(...).mean().unstack()` from Grouping by Two Keys in a single call, with optional row and column totals called **margins**. A **cross-tabulation** (crosstab) is the special case that counts rows in each combination.
-
-```text
-LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
-clinic  visit_type  wait_min               visit_type  Follow-up   New
-North   New         12                     clinic
-North   Follow-up   15  ┐ mean → 10.5      East              9.0   NaN   ← no East new-patient visits
-North   Follow-up    6  ┘                  North            10.5  12.0
-South   New         20  ┐ mean → 25.0      South             NaN  25.0
-South   New         30  ┘
-East    Follow-up    9
-```
-
-## Basic Pivot Tables
-
-### Reference Card: Pivot Tables and Crosstabs
-
-| Call | Purpose and key arguments | Output |
-| :--- | :--- | :--- |
-| `pd.pivot_table(df, values=..., index=..., columns=..., aggfunc='mean')` | Group by the `index` and `columns` keys and summarize `values` in each cell; `aggfunc` picks the summary (`'mean'`, `'sum'`, `'count'`, ...) | Wide table; absent combinations are `NaN` |
-| `pd.pivot_table(..., aggfunc=['sum', 'mean'])` | Several summaries at once; `result['sum']` selects one | Two-level column labels |
-| `pd.crosstab(df['a'], df['b'])` | Count rows for each combination of two columns; pass a list such as `[df['a'], df['c']]` for two-level rows | Counts; absent combinations are 0 |
-| `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
-| `pd.crosstab(df['a'], df['b'], margins=True)` | Add an `All` row and column of totals | Counts with totals |
-
-### Code Snippet: A Pivot Table and Its GroupBy Twin
-
-```python
-mean_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
-                           columns='visit_type', aggfunc='mean')
-print(mean_wait)
-
-same = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean().unstack()
-print(mean_wait.equals(same))   # True
-
-print(pd.crosstab(visits['clinic'], visits['visit_type'], margins=True))
-```
-
-```text
-visit_type  Follow-up   New
-clinic
-East              9.0   NaN
-North            10.5  12.0
-South             NaN  25.0
-True
-visit_type  Follow-up  New  All
-clinic
-East                1    0    1
-North               2    1    3
-South               0    2    2
-All                 3    3    6
-```
-
-### Missing Cells: Absent Is Not Zero
-
-A `NaN` cell means no rows had that combination. `fill_value=0` is right for counts and sums, where "no visits" really is 0 visits (the crosstab above already shows 0). It is wrong for means, minimums, or other measurements: filling East–New with 0 would report a zero-minute wait that never happened.
-
-## Advanced Pivot Operations
-
-### Reference Card: Advanced Pivot Options
-
-| Option | Purpose and key arguments | Output effect |
-| :--- | :--- | :--- |
-| `margins=True, margins_name='Total'` | Add a row and column of totals computed from the underlying rows; `margins_name` labels them (default `All`) | Extra `Total` row and column |
-| `fill_value=0` | Replace absent cells with 0, only for counts and sums | No-`NaN` cells |
-| `observed=True, sort=True` | For categorical keys: show only combinations present, in category order (both are the defaults) | Smaller, ordered table |
-| `dropna=False` | Keep all-missing result rows and columns and show missing keys as a `NaN` row (also counted in margins) | Larger table |
-
-### Code Snippet: Totals Where Zero Is Real
-
-```python
-total_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
-                            columns='visit_type', aggfunc='sum',
-                            fill_value=0, margins=True, margins_name='Total')
-print(total_wait)
-```
-
-```text
-visit_type  Follow-up  New  Total
-clinic
-East                9    0      9
-North              21   12     33
-South               0   50     50
-Total              30   62     92
-```
-
-East had no new-patient visits, so its total new-patient wait really is 0 minutes. The mean table above correctly leaves that cell `NaN`.
 
 # LIVE DEMO!
 

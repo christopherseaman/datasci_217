@@ -45,8 +45,9 @@ value3 = np.random.randn(n_rows) + np.where(
     categories == "A", 2, np.where(categories == "B", 1, 0)
 )
 
-# Add time-based data
-dates = pd.date_range("2020-01-01", periods=n_rows, freq="h")[:n_rows]
+# Add small-integer label columns (a month number and its quarter)
+month = np.random.randint(1, 13, n_rows)
+quarter = (month - 1) // 3 + 1
 
 # Create DataFrame
 df_large = pd.DataFrame({
@@ -55,9 +56,8 @@ df_large = pd.DataFrame({
     "value1": value1,
     "value2": value2,
     "value3": value3,
-    "date": dates,
-    "month": dates.month,
-    "quarter": dates.quarter,
+    "month": month,
+    "quarter": quarter,
 })
 
 # Add some additional numeric columns
@@ -67,7 +67,6 @@ df_large["value5"] = np.random.uniform(0, 100, n_rows)
 print(f"Dataset shape: {df_large.shape}")
 print(f"Number of unique groups: {df_large['group'].nunique():,}")
 print(f"Number of unique categories: {df_large['category'].nunique()}")
-print(f"Date range: {df_large['date'].min()} to {df_large['date'].max()}")
 print(
     f"Memory usage: {df_large.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
 )
@@ -259,7 +258,7 @@ col_memory_opt = df_optimized.memory_usage(deep=True) / 1024**2
 memory_comparison = pd.DataFrame({
     "Original": col_memory_orig,
     "Optimized": col_memory_opt,
-}).drop(["date"])  # Exclude date for clarity
+})
 memory_comparison.plot(
     kind="bar", ax=axes[1], width=0.8, color=["red", "green"], alpha=0.7
 )
@@ -326,7 +325,8 @@ print(f"Estimated speedup: 4.0x")
 # Simulate SSH connection setup
 print("=== SSH Connection Simulation ===")
 print("In a real scenario, you would:")
-print("1. Generate SSH key pair: ssh-keygen -t rsa -b 4096")
+print("1. Generate SSH key pair: ssh-keygen -t ed25519")
+print("   (private key ~/.ssh/id_ed25519, public key ~/.ssh/id_ed25519.pub)")
 print("2. Copy public key to server: ssh-copy-id username@server.com")
 print("3. Connect to server: ssh username@server.com")
 print("4. Set up environment on remote server")

@@ -11,9 +11,9 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
-**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_ml_boosting.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_deep_learning.ipynb)
+**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_sklearn_prediction.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_trees_boosting_networks.ipynb)
 
-Before running the examples, install the packages listed in [`demo/requirements.txt`](demo/requirements.txt); `BONUS.md` names a few extras that are not in that recorded environment.
+Before running the examples, install the packages in [`demo/requirements.txt`](demo/requirements.txt); `BONUS.md` names a few extras beyond it.
 
 *Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*
 
@@ -21,22 +21,18 @@ Before running the examples, install the packages listed in [`demo/requirements.
 
 # What Is a Model?
 
-A **model** is a simplified mathematical description of how an outcome relates to other variables: a map, not the territory. In Lecture 08, `visits.groupby('clinic')['wait_min'].mean()` gave one average wait per clinic. A model does the same job more smoothly, estimating the average outcome for *any* combination of inputs, including combinations that never appear in the table.
+A **model** is a simplified mathematical description of how an outcome relates to other variables: a map, not the territory. Lecture 08's `visits.groupby('clinic')['wait_min'].mean()` gave one average wait per clinic; a model does the same job more smoothly, estimating the average outcome for *any* combination of inputs, including ones the table never contains.
 
-The same model can serve two different questions, and the question decides how you judge it:
+The same model serves two questions, and the question decides how you judge it:
 
 - **Inference**: "Is BMI associated with systolic blood pressure among patients of the same age, and how sure are we?" You care about coefficients, uncertainty, and assumptions. Tool: `statsmodels`.
-- **Prediction**: "What will this patient's blood pressure be at the next visit?" You care about error on patients the model has never seen. Tools: `scikit-learn` and friends.
-
-The lecture follows that split: inference first, then honest prediction, then flexible models that trade interpretability for predictive power.
+- **Prediction**: "What will this patient's blood pressure be at the next visit?" You care about error on patients never seen before. Tools: `scikit-learn` and friends.
 
 ## The Modeling Landscape
 
-Python's modeling libraries line up from inference (`statsmodels`) toward flexible prediction (`scikit-learn`, `XGBoost`, then TensorFlow/Keras). Moving right usually buys predictive power and costs interpretability:
+Python's modeling libraries line up from inference toward flexible prediction. Moving right usually buys predictive power and costs interpretability:
 
 ![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
-
-More complexity does not guarantee better predictions; the prediction topics below compare candidates fairly on patients the model has not seen.
 
 *Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!*
 
@@ -55,17 +51,17 @@ More complexity does not guarantee better predictions; the prediction topics bel
 
 # Statistical Modeling with `statsmodels`
 
-Suppose a clinic asks whether higher BMI goes with higher systolic blood pressure (SBP), even among patients of the same age. **Linear regression** answers by fitting the relationship `sbp = b0 + b1 * age + b2 * bmi` that best matches the data. Plugging a patient's age and BMI into it gives a **fitted value**: the model's estimated average SBP for patients like them.
+Suppose a clinic asks whether higher BMI goes with higher systolic blood pressure (SBP), even among patients of the same age. **Linear regression** answers by fitting `sbp = b0 + b1 * age + b2 * bmi` to the data. Plugging a patient's age and BMI into it gives a **fitted value**: the model's estimated average SBP for patients like them.
 
-- The **intercept** (`b0`) is the fitted SBP when every predictor is 0, usually an anchor for the line rather than a real patient.
+- The **intercept** (`b0`) is the fitted SBP when every predictor is 0: an anchor for the line, rarely a real patient.
 - A **coefficient** (`b2`) is the difference in fitted SBP for a one-unit difference in BMI, *holding age fixed*.
-- An **association** means two variables move together; **causation** means changing one would change the other. A coefficient from observational clinic records describes an association, so "losing weight would lower SBP by b2" needs a design such as a randomized trial.
-- A **95% confidence interval** is a range computed from the sample. Repeat the study many times and about 95% of intervals built this way would contain the true coefficient, if the model is right.
-- A **p-value** asks: if the true coefficient were 0, how surprising would an estimate at least this far from 0 be? It is not the probability that a hypothesis is true.
+- An **association** means two variables move together; **causation** means changing one would change the other. A coefficient from observational records describes an association, so "losing weight would lower SBP by b2" needs a randomized trial.
+- A **95% confidence interval** is a range computed from the sample: repeat the study many times and about 95% of these intervals would contain the true coefficient.
+- A **p-value** asks: if the true coefficient were 0, how surprising would an estimate this far from 0 be? It is not the probability that a hypothesis is true.
 
 ## Formulas and Arrays
 
-`statsmodels` offers two interfaces (McKinney Ch. 12.3). The formula interface reads column names from a DataFrame and adds the intercept for you; read `~` as "is modeled by" and `+` as "also include this predictor", not arithmetic (McKinney Ch. 12.2). The array interface takes the outcome and a table of predictors, and you add the intercept column yourself.
+`statsmodels` offers two interfaces (McKinney Ch. 12.3). In a formula, read `~` as "is modeled by" and `+` as "also include this predictor", not arithmetic (McKinney Ch. 12.2); the block below shows what each interface asks you to supply.
 
 ```text
 Formula: smf.ols('sbp ~ age + bmi', data=clinic)                         intercept added for you
@@ -85,13 +81,13 @@ Array:   sm.OLS(clinic['sbp'], sm.add_constant(clinic[['age', 'bmi']]))  interce
 
 ## Linear Regression by Least Squares
 
-**Ordinary least squares (OLS)** picks the intercept and coefficients that miss the observed points by as little as possible. Each miss is a **residual** (observed minus fitted), and OLS makes the sum of squared residuals as small as it can:
+**Ordinary least squares (OLS)** picks the intercept and coefficients that miss the observed points by as little as possible: each miss is a **residual** (observed minus fitted), and OLS minimizes the sum of squared residuals.
 
 ```
 y = β₀ + β₁x₁ + β₂x₂ + ... + ε
 ```
 
-Here y is SBP, x₁ is age, x₂ is BMI, and ε (the **error term**) is everything the predictors do not explain.
+Here y is SBP, x₁ is age, x₂ is BMI, and ε (the **error term**) is what the predictors do not explain.
 
 *Think of linear regression as the Derek Zoolander of modeling - simple, reliable, and it can turn left, turn right, or even turn statistically significant.*
 
@@ -139,15 +135,15 @@ bmi          0.0008
 dtype: float64
 ```
 
-`print(results.summary())` shows the same numbers in one table: read its `coef`, `std err`, `P>|t|`, and `[0.025 0.975]` columns (R-squared here is 0.536). A p-value printed as 0.0000 is below 0.00005, not exactly 0.
+`results.summary()` shows the same numbers in one table, under `coef`, `std err`, `P>|t|`, and `[0.025 0.975]`. R-squared here is 0.536, and a p-value printed as 0.0000 is below 0.00005, not exactly 0.
 
-The data were simulated with true coefficients 0.5 (age) and 0.8 (BMI). With only 60 patients the estimates miss them, but both true values fall inside their 95% confidence intervals (next section), which is the uncertainty those intervals describe.
+The data were simulated with true coefficients 0.5 (age) and 0.8 (BMI). The estimates miss them, but both true values fall inside their 95% confidence intervals - which is the uncertainty those intervals describe.
 
 ## Uncertainty, Residuals, and New-Patient Intervals
 
-A coefficient is an estimate from one sample of patients, so it comes with uncertainty. The **standard error** measures how much it would vary from sample to sample, and the 95% confidence interval is roughly the estimate ± 2 standard errors.
+A coefficient is an estimate from one sample, so it comes with uncertainty: the **standard error** measures how much it would vary from sample to sample, and the 95% confidence interval is roughly the estimate ± 2 standard errors.
 
-Plotting each row's residual against its fitted value is a quick assumption check. A shapeless cloud around zero is what we hope for; a curve, like the U-shape on the right below, says the straight-line form is wrong, and a funnel says the spread is not constant.
+Plotting each row's residual against its fitted value is a quick assumption check: a shapeless cloud around zero is what we hope for, a curve says the straight-line form is wrong, and a funnel says the spread is not constant.
 
 Predicting for a new patient takes two different intervals:
 
@@ -158,12 +154,14 @@ Predicting for a new patient takes two different intervals:
 
 ### Reference Card: OLS Uncertainty and Diagnostics
 
-- `results.bse`: Standard error of each coefficient; a Series indexed by term.
-- `results.conf_int(alpha=0.05)`: Lower and upper 95% bounds; a DataFrame with columns `0` and `1`.
-- `results.fittedvalues` / `results.resid`: One fitted value and one residual (observed - fitted) per row.
-- `results.get_prediction(new_rows).summary_frame(alpha=0.05)`: Intervals for new rows; columns `mean`, `mean_ci_lower`, `mean_ci_upper` (mean response) and `obs_ci_lower`, `obs_ci_upper` (individual prediction). `.conf_int(obs=True)` instead of `.summary_frame()` returns just the prediction bounds as an array (Demo 1 uses it).
-- `ax.scatter(results.fittedvalues, results.resid)` then `ax.axhline(0, color='gray', linestyle='--')`: Residuals-versus-fitted plot with Lecture 07's Axes methods; `axhline` draws the reference line at 0.
-- `fig.savefig(path)`, `plt.show()`, `plt.close(fig)`: Save, display, then close the figure; an unclosed figure stays in memory.
+| Method / attribute | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `results.bse` | Standard error of each coefficient. | Series indexed by term |
+| `results.conf_int(alpha=0.05)` | Lower and upper 95% bounds. | DataFrame with columns `0` and `1` |
+| `results.fittedvalues` / `results.resid` | One fitted value and one residual (observed - fitted) per row. | Series |
+| `results.get_prediction(new_rows).summary_frame(alpha=0.05)` | Intervals for new rows: `mean`, `mean_ci_lower`, `mean_ci_upper` (mean response) and `obs_ci_lower`, `obs_ci_upper` (individual prediction); `.conf_int(obs=True)` returns only the prediction bounds (Demo 1 uses it). | DataFrame |
+| `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot with Lecture 07's Axes methods; the reference line sits at 0. | Axes |
+| `fig.savefig(path)`, `plt.show()`, `plt.close(fig)` | Save, display, then close; an unclosed figure stays in memory. | PNG on disk |
 
 ### Code Snippet: Uncertainty and a New-Patient Interval
 
@@ -189,7 +187,7 @@ bmi         0.52   1.86
 0  147.2      1.5          144.3          150.2         131.4         163.0
 ```
 
-Read the `age` row like this: holding BMI fixed, each extra year is associated with about 0.66 mmHg higher fitted SBP (95% CI 0.48 to 0.84). For the new patient, the mean-response interval is about 6 mmHg wide and the prediction interval about 32 mmHg wide.
+Read the `age` row as: holding BMI fixed, each extra year is associated with about 0.66 mmHg higher fitted SBP (95% CI 0.48 to 0.84). For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32.
 
 ### Code Snippet: Residuals Versus Fitted Values
 
@@ -221,26 +219,22 @@ plt.close(fig)
 2     139.6   142.0      -2.4
 ```
 
-The saved plot shows the same pattern as the left panel of the figure above: no curve and no funnel.
-
 ![xkcd 539: Boyfriend](media/xkcd_539.png)
 
 ![xkcd 552: Correlation — "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_1725.png)
-
-# LIVE DEMO!
 
 # Prediction: Features, Targets, and Honest Splits
 
 Inference asked how SBP relates to age, holding BMI fixed. Prediction asks something else: "What will *this* patient's SBP be at the next visit?" A predictive model is judged on patients it has never seen.
 
-- A feature (Lecture 09) is an input column the model uses (age, BMI, today's SBP). The table of features is usually called `X`.
-- The **target** is the column to predict (next-visit SBP), usually called `y`. Its **target time** is when that value is measured.
-- The **prediction unit** is what receives one prediction (one visit). Prediction time (Lecture 09) is when it is made, and every feature must be known by then.
-- **Leakage** is information the model could not have at prediction time sneaking into training, such as a lab result that comes back 24 hours *after* the visit (Lecture 09's future leakage).
+- The features (Lecture 09) are the input columns the model uses (age, BMI, today's SBP), together called `X`.
+- The **target** is the column to predict (next-visit SBP), called `y`; its **target time** is when that value is measured.
+- The **prediction unit** receives one prediction (one visit); prediction time (Lecture 09) is when it is made, and every feature must be known by then.
+- **Leakage** is information unavailable at prediction time sneaking into training - a lab result that arrives 24 hours *after* the visit (Lecture 09's future leakage).
 
 ## Feature Availability
 
-Run that check on every candidate feature before fitting. Here the prediction is made at the end of the visit:
+Run that check on every candidate feature. Here the prediction is made at the end of the visit:
 
 | Candidate feature | Becomes known | Hours after the visit | Decision |
 | --- | --- | --- | --- |
@@ -250,10 +244,8 @@ Run that check on every candidate feature before fitting. Here the prediction is
 
 ### Reference Card: Availability Audit
 
-- `candidates['available'] = candidates['resulted_at'] <= prediction_time`: Lecture 09's check; `True` where the value is known by prediction time. With offsets like the table's, `candidates['hours_after_visit'] <= 0` does the same.
-- `np.where(candidates['available'], 'keep', 'exclude')`: Turn the check into a decision label (Lecture 03's `np.where`); returns an array of labels.
-
-A kept feature may still need reshaping: hour of day is the classic case, since 23 and 0 are an hour apart but sit at opposite ends of the number line ([Cyclic Time Features](BONUS.md#cyclic-time-features)).
+- `candidates['available'] = candidates['resulted_at'] <= prediction_time`: Lecture 09's check; `True` where the value is known by prediction time. With offsets like the table's, use `candidates['hours_after_visit'] <= 0`.
+- `np.where(candidates['available'], 'keep', 'exclude')`: Turn the check into a decision label (Lecture 03); returns an array of labels.
 
 ## Training, Validation, and Test Rows
 
@@ -274,7 +266,7 @@ Validation error: 0.22          Validation error: 0.35
 
 The opposite, **underfitting**, is a model too simple to capture the pattern, so both errors stay high.
 
-When rows have no time order, a seeded random split works (`train_test_split` below). When the model will predict the *future*, use Lecture 09's chronological blocks: train on the past, validate on the next period, test on the period after that. Split on the target time, not the visit date: the Feb 8 visit predicts SBP measured on Feb 15, so splitting by visit date would train on an outcome from the validation weeks.
+When rows have no time order, split them at random; the next topic's `train_test_split` does it in one call. When the model will predict the *future*, use Lecture 09's chronological blocks: train on the past, validate on the next period, test on the one after. Split on the **target** time, not the visit date: the Feb 8 visit predicts SBP measured on Feb 15.
 
 | Target weeks (next visit) | Role | Why |
 | --- | --- | --- |
@@ -284,12 +276,11 @@ When rows have no time order, a seeded random split works (`train_test_split` be
 
 *The golden rule: Never evaluate on data the model has seen during training. That's like giving a student the answers before the test and then being surprised they got 100%.*
 
-### Reference Card: Splits
+### Reference Card: Splitting on Target Time
 
-- `train_test_split(X, y, test_size=0.2, random_state=42)`: Seeded random split (`from sklearn.model_selection import train_test_split`); returns `X_train, X_test, y_train, y_test`. Call it twice for train/validation/test; `stratify=y` keeps the class mix equal in every part.
-- `df['visit_date'] + pd.Timedelta(days=7)`: Target time for a next-week target (Lecture 09's `pd.Timedelta`).
+- `df['visit_date'] + pd.Timedelta(days=7)`: Target time for a next-week target (Lecture 09).
 - `df[df['target_date'] < cutoff]`, `df[(df['target_date'] >= start) & (df['target_date'] < end)]`: Rows whose target falls before a cutoff, or inside one period.
-- `len(part)`, `part['target_date'].min()`, `part['target_date'].max()`: Each partition's size and target-time range; check them before fitting.
+- `len(part)`, `part['target_date'].min()`, `part['target_date'].max()`: Each partition's size and target-time range; check before fitting.
 
 ### Code Snippet: A Chronological Split
 
@@ -319,15 +310,17 @@ print(valid[['visit_date', 'target_date']])
 
 The Feb 8 visit is a validation row, so no training target falls in the validation weeks.
 
+# LIVE DEMO!
+
 # scikit-learn: One Pattern for Every Model
 
-`scikit-learn` is Python's standard library for prediction. Every model is an object with the same three steps (create, `fit`, `predict`), so once you can fit one model you can fit them all.
+`scikit-learn` is Python's standard library for prediction: every model is an object with the same three steps, so once you can fit one you can fit them all.
 
 *Think of `scikit-learn` as the Swiss Army knife of machine learning - it has a tool for almost everything, it's reliable, and it's been around long enough that everyone knows how to use it.*
 
-It works like a hospital lab analyzer: the lab calibrates it against standards of known concentration (`fit`), then measures new patient samples (`predict`). Checking it only against its calibration standards would say little about patient samples, which is why models are scored on rows they have not seen. Objects that learn with `fit` are **estimators**; those that reshape columns instead of predicting, like `StandardScaler`, are **transformers**.
+It works like a hospital lab analyzer: the lab calibrates it against standards of known concentration (`fit`), then measures new patient samples (`predict`). Objects that learn with `fit` are **estimators**; those that reshape columns instead of predicting, like `StandardScaler`, are **transformers**.
 
-It accepts the pandas DataFrames you have built since Lecture 04, so `X` can be `df[['age', 'bmi']]` and `y` can be `df['sbp']` (McKinney Ch. 12.4).
+It accepts the pandas DataFrames you have built since Lecture 04: `X` is `df[['age', 'bmi']]`, `y` is `df['sbp']` (McKinney Ch. 12.4).
 
 ## The Estimator Pattern
 
@@ -341,6 +334,7 @@ predictions = model.predict(X_new)  # 3. predict for rows the model has not seen
 
 | Function / method | Purpose & arguments | Typical output |
 | :--- | :--- | :--- |
+| `train_test_split(X, y, test_size=0.2, random_state=42)` | Split rows at random when they have no time order (`from sklearn.model_selection import train_test_split`); `random_state` makes the split repeat. Call it twice to carve out train, validation, and test. | `X_train, X_test, y_train, y_test` |
 | `model.fit(X, y)` | Learn parameters from features and targets. | The fitted estimator (`model`) |
 | `model.predict(X)` | Generate predictions for new rows. | NumPy array |
 | `model.score(X, y)` | Return the estimator's default score (R² for regressors, accuracy for classifiers). | Float |
@@ -348,16 +342,9 @@ predictions = model.predict(X_new)  # 3. predict for rows the model has not seen
 
 ## Linear Regression for Prediction
 
-`LinearRegression` fits the same least-squares line as `statsmodels`, but reports only what prediction needs: coefficients and predictions, with no standard errors or p-values.
+`LinearRegression` fits the same least-squares line as `statsmodels`, minus the inference machinery: no standard errors, no p-values, no diagnostics, but pipelines and dozens of other model families.
 
-| Feature | `statsmodels` | `scikit-learn` |
-|---------|---------------|----------------|
-| P-values and confidence intervals | ✅ Yes | ❌ No |
-| Model diagnostics | ✅ Comprehensive | ❌ Basic |
-| Preprocessing, pipelines, many model families | ❌ No | ✅ Yes |
-| Use when | You need to understand a relationship | You need predictions |
-
-**Regularization** adds a penalty that shrinks coefficients and can reduce overfitting. Ridge (L2, the sum of squared coefficients) shrinks all of them; Lasso (L1, the sum of absolute values) can set some to exactly zero, which selects features. Both help when features are many or strongly correlated, and both treat every coefficient alike, so scale the features first (the pipelines below do).
+**Regularization** adds a penalty that shrinks coefficients and can reduce overfitting. Ridge uses L2, the sum of squared coefficients; Lasso uses L1, the sum of absolute values, which can set some to exactly zero and so selects features. Both help when features are many or correlated, and both treat every coefficient alike, so scale first.
 
 ### Reference Card: Linear Estimators
 
@@ -392,13 +379,13 @@ print(model.coef_.round(2))                            # [ 2.85  0.65 -0.11]
 print(f"R² score: {model.score(X_test, y_test):.3f}")  # R² score: 0.825
 ```
 
-The fitted slopes land near the true 3, 0.5, and 0 used to build the target.
+The fitted slopes land near the true 3, 0.5, and 0.
 
 ## Baselines and Pipelines
 
-Before celebrating a model, ask whether it beats a guess. A **baseline** is the simplest honest prediction: for a number, the training mean for everyone. For time-ordered data, **persistence** is stronger, predicting the patient's last value again ([worked example](BONUS.md#persistence-baselines-for-time-ordered-rows)). A model that cannot beat the baseline on validation rows has not learned anything useful.
+Before celebrating a model, ask whether it beats a guess. A **baseline** is the simplest honest prediction: for a number, the training mean for everyone; for time-ordered rows, **persistence**, the patient's last value again ([worked example](BONUS.md#persistence-baselines-for-time-ordered-rows)). A model that cannot beat the baseline on validation rows has learned nothing useful.
 
-Preprocessing needs the same honesty: a scaler that learns its means from validation or test rows leaks information about rows the model should be seeing for the first time (McKinney Ch. 12.4 fills missing ages with the *training* median for the same reason). A **Pipeline** bundles transformers and a model into one estimator, so `fit` learns the scaling from training rows only and `predict` reuses it.
+Preprocessing needs the same honesty: a scaler that learns its means from validation or test rows leaks information about rows the model should be seeing for the first time. A **Pipeline** bundles transformers and a model into one estimator:
 
 ```text
 X_train --fit-->     [StandardScaler -> LinearRegression]   (learns scaling + coefficients)
@@ -407,13 +394,13 @@ X_valid --predict--> [same fitted steps]  --> predictions
 
 ### Reference Card: Baselines and Pipelines
 
-- `DummyRegressor(strategy='mean')`: The regression baseline; predicts the training mean for every row (`from sklearn.dummy import DummyRegressor`).
+- `DummyRegressor(strategy='mean')`: Regression baseline; predicts the training mean for every row (`from sklearn.dummy import DummyRegressor`).
 - `df.groupby('patient_id')['sbp'].shift(1)`: Persistence baseline: each patient's previous reading, `NaN` on their first row (Lecture 09's grouped `shift()`).
-- `Pipeline([('scale', StandardScaler()), ('model', LinearRegression())])`: Chains named steps; the last step is the model.
-- `pipeline.fit(X_train, y_train)` / `pipeline.predict(X_valid)`: Fit every step on training rows only, then reuse that scaling and predict (a NumPy array).
+- `Pipeline([('scale', StandardScaler()), ('model', LinearRegression())])`: Chains named steps; the last is the model.
+- `pipeline.fit(X_train, y_train)` / `pipeline.predict(X_valid)`: Fit every step on training rows only, then reuse that scaling; returns an array.
 - `ColumnTransformer([(name, steps, columns), ...])`: Sends different columns to different preprocessing steps.
-- `SimpleImputer(strategy='median')`: Fills missing numbers with the training median; `strategy='most_frequent'` fills categories with the most common training value.
-- `OneHotEncoder(handle_unknown='ignore', sparse_output=False)`: One 0/1 column per training category; `handle_unknown='ignore'` turns an unseen category into all zeros instead of an error, and `sparse_output=False` returns an ordinary array.
+- `SimpleImputer(strategy='median')`: Fills missing numbers with the training median; `strategy='most_frequent'` fills categories.
+- `OneHotEncoder(handle_unknown='ignore', sparse_output=False)`: One 0/1 column per training category; an unseen category becomes all zeros instead of an error.
 
 ### Code Snippet: A Baseline and a Linear Pipeline
 
@@ -440,7 +427,7 @@ print(valid['sbp'].head(3).values)                     # [144.7 141.2 156.3]
 
 ### Code Snippet: Variation with Mixed Numeric and Categorical Columns
 
-Real tables mix numbers with categories and have gaps. `ColumnTransformer` routes each group of columns to its own pipeline, and every step still learns from training rows only.
+Real tables mix numbers with categories and have gaps; `ColumnTransformer` routes each group to its own pipeline, and every step still learns from training rows only.
 
 ```python
 import numpy as np
@@ -467,13 +454,13 @@ model.fit(mixed_train, mixed_target)
 print(model.predict(mixed_valid).round(2))  # [2.06 1.44]
 ```
 
-For classification, replace the final estimator; the fitting boundary stays the same.
+For classification, swap the final estimator.
 
 ## Measuring Prediction Error
 
 A **metric** turns a column of errors into one number. Choose it before comparing models and compute it the same way for the baseline, every candidate, and the final test.
 
-For numeric targets, each error is actual - predicted. For yes/no targets (1 = readmitted within 30 days), a **confusion matrix** counts the four outcomes: true positives (TP), false positives (FP), false negatives (FN), and true negatives (TN).
+For a numeric target, each error is actual - predicted. For a yes/no target - **classification**, with 1 = readmitted within 30 days - a **confusion matrix** counts the four outcomes: TP, FP, FN, TN.
 
 ### Reference Card: `sklearn.metrics`
 
@@ -533,78 +520,11 @@ flagged: accuracy=0.625 precision=0.500 recall=0.333
 always_no: accuracy=0.625 precision=0.000 recall=0.000
 ```
 
-## Freeze, Then Test Once
-
-After validation picks a winner, **freeze** it: its features, preprocessing, and settings can no longer change. You may refit the frozen pipeline on training + validation rows (same settings, more data) or keep the train-fitted version. Either way, evaluate on the test rows exactly once and report that number, disappointing or not: going back to tweak the model would turn the test set into a second validation set.
-
-### Reference Card: Freezing and the Final Test
-
-- `model.get_params(deep=False)`: The settings the model was created with; record them with the results. `LinearRegression` has no `random_state`, but `Ridge` and the forests below do: fix it so the run repeats.
-- `final = Pipeline([('scale', StandardScaler()), ('model', LinearRegression())])`: Recreate the frozen pipeline with the same steps and settings.
-- `train_valid = pd.concat([train, valid])`: Stack training and validation rows (Lecture 06's `pd.concat`).
-- `final.fit(train_valid[features], train_valid['sbp'])`: Optional refit on more data; the settings do not change.
-- `final.predict(test[features])`: The one test prediction, scored with the same metrics as validation.
-
-Demo 2's final part practices the refit and single test evaluation.
-
-## Random Forest
-
-A **decision tree** predicts by asking yes/no questions about the features ("Is age > 60?" then "Is BMI > 30?") and reporting the average outcome of the training patients who land in the same final group (a **leaf**). One tree is easy to read but jumpy: change a few training rows and its questions can change.
-
-A **random forest** grows many trees, each on a random resample of the rows (classification forests also consider a random subset of features at each question), then averages their predictions. A group of models combined into one prediction is an **ensemble**, and averaging many jumpy trees gives a steadier answer: wisdom of crowds.
-
-*Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works.*
-
-![Decision tree: one model, one prediction. Random forest: trees trained in parallel on random feature subsets, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
-
-Forests capture **nonlinear** (curved) relationships and **interactions**, where one feature's effect depends on another (age might matter more at high BMI), usually without scaling. Categorical text columns still need encoding, and feature importances are diagnostic, not causal.
-
-### Reference Card: Random Forests
-
-| Class / method | Purpose & arguments | Typical output |
-| :--- | :--- | :--- |
-| `RandomForestClassifier(n_estimators=..., random_state=...)` | Build a classification forest from randomized trees. | Estimator |
-| `RandomForestRegressor(n_estimators=..., random_state=...)` | Build a regression forest from randomized trees. | Estimator |
-| `max_depth=...`, `min_samples_split=...` | Limit how deep each tree grows and how many rows a question needs before it splits; smaller trees memorize less. | Settings |
-| `n_jobs=-1` | Build trees on all CPU cores at once. | Setting |
-| `model.fit(X_train, y_train)` | Fit the trees on training data. | Fitted estimator |
-| `model.predict(X_valid)` | Return class labels or numeric predictions. | Array |
-| `model.predict_proba(X_valid)` | Return class probabilities (classification only). | 2-D array |
-| `model.feature_importances_` | Read impurity-based feature importance scores (how much each feature's questions reduced error while training). | Array; not causal evidence |
-
-### Code Snippet: Random-Forest Classification
-
-```python
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-import numpy as np
-
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)  # only the first two columns matter
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
-
-predictions = model.predict(X_test)
-print(f"Feature importance: {model.feature_importances_.round(3)}")
-```
-
-```text
-Feature importance: [0.411 0.451 0.072 0.066]
-```
-
-The first two columns built the label, and the forest leans on them.
-
 ## Permutation Importance: What Does the Model Rely On?
 
-A forest's `feature_importances_` only describes tree models. **Permutation importance** works for any fitted model or pipeline: score it on validation rows, shuffle one feature column to break its link to the target, and score again. The bigger the drop, the more the model relied on that feature, like scrambling one lab value across a stack of charts to see how much worse a clinician's diagnoses get.
+A metric says how well the pipeline predicts; it does not say which columns it leans on. **Permutation importance** answers that for any fitted model or pipeline: score it on validation rows, shuffle one feature column to break its link to the target, and score again. The bigger the drop, the more the model relied on that feature - like scrambling one lab value across a stack of charts to see how much worse a clinician's diagnoses get.
 
-Shuffle validation rows, never the sealed test set. Correlated features can share or hide importance, and reliance is not causation.
+Shuffle validation rows, never the test set you are saving for the end. Correlated features can share or hide importance, and reliance is not causation. The same call works on the tree models in the next topic, where Demo 3 sets it beside their built-in importances.
 
 ### Reference Card: `permutation_importance`
 
@@ -617,7 +537,7 @@ Shuffle validation rows, never the sealed test set. Correlated features can shar
 | `scoring` | Metric; scorers are "higher is better", so MAE is `'neg_mean_absolute_error'` | Importance = increase in MAE |
 | `n_repeats`, `random_state` | Shuffles per feature and seed | Reproducible mean and spread |
 
-Returns an object whose `importances_mean` and `importances_std` hold one value per column, in column order.
+Returns an object whose `importances_mean` and `importances_std` hold one value per column.
 
 ### Code Snippet: Permutation Importance on Validation Rows
 
@@ -643,9 +563,83 @@ print(importance)
 1     bmi          1.31  0.38
 ```
 
+## Freeze, Then Test Once
+
+After validation picks a winner, **freeze** it: features, preprocessing, and settings stop changing. Refit the frozen pipeline on training + validation rows (same settings, more data) or keep the train-fitted version; either way, evaluate on the test rows exactly once and report that number, disappointing or not. Going back to tweak the model would turn the test set into a second validation set.
+
+### Reference Card: Freezing and the Final Test
+
+- `model.get_params(deep=False)`: The settings the model was created with; record them, and fix any `random_state`.
+- `final = Pipeline([('scale', StandardScaler()), ('model', LinearRegression())])`: Recreate the frozen pipeline, same steps and settings.
+- `train_valid = pd.concat([train, valid])`: Stack training and validation rows (Lecture 06).
+- `final.fit(train_valid[features], train_valid['sbp'])`: Optional refit on more data; no setting changes.
+- `final.predict(test[features])`: The one test prediction, scored with the same metrics as validation.
+
+Demo 2 ends with that refit and single test evaluation.
+
 *"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
 
 !["I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"](media/really_really__really_ridiculously_good_looking.jpg)
+
+# LIVE DEMO!
+
+# Trees and Forests
+
+A linear model shifts its prediction by the same amount for every extra year of age, at any BMI. The rest of the lecture keeps that workflow - train, validate, freeze, test once - and swaps in models that can bend.
+
+A **decision tree** predicts by asking yes/no questions about the features ("Is age > 60?" then "Is BMI > 30?") and reporting the average outcome of the training patients in the same final group (a **leaf**). One tree is easy to read but jumpy: change a few training rows and its questions change.
+
+*Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works.*
+
+## From One Tree to a Forest
+
+A **random forest** grows many trees, each on a random resample of the rows, then averages their predictions; `max_features` decides how many features each question may consider. A group of models combined into one prediction is an **ensemble**, and averaging many jumpy trees gives a steadier answer: wisdom of crowds.
+
+![Decision tree: one model, one prediction. Random forest: trees trained in parallel on random feature subsets, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
+
+Forests capture **nonlinear** (curved) relationships and **interactions**, where one feature's effect depends on another (age might matter more at high BMI), usually without scaling. Categorical text columns still need encoding.
+
+### Reference Card: Random Forests
+
+| Class / method | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `train_test_split(..., stratify=y)` | Split a class label so each part keeps the same share of each class; without it a small split can land lopsided. | Same four parts as before |
+| `RandomForestClassifier(n_estimators=..., random_state=...)` | Build a classification forest from randomized trees. | Estimator |
+| `RandomForestRegressor(n_estimators=..., random_state=...)` | Build a regression forest from randomized trees. | Estimator |
+| `max_features=...` | How many features each question may choose from. Defaults to the square root of the count for `RandomForestClassifier` but to all of them for `RandomForestRegressor`; fewer features make the trees less alike. | Setting |
+| `max_depth=...`, `min_samples_split=...` | Limit how deep each tree grows and how many rows a question needs before it splits; smaller trees memorize less. | Settings |
+| `n_jobs=-1` | Build trees on all CPU cores at once. | Setting |
+| `model.fit(X_train, y_train)` | Fit the trees on training data. | Fitted estimator |
+| `model.predict(X_valid)` | Return class labels or numeric predictions. | Array |
+| `model.predict_proba(X_valid)` | Return class probabilities (classification only). | 2-D array |
+| `model.feature_importances_` | Read impurity-based feature importance scores (how much each feature's questions reduced error while training). Tree models only, and measured on the training fit; `permutation_importance` measures held-out reliance for any model. | Array; not causal evidence |
+
+### Code Snippet: Random-Forest Classification
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)  # only the first two columns matter
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+predictions = model.predict(X_test)
+print(f"Feature importance: {model.feature_importances_.round(3)}")
+```
+
+```text
+Feature importance: [0.411 0.451 0.072 0.066]
+```
+
+The first two columns built the label, and the forest leans on them.
 
 # The Secret Weapon: Gradient Boosting
 
@@ -653,13 +647,13 @@ print(importance)
 
 ## Why Gradient Boosting?
 
-A random forest builds independent trees in parallel and averages them. Boosting builds trees in sequence, each aimed at what the ensemble so far still gets wrong (the bottom row of the trees figure), which makes it a strong tabular candidate.
+Boosting builds its trees in sequence instead of in parallel, each aimed at what the ensemble so far still gets wrong (the bottom row of the trees figure).
 
-A **hyperparameter** is a setting you choose before fitting (number of trees, tree depth, learning rate), not a value the model learns. The **learning rate** scales each new tree's correction: at 0.1, each tree fixes a tenth of the remaining error, so many small steps add up without overshooting.
+A **hyperparameter** is a setting you choose before fitting - number of trees, depth, learning rate - not a value the model learns. The **learning rate** scales each new tree's correction: at 0.1 each tree fixes a tenth of the remaining error, so small steps add up without overshooting.
 
 *Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind).*
 
-For squared-error regression each tree fits ordinary residuals; for other error measures it fits a generalized residual, the "gradient" in the name. Step by step, with made-up numbers:
+For squared-error regression each tree fits the ordinary residuals; the "gradient" in the name is the general version of that idea. Step by step, with made-up numbers:
 
 | Step | What Happens | Example |
 |------|--------------|---------|
@@ -669,7 +663,7 @@ For squared-error regression each tree fits ordinary residuals; for other error 
 | 4 | Add the scaled update to the ensemble | With learning rate 1: [5.4, 3.3, 6.9] |
 | 5 | Recompute targets and repeat | For N rounds, or until validation stops improving |
 
-*Each new model focuses on what the ensemble so far got wrong. It's like having a tutor who only helps with your mistakes!*
+*It's like having a tutor who only helps with your mistakes!*
 
 *"What is this? A model for ants? It needs to be at least... three times more accurate!"*
 
@@ -677,7 +671,7 @@ For squared-error regression each tree fits ordinary residuals; for other error 
 
 ## `XGBoost` Basics
 
-`XGBoost` is a widely used gradient-boosting library, and its models follow the same `fit`/`predict` pattern as `scikit-learn`. **Early stopping** ends training when validation performance stops improving; because validation then participates in model selection, keep a separate test set for the one final evaluation.
+`XGBoost` is a widely used gradient-boosting library whose models follow the same `fit`/`predict` pattern as `scikit-learn`. **Early stopping** ends training when validation performance stops improving; validation then helps select the model, so keep a separate test set for the one final evaluation.
 
 ### Reference Card: XGBoost
 
@@ -701,7 +695,7 @@ For squared-error regression each tree fits ordinary residuals; for other error 
 | `subsample` | Fraction of rows each tree sees | Less robust | More variance | 0.8-1.0 |
 | `colsample_bytree` | Fraction of features each tree sees | Trees miss useful features | Trees become more alike | 0.8-1.0 |
 
-*Toy starting points, not universal sweet spots; validate them for the data, objective, and budget. Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash.*
+*Toy starting points, not universal sweet spots; validate them for the data and budget. Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash.*
 
 ### Code Snippet: XGBoost with Early Stopping
 
@@ -738,19 +732,17 @@ Best iteration: 56
 
 ![Fast & Furious Family](media/fast_furious_family.jpg)
 
-# LIVE DEMO!
-
 # Deep Learning: The Modern Frontier
 
 *Deep learning is like the "Derelicte" of modeling - it's cutting-edge, it's flashy, and everyone wants to use it even when they probably shouldn't.*
 
 ## Why Deep Learning?
 
-A **neural network** is a stack of simple units. Each **neuron** does something you already know: a weighted sum of its inputs plus an intercept (a tiny linear regression), followed by an **activation function** that bends the result. **ReLU** keeps positive values and turns negatives into 0; **sigmoid** squashes any number into 0-1 so it can be read as a probability. A **layer** is a row of neurons, and "deep" means several layers, so later layers combine patterns found by earlier ones.
+A **neural network** is a stack of simple units. Each **neuron** is a weighted sum of its inputs plus an intercept - a tiny linear regression - followed by an **activation function** that bends the result. **ReLU** keeps positive values and turns negatives into 0; **sigmoid** squashes any number into 0-1, readable as a probability. A **layer** is a row of neurons, and "deep" means several, so later layers combine patterns found by earlier ones.
 
 Training repeats one loop: predict, measure the **loss** (how wrong the predictions are; `binary_crossentropy` for yes/no targets), and let the **optimizer** (such as Adam) nudge every weight to reduce it. One pass through the training rows is an **epoch**, and rows are processed in **batches** of, say, 32.
 
-All that flexibility pays off for images, text, and audio, where useful features are hard to write by hand and the network learns its own (**representation learning**). On a tabular clinic table with a few hundred rows, a linear model or boosted trees usually match or beat it for far less effort, and a network overfits a small table easily, so watch the training and validation loss curves together (Demo 3 plots them).
+All that flexibility pays off for images, text, and audio, where useful features are hard to write by hand and the network learns its own (**representation learning**). On a clinic table of a few hundred rows, a linear model or boosted trees usually match it for far less effort, and a network overfits easily - so watch the loss curves (Demo 3 plots them).
 
 *"But why deep learning models?" "Seriously? I just told you that a moment ago."*
 
@@ -758,11 +750,11 @@ All that flexibility pays off for images, text, and audio, where useful features
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
-This lecture uses TensorFlow's integrated `tf.keras` API, with the course Python 3.13 runtime and TensorFlow 2.21.0 in Demo 3. Framework choice depends on measured performance, target platform, expertise, and maintenance; `BONUS.md` covers PyTorch and JAX.
+This lecture uses TensorFlow's integrated `tf.keras` API, with the course Python 3.13 runtime and TensorFlow 2.21.0 in Demo 3; `BONUS.md` covers PyTorch and JAX.
 
-**Dropout** randomly masks a fraction of units during training to reduce reliance on particular pathways; all units are active when the model predicts. Like L2, it is a regularization choice to validate rather than a guarantee against overfitting, and Demo 3 compares the two.
+**Dropout** randomly masks a fraction of units during training; all units are active when the model predicts. Like L2, it is a regularization choice to validate, not a guarantee against overfitting, and Demo 3 validates both against a plain network.
 
-The snippet below builds this network. Layers between the input and the output are called **hidden layers**:
+Layers between the input and the output are called **hidden layers**:
 
 ```
 Input Layer (10 features)
@@ -778,7 +770,7 @@ Output Layer (1 neuron, Sigmoid)
 
 | Method / class | Purpose & arguments | Typical output |
 | :--- | :--- | :--- |
-| `keras.utils.set_random_seed(42)` | Seed Python, NumPy, and TensorFlow at once for repeatable results (Demo 3 seeds with `np.random.seed` and `tf.random.set_seed`). | None |
+| `keras.utils.set_random_seed(42)` | Seed Python, NumPy, and TensorFlow at once; pair it with `tf.config.experimental.enable_op_determinism()` when the printed numbers must repeat exactly (Demo 3 does both). | None |
 | `keras.Sequential([...])` | Build a linear stack of layers. | Keras model |
 | `keras.layers.Input(shape=(n_features,))` | Declare the input width as the first item in `Sequential`. | Input placeholder |
 | `keras.layers.Dense(units, activation=...)` | Add a fully connected layer. | Layer |
@@ -791,8 +783,6 @@ Output Layer (1 neuron, Sigmoid)
 | `history.history` | Per-epoch values such as `loss`, `val_loss`, `accuracy`, `val_accuracy`. | dict of lists |
 | `model.predict(X)` | Generate predictions; with a sigmoid output these are probabilities, so `(model.predict(X) > 0.5).astype(int).flatten()` gives 0/1 labels. | NumPy array |
 | `model.evaluate(X_test, y_test)` | Calculate loss and configured metrics on held-out data. | Scalar or list |
-
-*"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN backpropagate!"*
 
 ### Code Snippet: A Small Keras Classifier
 
@@ -828,13 +818,13 @@ Final validation accuracy: 0.960
 Test accuracy: 0.980
 ```
 
-These numbers come from a CPU run; other hardware may differ slightly.
+These numbers come from a CPU run; other hardware may differ.
 
 *"What is this? A learning rate for ants? It needs to be at least... three times smaller!"*
 
 ## Comparing Model Families
 
-Each family earns a place on a shortlist for different reasons:
+Each family earns its shortlist place differently:
 
 | Model family | Useful role in a shortlist | Potential strengths | Check before choosing |
 |---|---|---|---|
@@ -843,7 +833,7 @@ Each family earns a place on a shortlist for different reasons:
 | Gradient-boosted trees | Tabular prediction candidate | Flexible nonlinear fits and strong empirical performance | Tuning, calibration, and validation stability |
 | Deep neural networks | Representation-learning candidate | Flexible architectures for images, text, audio, and other complex inputs | Data, compute, deployment, and explanation requirements |
 
-Measure performance in the intended workflow: dataset, implementation, hardware, and tuning budget rule out universal rankings.
+Measure performance in the intended workflow: dataset, implementation, hardware, and budget rule out universal rankings.
 
 *"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"*
 

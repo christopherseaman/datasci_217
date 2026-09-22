@@ -64,7 +64,7 @@ Use these nudges after trying the corresponding phase. They intentionally stop s
 
 ## Q7: Train-Fitted Pipeline
 
-- Revisit [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) for the prerequisite pipeline and validation pattern.
+- Revisit [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_sklearn_prediction.ipynb) for the prerequisite pipeline and validation pattern.
 - A `ColumnTransformer` can apply the required `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` to station and `SimpleImputer(strategy="median")` to numeric predictors.
 - Put preprocessing and the regressor in one `Pipeline`; fitting that object on training data prevents validation leakage.
 - Choose only a regressor included in the pinned scikit-learn version. Do not install XGBoost.

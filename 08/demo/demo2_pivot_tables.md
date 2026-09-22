@@ -1,10 +1,12 @@
-# Demo 2: Pivot Tables and Cross-Tabulations
+# Demo 2: Group Coverage and Result Shapes
 
 ## Learning Objectives
-- Create pivot tables for multi-dimensional analysis
-- Use cross-tabulations for frequency analysis
-- Apply advanced pivot operations
-- Handle missing values and totals
+- See which rows and which groups a default summary silently leaves out
+- Keep unrecorded keys visible with `dropna=False`
+- Set a reporting order with `pd.Categorical` and show empty groups with `observed=False`
+- Add group context to every row with `transform`
+- Keep or drop whole groups with `filter`
+- Run a custom function per group with `apply`
 
 ## Setup
 
@@ -20,790 +22,675 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 ```
 
-## Part 1: Basic Pivot Tables
+## Part 1: Which Groups Appear in a Summary
+
+This demo builds the same employee table Demo 1 used, so it runs on its own. Rerun the next cell even if you still have Demo 1 open.
 
 ### Create Sample Data
 
 ```python
-# Create large-scale sales dataset (100,000 transactions)
-print("=== Creating Large-Scale Sales Dataset ===")
-np.random.seed(42)
-n_transactions = 100000
+# Create large-scale employee dataset (100,000 rows)
+print("=== Creating Large-Scale Employee Dataset ===")
+n_employees = 100000
 
-# Generate realistic sales data
-products = [
-    "Electronics",
-    "Clothing",
-    "Books",
-    "Home",
-    "Sports",
-    "Toys",
-    "Food",
-    "Beauty",
+# Generate realistic employee data
+departments = [
+    "Sales",
+    "Engineering",
+    "Marketing",
+    "HR",
+    "Finance",
+    "Operations",
 ]
 regions = ["North", "South", "East", "West", "Central"]
-categories = ["Premium", "Standard", "Budget"]
-sales_channels = ["Online", "Retail", "Wholesale"]
+employee_names = [f"Emp_{i:05d}" for i in range(n_employees)]
 
-# Product-specific pricing
-product_base_prices = {
-    "Electronics": (200, 2000),
-    "Clothing": (30, 400),
-    "Books": (15, 60),
-    "Home": (50, 900),
-    "Sports": (40, 600),
-    "Toys": (20, 250),
-    "Food": (5, 50),
-    "Beauty": (10, 150),
+# Create correlated data: Engineering has higher salaries, Sales varies more
+dept_salary_base = {
+    "Engineering": 85000,
+    "Finance": 75000,
+    "Marketing": 65000,
+    "Sales": 60000,
+    "HR": 55000,
+    "Operations": 50000,
+}
+
+dept_salary_std = {
+    "Engineering": 15000,
+    "Finance": 12000,
+    "Marketing": 10000,
+    "Sales": 20000,  # Higher variance
+    "HR": 8000,
+    "Operations": 7000,
 }
 
 # Generate data
-transactions = []
-for i in range(n_transactions):
-    product = np.random.choice(products)
-    region = np.random.choice(regions)
-    category = np.random.choice(categories)
-    channel = np.random.choice(sales_channels)
+np.random.seed(42)
+departments_list = np.random.choice(departments, n_employees)
+regions_list = np.random.choice(regions, n_employees)
 
-    # Correlated pricing: Premium > Standard > Budget
-    price_multiplier = {"Premium": 1.5, "Standard": 1.0, "Budget": 0.7}[
-        category
-    ]
-    price_min, price_max = product_base_prices[product]
-    unit_price = np.random.uniform(price_min, price_max) * price_multiplier
+# Create correlated salaries based on department
+salaries = []
+for dept in departments_list:
+    base = dept_salary_base[dept]
+    std = dept_salary_std[dept]
+    salary = np.random.normal(base, std)
+    salaries.append(max(30000, salary))  # Minimum wage floor
 
-    # Quantity inversely correlated with price
-    quantity = max(
-        1,
-        int(
-            np.random.exponential(5)
-            * (1 - (unit_price - price_min) / (price_max * 1.5 - price_min))
-        ),
-    )
-    quantity = min(quantity, 50)
+# Experience correlates with salary (but with noise)
+experience = []
+for salary in salaries:
+    # More experienced employees tend to earn more, but with variation
+    exp_base = (salary - 40000) / 8000
+    exp = max(0, int(np.random.normal(exp_base, 2)))
+    experience.append(min(exp, 30))  # Cap at 30 years
 
-    sales = unit_price * quantity
+# Create DataFrame
+df = pd.DataFrame({
+    "Employee": employee_names,
+    "Department": departments_list,
+    "Region": regions_list,
+    "Salary": np.round(salaries, 2),
+    "Experience": experience,
+})
 
-    # Add seasonal variation
-    month = np.random.randint(1, 13)
-    seasonal_mult = 1.0 + 0.3 * np.sin(
-        2 * np.pi * month / 12
-    )  # Seasonal pattern
-    sales *= seasonal_mult
+# Add some additional features
+df["Years_At_Company"] = np.round(np.random.uniform(0.5, 14, n_employees), 1)
+df["Performance_Score"] = np.random.uniform(1, 5, n_employees)
+df["Bonus"] = df["Salary"] * df["Performance_Score"] * 0.1
 
-    transactions.append({
-        "Product": product,
-        "Region": region,
-        "Category": category,
-        "Channel": channel,
-        "Unit_Price": round(unit_price, 2),
-        "Quantity": quantity,
-        "Sales": round(sales, 2),
-        "Month": month,
-    })
-
-df = pd.DataFrame(transactions)
-df["Date"] = pd.date_range("2020-01-01", periods=n_transactions, freq="h")[
-    :n_transactions
-]
-df["Quarter"] = df["Date"].dt.quarter
-df["Year"] = df["Date"].dt.year
+# Bonuses are paid after a full year, so this year's hires have no bonus on file
+df.loc[df["Years_At_Company"] < 1, "Bonus"] = np.nan
 
 print(f"Dataset shape: {df.shape}")
+print(f"Employees in their first year (no bonus yet): {df['Bonus'].isna().sum():,}")
 print(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-print("\nSample Data:")
-print(df.head(10))
-print("\nBasic Statistics:")
+print("\nFirst few rows:")
+print(df.head())
+print("\nBasic statistics:")
 print(df.describe())
 ```
 
-### Basic Pivot Table
+### Two Realities the Default Summary Hides
 
 ```python
-# Create basic pivot table
-print("=== Basic Pivot Table: Sales by Product and Region ===")
-pivot = pd.pivot_table(
-    df, values="Sales", index="Product", columns="Region", aggfunc="sum"
+# Work on a copy so the original table stays clean for Parts 2-4
+reported = df.copy()
+
+# 1. Some records arrived without a department
+unrecorded = np.random.choice(reported.index, size=250, replace=False)
+reported.loc[unrecorded, "Department"] = None
+
+# 2. Legal opened this quarter and has not hired anyone yet
+reporting_order = [
+    "Engineering",
+    "Finance",
+    "Marketing",
+    "Sales",
+    "HR",
+    "Operations",
+    "Legal",
+]
+
+print("=== What the Table Contains ===")
+print(f"Rows: {len(reported):,}")
+print(f"Rows with no department recorded: {reported['Department'].isna().sum()}")
+print(f"Departments named in the report: {len(reporting_order)}")
+print(f"Departments present in the data: {reported['Department'].nunique()}")
+```
+
+Six departments have employees, a seventh exists on paper, and 250 rows name no department at all. A default `groupby` shows six groups and says nothing about the rest.
+
+### Missing Keys: `dropna`
+
+```python
+# The default drops rows whose key is missing, before the split
+default_counts = reported.groupby("Department")["Salary"].count()
+kept_counts = reported.groupby("Department", dropna=False)["Salary"].count()
+
+print("=== Default: dropna=True ===")
+print(default_counts)
+print(f"Employees counted: {default_counts.sum():,} of {len(reported):,}")
+
+print("\n=== dropna=False ===")
+print(kept_counts)
+print(f"Employees counted: {kept_counts.sum():,} of {len(reported):,}")
+```
+
+The default report loses 250 people with no warning; `dropna=False` keeps them as a `NaN` group, listed last, so the gap is visible and someone can go find the missing departments.
+
+### Reporting Order and Empty Groups: `pd.Categorical` and `observed`
+
+```python
+# Declare the allowed values and the order the report should use
+reported["Department"] = pd.Categorical(
+    reported["Department"], categories=reporting_order, ordered=True
 )
-print("Sales by Product and Region:")
-print(pivot)
 
-# Visualize basic pivot table
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+present_only = reported.groupby("Department", observed=True, dropna=False)[
+    "Salary"
+].agg(["count", "mean"])
+every_department = reported.groupby("Department", observed=False, dropna=False)[
+    "Salary"
+].agg(["count", "mean"])
 
-# 1. Heatmap visualization
-im = axes[0].imshow(pivot.values, cmap="YlOrRd", aspect="auto")
-axes[0].set_xticks(range(len(pivot.columns)))
-axes[0].set_yticks(range(len(pivot.index)))
-axes[0].set_xticklabels(pivot.columns)
-axes[0].set_yticklabels(pivot.index)
-axes[0].set_title(
-    "Sales Heatmap: Product × Region", fontsize=14, fontweight="bold"
+print("=== observed=True: Only Departments With Employees ===")
+print(present_only.round(0))
+print("\n=== observed=False: Every Declared Department ===")
+print(every_department.round(0))
+```
+
+Both tables follow the order you declared, not alphabetical order. Only the second one shows Legal, with a count of `0` and a mean of `NaN`: no salaries to average is not the same as a mean salary of zero.
+
+### The Same Choices in a Pivot Table
+
+```python
+# pivot_table makes the same two choices, and dropna= has one extra job here
+staffing = pd.pivot_table(
+    reported,
+    values="Salary",
+    index="Department",
+    columns="Region",
+    aggfunc="count",
+    observed=False,
+    dropna=False,
+    fill_value=0,
 )
-axes[0].set_xlabel("Region")
-axes[0].set_ylabel("Product")
-cbar = plt.colorbar(im, ax=axes[0])
-cbar.set_label("Total Sales ($)", rotation=270, labelpad=20)
+print("=== Headcount by Department × Region (dropna=False) ===")
+print(staffing)
+print("\nRows in the table:", len(staffing))
 
-# Add text annotations
-for i in range(len(pivot.index)):
-    for j in range(len(pivot.columns)):
-        text = axes[0].text(
-            j,
+# The same counts with the default dropna=True
+counted_default = pd.pivot_table(
+    reported,
+    values="Salary",
+    index="Department",
+    columns="Region",
+    aggfunc="count",
+    observed=False,
+    dropna=True,
+    fill_value=0,
+)
+print("\n=== Same Counts with dropna=True ===")
+print(counted_default)
+print("\nRows in the table:", len(counted_default))
+
+# Mean salary instead of a count, with the default dropna=True
+mean_default = pd.pivot_table(
+    reported,
+    values="Salary",
+    index="Department",
+    columns="Region",
+    aggfunc="mean",
+    observed=False,
+    dropna=True,
+)
+print("\n=== Mean Salary with dropna=True ===")
+print(mean_default.round(0))
+print("\nRows in the table:", len(mean_default))
+
+# The same means with dropna=False, to see which rows the default removed
+mean_kept = pd.pivot_table(
+    reported,
+    values="Salary",
+    index="Department",
+    columns="Region",
+    aggfunc="mean",
+    observed=False,
+    dropna=False,
+)
+print("\n=== Mean Salary with dropna=False ===")
+print(mean_kept.round(0))
+print("\nRows in the table:", len(mean_kept))
+```
+
+`observed=False` asks for every declared department, so Legal gets a row in three of the four tables; only the mean with `dropna=True` loses it. `dropna=False` adds the rows whose department was never recorded: eight rows, the six staffed departments, Legal, and the `NaN` group. Switching to `dropna=True` drops that `NaN` group but keeps Legal at seven rows, because counting an empty group gives `0`, and `0` is not missing. The extra job `dropna=` has in a pivot table is about the result, not the category: `dropna=True` also removes any row or column whose cells all came out `NaN`. Both rules cut a row from the table of means: the `NaN` group goes because its key is missing, and Legal goes because its five cells are all `NaN`, leaving six rows. The last table keeps both, and its `NaN` row is not empty at all: five real means, from `61288` in East to `67633` in Central, averaging the salaries of the 250 people the default report never mentions. Counting rows is exactly the case where `fill_value=0` is right.
+
+One thing to read carefully: the `NaN` row is not last here. `groupby(dropna=False)` lists it after every named group, but `pivot_table` with a categorical key, `observed=False`, and a `columns=` key puts it at the top, above Engineering, in both tables that keep it. Find that row by its label, not by its position.
+
+### Show the Difference
+
+```python
+# Every group the data can produce, marking the ones a default report hides
+full_counts = reported.groupby("Department", observed=False, dropna=False)[
+    "Salary"
+].count()
+default_groups = list(
+    reported.groupby("Department", observed=True)["Salary"].count().index
+)
+
+labels = [
+    name if pd.notna(name) else "(not recorded)" for name in full_counts.index
+]
+hidden = [
+    pd.isna(name) or name not in default_groups for name in full_counts.index
+]
+colors = ["tab:red" if is_hidden else "tab:blue" for is_hidden in hidden]
+
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.bar(labels, full_counts.to_numpy(), color=colors, alpha=0.85)
+for i, (value, is_hidden) in enumerate(zip(full_counts.to_numpy(), hidden)):
+    if is_hidden:
+        ax.text(
             i,
-            f"${pivot.iloc[i, j] / 1000:.0f}K",
+            value + 600,
+            "missing from the default report",
             ha="center",
-            va="center",
-            color="black",
+            va="bottom",
+            rotation=90,
+            color="tab:red",
             fontsize=9,
             fontweight="bold",
         )
-
-# 2. Grouped bar chart
-pivot.plot(kind="bar", ax=axes[1], width=0.8)
-axes[1].set_title(
-    "Sales by Product and Region (Bar Chart)", fontsize=14, fontweight="bold"
+ax.set_title(
+    "What the Default Report Leaves Out", fontsize=14, fontweight="bold"
 )
-axes[1].set_ylabel("Total Sales ($)")
-axes[1].set_xlabel("Product")
-axes[1].legend(title="Region", bbox_to_anchor=(1.05, 1), loc="upper left")
-axes[1].tick_params(axis="x", rotation=45)
-axes[1].grid(axis="y", alpha=0.3)
+ax.set_ylabel("Employees Counted")
+ax.tick_params(axis="x", rotation=45)
+ax.grid(axis="y", alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-### Pivot Table with Multiple Aggregations
+Two bars are red: Legal, an empty group with a real headcount question behind it, and the 250 employees whose department was never recorded. A default `groupby` prints neither one.
+
+## Part 2: Transform — Keep Every Row
+
+`transform` computes a statistic per group and copies it back to every row of that group, so the result has the same length and index as the input and can become a new column.
+
+### Add Department Statistics to Every Row
 
 ```python
-# Pivot table with multiple aggregations
-print("=== Multiple Aggregations ===")
-pivot_multi = pd.pivot_table(
-    df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc=["sum", "mean", "count", "std"],
+# Transform: Add group statistics as new columns
+print("=== Transform Operations ===")
+print("Adding department-level statistics to each employee record...")
+
+df["Dept_Salary_Mean"] = df.groupby("Department")["Salary"].transform("mean")
+df["Dept_Salary_Std"] = df.groupby("Department")["Salary"].transform("std")
+df["Dept_Salary_Median"] = df.groupby("Department")["Salary"].transform(
+    "median"
 )
-print("Multiple aggregations (sum, mean, count, std):")
-print(pivot_multi)
-
-# Visualize multiple aggregations
-fig, axes = plt.subplots(2, 2, figsize=(18, 12))
-
-# Extract each aggregation level
-pivot_sum = pivot_multi["sum"]
-pivot_mean = pivot_multi["mean"]
-pivot_count = pivot_multi["count"]
-pivot_std = pivot_multi["std"]
-
-# 1. Sum heatmap
-im1 = axes[0, 0].imshow(pivot_sum.values, cmap="YlOrRd", aspect="auto")
-axes[0, 0].set_xticks(range(len(pivot_sum.columns)))
-axes[0, 0].set_yticks(range(len(pivot_sum.index)))
-axes[0, 0].set_xticklabels(pivot_sum.columns)
-axes[0, 0].set_yticklabels(pivot_sum.index)
-axes[0, 0].set_title("Total Sales (Sum)", fontsize=12, fontweight="bold")
-axes[0, 0].set_xlabel("Region")
-axes[0, 0].set_ylabel("Product")
-plt.colorbar(im1, ax=axes[0, 0], label="Total Sales ($)")
-
-# 2. Mean heatmap
-im2 = axes[0, 1].imshow(pivot_mean.values, cmap="Blues", aspect="auto")
-axes[0, 1].set_xticks(range(len(pivot_mean.columns)))
-axes[0, 1].set_yticks(range(len(pivot_mean.index)))
-axes[0, 1].set_xticklabels(pivot_mean.columns)
-axes[0, 1].set_yticklabels(pivot_mean.index)
-axes[0, 1].set_title("Average Sales (Mean)", fontsize=12, fontweight="bold")
-axes[0, 1].set_xlabel("Region")
-axes[0, 1].set_ylabel("Product")
-plt.colorbar(im2, ax=axes[0, 1], label="Mean Sales ($)")
-
-# 3. Count heatmap
-im3 = axes[1, 0].imshow(pivot_count.values, cmap="Greens", aspect="auto")
-axes[1, 0].set_xticks(range(len(pivot_count.columns)))
-axes[1, 0].set_yticks(range(len(pivot_count.index)))
-axes[1, 0].set_xticklabels(pivot_count.columns)
-axes[1, 0].set_yticklabels(pivot_count.index)
-axes[1, 0].set_title("Transaction Count", fontsize=12, fontweight="bold")
-axes[1, 0].set_xlabel("Region")
-axes[1, 0].set_ylabel("Product")
-plt.colorbar(im3, ax=axes[1, 0], label="Count")
-
-# 4. Standard deviation heatmap (shows variability)
-im4 = axes[1, 1].imshow(pivot_std.values, cmap="Purples", aspect="auto")
-axes[1, 1].set_xticks(range(len(pivot_std.columns)))
-axes[1, 1].set_yticks(range(len(pivot_std.index)))
-axes[1, 1].set_xticklabels(pivot_std.columns)
-axes[1, 1].set_yticklabels(pivot_std.index)
-axes[1, 1].set_title(
-    "Sales Variability (Std Dev)", fontsize=12, fontweight="bold"
+df["Salary_Normalized"] = df.groupby("Department")["Salary"].transform(
+    lambda x: (x - x.mean()) / x.std()
 )
-axes[1, 1].set_xlabel("Region")
-axes[1, 1].set_ylabel("Product")
-plt.colorbar(im4, ax=axes[1, 1], label="Std Dev ($)")
-
-plt.tight_layout()
-plt.show()
-```
-
-## Part 2: Advanced Pivot Operations
-
-### Pivot Table with Totals
-
-```python
-# Pivot table with totals
-print("=== Pivot Table with Totals ===")
-pivot_totals = pd.pivot_table(
-    df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc="sum",
-    margins=True,
-    margins_name="Total",
-)
-print("Sales with totals:")
-print(pivot_totals)
-```
-
-### Handling Missing Values
-
-```python
-# Create data with missing combinations
-data_missing = {
-    "Product": ["A", "A", "B", "B", "C"],
-    "Region": ["North", "South", "North", "South", "North"],
-    "Sales": [1000, 1500, 2000, 1200, 800],
-}
-
-df_missing = pd.DataFrame(data_missing)
-print("=== Handling Missing Values ===")
-print("Data with missing combinations:")
-print(df_missing)
-
-# Pivot with fill_value
-pivot_filled = pd.pivot_table(
-    df_missing,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc="sum",
-    fill_value=0,
-)
-print("\nPivot with filled missing values:")
-print(pivot_filled)
-```
-
-### Cross-Tabulation
-
-```python
-# Create large-scale categorical data for cross-tabulation
-print("=== Creating Large-Scale Categorical Dataset ===")
-np.random.seed(42)
-n_observations = 100000
-
-# Generate realistic categorical data with correlations
-genders = np.random.choice(["M", "F"], n_observations, p=[0.48, 0.52])
-age_groups = np.random.choice(
-    ["18-25", "26-35", "36-45", "46-55", "56-65", "65+"],
-    n_observations,
-    p=[0.15, 0.25, 0.20, 0.18, 0.12, 0.10],
-)
-education_levels = np.random.choice(
-    ["High School", "Bachelor", "Master", "PhD", "Associate"],
-    n_observations,
-    p=[0.30, 0.35, 0.20, 0.10, 0.05],
-)
-income_levels = np.random.choice(
-    ["Low", "Medium", "High"], n_observations, p=[0.40, 0.40, 0.20]
+df["Salary_Percentile_Rank"] = df.groupby("Department")["Salary"].transform(
+    lambda x: pd.qcut(
+        x, q=4, labels=["Q1", "Q2", "Q3", "Q4"], duplicates="drop"
+    )
 )
 
-# Add correlation: Higher education tends to have higher income
-for i in range(n_observations):
-    if education_levels[i] in ["Master", "PhD"]:
-        income_levels[i] = np.random.choice(["Medium", "High"], p=[0.4, 0.6])
-    elif education_levels[i] == "High School":
-        income_levels[i] = np.random.choice(["Low", "Medium"], p=[0.7, 0.3])
+# Calculate how many standard deviations each employee is from their department mean
+df["Salary_Z_Score"] = (df["Salary"] - df["Dept_Salary_Mean"]) / df[
+    "Dept_Salary_Std"
+]
 
-cat_df = pd.DataFrame({
-    "Gender": genders,
-    "Age_Group": age_groups,
-    "Education": education_levels,
-    "Income_Level": income_levels,
-})
+print("Sample of transformed data:")
+sample_cols = [
+    "Department",
+    "Employee",
+    "Salary",
+    "Dept_Salary_Mean",
+    "Dept_Salary_Std",
+    "Salary_Normalized",
+    "Salary_Z_Score",
+    "Salary_Percentile_Rank",
+]
+print(df[sample_cols].head(10))
 
-# Add purchase behavior correlated with demographics
-purchase_amounts = []
-for i in range(n_observations):
-    base = {"Low": 50, "Medium": 150, "High": 400}[income_levels[i]]
-    amount = np.random.exponential(base)
-    purchase_amounts.append(min(amount, 2000))
+# Visualize transform results
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
-cat_df["Purchase_Amount"] = purchase_amounts
-
-print(f"Dataset shape: {cat_df.shape}")
-print("\nSample categorical data:")
-print(cat_df.head(10))
-
-# Cross-tabulation: Gender × Age Group
-print("\n=== Cross-Tabulation: Gender × Age Group ===")
-crosstab = pd.crosstab(cat_df["Gender"], cat_df["Age_Group"], margins=True)
-print(crosstab)
-
-# Cross-tabulation with values: Gender × Income Level (sum of purchases)
-print("\n=== Cross-Tabulation with Values: Gender × Income Level ===")
-crosstab_values = pd.crosstab(
-    cat_df["Gender"],
-    cat_df["Income_Level"],
-    values=cat_df["Purchase_Amount"],
-    aggfunc="sum",
-    margins=True,
-)
-print(crosstab_values)
-
-# Multi-dimensional cross-tabulation
-print("\n=== Multi-Dimensional Cross-Tabulation ===")
-crosstab_multi = pd.crosstab(
-    [cat_df["Gender"], cat_df["Age_Group"]], cat_df["Education"], margins=True
-)
-print("Gender × Age Group × Education:")
-print(crosstab_multi.head(15))
-
-# Visualize cross-tabulations
-fig, axes = plt.subplots(2, 2, figsize=(18, 12))
-
-# 1. Gender × Age Group heatmap
-crosstab_no_margins = pd.crosstab(cat_df["Gender"], cat_df["Age_Group"])
-im1 = axes[0, 0].imshow(crosstab_no_margins.values, cmap="Blues", aspect="auto")
-axes[0, 0].set_xticks(range(len(crosstab_no_margins.columns)))
-axes[0, 0].set_yticks(range(len(crosstab_no_margins.index)))
-axes[0, 0].set_xticklabels(crosstab_no_margins.columns, rotation=45)
-axes[0, 0].set_yticklabels(crosstab_no_margins.index)
+# 1. Distribution of normalized salaries by department
+for dept in df["Department"].unique():
+    dept_data = df[df["Department"] == dept]["Salary_Normalized"]
+    axes[0, 0].hist(dept_data, alpha=0.5, label=dept, bins=30)
 axes[0, 0].set_title(
-    "Gender × Age Group Cross-Tabulation", fontsize=12, fontweight="bold"
+    "Normalized Salary Distribution by Department",
+    fontsize=14,
+    fontweight="bold",
 )
-axes[0, 0].set_xlabel("Age Group")
-axes[0, 0].set_ylabel("Gender")
-plt.colorbar(im1, ax=axes[0, 0], label="Count")
+axes[0, 0].set_xlabel("Normalized Salary (Z-score)")
+axes[0, 0].set_ylabel("Frequency")
+axes[0, 0].legend()
+axes[0, 0].grid(alpha=0.3)
 
-# Add text annotations
-for i in range(len(crosstab_no_margins.index)):
-    for j in range(len(crosstab_no_margins.columns)):
-        text = axes[0, 0].text(
-            j,
-            i,
-            f"{crosstab_no_margins.iloc[i, j]:,}",
-            ha="center",
-            va="center",
-            color="white",
-            fontsize=10,
-            fontweight="bold",
-        )
-
-# 2. Gender × Income Level (with purchase amounts)
-crosstab_purchases = pd.crosstab(
-    cat_df["Gender"],
-    cat_df["Income_Level"],
-    values=cat_df["Purchase_Amount"],
-    aggfunc="mean",
+# 2. Z-score distribution
+df["Salary_Z_Score"].hist(
+    bins=50, ax=axes[0, 1], color="steelblue", edgecolor="black"
 )
-crosstab_purchases.plot(kind="bar", ax=axes[0, 1], width=0.8)
+axes[0, 1].axvline(
+    0, color="red", linestyle="--", linewidth=2, label="Department Mean"
+)
 axes[0, 1].set_title(
-    "Average Purchase Amount: Gender × Income Level",
-    fontsize=12,
+    "Salary Z-Score Distribution (All Employees)",
+    fontsize=14,
     fontweight="bold",
 )
-axes[0, 1].set_ylabel("Average Purchase Amount ($)")
-axes[0, 1].set_xlabel("Gender")
-axes[0, 1].legend(title="Income Level")
-axes[0, 1].tick_params(axis="x", rotation=0)
-axes[0, 1].grid(axis="y", alpha=0.3)
+axes[0, 1].set_xlabel("Z-Score (Standard Deviations from Dept Mean)")
+axes[0, 1].set_ylabel("Frequency")
+axes[0, 1].legend()
+axes[0, 1].grid(alpha=0.3)
 
-# 3. Education × Income Level
-edu_income = pd.crosstab(
-    cat_df["Education"], cat_df["Income_Level"], margins=True
+# 3. Salary vs Department Mean (scatter)
+for dept in df["Department"].unique():
+    dept_data = df[df["Department"] == dept]
+    axes[1, 0].scatter(
+        dept_data["Dept_Salary_Mean"],
+        dept_data["Salary"],
+        alpha=0.3,
+        label=dept,
+        s=10,
+    )
+axes[1, 0].plot(
+    [df["Salary"].min(), df["Salary"].max()],
+    [df["Salary"].min(), df["Salary"].max()],
+    "r--",
+    linewidth=2,
+    label="y=x (at mean)",
 )
-edu_income_no_margins = edu_income.drop("All").drop("All", axis=1)
-im3 = axes[1, 0].imshow(
-    edu_income_no_margins.values, cmap="YlOrRd", aspect="auto"
-)
-axes[1, 0].set_xticks(range(len(edu_income_no_margins.columns)))
-axes[1, 0].set_yticks(range(len(edu_income_no_margins.index)))
-axes[1, 0].set_xticklabels(edu_income_no_margins.columns)
-axes[1, 0].set_yticklabels(edu_income_no_margins.index)
 axes[1, 0].set_title(
-    "Education × Income Level Cross-Tabulation", fontsize=12, fontweight="bold"
+    "Individual Salary vs Department Mean", fontsize=14, fontweight="bold"
 )
-axes[1, 0].set_xlabel("Income Level")
-axes[1, 0].set_ylabel("Education")
-plt.colorbar(im3, ax=axes[1, 0], label="Count")
+axes[1, 0].set_xlabel("Department Mean Salary ($)")
+axes[1, 0].set_ylabel("Individual Salary ($)")
+axes[1, 0].legend()
+axes[1, 0].grid(alpha=0.3)
 
-# 4. Age Group distribution by Education (stacked bar)
-age_edu = pd.crosstab(cat_df["Age_Group"], cat_df["Education"])
-age_edu_pct = age_edu.div(age_edu.sum(axis=1), axis=0) * 100
-age_edu_pct.plot(kind="bar", ax=axes[1, 1], stacked=True, width=0.8)
+# 4. Percentile rank distribution
+percentile_counts = df["Salary_Percentile_Rank"].value_counts().sort_index()
+percentile_counts.plot(kind="bar", ax=axes[1, 1], color="coral")
 axes[1, 1].set_title(
-    "Education Distribution by Age Group (Percentage)",
-    fontsize=12,
-    fontweight="bold",
+    "Salary Percentile Rank Distribution", fontsize=14, fontweight="bold"
 )
-axes[1, 1].set_ylabel("Percentage (%)")
-axes[1, 1].set_xlabel("Age Group")
-axes[1, 1].legend(title="Education", bbox_to_anchor=(1.05, 1), loc="upper left")
-axes[1, 1].tick_params(axis="x", rotation=45)
+axes[1, 1].set_xlabel("Percentile Rank")
+axes[1, 1].set_ylabel("Number of Employees")
+axes[1, 1].tick_params(axis="x", rotation=0)
 axes[1, 1].grid(axis="y", alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-## Part 3: Real-world Analysis
+`df` still has 100,000 rows in the same order: `transform` added columns, it did not summarize. `Salary_Normalized` and `Salary_Z_Score` agree to the last decimal, because both compare a salary with its own department's mean and spread. The z-score histogram is centred on 0 by construction, and the department histograms overlap once each one is measured against its own mean.
 
-### Sales Performance Analysis
+## Part 3: Filter — Keep or Drop Whole Groups
 
-```python
-# Use the comprehensive dataset we already created
-sales_df = df.copy()
-print("=== Sales Performance Analysis ===")
-print(f"Using dataset with {len(sales_df):,} transactions")
-print("\nSample sales data:")
-print(sales_df.head())
-```
+`filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
 
-### Monthly Sales by Product and Region
+### Keep Only the Groups That Qualify
 
 ```python
-# Monthly sales pivot table
-print("=== Monthly Sales by Product ===")
-monthly_pivot = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Month",
-    aggfunc="sum",
-    margins=True,
-    margins_name="Total",
+# Filter: Keep only departments with more than threshold employees
+print("=== Filter Operations ===")
+min_employees = 15000  # Filter departments with at least 15,000 employees
+filtered_large_depts = df.groupby("Department").filter(
+    lambda x: len(x) >= min_employees
 )
-print("Monthly sales by product:")
-print(monthly_pivot.head(10))
+print(f"Departments with at least {min_employees:,} employees:")
+print(f"Filtered dataset shape: {filtered_large_depts.shape}")
+print(f"Departments kept: {filtered_large_depts['Department'].unique()}")
 
-# Visualize monthly trends
-fig, axes = plt.subplots(2, 1, figsize=(16, 10))
-
-# 1. Monthly sales trend by product (line plot)
-monthly_pivot_no_total = monthly_pivot.drop("Total", axis=1).drop(
-    "Total", axis=0
+# Filter: Keep only departments with average salary > threshold
+salary_threshold = 65000
+high_salary_depts = df.groupby("Department").filter(
+    lambda x: x["Salary"].mean() > salary_threshold
 )
-monthly_pivot_no_total.T.plot(ax=axes[0], marker="o", linewidth=2, markersize=5)
+print(f"\nDepartments with average salary > ${salary_threshold:,}:")
+print(f"Filtered dataset shape: {high_salary_depts.shape}")
+print(f"Departments kept: {high_salary_depts['Department'].unique()}")
+
+# Filter: Keep departments with high variance (interesting for analysis)
+high_variance_depts = df.groupby("Department").filter(
+    lambda x: x["Salary"].std() > 12000
+)
+print(f"\nDepartments with salary std > $12,000:")
+print(f"Filtered dataset shape: {high_variance_depts.shape}")
+print(f"Departments kept: {high_variance_depts['Department'].unique()}")
+
+# Visualize filtering effects
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+# 1. Department sizes (original vs filtered)
+dept_counts_original = df["Department"].value_counts().sort_index()
+dept_counts_filtered = (
+    filtered_large_depts["Department"].value_counts().sort_index()
+)
+x_pos = np.arange(len(dept_counts_original.index))
+width = 0.35
+axes[0].bar(
+    x_pos - width / 2,
+    dept_counts_original.values,
+    width,
+    label="Original",
+    alpha=0.7,
+)
+axes[0].bar(
+    x_pos + width / 2,
+    dept_counts_filtered.values,
+    width,
+    label="Filtered",
+    alpha=0.7,
+)
+axes[0].set_xticks(x_pos)
+axes[0].set_xticklabels(dept_counts_original.index, rotation=45)
 axes[0].set_title(
-    "Monthly Sales Trends by Product", fontsize=14, fontweight="bold"
+    f"Department Size: Original vs Filtered (min {min_employees:,})",
+    fontsize=12,
+    fontweight="bold",
 )
-axes[0].set_ylabel("Total Sales ($)")
-axes[0].set_xlabel("Month")
-axes[0].legend(title="Product", bbox_to_anchor=(1.05, 1), loc="upper left")
-axes[0].grid(alpha=0.3)
-axes[0].tick_params(axis="x", rotation=45)
+axes[0].set_ylabel("Number of Employees")
+axes[0].legend()
+axes[0].grid(axis="y", alpha=0.3)
 
-# 2. Monthly sales heatmap
-monthly_pivot_no_total_values = monthly_pivot_no_total.values
-im = axes[1].imshow(monthly_pivot_no_total_values, cmap="YlGnBu", aspect="auto")
-axes[1].set_xticks(range(len(monthly_pivot_no_total.columns)))
-axes[1].set_yticks(range(len(monthly_pivot_no_total.index)))
-axes[1].set_xticklabels(monthly_pivot_no_total.columns, rotation=45)
-axes[1].set_yticklabels(monthly_pivot_no_total.index)
-axes[1].set_title(
-    "Monthly Sales Heatmap by Product", fontsize=14, fontweight="bold"
+# 2. Salary distributions: original vs high-salary departments
+axes[1].hist(
+    df["Salary"], bins=50, alpha=0.5, label="All Departments", color="blue"
 )
-axes[1].set_xlabel("Month")
-axes[1].set_ylabel("Product")
-plt.colorbar(im, ax=axes[1], label="Total Sales ($)")
+axes[1].hist(
+    high_salary_depts["Salary"],
+    bins=50,
+    alpha=0.5,
+    label=f"Avg Salary > ${salary_threshold:,}",
+    color="red",
+)
+axes[1].set_title(
+    "Salary Distribution: Filtering Effect", fontsize=12, fontweight="bold"
+)
+axes[1].set_xlabel("Salary ($)")
+axes[1].set_ylabel("Frequency")
+axes[1].legend()
+axes[1].grid(alpha=0.3)
+
+# 3. Department salary statistics comparison
+dept_stats_all = df.groupby("Department")["Salary"].agg(["mean", "std"])
+dept_stats_filtered = high_salary_depts.groupby("Department")["Salary"].agg([
+    "mean",
+    "std",
+])
+# Only compare departments that exist in both datasets
+common_depts = dept_stats_all.index.intersection(dept_stats_filtered.index)
+if len(common_depts) > 0:
+    dept_stats_all_subset = dept_stats_all.loc[common_depts]
+    dept_stats_filtered_subset = dept_stats_filtered.loc[common_depts]
+    x_pos = np.arange(len(common_depts))
+    axes[2].bar(
+        x_pos - width / 2,
+        dept_stats_all_subset["mean"],
+        width,
+        label="All",
+        alpha=0.7,
+        yerr=dept_stats_all_subset["std"],
+        capsize=5,
+    )
+    axes[2].bar(
+        x_pos + width / 2,
+        dept_stats_filtered_subset["mean"],
+        width,
+        label="Filtered",
+        alpha=0.7,
+        yerr=dept_stats_filtered_subset["std"],
+        capsize=5,
+    )
+    axes[2].set_xticks(x_pos)
+    axes[2].set_xticklabels(common_depts, rotation=45)
+else:
+    axes[2].text(
+        0.5,
+        0.5,
+        "No common departments\nbetween filtered datasets",
+        ha="center",
+        va="center",
+        transform=axes[2].transAxes,
+    )
+axes[2].set_title(
+    f"Mean Salary: Original vs Filtered (avg > ${salary_threshold:,})",
+    fontsize=12,
+    fontweight="bold",
+)
+axes[2].set_ylabel("Mean Salary ($)")
+axes[2].legend()
+axes[2].grid(axis="y", alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-### Salesperson Performance Analysis
+`filter` returns rows, not groups. All six departments clear 15,000 employees, so the first result keeps all 100,000 rows. Only Engineering and Finance average more than $65,000 (33,609 rows) and only Engineering and Sales have a salary spread above $12,000 (33,391 rows). The kept rows are the originals, unchanged.
+
+## Part 4: Apply — Your Own Function per Group
+
+`apply` hands each group to your function as a small DataFrame and stitches the results together. Use it when no built-in aggregation fits; it is the slowest of the four, and its output shape depends on what your function returns.
+
+### Custom Statistics and Top-N per Group
 
 ```python
-# Multi-dimensional pivot: Product × Region × Category
-print("=== Multi-Dimensional Pivot Analysis ===")
+# Apply: Custom function for comprehensive salary statistics
+def comprehensive_salary_stats(group):
+    """Calculate comprehensive statistics for a group"""
+    return pd.Series({
+        "count": len(group),
+        "mean": group["Salary"].mean(),
+        "median": group["Salary"].median(),
+        "std": group["Salary"].std(),
+        "min": group["Salary"].min(),
+        "max": group["Salary"].max(),
+        "range": group["Salary"].max() - group["Salary"].min(),
+        "q25": group["Salary"].quantile(0.25),
+        "q75": group["Salary"].quantile(0.75),
+        "iqr": group["Salary"].quantile(0.75) - group["Salary"].quantile(0.25),
+        "mean_experience": group["Experience"].mean(),
+        "mean_performance": group["Performance_Score"].mean(),
+    })
 
-# 1. Product × Region × Category
-product_region_category = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns=["Region", "Category"],
-    aggfunc="sum",
-    margins=True,
-    margins_name="Total",
+print("=== Apply Operations ===")
+print("Comprehensive statistics by department:")
+dept_stats_apply = df.groupby("Department").apply(
+    comprehensive_salary_stats, include_groups=False
 )
-print("Sales by Product × Region × Category:")
-print(product_region_category.head(10))
+print(dept_stats_apply)
 
-# 2. Channel × Region performance
-channel_region = pd.pivot_table(
-    sales_df,
-    values=["Sales", "Quantity"],
-    index="Channel",
-    columns="Region",
-    aggfunc={"Sales": "sum", "Quantity": "sum"},
-    margins=True,
+# Apply: Get top N earners in each department
+top_n = 5
+top_earners = df.groupby("Department").apply(
+    lambda x: x.nlargest(top_n, "Salary"), include_groups=False
 )
-print("\nChannel performance by region:")
-print(channel_region)
-
-# Visualize multi-dimensional analysis
-fig, axes = plt.subplots(2, 2, figsize=(18, 12))
-
-# 1. Product × Category heatmap (aggregated across regions)
-product_category = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Category",
-    aggfunc="sum",
+print(f"\nTop {top_n} earners per department:")
+# Department is in the index, so we need to reset it or access it differently
+top_earners_display = top_earners.reset_index(level=0, drop=False)
+print(
+    top_earners_display[
+        ["Department", "Employee", "Salary", "Experience", "Performance_Score"]
+    ]
 )
-im1 = axes[0, 0].imshow(product_category.values, cmap="YlOrRd", aspect="auto")
-axes[0, 0].set_xticks(range(len(product_category.columns)))
-axes[0, 0].set_yticks(range(len(product_category.index)))
-axes[0, 0].set_xticklabels(product_category.columns)
-axes[0, 0].set_yticklabels(product_category.index)
+
+# Apply: Calculate department-specific percentiles
+def calculate_percentiles(group):
+    """Calculate salary percentiles for a group"""
+    percentiles = [10, 25, 50, 75, 90, 95, 99]
+    return pd.Series({
+        f"p{p}": group["Salary"].quantile(p / 100) for p in percentiles
+    })
+
+dept_percentiles = df.groupby("Department").apply(
+    calculate_percentiles, include_groups=False
+)
+print("\nSalary percentiles by department:")
+print(dept_percentiles)
+
+# Visualize apply results
+fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+
+# 1. Top earners visualization
+top_earners_plot = (
+    top_earners_display.groupby("Department")["Salary"]
+    .mean()
+    .sort_values(ascending=False)
+)
+top_earners_plot.plot(kind="barh", ax=axes[0, 0], color="gold")
 axes[0, 0].set_title(
-    "Sales by Product × Category", fontsize=12, fontweight="bold"
+    f"Mean Salary of Top {top_n} Earners by Department",
+    fontsize=14,
+    fontweight="bold",
 )
-axes[0, 0].set_xlabel("Category")
-axes[0, 0].set_ylabel("Product")
-plt.colorbar(im1, ax=axes[0, 0], label="Total Sales ($)")
+axes[0, 0].set_xlabel("Mean Salary ($)")
+axes[0, 0].grid(axis="x", alpha=0.3)
 
-# 2. Channel performance by region (grouped bar)
-channel_region_sales = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Channel",
-    columns="Region",
-    aggfunc="sum",
-)
-channel_region_sales.plot(kind="bar", ax=axes[0, 1], width=0.8)
+# 2. Percentile comparison across departments
+dept_percentiles.T.plot(kind="bar", ax=axes[0, 1], width=0.8)
 axes[0, 1].set_title(
-    "Channel Performance by Region", fontsize=12, fontweight="bold"
+    "Salary Percentiles by Department", fontsize=14, fontweight="bold"
 )
-axes[0, 1].set_ylabel("Total Sales ($)")
-axes[0, 1].set_xlabel("Channel")
-axes[0, 1].legend(title="Region")
+axes[0, 1].set_ylabel("Salary ($)")
+axes[0, 1].set_xlabel("Percentile")
+axes[0, 1].legend(
+    title="Department", bbox_to_anchor=(1.05, 1), loc="upper left"
+)
 axes[0, 1].tick_params(axis="x", rotation=0)
 axes[0, 1].grid(axis="y", alpha=0.3)
 
-# 3. Quarterly sales by product
-quarterly_product = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Quarter",
-    aggfunc="sum",
-)
-quarterly_product.plot(kind="bar", ax=axes[1, 0], width=0.8)
+# 3. IQR comparison (shows salary spread)
+iqr_data = dept_stats_apply["iqr"].sort_values(ascending=False)
+iqr_data.plot(kind="bar", ax=axes[1, 0], color="steelblue")
 axes[1, 0].set_title(
-    "Quarterly Sales by Product", fontsize=12, fontweight="bold"
+    "Interquartile Range (IQR) by Department", fontsize=14, fontweight="bold"
 )
-axes[1, 0].set_ylabel("Total Sales ($)")
-axes[1, 0].set_xlabel("Product")
-axes[1, 0].legend(title="Quarter")
+axes[1, 0].set_ylabel("IQR ($)")
 axes[1, 0].tick_params(axis="x", rotation=45)
 axes[1, 0].grid(axis="y", alpha=0.3)
 
-# 4. Product × Region stacked bar (showing proportions)
-product_region_prop = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc="sum",
-)
-product_region_prop_pct = (
-    product_region_prop.div(product_region_prop.sum(axis=1), axis=0) * 100
-)
-product_region_prop_pct.plot(kind="bar", ax=axes[1, 1], stacked=True, width=0.8)
+# 4. Mean vs Median comparison (shows skewness)
+comparison_df = pd.DataFrame({
+    "Mean": dept_stats_apply["mean"],
+    "Median": dept_stats_apply["median"],
+})
+comparison_df.plot(kind="bar", ax=axes[1, 1], width=0.8)
 axes[1, 1].set_title(
-    "Sales Distribution by Region (Percentage)", fontsize=12, fontweight="bold"
+    "Mean vs Median Salary by Department", fontsize=14, fontweight="bold"
 )
-axes[1, 1].set_ylabel("Percentage (%)")
-axes[1, 1].set_xlabel("Product")
-axes[1, 1].legend(title="Region")
+axes[1, 1].set_ylabel("Salary ($)")
 axes[1, 1].tick_params(axis="x", rotation=45)
+axes[1, 1].legend()
 axes[1, 1].grid(axis="y", alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-### Product Performance by Region
-
-```python
-# Product performance by region
-product_pivot = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc=["sum", "mean", "count"],
-    margins=True,
-)
-print("Product performance by region:")
-print(product_pivot)
-```
-
-## Part 4: Visualization with Pivot Tables
-
-### Heatmap Visualization
-
-```python
-# Create heatmap from pivot table
-pivot_heatmap = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc="sum",
-)
-
-# Create heatmap
-fig, ax = plt.subplots(figsize=(10, 6))
-im = ax.imshow(pivot_heatmap.values, cmap="YlOrRd", aspect="auto")
-
-# Set ticks and labels
-ax.set_xticks(range(len(pivot_heatmap.columns)))
-ax.set_yticks(range(len(pivot_heatmap.index)))
-ax.set_xticklabels(pivot_heatmap.columns)
-ax.set_yticklabels(pivot_heatmap.index)
-
-# Add colorbar
-plt.colorbar(im, ax=ax, label="Total Sales ($)")
-
-# Add title and labels
-plt.title("Sales Heatmap: Product vs Region", fontsize=14, fontweight="bold")
-plt.xlabel("Region")
-plt.ylabel("Product")
-
-# Add text annotations
-for i in range(len(pivot_heatmap.index)):
-    for j in range(len(pivot_heatmap.columns)):
-        text = ax.text(
-            j,
-            i,
-            f"${pivot_heatmap.iloc[i, j] / 1000:.0f}K",
-            ha="center",
-            va="center",
-            color="black",
-            fontsize=9,
-            fontweight="bold",
-        )
-
-plt.tight_layout()
-plt.show()
-```
-
-### Bar Chart from Pivot Table
-
-```python
-# Create bar chart from pivot table
-pivot_bar = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc="sum",
-)
-
-# Create bar chart
-pivot_bar.plot(kind="bar", figsize=(12, 6))
-plt.title("Sales by Product and Region", fontsize=14, fontweight="bold")
-plt.xlabel("Product")
-plt.ylabel("Total Sales ($)")
-plt.legend(title="Region")
-plt.xticks(rotation=45)
-plt.grid(axis="y", alpha=0.3)
-plt.tight_layout()
-plt.show()
-```
-
-## Part 5: Advanced Pivot Operations
-
-### Custom Aggregation Functions
-
-```python
-# Custom aggregation function
-def sales_range(series):
-    return series.max() - series.min()
-
-
-# Pivot table with custom function
-custom_pivot = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc=sales_range,
-)
-print("=== Custom Aggregation ===")
-print("Sales range by product and region:")
-print(custom_pivot)
-```
-
-### Pivot Table with Multiple Values
-
-```python
-# Pivot table with multiple value columns
-multi_value_pivot = pd.pivot_table(
-    sales_df,
-    values=["Sales", "Quantity"],
-    index="Product",
-    columns="Region",
-    aggfunc={"Sales": "sum", "Quantity": "mean"},
-)
-print("=== Multiple Value Columns ===")
-print("Sales and quantity by product and region:")
-print(multi_value_pivot)
-```
-
-### Reshaping Pivot Results
-
-```python
-# Reshape pivot table results
-pivot_reshaped = pd.pivot_table(
-    sales_df,
-    values="Sales",
-    index="Product",
-    columns="Region",
-    aggfunc="sum",
-)
-
-# Stack and unstack operations
-stacked = pivot_reshaped.stack()
-print("=== Reshaping Operations ===")
-print("Stacked pivot table:")
-print(stacked.head(10))
-
-# Unstack back to wide format
-unstacked = stacked.unstack()
-print("\nUnstacked back to wide format:")
-print(unstacked)
-```
+The shape of an `apply` result follows the function you pass. Returning a `Series` of statistics gives one row per department, just like `agg`; returning `nlargest(5, "Salary")` gives whole employee rows, five per department, with the department in an outer index level. When the function could have been `agg` or `transform`, prefer those: they run as compiled code instead of once per group.
 
 ## Key Takeaways
 
-1. **Pivot Tables**: Transform long-format data to wide-format summaries
-2. **Multiple Aggregations**: Use different functions for different insights
-3. **Totals and Margins**: Add row and column totals for comprehensive analysis
-4. **Missing Values**: Handle missing combinations with fill_value
-5. **Cross-Tabulation**: Analyze categorical data relationships
-6. **Visualization**: Create heatmaps and charts from pivot tables
-7. **Custom Functions**: Apply business-specific aggregation logic
+1. **Coverage is a choice**: `dropna=` decides whether rows with a missing key are counted, `observed=` whether empty categories appear
+2. **Declare the categories**: `pd.Categorical(..., categories=[...], ordered=True)` fixes the reporting order and names the groups that should exist
+3. **Pivot tables make the same choices**: plus `dropna=False` to keep rows with a missing key and any row or column whose cells all came out `NaN`
+4. **Transform**: same rows, same index, one new column of group context
+5. **Filter**: original rows from the groups that pass a whole-group test
+6. **Apply**: any per-group function, at the cost of speed and a shape you have to check
+7. **Check the totals**: every result in this demo can be checked by counting rows before and after
 
 ## Next Steps
 
-- Practice with your own datasets
-- Experiment with different aggregation functions
-- Continue with advanced pivot-table and MultiIndex topics in the bonus material
+- Rerun Part 1 with `dropna=True` and confirm exactly 250 employees disappear
+- Rewrite one `apply` call in Part 4 as `agg` or `transform`, and compare the results
+

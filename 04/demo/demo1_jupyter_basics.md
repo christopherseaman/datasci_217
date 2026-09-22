@@ -21,12 +21,13 @@ jupyter:
 
 - Distinguish a notebook document from its running kernel state.
 - Explain why visible cell order and execution order can disagree.
-- Produce a real fresh-state failure and repair it with restart-and-run-all.
+- Produce a stale value and a `NameError` by hand, then repair both with restart-and-run-all.
+- Check where the kernel is running with the `%pwd` and `%ls` magic commands.
 - Identify runtime-local files and apply the notebook output/privacy policy.
 
 A **notebook** is a document made of Markdown cells and code cells. A **kernel** is the Python process that executes code. The kernel's **state** is the collection of names and values currently held in memory. A Colab **runtime** includes that kernel and its runtime-local files. **Stored output** is text or another result saved beneath a cell; it can remain visible even when it no longer describes current state.
 
-Colab is the default launch experience; local Jupyter uses the equivalent restart-kernel and run-all controls. The live mutation protocol is described in the cells below. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
+Colab is the default launch experience; local Jupyter uses the equivalent restart-kernel and run-all controls. "Repair the hidden dependency" below walks you through editing and rerunning cells out of order. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
 
 The later pandas demonstrations use the pinned activity environment documented
 in this notebook. It deliberately stays with notebook mechanics
@@ -44,7 +45,7 @@ print("Python:", sys.version.split()[0])
 
 Markdown cells explain, predict, and interpret. Code cells send Python to the kernel. Running a code cell can change state and create stored output; merely editing its visible source does neither.
 
-For the live demonstration, use a disposable copy to insert one prediction Markdown cell and one harmless code cell. Remove those scratch cells before the stale-state sequence below.
+Before you change anything, write down in a Markdown cell what you expect the next code cell to print. Predicting first is what turns a surprise into information.
 
 
 ## Producer and dependent cells
@@ -71,8 +72,26 @@ print("total in kernel:", total)
 
 ## Repair the hidden dependency
 
-The live sequence temporarily creates a stale total of `24`, restarts into a real `NameError`, and then restores the canonical source. **Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. The canonical result below must be `36`; stored output alone is never evidence that this happened.
+The cell above printed `36` because the producer cell ran first. Do this by hand now, in this notebook, to see the two failures for yourself:
 
+1. Change `rate = 3` to `rate = 2` in the producer cell and run **only** that cell. Then run the last cell again. It prints `total in kernel: 36`, a stale value: `total` still holds the old product, because nothing recomputed it.
+2. Run the dependent cell (`total = units * rate`) and the last cell again. Now it prints `24`. The notebook's visible source never said `36` or `24` was correct; execution order decided.
+3. Change `rate` back to `3`, then restart the kernel and run the last cell on its own. It raises `NameError: name 'rate' is not defined`, because a fresh kernel holds nothing at all.
+
+**Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. Do that now: the last cell must print `36` again. Stored output alone is never evidence that this happened.
+
+
+## Where the kernel is running
+
+A **magic command** is a notebook-only shortcut that starts with `%`. `%pwd` reports the kernel's current working directory and `%ls` lists the files it can see from there. Check both first whenever a notebook cannot find a file: in Colab the directory is usually `/content`, and locally it is usually the notebook's own folder. A cell shows the value of its last line only, so `%pwd` gets a cell to itself.
+
+```python
+%pwd
+```
+
+```python
+%ls
+```
 
 ## Runtime-local files
 
@@ -85,13 +104,16 @@ from tempfile import gettempdir
 runtime_dir = Path(gettempdir()) / "datasci_217_lecture04_demo1"
 runtime_dir.mkdir(parents=True, exist_ok=True)
 runtime_note = runtime_dir / "runtime_note.txt"
-runtime_note.write_text(
-    "runtime-local; safe demo content\n",
-    encoding="utf-8",
-)
+
+# Write and read it back with open(), from Lecture 02.
+with open(runtime_note, "w", encoding="utf-8") as file:
+    file.write("runtime-local; safe demo content\n")
+
+with open(runtime_note, "r", encoding="utf-8") as file:
+    saved_text = file.read()
 
 print("runtime-local file:", runtime_note)
-print(runtime_note.read_text(encoding="utf-8"), end="")
+print(saved_text, end="")
 ```
 
 ## Output and privacy policy
@@ -102,9 +124,7 @@ Clear sensitive output immediately and never put secrets or identifying records 
 assert units == 12
 assert rate == 3
 assert total == 36
-assert runtime_note.read_text(encoding="utf-8") == (
-    "runtime-local; safe demo content\n"
-)
+assert saved_text == "runtime-local; safe demo content\n"
 
 print("Demo 1 fresh-run verification passed: total = 36")
 ```

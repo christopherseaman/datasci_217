@@ -223,7 +223,7 @@ Columns: `split`, `n_rows`, `target_start`, `target_end`, `n_features`. Include 
 ### Q7: Modeling (13 points)
 
 Use training rows to fit candidates and validation rows to select one final model. Do not access any test artifact in this phase.
-Review the pipeline and validation pattern from [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) before starting this phase.
+Review the pipeline and validation pattern from [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_sklearn_prediction.ipynb) before starting this phase.
 
 > **Checkpoint — `output/q7_model_spec.csv`**
 

@@ -419,6 +419,22 @@ patient_id
 P002         58    38.1
 ```
 
+# LIVE DEMO!
+
+# Deriving and Ordering Data
+
+Selecting answers "which rows and columns?" Two more questions come up in every analysis: "what number do I actually need?" and "which rows matter most?" A clinic export rarely stores the value you want to report. It stores a temperature in Celsius when the chart is in Fahrenheit, or a baseline and a follow-up when the interesting number is the change between them. You compute that value once, for the whole table, and pandas keeps each result attached to its patient.
+
+Then you put the interesting rows on top. In Lecture 03, `np.sort()` reordered bare values. A table has to move whole rows, so each patient's other columns travel with the value you sorted on.
+
+```text
+visits                 add temp_f                    sort by temp_f (highest first)
+     age  temp_c            age  temp_c  temp_f           age  temp_c  temp_f
+P001  34    36.8      P001   34    36.8   98.24     P002   58    38.1  100.58
+P002  58    38.1      P002   58    38.1  100.58     P003   41    37.2   98.96
+P003  41    37.2      P003   41    37.2   98.96     P001   34    36.8   98.24
+```
+
 ## Adding Columns
 
 A **derived column** is computed from columns you already have: a temperature in Fahrenheit, a change from baseline, a body-mass index. Assign to a new column name with brackets. As with NumPy's vectorized arithmetic in Lecture 03, pandas computes the whole column at once with no loop, matching rows by index label.
@@ -459,7 +475,7 @@ To change a separate table, such as the fever patients only, copy it first, as w
 
 ## Sorting Rows
 
-A sorted table answers "who is highest?" at a glance: which patients had the largest blood-pressure drop, or which readings are most extreme. In Lecture 03, `np.sort()` reordered bare values. `sort_values()` reorders whole rows, so each patient's other columns and index label travel with the sorted value.
+A sorted table answers "who is highest?" at a glance: which patients had the largest blood-pressure drop, or which readings are most extreme. `sort_values()` reorders whole rows, so each patient's other columns and index label travel with the sorted value.
 
 Sorting returns a **new** DataFrame and leaves the original in its old order; assign the result to a name to keep it. When two rows share a value (a **tie**), add a unique second key, such as an ID, so the order is the same on every run: a **deterministic sort**.
 
@@ -493,8 +509,6 @@ print(by_pressure)
 ```
 
 P002 and P003 tie at 142, and `patient_id` puts P002 first. The index labels (2, 0, 3, 1) show where each row started. `vitals` itself is unchanged.
-
-# LIVE DEMO!
 
 # Data Loading and Storage
 
