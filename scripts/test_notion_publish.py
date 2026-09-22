@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import notion_publish
 from notion_publish import prepare, _replace_links, table
 
 
@@ -20,6 +21,23 @@ class PrepareTest(unittest.TestCase):
             self.assertEqual(result.count(child), 1)
             self.assertLess(result.index("# Lectures"), result.index(child))
             self.assertLess(result.index(child), result.index("> Lecture description."))
+
+    def test_media_uses_notion_uploads_when_a_manifest_is_loaded(self):
+        source = Path("01/README.md")
+        self.assertIn(
+            "raw.githubusercontent.com/christopherseaman/datasci_217/main/01/media/duck_typing.jpg",
+            _replace_links("![Git](media/duck_typing.jpg)", source),
+        )
+        notion_publish.MEDIA.update({"01/media/duck_typing.jpg": "file-upload://abc123"})
+        try:
+            self.assertEqual(
+                _replace_links("![Git](media/duck_typing.jpg)", source),
+                "![Git](file-upload://abc123)",
+            )
+            with self.assertRaises(ValueError):
+                _replace_links("![Other](media/not_uploaded.png)", source)
+        finally:
+            notion_publish.MEDIA.clear()
 
     def test_inline_code_and_tables(self):
         source = Path("01/README.md")
