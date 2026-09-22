@@ -230,8 +230,7 @@ print(frame)
 
 Local midnight on 1 June is 04:00 UTC during daylight saving time, so the 02:00 and 03:00 UTC targets still belong to May.
 
-![xkcd 2582: Data Trap](media/xkcd_2582.png)
-*Analysis should produce understanding, not an unbounded pile of artifacts.*
+![xkcd 2582: Data Trap — Analysis should produce understanding, not an unbounded pile of artifacts.](media/xkcd_2582.png)
 
 # Demo roadmap
 

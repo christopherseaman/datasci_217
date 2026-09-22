@@ -17,9 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
 
-![xkcd 1945: Scientific Paper Graph Quality](media/xkcd_1945.png)
-
-*Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.*
+![xkcd 1945: Scientific Paper Graph Quality — Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 
 # Start with a visualization contract
 
@@ -114,9 +112,7 @@ Three columns are `int64`, but only `systolic_bp` (mmHg) is a quantitative measu
 
 The question and the variable types narrow the choice of chart.
 
-![Chart Selection Guide](media/chart_selection.png)
-
-*Six common jobs and the chart each one calls for. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.*
+![Six common jobs and the chart each one calls for. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.](media/chart_selection.png)
 
 # matplotlib: Foundation Layer
 
@@ -206,9 +202,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Matplotlib Subplots Example](media/matplotlib_subplots.png)
-
-*One Figure, four Axes: each panel has its own title and its own scales.*
+![One Figure, four Axes: each panel has its own title and its own scales.](media/matplotlib_subplots.png)
 
 ## Customizing Plots
 
@@ -248,9 +242,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Matplotlib Customization Example](media/matplotlib_customization.png)
-
-*Two labeled series with a title, axis labels, a legend, and a light grid.*
+![Two labeled series with a title, axis labels, a legend, and a light grid.](media/matplotlib_customization.png)
 
 ## Colors, Markers, and Line Styles
 
@@ -283,9 +275,7 @@ ax.grid(True, alpha=0.3)
 plt.show()
 ```
 
-![Four series titled Different Line Styles and Markers: blue circles on a solid line, red squares on a dashed line, green triangles on a dash-dot line, and purple stars on a dotted line.](media/matplotlib_styles.png)
-
-*Each series combines its own color, marker, and line style.*
+![Each series combines its own color, marker, and line style.](media/matplotlib_styles.png)
 
 ## Annotate, Declutter, and Save
 
@@ -319,9 +309,7 @@ fig.savefig('flu_visits.png', dpi=150, bbox_inches='tight')
 
 Expected result: `flu_visits.png` appears next to your notebook, showing one line with an arrow from 'Peak: 51 visits' to the week-3 point and no top or right frame line.
 
-![xkcd 833: Convincing](media/xkcd_833.png)
-
-*"I just think I can do better than someone who doesn't label her axes." Label your axes.*
+![xkcd 833: Convincing — "I just think I can do better than someone who doesn't label her axes." Label your axes.](media/xkcd_833.png)
 
 # LIVE DEMO!
 
@@ -417,9 +405,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Four pandas plots of the same four weeks of clinic visits: a line per clinic, grouped bars per week, a scatter of North against South with one point per week, and one box per clinic.](media/pandas_plotting.png)
-
-*One table, four views: each `kind=` answers a different question about the same rows.*
+![One table, four views: each `kind=` answers a different question about the same rows.](media/pandas_plotting.png)
 
 ## DataFrame Plotting Options
 
@@ -499,9 +485,7 @@ fig.tight_layout()
 plt.show()
 ```
 
-![Three seaborn panels from the healthexp table: health spending against life expectancy with one colored point per country-year, life expectancy over time with one line per country, and one box of yearly life expectancy per country.](media/seaborn_statistical.png)
-
-*Left: one point per country-year. Middle: one line per country. Right: each box summarizes one country's yearly values.*
+![Left: one point per country-year. Middle: one line per country. Right: each box summarizes one country's yearly values.](media/seaborn_statistical.png)
 
 ## Watch the Grain
 
@@ -600,9 +584,7 @@ Raise it by removing ink that carries no data:
 - Avoid 3D effects and shadows, which distort perception
 - Remove redundant labels and tick marks
 
-![Data-Ink Ratio Comparison](media/tufte_data_ink_ratio.png)
-
-*Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.*
+![Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.](media/tufte_data_ink_ratio.png)
 
 ### Chartjunk
 
@@ -648,15 +630,11 @@ Show as much detail as the data allows; don't oversimplify or aggregate unnecess
 
 ### Example 1: Bar Chart Redesign
 
-![Bar Chart Comparison](media/tufte_bar_comparison.png)
-
-*Before (left): excessive colors, patterns, and heavy gridlines. After (right): direct labeling and a high data-ink ratio.*
+![Before (left): excessive colors, patterns, and heavy gridlines. After (right): direct labeling and a high data-ink ratio.](media/tufte_bar_comparison.png)
 
 ### Example 2: Line Chart with Truncated Axis (Lie Factor)
 
-![Lie Factor Example](media/tufte_lie_factor.png)
-
-*Before (left): The narrow y-range exaggerates modest growth. After (right): starting at zero restores useful magnitude context.*
+![Before (left): The narrow y-range exaggerates modest growth. After (right): starting at zero restores useful magnitude context.](media/tufte_lie_factor.png)
 
 ## Color Palette Best Practices
 
@@ -837,8 +815,6 @@ with open('study_record.json', encoding='utf-8') as file:
 print(saved['grain'])  # one prepared learning session
 ```
 
-![xkcd 1138: Heatmap](media/xkcd_1138.png)
-
-*"Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.*
+![xkcd 1138: Heatmap — "Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.](media/xkcd_1138.png)
 
 # LIVE DEMO!

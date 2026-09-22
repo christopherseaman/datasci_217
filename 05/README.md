@@ -65,8 +65,7 @@ Why a value is missing matters more than how many are missing:
 
 Counts cannot tell these apart; knowing how the data was collected can.
 
-![MCAR, MAR, and MNAR: where missing cells fall relative to observed and unobserved values](media/data_cleaning_workflow.png)
-*Dark gray cells are missing. The shade of each other cell shows its value.*
+![Dark gray cells are missing. The shade of each other cell shows its value.](media/data_cleaning_workflow.png)
 
 *Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."*
 
@@ -316,8 +315,7 @@ The tools so far repair values that are missing, repeated, or stored as the wron
 
 ## Applying Custom Functions
 
-![xkcd 1205: Is It Worth the Time?](media/xkcd_1205_apply.png)
-*A reminder to compare the time spent automating with the time it saves.*
+![xkcd 1205: Is It Worth the Time? — A reminder to compare the time spent automating with the time it saves.](media/xkcd_1205_apply.png)
 
 Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis. Any of them can take a **`lambda`**, a one-line function without a name: `lambda x: x * 2` does the same as `def double(x): return x * 2`, and is handy for one-time use.
 
@@ -453,8 +451,7 @@ Text columns are where inconsistent categories hide. A hand-typed site column mi
 
 ## Basic String Operations
 
-![String Operations Reference](media/string_operations_reference.png)
-*Python's built-in string methods from Lecture 01; the .str accessor applies them to a whole column.*
+![String Operations Reference — Python's built-in string methods from Lecture 01; the .str accessor applies them to a whole column.](media/string_operations_reference.png)
 
 ### Reference Card: String operations
 
@@ -492,8 +489,7 @@ dtype: bool
 
 One column sometimes holds several facts at once: a full name, a `city, state` pair, or a delimited list of codes. [The bonus](BONUS.md#splitting-and-joining-values) covers `str.split()`, `str.cat()`, and `str.join()` for taking those apart and putting them back together.
 
-![xkcd 1171: Perl Problems](media/xkcd_1171.png)
-*"I got 99 problems, so I used regular expressions. Now I have 100 problems."*
+![xkcd 1171: Perl Problems — "I got 99 problems, so I used regular expressions. Now I have 100 problems."](media/xkcd_1171.png)
 
 # Categorical Data Encoding
 
@@ -536,10 +532,7 @@ print(colors_cat.cat.codes[:5].tolist())   # [2, 0, 2, 1, 0]
 
 `pd.get_dummies()` gives each label its own column, marking rows with that label `True` (1) and every other row `False` (0); `dtype='int64'` stores the marks as 0/1 integers. With `drop_first=True`, one category becomes the reference: a row in that category has 0 in every retained indicator, so the model does not carry a redundant column (Lecture 10 covers the modeling implications).
 
-![Categorical Encoding](media/categorical_encoding_diagram.png)
-*One-hot encoding: each category becomes its own 0/1 column.*
-
-*Think of dummy variables as translating categories into a language that models can understand - instead of "red", "blue", "green", you get three columns of 1s and 0s indicating which color each row has.*
+![One-hot encoding: each category becomes its own 0/1 column.](media/categorical_encoding_diagram.png)
 
 ### Reference Card: Indicator variables
 
@@ -579,8 +572,7 @@ print(pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64'
 
 # Data Validation and Quality Assessment
 
-![xkcd 2239: Data Error](media/xkcd_2239.png)
-*A clean-looking analysis cannot rescue corrupted source data.*
+![xkcd 2239: Data Error — A clean-looking analysis cannot rescue corrupted source data.](media/xkcd_2239.png)
 
 Lecture 04 ended with a first look at a loaded table: count gaps with `isna().sum()` and repeats with `duplicated().sum()`. Inspection describes a table; **validation** checks it against the data contract. A **validation rule** is a yes/no question asked of every row, such as "is the age between 0 and 120?" or "does the patient ID look like `P` plus three digits?" Rows that fail are listed for review rather than deleted: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
 
@@ -719,8 +711,7 @@ See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
 
 # Data Cleaning Pipeline
 
-![xkcd 2054: Data Pipeline](media/data_pipeline_intro.png)
-*A pipeline that collapses on the first weird input is why the last step is validation.*
+![xkcd 2054: Data Pipeline — A pipeline that collapses on the first weird input is why the last step is validation.](media/data_pipeline_intro.png)
 
 Treat the file you received like an original lab specimen: you never write on it. Load it into a **raw table** and leave that table untouched. Make every change on a **working copy**, and save the result as a new **cleaned table** only after it passes validation. Keeping the raw table lets you rerun the cleaning from the start and prove nothing changed by accident. Record where the file came from (its **provenance**) and each decision you made, such as one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
 

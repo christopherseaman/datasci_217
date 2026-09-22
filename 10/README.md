@@ -17,9 +17,7 @@ Before running the examples, install the packages listed in [`demo/requirements.
 
 *Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*
 
-![xkcd 1838: Machine Learning](media/xkcd_1838.png)
-
-*"I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."*
+![xkcd 1838: Machine Learning — "I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."](media/xkcd_1838.png)
 
 # What Is a Model?
 
@@ -53,9 +51,7 @@ More complexity does not guarantee better predictions; the prediction topics bel
 
 *"But why models?" "Seriously? I just told you that a moment ago."*
 
-![xkcd 882: Significant](media/xkcd_882.png)
-
-*"We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"*
+![xkcd 882: Significant — "We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"](media/xkcd_882.png)
 
 # Statistical Modeling with `statsmodels`
 
@@ -97,13 +93,9 @@ y = β₀ + β₁x₁ + β₂x₂ + ... + ε
 
 Here y is SBP, x₁ is age, x₂ is BMI, and ε (the **error term**) is everything the predictors do not explain.
 
-*Think of linear regression as the Derek Zoolander of modeling - it's simple, it's reliable, and it can turn left (or right, or any direction really).*
+*Think of linear regression as the Derek Zoolander of modeling - simple, reliable, and it can turn left, turn right, or even turn statistically significant.*
 
-![Observed points, their fitted straight line, and dashed vertical residuals. The line minimizes the sum of squared residuals rather than passing through every point.](media/ols_residuals.png)
-
-*The dashes are vertical: OLS measures each miss straight up or down (`observed y - fitted y`), not as the shortest distance from the point to the line.*
-
-*"I can turn left, I can turn right, I can even turn... statistically significant!"*
+![The dashes are vertical: OLS measures each miss straight up or down (`observed y - fitted y`), not as the shortest distance from the point to the line.](media/ols_residuals.png)
 
 ### Reference Card: OLS Results
 
@@ -233,9 +225,7 @@ The saved plot shows the same pattern as the left panel of the figure above: no 
 
 ![xkcd 539: Boyfriend](media/xkcd_539.png)
 
-![xkcd 552: Correlation](media/xkcd_1725.png)
-
-*"Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."*
+![xkcd 552: Correlation — "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_1725.png)
 
 # LIVE DEMO!
 
@@ -655,9 +645,7 @@ print(importance)
 
 *"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
 
-![Really, really, really, ridiculously...](media/really_really__really_ridiculously_good_looking.jpg)
-
-*"I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"*
+!["I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"](media/really_really__really_ridiculously_good_looking.jpg)
 
 # The Secret Weapon: Gradient Boosting
 
@@ -685,9 +673,7 @@ For squared-error regression each tree fits ordinary residuals; for other error 
 
 *"What is this? A model for ants? It needs to be at least... three times more accurate!"*
 
-![xkcd 2400: Statistics](media/xkcd_2400.png)
-
-*"Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."*
+![xkcd 2400: Statistics — "Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."](media/xkcd_2400.png)
 
 ## `XGBoost` Basics
 
@@ -768,9 +754,7 @@ All that flexibility pays off for images, text, and audio, where useful features
 
 *"But why deep learning models?" "Seriously? I just told you that a moment ago."*
 
-![xkcd 2169: Predictive Models](media/xkcd_2169.png)
-
-*"Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."*
+![xkcd 2169: Predictive Models — "Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."](media/xkcd_2169.png)
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 

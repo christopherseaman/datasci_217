@@ -15,9 +15,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 # Virtual Environments
 
-![xkcd 1987: Python Environment](media/xkcd_1987.png)
-
-*Virtual environments prevent package chaos*
+![xkcd 1987: Python Environment — Virtual environments prevent package chaos](media/xkcd_1987.png)
 
 ## Why Virtual Environments?
 

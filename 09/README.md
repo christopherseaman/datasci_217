@@ -13,9 +13,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
 
-![xkcd 2048: Curve-Fitting](media/xkcd_2048.png)
-
-*"Cauchy-Lorentz: 'Something alarmingly mathematical is happening, and you should probably stop.'" - Not every pattern in a time series is meaningful.*
+![xkcd 2048: Curve-Fitting — "Cauchy-Lorentz: 'Something alarmingly mathematical is happening, and you should probably stop.'" - Not every pattern in a time series is meaningful.](media/xkcd_2048.png)
 
 # Understanding Time Series Data
 
@@ -33,9 +31,7 @@ A **single series** is one history, such as one patient's weight. A **panel** st
 
 *"Time series data comes in many flavors - some are as regular as a Swiss watch, others as unpredictable as a toddler's nap schedule. The key is knowing which one you're dealing with!"*
 
-![Types of Time Series](media/types_of_time_series.png)
-
-*Regular series tick along like clockwork, while irregular series jump around like a medical appointment schedule.*
+![Regular series tick along like clockwork, while irregular series jump around like a medical appointment schedule.](media/types_of_time_series.png)
 
 | Type | Description | Example |
 |------|-------------|---------|
@@ -200,9 +196,7 @@ Clinic visits: None
 
 A blood-pressure reading means more next to the previous one: did it go up or down since the last visit? **Shifting** slides values down or up the rows while the dates stay in place, so each row can carry a **lag** (the previous row's value) or a **lead** (the next row's). A column built this way as an input for a risk score or model is called a **feature**; Lecture 10 uses features to make predictions.
 
-![Shifting and Lagging](media/shifting_lagging.png)
-
-*Lag looks back, lead looks ahead, and the difference is the day-to-day change.*
+![Lag looks back, lead looks ahead, and the difference is the day-to-day change.](media/shifting_lagging.png)
 
 Shifting counts rows, not time: with irregular clinic visits, the "previous" reading can be one week or four weeks back. Time windows, later in this lecture, look back a fixed amount of time instead.
 
@@ -244,9 +238,7 @@ print(weight)
 
 Lecture 04's `.loc` selected rows by label. On a DatetimeIndex the labels are times, and `.loc` also accepts partial dates: write `'2024-03'` and pandas selects every row in March 2024. This is **partial-string indexing**.
 
-![Time Series Indexing](media/time_series_indexing.png)
-
-*Slicing by year, month, or date range: `pandas` reads string dates the way a human would.*
+![Slicing by year, month, or date range: `pandas` reads string dates the way a human would.](media/time_series_indexing.png)
 
 ### Reference Card: Calendar Selection
 
@@ -322,9 +314,7 @@ First 3 days: (72,)
 
 A bedside monitor records heart rate every minute, but a daily report needs one number per hour or per day. **Resampling** converts a time series from one frequency to another. **Downsampling** combines many readings into fewer, longer bins (minutes to hours, days to months). **Upsampling** asks for more, shorter slots than the data has (monthly to daily), so most new slots start empty.
 
-![Resampling Example](media/resampling_example.png)
-
-*Daily data (many points) resampled to monthly (few): the monthly view smooths out daily swings.*
+![Daily data (many points) resampled to monthly (few): the monthly view smooths out daily swings.](media/resampling_example.png)
 
 ## Basic Resampling
 
@@ -576,9 +566,7 @@ Rolling is the partner of resampling: `resample('W').mean()` returns one row per
 
 ## Basic Rolling Operations
 
-![Rolling Window](media/rolling_window.png)
-
-*A 7-day window smooths daily fluctuations while keeping the trend; the shaded band is the standard deviation, wider where readings vary more.*
+![A 7-day window smooths daily fluctuations while keeping the trend; the shaded band is the standard deviation, wider where readings vary more.](media/rolling_window.png)
 
 ### Reference Card: Rolling Windows
 
@@ -676,9 +664,7 @@ The centered window needs three rows on each side, so it starts on January 4 and
 
 A rolling mean treats the 7 readings in its window equally and ignores everything older. An **exponentially weighted moving average (EWM)** instead uses every earlier reading but gives each older one less weight, so it reacts faster when a patient's blood pressure starts climbing after a medication change while still smoothing day-to-day noise. `span=7` makes the result comparable to a 7-reading rolling mean.
 
-![EWM Comparison](media/ewm_comparison.png)
-
-*EWM against a simple moving average: the EWM line responds faster to recent changes.*
+![EWM against a simple moving average: the EWM line responds faster to recent changes.](media/ewm_comparison.png)
 
 ### Reference Card: Exponentially Weighted Windows
 
@@ -711,17 +697,13 @@ print(pd.DataFrame({
 2023-01-05          119.00    119.80     119.82
 ```
 
-![xkcd 2289: Scenario 4](media/xkcd_2289.png)
-
-*"Remember, models aren't for telling you facts, they're for exploring dynamics. This model apparently explores time travel."*
+![xkcd 2289: Scenario 4 — "Remember, models aren't for telling you facts, they're for exploring dynamics. This model apparently explores time travel."](media/xkcd_2289.png)
 
 # LIVE DEMO!
 
 # Time Zone Handling
 
-![xkcd 1799: Bad Map Projection: Time Zones](media/xkcd_time_zones.png)
-
-*Pro tip: Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions.*
+![xkcd 1799: Bad Map Projection: Time Zones — Pro tip: Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions.](media/xkcd_time_zones.png)
 
 ## Basic Time Zone Operations
 
@@ -981,6 +963,6 @@ plt.show()
 
 ![Bar chart of each calendar month's mean temperature minus 98.6 °F](media/viz_temp_monthly.png)
 
-*Optional decomposition and component plots belong in [BONUS.md](BONUS.md).*
+Optional decomposition and component plots belong in [BONUS.md](BONUS.md).
 
 # LIVE DEMO!

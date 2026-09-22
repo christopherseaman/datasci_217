@@ -375,7 +375,7 @@ Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 
 # Python Basics
 
-![xkcd_353.png](media/xkcd_353.png)
+![xkcd 353: Python — "You're flying! How?" "I just typed import antigravity."](media/xkcd_353.png)
 
 Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files; Python computes with what is inside them—one patient's BMI, then the same calculation for every row of a clinic export.
 
@@ -607,31 +607,6 @@ print("BMI is", bmi)
 BMI is 22.857142857142858
 ```
 
-![xkcd 1654: Universal Install Script](media/xkcd_1654.png)
-
-# LIVE DEMO!
-
-# Control Structures
-
-So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to 4 readings or 4,000). **Control flow** statements change that top-to-bottom order.
-
-- A **condition** is an expression that is `True` or `False`, such as `systolic >= 140`. The comparison operators below build conditions; `and`, `or`, and `not` combine them.
-- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python runs only the first block whose condition is `True`.
-- A `for` loop runs its block once per item in a list, naming the current item: `for grade in grades:`. A `while` loop repeats while its condition stays `True`.
-
-Indentation, from Python Syntax Overview, tells Python which lines belong to the `if` or the loop.
-
-## Decisions and Repetition
-
-### Reference Card: Decisions and Repetition
-
-- `if` / `elif` / `else`: Choose which block runs based on a condition
-- `for value in values:`: Visit each item in order
-- `range(5)`: Supply integers 0 through 4
-- `while condition:`: Repeat while the condition stays true
-- `enumerate(values, start=1)`: Supply each position and value
-- `break` / `continue`: Stop a loop / skip to its next iteration
-
 ## Comparison Operators
 
 ### Reference Card: Comparisons
@@ -653,6 +628,31 @@ print(x in [1, 2, 3], x not in [1, 2, 3])   # True False
 ```
 
 At the `>>>` prompt Python shows a bare expression's value; in a script, only `print()` shows it.
+
+![xkcd 1654: Universal Install Script — what installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
+
+# LIVE DEMO!
+
+# Control Structures
+
+So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to 4 readings or 4,000). **Control flow** statements change that top-to-bottom order.
+
+- A **condition** is an expression that is `True` or `False`, such as `systolic >= 140`. The comparison operators from Python Basics build conditions; `and`, `or`, and `not` combine them.
+- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python runs only the first block whose condition is `True`.
+- A `for` loop runs its block once per item in a list, naming the current item: `for grade in grades:`. A `while` loop repeats while its condition stays `True`.
+
+Indentation, from Python Syntax Overview, tells Python which lines belong to the `if` or the loop.
+
+## Decisions and Repetition
+
+### Reference Card: Decisions and Repetition
+
+- `if` / `elif` / `else`: Choose which block runs based on a condition
+- `for value in values:`: Visit each item in order
+- `range(5)`: Supply integers 0 through 4
+- `while condition:`: Repeat while the condition stays true
+- `enumerate(values, start=1)`: Supply each position and value
+- `break` / `continue`: Stop a loop / skip to its next iteration
 
 ## If Statements
 

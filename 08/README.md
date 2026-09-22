@@ -324,9 +324,7 @@ The same order carries into `pivot_table` rows and columns.
 
 # Pivot Tables and Cross-Tabulations
 
-![Research vs. Practical](media/research.png)
-
-*Think of pivot tables as the data analyst's Swiss Army knife - they can reshape, summarize, and analyze data in ways that would take dozens of lines of code to accomplish manually.*
+![The greatest research skill you can have is being a nosy bitch who wants to find out — a pivot table is how you find out](media/research.png)
 
 In Lecture 06, `pivot()` rearranged a long table into a wide one and raised an error when an index/column pair appeared more than once. A **pivot table** handles those repeats: it groups rows by one key for the rows and another for the columns, aggregates each combination, and lays the results out as a grid. It is the two-key `groupby(...).mean().unstack()` from Grouping by Two Keys in a single call, with optional row and column totals called **margins**. A **cross-tabulation** (crosstab) is the special case that counts rows in each combination.
 
