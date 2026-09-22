@@ -22,7 +22,8 @@ The lecture format comes from DataSci 223's lecture style and formatting guide (
 - Content balance: each major topic blends conceptual foundations, reference material, practical examples, and hands-on demos.
 - Build knowledge incrementally. Order topics so each uses only what came before, and teach how to get something working before adding safeguards. Python content follows McKinney's *Python for Data Analysis* progression.
 - When a section develops one tool or technique, a good order is: the problem it solves → the basic tool → options and variations → pitfalls and safeguards. Use this where it fits; not every section or subsection needs every step.
-- Topics form blocks that each end at a demo break; each demo practices the block before it using only material already taught.
+- Topics form blocks that each end at a demo break; each demo practices the block before it using only material already taught. A block is a conceptual group of topics, so a break belongs where one group finishes rather than at a fixed word count.
+- A break may move to an earlier breakpoint, or the topics around it may be reordered, when that balances the blocks and still leaves each topic using only what came before. Moving a break changes what its demo may use: check the demo first, and leave the break where it is when the demo would end up practicing untaught material.
 - Size: aim for about 850 lines and at most 3,000 words of prose (everything outside code fences, tables, and headings) per lecture. Space the demo breaks roughly evenly, with a little more material in the first block than the later ones. Measure with `python3 scripts/lecture_metrics.py`.
 - Keep lectures lean and practical: essential daily data-science tools belong in the lecture; advanced variations, theory, and specialized tools go in `BONUS.md`. The main path comes first, and alternatives (such as standard-library `venv` or Conda beside uv) follow it, labeled as alternatives.
 - Everything the demos and the assignment need is taught in this lecture or an earlier one, not only in `BONUS.md`.
@@ -98,7 +99,8 @@ print(result)  # expected output
 - Notion-native Markdown: multiple `#` topic headings, `##` subtopics, `###` for reference cards, code snippets, and minor subsections, and `####` only when a `###` subsection needs its own children. Do not skip a level. Use real headings rather than bold labels, no hard wrapping within paragraphs, four-space nesting for lists, and no horizontal rules.
 - Demo breaks: exactly `# LIVE DEMO!`, identical at every break, with nothing beneath it. The next line starts a new `#` topic because any `##` heading would nest under the demo marker in Notion. Nothing follows the final marker.
 - Name subsections `Reference Card: ...` and `Code Snippet: ...` after the task or concept they cover. Put visuals before code.
-- Comics: local images with `xkcd NNNN: Title`-style alt text and an optional short italic caption, placed between topics rather than inside an explanation.
+- Captions: the link text of an image is its caption. Notion renders `![Caption](path)` as a picture captioned `Caption`, and the site renders the same text as a `figcaption`, so never put a caption in a separate italic paragraph beneath the image. Keep it to one line: what the picture shows or the point it makes, not a restatement of the nearby prose.
+- Comics: local images placed between topics rather than inside an explanation, captioned `xkcd NNNN: Title` followed by an em dash and the joke or the point, as in `![xkcd 1987: Python Environment — Virtual environments prevent package chaos](media/xkcd_1987.png)`.
 
 #### Reference card formats
 

@@ -63,6 +63,17 @@ module.exports = function (eleventyConfig) {
     });
   });
 
+  // Notion turns an image's link text into the picture's caption; render the
+  // same text as a figcaption so a standalone image reads the same on the site.
+  eleventyConfig.addTransform("image-captions", function (content, outputPath) {
+    if (!outputPath || !outputPath.endsWith(".html")) return content;
+    return content.replace(/<p>(<img\b[^>]*>)<\/p>/gi, (paragraph, image) => {
+      const alt = image.match(/\balt=(["'])(.*?)\1/i);
+      if (!alt || !alt[2].trim()) return paragraph;
+      return `<figure>${image}<figcaption>${alt[2]}</figcaption></figure>`;
+    });
+  });
+
   // Computed data — assign layout and clean URLs without frontmatter
   eleventyConfig.addGlobalData("eleventyComputed", {
     layout: (data) => data.layout || "layout.njk",

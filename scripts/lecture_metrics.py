@@ -30,6 +30,28 @@ def metrics(path):
     return dict(lines=len(lines), prose_words=prose_words, code=code_lines, topics=topics,
                 subs=subs, cards=cards, snippets=snips, images=images, table_rows=tables, demos=demos)
 
+def blocks(path):
+    """Share of the lecture's lines in each block, where a block ends at a demo break."""
+    counts, current = [], 0
+    for l in Path(path).read_text().splitlines():
+        if l.strip().rstrip("!") == "# LIVE DEMO":
+            counts.append(current)
+            current = 0
+            continue
+        current += 1
+    if current:
+        counts.append(current)
+    total = sum(counts) or 1
+    return [round(100 * c / total) for c in counts]
+
+
+if "--blocks" in sys.argv:
+    print(f"{'lec':<5}{'lines':>7}  block shares (% of lines, one per demo break)")
+    for nn in [f"{i:02d}" for i in range(1, 12)]:
+        share = blocks(f"{nn}/README.md")
+        print(f"{nn:<5}{len(Path(f'{nn}/README.md').read_text().splitlines()):>7}  " + "/".join(f"{s}" for s in share))
+    raise SystemExit
+
 print(f"{'lec':<5}{'lines':>7}{'prose':>8}{'code':>7}{'topics':>8}{'subs':>6}{'cards':>7}{'snips':>7}{'imgs':>6}{'tbl':>6}{'demos':>7}")
 tot = {}
 for nn in [f"{i:02d}" for i in range(1, 12)]:
