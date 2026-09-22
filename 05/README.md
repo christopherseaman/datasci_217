@@ -40,9 +40,7 @@ Before changing a single value, write down what the table is supposed to look li
 | `visit_date` | visit day | `datetime64` | a real calendar date |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60-250 when present |
 
-Two dtypes here are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. Data Type Conversion below shows how to convert columns to both.
-
-Every operation in this lecture either checks a rule like these or changes the data to satisfy one.
+Two dtypes here are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank (Data Type Conversion below converts columns to both). Every operation in this lecture either checks a rule like these or changes the data to satisfy one.
 
 # Handling Missing Data
 
@@ -321,9 +319,7 @@ The tools so far repair values that are missing, repeated, or stored as the wron
 ![xkcd 1205: Is It Worth the Time?](media/xkcd_1205_apply.png)
 *A reminder to compare the time spent automating with the time it saves.*
 
-Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis.
-
-A **`lambda`** is a one-line function without a name: `lambda x: x * 2` does the same as `def double(x): return x * 2`, and is handy for one-time use.
+Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis. Any of them can take a **`lambda`**, a one-line function without a name: `lambda x: x * 2` does the same as `def double(x): return x * 2`, and is handy for one-time use.
 
 ### Reference Card: Custom functions
 
@@ -338,50 +334,45 @@ A **`lambda`** is a one-line function without a name: `lambda x: x * 2` does the
 ### Code Snippet: Map and apply transformations
 
 ```python
-# Apply custom numeric logic along a Series
+# Apply custom numeric logic to each value of a Series
 def performance_band(score):
     """Assign a documented band from a numeric score."""
     return 'high' if score >= 80 else 'standard'
 
 scores = pd.Series([72, 91, 84])
-bands = scores.apply(performance_band)
-print(bands)  # ['standard', 'high', 'high']
+print(scores.apply(performance_band))
 
 # Map categorical values to numbers
 status = pd.Series(['active', 'inactive', 'active', 'pending'])
-status_map = {'active': 1, 'inactive': 0, 'pending': 2}
-status_coded = status.map(status_map)
-print(status_coded)  # [1, 0, 1, 2]
+print(status.map({'active': 1, 'inactive': 0, 'pending': 2}))
 
-# Apply function to DataFrame rows
-df = pd.DataFrame({'min': [1, 4, 7], 'max': [5, 9, 12]})
-df['range'] = df.apply(lambda row: row['max'] - row['min'], axis=1)
-print(df)
-#    min  max  range
-# 0    1    5      4
-# 1    4    9      5
-# 2    7   12      5
+# Apply a lambda to each row; axis=1 passes the row as a Series
+vitals = pd.DataFrame({'min': [1, 4, 7], 'max': [5, 9, 12]})
+vitals['range'] = vitals.apply(lambda row: row['max'] - row['min'], axis=1)
+print(vitals)
+```
 
-# Apply function to DataFrame columns
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-column_sums = df.apply(sum, axis=0)  # Sum each column
-print(column_sums)  # A: 6, B: 15
-
-# Element-wise DataFrame mapping (pandas 3 DataFrame.map)
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-df_squared = df.map(lambda x: x ** 2)
-print(df_squared)
-#    A   B
-# 0  1  16
-# 1  4  25
-# 2  9  36
+```text
+0    standard
+1        high
+2        high
+dtype: str
+0    1
+1    0
+2    1
+3    2
+dtype: int64
+   min  max  range
+0    1    5      4
+1    4    9      5
+2    7   12      5
 ```
 
 ## Renaming Axis Indexes
 
 Exports rarely arrive with tidy column names. A clinic extract might label its columns `'Patient ID '`, `'SBP (mmHg)'`, and `'VisitDate'`. Every Lecture 04 selection, `df['col']` or `df.loc[rows, 'col']`, must spell a label exactly, so the trailing space alone makes `df['Patient ID']` raise `KeyError`. A table has two **axis indexes**: the row labels (`df.index`) and the column labels (`df.columns`). **Renaming** changes those labels without touching any values. Choose one naming style, such as lowercase words joined by underscores (`patient_id`, `sbp`, `visit_date`), and rename right after loading so every later step can type the names without guessing.
 
-`rename()` takes the same two kinds of rule as `map()` above: a dictionary of old-to-new labels (Lecture 02), or a function such as `str.lower` that it calls on every label.
+`rename()` takes the same two kinds of rule as `map()` above: a dictionary of old-to-new labels (Lecture 02), or a function such as `str.lower` that it calls on every label. It returns a new table, so assign the result; for targeted value changes, assign directly with `.loc`. Both forms are clear under pandas 3 Copy-on-Write behavior.
 
 ### Reference Card: Renaming labels
 
@@ -393,41 +384,28 @@ Exports rarely arrive with tidy column names. A clinic extract might label its c
 | `df.rename(columns=str.strip)` | Remove leading/trailing whitespace from each column label | DataFrame with revised labels |
 | `series.rename('new_name')` | Set a Series' name; it becomes the column header when the Series turns into a table column, as after `reset_index()` | `Series` with the new name |
 
-Prefer assigning the returned object, as below. For targeted value changes, assign directly with `.loc`; these forms are clear under pandas 3 Copy-on-Write behavior.
-
-### Code Snippet: Rename columns and index labels
+### Code Snippet: Rename columns
 
 ```python
-visits = pd.DataFrame({
-    'Patient ID ': ['P001', 'P002'],
-    'SBP (mmHg)': [128, 141],
-    'VisitDate': ['2026-01-15', '2026-02-02'],
-})
+visits = pd.DataFrame({'Patient ID ': ['P001', 'P002'], 'SBP (mmHg)': [128, 141]})
 
-# A dictionary renames specific columns
-visits = visits.rename(columns={'Patient ID ': 'patient_id', 'SBP (mmHg)': 'sbp', 'VisitDate': 'visit_date'})
+# A dictionary renames the columns you name
+visits = visits.rename(columns={'Patient ID ': 'patient_id', 'SBP (mmHg)': 'sbp'})
 print(visits.columns)
 
 # A function rule applies to every label; spaces inside a label stay
 labels_df = pd.DataFrame({'First Column': [1], ' Second ': [2], 'THIRD': [3]})
 print(labels_df.rename(columns=str.strip).rename(columns=str.lower).columns)
-
-# Row labels use index=
-visits = visits.rename(index={0: 'first_visit', 1: 'second_visit'})
-print(visits)
 ```
 
 ```text
-Index(['patient_id', 'sbp', 'visit_date'], dtype='str')
+Index(['patient_id', 'sbp'], dtype='str')
 Index(['first column', 'second', 'third'], dtype='str')
-             patient_id  sbp  visit_date
-first_visit        P001  128  2026-01-15
-second_visit       P002  141  2026-02-02
 ```
 
 ## Creating Categories
 
-Table 1 of almost every clinical paper reports age in bands rather than single years. **Binning** assigns each value to an interval. `pd.cut()` uses edges you choose, so bands can match a clinical definition. `pd.qcut()` picks edges from the data so each bin gets about the same number of rows, as in quartiles. pandas writes an interval as `(30, 50]`: the round bracket means 30 is not included, and the square bracket means 50 is.
+Table 1 of almost every clinical paper reports age in bands rather than single years. **Binning** assigns each value to an interval. `pd.cut()` uses edges you choose, so bands can match a clinical definition. `pd.qcut()` picks edges from the data so each bin gets about the same number of rows, as in quartiles; ties can make its edges duplicate, so inspect the result and set an explicit duplicate-edge policy (`duplicates='drop'` in Demo 2) when needed. pandas writes an interval as `(30, 50]`: the round bracket means 30 is not included, and the square bracket means 50 is.
 
 *Pro tip: Categories are like putting your data in organized boxes - everything has its place, and you can find things much faster when you know exactly which box to look in.*
 
@@ -441,24 +419,14 @@ Table 1 of almost every clinical paper reports age in bands rather than single y
 | `bins=[0, 30, 50, 100]` | Supply three explicit intervals | `(0, 30]`, `(30, 50]`, `(50, 100]` by default |
 | `labels=['Young', 'Middle', 'Senior']` | Name the three bins | One label per bin is required |
 
-Ties can make quantile edges duplicate, so inspect the result and use an explicit duplicate-edge policy (`duplicates='drop'` in Demo 2) when needed.
-
 ### Code Snippet: Create ordered categories
 
 ```python
 ages = pd.Series([25, 30, 45, 60, 75])
-print(pd.cut(ages, bins=[0, 30, 50, 100]))  # 30 falls in (0, 30]
-print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))
+print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))  # 30 falls in (0, 30]
 ```
 
 ```text
-0      (0, 30]
-1      (0, 30]
-2     (30, 50]
-3    (50, 100]
-4    (50, 100]
-dtype: category
-Categories (3, interval[int64, right]): [(0, 30] < (30, 50] < (50, 100]]
 0     Young
 1     Young
 2    Middle
@@ -487,22 +455,6 @@ Text columns are where inconsistent categories hide. A hand-typed site column mi
 
 ![String Operations Reference](media/string_operations_reference.png)
 *Python's built-in string methods from Lecture 01; the .str accessor applies them to a whole column.*
-
-```
-Input: "  Alice Smith  "
-   │
-   ├─ .strip() ────────────► "Alice Smith"
-   │                              │
-   │                              ├─ .lower() ────────► "alice smith"
-   │                              │                          │
-   │                              │                          └─ .replace(' ', '_') ──► "alice_smith"
-   │                              │
-   │                              └─ .split(' ') ────────► ['Alice', 'Smith']
-   │                                     │
-   │                                     └─ [0] ──────────► 'Alice'
-   │
-   └─ .title() ────────────► "Alice Smith"
-```
 
 ### Reference Card: String operations
 
@@ -538,40 +490,10 @@ dtype: str
 dtype: bool
 ```
 
+One column sometimes holds several facts at once: a full name, a `city, state` pair, or a delimited list of codes. [The bonus](BONUS.md#splitting-and-joining-values) covers `str.split()`, `str.cat()`, and `str.join()` for taking those apart and putting them back together.
+
 ![xkcd 1171: Perl Problems](media/xkcd_1171.png)
 *"I got 99 problems, so I used regular expressions. Now I have 100 problems."*
-
-## String Splitting and Joining
-
-Splitting and joining strings is common when working with structured text data like addresses, names, or delimited values.
-
-### Reference Card: String splitting
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `series.str.split(sep, regex=False)` | Split on a literal separator | `Series` of lists |
-| `series.str.split(sep, expand=True, regex=False)` | Expand split parts into columns | `DataFrame` |
-| `series.str.cat(sep=' ')` | Combine all non-missing strings into one | One string |
-| `series.str.join(sep)` | Join the strings within each list value | String `Series` |
-
-### Code Snippet: Split a compound field
-
-```python
-full_names = pd.Series(['Alice Smith', 'Bob Jones', 'Charlie Brown'])
-print(full_names.str.split(' '))               # a list per value
-print(full_names.str.split(' ', expand=True))  # one column per part
-```
-
-```text
-0      [Alice, Smith]
-1        [Bob, Jones]
-2    [Charlie, Brown]
-dtype: object
-         0      1
-0    Alice  Smith
-1      Bob  Jones
-2  Charlie  Brown
-```
 
 # Categorical Data Encoding
 
@@ -600,28 +522,24 @@ A `category` column stores each distinct label once and gives every row a small 
 ### Code Snippet: Store repeated categories efficiently
 
 ```python
-# Compare storage for repeated values
+# 5,000 values drawn from three labels
 colors = pd.Series(['red', 'blue', 'red', 'green', 'blue'] * 1000)
-print(f"As str: {colors.memory_usage(deep=True)} bytes")
-
 colors_cat = colors.astype('category')
-print(f"As category: {colors_cat.memory_usage(deep=True)} bytes")
 
-# Access categories and codes
-print(colors_cat.cat.categories)  # ['blue', 'green', 'red']
-print(colors_cat.cat.codes[:5])   # [2, 0, 2, 1, 0]
+print(f"As str: {colors.memory_usage(deep=True)} bytes")        # tens of thousands
+print(f"As category: {colors_cat.memory_usage(deep=True)} bytes")  # a few thousand
+print(colors_cat.cat.categories)           # Index(['blue', 'green', 'red'], dtype='str')
+print(colors_cat.cat.codes[:5].tolist())   # [2, 0, 2, 1, 0]
 ```
 
 ## Creating Indicator (Dummy) Variables
 
-`pd.get_dummies()` gives each label its own column, marking rows with that label `True` (1) and every other row `False` (0); `dtype='int64'` stores the marks as 0/1 integers.
+`pd.get_dummies()` gives each label its own column, marking rows with that label `True` (1) and every other row `False` (0); `dtype='int64'` stores the marks as 0/1 integers. With `drop_first=True`, one category becomes the reference: a row in that category has 0 in every retained indicator, so the model does not carry a redundant column (Lecture 10 covers the modeling implications).
 
 ![Categorical Encoding](media/categorical_encoding_diagram.png)
 *One-hot encoding: each category becomes its own 0/1 column.*
 
 *Think of dummy variables as translating categories into a language that models can understand - instead of "red", "blue", "green", you get three columns of 1s and 0s indicating which color each row has.*
-
-With `drop_first=True`, one category becomes the reference: a row in that category has 0 in every retained indicator. This avoids carrying a redundant set of columns into a model; Lecture 10 explains the modeling implications in more detail.
 
 ### Reference Card: Indicator variables
 
@@ -674,35 +592,7 @@ Lecture 04 ended with a first look at a loaded table: count gaps with `isna().su
 | Outliers | `df.describe()`<br>Box plots<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
 | Inconsistent Categories | `df['col'].unique()` | Normalize only differences known to share a meaning; map documented aliases explicitly |
 
-## Data Quality Checks
-
-Rerun the Lecture 04 inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning and compare the outputs; counts should change only where you meant them to.
-
-### Code Snippet: Audit a table
-
-```python
-df = pd.DataFrame({'A': [1, 2, 2, 4], 'B': [5, 6, 6, 8], 'C': [9, 10, 10, 12]})
-print(df.isna().sum())        # Missing values per column
-print(df.duplicated().sum())  # Rows 1 and 2 are identical
-print(df.nunique())           # Distinct values per column
-print(df.dtypes)              # Data types per column
-```
-
-```text
-A    0
-B    0
-C    0
-dtype: int64
-1
-A    3
-B    3
-C    3
-dtype: int64
-A    int64
-B    int64
-C    int64
-dtype: object
-```
+Run the Lecture 04 inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning and compare the outputs: counts should change only where you meant them to.
 
 ## Data Validation Rules
 
@@ -760,7 +650,7 @@ dtype: datetime64[us]
 
 ## Detecting and Filtering Outliers
 
-Outliers are extreme values that may represent errors, rare but valid observations, or important anomalies. A statistical rule can flag candidates, but source evidence, domain meaning, and analysis purpose determine whether to keep, correct, cap, or exclude them.
+Outliers are extreme values that may represent errors, rare but valid observations, or important anomalies. A statistical rule can flag candidates, but source evidence, domain meaning, and analysis purpose determine whether to keep, correct, cap, or exclude them. The **interquartile range (IQR)** is the distance from the 25th to the 75th percentile; the usual rule flags values more than 1.5 IQRs outside those quartiles, which is exactly where a box plot draws its whiskers. See [the bonus](BONUS.md#advanced-outlier-detection-methods) for z-score and other detection methods.
 
 ![IQR Method for Outlier Detection](media/boxplot_vs_pdf.png)
 
@@ -779,30 +669,23 @@ Outliers are extreme values that may represent errors, rare but valid observatio
 ```python
 df = pd.DataFrame({'value': [1, 2, 3, 4, 5] * 4 + [100]})
 
-# Flag values beyond 3 standard deviations
-mean, std = df['value'].mean(), df['value'].std()
-three_sd_flag = abs(df['value'] - mean) > 3 * std
-print(df.loc[three_sd_flag])  # Flags 100 for investigation
-
-# IQR method: quartiles are 2 and 4, so the fences are -1 and 7
+# The quartiles are 2 and 4, so the fences are -1 and 7
 Q1 = df['value'].quantile(0.25)
 Q3 = df['value'].quantile(0.75)
 IQR = Q3 - Q1
 iqr_flag = (df['value'] < Q1 - 1.5 * IQR) | (df['value'] > Q3 + 1.5 * IQR)
-print(iqr_flag.sum())
+print(df.loc[iqr_flag])  # the row to investigate
 
 # Exclude a flagged row only after evidence supports that decision
 df_clean = df.loc[~iqr_flag]
 
 # Or cap extreme values instead of dropping them
-capped = df['value'].clip(lower=0, upper=10)
-print(capped.max())
+print(df['value'].clip(lower=0, upper=10).max())
 ```
 
 ```text
     value
 20    100
-1
 10
 ```
 

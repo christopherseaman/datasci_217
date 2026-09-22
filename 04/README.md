@@ -45,15 +45,15 @@ Shortcuts such as `A` (add a cell above), `B` (add a cell below), and `DD` (dele
 ### Code Snippet: A notebook cell
 
 ```python
-# Cell 1: Core Python values
+# Cell 1: the kernel keeps these values
 name = "Ada"
 scores = [8, 9, 10]
+```
 
-# Cell 2: Run a calculation
+```python
+# Cell 2: a later cell can use them, and its output appears below it
 average = sum(scores) / len(scores)
 print(f"{name}'s average: {average:.1f}")
-
-# Cell 3: Markdown can explain the result
 ```
 
 ```text
@@ -156,20 +156,23 @@ Times vary by machine.
 
 Jupyter notebooks are like that one friend who screenshots everything you text them. They save both your code AND all the outputs (results, data, plots) in the same file.
 
-Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too—like having a photographic memory of your most awkward moments. Open the `.ipynb` file in a text editor and the output is right there, in the file Git will commit:
+Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too—like having a photographic memory of your most awkward moments.
+
+### Code Snippet: What Git actually commits
+
+```python
+patient_name = "Example Patient"
+blood_pressure = "120/80"
+print(patient_name, blood_pressure)  # Example Patient 120/80
+```
+
+Open the `.ipynb` file in a text editor and that line is right there, in the file Git will commit:
 
 ```json
-{
- "cell_type": "code",
+{"cell_type": "code",
  "execution_count": 1,
- "outputs": [
-  {
-   "name": "stdout",
-   "output_type": "stream",
-   "text": ["Example Patient 120/80\n"]
-  }
- ]
-}
+ "outputs": [{"name": "stdout", "output_type": "stream",
+              "text": ["Example Patient 120/80\n"]}]}
 ```
 
 ### Before You Commit a Notebook
@@ -179,16 +182,6 @@ Accidentally printed passwords, patient data, or embarrassing test results are s
 3. **Save the notebook**: the outputs are removed from the file.
 
 Then check the notebook's diff in VS Code Source Control (Lecture 02) before you commit.
-
-### Code Snippet: Clear sensitive output before commit
-
-```python
-# This output contains sensitive data and will be saved in the notebook
-patient_name = "Example Patient"
-blood_pressure = "120/80"
-print(patient_name, blood_pressure)  # Example Patient 120/80
-# Clear the output before sharing or committing the notebook.
-```
 
 # LIVE DEMO!
 
@@ -302,20 +295,6 @@ smoker       bool
 dtype: object
 ```
 
-## `display()` vs `print()`
-
-`print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a Series or DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan. As in the `%pwd` example above, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
-
-*Think of `print()` as the reliable Honda Civic—works almost anywhere—while `display()` is the sports car: prettier, but happiest in Jupyter.*
-
-### Code Snippet: Choose notebook output
-
-```python
-print(visits)    # Plain text, works everywhere
-display(visits)  # Formatted table in Jupyter
-len(visits)      # Last line: shown automatically as 3
-```
-
 ## Selecting Columns
 
 Most questions need only a few columns: "what were the temperatures?" rather than the whole table. Brackets select columns by label. One label gives a Series; a list of labels (double brackets) gives a DataFrame, even when the list holds one name.
@@ -328,7 +307,7 @@ Most questions need only a few columns: "what were the temperatures?" rather tha
 | --- | --- | --- |
 | `df["column_name"]` | One label | `Series` |
 | `df[["col1", "col2"]]` | List of labels | `DataFrame` |
-| `df.column_name` | Identifier that does not conflict with an attribute | `Series` (prefer brackets for safety) |
+| `df.column_name` | Identifier that does not conflict with an attribute | `Series`; fails on names with spaces or names shared with a DataFrame method, so prefer brackets |
 | `df.select_dtypes(include=["number"])` | Dtype selector | Matching-column `DataFrame` |
 
 ### Code Snippet: Select Series and DataFrames
@@ -350,11 +329,6 @@ P001         34    36.8
 P002         58    38.1
 P003         41    37.2
 ```
-
-### Common Mistakes: Column Selection
-
-- `df["col"]` and `df[["col"]]` look alike but return different types: Series vs DataFrame.
-- Dot notation (`df.col`) fails when the name has spaces or matches a DataFrame method; brackets always work.
 
 ## Selecting with `.loc` and `.iloc`
 
@@ -447,7 +421,7 @@ P002         58    38.1
 
 ## Adding Columns
 
-A **derived column** is computed from columns you already have: a temperature in Fahrenheit, a change from baseline, a body-mass index. Assign to a new column name with brackets. As with NumPy's vectorized arithmetic in Lecture 03, pandas computes the whole column at once with no loop, matching rows by index label. To change only some rows, select those rows and the column together in one `.loc[...]`.
+A **derived column** is computed from columns you already have: a temperature in Fahrenheit, a change from baseline, a body-mass index. Assign to a new column name with brackets. As with NumPy's vectorized arithmetic in Lecture 03, pandas computes the whole column at once with no loop, matching rows by index label.
 
 ### Reference Card: Adding and updating columns
 
@@ -599,6 +573,20 @@ by_patient.to_csv("no_index.csv", index=False)  # first line: age,temp_c,clinic
 Keep the index when it holds meaningful labels such as patient IDs. Use `index=False` when the index is just the default 0, 1, 2, ... row numbers. Reading the saved file back with `pd.read_csv()`, a **round trip**, confirms that the columns you meant to write are there.
 
 *Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!"* pandas has matching readers and writers for other formats, such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
+
+## Showing a Table: `display()` vs `print()`
+
+`print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a Series or DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan when you are looking over a table you just loaded. As in the `%pwd` example, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
+
+*Think of `print()` as the reliable Honda Civic—works almost anywhere—while `display()` is the sports car: prettier, but happiest in Jupyter.*
+
+### Code Snippet: Choose notebook output
+
+```python
+print(visits)    # Plain text, works everywhere
+display(visits)  # Formatted table in Jupyter
+len(visits)      # Last line: shown automatically as 5
+```
 
 ## Inspecting a Loaded Table
 

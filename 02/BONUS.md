@@ -11,6 +11,34 @@ notion:
 
 *This content is optional and not required for assignments. It's here for students who want to dive deeper into Git.*
 
+# VS Code Extensions, Themes, and Settings
+
+Editor customization for the Lecture 02 VS Code section. None of it is needed for the demos or the assignment.
+
+## Recommended extensions (install via View → Extensions)
+
+- Python, with Pylance (type information and completion) and Ruff (linting and formatting)
+- Jupyter (we'll use this a lot later)
+- Markdown All in One, markdownlint, Markdown Checkboxes, GitHub Markdown Preview
+- Bonus mentions: Error Lens, YAML, indent‑rainbow, GitLens
+
+## Themes and schemes: make it Py‑pretty
+
+- Change Color Theme: Command Palette → **Preferences: Color Theme** (**Ctrl+K** then **Ctrl+T** on Windows/Linux; **Cmd+K** then **Cmd+T** on macOS). I am a fan of:
+    - "Tomorrow Night Bright"
+    - "GitHub Dark High Contrast"
+- Toggle icons: Command Palette → **Preferences: File Icon Theme**.
+
+## Window layout
+
+- Split an editor: **View → Editor Layout → Split Right**, **Ctrl+backslash** (**Cmd+backslash** on Mac).
+- Hide distractions: **View → Appearance → Zen Mode**; press **Esc** twice to leave.
+
+## Format on save
+
+- In Settings, search **Format on Save** and enable it.
+- Search **Default Formatter** and select an installed formatter such as Ruff.
+
 # Command Line Git (Power User Track)
 
 While VS Code's Git interface is excellent for daily use, command line Git offers more power and precision. Here's what power users should know:

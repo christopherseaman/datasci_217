@@ -21,6 +21,7 @@ See [README.md](README.md) for core data wrangling operations - master those fir
 4. **MultiIndex Creation Methods** - Programmatically build hierarchical indexes with from_tuples(), from_product(), from_arrays()
 5. **Stack/Unstack with dropna Parameter** - Control how missing data is handled during reshaping
 6. **Hierarchical Columns from Pivot** - Create and work with MultiIndex in column headers
+7. **Repeated Pairs and pivot_table()** - A first look at the call that reshapes when `pivot()` refuses
 
 
 # 1. Advanced MultiIndex Operations
@@ -656,6 +657,33 @@ print(swapped)
 3. Restructure the data to long format and avoid hierarchical columns
 
 
+# 7. Repeated Pairs and pivot_table()
+
+`pivot()` stops with `ValueError: Index contains duplicate entries, cannot reshape` when an index/column pair holds more than one value. If the repeats are real observations rather than data errors, `pivot_table()` aggregates them into one cell on the way to the wide shape. Picking `sum` instead of `mean` changes the question being answered, so treat it as an analysis decision, not a formatting fix. Lecture 08 teaches aggregation and pivot tables properly.
+
+## Reshaping Repeated Observations
+
+### Code Snippet: Aggregate duplicates while reshaping
+
+```python
+sales = pd.DataFrame({
+    'month': ['Jan', 'Jan'],
+    'category': ['Electronics', 'Electronics'],
+    'amount': [100, 150],
+})
+
+# pivot() would fail because Jan/Electronics appears twice.
+# Use this only when summing those rows is part of the question.
+sales_pivot = pd.pivot_table(sales, values='amount',
+                             index='month', columns='category',
+                             aggfunc='sum')
+
+print(sales_pivot)
+# category  Electronics
+# month
+# Jan               250
+```
+
 # When to Revisit These Topics
 
 You'll know it's time to come back to these advanced topics when you encounter:
@@ -701,5 +729,11 @@ You'll know it's time to come back to these advanced topics when you encounter:
 - Financial reports (products × metrics × time periods)
 - Need to represent multi-dimensional data in 2D table
 - Building sophisticated summary tables
+
+## Repeated Pairs and pivot_table()
+
+- `pivot()` raises `ValueError: Index contains duplicate entries, cannot reshape`
+- Repeated index/column pairs are real observations, not data errors
+- Need to choose an aggregation (`sum`, `mean`, ...) as part of reshaping
 
 **Bottom Line:** If the basic operations in the main lecture feel limiting, come back here. These advanced topics solve real problems that emerge in complex data wrangling scenarios.

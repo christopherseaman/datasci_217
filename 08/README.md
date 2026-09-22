@@ -153,42 +153,6 @@ South             NaN  25.0
 
 East had no new-patient visits, so East–New is `NaN`. There was nothing to average, which is not the same as a zero-minute wait.
 
-## Missing Keys and Unused Categories
-
-Two defaults decide which groups appear. Rows with a missing key are left out. For a categorical key (Lecture 05), only the categories that occur in the data appear, so a clinic with no visits yet is missing from the report. Declaring the categories yourself also sets the order of the results: with the default `sort=True`, groups follow the order you list in `categories=`, not alphabetical order.
-
-### Reference Card: Which Groups Appear
-
-- `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
-- `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present. For plain text keys, `observed` does nothing.
-- `pd.Categorical(values, categories=[...], ordered=True)`: Declare the allowed values and their reporting order; `ordered=True` records that the order is meaningful. Prints `Categories (4, str): ['North' < 'South' < 'East' < 'West']` under the values. A value missing from `categories=` becomes `NaN` with a warning, so list every value that occurs.
-
-### Code Snippet: A Reporting Order and an Unused Clinic
-
-```python
-levels = ['North', 'South', 'East', 'West']   # reporting order; West has no visits yet
-cat_visits = visits.copy()
-cat_visits['clinic'] = pd.Categorical(visits['clinic'], categories=levels, ordered=True)
-print(cat_visits.groupby('clinic', observed=True)['wait_min'].count())
-print(cat_visits.groupby('clinic', observed=False)['wait_min'].count())
-```
-
-```text
-clinic
-North    3
-South    2
-East     1
-Name: wait_min, dtype: int64
-clinic
-North    3
-South    2
-East     1
-West     0
-Name: wait_min, dtype: int64
-```
-
-The same order carries into `pivot_table` rows and columns.
-
 # GroupBy Result-Shape Choices
 
 Before choosing a method, decide what one row of the answer should represent: its grain. Aggregation changes the grain; transform and filter keep the original rows.
@@ -317,6 +281,46 @@ South  4        P04        30
 The index has two levels: the clinic and each row's original index. `include_groups=False` means your function does not receive the `clinic` column. It is the only setting pandas 3 allows; writing it out makes pandas 2.2, which still passes the column by default, give the same result.
 
 # LIVE DEMO!
+
+# Which Groups Appear in a Summary
+
+A fourth clinic opens in March and sees nobody in April. The April report, built with `groupby`, lists three clinics, and nothing in the output says the fourth is missing. Rows whose clinic was never recorded vanish just as quietly. Two defaults decide which groups a summary contains, and neither one warns you, so set both on purpose in anything you hand to someone else.
+
+## Missing Keys and Unused Categories
+
+Rows with a missing key are left out before the split. For a categorical key (Lecture 05), only the categories that occur in the data become groups, so the clinic with no visits yet never reaches the report. Declaring the categories yourself also sets the order of the results: with the default `sort=True`, groups follow the order you list in `categories=`, not alphabetical order.
+
+### Reference Card: Group Coverage Options
+
+- `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
+- `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present. For plain text keys, `observed` does nothing.
+- `pd.Categorical(values, categories=[...], ordered=True)`: Declare the allowed values and their reporting order; `ordered=True` records that the order is meaningful. Prints `Categories (4, str): ['North' < 'South' < 'East' < 'West']` under the values. A value missing from `categories=` becomes `NaN` with a warning, so list every value that occurs.
+
+### Code Snippet: A Reporting Order and an Unused Clinic
+
+```python
+levels = ['North', 'South', 'East', 'West']   # reporting order; West has no visits yet
+cat_visits = visits.copy()
+cat_visits['clinic'] = pd.Categorical(visits['clinic'], categories=levels, ordered=True)
+print(cat_visits.groupby('clinic', observed=True)['wait_min'].count())
+print(cat_visits.groupby('clinic', observed=False)['wait_min'].count())
+```
+
+```text
+clinic
+North    3
+South    2
+East     1
+Name: wait_min, dtype: int64
+clinic
+North    3
+South    2
+East     1
+West     0
+Name: wait_min, dtype: int64
+```
+
+The same order carries into `pivot_table` rows and columns.
 
 # Pivot Tables and Cross-Tabulations
 

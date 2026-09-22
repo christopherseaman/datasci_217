@@ -15,7 +15,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 *Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
 
-This lecture uses prepared plotting tables so you can focus on choosing honest encodings and communicating what those tables show. Lecture 08 then teaches how to produce grouped summaries that can become plotting tables.
+This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
 
 ![xkcd 1945: Scientific Paper Graph Quality](media/xkcd_1945.png)
 
@@ -23,20 +23,20 @@ This lecture uses prepared plotting tables so you can focus on choosing honest e
 
 # Start with a visualization contract
 
-In the 1850s, Florence Nightingale had monthly counts of British Army deaths in the Crimean War, split by cause. Her diagram made one comparison impossible to miss: the blue wedges (deaths from preventable disease) dwarf the red wedges (deaths from wounds). She used it to argue for sanitary reform in army hospitals. The lesson for us: decide what the reader should compare before drawing anything.
+In the 1850s, Florence Nightingale had monthly counts of British Army deaths in the Crimean War, split by cause. Her diagram made one comparison impossible to miss: the blue wedges (deaths from preventable disease) dwarf the red wedges (deaths from wounds), and she used it to argue for sanitary reform in army hospitals. Decide what the reader should compare before you draw anything.
 
 ![Florence Nightingale's Diagram of the Causes of Mortality in the Army in the East: blue wedges for preventable disease are far larger than red wedges for wounds.](media/Nightingale-mortality-1600.jpg)
 
-A **visualization** maps data values to visible properties so that a reader can make a comparison. Think of it as a translation: each column of your table becomes something the eye can compare, such as a position, a length, or a color. Before choosing an API or chart type, write these four plain-language statements:
+A **visualization** maps data values to visible properties so a reader can make a comparison: each column becomes something the eye can compare, such as a position, a length, or a color. Before choosing a chart type, write these four plain-language statements:
 
 1. **Question:** What comparison or pattern should the chart help the reader understand?
-2. **Audience and claim:** Who will use the chart, what context do they bring, and what descriptive conclusion should the finished chart support? A visual pattern alone does not prove why that pattern occurred.
-3. **Unit and grain:** What does one mark or summarized position represent, and what does one row in the plotting table represent?
-4. **Variables:** What is each variable's data type, what analytical role does it play, and which visible property will encode it?
+2. **Audience and claim:** Who reads the chart, and what descriptive conclusion should it support? A visible pattern alone does not prove why that pattern occurred.
+3. **Unit and grain:** What does one mark represent, and what does one row of the plotting table represent?
+4. **Variables:** What is each variable's data type and role, and which visible property encodes it?
 
 ## State the unit and grain shown
 
-The **unit displayed** is what one mark or summarized position in the chart represents. Its grain, Lecture 06's term for what one row represents, is the plotting table's row meaning. You met this idea as row meaning in Lecture 05 (one row is one clinic visit, not one patient) and as long format in Lecture 06 (one row per entity-variable observation): a plotting table is a table whose rows match the marks you want to draw.
+The **unit displayed** is what one mark in the chart represents. You met this idea as row meaning in Lecture 05 (one row is one clinic visit, not one patient) and as long format in Lecture 06. A **plotting table** is a table whose rows match the marks you want to draw.
 
 | Plotting table | One row is | One mark is | Question it can answer |
 | --- | --- | --- | --- |
@@ -45,20 +45,20 @@ The **unit displayed** is what one mark or summarized position in the chart repr
 
 ## Separate data type from role
 
-A variable's **data type** describes the meaning and valid operations of its values:
+A variable's **data type** is what its values mean and which operations make sense:
 
 - **categorical** values place observations into named groups;
-- **quantitative** values record numeric magnitudes for which arithmetic is meaningful;
+- **quantitative** values are numeric magnitudes where arithmetic is meaningful;
 - **ordinal** values are categories with a meaningful order; and
-- **temporal** values represent dates or times, whose order and spacing may matter.
+- **temporal** values are dates or times, whose order and spacing may matter.
 
-A variable's **role** describes how it participates in this particular analysis: for example, a quantitative column can be the measure being compared, a categorical column can define groups, and a temporal column can establish observation order. An identifier labels or links records; even when stored as a number, it is not automatically a quantitative measure. The same data type can play different roles in different charts, so record both type and role before choosing x, y, color, or another encoding.
+A variable's **role** is the job it does here: the measure compared, the grouping, the observation order, or an **identifier** that labels or links records. An identifier stored as a number is still not a quantitative measure. One data type can play different roles in different charts, so record both before choosing x, y, or color.
 
 ## Separate exploratory and explanatory work
 
-An **exploratory visualization** helps the analyst inspect patterns, distributions, or unexpected values while the question is still being refined. It may be quick, but it still needs truthful scales and labels.
+An **exploratory visualization** helps you inspect patterns, distributions, or surprises while the question is still forming. It can be quick, but it still needs truthful scales and labels.
 
-An **explanatory visualization** communicates one selected finding to a named audience. It removes irrelevant alternatives, adds context and annotation, and uses a title or caption that states what the reader should notice without overstating the evidence.
+An **explanatory visualization** communicates one finding to a named audience. It drops irrelevant alternatives, adds annotation, and uses a title that states what the reader should notice without overstating the evidence.
 
 ![xkcd 1845, “State Word Map”: a satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](media/xkcd_1845.png)
 
@@ -66,13 +66,13 @@ An **explanatory visualization** communicates one selected finding to a named au
 
 ## Think in marks and encodings
 
-A **mark** is a visible object such as a point, line, or rectangle. An **encoding** maps a data value to a visible property such as horizontal position, vertical position, length, color, marker shape, or line style.
+A **mark** is a visible object such as a point, line, or rectangle. An **encoding** maps a data value to a visible property: position, length, color, marker shape, or line style.
 
-Position along a common scale usually supports more precise comparison than area or decorative volume. Color can distinguish categories, but color alone is fragile: some readers cannot distinguish the selected hues, and grayscale reproduction may remove the distinction. When category identity matters, pair color with a redundant encoding such as marker shape, line style, direct labeling, or position.
+Position along a common scale supports more precise comparison than area or volume. Color alone is fragile: some readers cannot tell the hues apart, and grayscale printing removes the difference. When category identity matters, pair color with a redundant encoding such as marker shape, line style, or a direct label.
 
 ## Write the contract down
 
-Record the four answers before you write any plotting code. The card adds a fifth row for accessibility, which the accessibility section later in this lecture develops.
+Record the four answers before you write any plotting code. The card adds a fifth row for accessibility, developed later in this lecture.
 
 ### Reference Card: Visualization Contract
 
@@ -108,71 +108,30 @@ systolic_bp    int64
 dtype: object
 ```
 
-Three columns are `int64`, but only `systolic_bp` (mmHg) is a quantitative measure. `patient_id` is an identifier (its average means nothing), `visit_month` is temporal (order and spacing matter), and `clinic` is categorical. One row is one visit, so one scatter point would be one visit.
+Three columns are `int64`, but only `systolic_bp` (mmHg) is a quantitative measure. `patient_id` is an identifier (its average means nothing), `visit_month` is temporal, and `clinic` is categorical. One row is one visit, so one scatter point is one visit.
 
 ## The Right Chart for the Job
 
-The question and the variable types narrow the choice of chart:
-
-- **Line charts**: Time series, trends over time
-- **Bar charts**: Categories, comparisons
-- **Scatter plots**: Relationships between two variables
-- **Histograms**: Distribution of single variable
-- **Box plots**: Distribution with outliers
-- **Heatmaps**: Patterns in 2D data
-- **Pie charts**: Parts of a whole (use sparingly!)
+The question and the variable types narrow the choice of chart.
 
 ![Chart Selection Guide](media/chart_selection.png)
 
-*Different chart types are optimized for different data relationships and questions. Choose the right chart for your message.*
-
-# The Visualization Ecosystem
-
-*Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart. But don't worry - we'll focus on the essential tools that actually matter for daily data science work.*
-
-A **plotting backend** is the engine that actually draws a library's charts. matplotlib draws images from Python; **Vega-Lite** draws charts in a web browser.
-
-```
-matplotlib ← pandas .plot() (default backend)
-           ← seaborn
-           ← plotnine
-
-Vega-Lite  ← Altair
-
-Arrows mean “renders through,” not a required learning order.
-```
-
-## Choosing the Right Tool
-
-Each tool below solves a different job; most of them draw through matplotlib. In the Typical output column, a `Figure` is matplotlib's whole image and an `Axes` is one plotting panel inside it; the next section explains both.
-
-### Reference Card: Choosing a Plotting Tool
-
-| Tool | Reach for it when | Draws through | Typical output |
-| --- | --- | --- | --- |
-| pandas `.plot()` | You want a first look at a DataFrame | matplotlib | `Axes` |
-| matplotlib | You need full control or a publication figure | itself | `Figure`/`Axes`; PNG, SVG, PDF |
-| seaborn | You want statistical plots from long data, with groups shown by color (`hue=`) | matplotlib | `Axes` |
-| Altair | You want encodings that state each column's data type, hover tooltips, or a chart for a web page or JSON file | Vega-Lite | Altair `Chart` object; HTML, JSON |
-
-plotnine, Bokeh, and Plotly are surveyed in [BONUS.md](BONUS.md).
+*Six common jobs and the chart each one calls for. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.*
 
 # matplotlib: Foundation Layer
 
 *Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures.*
 
-pandas and seaborn draw through matplotlib, so the charts they make are matplotlib objects you can adjust with the same methods (Altair, at the end of this lecture, draws through Vega-Lite instead). Two objects are enough to fix almost any of these charts:
+pandas and seaborn draw through matplotlib, so their charts are matplotlib objects you can adjust with the same methods. Two objects are enough to fix almost any of them:
 
-- A **Figure** is the whole canvas: the image you display or save.
-- An **Axes** is one plotting area inside the Figure, with its own x-axis, y-axis, title, and marks. "Axes" names one plotting area; it is not the plural of "axis".
+- A **Figure** is the whole canvas: the image you display or save with `fig.savefig()`.
+- An **Axes** is one painting on that canvas: a plotting area with its own x-axis, y-axis, title, and marks, set with methods such as `ax.set_title()`. "Axes" names one plotting area; it is not the plural of "axis".
 
-If the Figure is a canvas, each Axes is one painting on it: `fig.savefig()` saves the whole canvas, and `ax.set_title()` titles one painting.
-
-The main path is `fig, ax = plt.subplots()` followed by Axes methods such as `ax.plot()` and `ax.set_xlabel()`. An alternative you will see in older examples is the pyplot shortcut style, such as `plt.plot()` and `plt.title()`, which draws on whichever Axes is current. It is fine for a quick sketch but confusing with several panels, so this course uses Axes methods.
+The main path is `fig, ax = plt.subplots()` plus Axes methods such as `ax.plot()` and `ax.set_xlabel()`. Older examples use the pyplot shortcut style (`plt.plot()`, `plt.title()`), which draws on whichever Axes is current: fine for a sketch, confusing with several panels, so this course uses Axes methods.
 
 ## Figures and Subplots
 
-With several panels, `plt.subplots(rows, cols)` returns the Axes in a NumPy array, so Lecture 03 indexing applies: one row of panels gives a 1-D array (`axes[0]`, `axes[1]`), and a grid gives a 2-D array (`axes[0, 1]` is row 0, column 1).
+With several panels, `plt.subplots(rows, cols)` returns the Axes in a NumPy array, so Lecture 03 indexing applies: one row of panels gives a 1-D array (`axes[0]`), and a grid gives a 2-D array (`axes[0, 1]` is row 0, column 1).
 
 ```text
 Figure (fig)
@@ -212,7 +171,7 @@ Read each class name from its last part: one `Figure`, and an array of two `Axes
 
 ## Draw Marks on an Axes
 
-Most chart types from the contract topic have a matching Axes method. Call the method on the Axes where that chart should appear.
+Most chart types have a matching Axes method.
 
 ### Reference Card: Axes Plotting Methods
 
@@ -295,7 +254,7 @@ plt.show()
 
 ## Colors, Markers, and Line Styles
 
-Each series can combine a color, a marker, and a line style. Combining them keeps lines distinguishable even in grayscale, a point the accessibility section returns to.
+Each series can combine a color, a marker, and a line style. Together they keep lines distinguishable even in grayscale, as the accessibility section revisits.
 
 ### Reference Card: Colors, Markers, and Line Styles
 
@@ -330,15 +289,14 @@ plt.show()
 
 ## Annotate, Declutter, and Save
 
-An explanatory chart usually points at one thing. An **annotation** is text attached to a specific data point, often with an arrow, so the reader does not have to hunt for it. The top and right frame lines (**spines**) carry no data; hiding them leaves more attention for the marks. `fig.savefig()` writes the whole Figure to a file, and the file type comes from the extension.
+An explanatory chart usually points at one thing. An **annotation** is text attached to a data point, often with an arrow, so the reader does not have to hunt for it. The top and right frame lines (**spines**) carry no data, so hiding them leaves more attention for the marks. `fig.savefig()` writes the whole Figure to a file, and the extension picks the file type.
 
 ### Reference Card: Annotate, Declutter, and Save
 
-- `ax.annotate(text, xy=(x, y), xytext=(x2, y2), arrowprops=dict(arrowstyle='->'))`: Put `text` at `xytext` with an arrow to the data point `xy`. Add `color=...` for the text and `color=...` inside `arrowprops` for the arrow, such as the color of the line being labeled.
+- `ax.annotate(text, xy=(x, y), xytext=(x2, y2), arrowprops=dict(arrowstyle='->'))`: Put `text` at `xytext` with an arrow pointing to the data point `xy`. Add `color=` for the text, and a `color=` inside `arrowprops` for the arrow.
 - `ax.text(x, y, text, va='center')`: Put text at a point with no arrow, such as a direct line label; `va=` (vertical alignment) and `ha=` (horizontal alignment) set which part of the text sits on that point.
 - `ax.spines[['top', 'right']].set_visible(False)`: Hide the two frame lines that carry no data.
 - `ax.legend(loc='upper left', bbox_to_anchor=(1, 1), frameon=False)`: Place the legend just outside the right edge, without a box.
-- `fig.set_size_inches(w, h)`: Resize an existing Figure before saving.
 - `fig.savefig('chart.png', dpi=150, bbox_inches='tight')`: Save a PNG at 150 dots per inch; `bbox_inches='tight'` trims extra margin so labels are not cut off. Use `.svg` or `.pdf` for vector output.
 
 ### Code Snippet: Point to the Peak and Save
@@ -367,11 +325,42 @@ Expected result: `flu_visits.png` appears next to your notebook, showing one lin
 
 # LIVE DEMO!
 
+# The Visualization Ecosystem
+
+*Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart.*
+
+A **plotting backend** is the engine that actually draws a library's charts: matplotlib draws images from Python, and **Vega-Lite** draws charts in a web browser.
+
+```
+matplotlib ← pandas .plot() (default backend)
+           ← seaborn
+           ← plotnine
+
+Vega-Lite  ← Altair
+
+Arrows mean “renders through,” not a required learning order.
+```
+
+## Choosing the Right Tool
+
+Each tool below solves a different job.
+
+### Reference Card: Choosing a Plotting Tool
+
+| Tool | Reach for it when | Draws through | Typical output |
+| --- | --- | --- | --- |
+| pandas `.plot()` | You want a first look at a DataFrame | matplotlib | `Axes` |
+| matplotlib | You need full control or a publication figure | itself | `Figure`/`Axes`; PNG, SVG, PDF |
+| seaborn | You want statistical plots from long data, with groups shown by color (`hue=`) | matplotlib | `Axes` |
+| Altair | You want encodings that state each column's data type, hover tooltips, or a chart for a web page or JSON file | Vega-Lite | Altair `Chart` object; HTML, JSON |
+
+plotnine, Bokeh, and Plotly are surveyed in [BONUS.md](BONUS.md).
+
 # pandas: Quick Data Exploration
 
 *Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
 
-When you have just loaded a table and want to see it, `df.plot()` is the fastest path: one method call on the DataFrame you already have (Lecture 04). `df.plot()` returns a matplotlib `Axes`, so matplotlib methods still work afterward, and `ax=` draws into one panel of a `plt.subplots()` grid.
+`df.plot()` is the fastest look at a table you have just loaded: one call on the DataFrame you already have (Lecture 04). It returns a matplotlib `Axes`, so matplotlib methods still work afterward, and `ax=` draws into one panel of a `plt.subplots()` grid.
 
 ## Index to x, Columns to Series
 
@@ -380,7 +369,7 @@ pandas hands the data to matplotlib using two rules:
 - The **index** becomes the x-axis.
 - Each numeric **column** becomes one series (a line, a set of bars, ...), and the column names fill the legend.
 
-So check the index before plotting. If it is the default row number 0, 1, 2, ..., the x-axis shows row numbers; `set_index()` from Lecture 06 makes it something meaningful, such as the week.
+Check the index before plotting: if it is the default 0, 1, 2, ..., the x-axis shows row numbers. `set_index()` from Lecture 06 makes it meaningful, such as the week.
 
 ### Code Snippet: The Index Becomes the x-Axis
 
@@ -464,7 +453,7 @@ Expected output: three stacked panels (North, South, East), each labeled Visits,
 
 # seaborn: Statistical Graphics
 
-*seaborn is like having a data visualization expert sitting next to you, automatically choosing the right colors, styles, and statistical methods to make your plots look professional and informative.*
+*seaborn is like having a visualization expert sitting next to you, quietly picking the colors, styles, and statistics for you.*
 
 seaborn builds on matplotlib to draw statistical graphics from a DataFrame in one call. It expects long data from Lecture 06: one row per observation, one column per variable. You pass column names, and seaborn maps each one to an encoding:
 
@@ -472,7 +461,7 @@ seaborn builds on matplotlib to draw statistical graphics from a DataFrame in on
 - `x=` and `y=`: horizontal and vertical position
 - `hue=`: color, one color per category
 
-That is the visualization contract written as code: `sns.scatterplot(data=visits, x='visit_month', y='systolic_bp', hue='clinic')` means one point per visit, month across, blood pressure up, clinic by color. Each plotting function in the card below returns a matplotlib `Axes` and accepts `ax=` to draw into one panel of a `plt.subplots()` grid.
+That is the visualization contract written as code: `sns.scatterplot(data=visits, x='visit_month', y='systolic_bp', hue='clinic')` means one point per visit, month across, blood pressure up, clinic by color. Each function in the card below returns an `Axes` and accepts `ax=`.
 
 ## Statistical Plots from Long Data
 
@@ -516,7 +505,7 @@ plt.show()
 
 ## Watch the Grain
 
-When several rows share an x value, `sns.lineplot()` and `sns.barplot()` draw the **mean** of those rows plus an error band or bar showing its uncertainty, not the rows themselves. The unit displayed silently changes from one reading to an average reading, so say so in the axis label or title. Lecture 08 shows how to build such summaries yourself.
+When several rows share an x value, `sns.lineplot()` and `sns.barplot()` draw the **mean** of those rows plus an error band showing its uncertainty, not the rows themselves. The unit displayed silently changes from one reading to an average, so say so in the axis label or title. Lecture 08 builds such summaries explicitly.
 
 ### Code Snippet: seaborn Averages Repeated x Values
 
@@ -537,11 +526,9 @@ print(ax.get_lines()[0].get_ydata())  # [143.33333333 139.66666667]
 
 # Density Plots and Distribution Visualization
 
-*Density plots show the shape of your data distribution - they're like histograms but smoother, revealing patterns that might be hidden in discrete bins.*
+A histogram counts values in bins, so its shape depends on where the bins start and how wide they are. A **density plot**, or **KDE** (kernel density estimate), instead puts a small smooth bump on every observation and adds them up. Its total area is 1, so the y-axis is **density**, not a count. The bump width is the **bandwidth**: wider bumps smooth more, narrower ones show more detail and more noise.
 
-A histogram counts values in bins, so its shape depends on where the bins start and how wide they are. A **density plot**, or **KDE** (kernel density estimate), instead puts a small smooth bump on every observation and adds the bumps up. The curve's total area is 1, so the y-axis is **density**, not a count. The bump width is the **bandwidth**: wider bumps smooth more, narrower bumps show more detail and more noise.
-
-Density plots are good at revealing shape. Fasting glucose readings from a clinic that serves people with and without diabetes may show two peaks (**bimodal**), which a single mean or box plot would hide; the bimodal panel below shows that pattern with simulated data.
+Fasting glucose readings from a clinic serving people with and without diabetes may show two peaks (**bimodal**), which a single mean or box plot would hide.
 
 ![KDE curves for a normal sample centered near zero and a bimodal sample with peaks near minus two and two.](media/distribution_reference.png)
 
@@ -568,26 +555,21 @@ bimodal_data = np.concatenate([       # join two arrays end to end
     rng.normal(2, 0.5, 500),
 ])
 
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
-pd.Series(normal_data).plot.density(ax=axes[0, 0], title='Normal Distribution')
-axes[0, 0].grid(True, alpha=0.3)
+pd.Series(normal_data).plot.density(ax=axes[0], title='Normal (pandas)')
 
-sns.kdeplot(data=normal_data, ax=axes[0, 1])
-axes[0, 1].set_title('Normal Distribution (seaborn)')
-axes[0, 1].grid(True, alpha=0.3)
+sns.kdeplot(data=bimodal_data, ax=axes[1])
+axes[1].set_title('Bimodal (seaborn)')
 
-sns.kdeplot(data=bimodal_data, ax=axes[1, 0])
-axes[1, 0].set_title('Bimodal Distribution')
-axes[1, 0].grid(True, alpha=0.3)
-
-sns.histplot(data=normal_data, kde=True, ax=axes[1, 1])
-axes[1, 1].set_title('Histogram + Density')
-axes[1, 1].grid(True, alpha=0.3)
+sns.histplot(data=normal_data, kde=True, ax=axes[2])
+axes[2].set_title('Histogram + density')
 
 plt.tight_layout()
 plt.show()
 ```
+
+Expected output: a single-peaked pandas KDE, a two-peaked seaborn KDE with peaks near -2 and 2, and a histogram overlaid with its density curve.
 
 # LIVE DEMO!
 
@@ -599,24 +581,23 @@ plt.show()
 
 A chart can get every number right and still mislead. Picture a hospital dashboard showing hand-hygiene compliance of 96% in March and 97% in April, drawn as bars on a y-axis that starts at 95%. The April bar is twice as tall, so readers see compliance double when it rose one point. Nothing in the data is wrong; the drawing is.
 
-The visualization contract says which comparison the reader should make. Edward Tufte's principles check that the drawing lets them make it honestly: spend ink on data rather than decoration, keep visual size proportional to the numbers, and keep repeated panels comparable. They are also the vocabulary you will use to critique and redesign a chart in the assignment.
+Tufte's principles check that the drawing lets the reader make the contract's comparison honestly. They are also the vocabulary you use to critique and redesign a chart in the assignment.
 
 ## Five Principles
 
 ### Data-Ink Ratio
 
-The **data-ink ratio** is the proportion of ink (or pixels) used to present actual data compared to the total ink used in the entire display.
+The **data-ink ratio** is the share of ink (or pixels) that presents data rather than decoration.
 
 ```
 Data-Ink Ratio = Data-Ink / Total Ink Used
 ```
 
-Tufte's goal is to maximize this ratio by removing ink that carries no data:
+Raise it by removing ink that carries no data:
 
-- Remove unnecessary gridlines (or make them subtle)
-- Eliminate decorative elements that don't convey information
-- Use direct labeling instead of legends when possible
-- Avoid 3D effects and shadows that distort perception
+- Remove unnecessary gridlines, or make them subtle
+- Use direct labeling instead of a legend when you can
+- Avoid 3D effects and shadows, which distort perception
 - Remove redundant labels and tick marks
 
 ![Data-Ink Ratio Comparison](media/tufte_data_ink_ratio.png)
@@ -625,13 +606,7 @@ Tufte's goal is to maximize this ratio by removing ink that carries no data:
 
 ### Chartjunk
 
-**Chartjunk** includes any visual elements that do not convey information:
-
-- Unnecessary 3D effects
-- Heavy grid lines
-- Decorative fills and patterns
-- Excessive colors
-- Redundant labels
+**Chartjunk** is non-data ink that competes with the marks: 3D effects, heavy grid lines, decorative fills and patterns, excessive colors, and redundant labels.
 
 ### Lie Factor
 
@@ -645,7 +620,7 @@ A lie factor close to 1.0 means no distortion. In the hand-hygiene dashboard, th
 
 Common distortions to avoid:
 
-- Axis limits that hide relevant context or exaggerate differences. Bars normally need a zero baseline because length encodes magnitude; line charts do not always need to start at zero, but their range and any axis break must be clear and appropriate to the question.
+- Axis limits that hide context or exaggerate differences. Bars need a zero baseline because length encodes magnitude; a line chart need not start at zero, but its range and any axis break must be clear and appropriate to the question.
 - 3D perspective that distorts area/volume comparisons
 - Inconsistent scales
 - Cherry-picked time ranges
@@ -656,11 +631,9 @@ Use small, repeated charts with the same scale to enable easy comparison across 
 
 ![Small Multiples Example](media/tufte_small_multiples.png)
 
-*Small multiples enable quick visual comparison across multiple dimensions while maintaining consistent scales.*
-
 ### Show the Detail
 
-Show as much detail as the data allows - don't oversimplify or aggregate unnecessarily. Tufte calls these high-resolution data graphics.
+Show as much detail as the data allows; don't oversimplify or aggregate unnecessarily. Tufte calls these high-resolution data graphics.
 
 ### Reference Card: Tufte's Checks
 
@@ -677,31 +650,30 @@ Show as much detail as the data allows - don't oversimplify or aggregate unneces
 
 ![Bar Chart Comparison](media/tufte_bar_comparison.png)
 
-*Before (left): Excessive colors, patterns, and heavy gridlines distract from the data. After (right): Clean design with direct labeling maximizes data-ink ratio.*
+*Before (left): excessive colors, patterns, and heavy gridlines. After (right): direct labeling and a high data-ink ratio.*
 
 ### Example 2: Line Chart with Truncated Axis (Lie Factor)
 
 ![Lie Factor Example](media/tufte_lie_factor.png)
 
-*Before (left): The narrow y-range exaggerates modest growth. After (right): In this example, starting at zero restores useful magnitude context. A zero baseline is not a universal requirement for line charts; use a clearly labeled range that supports the intended comparison without distortion.*
+*Before (left): The narrow y-range exaggerates modest growth. After (right): starting at zero restores useful magnitude context.*
 
 ## Color Palette Best Practices
 
-Different data types require different color strategies:
+Match the palette to the data type:
 
 ![Color Palette Guide](media/color_palettes.png)
 
-- **Sequential:** Use for ordered data (temperature, age, income) - single hue gradient
-- **Diverging:** Use for data with meaningful zero/midpoint (profit/loss, correlation) - two contrasting hues
-- **Qualitative:** Use for categories with no inherent order - distinct, unrelated colors
-- **Accessibility:** Always test for colorblind accessibility using tools like [ColorBrewer](https://colorbrewer2.org/)
+- **Sequential:** ordered data (temperature, age, income) - single hue gradient
+- **Diverging:** data with a meaningful midpoint (profit/loss, correlation) - two contrasting hues
+- **Qualitative:** categories with no inherent order - distinct, unrelated colors
 
 ## Make the chart accessible
 
 An accessible chart is designed so more readers can recover its comparison.
 
 - Use readable type, complete labels, and adequate contrast against the background.
-- Use a colorblind-safe palette, but do not treat palette choice as the whole accessibility task.
+- Use a colorblind-safe palette, tested with a tool such as [ColorBrewer](https://colorbrewer2.org/), but do not treat palette choice as the whole task.
 - Add redundant encoding when color distinguishes important categories.
 - Prefer direct labels or a clearly associated legend over a distant decoding task.
 - Do not rely on hover interaction to reveal essential values.
@@ -715,13 +687,13 @@ Example text alternative:
 
 - `ax.plot(x, y, color=..., marker='o', linestyle='-')`: Pair each line color with its own marker and line style.
 - `x = np.arange(n)`: One position per category group (Lecture 03); `ax.set_xticks(x, labels)` names the positions.
-- `ax.bar(x - width / 2, heights, width, label=..., hatch='//')`: Draw one set of side-by-side bars, shifted left by half a bar width. A fill pattern (**hatch**) such as `'//'` or `'..'` keeps groups distinguishable in grayscale; because it encodes the group, it is data ink rather than chartjunk.
+- `ax.bar(x - width / 2, heights, width, label=..., hatch='//')`: Draw one set of side-by-side bars, shifted left by half a bar width. A fill pattern (**hatch**) such as `'//'` or `'..'` keeps groups distinguishable in grayscale; because it encodes the group, it is data ink, not chartjunk.
 - `ax.bar_label(bars, fmt='%d%%')`: Write each bar's value on it, such as `64%`; `bars` is what `ax.bar()` returns.
 - `ax.set_ylim(0, 100)`: Start bar axes at zero, because bar length encodes magnitude.
 
 ### Code Snippet: Redundant Cues on a Line Chart
 
-The text alternative above describes this chart. Color is reinforced with marker shape, line style, and direct labels, so the comparison does not depend on color or a hover interaction alone:
+The text alternative above describes this chart: color is reinforced with marker shape, line style, and direct labels, so the comparison never depends on color alone.
 
 ```python
 import matplotlib.pyplot as plt
@@ -774,7 +746,7 @@ Expected output: two pairs of bars rising from 0, labeled 58% and 55% for 2023-2
 
 # Altair: Declarative Charts and Interaction
 
-Altair is **declarative**: you describe *what* the chart shows (which column goes on which visible property) and Altair works out *how* to draw it, like ordering from a menu instead of cooking. matplotlib is the opposite: you give drawing steps one at a time. An Altair chart is built as **data → mark → typed encodings** and becomes a **Vega-Lite specification**, a JSON document that a browser renders; that JSON is also what you save and share. Each encoded field gets a type letter matching the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
+Altair is **declarative**: you describe *what* the chart shows and Altair works out *how* to draw it, like ordering from a menu instead of cooking; matplotlib gives drawing steps one at a time. An Altair chart is **data → mark → typed encodings**; it becomes a **Vega-Lite specification**, a JSON document a browser renders and you can save and share. Each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
 
 ![Six sessions show reflection scores increasing with activities completed; color and shape distinguish independent and guided pathways. This tiny example demonstrates encodings, not a causal effect.](media/altair_study_reference.png)
 
@@ -820,13 +792,13 @@ scatter = alt.Chart(study).mark_point(filled=True, size=90).encode(
 scatter.interactive()
 ```
 
-`Chart(study)` supplies the table, `mark_point(filled=True)` chooses points, and the nominal color-plus-shape encodings redundantly identify pathways. `encode()` states the mapping. Tooltips and `.interactive()` can help a reader inspect a value or zoom, but the title, axes, legend, and main comparison must remain visible without hover. For a compact comparison, compose already honest charts with `alt.hconcat(left, right)` or `alt.vconcat(top, bottom)`; the end-of-lecture demo practices that pattern after the basic path above.
+The color-plus-shape encodings identify the pathways redundantly. Tooltips and `.interactive()` help a reader inspect or zoom, but the title, axes, legend, and main comparison must stay visible without hover. `alt.hconcat(left, right)` and `alt.vconcat(top, bottom)` compose two already honest charts, as the last demo does.
 
-Altair does not replace the visualization contract: state the row grain and variable roles first, choose truthful scales and marks, use redundant cues when category identity matters, and supply a text alternative for the rendered or shared view.
+Altair does not replace the contract: state grain and roles first, choose truthful scales and marks, add redundant cues, and supply a text alternative for the shared view.
 
 ## Save the Chart and Its Record
 
-Because an Altair chart is a Vega-Lite specification, saving it as JSON keeps the chart and its rows together; anyone with the file can render the same chart. The standard-library `json` module saves anything else you want to keep beside the chart, such as its contract and text alternative.
+Saving a chart as JSON keeps the Vega-Lite specification and its rows together, so anyone with the file can render the same chart. The standard-library `json` module saves what you keep beside it: the contract and the text alternative.
 
 ### Reference Card: Saving Charts and Records
 
@@ -847,7 +819,7 @@ print(spec['mark'])                 # {'type': 'point', 'filled': True, 'size': 
 
 ### Code Snippet: Save a Chart Record as JSON
 
-`json.dump()` writes any dictionary of strings, numbers, lists, and nested dictionaries, including the one `chart.to_dict()` returns. `open()` and `with` come from Lecture 02.
+`open()` and `with` come from Lecture 02; `json.dump()` also accepts the dictionary `chart.to_dict()` returns.
 
 ```python
 import json

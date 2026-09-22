@@ -11,6 +11,30 @@ notion:
 
 These topics are **optional** and not required for future lectures. Explore them if you're curious or want to deepen your understanding!
 
+# Python on Native Windows PowerShell
+
+The course demos use WSL, but uv can install Python for PowerShell itself:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Open a new PowerShell terminal, then run:
+
+```powershell
+uv python install 3.13 --default
+uv python update-shell
+```
+
+Reopen the terminal and check `python --version`. Use `python` in place of `python3` in this environment; the shell commands in Lecture 01 still need WSL.
+
+# Other Editors
+
+- **Sublime Text**: fast and lightweight
+- **PyCharm**: full-featured Python IDE
+- **nano**: simple command-line editor for quick fixes
+- **Vim / Neovim**: modal terminal editors; open with `vim filename.py` or `nvim filename.py`. Press `i` to insert text, then `Esc` and `:wq` to save and quit (the answer to "how do I get out of Vim?").
+
 # Advanced ls Options
 
 Beyond the basic `ls`, there are many useful variations:
@@ -159,36 +183,16 @@ large_number = 1.23e6    # 1,230,000
 small_number = 1.23e-3   # 0.00123
 ```
 
-# Why These Topics Are Bonus
-
-These advanced features are powerful, but can be overwhelming when you're just starting. Focus on the core concepts first, then come back to these when:
-
-- You feel comfortable with the basics
-- You encounter a specific need for these features
-- You want to optimize your workflow
-- You're curious about "how the pros do it"
-
-Remember: Being productive with the basics is better than being confused by the advanced features!
-
 # When You Might Need These
 
-- **Advanced ls**: When working with large directories or complex file structures
-- **REPL features**: When exploring new Python libraries or debugging
-- **History shortcuts**: When you find yourself retyping the same commands
-- **Help functions**: When working with unfamiliar Python functions
-- **Permissions**: When setting up scripts or working on shared systems
-- **Environment variables**: When configuring development environments
-- **Advanced strings**: When processing messy text data
-- **Wildcards**: When working with many files with similar names
-- **Advanced math**: When doing complex calculations
-
-# Practice Suggestions
-
-If you want to explore these topics:
-
-1. **Start small**: Pick one advanced feature and use it for a week
-2. **Practice with real files**: Use your actual project files, not made-up examples
-3. **Ask "why?"**: Understand when and why you'd use each feature
-4. **Document what works**: Keep notes on useful shortcuts and commands
-
-The key is building confidence with the basics first, then gradually adding more advanced techniques as needed!
+- **Native PowerShell Python**: when you cannot install WSL on a Windows machine
+- **Other editors**: when you already live in one, or need to edit over SSH
+- **Advanced ls**: when working with large directories or complex file structures
+- **REPL features**: when exploring new Python libraries or debugging
+- **History shortcuts**: when you find yourself retyping the same commands
+- **Help functions**: when working with unfamiliar Python functions
+- **Permissions**: when setting up scripts or working on shared systems
+- **Environment variables**: when configuring development environments
+- **Advanced strings**: when processing messy text data
+- **Wildcards**: when working with many files with similar names
+- **Advanced math**: when doing complex calculations

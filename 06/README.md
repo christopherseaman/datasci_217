@@ -87,31 +87,24 @@ The `pd.merge()` function is your workhorse for combining datasets. At its simpl
 ```python
 import pandas as pd
 
-# Customer data
 customers = pd.DataFrame({
     'customer_id': ['C001', 'C002', 'C003', 'C004'],
     'name': ['Alice', 'Bob', 'Charlie', 'Diana'],
     'city': ['Seattle', 'Portland', 'Seattle', 'Eugene']
 })
-
-# Purchase data
 purchases = pd.DataFrame({
     'customer_id': ['C001', 'C001', 'C002', 'C005'],
     'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
     'amount': [999.99, 25.99, 79.99, 299.99]
 })
 
-# Basic merge: pandas detects the common 'customer_id' column
-merged = pd.merge(customers, purchases)
+# pandas would find the shared 'customer_id' column on its own, but name it anyway
+merged = pd.merge(customers, purchases, on='customer_id')
 display(merged)
 #   customer_id   name      city   product  amount
 # 0        C001  Alice   Seattle    Laptop  999.99
 # 1        C001  Alice   Seattle     Mouse   25.99
 # 2        C002    Bob  Portland  Keyboard   79.99
-
-# Explicit is better: specify the key
-merged = pd.merge(customers, purchases, on='customer_id')
-display(merged)  # Same result
 ```
 
 ## Join Types: The Four Horsemen of Data Merging (Plus One)
@@ -244,41 +237,26 @@ When both DataFrames have columns with the same name (besides the merge key), pa
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | Suffixed output columns |
-| `suffixes=('_left', '_right')` | Custom suffixes for clarity | Clear left/right column names |
-| `suffixes=('_old', '_new')` | Useful for comparing versions | Clear version column names |
+| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | `total_x` from the left table, `total_y` from the right |
+| `suffixes=('_sales', '_inventory')` | Say what each column means | Named output columns |
 
 ### Code Snippet: Name overlapping columns
 
 ```python
-# Both DataFrames have 'total' column
-sales = pd.DataFrame({
-    'product_id': ['P001', 'P002', 'P003'],
-    'total': [100, 200, 150]  # Sales total
-})
+# Both tables have a 'total' column: revenue in one, units in stock in the other
+sales = pd.DataFrame({'product_id': ['P001', 'P002'], 'total': [100, 200]})
+inventory = pd.DataFrame({'product_id': ['P001', 'P002'], 'total': [50, 75]})
 
-inventory = pd.DataFrame({
-    'product_id': ['P001', 'P002', 'P003'],
-    'total': [50, 75, 30]  # Inventory total
-})
-
-# Default suffixes (_x and _y)
-merged = pd.merge(sales, inventory, on='product_id')
-display(merged)
+display(pd.merge(sales, inventory, on='product_id'))
 #   product_id  total_x  total_y
 # 0       P001      100       50
 # 1       P002      200       75
-# 2       P003      150       30
 
-# Custom suffixes for clarity
-merged = pd.merge(sales, inventory, on='product_id',
-                  suffixes=('_sales', '_inventory'))
-display(merged)
+display(pd.merge(sales, inventory, on='product_id',
+                 suffixes=('_sales', '_inventory')))
 #   product_id  total_sales  total_inventory
 # 0       P001          100               50
 # 1       P002          200               75
-# 2       P003          150               30
-
 ```
 
 **Pro tip:** Always use descriptive suffixes! `_sales` and `_inventory` are much clearer than `_x` and `_y`.
@@ -377,18 +355,13 @@ Later in this lecture, `pivot()` builds its result’s index from an identifier 
 ### Code Snippet: Set an identifier index
 
 ```python
-# Employee data
+# Employee data, with the default RangeIndex 0, 1, 2
 employees = pd.DataFrame({
     'emp_id': ['E001', 'E002', 'E003'],
     'name': ['Alice', 'Bob', 'Charlie'],
     'department': ['Engineering', 'Sales', 'Engineering'],
     'salary': [95000, 75000, 88000]
 })
-display(employees)
-#   emp_id     name   department  salary
-# 0   E001    Alice  Engineering   95000
-# 1   E002      Bob        Sales   75000
-# 2   E003  Charlie  Engineering   88000
 
 # Make emp_id the index and assert the expected uniqueness
 indexed = employees.set_index('emp_id')
@@ -405,7 +378,6 @@ display(indexed.loc['E002'])  # Bob's record
 # name              Bob
 # department      Sales
 # salary          75000
-
 ```
 
 ## reset_index(): Moving Index to Columns
@@ -422,24 +394,19 @@ The opposite operation - converts index back to a regular column.
 ### Code Snippet: Restore an identifier column
 
 ```python
-# Move index back to a column
-reset = indexed.reset_index()
-display(reset)
+# Move the labels back into a column: the original structure returns
+display(indexed.reset_index())
 #   emp_id     name   department  salary
 # 0   E001    Alice  Engineering   95000
 # 1   E002      Bob        Sales   75000
 # 2   E003  Charlie  Engineering   88000
 
-# Back to original structure with default numeric index
-
-# Discard index instead of converting
-dropped = indexed.reset_index(drop=True)
-display(dropped)
+# Discard the labels instead of keeping them
+display(indexed.reset_index(drop=True))
 #       name   department  salary
 # 0    Alice  Engineering   95000
 # 1      Bob        Sales   75000
 # 2  Charlie  Engineering   88000
-
 ```
 
 After `pivot()` or a horizontal concatenation later in this lecture, `reset_index()` turns the identifiers left in the index back into ordinary columns.
@@ -480,61 +447,33 @@ Useful for: matrix-like comparisons            Useful for: grouping/filtering by
 
 ```
 
-## Understanding Wide Format
+## Building Both Shapes
 
-In this example, wide format has one row per student and a separate column for each subject. In other datasets, the row meaning may be different; “wide” describes values spread across columns, not a universal one-row-per-entity rule.
+The two frames below hold exactly the numbers in the diagram above. The wide one keeps a column per subject, which suits side-by-side comparison; the long one makes `subject` a value that can be filtered, grouped, or handed to a plotting library. “Wide” describes values spread across columns, not a universal one-row-per-entity rule: another dataset may put something else in a row.
 
-### Code Snippet: Inspect wide data
+### Code Snippet: Wide and long versions of the same scores
 
 ```python
-# Wide format: Student test scores
+# Wide: one row per student, one column per subject
 wide_data = pd.DataFrame({
     'student': ['Alice', 'Bob', 'Charlie'],
     'math': [95, 88, 92],
     'english': [90, 85, 94],
     'science': [92, 90, 89]
 })
-display(wide_data)
-#    student  math  english  science
-# 0    Alice    95       90       92
-# 1      Bob    88       85       90
-# 2  Charlie    92       94       89
 
-# This shape is convenient for side-by-side subject comparisons
-# and tools that require one fixed feature column per subject.
-
-```
-
-## Understanding Long Format
-
-Here, long format records one measured value per row: `student` and `subject` are the identifier columns, and `score` is the value column.
-
-### Code Snippet: Inspect long data
-
-```python
-# Long format: Same data, different structure
+# Long: one row per student-subject score
 long_data = pd.DataFrame({
     'student': ['Alice', 'Alice', 'Alice', 'Bob', 'Bob', 'Bob',
                 'Charlie', 'Charlie', 'Charlie'],
-    'subject': ['math', 'english', 'science', 'math', 'english', 'science',
-                'math', 'english', 'science'],
+    'subject': ['math', 'english', 'science'] * 3,
     'score': [95, 90, 92, 88, 85, 90, 92, 94, 89]
 })
-display(long_data)
-#    student  subject  score
-# 0    Alice     math     95
-# 1    Alice  english     90
-# 2    Alice  science     92
-# 3      Bob     math     88
-# 4      Bob  english     85
-# 5      Bob  science     90
-# 6  Charlie     math     92
-# 7  Charlie  english     94
-# 8  Charlie  science     89
-
-# This shape makes subject a value that can be grouped or filtered.
-# Many plotting APIs also accept this tidy representation directly.
-
+display(long_data.head(3))
+#   student  subject  score
+# 0   Alice     math     95
+# 1   Alice  english     90
+# 2   Alice  science     92
 ```
 
 ## Pivoting Long to Wide with pivot()
@@ -562,35 +501,9 @@ display(wide)
 # Alice         90    95       92
 # Bob           85    88       90
 # Charlie       94    92       89
-
-# Pivot makes the column names the new column headers
-# And index becomes the row labels
-# Values fill the cells
-
 ```
 
-If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops: pandas reports `ValueError: Index contains duplicate entries, cannot reshape`. First determine whether the duplicates are data errors or repeated observations. If repeated observations are valid, `pivot_table()` aggregates them into one cell before reshaping; the choice of `sum`, `mean`, or another function changes the question being answered. Aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
-
-### Code Snippet: Preview pivot_table() for repeated pairs
-
-```python
-sales = pd.DataFrame({
-    'month': ['Jan', 'Jan'],
-    'category': ['Electronics', 'Electronics'],
-    'amount': [100, 150],
-})
-
-# pivot() would fail because Jan/Electronics appears twice.
-# Use this only when summing those rows is part of the question.
-sales_pivot = pd.pivot_table(sales, values='amount',
-                             index='month', columns='category',
-                             aggfunc='sum')
-
-display(sales_pivot)
-# category  Electronics
-# month
-# Jan               250
-```
+If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops: pandas reports `ValueError: Index contains duplicate entries, cannot reshape`. First determine whether the duplicates are data errors or repeated observations. If repeated observations are valid, `pivot_table()` aggregates them into one cell before reshaping, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
 
 ## Two-Level Row Labels
 
@@ -632,32 +545,13 @@ display(summary.loc['East'])
 # Q1         120
 # Q2         180
 
-# Check the index
-display(summary.index)
-# MultiIndex([('East', 'Q1'),
-#             ('East', 'Q2'),
-#             ('West', 'Q1'),
-#             ('West', 'Q2')],
-#            names=['region', 'quarter'])
-
-```
-
-### Code Snippet: Flatten a MultiIndex
-
-Use `.reset_index()` to turn MultiIndex labels back into regular columns.
-
-```python
-# Convert MultiIndex back to regular columns
-flattened = summary.reset_index()
-display(flattened)
+# Both levels back into ordinary columns
+display(summary.reset_index())
 #   region quarter  sales
 # 0   East      Q1    120
 # 1   East      Q2    180
 # 2   West      Q1    100
 # 3   West      Q2    150
-
-# Now easier to work with for most people
-
 ```
 
 ## Melting Wide to Long with melt()
@@ -693,13 +587,9 @@ display(long)
 # 6    Alice  science     92
 # 7      Bob  science     90
 # 8  Charlie  science     89
-
-# The subject label is now a value in a tidy column, ready for a later
-# aggregation or visualization step. Aggregation is introduced in Lecture 08.
-
 ```
 
-**Real-world example:** Survey responses stored in Q1, Q2, and Q3 columns can be melted when a downstream operation needs the question name as a row value.
+The subject label is now a value in a tidy column, ready for a later aggregation (Lecture 08) or plot. Survey responses stored in `Q1`, `Q2`, and `Q3` columns melt the same way when a downstream step needs the question name as a row value.
 
 ### Code Snippet: Round-trip back to the original wide table
 

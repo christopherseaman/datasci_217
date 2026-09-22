@@ -162,6 +162,38 @@ outliers_z = df[z_scores > 3]
 
 Advanced string operations for specialized text cleaning tasks.
 
+## Splitting and Joining Values
+
+Splitting breaks each value into parts; joining puts parts back together. Use this when one column holds several facts, such as a full name or a `city, state` pair.
+
+### Reference Card: String splitting
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `series.str.split(sep, regex=False)` | Split on a literal separator | `Series` of lists |
+| `series.str.split(sep, expand=True, regex=False)` | Expand split parts into columns | `DataFrame` |
+| `series.str.cat(sep=' ')` | Combine all non-missing strings into one | One string |
+| `series.str.join(sep)` | Join the strings within each list value | String `Series` |
+
+### Code Snippet: Split a compound field
+
+```python
+full_names = pd.Series(['Alice Smith', 'Bob Jones', 'Charlie Brown'])
+print(full_names.str.split(' '))               # a list per value
+print(full_names.str.split(' ', expand=True))  # one column per part
+```
+
+```text
+0      [Alice, Smith]
+1        [Bob, Jones]
+2    [Charlie, Brown]
+dtype: object
+         0      1
+0    Alice  Smith
+1      Bob  Jones
+2  Charlie  Brown
+```
+
 ## Extracting and normalizing text
 
 ### Reference Card: Advanced string methods

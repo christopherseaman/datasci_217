@@ -180,12 +180,6 @@ With Python 3.13 installed, `venv` creates an environment with pip included:
 | Install | `python -m pip install -r requirements.txt` | Uses the active environment's pip. |
 | Leave | `deactivate` | Returns to the previous shell environment. |
 
-In native Windows PowerShell, replace the Bash activation line with:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
 Choose one environment tool for a project; these are alternative routes, not consecutive steps.
 
 ## Using Conda (alternative comparison)
@@ -422,15 +416,12 @@ row 1  →       4         5         6
 ```python
 import numpy as np
 
-# From Python lists
 arr = np.array([1, 2, 3, 4, 5])
 arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
-
-# Array creation functions
-zeros = np.zeros(5)              # array([0., 0., 0., 0., 0.])
-ones = np.ones((2, 3))           # 2x3 array of ones
-range_arr = np.arange(10)        # array([0, 1, 2, ..., 9])
-full = np.full((2, 3), 7)        # 2x3 array filled with 7
+zeros = np.zeros(5)         # array([0., 0., 0., 0., 0.])
+ones = np.ones((2, 3))      # 2x3 array of ones
+range_arr = np.arange(10)   # array([0, 1, 2, ..., 9])
+full = np.full((2, 3), 7)   # 2x3 array filled with 7
 ```
 
 ## Array Properties
@@ -453,8 +444,7 @@ Values read from a file arrive as text: `"98.6"` is a string until you convert i
 | Operation | Purpose | Example |
 | :--- | :--- | :--- |
 | `np.array(values, dtype=...)` | Chooses the initial element type. | `dtype=np.int32` |
-| `arr.astype(dtype)` | Returns a converted array. | `arr.astype(np.float64)` |
-| `astype(float)` | Converts numeric strings to numbers. | `str_arr.astype(float)` |
+| `arr.astype(dtype)` | Returns a new converted array; also parses numeric text. | `arr.astype(np.float64)`, `str_arr.astype(float)` |
 
 ### Code Snippet: Convert Numeric Text
 
@@ -467,8 +457,6 @@ print(temps_f.astype(int))  # [ 98 101  99]: decimals dropped, not rounded
 ```
 
 ## Arithmetic and Vectorized Operations
-
-NumPy's vectorized operations calculate element-wise across arrays without explicit loops.
 
 ### Reference Card: vectorized arithmetic
 
@@ -484,25 +472,19 @@ NumPy's vectorized operations calculate element-wise across arrays without expli
 ```python
 arr1 = np.array([1, 2, 3, 4, 5])
 arr2 = np.array([5, 4, 3, 2, 1])
-
-# Element-wise operations
-sum_arr = arr1 + arr2       # array([6, 6, 6, 6, 6])
-mult_arr = arr1 * arr2      # array([5, 8, 9, 8, 5])
-power_arr = arr1 ** 2       # array([1, 4, 9, 16, 25])
-
-# Scalar operations
-doubled = arr1 * 2          # array([2, 4, 6, 8, 10])
-arr = np.array([[1, 2, 3], [4, 5, 6]])
-result = arr + 10           # Adds 10 to all elements
+print(arr1 + arr2)   # [6 6 6 6 6]
+print(arr1 * arr2)   # [5 8 9 8 5]
+print(arr1 ** 2)     # [ 1  4  9 16 25]
+print(arr1 * 2)      # [ 2  4  6  8 10]: one number broadcast to every element
 ```
 
-# LIVE DEMO!
+Two arrays combine position by position, so they must have the same shape: `np.array([1, 2, 3]) + np.array([1, 2])` raises `ValueError: operands could not be broadcast together with shapes (3,) (2,)`.
 
 # Array Indexing and Slicing
 
-## Basic Indexing
+Lecture 02 picked list items with `items[0]` and slices such as `items[1:4]`. Arrays use the same square brackets and the same half-open slices, then add one index per dimension, separated by commas. That is how a table of patients by visits gets read one cell, one row, one column, or one block at a time.
 
-NumPy extends familiar Python indexing and slicing across multiple dimensions.
+## Basic Indexing
 
 ### Reference Card: one-dimensional indexing
 
@@ -517,14 +499,9 @@ NumPy extends familiar Python indexing and slicing across multiple dimensions.
 
 ```python
 arr = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-
-# Single element
-first = arr[0]          # 0
-last = arr[-1]          # 9
-
-# Slicing
-subset = arr[2:7]       # array([2, 3, 4, 5, 6])
-every_other = arr[::2]  # array([0, 2, 4, 6, 8])
+print(arr[0], arr[-1])   # 0 9
+print(arr[2:7])          # [2 3 4 5 6]
+print(arr[::2])          # [0 2 4 6 8]
 ```
 
 ## Multidimensional Indexing
@@ -561,6 +538,12 @@ print(bp[:, 0])    # [128 142 118]: visit 1 for every patient
 print(bp[:2, 1:])  # [[131 126]
                    #  [145 139]]: patients 0-1, visits 2-3
 ```
+
+# LIVE DEMO!
+
+# Views, Copies, and Boolean Selection
+
+Slicing a Python list makes a new list. NumPy is built for arrays of millions of values, so it avoids that copying wherever it can: a slice hands back a window onto the same numbers. The saved time is why arrays are fast, and it is also behind the most common NumPy surprise, where changing one array changes another. This topic covers when NumPy shares data, when it copies, and how to select values by a condition instead of by position.
 
 ## Names, aliases, and mutability
 
@@ -607,7 +590,7 @@ Use `==` to compare values and `is` to compare object identity. A list's `copy()
 
 ## Views vs Copies
 
-NumPy is built for arrays with millions of values, so a slice does not copy data. A slice is a **view**: a second window onto the same numbers. Changing a value through the view changes the original array, just as `same_values` did above. When you need to experiment without touching the source data, make an independent **copy** with `.copy()`.
+A slice is a **view**: a second window onto the same numbers, not a copy of them. Changing a value through the view changes the original array, just as `same_values` did above. When you need to experiment without touching the source data, make an independent **copy** with `.copy()`.
 
 ### Reference Card: Views and Copies
 
@@ -664,22 +647,13 @@ print(systolic[(systolic >= 120) & (systolic < 140)])  # [128 135]
 
 Use `&` and `|`, not `and` and `or`, and wrap each comparison in parentheses. `systolic >= 120 and systolic < 140` raises `ValueError: The truth value of an array with more than one element is ambiguous`.
 
-## Fancy Indexing
-
-Fancy indexing uses integer arrays to select multiple elements at arbitrary positions without explicit loops.
-
-### Code Snippet: Select Arbitrary Positions
-
-```python
-arr = np.array([10, 20, 30, 40])
-arr[[0, 3]]  # array([10, 40]); a copy, not a view
-```
+**Fancy indexing** selects by a list of positions rather than by a mask, and also returns a copy: `systolic[[0, 3]]` gives `[128 151]`.
 
 # NumPy Operations
 
-## Statistical Operations
+Indexing answers "which values?"; a **reduction** answers "what are they, taken together?" by collapsing many numbers into one. The same summaries work on a whole array or along one axis, which is how a grades table gives a per-student average and a per-assignment average from the same data.
 
-NumPy provides built-in statistics across entire arrays or specific axes.
+## Statistical Operations
 
 ```text
 [[1, 2, 3],  → axis=1 mean: 2.0 for this row
@@ -712,7 +686,7 @@ arr.mean()        # 3.5: one mean for the whole array
 
 ## Array Reshaping
 
-Reshaping operations change an array's dimensions. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
+Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 grades becomes 3 students by 4 assignments. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
 ![NumPy array reference](media/nparray_cheatsheet.png)
 
@@ -753,15 +727,9 @@ A **universal function** (ufunc) applies one math operation to every element and
 
 ```python
 arr = np.array([1, 4, 9, 16, 25])
-
-# Common mathematical functions
-sqrt_arr = np.sqrt(arr)         # array([1., 2., 3., 4., 5.])
-exp_arr = np.exp([1, 2, 3])     # array([2.718, 7.389, 20.086])
-
-# Binary functions
-arr1 = np.array([1, 5, 3])
-arr2 = np.array([4, 2, 6])
-max_arr = np.maximum(arr1, arr2) # array([4, 5, 6])
+print(np.sqrt(arr))                      # [1. 2. 3. 4. 5.]
+print(np.exp([1, 2, 3]))                 # [ 2.71828183  7.3890561  20.08553692]
+print(np.maximum([1, 5, 3], [4, 2, 6]))  # [4 5 6]
 ```
 
 ## Conditional Logic

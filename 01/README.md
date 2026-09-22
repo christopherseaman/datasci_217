@@ -51,37 +51,35 @@ Think of it as texting your computer instead of playing charades with icons.
 
 ![learning to code is kind of like this](media/rocket_packs.png)
 
-Install [VS Code](https://code.visualstudio.com/) and use its **Terminal → New Terminal** (**Ctrl+Shift+backtick**, also Control on Mac) for course commands. Open your project folder first; the terminal starts there. The examples use Bash or Zsh, shells with compatible POSIX command syntax.
+Install [VS Code](https://code.visualstudio.com/) and use **Terminal → New Terminal** (**Ctrl+Shift+backtick**, also Control on Mac) for course commands; it starts in whatever folder you opened. The examples use Bash or Zsh.
 
 ### Windows: connect VS Code to WSL
 
-1. For initial setup only, open **PowerShell as Administrator**, run `wsl --install`, restart if prompted, and finish Ubuntu's username/password setup.
+1. Once, in **PowerShell as Administrator**: run `wsl --install`, restart if prompted, and finish Ubuntu's username/password setup.
 2. In VS Code, open **View → Extensions** (**Ctrl+Shift+X**) and install **WSL** by Microsoft.
-3. Open **View → Command Palette** (**Ctrl+Shift+P**) → **WSL: Connect to WSL**. Check that the lower-left corner shows **WSL: Ubuntu**.
-4. In that window, install Microsoft's **Python** extension in WSL when prompted. Use **Terminal → New Terminal** for the installation commands below and clone/open your project in this WSL-connected window.
+3. Command Palette → **WSL: Connect to WSL**. The lower-left corner should read **WSL: Ubuntu**.
+4. Install Microsoft's **Python** extension in WSL when prompted, and stay in this window for the commands below and your cloned project.
 
 WSL supplies Linux underneath; you work in VS Code, not a separate Ubuntu terminal. [VS Code's WSL setup](https://code.visualstudio.com/docs/remote/wsl).
 
 ### Mac
 
-VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space**, type `Terminal`) is a fallback; use `cd` (moves the terminal into a folder; see Command Line Essentials below for the full treatment) to enter your project folder there.
+VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space**, type `Terminal`) is a fallback; use `cd` (Command Line Essentials, below) to enter your project folder there.
 
 ### Alternative: Codespaces instead of a local VS Code installation
 
-[GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser.
+[GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser — no local VS Code, WSL, or Homebrew.
 
 1. Create your GitHub account and fork the assignment repository using **Creating Your GitHub Account** and **Fork on GitHub** below.
-2. On **your fork**, select **Code → Codespaces → Create codespace on main**. Your repository opens automatically; skip local cloning.
-3. Open **Terminal → New Terminal** and run the shared uv/Python installation below. Check `python3 --version` for **3.13.x**, then choose **Python: Select Interpreter** from the Command Palette.
-4. Edit, run, commit, and sync in the browser just as in desktop VS Code. Stop the codespace when finished; usage allowances are limited.
-
-Skip local VS Code, WSL, and Homebrew installation for this route.
+2. On **your fork**: **Code → Codespaces → Create codespace on main**. Your repository opens automatically; skip cloning.
+3. In **Terminal → New Terminal**, run the uv/Python installation below, check `python3 --version` for **3.13.x**, then choose **Python: Select Interpreter**.
+4. Edit, run, commit, and sync in the browser as in desktop VS Code. Stop the codespace when finished; usage allowances are limited.
 
 ## Installing Python
 
 ### macOS, Windows WSL, and Codespaces
 
-Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13** in any of these environments. Run these commands in **VS Code's integrated terminal**. On Windows, use the **WSL-connected window**, not PowerShell. We'll cover uv environments and packages in Lecture 03.
+Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13**. Run these commands in **VS Code's integrated terminal** — on Windows, the **WSL-connected window**, not PowerShell. Lecture 03 covers uv environments and packages.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -97,84 +95,38 @@ python3 --version
 # Should show: Python 3.13.x
 ```
 
-[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv, not Homebrew, for the course Python installation.
-
-### Native Windows PowerShell alternative
-
-For Python outside WSL, install uv in PowerShell:
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-Open a new PowerShell terminal, then run:
-
-```powershell
-uv python install 3.13 --default
-uv python update-shell
-```
-
-Reopen the terminal and check `python --version`. Use `python` in place of `python3` in this environment. The course shell demos still require WSL.
+[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv for the course Python. Native Windows PowerShell setup is in [BONUS.md](BONUS.md); the course shell demos still require WSL.
 
 ## Text Editor Options
 
-### Visual Studio Code (Recommended)
-
-- Free, powerful, and perfect for data science
-- Available on all platforms
-- Python support through Microsoft's Python extension
-- Can open files from command line with `code filename.py`
-
-### Other Editors
-
-- **Sublime Text**: Fast and lightweight
-- **PyCharm**: Full-featured Python IDE
-- **nano**: Simple command-line editor for quick fixes
-- **Vim / Neovim**: Modal terminal editors; use `vim filename.py` or `nvim filename.py`. Press `i` to insert text, then `Esc` and `:wq` to save and quit.
-
-### Why VS Code?
-
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-We'll use VS Code for its editor, integrated terminal, debugger, and Git interface.
+We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. Other editors work too — Sublime Text, PyCharm, nano, Vim — see [BONUS.md](BONUS.md).
 
 ### VS Code Basics
 
-Open the assignment folder with **File → Open Folder** so the editor, terminal, and Source Control all use the same project.
+Open your project with **File → Open Folder** so the editor, terminal, and Source Control share one project.
 
 ![VS Code's labeled interface showing the Activity Bar, Primary Side Bar, editor, Panel, and Status Bar.](media/vscode-workspace.png)
 
-- Open or create a file: **Explorer** at left; click a filename or the **New File** icon. Keep `.py` on Python filenames.
-- Edit and save: Type in the editor; **File → Save** or **Ctrl+S** (**Cmd+S** on Mac). Save before running.
-- Enable Python support: **Extensions** at left; install **Python** by Microsoft.
-- Choose Python: Command Palette → **Python: Select Interpreter**; select the installed Python 3.13.
-- Run a command: **Terminal → New Terminal**, or **Ctrl+Shift+backtick** (also Control on Mac); type the command at the prompt and press Enter.
-- Find an editor action: **View → Command Palette**, or **Ctrl+Shift+P** (**Cmd+Shift+P** on Mac); type its name, such as `Git: Clone`.
-- Review changed files: **View → Source Control**, or **Ctrl+Shift+G** (also Control on Mac); click a file to see its changes.
+- **Explorer** (left): open a file or create one with the **New File** icon; keep `.py` on Python filenames.
+- **File → Save** (**Ctrl+S**; **Cmd+S** on Mac): save before running.
+- **Extensions** (left): install **Python** by Microsoft.
+- **Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac): run an editor action by name, such as **Python: Select Interpreter** (choose Python 3.13) or **Git: Clone**.
+- **Terminal → New Terminal** (**Ctrl+Shift+backtick**, also Control on Mac): type a command at the prompt and press Enter.
+- **Source Control** (**Ctrl+Shift+G**, also Control on Mac): click a changed file to see its changes.
 
-The editor changes files; the terminal runs commands. Saving a file does not run it or upload it to GitHub. Screenshot: [VS Code interface](https://code.visualstudio.com/docs/editing/getting-started/userinterface). **Help → Keyboard Shortcuts Reference** lists your platform's [default shortcuts](https://code.visualstudio.com/docs/reference/default-keybindings).
+The editor changes files; the terminal runs commands. Saving a file does not run it or upload it to GitHub. **Help → Keyboard Shortcuts Reference** lists your platform's [default shortcuts](https://code.visualstudio.com/docs/reference/default-keybindings).
 
 ## Starting with GitHub
 
 ### Creating Your GitHub Account
 
-#### Account Setup
+1. Go to [github.com](http://github.com/) and sign up with your UCSF email, so I can find you, or not. You can add or remove addresses later.
+2. Choose a username you can live with for years: your name or initials (`alice-smith`, `asmith-the-best-one-ever`), not `alice_smith_9847`. Future employers will see it, and you can change it later, but links might break.
+3. Verify your email address.
 
-1. Go to [github.com](http://github.com/)
-2. Sign up with your UCSF email (or personal email)
-    - Use your actual UCSF email so I can find you, or not
-    - You can always add/remove email addresses later
-3. Choose a professional username (you'll use this for years!)
-4. Verify your email address
-
-#### Username Tips
-
-- Use your name or initials: `alice-smith`, `asmith-the-best-one-ever`
-- Avoid hard-to-remember numbers: `alice_smith_9847`
-- Keep it professional? - future employers will see this
-- You can change it later, but links might break
-
-GitHub Student Pack (Optional Bonus) With your .edu email, you can get free premium features. We don't need them for class, but they're nice to have!
+With a .edu address, the GitHub Student Pack adds free premium features. Not needed for class, but nice to have!
 
 ### DON'T USE YOUR REAL EMAIL IN GIT CONFIG
 
@@ -184,11 +136,9 @@ You don't want to put your email all over the public internet, so GitHub provide
 
 ### Setting Up Git in VS Code
 
-Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code.
+Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code. When **Clone from GitHub** or **Sync Changes** prompts you, choose **Sign in with GitHub** and authorize in your browser.
 
-Sign in to GitHub through VS Code when **Clone from GitHub** or **Sync Changes** prompts you: choose **Sign in with GitHub**, authorize in your browser, then return to VS Code.
-
-If a commit reports a missing name or email, open **Terminal → New Terminal** in your cloned folder and run these once, using your GitHub `noreply` email:
+If a commit reports a missing name or email, run these once in your cloned folder's terminal, using your GitHub `noreply` email:
 
 ```bash
 git config user.name "Your Name"
@@ -199,9 +149,7 @@ GitHub login authorizes access to your repositories; these settings identify the
 
 ## Getting the First Assignment
 
-Lecture 02 explains Git concepts but here’s what you’ll need to complete the first assignment
-
-A **fork** is your copy on GitHub; a **clone** is the working copy on your computer. Follow these steps to start Assignment 01.
+Lecture 02 explains Git properly; here’s what you’ll need to start Assignment 01. A **fork** is your copy of a repository on GitHub; a **clone** is the working copy on your computer.
 
 ### Fork on GitHub
 
@@ -219,7 +167,7 @@ A **fork** is your copy on GitHub; a **clone** is the working copy on your compu
 
 ![Copy your fork's HTTPS URL from the Code menu](assignment/media/github-clone-url.png)
 
-2. In VS Code, open **View → Command Palette** (Ctrl+Shift+P; Cmd+Shift+P on Mac), choose **Git: Clone**, paste that URL, choose a folder, and open the cloned repository. On Windows, use the **WSL: Ubuntu** window and choose a folder in your Linux home directory. Sign in if prompted.
+2. In VS Code, open the Command Palette, choose **Git: Clone**, paste that URL, pick a folder, and open the cloned repository. Sign in if prompted. On Windows, do this in the **WSL: Ubuntu** window and pick a folder in your Linux home directory.
 
 ![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
 
@@ -227,11 +175,11 @@ The screenshots use example repositories; paste your own fork's URL. Keep your a
 
 ## Submit Your Assignment Files
 
-A **commit** saves a version of your files. **Staging** a file (the **+** button in Source Control) chooses which changes go into the next commit. **Push** sends local commits to GitHub; VS Code's **Sync Changes** pushes your commits and pulls any new ones from GitHub in one click. To submit the first assignment, use **VS Code to commit and push**, or **the GitHub website to upload and commit directly**, as shown below.
+A **commit** saves a version of your files. **Staging** a file (the **+** button in Source Control) chooses which changes go into the next commit. **Push** sends local commits to GitHub; VS Code's **Sync Changes** pushes your commits and pulls any new ones in one click. Submit either way below.
 
 ### VS Code: Commit and Sync
 
-1. Save your files. Open **Source Control** and click each changed file to review it. Stage the completed scripts and checkpoint artifacts with **+**; for Assignment 01, include both files in `terminal-practice/` and both in `output/`.
+1. Save your files. In **Source Control**, click each changed file to review it, then stage it with **+**. For Assignment 01, stage the completed scripts, both files in `terminal-practice/`, and both in `output/`.
 
 ![VS Code Source Control with the plus button highlighted to stage a file.](assignment/media/vscode-stage.png)
 
@@ -249,12 +197,12 @@ A **commit** saves a version of your files. **Staging** a file (the **+** button
 
 ![GitHub's Add file menu with Upload files highlighted.](assignment/media/github-upload-files.png)
 
-2. Drag in the completed scripts and the `terminal-practice` and `output` folders. Keep the folders intact so paths such as `output/readiness.txt` stay correct. Upload the assignment files, not the whole project folder.
-3. Enter `Complete Assignment 01` or another description, choose **Commit directly to the main branch**, and click **Commit changes**. Web upload commits directly on GitHub; no separate push is needed.
+2. Drag in the completed scripts and the `terminal-practice` and `output` folders, not the whole project folder. Keep the folders intact so paths such as `output/readiness.txt` stay correct.
+3. Enter `Complete Assignment 01`, choose **Commit directly to the main branch**, and click **Commit changes**. A web upload commits on GitHub; no separate push is needed.
 
 ### Verify on GitHub
 
-Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** to see the automatic checks; enable workflows once if prompted in a new fork. Your fork is the submission—no pull request to the course repository.
+Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** for the automatic checks; enable workflows once if a new fork prompts you. Your fork is the submission—no pull request to the course repository.
 
 <synced_block url="https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696#3dcd9fdd1a1a806b8fb4fffbf0fdabab">
 
@@ -266,15 +214,15 @@ Open your fork's `output/readiness.txt` and `output/student_identity.txt` and ch
 
 ![Unix System Reference](media/its-a-unix-system.jpeg)
 
-Professional data scientists switch constantly between Python scripts and the command line: Python analyzes data; the command line organizes files, runs scripts, and manages projects. It's like being bilingual in the data world. Python speaks to your data, command line speaks to your computer.
+Data science work switches constantly between Python and the command line. It's like being bilingual in the data world: Python speaks to your data, the command line speaks to your computer.
 
-Picture a clinic study that arrives as a folder of CSV exports. From the shell you can make a project folder, copy the raw files somewhere safe, peek at the first rows, and run your analysis script—the same few commands every time, with nothing to click and nothing to forget.
+Picture a clinic study that arrives as a folder of CSV exports. From the shell you make a project folder, copy the raw files somewhere safe, peek at the first rows, and run your analysis script—the same few commands every time, nothing to click and nothing to forget.
 
-**Reality check:** Organizing files, inspecting data, and explaining results are part of the analysis—not chores you finish before the “real” work starts.
+**Reality check:** Organizing files and inspecting data are part of the analysis—not chores you finish before the “real” work starts.
 
 ## How the Shell Reads a Command
 
-The shell shows a **prompt**, such as `alice@laptop:~/datasci217$`, and waits. Type a command and press Enter; the shell runs it, prints any output, and shows a new prompt. It splits your line at spaces: the first word is the program to run, words starting with `-` are **options** that change how it behaves, and the rest are **arguments**, usually the files or folders to act on.
+The shell shows a **prompt**, such as `alice@laptop:~/datasci217$`, and waits. Type a command, press Enter, and the shell runs it, prints any output, and shows a new prompt. It splits your line at spaces: the first word is the program to run, words starting with `-` are **options** that change how it behaves, and the rest are **arguments**, usually the files or folders to act on.
 
 ```text
 ls  -l  data
@@ -287,7 +235,7 @@ Quote an argument that contains spaces: `cd "My Documents"`.
 
 ## Where You Are: Paths and the Working Directory
 
-A folder is called a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the *You are here* dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
+A folder is a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the *You are here* dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
 
 A **path** names a file or folder. An **absolute path** starts at the top of the file system, `/`, like a full street address; it works from anywhere. A **relative path** starts from your working directory, like directions from where you are standing.
 
@@ -372,7 +320,7 @@ visits_copy.csv
 
 ## Writing and Viewing Text Files
 
-`echo` prints text; `>` and `>>` **redirect** that output into a file instead of the screen. `cat`, `head`, and `tail` show what a file holds. `head` is the quick way to check a large data file's column names without opening it.
+`echo` prints text; `>` and `>>` **redirect** that output into a file instead of the screen. `cat`, `head`, and `tail` show what a file holds — `head` is the quick way to check a large data file's column names without opening it.
 
 ### Reference Card: Writing and Viewing Files
 
@@ -403,12 +351,10 @@ P003,131
 ## Create a Script by Pasting
 
 1. Run `cat > file.sh` in your shell. `>` replaces that file if it exists.
-2. Paste the script, press **Enter** to reach a new line, then **Ctrl+C** to finish (Control, not Command, on Mac; see Ctrl+C: Make it Stop! below).
+2. Paste the script, press **Enter** to end the last line, then **Ctrl+C** to stop `cat` (Control, not Command, on Mac; see Ctrl+C: Make it Stop! below). The text already written stays in the file.
 3. Inspect with `cat file.sh`, then run with `bash file.sh`.
 
-Enter ends a line; Ctrl+C stops `cat`, and the text already written stays in the file.
-
-A **shell script** is a text file of shell commands that Bash runs top to bottom. Its first line, `#!/bin/bash`, records which shell the script expects; when you run `bash file.sh`, Bash treats it like any other `#` comment.
+A **shell script** is a text file of shell commands that Bash runs top to bottom. Its first line, `#!/bin/bash`, records which shell the script expects; `bash file.sh` treats that line as an ordinary `#` comment.
 
 ## Getting Help
 
@@ -433,15 +379,15 @@ Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 
 Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files; Python computes with what is inside them—one patient's BMI, then the same calculation for every row of a clinic export.
 
-You can give Python code in two ways:
+You can give Python code two ways:
 
-- **Interactive mode**, or the **REPL** (read–evaluate–print loop): run `python3`, then type one line at the `>>>` prompt. Python evaluates it and shows the result right away, which is good for quick experiments.
-- **Script mode**: save code in a `.py` file and run the whole file with `python3 file.py` from the folder that contains it (check with `pwd` and `ls`). A script is a record you can rerun, fix, and commit to GitHub. It shows output only where you call `print()`.
+- **Interactive mode**, or the **REPL** (read–evaluate–print loop): run `python3` and type a line at the `>>>` prompt. Python shows the result right away, good for quick experiments.
+- **Script mode**: save code in a `.py` file and run `python3 file.py` from the folder that contains it (check with `pwd` and `ls`). A script is a record you can rerun, fix, and commit to GitHub; it shows output only where you call `print()`.
 
-Two kinds of calls appear throughout this lecture:
+Two kinds of calls appear throughout:
 
-- A **function** does a job when you call it with parentheses: `print("Hello")`, `len("Alice")`, `type(22)`. The values inside the parentheses are its **arguments**, like a shell command's arguments.
-- A **method** is a function that belongs to a value and is called with a dot: `"alice".upper()` returns `"ALICE"`.
+- A **function** does a job when called with parentheses: `print("Hello")`, `len("Alice")`, `type(22)`. The values in the parentheses are its **arguments**, like a shell command's arguments.
+- A **method** is a function belonging to a value, called with a dot: `"alice".upper()` returns `"ALICE"`.
 
 ## Running Python
 
@@ -458,7 +404,7 @@ python3                 # Start interactive Python
 python3 script.py       # Run a Python script
 ```
 
-These are Bash commands. In native Windows PowerShell, substitute `python` for `python3`. At the Python `>>>` prompt, enter `exit()` to leave the REPL.
+These are Bash commands; native Windows PowerShell uses `python`. Enter `exit()` at the `>>>` prompt to leave the REPL.
 
 #### Interactive Mode Example
 
@@ -471,12 +417,6 @@ Hello, World!
 >>> exit()
 ```
 
-#### Script Mode Example
-
-```bash
-python3 my_script.py
-```
-
 ## Python Syntax Overview
 
 ### Indentation Matters!
@@ -486,25 +426,23 @@ python3 my_script.py
 	**Recommendation: Use four spaces per indentation level.**
 </callout>
 
-This is a preview of an `if` conditional; the Control Structures section below explains how the condition works.
+This previews an `if` conditional; Control Structures, below, explains the condition.
 
 ```python
 # Correct indentation
 x = 1
 if x > 0:
-    print("Positive")    # This line is indented
-    print("Still positive")  # This line is also indented
+    print("Positive")        # indented, so it belongs to the if
+    print("Still positive")  # also indented
 ```
 
 ```python
-# Wrong indentation (will cause an error)
+# Wrong indentation: raises IndentationError until the print is indented
 if x > 0:
 print("This will cause an IndentationError")
 ```
 
-To fix the second example, indent the `print()` line four spaces beneath `if`, as in the first example.
-
-At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in, and later lines keep that indentation. Type the block without adding spaces yourself, press **Backspace** once for each level you want to move back out (before an `elif` or `else`, for example), and press **Enter** on an empty `...` line to finish the block. In a `.py` file you type the four spaces yourself.
+At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in. Type the block without adding spaces yourself, press **Backspace** once for each level you want to move back out (before an `elif` or `else`), and press **Enter** on an empty `...` line to finish. In a `.py` file you type the four spaces yourself.
 
 ### Comments Use `#`
 
@@ -522,7 +460,9 @@ print("This is code")  # Comments can also go at the end of lines
 
 ## Variables and Data Types
 
-A **variable** is a name for a value, created with `=`: `age = 67` means "let the name `age` refer to 67." Think of a name tag stuck on a value rather than a box: later you can move the tag to a different value, even one of another type. Every value has a **type** that decides what you can do with it. You can add two numbers, but adding a number to text raises an error (see Debugging below). One patient record already mixes four types: an ID (`"P001"`, text), an age (`67`, whole number), a temperature (`37.8`, decimal), and whether consent is on file (`True`).
+A **variable** is a name for a value, created with `=`: `age = 67` means "let the name `age` refer to 67." Think of a name tag stuck on a value rather than a box: later you can move the tag to a different value, even one of another type. Name variables for what they hold — `student_age`, not `a`, `x1`, or `temp`.
+
+Every value has a **type** that decides what you can do with it: adding two numbers works, adding a number to text raises an error (see Debugging). One patient record already mixes four types: an ID (`"P001"`, text), an age (`67`, whole number), a temperature (`37.8`, decimal), and whether consent is on file (`True`).
 
 ### Reference Card: Values and Types
 
@@ -538,20 +478,13 @@ A **variable** is a name for a value, created with `=`: `age = 67` means "let th
 ### Numbers - The Foundation of Data Science
 
 ```python
-# Integers (whole numbers)
-student_count = 150
-year = 2024
+student_count = 150      # int: whole number
 temperature_celsius = -5
-
-# Floats (decimal numbers)
-average_grade = 87.3
+average_grade = 87.3     # float: has a decimal part
 height_meters = 1.75
-pi_approximation = 3.14159
-
-# Scientific notation for very large/small numbers
-population = 1.4e9          # 1.4 billion
-atom_mass = 1.67e-27        # Very small number
 ```
+
+Scientific notation, such as `1.4e9`, and the `math` module are in [BONUS.md](BONUS.md).
 
 ### Text - Essential for Data Labels and Categories
 
@@ -564,16 +497,11 @@ atom_mass = 1.67e-27        # Very small number
 - String methods return new text; assign the result to keep it.
 
 ```python
-# Strings for text data
 student_name = "Alice Johnson"
-department = "Data Science"
-file_path = "/Users/alice/projects/analysis.py"
-
-# String methods you'll use constantly
 name_upper = student_name.upper()        # "ALICE JOHNSON"
 name_lower = student_name.lower()        # "alice johnson"
-name_title = student_name.title()        # "Alice Johnson"
-clean_name = "  Bob Smith  ".strip()     # Removes whitespace: "Bob Smith"
+clean_name = "  Bob Smith  ".strip()     # "Bob Smith"
+print(len(student_name))                 # 13
 ```
 
 ### Boolean - Essential for Data Filtering
@@ -593,34 +521,13 @@ analysis_ready = True and has_complete_data    # True
 needs_cleaning = missing_values or not analysis_ready  # False
 ```
 
-### Variable Naming Best Practices
+### Checking a Value's Type
 
 ```python
-# Good variable names (descriptive and clear)
 student_age = 22
-average_test_score = 85.7
-data_file_path = "student_grades.csv"
-
-# Avoid these (unclear or confusing)
-a = 22                  # What does 'a' represent?
-x1 = 85.7              # Meaningless variable name
-temp = "grades.csv"     # 'temp' usually means temporary
-```
-
-### Understanding Variable Types (Debugging Foundation)
-
-```python
-# Check what type a variable is (essential for debugging!)
-student_name = "Alice"
-student_age = 22
-grade_average = 87.5
-
-print(type(student_name))    # <class 'str'>
-print(type(student_age))     # <class 'int'>
-print(type(grade_average))   # <class 'float'>
-
-# This is crucial when data doesn't behave as expected!
 mysterious_data = "22"       # Looks like a number, but it's text
+
+print(type(student_age))     # <class 'int'>
 print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
 ```
 
@@ -638,9 +545,7 @@ A **list** holds several values in order inside square brackets, such as one pat
 
 ### Duck Typing: Behavior Over Labels
 
-Python is dynamically typed: a variable can refer to values of different types, and code often cares more about what an object can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck.
-
-A string and a list are different types, yet both support `len()`:
+Python is dynamically typed: a variable can refer to values of different types, and code cares more about what a value can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck. A string and a list are different types, yet both support `len()`:
 
 ```python
 label = "dataset"
@@ -676,30 +581,22 @@ Use `print()` to display a value or several values separated by commas. Python p
 - `(...)`: group an expression to control calculation order.
 - `total += 5`: Shorthand for `total = total + 5`; `-=` and `*=` work the same way.
 
-### Code Snippet: Arithmetic and Strings
+### Code Snippet: Joining and Printing Text
 
 ```python
-# Math operations
-result = 10 + 5         # Addition: 15
-result = 10 - 3         # Subtraction: 7
-result = 4 * 6          # Multiplication: 24
-result = 15 / 4         # Division: 3.75
-result = 15 // 4        # Integer division: 3
-result = 15 % 4         # Remainder: 3
-result = 2 ** 3         # Power: 8
-
-# String operations
 first = "Ada"
 last = "Lovelace"
-name = first
 full_name = first + " " + last        # Concatenation
-print("Hello", name)                 # Print text and a value
+print("Hello", full_name)             # Print text and a value
+```
+
+```text
+Hello Ada Lovelace
 ```
 
 ### Code Snippet: Calculate BMI
 
 ```python
-# Calculate BMI
 weight_kg = 70
 height_m = 1.75
 bmi = weight_kg / (height_m ** 2)
@@ -716,13 +613,13 @@ BMI is 22.857142857142858
 
 # Control Structures
 
-So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to every reading, whether there are 4 or 4,000). **Control flow** statements change that top-to-bottom order.
+So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to 4 readings or 4,000). **Control flow** statements change that top-to-bottom order.
 
-- A **condition** is an expression that is either `True` or `False`, such as `systolic >= 140`. The comparison operators below build conditions; `and`, `or`, and `not` from the Boolean card combine them.
-- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python checks the conditions from top to bottom and runs only the first block whose condition is `True`.
-- A `for` loop runs its block once for each item in a list, giving the current item a name: `for grade in grades:`. A `while` loop repeats as long as its condition stays `True`.
+- A **condition** is an expression that is `True` or `False`, such as `systolic >= 140`. The comparison operators below build conditions; `and`, `or`, and `not` combine them.
+- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python runs only the first block whose condition is `True`.
+- A `for` loop runs its block once per item in a list, naming the current item: `for grade in grades:`. A `while` loop repeats while its condition stays `True`.
 
-Indentation, from Python Syntax Overview, is how Python knows which lines belong to the `if` or the loop.
+Indentation, from Python Syntax Overview, tells Python which lines belong to the `if` or the loop.
 
 ## Decisions and Repetition
 
@@ -771,7 +668,6 @@ At the `>>>` prompt Python shows a bare expression's value; in a script, only `p
 ### Code Snippet: Basic If Statements
 
 ```python
-# Simple decision making
 score = 85
 
 if score >= 90:
@@ -791,7 +687,6 @@ Grade: B
 ### Code Snippet: Compound Conditions
 
 ```python
-# Multiple conditions with and/or
 age = 25
 has_license = True
 
@@ -809,7 +704,7 @@ Can drive
 
 ## For Loops
 
-`range(5)` supplies the integers from 0 through 4. A list supplies its items in order; Lecture 02 covers lists in more depth.
+A list supplies its items in order, and `range()` supplies integers; Lecture 02 covers lists in more depth.
 
 ### Code Snippet: Basic For Loops
 
@@ -817,11 +712,6 @@ Can drive
 # Count from 0 to 4
 for i in range(5):
     print("Count:", i)
-
-# Loop through a list
-grades = [85, 92, 78, 96, 88]
-for grade in grades:
-    print("Grade:", grade)
 ```
 
 ```text
@@ -830,11 +720,6 @@ Count: 1
 Count: 2
 Count: 3
 Count: 4
-Grade: 85
-Grade: 92
-Grade: 78
-Grade: 96
-Grade: 88
 ```
 
 ### Tracing a Loop
@@ -854,7 +739,6 @@ To check a loop you wrote, add a temporary `print("grade:", grade, "total:", tot
 ### Code Snippet: Practical Data Science Example
 
 ```python
-# Calculate average grade
 grades = [85, 92, 78, 96, 88]
 total = 0
 count = 0
@@ -902,7 +786,7 @@ Assignment 2 grade: 92
 Assignment 3 grade: 78
 ```
 
-Use `break` to stop a loop early, and `continue` to skip the rest of the current iteration and move to the next item:
+`break` stops a loop early; `continue` skips the rest of the current pass and moves to the next item:
 
 ```python
 grades = [85, 72, 92, 78]
@@ -929,8 +813,8 @@ An error reports where execution stopped and what operation failed—not necessa
 
 1. Read the final line for the error type and message.
 2. Find the referenced line in your script.
-3. Inspect the relevant values with `print()` and their types with `type()`.
-4. Make one correction, save, and rerun. The next error may only become visible after this one is fixed.
+3. Inspect the values there with `print()` and their types with `type()`.
+4. Make one correction, save, and rerun. The next error often appears only after this one is fixed.
 
 ### Reference Card: Inspecting and Converting Values
 
@@ -957,15 +841,9 @@ print("Grade: B")
 IndentationError: expected an indented block after 'if' statement on line 2
 ```
 
-**Diagnosis:** A line ending in `:` must be followed by at least one indented line. Python checks the whole file's structure before it runs anything, so this error has no `Traceback (most recent call last)` header and nothing in the script runs, not even the lines above the mistake. A `NameError` or `TypeError` appears only when Python reaches the bad line, after earlier lines have already printed.
+**Diagnosis:** A line ending in `:` must be followed by at least one indented line. Python checks the whole file's structure before running anything, so this error has no `Traceback (most recent call last)` header and nothing runs, not even the lines above the mistake. A `NameError` or `TypeError` appears only when Python reaches the bad line, after earlier lines have already printed.
 
-**Correction:** Indent the block four spaces, as in Python Syntax Overview:
-
-```python
-score = 85
-if score >= 80:
-    print("Grade: B")
-```
+**Correction:** Indent `print("Grade: B")` four spaces, as in Python Syntax Overview.
 
 ## NameError: Check the Name and Its Definition
 
@@ -973,7 +851,7 @@ if score >= 80:
 print(student_naem)
 ```
 
-A traceback for this one-line script looks like:
+The traceback for this one-line script:
 
 ```text
 Traceback (most recent call last):
@@ -1025,9 +903,9 @@ age = int(raw_age)
 ValueError: invalid literal for int() with base 10: 'hello'
 ```
 
-**Diagnosis:** `int()` accepts numeric text such as `"25"`, but `"hello"` is not an integer representation. Checking only `type(raw_age)` would miss the difference; inspect its value and where it came from.
+**Diagnosis:** `int()` accepts numeric text such as `"25"`, but `"hello"` is not an integer representation. Both are `str`, so checking only `type(raw_age)` would miss the difference; inspect the value and where it came from.
 
-**Correction:** If the wrong field was selected, select the age field. If the source value is wrong, correct it only when you know the intended value. For this example, suppose the source confirms an age of 25:
+**Correction:** Fix the source: select the age field if the wrong one was read, or correct the value only when you know the intended one. Suppose the record confirms an age of 25:
 
 ```python
 raw_age = "25"
