@@ -439,9 +439,10 @@ P003  41    37.2      P003   41    37.2   98.96     P001   34    36.8   98.24
 
 A **derived column** is computed from columns you already have: a temperature in Fahrenheit, a change from baseline, a body-mass index. Assign to a new column name with brackets. As with NumPy's vectorized arithmetic in Lecture 03, pandas computes the whole column at once with no loop, matching rows by index label.
 
-### Reference Card: Adding and updating columns
+### Reference Card: Adding, updating, and removing columns
 
 - `df["new"] = expression`: Add a column, or replace it if the name exists; values line up by index label.
+- `df.drop(columns=["col1", "col2"])`: Return a new DataFrame without the named columns; `columns=` names what to leave out, as one label or a list, and the original table keeps every column.
 - `df.loc[mask, "col"] = value`: Update only the rows where `mask` is `True`, in the original table.
 - `subset = df.loc[mask].copy()`: Make a separate table you intend to modify, and say so explicitly.
 

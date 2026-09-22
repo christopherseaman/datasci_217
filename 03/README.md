@@ -677,16 +677,16 @@ For `arr = np.array([[1, 2, 3], [4, 5, 6]])`:
 
 ```python
 arr = np.array([[1, 2, 3], [4, 5, 6]])
-arr.mean(axis=0)  # [2.5, 3.5, 4.5]: one mean per column
-arr.mean(axis=1)  # [2., 5.]: one mean per row
-arr.mean()        # 3.5: one mean for the whole array
+print(arr.mean(axis=0))  # [2.5 3.5 4.5]: one mean per column
+print(arr.mean(axis=1))  # [2. 5.]: one mean per row
+print(arr.mean())        # 3.5: one mean for the whole array
 ```
 
 ## Array Reshaping
 
 Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 grades becomes 3 students by 4 assignments. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
-![NumPy array reference](media/nparray_cheatsheet.png)
+![NumPy reshaping cheatsheet: only the top-left panel is this lecture's, and only its reshape lines, where -1 asks NumPy to work out that dimension. ravel is another flatten, one that skips the copy when the layout allows it and copies when it does not; order='F' refills column-first; the stacking and 3D panels are further reading — BONUS.md covers stacking.](media/nparray_cheatsheet.png)
 
 ### Reference Card: reshape and transpose
 
@@ -701,8 +701,12 @@ Reshaping rearranges the same values into a different grid without changing any 
 
 ```python
 arr = np.array([[1, 2, 3], [4, 5, 6]])
-arr.reshape(3, 2)  # [[1, 2], [3, 4], [5, 6]]: same flat order
-arr.T             # [[1, 4], [2, 5], [3, 6]]: rows become columns
+print(arr.reshape(3, 2))  # [[1 2]
+                          #  [3 4]
+                          #  [5 6]]: same flat order
+print(arr.T)              # [[1 4]
+                          #  [2 5]
+                          #  [3 6]]: rows become columns
 ```
 
 # Array Tools for Analysis

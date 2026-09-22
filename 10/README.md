@@ -25,7 +25,7 @@ A **model** is a simplified mathematical description of how an outcome relates t
 
 The same model serves two questions, and the question decides how you judge it:
 
-- **Inference**: "Is BMI associated with systolic blood pressure among patients of the same age, and how sure are we?" You care about coefficients, uncertainty, and assumptions. Tool: `statsmodels`.
+- **Inference**: "Is BMI associated with systolic blood pressure (SBP) among patients of the same age, and how sure are we?" You care about coefficients, uncertainty, and assumptions. Tool: `statsmodels`.
 - **Prediction**: "What will this patient's blood pressure be at the next visit?" You care about error on patients never seen before. Tools: `scikit-learn` and friends.
 
 ## The Modeling Landscape
@@ -45,13 +45,11 @@ Python's modeling libraries line up from inference toward flexible prediction. M
 | **XGBoost** | Candidate for tabular prediction | Gradient-boosted trees, feature-importance summaries | Benchmarking alongside simpler tabular models |
 | **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops | Deep-learning workflows (PyTorch is in BONUS) |
 
-*"But why models?" "Seriously? I just told you that a moment ago."*
-
 ![xkcd 882: Significant — "We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"](media/xkcd_882.png)
 
 # Statistical Modeling with `statsmodels`
 
-Suppose a clinic asks whether higher BMI goes with higher systolic blood pressure (SBP), even among patients of the same age. **Linear regression** answers by fitting `sbp = b0 + b1 * age + b2 * bmi` to the data. Plugging a patient's age and BMI into it gives a **fitted value**: the model's estimated average SBP for patients like them.
+Suppose a clinic asks whether higher BMI goes with higher SBP, even among patients of the same age. **Linear regression** answers that by fitting `sbp = b0 + b1 * age + b2 * bmi` to the clinic's records. Plugging a patient's age and BMI into it gives a **fitted value**: the model's estimated average SBP for patients like them.
 
 - The **intercept** (`b0`) is the fitted SBP when every predictor is 0: an anchor for the line, rarely a real patient.
 - A **coefficient** (`b2`) is the difference in fitted SBP for a one-unit difference in BMI, *holding age fixed*.
@@ -112,32 +110,23 @@ import pandas as pd
 import statsmodels.formula.api as smf
 
 rng = np.random.default_rng(42)
-clinic = pd.DataFrame({
-    'age': rng.integers(30, 70, size=60),
-    'bmi': rng.normal(27, 4, size=60).round(1),
-})
+clinic = pd.DataFrame({'age': rng.integers(30, 70, size=60),
+                       'bmi': rng.normal(27, 4, size=60).round(1)})
 clinic['sbp'] = (95 + 0.5 * clinic['age'] + 0.8 * clinic['bmi']
                  + rng.normal(0, 8, size=60)).round(1)
 
 results = smf.ols('sbp ~ age + bmi', data=clinic).fit()
-print(results.params.round(2))
-print(results.pvalues.round(4))
+print(pd.DataFrame({'coef': results.params.round(2), 'p_value': results.pvalues.round(4)}))
 ```
 
 ```text
-Intercept    75.21
-age           0.66
-bmi           1.19
-dtype: float64
-Intercept    0.0000
-age          0.0000
-bmi          0.0008
-dtype: float64
+            coef  p_value
+Intercept  75.21   0.0000
+age         0.66   0.0000
+bmi         1.19   0.0008
 ```
 
 `results.summary()` shows the same numbers in one table, under `coef`, `std err`, `P>|t|`, and `[0.025 0.975]`. R-squared here is 0.536, and a p-value printed as 0.0000 is below 0.00005, not exactly 0.
-
-The data were simulated with true coefficients 0.5 (age) and 0.8 (BMI). The estimates miss them, but both true values fall inside their 95% confidence intervals - which is the uncertainty those intervals describe.
 
 ## Uncertainty, Residuals, and New-Patient Intervals
 
@@ -145,10 +134,7 @@ A coefficient is an estimate from one sample, so it comes with uncertainty: the 
 
 Plotting each row's residual against its fitted value is a quick assumption check: a shapeless cloud around zero is what we hope for, a curve says the straight-line form is wrong, and a funnel says the spread is not constant.
 
-Predicting for a new patient takes two different intervals:
-
-- **Mean-response interval**: where the *average* SBP of all 55-year-olds with BMI 30 probably lies.
-- **Prediction interval**: where *one* such patient's SBP probably lies; it adds person-to-person variation, so it is always wider.
+Predicting for a new patient takes two different intervals: a **mean-response interval**, where the *average* SBP of all 55-year-olds with BMI 30 probably lies, and a **prediction interval**, where *one* such patient's SBP probably lies; the second adds person-to-person variation, so it is always wider.
 
 ![Two residuals-versus-fitted plots. Left: the clinic fit's residuals scatter without pattern around a dashed zero line. Right: a straight line fitted to curved data leaves a U-shaped pattern.](media/ols_residuals_vs_fitted.png)
 
@@ -167,27 +153,24 @@ Predicting for a new patient takes two different intervals:
 
 ```python
 # results: the clinic fit from the OLS snippet above
-print(results.bse.round(2))
-print(results.conf_int().round(2))
+print(pd.DataFrame({'std_err': results.bse.round(2),
+                    'ci_lower': results.conf_int()[0].round(2),
+                    'ci_upper': results.conf_int()[1].round(2)}))
 
 new_patient = pd.DataFrame({'age': [55], 'bmi': [30.0]})
 print(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 ```
 
 ```text
-Intercept    10.18
-age           0.09
-bmi           0.34
-dtype: float64
-               0      1
-Intercept  54.83  95.59
-age         0.48   0.84
-bmi         0.52   1.86
+           std_err  ci_lower  ci_upper
+Intercept    10.18     54.83     95.59
+age           0.09      0.48      0.84
+bmi           0.34      0.52      1.86
     mean  mean_se  mean_ci_lower  mean_ci_upper  obs_ci_lower  obs_ci_upper
 0  147.2      1.5          144.3          150.2         131.4         163.0
 ```
 
-Read the `age` row as: holding BMI fixed, each extra year is associated with about 0.66 mmHg higher fitted SBP (95% CI 0.48 to 0.84). For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32.
+Read the `age` row as: holding BMI fixed, each extra year is associated with about 0.66 mmHg higher fitted SBP (95% CI 0.48 to 0.84), an interval that contains the 0.5 the data were simulated with, as the `bmi` interval contains its 0.8. For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32.
 
 ### Code Snippet: Residuals Versus Fitted Values
 
@@ -195,11 +178,8 @@ Read the `age` row as: holding BMI fixed, each extra year is associated with abo
 import matplotlib.pyplot as plt
 
 # clinic, results: from the OLS snippet above
-diagnostics = pd.DataFrame({
-    'observed': clinic['sbp'],
-    'fitted': results.fittedvalues,
-    'residual': results.resid,
-})
+diagnostics = pd.DataFrame({'observed': clinic['sbp'], 'fitted': results.fittedvalues,
+                            'residual': results.resid})
 print(diagnostics.head(3).round(1))
 
 fig, ax = plt.subplots(figsize=(6, 4))
@@ -225,7 +205,7 @@ plt.close(fig)
 
 # Prediction: Features, Targets, and Honest Splits
 
-Inference asked how SBP relates to age, holding BMI fixed. Prediction asks something else: "What will *this* patient's SBP be at the next visit?" A predictive model is judged on patients it has never seen.
+Prediction asks what *this* patient's SBP will be at the next visit, and it brings one golden rule: never judge a model on data it was fitted on. A model can always describe rows it has already seen, so its error on those rows says nothing about the next patient.
 
 - The features (Lecture 09) are the input columns the model uses (age, BMI, today's SBP), together called `X`.
 - The **target** is the column to predict (next-visit SBP), called `y`; its **target time** is when that value is measured.
@@ -234,7 +214,7 @@ Inference asked how SBP relates to age, holding BMI fixed. Prediction asks somet
 
 ## Feature Availability
 
-Run that check on every candidate feature. Here the prediction is made at the end of the visit:
+Run Lecture 09's availability check on every candidate feature: `candidates['resulted_at'] <= prediction_time`, or `candidates['hours_after_visit'] <= 0` for offsets like the ones below. The prediction here is made at the end of the visit:
 
 | Candidate feature | Becomes known | Hours after the visit | Decision |
 | --- | --- | --- | --- |
@@ -242,10 +222,38 @@ Run that check on every candidate feature. Here the prediction is made at the en
 | `sbp_today` | During the visit | 0 | Keep |
 | `a1c_result` | When the lab reports the next day | 24 | Exclude (leakage) |
 
-### Reference Card: Availability Audit
+## Cyclic Time Features
 
-- `candidates['available'] = candidates['resulted_at'] <= prediction_time`: Lecture 09's check; `True` where the value is known by prediction time. With offsets like the table's, use `candidates['hours_after_visit'] <= 0`.
-- `np.where(candidates['available'], 'keep', 'exclude')`: Turn the check into a decision label (Lecture 03); returns an array of labels.
+Time features pass that audit easily - a timestamp is known as soon as the row exists - but the hour needs shaping first. As a plain number it misleads a model: 23:00 and 00:00 are an hour apart, while 23 and 0 sit at opposite ends of the range. A clock face fixes that: the sine and cosine of `2 * np.pi * hour / 24` place each hour on a circle, so hour 23 lands as close to hour 0 as hour 1 does.
+
+### Reference Card: Cyclic Time Features
+
+| Expression | Purpose & arguments | Typical output |
+| --- | --- | --- |
+| `df['timestamp'].dt.hour` | Hour of day from a datetime column; `.dt.dayofyear` for the yearly cycle in the last row (both Lecture 09). | Integer Series |
+| `np.sin(2 * np.pi * df['hour'] / 24)` | The hour's height on the clock face; `np.pi` is the constant π, and `np.sin()` works column-wise like Lecture 03's `np.sqrt()`. | Float Series, -1 to 1 |
+| `np.cos(2 * np.pi * df['hour'] / 24)` | Its side-to-side position. Pair it with the sine: either column alone gives two different hours the same value. | Float Series, -1 to 1 |
+| `2 * np.pi * (df['dayofyear'] - 1) / 366` | The same angle for any other cycle. Subtract 1 when the count starts at 1, so the first day sits at angle 0 (`.dt.hour` already starts at 0, `.dt.dayofyear` at 1). Divide by the cycle's length: 7 for day of the week, 366 for day of the year. Keeping 366 every year, leap or not, spaces every day one equal step apart and leaves day 366 one step short of a full turn. | Float Series |
+
+### Code Snippet: Hours on a Clock Face
+
+```python
+import numpy as np
+import pandas as pd
+
+hours = pd.DataFrame({'hour': [0, 1, 12, 23]})
+hours['hour_sin'] = np.sin(2 * np.pi * hours['hour'] / 24).round(2)
+hours['hour_cos'] = np.cos(2 * np.pi * hours['hour'] / 24).round(2)
+print(hours)
+```
+
+```text
+   hour  hour_sin  hour_cos
+0     0      0.00      1.00
+1     1      0.26      0.97
+2    12      0.00     -1.00
+3    23     -0.26      0.97
+```
 
 ## Training, Validation, and Test Rows
 
@@ -266,15 +274,13 @@ Validation error: 0.22          Validation error: 0.35
 
 The opposite, **underfitting**, is a model too simple to capture the pattern, so both errors stay high.
 
-When rows have no time order, split them at random; the next topic's `train_test_split` does it in one call. When the model will predict the *future*, use Lecture 09's chronological blocks: train on the past, validate on the next period, test on the one after. Split on the **target** time, not the visit date: the Feb 8 visit predicts SBP measured on Feb 15.
+When rows have no time order, split them at random; the next topic's `train_test_split` does it in one call. When the model will predict the *future*, use Lecture 09's chronological blocks, and split on the **target** time, not the visit date: the Feb 8 visit predicts SBP measured on Feb 15.
 
 | Target weeks (next visit) | Role | Why |
 | --- | --- | --- |
 | Jan 11 - Feb 8 | Training | Oldest outcomes fit the model |
 | Feb 15 - Feb 22 | Validation | Next period chooses between candidates |
 | Mar 1 - Mar 15 | Test | Newest outcomes, opened once |
-
-*The golden rule: Never evaluate on data the model has seen during training. That's like giving a student the answers before the test and then being surprised they got 100%.*
 
 ### Reference Card: Splitting on Target Time
 
@@ -287,11 +293,9 @@ When rows have no time order, split them at random; the next topic's `train_test
 ```python
 import pandas as pd
 
-visits = pd.DataFrame({
-    'visit_date': pd.date_range('2026-01-04', periods=10, freq='W'),
-    'sbp_today': [138, 142, 135, 150, 147, 139, 144, 152, 141, 137],
-    'sbp_next_visit': [142, 135, 150, 147, 139, 144, 152, 141, 137, 145],
-})
+visits = pd.DataFrame({'visit_date': pd.date_range('2026-01-04', periods=10, freq='W'),
+                       'sbp_today': [138, 142, 135, 150, 147, 139, 144, 152, 141, 137],
+                       'sbp_next_visit': [142, 135, 150, 147, 139, 144, 152, 141, 137, 145]})
 visits['target_date'] = visits['visit_date'] + pd.Timedelta(days=7)  # when sbp_next_visit is measured
 
 train = visits[visits['target_date'] < '2026-02-15']
@@ -307,8 +311,6 @@ print(valid[['visit_date', 'target_date']])
 5 2026-02-08  2026-02-15
 6 2026-02-15  2026-02-22
 ```
-
-The Feb 8 visit is a validation row, so no training target falls in the validation weeks.
 
 # LIVE DEMO!
 
@@ -427,7 +429,7 @@ print(valid['sbp'].head(3).values)                     # [144.7 141.2 156.3]
 
 ### Code Snippet: Variation with Mixed Numeric and Categorical Columns
 
-Real tables mix numbers with categories and have gaps; `ColumnTransformer` routes each group to its own pipeline, and every step still learns from training rows only.
+Real tables mix numbers with categories and have gaps; `ColumnTransformer` routes each group to its own pipeline.
 
 ```python
 import numpy as np
@@ -460,7 +462,7 @@ For classification, swap the final estimator.
 
 A **metric** turns a column of errors into one number. Choose it before comparing models and compute it the same way for the baseline, every candidate, and the final test.
 
-For a numeric target, each error is actual - predicted. For a yes/no target - **classification**, with 1 = readmitted within 30 days - a **confusion matrix** counts the four outcomes: TP, FP, FN, TN.
+For a numeric target, each error is actual - predicted. For a yes/no target - **classification**, with 1 = readmitted within 30 days - a **confusion matrix** counts the four outcomes: true positives (TP, flagged and readmitted), false positives (FP, flagged but not readmitted), false negatives (FN, readmitted but not flagged), and true negatives (TN).
 
 ### Reference Card: `sklearn.metrics`
 

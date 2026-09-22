@@ -678,38 +678,6 @@ with mlflow.start_run():
 
 # Advanced Feature Engineering
 
-## Cyclic Time Features
-
-Hour of day is a common feature for hospital data, but as a plain number it misleads a model: 23:00 and 00:00 are one hour apart, yet 23 and 0 are as far apart as the numbers go. Placing each hour on a clock face fixes this. Two columns, `sin(2π · hour / 24)` and `cos(2π · hour / 24)`, give each hour a point on a circle, so hour 23 sits next to hour 0.
-
-### Reference Card: Cyclic Time Features
-
-- `df['timestamp'].dt.hour`: Hour of day (0-23) from a datetime column (Lecture 09).
-- `np.sin(2 * np.pi * df['hour'] / 24)`, `np.cos(2 * np.pi * df['hour'] / 24)`: The hour's position on the clock face; each column runs from -1 to 1, so use both. `np.sin()` and `np.cos()` are NumPy functions like Lecture 03's `np.sqrt()`, and `np.pi` is the constant π.
-
-### Code Snippet: Hours on a Clock Face
-
-```python
-import numpy as np
-import pandas as pd
-
-hours = pd.DataFrame({'hour': [0, 1, 6, 12, 23]})
-hours['hour_sin'] = np.sin(2 * np.pi * hours['hour'] / 24).round(2)
-hours['hour_cos'] = np.cos(2 * np.pi * hours['hour'] / 24).round(2)
-print(hours)
-```
-
-```text
-   hour  hour_sin  hour_cos
-0     0      0.00      1.00
-1     1      0.26      0.97
-2     6      1.00      0.00
-3    12      0.00     -1.00
-4    23     -0.26      0.97
-```
-
-Hours 23 and 1 land equally close to hour 0, and hour 12 is on the opposite side of the circle. The same trick works for any repeating cycle: divide by 7 for day of the week, or by the number of days in the year for day of the year.
-
 ## Automated Feature Engineering
 
 This optional example requires `featuretools`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install featuretools` before running the example.

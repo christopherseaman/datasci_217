@@ -216,6 +216,7 @@ Titles, axis labels with units, deliberate limits, and a restrained grid give th
 | `ax.set_title(text)`, `ax.set_xlabel(text)`, `ax.set_ylabel(text)` | Set one label at a time | Updated `Axes` |
 | `ax.set_xlim(left, right)` / `ax.set_ylim(bottom, top)` | Control displayed ranges; use deliberately | Updated limits |
 | `ax.set_xticks(positions, labels)` | Choose where ticks sit and, optionally, what they say | Updated ticks |
+| `ax.tick_params(axis='x', rotation=45)` | Turn the tick labels on one axis so long category names stop overlapping; `labelsize=` shrinks them instead | Updated tick labels |
 | `ax.grid(axis='y', alpha=0.3)` | Add restrained reference lines | Updated `Axes` |
 | `ax.legend()` | Decode labeled series when direct labels are not enough | Legend artist |
 | `plt.style.use(name)` | Apply a named style before creating figures | Global style setting |
@@ -331,8 +332,6 @@ Arrows mean “renders through,” not a required learning order.
 
 ## Choosing the Right Tool
 
-Each tool below solves a different job.
-
 ### Reference Card: Choosing a Plotting Tool
 
 | Tool | Reach for it when | Draws through | Typical output |
@@ -378,7 +377,11 @@ Expected output: two lines, one per clinic, with `week` on the x-axis and a lege
 
 ## Plot Kinds
 
-### Reference Card: pandas Plotting
+One table, many views: `kind=` picks the mark, and when the question is how two columns relate, `corr()` answers with a table of numbers rather than a picture: the **Pearson correlation** of every pair of selected columns.
+
+A correlation runs from `-1`, one column rising as the other falls, through `0`, no straight-line link, to `1`, both moving the same way. Pearson is the default. Select the numeric columns yourself rather than trusting the error: a text column of words raises `ValueError`, but a text column whose values happen to parse as numbers, such as zero-padded patient IDs or ZIP codes, is correlated silently as though it were a measurement. And a correlation measures straight-line association only, so a strong number is still not causation.
+
+### Reference Card: pandas Plotting and Correlation
 
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
@@ -390,6 +393,8 @@ Expected output: two lines, one per clinic, with `week` on the x-axis and a lege
 | `df.plot(kind='box')` | Compare distributions and outliers | `Axes` |
 | `df.plot(kind='pie', y='col')` | Show nonnegative values as parts of their total | `Axes` |
 | `df.plot.bar()`, `df.plot.hist()` | Same as `kind='bar'` / `kind='hist'`; `df.plot.density()` below uses this form | `Axes` |
+| `corr = df[['age', 'bmi']].corr()` | **Correlation matrix**: the Pearson correlation of every pair of the listed columns; `method=` also accepts `'spearman'` and `'kendall'` | Square `DataFrame`, one row and column per listed column. `1.0` down the diagonal, except that a column with nothing to vary — one repeated value, or only one non-missing value — is `NaN` throughout |
+| `corr.to_csv(path, index=True, index_label='feature')` | Write a frame whose row labels are data, not row numbers: `index=True` keeps them (Lecture 04) and `index_label=` names the column they land in | CSV file whose first column is headed `feature` |
 
 ### Code Snippet: Several Plot Kinds in One Grid
 
@@ -406,6 +411,15 @@ plt.show()
 ```
 
 ![One table, four views: each `kind=` answers a different question about the same rows.](media/pandas_plotting.png)
+
+### Code Snippet: A Correlation Matrix
+
+```python
+print(weekly[['North', 'South']].corr())
+#          North    South
+# North  1.00000  0.29277
+# South  0.29277  1.00000
+```
 
 ## DataFrame Plotting Options
 
@@ -503,10 +517,8 @@ readings = pd.DataFrame({
     'systolic_bp': [150, 138, 142, 144, 136, 139],
 })
 ax = sns.lineplot(data=readings, x='week', y='systolic_bp', errorbar=None)
-print(ax.get_lines()[0].get_ydata())  # [143.33333333 139.66666667]
+print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week: [143.33333333 139.66666667]
 ```
-
-`ax.get_lines()[0].get_ydata()` reads back the y-values of the line seaborn drew. Six readings became two points: the week 1 mean (143.3) and the week 2 mean (139.7).
 
 # Density Plots and Distribution Visualization
 

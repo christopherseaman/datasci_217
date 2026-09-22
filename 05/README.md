@@ -771,7 +771,7 @@ True
 
 The validation rules above list the rows that break a rule. Before saving, ask each rule once of the whole table. A **validation invariant** is a rule that must be true before a table counts as clean: IDs are unique, every site is on the allowed list, every recorded age is between 0 and 120. Write each invariant as one `True`/`False` check, and collect the checks in a Series so they print as a report.
 
-Python's **`assert`** statement turns that report into a gate. `assert condition, message` does nothing when the condition is `True`. When it is `False`, the program stops with an `AssertionError` that shows `message`. Put the `assert` directly before `to_csv()`, so a failed check means no file is written. Passing checks show the table matches its contract; they cannot show that the cleaning decisions were wise.
+`assert condition, message` from Lecture 02 turns that report into a gate: put it directly before `to_csv()`, so a failed check means no file is written. Passing checks show the table matches its contract; they cannot show that the cleaning decisions were wise.
 
 ### Reference Card: Validation checks
 

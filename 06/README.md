@@ -340,6 +340,25 @@ Later in this lecture, `pivot()` builds its result’s index from an identifier 
 - An index is not automatically unique. Check `df.index.is_unique` when each label should appear once.
 - `set_index()` and `reset_index()` return a new DataFrame, so assign the result: `indexed = df.set_index('emp_id')`.
 
+## Row Labels Before and After
+
+```
+employees as built from a dict — the RangeIndex down the left edge only counts rows
+
+  emp_id     name   department  salary
+0   E001    Alice  Engineering   95000
+1   E002      Bob        Sales   75000
+2   E003  Charlie  Engineering   88000
+
+employees.set_index('emp_id') — the IDs are the row labels, so .loc['E002'] finds Bob
+
+           name   department  salary
+emp_id
+E001      Alice  Engineering   95000
+E002        Bob        Sales   75000
+E003    Charlie  Engineering   88000
+```
+
 ## set_index(): Moving Columns to Index
 
 `set_index()` moves one or more columns into the row labels, enabling label-based selection and alignment on those values.
@@ -355,7 +374,6 @@ Later in this lecture, `pivot()` builds its result’s index from an identifier 
 ### Code Snippet: Set an identifier index
 
 ```python
-# Employee data, with the default RangeIndex 0, 1, 2
 employees = pd.DataFrame({
     'emp_id': ['E001', 'E002', 'E003'],
     'name': ['Alice', 'Bob', 'Charlie'],
@@ -363,21 +381,14 @@ employees = pd.DataFrame({
     'salary': [95000, 75000, 88000]
 })
 
-# Make emp_id the index and assert the expected uniqueness
-indexed = employees.set_index('emp_id')
-assert indexed.index.is_unique
-display(indexed)
-#           name   department  salary
-# emp_id
-# E001     Alice  Engineering   95000
-# E002       Bob        Sales   75000
-# E003   Charlie  Engineering   88000
+indexed = employees.set_index('emp_id')  # row labels become E001, E002, E003
+assert indexed.index.is_unique           # each employee should appear once
 
-# Now you can access by emp_id directly
-display(indexed.loc['E002'])  # Bob's record
-# name              Bob
-# department      Sales
-# salary          75000
+display(indexed.loc['E002'])             # Bob's record, found by label
+# name            Bob
+# department    Sales
+# salary        75000
+# Name: E002, dtype: object
 ```
 
 ## reset_index(): Moving Index to Columns
@@ -407,6 +418,55 @@ display(indexed.reset_index(drop=True))
 # 0    Alice  Engineering   95000
 # 1      Bob        Sales   75000
 # 2  Charlie  Engineering   88000
+```
+
+## Two-Level Row Labels
+
+One column does not always name a row on its own: a quarterly sales figure is identified by region *and* quarter together. Passing `set_index()` a list of columns gives each row a two-part label, and pandas calls the result a **MultiIndex** (hierarchical index): each row label has more than one level, such as a `(region, quarter)` pair. Later in this lecture, `pivot()` with a list of identifier columns builds the same kind of label.
+
+### Reference Card: Two-level row labels
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.set_index(['col1', 'col2'])` | Build two-level row labels from two columns | DataFrame with a `MultiIndex` |
+| `df.loc[('key1', 'key2'), :]` | Select a row by both parts of its label; `df.loc['key1']` selects every row under one outer label | Selected row or rows |
+| `df.reset_index()` | Turn both levels back into columns | New `DataFrame` with a default `RangeIndex` |
+
+### Code Snippet: Build a MultiIndex
+
+```python
+# Sales data
+sales = pd.DataFrame({
+    'region': ['West', 'West', 'East', 'East'],
+    'quarter': ['Q1', 'Q2', 'Q1', 'Q2'],
+    'sales': [100, 150, 120, 180]
+})
+
+# Build the two-level index directly from unique row labels.
+summary = sales.set_index(['region', 'quarter']).sort_index()
+assert summary.index.is_unique
+display(summary)
+#                 sales
+# region quarter
+# East   Q1         120
+#        Q2         180
+# West   Q1         100
+#        Q2         150
+
+# Every row under one outer label
+display(summary.loc['East'])
+#          sales
+# quarter
+# Q1         120
+# Q2         180
+
+# Both levels back into ordinary columns
+display(summary.reset_index())
+#   region quarter  sales
+# 0   East      Q1    120
+# 1   East      Q2    180
+# 2   West      Q1    100
+# 3   West      Q2    150
 ```
 
 After `pivot()` or a horizontal concatenation later in this lecture, `reset_index()` turns the identifiers left in the index back into ordinary columns.
@@ -476,87 +536,9 @@ display(long_data.head(3))
 # 2   Alice  science     92
 ```
 
-## Pivoting Long to Wide with pivot()
-
-The `pivot()` method reshapes long data to wide form without aggregating values.
-
-### Reference Card: `pivot()`
-
-| Argument | Purpose | Constraint / output |
-| --- | --- | --- |
-| `index` | Column becoming row labels | One row per index value; a list such as `['id1', 'id2']` gives two-level row labels |
-| `columns` | Column becoming headers | One column per value |
-| `values` | Column filling cells | Duplicate index/column pairs raise an error |
-| `.reset_index()` afterward | Turn the row labels back into an ordinary column | Leaves the `columns` name as a header label |
-| `result.columns.name = None` | Drop that leftover header label | Plain column headers, as in the original wide table |
-
-### Code Snippet: Pivot long data
-
-```python
-# Convert long format to wide format
-wide = long_data.pivot(index='student', columns='subject', values='score')
-display(wide)
-# subject  english  math  science
-# student
-# Alice         90    95       92
-# Bob           85    88       90
-# Charlie       94    92       89
-```
-
-If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops: pandas reports `ValueError: Index contains duplicate entries, cannot reshape`. First determine whether the duplicates are data errors or repeated observations. If repeated observations are valid, `pivot_table()` aggregates them into one cell before reshaping, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
-
-## Two-Level Row Labels
-
-Pivoting with two identifier columns, such as `pivot(index=['employee_id', 'department'], ...)`, gives each row a two-part label, and so does `set_index()` with a list. pandas calls this a **MultiIndex** (hierarchical index): each row label has more than one level, such as a `(region, quarter)` pair.
-
-### Reference Card: Two-level row labels
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.set_index(['col1', 'col2'])` | Build two-level row labels from two columns | DataFrame with a `MultiIndex` |
-| `df.loc[('key1', 'key2'), :]` | Select a row by both parts of its label; `df.loc['key1']` selects every row under one outer label | Selected row or rows |
-| `df.reset_index()` | Turn both levels back into columns | New `DataFrame` with a default `RangeIndex` |
-
-### Code Snippet: Build a MultiIndex
-
-```python
-# Sales data
-sales = pd.DataFrame({
-    'region': ['West', 'West', 'East', 'East'],
-    'quarter': ['Q1', 'Q2', 'Q1', 'Q2'],
-    'sales': [100, 150, 120, 180]
-})
-
-# Build the two-level index directly from unique row labels.
-summary = sales.set_index(['region', 'quarter']).sort_index()
-assert summary.index.is_unique
-display(summary)
-#                 sales
-# region quarter
-# East   Q1         120
-#        Q2         180
-# West   Q1         100
-#        Q2         150
-
-# Every row under one outer label
-display(summary.loc['East'])
-#          sales
-# quarter
-# Q1         120
-# Q2         180
-
-# Both levels back into ordinary columns
-display(summary.reset_index())
-#   region quarter  sales
-# 0   East      Q1    120
-# 1   East      Q2    180
-# 2   West      Q1    100
-# 3   West      Q2    150
-```
-
 ## Melting Wide to Long with melt()
 
-The `melt()` function, written `pd.melt(df, ...)` or `df.melt(...)`, reshapes selected wide columns into variable-value rows.
+The `melt()` function, written `pd.melt(df, ...)` or `df.melt(...)`, is the wide-to-long step: it holds the identifier columns fixed and turns each selected wide column into variable-value rows. The blood-pressure table that opened this topic needs exactly this before anything can group or plot by visit.
 
 ### Reference Card: `melt()`
 
@@ -591,9 +573,36 @@ display(long)
 
 The subject label is now a value in a tidy column, ready for a later aggregation (Lecture 08) or plot. Survey responses stored in `Q1`, `Q2`, and `Q3` columns melt the same way when a downstream step needs the question name as a row value.
 
-### Code Snippet: Round-trip back to the original wide table
+## Pivoting Long Back to Wide with pivot()
+
+`pivot()` runs `melt()` backwards: the variable column supplies the new headers, the value column fills the cells, and the identifier column becomes the row labels. Reach for it when data arrives long, one row per observation the way `long_data` is, and a reader or a matrix-shaped tool wants a column per subject. `pivot()` never aggregates, so each `index`/`columns` pair must identify exactly one value.
+
+### Reference Card: `pivot()`
+
+| Argument | Purpose | Constraint / output |
+| --- | --- | --- |
+| `index` | Column becoming row labels | One row per index value; a list such as `['id1', 'id2']` gives two-level row labels |
+| `columns` | Column becoming headers | One column per value |
+| `values` | Column filling cells | Duplicate index/column pairs raise an error |
+| `.reset_index()` afterward | Turn the row labels back into an ordinary column | Leaves the `columns` name as a header label |
+| `result.columns.name = None` | Drop that leftover header label | Plain column headers, as in the original wide table |
+
+### Code Snippet: Pivot long data back to wide
 
 ```python
+# long_data was typed by hand and long came out of melt(): the same nine scores
+# in a different row order, which pivot() files by label into one frame.
+wide = long_data.pivot(index='student', columns='subject', values='score')
+display(wide)
+# subject  english  math  science
+# student
+# Alice         90    95       92
+# Bob           85    88       90
+# Charlie       94    92       89
+
+print(wide.equals(long.pivot(index='student', columns='subject', values='score')))
+# True
+
 back = long.pivot(index='student', columns='subject', values='score').reset_index()
 display(back)
 # subject  student  english  math  science   <- 'subject' is a leftover header label
@@ -607,7 +616,9 @@ print(back.equals(wide_data))
 # True
 ```
 
-`pivot()` sorts row and column labels, so restore the original order when it matters. `equals()` ignores the leftover header label, so drop it even when `equals()` already returns `True`; a stricter check such as `pd.testing.assert_frame_equal(back, wide_data)` reports it as a difference. With two identifier columns, `index=['id1', 'id2']` builds a two-level row index, and `reset_index()` turns both levels back into columns.
+Melting `wide_data` and pivoting the result puts every score back in the cell it came from, and carrying the values back is what makes the two operations inverses. The frame itself does not come back equal: `long.pivot(index='student', columns='subject', values='score').equals(wide_data)` is `False`, because the pivot moved `student` into the row labels, left `subject` behind as a header label, and sorted the columns into `english, math, science`. The fixups in the snippet undo those differences—`reset_index()` restores the `student` column, `back.columns.name = None` clears the leftover label, and reselecting the columns restores the original order, after which `equals()` returns `True`. With two identifier columns, `index=['id1', 'id2']` builds the two-level row index from earlier in this lecture, and `reset_index()` turns both levels back into columns.
+
+If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops: pandas reports `ValueError: Index contains duplicate entries, cannot reshape`. First determine whether the duplicates are data errors or repeated observations. If repeated observations are valid, `pivot_table()` aggregates them into one cell before reshaping, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
 
 If a reshape feels mysterious, write down what one row represents before choosing `pivot()` or `melt()`—your future self will thank you for the labels.
 

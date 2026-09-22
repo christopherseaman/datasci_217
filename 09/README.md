@@ -29,7 +29,7 @@ A **single series** is one history, such as one patient's weight. A **panel** st
 
 ## Types of Time Series
 
-*"Time series data comes in many flavors - some are as regular as a Swiss watch, others as unpredictable as a toddler's nap schedule. The key is knowing which one you're dealing with!"*
+*"Time series data comes in many flavors - some are as regular as a Swiss watch, others as unpredictable as a toddler's nap schedule."*
 
 ![Regular series tick along like clockwork, while irregular series jump around like a medical appointment schedule.](media/types_of_time_series.png)
 
@@ -44,11 +44,11 @@ A **single series** is one history, such as one patient's weight. A **panel** st
 
 # Date and Time Data Types
 
-*Think of datetime objects as the Swiss Army knife of temporal data - they can represent any moment in time with precision down to microseconds, and `pandas` makes them incredibly powerful for analysis.*
+A lab extract arrives with `collected_at` and `resulted_at` stored as text, like `"2023-12-25 14:30:00"`. Text answers none of the questions a turnaround report asks: subtracting one string from another to get the hours between collection and result raises `TypeError`, and "was this drawn on the night shift?" needs something that knows `14` is an hour. Lecture 05 treated a column of the wrong type as a cleaning problem, and the type wanted here is a **datetime**: one value holding year, month, day, hour, minute, and second, which can be compared, subtracted, and rewritten in any display format.
+
+Python's standard library builds these values one at a time, which is what a script needs to stamp a report or schedule a follow-up visit; `pandas` applies the same rules to a whole column at once. Both call the two directions **parsing** (text in, datetime out) and **formatting** (datetime in, text out). *A datetime is the Swiss Army knife of temporal data - precise down to the microsecond, and `pandas` wields a million at a time.*
 
 ## Python datetime Module
-
-The Python standard library provides `datetime` for working with dates and times; `pandas` builds on it. *Think of it as learning to walk before you can run - except in this case, walking is parsing dates and running is resampling multi-site clinical trial data.*
 
 ### Reference Card: Python `datetime`
 
@@ -82,7 +82,7 @@ December 25, 2023 at 02:30 PM
 
 ## pandas DatetimeIndex
 
-Dates usually arrive as text, like `"3/10/2024 08:00"` in a CSV column. Text sorts character by character (so `"3/10/2024"` lands before `"3/9/2024"`) and cannot be subtracted. `pd.to_datetime()` (Lecture 05's cleaning workflow) converts it into **`datetime64`** values; each single value is a **`Timestamp`**, and a missing or unparseable date becomes **`NaT`** ("Not a Time"), the datetime version of `NaN`.
+Dates usually arrive as text in a CSV column, like `"3/10/2024 08:00"`, and text sorts character by character: `"3/10/2024"` lands before `"3/9/2024"`. `pd.to_datetime()` converts a whole column into **`datetime64`** values; each single value is a **`Timestamp`**, and a missing or unparseable date becomes **`NaT`** ("Not a Time"), the datetime version of `NaN`.
 
 When those timestamps become the row labels, the index is a **`DatetimeIndex`**. Selecting "all of March", resampling by week, and rolling over the last two hours all read this index. Sort it first: slicing an unsorted DatetimeIndex with date strings raises `KeyError`.
 
@@ -95,6 +95,8 @@ When those timestamps become the row labels, the index is a **`DatetimeIndex`**.
 | Check | `df.index.is_monotonic_increasing` | Confirm order before slicing | `True` / `False` |
 | Parts | `df.index.month`, `.year`, `.hour`, `.day_name()` | Calendar parts from the index | Index of numbers or names |
 | Parts | `s.dt.month`, `s.dt.year`, `s.dt.hour` | The same parts from a datetime column | Series |
+| Parts | `s.dt.dayofweek` | Day of the week as a number, Monday `0` through Sunday `6`; `.dt.day_name()` spells it out | Series of `int32` |
+| Parts | `s.dt.dayofyear` | Day of the year, `1` through 365, or 366 in a leap year | Series of `int32` |
 | Round | `s.dt.floor('h')` | Round each time down to the hour (`'D'` for the day) | Series |
 | Duration | `pd.Timedelta(days=2)`, `pd.Timedelta(hours=6)` | pandas' `timedelta`; add it to or subtract it from a timestamp | `Timedelta` |
 
@@ -125,7 +127,7 @@ Index([8, 20, 8], dtype='int32', name='recorded_at')
 
 ## Date Range Generation
 
-*Want every Monday? Got it. Business days only? No problem. Last Friday of each month? Absolutely. Third Wednesday? Why not! `pandas` can generate pretty much any date pattern you can imagine - and some you probably can't.*
+*Every Monday? Got it. Business days only? No problem. `pandas` generates just about any date pattern you can imagine - and some you probably can't.*
 
 ### Reference Card: Frequency Aliases
 
@@ -164,7 +166,7 @@ The business-day range skips the weekend of January 6-7.
 
 ## Frequency Inference
 
-Data rarely arrives labeled with how often it was measured. `pd.infer_freq()` reads a sorted DatetimeIndex and returns the alias from the table above when the spacing is perfectly regular, or `None` when it is irregular, such as clinic visits. `asfreq()` lays a series onto a new regular grid without combining anything: it keeps the values that land exactly on the grid and inserts `NaN` elsewhere.
+Data rarely arrives labeled with how often it was measured. `pd.infer_freq()` reads a sorted DatetimeIndex and names the spacing, or returns `None` when it is irregular, as with clinic visits. `asfreq()` lays a series onto a regular grid without combining anything: values that land exactly on the grid are kept, and the rest of the grid is `NaN`.
 
 ### Reference Card: Frequency and Alignment
 
@@ -198,7 +200,7 @@ A blood-pressure reading means more next to the previous one: did it go up or do
 
 ![Lag looks back, lead looks ahead, and the difference is the day-to-day change.](media/shifting_lagging.png)
 
-Shifting counts rows, not time: with irregular clinic visits, the "previous" reading can be one week or four weeks back. Time windows, later in this lecture, look back a fixed amount of time instead.
+Shifting counts rows, not time: with irregular clinic visits, the "previous" reading can be one week or four weeks back. Time windows, later in this lecture, count elapsed time instead.
 
 ### Reference Card: Lagged Features
 
@@ -272,7 +274,7 @@ February 2024 has 29 days (a leap year), and the range keeps both January 30 and
 
 ## Advanced Time Series Selection
 
-Readings that carry a time of day can also be selected by it: compare daytime with overnight ICU readings, or keep only readings taken during clinic hours.
+Readings that carry a time of day can also be selected by it: daytime against overnight ICU readings, or only the readings taken during clinic hours.
 
 ### Reference Card: Time-of-Day Selection
 
@@ -310,7 +312,7 @@ First 3 days: (72,)
 
 # Resampling and Frequency Conversion
 
-*Resampling is like changing the lens on your camera - you can zoom in to see more detail (higher frequency) or zoom out to see the big picture (lower frequency).*
+*Resampling is like changing the lens on your camera: zoom in for detail, zoom out for the big picture.*
 
 A bedside monitor records heart rate every minute, but a daily report needs one number per hour or per day. **Resampling** converts a time series from one frequency to another. **Downsampling** combines many readings into fewer, longer bins (minutes to hours, days to months). **Upsampling** asks for more, shorter slots than the data has (monthly to daily), so most new slots start empty.
 
@@ -318,7 +320,7 @@ A bedside monitor records heart rate every minute, but a daily report needs one 
 
 ## Basic Resampling
 
-`resample()` works like Lecture 08's `groupby()`: it splits the rows into groups, here time bins, and then needs an aggregation such as `.mean()` to combine each group into one row.
+`resample()` works like Lecture 08's `groupby()`: it splits rows into groups - here, time bins - and needs an aggregation such as `.mean()` to combine each group into one row.
 
 ### Reference Card: Resampling Frequencies
 
@@ -386,17 +388,17 @@ print(readings.resample('2h').agg(['mean', 'count']))
 2024-03-01 10:00:00  79.000000      2
 ```
 
-Unlike `asfreq()`, which keeps only readings that land exactly on a grid label, `resample()` assigns every reading to a bin.
+Unlike `asfreq()`, `resample()` assigns every reading to a bin.
 
 # LIVE DEMO!
 
 # Resampling Summaries, Grids, and Groups
 
-A daily ICU report needs more than one average per day: the highest heart rate flags a crisis, and the reading count shows whether the monitor was even connected. Some tasks go the other way and lay sparse readings onto a finer grid, and most clinical tables stack many patients, whose histories must be resampled separately so their readings never mix.
+A daily ICU report needs more than one average per day: the highest heart rate flags a crisis, and the reading count shows whether the monitor was even connected. Other tasks run the opposite way, laying sparse readings onto a finer grid. And most clinical tables stack many patients, whose histories have to be resampled separately so that one patient's readings never mix into another's.
 
 ## Resampling with Different Aggregations
 
-Any aggregation that works after `groupby()` works after `resample()`, including several at once, different ones per column, and Lecture 08's named aggregation.
+Any aggregation that works after `groupby()` works after `resample()`, including several at once and Lecture 08's named aggregation.
 
 ### Reference Card: Resampling Aggregations
 
@@ -445,7 +447,7 @@ The first weekly bin holds only January 1, so its standard deviation is `NaN`.
 
 ## Upsampling: Filling a Finer Grid
 
-The slots that upsampling adds start empty, such as the hourly slots between readings taken three hours apart. You choose what goes in them: leave them missing, carry the last reading forward, or draw a straight line between readings (Lecture 05's `ffill()` and `interpolate()`, applied to the new slots).
+The slots that upsampling adds start empty - the hourly slots between readings taken three hours apart, say. You choose what goes in them: leave them missing, carry the last reading forward, or draw a straight line between readings (Lecture 05's `ffill()` and `interpolate()`).
 
 ### Reference Card: Upsampling
 
@@ -476,9 +478,9 @@ print(pd.DataFrame({
 
 ## Resampling Each Patient Separately
 
-A vitals table usually stacks many patients. Resampling the whole table would average patient P1's heart rate with patient P2's in the same two-hour bin, which describes no one. Group by the entity first and resample inside each group, the same split-apply-combine pattern as `groupby()` in Lecture 08.
+A vitals table usually stacks many patients. Resampling the whole table would average patient P1's heart rate with patient P2's in the same two-hour bin, which describes no one. Group by the entity first and resample inside each group, the split-apply-combine pattern from Lecture 08.
 
-For the five readings in the first snippet below, the two approaches give:
+For the five readings in the snippet below:
 
 | Two-hour bin | Whole table (mixes patients) | P1 only | P2 only |
 | --- | --- | --- | --- |
@@ -575,6 +577,7 @@ Rolling is the partner of resampling: `resample('W').mean()` returns one row per
 - `ts.rolling('7D').mean()`: Mean of readings in the 7 days ending at each row; needs a sorted DatetimeIndex; the first rows are not `NaN`
 - `ts.rolling('2h', closed='left').mean()`: The same idea, excluding the current row (a past-only window)
 - `a.rolling(30).corr(b)`: Rolling correlation between two aligned series, such as daily heart rate and blood pressure
+- `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shades the band in the figure above, on a Lecture 07 `Axes`; `alpha` keeps the lines readable, and `label=` names the band in the legend
 
 ### Code Snippet: Rolling Statistics
 
@@ -630,7 +633,7 @@ At 11:00, the count window averages in the 08:00 reading from three hours earlie
 
 ## Advanced Rolling Operations
 
-A **centered** window looks both backward and forward from each row, `min_periods` lets a window compute before it is full, and `apply()` runs your own function on each window. An **expanding window** grows from the first row to the current one, giving a running average of everything so far.
+A **centered** window looks both backward and forward from each row, `min_periods` lets a window compute before it is full, and `apply()` runs your own function on each window. An **expanding window** grows from the first row to the current one.
 
 ### Reference Card: Rolling Options
 
@@ -759,7 +762,7 @@ Localizing assumes every clock reading names exactly one instant, and twice a ye
 | 2024-11-03 06:00 | 01:00 EST | UTC-5 |
 | 2024-11-03 07:00 | 02:00 EST | UTC-5 |
 
-By default, `tz_localize()` stops with a `ValueError` at these times. `ambiguous='NaT'` and `nonexistent='NaT'` turn them into `NaT` instead, so you can count them and set them aside rather than let pandas guess.
+By default, `tz_localize()` stops with a `ValueError` at these times; `ambiguous='NaT'` and `nonexistent='NaT'` turn them into `NaT` instead, rather than letting pandas guess.
 
 ### Reference Card: Daylight-Saving Arguments
 
@@ -796,7 +799,7 @@ Set aside: 2
 23
 ```
 
-Report how many readings were set aside, so anyone reading the results knows what was excluded.
+Report how many readings were set aside, so readers know what was excluded.
 
 # Entity-Aware Features and Past-Only Windows
 
@@ -805,7 +808,7 @@ Picture an early-warning score that runs at 11:00 on an ICU ward. For each patie
 - The vitals table is a panel that stacks every patient together. A plain `shift(1)` hands patient P2's first reading the last reading of patient P1.
 - A feature quietly uses information from after 11:00, such as a centered window or a lab drawn at 09:30 but not resulted until 11:15. Using information that did not exist yet at the moment of use is **future leakage**; Lecture 10 returns to it when evaluating models.
 
-The fix for the first mistake is Lecture 08's split-apply-combine with the entity column as the group key: split by patient, compute inside each ordered history, then combine. The fix for the second is to build only **past-only features**, which use rows strictly before the current row. The **prediction time** is the moment a feature would be used, and a value is **available** only if it was recorded, or resulted, by then.
+The fix for the first mistake is again Lecture 08's split-apply-combine, with the entity column as the group key. The fix for the second is to build only **past-only features**, which use rows strictly before the current row. The **prediction time** is the moment a feature would be used, and a value is **available** only if it was known by then.
 
 ## Grouped Lags and Past-Only Windows
 
@@ -886,7 +889,7 @@ At P1's 11:30 reading, the previous two readings average 76, but nothing was rec
 
 ## Availability at Prediction Time
 
-A timestamp says when something happened, not when anyone could know it. A lab sample is collected, then resulted later; a monthly case count is published weeks after the month ends. Compare the time a value became known with the prediction time.
+A timestamp says when something happened, not when anyone could know it. A lab sample is collected, then resulted later; a monthly case count is published weeks after the month ends.
 
 ### Reference Card: Availability and Chronological Blocks
 
@@ -917,7 +920,7 @@ The creatinine sample was drawn before 11:00, but its result did not exist until
 
 # Time Series Visualization
 
-Lecture 07's plotting principles carry over to time: put time on the x-axis, keep chronological order, make gaps visible, and label the time zone when it matters. Draw the readings as a line and overlay a summary such as a rolling mean, keeping the raw series visible so the smoother does not hide variation.
+Lecture 07's plotting principles carry over to time: put time on the x-axis, keep chronological order, make gaps visible, and label the time zone when it matters. Draw the readings as a line and overlay a summary such as a rolling mean, so the smoother never hides the variation.
 
 ## Basic Time Series Plots
 

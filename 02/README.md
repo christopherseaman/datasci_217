@@ -542,44 +542,51 @@ The fields are still text; convert with `int()` before doing arithmetic.
 
 ## Basic File I/O Operations
 
-File **I/O** means input/output: read saved text into Python, or write results for later. `open()` returns a **file handle**, Python's connection to the file, and a `with` block closes it for you. Mode `"w"` replaces the whole file, so check the name first.
+File **I/O** means input/output: read saved text into Python, or write results for later. `open()` returns a **file handle**, Python's connection to the file, and a `with` block closes it for you. Mode `"w"` replaces the whole file, so check the name first. Build that filename with **`Path`**, the path type in the standard library's `pathlib` module: `Path("output") / "grades.txt"` joins the parts with `/` instead of gluing strings and separators together, and `.mkdir(exist_ok=True)` creates a folder that may already exist. A `Path` works anywhere a filename string does, `open()` included, so these are one system and not two rival ones.
 
 ```text
-Python text → write → grades.txt → read → saved text
-     └──────────── compare with == ───────────┘
+Python text → write → output/grades.txt → read → saved text
+     └──────────────── compare with == ───────────────┘
 ```
 
-### Reference Card: Basic File I/O Operations
+### Reference Card: Reading and Writing Files
 
-- `open(file, mode)`: Open file with specified mode
-- `encoding="utf-8"`: Set the text encoding explicitly when reading or writing
-- `'r'`: Read mode (default)
-- `'w'`: Write mode (overwrites existing files)
-- `'a'`: Append mode (adds to existing files)
-- `'x'`: Create mode (fails if file exists)
-- `file.read()`: Read entire file content
-- `file.readline()`: Read single line
-- `file.readlines()`: Read all lines into list
-- `file.write(string)`: Write string to file
-- `file.close()`: Close file handle
-- `with open(...) as file:`: Close the handle automatically when the block ends
+| Task | Call | Purpose & arguments | Typical output |
+| --- | --- | --- | --- |
+| Open | `with open(path, mode, encoding="utf-8") as file:` | Connect to a file and close the handle when the block ends. | File handle |
+| Open | Modes `"r"`, `"w"`, `"a"`, `"x"` | Read (the default); replace the file; add to its end; create, failing if it exists. | — |
+| Read | `file.read()` | The whole file as one string. | `'Alice: 95\nBob: 87\n'` |
+| Read | `file.readlines()` | One list item per line, newlines kept. | `['Alice: 95\n', 'Bob: 87\n']` |
+| Write | `file.write(text)` | Write one string; you supply the `\n`. | Characters written |
+| Write | `print(text, file=file)` | Write one line, newline included. | — |
+| Path | `from pathlib import Path` | Load the path type; once per file. | — |
+| Path | `Path("output") / "grades.txt"` | Join path parts with `/`; either side may be a string. | `PosixPath('output/grades.txt')` |
+| Path | `path.mkdir(exist_ok=True)` | Create the folder; `exist_ok=True` accepts one already there, `parents=True` also makes missing parent folders. | — |
+| Path | `path.open(mode, encoding="utf-8")` | Open this path; the same modes as `open()`. | File handle |
+| Path | `path.exists()` | Whether the file or folder is already there. | `True` / `False` |
+| Path | `path.read_text(encoding="utf-8")` / `path.write_text(text, encoding="utf-8")` | Read or replace a whole small file in one call, with no `with` block. | `'Alice: 95\n'` / characters written |
 
-### Code Snippet: Write, Read Back, Append
+### Code Snippet: Build a Path, Write, Read Back, Append
 
 ```python
+from pathlib import Path
+
 results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
 
-# Write: "w" creates grades.txt, or replaces it if it exists
-with open("grades.txt", "w", encoding="utf-8") as file:
+output_dir = Path("output")
+output_dir.mkdir(exist_ok=True)      # no error when output/ already exists
+grades_path = output_dir / "grades.txt"   # output/grades.txt
+
+# Write: "w" creates the file, or replaces it if it exists
+with open(grades_path, "w", encoding="utf-8") as file:
     for result in results:
         file.write(f"{result}\n")
 
-# Read back and compare
-with open("grades.txt", "r", encoding="utf-8") as file:
+# Read back and compare; path.open(...) is open(path, ...) started from the path
+with grades_path.open("r", encoding="utf-8") as file:
     saved_text = file.read()
 print(saved_text, end="")
-expected_text = "\n".join(results) + "\n"
-print("Saved text matches:", saved_text == expected_text)
+print("Saved text matches:", saved_text == "\n".join(results) + "\n")
 
 # Append: "a" adds to the end; print(..., file=file) adds the newline
 with open("log.txt", "a", encoding="utf-8") as file:
@@ -593,8 +600,6 @@ Charlie: 92
 Saved text matches: True
 ```
 
-`log.txt` gains a line every run: `"a"` never removes what is already there.
-
 ## Minimal Exception Handling
 
 In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback, and real data does have `"not available"` sitting in a numeric column. An **exception** is Python's report of such a problem; `try`/`except` lets your script respond instead of stopping. Catch only the exception you expect, so real bugs still show up.
@@ -602,10 +607,10 @@ In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback, 
 ### Reference Card: Exceptions You Will Meet
 
 - `ValueError`: Right type, unusable value, such as `float("not available")`.
-- `FileNotFoundError`: `open()` on a path that does not exist.
-- `OSError`: Any file-system failure, including missing paths and denied permissions.
+- `FileNotFoundError`: `open()` on a path that does not exist; one kind of `OSError`, the family of file-system failures.
 - `try:` / `except ValueError as error:`: Run the risky line; on that error only, run the handler with the message in `error`.
 - `else:`: Runs only when the `try` block succeeded.
+- `assert condition, message`: Nothing happens when `condition` is true; raise `AssertionError` showing `message` when it is false.
 
 ### Code Snippet: Handle Invalid Numeric Text
 
@@ -622,6 +627,18 @@ else:
 
 ```text
 Could not parse score: could not convert string to float: 'not available'
+```
+
+Some failures are not errors to catch but expectations to state. `assert condition, message` is how a script or notebook says “this is what I expect to be true here”: a true condition does nothing and the next line runs, while a false one stops the script with an `AssertionError` whose last line is your message. Later demos use `assert` as a visible checkpoint after each step, so silence means the step did what it claimed.
+
+### Code Snippet: State What You Expect
+
+```python
+scores = [85, 92, 78]
+assert len(scores) == 3, "expected three scores"   # true: nothing happens, the script goes on
+print(f"Checked {len(scores)} scores")             # Checked 3 scores
+assert min(scores) >= 80, f"a score is below 80: {min(scores)}"
+# AssertionError: a score is below 80: 78
 ```
 
 ## Break(points) the Ice
@@ -646,19 +663,11 @@ def main():
     average = sum(grades) / len(grades)
     print(f"Average grade: {average:.1f}")
 
-
 if __name__ == "__main__":
     main()
 ```
 
-Saved as `analysis.py`, these two commands show the difference:
-
-```bash
-python3 analysis.py
-python3 -c "import analysis"
-```
-
-The first prints `Average grade: 87.8`. The second prints nothing: importing ran the `def` but skipped `main()`.
+Saved as `analysis.py`, `python3 analysis.py` prints `Average grade: 87.8`, while `python3 -c "import analysis"` prints nothing: importing ran the `def` but skipped `main()`.
 
 ## Document How to Run It
 
@@ -671,11 +680,9 @@ Every repository needs a note saying what it is and how to run it. On GitHub tha
 - `*italic text*`: Emphasis, shown as *italic text*.
 - Backticks around text, such as `mean()`: Code inside a sentence.
 - Three backticks on their own line, optionally with a language name such as `bash`: Start a code block; three more close it.
-- `~~~` on its own line: Opens and closes a code block too, used below because the example already sits inside a backtick block.
 - `- item` or `1. item`: Bulleted or numbered list.
 - `[text](url)`: Clickable link.
 - `![alt](url)`: Image with descriptive alternative text.
-- `| col1 | col2 |`: Table row; follow the header with a separator row, `| --- | --- |`.
 - **Ctrl+K** then **V** (**Cmd+K** then **V** on Mac), or right-click the `.md` tab → **Open Preview to the Side**: Show the rendered preview beside the file.
 
 ### Code Snippet: Markdown Documentation
@@ -686,16 +693,11 @@ Every repository needs a note saying what it is and how to run it. On GitHub tha
 ## Overview
 Analyzes study time vs. performance.
 
+## Run
+Run `python3 analysis.py` from this folder.
+
 ## Key Findings
 - More hours → higher grades
-- Regular habits help
-
-## Example Output
-~~~python
-print("Analysis complete")
-~~~
 ```
-
-The preview shows a large title, three headings, a paragraph, a two-item list, and a shaded code block.
 
 # LIVE DEMO!
