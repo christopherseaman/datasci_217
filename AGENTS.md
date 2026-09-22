@@ -23,6 +23,7 @@ The lecture format comes from DataSci 223's lecture style and formatting guide (
 - Build knowledge incrementally. Order topics so each uses only what came before, and teach how to get something working before adding safeguards. Python content follows McKinney's *Python for Data Analysis* progression.
 - When a section develops one tool or technique, a good order is: the problem it solves → the basic tool → options and variations → pitfalls and safeguards. Use this where it fits; not every section or subsection needs every step.
 - Topics form blocks that each end at a demo break; each demo practices the block before it using only material already taught.
+- Size: aim for about 850 lines and at most 3,000 words of prose (everything outside code fences, tables, and headings) per lecture. Space the demo breaks roughly evenly, with a little more material in the first block than the later ones. Measure with `python3 scripts/lecture_metrics.py`.
 - Keep lectures lean and practical: essential daily data-science tools belong in the lecture; advanced variations, theory, and specialized tools go in `BONUS.md`. The main path comes first, and alternatives (such as standard-library `venv` or Conda beside uv) follow it, labeled as alternatives.
 - Everything the demos and the assignment need is taught in this lecture or an earlier one, not only in `BONUS.md`.
 - No summary or recap; the lecture ends at its last demo break.
