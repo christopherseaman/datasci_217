@@ -379,17 +379,22 @@ def _followup_text(root: Path) -> str:
 def _listed_patients(root: Path, known: frozenset[str]) -> set[str]:
     """The patient IDs named in the follow-up list, ignoring anything else on the page.
 
-    A line is read for IDs unless it is the `Cutoff:` or `Reason:` line, so a
-    heading, a blank line, a separator, or a bullet marker is simply ignored.
+    A line counts only when the whole line is one patient ID, allowing a bullet
+    marker and trailing punctuation. That is what the README promises, and it
+    matches the shape check the student runs locally, so a heading or a note
+    that happens to mention a patient cannot change the graded answer.
     """
     listed: set[str] = set()
     for line in _followup_text(root).splitlines():
-        label, separator, _ = line.partition(":")
-        if separator and _label(label) in LABEL_LINES:
-            continue
-        for token in BARE_TOKEN.findall(line):
-            if token.casefold() in known:
-                listed.add(token.casefold())
+        entry = line.strip()
+        label, separator, _ = entry.partition(":")
+        if separator:
+            if _label(label) in LABEL_LINES:
+                continue
+            entry = label.strip()
+        entry = entry.lstrip("-*\u2022 \t").strip().rstrip(",;")
+        if entry.casefold() in known:
+            listed.add(entry.casefold())
     return listed
 
 

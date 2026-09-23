@@ -92,9 +92,11 @@ def check_guide_code(sources):
     """Every block the guide quotes as demo code is code the demo really runs."""
     edit = only(fences("python"), ".upper()")
     original = edit.replace(".upper()", "")
-    # Line-exact, so the guide cannot print an edit at an indentation a student cannot paste.
-    assert original in sources["module_usage_demo.py"].splitlines(keepends=True), (
-        f"the guide prints the checkpoint edit as a line the script does not have:\n{edit}"
+    # Contiguous and indentation-exact, so a student can paste the block as printed.
+    # A published page can flatten the indent of a block that starts mid-nesting, so the
+    # guide quotes enough context for its first line to sit at its own indent level.
+    assert original.rstrip("\n") in sources["module_usage_demo.py"], (
+        f"the guide prints the checkpoint edit as code the script does not have:\n{edit}"
     )
     for block in fences("python"):
         if block == edit:                     # the intentional edit, checked above

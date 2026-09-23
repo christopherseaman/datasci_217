@@ -15,7 +15,7 @@ Without cloning, use **Download raw file** on GitHub for each of the four files 
 
 # 1. Git workflow
 
-From the repository root, create `scratch/git-practice`, then use **File → Open Folder…** to open it in VS Code. Open **View → Source Control** (Ctrl+Shift+G, including Control on macOS) and select **Initialize Repository**. If the initial branch is not `main`, open **View → Command Palette…** (Ctrl+Shift+P on Windows/Linux, Cmd+Shift+P on macOS), select **Git: Create Branch**, and name it `main`.
+Make a practice folder **outside** your cloned course repository, such as `ds217-practice` in your home folder, and use **File → Open Folder…** to open it in VS Code. It has to sit outside the clone: VS Code hides **Initialize Repository** for any folder that is already inside a repository, so a folder made under the clone never offers the button. Open **View → Source Control** (Ctrl+Shift+G, including Control on macOS) and select **Initialize Repository**. If the initial branch is not `main`, open **View → Command Palette…** (Ctrl+Shift+P on Windows/Linux, Cmd+Shift+P on macOS), select **Git: Create Branch**, and name it `main`.
 
 Create `notes.md` with `# Practice notes`. In Source Control, stage it with the `+` button, enter `Start practice notes`, and select the visible **Commit** button. The changes list is empty after the commit: the working tree is clean.
 
@@ -23,11 +23,12 @@ Click the branch name in the status bar → **Create new branch…** → `experi
 
 Click the branch name → select `main`. Open the Command Palette, select **Git: Merge Branch…**, and choose `experiment`. The experiment change is now committed on `main`.
 
-Alternatively, start at the repository root (with a `scratch` directory) and create the practice repository using terminal commands:
+Alternatively, create the same practice repository from the terminal. Start in your home folder, again outside the clone:
 
 ```bash
-mkdir -p scratch/git-practice
-cd scratch/git-practice
+cd ~
+mkdir -p ds217-practice
+cd ds217-practice
 git init
 git checkout -b main
 echo "# Practice notes" > notes.md
@@ -44,12 +45,12 @@ git status                    # committed: working tree clean
 git checkout main
 git merge experiment
 git log --oneline             # shows both commits; press q if needed
-cd ../../02/demo
+cd -                          # back to where you started
 ```
 
 ## Less typing: recall and edit
 
-Open `scratch/git-practice` with **File → Open Folder**, then **Terminal → New Terminal**:
+Open `ds217-practice` with **File → Open Folder**, then **Terminal → New Terminal**:
 
 1. Type `cat no`, press **Tab** to complete `notes.md`, then **Enter**. Expect the practice heading and experiment note.
 2. Press **↑** to recall it, then **Ctrl+A** to move to the start. Press **Delete** three times to remove `cat` (on Mac, **Fn+Delete**), type `git diff --`, and press **Ctrl+E**. The line should read `git diff -- notes.md`.
@@ -267,11 +268,14 @@ Open `output/vitals_report.txt` in the Explorer: it holds the five report lines 
 
 ## Watch the checkpoint fire
 
-An `assert` is worth having only if you know what it looks like when it fails. Save different text than the script built by replacing the `report_file.write(report_text)` line inside the first `with` block. That line sits two levels in, inside `main()` and inside the `with`, so keep the eight spaces shown here:
+An `assert` is worth having only if you know what it looks like when it fails. Save different text than the script built: find the first `with` block in `main()` and add `.upper()` to what it writes, so the two lines read
 
 ```python
+    with open(report_path, "w", encoding="utf-8") as report_file:
         report_file.write(report_text.upper())
 ```
+
+Both lines are already in the file; the only edit is `.upper()`.
 
 Save, run `python3 module_usage_demo.py` again, and the report reads back in capitals. The printed comparison answers `False`:
 

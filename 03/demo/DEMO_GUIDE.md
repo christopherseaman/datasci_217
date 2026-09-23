@@ -39,9 +39,12 @@ uv pip install -r requirements.txt                      # + numpy==2.3.3
 python -c "import numpy as np; print(np.__version__)"   # 2.3.3
 deactivate
 cd ../..
+source .venv/bin/activate                               # back in the demo environment
 ```
 
-Assignment 03 repeats this check with its own `.python-version` and `requirements.txt`.
+The last line matters: activating one environment inside another saves the PATH from before *both*, so a single `deactivate` drops you out of the demo environment too. Re-activating brings the `(.venv)` prompt back, and the rest of this guide needs it.
+
+Assignment 03 records its own environment the same way, with a `.python-version` and a `requirements.txt`.
 
 # 1. Shell Pipeline
 

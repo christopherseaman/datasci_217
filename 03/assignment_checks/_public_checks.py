@@ -376,22 +376,20 @@ def check_monitor_counts(root: Path) -> None:
     expected = {monitor.casefold(): count for monitor, count in monitor_counts(load_dataset(root)).items()}
     problems: list[str] = []
     for path in timestamped:
-        found = read_count_pairs(path.read_text(encoding="utf-8").lstrip("﻿"))
-        if found == expected:
+        found = read_count_pairs(path.read_text(encoding="utf-8").lstrip("\ufeff"))
+        # Every monitor has to be there with the right count. A label that is not a
+        # monitor is an extra line, which the README says is ignored: a run total or
+        # a title must not cost the student this check.
+        if all(found.get(monitor) == count for monitor, count in expected.items()):
             return
         if not found:
             problems.append(f"{path.name} holds no `count monitor` pairs.")
             continue
         missing = sorted(set(expected) - set(found))
-        unknown = sorted(set(found) - set(expected))
         wrong = sorted(monitor for monitor in set(found) & set(expected) if found[monitor] != expected[monitor])
         details = []
         if missing:
             details.append("no count for " + ", ".join(monitor.upper() for monitor in missing))
-        if unknown:
-            details.append(
-                "a count for " + ", ".join(unknown) + ", which is not a monitor in the data"
-            )
         if wrong:
             details.append("the wrong count for " + ", ".join(monitor.upper() for monitor in wrong))
         problems.append(f"{path.name} has " + "; ".join(details) + ".")
