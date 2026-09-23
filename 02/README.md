@@ -287,7 +287,7 @@ data/raw/*.csv
 
 ![xkcd 1429, “Data”: a grammar joke contrasting polling data with the Star Trek character Data.](media/xkcd_1429.png)
 
-*Data* by xkcd — in Python, everything is an object. In Star Trek, Data is too.
+*Data* by xkcd: in Python, everything is an object. In Star Trek, Data is too.
 
 Lecture 01 stored one value per variable and looped over a short list of numbers. Health data needs more structure: a patient has a list of blood-pressure readings, a visit record pairs an ID with a date, a session has a set of patient IDs. Python's containers hold these, f-strings print results people can read, and functions name a job you repeat.
 
@@ -556,14 +556,14 @@ Python text → write → output/vitals.txt → read → saved text
 | Task | Call | Purpose & arguments | Typical output |
 | --- | --- | --- | --- |
 | Open | `with open(path, mode, encoding="utf-8") as file:` | Connect to a file and close the handle when the block ends. | File handle |
-| Open | Modes `"r"`, `"w"`, `"a"`, `"x"` | Read (the default); replace the file; add to its end; create, failing if it exists. | — |
+| Open | Modes `"r"`, `"w"`, `"a"`, `"x"` | Read (the default); replace the file; add to its end; create, failing if it exists. | n/a |
 | Read | `file.read()` | The whole file as one string. | `'P001: 128 mmHg\nP002: 142 mmHg\n'` |
 | Read | `file.readlines()` | One list item per line, newlines kept. | `['P001: 128 mmHg\n', 'P002: 142 mmHg\n']` |
 | Write | `file.write(text)` | Write one string; you supply the `\n`. | Characters written |
-| Write | `print(text, file=file)` | Write one line, newline included. | — |
-| Path | `from pathlib import Path` | Load the path type; once per file. | — |
+| Write | `print(text, file=file)` | Write one line, newline included. | n/a |
+| Path | `from pathlib import Path` | Load the path type; once per file. | n/a |
 | Path | `Path("output") / "vitals.txt"` | Join path parts with `/`; either side may be a string. | `PosixPath('output/vitals.txt')` |
-| Path | `path.mkdir(exist_ok=True)` | Create the folder; `exist_ok=True` accepts one already there, `parents=True` also makes missing parent folders. | — |
+| Path | `path.mkdir(exist_ok=True)` | Create the folder; `exist_ok=True` accepts one already there, `parents=True` also makes missing parent folders. | n/a |
 | Path | `path.open(mode, encoding="utf-8")` | Open this path; the same modes as `open()`. | File handle |
 | Path | `path.exists()` | Whether the file or folder is already there. | `True` / `False` |
 | Path | `path.read_text(encoding="utf-8")` / `path.write_text(text, encoding="utf-8")` | Read or replace a whole small file in one call, with no `with` block. | `'P001: 128 mmHg\n'` / characters written |

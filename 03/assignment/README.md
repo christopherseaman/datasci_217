@@ -35,7 +35,7 @@ Grading happens in two places, and both read only your committed artifacts. Neit
 | Where | What it checks | What it cannot tell you |
 | --- | --- | --- |
 | `python check_assignment.py`, in your repository | The shape of each artifact: the file is there, it is readable text, it carries the required labels, and each value is a number or a label in a range a clinician would accept. | Whether a value is right. The answers are not in your repository. |
-| GitHub Actions, on every push | The same shape checks, plus every answer compared with the value recomputed from `data/bp_readings.csv`. | — |
+| GitHub Actions, on every push | The same shape checks, plus every answer compared with the value recomputed from `data/bp_readings.csv`. | n/a |
 
 Run the local checks to catch a missing file, a missing key, or a typo before you push; push to find out whether the analysis is right.
 
@@ -58,7 +58,7 @@ uv pip install -r requirements.txt
 
 `uv python pin` writes the `.python-version` file for you; commit it.
 
-> **Checkpoint — `.python-version`**
+> **Checkpoint: `.python-version`**
 > Records the course interpreter series, and `requirements.txt` still pins numpy.
 
 ### 1.2 Save an environment probe
@@ -79,7 +79,7 @@ echo "python: $(python --version)" > output/environment.txt
 
 Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path.
 
-> **Checkpoint — `output/environment.txt`**
+> **Checkpoint: `output/environment.txt`**
 > Three lines: a 3.13 interpreter, the numpy version `requirements.txt` pins, and an interpreter path inside your project's `.venv`.
 
 ## Task 2: Count the dataset from the shell
@@ -90,7 +90,7 @@ Build both answers with a shell pipeline (`tail`, `cut`, `sort`, `uniq -c`, `wc 
 
 Save the count of patient records to `output/record_count.txt`. The header line is not a patient record, so drop it before counting.
 
-> **Checkpoint — `output/record_count.txt`**
+> **Checkpoint: `output/record_count.txt`**
 > Holds the number of patient rows in `data/bp_readings.csv`. Only the first number in the file is read, so a bare count or a line with a word after it both work. Counting the whole CSV counts the header too, which is one too many.
 
 ### 2.2 How many patients did each monitor record?
@@ -103,7 +103,7 @@ output/monitor_counts_YYYYMMDD_HHMMSS.txt
 
 Capture the timestamp once into a shell variable and use it in the filename; the lecture's "Variables and Timestamps" reference card gives the `date` format string that produces `YYYYMMDD_HHMMSS`.
 
-> **Checkpoint — `output/monitor_counts_<timestamp>.txt`**
+> **Checkpoint: `output/monitor_counts_<timestamp>.txt`**
 > One line per monitor with that monitor's count and its id, as `uniq -c` prints them. Spacing, separators such as `M01: 58`, and line order do not matter, and earlier timestamped runs may sit beside it.
 
 ## Task 3: Answer the ward's questions with NumPy
@@ -115,7 +115,7 @@ Two definitions the questions use:
 - A patient's **12-hour mean** is the mean of that patient's twelve readings: one number per patient, which is `readings.mean(axis=1)`.
 - A monitor's **average** is the mean of the 12-hour means of the patients it recorded. Every patient has twelve readings, so that is the same number as the mean of all of that monitor's readings.
 
-Grouping patients by their monitor is what the optional Demo 3.4 script does with clinics: `systolic[clinics == clinic]` builds a Boolean mask from a text column and keeps the values belonging to one group. The mask and the values it selects have to be the same length, so group an array holding one value per patient — the 12-hour means — with `monitors`, which also holds one value per patient.
+Grouping patients by their monitor is what the optional Demo 3.4 script does with clinics: `systolic[clinics == clinic]` builds a Boolean mask from a text column and keeps the values belonging to one group. The mask and the values it selects have to be the same length, so group an array holding one value per patient, the 12-hour means, with `monitors`, which also holds one value per patient.
 
 Write one line per answer, a key, a colon, and the value:
 
@@ -151,7 +151,7 @@ How the values are read:
 - "140 mmHg or higher" includes a mean of exactly 140.
 - Keys may appear in any order, spacing is free, and extra lines are ignored.
 
-> **Checkpoint — `output/vitals_summary.txt`**
+> **Checkpoint: `output/vitals_summary.txt`**
 > One `key: value` line for each of the 14 keys above, holding the answers your analysis computed from `data/bp_readings.csv`.
 
 ## Check your work
