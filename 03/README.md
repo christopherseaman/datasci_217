@@ -314,13 +314,13 @@ Lecture 01 used `enumerate()` and Lecture 02 used `sorted()`. Two more built-ins
 ### Code Snippet: Keep related values together
 
 ```python
-names = ["Alice", "Bob", "Charlie"]
-grades = [85, 92, 78]
-for number, name in enumerate(names, start=1):
-    print(f"{number}: {name}")  # 1: Alice, then 2: Bob, 3: Charlie
-for name, grade in zip(names, grades):
-    print(f"{name}: {grade}")   # Alice: 85, then Bob: 92, Charlie: 78
-print(list(reversed(names)))   # ['Charlie', 'Bob', 'Alice']
+patients = ["P001", "P002", "P003"]
+systolic = [128, 142, 118]
+for number, patient in enumerate(patients, start=1):
+    print(f"{number}: {patient}")     # 1: P001, then 2: P002, 3: P003
+for patient, reading in zip(patients, systolic):
+    print(f"{patient}: {reading}")    # P001: 128, then P002: 142, P003: 118
+print(list(reversed(patients)))       # ['P003', 'P002', 'P001']
 ```
 
 ## List Comprehensions
@@ -649,7 +649,7 @@ Use `&` and `|`, not `and` and `or`, and wrap each comparison in parentheses. `s
 
 # NumPy Operations
 
-Indexing answers "which values?"; a **reduction** answers "what are they, taken together?" by collapsing many numbers into one. The same summaries work on a whole array or along one axis, which is how a grades table gives a per-student average and a per-assignment average from the same data.
+Indexing answers "which values?"; a **reduction** answers "what are they, taken together?" by collapsing many numbers into one. The same summaries work on a whole array or along one axis, which is how a table of readings gives a per-patient average and a per-visit average from the same data.
 
 ## Statistical Operations
 
@@ -684,7 +684,7 @@ print(arr.mean())        # 3.5: one mean for the whole array
 
 ## Array Reshaping
 
-Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 grades becomes 3 students by 4 assignments. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
+Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 readings becomes 3 patients by 4 visits. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
 ![NumPy reshaping cheatsheet: only the top-left panel is this lecture's, and only its reshape lines, where -1 asks NumPy to work out that dimension. ravel is another flatten, one that skips the copy when the layout allows it and copies when it does not; order='F' refills column-first; the stacking and 3D panels are further reading — BONUS.md covers stacking.](media/nparray_cheatsheet.png)
 
