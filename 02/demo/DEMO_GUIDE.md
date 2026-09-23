@@ -48,6 +48,23 @@ git log --oneline             # shows both commits; press q if needed
 cd -                          # back to where you started
 ```
 
+The three `git status --short` calls are the point of the exercise: the same file reports a different state each time, and the space before `M` moves.
+
+```text
+ M notes.md      <- working tree: edited, not staged
+M  notes.md      <- staging area: ready for the next commit
+                 <- committed: nothing to report, the tree is clean
+```
+
+`git diff` between the first two shows the line you added, and `git log --oneline` ends with both commits on `main`, newest first:
+
+```text
+<hash> Add experiment note
+<hash> Start practice notes
+```
+
+Your hashes differ from anyone else's; the messages and their order do not.
+
 ## Less typing: recall and edit
 
 Open `ds217-practice` with **File → Open Folder**, then **Terminal → New Terminal**:

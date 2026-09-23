@@ -439,7 +439,9 @@ Every analysis repeats small jobs: average a patient's readings, find the highes
 
 - `def function_name(parameters): ...`: Function definition
 - `return value`: Send a result back to the caller; without a value, the result is `None`
+- `return first, second`: Send back two results at once, as a tuple
 - `result = function_name(arguments)`: Call it and store the return value
+- `first, second = function_name(arguments)`: Unpack a pair into two names, the same unpacking as a tuple literal
 - `def func(param=default_value):`: A default used when the caller omits that argument
 - `"""Description."""` on the first line inside a function: A docstring giving its purpose and return value
 - `if not values:`: An empty collection is false; handle it before dividing by its length
@@ -460,6 +462,27 @@ print(mean_reading([0, 0]))           # 0.0
 ```
 
 Why `None` instead of `0`? A mean of 0 can be real (zero steps recorded); `None` says there was nothing to average. Since `if not result:` also treats `0.0` as missing, test with `result is None`.
+
+### Code Snippet: Return Two Results at Once
+
+A function that reads a file usually has two things to report: what it found, and what it had to leave out. Listing both after `return` sends back a tuple, and the caller unpacks it with two names on the left, exactly as Lists and Tuples unpacked `patient_id, visit_date`.
+
+```python
+def usable_readings(values):
+    """Return the readings in range and how many were out of range."""
+    usable = []
+    skipped = 0
+    for value in values:
+        if 60 <= value <= 250:
+            usable.append(value)
+        else:
+            skipped += 1
+    return usable, skipped
+
+readings, ignored = usable_readings([118, 912, 136])
+print(readings)  # [118, 136]
+print(ignored)   # 1
+```
 
 ## Imports and Modules
 
