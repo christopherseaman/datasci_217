@@ -101,7 +101,7 @@ git diff HEAD~1          # Compare with previous commit
 ### Visiting an older version
 
 ```bash
-# Check out one commit by its hash, read-only
+# Check out one commit by its hash; new commits here belong to no branch
 git checkout abc123
 ```
 
@@ -405,7 +405,7 @@ git merge feature-branch
 ```bash
 # User information
 git config --global user.name "Your Name"
-git config --global user.email "your.email@ucsf.edu"
+git config --global user.email "YOUR GITHUB NOREPLY EMAIL"
 
 # Default editor
 git config --global core.editor "code --wait"
@@ -772,7 +772,7 @@ point = (1, 2)
 lookup = {point: "origin-adjacent"}
 
 unhashable = (1, [2])
-# {unhashable: "not allowed"}  # TypeError: list is unhashable
+# {unhashable: "not allowed"}  # TypeError: unhashable type: 'list'
 ```
 
 ## Exception handling patterns

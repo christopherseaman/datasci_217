@@ -88,7 +88,7 @@ Enter ends a line; Ctrl+C stops `cat`, and the text already written stays in the
 
 # What Python Is Doing
 
-Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files; Python computes with what is inside them—one patient's BMI, then the same calculation for every row of a clinic export.
+Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files. Python computes with what is inside them: one patient's BMI, then the same calculation for every row of a clinic export.
 
 You can give Python code in two ways:
 

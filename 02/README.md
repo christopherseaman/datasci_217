@@ -17,58 +17,57 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 # VS Code Basics
 
-Lecture 01 got you opening folders in VS Code, running terminal commands, and committing with Source Control. Today adds Git branches and Python scripts that import each other: more files, more commands, so this section is about moving faster.
+The **Command Palette** lists every VS Code action by name: type part of a name instead of hunting through menus.
 
-Start with the **Command Palette**. Every VS Code action is listed there by name, so type part of the name instead of hunting through menus.
+![The Command Palette: type after the > to find any VS Code command by name](media/vscode-command-palette.png)
 
 ## Palette Cleanse: Command Palette & Quick Open
 
-- Open Command Palette: **View → Command Palette…**, **Ctrl+Shift+P** (Windows/Linux), **Cmd+Shift+P** (macOS).
-- Quick Open files: **Go → Go to File…**, **Ctrl+P** (Windows/Linux), **Cmd+P** (macOS).
-- Search across files: **View → Search**, **Ctrl+Shift+F** (Windows/Linux), **Cmd+Shift+F** (macOS).
+| Action | Menu | Windows/Linux | macOS |
+| --- | --- | --- | --- |
+| Open the Command Palette | **View → Command Palette...** | **Ctrl+Shift+P** | **Cmd+Shift+P** |
+| Quick Open a file by name | **Go → Go to File...** | **Ctrl+P** | **Cmd+P** |
+| Search across files | **View → Search** | **Ctrl+Shift+F** | **Cmd+Shift+F** |
 
 ### Reference Card: Finding Your Way Around
 
-- **Activity Bar** (left): Explorer, Search, Source Control, Run & Debug, and Extensions.
-- **Panel** (bottom): Terminal, Problems, Output, and Debug Console; toggle via **View → Appearance → Panel**.
-- Start debugging: **Run → Start Debugging**, **F5**.
+- **Activity Bar** (left): Explorer, Search, Source Control, Run and Debug, and Extensions.
+- **Panel** (bottom): Terminal, Problems, Output, and Debug Console; toggle it with **View → Appearance → Panel**.
 
 ## Less Typing, More Doing
 
-Edit and reuse commands in **VS Code's terminal** instead of retyping them.
+**VS Code's terminal** runs the same shell as a standalone one; recall and edit earlier commands instead of retyping them.
 
 ![VS Code's integrated terminal with command history](media/vscode-integrated-terminal.png)
 
-Same shell commands as a standalone terminal. Screenshot: [VS Code terminal documentation](https://code.visualstudio.com/docs/terminal/basics).
-
 ### Reference Card: Shell Shortcuts
 
-- **Tab:** Complete a command or path; if ambiguous, press again to see choices.
-- **↑ / ↓:** Recall previous/next commands.
-- **← / →:** Move one character.
-- **Ctrl+A:** Move to the beginning of the line.
-- **Ctrl+E:** Move to the end of the line. On Windows/Linux, VS Code claims **Ctrl+E** for Quick Open, so press **End** there.
+- **Tab**: Complete a command or path; if ambiguous, press again to see choices.
+- **↑ / ↓**: Recall previous/next commands.
+- **← / →**: Move one character.
+- **Ctrl+A**: Move to the beginning of the line.
+- **Ctrl+E**: Move to the end of the line. On Windows/Linux, VS Code claims **Ctrl+E** for Quick Open, so press **End** there.
 - **Ctrl+← / Ctrl+→** (Windows/Linux): Move by word. On Mac, press **Esc**, then **B** or **F**.
-- **Ctrl+R:** Search command history; type part of a command, press again for older matches.
-- **Ctrl+W:** Delete the preceding word.
-- **Ctrl+L:** Clear the view without deleting command history.
+- **Ctrl+R**: Search command history; type part of a command, press again for older matches.
+- **Ctrl+W**: Delete the preceding word.
+- **Ctrl+L**: Clear the view without deleting command history.
+- **Enter**: Run the edited command.
+- **Ctrl+C**: Abandon the line for a fresh prompt.
 
-These are Bash/Zsh's editing bindings, active while the terminal has focus; **Ctrl** means Control even on Mac. Press **Enter** to run the edited command, or **Ctrl+C** to abandon it for a fresh prompt. [Shell editing reference](https://www.gnu.org/software/bash/manual/html_node/Readline-Movement-Commands.html).
+These work while the terminal has focus, and **Ctrl** means Control even on Mac.
 
 ## Settings
 
 - Open settings: Command Palette → **Preferences: Open Settings (UI)**, or **Ctrl+,** (Windows/Linux), **Cmd+,** (macOS).
-- Python interpreter: Command Palette → **Python: Select Interpreter**.
+- Python interpreter: Command Palette → **Python: Select Interpreter**, then choose the course's Python 3.13.
 
-![The Python Select Interpreter menu in VS Code](media/vscode-selected-interpreter.png)
+![Python: Select Interpreter with Python 3.13 chosen; your list shows the Pythons on your computer](media/vscode-selected-interpreter.png)
 
-Choose the course's Python 3.13 interpreter; this documentation screenshot shows example versions and paths. Source: [VS Code Python environments](https://code.visualstudio.com/docs/python/environments).
-
-Make it Py‑pretty: extensions, themes, window layouts, and format-on-save are in [BONUS.md](BONUS.md#vs-code-extensions-themes-and-settings).
+Make it Py-pretty: extensions, themes, window layouts, and format-on-save are in [BONUS.md](BONUS.md#vs-code-extensions-themes-and-settings).
 
 ## Command-Line Catalog
 
-Names to recognize from command-line work; the [command-line bonus](BONUS.md#command-line-essentials) has examples.
+Commands to recognize from the shell; the [command-line bonus](BONUS.md#command-line-essentials) has examples.
 
 | Area | Commands | Purpose |
 | --- | --- | --- |
@@ -81,31 +80,25 @@ Names to recognize from command-line work; the [command-line bonus](BONUS.md#com
 
 # Git Version Control
 
-![xkcd 1597: Git](media/xkcd_1597.png)
-
-Don't worry - we're taking a different approach than that xkcd suggests!
+![xkcd 1597: Git. Memorizing commands and re-downloading after errors is the approach this lecture avoids](media/xkcd_1597.png)
 
 ## Why Version Control Matters
 
-You're working on a data analysis, and the folder fills up:
+Without version control, a project folder fills up like this:
 
-- `analysis_v1.py`
-- `analysis_v2.py`
-- `analysis_v2_final.py`
-- `analysis_v2_final_ACTUALLY_FINAL.py`
-- `analysis_fixed_broken_computer_recovery.py`
+```text
+analysis_v1.py
+analysis_v2.py
+analysis_v2_final.py
+analysis_v2_final_ACTUALLY_FINAL.py
+analysis_fixed_broken_computer_recovery.py
+```
 
-Sound familiar? Now imagine four teammates doing the same thing. Chaos! Git tracks every change instead: see what changed, restore any version, work in parallel, and stop losing work.
+**Version control** replaces the pile with one history of every change: see what changed, restore any version, and work in parallel with teammates. **Git** is the version control system this course uses.
 
-## Git Concepts - The Mental Model
+## Git Concepts: The Mental Model
 
-In Lecture 01 you staged files with **+**, selected **Commit**, then **Sync Changes**. Here is what those buttons did.
-
-Git records your project as a series of **snapshots**. Each **commit** is one snapshot of every tracked file, plus who made it, when, and a message saying why. Like saving a game: you can always come back to this exact state.
-
-Git does not snapshot whatever is on disk. You choose: edits sit in the **working tree**, the ones you pick move to the **staging area**, and a commit records them in the **repository**, the history kept in the hidden `.git` folder.
-
-Why the extra step? You fixed a bug in `bp_cleaning.py` and also started an unfinished draft of `bp_plot.py`. Stage and commit the fix; leave the draft unstaged until it earns its own commit.
+Git records a project as a series of **commits**: snapshots of the tracked files, each with an author, time, and message saying why. A change moves through these steps:
 
 ```text
 edit files        select changes       record snapshot       share
@@ -113,23 +106,25 @@ working tree  →   staging area     →   local commit      →   GitHub (remot
                Stage (+)            Commit                 Sync Changes
 ```
 
+Staging lets you commit a finished fix to `bp_cleaning.py` while a half-written `bp_plot.py` waits for a later commit.
+
 ### Reference Card: Git Vocabulary
 
-- **Working tree**: Your current files, including edits not yet committed.
+- **Working tree**: Your files as they are now, including uncommitted edits.
 - **Diff**: Line-by-line comparison of two versions; click a changed file in Source Control.
 - **Staging area**: Changes selected for the next commit; a later edit needs staging again.
 - **Commit**: A snapshot with author, time, and message.
 - **Repository (repo)**: Your files plus their recorded history in `.git`.
 - **Branch**: A named line of commits; `main` holds the official version.
 - **Local branch**: The branch on your computer; it can be ahead of or behind GitHub.
-- **Remote**: The copy of the repository on GitHub, usually named `origin`.
-- **Synchronize**: VS Code's **Sync Changes** pulls incoming commits and pushes outgoing ones.
+- **Remote**: The GitHub copy, usually named `origin`.
+- **Synchronize**: **Sync Changes** pulls incoming commits and pushes outgoing ones.
 - **Merge**: Combine another branch's commits into the current branch.
 - **Conflict**: Both branches changed the same lines, so Git asks you to choose.
 
 ## VS Code Git Integration
 
-Review a change, stage what belongs in the snapshot, commit, then sync to GitHub.
+Source Control runs the diagram's steps: review a change, stage it, commit, then sync to GitHub.
 
 ![Stage a changed file using the plus button in VS Code](media/vscode-stage.png)
 
@@ -137,49 +132,57 @@ Review a change, stage what belongs in the snapshot, commit, then sync to GitHub
 
 ![Sync committed changes with the GitHub copy](media/vscode-sync.png)
 
-Screenshots: [VS Code source control documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
-
-If Git reports a missing name or email, use the Git identity setup from Lecture 01.
-
 ### Reference Card: VS Code Git Actions
 
-- **Source Control Panel**: **View → Source Control**, **Ctrl+Shift+G** (including Control on macOS)
-- **Initialize Repository**: The Source Control button in a folder that is not yet a repository; the same as `git init`
-- **Stage Changes**: Click `+` next to files in "Changes" section
-- **Commit**: Type a message and select **Commit**
-- **View Differences**: Click a modified file to see its diff
-- **Push/Pull**: Select **Sync Changes**, or Command Palette → **Git: Push** / **Git: Pull**
+- **Source Control**: **View → Source Control**, **Ctrl+Shift+G** (Control on macOS too).
+- **Initialize Repository**: The Source Control button in a folder that is not yet a repository; the same as `git init`.
+- **Stage Changes**: Click `+` next to a file under **Changes**.
+- **Commit**: Type a message and select **Commit**.
+- **View differences**: Click a changed file to see its diff.
+- **Push/Pull**: Select **Sync Changes**, or Command Palette → **Git: Push** / **Git: Pull**.
 
 ### Good vs. Bad Commit Messages
 
-In the Source Control message box, write a short summary that finishes "This commit will…": `Add blood pressure range check`, not `minor changes`. Need more? Leave a blank line, then explain why.
+In the message box, write a summary that finishes "This commit will...", then a blank line and why:
 
-![xkcd 1296: Git Commit](media/xkcd_1296.png)
+```text
+# Good commit message
+Add blood pressure range check
+
+Systolic readings outside 60-250 mmHg are recording errors,
+so the report now skips them instead of averaging them in.
+
+# Bad commit message
+minor changes
+```
+
+![xkcd 1296: Git Commit. Commit messages get less informative as a project drags on](media/xkcd_1296.png)
 
 ## Git Workflow: Branching and Merging
 
-A **branch** is a separate line of commits. Try a new way to flag abnormal lab values on a branch while `main` keeps the version your team trusts. If it works, **merge** it into `main`; if not, switch back and abandon the branch.
+A **branch** is a separate line of commits. Build a change on one, such as a new flag for abnormal lab values, while `main` keeps the version your team trusts; then **merge** the branch into `main`, or abandon it.
 
-```text
-main        A ─── B ─── E ─────────── M
-                   \                 /
-feature/…           C ─── D ─────────
-```
+![A feature branch splits off main; a merge commit later joins both lines back into main](media/git_three_way_merge.png)
 
-Each letter is a commit: `C` and `D` exist only on the feature branch until merge commit `M` brings them into `main`.
+| Since the branch split, `main` has | The merge |
+| --- | --- |
+| New commits of its own | Adds a **merge commit** that joins both lines, as in the picture |
+| No new commits | Is a **fast-forward**: `main` moves up to the branch's newest commit, and no merge commit is made |
 
 ### Reference Card: Branches in VS Code
 
-- **Git: Create Branch…** (Command Palette): Name the branch, such as `feature/measurement-summary`; VS Code switches to it.
-- Branch name in the status bar (lower left): The current branch; click it to switch, or to select **Create new branch…**.
+- **Git: Create Branch...** (Command Palette): Name the branch, such as `feature/measurement-summary`; VS Code switches to it.
+- Branch name in the status bar (lower left): Click it to switch branches, or select **Create new branch...**. Switching swaps the files in your folder to that branch's version.
 - **Publish Branch** (Source Control): Send a new branch to GitHub; **Sync Changes** keeps it current after that.
-- **Git: Merge Branch…** (Command Palette): Combine the chosen branch's commits into the branch you are on.
-
-Switching branches rewrites the files in your editor: an edit committed on the feature branch disappears when you switch to `main`, and returns when you merge. If `main` gained no commits meanwhile, that merge is a **fast-forward**: Git slides the `main` pointer up to the feature branch's latest commit, with no merge commit like `M`.
+- **Git: Merge...** (Command Palette): Combine the chosen branch's commits into the branch you are on.
 
 ### Merge Conflicts
 
-A **conflict** happens when both branches changed the same lines, so Git cannot tell which version wins. It stops the merge and marks both versions in the file:
+A conflict happens when two branches, or your commits and a teammate's, changed the same lines, so Git cannot pick a version. The merge or sync stops, and the file appears under **Merge Changes** in Source Control.
+
+![Dev A and Dev B both update file A; after Dev A pushes, Dev B's pull or push hits a merge conflict](media/git_merge_conflict.png)
+
+Git writes both versions into the file between markers:
 
 ```text
 # Practice notes
@@ -190,11 +193,17 @@ Experiment: compare three systolic summaries.
 >>>>>>> experiment
 ```
 
-- Between `<<<<<<< HEAD` and `=======`: the branch you are on (**Current Change**).
-- Between `=======` and `>>>>>>> experiment`: the branch you are merging in (**Incoming Change**).
+| Lines | Hold | VS Code label |
+| --- | --- | --- |
+| `<<<<<<< HEAD` to `=======` | The branch you are on | **Current Change** |
+| `=======` to `>>>>>>> experiment` | The branch you are merging in | **Incoming Change** |
 
-1. Open the file listed under **Merge Changes**. Above the block, choose **Accept Current Change**, **Accept Incoming Change**, **Accept Both Changes**, or edit the lines yourself.
-2. Check that no `<<<<<<<`, `=======`, or `>>>>>>>` lines remain, save, then stage with **+** and **Commit** to finish the merge.
+Open the conflicted file and resolve it one of two ways:
+
+- **Inline**: Above the block, select **Accept Current Change**, **Accept Incoming Change**, or **Accept Both Changes** (**Compare Changes** shows the two side by side first), or edit the lines yourself and delete the three marker lines. Save, then stage the file with **+**.
+- **Merge editor**: Select **Resolve in Merge Editor** at the lower right of the file. **Incoming** (left) and **Current** (right) sit above **Result**; select **Accept Incoming** or **Accept Current** above each conflict, check **Result**, and select **Complete Merge**, which saves and stages the file.
+
+Then select **Commit**; VS Code fills in the merge message. In the terminal, edit the file to the text you want, with no markers left, then run `git add notes.md` and `git commit -m "Merge branch 'experiment'"`.
 
 ## Alternative: Git in the Terminal
 
@@ -205,7 +214,7 @@ Every Source Control button runs a Git command. Demo 1's terminal path uses thes
 | Task | Command | Result |
 | --- | --- | --- |
 | Start a repository | `git init` | A hidden `.git` folder |
-| Check state | `git status` | Modified, staged, or "working tree clean" |
+| Check state | `git status` | Modified, staged, or "working tree clean"; `--short` prints one line per file |
 | Inspect edits | `git diff` | Unstaged line changes: `+` added, `-` removed |
 | Stage | `git add FILE` | FILE's changes go into the next commit |
 | Commit | `git commit -m "message"` | A new local commit |
@@ -214,10 +223,11 @@ Every Source Control button runs a Git command. Demo 1's terminal path uses thes
 | Merge | `git merge NAME` | NAME's commits added to the current branch |
 | History | `git log --oneline` | One line per commit; press `q` if the list fills the screen |
 | Share | `git push` / `git pull` | Send / receive commits on a branch already linked to GitHub |
+| Set your identity | `git config user.name "..."`, `git config user.email "..."` | Your name and GitHub noreply email on this repository's commits; Lecture 01 had you set them, if a commit asked, only in your Assignment 01 clone, so run them in each new repository |
 
 ## GitHub Web Interface
 
-GitHub's website shows the remote copy: check what arrived after **Sync Changes**, or edit and upload files without cloning, as in Lecture 01. A website edit is a commit on the remote, so **Sync Changes** in VS Code before working locally again.
+GitHub's website shows the remote copy: check what arrived after **Sync Changes**, or edit and upload files without cloning. A website edit is a remote commit, so **Sync Changes** before working locally again.
 
 ### Reference Card: GitHub Web Interface
 
@@ -227,41 +237,33 @@ GitHub's website shows the remote copy: check what arrived after **Sync Changes*
 - **Actions** tab: Results of the automatic assignment checks.
 - **+ → New repository**: Create an empty remote with a README.
 
-## Gitignore Files
+## .gitignore Files
 
-Never commit protected health information (**PHI**), personally identifiable information (**PII**), passwords, or keys. Not once. A commit is permanent: deleting the file later leaves it in every earlier snapshot and every clone, and anyone can read a public repository. PHI belongs in your institution's approved storage (UCSF has an internal GitHub for it).
+Never commit protected health information (**PHI**), personally identifiable information (**PII**), passwords, or keys. A commit is permanent: deleting the file later leaves it in every earlier snapshot and every clone. PHI belongs in your institution's approved storage (UCSF has an internal GitHub for it).
 
-A **`.gitignore`** file lists **patterns** for files Git should not track. Matching files stay on your computer but never appear under **Changes**, so you cannot stage them by accident. It also hides clutter, such as the `__pycache__/` folder of compiled `.pyc` files created when a script imports your own module.
+A **`.gitignore`** file lists **patterns** for files Git should not track. Matching files stay on disk but never appear under **Changes**, so you cannot stage them by accident. List clutter there too, such as Python's `__pycache__/` folder. A pattern does not untrack files already committed.
 
-Adding a pattern does not untrack files already committed.
-
-`git status --short` marks untracked files with `??`. Before adding a `.gitignore`:
+`git status --short` marks untracked files `??`. Before and after a `.gitignore` with `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
 
 ```text
-?? __pycache__/
-?? data/
-?? main.py
+Before                  After
+?? __pycache__/         ?? .gitignore
+?? data/                ?? main.py
+?? main.py              ?? vitals_tools.py
 ?? vitals_tools.py
 ```
 
-After a `.gitignore` containing `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
-
-```text
-?? .gitignore
-?? main.py
-?? vitals_tools.py
-```
-
-Git lists the entries in order. `data/` disappears because every file in it is a raw CSV the pattern covers; a directory stops being listed once nothing inside it is untracked.
+`data/` disappears because every file in it is ignored.
 
 ### Reference Card: Ignore Patterns
 
-- `# comment`: Explain a pattern
-- `*.csv`: Match CSV filenames
-- `file?.txt`: Match one character, such as `file1.txt`
-- `[abc].txt`: Match `a.txt`, `b.txt`, or `c.txt`
-- `!keep.csv`: Re-include a file matched by an earlier pattern
-- `**/cache/`: Match cache directories at any depth
+- `# comment`: A note; Git skips the line.
+- `*.csv`: Every file ending in `.csv`.
+- `__pycache__/`: A directory and everything in it; the trailing `/` matches directories only.
+- `file?.txt`: Any one character in place of `?`, such as `file1.txt`.
+- `*.py[cod]`: Any one of the bracketed characters, so `.pyc`, `.pyo`, and `.pyd` files.
+- `!keep.csv`: Re-include a file matched by an earlier pattern.
+- `**/cache/`: A `cache` directory at any depth.
 
 ### Code Snippet: A Project's `.gitignore`
 
@@ -279,197 +281,244 @@ data/raw/*.csv
 .vscode/
 .idea/
 
-# Track important files
-!data/processed/important_results.csv
+# Keep the codebook, which the raw-data pattern above ignores
+!data/raw/codebook.csv
 ```
 
 # LIVE DEMO!
 
 # Python Fundamentals (McKinney Ch2+3)
 
-![xkcd 1429, “Data”: a grammar joke contrasting polling data with the Star Trek character Data.](media/xkcd_1429.png)
+![xkcd 1429: Data. In Python, everything is an object; in Star Trek, Data is too](media/xkcd_1429.png)
 
-*Data* by xkcd: in Python, everything is an object. In Star Trek, Data is too.
+Health data rarely fits one value per variable: a patient has several readings, a visit pairs an ID with a date, and a clinic session has a set of patients.
 
-Lecture 01 stored one value per variable and looped over a short list of numbers. Health data needs more structure: a patient has a list of blood-pressure readings, a visit record pairs an ID with a date, a session has a set of patient IDs. Python's containers hold these, f-strings print results people can read, and functions name a job you repeat.
+## F-Strings and Input
 
-## Printing and Basic Input
+An **f-string** is a string with `f` before the opening quote. Python replaces each `{expression}` inside it with that expression's value. A **format spec** after a colon inside the braces controls how the value looks.
 
-In Lecture 01, `print("BMI is", bmi)` printed every digit: `BMI is 22.857142857142858`. An **f-string**, a string with `f` before the opening quote, puts values inside the text and controls how they look: `print(f"BMI: {bmi:.1f}")` prints `BMI: 22.9`. After the colon comes the **format spec**; `.1f` means one digit after the decimal point. `input()` goes the other way, reading what someone types, always as text.
-
-### Reference Card: Printing and Formatting
-
-| Syntax | Purpose | Example output |
-| --- | --- | --- |
-| `print("Systolic:", systolic)` | Print separate values with spaces | `Systolic: 128.4` |
-| `print(text, end="")` | Print without adding a newline, useful when `text` already ends with one | Text unchanged |
-| `f"{systolic}"` | Insert a value into text | `128.4` |
-| `f"{systolic:.1f}"` | One decimal place | `128.4` |
-| `f"{systolic:.0f}"` | No decimal places | `128` |
-| `f"{cost:,.2f}"` | Thousands separator and two decimals | `15,432.50` |
-| `f"{adherence_rate:.1%}"` | Display a fraction as a percentage | `84.7%` |
-| `f"{population:.2e}"` | Scientific notation | `1.40e+09` |
-| `f"{patient_id:<15}"` / `f"{systolic:>8}"` | Left/right alignment | Padded text |
-| `input("Patient ID: ")` | Read typed input as a string | User's text |
-| `int(text)` / `float(text)` | Convert numeric text | A number |
-
-### Code Snippet: Printing and F-Strings
-
-Choose precision that helps the reader rather than printing every available digit.
+```text
+f"Above average by {systolic - clinic_average:.1f} mmHg"
+                    │                         └── format spec: one decimal place
+                    └── any expression: a variable, a calculation, a function call
+```
 
 ```python
 patient_id = "P002"
-systolic = 142.0
+systolic = 142
 clinic_average = 128.4
 
-print(f"Patient: {patient_id}")                      # Basic variable insertion
-print(f"Systolic: {systolic:.1f} mmHg")              # One decimal place: 142.0
-print(f"Above average by {systolic - clinic_average:.1f} mmHg")  # Calculations inside f-strings
+print(systolic - clinic_average)                                  # 13.599999999999994
+print(f"{patient_id}: {systolic} mmHg")                           # P002: 142 mmHg
+print(f"Above average by {systolic - clinic_average:.1f} mmHg")   # Above average by 13.6 mmHg
+```
+
+### Reference Card: Format Specs
+
+For `bmi = 22.857`, `visits = 15432`, `adherence = 0.847`, `p_value = 0.000034`, `systolic = 128`, `patient_id = "P002"`, and `visit_number = 7`:
+
+| Spec | Meaning | Example | Output |
+| --- | --- | --- | --- |
+| none | The value as `print()` shows it | `f"{bmi}"` | `22.857` |
+| `.1f` | One decimal place | `f"{bmi:.1f}"` | `22.9` |
+| `.0f` | Rounded to a whole number | `f"{bmi:.0f}"` | `23` |
+| `d` | Integer; a float raises `ValueError` | `f"{systolic:d}"` | `128` |
+| `,` | Thousands separator | `f"{visits:,}"` | `15,432` |
+| `,.2f` | Specs combine: separator and two decimals | `f"{visits:,.2f}"` | `15,432.00` |
+| `.1%` | Fraction as a percentage | `f"{adherence:.1%}"` | `84.7%` |
+| `.2e` | Scientific notation, two decimals | `f"{p_value:.2e}"` | `3.40e-05` |
+| `>8` | Right-align in 8 characters; the brackets show the padding | `f"[{systolic:>8}]"` | `[     128]` |
+| `<8` | Left-align in 8 characters | `f"[{patient_id:<8}]"` | `[P002    ]` |
+| `0>4` | Pad with zeros to 4 characters | `f"{visit_number:0>4}"` | `0007` |
+| `03d` | Integer padded with zeros to 3 digits | `f"{visit_number:03d}"` | `007` |
+
+### Reference Card: Keyboard Input
+
+- `input(prompt)`: Show the prompt and return what was typed, always as a string; `""` when the user presses Enter alone.
+- `int(text)`, `float(text)`: Convert numeric text before doing arithmetic; `ValueError` when it is not a number.
+
+### Code Snippet: Read a Number from the Keyboard
+
+```python
+raw_temp = input("Temperature (°C): ")   # type 38.4, then press Enter
+print(type(raw_temp))
+temperature = float(raw_temp)
+print(f"{temperature:.1f} °C, fever: {temperature >= 38.0}")
 ```
 
 ```text
-Patient: P002
-Systolic: 142.0 mmHg
-Above average by 13.6 mmHg
+Temperature (°C): 38.4
+<class 'str'>
+38.4 °C, fever: True
 ```
 
-### Code Snippet: Text In, Number Out
+## Lists and Tuples
 
-```python
-raw_temp = input("Temperature: ")      # Typing 38.4 produces the string "38.4"
-temperature = float(raw_temp)          # Convert to the number 38.4
-print(type(temperature))               # <class 'float'>
-print(f"Temp: {temperature:.1f} °C")   # Temp: 38.4 °C
-```
+A **list** holds values in order inside square brackets, such as one patient's systolic readings across visits. Each item has an **index**, its position counting from 0; negative indexes count back from the end. An index in square brackets gets one item. A **slice** `start:stop` gets a new list from `start` up to, but not including, `stop`; leave out either end to run to that end.
 
-## Data Structures: Lists and Tuples
-
-Lists are **mutable**: their contents can change. Tuples are **immutable**: their entries cannot be replaced, making them useful for fixed records.
-
-| Position | First | Second | Third | Fourth |
+| Item | `128` | `142` | `118` | `136` |
 | --- | --- | --- | --- | --- |
-| Value | 128 | 142 | 118 | 136 |
 | Index | 0 | 1 | 2 | 3 |
 | Negative index | -4 | -3 | -2 | -1 |
 
-For this list, `[1:3]` selects `[142, 118]`: start included, stop excluded.
+```python
+readings = [128, 142, 118, 136]
+print(readings[0], readings[-1])     # 128 136
+print(readings[1:3])                 # [142, 118]: index 3 is excluded
+print(readings[:2], readings[-2:])   # [128, 142] [118, 136]: the first two, the last two
+```
 
-### Reference Card: Data Structures: Lists and Tuples
+A list is **mutable**: it can change after you create it. `.append()` adds an item at the end, and assigning to an index replaces one.
 
-- `list()`: Create list
-- `[item1, item2, ...]`: List literal
-- `list[index]`: Access one item using a zero-based index
-- `list[start:stop:step]`: Slice up to, but not including, `stop`; omitted bounds use the ends, and `step` defaults to 1
-- `list.append(item)`: Add to end
-- `list.insert(index, item)`: Insert at position
-- `list.remove(item)`: Remove first occurrence
-- `list.pop(index)`: Remove and return item
-- `tuple()`: Create tuple
-- `(item1, item2, ...)`: Tuple literal
+```python
+readings.append(124)
+readings[0] = 130
+print(readings)   # [130, 142, 118, 136, 124]
+```
+
+A **tuple** is written with parentheses and is **immutable**: it cannot change, which suits a fixed record such as a patient ID and a visit date. Indexing and slicing work as on a list. **Unpacking** assigns each item to its own name, one name per item.
+
+```python
+visit = ("P001", "2026-09-18")
+patient_id, visit_date = visit
+print(patient_id, visit_date)   # P001 2026-09-18
+visit[0] = "P002"               # TypeError: 'tuple' object does not support item assignment
+```
+
+### Reference Card: Lists and Tuples
+
+| Task | Syntax | Result |
+| --- | --- | --- |
+| Create | `[128, 142]`, `[]`, `("P001", "2026-09-18")`, `list(items)` | A list, an empty list, a tuple, a new list copied from any sequence |
+| Get one item | `items[0]`, `items[-1]` | The first item, the last item |
+| Slice | `items[start:stop]`, `items[start:stop:step]` | A new list or tuple from `start` up to, not including, `stop`; `step` takes every `step`th item, and `[::-1]` reverses |
+| Add | `items.append(x)` | `x` added at the end; lists only |
+| Insert | `items.insert(i, x)` | `x` placed at index `i`; lists only |
+| Remove | `items.remove(x)`, `items.pop(i)` | The first `x` removed; item `i` removed and returned |
+| Replace | `items[i] = x` | Lists only; a tuple raises `TypeError` |
+| Unpack | `a, b = pair` | One name per item; a different count raises `ValueError` |
 
 ### Reference Card: Summarize a Collection
 
-For `readings = [128, 142, 118]`:
+| Call | Returns | For `[128, 142, 118]` |
+| --- | --- | --- |
+| `sum(items)` | The total | `388` |
+| `len(items)` | The number of items | `3` |
+| `min(items)`, `max(items)` | The smallest, the largest | `118`, `142` |
+| `sorted(items)` | A new list in order; `items` is unchanged | `[118, 128, 142]` |
 
-- `sum(readings)`: Total, `388`.
-- `len(readings)`: Number of items, `3`.
-- `min(readings)` / `max(readings)`: Smallest/largest value, `118` / `142`.
-- `sorted(readings)`: New ordered list, `[118, 128, 142]`; leaves `readings` unchanged.
-
-### Code Snippet: Data Structures: Lists and Tuples
+### Code Snippet: Rank Readings
 
 ```python
 readings = [128, 142, 118, 136]
-print(readings[0], readings[-1])   # 128 136
-print(readings[1:3])               # [142, 118]
-readings.append(124)
-print(readings)                    # [128, 142, 118, 136, 124]
-
-visit = ("P001", "2026-09-18")  # a fixed record: patient ID and visit date
-patient_id, visit_date = visit  # unpacking
-print(patient_id)               # P001
+ranked = sorted(readings)
+print(ranked)        # [118, 128, 136, 142]
+print(ranked[-2:])   # [136, 142]: the two highest
+print(readings)      # [128, 142, 118, 136]: unchanged
+print(f"Mean: {sum(readings) / len(readings):.1f} mmHg")   # Mean: 131.0 mmHg
 ```
 
-## Data Structures: Dictionaries and Sets
+## Dictionaries and Sets
 
-A **dictionary** stores each value under a key, like `encounter["systolic"]`. A **set** keeps only distinct values.
-
-```text
-Dictionary: "patient_id" → "P001"   lookup by key
-            "systolic"   → 128
-Set:        {"P001", "P004"}        distinct values, no duplicates
-```
-
-### Reference Card: Data Structures: Dictionaries and Sets
-
-- `dict()`: Create dictionary
-- `{key: value, ...}`: Dictionary literal
-- `dict[key]`: Access value
-- `dict.get(key, default)`: Safe access
-- `dict.keys()`, `dict.values()`, `dict.items()`: Iteration
-- `set()`: Create set
-- `{item1, item2, ...}`: Set literal
-- `set.union()`, `set.intersection()`, `set.difference()`: Set operations
-- `a & b`, `a | b`, `a - b`: Items in both / either / only the first set; same as `.intersection()`, `.union()`, `.difference()`
-
-### Code Snippet: Data Structures: Dictionaries and Sets
+A **dictionary** stores **key-value pairs** in curly braces, such as an encounter's `"patient_id"` and `"systolic"` fields. Square brackets look up a key; `.get()` gives a default when the key is missing. Inside an f-string, write the key in single quotes.
 
 ```python
 encounter = {"patient_id": "P001", "systolic": 128}
-print(encounter["patient_id"])                   # P001
-print(encounter.get("follow_up", "none"))        # none
-
-morning_session = {"P001", "P002", "P003"}
-flagged = {"P001", "P004", "P005"}
-print(morning_session & flagged)                 # {'P001'}
+print(encounter["systolic"])                # 128
+print(encounter.get("follow_up", "none"))   # none
+print("follow_up" in encounter)             # False
+encounter["diastolic"] = 82                 # add a key, or replace its value
+for field, value in encounter.items():
+    print(f"{field}: {value}")
+print(f"Systolic: {encounter['systolic']} mmHg")
 ```
 
-A set has no order, so wrap a larger result in `sorted()` for a stable display.
+```text
+128
+none
+False
+patient_id: P001
+systolic: 128
+diastolic: 82
+Systolic: 128 mmHg
+```
+
+A **set** holds distinct values inside curly braces, with no keys and no order. `set(items)` drops the repeats, `&` keeps the values two sets share, and `sorted()` turns a set into an ordered list for display.
+
+```python
+visit_ids = ["P001", "P002", "P001", "P003"]   # P001 came in twice
+patients = set(visit_ids)
+print(len(visit_ids), len(patients))           # 4 3
+flagged = {"P002", "P003", "P005"}
+print(sorted(patients & flagged))              # ['P002', 'P003']
+```
+
+### Reference Card: Dictionaries and Sets
+
+| Task | Syntax | Result |
+| --- | --- | --- |
+| Create a dictionary | `{"patient_id": "P001", "systolic": 128}`, `dict(patient_id="P001", systolic=128)`, `{}` | A dictionary; `dict(key=value, ...)` builds the same one from keyword arguments; `{}` is an empty one |
+| Look up | `d[key]` | The value; `KeyError` when `key` is missing |
+| Look up with a default | `d.get(key, default)` | The value, or `default` when `key` is missing |
+| Add or replace | `d[key] = value` | `d` changed in place |
+| Hold many records | `[{"patient_id": "P001", "systolic": 128}, ...]` | A list of dictionaries, one per encounter; `records[0]["systolic"]` reads the first one's value |
+| Loop over pairs | `for key, value in d.items():` | Each key with its value |
+| Keys or values only | `d.keys()`, `d.values()` | The keys, or the values, to loop over |
+| Create a set | `{"P001", "P002"}`, `set(items)` | Distinct values; `set()` is an empty one |
+| Add to a set | `s.add(x)` | `s` changed in place |
+| Membership | `x in s` | `True` or `False`; also works on lists, tuples, and dictionary keys |
+| Compare sets | `a & b`, `a \| b`, `a - b` | In both, in either, only in `a`; the same as `a.intersection(b)`, `a.union(b)`, `a.difference(b)` |
 
 ## Functions
 
-Every analysis repeats small jobs: average a patient's readings, find the highest value, format a line for a report. Copy that loop into every script and one bug means fixing every copy. A **function** gives the job a name, so you write it once and call it everywhere. Pass values in as **arguments** (inside the definition they are called **parameters**) and get back a **return value**. A function that ends without `return` gives back `None`, Python's value for "nothing here."
+A **function** is a named block of code: define it once with `def`, then call it wherever the job repeats. The names in its parentheses are **parameters**, the values you pass when you call it are **arguments**, and `return` sends a **return value** back to the caller. A **docstring**, a string on the body's first line, says what the function returns.
 
-```text
-[118, 124, 130] → mean_reading(readings) → 124.0
-    argument          parameter           return value
+A function with no `return` gives back `None`, Python's value for "no result." An empty list, `""`, `0`, and `None` all count as false in an `if`, so check a result with `is None`: a real average can be `0.0`.
+
+```python
+def mean_reading(readings):                # name and parameter
+    """Return the average, or None when there are no readings."""   # docstring
+    if not readings:                       # an empty list counts as false
+        return None
+    return sum(readings) / len(readings)   # the return value
+
+print(mean_reading([118, 124, 130]))   # 124.0: the list is the argument
+print(mean_reading([]))                # None
+print(mean_reading([0, 0]) is None)    # False: 0.0 is a real average
+```
+
+A **default argument** is the value a parameter takes when the caller leaves it out:
+
+```python
+def is_high(systolic, cutoff=130):
+    """Return True when systolic is at or above cutoff."""
+    return systolic >= cutoff
+
+print(is_high(128))               # False
+print(is_high(128, cutoff=120))   # True
 ```
 
 ### Reference Card: Functions
 
-- `def function_name(parameters): ...`: Function definition
-- `return value`: Send a result back to the caller; without a value, the result is `None`
-- `return first, second`: Send back two results at once, as a tuple
-- `result = function_name(arguments)`: Call it and store the return value
-- `first, second = function_name(arguments)`: Unpack a pair into two names, the same unpacking as a tuple literal
-- `def func(param=default_value):`: A default used when the caller omits that argument
-- `"""Description."""` on the first line inside a function: A docstring giving its purpose and return value
-- `if not values:`: An empty collection is false; handle it before dividing by its length
-- `value is None`: Test for “no result,” distinct from a numeric zero
+| Task | Syntax | Notes |
+| --- | --- | --- |
+| Define | `def name(param1, param2):` | Indent the body under the colon |
+| Document | `"""Return ..."""` as the body's first line | The docstring |
+| Return | `return value` | Ends the call; no `return`, or a bare one, gives `None` |
+| Return two values | `return first, second` | Sends back one tuple |
+| Call | `result = name(arg1, arg2)` | Stores the return value |
+| Unpack two values | `first, second = name(arg1)` | One name per returned value |
+| Default | `def name(param=default):` | Used when the caller omits `param` |
+| Pass by name | `name(param=value)` | Any order; clearer for options |
+| Check for no result | `result is None` | `0` and `0.0` are not `None` |
 
-### Code Snippet: Functions
+### Code Snippet: Return Two Values
 
-```python
-def mean_reading(readings):
-    """Return the average reading, or None when there are no readings."""
-    if not readings:
-        return None
-    return sum(readings) / len(readings)
-
-print(mean_reading([118, 124, 130]))  # 124.0
-print(mean_reading([]))               # None
-print(mean_reading([0, 0]))           # 0.0
-```
-
-Why `None` instead of `0`? A mean of 0 can be real (zero steps recorded); `None` says there was nothing to average. Since `if not result:` also treats `0.0` as missing, test with `result is None`.
-
-### Code Snippet: Return Two Results at Once
-
-A function that reads a file usually has two things to report: what it found, and what it had to leave out. Listing both after `return` sends back a tuple, and the caller unpacks it with two names on the left, exactly as Lists and Tuples unpacked `patient_id, visit_date`.
+`return usable, skipped` sends back a tuple, and the caller unpacks it into two names.
 
 ```python
 def usable_readings(values):
-    """Return the readings in range and how many were out of range."""
+    """Return the readings from 60 to 250 mmHg and how many were skipped."""
     usable = []
     skipped = 0
     for value in values:
@@ -479,22 +528,24 @@ def usable_readings(values):
             skipped += 1
     return usable, skipped
 
-readings, ignored = usable_readings([118, 912, 136])
-print(readings)  # [118, 136]
-print(ignored)   # 1
+readings, skipped = usable_readings([118, 912, 136])
+print(readings)   # [118, 136]
+print(skipped)    # 1
 ```
 
 ## Imports and Modules
 
-A **module** is a Python file of reusable names, and `import` loads one into the current program. Standard-library modules ship with Python; third-party modules must be installed first.
+A **module** is a Python file of reusable names, and `import` loads one into your program. **Standard-library** modules such as `math` and `statistics` ship with Python; third-party modules must be installed first. Any `.py` file you write is a module too, named after the file without `.py`.
 
 ![Meme: Java insists you write your own code; Python replies from python.goes import brrrrr](media/python_import.webp)
 
 ### Reference Card: Imports and Modules
 
-- `import module`: Import a module and use `module.name`
-- `import module as alias`: Bind a shorter local name; this does not copy the module
-- `from module import name`: Import one specific name
+- `import module`: Load a module; use its names as `module.name`.
+- `import module as alias`: Load it under a shorter name, such as `stats`.
+- `from module import name`: Load one name to use without the prefix.
+- `from module import name1, name2`: Load several names; for a long list, wrap the names in parentheses, one per line.
+- `python3 -c "code"`: Run a line of Python from the terminal.
 
 ### Code Snippet: Use a Module
 
@@ -503,77 +554,106 @@ import math
 import statistics as stats
 from math import pi
 
-print(math.sqrt(16))                   # 4.0
-print(stats.mean([128, 142, 120]))     # 130
-print(pi)                              # 3.141592653589793
+print(math.sqrt(16))                 # 4.0
+print(stats.mean([128, 142, 120]))   # 130
+print(pi)                            # 3.141592653589793
 ```
 
-In a terminal, `-c` runs Python code given as a string, handy for a quick check:
+For a quick check in the terminal, this prints `130`:
 
 ```bash
-python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"   # 2
+python3 -c "import statistics; print(statistics.mean([128, 142, 120]))"
 ```
 
 ### Code Snippet: Import Your Own Module
 
-Any `.py` file is a module. Save a helper in `vitals_tools.py`:
+Save two helpers in `vitals_tools.py`:
 
 ```python
 # vitals_tools.py
+def mean_reading(readings):
+    return sum(readings) / len(readings)
+
 def highest_reading(readings):
     return max(readings)
 ```
 
-Import it from another script in the same folder:
+Import both from a script in the same folder:
 
 ```python
 # report.py
-from vitals_tools import highest_reading
+from vitals_tools import highest_reading, mean_reading
 
-print(highest_reading([128, 142, 118]))  # 142
+readings = [128, 142, 118]
+print(f"Mean: {mean_reading(readings):.1f}, highest: {highest_reading(readings)}")   # Mean: 129.3, highest: 142
 ```
 
-Run `python3 report.py` from that folder. Python finds `vitals_tools.py` beside the script, and the module name is the filename without `.py`. That first import also creates the `__pycache__/` folder your `.gitignore` keeps out of Git.
+With more names, list one per line inside parentheses:
 
-Importing runs the file top to bottom: that is how the `def` line takes effect. So a `print()` at a module's top level fires on import too, which is the problem `__main__` below solves.
+```python
+from vitals_tools import (
+    highest_reading,
+    mean_reading,
+)
+```
+
+Run `python3 report.py` from that folder. The first import creates a `__pycache__/` folder, which your `.gitignore` keeps out of Git. Importing runs the module top to bottom, so a `print()` at its top level runs on import too; `__main__` below fixes that.
 
 # LIVE DEMO!
 
 # Files and Reusable Scripts
 
-Variables disappear when a script ends. To keep a result (a summary for your PI, a log of what ran), build the text, write it to a file, and read it back to confirm what was saved. To reuse the script's functions elsewhere, make it safe to import, and say how to run it in a README.
+A script's variables vanish when it ends, so results worth keeping go in files.
 
-## More String Operations
+## String Methods
 
-Data often arrives as one line of text per record, such as a row of a CSV file. String methods take such a line apart, and join a list of lines into text you can save.
+A data file arrives as lines of text, one record per line. String methods take a line apart and join lines back into text; each returns a new value and leaves the original unchanged.
 
-### Reference Card: More String Operations
+```text
+'P001,2026-09-18,128\n'
+    .strip()     → 'P001,2026-09-18,128'
+    .split(",")  → ['P001', '2026-09-18', '128']
+```
 
-- `text.split(",")`: Split text at commas into a list: `"a,b"` → `["a", "b"]`.
-- `"\n".join(lines)`: Combine a list of strings with newlines between them; add `+ "\n"` for a final newline.
-- `text.replace("old", "new")`: Return text with matching parts replaced.
-- `text.endswith(".csv")`: `True` when the text ends with that suffix.
+### Reference Card: String Methods
+
+| Method | Purpose | Example | Result |
+| --- | --- | --- | --- |
+| `text.strip()` | Remove spaces and newlines from both ends | `"128\n".strip()` | `'128'` |
+| `text.split(",")` | Split at each comma into a list of strings | `"P001,128".split(",")` | `['P001', '128']` |
+| `"\n".join(lines)` | Join strings with a newline between each; add `+ "\n"` for a final one | `"\n".join(["P001", "P002"])` | `'P001\nP002'` |
+| `text.replace(old, new)` | Replace every `old` with `new` | `"P001\nP002".replace("\n", ", ")` | `'P001, P002'` |
+| `text.splitlines()` | Split into lines, dropping the newlines | `"P001\nP002\n".splitlines()` | `['P001', 'P002']` |
+| `text.upper()` | Uppercase copy (Lecture 01) | `"mmHg".upper()` | `'MMHG'` |
+| `text.endswith(end)` | Check the ending | `"vitals.csv".endswith(".csv")` | `True` |
 
 ### Code Snippet: Split a CSV Row
 
 ```python
-line = "P001,2026-09-18,128,82"
-fields = line.split(",")
-print(fields)                                         # ['P001', '2026-09-18', '128', '82']
-patient_id, visit_date, systolic, diastolic = fields  # unpack the four fields
-print(patient_id, int(systolic) - int(diastolic))     # P001 46
-print("clinic_vitals.csv".endswith(".csv"))           # True
+row = "P001,2026-09-18,128\n"                 # one line, as a file gives it
+fields = row.strip().split(",")
+print(fields)                                 # ['P001', '2026-09-18', '128']
+patient_id, visit_date, systolic = fields     # one name per field
+print(patient_id, int(systolic) >= 130)       # P001 False: convert the text before comparing
 ```
 
-The fields are still text; convert with `int()` before doing arithmetic.
+### Code Snippet: Join Lines into Text
 
-## Basic File I/O Operations
+```python
+lines = ["P001: 128 mmHg", "P002: 142 mmHg"]
+report_text = "\n".join(lines) + "\n"              # 'P001: 128 mmHg\nP002: 142 mmHg\n'
+print(report_text.strip().replace("\n", " | "))   # P001: 128 mmHg | P002: 142 mmHg
+```
 
-File **I/O** means input/output: read saved text into Python, or write results for later. `open()` returns a **file handle**, Python's connection to the file, and a `with` block closes it for you. Mode `"w"` replaces the whole file, so check the name first. Build that filename with **`Path`**, the path type in the standard library's `pathlib` module: `Path("output") / "vitals.txt"` joins the parts with `/` instead of gluing strings and separators together, and `.mkdir(exist_ok=True)` creates a folder that may already exist. A `Path` works anywhere a filename string does, `open()` included, so these are one system and not two rival ones.
+## Reading and Writing Files
+
+`open(path, mode, encoding="utf-8")` returns a **file handle** for reading or writing; open it in a `with` block, which closes the file when the block ends. Mode `"r"` reads (the default), `"w"` replaces the file, and `"a"` adds to its end.
+
+**`Path`**, from the standard library's `pathlib` module, builds paths with `/`, as in `Path("output") / "vitals.txt"`, and works anywhere a filename string does.
 
 ```text
-Python text → write → output/vitals.txt → read → saved text
-     └──────────────── compare with == ───────────────┘
+Python text ── write ──▶ output/vitals.txt ── read ──▶ saved text
+     └──────────────── compare with == ────────────────┘
 ```
 
 ### Reference Card: Reading and Writing Files
@@ -586,6 +666,7 @@ Python text → write → output/vitals.txt → read → saved text
 | Read | `file.readlines()` | One list item per line, newlines kept. | `['P001: 128 mmHg\n', 'P002: 142 mmHg\n']` |
 | Write | `file.write(text)` | Write one string; you supply the `\n`. | Characters written |
 | Write | `print(text, file=file)` | Write one line, newline included. | n/a |
+| Print | `print(text, end="")` | Print text that already ends in a newline, without adding another. | Text unchanged |
 | Path | `from pathlib import Path` | Load the path type; once per file. | n/a |
 | Path | `Path("output") / "vitals.txt"` | Join path parts with `/`; either side may be a string. | `PosixPath('output/vitals.txt')` |
 | Path | `path.mkdir(exist_ok=True)` | Create the folder; `exist_ok=True` accepts one already there, `parents=True` also makes missing parent folders. | n/a |
@@ -601,15 +682,15 @@ from pathlib import Path
 results = ["P001: 128 mmHg", "P002: 142 mmHg", "P003: 118 mmHg"]
 
 output_dir = Path("output")
-output_dir.mkdir(exist_ok=True)      # no error when output/ already exists
-vitals_path = output_dir / "vitals.txt"   # output/vitals.txt
+output_dir.mkdir(exist_ok=True)            # no error when output/ already exists
+vitals_path = output_dir / "vitals.txt"    # output/vitals.txt
 
 # Write: "w" creates the file, or replaces it if it exists
 with open(vitals_path, "w", encoding="utf-8") as file:
     for result in results:
         file.write(f"{result}\n")
 
-# Read back and compare; path.open(...) is open(path, ...) started from the path
+# Read back and compare; vitals_path.open(...) is the same as open(vitals_path, ...)
 with vitals_path.open("r", encoding="utf-8") as file:
     saved_text = file.read()
 print(saved_text, end="")
@@ -627,17 +708,26 @@ P003: 118 mmHg
 Saved text matches: True
 ```
 
-## Minimal Exception Handling
+## Exceptions, Assertions, and the Debugger
 
-In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback, and real data does have `"not recorded"` sitting in a numeric column. An **exception** is Python's report of such a problem; `try`/`except` lets your script respond instead of stopping. Catch only the exception you expect, so real bugs still show up.
+An **exception** is the error Python raises when a line cannot run, such as `ValueError` from `int("not recorded")`; unhandled, it stops the script with a traceback. `try`/`except` handles it instead, as the table shows. Name the exception you expect, so any other error still stops the script.
 
-### Reference Card: Exceptions You Will Meet
+| `raw_systolic` | `int(raw_systolic)` | Block that runs |
+| --- | --- | --- |
+| `"128"` | `128` | `else:` |
+| `"not recorded"` | Raises `ValueError` | `except ValueError:` |
+| `""` (blank) | Raises `ValueError` | `except ValueError:` |
 
-- `ValueError`: Right type, unusable value, such as `int("not recorded")`.
-- `FileNotFoundError`: `open()` on a path that does not exist; one kind of `OSError`, the family of file-system failures.
-- `try:` / `except ValueError as error:`: Run the risky line; on that error only, run the handler with the message in `error`.
+An **assertion**, `assert condition, message`, states what must be true at that point. Place one after a step as a checkpoint: silence means the step did what it claimed.
+
+### Reference Card: Exceptions and Assertions
+
+- `try:` / `except ValueError as error:`: Run the risky line; on that error only, run the handler, with the message in `error`.
 - `else:`: Runs only when the `try` block succeeded.
-- `assert condition, message`: Nothing happens when `condition` is true; raise `AssertionError` showing `message` when it is false.
+- `ValueError`: Right type, unusable value, such as `int("not recorded")`.
+- `KeyError`: A dictionary has no such key.
+- `FileNotFoundError`: `open()` on a path that does not exist; check with `path.exists()` first.
+- `assert condition, message`: Nothing when `condition` is true; `AssertionError: message` when it is false.
 
 ### Code Snippet: Handle Invalid Numeric Text
 
@@ -656,33 +746,41 @@ else:
 Could not read systolic: invalid literal for int() with base 10: 'not recorded'
 ```
 
-Some failures are not errors to catch but expectations to state. `assert condition, message` is how a script or notebook says “this is what I expect to be true here”: a true condition does nothing and the next line runs, while a false one stops the script with an `AssertionError` whose last line is your message. Later demos use `assert` as a visible checkpoint after each step, so silence means the step did what it claimed.
-
 ### Code Snippet: State What You Expect
 
 ```python
 readings = [128, 142, 118]
-assert len(readings) == 3, "expected three readings"   # true: nothing happens, the script goes on
+assert len(readings) == 3, "expected three readings"   # true: nothing happens
 print(f"Checked {len(readings)} readings")             # Checked 3 readings
 assert max(readings) <= 140, f"a reading is above 140: {max(readings)}"
-# AssertionError: a reading is above 140: 142
 ```
 
-## Break(points) the Ice
+The last line stops the script; the traceback ends with:
+
+```text
+AssertionError: a reading is above 140: 142
+```
+
+### Break(points) the Ice
+
+The **debugger** runs a script and pauses at a **breakpoint**, a line you mark, so you can read every variable's value and then run one line at a time. It runs the script from the folder open in VS Code, so open the script's own folder first.
 
 ![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
 
-The highlighted line runs next; **Variables** on the left shows the values so far. Screenshot: [VS Code Python tutorial](https://code.visualstudio.com/docs/python/python-tutorial), whose status bar shows an older interpreter.
+| Step | How | Result |
+| --- | --- | --- |
+| Set a breakpoint | Click left of a line number | A red dot; the run will pause before that line |
+| Start | **F5**, or **Run → Start Debugging**; the first time, choose **Python File** from the menu | The script runs until the breakpoint |
+| Inspect | Read **Variables** on the left | Each name's current value; the highlighted line runs next |
+| Step over | **F10**, or **Run → Step Over** | One line runs, then the script pauses again |
+| Continue | **F5**, or **Run → Continue** | The script runs to the next breakpoint |
+| Stop | **Shift+F5**, or **Run → Stop Debugging** | The run ends |
 
-1. Click left of a line number inside a function to add a breakpoint (a red dot).
-2. Select **Run → Start Debugging** (**F5**); the script pauses there.
-3. Read **Variables**, then **Run → Step Over** (**F10**) for one line, or **Run → Continue** (**F5**) for the next breakpoint.
+## `__main__`: Run Directly or Import
 
-## `__main__` for script execution
+Python sets each file's `__name__` to `"__main__"` when you run the file directly, and to the module's name when another file imports it. Put the script's work in `main()` and call it under that check, so an import only defines the functions.
 
-Python sets a file's `__name__` to `"__main__"` when it runs directly, and to the module's name on import. Guard the script-only work with it:
-
-### Code Snippet: Run Directly or Import
+### Code Snippet: Guard the Script's Work
 
 ```python
 def main():
@@ -694,37 +792,72 @@ if __name__ == "__main__":
     main()
 ```
 
-Saved as `analysis.py`, `python3 analysis.py` prints `Average systolic: 129.6 mmHg`, while `python3 -c "import analysis"` prints nothing: the import ran the `def` and skipped `main()`.
+Saved as `analysis.py`, run it both ways:
 
-## Document How to Run It
+```bash
+python3 analysis.py
+python3 -c "import analysis"
+```
 
-Every repository needs a note saying what it is and how to run it: `README.md`, which GitHub shows below the file list. The `.md` means **Markdown**: plain text with a few formatting symbols, readable raw in any editor and rendered as formatted text by GitHub, VS Code's preview, and the course site.
+```text
+Average systolic: 129.6 mmHg
+```
 
-### Reference Card: Markdown Documentation
+Only the first command prints: the import ran the `def` lines and skipped `main()`.
 
-- `# Title`, `## Section`, `### Subsection`: Headings, from largest to smallest.
-- `**bold text**`: Strong emphasis, shown as **bold text**.
-- `*italic text*`: Emphasis, shown as *italic text*.
-- Backticks around text, such as `mean()`: Code inside a sentence.
-- Three backticks on their own line, optionally with a language name such as `bash`: Start a code block; three more close it.
-- `- item` or `1. item`: Bulleted or numbered list.
-- `[text](url)`: Clickable link.
-- `![alt](url)`: Image with descriptive alternative text.
-- **Ctrl+K** then **V** (**Cmd+K** then **V** on Mac), or right-click the `.md` tab → **Open Preview to the Side**: Show the rendered preview beside the file.
+## Markdown and the README
 
-### Code Snippet: Markdown Documentation
+**Markdown** is plain text with a few symbols for formatting. It reads fine raw, GitHub and VS Code's preview show it formatted, and Notion formats most of the same symbols as you type. Every repository needs a `README.md`, which GitHub shows below the file list, saying what the project does and how to run it.
 
-```markdown
-# Clinic Vitals Report
+### Reference Card: Markdown
 
-## Overview
-Summarizes systolic readings from one clinic session.
+| You type | You get | Notes |
+| --- | --- | --- |
+| `# Systolic Summary` | The document's title | One per document (Notion pages, like this one, break the rule) |
+| `## Run`, `### Output` | A section, a subsection | Do not skip levels |
+| A blank line between lines of text | A new paragraph | Without it, the lines join into one paragraph |
+| `**high**` | **high** | Bold |
+| `_estimated_` | _estimated_ | Italic; `*estimated*` also works |
+| `> Readings are in mmHg.` | An indented quote | Notion's editor starts a quote with `\|` and a space |
+| `- item` | A bulleted list | Indent four spaces to nest |
+| `1. item` | A numbered list | |
+| `- [ ] task`, `- [x] done` | A checklist | GitHub shows checkboxes |
+| `mean()` between single backticks | `mean()` in code font | Code inside a sentence |
+| Three backticks and a language such as `bash` on one line, the code, then three backticks | A code block | The language name colors the syntax |
+| `$\bar{x}$` | An equation inside a sentence | Math in LaTeX notation; GitHub renders it |
+| `$$` on the lines above and below an equation | An equation on its own line | |
+| `[Python docs](https://docs.python.org/3/)` | A link | |
+| `![Caption](media/chart.png)` | An image | Path relative to the `.md` file |
+
+### Code Snippet: A Project README
+
+````markdown
+# Systolic Summary
+
+## Project description
+
+Prints the **average systolic** blood pressure of one clinic session's readings.
 
 ## Run
-Run `python3 analysis.py` from this folder.
 
-## Key Findings
-- 2 of 5 readings at or above 130 mmHg
+From this folder:
+
+```bash
+python3 analysis.py
 ```
+
+## Method
+
+$$
+\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i
+$$
+
+> Readings are in mmHg and are _not_ checked for recording errors.
+
+- [x] Average the readings
+- [ ] Skip readings outside 60 to 250 mmHg
+````
+
+Preview it in VS Code with **Ctrl+K** then **V** (**Cmd+K** then **V** on Mac).
 
 # LIVE DEMO!
