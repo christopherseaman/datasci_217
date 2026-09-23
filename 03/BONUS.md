@@ -327,24 +327,24 @@ Command line tools for quick data visualization without leaving the terminal.
 # sparklines: Inline Unicode graphs
 # Install: pip install sparklines
 
-# Visualize grade trends inline
-cut -d',' -f3 students.csv | tail -n +2 | sparklines
+# Visualize systolic readings inline
+cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines
 #     Extract column 3 -> Skip header (line 1) -> Graph
 #     tail -n +2 means "start at line 2" (skip the header)
 # Output: ▅█▃▆▇▄▇▂▆▅
 
 # With statistics
-cut -d',' -f3 students.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
+cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
 
 # gnuplot: Create terminal plots (optional - many dependencies)
 # Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
 
 # Simple plot of grades
-cut -d',' -f3 students.csv | tail -n +2 | \
+cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | \
   gnuplot -e "set terminal dumb; plot '-' with linespoints"
 
-# Bar chart: count students by subject
-cut -d',' -f4 students.csv | tail -n +2 | sort | uniq -c | \
+# Bar chart: count encounters by clinic
+cut -d',' -f4 data/raw/encounters.csv | tail -n +2 | sort | uniq -c | \
   gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
 ```
 
