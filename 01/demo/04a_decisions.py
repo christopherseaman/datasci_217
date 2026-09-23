@@ -1,14 +1,16 @@
-score = 85
-if score >= 90:
-    print("grade: A")
-elif score >= 80:
-    print("grade: B")
+systolic = 135
+if systolic >= 140:
+    print("systolic category: stage 2 hypertension")
+elif systolic >= 130:
+    print("systolic category: stage 1 hypertension")
+elif systolic >= 120:
+    print("systolic category: elevated")
 else:
-    print("grade: keep practicing")
+    print("systolic category: normal")
 
-age = 25
-has_experience = True
-if age >= 21 and has_experience:
-    print("candidate meets both requirements")
+age_years = 67
+has_consent = True
+if age_years >= 65 and has_consent:
+    print("eligible for fall-risk screening")
 else:
-    print("candidate needs another requirement")
+    print("not eligible for fall-risk screening")

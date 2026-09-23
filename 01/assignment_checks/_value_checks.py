@@ -1,4 +1,13 @@
-"""Public artifact checks for Assignment 01."""
+"""Value checks for Assignment 01. Course-side only; never shipped in a fork.
+
+This file holds what the fork must not: the expected readiness report and the
+course roster's identity hashes. The GitHub Actions run fetches it from the
+course repository on every push, and the TA grading script reads it here.
+
+The checks read committed artifacts only: the two files in
+`terminal-practice/` and the two in `output/`. Student source code is never
+read, imported, or executed.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +15,19 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 import re
+
+
+PRACTICE_DIR = Path("terminal-practice")
+PRACTICE_FILES = ("source.txt", "path-check.txt")
+OUTPUT_DIR = Path("output")
+READINESS_FILE = OUTPUT_DIR / "readiness.txt"
+IDENTITY_FILE = OUTPUT_DIR / "student_identity.txt"
+
+# The report's first line records whichever Python ran readiness.py; any version counts.
+PYTHON_FAMILY = re.compile(r"Python family: \d+\.\d+")
+# A SHA-256 hash as capture_identity.py saves it: 64 hexadecimal digits.
+IDENTITY_HASH = re.compile(r"[0-9a-f]{64}")
+
 
 ROSTER_HASHES = frozenset({
     "07f66adfe2a38fb3a84a2ab2f55d40bdb5cabd85355ecb9f65290385c5cc76b8",
@@ -69,7 +91,7 @@ Next checkpoint: 5
 
 
 @dataclass(frozen=True)
-class PublicCheck:
+class Check:
     name: str
     action: Callable[[Path], None]
 
@@ -79,51 +101,85 @@ def _assert(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def check_terminal_practice(root: Path) -> None:
-    practice = root / "terminal-practice"
-    _assert(practice.is_dir() and not practice.is_symlink(), "Create a regular terminal-practice directory.")
-    for name in ("source.txt", "path-check.txt"):
-        _assert((practice / name).is_file() and not (practice / name).is_symlink(), f"terminal-practice/{name} must be a regular file.")
+def _read_text(path: Path, missing_message: str, encoding_message: str) -> str:
+    """Read a committed artifact as UTF-8 text; a folder or a symlink is not one."""
+    _assert(path.is_file() and not path.is_symlink(), missing_message)
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as error:
+        raise AssertionError(encoding_message) from error
 
 
 def _after_python_family(report: str) -> str | None:
     """The report without its first line, which records whichever Python ran readiness.py."""
     first, _, rest = report.partition("\n")
-    return rest if re.fullmatch(r"Python family: \d+\.\d+", first) else None
+    return rest if PYTHON_FAMILY.fullmatch(first) else None
+
+
+def _readiness_report(root: Path) -> str:
+    output = root / OUTPUT_DIR
+    _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
+    return _read_text(
+        root / READINESS_FILE,
+        "Commit output/readiness.txt as a regular file.",
+        "output/readiness.txt must be UTF-8 text.",
+    )
+
+
+def _identity_hash(root: Path) -> str:
+    """The saved hash with surrounding whitespace and letter case ignored."""
+    text = _read_text(
+        root / IDENTITY_FILE,
+        "Run capture_identity.py and commit output/student_identity.txt.",
+        "student_identity.txt must be UTF-8 text.",
+    )
+    identity_hash = text.strip().lower()
+    _assert(
+        IDENTITY_HASH.fullmatch(identity_hash) is not None,
+        "student_identity.txt must contain one SHA-256 hash; surrounding whitespace and letter case are ignored.",
+    )
+    return identity_hash
+
+
+# --------------------------------------------------------------------------
+# Checks
+# --------------------------------------------------------------------------
+
+
+def check_terminal_practice(root: Path) -> None:
+    practice = root / PRACTICE_DIR
+    _assert(practice.is_dir() and not practice.is_symlink(), "Create a regular terminal-practice directory.")
+    for name in PRACTICE_FILES:
+        _assert(
+            (practice / name).is_file() and not (practice / name).is_symlink(),
+            f"terminal-practice/{name} must be a regular file.",
+        )
 
 
 def check_output_artifact(root: Path) -> None:
-    output = root / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
-    report = output / "readiness.txt"
-    _assert(report.is_file() and not report.is_symlink(), "Commit output/readiness.txt as a regular file.")
-    try:
-        stored = report.read_text(encoding="utf-8")
-    except UnicodeDecodeError as error:
-        raise AssertionError("output/readiness.txt must be UTF-8 text.") from error
-    _assert(_after_python_family(stored) == _after_python_family(EXPECTED_READINESS),
-            "output/readiness.txt must contain the documented 14-line readiness report; "
-            "any Python version on its first line is accepted.")
-    identity = output / "student_identity.txt"
-    _assert(identity.is_file() and not identity.is_symlink(), "Run capture_identity.py and commit output/student_identity.txt.")
-    try:
-        identity_text = identity.read_text(encoding="utf-8")
-    except UnicodeDecodeError as error:
-        raise AssertionError("student_identity.txt must be UTF-8 text.") from error
-    identity_hash = identity_text.strip().lower()
-    _assert(re.fullmatch(r"[0-9a-f]{64}", identity_hash) is not None, "student_identity.txt must contain one SHA-256 hash; surrounding whitespace and letter case are ignored.")
-    _assert(identity_hash in ROSTER_HASHES, "The identity hash does not match the course roster. Rerun capture_identity.py with your course roster email; contact the course team if it still fails.")
+    """The report and the identity share their points, so both have to pass."""
+    report = _readiness_report(root)
+    _assert(
+        _after_python_family(report) == _after_python_family(EXPECTED_READINESS),
+        "output/readiness.txt must contain the documented 14-line readiness report; "
+        "any Python version on its first line is accepted.",
+    )
+    _assert(
+        _identity_hash(root) in ROSTER_HASHES,
+        "The identity hash does not match the course roster. Rerun capture_identity.py with your "
+        "course roster email; contact the course team if it still fails.",
+    )
 
 
-PUBLIC_CHECKS = (
-    PublicCheck("terminal practice evidence", check_terminal_practice),
-    PublicCheck("committed readiness and identity artifacts", check_output_artifact),
+CHECKS = (
+    Check("terminal practice evidence", check_terminal_practice),
+    Check("committed readiness and identity artifacts", check_output_artifact),
 )
 
 
-def run_public_checks(root: Path) -> list[tuple[str, str | None]]:
+def run_checks(root: Path) -> list[tuple[str, str | None]]:
     results = []
-    for check in PUBLIC_CHECKS:
+    for check in CHECKS:
         try:
             check.action(root)
         except (AssertionError, OSError) as error:

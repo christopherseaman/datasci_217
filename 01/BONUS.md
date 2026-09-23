@@ -183,16 +183,3 @@ large_number = 1.23e6    # 1,230,000
 small_number = 1.23e-3   # 0.00123
 ```
 
-# When You Might Need These
-
-- **Native PowerShell Python**: when you cannot install WSL on a Windows machine
-- **Other editors**: when you already live in one, or need to edit over SSH
-- **Advanced ls**: when working with large directories or complex file structures
-- **REPL features**: when exploring new Python libraries or debugging
-- **History shortcuts**: when you find yourself retyping the same commands
-- **Help functions**: when working with unfamiliar Python functions
-- **Permissions**: when setting up scripts or working on shared systems
-- **Environment variables**: when configuring development environments
-- **Advanced strings**: when processing messy text data
-- **Wildcards**: when working with many files with similar names
-- **Advanced math**: when doing complex calculations

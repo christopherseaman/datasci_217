@@ -1,21 +1,21 @@
-scores = [92, 76, 88, 64]
-passing_score = 70
+heart_rates = [72, 104, 88, 112]
+review_above = 100
 total = 0
 count = 0
-passing = 0
+review_count = 0
 
-for position, score in enumerate(scores, start=1):
-    total = total + score
-    count = count + 1
-    if score >= passing_score:
-        status = "PASS"
-        passing = passing + 1
-    else:
+for visit, heart_rate in enumerate(heart_rates, start=1):
+    total += heart_rate
+    count += 1
+    if heart_rate > review_above:
         status = "REVIEW"
-    print("Student", position, "score:", score, status)
+        review_count += 1
+    else:
+        status = "OK"
+    print("Visit", visit, "heart rate:", heart_rate, "bpm", status)
 
 average = total / count
 print("total:", total)
 print("count:", count)
 print("average:", average)
-print("passing:", passing)
+print("readings to review:", review_count)

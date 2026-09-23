@@ -36,7 +36,7 @@ Quote an argument that contains spaces: `cd "My Documents"`.
 
 # Where You Are: Paths and the Working Directory
 
-A folder is called a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the *You are here* dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
+A folder is called a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the _You are here_ dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
 
 A **path** names a file or folder. An **absolute path** starts at the top of the file system, `/`, like a full street address; it works from anywhere. A **relative path** starts from your working directory, like directions from where you are standing.
 
@@ -102,7 +102,7 @@ Two kinds of calls appear throughout Lecture 01:
 
 ## The `>>>` Prompt Indents for You
 
-At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in, and later lines keep that indentation. Type the block without adding spaces yourself, press **Backspace** once for each level you want to move back out (before an `elif` or `else`, for example), and press **Enter** on an empty `...` line to finish the block. In a `.py` file you type the four spaces yourself.
+At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in, and later lines keep that indentation. Type the block without adding spaces yourself, press **Backspace** once for each level you want to move back out (before an `elif` or `else`, for example), and press **Enter** on an empty `...` line to finish the block. In a `.py` file, VS Code also indents the line after a `:` when you press **Enter**; check that each block line starts four spaces in.
 
 ```console
 >>> score = 85
@@ -128,13 +128,13 @@ A **list** holds several values in order inside square brackets, such as one pat
 
 # Running Totals with `+=`
 
-The lecture's loops use `total += grade` where the demos write the same step out in full as `total = total + score`. Both forms do the same thing:
+The lecture's loops use `total += grade`, and demo 4.2 writes the same step out in full as `total = total + systolic`. Both forms do the same thing:
 
 - `total += 5`: Shorthand for `total = total + 5`; `-=` and `*=` work the same way.
 
 # Making Choices and Repeating Work
 
-So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to every reading, whether there are 4 or 4,000). **Control flow** statements change that top-to-bottom order.
+So far, every script runs each line once, top to bottom. Data work needs two more moves: _choose_ (flag a blood-pressure reading only if it is high) and _repeat_ (apply the same check to every reading, whether there are 4 or 4,000). **Control flow** statements change that top-to-bottom order.
 
 - A **condition** is an expression that is either `True` or `False`, such as `systolic >= 140`. Comparison operators build conditions; `and`, `or`, and `not` combine them.
 - An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python checks the conditions from top to bottom and runs only the first block whose condition is `True`.

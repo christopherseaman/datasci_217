@@ -76,7 +76,7 @@ Open **View → Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac), ch
 
     ![VS Code's Clone from URL prompt](../assignment/media/vscode-clone.png)
 
-Screenshots show example repositories; paste your own fork's URL. Sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+Screenshots show example repositories; paste your own fork's URL.
 
 ## 1.6 Sign in to GitHub in VS Code
 

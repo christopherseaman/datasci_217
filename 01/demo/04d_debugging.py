@@ -1,15 +1,19 @@
-# Uncomment to see the NameError, then comment it again before rerunning.
-# print(total_socre)
-total_score = 440
-print("Corrected version:", total_score)
+# Each line starting with # and no space is a broken version of the code just below it.
+# Delete that # to see the error, then put it back before trying the next one.
+heart_rate = 72
+#print("heart rate:", heart_rat)
+print("heart rate:", heart_rate)
 
-age_text = "25"
-# Uncomment to see the TypeError, then comment it again before rerunning.
-# print(age_text + 1)
-age_number = int(age_text)
-print("Corrected version:", age_number + 1)
+age_text = "67"
+#print("age next year:", age_text + 1)
+age_years = int(age_text)
+print("age next year:", age_years + 1)
 
-# Uncomment to see the ValueError, then comment it again before rerunning.
-# invalid_number = int("hello")
-valid_number = int("42")
-print("Corrected version:", valid_number)
+#weight_kg = int("70 kg")
+weight_kg = int("70")
+print("weight (kg):", weight_kg)
+
+if heart_rate > 100:
+    print("heart rate: above 100 bpm")
+else:
+    print("heart rate: 100 bpm or below")

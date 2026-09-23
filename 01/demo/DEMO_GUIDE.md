@@ -1,13 +1,13 @@
 ---
 notion:
-  title_line: "# Lecture 01 Live Demo Guide"
+  title_line: "# Lecture 01 Demo Guide: Setup, the Shell, and Python Basics"
   role: demo
   status: mapped
   page_id: "3a4d9fdd-1a1a-8132-b57d-dd4cf6b9a2fa"
   url: "https://app.notion.com/p/3a4d9fdd1a1a8132b57ddd4cf6b9a2fa"
 ---
 
-# Lecture 01 Live Demo Guide
+# Lecture 01 Demo Guide: Setup, the Shell, and Python Basics
 
 There are four live demos:
 
@@ -19,7 +19,6 @@ There are four live demos:
 All files are in the [Lecture 01 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/01/demo). Follow the setup below, then create a practice folder and open it in VS Code with **File → Open Folder**. Each code block has a source link; use **Download raw file** on GitHub or paste the code into a new file with the shown filename. Save with **File → Save** (Ctrl+S; Cmd+S on Mac).
 
 Run commands in **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). A separate Terminal or WSL Ubuntu window also works; use `cd` to enter your working folder first.
-
 
 # Demo 1: Git setup
 
@@ -101,7 +100,7 @@ Open **View → Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac), ch
 
     ![VS Code's Clone from URL prompt](../assignment/media/vscode-clone.png)
 
-Screenshots show example repositories; paste your own fork's URL. Sources: [GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and [VS Code documentation](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
+Screenshots show example repositories; paste your own fork's URL.
 
 ## 1.6 Sign in to GitHub in VS Code
 
@@ -133,31 +132,60 @@ Start in your practice folder. Enter each line separately and inspect the result
 ```bash
 pwd
 ls
-mkdir cli_manual
-cd cli_manual
+mkdir clinic_manual
+cd clinic_manual
 pwd
 ```
 
-The second `pwd` ends in `cli_manual`. Create a small project:
+The second `pwd` ends in `clinic_manual`. Create a small clinic project:
 
 ```bash
 mkdir data scripts results
 touch README.txt
 ls
-cat README.txt
 ```
 
-`ls` shows three folders and `README.txt`. `cat` prints nothing because the file is empty.
+`ls` shows three folders and `README.txt`. Write a visits file: `>` creates it with a header line, and each `>>` appends one patient's reading.
 
 ```bash
-cp README.txt results/notes.txt
-mv results/notes.txt results/lecture_notes.txt
+echo "patient_id,systolic_mmHg" > data/visits.csv
+echo "P001,118" >> data/visits.csv
+echo "P002,142" >> data/visits.csv
+echo "P003,131" >> data/visits.csv
+cat data/visits.csv
+```
+
+```text
+patient_id,systolic_mmHg
+P001,118
+P002,142
+P003,131
+```
+
+Check only the start or the end of the file, as you would for a large export:
+
+```bash
+head -n 2 data/visits.csv
+tail -n 1 data/visits.csv
+```
+
+```text
+patient_id,systolic_mmHg
+P001,118
+P003,131
+```
+
+Copy the file, rename the copy, and go back up:
+
+```bash
+cp data/visits.csv results/visits_backup.csv
+mv results/visits_backup.csv results/visits_raw.csv
 ls results
 cd ..
 pwd
 ```
 
-`ls results` shows `lecture_notes.txt`; the final `pwd` is back in your practice folder.
+`ls results` shows `visits_raw.csv`; the final `pwd` is back in your practice folder.
 
 ## 2.2 Create a script by pasting
 
@@ -167,7 +195,7 @@ From that same practice folder, run:
 cat > 02_cli_navigation_demo.sh
 ```
 
-Paste the script below. Press **Enter** to reach a new line, then **Ctrl+C** to finish. Enter ends a line; Ctrl+C stops `cat`, and the text already written stays in the file. `>` replaces any previous contents.
+Paste the script below. Press **Enter** to end the last line, then **Ctrl+C** to stop `cat`. Every line you ended with Enter stays in the file; a line not yet ended with Enter is dropped. `>` replaces any previous contents.
 
 [02_cli_navigation_demo.sh on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/02_cli_navigation_demo.sh)
 
@@ -185,28 +213,35 @@ echo
 echo "What is here?"
 ls
 echo
-echo "Make a small project and enter it:"
-mkdir cli_practice
-cd cli_practice
+echo "Make a clinic project and enter it:"
+mkdir clinic_practice
+cd clinic_practice
 pwd
-echo "Create folders and an empty note:"
+echo "Create folders and an empty README:"
 mkdir data scripts results
 touch README.txt
 ls
-echo "Inspect the empty note file:"
-cat README.txt
-echo "Copy and rename the note:"
-cp README.txt results/notes.txt
-mv results/notes.txt results/lecture_notes.txt
+echo "Write a visits file, one line at a time:"
+echo "patient_id,systolic_mmHg" > data/visits.csv
+echo "P001,118" >> data/visits.csv
+echo "P002,142" >> data/visits.csv
+echo "P003,131" >> data/visits.csv
+cat data/visits.csv
+echo "The header and first row, then the last row:"
+head -n 2 data/visits.csv
+tail -n 1 data/visits.csv
+echo "Copy and rename the visits file:"
+cp data/visits.csv results/visits_backup.csv
+mv results/visits_backup.csv results/visits_raw.csv
 ls results
 echo
 echo "Move back to the starting directory:"
 cd ..
 pwd
 echo "The practice folder is still here:"
-ls cli_practice
+ls clinic_practice
 echo
-echo "Key commands: pwd, ls, cd, mkdir, touch, cp, mv, cat"
+echo "Key commands: pwd, ls, cd, mkdir, touch, echo, cat, head, tail, cp, mv"
 echo "Tip: use pwd whenever you are unsure where a relative path starts."
 ```
 
@@ -224,9 +259,9 @@ You can run scripts by calling the shell as a command and pointing it at the fil
 bash 02_cli_navigation_demo.sh
 ```
 
-The script creates `cli_practice`, separate from your interactive `cli_manual` folder. Explorer should show `cli_practice/data`, `cli_practice/scripts`, `cli_practice/results/lecture_notes.txt`, and `cli_practice/README.txt`. The two text files are empty.
+The script creates `clinic_practice`, separate from your interactive `clinic_manual` folder. Explorer should show `clinic_practice/data/visits.csv`, `clinic_practice/scripts`, `clinic_practice/results/visits_raw.csv`, and an empty `clinic_practice/README.txt`. Both CSV files hold the same four lines.
 
-Watch `pwd` and `ls` as the script creates, copies, and renames files. Repeat in a fresh practice folder.
+Watch `pwd`, `ls`, `head`, and `tail` as the script writes, views, copies, and renames files. The `cat`, `head`, and `tail` output matches 2.1. Repeat in a fresh practice folder.
 
 # Demo 3: Python basics
 
@@ -241,15 +276,19 @@ To run a saved file instead, enter `exit()` to return to your shell, then use th
 [03a_values.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/03a_values.py)
 
 ```python
-student_name = "Alice"
-student_age = 22
-average_score = 87.5
-is_enrolled = True
-print("name:", student_name, "type:", type(student_name))
-print("age:", student_age, "type:", type(student_age))
-print("score:", average_score, "type:", type(average_score))
-print("enrolled:", is_enrolled, "type:", type(is_enrolled))
-print("next score:", average_score + 2)
+patient_id = "P001"
+age_years = 67
+temperature_c = 37.8
+has_consent = True
+print("patient:", patient_id, "type:", type(patient_id))
+print("age:", age_years, "type:", type(age_years))
+print("temperature:", temperature_c, "type:", type(temperature_c))
+print("consent:", has_consent, "type:", type(has_consent))
+print("age next year:", age_years + 1)
+print("fever:", temperature_c >= 38.0)
+print("fall-risk screen:", age_years >= 65 and has_consent)
+systolic_readings = [118, 142, 131]
+print("readings:", systolic_readings, "count:", len(systolic_readings))
 ```
 
 From your shell:
@@ -258,19 +297,30 @@ From your shell:
 python3 03a_values.py
 ```
 
-Expect Alice (`str`), 22 (`int`), 87.5 (`float`), True (`bool`), and next score 89.5.
+```text
+patient: P001 type: <class 'str'>
+age: 67 type: <class 'int'>
+temperature: 37.8 type: <class 'float'>
+consent: True type: <class 'bool'>
+age next year: 68
+fever: False
+fall-risk screen: True
+readings: [118, 142, 131] count: 3
+```
+
+A comparison gives `True` or `False`: 37.8 is below the 38.0 °C fever cutoff, and 67 is at least 65 with consent recorded, so `and` gives `True`. `len()` counts the three readings in the list.
 
 ## 3.3 Strings
 
 [03b_strings.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/03b_strings.py)
 
 ```python
-course = "Data Science 217"
-welcome = "Welcome to " + course
+clinic = "Mission Bay Clinic"
+welcome = "Welcome to " + clinic
 print(welcome)
-print("course length:", len(course))
-print("upper case:", course.upper())
-print("trimmed text:", "  ready  ".strip())
+print("name length:", len(clinic))
+print("upper case:", clinic.upper())
+print("trimmed ID:", "  P002  ".strip())
 ```
 
 From your shell:
@@ -279,19 +329,26 @@ From your shell:
 python3 03b_strings.py
 ```
 
-Expect `Welcome to Data Science 217`, length 16, `DATA SCIENCE 217`, and `ready` without surrounding spaces.
+```text
+Welcome to Mission Bay Clinic
+name length: 18
+upper case: MISSION BAY CLINIC
+trimmed ID: P002
+```
+
+`len()` counts the spaces inside the clinic name; `strip()` removes the spaces around `P002`.
 
 ## 3.4 Calculations
 
 [03c_calculations.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/03c_calculations.py)
 
 ```python
-hours_studied = 3
-score_per_hour = 10
-points_earned = hours_studied * score_per_hour
-print("hours:", hours_studied)
-print("points per hour:", score_per_hour)
-print("points earned:", points_earned)
+doses_per_day = 3
+dose_mg = 500
+daily_mg = doses_per_day * dose_mg
+print("doses per day:", doses_per_day)
+print("dose (mg):", dose_mg)
+print("daily total (mg):", daily_mg)
 weight_kg = 70
 height_m = 1.75
 bmi = weight_kg / (height_m * height_m)
@@ -304,33 +361,42 @@ From your shell:
 python3 03c_calculations.py
 ```
 
-Expect 30 points and a BMI of about 22.86. Change the hours or weight and observe which outputs change.
+```text
+doses per day: 3
+dose (mg): 500
+daily total (mg): 1500
+BMI: 22.857142857142858
+```
+
+Change the doses or the weight and watch which outputs change.
 
 # Demo 4: Control structures and debugging
 
 Run each saved file from your shell, for example `python3 04a_decisions.py`. Every file includes its own starting values.
 
-You can also try single lines at the `python3` prompt, but do not retype the indentation shown here: after a line ending in `:`, Python 3.13 indents the next line for you, so typing the spaces as well doubles them and the block fails when it reaches `elif` or `else`. Press Enter on an empty line to finish a block.
+To type a block at the `python3` prompt instead, leave out the indentation shown here: after a line ending in `:`, Python 3.13 starts the next `...` line four spaces in for you. Press **Backspace** once for each level you move back out (before `elif` or `else`), and press **Enter** on an empty `...` line to finish the block. Typing the spaces yourself doubles the indentation, and the second line of a block then raises `IndentationError: unexpected indent`.
 
 ## 4.1 Decisions
 
 [04a_decisions.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04a_decisions.py)
 
 ```python
-score = 85
-if score >= 90:
-    print("grade: A")
-elif score >= 80:
-    print("grade: B")
+systolic = 135
+if systolic >= 140:
+    print("systolic category: stage 2 hypertension")
+elif systolic >= 130:
+    print("systolic category: stage 1 hypertension")
+elif systolic >= 120:
+    print("systolic category: elevated")
 else:
-    print("grade: keep practicing")
+    print("systolic category: normal")
 
-age = 25
-has_experience = True
-if age >= 21 and has_experience:
-    print("candidate meets both requirements")
+age_years = 67
+has_consent = True
+if age_years >= 65 and has_consent:
+    print("eligible for fall-risk screening")
 else:
-    print("candidate needs another requirement")
+    print("not eligible for fall-risk screening")
 ```
 
 From your shell:
@@ -339,26 +405,31 @@ From your shell:
 python3 04a_decisions.py
 ```
 
-Expect grade B and `candidate meets both requirements`. Try a score of 95, then 70.
+```text
+systolic category: stage 1 hypertension
+eligible for fall-risk screening
+```
+
+Python checks the conditions top to bottom: 135 fails `systolic >= 140` and passes `systolic >= 130`, so only the stage 1 block runs. These are systolic cutoffs only; a full blood-pressure category also uses diastolic pressure. Set `systolic` to 145, then 118, and rerun (stage 2 hypertension, then normal).
 
 ## 4.2 For loops and running totals
 
 [04b_for_loops.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04b_for_loops.py)
 
 ```python
-scores = [87, 92, 78, 95, 88]
+systolic_readings = [128, 142, 118, 135, 151]
 total = 0
 count = 0
-for score in scores:
-    print("score:", score)
-    total = total + score
+for systolic in systolic_readings:
+    print("systolic:", systolic)
+    total = total + systolic
     count = count + 1
 
 print("total:", total)
 print("count:", count)
 print("average:", total / count)
-for position, score in enumerate(scores, start=1):
-    print("assignment", position, "score", score)
+for visit, systolic in enumerate(systolic_readings, start=1):
+    print("visit", visit, "systolic", systolic)
 ```
 
 From your shell:
@@ -367,30 +438,46 @@ From your shell:
 python3 04b_for_loops.py
 ```
 
-Expect total 440, count 5, average 88.0, then assignment numbers 1–5 paired with scores.
+```text
+systolic: 128
+systolic: 142
+systolic: 118
+systolic: 135
+systolic: 151
+total: 674
+count: 5
+average: 134.8
+visit 1 systolic 128
+visit 2 systolic 142
+visit 3 systolic 118
+visit 4 systolic 135
+visit 5 systolic 151
+```
+
+`total = total + systolic` is the long form of `total += systolic`; both do the same thing, and 4.3 and 4.5 use `+=`.
 
 ## 4.3 While, break, and continue
 
 [04c_loop_control.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04c_loop_control.py)
 
 ```python
-counter = 1
-while counter <= 3:
-    print("counter:", counter)
-    counter = counter + 1
+check = 1
+while check <= 3:
+    print("blood pressure check:", check)
+    check += 1
 
-scores = [87, 92, 78, 95, 88]
-print("Stop at the first score above 90:")
-for score in scores:
-    if score > 90:
-        print("found:", score)
+systolic_readings = [128, 142, 118, 135, 151]
+print("Stop at the first reading of 140 or above:")
+for systolic in systolic_readings:
+    if systolic >= 140:
+        print("found:", systolic)
         break
 
-print("Skip scores below 80:")
-for score in scores:
-    if score < 80:
+print("Skip readings below 130:")
+for systolic in systolic_readings:
+    if systolic < 130:
         continue
-    print("processing:", score)
+    print("review:", systolic)
 ```
 
 From your shell:
@@ -399,28 +486,44 @@ From your shell:
 python3 04c_loop_control.py
 ```
 
-Expect counters 1–3, a stop at 92, then processing of 87, 92, 95, and 88 (78 is skipped).
+```text
+blood pressure check: 1
+blood pressure check: 2
+blood pressure check: 3
+Stop at the first reading of 140 or above:
+found: 142
+Skip readings below 130:
+review: 142
+review: 135
+review: 151
+```
+
+`break` stops at 142, the first reading of 140 or above, so the loop never reaches 118, 135, or 151. `continue` skips 128 and 118.
 
 ## 4.4 Debugging
 
 [04d_debugging.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04d_debugging.py)
 
 ```python
-# Uncomment to see the NameError, then comment it again before rerunning.
-# print(total_socre)
-total_score = 440
-print("Corrected version:", total_score)
+# Each line starting with # and no space is a broken version of the code just below it.
+# Delete that # to see the error, then put it back before trying the next one.
+heart_rate = 72
+#print("heart rate:", heart_rat)
+print("heart rate:", heart_rate)
 
-age_text = "25"
-# Uncomment to see the TypeError, then comment it again before rerunning.
-# print(age_text + 1)
-age_number = int(age_text)
-print("Corrected version:", age_number + 1)
+age_text = "67"
+#print("age next year:", age_text + 1)
+age_years = int(age_text)
+print("age next year:", age_years + 1)
 
-# Uncomment to see the ValueError, then comment it again before rerunning.
-# invalid_number = int("hello")
-valid_number = int("42")
-print("Corrected version:", valid_number)
+#weight_kg = int("70 kg")
+weight_kg = int("70")
+print("weight (kg):", weight_kg)
+
+if heart_rate > 100:
+    print("heart rate: above 100 bpm")
+else:
+    print("heart rate: 100 bpm or below")
 ```
 
 From your shell:
@@ -429,34 +532,60 @@ From your shell:
 python3 04d_debugging.py
 ```
 
-Run the corrected version first: expect 440, 26, and 42. Then uncomment one error line in `04d_debugging.py`: select it and press **Ctrl+/** (**Cmd+/** on Mac), or delete the `#` together with the space after it. Deleting only the `#` leaves the line indented, and Python reports `IndentationError: unexpected indent` instead of the error you are looking for. Save, run the script again, and read the error: use the corrected line below it to identify the fix, which is to spell the name correctly, convert text with `int()`, or supply numeric text. Comment the line again before trying the next error.
+```text
+heart rate: 72
+age next year: 68
+weight (kg): 70
+heart rate: 100 bpm or below
+```
+
+Delete the `#` from one broken line, save, run, and compare the last line of the error with the table; the code just below it shows the fix. Put the `#` back before trying the next one.
+
+| Delete the `#` from | Last line of the error |
+| --- | --- |
+| `#print("heart rate:", heart_rat)` | `NameError: name 'heart_rat' is not defined. Did you mean: 'heart_rate'?` |
+| `#print("age next year:", age_text + 1)` | `TypeError: can only concatenate str (not "int") to str` |
+| `#weight_kg = int("70 kg")` | `ValueError: invalid literal for int() with base 10: '70 kg'` |
+
+These errors appear when Python reaches the bad line, so the lines before it have already printed: the `TypeError` run starts with `heart rate: 72`. **Ctrl+/** (**Cmd+/** on Mac) also removes or adds a `#`. If Python reports `IndentationError: unexpected indent` instead, a space is left at the start of the line; delete it.
+
+Last, delete the four spaces before `print("heart rate: above 100 bpm")` on line 17, save, and run:
+
+```text
+  File "/home/alice/practice/04d_debugging.py", line 17
+    print("heart rate: above 100 bpm")
+    ^^^^^
+IndentationError: expected an indented block after 'if' statement on line 16
+```
+
+Your own folder replaces `/home/alice/practice`. There is no `Traceback` header, and nothing prints, not even `heart rate: 72`: Python checks the whole file's structure before it runs any line. Put the four spaces back and rerun to see all four lines again.
 
 ## 4.5 Combine the pieces
 
 [04e_measurement_workflow.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04e_measurement_workflow.py)
 
 ```python
-scores = [92, 76, 88, 64]
-passing_score = 70
+heart_rates = [72, 104, 88, 112]
+review_above = 100
 total = 0
 count = 0
-passing = 0
+review_count = 0
 
-for position, score in enumerate(scores, start=1):
-    total = total + score
-    count = count + 1
-    if score >= passing_score:
-        status = "PASS"
-        passing = passing + 1
-    else:
+for visit, heart_rate in enumerate(heart_rates, start=1):
+    total += heart_rate
+    count += 1
+    if heart_rate > review_above:
         status = "REVIEW"
-    print("Student", position, "score:", score, status)
+        review_count += 1
+    else:
+        status = "OK"
+    print("Visit", visit, "heart rate:", heart_rate, "bpm", status)
 
 average = total / count
 print("total:", total)
 print("count:", count)
 print("average:", average)
-print("passing:", passing)
+print("readings to review:", review_count)
 ```
 
 From your shell:
@@ -465,4 +594,15 @@ From your shell:
 python3 04e_measurement_workflow.py
 ```
 
-Expect PASS for scores 92, 76, and 88; REVIEW for 64; total 320, count 4, average 80.0, and 3 passing students. Change the threshold and inspect the status and count changes.
+```text
+Visit 1 heart rate: 72 bpm OK
+Visit 2 heart rate: 104 bpm REVIEW
+Visit 3 heart rate: 88 bpm OK
+Visit 4 heart rate: 112 bpm REVIEW
+total: 376
+count: 4
+average: 94.0
+readings to review: 2
+```
+
+Lower `review_above` to 80 and rerun: 88 is now flagged too, and `readings to review` becomes 3.

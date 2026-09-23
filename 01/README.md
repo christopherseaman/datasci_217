@@ -23,7 +23,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 - [Official Python tutorial](https://docs.python.org/3/tutorial/): tutorials straight from the source
 
 <callout icon="🌉" color="green_bg">
-	#### *San Francisco is a walkable city and I will literally die on this hill*
+	#### _San Francisco is a walkable city and I will literally die on this hill_
 </callout>
 
 # Class Structure
@@ -175,7 +175,7 @@ The screenshots use example repositories; paste your own fork's URL. Keep your a
 
 ## Submit Your Assignment Files
 
-A **commit** saves a version of your files. **Staging** a file (the **+** button in Source Control) chooses which changes go into the next commit. **Push** sends local commits to GitHub; VS Code's **Sync Changes** pushes your commits and pulls any new ones in one click. Submit either way below.
+A **commit** saves a version of your files. **Staging** a file (the **+** button in Source Control) chooses which changes go into the next commit; unstaged changes stay on your computer. **Push** sends local commits to GitHub; VS Code's **Sync Changes** pushes your commits and pulls any new ones from GitHub in one click. Submit either way below.
 
 ### VS Code: Commit and Sync
 
@@ -235,7 +235,7 @@ Quote an argument that contains spaces: `cd "My Documents"`.
 
 ## Where You Are: Paths and the Working Directory
 
-A folder is a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the *You are here* dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
+A folder is a **directory** at the shell, and the shell is always "in" one of them: its **working directory**, the _You are here_ dot on a map. `pwd` prints it, `cd` changes it, and commands look for files there unless you say otherwise.
 
 A **path** names a file or folder. An **absolute path** starts at the top of the file system, `/`, like a full street address; it works from anywhere. A **relative path** starts from your working directory, like directions from where you are standing.
 
@@ -350,11 +350,11 @@ P003,131
 
 ## Create a Script by Pasting
 
-1. Run `cat > file.sh` in your shell. `>` replaces that file if it exists.
-2. Paste the script, press **Enter** to end the last line, then **Ctrl+C** to stop `cat` (Control, not Command, on Mac; see Ctrl+C: Make it Stop! below). The text already written stays in the file.
-3. Inspect with `cat file.sh`, then run with `bash file.sh`.
-
 A **shell script** is a text file of shell commands that Bash runs top to bottom. Its first line, `#!/bin/bash`, records which shell the script expects; `bash file.sh` treats that line as an ordinary `#` comment.
+
+1. Run `cat > file.sh` in your shell. `>` replaces that file if it exists.
+2. Paste the script, press **Enter** to end the last line, then **Ctrl+C** to stop `cat` (Control, not Command, on Mac; see Ctrl+C: Make it Stop! below). Every line you ended with Enter stays in the file; a line not yet ended with Enter is dropped.
+3. Inspect with `cat file.sh`, then run with `bash file.sh`.
 
 ## Getting Help
 
@@ -442,12 +442,26 @@ if x > 0:
 print("This will cause an IndentationError")
 ```
 
-At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in. Type the block without adding spaces yourself, press **Backspace** once for each level you want to move back out (before an `elif` or `else`), and press **Enter** on an empty `...` line to finish. In a `.py` file you type the four spaces yourself.
+### The `>>>` Prompt Indents for You
+
+At the `>>>` prompt, Python 3.13 indents for you: after a line ending in `:`, the next `...` line already starts four spaces in. Type each line without adding spaces, press **Backspace** once for each level you move back out (before `else`, which runs when the `if` condition is `False`), and press **Enter** on an empty `...` line to finish the block. In a `.py` file, VS Code also indents the line after a `:` when you press **Enter**; check that each block line starts four spaces in.
+
+```console
+>>> score = 85
+>>> if score >= 90:
+...     print("Grade: A")
+... else:
+...     print("Grade: B")
+...
+Grade: B
+```
+
+Typing the spaces as well doubles the indentation. A one-line block still runs, but the block's second line starts at that deeper indentation plus your spaces, and Python reports `IndentationError: unexpected indent`.
 
 ### Comments Use `#`
 
 ```python
-# This is a comment - Python ignores this line
+# This is a comment; Python ignores this line
 print("This is code")  # Comments can also go at the end of lines
 ```
 
@@ -475,7 +489,7 @@ Every value has a **type** that decides what you can do with it: adding two numb
 | `type(value)` | Inspect a value's type | `type(22)` → `<class 'int'>` |
 | `name = value` | Assign a value to a name | `age = 22` |
 
-### Numbers - The Foundation of Data Science
+### Numbers: The Foundation of Data Science
 
 ```python
 student_count = 150      # int: whole number
@@ -486,7 +500,7 @@ height_meters = 1.75
 
 Scientific notation, such as `1.4e9`, and the `math` module are in [BONUS.md](BONUS.md).
 
-### Text - Essential for Data Labels and Categories
+### Text: Essential for Data Labels and Categories
 
 #### Reference Card: Strings
 
@@ -504,7 +518,7 @@ clean_name = "  Bob Smith  ".strip()     # "Bob Smith"
 print(len(student_name))                 # 13
 ```
 
-### Boolean - Essential for Data Filtering
+### Boolean: Essential for Data Filtering
 
 #### Reference Card: Boolean Logic
 
@@ -528,7 +542,7 @@ student_age = 22
 mysterious_data = "22"       # Looks like a number, but it's text
 
 print(type(student_age))     # <class 'int'>
-print(type(mysterious_data)) # <class 'str'> - Aha! That's the problem
+print(type(mysterious_data)) # <class 'str'>: aha! That's the problem
 ```
 
 ### Lists: Ordered Collections
@@ -635,10 +649,10 @@ At the `>>>` prompt Python shows a bare expression's value; in a script, only `p
 
 # Control Structures
 
-So far, every script runs each line once, top to bottom. Data work needs two more moves: *choose* (flag a blood-pressure reading only if it is high) and *repeat* (apply the same check to 4 readings or 4,000). **Control flow** statements change that top-to-bottom order.
+So far, every script runs each line once, top to bottom. Data work needs two more moves: _choose_ (flag a blood-pressure reading only if it is high) and _repeat_ (apply the same check to 4 readings or 4,000). **Control flow** statements change that top-to-bottom order.
 
 - A **condition** is an expression that is `True` or `False`, such as `systolic >= 140`. The comparison operators from Python Basics build conditions; `and`, `or`, and `not` combine them.
-- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python runs only the first block whose condition is `True`.
+- An `if` statement runs its indented **block** only when its condition is `True`. With `elif` and `else`, Python checks the conditions top to bottom and runs only the first block whose condition is `True`.
 - A `for` loop runs its block once per item in a list, naming the current item: `for grade in grades:`. A `while` loop repeats while its condition stays `True`.
 
 Indentation, from Python Syntax Overview, tells Python which lines belong to the `if` or the loop.
@@ -744,7 +758,7 @@ total = 0
 count = 0
 
 for grade in grades:
-    total += grade
+    total += grade          # same as total = total + grade
     count += 1
 
 average = total / count
@@ -807,6 +821,8 @@ Processing 92
 
 ![Programming is doing something wrong over and over until you do something right](media/it_works.png)
 
+When Python cannot run a line, it stops and prints a **traceback**: the file and line where it stopped, that line of code, and a last line naming the **error type**, such as `NameError`, and a message.
+
 ## Reading a Traceback
 
 An error reports where execution stopped and what operation failed, but not necessarily the underlying cause.
@@ -848,22 +864,21 @@ IndentationError: expected an indented block after 'if' statement on line 2
 ## NameError: Check the Name and Its Definition
 
 ```python
+student_name = "Alice"
 print(student_naem)
 ```
 
-The traceback for this one-line script:
-
 ```text
 Traceback (most recent call last):
-  File "/home/alice/datasci217/analysis.py", line 1, in <module>
+  File "/home/alice/datasci217/analysis.py", line 2, in <module>
     print(student_naem)
           ^^^^^^^^^^^^
-NameError: name 'student_naem' is not defined
+NameError: name 'student_naem' is not defined. Did you mean: 'student_name'?
 ```
 
-The `^^^^` markers point at the part of the line that failed. When a similar name exists, Python 3.13 adds a hint such as `Did you mean: 'student_name'?`.
+The `^^^^` markers point at the part of the line that failed. `Did you mean` is Python 3.13's hint when a similar name exists.
 
-**Diagnosis:** Python cannot find that name. Check its spelling and whether the assignment ran before this line.
+**Diagnosis:** Python cannot find that name. Check its spelling against the hint and whether the assignment ran before this line.
 
 **Correction:**
 
