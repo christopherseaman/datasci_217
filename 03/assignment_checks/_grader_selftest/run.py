@@ -31,7 +31,7 @@ from _public_checks import DATA_FILE  # noqa: E402
 from grading import POINTS, grade_submission  # noqa: E402
 
 COUNTS_NAME = "monitor_counts_20260922_101500.txt"
-ARTIFACT_POINTS = sum(POINTS[:5])
+ARTIFACT_POINTS = sum(POINTS[:4])
 ANSWER_POINTS = dict(
     zip(
         (
@@ -40,7 +40,7 @@ ANSWER_POINTS = dict(
             "peak_hour_column", "peak_hour_mean", "high_monitor", "monitor_offset",
             "stage2_other_monitors",
         ),
-        POINTS[5:],
+        POINTS[4:],
         strict=True,
     )
 )
@@ -263,10 +263,10 @@ def run() -> None:
         )
         assert failing(grade_submission(unactivated)) == {"environment probe"}
 
-        # The Python version never decides a grade; a record that names no version still fails.
+        # The Python version is never graded: any .python-version and any python line, even none, pass.
         for series, reported, expected in (("3.14", "Python 3.14.4", set()), ("3.12.7", "Python 3.12.7", set()),
-                                           ("latest", "Python 3.13.14", {"environment records"}),
-                                           ("3.13", "Python", {"environment probe"})):
+                                           ("latest", "Python 3.13.14", set()),
+                                           ("3.13", "Python", set())):
             other = workspace / f"python-{series}-{len(reported)}"
             build(other, summary, counts, records)
             (other / ".python-version").write_text(series + "\n", encoding="utf-8")
@@ -274,6 +274,14 @@ def run() -> None:
             (other / "output" / "environment.txt").write_text(
                 probe.replace("Python 3.13.14", reported), encoding="utf-8")
             assert failing(grade_submission(other)) == expected, (series, reported)
+        bare = workspace / "no-python-records"  # neither file has to mention Python at all
+        build(bare, summary, counts, records)
+        (bare / ".python-version").unlink()
+        probe = (bare / "output" / "environment.txt").read_text(encoding="utf-8")
+        (bare / "output" / "environment.txt").write_text(
+            "".join(line for line in probe.splitlines(keepends=True) if not line.startswith("python:")),
+            encoding="utf-8")
+        assert failing(grade_submission(bare)) == set(), failing(grade_submission(bare))
 
         # The counting artifacts must not be gradeable against an edited dataset.
         tampered = workspace / "tampered"

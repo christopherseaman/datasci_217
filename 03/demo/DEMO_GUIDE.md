@@ -9,7 +9,7 @@ notion:
 
 # Lecture 03 Demo Guide: Environments and NumPy
 
-Open `03/demo` in VS Code and select **Terminal → New Terminal**. Run the three demos below in order. Every file name starts with the demo that runs it: `demo1_` for the shell pipeline, `demo2_` for Python collections and array basics, `demo3_` for the analysis workflow. Sources: [Lecture 03 demo files](https://github.com/christopherseaman/datasci_217/tree/main/03/demo).
+Clone the course repository the way Lecture 01 cloned your fork (Command Palette → **Git: Clone**, paste `https://github.com/christopherseaman/datasci_217.git`, pick a folder), and the files are in its `03/demo` folder. Without cloning, open the [Lecture 03 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/03/demo), use **Download raw file** for `requirements.txt`, `encounters.csv`, and the six demo scripts, and save them together in one folder. Open that folder in VS Code and select **Terminal → New Terminal**. Run the three demos below in order. Every file name starts with the demo that runs it: `demo1_` for the shell pipeline, `demo2_` for Python collections and array basics, `demo3_` for the analysis workflow.
 
 # Setup: Create the tested environment
 
@@ -42,7 +42,7 @@ cd ../..
 source .venv/bin/activate                               # back in the demo environment
 ```
 
-The last line matters: activating one environment inside another saves the PATH from before *both*, so a single `deactivate` drops you out of the demo environment too. Re-activating brings the `(.venv)` prompt back, and the rest of this guide needs it.
+The last line matters: activating one environment inside another saves the PATH from before _both_, so a single `deactivate` drops you out of the demo environment too. Re-activating brings the `(.venv)` prompt back, and the rest of this guide needs it.
 
 Assignment 03 records its own environment the same way, with a `.python-version` and a `requirements.txt`.
 
@@ -99,7 +99,7 @@ One captured timestamp names the result file and labels both log lines. Run the 
 
 # 2. Python Collections and NumPy Arrays
 
-Run these three from `03/demo`.
+Run these three from the demo folder.
 
 ## 2.1 Inspect Values, Pair Sequences, Build Lists
 
@@ -300,7 +300,7 @@ A comparison such as `patient_averages > 90` gives one True or False per patient
 ```text
 === Boolean Indexing ===
 Patients averaging above 90 mmHg: 9
-Their averages: [92.6 93.  90.6 90.4 90.6]
+First five of their averages: [92.6 93.  90.6 90.4 90.6]
 
 Diastolic stages:
   Stage 2 (90+): 9 patients
@@ -350,11 +350,11 @@ Lowest-average visit: #3 (avg: 84.1 mmHg)
 Highest-average visit: #1 (avg: 85.8 mmHg)
 
 Highest 5 patient averages:
-  #1: Patient  63 - Average: 93.2 mmHg
-  #2: Patient   9 - Average: 93.0 mmHg
-  #3: Patient   2 - Average: 92.6 mmHg
-  #4: Patient  80 - Average: 91.6 mmHg
-  #5: Patient  21 - Average: 90.6 mmHg
+  #1: Patient  63, average 93.2 mmHg
+  #2: Patient   9, average 93.0 mmHg
+  #3: Patient   2, average 92.6 mmHg
+  #4: Patient  80, average 91.6 mmHg
+  #5: Patient  21, average 90.6 mmHg
 
 Change from visit 1 to visit 5:
   Patients whose reading rose: 49

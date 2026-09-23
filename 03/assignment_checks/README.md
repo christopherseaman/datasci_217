@@ -8,15 +8,16 @@ Nothing in this directory ships in a student fork.
 | Half | Lives in | Answers | Points |
 | --- | --- | --- | ---: |
 | Shape | `03/assignment/` (the fork students clone) | Is each artifact well formed: present, readable UTF-8, labelled, and inside a plausible range? | 100 |
-| Value | here, published to the checks repository | Does each answer match the value recomputed from `data/bp_readings.csv`? | 100 |
+| Value | here, fetched by the fork's workflow at run time | Does each answer match the value recomputed from `data/bp_readings.csv`? | 100 |
 
 Both halves expose `grade_submission(path)` returning the same
-`datasci217/grading-result/v1` dict, with the same nineteen check names in the
+`datasci217/grading-result/v1` dict, with the same eighteen check names in the
 same order and the same `POINTS` tuple, so the same tooling runs either one.
-`grading.py`, `check_assignment.py`, `test_assignment.py` and
-`.github/test/` are byte-identical to the fork's copies; only
-`_public_checks.py` differs, and it is what `check_assignment.py` reads the
-report wording from (`SCOPE_NOTE`, `SCORE_LABEL`, `COMPLETE_NOTE`).
+`grading.py`, `test_assignment.py` and `.github/test/` are byte-identical to
+the fork's copies. Two files differ: `_public_checks.py`, and
+`check_assignment.py`, whose fork copy prints a count of passed shape checks
+while this copy prints each check's score and the total. Both read the report
+wording from `_public_checks.py` (`SCOPE_NOTE`, `SCORE_LABEL`, `COMPLETE_NOTE`).
 
 A student's fork can therefore never contain an expected value, and a reviewer
 cannot score points by importing the checker.
@@ -35,8 +36,9 @@ check_assignment.py
 grading.py
 ```
 
-Copy this directory to `03/` in that repository. The repository must exist and
-hold one directory per assignment; students do not fork it. The workflow
+The workflow reads these files from `03/assignment_checks` on `main` of
+`christopherseaman/datasci_217`; commit and push them there. Students do not
+fork that repository. The workflow
 validates what arrives, smoke-tests that it runs together, rolls back to the
 fork's shape-only copy if either fails, and says in the log when a run did not
 verify any value.

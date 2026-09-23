@@ -90,7 +90,7 @@ def accounts_for(output, blocks):
     """True when the blocks are exact consecutive runs, in guide order, covering every line.
 
     Only blank lines may fall between one block and the next, so an output line the guide never
-    shows - or one it shows differently - fails the check.
+    shows, or one it shows differently, fails the check.
     """
     lines = output.splitlines()
     position = 0

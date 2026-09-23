@@ -89,7 +89,7 @@ def demo_boolean_indexing(readings):
     # Find the patients who run high
     uncontrolled = patient_averages > 90
     print(f"Patients averaging above 90 mmHg: {uncontrolled.sum()}")
-    print(f"Their averages: {patient_averages[uncontrolled][:5]}")
+    print(f"First five of their averages: {patient_averages[uncontrolled][:5]}")
 
     # Multiple conditions
     stage_2 = patient_averages >= 90
@@ -155,7 +155,7 @@ def demo_practical_analysis(readings):
 
     print(f"\nHighest 5 patient averages:")
     for rank, idx in enumerate(top_5_indices, 1):
-        print(f"  #{rank}: Patient {idx:3d} - Average: {patient_averages[idx]:.1f} mmHg")
+        print(f"  #{rank}: Patient {idx:3d}, average {patient_averages[idx]:.1f} mmHg")
 
     # Calculate the change from the first visit to the last
     change = readings[:, -1] - readings[:, 0]

@@ -15,13 +15,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 # Virtual Environments
 
-![xkcd 1987: Python Environment, where virtual environments prevent package chaos](media/xkcd_1987.png)
+![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)
 
 ## Why Virtual Environments?
 
-Lecture 01 used uv to install Python 3.13, and Lecture 02 imported modules such as `math` that ship with Python. NumPy does not ship with Python: it is a third-party **package**, and Lecture 02 noted that third-party modules must be installed in the active environment before `import` works. This topic covers where that installation goes.
+Unlike `math`, NumPy does not ship with Python: it is a third-party **package**, which must be installed in the active environment before `import` works. A **virtual environment** gives each project its own set of installed packages.
 
-Picture two analyses on one laptop. Last year's readmission report ran with an older NumPy; this term's wearable-sensor project needs NumPy 2.3.3. If both share one Python installation, upgrading for the new project changes the old one, and the published numbers may no longer rerun. A **virtual environment** gives each project its own set of installed packages, like giving each study its own labeled supply cabinet instead of one shared closet.
+Without one, every project shares one Python installation. Last year's readmission report ran with an older NumPy; this term's wearable-sensor project needs NumPy 2.3.3. Upgrading for the new project changes the old one, and the published numbers may no longer rerun.
 
 ```text
 Project A → A/.venv → its Python and package versions
@@ -56,11 +56,11 @@ After activation below, Python can report the exact interpreter path without a p
 python -c "import sys; print(sys.executable)"
 ```
 
-Lecture 02 introduced `-c`, which runs the Python string that follows it.
+`-c` runs the Python string that follows it.
 
 ### Package, module, and dependency
 
-Lecture 02 defined a **module** as a Python file that can be imported. A package is installable software that can provide one or more modules. NumPy is a package; code normally loads its top-level module with `import numpy`.
+A package is installable software that can provide one or more modules, the importable Python files from Lecture 02. NumPy is a package; code normally loads its top-level module with `import numpy`.
 
 A **dependency** is software a project needs: **direct** dependencies are chosen by the project; **transitive** dependencies are required by those packages.
 
@@ -108,6 +108,7 @@ The `(.venv)` prefix shows the environment is active, and `python` now runs the 
 | :--- | :--- | :--- |
 | Pin Python | `uv python pin 3.13` | Writes `.python-version` containing `3.13`; later `uv venv` commands in this folder use it. |
 | Create environment | `uv venv --python 3.13 .venv` | Creates the project environment. |
+| Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt shows `(.venv)`; `python` now runs the environment's interpreter. |
 | Install requirements | `uv pip install -r requirements.txt` | Installs the deliberate direct dependencies. |
 | Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | Confirms Python and NumPy versions. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
@@ -200,7 +201,7 @@ Conda manages Python environments and packages, including non-Python dependencie
 
 ## Pipelines
 
-Lecture 01 used `>` and `>>` to send a command's output into a file instead of the screen. A **pipe** (`|`) sends that output into another command instead. A **pipeline** chains small commands, each doing one job, like stations on an assembly line: each station receives the previous station's output and passes its result on. Before writing any Python, a pipeline can answer quick questions about a file, such as how many participants each study site enrolled.
+A **pipe** (`|`) sends a command's output into another command, where `>` (Lecture 01) sends it into a file. A **pipeline** chains small commands, each doing one job on the previous command's output. Before writing any Python, a pipeline can answer quick questions about a file, such as how many participants each study site enrolled.
 
 Demo 1 creates `data/raw/encounters.csv`, which has a header and six rows. Each stage receives the previous stage's output:
 
@@ -275,7 +276,7 @@ Before switching to NumPy, three groups of built-in Python tools make everyday c
 
 ## Object introspection
 
-Lecture 01 used `type()` to discover that `"22"` was text, not a number. Values read from a file start as text, so checking a value before calculating avoids a `TypeError`. **Introspection** means asking an object what it is or what it can do while the program runs. `type()` shows the exact type; `isinstance()` answers yes or no and is the usual test inside an `if`; `dir()` lists what the object can do; and `help()` shows its documentation.
+Values read from a file start as text, so checking a value before calculating avoids a `TypeError`. **Introspection** means asking an object what it is or what it can do while the program runs. `type()`, from Lecture 01, shows the exact type; `isinstance()` answers yes or no and is the usual test inside an `if`; `dir()` lists what the object can do; and `help()` shows its documentation.
 
 ### Reference Card: object introspection
 
@@ -302,7 +303,7 @@ print(clean, sum(clean))      # [72, 80, 88] 240
 
 ## Sequence functions
 
-Lecture 01 used `enumerate()` and Lecture 02 used `sorted()`. Two more built-ins handle common loop needs: `zip()` walks two lists side by side, keeping each patient's ID with that patient's reading, and `reversed()` walks a sequence from the end.
+Beside `enumerate()` and `sorted()`, two more built-ins handle common loop needs: `zip()` walks two lists side by side, keeping each patient's ID with that patient's reading, and `reversed()` walks a sequence from the end.
 
 ### Reference Card: sequence functions
 
@@ -325,7 +326,7 @@ print(list(reversed(patients)))       # ['P003', 'P002', 'P001']
 
 ## List Comprehensions
 
-Lecture 01's `for` loops and Lecture 02's `append()` built lists one item at a time. A **list comprehension** writes that loop in one line: `[expression for item in items if condition]`. Read it as "make this, for each item, keeping only items that pass."
+A **list comprehension** writes a `for` loop that builds a list with `append()` in one line: `[expression for item in items if condition]`. Read it as "make this, for each item, keeping only items that pass."
 
 ```text
 loop                                 comprehension
@@ -361,7 +362,7 @@ A comprehension is concise, but Python still handles one item at a time. NumPy, 
 
 A wearable heart monitor records one reading per second: 86,400 readings per patient per day. A list comprehension handles those readings one at a time in Python. **NumPy** (Numerical Python) is the package that stores and calculates on numbers in bulk; pandas, which starts in Lecture 04, is built on it.
 
-NumPy's core object is the **array** (`ndarray`, for n-dimensional array): a grid of values that all share one data type. A Python list is like a shelf of boxes that can each hold anything, so Python must open and check every box. An array is like a pill organizer: identical compartments in a fixed grid, stored side by side in memory, so NumPy's built-in routines, written in the faster C language, can process them all in one pass. Writing one expression that applies to every element, instead of a loop, is called **vectorization**.
+NumPy's core object is the **array** (`ndarray`, for n-dimensional array): a grid of values that all share one data type. A Python list can hold anything in each slot, so Python must check every item as it goes. An array's values share one type and sit side by side in memory, so NumPy's built-in routines, written in the faster C language, can process them all in one pass. Writing one expression that applies to every element, instead of a loop, is called **vectorization**.
 
 ## Lists Versus Arrays
 
@@ -480,7 +481,7 @@ Two arrays combine position by position, so they must have the same shape: `np.a
 
 # Array Indexing and Slicing
 
-Lecture 02 picked list items with `items[0]` and slices such as `items[1:4]`. Arrays use the same square brackets and the same half-open slices, then add one index per dimension, separated by commas. That is how a table of patients by visits gets read one cell, one row, one column, or one block at a time.
+Arrays use the same square brackets and half-open slices as lists, such as `items[0]` and `items[1:4]`, then add one index per dimension, separated by commas. That is how a table of patients by visits gets read one cell, one row, one column, or one block at a time.
 
 ## Basic Indexing
 
@@ -504,7 +505,7 @@ print(arr[::2])          # [0 2 4 6 8]
 
 ## Multidimensional Indexing
 
-A 2D array is a table: the first index picks rows and the second picks columns, separated by a comma. McKinney calls axis 0 the rows and axis 1 the columns. Leaving out the column index selects a whole row, so `bp[1]` is the same as `bp[1, :]`.
+A 2D array is a table: the first index picks rows and the second picks columns, separated by a comma. Axis 0 is the rows and axis 1 the columns. Leaving out the column index selects a whole row, so `bp[1]` is the same as `bp[1, :]`.
 
 ```text
 bp              visit 1  visit 2  visit 3
@@ -686,7 +687,7 @@ print(arr.mean())        # 3.5: one mean for the whole array
 
 Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 readings becomes 3 patients by 4 visits. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
-![NumPy reshaping cheatsheet: only the top-left panel is this lecture's, and only its reshape lines, where -1 asks NumPy to work out that dimension. ravel is another flatten, one that skips the copy when the layout allows it and copies when it does not; order='F' refills column-first; the stacking and 3D panels are further reading, and the bonus page covers stacking.](media/nparray_cheatsheet.png)
+![NumPy reshaping cheatsheet: this lecture uses only the top-left reshape panel; the bonus page covers stacking](media/nparray_cheatsheet.png)
 
 ### Reference Card: reshape and transpose
 
@@ -753,7 +754,7 @@ The second call keeps each original value where the test passes and substitutes 
 
 ## Sorting and Ranking
 
-Sorting answers two questions. `np.sort()` returns the *values* in order. `np.argsort()` returns the *positions* that would put them in order, which tells you *which* patient has the highest value. A slice step of `-1` walks backward, so `[::-1]` reverses an order.
+Sorting answers two questions. `np.sort()` returns the _values_ in order. `np.argsort()` returns the _positions_ that would put them in order, which tells you _which_ patient has the highest value. A slice step of `-1` walks backward, so `[::-1]` reverses an order.
 
 ### Reference Card: Values Versus Positions
 

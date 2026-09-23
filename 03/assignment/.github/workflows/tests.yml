@@ -6,13 +6,15 @@ on:
   workflow_dispatch:
 
 env:
-  # The course checks repository. It is not forked: it holds one directory per
-  # assignment (03/ for this one) with the checks that compare your answers
-  # against the supplied readings, and it must exist for those value checks to
-  # run. Each quarter, point these three lines at the new one.
+  # The course checks repository, which nobody forks: it holds the checks that
+  # decide the grade under NN/assignment_checks/ beside the lecture and demo they
+  # belong to, and compares your answers against the supplied readings. If that
+  # directory cannot be fetched, every run falls back to the shape-only checks
+  # committed here and reports that no value was verified. Each quarter, point
+  # these three lines at the branch the course is taught from.
   CHECKS_REPO: christopherseaman/datasci_217
   CHECKS_REF: main
-  CHECKS_DIR: "03/assignment_checks"
+  CHECKS_PATH: "03/assignment_checks"
   # Supplied checker files, refreshed together so a correction cannot land half-applied.
   # Student work is never listed here.
   CHECKS_FILES: |
@@ -62,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          base="https://raw.githubusercontent.com/${CHECKS_REPO}/${CHECKS_REF}/${CHECKS_DIR}"
+          base="https://raw.githubusercontent.com/${CHECKS_REPO}/${CHECKS_REF}/${CHECKS_PATH}"
           staging="$(mktemp -d)"
 
           cat > "$staging/validate.py" <<'PY'
@@ -102,9 +104,9 @@ jobs:
             else
               status=$?
               if [ "$status" = 22 ]; then
-                problem="${CHECKS_REPO}@${CHECKS_REF} answered but does not serve ${CHECKS_DIR}/${file}, so the course repository needs fixing."
+                problem="${CHECKS_REPO}@${CHECKS_REF} answered but does not serve ${CHECKS_PATH}/${file}, so the course repository needs fixing."
               else
-                problem="downloading ${CHECKS_DIR}/${file} from ${CHECKS_REPO}@${CHECKS_REF} failed before GitHub answered (curl exit ${status}), which is usually a passing network problem."
+                problem="downloading ${CHECKS_PATH}/${file} from ${CHECKS_REPO}@${CHECKS_REF} failed before GitHub answered (curl exit ${status}), which is usually a passing network problem."
               fi
               break
             fi
@@ -119,7 +121,7 @@ jobs:
             echo "::warning::Checks: ${problem} This run uses the shape-only copy committed in this repository, which does not check any answer."
           else
             echo "CHECKS_STAGING=$staging" >> "$GITHUB_ENV"
-            echo "Checks: downloaded the current version from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_DIR}; nothing uses it until it has run."
+            echo "Checks: downloaded the current version from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH}; nothing uses it until it has run."
           fi
 
       - name: Confirm the checks run before grading with them
@@ -212,14 +214,14 @@ jobs:
             if ! python -m pip install -r .github/test/requirements.txt; then
               problem="its requirement list does not install"
             elif outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
-              echo "Checks: ${outcome}, from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_DIR}."
+              echo "Checks: ${outcome}, from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH}."
               echo "CHECKS_SOURCE=course" >> "$GITHUB_ENV"
               exit 0
             else
               problem="$outcome"
             fi
 
-            echo "::warning::Checks: the set downloaded from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_DIR} does not run together (${problem}), so the course repository needs fixing. Restoring the shape-only copy committed in this repository, which does not check any answer."
+            echo "::warning::Checks: the set downloaded from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH} does not run together (${problem}), so the course repository needs fixing. Restoring the shape-only copy committed in this repository, which does not check any answer."
             for file in $CHECKS_FILES; do
               if [ -e "$backup/$file" ]; then
                 cp "$backup/$file" "$file"

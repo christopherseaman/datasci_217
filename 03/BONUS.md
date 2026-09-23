@@ -150,7 +150,7 @@ arr2 = np.array([3, 4, 5, 6, 7])
 unique_vals = np.unique(arr1)                    # Unique values
 intersection = np.intersect1d(arr1, arr2)        # array([3, 4, 5])
 union = np.union1d(arr1, arr2)                   # array([1, 2, 3, 4, 5, 6, 7])
-difference = np.setdiff1d(arr1, arr2)            # array([1, 2]) - in arr1 not arr2
+difference = np.setdiff1d(arr1, arr2)            # array([1, 2]): in arr1, not arr2
 symmetric_diff = np.setxor1d(arr1, arr2)         # Elements in one but not both
 
 # Test membership
@@ -333,10 +333,10 @@ cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines
 #     tail -n +2 means "start at line 2" (skip the header)
 # Output: one bar per record, six for this file
 
-# With statistics
-cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean
+# Taller bars: two rows per sparkline
+cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines -n 2
 
-# gnuplot: Create terminal plots (optional - many dependencies)
+# gnuplot: Create terminal plots (optional; many dependencies)
 # Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
 
 # Simple plot of systolic readings

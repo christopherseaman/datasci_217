@@ -8,7 +8,7 @@ builds submissions in ignored `scratch/`, and confirms that:
   loose formatting, rounding, a BOM, CRLF, NumPy scalar reprs and the sample
   standard deviation, and take away exactly the points a wrong, partial,
   miscounted, unactivated or edited-dataset submission should lose;
-- the shape-only checks in `03/assignment/` report the *same* thing for a
+- the shape-only checks in `03/assignment/` report the _same_ thing for a
   correct submission and for a plausible but entirely wrong one, need no
   dataset at all, and still catch a missing, unreadable, or implausible value.
 

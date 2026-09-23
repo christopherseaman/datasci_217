@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Stop at the first failing command, unset variable, or failing pipeline stage.
 set -euo pipefail
 
 # A bounded, repeatable shell pipeline. Run from a disposable directory:
@@ -6,6 +7,7 @@ set -euo pipefail
 echo "=== Lecture 03: bounded CLI pipeline ==="
 mkdir -p data/raw logs results
 
+# Write the lines between <<'EOF' and EOF into the file, unchanged.
 cat > data/raw/encounters.csv <<'EOF'
 patient_id,age,systolic_bp,clinic
 P001,54,128,Cardiology
@@ -19,7 +21,8 @@ EOF
 echo "Encounter records: $(tail -n +2 data/raw/encounters.csv | wc -l)"
 echo "Clinics (with counts):"
 # Skip the header, select one field, sort it for uniq, count it, and bound
-# the displayed result to five lines.
+# the displayed result to five lines. A trailing \ continues the command on
+# the next line, so this is still one pipeline.
 tail -n +2 data/raw/encounters.csv \
   | cut -d',' -f4 \
   | sort \

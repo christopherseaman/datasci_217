@@ -33,8 +33,6 @@ ENVIRONMENT_FILE = "output/environment.txt"
 MONITOR_COUNTS_PATTERN = re.compile(r"^monitor_counts_\d{8}_\d{6}\.txt$")
 MONITOR_COUNTS_NAME = "output/monitor_counts_<timestamp>.txt"
 
-# The course interpreter series, named in messages; any Python version is accepted.
-PYTHON_SERIES = "3.13"
 STAGE_2_MMHG = 140
 MMHG_TOLERANCE = 0.6
 
@@ -281,35 +279,17 @@ def _report(problems: list[str]) -> None:
     _assert(not problems, " ".join(problems))
 
 
-def check_environment_records(root: Path) -> None:
-    """`.python-version` and `requirements.txt` record the environment."""
-    problems: list[str] = []
-
-    pinned = _text(root, ".python-version").strip()
-    if _VERSION.match(pinned) is None:
-        problems.append(f".python-version records `{pinned}`, not a Python version such as {PYTHON_SERIES}.")
-
-    requirements = _text(root, "requirements.txt")
-    if not any(_PINNED_NUMPY.match(line.strip()) for line in requirements.splitlines()):
-        problems.append("requirements.txt must pin the direct dependency as `numpy==<version>`.")
-
-    _report(problems)
-
 
 def check_environment_probe(root: Path) -> None:
     """`output/environment.txt` reports the environment the analysis ran in."""
     probe = read_environment(root)
     problems: list[str] = []
 
-    for key in ("python", "numpy", "interpreter"):
+    for key in ("numpy", "interpreter"):  # the python line is never graded
         if key not in probe:
             problems.append(f"{ENVIRONMENT_FILE} has no `{key}` line.")
     if problems:
         _report(problems)
-
-    python_version = _VERSION.search(probe["python"])
-    if python_version is None:
-        problems.append(f"{ENVIRONMENT_FILE} reports python `{probe['python']}`, which names no Python version.")
 
     pinned = None
     for line in _text(root, "requirements.txt").splitlines():
@@ -452,7 +432,6 @@ def _answer_check(key: str) -> PublicCheck:
 
 
 PUBLIC_CHECKS = (
-    PublicCheck("environment records", check_environment_records),
     PublicCheck("environment probe", check_environment_probe),
     PublicCheck("record count artifact", check_record_count),
     PublicCheck("monitor counts artifact", check_monitor_counts),

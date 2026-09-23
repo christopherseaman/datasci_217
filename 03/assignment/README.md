@@ -28,18 +28,11 @@ P0001,M06,111,122, ... ,108
 
 Leave this file exactly as it ships: the checks that grade your answers recompute them from it.
 
-## Where your work is judged
+## Setup
 
-Grading happens in two places, and both read only your committed artifacts. Neither ever runs or reads your Python code, so any way of producing a correct artifact counts.
+Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `bp_readings.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-| Where | What it checks | What it cannot tell you |
-| --- | --- | --- |
-| `python check_assignment.py`, in your repository | The shape of each artifact: the file is there, it is readable text, it carries the required labels, and each value is a number or a label in a range a clinician would accept. | Whether a value is right. The answers are not in your repository. |
-| GitHub Actions, on every push | The same shape checks, plus every answer compared with the value recomputed from `data/bp_readings.csv`. | n/a |
-
-Run the local checks to catch a missing file, a missing key, or a typo before you push; push to find out whether the analysis is right.
-
-Work in `03/assignment` or its standalone repository. In VS Code, sync `main` and use **Git: Create Branch** to create `feature/numpy-analysis`, then open **Terminal → New Terminal** at the assignment directory. If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first.
+Switch to `main`, select **Sync Changes** if Source Control shows it, and use **Git: Create Branch** to create `feature/numpy-analysis`. Work on that branch until the Submit section.
 
 > **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Task 2 uses `tail`, `cut`, `sort`, `uniq`, and `wc`, which native PowerShell does not have. Git Bash also provides them; there the environment activates with `source .venv/Scripts/activate` instead.
 
@@ -58,8 +51,8 @@ uv pip install -r requirements.txt
 
 `uv python pin` writes the `.python-version` file for you; commit it.
 
-> **Checkpoint: `.python-version`**
-> Records the course interpreter series, and `requirements.txt` still pins numpy.
+> **Checkpoint: `requirements.txt`**
+> Still pins numpy as `numpy==<version>`.
 
 ### 1.2 Save an environment probe
 
@@ -80,7 +73,7 @@ echo "python: $(python --version)" > output/environment.txt
 Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path.
 
 > **Checkpoint: `output/environment.txt`**
-> Three lines: the Python version (any version is accepted), the numpy version `requirements.txt` pins, and an interpreter path inside your project's `.venv`.
+> Three lines: the Python version (not graded), the numpy version `requirements.txt` pins, and an interpreter path inside your project's `.venv`.
 
 ## Task 2: Count the dataset from the shell
 
@@ -139,7 +132,7 @@ high_monitor: <monitor id>
 | `peak_hour_column` | Which hour column has the highest mean across all patients? | Column name as written in the header | 4 |
 | `peak_hour_mean` | What is that column's mean? | mmHg | 4 |
 | `high_monitor` | Which monitor's average is highest? | Monitor id as written in the file | 4 |
-| `monitor_offset` | How far above the average of the patients on the *other* monitors does that monitor's average sit? | mmHg | 3 |
+| `monitor_offset` | How far above the average of the patients on the _other_ monitors does that monitor's average sit? | mmHg | 3 |
 | `stage2_other_monitors` | Leaving out the patients on that monitor, how many of the rest have a 12-hour mean of 140 mmHg or higher? | Whole number | 3 |
 
 How the values are read:
@@ -163,14 +156,21 @@ python analysis.py
 python check_assignment.py
 ```
 
-These checks read your committed artifacts and confirm that each one is well formed. They do not hold the answers, so a complete run says only that:
+Grading happens in two places, and both read only your committed artifacts. Neither ever runs or reads your Python code, so any way of producing a correct artifact counts.
+
+| Where | What it checks | What it cannot tell you |
+| --- | --- | --- |
+| `python check_assignment.py`, in your repository | The shape of each artifact: the file is there, it is readable text, it carries the required labels, and each value is a number or a label in a range a clinician would accept. | Whether a value is right. The answers are not in your repository. |
+| GitHub Actions, on every push | The same shape checks, plus every answer compared with the value recomputed from `data/bp_readings.csv`. | n/a |
+
+Run the local checks to catch a missing file, a missing key, or a typo before you push; push to find out whether the analysis is right. The local checks do not hold the answers, so a complete run says only that each artifact is well formed:
 
 ```text
-19 of 19 shape checks passed.
+18 of 18 shape checks passed.
 These checks confirm the shape of your artifacts; your values are checked when you push.
 ```
 
-It reports a count rather than a score, because it has not looked at a single answer. When something is off it names the artifact to revise. Your answers are compared with the readings when you push, and the GitHub Actions run reports the same nineteen checks, each carrying its own points.
+It reports a count rather than a score, because it has not looked at a single answer. When something is off it names the artifact to revise. Your answers are compared with the readings when you push, and the GitHub Actions run reports the same eighteen checks, each carrying its own points.
 
 ### Completion contract
 
@@ -178,8 +178,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 
 | Artifact | Complete when | Check | Points |
 | --- | --- | --- | ---: |
-| `.python-version`, `requirements.txt` | They record the course interpreter series and a pinned numpy version. | environment records | 5 |
-| `output/environment.txt` | Its `python`, `numpy`, and `interpreter` lines agree with those records and name an interpreter inside `.venv`. | environment probe | 8 |
+| `output/environment.txt` | Its `numpy` line matches the pin in `requirements.txt`, and its `interpreter` line names an interpreter inside `.venv`. The `python` line is not graded. | environment probe | 13 |
 | `output/record_count.txt` | It holds the number of patient records in the supplied CSV. | record count artifact | 10 |
 | `output/monitor_counts_<timestamp>.txt` | A timestamped file holds every monitor's patient count. | monitor counts artifact | 15 |
 | `output/vitals_summary.txt` | It has a readable `key: value` line for all 14 keys. | summary artifact format | 12 |

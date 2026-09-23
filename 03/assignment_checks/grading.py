@@ -13,10 +13,10 @@ from _public_checks import run_public_checks
 
 
 # One value per check in _public_checks.PUBLIC_CHECKS, in the same order:
-# environment records, environment probe, record count, monitor counts,
+# environment probe, record count, monitor counts,
 # summary format, then the fourteen answers in README order.
 POINTS = (
-    5, 8, 10, 15, 12,
+    13, 10, 15, 12,
     4, 4, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 3, 3,
 )
 
