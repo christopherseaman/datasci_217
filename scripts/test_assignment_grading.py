@@ -1,7 +1,11 @@
+# /// script
+# requires-python = ">=3.13,<3.14"
+# dependencies = ["numpy==2.3.3", "pandas==3.0.5", "scikit-learn==1.9.0"]
+# ///
 """Check every grader's empty/scaffold contract without executing submissions.
 
-Run with the assignment grading dependencies installed:
-    python scripts/test_assignment_grading.py
+Assignment 11's checks refuse any other versions of these dependencies:
+    uv run scripts/test_assignment_grading.py
 """
 
 import json

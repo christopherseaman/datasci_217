@@ -119,7 +119,8 @@ def _task3(root: Path) -> None:
 
 
 def _record(name: str, maximum: int, error: Exception | None) -> dict:
-    return {"test-name": name, "passed": error is None, "score": maximum if error is None else 0, "max-score": maximum}
+    return {"test-name": name, "passed": error is None, "score": maximum if error is None else 0, "max-score": maximum,
+            "detail": "" if error is None else str(error)}
 
 
 def grade_submission(submission_root: str | Path) -> dict:
@@ -139,7 +140,7 @@ def _format_result(result: dict) -> str:
     return "\n".join(
         f"[{'PASS' if test['passed'] else 'FAIL'}] {test['test-name']}: "
         f"{test['score']}/{test['max-score']}"
-        + (f" — {test['detail']}" if test.get("detail") else "")
+        + (f" ({test['detail']})" if test.get("detail") else "")
         for test in result["tests"]
     ) + f"\nScore: {result['score']}/{result['max-score']}"
 
