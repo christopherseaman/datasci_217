@@ -686,7 +686,7 @@ print(arr.mean())        # 3.5: one mean for the whole array
 
 Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 readings becomes 3 patients by 4 visits. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
 
-![NumPy reshaping cheatsheet: only the top-left panel is this lecture's, and only its reshape lines, where -1 asks NumPy to work out that dimension. ravel is another flatten, one that skips the copy when the layout allows it and copies when it does not; order='F' refills column-first; the stacking and 3D panels are further reading, and BONUS.md covers stacking.](media/nparray_cheatsheet.png)
+![NumPy reshaping cheatsheet: only the top-left panel is this lecture's, and only its reshape lines, where -1 asks NumPy to work out that dimension. ravel is another flatten, one that skips the copy when the layout allows it and copies when it does not; order='F' refills column-first; the stacking and 3D panels are further reading, and the bonus page covers stacking.](media/nparray_cheatsheet.png)
 
 ### Reference Card: reshape and transpose
 

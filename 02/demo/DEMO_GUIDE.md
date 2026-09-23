@@ -53,7 +53,7 @@ cd -                          # back to where you started
 Open `ds217-practice` with **File → Open Folder**, then **Terminal → New Terminal**:
 
 1. Type `cat no`, press **Tab** to complete `notes.md`, then **Enter**. Expect the practice heading and experiment note.
-2. Press **↑** to recall it, then **Ctrl+A** to move to the start. Press **Delete** three times to remove `cat` (on Mac, **Fn+Delete**), type `git diff --`, and press **Ctrl+E**. The line should read `git diff -- notes.md`.
+2. Press **↑** to recall it, then **Ctrl+A** to move to the start. Press **Delete** three times to remove `cat` (on Mac, **Fn+Delete**), type `git diff --`, and press **Ctrl+E** (**End** on Windows/Linux, where VS Code claims Ctrl+E for Quick Open). The line should read `git diff -- notes.md`.
 3. Press **Enter**. Expect no output: you already committed and merged those changes.
 4. Press **Ctrl+R**, type `cat no`, and check that `cat notes.md` appears. Press **Esc** to accept the match, then **Enter** to run it again.
 

@@ -235,22 +235,24 @@ A **`.gitignore`** file lists **patterns** for files Git should not track. Match
 
 Adding a pattern does not untrack files already committed.
 
-`git status --short` marks untracked files with `??`. Before adding a `.gitignore`:
+`git status --short` marks untracked files with `??`. Before a `.gitignore`:
 
 ```text
 ?? __pycache__/
-?? vitals_tools.py
 ?? data/
 ?? main.py
+?? vitals_tools.py
 ```
 
 After a `.gitignore` containing `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
 
 ```text
 ?? .gitignore
-?? vitals_tools.py
 ?? main.py
+?? vitals_tools.py
 ```
+
+`data/` disappears because every file in it is a raw CSV the pattern covers.
 
 ### Reference Card: Ignore Patterns
 

@@ -166,11 +166,11 @@ python check_assignment.py
 These checks read your committed artifacts and confirm that each one is well formed. They do not hold the answers, so a complete run says only that:
 
 ```text
-Shape: 100/100
-Every artifact is well formed. Your values are checked when you push.
+19 of 19 shape checks passed.
+These checks confirm the shape of your artifacts; your values are checked when you push.
 ```
 
-Each check reports its own points and, when something is off, which artifact to revise. Your answers are compared with the readings when you push, and the GitHub Actions run reports the same nineteen checks with the same point values.
+It reports a count rather than a score, because it has not looked at a single answer. When something is off it names the artifact to revise. Your answers are compared with the readings when you push, and the GitHub Actions run reports the same nineteen checks, each carrying its own points.
 
 ### Completion contract
 

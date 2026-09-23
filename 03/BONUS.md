@@ -331,7 +331,7 @@ Command line tools for quick data visualization without leaving the terminal.
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines
 #     Extract column 3 -> Skip header (line 1) -> Graph
 #     tail -n +2 means "start at line 2" (skip the header)
-# Output: ▅█▃▆▇▄▇▂▆▅
+# Output: one bar per record, six for this file
 
 # With statistics
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines --stat-min --stat-max --stat-mean

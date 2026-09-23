@@ -287,7 +287,8 @@ def check_followup_patients(root: Path) -> None:
     listed = _listed_ids(_followup_text(root))
     _assert(
         listed,
-        f"{FOLLOWUP_FILE.as_posix()} lists no patient IDs. After the `Cutoff:` and `Reason:` lines, "
+        f"{FOLLOWUP_FILE.as_posix()} has no line that is a patient ID on its own. After the "
+        f"`Cutoff:` and `Reason:` lines, "
         "write one patient ID per line.",
     )
     repeated = sorted({entry for entry in listed if listed.count(entry) > 1})
