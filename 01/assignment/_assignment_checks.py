@@ -86,6 +86,12 @@ def check_terminal_practice(root: Path) -> None:
         _assert((practice / name).is_file() and not (practice / name).is_symlink(), f"terminal-practice/{name} must be a regular file.")
 
 
+def _after_python_family(report: str) -> str | None:
+    """The report without its first line, which records whichever Python ran readiness.py."""
+    first, _, rest = report.partition("\n")
+    return rest if re.fullmatch(r"Python family: \d+\.\d+", first) else None
+
+
 def check_output_artifact(root: Path) -> None:
     output = root / "output"
     _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
@@ -95,7 +101,9 @@ def check_output_artifact(root: Path) -> None:
         stored = report.read_text(encoding="utf-8")
     except UnicodeDecodeError as error:
         raise AssertionError("output/readiness.txt must be UTF-8 text.") from error
-    _assert(stored == EXPECTED_READINESS, "output/readiness.txt must contain the documented 14-line readiness report.")
+    _assert(_after_python_family(stored) == _after_python_family(EXPECTED_READINESS),
+            "output/readiness.txt must contain the documented 14-line readiness report; "
+            "any Python version on its first line is accepted.")
     identity = output / "student_identity.txt"
     _assert(identity.is_file() and not identity.is_symlink(), "Run capture_identity.py and commit output/student_identity.txt.")
     try:

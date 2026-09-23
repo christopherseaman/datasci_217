@@ -41,7 +41,7 @@ rm terminal-practice/remove-me.txt
 ls terminal-practice
 ```
 
-> **Checkpoint — `terminal-practice/source.txt` and `terminal-practice/path-check.txt`**
+> **Checkpoint: `terminal-practice/source.txt` and `terminal-practice/path-check.txt`**
 > Both empty files should now exist. Commit them with your completed work.
 
 ### 1.2 Complete `readiness.py`
@@ -133,7 +133,7 @@ After all three student scripts run cleanly, use the supplied wrapper:
 python3 make_output.py
 ```
 
-> **Checkpoint — `output/readiness.txt`**
+> **Checkpoint: `output/readiness.txt`**
 > The helper runs the three scripts and saves their combined output: the 3 lines from Task 1.2, 8 from Task 2.2, and 3 from Task 3.1, in that order. Open the file and check all 14 lines.
 
 ### 3.3 Generate your identity hash
@@ -146,7 +146,7 @@ python3 capture_identity.py
 
 The helper trims whitespace, lowercases the address, requires `@ucsf.edu`, and hashes the username after removing punctuation. It saves only the hash; keep your email address out of files and commits.
 
-> **Checkpoint — `output/student_identity.txt`**
+> **Checkpoint: `output/student_identity.txt`**
 > The file contains one 64-character SHA-256 hash. The checker must match it to the course roster. If it does not, rerun the helper with your roster email or contact the course team.
 
 ## Check Your Work
@@ -173,7 +173,7 @@ GitHub Actions runs the same checks automatically on every push. In a new fork, 
 | Points | Artifacts | What is checked |
 | --- | --- | --- |
 | 20 | `terminal-practice/source.txt`, `terminal-practice/path-check.txt` | Both exist as regular files in a regular directory; contents are not checked. |
-| 80 | `output/readiness.txt`, `output/student_identity.txt` | Both are regular UTF-8 files in a regular `output` directory. The report matches all 14 expected lines, including spacing and a final newline. The identity file contains one roster hash; surrounding whitespace and hex-letter case are ignored. Both artifacts must pass for these points. |
+| 80 | `output/readiness.txt`, `output/student_identity.txt` | Both are regular UTF-8 files in a regular `output` directory. The report matches all 14 expected lines, including spacing and a final newline; the Python version on its first line is not graded. The identity file contains one roster hash; surrounding whitespace and hex-letter case are ignored. Both artifacts must pass for these points. |
 
 Extra files are ignored. The checker reads saved artifacts, not your source code or how you produced the results.
 

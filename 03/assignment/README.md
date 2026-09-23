@@ -80,7 +80,7 @@ echo "python: $(python --version)" > output/environment.txt
 Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path.
 
 > **Checkpoint: `output/environment.txt`**
-> Three lines: a 3.13 interpreter, the numpy version `requirements.txt` pins, and an interpreter path inside your project's `.venv`.
+> Three lines: the Python version (any version is accepted), the numpy version `requirements.txt` pins, and an interpreter path inside your project's `.venv`.
 
 ## Task 2: Count the dataset from the shell
 

@@ -43,9 +43,9 @@ verify any value.
 
 ## Maintaining both halves
 
-- A parsing, environment, or naming rule that both halves share — the summary
+- A parsing, environment, or naming rule that both halves share (the summary
   reader, the `count label` reader, the NumPy-scalar unwrapper, the
-  environment checks, the timestamped file name — is written in both
+  environment checks, the timestamped file name) is written in both
   `_public_checks.py` files. Fix it in both; they are deployed separately, so
   neither can import the other.
 - A change to the check list or to `POINTS` belongs in both halves at once, in

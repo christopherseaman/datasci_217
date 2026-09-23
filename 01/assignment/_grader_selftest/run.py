@@ -58,9 +58,20 @@ def run() -> None:
         (output / "student_identity.txt").write_text(valid_identity + "\n" + valid_identity, encoding="utf-8")
         assert grade_submission(root)["score"] == 20
         (output / "student_identity.txt").write_text(valid_identity + "\n", encoding="utf-8")
+        # The first line records whichever Python ran the script, and any version earns the points;
+        # every other line, and the shape of that one, is still graded.
+        for family, score in (("3.13", 100), ("3.14", 100), ("3.12", 100), ("3.9", 100),
+                              ("3", 20), ("three", 20), ("3.14.4", 20), ("", 20)):
+            report = EXPECTED_READINESS.replace("Python family: 3.13\n", f"Python family: {family}\n", 1)
+            (output / "readiness.txt").write_text(report, encoding="utf-8")
+            assert grade_submission(root)["score"] == score, family
+        (output / "readiness.txt").write_text(EXPECTED_READINESS.replace("Total: 82", "Total: 83"), encoding="utf-8")
+        assert grade_submission(root)["score"] == 20
+        (output / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
         (practice / "source.txt").unlink()
         assert grade_submission(root)["score"] == 80
-    print("Assignment 01: all 40 roster hashes, non-roster hashes, starter, extra-file, missing, and wrong-artifact checks passed.")
+    print("Assignment 01: all 40 roster hashes, non-roster hashes, starter, extra-file, missing, wrong-artifact, "
+          "and any-Python-version checks passed.")
 
 
 if __name__ == "__main__":

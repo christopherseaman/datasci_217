@@ -33,6 +33,7 @@ ENVIRONMENT_FILE = "output/environment.txt"
 MONITOR_COUNTS_PATTERN = re.compile(r"^monitor_counts_\d{8}_\d{6}\.txt$")
 MONITOR_COUNTS_NAME = "output/monitor_counts_<timestamp>.txt"
 
+# The course interpreter series, named in messages; any Python version is accepted.
 PYTHON_SERIES = "3.13"
 STAGE_2_MMHG = 140
 MMHG_TOLERANCE = 0.6
@@ -285,8 +286,8 @@ def check_environment_records(root: Path) -> None:
     problems: list[str] = []
 
     pinned = _text(root, ".python-version").strip()
-    if not pinned.startswith(PYTHON_SERIES):
-        problems.append(f".python-version records `{pinned}`, not the course interpreter series {PYTHON_SERIES}.")
+    if _VERSION.match(pinned) is None:
+        problems.append(f".python-version records `{pinned}`, not a Python version such as {PYTHON_SERIES}.")
 
     requirements = _text(root, "requirements.txt")
     if not any(_PINNED_NUMPY.match(line.strip()) for line in requirements.splitlines()):
@@ -307,8 +308,8 @@ def check_environment_probe(root: Path) -> None:
         _report(problems)
 
     python_version = _VERSION.search(probe["python"])
-    if python_version is None or not python_version.group().startswith(PYTHON_SERIES):
-        problems.append(f"{ENVIRONMENT_FILE} reports python `{probe['python']}`, not a {PYTHON_SERIES} interpreter.")
+    if python_version is None:
+        problems.append(f"{ENVIRONMENT_FILE} reports python `{probe['python']}`, which names no Python version.")
 
     pinned = None
     for line in _text(root, "requirements.txt").splitlines():

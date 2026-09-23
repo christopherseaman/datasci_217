@@ -263,6 +263,18 @@ def run() -> None:
         )
         assert failing(grade_submission(unactivated)) == {"environment probe"}
 
+        # The Python version never decides a grade; a record that names no version still fails.
+        for series, reported, expected in (("3.14", "Python 3.14.4", set()), ("3.12.7", "Python 3.12.7", set()),
+                                           ("latest", "Python 3.13.14", {"environment records"}),
+                                           ("3.13", "Python", {"environment probe"})):
+            other = workspace / f"python-{series}-{len(reported)}"
+            build(other, summary, counts, records)
+            (other / ".python-version").write_text(series + "\n", encoding="utf-8")
+            probe = (other / "output" / "environment.txt").read_text(encoding="utf-8")
+            (other / "output" / "environment.txt").write_text(
+                probe.replace("Python 3.13.14", reported), encoding="utf-8")
+            assert failing(grade_submission(other)) == expected, (series, reported)
+
         # The counting artifacts must not be gradeable against an edited dataset.
         tampered = workspace / "tampered"
         build(tampered, summary, counts, records)

@@ -131,8 +131,8 @@ jobs:
           # entrypoint runs the checker, so a set whose files disagree only
           # fails once it runs. Running it here is what guarantees the set is
           # coherent, and a download that fails here is rolled back before
-          # anything grades with it - including the requirement list, the one
-          # downloaded file that cannot be judged by reading it.
+          # anything grades with it. That includes the requirement list, the
+          # one downloaded file that cannot be judged by reading it.
           smoke="$(mktemp -d)"
 
           cat > "$smoke/smoke.py" <<'PY'
