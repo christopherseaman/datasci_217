@@ -12,8 +12,8 @@ The split it belongs to:
 
 | Half | Lives in | Answers |
 |---|---|---|
-| Shape checks | `01/assignment/` (`_shape_checks.py`, `grading.py`, `check_assignment.py`) | Is each artifact well formed: both practice files present as regular files, a UTF-8 report of 14 lines with a final newline and a `Python family: N.N` first line, one 64-character hash? |
-| Value checks | here (`_value_checks.py`, `grading.py`, `check_assignment.py`) | Does the report match `EXPECTED_READINESS` (any Python family on its first line), and is the hash in `ROSTER_HASHES`? |
+| Shape checks | `01/assignment/` (`_shape_checks.py`, `grading.py`, `check_assignment.py`) | Is each artifact well formed: both practice files present as regular files, a UTF-8 report of 14 lines with a final newline (13 without the Python version line), one 64-character hash? |
+| Value checks | here (`_value_checks.py`, `grading.py`, `check_assignment.py`) | Does the report match `EXPECTED_READINESS` after its first line (the Python version, never graded), and is the hash in `ROSTER_HASHES`? |
 
 Both halves expose `grade_submission(path)` returning the same
 `datasci217/grading-result/v1` dict with the same two checks worth 20 and 80
@@ -21,12 +21,14 @@ points, and `test_assignment.py` is identical in both, so the same tooling runs
 either. The 80 points need both output files to pass. The shape half holds no
 expected report line and no roster hash.
 
-The value checks grade exactly as the checks they replaced, the vendored
-`01/assignment/_assignment_checks.py` and `grading.py` at commit `f39598b`:
-same criteria, same points, same test names and details. The self-test replays
-that checker from the repository history against every artifact variant it
-builds and fails on any difference, so forks completed against the earlier
-handout keep their scores when graded here.
+The value checks replaced the vendored `01/assignment/_assignment_checks.py`
+and `grading.py` at commit `f39598b`. They give the score and detail the
+f39598b checker gives once the report's first line is set aside, and never a
+lower score; any first line, or none, is accepted. Points and test names are
+unchanged. The self-test replays that checker from the repository history
+against every artifact variant it builds and fails on any other difference, so
+forks completed against the earlier handout keep at least their scores when
+graded here.
 
 ## Publishing
 

@@ -2,8 +2,9 @@
 
 These run in your own repository, so they deliberately know nothing about the
 answers. They confirm that each required file exists as a regular file, that
-the readiness report is UTF-8 text with the right number of lines and a
-`Python family:` first line, and that the identity file holds one hash. They
+the readiness report is UTF-8 text with the right number of lines, and that
+the identity file holds one hash. The report's first line, the Python version,
+is never checked. They
 never say whether a report line is right or whether a hash is on the roster.
 
 Your values are checked when you push, by the checks the GitHub Actions run
@@ -24,8 +25,6 @@ OUTPUT_DIR = Path("output")
 READINESS_FILE = OUTPUT_DIR / "readiness.txt"
 IDENTITY_FILE = OUTPUT_DIR / "student_identity.txt"
 
-# The report's first line records whichever Python ran readiness.py; any version counts.
-PYTHON_FAMILY = re.compile(r"Python family: \d+\.\d+")
 # A SHA-256 hash as capture_identity.py saves it: 64 hexadecimal digits.
 IDENTITY_HASH = re.compile(r"[0-9a-f]{64}")
 # One line each from readiness.py (3), measurement_summary.py (8), and debug_report.py (3).
@@ -50,12 +49,6 @@ def _read_text(path: Path, missing_message: str, encoding_message: str) -> str:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError as error:
         raise AssertionError(encoding_message) from error
-
-
-def _after_python_family(report: str) -> str | None:
-    """The report without its first line, which records whichever Python ran readiness.py."""
-    first, _, rest = report.partition("\n")
-    return rest if PYTHON_FAMILY.fullmatch(first) else None
 
 
 def _readiness_report(root: Path) -> str:
@@ -101,17 +94,13 @@ def check_terminal_practice(root: Path) -> None:
 def check_output_artifact(root: Path) -> None:
     report = _readiness_report(root)
     _assert(
-        _after_python_family(report) is not None,
-        "output/readiness.txt must start with a line such as `Python family: 3.13`; "
-        "run make_output.py again after readiness.py prints it.",
-    )
-    _assert(
         report.endswith("\n"),
         "output/readiness.txt must end with a newline; save it with make_output.py instead of editing it.",
     )
     lines = len(report.splitlines())
+    # The first line, the Python version, is never graded, so a report may leave it out.
     _assert(
-        lines == READINESS_LINES,
+        lines in (READINESS_LINES - 1, READINESS_LINES),
         f"output/readiness.txt must hold {READINESS_LINES} lines, one per printed line (yours has {lines}); "
         "run make_output.py again after all three scripts print what the README shows.",
     )

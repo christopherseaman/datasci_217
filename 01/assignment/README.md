@@ -69,7 +69,7 @@ Project: DataSci 217 Assignment 01
 Script: readiness.py
 ```
 
-Use the supplied variable names, not repeated or hard-coded values. Run the script:
+Print the supplied variable that belongs on each line. Run the script:
 
 ```bash
 python3 readiness.py
@@ -81,7 +81,7 @@ python3 readiness.py
 
 Complete `measurement_summary.py`. Keep the supplied `measurements` list and `review_threshold_text` while developing your answer. `measurements` is a list, as in Lecture 01: `len()` counts its items, and a `for` loop visits each one in order.
 
-Your script must:
+Build the script in these steps:
 
 1. convert `review_threshold_text` to an integer named `review_threshold`;
 2. start `total` and `review_count` at zero;
@@ -168,10 +168,10 @@ python3 check_assignment.py
 
 The checks come in two halves, and both look only at the four files you commit in `terminal-practice/` and `output/`. Neither one runs or reads your Python code.
 
-- **In your repository: the shape checks.** `check_assignment.py` confirms that both practice files exist, that `output/readiness.txt` is UTF-8 text with 14 lines, a final newline, and a first line such as `Python family: 3.13`, and that `output/student_identity.txt` holds one 64-character hash. It does not hold the expected report or the course roster, so it cannot tell you whether a line is right or whether your hash is on the roster.
+- **In your repository: the shape checks.** `check_assignment.py` confirms that both practice files exist, that `output/readiness.txt` is UTF-8 text with 14 lines (13 also pass, because the first line is never checked) and a final newline, and that `output/student_identity.txt` holds one 64-character hash. It does not hold the expected report or the course roster, so it cannot tell you whether a line is right or whether your hash is on the roster.
 - **On GitHub: the value checks.** Every push runs GitHub Actions, which downloads the course checks, compares your report with the 14 lines this README shows, and matches your hash to the course roster. That run is what your grade comes from, and a check corrected after handout reaches you on your next push.
 
-Any Python version is accepted: the first line of the report records whichever Python ran `readiness.py`, and only its `Python family: N.N` form is checked.
+The report's first line, your Python version, is never checked.
 
 A clean local run ends with:
 
@@ -189,7 +189,7 @@ Commit these files in your fork. Grading totals 100 points.
 | Artifact | Complete when | Points |
 |---|---|---:|
 | `terminal-practice/source.txt` and `terminal-practice/path-check.txt` | Both exist as regular files in a regular `terminal-practice` directory. Their contents are not checked. | 20 |
-| `output/readiness.txt` and `output/student_identity.txt` | Both are regular files in a regular `output` directory. The report is UTF-8 text matching all 14 lines shown in Tasks 1.2, 2.2, and 3.1, including spacing and a final newline; any Python version on its first line counts. The identity file holds one hash from the course roster; surrounding whitespace and letter case are ignored. | 80 |
+| `output/readiness.txt` and `output/student_identity.txt` | Both are regular files in a regular `output` directory. The report is UTF-8 text matching all 14 lines shown in Tasks 1.2, 2.2, and 3.1, including spacing and a final newline; its first line, the Python version, is not checked. The identity file holds one hash from the course roster; surrounding whitespace and letter case are ignored. | 80 |
 
 The two output files share their 80 points, so both must pass: a correct report with a hash that is not on the roster earns none of them. Extra files are ignored, but keep the supplied ones, because `capture_identity.py` needs `process_email.py` and the checks need their own files.
 

@@ -8,7 +8,7 @@ the same way and rejects addresses off `@ucsf.edu`; an untouched handout scores
 0; the two practice files alone score 20; every one of the 40 roster hashes
 scores 100 with a correct report, whatever its case or surrounding whitespace;
 a hash off the roster, a wrong report line, or a missing report costs the 80
-points together; and any `Python family: N.N` first line earns them.
+points together; and any first line, or none, earns them.
 
 For equivalence: the value checks replaced the checker the fork used to carry,
 `01/assignment/_assignment_checks.py` and `grading.py` at commit `f39598b`. The
@@ -16,8 +16,10 @@ self-test reads that checker from the repository history and grades about 1,500
 artifact variants with both: each roster hash, other Python families, CRLF and
 CR line endings, no final newline, extra whitespace, a byte-order mark,
 non-UTF-8 and UTF-16 files, symlinks, directories where files belong, missing
-and extra files, and unreadable files. The two must agree on every score and
-every detail, so forks completed against the earlier handout keep their scores.
+and extra files, and unreadable files. The value checks give the score and
+detail the f39598b checker gives once the first line is set aside, and never a
+lower score; any first line, or none, is accepted. Forks completed against the
+earlier handout keep at least their scores.
 
 For the shape checks that ship in the fork: they share the value checks'
 constants, helpers, and byte-identical test entrypoints; no roster hash and no

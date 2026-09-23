@@ -8,7 +8,8 @@
 
 Completes Assignment 01 by following its README literally, publishes that and
 other submissions as local repositories standing in for forks, and grades them
-through scripts/grade_submissions.py. Nothing here contacts GitHub.
+through scripts/grade_submissions.py, which uses the course-owned value checks
+in 01/assignment_checks/. Nothing here contacts GitHub.
 """
 
 from contextlib import contextmanager
@@ -26,11 +27,12 @@ import urllib.request
 
 REPO = Path(__file__).resolve().parents[1]
 HANDOUT = REPO / "01" / "assignment"
+VALUE_CHECKS = REPO / "01" / "assignment_checks"
 sys.path.insert(0, str(REPO / "scripts"))
 import grade_submissions  # noqa: E402
 
-sys.path.insert(0, str(HANDOUT))
-from _assignment_checks import EXPECTED_READINESS, ROSTER_HASHES  # noqa: E402
+sys.path.insert(0, str(VALUE_CHECKS))
+from _value_checks import EXPECTED_READINESS, ROSTER_HASHES  # noqa: E402
 
 GIT_IDENTITY = ["-c", "user.name=Test Student", "-c", "user.email=student@example.com"]
 ROSTER_HASH = sorted(ROSTER_HASHES)[0]
@@ -77,6 +79,14 @@ def block(sections: dict, task: str, language: str) -> str:
 def printed(command: list[str], cwd: Path, expected: str, what: str) -> None:
     actual = run(command, cwd)
     assert actual == expected, f"{what} printed:\n{actual}\nThe README expects:\n{expected}"
+
+
+def value_report(root: Path) -> dict:
+    """The course-owned value checks' JSON report for a submission, as CI and the TA script get it."""
+    result = subprocess.run([sys.executable, "-B", str(VALUE_CHECKS / "check_assignment.py"), str(root), "--json"],
+                            cwd=root, capture_output=True, text=True, check=False)
+    assert result.returncode in (0, 1), (result.stdout, result.stderr)
+    return json.loads(result.stdout)
 
 
 def copy_tracked(number: str, destination: Path) -> Path:
@@ -142,6 +152,12 @@ def complete_as_written(root: Path) -> None:
     ):
         failed = subprocess.run([sys.executable, "debug_report.py"], cwd=root, capture_output=True, text=True)
         assert failed.returncode != 0 and failed.stderr.strip().splitlines()[-1].startswith(error), failed.stderr
+        # As the README says: the IndentationError stops everything before any line runs, with no
+        # Traceback header; the other two surface only after the lines above them have printed.
+        if error == "IndentationError":
+            assert "Traceback" not in failed.stderr and failed.stdout == "", (failed.stdout, failed.stderr)
+        else:
+            assert failed.stderr.startswith("Traceback (most recent call last)") and failed.stdout, failed
         text = debug.read_text()
         assert text.count(old) == 1, f"debug_report.py no longer holds {old!r}"
         debug.write_text(text.replace(old, new))
@@ -153,18 +169,23 @@ def complete_as_written(root: Path) -> None:
     quoted = block(sections, "1.2", "text") + block(sections, "2.2", "text") + block(sections, "3.1", "text")
     assert saved == EXPECTED_READINESS == quoted and len(saved.splitlines()) == 14
 
-    # Task 3.3: the helper saves only a hash; an email off the roster is rejected by the check,
+    # Task 3.3: the helper saves only a hash. The local shape checks cannot tell an email off the
+    # roster from a roster one; the value checks reject it and hold back the shared 80 points,
     # so the test then stands in a roster hash for the student's own.
     run([sys.executable, "capture_identity.py"], root, stdin="Test.Student@ucsf.edu\n")
     identity = root / "output" / "student_identity.txt"
     assert re.fullmatch(r"[0-9a-f]{64}\n", identity.read_text())
-    checked = subprocess.run([sys.executable, "-B", "check_assignment.py"], cwd=root, capture_output=True, text=True)
-    assert checked.returncode == 1 and "Score: 20/100" in checked.stdout, checked.stdout
+    promised = block(sections, "Check", "text")
+    checked = run([sys.executable, "-B", "check_assignment.py"], root)
+    assert checked.endswith(promised), f"check_assignment.py printed:\n{checked}\nThe README promises:\n{promised}"
+    report = value_report(root)
+    assert report["score"] == 20 and "course roster" in report["tests"][1]["detail"], report
     identity.write_text(ROSTER_HASH + "\n", encoding="utf-8")
 
-    # Check Your Work: the README's promised ending.
+    # Check your work: the README's promised local ending, and full marks from the value checks.
     checked = run([sys.executable, "-B", "check_assignment.py"], root)
-    assert checked.endswith("Score: 100/100\nAll checks passed.\n"), checked
+    assert checked.endswith(promised), checked
+    assert value_report(root)["score"] == 100
 
 
 def publish_fork(forks: Path, user: str, files: Path, repository: str = "ds217-26f-01") -> str:
@@ -217,8 +238,7 @@ def test_fork_names_and_listing() -> None:
     assert grade_submissions.printable("monitor\udcff.txt") == "monitor\\udcff.txt"
 
     # Grades come from the course-owned value checks where they exist, as CI fetches them.
-    assert grade_submissions.trusted_checks_dir("01") == HANDOUT
-    for number in ("02", "03"):
+    for number in ("01", "02", "03"):
         assert grade_submissions.trusted_checks_dir(number) == REPO / number / "assignment_checks"
     assert grade_submissions.load_assignment("01")["repository"] == "UCSF-DataSci/ds217-26f-01"
 
@@ -315,6 +335,16 @@ def test_grading_forks(work: Path) -> None:
     report.write_text(report.read_text().replace("Python family: 3.13\n", "Python family: 3.14\n", 1))
     urls["erin"] = publish_fork(forks, "erin", other_python)
 
+    # Well formed but wrong: every local shape check passes, and the value checks still
+    # hold back the 80 points for a wrong report line and a hash off the roster.
+    plausible = work / "plausible"
+    shutil.copytree(completed, plausible)
+    report = plausible / "output" / "readiness.txt"
+    report.write_text(report.read_text().replace("Total: 82\n", "Total: 83\n", 1))
+    (plausible / "output" / "student_identity.txt").write_text("0" * 64 + "\n")
+    assert run([sys.executable, "-B", "check_assignment.py"], plausible).endswith(block(readme_blocks(), "Check", "text"))
+    urls["olga"] = publish_fork(forks, "olga", plausible)
+
     # A fork whose folders are symlinks into a classmate's clone beside it.
     borrowed = copy_tracked("01", work / "borrowed")
     for name in ("output", "terminal-practice"):
@@ -325,12 +355,13 @@ def test_grading_forks(work: Path) -> None:
     assert grade(destination, *urls.values()) == 0
     grades = read_grades(destination)
     assert {user: row["score"] for user, row in grades.items()} == {
-        "alice": "100", "bob": "20", "carol": "0", "erin": "100", "mallory": "20", "sam": "0"}
+        "alice": "100", "bob": "20", "carol": "0", "erin": "100", "mallory": "20", "olga": "20", "sam": "0"}
     assert all(row["status"] == "graded" and row["max_score"] == "100" for row in grades.values())
     assert grades["alice"]["test: terminal practice evidence"] == "20"
     assert grades["alice"]["test: committed readiness and identity artifacts"] == "80"
     assert grades["alice"]["details"] == ""
     assert "student_identity.txt" in grades["mallory"]["details"]
+    assert "readiness report" in grades["olga"]["details"], grades["olga"]["details"]
     assert len({row["checks"] for row in grades.values()}) == 1 and grades["alice"]["checks"]
     for user, url in urls.items():
         assert grades[user]["commit"] == head(url), user
@@ -487,8 +518,9 @@ def main() -> None:
         test_checker_failures(work)
         test_grades_file(work)
         test_every_assignment_through_the_script(work)
-    print("grade_submissions: Assignment 01 completed as written scores 100/100; partial, untouched, forged, "
-          "other-Python and symlinked forks score as intended from the course checks; TA edits, renamed URLs, "
+    print("grade_submissions: Assignment 01 completed as written passes every local shape check and scores "
+          "100/100 from 01/assignment_checks; partial, untouched, forged, plausible-but-wrong, other-Python and "
+          "symlinked forks score as intended from the course checks; TA edits, renamed URLs, "
           "checker failures, interrupted runs and grades.csv round trips behave; every assignment's handout "
           "grades to a zero row through the script.")
 

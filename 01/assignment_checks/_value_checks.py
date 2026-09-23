@@ -23,8 +23,6 @@ OUTPUT_DIR = Path("output")
 READINESS_FILE = OUTPUT_DIR / "readiness.txt"
 IDENTITY_FILE = OUTPUT_DIR / "student_identity.txt"
 
-# The report's first line records whichever Python ran readiness.py; any version counts.
-PYTHON_FAMILY = re.compile(r"Python family: \d+\.\d+")
 # A SHA-256 hash as capture_identity.py saves it: 64 hexadecimal digits.
 IDENTITY_HASH = re.compile(r"[0-9a-f]{64}")
 
@@ -110,10 +108,9 @@ def _read_text(path: Path, missing_message: str, encoding_message: str) -> str:
         raise AssertionError(encoding_message) from error
 
 
-def _after_python_family(report: str) -> str | None:
-    """The report without its first line, which records whichever Python ran readiness.py."""
-    first, _, rest = report.partition("\n")
-    return rest if PYTHON_FAMILY.fullmatch(first) else None
+def _graded_lines(report: str) -> str:
+    """The report after its first line. That line records the Python version and is never graded."""
+    return report.partition("\n")[2]
 
 
 def _readiness_report(root: Path) -> str:
@@ -160,7 +157,7 @@ def check_output_artifact(root: Path) -> None:
     """The report and the identity share their points, so both have to pass."""
     report = _readiness_report(root)
     _assert(
-        _after_python_family(report) == _after_python_family(EXPECTED_READINESS),
+        _graded_lines(EXPECTED_READINESS) in (report, _graded_lines(report)),
         "output/readiness.txt must contain the documented 14-line readiness report; "
         "any Python version on its first line is accepted.",
     )

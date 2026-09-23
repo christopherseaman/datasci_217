@@ -4,6 +4,9 @@
 # ///
 """Check every grader's empty/scaffold contract without executing submissions.
 
+Runs each assignment's handout checker and, where it exists, its course-owned
+NN/assignment_checks/ checker, against an empty submission and the scaffold.
+
 Assignment 11's checks refuse any other versions of these dependencies:
     uv run scripts/test_assignment_grading.py
 """
@@ -21,24 +24,30 @@ def main():
     scratch.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=scratch, prefix="grading-contract-") as directory:
         target = Path(directory)
-        for name in ("grading.py", "check_assignment.py", "_assignment_checks.py"):
+        for name in ("grading.py", "check_assignment.py", "_assignment_checks.py", "_public_checks.py",
+                     "_shape_checks.py", "_value_checks.py"):
             (target / name).write_text("raise RuntimeError('submission code must not run')\n")
         for number in range(1, 12):
             assignment = repo / f"{number:02}" / "assignment"
-            for submission in (target, assignment):
-                result = subprocess.run(
-                    [sys.executable, "-B", str(assignment / "check_assignment.py"), str(submission), "--json"],
-                    cwd=target, capture_output=True, text=True, check=False,
-                )
-                assert result.returncode == 1, (number, result.stdout, result.stderr)
-                report = json.loads(result.stdout)
-                assert report["schema"] == "datasci217/grading-result/v1", report
-                assert report["score"] == 0, (number, submission, report)
-                assert report["max-score"] == (85 if number in (5, 11) else 100), report
-                assert sum(test["max-score"] for test in report["tests"]) == report["max-score"], report
-                assert sum(test["score"] for test in report["tests"]) == 0, report
-                assert "submission code must not run" not in result.stdout + result.stderr, report
-            print(f"Assignment {number:02}: empty and scaffold earn zero; point total and trusted CLI pass")
+            course_owned = repo / f"{number:02}" / "assignment_checks"
+            checkers = [assignment] + ([course_owned] if (course_owned / "check_assignment.py").is_file() else [])
+            for checks in checkers:
+                for submission in (target, assignment):
+                    result = subprocess.run(
+                        [sys.executable, "-B", str(checks / "check_assignment.py"), str(submission), "--json"],
+                        cwd=target, capture_output=True, text=True, check=False,
+                    )
+                    assert result.returncode == 1, (number, checks, result.stdout, result.stderr)
+                    report = json.loads(result.stdout)
+                    assert report["schema"] == "datasci217/grading-result/v1", report
+                    assert report["score"] == 0, (number, checks, submission, report)
+                    assert report["max-score"] == (85 if number in (5, 11) else 100), report
+                    assert sum(test["max-score"] for test in report["tests"]) == report["max-score"], report
+                    assert sum(test["score"] for test in report["tests"]) == 0, report
+                    assert "submission code must not run" not in result.stdout + result.stderr, report
+            halves = " and course-owned" if len(checkers) == 2 else ""
+            print(f"Assignment {number:02}: empty and scaffold earn zero under the handout{halves} checks; "
+                  "point total and trusted CLI pass")
 
 
 if __name__ == "__main__":

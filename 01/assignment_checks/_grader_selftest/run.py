@@ -351,12 +351,13 @@ def run() -> None:
             (output / "student_identity.txt").write_text(text, encoding="utf-8")
             assert grade_submission(root)["score"] == 20, text
         (output / "student_identity.txt").write_text(ROSTER_HASH + "\n", encoding="utf-8")
-        # The first line records whichever Python ran the script, and any version earns the points;
-        # every other line, and the shape of that one, is still graded.
-        for version, score in (("3.13", 100), ("3.14", 100), ("3.12", 100), ("3.9", 100),
-                               ("3", 20), ("three", 20), ("3.14.4", 20), ("", 20)):
-            (output / "readiness.txt").write_text(family(version), encoding="utf-8")
-            assert grade_submission(root)["score"] == score, version
+        # The first line records the Python version and is never graded: any text there, or none at all,
+        # earns the points; every other line is still graded.
+        for text in [family(version) for version in ("3.13", "3.14", "3.12", "3.9", "3", "three", "3.14.4", "")] + [
+                EXPECTED_READINESS.replace(FIRST_LINE, "Python 3.13.7\n", 1),
+                EXPECTED_READINESS.replace(FIRST_LINE, "", 1)]:
+            (output / "readiness.txt").write_text(text, encoding="utf-8")
+            assert grade_submission(root)["score"] == 100, text[:30]
         (output / "readiness.txt").write_text(EXPECTED_READINESS.replace("Total: 82", "Total: 83"), encoding="utf-8")
         assert grade_submission(root)["score"] == 20
         (output / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
@@ -364,11 +365,26 @@ def run() -> None:
         assert scores(root) == {"terminal practice evidence": 0, "committed readiness and identity artifacts": 80}
 
     print("Assignment 01 value checks: all 40 roster hashes, non-roster hashes, starter, extra-file, missing, "
-          "wrong-artifact, and any-Python-version cases score as the contract states.")
+          "and wrong-artifact cases score as the contract states, and the Python version line is never graded.")
+
+
+def with_graded_first_line(root: Path) -> None:
+    """Give the report the first line the replaced checker required, so only the ungraded line changes."""
+    report = root / "output" / "readiness.txt"
+    if not report.is_file() or report.is_symlink():
+        return
+    try:
+        text = report.read_text(encoding="utf-8")  # read as the checks read it, newlines normalized
+    except (OSError, UnicodeDecodeError):
+        return
+    graded = EXPECTED_READINESS.partition("\n")[2]
+    report.write_bytes((FIRST_LINE + (text if text == graded else text.partition("\n")[2])).encode("utf-8"))
 
 
 def run_equivalence() -> None:
-    """The value checks grade every variant exactly as the checker they replaced."""
+    """The value checks grade every variant as the checker they replaced, except that they never read
+    the report's first line: each variant scores what the replaced checker gives it once that line reads
+    the way the replaced checker required."""
     with scratch("a01-replaced-") as temporary:
         replaced = Path(temporary) / "replaced"
         replaced.mkdir()
@@ -393,8 +409,11 @@ def run_equivalence() -> None:
             root = Path(temporary) / f"case-{index}"
             root.mkdir()
             build(root)
-            now, then = grade_submission(root), before_grading.grade_submission(root)
+            now, unchanged = grade_submission(root), before_grading.grade_submission(root)
+            with_graded_first_line(root)
+            then = before_grading.grade_submission(root)
             assert now == then, (name, now, then)
+            assert now["score"] >= unchanged["score"], (name, now, unchanged)  # nobody scores lower
             outcomes["full" if now["score"] == 100 else "zero" if now["score"] == 0 else "partial"] += 1
             # A submission the value checks accept always passes the local shape checks too.
             for (check, detail), test in zip(shape.run_checks(root), now["tests"], strict=True):
@@ -405,9 +424,9 @@ def run_equivalence() -> None:
         assert all(outcomes.values()), outcomes
 
     print(f"Assignment 01 equivalence: {len(cases)} artifact variants ({outcomes['full']} full, "
-          f"{outcomes['partial']} partial, {outcomes['zero']} zero) grade identically, detail for detail, "
-          f"under the value checks and the checker from {REPLACED_COMMIT[:7]}; every one the value checks "
-          "accept passes the shape checks.")
+          f"{outcomes['partial']} partial, {outcomes['zero']} zero) grade, detail for detail, as the checker "
+          f"from {REPLACED_COMMIT[:7]} does once the ungraded Python line is set aside, and never lower; "
+          "every one the value checks accept passes the shape checks.")
 
 
 def load_shape():
@@ -440,9 +459,9 @@ def run_shape() -> None:
 
     # Both halves read the artifacts with the same code, so they never disagree about a format.
     for name in ("PRACTICE_DIR", "PRACTICE_FILES", "OUTPUT_DIR", "READINESS_FILE", "IDENTITY_FILE",
-                 "PYTHON_FAMILY", "IDENTITY_HASH"):
+                 "IDENTITY_HASH"):
         assert getattr(shape, name) == getattr(value, name), name  # compiled regexes compare pattern and flags
-    for name in ("Check", "_assert", "_read_text", "_after_python_family", "_readiness_report", "_identity_hash",
+    for name in ("Check", "_assert", "_read_text", "_readiness_report", "_identity_hash",
                  "check_terminal_practice", "run_checks"):
         assert inspect.getsource(getattr(shape, name)) == inspect.getsource(getattr(value, name)), name
     assert shape.READINESS_LINES == len(EXPECTED_READINESS.splitlines())
@@ -460,7 +479,10 @@ def run_shape() -> None:
         # Right and plausibly wrong are indistinguishable: a wrong line and a hash off the roster pass.
         for report, identity in ((EXPECTED_READINESS, ROSTER_HASH),
                                  (family("3.14").replace("Total: 82", "Total: 83"), "0" * 64),
-                                 (EXPECTED_READINESS.replace("\n", "\r\n"), ROSTER_HASH.upper())):
+                                 (EXPECTED_READINESS.replace("\n", "\r\n"), ROSTER_HASH.upper()),
+                                 (EXPECTED_READINESS.replace(FIRST_LINE, "Python 3.13.7\n"), ROSTER_HASH),
+                                 (EXPECTED_READINESS.replace(FIRST_LINE, ""), ROSTER_HASH),
+                                 ("\ufeff" + EXPECTED_READINESS, ROSTER_HASH)):
             practice(root)
             outputs(root, report, identity + "\n")
             failures = [detail for _, detail in shape.run_checks(root) if detail]
@@ -469,11 +491,9 @@ def run_shape() -> None:
 
         # Malformed artifacts are still caught, each by its own check.
         for report, identity, failing in (
-            (EXPECTED_READINESS.replace("Review count: 2\n", ""), ROSTER_HASH, "(yours has 13)"),
+            (EXPECTED_READINESS.replace("Count: 4\nTotal: 82\n", ""), ROSTER_HASH, "(yours has 12)"),
             (EXPECTED_READINESS + "extra\n", ROSTER_HASH, "(yours has 15)"),
             (EXPECTED_READINESS[:-1], ROSTER_HASH, "end with a newline"),
-            (EXPECTED_READINESS.replace(FIRST_LINE, "Python 3.13.7\n"), ROSTER_HASH, "Python family: 3.13"),
-            ("\ufeff" + EXPECTED_READINESS, ROSTER_HASH, "Python family: 3.13"),
             (EXPECTED_READINESS, "not-a-hash", "one SHA-256 hash"),
             (EXPECTED_READINESS, ROSTER_HASH + "\n" + ROSTER_HASH, "one SHA-256 hash"),
         ):
