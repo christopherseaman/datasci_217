@@ -13,7 +13,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-[Lecture 01 catch-up](LECTURE_01_CATCHUP.md) covers material added to Lecture 01 after it was delivered.
+[Lecture 01 Catch-Up](LECTURE_01_CATCHUP.md)
 
 # VS Code Basics
 
