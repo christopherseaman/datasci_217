@@ -18,8 +18,8 @@ assignment/
 │   └── clinic_encounters.csv    # supplied: one week of encounters, exactly as the clinic exported them
 ├── vitals_tools.py              # scaffold: the calculations you reuse
 ├── clinic_report.py             # scaffold: reads the data and writes both artifacts
-├── check_assignment.py          # supplied: run it to check the shape of your work; keep unchanged
-├── grading.py, _shape_checks.py  # supplied: the shape checks themselves; keep unchanged
+├── check_assignment.py          # supplied: run it to check your work; keep unchanged
+├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 └── output/
     ├── vitals_report.txt        # you generate in Task 2
@@ -123,19 +123,27 @@ python3 clinic_report.py
 python3 check_assignment.py
 ```
 
-The checks come in two halves, and both look only at what you committed: this `README.md`, `.gitignore`, and the two files in `output/`. The GitHub half also reads the supplied `data/clinic_encounters.csv` to work out what your answers should have been. Neither one runs or reads your Python code, so any way of producing a correct artifact counts.
+`check_assignment.py` runs the same checks GitHub runs. They look only at your artifacts: this `README.md`, `.gitignore`, and the two files in `output/`. They also read the supplied `data/clinic_encounters.csv` to work out what your answers should be, and never run or read your Python code, so any way of producing a correct artifact counts.
 
-- **In your repository: the shape checks.** `check_assignment.py` confirms that each file exists, is readable text, carries the labels the tasks ask for, and gives a number where a number belongs. It does not hold the answers and never opens the encounter file, so it cannot tell you whether a value is right.
-- **On GitHub: the value checks.** Every push runs GitHub Actions, which downloads the course checks, recomputes each expected value from `data/clinic_encounters.csv`, and scores your values one at a time with a message naming what to fix. That run is what your grade comes from, and a check corrected after handout reaches you on your next push.
-
-A clean local run ends with:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 1, for example, the first check reports:
 
 ```text
-13 of 13 shape checks passed.
-These checks confirm the shape of your artifacts; your values are checked when you push.
+[FIX ]  0/5  README project description
+         README.md: replace the TODO line under `## Project description` with your own description.
 ```
 
-If an Actions run ever cannot reach the course checks, it falls back to these same shape checks and warns that no value was verified: a green run then means well formed, not correct.
+Fix what it names, rerun your script and the checks, and repeat until every check passes. A clean local run ends with:
+
+```text
+[PASS]  5/5  follow-up cutoff
+[PASS]  5/5  follow-up reason
+[PASS] 15/15 follow-up patient list
+
+Score: 100/100
+All checks passed.
+```
+
+Every push also runs GitHub Actions, which downloads the course's current copy of the checks and reruns them on the files you committed and pushed. That run is what counts, and a check corrected after handout reaches you there on your next push.
 
 ### Completion contract
 
@@ -163,4 +171,4 @@ Each row is scored on its own, so a right value earns its points whatever else i
 
 Inspect your changes in VS Code Source Control, then stage `vitals_tools.py`, `clinic_report.py`, `output/vitals_report.txt`, and `output/followup_list.txt` and commit with `Summarize clinic encounters`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes left, switch to `main`, run **Git: Merge...**, and select `feature/clinic-report`. Resolve any conflict, inspect the result, and sync. Confirm in the repository browser that `main` holds both scripts and both files under `output/`.
 
-GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a local check disagrees with the GitHub run, the GitHub run counts: it checks your values, and the local run checks their format.
+GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks.

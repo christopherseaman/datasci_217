@@ -1,13 +1,10 @@
 """Development regression checks for the Assignment 03 checks.
 
 Builds submissions in ignored `scratch/`, computes the correct answers with
-NumPy (independently of the pure-Python recomputation the value checks use),
-and confirms what each kind of submission scores on both halves:
-
-* the course value checks in this directory, which compare every answer with
-  the supplied readings;
-* the shape-only checks committed in `03/assignment/`, run through their own
-  entry point, which must score the same report whatever the answers are.
+NumPy (independently of the pure-Python recomputation the checks use), and
+confirms what each kind of submission scores. It also confirms that the
+handout in `03/assignment/` ships the course-owned checks byte for byte, so a
+student's local run reports exactly what the GitHub run reports.
 
     python 03/assignment_checks/_grader_selftest/run.py
 """
@@ -50,7 +47,7 @@ def solve(data_path: Path) -> tuple[list[str], dict[str, int]]:
     """Answer the assignment with NumPy, the way a student would.
 
     A monitor's average is the mean of its patients' 12-hour means, which is
-    the definition the assignment README states and the one the value checks
+    the definition the assignment README states and the one the checks
     recompute.
     """
     lines = data_path.read_text(encoding="utf-8").splitlines()
@@ -102,23 +99,22 @@ def answers_cost(*keys: str) -> int:
     return sum(ANSWER_POINTS[key] for key in keys)
 
 
-def shape_grade(root: Path) -> dict:
-    """Grade through the shape-only checks committed in the student fork."""
+def handout_grade(root: Path) -> dict:
+    """Grade through the handout's own entry point, the command students run."""
     finished = subprocess.run(
         [sys.executable, "-B", str(FORK / "check_assignment.py"), str(root), "--json"],
         capture_output=True,
         text=True,
         check=False,
     )
-    assert finished.stdout, f"the fork checker printed nothing: {finished.stderr}"
+    assert finished.stdout, f"the handout checker printed nothing: {finished.stderr}"
     return json.loads(finished.stdout)
 
 
-def build(root: Path, summary: list[str], counts: dict[str, int], records: int, data: bool = True) -> None:
+def build(root: Path, summary: list[str], counts: dict[str, int], records: int) -> None:
     root.mkdir(parents=True, exist_ok=True)
-    if data:
-        (root / "data").mkdir(exist_ok=True)
-        shutil.copy(FORK / DATA_FILE, root / DATA_FILE)
+    (root / "data").mkdir(exist_ok=True)
+    shutil.copy(FORK / DATA_FILE, root / DATA_FILE)
     requirements = (FORK / "requirements.txt").read_text(encoding="utf-8")
     (root / "requirements.txt").write_text(requirements, encoding="utf-8")
     pinned = re.search(r"numpy==([^\s]+)", requirements).group(1)
@@ -157,12 +153,13 @@ def run() -> None:
         empty = workspace / "empty"
         empty.mkdir()
         assert grade_submission(empty)["score"] == 0, "an empty submission must score nothing"
-        assert shape_grade(empty)["score"] == 0, "an empty submission must score nothing on shape either"
+        assert handout_grade(empty) == grade_submission(empty), "the handout must report what the course reports"
 
         complete = workspace / "complete"
         build(complete, summary, counts, records)
         result = grade_submission(complete)
         assert result["score"] == 100, f"a correct submission scored {result['score']}: {failing(result)}"
+        assert handout_grade(complete) == result, "the handout must report what the course reports"
 
         (complete / "notes.md").write_text("scratch notes\n", encoding="utf-8")
         assert grade_submission(complete)["score"] == 100, "an extra file must not cost points"
@@ -230,6 +227,7 @@ def run() -> None:
         assert failing(result) == {"answer: sd_sbp", "answer: high_monitor"}, failing(result)
         assert result["score"] == 100 - answers_cost("sd_sbp", "high_monitor"), result["score"]
         assert "which is not the monitor whose patients" in detail(result, "answer: high_monitor")
+        assert handout_grade(mixed) == result, "the handout must report what the course reports"
 
         # Right shape, wrong numbers: the artifact checks still pass.
         wrong = workspace / "wrong"
@@ -296,83 +294,40 @@ def run() -> None:
             if not test["passed"] and test["test-name"] not in {"summary artifact format"}
         ), failing(result)
 
-        _check_shape_only(workspace, summary, counts, records)
-
     print(
-        "Assignment 03 value checks: empty, correct, extra-file, loosely formatted, NumPy-repr, "
+        "Assignment 03 checks: empty, correct, extra-file, loosely formatted, NumPy-repr, "
         "sample-SD, one-wrong, two-wrong, all-wrong, partial, miscounted, unactivated and "
         "tampered-data submissions all score as intended."
     )
-    print(
-        "Assignment 03 shape checks: report nothing about correctness, need no dataset, and "
-        "fail only on artifacts that are missing, unreadable, or implausible."
+
+
+def run_handout_copy() -> None:
+    """Students run locally exactly the checks GitHub runs: the handout's copy is the course's."""
+    workflow = (FORK / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+    assert re.search(r'^  CHECKS_PATH: "03/assignment_checks"$', workflow, re.MULTILINE), (
+        "tests.yml does not download from 03/assignment_checks"
     )
+    listed = re.search(r"^  CHECKS_FILES: \|\n((?:    \S.*\n)+)", workflow, re.MULTILINE)
+    assert listed is not None, "tests.yml lists no CHECKS_FILES"
+    files = listed.group(1).split()
 
+    # The list names every checker file here, so a download never misses a module.
+    course_owned = [path.name for path in CHECKS.glob("*.py")]
+    course_owned += [f".github/test/{path.name}" for path in (CHECKS / ".github" / "test").iterdir() if path.is_file()]
+    assert sorted(files) == sorted(course_owned), (sorted(files), sorted(course_owned))
 
-def _check_shape_only(workspace: Path, summary: list[str], counts: dict[str, int], records: int) -> None:
-    """The fork's checks must not reveal, or depend on, a single answer."""
-    source = "\n".join(
-        (FORK / name).read_text(encoding="utf-8")
-        for name in ("_public_checks.py", "grading.py", "check_assignment.py", "test_assignment.py")
-    )
-    for forbidden in ("expected_answers", "DATA_SHA256", "load_dataset", "hashlib", "read_bytes"):
-        assert forbidden not in source, f"the fork checks must not carry {forbidden}"
+    for name in files:
+        assert (FORK / name).read_bytes() == (CHECKS / name).read_bytes(), (
+            f"03/assignment/{name} differs from 03/assignment_checks/{name}; copy the course-owned file over it"
+        )
 
-    right = workspace / "shape-right"
-    build(right, summary, counts, records)
-    correct = shape_grade(right)
-    assert correct["score"] == 100, correct
+    # Besides the checks, the handout's only Python file is the scaffold the student completes.
+    handout_python = {path.name for path in FORK.glob("*.py")}
+    assert handout_python == {name for name in files if "/" not in name and name.endswith(".py")} | {
+        "analysis.py"
+    }, sorted(handout_python)
 
-    # Plausible answers, every one of them wrong. The report must be identical
-    # to the correct one, so it cannot tell a student which values are right.
-    invented = replaced(
-        summary,
-        patients="7",
-        readings="84",
-        mean_sbp="111.1",
-        sd_sbp="9.9",
-        min_sbp="70",
-        max_sbp="199",
-        stage2_patients="3",
-        highest_patient="P9999",
-        highest_patient_mean="149.9",
-        peak_hour_column="sbp_h11",
-        peak_hour_mean="112.2",
-        high_monitor="M99",
-        monitor_offset="42.0",
-        stage2_other_monitors="2",
-    )
-    invented_counts = {"M99": 1, "M98": 2}
-    bogus = workspace / "shape-wrong"
-    build(bogus, invented, invented_counts, 7)
-    assert shape_grade(bogus) == correct, "the shape checks must report the same thing for wrong answers"
-
-    # It must not need the supplied dataset at all.
-    dataless = workspace / "shape-dataless"
-    build(dataless, invented, invented_counts, 7, data=False)
-    assert shape_grade(dataless) == correct, "the shape checks must not read the dataset"
-
-    # What it does catch: values that are missing, unreadable, or implausible.
-    malformed = workspace / "shape-malformed"
-    build(
-        malformed,
-        replaced(summary, mean_sbp="high", min_sbp="12", stage2_patients="-4", high_monitor="the fourth one"),
-        counts,
-        records,
-    )
-    result = shape_grade(malformed)
-    assert failing(result) == {
-        "summary artifact format",
-        "answer: mean_sbp",
-        "answer: min_sbp",
-        "answer: stage2_patients",
-        "answer: high_monitor",
-    }, failing(result)
-    assert "has to be a whole number of mmHg" in detail(result, "answer: min_sbp")
-    assert "has to be a monitor id" in detail(result, "answer: high_monitor")
-    for test in result["tests"]:
-        assert "not the" not in test["detail"], f"a shape message must not judge an answer: {test['detail']}"
-        assert "data/bp_readings.csv" not in test["detail"], test["detail"]
+    print(f"Assignment 03 handout: all {len(files)} check files match 03/assignment_checks byte for byte.")
 
 
 def _is_number(value: str) -> bool:
@@ -385,3 +340,4 @@ def _is_number(value: str) -> bool:
 
 if __name__ == "__main__":
     run()
+    run_handout_copy()

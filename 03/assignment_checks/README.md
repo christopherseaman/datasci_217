@@ -1,31 +1,17 @@
-# Assignment 03 course-side checks
+# Assignment 03 checks (course-owned)
 
-The checks that compare a submission's answers with the supplied readings.
-Nothing in this directory ships in a student fork.
+These are the checks that decide the Assignment 03 grade. They compare each
+answer with the value recomputed from the supplied `data/bp_readings.csv`.
+`03/assignment/.github/workflows/tests.yml` downloads them on every student
+push from `christopherseaman/datasci_217@main:03/assignment_checks/` (its
+`CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
+grades with them.
 
-## How the two halves fit together
-
-| Half | Lives in | Answers | Points |
-| --- | --- | --- | ---: |
-| Shape | `03/assignment/` (the fork students clone) | Is each artifact well formed: present, readable UTF-8, labelled, and inside a plausible range? | 100 |
-| Value | here, fetched by the fork's workflow at run time | Does each answer match the value recomputed from `data/bp_readings.csv`? | 100 |
-
-Both halves expose `grade_submission(path)` returning the same
-`datasci217/grading-result/v1` dict, with the same eighteen check names in the
-same order and the same `POINTS` tuple, so the same tooling runs either one.
-`grading.py`, `test_assignment.py` and `.github/test/` are byte-identical to
-the fork's copies. Two files differ: `_public_checks.py`, and
-`check_assignment.py`, whose fork copy prints a count of passed shape checks
-while this copy prints each check's score and the total. Both read the report
-wording from `_public_checks.py` (`SCOPE_NOTE`, `SCORE_LABEL`, `COMPLETE_NOTE`).
-
-A student's fork can therefore never contain an expected value, and a reviewer
-cannot score points by importing the checker.
-
-## Publishing
-
-`03/assignment/.github/workflows/tests.yml` downloads these files at run time
-from `CHECKS_REPO` (`christopherseaman/datasci_217`), at path `03/assignment_checks/<file>`:
+The handout ships a byte-identical copy of every file the workflow lists in
+`CHECKS_FILES`, so `python check_assignment.py` in a student's repository
+prints each check's result, what to fix, and the score, exactly as GitHub will.
+The checks recompute every expected value from the supplied dataset, which
+ships in the handout, so there is no answer key to hide. The listed files:
 
 ```text
 .github/test/test_assignment.py
@@ -36,22 +22,31 @@ check_assignment.py
 grading.py
 ```
 
-The workflow reads these files from `03/assignment_checks` on `main` of
-`christopherseaman/datasci_217`; commit and push them there. Students do not
-fork that repository. The workflow
-validates what arrives, smoke-tests that it runs together, rolls back to the
-fork's shape-only copy if either fails, and says in the log when a run did not
-verify any value.
+## Publishing
 
-## Maintaining both halves
+Pushing this directory to `main` publishes it; there is no separate checks
+repository. The workflow downloads the files named in `CHECKS_FILES` over the
+committed copies. A fetch that misses any one of them, or a set that does not
+run together, is rolled back, and the run grades with the copy committed in the
+student's repository and says so in the log.
 
-- A parsing, environment, or naming rule that both halves share (the summary
-  reader, the `count label` reader, the NumPy-scalar unwrapper, the
-  environment checks, the timestamped file name) is written in both
-  `_public_checks.py` files. Fix it in both; they are deployed separately, so
-  neither can import the other.
-- A change to the check list or to `POINTS` belongs in both halves at once, in
-  the same order: `grading.py` zips the checks against `POINTS` with
-  `strict=True`.
-- Run `python 03/assignment_checks/_grader_selftest/run.py` after any change;
-  it grades both halves.
+Correct a check here and copy the changed file over its twin in
+`03/assignment/`; the self-test fails while the two differ. Every fork gets the
+correction on its next push. A student's local copy changes only when the
+handout is republished (`scripts/publish_assignment.sh 03 ...`) and the student
+syncs the fork, so until then the local run can lag the GitHub run, and the
+GitHub run counts.
+
+A change to the check list or to `POINTS` belongs in `_public_checks.py` and
+`grading.py` at once, in the same order: `grading.py` zips the checks against
+`POINTS` with `strict=True`. Keep the README's key table and completion
+contract in agreement with `POINTS`.
+
+## Checking the checks
+
+```bash
+uv run --python 3.13 --with numpy==2.3.3 python 03/assignment_checks/_grader_selftest/run.py
+```
+
+It grades every kind of submission and confirms the handout's copy matches this
+one byte for byte.

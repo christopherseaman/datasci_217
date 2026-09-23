@@ -1,8 +1,8 @@
-"""Artifact-only grading rules for Assignment 01: the value checks.
+"""Artifact-only grading rules for Assignment 01.
 
-This is the half that decides the grade. The saved readiness report is compared
-with the documented report, and the saved identity hash with the course roster;
-the report and the identity share their points, so both have to pass.
+Each check is scored on its own: 10 points for each terminal-practice file,
+5 for each graded line of the readiness report, and 15 for the identity hash.
+A wrong report line costs its own 5 points and nothing else.
 """
 
 from __future__ import annotations
@@ -12,7 +12,8 @@ from pathlib import Path
 from _value_checks import run_checks
 
 
-POINTS = (20, 80)
+# In the order of _value_checks.CHECKS: two practice files, thirteen report lines, and the identity hash.
+POINTS = (10, 10) + (5,) * 13 + (15,)
 
 
 def grade_submission(submission_dir: Path) -> dict:

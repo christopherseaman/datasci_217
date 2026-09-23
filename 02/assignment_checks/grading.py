@@ -1,8 +1,8 @@
-"""Artifact-only grading rules for Assignment 02: the value checks.
+"""Artifact-only grading rules for Assignment 02.
 
-This is the half that decides the grade. Each requirement is scored on its own,
-so a partial submission reports exactly which value to fix, and every expected
-value is recomputed from the supplied encounter file.
+Each requirement is scored on its own, so a partial submission reports exactly
+which value to fix, and every expected value is recomputed from the supplied
+encounter file.
 """
 
 from __future__ import annotations

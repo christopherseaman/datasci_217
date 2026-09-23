@@ -6,12 +6,13 @@ on:
   workflow_dispatch:
 
 env:
-  # The course checks repository, which nobody forks: it holds the checks that
-  # decide the grade. They live in the course repository, which students never
-  # fork, under NN/assignment_checks/ beside the lecture and demo they belong to.
-  # If that directory cannot be fetched, every run falls back to the shape-only
-  # checks committed here and reports that no value was verified. Each quarter,
-  # point these three lines at the branch the course is taught from.
+  # The checks that decide the grade live in the course repository, which
+  # students never fork, under NN/assignment_checks/ beside the lecture and demo
+  # they belong to. Every run downloads them, so a check corrected after handout
+  # reaches every student on the next push. This repository carries a
+  # byte-identical copy from handout, which students run locally; if the
+  # download cannot be used, the run grades with that copy and says so. Each
+  # quarter, point these three lines at the branch the course is taught from.
   CHECKS_REPO: christopherseaman/datasci_217
   CHECKS_REF: main
   CHECKS_PATH: "01/assignment_checks"
@@ -119,7 +120,7 @@ jobs:
           fi
 
           if [ -n "$problem" ]; then
-            echo "::warning::Checks: ${problem} This run uses the shape-only checks committed in this repository."
+            echo "::warning::Checks: ${problem} This run uses the copy of the checks committed in this repository."
           else
             echo "CHECKS_STAGING=$staging" >> "$GITHUB_ENV"
             echo "Checks: downloaded the current version from ${origin}; nothing uses it until it has run."
@@ -217,13 +218,13 @@ jobs:
               problem="its requirement list does not install"
             elif outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
               echo "Checks: ${outcome}, from ${origin}."
-              echo "CHECKS_VALUES_VERIFIED=yes" >> "$GITHUB_ENV"
+              echo "CHECKS_CURRENT=yes" >> "$GITHUB_ENV"
               exit 0
             else
               problem="$outcome"
             fi
 
-            echo "::warning::Checks: the set downloaded from ${origin} does not run together (${problem}), so the course checks repository needs fixing. Restoring the shape-only checks committed in this repository."
+            echo "::warning::Checks: the set downloaded from ${origin} does not run together (${problem}), so the course checks repository needs fixing. Restoring the copy of the checks committed in this repository."
             for file in $CHECKS_FILES; do
               if [ -e "$backup/$file" ]; then
                 cp "$backup/$file" "$file"
@@ -241,9 +242,9 @@ jobs:
           fi
 
           if outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
-            echo "Checks: ${outcome}, from the shape-only checks committed in this repository."
-            echo "CHECKS_VALUES_VERIFIED=no" >> "$GITHUB_ENV"
-            echo "::warning::Checks: this run could not use ${origin}, so it checked only the SHAPE of your artifacts. None of your values was verified; a green run here does not mean the submission is correct."
+            echo "Checks: ${outcome}, from the copy committed in this repository."
+            echo "CHECKS_CURRENT=no" >> "$GITHUB_ENV"
+            echo "::warning::Checks: this run could not use ${origin}, so it graded with the copy of the checks committed in this repository. That copy checks your values too, but it misses any correction made to the checks after handout."
           else
             echo "::error::No working checks: the copy committed in this repository does not run (${outcome})."
             exit 1
@@ -252,13 +253,13 @@ jobs:
       - name: Check assignment artifacts
         run: python -m pytest .github/test/test_assignment.py -q --tb=short
 
-      - name: Say what this run verified
+      - name: Say which checks this run used
         if: always()
         run: |
           set -euo pipefail
 
-          if [ "${CHECKS_VALUES_VERIFIED:-no}" = "yes" ]; then
-            echo "This run checked your artifacts against the documented report and the course roster."
+          if [ "${CHECKS_CURRENT:-no}" = "yes" ]; then
+            echo "This run graded your artifacts with the course's current checks from ${CHECKS_REPO}."
           else
-            echo "::warning::This run checked only that your artifacts are well formed. Your values were NOT verified, because the course checks could not be downloaded. Re-run the job once ${CHECKS_REPO} is reachable."
+            echo "::warning::This run graded your artifacts with the copy of the checks committed in this repository, because the course's current checks could not be used. That copy may miss a correction made after handout. Re-run the job once ${CHECKS_REPO} is reachable."
           fi

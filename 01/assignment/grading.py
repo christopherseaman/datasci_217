@@ -1,28 +1,23 @@
-"""Artifact-only shape rules for Assignment 01.
+"""Artifact-only grading rules for Assignment 01.
 
-This half of the checks travels in your repository and answers one question per
-artifact: is it well formed? The values themselves (the report's lines and your
-identity hash) are checked by the course checks the GitHub Actions run downloads
-on every push, which is where your grade comes from. Both halves report the same
-result format, so the same tooling runs either one.
+Each check is scored on its own: 10 points for each terminal-practice file,
+5 for each graded line of the readiness report, and 15 for the identity hash.
+A wrong report line costs its own 5 points and nothing else.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from _shape_checks import run_checks
+from _value_checks import run_checks
 
 
-POINTS = (20, 80)
-
-REPORT_NOTE = (
-    "These checks confirm the shape of your artifacts; your values are checked when you push."
-)
+# In the order of _value_checks.CHECKS: two practice files, thirteen report lines, and the identity hash.
+POINTS = (10, 10) + (5,) * 13 + (15,)
 
 
 def grade_submission(submission_dir: Path) -> dict:
-    """Check saved artifacts without importing or executing submitted student code."""
+    """Grade saved artifacts without importing or executing submitted student code."""
     diagnostics = run_checks(Path(submission_dir))
     tests = []
     for (name, detail), max_score in zip(diagnostics, POINTS, strict=True):

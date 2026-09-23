@@ -1,10 +1,12 @@
-"""Regression checks for the Assignment 02 value checks.
+"""Regression checks for the Assignment 02 checks.
 
 Builds submissions in ignored `scratch/` and confirms each check scores what it
-should. Nothing here reads or runs student code.
+should, and that the handout ships the course-owned checks byte for byte.
+Nothing here reads or runs student code.
 """
 
 from pathlib import Path
+import re
 import shutil
 import sys
 import tempfile
@@ -260,129 +262,41 @@ def run() -> None:
         assert result["vitals report format"] == 10
 
     print(
-        f"Assignment 02 value checks: {len(POINTS)} checks worth {sum(POINTS)} points, recomputed "
+        f"Assignment 02 checks: {len(POINTS)} checks worth {sum(POINTS)} points, recomputed "
         "answers, tolerant formats, and per-check partial credit all pass."
     )
 
 
-def run_shape() -> None:
-    """The checks in the student fork judge shape, and cannot judge an answer."""
-    import ast
-    import importlib.util
-
-    source = (ASSIGNMENT / "_shape_checks.py").read_text(encoding="utf-8")
-    encounters = load_supplied_encounters(ASSIGNMENT)
-    readings = encounters.readings
-    answers = {
-        len(encounters.usable),
-        encounters.skipped_rows,
-        len(encounters.patients),
-        max(readings),
-        min(readings),
-        round(sum(readings) / len(readings), 2),
-    }
-    constants = {
-        node.value
-        for node in ast.walk(ast.parse(source))
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float))
-    }
-    assert not constants & answers, sorted(constants & answers)
-    assert "clinic_encounters" not in source and "data" not in ast_strings(source), "shape checks read the data"
-
-    specification = importlib.util.spec_from_file_location("_shape_checks", ASSIGNMENT / "_shape_checks.py")
-    shape = importlib.util.module_from_spec(specification)
-    sys.modules["_shape_checks"] = shape  # dataclasses look their own module up by name
-    specification.loader.exec_module(shape)
-
-    # Both halves parse the artifacts with the same code, so they never disagree about a format.
-    import inspect
-    import _value_checks as value
-
-    for name in ("RUN_COMMAND", "NUMPY_SCALAR", "NUMBER", "CACHE_DIRECTORY_PATTERN", "CACHE_FILE_PATTERN",
-                 "REPORT_FILE", "FOLLOWUP_FILE", "REPORT_LABELS", "LABEL_LINES", "SYSTOLIC_MIN", "SYSTOLIC_MAX",
-                 "CUTOFF_MIN", "CUTOFF_MAX", "REASON_MIN_LENGTH", "REASON_MAX_LENGTH",
-                 "DESCRIPTION_MIN_LENGTH", "DESCRIPTION_MAX_LENGTH"):
-        assert getattr(shape, name) == getattr(value, name), name  # compiled regexes compare pattern and flags
-    for name in ("_assert", "_read_artifact", "_report_values", "_followup_text", "_label", "_labelled_values",
-                 "_readme_section", "check_readme_description", "check_readme_run_command",
-                 "check_gitignore_cache", "check_report_format", "check_followup_reason"):
-        assert inspect.getsource(getattr(shape, name)) == inspect.getsource(getattr(value, name)), name
-    assert [check.name for check in shape.CHECKS] == [check.name for check in VALUE_CHECKS]
-    for shared in ("test_assignment.py", ".github/test/test_assignment.py", ".github/test/requirements.txt"):
-        assert (ASSIGNMENT / shared).read_bytes() == (CHECKS / shared).read_bytes(), shared
-
-    with tempfile.TemporaryDirectory(dir=REPO / "scratch", prefix="a02-shape-") as temporary:
-        root = Path(temporary) / "submission"
-        root.mkdir()
-
-        # An untouched handout fails every shape check; no data file is needed.
-        assert all(detail for _, detail in shape.run_checks(root))
-
-        right = (
-            f"Usable encounters: {len(encounters.usable)}\nSkipped rows: {encounters.skipped_rows}\n"
-            f"Patients seen: {len(encounters.patients)}\n"
-            f"Mean systolic: {sum(readings) / len(readings):.1f} mmHg\n"
-            f"Highest systolic: {max(readings)} mmHg\nLowest systolic: {min(readings)} mmHg\n"
-        )
-        listed = sorted(encounters.patients_at_or_above(140))
-        right_followup = f"Cutoff: 140 mmHg\n{REASON}" + "".join(f"{p}\n" for p in listed)
-        # Plausible and wrong: every number is in range, every value is incorrect.
-        wrong = (
-            "Usable encounters: 30\nSkipped rows: 1\nPatients seen: 29\n"
-            "Mean systolic: 142.7 mmHg\nHighest systolic: 200 mmHg\nLowest systolic: 61 mmHg\n"
-        )
-        wrong_followup = f"Cutoff: 121 mmHg\n{REASON}P001\nP007\n"
-
-        top_patient = max(encounters.usable, key=lambda encounter: encounter[1])[0]
-        for report, followup in (
-            (right, right_followup),
-            (wrong, wrong_followup),
-            # The formats the value checks accept pass here too.
-            (right.replace("Highest systolic: ", f"Highest systolic: {top_patient} at "), right_followup + f"{listed[0]}\n"),
-        ):
-            write_submission(root, report=report, followup=followup)
-            failures = [detail for _, detail in shape.run_checks(root) if detail]
-            assert not failures, failures
-            # No data file at all: the shape checks still pass, because they never open it.
-            shutil.rmtree(root / "data", ignore_errors=True)
-            assert not [detail for _, detail in shape.run_checks(root) if detail]
-
-        # Implausible artifacts are still caught.
-        for report, failing in (
-            (right.replace("Mean systolic: ", "Mean systolic: 1"), "mean systolic"),
-            (right.replace("Skipped rows: ", "Skipped rows: -"), "skipped rows"),
-            (right.replace("Patients seen:", "Patients:"), "vitals report format"),
-            (right.replace(f"Lowest systolic: {min(readings)}", "Lowest systolic: not recorded"), "lowest systolic"),
-        ):
-            write_submission(root, report=report, followup=right_followup)
-            broken = {name for name, detail in shape.run_checks(root) if detail}
-            assert broken and failing in broken, (failing, broken)
-
-        for followup, failing in (
-            (f"Cutoff: 95\n{REASON}P001\n", "follow-up cutoff"),
-            (f"Cutoff: 140\nReason: too short.\nP001\n", "follow-up reason"),
-            (f"Cutoff: 140\n{REASON}", "follow-up patient list"),
-        ):
-            write_submission(root, report=right, followup=followup)
-            broken = {name for name, detail in shape.run_checks(root) if detail}
-            assert failing in broken, (failing, broken)
-
-    print(
-        "Assignment 02 shape checks: correct and plausibly wrong submissions are indistinguishable, "
-        "no answer appears in the module, and the supplied data is never read."
+def run_handout_copy() -> None:
+    """Students run locally exactly the checks GitHub runs: the handout's copy is the course's."""
+    workflow = (ASSIGNMENT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+    assert re.search(r'^  CHECKS_PATH: "02/assignment_checks"$', workflow, re.MULTILINE), (
+        "tests.yml does not download from 02/assignment_checks"
     )
+    listed = re.search(r"^  CHECKS_FILES: \|\n((?:    \S.*\n)+)", workflow, re.MULTILINE)
+    assert listed is not None, "tests.yml lists no CHECKS_FILES"
+    files = listed.group(1).split()
 
+    # The list names every checker file here, so a download never misses a module.
+    course_owned = [path.name for path in CHECKS.glob("*.py")]
+    course_owned += [f".github/test/{path.name}" for path in (CHECKS / ".github" / "test").iterdir() if path.is_file()]
+    assert sorted(files) == sorted(course_owned), (sorted(files), sorted(course_owned))
 
-def ast_strings(source: str) -> set[str]:
-    import ast
+    for name in files:
+        assert (ASSIGNMENT / name).read_bytes() == (CHECKS / name).read_bytes(), (
+            f"02/assignment/{name} differs from 02/assignment_checks/{name}; copy the course-owned file over it"
+        )
 
-    return {
-        node.value
-        for node in ast.walk(ast.parse(source))
-        if isinstance(node, ast.Constant) and isinstance(node.value, str)
-    }
+    # Besides the checks, the handout's Python files are the two scaffolds the student completes.
+    handout_python = {path.name for path in ASSIGNMENT.glob("*.py")}
+    assert handout_python == {name for name in files if "/" not in name and name.endswith(".py")} | {
+        "clinic_report.py",
+        "vitals_tools.py",
+    }, sorted(handout_python)
+
+    print(f"Assignment 02 handout: all {len(files)} check files match 02/assignment_checks byte for byte.")
 
 
 if __name__ == "__main__":
     run()
-    run_shape()
+    run_handout_copy()

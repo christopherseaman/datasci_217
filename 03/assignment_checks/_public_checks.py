@@ -1,15 +1,12 @@
-"""Value checks for Assignment 03.
+"""Checks for Assignment 03.
 
-Course-side material. This file ships in the checks repository the assignment
-workflow downloads at run time, never in a student fork. It recomputes every
-answer from the supplied ``data/bp_readings.csv`` and compares it with the
-committed artifacts, so there is no answer key to copy and any submission that
-answers the questions in README.md scores, whatever code produced it. Numeric
-answers are compared with a tolerance, so rounding and spacing never decide a
-score.
-
-The fork carries a shape-only twin of this module with the same check names,
-order, and point values. Fix a parsing, environment, or naming rule in both.
+The course keeps these checks in 03/assignment_checks/, which the assignment
+workflow downloads on every push, and the handout ships a byte-identical copy
+so a local run reports exactly what GitHub will. They recompute every answer
+from the supplied ``data/bp_readings.csv`` and compare it with the committed
+artifacts, so there is no answer key to copy and any submission that answers
+the questions in README.md scores, whatever code produced it. Numeric answers
+are compared with a tolerance, so rounding and spacing never decide a score.
 
 Nothing here imports, runs, or inspects student source code.
 """
@@ -36,8 +33,7 @@ MONITOR_COUNTS_NAME = "output/monitor_counts_<timestamp>.txt"
 STAGE_2_MMHG = 140
 MMHG_TOLERANCE = 0.6
 
-# What `check_assignment.py` tells the reader this run verified.
-CHECKS_SCOPE = "values"
+# What `check_assignment.py` prints before and after the report.
 SCOPE_NOTE = "These checks recompute every answer from data/bp_readings.csv and compare it with your artifacts."
 SCORE_LABEL = "Score"
 COMPLETE_NOTE = "All checks passed."

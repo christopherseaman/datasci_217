@@ -1,33 +1,41 @@
 # Assignment 01 grading development self-test
 
 This development QA smoke test builds submissions in ignored `scratch/` and
-confirms both halves of the checks behave.
+confirms the checks behave.
 
-For the value checks: the identity helper hashes each documented address form
-the same way and rejects addresses off `@ucsf.edu`; an untouched handout scores
-0; the two practice files alone score 20; every one of the 40 roster hashes
-scores 100 with a correct report, whatever its case or surrounding whitespace;
-a hash off the roster, a wrong report line, or a missing report costs the 80
-points together; and any first line, or none, earns them.
+For the contract: the identity helper hashes each documented address form the
+same way and rejects addresses off `@ucsf.edu`; an untouched handout scores 0,
+and every check says why; the two practice files alone score 20, and each
+costs its own 10; every roster hash, however many students the roster holds,
+earns the identity's 15 whatever its case or surrounding whitespace, with or
+without a report; a hash off the roster, or no hash, costs those 15 and
+nothing else; a missing, non-UTF-8, or folder-shaped report fails every report
+line with the same advice, which names make_output.py. Whitespace of any
+kind (including a missing space or a no-break space), blank lines, extra lines,
+line endings, and the first line (any Python version, other text, or none) are
+never graded; a missing line costs only itself, and a wrong value or a letter's
+case costs that line's 5 points and says what the line should read. The real
+submission that compared the running total instead of each measurement,
+printed with double spaces, scores 90.
 
-For equivalence: the value checks replaced the checker the fork used to carry,
-`01/assignment/_assignment_checks.py` and `grading.py` at commit `f39598b`. The
-self-test reads that checker from the repository history and grades about 1,500
-artifact variants with both: each roster hash, other Python families, CRLF and
-CR line endings, no final newline, extra whitespace, a byte-order mark,
-non-UTF-8 and UTF-16 files, symlinks, directories where files belong, missing
-and extra files, and unreadable files. The value checks give the score and
-detail the f39598b checker gives once the first line is set aside, and never a
-lower score; any first line, or none, is accepted. Forks completed against the
-earlier handout keep at least their scores.
+For the handout: each file in the workflow's `CHECKS_FILES` is byte-identical
+in `01/assignment/` and here, and no shape-only checks remain; the README shows
+every expected line, and its contract table agrees with `POINTS` row by row;
+the handout's `check_assignment.py` prints the same JSON as this directory's
+for the same submission; and a clean local run ends with the lines the README
+quotes.
 
-For the shape checks that ship in the fork: they share the value checks'
-constants, helpers, and byte-identical test entrypoints; no roster hash and no
-report line appears in any checker file under `01/assignment/`; a correct
-submission and a plausibly wrong one (a wrong total and a hash off the roster)
-are indistinguishable; malformed artifacts are still caught; every artifact the
-value checks accept passes the shape checks; and the local checker ends with the
-two lines the README quotes.
+For never scoring lower: these checks replaced the checker the fork used to
+carry, `01/assignment/_assignment_checks.py` and `grading.py` at commit
+`f39598b`. The self-test reads that checker from the repository history and
+grades about 1,800 artifact variants with both: each roster hash, other Python
+families, CRLF and CR line endings, no final newline, extra whitespace, a
+byte-order mark, non-UTF-8 and UTF-16 files, symlinks, directories where files
+belong, missing and extra files, and unreadable files. Every variant scores at
+least what the f39598b checker gives it, both as built and once its first line
+reads the way that checker required, and whatever that checker passed, the
+matching checks here pass. Every whitespace, blank-line, and extra-line variant
+of the correct report scores 100.
 
 It is not a separate scoring mode; graders use the supplied checker from a
 trusted copy. The equivalence run needs a full clone, since it reads commit

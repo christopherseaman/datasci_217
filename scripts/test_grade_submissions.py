@@ -8,8 +8,10 @@
 
 Completes Assignment 01 by following its README literally, publishes that and
 other submissions as local repositories standing in for forks, and grades them
-through scripts/grade_submissions.py, which uses the course-owned value checks
-in 01/assignment_checks/. Nothing here contacts GitHub.
+through scripts/grade_submissions.py, which uses the course-owned checks in
+01/assignment_checks/. The handout ships a byte-identical copy of those checks,
+so each fork's own local run is compared with them too. Nothing here contacts
+GitHub.
 """
 
 from contextlib import contextmanager
@@ -27,11 +29,11 @@ import urllib.request
 
 REPO = Path(__file__).resolve().parents[1]
 HANDOUT = REPO / "01" / "assignment"
-VALUE_CHECKS = REPO / "01" / "assignment_checks"
+COURSE_CHECKS = REPO / "01" / "assignment_checks"
 sys.path.insert(0, str(REPO / "scripts"))
 import grade_submissions  # noqa: E402
 
-sys.path.insert(0, str(VALUE_CHECKS))
+sys.path.insert(0, str(COURSE_CHECKS))
 from _value_checks import EXPECTED_READINESS, ROSTER_HASHES  # noqa: E402
 
 GIT_IDENTITY = ["-c", "user.name=Test Student", "-c", "user.email=student@example.com"]
@@ -81,18 +83,27 @@ def printed(command: list[str], cwd: Path, expected: str, what: str) -> None:
     assert actual == expected, f"{what} printed:\n{actual}\nThe README expects:\n{expected}"
 
 
-def value_report(root: Path) -> dict:
-    """The course-owned value checks' JSON report for a submission, as CI and the TA script get it."""
-    result = subprocess.run([sys.executable, "-B", str(VALUE_CHECKS / "check_assignment.py"), str(root), "--json"],
+def value_report(root: Path, checks: Path = COURSE_CHECKS) -> dict:
+    """The JSON report of the checks in `checks` for a submission: by default the course-owned
+    copy, as CI and the TA script get it; given the submission itself, the student's local run."""
+    result = subprocess.run([sys.executable, "-B", str(checks / "check_assignment.py"), str(root), "--json"],
                             cwd=root, capture_output=True, text=True, check=False)
     assert result.returncode in (0, 1), (result.stdout, result.stderr)
     return json.loads(result.stdout)
 
 
+def failing(report: dict) -> dict[str, str]:
+    return {test["test-name"]: test["detail"] for test in report["tests"] if not test["passed"]}
+
+
 def copy_tracked(number: str, destination: Path) -> Path:
-    """The files a student's fork starts with: exactly what the course repository tracks."""
-    tracked = run(["git", "ls-files", "-z", f"{number}/assignment"], REPO).split("\0")
-    for name in filter(None, tracked):
+    """The files a student's fork starts with: what the course repository tracks, with files added
+    or deleted since the last commit counted, so the handout about to be committed is what is tested."""
+    listed = run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", f"{number}/assignment"],
+                 REPO).split("\0")
+    for name in dict.fromkeys(filter(None, listed)):
+        if not (REPO / name).is_file():
+            continue  # deleted in the working tree, so the next commit drops it
         target = destination / Path(name).relative_to(f"{number}/assignment")
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO / name, target)
@@ -169,22 +180,22 @@ def complete_as_written(root: Path) -> None:
     quoted = block(sections, "1.2", "text") + block(sections, "2.2", "text") + block(sections, "3.1", "text")
     assert saved == EXPECTED_READINESS == quoted and len(saved.splitlines()) == 14
 
-    # Task 3.3: the helper saves only a hash. The local shape checks cannot tell an email off the
-    # roster from a roster one; the value checks reject it and hold back the shared 80 points,
-    # so the test then stands in a roster hash for the student's own.
+    # Task 3.3: the helper saves only a hash. This test's email is off the roster, so the checks,
+    # locally and on GitHub alike, hold back the identity's 15 points and nothing else; the test
+    # then stands in a roster hash for the student's own.
     run([sys.executable, "capture_identity.py"], root, stdin="Test.Student@ucsf.edu\n")
     identity = root / "output" / "student_identity.txt"
     assert re.fullmatch(r"[0-9a-f]{64}\n", identity.read_text())
+    report = value_report(root)
+    assert report == value_report(root, checks=root), "the local run and the course checks disagree"
+    assert report["score"] == 85 and list(failing(report)) == ["identity hash on the roster"], report
+    assert "course roster" in failing(report)["identity hash on the roster"], report
+    identity.write_text(ROSTER_HASH + "\n", encoding="utf-8")
+
+    # Check your work: the README's promised local ending, and full marks from the course checks.
     promised = block(sections, "Check", "text")
     checked = run([sys.executable, "-B", "check_assignment.py"], root)
     assert checked.endswith(promised), f"check_assignment.py printed:\n{checked}\nThe README promises:\n{promised}"
-    report = value_report(root)
-    assert report["score"] == 20 and "course roster" in report["tests"][1]["detail"], report
-    identity.write_text(ROSTER_HASH + "\n", encoding="utf-8")
-
-    # Check your work: the README's promised local ending, and full marks from the value checks.
-    checked = run([sys.executable, "-B", "check_assignment.py"], root)
-    assert checked.endswith(promised), checked
     assert value_report(root)["score"] == 100
 
 
@@ -237,7 +248,7 @@ def test_fork_names_and_listing() -> None:
     assert not grade_submissions.same_remote("https://github.com/bob/ds217-26f-01.git", https)
     assert grade_submissions.printable("monitor\udcff.txt") == "monitor\\udcff.txt"
 
-    # Grades come from the course-owned value checks where they exist, as CI fetches them.
+    # Grades come from the course-owned checks where they exist, as CI fetches them.
     for number in ("01", "02", "03"):
         assert grade_submissions.trusted_checks_dir(number) == REPO / number / "assignment_checks"
     assert grade_submissions.load_assignment("01")["repository"] == "UCSF-DataSci/ds217-26f-01"
@@ -307,7 +318,7 @@ def test_grading_forks(work: Path) -> None:
     complete_as_written(completed)
     urls = {"alice": publish_fork(forks, "alice", completed)}
 
-    # Terminal practice only: 20 of 100, the split the Completion Contract states.
+    # Terminal practice only: 20 of 100, 10 for each practice file as the Completion Contract states.
     partial = copy_tracked("01", work / "partial")
     shutil.copytree(completed / "terminal-practice", partial / "terminal-practice")
     urls["bob"] = publish_fork(forks, "bob", partial)
@@ -315,7 +326,8 @@ def test_grading_forks(work: Path) -> None:
     urls["carol"] = publish_fork(forks, "carol", copy_tracked("01", work / "untouched"))
 
     # A fork whose own checker claims full marks, and where every Python file, including ones
-    # named like the standard-library modules the checks import, leaves a trace if it runs.
+    # named like the standard-library modules the checks import, leaves a trace if it runs. Its
+    # identity file is missing, so the course checks give 85, never the 100 it claims.
     forged = work / "forged"
     shutil.copytree(completed, forged)
     (forged / "output" / "student_identity.txt").unlink()
@@ -335,15 +347,40 @@ def test_grading_forks(work: Path) -> None:
     report.write_text(report.read_text().replace("Python family: 3.13\n", "Python family: 3.14\n", 1))
     urls["erin"] = publish_fork(forks, "erin", other_python)
 
-    # Well formed but wrong: every local shape check passes, and the value checks still
-    # hold back the 80 points for a wrong report line and a hash off the roster.
+    # Plausible but wrong: a wrong total and a hash off the roster cost their own 5 and 15 points,
+    # and the fork's local run already says so, exactly as the course checks do.
     plausible = work / "plausible"
     shutil.copytree(completed, plausible)
     report = plausible / "output" / "readiness.txt"
     report.write_text(report.read_text().replace("Total: 82\n", "Total: 83\n", 1))
     (plausible / "output" / "student_identity.txt").write_text("0" * 64 + "\n")
-    assert run([sys.executable, "-B", "check_assignment.py"], plausible).endswith(block(readme_blocks(), "Check", "text"))
+    local = value_report(plausible, checks=plausible)
+    assert local == value_report(plausible) and local["score"] == 80, local
+    assert sorted(failing(local)) == ["identity hash on the roster", "report: Total"], local
     urls["olga"] = publish_fork(forks, "olga", plausible)
+
+    # A real mistake: the running total compared with the threshold instead of each measurement, and a
+    # space inside each Task 2 label's quotes. Spacing is not graded, so only the two wrong lines cost points.
+    running = work / "running-total"
+    shutil.copytree(completed, running)
+    summary = running / "measurement_summary.py"
+    code = summary.read_text()
+    for old, new in (("if measurement >= review_threshold:", "if total >= review_threshold:"),
+                     *((f'print("{label}:", ', f'print("{label}: ", ')
+                       for label in ("Measurement", "Count", "Total", "Mean", "Review count"))):
+        assert code.count(old) == 1, old
+        code = code.replace(old, new)
+    summary.write_text(code)
+    run([sys.executable, "make_output.py"], running)
+    saved = (running / "output" / "readiness.txt").read_text(encoding="utf-8").splitlines()
+    assert saved[3:11] == ["Measurement:  18 within range", "Measurement:  21 review", "Measurement:  24 review",
+                           "Measurement:  19 review", "Count:  4", "Total:  82", "Mean:  20.5", "Review count:  3"]
+    local = value_report(running, checks=running)
+    assert local == value_report(running) and local["score"] == 90, local
+    assert failing(local)["report: Measurement 4"].startswith(
+        "The line should read `Measurement: 19 within range`; yours reads `Measurement: 19 review`."), local
+    assert sorted(failing(local)) == ["report: Measurement 4", "report: Review count"], local
+    urls["tess"] = publish_fork(forks, "tess", running)
 
     # A fork whose folders are symlinks into a classmate's clone beside it.
     borrowed = copy_tracked("01", work / "borrowed")
@@ -355,13 +392,18 @@ def test_grading_forks(work: Path) -> None:
     assert grade(destination, *urls.values()) == 0
     grades = read_grades(destination)
     assert {user: row["score"] for user, row in grades.items()} == {
-        "alice": "100", "bob": "20", "carol": "0", "erin": "100", "mallory": "20", "olga": "20", "sam": "0"}
+        "alice": "100", "bob": "20", "carol": "0", "erin": "100", "mallory": "85", "olga": "80", "sam": "0",
+        "tess": "90"}
     assert all(row["status"] == "graded" and row["max_score"] == "100" for row in grades.values())
-    assert grades["alice"]["test: terminal practice evidence"] == "20"
-    assert grades["alice"]["test: committed readiness and identity artifacts"] == "80"
+    assert grades["alice"]["test: terminal-practice/source.txt"] == "10"
+    assert grades["alice"]["test: report: Total"] == "5"
+    assert grades["alice"]["test: identity hash on the roster"] == "15"
+    assert len([column for column in grades["alice"] if column.startswith("test: ")]) == 16
     assert grades["alice"]["details"] == ""
-    assert "student_identity.txt" in grades["mallory"]["details"]
-    assert "readiness report" in grades["olga"]["details"], grades["olga"]["details"]
+    assert grades["bob"]["test: terminal-practice/path-check.txt"] == "10"
+    assert grades["mallory"]["details"].startswith("identity hash on the roster: Run capture_identity.py"), grades
+    assert "should read `Total: 82`; yours reads `Total: 83`" in grades["olga"]["details"], grades["olga"]["details"]
+    assert grades["tess"]["test: report: Review count"] == "0" and grades["tess"]["test: report: Total"] == "5"
     assert len({row["checks"] for row in grades.values()}) == 1 and grades["alice"]["checks"]
     for user, url in urls.items():
         assert grades[user]["commit"] == head(url), user
@@ -398,7 +440,7 @@ def test_grading_forks(work: Path) -> None:
     missing = (forks / "nobody" / "ds217-26f-01").as_uri()
     assert grade(destination, urls["carol"], urls["alice"], urls["mallory"], missing, urls["erin"]) == 1
     rows = read_grades(destination)
-    for user, kept in (("carol", "0"), ("alice", "100"), ("mallory", "20")):
+    for user, kept in (("carol", "0"), ("alice", "100"), ("mallory", "85")):
         assert rows[user]["status"] == "error" and "local changes" in rows[user]["details"], rows[user]
         assert rows[user]["score"] == kept and "score kept from commit" in rows[user]["details"], rows[user]
     assert (destination / "carol" / "ta-notes.txt").read_text() == "untracked note\n"
@@ -518,9 +560,9 @@ def main() -> None:
         test_checker_failures(work)
         test_grades_file(work)
         test_every_assignment_through_the_script(work)
-    print("grade_submissions: Assignment 01 completed as written passes every local shape check and scores "
-          "100/100 from 01/assignment_checks; partial, untouched, forged, plausible-but-wrong, other-Python and "
-          "symlinked forks score as intended from the course checks; TA edits, renamed URLs, "
+    print("grade_submissions: Assignment 01 completed as written scores 100/100 from 01/assignment_checks and "
+          "from its own local run; partial, untouched, forged, plausible-but-wrong, running-total, other-Python "
+          "and symlinked forks score as intended from the course checks; TA edits, renamed URLs, "
           "checker failures, interrupted runs and grades.csv round trips behave; every assignment's handout "
           "grades to a zero row through the script.")
 

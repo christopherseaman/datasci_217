@@ -19,19 +19,16 @@ def main() -> int:
     if args.json:
         print(json.dumps(result))
     else:
-        # Report a count, never a score: these checks have not looked at a value,
-        # so printing anything out of 100 would read as a grade.
-        passed = 0
-        for test in result["tests"]:
-            if test["passed"]:
-                passed += 1
-                print(f"[ OK ] {test['test-name']}")
-            else:
-                print(f"[ FIX ] {test['test-name']}")
-                if test["detail"]:
-                    print(f"        {test['detail']}")
-        print(f"\n{passed} of {len(result['tests'])} shape checks passed.")
         print(SCOPE_NOTE)
+        print()
+        for test in result["tests"]:
+            status = "PASS" if test["passed"] else "FIX "
+            print(f"[{status}] {test['score']:>3}/{test['max-score']:<3} {test['test-name']}")
+            if test["detail"]:
+                print(f"         {test['detail']}")
+        print(f"\n{SCORE_LABEL}: {result['score']}/{result['max-score']}")
+        if result["score"] == result["max-score"]:
+            print(COMPLETE_NOTE)
     return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 

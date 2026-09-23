@@ -11,8 +11,8 @@ assignment/
 ├── make_output.py                # supplied: saves the readiness report in Task 3.2; keep unchanged
 ├── capture_identity.py           # supplied: saves your identity hash in Task 3.3; keep unchanged
 ├── process_email.py              # supplied: used by capture_identity.py; keep unchanged
-├── check_assignment.py           # supplied: run it to check the shape of your work; keep unchanged
-├── grading.py, _shape_checks.py  # supplied: the shape checks themselves; keep unchanged
+├── check_assignment.py           # supplied: run it to check your work; keep unchanged
+├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 ├── media/                        # supplied: screenshots for the Lecture 01 walkthrough
 ├── terminal-practice/            # you create in Task 1.1
@@ -156,7 +156,7 @@ python3 capture_identity.py
 The helper trims whitespace, lowercases the address, requires `@ucsf.edu`, and hashes the username after removing punctuation. It saves only the hash; keep your email address out of files and commits.
 
 > **Checkpoint: `output/student_identity.txt`**
-> The file contains one 64-character SHA-256 hash. The checks on GitHub match it to the course roster. If they report no match, rerun the helper with your roster email or contact the course team.
+> The file contains one 64-character SHA-256 hash. The checks match it to the course roster. If they report no match, rerun the helper with your roster email or contact the course team.
 
 ## Check your work
 
@@ -166,35 +166,35 @@ Run the checks from the assignment directory:
 python3 check_assignment.py
 ```
 
-The checks come in two halves, and both look only at the four files you commit in `terminal-practice/` and `output/`. Neither one runs or reads your Python code.
-
-- **In your repository: the shape checks.** `check_assignment.py` confirms that both practice files exist, that `output/readiness.txt` is UTF-8 text with 14 lines (13 also pass, because the first line is never checked) and a final newline, and that `output/student_identity.txt` holds one 64-character hash. It does not hold the expected report or the course roster, so it cannot tell you whether a line is right or whether your hash is on the roster.
-- **On GitHub: the value checks.** Every push runs GitHub Actions, which downloads the course checks, compares your report with the 14 lines this README shows, and matches your hash to the course roster. That run is what your grade comes from, and a check corrected after handout reaches you on your next push.
-
-The report's first line, your Python version, is never checked.
+These are the same checks GitHub runs. They look only at the four files you commit in `terminal-practice/` and `output/`, and never run or read your Python code. Each check prints its points, and each failing check says what to fix: a report line that differs shows what it should read and what yours reads. Whitespace and blank lines are ignored, and so is the report's first line, your Python version.
 
 A clean local run ends with:
 
 ```text
-2 of 2 shape checks passed.
-These checks confirm the shape of your artifacts; your values are checked when you push.
+[PASS] 15/15 identity hash on the roster
+
+Score: 100/100
+All checks passed.
 ```
 
-If the report check fails, inspect your scripts, rerun `python3 make_output.py`, and check again. If an Actions run ever cannot reach the course checks, it falls back to these same shape checks and warns that no value was verified: a green run then means well formed, not correct.
+If a report line fails, fix the script that prints it, rerun `python3 make_output.py`, and check again.
+
+GitHub Actions reruns these checks on every push with the course's current copy of them, and that run is what counts. A check corrected after you forked reaches you on your next push. If a run cannot download the course's copy, it uses the copy in your repository and says so in its log.
 
 ### Completion contract
 
-Commit these files in your fork. Grading totals 100 points.
+Commit these files in your fork. Grading totals 100 points, and each check is scored on its own.
 
 | Artifact | Complete when | Points |
 |---|---|---:|
-| `terminal-practice/source.txt` and `terminal-practice/path-check.txt` | Both exist as regular files in a regular `terminal-practice` directory. Their contents are not checked. | 20 |
-| `output/readiness.txt` and `output/student_identity.txt` | Both are regular files in a regular `output` directory. The report is UTF-8 text matching all 14 lines shown in Tasks 1.2, 2.2, and 3.1, including spacing and a final newline; its first line, the Python version, is not checked. The identity file holds one hash from the course roster; surrounding whitespace and letter case are ignored. | 80 |
+| `terminal-practice/source.txt` and `terminal-practice/path-check.txt` | Each exists as a regular file in a regular `terminal-practice` directory. Their contents are not checked. | 20 (10 each) |
+| `output/readiness.txt` | A UTF-8 text file in a regular `output` directory holding the 13 lines this README shows after the Python version in Tasks 1.2, 2.2, and 3.1, in the same order. Whitespace, blank lines, and extra lines are ignored, and the Python version line is not checked. | 65 (5 each) |
+| `output/student_identity.txt` | A regular file in a regular `output` directory holding one hash from the course roster; surrounding whitespace and letter case are ignored. | 15 |
 
-The two output files share their 80 points, so both must pass: a correct report with a hash that is not on the roster earns none of them. Extra files are ignored, but keep the supplied ones, because `capture_identity.py` needs `process_email.py` and the checks need their own files.
+A wrong or missing report line costs only its own 5 points, and the identity hash is checked separately from the report. Extra files are ignored, but keep the supplied ones, because `capture_identity.py` needs `process_email.py` and the checks need their own files.
 
 ## Submit
 
 Commit your three completed scripts and the four checkpoint files to **your fork**: in VS Code Source Control, stage each file with **+**, commit, and select **Sync Changes**. Follow the [Lecture 01 submission walkthrough](https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696) for VS Code or GitHub web upload. On GitHub, open both files under `output/` and confirm their contents. Your fork is the submission; no pull request is needed.
 
-GitHub Actions runs the checks automatically on every push; in a new fork, open **Actions** and enable workflows once if GitHub prompts you. Open the latest run to see which artifacts need attention. If a local check disagrees with the GitHub run, the GitHub run counts: it checks your values, and the local run checks their shape.
+GitHub Actions runs the checks automatically on every push; in a new fork, open **Actions** and enable workflows once if GitHub prompts you. Open the latest run to see which artifacts need attention. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current copy of the checks.

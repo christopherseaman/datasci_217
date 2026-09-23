@@ -1,4 +1,4 @@
-"""Run the Assignment 02 value checks against saved artifacts."""
+"""Run the Assignment 02 checks against saved artifacts and say what to fix."""
 
 from __future__ import annotations
 

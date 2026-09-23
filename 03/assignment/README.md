@@ -7,8 +7,9 @@ assignment/
 ├── data/bp_readings.csv    # supplied readings; keep this file exactly as handed out
 ├── analysis.py             # starter script: the CSV loader is written, the analysis is yours
 ├── requirements.txt        # supplied: the one direct dependency this project installs
-├── check_assignment.py     # supplied: run it to check the shape of your work; keep unchanged
+├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _public_checks.py  # supplied: the checks themselves; keep unchanged
+├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 ├── .python-version         # you create in Task 1
 └── output/
     ├── environment.txt             # you generate in Task 1
@@ -156,21 +157,27 @@ python analysis.py
 python check_assignment.py
 ```
 
-Grading happens in two places, and both read only your committed artifacts. Neither ever runs or reads your Python code, so any way of producing a correct artifact counts.
+`check_assignment.py` runs the same checks GitHub runs. They read only `requirements.txt` and your files in `output/`, and recompute every answer from the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
 
-| Where | What it checks | What it cannot tell you |
-| --- | --- | --- |
-| `python check_assignment.py`, in your repository | The shape of each artifact: the file is there, it is readable text, it carries the required labels, and each value is a number or a label in a range a clinician would accept. | Whether a value is right. The answers are not in your repository. |
-| GitHub Actions, on every push | The same shape checks, plus every answer compared with the value recomputed from `data/bp_readings.csv`. | n/a |
-
-Run the local checks to catch a missing file, a missing key, or a typo before you push; push to find out whether the analysis is right. The local checks do not hold the answers, so a complete run says only that each artifact is well formed:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 1, for example, the first check reports:
 
 ```text
-18 of 18 shape checks passed.
-These checks confirm the shape of your artifacts; your values are checked when you push.
+[FIX ]   0/13  environment probe
+         output/environment.txt is missing; commit it as a regular file.
 ```
 
-It reports a count rather than a score, because it has not looked at a single answer. When something is off it names the artifact to revise. Your answers are compared with the readings when you push, and the GitHub Actions run reports the same eighteen checks, each carrying its own points.
+Fix what it names, rerun whatever produces that artifact and then the checks, and repeat until every check passes. A clean local run ends with:
+
+```text
+[PASS]   4/4   answer: high_monitor
+[PASS]   3/3   answer: monitor_offset
+[PASS]   3/3   answer: stage2_other_monitors
+
+Score: 100/100
+All checks passed.
+```
+
+Every push also runs GitHub Actions, which downloads the course's current copy of the checks and reruns them on the files you committed and pushed. That run is what counts, and a check corrected after handout reaches you there on your next push.
 
 ### Completion contract
 
@@ -190,4 +197,4 @@ Extra files and extra lines are ignored.
 
 In VS Code Source Control, stage `.python-version`, `analysis.py`, and everything in `output/`, including every timestamped counts file you kept. Commit with `Analyze telemetry ward readings`. Keep `.venv/` out of the commit; `.gitignore` already lists it.
 
-Publish or sync the branch. With no unfinished changes, switch to `main`, run **Git: Merge...**, and select `feature/numpy-analysis`. Resolve any unexpected conflict, inspect the resolution, and sync. Confirm the committed artifacts on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. Each run downloads the current version of the checks, including the comparison against the supplied readings, from the course checks repository, so a correction made after the assignment was handed out reaches you on your next push. If that download fails, the run says so and falls back to the shape checks in your repository, which do not verify any answer. If a required VS Code control is unavailable, record its message and contact the instructor.
+Publish or sync the branch. With no unfinished changes, switch to `main`, run **Git: Merge...**, and select `feature/numpy-analysis`. Resolve any unexpected conflict, inspect the resolution, and sync. Confirm the committed artifacts on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a run cannot download the course's current checks, it grades with the copy in your repository and says so in its log. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks. If a required VS Code control is unavailable, record its message and contact the instructor.

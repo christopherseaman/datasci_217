@@ -1,38 +1,42 @@
-"""Shape checks for Assignment 03.
+"""Checks for Assignment 03.
 
-These are the checks that run in your own repository. They answer one question:
-is each artifact well formed? Every required file exists and is readable UTF-8,
-every required label is present, and every value parses and sits inside a range
-a clinician would accept. Nothing here recomputes an answer from
-`data/bp_readings.csv`, so nothing here can tell you whether a value is right;
-your values are checked when you push.
-
-The course checks that run on GitHub carry the same check names, order, and
-point values, and add the comparison against the supplied readings.
+The course keeps these checks in 03/assignment_checks/, which the assignment
+workflow downloads on every push, and the handout ships a byte-identical copy
+so a local run reports exactly what GitHub will. They recompute every answer
+from the supplied ``data/bp_readings.csv`` and compare it with the committed
+artifacts, so there is no answer key to copy and any submission that answers
+the questions in README.md scores, whatever code produced it. Numeric answers
+are compared with a tolerance, so rounding and spacing never decide a score.
 
 Nothing here imports, runs, or inspects student source code.
 """
 
 from __future__ import annotations
 
+import codecs
+import hashlib
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 
+DATA_FILE = "data/bp_readings.csv"
+DATA_SHA256 = "b2300f98336816323b86a910f1dc1cc8ce89f83e9b564e3e10b82bf8e2aadadc"
 SUMMARY_FILE = "output/vitals_summary.txt"
 RECORD_COUNT_FILE = "output/record_count.txt"
 ENVIRONMENT_FILE = "output/environment.txt"
 MONITOR_COUNTS_PATTERN = re.compile(r"^monitor_counts_\d{8}_\d{6}\.txt$")
 MONITOR_COUNTS_NAME = "output/monitor_counts_<timestamp>.txt"
 
+STAGE_2_MMHG = 140
+MMHG_TOLERANCE = 0.6
 
-# What `check_assignment.py` tells the reader this run verified.
-CHECKS_SCOPE = "shape"
-SCOPE_NOTE = "These checks confirm the shape of your artifacts; your values are checked when you push."
-SCORE_LABEL = "Shape"
-COMPLETE_NOTE = "Every artifact is well formed. Your values are checked when you push."
+# What `check_assignment.py` prints before and after the report.
+SCOPE_NOTE = "These checks recompute every answer from data/bp_readings.csv and compare it with your artifacts."
+SCORE_LABEL = "Score"
+COMPLETE_NOTE = "All checks passed."
 
 _NUMPY_SCALAR = re.compile(r"(?:np|numpy)\.[A-Za-z_]+\d*\(\s*([^()]*?)\s*\)")
 _NUMBER = re.compile(r"(?<![\w.])[-+]?\d[\d,]*(?:\.\d+)?(?:[eE][-+]?\d+)?")
@@ -42,6 +46,51 @@ _PINNED_NUMPY = re.compile(r"^numpy\s*==\s*([0-9][^\s;#]*)", re.IGNORECASE)
 _VENV_INTERPRETER = re.compile(r"(?:^|[/\\])\.venv[/\\].*python", re.IGNORECASE)
 _COUNT_SPLIT = re.compile(r"[\s,;:=|]+")
 
+# key -> what the value must answer, phrased for a failure message.
+COUNT_KEYS = {
+    "patients": "the number of patients",
+    "readings": "the number of individual readings",
+    "min_sbp": "the lowest single reading",
+    "max_sbp": "the highest single reading",
+    "stage2_patients": f"the number of patients whose 12-hour mean is {STAGE_2_MMHG} mmHg or higher",
+    "stage2_other_monitors": (
+        f"the number of patients whose 12-hour mean is {STAGE_2_MMHG} mmHg or higher "
+        "once the patients on the high-reading monitor are left out"
+    ),
+}
+MMHG_KEYS = {
+    "mean_sbp": "the mean of every reading",
+    "sd_sbp": "the standard deviation of every reading",
+    "highest_patient_mean": "the 12-hour mean of the patient with the highest 12-hour mean",
+    "peak_hour_mean": "the mean of the hour column with the highest mean",
+    "monitor_offset": (
+        "the gap between the high-reading monitor's average and the average of the "
+        "patients on the other monitors"
+    ),
+}
+LABEL_KEYS = {
+    "highest_patient": "the patient_id of the patient with the highest 12-hour mean",
+    "peak_hour_column": "the header name of the hour column with the highest mean",
+    "high_monitor": "the monitor whose patients' 12-hour means average highest",
+}
+# Report order: the order README.md lists the answers in.
+ANSWER_KEYS = (
+    "patients",
+    "readings",
+    "mean_sbp",
+    "sd_sbp",
+    "min_sbp",
+    "max_sbp",
+    "stage2_patients",
+    "highest_patient",
+    "highest_patient_mean",
+    "peak_hour_column",
+    "peak_hour_mean",
+    "high_monitor",
+    "monitor_offset",
+    "stage2_other_monitors",
+)
+
 
 @dataclass(frozen=True)
 class PublicCheck:
@@ -50,39 +99,11 @@ class PublicCheck:
 
 
 @dataclass(frozen=True)
-class AnswerShape:
-    """What a value must look like: a label, or a number inside a wide band."""
-
-    band: str
-    low: float | None = None
-    high: float | None = None
-    whole: bool = False
-    label: bool = False
-
-
-_COUNT = AnswerShape("a whole number, zero or more", low=0, whole=True)
-_MMHG = AnswerShape("a systolic pressure in mmHg, between 60 and 250", low=60, high=250)
-_WHOLE_MMHG = AnswerShape("a whole number of mmHg, between 60 and 250", low=60, high=250, whole=True)
-
-# Report order: the order README.md lists the answers in.
-ANSWER_SHAPES = {
-    "patients": AnswerShape("a whole number, one or more", low=1, whole=True),
-    "readings": AnswerShape("a whole number, one or more", low=1, whole=True),
-    "mean_sbp": _MMHG,
-    "sd_sbp": AnswerShape("a spread in mmHg, between 0 and 100", low=0, high=100),
-    "min_sbp": _WHOLE_MMHG,
-    "max_sbp": _WHOLE_MMHG,
-    "stage2_patients": _COUNT,
-    "highest_patient": AnswerShape("a patient_id as written in the file", label=True),
-    "highest_patient_mean": _MMHG,
-    "peak_hour_column": AnswerShape("an hour column name as written in the header", label=True),
-    "peak_hour_mean": _MMHG,
-    "high_monitor": AnswerShape("a monitor id as written in the file", label=True),
-    "monitor_offset": AnswerShape("a gap in mmHg, between -100 and 100", low=-100, high=100),
-    "stage2_other_monitors": _COUNT,
-}
-ANSWER_KEYS = tuple(ANSWER_SHAPES)
-LABEL_KEYS = tuple(key for key, shape in ANSWER_SHAPES.items() if shape.label)
+class Dataset:
+    patients: tuple[str, ...]
+    monitors: tuple[str, ...]
+    hour_columns: tuple[str, ...]
+    readings: tuple[tuple[int, ...], ...]
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -98,6 +119,87 @@ def _text(root: Path, name: str) -> str:
     except UnicodeDecodeError as error:
         raise AssertionError(f"{name} must be UTF-8 text.") from error
     return text.lstrip("﻿")
+
+
+def load_dataset(root: Path) -> Dataset:
+    """Read the supplied dataset, refusing a file that is not the one handed out."""
+    path = root / DATA_FILE
+    _assert(path.is_file() and not path.is_symlink(), f"{DATA_FILE} is missing; restore the supplied dataset.")
+    raw = path.read_bytes()
+    if raw.startswith(codecs.BOM_UTF8):
+        raw = raw[len(codecs.BOM_UTF8) :]
+    raw = raw.replace(b"\r\n", b"\n")
+    _assert(
+        hashlib.sha256(raw).hexdigest() == DATA_SHA256,
+        f"{DATA_FILE} is not the supplied dataset. Restore it with "
+        f"`git checkout {DATA_FILE}` and rerun your analysis on it.",
+    )
+
+    lines = [line for line in raw.decode("utf-8").splitlines() if line.strip()]
+    header = lines[0].split(",")
+    rows = [line.split(",") for line in lines[1:]]
+    return Dataset(
+        patients=tuple(row[0] for row in rows),
+        monitors=tuple(row[1] for row in rows),
+        hour_columns=tuple(header[2:]),
+        readings=tuple(tuple(int(value) for value in row[2:]) for row in rows),
+    )
+
+
+def _mean(values) -> float:
+    values = tuple(values)
+    return sum(values) / len(values)
+
+
+def expected_answers(data: Dataset) -> dict[str, float | str]:
+    """Recompute every answer the summary file is asked for.
+
+    A monitor's average is the mean of its patients' 12-hour means, which is the
+    definition README.md states. Every patient has the same number of readings,
+    so it equals the mean of that monitor's readings.
+    """
+    flat = [value for row in data.readings for value in row]
+    overall_mean = _mean(flat)
+    patient_means = [_mean(row) for row in data.readings]
+    hour_means = [_mean(row[hour] for row in data.readings) for hour in range(len(data.hour_columns))]
+
+    best_patient = max(range(len(patient_means)), key=patient_means.__getitem__)
+    peak_hour = max(range(len(hour_means)), key=hour_means.__getitem__)
+
+    monitor_means = {
+        monitor: _mean(mean for mean, owner in zip(patient_means, data.monitors) if owner == monitor)
+        for monitor in set(data.monitors)
+    }
+    high_monitor = max(monitor_means, key=monitor_means.__getitem__)
+    other_means = [mean for mean, owner in zip(patient_means, data.monitors) if owner != high_monitor]
+
+    return {
+        "patients": len(data.patients),
+        "readings": len(flat),
+        "mean_sbp": overall_mean,
+        "sd_sbp": math.sqrt(sum((value - overall_mean) ** 2 for value in flat) / len(flat)),
+        "min_sbp": min(flat),
+        "max_sbp": max(flat),
+        "stage2_patients": sum(1 for mean in patient_means if mean >= STAGE_2_MMHG),
+        "highest_patient": data.patients[best_patient],
+        "highest_patient_mean": patient_means[best_patient],
+        "peak_hour_column": data.hour_columns[peak_hour],
+        "peak_hour_mean": hour_means[peak_hour],
+        "high_monitor": high_monitor,
+        "monitor_offset": monitor_means[high_monitor] - _mean(other_means),
+        "stage2_other_monitors": sum(
+            1
+            for mean, owner in zip(patient_means, data.monitors)
+            if owner != high_monitor and mean >= STAGE_2_MMHG
+        ),
+    }
+
+
+def monitor_counts(data: Dataset) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for monitor in data.monitors:
+        counts[monitor] = counts.get(monitor, 0) + 1
+    return counts
 
 
 def _unwrap(raw: str) -> str:
@@ -116,7 +218,7 @@ def _as_number(raw: str) -> float | None:
 
 
 def _as_label(raw: str) -> str:
-    return _unwrap(raw).strip().strip("`'\"").strip()
+    return _unwrap(raw).strip().strip("`'\"").strip().casefold()
 
 
 def read_summary(root: Path) -> dict[str, str]:
@@ -210,12 +312,19 @@ def check_environment_probe(root: Path) -> None:
 
 
 def check_record_count(root: Path) -> None:
-    """`output/record_count.txt` holds a count."""
+    """`output/record_count.txt` counts the patient records in the dataset."""
+    data = load_dataset(root)
     given = _as_number(_text(root, RECORD_COUNT_FILE))
     _assert(given is not None, f"{RECORD_COUNT_FILE} contains no number.")
-    _assert(
-        given >= 0 and float(given).is_integer(),
-        f"{RECORD_COUNT_FILE} records {given:g}, which is not a whole number of patient records.",
+    if abs(given - len(data.patients)) < 1e-9:
+        return
+    if abs(given - (len(data.patients) + 1)) < 1e-9:
+        raise AssertionError(
+            f"{RECORD_COUNT_FILE} records {given:g}, which counts the header line as a patient record; "
+            "drop the header with `tail -n +2` before counting."
+        )
+    raise AssertionError(
+        f"{RECORD_COUNT_FILE} records {given:g}, which is not the number of patient rows in {DATA_FILE}."
     )
 
 
@@ -239,17 +348,29 @@ def _timestamped_counts_files(root: Path) -> list[Path]:
 
 
 def check_monitor_counts(root: Path) -> None:
-    """A timestamped counts file pairs counts with monitor ids."""
+    """A timestamped counts file lists how many patients each monitor recorded."""
+    timestamped = _timestamped_counts_files(root)
+    expected = {monitor.casefold(): count for monitor, count in monitor_counts(load_dataset(root)).items()}
     problems: list[str] = []
-    for path in _timestamped_counts_files(root):
-        try:
-            text = path.read_text(encoding="utf-8").lstrip("﻿")
-        except UnicodeDecodeError:
-            problems.append(f"{path.name} must be UTF-8 text.")
-            continue
-        if read_count_pairs(text):
+    for path in timestamped:
+        found = read_count_pairs(path.read_text(encoding="utf-8").lstrip("\ufeff"))
+        # Every monitor has to be there with the right count. A label that is not a
+        # monitor is an extra line, which the README says is ignored: a run total or
+        # a title must not cost the student this check.
+        if all(found.get(monitor) == count for monitor, count in expected.items()):
             return
-        problems.append(f"{path.name} holds no `count monitor` pairs.")
+        if not found:
+            problems.append(f"{path.name} holds no `count monitor` pairs.")
+            continue
+        missing = sorted(set(expected) - set(found))
+        wrong = sorted(monitor for monitor in set(found) & set(expected) if found[monitor] != expected[monitor])
+        details = []
+        if missing:
+            details.append("no count for " + ", ".join(monitor.upper() for monitor in missing))
+        if wrong:
+            details.append("the wrong count for " + ", ".join(monitor.upper() for monitor in wrong))
+        problems.append(f"{path.name} has " + "; ".join(details) + ".")
+
     _report(problems)
 
 
@@ -273,29 +394,37 @@ def check_summary_format(root: Path) -> None:
     _report(problems)
 
 
-def _check_answer_shape(root: Path, key: str) -> None:
-    """Confirm one value is present and plausible, never that it is correct."""
+def _check_answer(root: Path, key: str) -> None:
+    """Compare one answer with the value recomputed from the supplied readings."""
     summary = read_summary(root)
     _assert(key in summary, f"{SUMMARY_FILE} has no `{key}` line.")
     raw = summary[key]
-    shape = ANSWER_SHAPES[key]
+    expected = expected_answers(load_dataset(root))[key]
 
-    if shape.label:
-        label = _as_label(raw)
-        _assert(label != "", f"`{key}` has no value; it has to be {shape.band}.")
-        _assert(len(label.split()) == 1, f"`{key}` is `{raw}`; it has to be {shape.band}.")
+    if key in LABEL_KEYS:
+        _assert(
+            _as_label(raw) == str(expected).casefold(),
+            f"`{key}` is `{raw}`, which is not {LABEL_KEYS[key]} in {DATA_FILE}.",
+        )
         return
 
     given = _as_number(raw)
-    _assert(given is not None, f"`{key}` is `{raw}`, which is not a number; it has to be {shape.band}.")
-    if shape.whole and not float(given).is_integer():
-        raise AssertionError(f"`{key}` is {raw}; it has to be {shape.band}.")
-    if (shape.low is not None and given < shape.low) or (shape.high is not None and given > shape.high):
-        raise AssertionError(f"`{key}` is {raw}; it has to be {shape.band}.")
+    _assert(given is not None, f"`{key}` is `{raw}`, which is not a number.")
+    if key in COUNT_KEYS:
+        _assert(
+            abs(given - float(expected)) <= 1e-9,
+            f"`{key}` is {raw}, which is not {COUNT_KEYS[key]} in {DATA_FILE}.",
+        )
+    else:
+        _assert(
+            abs(given - float(expected)) <= MMHG_TOLERANCE,
+            f"`{key}` is {raw}, which is not {MMHG_KEYS[key]} in {DATA_FILE} "
+            f"(allowed difference {MMHG_TOLERANCE} mmHg).",
+        )
 
 
 def _answer_check(key: str) -> PublicCheck:
-    return PublicCheck(f"answer: {key}", lambda root, key=key: _check_answer_shape(root, key))
+    return PublicCheck(f"answer: {key}", lambda root, key=key: _check_answer(root, key))
 
 
 PUBLIC_CHECKS = (

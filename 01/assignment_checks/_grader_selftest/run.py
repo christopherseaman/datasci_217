@@ -1,18 +1,18 @@
 """Regression checks for the Assignment 01 checks.
 
-Builds submissions in ignored `scratch/` and confirms that the value checks
-score what they should, that the shape checks shipped in the fork agree with
-them without knowing any answer, and that the value checks grade every artifact
-variant exactly as the vendored checker they replaced. Nothing here reads or
-runs student code.
+Builds submissions in ignored `scratch/` and confirms that the checks score
+each case as the README's contract states, that the handout ships them
+unchanged, and that no artifact variant scores lower than it did under the
+vendored checker they replaced. Nothing here reads or runs student code.
 """
 
 from collections.abc import Callable
 import hashlib
 import importlib.util
-import inspect
+import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -26,15 +26,50 @@ import _value_checks as value  # noqa: E402
 from _value_checks import CHECKS as VALUE_CHECKS, EXPECTED_READINESS, ROSTER_HASHES  # noqa: E402
 from grading import POINTS, grade_submission  # noqa: E402
 
-# The last commit whose fork carried the value checks itself, as
-# 01/assignment/_assignment_checks.py; the value checks must grade exactly as it did.
+# The last commit whose fork carried the checks as 01/assignment/_assignment_checks.py, with one
+# check for the practice files (20) and one for the report and identity together (80). This
+# quarter's forks were first graded with it, so no submission may score lower now.
 REPLACED_COMMIT = "f39598b76433ae1e626f574eff684c8d48561380"
 REPLACED_FILES = ("_assignment_checks.py", "grading.py")
 
-ROSTER_HASH = sorted(ROSTER_HASHES)[0]
-# The checker files that ship in the fork; the scaffolds legitimately print report lines.
-CHECKER_FILES = {"_shape_checks.py", "grading.py", "check_assignment.py", "test_assignment.py"}
+# A hash on the handout-time roster, so the replaced checker accepts it too; students added later
+# are only on the new roster.
+ROSTER_HASH = "07f66adfe2a38fb3a84a2ab2f55d40bdb5cabd85355ecb9f65290385c5cc76b8"
 FIRST_LINE = EXPECTED_READINESS.partition("\n")[0] + "\n"
+
+PRACTICE_TESTS = ["terminal-practice/source.txt", "terminal-practice/path-check.txt"]
+LINE_TESTS = ["report: Project", "report: Script", *(f"report: Measurement {n}" for n in range(1, 5)),
+              "report: Count", "report: Total", "report: Mean", "report: Review count", "report: Readiness",
+              "report: Participant count", "report: Next checkpoint"]
+IDENTITY_TEST = "identity hash on the roster"
+TEST_NAMES = PRACTICE_TESTS + LINE_TESTS + [IDENTITY_TEST]
+
+
+def task2_double_spaced(report: str) -> str:
+    """Each Task 2 line printed with a space inside the label's quotes, so two follow its colon."""
+    lines = report.splitlines(keepends=True)
+    lines[3:11] = [line.replace(": ", ":  ", 1) for line in lines[3:11]]
+    return "".join(lines)
+
+
+def task2_unspaced(report: str) -> str:
+    """Each Task 2 line printed with its label joined to the value, as `print("Count:" + str(count))` does."""
+    lines = report.splitlines(keepends=True)
+    lines[3:11] = [line.replace(": ", ":", 1) for line in lines[3:11]]
+    return "".join(lines)
+
+
+# A real submission: the running total compared with the threshold instead of each measurement,
+# so 19 is labelled review and three readings are counted, printed with double spaces.
+RUNNING_TOTAL = task2_double_spaced(
+    EXPECTED_READINESS.replace("Measurement: 19 within range", "Measurement: 19 review")
+    .replace("Review count: 2", "Review count: 3"))
+MISSING_REPORT = "Run make_output.py (Task 3.2), then commit output/readiness.txt as a regular file."
+# Report variants that lose no points: whitespace anywhere, and blank or extra lines anywhere.
+FULL_MARKS_REPORTS = ("expected", "trailing space", "tab after colon", "no-break space", "no space after a colon",
+                      "space before a colon", "no space after any Task 2 colon", "leading blank line",
+                      "blank line inside", "blank lines between the scripts", "leftover debug line",
+                      "extra final line", "double spaces after Task 2 colons", "leading and trailing spaces")
 
 
 def load(name: str, path: Path):
@@ -77,7 +112,7 @@ def family(version: str) -> str:
 
 
 # --------------------------------------------------------------------------
-# Artifact variants, shared by the equivalence and shape runs
+# Artifact variants for the equivalence run
 # --------------------------------------------------------------------------
 
 
@@ -91,8 +126,15 @@ def _readiness_variants() -> dict[str, Callable[[Path], None]]:
         "trailing space": report.replace("Total: 82\n", "Total: 82 \n"),
         "tab after colon": report.replace("Total: 82", "Total:\t82"),
         "no-break space": report.replace("Total: 82", "Total:\u00a082"),
+        "no space after a colon": report.replace("Measurement: 18", "Measurement:18"),
+        "space before a colon": report.replace("Count: 4", "Count : 4"),
+        "no space after any Task 2 colon": task2_unspaced(report),
         "leading blank line": "\n" + report,
         "blank line inside": report.replace("Count: 4\n", "\nCount: 4\n"),
+        "blank lines between the scripts": report.replace("Measurement: 18", "\nMeasurement: 18", 1)
+        .replace("Readiness:", "\n\nReadiness:", 1),
+        "leftover debug line": report.replace("Measurement: 18 within range\n",
+                                              "Measurement: 18 within range\ntotal so far: 18\n"),
         "extra final line": report + "extra\n",
         "line missing": report.replace("Review count: 2\n", ""),
         "lines reordered": report.replace("Count: 4\nTotal: 82\n", "Total: 82\nCount: 4\n"),
@@ -110,7 +152,16 @@ def _readiness_variants() -> dict[str, Callable[[Path], None]]:
         "newline only": "\n",
         "first line only": FIRST_LINE,
         "Python version written out": report.replace(FIRST_LINE, "Python 3.13.7\n", 1),
+        "Python version unlabelled, a line missing": report.replace(FIRST_LINE, "3.13\n", 1)
+        .replace("Next checkpoint: 5\n", ""),
+        "Python version unlabelled, a blank line inside": report.replace(FIRST_LINE, "3.13\n", 1)
+        .replace("Count: 4\n", "\nCount: 4\n"),
         "family label in lower case": report.replace("Python family", "python family", 1),
+        "double spaces after Task 2 colons": task2_double_spaced(report),
+        "running total compared, double spaced": RUNNING_TOTAL,
+        "leading and trailing spaces": "".join(f"  {line} \t\n" for line in report.splitlines()),
+        "a Task 2 line wrong": report.replace("Measurement: 24 review", "Measurement: 24 within range"),
+        "a Task 3.1 line wrong": report.replace("Next checkpoint: 5", "Next checkpoint: 41"),
     }
     for version in ("3.14", "3.12", "3.9", "3.10", "10.20", "0.0", "\u0663.\u0661\u0663", "3", "three",
                     "3.14.4", "", " 3.13", "3.13 ", "3.13\t", "v3.13", "3,13", "3.13\r"):
@@ -297,15 +348,37 @@ def artifact_variants() -> dict[str, Callable[[Path], None]]:
 # --------------------------------------------------------------------------
 
 
-def scores(root: Path) -> dict[str, int]:
+def graded(root: Path) -> dict[str, dict]:
     result = grade_submission(root)
     assert result["schema"] == "datasci217/grading-result/v1", result["schema"]
     assert result["max-score"] == sum(POINTS) == 100, result["max-score"]
-    return {test["test-name"]: test["score"] for test in result["tests"]}
+    assert [test["test-name"] for test in result["tests"]] == TEST_NAMES, result["tests"]
+    assert result["score"] == sum(test["score"] for test in result["tests"]), result
+    return {test["test-name"]: test for test in result["tests"]}
+
+
+def score(root: Path) -> int:
+    return sum(test["score"] for test in graded(root).values())
+
+
+def failing(root: Path) -> dict[str, str]:
+    """Each failing check's detail; a failing check always says why."""
+    failed = {name: test["detail"] for name, test in graded(root).items() if not test["passed"]}
+    assert all(failed.values()), failed
+    return failed
+
+
+def line_detail(expected: str, yours: str, script: str) -> str:
+    return f"The line should read `{expected}`; yours reads `{yours}`. Fix {script}, then rerun make_output.py."
+
+
+def missing_detail(expected: str, script: str) -> str:
+    return (f"output/readiness.txt is missing the line `{expected}`, or has it out of order. Fix {script}, "
+            "then rerun make_output.py.")
 
 
 def run() -> None:
-    """The value checks score each documented case as the README's contract states."""
+    """The checks score each documented case as the README's contract states."""
     process_email = load("process_email", ASSIGNMENT / "process_email.py").process_email
     expected_identity = hashlib.sha256(b"alicesmith").hexdigest()
     for address in ("Alice.Smith@ucsf.edu", " alice-smith@ucsf.edu ", "\tALICE.SMITH@UCSF.EDU\n", "alice_smith@ucsf.edu"):
@@ -319,53 +392,232 @@ def run() -> None:
             pass
         else:
             raise AssertionError(f"Invalid roster email was accepted: {address!r}")
-    assert len(ROSTER_HASHES) == 40
+    assert ROSTER_HASH in ROSTER_HASHES and len(ROSTER_HASHES) >= 40  # 40 at handout; students may be added
     assert all(value.IDENTITY_HASH.fullmatch(identity) for identity in ROSTER_HASHES)
     assert len(EXPECTED_READINESS.splitlines()) == 14 and EXPECTED_READINESS.endswith("\n")
+
+    # One check per practice file, per graded report line, and for the identity, scored 10, 5, and 15.
+    assert [check.name for check in VALUE_CHECKS] == TEST_NAMES
+    assert dict(zip(TEST_NAMES, POINTS, strict=True)) == (
+        dict.fromkeys(PRACTICE_TESTS, 10) | dict.fromkeys(LINE_TESTS, 5) | {IDENTITY_TEST: 15})
+    assert sum(POINTS) == 100
 
     with scratch("a01-selftest-") as temporary:
         root = Path(temporary) / "submission"
         root.mkdir()
-        assert grade_submission(root)["score"] == 0
-        assert len(grade_submission(root)["tests"]) == len(POINTS)
-        practice(root)
         output = root / "output"
-        outputs(root, EXPECTED_READINESS, None)
-        assert grade_submission(root)["score"] == 20
+
+        # An untouched handout scores 0, and every check says why.
+        assert score(root) == 0 and set(failing(root)) == set(TEST_NAMES)
+        practice(root)
+        assert score(root) == 20
+
+        # The identity check stands apart from the report: a roster hash with no report earns its 15,
+        # in any case and with any surrounding whitespace, for every student on the roster.
+        outputs(root, None, None)
         for identity_hash in ROSTER_HASHES:
             for text in (identity_hash, identity_hash + "\n", "\t " + identity_hash.upper() + " \n"):
                 (output / "student_identity.txt").write_text(text, encoding="utf-8")
-                assert scores(root) == {"terminal practice evidence": 20,
-                                        "committed readiness and identity artifacts": 80}
-        (output / "student_identity.txt").write_text("0" * 64 + "\n", encoding="utf-8")
-        assert grade_submission(root)["score"] == 20
-        (output / "student_identity.txt").write_text(ROSTER_HASH + "\n", encoding="utf-8")
-        (root / "notes.txt").write_text("extra files are allowed\n", encoding="utf-8")
-        assert grade_submission(root)["score"] == 100
-        (output / "readiness.txt").write_text("wrong\n", encoding="utf-8")
-        assert grade_submission(root)["score"] == 20
-        (output / "readiness.txt").unlink()
-        assert grade_submission(root)["score"] == 20
+                assert set(failing(root)) == set(LINE_TESTS), text
+                assert score(root) == 35
+        # A missing report fails every report line with the same advice, which says how to make it.
+        assert set(failing(root).values()) == {MISSING_REPORT}
+        (output / "readiness.txt").mkdir()
+        assert set(failing(root).values()) == {MISSING_REPORT}
+        (output / "readiness.txt").rmdir()
+        (output / "readiness.txt").write_bytes(EXPECTED_READINESS.encode("utf-16"))
+        assert set(failing(root).values()) == {"output/readiness.txt must be UTF-8 text."} and score(root) == 35
+        (output / "readiness.txt").write_bytes(EXPECTED_READINESS.encode() + b"caf\xe9\n")
+        assert set(failing(root).values()) == {"output/readiness.txt must be UTF-8 text."} and score(root) == 35
+
+        # A hash off the roster, or not a hash at all, costs the identity's 15 and nothing else.
         (output / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
-        for text in ("not-a-hash\n", ROSTER_HASH + "\n" + ROSTER_HASH):
-            (output / "student_identity.txt").write_text(text, encoding="utf-8")
-            assert grade_submission(root)["score"] == 20, text
+        (root / "notes.txt").write_text("extra files are allowed\n", encoding="utf-8")
         (output / "student_identity.txt").write_text(ROSTER_HASH + "\n", encoding="utf-8")
+        assert score(root) == 100 and failing(root) == {}
+        for text, advice in (("0" * 64 + "\n", "course roster"),
+                             (hashlib.sha256(b"teststudent").hexdigest() + "\n", "course roster"),
+                             ("not-a-hash\n", "one SHA-256 hash"),
+                             (ROSTER_HASH + "\n" + ROSTER_HASH, "one SHA-256 hash")):
+            (output / "student_identity.txt").write_text(text, encoding="utf-8")
+            failed = failing(root)
+            assert list(failed) == [IDENTITY_TEST] and advice in failed[IDENTITY_TEST], failed
+            assert score(root) == 85
+        (output / "student_identity.txt").unlink()
+        assert failing(root) == {IDENTITY_TEST: "Run capture_identity.py and commit output/student_identity.txt."}
+        (output / "student_identity.txt").write_text(ROSTER_HASH + "\n", encoding="utf-8")
+
+        def report_scores(text: str) -> int:
+            (output / "readiness.txt").write_text(text, encoding="utf-8")
+            return score(root)
+
         # The first line records the Python version and is never graded: any text there, or none at all,
-        # earns the points; every other line is still graded.
+        # earns full marks; every other line is still graded.
         for text in [family(version) for version in ("3.13", "3.14", "3.12", "3.9", "3", "three", "3.14.4", "")] + [
                 EXPECTED_READINESS.replace(FIRST_LINE, "Python 3.13.7\n", 1),
-                EXPECTED_READINESS.replace(FIRST_LINE, "", 1)]:
-            (output / "readiness.txt").write_text(text, encoding="utf-8")
-            assert grade_submission(root)["score"] == 100, text[:30]
-        (output / "readiness.txt").write_text(EXPECTED_READINESS.replace("Total: 82", "Total: 83"), encoding="utf-8")
-        assert grade_submission(root)["score"] == 20
+                EXPECTED_READINESS.replace(FIRST_LINE, "3.13\n", 1),
+                EXPECTED_READINESS.replace(FIRST_LINE, "", 1),
+                EXPECTED_READINESS.replace(FIRST_LINE, "anything at all\n", 1),
+                family("3.14") + "an extra final line\n"]:
+            assert report_scores(text) == 100, text[:30]
+        # Whatever the first line says, a missing line costs only itself.
+        for first_line in ("Python family: 3.12\n", "3.13\n", ""):
+            assert report_scores(EXPECTED_READINESS.replace(FIRST_LINE, first_line, 1)
+                                 .replace("Next checkpoint: 5\n", "")) == 95, first_line
+            assert list(failing(root)) == ["report: Next checkpoint"], first_line
+
+        # Whitespace is never graded: not inside a line, not around it, not blank lines, not line endings.
+        for text in (task2_double_spaced(EXPECTED_READINESS),
+                     task2_unspaced(EXPECTED_READINESS),
+                     EXPECTED_READINESS.replace(": ", ":\t"),
+                     EXPECTED_READINESS.replace("Measurement: 18", "Measurement:18"),
+                     EXPECTED_READINESS.replace("Count: 4", "Count : 4"),
+                     EXPECTED_READINESS.replace("Count: 4", "Count:4"),
+                     EXPECTED_READINESS.replace("Total: 82", "Total:\u00a082"),
+                     "".join(f"  {line} \t\n" for line in EXPECTED_READINESS.splitlines()),
+                     EXPECTED_READINESS.replace("within range", "within    range"),
+                     EXPECTED_READINESS.replace("\n", "\r\n"),
+                     EXPECTED_READINESS[:-1],
+                     EXPECTED_READINESS + "\n",
+                     "\n" + EXPECTED_READINESS,
+                     EXPECTED_READINESS.replace("Count: 4\n", "\nCount: 4\n"),
+                     EXPECTED_READINESS.replace("Measurement: 18", "\nMeasurement: 18", 1)
+                     .replace("Readiness:", "\n\nReadiness:", 1),
+                     EXPECTED_READINESS.replace(FIRST_LINE, "3.13\n", 1).replace("Count: 4\n", "\nCount: 4\n")):
+            assert report_scores(text) == 100, text
+        # Characters are graded: a letter's case counts, and the message shows the line with that label.
+        assert report_scores(EXPECTED_READINESS.replace("Project:", "project:")) == 95
+        assert failing(root) == {"report: Project": line_detail("Project: DataSci 217 Assignment 01",
+                                                                "project: DataSci 217 Assignment 01", "readiness.py")}
+
+        # One wrong value costs only its own line, and says what the line should read.
+        assert report_scores(EXPECTED_READINESS.replace("Total: 82", "Total: 83")) == 95
+        assert failing(root) == {"report: Total": line_detail("Total: 82", "Total: 83", "measurement_summary.py")}
+        assert report_scores(EXPECTED_READINESS.replace("Script: readiness.py", "Script: TODO")) == 95
+        assert failing(root) == {"report: Script": line_detail("Script: readiness.py", "Script: TODO", "readiness.py")}
+
+        # The real submission that compared the running total, double spaced: two lines wrong, 90 points.
+        assert report_scores(RUNNING_TOTAL) == 90
+        assert failing(root) == {
+            "report: Measurement 4": line_detail("Measurement: 19 within range", "Measurement: 19 review",
+                                                 "measurement_summary.py"),
+            "report: Review count": line_detail("Review count: 2", "Review count: 3", "measurement_summary.py"),
+        }
+
+        # A missing line costs only itself, and an extra line, such as a leftover debug print, costs nothing:
+        # the lines after either one are still matched.
+        assert report_scores(EXPECTED_READINESS.replace("Review count: 2\n", "")) == 95
+        assert failing(root) == {"report: Review count": missing_detail("Review count: 2", "measurement_summary.py")}
+        assert report_scores(EXPECTED_READINESS.replace("Count: 4\n", "Count: 4\ntotal so far: 18\n")) == 100
+        assert report_scores(EXPECTED_READINESS.replace("Total: 82", "Total: 83").replace(
+            "Count: 4\n", "Count: 4\ndebug\n")) == 95
+        assert failing(root) == {"report: Total": line_detail("Total: 82", "Total: 83", "measurement_summary.py")}
+        # Two lines swapped: one of them is out of order, and only it fails.
+        assert report_scores(EXPECTED_READINESS.replace("Count: 4\nTotal: 82\n", "Total: 82\nCount: 4\n")) == 95
+        assert len(failing(root)) == 1 and "or has it out of order" in next(iter(failing(root).values()))
+        # Several wrong lines in a row are each shown beside the line with the same label, in order.
+        assert report_scores(EXPECTED_READINESS.replace("21 review", "21 within range")
+                             .replace("24 review", "24 within range")) == 90
+        assert failing(root) == {
+            "report: Measurement 2": line_detail("Measurement: 21 review", "Measurement: 21 within range",
+                                                 "measurement_summary.py"),
+            "report: Measurement 3": line_detail("Measurement: 24 review", "Measurement: 24 within range",
+                                                 "measurement_summary.py"),
+        }
+        # A report with none of the lines fails each with the same kind of message.
+        assert report_scores("wrong\n") == 35
+        assert failing(root)["report: Project"] == missing_detail("Project: DataSci 217 Assignment 01",
+                                                                    "readiness.py")
+        assert report_scores("") == 35
+        assert failing(root)["report: Next checkpoint"] == missing_detail("Next checkpoint: 5", "debug_report.py")
+
+        # A practice file costs its own 10 points.
         (output / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
         (root / "terminal-practice" / "source.txt").unlink()
-        assert scores(root) == {"terminal practice evidence": 0, "committed readiness and identity artifacts": 80}
+        assert failing(root) == {"terminal-practice/source.txt": "terminal-practice/source.txt must be a regular "
+                                 "file; create it with the Task 1.1 commands."}
+        assert score(root) == 90
 
-    print("Assignment 01 value checks: all 40 roster hashes, non-roster hashes, starter, extra-file, missing, "
-          "and wrong-artifact cases score as the contract states, and the Python version line is never graded.")
+        # An output folder that is a symlink holds no artifact of this submission.
+        practice(root)
+        os.rename(output, root / "elsewhere")
+        output.symlink_to("elsewhere")
+        assert set(failing(root)) == set(LINE_TESTS + [IDENTITY_TEST]) and score(root) == 20
+        assert set(failing(root).values()) == {"Create a regular output/ directory."}
+
+    print("Assignment 01 checks: every roster hash, identity and report failures on their own, the running-total "
+          "submission at 90, whitespace, blank and extra lines, and the Python version line ungraded, a missing "
+          "line costing only itself, and each failing line saying what it should read, all score as the contract "
+          "states.")
+
+
+def checks_files() -> list[str]:
+    """The files the workflow downloads from the course, in its own words."""
+    workflow = (ASSIGNMENT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+    listed = re.search(r"^  CHECKS_FILES: \|\n((?:    \S.*\n)+)", workflow, re.M)
+    assert listed, "tests.yml lists no CHECKS_FILES"
+    assert '  CHECKS_PATH: "01/assignment_checks"\n' in workflow
+    assert "shape" not in workflow.lower(), "the workflow still describes shape-only checks"
+    return listed.group(1).split()
+
+
+def checker(copy: Path, root: Path, *options: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-B", str(copy / "check_assignment.py"), str(root), *options],
+                          capture_output=True, text=True, check=False)
+
+
+def run_handout() -> None:
+    """The handout carries the course's checks unchanged, so a local run gives what GitHub gives."""
+    files = checks_files()
+    course_owned = {path.relative_to(CHECKS).as_posix() for path in CHECKS.rglob("*")
+                    if path.is_file() and not {"__pycache__", ".pytest_cache", "_grader_selftest"} & set(path.parts)}
+    assert sorted(files) == sorted(course_owned - {"README.md"}), (files, course_owned)
+    for name in files:
+        assert (ASSIGNMENT / name).read_bytes() == (CHECKS / name).read_bytes(), f"01/assignment/{name} differs"
+    assert not (ASSIGNMENT / "_shape_checks.py").exists(), "the shape-only checks are back in the handout"
+
+    # The README shows every expected line and agrees with POINTS, row by row.
+    readme = (ASSIGNMENT / "README.md").read_text(encoding="utf-8")
+    for line in EXPECTED_READINESS.splitlines():
+        assert f"\n{line}\n" in readme, line
+    contract = readme.partition("### Completion contract\n")[2].partition("\n## ")[0]
+    assert f"Grading totals {sum(POINTS)} points" in contract
+    rows = re.findall(r"^\| `.+ \| (\d+)(?: \((\d+) each\))? \|$", contract, re.M)
+    points = dict(zip(TEST_NAMES, POINTS, strict=True))
+    expected_rows = []
+    for group in (PRACTICE_TESTS, LINE_TESTS, [IDENTITY_TEST]):
+        each = {points[name] for name in group}
+        assert len(each) == 1, group
+        expected_rows.append((str(sum(points[name] for name in group)), str(*each) if len(group) > 1 else ""))
+    assert rows == expected_rows, rows
+
+    with scratch("a01-handout-") as temporary:
+        submissions = {name: Path(temporary) / name for name in ("empty", "running total", "complete")}
+        for root in submissions.values():
+            root.mkdir()
+        practice(submissions["running total"])
+        outputs(submissions["running total"], RUNNING_TOTAL, "0" * 64 + "\n")
+        practice(submissions["complete"])
+        outputs(submissions["complete"], family("3.14"), ROSTER_HASH + "\n")
+
+        # Both copies report the same JSON, and the handout's needs nothing from the course directory.
+        for name, root in submissions.items():
+            local, course = checker(ASSIGNMENT, root, "--json"), checker(CHECKS, root, "--json")
+            assert local.stdout == course.stdout and local.returncode == course.returncode, (name, local, course)
+            assert json.loads(local.stdout) == grade_submission(root), name
+        shown = checker(ASSIGNMENT, submissions["running total"])
+        assert shown.returncode == 1 and "Score: 75/100\n" in shown.stdout, shown.stdout
+        assert "yours reads `Measurement: 19 review`" in shown.stdout, shown.stdout
+
+        # A clean local run ends the way the README promises.
+        shown = checker(ASSIGNMENT, submissions["complete"])
+        assert shown.returncode == 0, shown.stdout + shown.stderr
+        promised = re.search(r"A clean local run ends with:\n\n```text\n(.*?)```", readme, re.S)
+        assert promised and shown.stdout.endswith(promised.group(1)), (shown.stdout, promised)
+
+    print(f"Assignment 01 handout: {len(files)} check files byte-identical to 01/assignment_checks/, no shape "
+          "checks left, the README's contract matches POINTS, and the local checker reports what GitHub reports "
+          "and ends as the README shows.")
 
 
 def with_graded_first_line(root: Path) -> None:
@@ -377,14 +629,12 @@ def with_graded_first_line(root: Path) -> None:
         text = report.read_text(encoding="utf-8")  # read as the checks read it, newlines normalized
     except (OSError, UnicodeDecodeError):
         return
-    graded = EXPECTED_READINESS.partition("\n")[2]
-    report.write_bytes((FIRST_LINE + (text if text == graded else text.partition("\n")[2])).encode("utf-8"))
+    graded_lines = EXPECTED_READINESS.partition("\n")[2]
+    report.write_bytes((FIRST_LINE + (text if text == graded_lines else text.partition("\n")[2])).encode("utf-8"))
 
 
 def run_equivalence() -> None:
-    """The value checks grade every variant as the checker they replaced, except that they never read
-    the report's first line: each variant scores what the replaced checker gives it once that line reads
-    the way the replaced checker required."""
+    """No artifact variant scores lower than under the checker these replaced, whatever its first line."""
     with scratch("a01-replaced-") as temporary:
         replaced = Path(temporary) / "replaced"
         replaced.mkdir()
@@ -398,132 +648,52 @@ def run_equivalence() -> None:
         before = load("_assignment_checks", replaced / "_assignment_checks.py")
         before_grading = load("_replaced_grading", replaced / "grading.py")
         del sys.modules["_assignment_checks"]
-        assert before.ROSTER_HASHES == ROSTER_HASHES
+        assert before.ROSTER_HASHES <= ROSTER_HASHES  # the roster only grows
+        before.ROSTER_HASHES = ROSTER_HASHES  # compare the checking logic, with students added since
         assert before.EXPECTED_READINESS == EXPECTED_READINESS
-        assert before_grading.POINTS == POINTS
+        assert before_grading.POINTS == (20, 80)
 
-        shape = load_shape()
         cases = artifact_variants()
+        assert all(f"report {report} + identity roster hash" in cases for report in FULL_MARKS_REPORTS)
         outcomes = {"full": 0, "partial": 0, "zero": 0}
+        raised = 0
         for index, (name, build) in enumerate(cases.items()):
             root = Path(temporary) / f"case-{index}"
             root.mkdir()
             build(root)
-            now, unchanged = grade_submission(root), before_grading.grade_submission(root)
+            now, unchanged = graded(root), before_grading.grade_submission(root)
             with_graded_first_line(root)
             then = before_grading.grade_submission(root)
-            assert now == then, (name, now, then)
-            assert now["score"] >= unchanged["score"], (name, now, unchanged)  # nobody scores lower
-            outcomes["full" if now["score"] == 100 else "zero" if now["score"] == 0 else "partial"] += 1
-            # A submission the value checks accept always passes the local shape checks too.
-            for (check, detail), test in zip(shape.run_checks(root), now["tests"], strict=True):
-                assert check == test["test-name"], (check, test["test-name"])
-                assert detail is None or not test["passed"], (name, check, detail)
+            new_score = sum(test["score"] for test in now.values())
+            # Nobody scores lower, and the first line never matters: each variant scores at least what the
+            # replaced checker gives it as submitted and once its first line reads the way that checker required.
+            assert new_score >= unchanged["score"], (name, new_score, unchanged)
+            assert new_score >= then["score"], (name, new_score, then)
+            raised += new_score > unchanged["score"]
+            # Whatever the replaced checker passed, the matching new checks pass.
+            earlier = {test["test-name"]: test["passed"] for test in then["tests"]}
+            if earlier["terminal practice evidence"]:
+                assert all(now[test]["passed"] for test in PRACTICE_TESTS), name
+            if earlier["committed readiness and identity artifacts"]:
+                assert all(now[test]["passed"] for test in LINE_TESTS + [IDENTITY_TEST]), name
+            if name in ("complete", "extra files everywhere") or name.startswith("report expected + roster hash"):
+                assert new_score == 100, (name, now)
+            if name == "report running total compared, double spaced + identity roster hash":
+                assert new_score == 90, (name, now)
+            if name in (f"report {report} + identity roster hash" for report in FULL_MARKS_REPORTS):
+                assert new_score == 100, (name, now)
             if name.endswith("unreadable + identity roster hash"):
-                assert "Permission denied" in now["tests"][1]["detail"], now
+                assert "Permission denied" in now["report: Project"]["detail"], now
+            outcomes["full" if new_score == 100 else "zero" if new_score == 0 else "partial"] += 1
         assert all(outcomes.values()), outcomes
 
     print(f"Assignment 01 equivalence: {len(cases)} artifact variants ({outcomes['full']} full, "
-          f"{outcomes['partial']} partial, {outcomes['zero']} zero) grade, detail for detail, as the checker "
-          f"from {REPLACED_COMMIT[:7]} does once the ungraded Python line is set aside, and never lower; "
-          "every one the value checks accept passes the shape checks.")
-
-
-def load_shape():
-    return load("_shape_checks", ASSIGNMENT / "_shape_checks.py")
-
-
-def run_shape() -> None:
-    """The checks in the student fork judge shape, and cannot judge an answer."""
-    shape = load_shape()
-    shape_grading_source = (ASSIGNMENT / "grading.py").read_text(encoding="utf-8")
-    assert "from _shape_checks import run_checks" in shape_grading_source
-    shape_grading = load("_shape_grading", ASSIGNMENT / "grading.py")
-    assert shape_grading.POINTS == POINTS
-
-    # No answer ships in the fork: no roster hash anywhere, and no report line beyond the documented
-    # first-line form in any file but the README, which shows each script's output as instructions.
-    for path in sorted(ASSIGNMENT.rglob("*")):
-        if not path.is_file() or {"__pycache__", ".pytest_cache"} & set(path.parts):
-            continue
-        content = path.read_bytes()
-        leaked = [identity for identity in ROSTER_HASHES if identity.encode() in content.lower()]
-        assert not leaked, (path, len(leaked))
-        assert EXPECTED_READINESS.encode() not in content, path
-        for marker in (b"EXPECTED_READINESS", b"ROSTER_HASHES"):
-            assert marker not in content, (path, marker)
-        if path.name in CHECKER_FILES:
-            text = content.decode("utf-8")
-            for line in EXPECTED_READINESS.splitlines()[1:]:
-                assert line not in text, (path, line)
-
-    # Both halves read the artifacts with the same code, so they never disagree about a format.
-    for name in ("PRACTICE_DIR", "PRACTICE_FILES", "OUTPUT_DIR", "READINESS_FILE", "IDENTITY_FILE",
-                 "IDENTITY_HASH"):
-        assert getattr(shape, name) == getattr(value, name), name  # compiled regexes compare pattern and flags
-    for name in ("Check", "_assert", "_read_text", "_readiness_report", "_identity_hash",
-                 "check_terminal_practice", "run_checks"):
-        assert inspect.getsource(getattr(shape, name)) == inspect.getsource(getattr(value, name)), name
-    assert shape.READINESS_LINES == len(EXPECTED_READINESS.splitlines())
-    assert [check.name for check in shape.CHECKS] == [check.name for check in VALUE_CHECKS]
-    for shared in ("test_assignment.py", ".github/test/test_assignment.py", ".github/test/requirements.txt"):
-        assert (ASSIGNMENT / shared).read_bytes() == (CHECKS / shared).read_bytes(), shared
-
-    with scratch("a01-shape-") as temporary:
-        root = Path(temporary) / "submission"
-        root.mkdir()
-
-        # An untouched handout fails every shape check.
-        assert all(detail for _, detail in shape.run_checks(root))
-
-        # Right and plausibly wrong are indistinguishable: a wrong line and a hash off the roster pass.
-        for report, identity in ((EXPECTED_READINESS, ROSTER_HASH),
-                                 (family("3.14").replace("Total: 82", "Total: 83"), "0" * 64),
-                                 (EXPECTED_READINESS.replace("\n", "\r\n"), ROSTER_HASH.upper()),
-                                 (EXPECTED_READINESS.replace(FIRST_LINE, "Python 3.13.7\n"), ROSTER_HASH),
-                                 (EXPECTED_READINESS.replace(FIRST_LINE, ""), ROSTER_HASH),
-                                 ("\ufeff" + EXPECTED_READINESS, ROSTER_HASH)):
-            practice(root)
-            outputs(root, report, identity + "\n")
-            failures = [detail for _, detail in shape.run_checks(root) if detail]
-            assert not failures, failures
-            assert shape_grading.grade_submission(root)["score"] == 100
-
-        # Malformed artifacts are still caught, each by its own check.
-        for report, identity, failing in (
-            (EXPECTED_READINESS.replace("Count: 4\nTotal: 82\n", ""), ROSTER_HASH, "(yours has 12)"),
-            (EXPECTED_READINESS + "extra\n", ROSTER_HASH, "(yours has 15)"),
-            (EXPECTED_READINESS[:-1], ROSTER_HASH, "end with a newline"),
-            (EXPECTED_READINESS, "not-a-hash", "one SHA-256 hash"),
-            (EXPECTED_READINESS, ROSTER_HASH + "\n" + ROSTER_HASH, "one SHA-256 hash"),
-        ):
-            outputs(root, report, identity + "\n")
-            results = dict(shape.run_checks(root))
-            detail = results["committed readiness and identity artifacts"]
-            assert detail and failing in detail, (failing, detail)
-            assert results["terminal practice evidence"] is None
-        outputs(root, EXPECTED_READINESS.encode("utf-16"), ROSTER_HASH)
-        assert "UTF-8" in dict(shape.run_checks(root))["committed readiness and identity artifacts"]
-        (root / "terminal-practice" / "path-check.txt").unlink()
-        assert dict(shape.run_checks(root))["terminal practice evidence"] == "terminal-practice/path-check.txt must be a regular file."
-
-    # The local checker ends the way the README promises.
-    with scratch("a01-shape-cli-") as temporary:
-        root = Path(temporary)
-        practice(root)
-        outputs(root, family("3.14"), "0" * 64 + "\n")
-        shown = subprocess.run([sys.executable, "-B", str(ASSIGNMENT / "check_assignment.py"), str(root)],
-                               capture_output=True, text=True, check=False)
-        assert shown.returncode == 0, shown.stdout + shown.stderr
-        assert shown.stdout.endswith(f"2 of 2 shape checks passed.\n{shape_grading.REPORT_NOTE}\n"), shown.stdout
-        readme = (ASSIGNMENT / "README.md").read_text(encoding="utf-8")
-        assert f"```text\n2 of 2 shape checks passed.\n{shape_grading.REPORT_NOTE}\n```" in readme
-
-    print("Assignment 01 shape checks: share the value checks' code, hold no roster hash or report line, "
-          "cannot tell a right report or roster hash from a wrong one, and still catch malformed artifacts.")
+          f"{outcomes['partial']} partial, {outcomes['zero']} zero) each score at least what the checker from "
+          f"{REPLACED_COMMIT[:7]} gives them, with or without the ungraded Python line set aside; {raised} "
+          "score higher, and every one it passed passes the matching checks here.")
 
 
 if __name__ == "__main__":
     run()
-    run_shape()
+    run_handout()
     run_equivalence()

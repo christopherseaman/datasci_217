@@ -1,37 +1,33 @@
-# Assignment 02 value checks (course-side)
+# Assignment 02 checks (course-owned)
 
 These are the checks that decide the Assignment 02 grade.
-`02/assignment/.github/workflows/tests.yml` fetches them on every student push
+`02/assignment/.github/workflows/tests.yml` downloads them on every student push
 from `christopherseaman/datasci_217@main:02/assignment_checks/` (its
-`CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`). Nothing here ships in a student
-fork: the GitHub Actions run downloads it, checks it runs, and grades with it.
+`CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
+grades with them.
 
-The split it belongs to:
-
-| Half | Lives in | Answers |
-|---|---|---|
-| Shape checks | `02/assignment/` (`_shape_checks.py`, `grading.py`, `check_assignment.py`) | Is each artifact well formed: present, readable, labelled, a number where a number belongs, inside a clinically plausible band? |
-| Value checks | here (`_value_checks.py`, `grading.py`, `check_assignment.py`) | Is each value right, recomputed from `data/clinic_encounters.csv` with the tolerances the assignment documents? |
-
-Both halves expose `grade_submission(path)` returning the same
-`datasci217/grading-result/v1` dict, both total 100 points, and
-`test_assignment.py` is identical in both, so the same tooling runs either.
-The shape half holds no expected value and never opens the encounter file.
+The handout ships a byte-identical copy of every file the workflow lists in
+`CHECKS_FILES` (`grading.py`, `check_assignment.py`, `test_assignment.py`,
+`_value_checks.py`, and the two files under `.github/test/`), so
+`python3 check_assignment.py` in a student's repository prints each check's
+result, what to fix, and the score, exactly as GitHub will. The checks recompute
+every expected value from the supplied `data/clinic_encounters.csv`, which ships
+in the handout, so there is no answer key to hide.
 
 ## Publishing
 
 Pushing this directory to `main` publishes it; there is no separate checks
-repository. The workflow downloads `grading.py`, `check_assignment.py`,
-`test_assignment.py`, `_value_checks.py`, and the two files under
-`.github/test/` over the committed copies. A fetch that misses any one of them,
-or a set that does not run together, is rolled back, and the run falls back to
-the shape checks and says in the log that no value was verified.
+repository. The workflow downloads the files named in `CHECKS_FILES` over the
+committed copies. A fetch that misses any one of them, or a set that does not
+run together, is rolled back, and the run grades with the copy committed in the
+student's repository and says so in the log.
 
-The two halves parse artifacts with the same regexes, limits, and helpers,
-and `test_assignment.py` and `.github/test/` are byte-identical in both; the
-self-test fails if they drift. Correct a check here, and change
-`02/assignment/_shape_checks.py` too when the edit touches something they share
-or the shape of an artifact.
+Correct a check here and copy the changed file over its twin in
+`02/assignment/`; the self-test fails while the two differ. Every fork gets the
+correction on its next push. A student's local copy changes only when the
+handout is republished (`scripts/publish_assignment.sh 02 ...`) and the student
+syncs the fork, so until then the local run can lag the GitHub run, and the
+GitHub run counts.
 
 ## Checking the checks
 

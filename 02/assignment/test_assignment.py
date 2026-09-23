@@ -1,7 +1,8 @@
 """Pytest contract for Assignment 02: one test per artifact check.
 
-Identical in both halves of the checks, so the fetched value checks and the
-shape checks committed in the fork run through the same entrypoint.
+The handout ships a byte-identical copy of this file, so the local run and the
+GitHub Actions run, which downloads the course's current copy, go through the
+same entrypoint.
 """
 
 from pathlib import Path
