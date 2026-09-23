@@ -19,7 +19,7 @@ From the repository root, create `scratch/git-practice`, then use **File → Ope
 
 Create `notes.md` with `# Practice notes`. In Source Control, stage it with the `+` button, enter `Start practice notes`, and select the visible **Commit** button. The changes list is empty after the commit: the working tree is clean.
 
-Click the branch name in the status bar → **Create new branch…** → `experiment`. Add `Experiment: compare two grade summaries.` to `notes.md`. The Source Control view now shows a working (unstaged) change; select the file to inspect its diff. Stage it: the file moves to **Staged Changes**. Enter `Add experiment note` and select **Commit**; the lists are empty again.
+Click the branch name in the status bar → **Create new branch…** → `experiment`. Add `Experiment: compare two systolic summaries.` to `notes.md`. The Source Control view now shows a working (unstaged) change; select the file to inspect its diff. Stage it: the file moves to **Staged Changes**. Enter `Add experiment note` and select **Commit**; the lists are empty again.
 
 Click the branch name → select `main`. Open the Command Palette, select **Git: Merge Branch…**, and choose `experiment`. The experiment change is now committed on `main`.
 
@@ -34,7 +34,7 @@ echo "# Practice notes" > notes.md
 git add notes.md
 git commit -m "Start practice notes"
 git checkout -b experiment
-echo "Experiment: compare two grade summaries." >> notes.md
+echo "Experiment: compare two systolic summaries." >> notes.md
 git status                    # working: notes.md is modified, not staged
 git diff                      # working: shows the new line
 git add notes.md

@@ -339,7 +339,7 @@ cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines --stat-min --sta
 # gnuplot: Create terminal plots (optional - many dependencies)
 # Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
 
-# Simple plot of grades
+# Simple plot of systolic readings
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | \
   gnuplot -e "set terminal dumb; plot '-' with linespoints"
 

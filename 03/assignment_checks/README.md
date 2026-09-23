@@ -24,7 +24,7 @@ cannot score points by importing the checker.
 ## Publishing
 
 `03/assignment/.github/workflows/tests.yml` downloads these files at run time
-from `CHECKS_REPO` (`UCSF-DataSci/ds217-26f-checks`), at path `03/<file>`:
+from `CHECKS_REPO` (`christopherseaman/datasci_217`), at path `03/assignment_checks/<file>`:
 
 ```text
 .github/test/test_assignment.py

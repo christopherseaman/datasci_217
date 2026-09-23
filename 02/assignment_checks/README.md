@@ -2,7 +2,7 @@
 
 This directory is the source for `02/` in the course checks repository that
 `02/assignment/.github/workflows/tests.yml` names in `CHECKS_REPO`
-(`UCSF-DataSci/ds217-26f-checks` by default). Nothing here ships in a student
+(`christopherseaman/datasci_217` by default, path `02/assignment_checks`). Nothing here ships in a student
 fork, and nothing here is fetched by a student: the GitHub Actions run
 downloads it, checks it runs, and grades with it.
 
