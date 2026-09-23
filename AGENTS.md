@@ -44,7 +44,7 @@ Adapt introductions and examples from the course sources rather than inventing t
 ### Where material belongs
 
 - Lecture: concepts, visuals, reference cards, and short single-concept snippets.
-- Demo: realistic complexity with health data, multiple steps, edge cases, and visible checkpoints. The lecture does not embed full demo walkthroughs.
+- Demo: realistic complexity with health data, multiple steps, edge cases, and visible checkpoints. The lecture does not embed full demo walkthroughs. The audience is health data science master's students, so a demo's subject matter is patients, encounters, vitals, labs, or clinic operations — not student rosters, grades, or school subjects. A lecture snippet may keep a simple non-clinical example when it exists only to show syntax; a demo may not. Values carry real units and clinically sensible ranges, and identifiers are synthetic. When extending a demo that still runs on the old student-grade material, recast it rather than adding more of it.
 - `BONUS.md`: advanced options, theoretical depth, specialized use cases, and further reading.
 - Assignment: independent practice of lecture and demo material; it introduces no new required concept.
 

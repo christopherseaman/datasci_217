@@ -6,21 +6,21 @@ set -euo pipefail
 echo "=== Lecture 03: bounded CLI pipeline ==="
 mkdir -p data/raw logs results
 
-cat > data/raw/students.csv <<'EOF'
-name,age,grade,subject
-Alice,20,85,Math
-Bob,19,92,Science
-Charlie,21,78,English
-Diana,20,88,Math
-Eve,22,95,Science
-Frank,20,88,Math
+cat > data/raw/encounters.csv <<'EOF'
+patient_id,age,systolic_bp,clinic
+P001,54,128,Cardiology
+P002,39,118,Primary Care
+P003,67,142,Nephrology
+P004,45,131,Cardiology
+P005,72,145,Nephrology
+P006,58,126,Cardiology
 EOF
 
-echo "Student records: $(tail -n +2 data/raw/students.csv | wc -l)"
-echo "Subjects (with counts):"
+echo "Encounter records: $(tail -n +2 data/raw/encounters.csv | wc -l)"
+echo "Clinics (with counts):"
 # Skip the header, select one field, sort it for uniq, count it, and bound
 # the displayed result to five lines.
-tail -n +2 data/raw/students.csv \
+tail -n +2 data/raw/encounters.csv \
   | cut -d',' -f4 \
   | sort \
   | uniq -c \
@@ -30,9 +30,9 @@ tail -n +2 data/raw/students.csv \
 timestamp=$(date +"%Y%m%d_%H%M%S")
 summary="results/summary_${timestamp}.txt"
 echo "run timestamp: ${timestamp}" > "$summary"
-echo "records: $(tail -n +2 data/raw/students.csv | wc -l)" >> "$summary"
-echo "subject counts:" >> "$summary"
-tail -n +2 data/raw/students.csv \
+echo "encounters: $(tail -n +2 data/raw/encounters.csv | wc -l)" >> "$summary"
+echo "clinic counts:" >> "$summary"
+tail -n +2 data/raw/encounters.csv \
   | cut -d',' -f4 \
   | sort \
   | uniq -c \

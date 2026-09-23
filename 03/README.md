@@ -202,15 +202,15 @@ Conda manages Python environments and packages, including non-Python dependencie
 
 Lecture 01 used `>` and `>>` to send a command's output into a file instead of the screen. A **pipe** (`|`) sends that output into another command instead. A **pipeline** chains small commands, each doing one job, like stations on an assembly line: each station receives the previous station's output and passes its result on. Before writing any Python, a pipeline can answer quick questions about a file, such as how many participants each study site enrolled.
 
-Demo 1 creates `data/raw/students.csv`, which has a header and six rows. Each stage receives the previous stage's output:
+Demo 1 creates `data/raw/encounters.csv`, which has a header and six rows. Each stage receives the previous stage's output:
 
 | Stage | Command | Output |
 | --- | --- | --- |
-| Input | `cat data/raw/students.csv` | `name,age,grade,subject`, `Alice,20,85,Math`, … 7 lines |
-| Skip the header | `tail -n +2` | `Alice,20,85,Math`, `Bob,19,92,Science`, … 6 lines |
-| Keep field 4 | `cut -d',' -f4` | `Math`, `Science`, `English`, `Math`, `Science`, `Math` |
-| Put equal lines together | `sort` | `English`, `Math`, `Math`, `Math`, `Science`, `Science` |
-| Count each group | `uniq -c` | `1 English`, `3 Math`, `2 Science` |
+| Input | `cat data/raw/encounters.csv` | `patient_id,age,systolic_bp,clinic`, `P001,54,128,Cardiology`, … 7 lines |
+| Skip the header | `tail -n +2` | `P001,54,128,Cardiology`, `P002,39,118,Primary Care`, … 6 lines |
+| Keep field 4 | `cut -d',' -f4` | `Cardiology`, `Primary Care`, `Nephrology`, `Cardiology`, `Nephrology`, `Cardiology` |
+| Put equal lines together | `sort` | `Cardiology`, `Cardiology`, `Cardiology`, `Nephrology`, `Nephrology`, `Primary Care` |
+| Count each group | `uniq -c` | `3 Cardiology`, `2 Nephrology`, `1 Primary Care` |
 
 ### Reference Card: Pipeline Building Blocks
 
@@ -222,21 +222,21 @@ Demo 1 creates `data/raw/students.csv`, which has a header and six rows. Each st
 - `wc -l`: Count lines.
 - `command > FILE` / `command >> FILE`: Replace / append file contents.
 
-### Code Snippet: Count Records per Subject
+### Code Snippet: Count Encounters per Clinic
 
 ```bash
-tail -n +2 data/raw/students.csv | cut -d',' -f4 | sort | uniq -c
-tail -n +2 data/raw/students.csv | wc -l
+tail -n +2 data/raw/encounters.csv | cut -d',' -f4 | sort | uniq -c
+tail -n +2 data/raw/encounters.csv | wc -l
 ```
 
 ```text
-      1 English
-      3 Math
-      2 Science
+      3 Cardiology
+      2 Nephrology
+      1 Primary Care
 6
 ```
 
-`uniq` only merges lines that are next to each other, so `sort` first: without `sort`, the same pipeline prints six separate lines such as `1 Math` and `1 Science`. `cut` splits at every comma, so use it only on simple files with no commas inside a field.
+`uniq` only merges lines that are next to each other, so `sort` first: without `sort`, the same pipeline prints six separate lines such as `1 Cardiology` and `1 Nephrology`. `cut` splits at every comma, so use it only on simple files with no commas inside a field.
 
 ## Variables and Timestamps
 

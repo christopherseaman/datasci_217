@@ -1,0 +1,1501 @@
+patient_id,age,systolic_bp,clinic
+P0001,85,123,Primary Care
+P0002,25,141,Neurology
+P0003,43,140,Nephrology
+P0004,79,131,Primary Care
+P0005,65,104,Cardiology
+P0006,55,130,Primary Care
+P0007,26,124,Endocrinology
+P0008,64,125,Primary Care
+P0009,65,134,Endocrinology
+P0010,35,126,Obstetrics
+P0011,60,117,Neurology
+P0012,26,130,Neurology
+P0013,87,125,Primary Care
+P0014,88,139,Cardiology
+P0015,75,134,Dermatology
+P0016,71,122,Endocrinology
+P0017,20,132,Primary Care
+P0018,74,147,Cardiology
+P0019,25,100,Neurology
+P0020,59,130,Primary Care
+P0021,54,128,Cardiology
+P0022,20,156,Primary Care
+P0023,68,111,Neurology
+P0024,33,119,Oncology
+P0025,72,135,Primary Care
+P0026,58,139,Endocrinology
+P0027,58,132,Oncology
+P0028,51,113,Neurology
+P0029,47,127,Primary Care
+P0030,69,169,Cardiology
+P0031,55,117,Dermatology
+P0032,45,127,Neurology
+P0033,58,130,Cardiology
+P0034,57,115,Neurology
+P0035,31,127,Obstetrics
+P0036,72,145,Nephrology
+P0037,90,128,Primary Care
+P0038,23,114,Obstetrics
+P0039,19,125,Dermatology
+P0040,31,142,Primary Care
+P0041,53,124,Dermatology
+P0042,87,141,Cardiology
+P0043,85,147,Nephrology
+P0044,64,129,Neurology
+P0045,57,142,Oncology
+P0046,63,129,Primary Care
+P0047,40,128,Cardiology
+P0048,87,125,Oncology
+P0049,89,133,Primary Care
+P0050,88,124,Oncology
+P0051,30,121,Obstetrics
+P0052,70,124,Dermatology
+P0053,72,129,Neurology
+P0054,75,138,Nephrology
+P0055,77,162,Cardiology
+P0056,89,126,Cardiology
+P0057,32,109,Oncology
+P0058,60,117,Cardiology
+P0059,69,129,Primary Care
+P0060,51,135,Neurology
+P0061,43,150,Cardiology
+P0062,20,102,Obstetrics
+P0063,40,122,Obstetrics
+P0064,83,133,Primary Care
+P0065,25,118,Dermatology
+P0066,66,121,Neurology
+P0067,81,125,Oncology
+P0068,23,139,Primary Care
+P0069,64,130,Neurology
+P0070,47,155,Cardiology
+P0071,23,115,Primary Care
+P0072,49,137,Nephrology
+P0073,76,140,Cardiology
+P0074,26,129,Neurology
+P0075,31,138,Endocrinology
+P0076,61,108,Primary Care
+P0077,74,137,Nephrology
+P0078,31,121,Neurology
+P0079,44,160,Nephrology
+P0080,78,137,Neurology
+P0081,51,148,Endocrinology
+P0082,74,110,Primary Care
+P0083,41,124,Obstetrics
+P0084,35,156,Nephrology
+P0085,80,111,Endocrinology
+P0086,40,132,Cardiology
+P0087,80,105,Primary Care
+P0088,84,113,Primary Care
+P0089,89,118,Primary Care
+P0090,65,141,Cardiology
+P0091,36,139,Primary Care
+P0092,46,128,Primary Care
+P0093,56,148,Neurology
+P0094,44,126,Primary Care
+P0095,45,158,Cardiology
+P0096,41,159,Cardiology
+P0097,34,116,Primary Care
+P0098,70,123,Oncology
+P0099,82,140,Endocrinology
+P0100,89,139,Primary Care
+P0101,90,156,Cardiology
+P0102,54,142,Endocrinology
+P0103,31,138,Primary Care
+P0104,55,124,Dermatology
+P0105,43,137,Cardiology
+P0106,20,140,Primary Care
+P0107,73,123,Cardiology
+P0108,24,113,Obstetrics
+P0109,64,131,Neurology
+P0110,42,168,Nephrology
+P0111,50,123,Cardiology
+P0112,57,146,Cardiology
+P0113,42,156,Dermatology
+P0114,90,137,Cardiology
+P0115,59,147,Nephrology
+P0116,54,122,Primary Care
+P0117,59,152,Cardiology
+P0118,42,137,Neurology
+P0119,82,161,Cardiology
+P0120,40,131,Neurology
+P0121,50,133,Primary Care
+P0122,52,137,Neurology
+P0123,40,137,Oncology
+P0124,87,150,Nephrology
+P0125,71,136,Cardiology
+P0126,45,114,Endocrinology
+P0127,34,135,Primary Care
+P0128,32,138,Primary Care
+P0129,79,129,Cardiology
+P0130,21,110,Obstetrics
+P0131,57,156,Endocrinology
+P0132,35,135,Neurology
+P0133,71,130,Cardiology
+P0134,68,138,Endocrinology
+P0135,66,126,Endocrinology
+P0136,24,111,Obstetrics
+P0137,41,111,Oncology
+P0138,42,122,Endocrinology
+P0139,84,138,Cardiology
+P0140,75,128,Neurology
+P0141,43,140,Cardiology
+P0142,55,138,Endocrinology
+P0143,44,102,Obstetrics
+P0144,89,129,Cardiology
+P0145,66,141,Endocrinology
+P0146,58,132,Primary Care
+P0147,44,130,Primary Care
+P0148,65,118,Primary Care
+P0149,40,123,Cardiology
+P0150,56,112,Primary Care
+P0151,76,134,Endocrinology
+P0152,57,128,Primary Care
+P0153,90,150,Cardiology
+P0154,81,123,Oncology
+P0155,50,126,Primary Care
+P0156,55,125,Oncology
+P0157,36,105,Obstetrics
+P0158,37,127,Primary Care
+P0159,54,113,Dermatology
+P0160,38,133,Endocrinology
+P0161,86,140,Nephrology
+P0162,62,132,Oncology
+P0163,36,104,Obstetrics
+P0164,36,137,Endocrinology
+P0165,89,129,Primary Care
+P0166,53,133,Cardiology
+P0167,69,132,Neurology
+P0168,77,115,Primary Care
+P0169,81,134,Primary Care
+P0170,74,154,Cardiology
+P0171,81,123,Oncology
+P0172,28,138,Primary Care
+P0173,35,143,Nephrology
+P0174,31,114,Obstetrics
+P0175,80,126,Primary Care
+P0176,41,117,Obstetrics
+P0177,81,136,Endocrinology
+P0178,72,131,Primary Care
+P0179,54,136,Endocrinology
+P0180,61,150,Nephrology
+P0181,73,127,Nephrology
+P0182,43,132,Neurology
+P0183,43,123,Cardiology
+P0184,38,114,Endocrinology
+P0185,87,128,Nephrology
+P0186,45,151,Nephrology
+P0187,45,113,Obstetrics
+P0188,46,123,Dermatology
+P0189,41,140,Cardiology
+P0190,20,135,Primary Care
+P0191,77,141,Endocrinology
+P0192,19,110,Obstetrics
+P0193,46,148,Primary Care
+P0194,73,121,Cardiology
+P0195,63,120,Primary Care
+P0196,44,139,Cardiology
+P0197,83,134,Cardiology
+P0198,70,127,Nephrology
+P0199,61,132,Neurology
+P0200,79,130,Cardiology
+P0201,45,115,Cardiology
+P0202,70,126,Dermatology
+P0203,73,130,Oncology
+P0204,26,117,Endocrinology
+P0205,43,119,Primary Care
+P0206,86,127,Primary Care
+P0207,81,109,Neurology
+P0208,26,144,Primary Care
+P0209,63,148,Primary Care
+P0210,70,133,Neurology
+P0211,50,148,Primary Care
+P0212,65,114,Cardiology
+P0213,59,114,Dermatology
+P0214,46,157,Cardiology
+P0215,29,133,Obstetrics
+P0216,55,147,Cardiology
+P0217,29,146,Endocrinology
+P0218,29,109,Neurology
+P0219,24,129,Primary Care
+P0220,44,146,Neurology
+P0221,46,124,Primary Care
+P0222,42,137,Dermatology
+P0223,34,129,Endocrinology
+P0224,54,132,Dermatology
+P0225,19,126,Primary Care
+P0226,47,130,Dermatology
+P0227,47,134,Neurology
+P0228,54,137,Cardiology
+P0229,33,139,Obstetrics
+P0230,65,149,Primary Care
+P0231,28,97,Obstetrics
+P0232,38,128,Primary Care
+P0233,57,138,Primary Care
+P0234,61,134,Primary Care
+P0235,48,149,Primary Care
+P0236,55,128,Primary Care
+P0237,59,136,Dermatology
+P0238,80,108,Primary Care
+P0239,24,125,Primary Care
+P0240,42,139,Endocrinology
+P0241,43,121,Dermatology
+P0242,83,128,Nephrology
+P0243,76,130,Primary Care
+P0244,32,132,Oncology
+P0245,80,141,Nephrology
+P0246,31,134,Primary Care
+P0247,24,125,Primary Care
+P0248,83,138,Cardiology
+P0249,86,133,Primary Care
+P0250,25,125,Neurology
+P0251,55,136,Neurology
+P0252,74,128,Cardiology
+P0253,60,136,Endocrinology
+P0254,74,106,Primary Care
+P0255,45,123,Endocrinology
+P0256,68,102,Primary Care
+P0257,56,119,Dermatology
+P0258,45,124,Primary Care
+P0259,62,150,Cardiology
+P0260,78,139,Endocrinology
+P0261,76,121,Oncology
+P0262,41,115,Dermatology
+P0263,58,120,Dermatology
+P0264,36,135,Obstetrics
+P0265,29,130,Endocrinology
+P0266,63,140,Primary Care
+P0267,81,133,Neurology
+P0268,55,133,Cardiology
+P0269,47,133,Dermatology
+P0270,59,137,Oncology
+P0271,57,129,Dermatology
+P0272,41,97,Dermatology
+P0273,84,121,Oncology
+P0274,66,112,Primary Care
+P0275,59,145,Neurology
+P0276,61,139,Cardiology
+P0277,87,125,Primary Care
+P0278,44,152,Nephrology
+P0279,39,116,Obstetrics
+P0280,48,174,Neurology
+P0281,60,133,Cardiology
+P0282,68,138,Cardiology
+P0283,44,124,Primary Care
+P0284,59,121,Endocrinology
+P0285,46,140,Primary Care
+P0286,39,129,Oncology
+P0287,52,151,Endocrinology
+P0288,60,107,Endocrinology
+P0289,79,114,Primary Care
+P0290,54,139,Dermatology
+P0291,35,144,Primary Care
+P0292,66,132,Dermatology
+P0293,69,126,Primary Care
+P0294,70,141,Nephrology
+P0295,53,145,Nephrology
+P0296,28,134,Primary Care
+P0297,83,111,Primary Care
+P0298,79,159,Endocrinology
+P0299,60,134,Oncology
+P0300,55,131,Oncology
+P0301,53,139,Nephrology
+P0302,42,119,Oncology
+P0303,71,134,Cardiology
+P0304,71,128,Primary Care
+P0305,43,146,Cardiology
+P0306,31,144,Dermatology
+P0307,60,135,Neurology
+P0308,65,117,Primary Care
+P0309,28,124,Primary Care
+P0310,41,121,Obstetrics
+P0311,48,155,Cardiology
+P0312,48,129,Dermatology
+P0313,65,112,Endocrinology
+P0314,50,129,Dermatology
+P0315,62,126,Oncology
+P0316,39,122,Neurology
+P0317,89,142,Nephrology
+P0318,64,139,Primary Care
+P0319,35,127,Obstetrics
+P0320,55,143,Endocrinology
+P0321,80,131,Endocrinology
+P0322,20,118,Obstetrics
+P0323,53,114,Cardiology
+P0324,33,143,Primary Care
+P0325,37,127,Obstetrics
+P0326,85,117,Primary Care
+P0327,45,134,Primary Care
+P0328,27,128,Dermatology
+P0329,33,106,Primary Care
+P0330,30,96,Obstetrics
+P0331,69,134,Neurology
+P0332,70,121,Neurology
+P0333,71,130,Neurology
+P0334,57,131,Cardiology
+P0335,46,131,Primary Care
+P0336,68,115,Dermatology
+P0337,53,134,Neurology
+P0338,66,145,Cardiology
+P0339,71,96,Primary Care
+P0340,72,137,Dermatology
+P0341,81,136,Oncology
+P0342,53,142,Primary Care
+P0343,73,113,Primary Care
+P0344,42,106,Oncology
+P0345,72,134,Primary Care
+P0346,22,110,Obstetrics
+P0347,45,150,Endocrinology
+P0348,37,115,Neurology
+P0349,59,139,Cardiology
+P0350,84,137,Nephrology
+P0351,30,115,Oncology
+P0352,62,121,Oncology
+P0353,67,148,Nephrology
+P0354,67,150,Cardiology
+P0355,41,137,Cardiology
+P0356,73,122,Primary Care
+P0357,32,135,Dermatology
+P0358,83,128,Cardiology
+P0359,64,110,Primary Care
+P0360,22,92,Obstetrics
+P0361,40,149,Cardiology
+P0362,86,118,Primary Care
+P0363,71,121,Oncology
+P0364,36,108,Dermatology
+P0365,87,131,Primary Care
+P0366,25,93,Obstetrics
+P0367,54,154,Cardiology
+P0368,43,122,Dermatology
+P0369,57,100,Primary Care
+P0370,32,123,Primary Care
+P0371,54,125,Cardiology
+P0372,48,155,Cardiology
+P0373,42,115,Nephrology
+P0374,42,109,Obstetrics
+P0375,55,130,Oncology
+P0376,51,124,Dermatology
+P0377,89,129,Oncology
+P0378,47,133,Endocrinology
+P0379,21,124,Dermatology
+P0380,79,148,Cardiology
+P0381,79,157,Nephrology
+P0382,63,132,Cardiology
+P0383,28,114,Dermatology
+P0384,32,106,Endocrinology
+P0385,45,151,Neurology
+P0386,54,141,Cardiology
+P0387,61,137,Oncology
+P0388,29,118,Neurology
+P0389,43,128,Primary Care
+P0390,28,127,Primary Care
+P0391,41,91,Obstetrics
+P0392,86,134,Primary Care
+P0393,65,135,Primary Care
+P0394,81,135,Cardiology
+P0395,34,130,Neurology
+P0396,40,138,Primary Care
+P0397,64,149,Nephrology
+P0398,77,107,Oncology
+P0399,71,120,Primary Care
+P0400,80,125,Endocrinology
+P0401,78,131,Nephrology
+P0402,80,132,Cardiology
+P0403,30,117,Dermatology
+P0404,19,133,Primary Care
+P0405,26,106,Neurology
+P0406,24,110,Obstetrics
+P0407,83,131,Cardiology
+P0408,87,156,Cardiology
+P0409,44,118,Obstetrics
+P0410,67,139,Nephrology
+P0411,63,157,Cardiology
+P0412,71,108,Neurology
+P0413,80,115,Dermatology
+P0414,30,106,Neurology
+P0415,77,139,Cardiology
+P0416,50,109,Nephrology
+P0417,45,117,Primary Care
+P0418,82,130,Cardiology
+P0419,30,110,Obstetrics
+P0420,47,148,Endocrinology
+P0421,25,129,Primary Care
+P0422,37,138,Nephrology
+P0423,72,123,Nephrology
+P0424,77,145,Nephrology
+P0425,73,120,Primary Care
+P0426,70,134,Nephrology
+P0427,89,108,Primary Care
+P0428,57,161,Nephrology
+P0429,58,127,Primary Care
+P0430,56,137,Endocrinology
+P0431,56,142,Cardiology
+P0432,68,107,Primary Care
+P0433,34,129,Neurology
+P0434,30,136,Primary Care
+P0435,29,107,Dermatology
+P0436,67,139,Primary Care
+P0437,53,122,Primary Care
+P0438,77,122,Cardiology
+P0439,64,132,Cardiology
+P0440,47,142,Cardiology
+P0441,62,122,Oncology
+P0442,84,127,Primary Care
+P0443,66,153,Cardiology
+P0444,88,141,Cardiology
+P0445,37,127,Endocrinology
+P0446,67,134,Oncology
+P0447,65,114,Dermatology
+P0448,38,134,Primary Care
+P0449,55,136,Endocrinology
+P0450,55,139,Endocrinology
+P0451,43,130,Endocrinology
+P0452,87,99,Primary Care
+P0453,54,124,Primary Care
+P0454,37,136,Endocrinology
+P0455,70,135,Oncology
+P0456,34,135,Primary Care
+P0457,39,130,Obstetrics
+P0458,75,131,Neurology
+P0459,67,126,Oncology
+P0460,66,131,Endocrinology
+P0461,52,121,Primary Care
+P0462,63,148,Nephrology
+P0463,59,146,Endocrinology
+P0464,74,107,Dermatology
+P0465,88,119,Cardiology
+P0466,42,139,Cardiology
+P0467,47,107,Neurology
+P0468,37,125,Neurology
+P0469,30,126,Endocrinology
+P0470,41,136,Cardiology
+P0471,38,129,Endocrinology
+P0472,86,122,Primary Care
+P0473,61,131,Neurology
+P0474,49,139,Cardiology
+P0475,47,133,Cardiology
+P0476,54,153,Primary Care
+P0477,68,144,Primary Care
+P0478,64,122,Primary Care
+P0479,31,107,Oncology
+P0480,81,153,Neurology
+P0481,66,120,Primary Care
+P0482,73,142,Neurology
+P0483,84,139,Neurology
+P0484,65,151,Cardiology
+P0485,33,102,Obstetrics
+P0486,88,147,Nephrology
+P0487,41,115,Obstetrics
+P0488,43,131,Primary Care
+P0489,48,136,Primary Care
+P0490,73,128,Primary Care
+P0491,82,136,Cardiology
+P0492,81,141,Endocrinology
+P0493,46,112,Dermatology
+P0494,37,121,Oncology
+P0495,65,124,Cardiology
+P0496,28,131,Primary Care
+P0497,60,144,Oncology
+P0498,41,107,Primary Care
+P0499,62,99,Dermatology
+P0500,79,118,Primary Care
+P0501,41,125,Oncology
+P0502,45,120,Primary Care
+P0503,51,130,Neurology
+P0504,73,126,Primary Care
+P0505,50,116,Primary Care
+P0506,76,130,Primary Care
+P0507,22,120,Primary Care
+P0508,47,131,Endocrinology
+P0509,47,148,Cardiology
+P0510,33,124,Neurology
+P0511,79,122,Cardiology
+P0512,68,126,Cardiology
+P0513,50,131,Neurology
+P0514,37,126,Neurology
+P0515,75,143,Nephrology
+P0516,21,133,Obstetrics
+P0517,85,146,Nephrology
+P0518,41,145,Nephrology
+P0519,74,141,Endocrinology
+P0520,39,151,Endocrinology
+P0521,42,113,Obstetrics
+P0522,70,123,Endocrinology
+P0523,21,118,Primary Care
+P0524,62,132,Endocrinology
+P0525,65,122,Primary Care
+P0526,61,131,Dermatology
+P0527,40,115,Obstetrics
+P0528,33,134,Dermatology
+P0529,67,148,Endocrinology
+P0530,45,127,Cardiology
+P0531,30,137,Obstetrics
+P0532,18,135,Primary Care
+P0533,38,101,Obstetrics
+P0534,43,113,Obstetrics
+P0535,83,141,Cardiology
+P0536,48,130,Endocrinology
+P0537,46,108,Dermatology
+P0538,82,139,Nephrology
+P0539,85,123,Nephrology
+P0540,52,116,Primary Care
+P0541,43,101,Primary Care
+P0542,79,143,Cardiology
+P0543,40,130,Cardiology
+P0544,47,146,Primary Care
+P0545,31,119,Oncology
+P0546,72,131,Oncology
+P0547,89,146,Cardiology
+P0548,84,116,Primary Care
+P0549,52,134,Cardiology
+P0550,40,116,Endocrinology
+P0551,45,110,Oncology
+P0552,36,105,Obstetrics
+P0553,20,124,Primary Care
+P0554,27,128,Dermatology
+P0555,43,126,Endocrinology
+P0556,57,134,Oncology
+P0557,36,124,Primary Care
+P0558,66,125,Primary Care
+P0559,48,139,Primary Care
+P0560,43,131,Nephrology
+P0561,75,142,Nephrology
+P0562,74,132,Cardiology
+P0563,66,138,Neurology
+P0564,63,129,Oncology
+P0565,55,122,Neurology
+P0566,51,135,Nephrology
+P0567,31,98,Obstetrics
+P0568,45,130,Primary Care
+P0569,66,116,Primary Care
+P0570,72,144,Cardiology
+P0571,57,121,Primary Care
+P0572,66,122,Oncology
+P0573,34,130,Oncology
+P0574,67,120,Nephrology
+P0575,46,130,Nephrology
+P0576,28,126,Dermatology
+P0577,47,141,Nephrology
+P0578,77,106,Neurology
+P0579,41,128,Endocrinology
+P0580,35,114,Primary Care
+P0581,69,130,Dermatology
+P0582,74,117,Endocrinology
+P0583,57,123,Endocrinology
+P0584,28,117,Primary Care
+P0585,61,136,Primary Care
+P0586,23,129,Dermatology
+P0587,64,129,Neurology
+P0588,48,123,Primary Care
+P0589,62,132,Primary Care
+P0590,67,115,Primary Care
+P0591,37,132,Endocrinology
+P0592,56,117,Primary Care
+P0593,60,146,Primary Care
+P0594,46,146,Nephrology
+P0595,30,125,Neurology
+P0596,49,120,Dermatology
+P0597,59,141,Dermatology
+P0598,37,118,Endocrinology
+P0599,71,137,Endocrinology
+P0600,24,132,Primary Care
+P0601,24,131,Dermatology
+P0602,32,129,Dermatology
+P0603,67,115,Dermatology
+P0604,62,147,Cardiology
+P0605,76,143,Cardiology
+P0606,56,152,Endocrinology
+P0607,46,158,Neurology
+P0608,63,134,Endocrinology
+P0609,35,138,Endocrinology
+P0610,48,147,Oncology
+P0611,75,110,Cardiology
+P0612,76,130,Endocrinology
+P0613,85,158,Cardiology
+P0614,79,144,Primary Care
+P0615,46,117,Neurology
+P0616,45,152,Cardiology
+P0617,88,118,Primary Care
+P0618,35,138,Primary Care
+P0619,24,137,Primary Care
+P0620,71,138,Endocrinology
+P0621,78,142,Nephrology
+P0622,55,123,Oncology
+P0623,20,101,Obstetrics
+P0624,22,128,Primary Care
+P0625,74,133,Oncology
+P0626,24,123,Primary Care
+P0627,60,139,Primary Care
+P0628,82,132,Neurology
+P0629,51,115,Primary Care
+P0630,71,151,Oncology
+P0631,72,169,Primary Care
+P0632,90,127,Primary Care
+P0633,42,143,Endocrinology
+P0634,51,126,Endocrinology
+P0635,83,152,Cardiology
+P0636,46,136,Cardiology
+P0637,53,137,Cardiology
+P0638,65,129,Primary Care
+P0639,21,124,Primary Care
+P0640,79,122,Neurology
+P0641,64,115,Endocrinology
+P0642,60,104,Primary Care
+P0643,25,112,Primary Care
+P0644,63,133,Neurology
+P0645,82,103,Neurology
+P0646,82,141,Nephrology
+P0647,35,118,Primary Care
+P0648,37,126,Neurology
+P0649,75,116,Neurology
+P0650,51,146,Cardiology
+P0651,47,114,Oncology
+P0652,61,135,Endocrinology
+P0653,52,126,Neurology
+P0654,76,145,Cardiology
+P0655,46,109,Primary Care
+P0656,39,123,Obstetrics
+P0657,24,134,Primary Care
+P0658,75,142,Neurology
+P0659,37,97,Obstetrics
+P0660,39,115,Obstetrics
+P0661,33,105,Neurology
+P0662,42,134,Endocrinology
+P0663,46,128,Primary Care
+P0664,56,118,Primary Care
+P0665,53,153,Nephrology
+P0666,61,132,Cardiology
+P0667,68,129,Neurology
+P0668,60,116,Primary Care
+P0669,81,122,Oncology
+P0670,79,122,Endocrinology
+P0671,64,154,Cardiology
+P0672,57,128,Cardiology
+P0673,89,138,Cardiology
+P0674,47,130,Endocrinology
+P0675,65,145,Nephrology
+P0676,34,150,Primary Care
+P0677,68,126,Primary Care
+P0678,83,132,Primary Care
+P0679,34,119,Obstetrics
+P0680,80,122,Primary Care
+P0681,30,125,Primary Care
+P0682,57,143,Nephrology
+P0683,34,128,Obstetrics
+P0684,76,128,Primary Care
+P0685,79,131,Nephrology
+P0686,33,124,Primary Care
+P0687,39,143,Dermatology
+P0688,72,137,Neurology
+P0689,76,122,Primary Care
+P0690,87,129,Oncology
+P0691,50,156,Nephrology
+P0692,49,120,Primary Care
+P0693,84,148,Cardiology
+P0694,80,128,Endocrinology
+P0695,84,151,Endocrinology
+P0696,51,123,Dermatology
+P0697,45,122,Cardiology
+P0698,45,143,Primary Care
+P0699,39,123,Obstetrics
+P0700,81,132,Primary Care
+P0701,42,127,Primary Care
+P0702,69,147,Neurology
+P0703,71,141,Cardiology
+P0704,72,132,Cardiology
+P0705,73,131,Primary Care
+P0706,78,128,Cardiology
+P0707,65,139,Neurology
+P0708,32,112,Neurology
+P0709,68,140,Cardiology
+P0710,55,128,Primary Care
+P0711,56,150,Cardiology
+P0712,49,119,Dermatology
+P0713,57,145,Oncology
+P0714,50,136,Neurology
+P0715,41,132,Neurology
+P0716,56,125,Oncology
+P0717,83,135,Neurology
+P0718,84,129,Primary Care
+P0719,27,119,Primary Care
+P0720,26,145,Primary Care
+P0721,61,122,Cardiology
+P0722,19,108,Obstetrics
+P0723,56,140,Endocrinology
+P0724,24,144,Primary Care
+P0725,50,137,Cardiology
+P0726,57,136,Neurology
+P0727,65,143,Endocrinology
+P0728,75,109,Dermatology
+P0729,20,129,Dermatology
+P0730,76,128,Oncology
+P0731,26,164,Neurology
+P0732,87,142,Oncology
+P0733,74,142,Dermatology
+P0734,61,108,Primary Care
+P0735,46,129,Primary Care
+P0736,46,130,Primary Care
+P0737,66,134,Endocrinology
+P0738,21,144,Dermatology
+P0739,24,106,Obstetrics
+P0740,48,116,Primary Care
+P0741,50,121,Primary Care
+P0742,39,133,Oncology
+P0743,43,135,Primary Care
+P0744,44,137,Cardiology
+P0745,79,127,Cardiology
+P0746,85,108,Oncology
+P0747,22,130,Primary Care
+P0748,68,131,Endocrinology
+P0749,53,138,Endocrinology
+P0750,55,133,Cardiology
+P0751,38,116,Dermatology
+P0752,41,141,Primary Care
+P0753,47,130,Primary Care
+P0754,78,149,Primary Care
+P0755,21,141,Dermatology
+P0756,72,144,Nephrology
+P0757,39,126,Primary Care
+P0758,27,147,Endocrinology
+P0759,76,128,Nephrology
+P0760,78,124,Cardiology
+P0761,50,115,Endocrinology
+P0762,52,125,Oncology
+P0763,37,125,Obstetrics
+P0764,82,143,Nephrology
+P0765,55,143,Nephrology
+P0766,78,102,Neurology
+P0767,38,136,Primary Care
+P0768,55,152,Primary Care
+P0769,45,146,Cardiology
+P0770,35,143,Endocrinology
+P0771,64,118,Oncology
+P0772,81,148,Cardiology
+P0773,77,117,Oncology
+P0774,70,137,Neurology
+P0775,68,143,Cardiology
+P0776,54,122,Primary Care
+P0777,69,137,Dermatology
+P0778,82,133,Neurology
+P0779,89,128,Nephrology
+P0780,37,115,Endocrinology
+P0781,58,116,Primary Care
+P0782,89,116,Cardiology
+P0783,69,126,Primary Care
+P0784,48,107,Cardiology
+P0785,50,125,Oncology
+P0786,56,115,Cardiology
+P0787,41,124,Neurology
+P0788,29,102,Obstetrics
+P0789,46,146,Neurology
+P0790,55,145,Endocrinology
+P0791,86,135,Oncology
+P0792,52,145,Cardiology
+P0793,43,143,Cardiology
+P0794,90,150,Nephrology
+P0795,30,118,Obstetrics
+P0796,46,132,Cardiology
+P0797,87,129,Oncology
+P0798,69,132,Dermatology
+P0799,36,91,Obstetrics
+P0800,54,121,Primary Care
+P0801,83,113,Oncology
+P0802,41,116,Dermatology
+P0803,87,137,Cardiology
+P0804,75,117,Primary Care
+P0805,35,142,Dermatology
+P0806,68,132,Primary Care
+P0807,85,136,Endocrinology
+P0808,47,120,Endocrinology
+P0809,87,138,Cardiology
+P0810,27,134,Primary Care
+P0811,54,132,Neurology
+P0812,51,132,Endocrinology
+P0813,59,132,Cardiology
+P0814,37,102,Dermatology
+P0815,40,148,Endocrinology
+P0816,40,149,Cardiology
+P0817,58,141,Cardiology
+P0818,30,135,Endocrinology
+P0819,48,125,Nephrology
+P0820,87,137,Cardiology
+P0821,90,119,Primary Care
+P0822,21,105,Dermatology
+P0823,47,137,Nephrology
+P0824,73,129,Primary Care
+P0825,88,112,Primary Care
+P0826,66,131,Primary Care
+P0827,72,110,Nephrology
+P0828,27,134,Obstetrics
+P0829,76,123,Endocrinology
+P0830,23,111,Obstetrics
+P0831,22,125,Obstetrics
+P0832,38,126,Primary Care
+P0833,43,120,Primary Care
+P0834,41,140,Nephrology
+P0835,60,144,Neurology
+P0836,69,146,Nephrology
+P0837,31,138,Endocrinology
+P0838,72,139,Neurology
+P0839,83,127,Oncology
+P0840,31,115,Dermatology
+P0841,49,121,Dermatology
+P0842,57,117,Dermatology
+P0843,83,131,Neurology
+P0844,55,112,Oncology
+P0845,32,145,Neurology
+P0846,44,135,Dermatology
+P0847,67,103,Primary Care
+P0848,79,126,Cardiology
+P0849,33,116,Primary Care
+P0850,79,127,Cardiology
+P0851,64,169,Cardiology
+P0852,41,125,Cardiology
+P0853,33,111,Obstetrics
+P0854,46,133,Cardiology
+P0855,84,99,Primary Care
+P0856,73,152,Endocrinology
+P0857,61,129,Neurology
+P0858,47,125,Dermatology
+P0859,80,127,Primary Care
+P0860,34,131,Obstetrics
+P0861,73,144,Nephrology
+P0862,36,120,Primary Care
+P0863,19,107,Obstetrics
+P0864,80,155,Nephrology
+P0865,29,119,Endocrinology
+P0866,68,113,Dermatology
+P0867,63,124,Dermatology
+P0868,56,136,Nephrology
+P0869,87,129,Oncology
+P0870,68,130,Primary Care
+P0871,52,155,Cardiology
+P0872,36,125,Primary Care
+P0873,62,137,Primary Care
+P0874,46,139,Endocrinology
+P0875,85,137,Nephrology
+P0876,46,130,Endocrinology
+P0877,74,119,Primary Care
+P0878,58,114,Oncology
+P0879,63,135,Cardiology
+P0880,82,129,Cardiology
+P0881,55,137,Nephrology
+P0882,84,122,Endocrinology
+P0883,50,148,Primary Care
+P0884,56,112,Primary Care
+P0885,63,127,Neurology
+P0886,63,135,Cardiology
+P0887,55,141,Cardiology
+P0888,26,113,Obstetrics
+P0889,66,159,Nephrology
+P0890,88,120,Primary Care
+P0891,30,124,Primary Care
+P0892,28,143,Primary Care
+P0893,65,147,Oncology
+P0894,79,126,Cardiology
+P0895,30,135,Dermatology
+P0896,55,117,Endocrinology
+P0897,40,125,Endocrinology
+P0898,75,125,Endocrinology
+P0899,28,133,Endocrinology
+P0900,87,135,Oncology
+P0901,90,141,Nephrology
+P0902,74,135,Oncology
+P0903,43,139,Endocrinology
+P0904,58,130,Endocrinology
+P0905,66,128,Neurology
+P0906,35,164,Nephrology
+P0907,28,97,Primary Care
+P0908,37,110,Obstetrics
+P0909,86,124,Primary Care
+P0910,29,104,Obstetrics
+P0911,78,144,Cardiology
+P0912,68,111,Dermatology
+P0913,36,111,Obstetrics
+P0914,51,115,Cardiology
+P0915,64,148,Cardiology
+P0916,58,116,Oncology
+P0917,87,127,Cardiology
+P0918,31,141,Endocrinology
+P0919,58,124,Primary Care
+P0920,71,113,Neurology
+P0921,83,139,Cardiology
+P0922,69,123,Endocrinology
+P0923,51,149,Primary Care
+P0924,49,153,Nephrology
+P0925,65,135,Endocrinology
+P0926,37,127,Neurology
+P0927,71,122,Primary Care
+P0928,47,134,Neurology
+P0929,54,127,Primary Care
+P0930,36,131,Endocrinology
+P0931,72,135,Endocrinology
+P0932,44,133,Cardiology
+P0933,23,123,Dermatology
+P0934,68,128,Primary Care
+P0935,62,127,Cardiology
+P0936,59,109,Nephrology
+P0937,48,128,Primary Care
+P0938,49,133,Oncology
+P0939,38,138,Primary Care
+P0940,58,141,Nephrology
+P0941,77,121,Primary Care
+P0942,52,142,Oncology
+P0943,58,122,Dermatology
+P0944,33,104,Dermatology
+P0945,67,144,Nephrology
+P0946,69,118,Primary Care
+P0947,28,142,Obstetrics
+P0948,61,122,Endocrinology
+P0949,61,130,Cardiology
+P0950,81,133,Endocrinology
+P0951,46,145,Cardiology
+P0952,24,135,Primary Care
+P0953,76,135,Primary Care
+P0954,62,132,Primary Care
+P0955,81,126,Cardiology
+P0956,79,129,Endocrinology
+P0957,80,110,Dermatology
+P0958,65,133,Dermatology
+P0959,22,116,Dermatology
+P0960,59,141,Endocrinology
+P0961,36,135,Oncology
+P0962,79,122,Primary Care
+P0963,33,125,Dermatology
+P0964,48,141,Cardiology
+P0965,52,139,Oncology
+P0966,42,119,Neurology
+P0967,67,129,Endocrinology
+P0968,28,111,Dermatology
+P0969,39,134,Primary Care
+P0970,18,138,Primary Care
+P0971,75,130,Nephrology
+P0972,61,116,Neurology
+P0973,80,116,Primary Care
+P0974,68,154,Nephrology
+P0975,32,110,Primary Care
+P0976,61,114,Dermatology
+P0977,40,130,Primary Care
+P0978,26,116,Dermatology
+P0979,59,135,Primary Care
+P0980,57,136,Primary Care
+P0981,69,109,Dermatology
+P0982,62,130,Dermatology
+P0983,37,147,Endocrinology
+P0984,31,128,Primary Care
+P0985,28,120,Primary Care
+P0986,69,134,Endocrinology
+P0987,57,133,Cardiology
+P0988,80,141,Cardiology
+P0989,37,126,Primary Care
+P0990,79,142,Oncology
+P0991,38,126,Oncology
+P0992,66,149,Endocrinology
+P0993,62,137,Dermatology
+P0994,90,146,Cardiology
+P0995,57,144,Endocrinology
+P0996,35,124,Neurology
+P0997,26,115,Obstetrics
+P0998,51,123,Primary Care
+P0999,52,135,Neurology
+P1000,39,153,Nephrology
+P1001,45,131,Dermatology
+P1002,80,116,Nephrology
+P1003,89,136,Primary Care
+P1004,67,133,Cardiology
+P1005,64,105,Dermatology
+P1006,39,121,Obstetrics
+P1007,36,107,Obstetrics
+P1008,62,122,Dermatology
+P1009,71,115,Primary Care
+P1010,74,141,Cardiology
+P1011,37,112,Nephrology
+P1012,85,132,Cardiology
+P1013,59,120,Nephrology
+P1014,88,139,Nephrology
+P1015,24,107,Obstetrics
+P1016,84,164,Nephrology
+P1017,58,141,Nephrology
+P1018,34,114,Obstetrics
+P1019,79,136,Cardiology
+P1020,35,143,Primary Care
+P1021,58,110,Dermatology
+P1022,41,113,Obstetrics
+P1023,82,117,Endocrinology
+P1024,75,152,Cardiology
+P1025,47,141,Oncology
+P1026,78,121,Endocrinology
+P1027,39,133,Nephrology
+P1028,88,138,Primary Care
+P1029,56,115,Endocrinology
+P1030,25,139,Neurology
+P1031,21,132,Obstetrics
+P1032,50,126,Endocrinology
+P1033,53,122,Primary Care
+P1034,39,103,Oncology
+P1035,27,128,Neurology
+P1036,80,127,Endocrinology
+P1037,80,138,Cardiology
+P1038,73,156,Cardiology
+P1039,51,133,Dermatology
+P1040,54,121,Cardiology
+P1041,64,134,Primary Care
+P1042,73,145,Nephrology
+P1043,48,164,Cardiology
+P1044,41,123,Obstetrics
+P1045,82,134,Primary Care
+P1046,80,144,Endocrinology
+P1047,52,143,Nephrology
+P1048,83,128,Primary Care
+P1049,60,106,Dermatology
+P1050,52,125,Dermatology
+P1051,64,151,Nephrology
+P1052,23,128,Dermatology
+P1053,79,151,Primary Care
+P1054,76,146,Cardiology
+P1055,48,132,Endocrinology
+P1056,20,120,Obstetrics
+P1057,71,123,Primary Care
+P1058,46,148,Cardiology
+P1059,63,114,Dermatology
+P1060,43,131,Cardiology
+P1061,71,126,Nephrology
+P1062,73,89,Primary Care
+P1063,28,101,Obstetrics
+P1064,76,99,Endocrinology
+P1065,54,133,Neurology
+P1066,87,100,Oncology
+P1067,65,120,Oncology
+P1068,57,141,Endocrinology
+P1069,36,141,Nephrology
+P1070,54,122,Dermatology
+P1071,42,133,Oncology
+P1072,82,116,Oncology
+P1073,25,117,Obstetrics
+P1074,55,150,Primary Care
+P1075,67,120,Primary Care
+P1076,87,116,Primary Care
+P1077,56,141,Endocrinology
+P1078,58,114,Primary Care
+P1079,57,138,Nephrology
+P1080,62,140,Cardiology
+P1081,86,137,Primary Care
+P1082,43,119,Endocrinology
+P1083,65,158,Cardiology
+P1084,54,103,Oncology
+P1085,64,132,Oncology
+P1086,30,141,Endocrinology
+P1087,59,135,Nephrology
+P1088,86,140,Cardiology
+P1089,41,143,Oncology
+P1090,66,132,Primary Care
+P1091,79,123,Primary Care
+P1092,31,140,Primary Care
+P1093,40,139,Neurology
+P1094,83,141,Cardiology
+P1095,64,132,Cardiology
+P1096,73,125,Nephrology
+P1097,65,117,Primary Care
+P1098,82,122,Endocrinology
+P1099,34,100,Primary Care
+P1100,31,133,Oncology
+P1101,22,111,Primary Care
+P1102,31,134,Endocrinology
+P1103,89,118,Primary Care
+P1104,46,147,Neurology
+P1105,34,124,Dermatology
+P1106,46,146,Cardiology
+P1107,51,137,Cardiology
+P1108,51,145,Primary Care
+P1109,43,147,Endocrinology
+P1110,37,137,Primary Care
+P1111,36,124,Oncology
+P1112,62,139,Neurology
+P1113,55,139,Neurology
+P1114,33,114,Endocrinology
+P1115,90,121,Primary Care
+P1116,89,159,Cardiology
+P1117,38,115,Dermatology
+P1118,54,132,Oncology
+P1119,62,128,Cardiology
+P1120,52,119,Dermatology
+P1121,82,125,Cardiology
+P1122,74,142,Cardiology
+P1123,71,140,Oncology
+P1124,48,134,Cardiology
+P1125,90,144,Primary Care
+P1126,66,115,Dermatology
+P1127,62,111,Dermatology
+P1128,40,139,Dermatology
+P1129,50,133,Primary Care
+P1130,70,147,Cardiology
+P1131,56,151,Nephrology
+P1132,58,134,Oncology
+P1133,83,123,Neurology
+P1134,44,148,Cardiology
+P1135,72,118,Dermatology
+P1136,32,125,Dermatology
+P1137,27,115,Obstetrics
+P1138,24,128,Primary Care
+P1139,69,127,Endocrinology
+P1140,43,139,Neurology
+P1141,37,121,Obstetrics
+P1142,40,109,Oncology
+P1143,73,119,Dermatology
+P1144,81,151,Nephrology
+P1145,41,125,Endocrinology
+P1146,56,102,Dermatology
+P1147,38,139,Nephrology
+P1148,44,137,Endocrinology
+P1149,79,139,Nephrology
+P1150,68,129,Nephrology
+P1151,26,134,Neurology
+P1152,58,117,Neurology
+P1153,71,139,Primary Care
+P1154,24,122,Obstetrics
+P1155,26,138,Primary Care
+P1156,59,140,Primary Care
+P1157,49,137,Primary Care
+P1158,66,156,Cardiology
+P1159,79,130,Endocrinology
+P1160,25,97,Obstetrics
+P1161,82,126,Oncology
+P1162,34,122,Neurology
+P1163,73,123,Cardiology
+P1164,48,125,Dermatology
+P1165,34,127,Endocrinology
+P1166,66,133,Dermatology
+P1167,56,126,Primary Care
+P1168,33,124,Oncology
+P1169,83,129,Primary Care
+P1170,57,143,Oncology
+P1171,37,120,Oncology
+P1172,41,145,Cardiology
+P1173,81,113,Primary Care
+P1174,73,140,Endocrinology
+P1175,63,138,Nephrology
+P1176,51,152,Cardiology
+P1177,83,137,Primary Care
+P1178,53,140,Oncology
+P1179,63,156,Cardiology
+P1180,56,137,Cardiology
+P1181,63,116,Primary Care
+P1182,90,138,Primary Care
+P1183,29,127,Dermatology
+P1184,44,153,Cardiology
+P1185,81,147,Cardiology
+P1186,32,128,Primary Care
+P1187,78,120,Cardiology
+P1188,76,127,Neurology
+P1189,88,167,Nephrology
+P1190,70,117,Primary Care
+P1191,77,130,Neurology
+P1192,63,126,Endocrinology
+P1193,44,125,Primary Care
+P1194,26,116,Neurology
+P1195,52,143,Cardiology
+P1196,78,129,Endocrinology
+P1197,69,121,Dermatology
+P1198,69,148,Cardiology
+P1199,72,140,Cardiology
+P1200,65,144,Endocrinology
+P1201,28,120,Obstetrics
+P1202,82,120,Cardiology
+P1203,42,142,Cardiology
+P1204,84,142,Endocrinology
+P1205,38,106,Obstetrics
+P1206,52,152,Cardiology
+P1207,62,129,Cardiology
+P1208,70,153,Cardiology
+P1209,87,123,Primary Care
+P1210,63,130,Primary Care
+P1211,40,127,Cardiology
+P1212,48,123,Dermatology
+P1213,89,136,Primary Care
+P1214,83,126,Primary Care
+P1215,30,133,Primary Care
+P1216,28,120,Obstetrics
+P1217,48,148,Cardiology
+P1218,43,126,Cardiology
+P1219,30,125,Endocrinology
+P1220,45,106,Oncology
+P1221,28,144,Neurology
+P1222,38,120,Obstetrics
+P1223,43,131,Neurology
+P1224,30,119,Obstetrics
+P1225,50,127,Primary Care
+P1226,66,143,Endocrinology
+P1227,78,145,Cardiology
+P1228,42,133,Endocrinology
+P1229,22,117,Primary Care
+P1230,62,138,Endocrinology
+P1231,23,109,Obstetrics
+P1232,84,129,Oncology
+P1233,58,167,Cardiology
+P1234,42,125,Obstetrics
+P1235,43,122,Primary Care
+P1236,71,108,Neurology
+P1237,75,126,Neurology
+P1238,45,118,Dermatology
+P1239,34,121,Obstetrics
+P1240,71,131,Primary Care
+P1241,77,125,Primary Care
+P1242,56,146,Neurology
+P1243,71,141,Primary Care
+P1244,65,117,Endocrinology
+P1245,41,121,Primary Care
+P1246,37,115,Obstetrics
+P1247,26,112,Primary Care
+P1248,88,136,Nephrology
+P1249,77,127,Cardiology
+P1250,59,116,Endocrinology
+P1251,40,158,Primary Care
+P1252,63,124,Endocrinology
+P1253,74,108,Primary Care
+P1254,28,104,Obstetrics
+P1255,21,121,Obstetrics
+P1256,58,118,Endocrinology
+P1257,86,94,Primary Care
+P1258,32,102,Endocrinology
+P1259,18,113,Primary Care
+P1260,40,117,Endocrinology
+P1261,32,105,Obstetrics
+P1262,53,138,Primary Care
+P1263,34,132,Neurology
+P1264,46,137,Endocrinology
+P1265,29,122,Dermatology
+P1266,77,141,Nephrology
+P1267,83,132,Endocrinology
+P1268,65,99,Dermatology
+P1269,86,139,Primary Care
+P1270,46,144,Nephrology
+P1271,69,119,Primary Care
+P1272,51,126,Primary Care
+P1273,28,102,Obstetrics
+P1274,47,154,Primary Care
+P1275,37,136,Nephrology
+P1276,48,123,Endocrinology
+P1277,55,155,Nephrology
+P1278,35,131,Dermatology
+P1279,74,117,Endocrinology
+P1280,80,117,Primary Care
+P1281,75,143,Cardiology
+P1282,49,150,Cardiology
+P1283,22,119,Primary Care
+P1284,54,132,Primary Care
+P1285,77,121,Endocrinology
+P1286,53,133,Dermatology
+P1287,62,134,Primary Care
+P1288,72,105,Oncology
+P1289,53,141,Primary Care
+P1290,30,147,Endocrinology
+P1291,59,130,Oncology
+P1292,59,143,Neurology
+P1293,79,112,Dermatology
+P1294,45,138,Dermatology
+P1295,54,127,Primary Care
+P1296,48,131,Oncology
+P1297,78,156,Cardiology
+P1298,62,142,Cardiology
+P1299,78,129,Oncology
+P1300,85,150,Cardiology
+P1301,45,126,Endocrinology
+P1302,36,109,Endocrinology
+P1303,68,130,Primary Care
+P1304,20,121,Primary Care
+P1305,54,132,Endocrinology
+P1306,80,125,Neurology
+P1307,51,142,Nephrology
+P1308,39,137,Obstetrics
+P1309,65,138,Nephrology
+P1310,87,132,Cardiology
+P1311,59,145,Cardiology
+P1312,44,142,Cardiology
+P1313,43,126,Endocrinology
+P1314,88,120,Oncology
+P1315,74,139,Cardiology
+P1316,52,139,Cardiology
+P1317,86,145,Primary Care
+P1318,53,119,Dermatology
+P1319,89,150,Primary Care
+P1320,72,145,Neurology
+P1321,78,130,Oncology
+P1322,67,135,Cardiology
+P1323,43,127,Neurology
+P1324,41,127,Endocrinology
+P1325,41,134,Dermatology
+P1326,51,158,Cardiology
+P1327,57,125,Dermatology
+P1328,85,124,Endocrinology
+P1329,42,143,Cardiology
+P1330,29,112,Primary Care
+P1331,69,123,Primary Care
+P1332,42,131,Obstetrics
+P1333,76,149,Cardiology
+P1334,54,125,Neurology
+P1335,18,103,Obstetrics
+P1336,85,148,Cardiology
+P1337,21,130,Primary Care
+P1338,80,135,Oncology
+P1339,69,113,Dermatology
+P1340,41,116,Dermatology
+P1341,18,147,Primary Care
+P1342,44,161,Cardiology
+P1343,78,122,Oncology
+P1344,42,130,Obstetrics
+P1345,22,121,Obstetrics
+P1346,21,114,Obstetrics
+P1347,40,111,Obstetrics
+P1348,38,106,Dermatology
+P1349,40,140,Cardiology
+P1350,80,117,Dermatology
+P1351,33,131,Neurology
+P1352,73,131,Endocrinology
+P1353,48,143,Cardiology
+P1354,63,128,Nephrology
+P1355,69,118,Endocrinology
+P1356,37,126,Dermatology
+P1357,60,144,Cardiology
+P1358,69,129,Cardiology
+P1359,57,128,Oncology
+P1360,41,128,Neurology
+P1361,53,138,Cardiology
+P1362,82,132,Endocrinology
+P1363,42,129,Cardiology
+P1364,53,154,Cardiology
+P1365,55,145,Primary Care
+P1366,54,144,Primary Care
+P1367,40,127,Endocrinology
+P1368,59,124,Cardiology
+P1369,86,137,Oncology
+P1370,46,127,Neurology
+P1371,81,137,Neurology
+P1372,72,130,Nephrology
+P1373,30,116,Primary Care
+P1374,47,109,Nephrology
+P1375,27,127,Obstetrics
+P1376,70,130,Dermatology
+P1377,89,101,Primary Care
+P1378,69,155,Cardiology
+P1379,39,131,Endocrinology
+P1380,74,146,Cardiology
+P1381,50,144,Endocrinology
+P1382,41,130,Dermatology
+P1383,44,126,Obstetrics
+P1384,56,156,Cardiology
+P1385,81,141,Primary Care
+P1386,74,122,Oncology
+P1387,90,140,Nephrology
+P1388,81,147,Cardiology
+P1389,70,137,Oncology
+P1390,38,137,Primary Care
+P1391,67,141,Endocrinology
+P1392,70,149,Cardiology
+P1393,82,118,Primary Care
+P1394,25,125,Obstetrics
+P1395,28,118,Dermatology
+P1396,62,134,Primary Care
+P1397,41,149,Primary Care
+P1398,87,114,Primary Care
+P1399,60,137,Dermatology
+P1400,41,159,Nephrology
+P1401,19,129,Dermatology
+P1402,23,120,Obstetrics
+P1403,75,148,Neurology
+P1404,62,137,Cardiology
+P1405,88,117,Primary Care
+P1406,62,137,Cardiology
+P1407,35,153,Endocrinology
+P1408,66,132,Primary Care
+P1409,57,117,Oncology
+P1410,49,117,Oncology
+P1411,65,120,Primary Care
+P1412,71,119,Oncology
+P1413,60,129,Neurology
+P1414,44,109,Obstetrics
+P1415,38,122,Oncology
+P1416,66,137,Primary Care
+P1417,59,110,Neurology
+P1418,70,144,Endocrinology
+P1419,75,132,Endocrinology
+P1420,64,113,Dermatology
+P1421,38,137,Oncology
+P1422,69,155,Primary Care
+P1423,79,121,Primary Care
+P1424,19,130,Obstetrics
+P1425,71,121,Cardiology
+P1426,35,138,Obstetrics
+P1427,73,150,Primary Care
+P1428,42,145,Neurology
+P1429,44,110,Neurology
+P1430,49,129,Primary Care
+P1431,47,148,Nephrology
+P1432,82,117,Primary Care
+P1433,24,116,Primary Care
+P1434,29,135,Endocrinology
+P1435,81,142,Nephrology
+P1436,78,123,Cardiology
+P1437,39,118,Oncology
+P1438,39,102,Obstetrics
+P1439,76,139,Primary Care
+P1440,90,145,Nephrology
+P1441,32,120,Oncology
+P1442,18,112,Dermatology
+P1443,60,154,Primary Care
+P1444,62,119,Primary Care
+P1445,50,129,Neurology
+P1446,69,125,Neurology
+P1447,30,131,Dermatology
+P1448,73,148,Cardiology
+P1449,30,102,Dermatology
+P1450,44,142,Primary Care
+P1451,58,134,Nephrology
+P1452,34,116,Oncology
+P1453,68,118,Oncology
+P1454,46,112,Oncology
+P1455,33,112,Obstetrics
+P1456,36,127,Obstetrics
+P1457,40,141,Nephrology
+P1458,37,113,Obstetrics
+P1459,37,134,Neurology
+P1460,42,115,Cardiology
+P1461,77,129,Cardiology
+P1462,62,137,Neurology
+P1463,48,150,Primary Care
+P1464,65,124,Neurology
+P1465,84,143,Primary Care
+P1466,44,130,Endocrinology
+P1467,31,113,Endocrinology
+P1468,25,114,Obstetrics
+P1469,66,130,Neurology
+P1470,71,128,Neurology
+P1471,81,138,Oncology
+P1472,33,130,Primary Care
+P1473,44,113,Primary Care
+P1474,46,117,Endocrinology
+P1475,41,119,Primary Care
+P1476,38,101,Obstetrics
+P1477,69,137,Endocrinology
+P1478,63,139,Cardiology
+P1479,24,120,Primary Care
+P1480,31,132,Oncology
+P1481,46,123,Oncology
+P1482,24,113,Primary Care
+P1483,22,134,Primary Care
+P1484,64,135,Dermatology
+P1485,89,127,Cardiology
+P1486,34,134,Obstetrics
+P1487,70,121,Primary Care
+P1488,42,143,Oncology
+P1489,23,104,Dermatology
+P1490,82,136,Neurology
+P1491,69,141,Cardiology
+P1492,79,125,Dermatology
+P1493,39,111,Obstetrics
+P1494,58,120,Primary Care
+P1495,41,124,Endocrinology
+P1496,50,138,Cardiology
+P1497,39,126,Primary Care
+P1498,49,158,Nephrology
+P1499,67,123,Endocrinology
+P1500,82,136,Cardiology
