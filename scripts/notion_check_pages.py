@@ -35,8 +35,16 @@ def blocks(page: str) -> list[dict] | None:
         data = json.loads(result.stdout)
         found += data.get("results", [])
         if not data.get("has_more"):
-            return found
+            break
         cursor = data["next_cursor"]
+    # Images inside columns, callouts, and lists are nested one level or more down.
+    for block in list(found):
+        if block.get("has_children") and block["type"] not in ("child_page", "child_database"):
+            nested = blocks(block["id"])
+            if nested is None:
+                return None
+            found += nested
+    return found
 
 
 def mapped_pages() -> list[tuple[Path, str, int]]:

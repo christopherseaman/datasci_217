@@ -42,14 +42,19 @@ def api(path: str, *arguments: str, body: dict | None = None) -> dict:
 
 
 def page_blocks(page: str) -> list[dict]:
+    """Every block on the page, including those inside columns, callouts, and lists."""
     cursor, found = None, []
     while True:
         query = f"/v1/blocks/{page}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
         data = api(query)
         found += data.get("results", [])
         if not data.get("has_more"):
-            return found
+            break
         cursor = data["next_cursor"]
+    for block in list(found):
+        if block.get("has_children") and block["type"] not in ("child_page", "child_database"):
+            found += page_blocks(block["id"])
+    return found
 
 
 def captioned_images(source: Path) -> list[tuple[str, Path]]:
@@ -105,7 +110,9 @@ def main() -> int:
             repaired += 1
             continue
         upload_id = upload(local)
-        api(f"/v1/blocks/{args.page}/children", "-X", "PATCH", body={
+        # A nested image (inside a column, say) is replaced within its own parent block.
+        parent = block.get("parent", {}).get("block_id") or args.page
+        api(f"/v1/blocks/{parent}/children", "-X", "PATCH", body={
             "position": {"type": "after_block", "after_block": {"id": block["id"]}},
             "children": [{
                 "object": "block", "type": "image",

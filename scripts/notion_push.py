@@ -61,6 +61,15 @@ def blocks(page: str) -> list[dict]:
         cursor = data["next_cursor"]
 
 
+def descendants(page: str) -> list[dict]:
+    """Every block on the page, including those inside columns, callouts, and lists."""
+    found = blocks(page)
+    for block in list(found):
+        if block.get("has_children") and block["type"] not in ("child_page", "child_database"):
+            found += descendants(block["id"])
+    return found
+
+
 def page_id_of(source: Path) -> str:
     text = source.read_text(encoding="utf-8")
     match = re.search(r'page_id:\s*"?([0-9a-fA-F-]{32,36})', text)
@@ -137,7 +146,7 @@ def main() -> int:
     print("  attaching images")
     run("notion_attach_media.py", page, str(source))
 
-    after = blocks(page)
+    after = descendants(page)
     kept = len([b for b in after if b["type"] in ("child_page", "child_database")])
     images = [b for b in after if b["type"] == "image"]
     bad = [b for b in images if broken(b)]
