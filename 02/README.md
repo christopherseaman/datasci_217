@@ -831,7 +831,7 @@ Only the first command prints: the import ran the `def` lines and skipped `main(
 
 ### Code Snippet: A Project README
 
-````markdown
+```markdown
 # Systolic Summary
 
 ## Project description
@@ -840,11 +840,7 @@ Prints the **average systolic** blood pressure of one clinic session's readings.
 
 ## Run
 
-From this folder:
-
-```bash
-python3 analysis.py
-```
+From this folder, run `python3 analysis.py`.
 
 ## Method
 
@@ -856,7 +852,7 @@ $$
 
 - [x] Average the readings
 - [ ] Skip readings outside 60 to 250 mmHg
-````
+```
 
 Preview it in VS Code with **Ctrl+K** then **V** (**Cmd+K** then **V** on Mac).
 
