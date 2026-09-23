@@ -13,7 +13,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo1_matplotlib_basics.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo2_seaborn_statistical.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo3_pandas_altair.ipynb)
 
-*Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process.*
+_Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process._
 
 This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
 
@@ -60,7 +60,7 @@ An **explanatory visualization** communicates one finding to a named audience. I
 
 ![xkcd 1845: State Word Map. A satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](media/xkcd_1845.png)
 
-*xkcd 1845, “State Word Map”*: if flexible method choices can produce any headline, the chart is not evidence.
+_xkcd 1845, “State Word Map”_: if flexible method choices can produce any headline, the chart is not evidence.
 
 ## Think in marks and encodings
 
@@ -116,7 +116,7 @@ The question and the variable types narrow the choice of chart.
 
 # matplotlib: Foundation Layer
 
-*Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures.*
+_Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures._
 
 pandas and seaborn draw through matplotlib, so their charts are matplotlib objects you can adjust with the same methods. Two objects are enough to fix almost any of them:
 
@@ -316,7 +316,7 @@ Expected result: `flu_visits.png` appears next to your notebook, showing one lin
 
 # The Visualization Ecosystem
 
-*Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart.*
+_Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart._
 
 A **plotting backend** is the engine that actually draws a library's charts: matplotlib draws images from Python, and **Vega-Lite** draws charts in a web browser.
 
@@ -345,7 +345,7 @@ plotnine, Bokeh, and Plotly are surveyed in [BONUS.md](BONUS.md).
 
 # pandas: Quick Data Exploration
 
-*Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data.*
+_Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data._
 
 `df.plot()` is the fastest look at a table you have just loaded: one call on the DataFrame you already have (Lecture 04). It returns a matplotlib `Axes`, so matplotlib methods still work afterward, and `ax=` draws into one panel of a `plt.subplots()` grid.
 
@@ -453,7 +453,7 @@ Expected output: three stacked panels (North, South, East), each labeled Visits,
 
 # seaborn: Statistical Graphics
 
-*seaborn is like having a visualization expert sitting next to you, quietly picking the colors, styles, and statistics for you.*
+_seaborn is like having a visualization expert sitting next to you, quietly picking the colors, styles, and statistics for you._
 
 seaborn builds on matplotlib to draw statistical graphics from a DataFrame in one call. It expects long data from Lecture 06: one row per observation, one column per variable. You pass column names, and seaborn maps each one to an encoding:
 
@@ -571,7 +571,7 @@ Expected output: a single-peaked pandas KDE, a two-peaked seaborn KDE with peaks
 
 # Edward Tufte's Principles of Data Visualization
 
-*Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first.*
+_Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first._
 
 **"Above all else, show the data."** - Edward Tufte
 
@@ -736,7 +736,7 @@ Expected output: two pairs of bars rising from 0, labeled 58% and 55% for 2023-2
 
 # Altair: Declarative Charts and Interaction
 
-Altair is **declarative**: you describe *what* the chart shows and Altair works out *how* to draw it, like ordering from a menu instead of cooking; matplotlib gives drawing steps one at a time. An Altair chart is **data → mark → typed encodings**; it becomes a **Vega-Lite specification**, a JSON document a browser renders and you can save and share. Each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
+Altair is **declarative**: you describe _what_ the chart shows and Altair works out _how_ to draw it, like ordering from a menu instead of cooking; matplotlib gives drawing steps one at a time. An Altair chart is **data → mark → typed encodings**; it becomes a **Vega-Lite specification**, a JSON document a browser renders and you can save and share. Each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
 
 ![Six sessions show reflection scores increasing with activities completed; color and shape distinguish independent and guided pathways. This tiny example demonstrates encodings, not a causal effect.](media/altair_study_reference.png)
 

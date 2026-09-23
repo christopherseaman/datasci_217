@@ -9,7 +9,7 @@ notion:
   url: "https://app.notion.com/p/271d9fdd1a1a80c6ab20f6065b01e4e3"
 ---
 
-# *Introduction* to Python & Data Science Tools
+# _Introduction_ to Python & Data Science Tools
 
 DataSci 217 is a practical introduction to the tools and reasoning used in Python data work. The course moves from the command line and Python fundamentals through NumPy, pandas, visualization, time series, modeling, and a complete question-led analysis.
 

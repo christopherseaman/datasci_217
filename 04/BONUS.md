@@ -9,7 +9,7 @@ notion:
 
 # DLC: Jupyter Workflows and Advanced Pandas Operations
 
-*This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, selection and Boolean masks, column creation, and the core CSV workflow before tackling these extensions.*
+_This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, selection and Boolean masks, column creation, and the core CSV workflow before tackling these extensions._
 
 
 # Running Notebooks Non-Interactively

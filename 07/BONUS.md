@@ -314,7 +314,7 @@ plt.colorbar()
 
 # Interactive Visualizations
 
-*The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches.*
+_The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches._
 
 This survey names alternatives to the lecture's tools; the same visible-context rules still apply. Extended Altair, Bokeh, and Plotly examples follow it.
 

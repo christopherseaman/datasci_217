@@ -15,11 +15,11 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo2_pivot_melt.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo3_concat_timeseries.ipynb)
 
-*Fun fact: “wrangle” comes from the Low German “wrangeln,” meaning “to dispute; to wrestle.” Surprisingly accurate - data wrangling is arguing and wrestling with your data until it finally agrees to cooperate.*
+_Fun fact: “wrangle” comes from the Low German “wrangeln,” meaning “to dispute; to wrestle.” Surprisingly accurate - data wrangling is arguing and wrestling with your data until it finally agrees to cooperate._
 
 # Database-Style DataFrame Joins
 
-*Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration.*
+_Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration._
 
 Health data rarely arrives in one table. A clinic keeps a patients table (one row per patient: ID, birth year, clinic) and a lab results table (one row per test: patient ID, test name, value). To ask whether older patients have higher A1c, you need each lab value next to that patient's birth year. **Joining** lines those rows up using a **key**: a column, such as `patient_id`, whose values name the same thing in both tables. In pandas the main tool is `pd.merge()`, so joins are often called **merges**.
 
@@ -331,7 +331,7 @@ Missing keys match each other. If two visits and two clinic rows all have a blan
 
 # Working with DataFrame Indexes
 
-*Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it’s all about what you need to access quickly!*
+_Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it’s all about what you need to access quickly!_
 
 Lecture 04 gave `visits` an index of patient IDs, the row labels printed down the left side, so `visits.loc["P002"]` found a patient by name. A table built from a dict or read from a CSV gets the default `0, 1, 2, …` instead, a **RangeIndex** that only counts rows. When a column already identifies rows, such as `patient_id` or `emp_id`, you can move it into the index. Then `.loc['E002']` finds that row directly, and pandas can line up rows from two tables by label, just as Lecture 04’s derived columns lined up with their rows by index label.
 
@@ -422,7 +422,7 @@ display(indexed.reset_index(drop=True))
 
 ## Two-Level Row Labels
 
-One column does not always name a row on its own: a quarterly sales figure is identified by region *and* quarter together. Passing `set_index()` a list of columns gives each row a two-part label, and pandas calls the result a **MultiIndex** (hierarchical index): each row label has more than one level, such as a `(region, quarter)` pair. Later in this lecture, `pivot()` with a list of identifier columns builds the same kind of label.
+One column does not always name a row on its own: a quarterly sales figure is identified by region _and_ quarter together. Passing `set_index()` a list of columns gives each row a two-part label, and pandas calls the result a **MultiIndex** (hierarchical index): each row label has more than one level, such as a `(region, quarter)` pair. Later in this lecture, `pivot()` with a list of identifier columns builds the same kind of label.
 
 ### Reference Card: Two-level row labels
 
@@ -473,7 +473,7 @@ After `pivot()` or a horizontal concatenation later in this lecture, `reset_inde
 
 # Reshaping: Wide vs Long Format
 
-*Fun fact: 90% of data reshaping confusion comes from not understanding which format you have and which format you need. Once you know that, the solution is usually obvious!*
+_Fun fact: 90% of data reshaping confusion comes from not understanding which format you have and which format you need. Once you know that, the solution is usually obvious!_
 
 A blood-pressure study measures each patient at baseline and again at follow-up. The clinic’s spreadsheet has one row per patient and a column per visit: `baseline_sbp`, `followup_sbp`. That layout is **wide**: several measurements of the same kind spread across columns. Plotting and grouping tools usually want **long** layout: one row per patient-visit, a `visit` column saying which measurement it is, and a single `sbp` column holding the value.
 
@@ -626,7 +626,7 @@ If a reshape feels mysterious, write down what one row represents before choosin
 
 # Concatenating DataFrames Along an Axis
 
-*Think of concatenation as stacking LEGO bricks - you can stack them vertically (add more rows) or horizontally (add more columns). Just make sure they fit together!*
+_Think of concatenation as stacking LEGO bricks - you can stack them vertically (add more rows) or horizontally (add more columns). Just make sure they fit together!_
 
 A hospital system exports admissions one month at a time: `jan_admissions.csv`, `feb_admissions.csv`, and so on. Every file has the same columns and the same row meaning (one admission), so nothing needs matching by key: the files just need to go one after another. That is **concatenation**: gluing tables together along an **axis**, numbered as in NumPy (Lecture 03). Stacking rows is `axis=0`; placing columns side by side is `axis=1`.
 
@@ -852,6 +852,6 @@ display(complete)
 
 Confirm that row and column labels mean the same thing in both sources before combining them.
 
-*“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”*
+_“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”_
 
 # LIVE DEMO!

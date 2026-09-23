@@ -142,7 +142,7 @@ zone-hours.
 
 ## Add local calendar fields and past-only history
 
-At prediction time for hour *t*, counts from hour *t* are not available. Every
+At prediction time for hour _t_, counts from hour _t_ are not available. Every
 history feature therefore starts with `shift`, including rolling means.
 
 ```python
@@ -174,7 +174,7 @@ print("Rows after dropping incomplete history:", f"{len(model_table):,}")
 ```
 
 We can inspect one row directly: `lag_1` must equal that zone's previous UTC
-hour, while `rolling_mean_24` must average hours *t-24* through *t-1*.
+hour, while `rolling_mean_24` must average hours _t-24_ through _t-1_.
 
 ```python
 zone = zone_ids[0]

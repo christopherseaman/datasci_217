@@ -106,7 +106,7 @@ Scaled training stds  (first 3): [1. 1. 1.]
 **The selection rule, written down before any model is fitted:** pick the
 candidate with the highest validation accuracy; if the best and the runner-up are
 within one validation row of each other, that gap is noise on 36 rows, so treat
-them as tied and keep the *simplest* candidate - the one with the fewest settings
+them as tied and keep the _simplest_ candidate - the one with the fewest settings
 to tune and the fastest fit. Writing the rule down now is what stops the table at
 the end from being read backwards to justify a favourite.
 
@@ -186,7 +186,7 @@ memorised 106 rows and still generalises.
 
 Now the question the accuracy cannot answer: which columns is it leaning on?
 There are two answers, and they are measured on different data.
-`feature_importances_` comes from the *training* fit and is defined only for tree
+`feature_importances_` comes from the _training_ fit and is defined only for tree
 models. `permutation_importance` shuffles one validation column at a time and
 measures how far accuracy falls, so it works on any fitted estimator and reports
 held-out reliance.
@@ -221,7 +221,7 @@ od280/od315_of_diluted_wines                0.038                     0.033     
 
 The two columns agree on `proline` and disagree lower down.
 `alcalinity_of_ash` and `color_intensity` sit fifth and sixth by impurity, yet
-shuffling either one leaves validation accuracy *slightly better* (-0.017 and
+shuffling either one leaves validation accuracy _slightly better_ (-0.017 and
 -0.011): the trees used them to carve up the training rows, but they buy nothing
 on held-out rows. `od280/od315_of_diluted_wines` is the mirror image, eighth by
 impurity and tied for second by permutation. With 36 validation rows the standard
@@ -269,7 +269,7 @@ not numbers.
 
 Early stopping watches validation performance after every boosting round and stops
 when it stops improving, so you can set a generous round budget without paying for
-the rounds that only overfit. Because validation now helps *fit* this model, its
+the rounds that only overfit. Because validation now helps _fit_ this model, its
 validation score is no longer on equal footing with the others - that is a cost of
 early stopping, not a free win.
 
@@ -437,7 +437,7 @@ print(pd.DataFrame({
 ```
 
 All three get the same 35 of 36 validation rows right. Four times the weights
-changes nothing measurable, and the regularized network is *worse* on validation
+changes nothing measurable, and the regularized network is _worse_ on validation
 loss - the penalty and the dropped units cost it confidence it did not need to
 give up. Plot the two loss curves to see where that happens.
 
@@ -540,7 +540,7 @@ regression**, thirteen coefficients and an intercept, fitted in milliseconds. Th
 is the honest reading of 36 validation rows - not that deep learning failed, but
 that this dataset is far too small to tell these families apart. With thousands of
 rows and messier features the ranking could look completely different, which is
-why the rule is about *this* evidence.
+why the rule is about _this_ evidence.
 
 ## Part 11: Freeze, Then Test Once
 

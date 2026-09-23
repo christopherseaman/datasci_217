@@ -9,7 +9,7 @@ notion:
 
 # DLC: Advanced Data Wrangling
 
-*These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques.*
+_These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques._
 
 See [README.md](README.md) for core data wrangling operations - master those first!
 
@@ -26,7 +26,7 @@ See [README.md](README.md) for core data wrangling operations - master those fir
 
 # 1. Advanced MultiIndex Operations
 
-*You've seen basic MultiIndex - now let's go deeper. MultiIndex becomes essential when working with hierarchical data like time series with multiple metrics, or nested business hierarchies.*
+_You've seen basic MultiIndex - now let's go deeper. MultiIndex becomes essential when working with hierarchical data like time series with multiple metrics, or nested business hierarchies._
 
 ## Swapping and Reordering Index Levels
 
@@ -166,7 +166,7 @@ print(by_color)
 
 # 2. Merging on Index
 
-*Sometimes your "key" isn't a column - it's the index itself. This is common with time series or when you've already structured data with meaningful indexes.*
+_Sometimes your "key" isn't a column - it's the index itself. This is common with time series or when you've already structured data with meaningful indexes._
 
 Instead of merging on columns, you can merge using the index of one or both DataFrames.
 
@@ -273,7 +273,7 @@ print(combined)
 
 # 3. Advanced concat Options
 
-*Basic concat is straightforward, but these options give you fine control over how pieces are labeled and validated.*
+_Basic concat is straightforward, but these options give you fine control over how pieces are labeled and validated._
 
 Beyond basic concatenation, you can add hierarchical labels, name levels, and validate data integrity.
 
@@ -377,7 +377,7 @@ print(result)
 
 # 4. MultiIndex Creation Methods
 
-*Sometimes you need to build a MultiIndex programmatically rather than getting it from groupby or pivot. These methods give you precise control.*
+_Sometimes you need to build a MultiIndex programmatically rather than getting it from groupby or pivot. These methods give you precise control._
 
 Pandas provides several factory methods for creating MultiIndex objects from scratch.
 
@@ -526,7 +526,7 @@ Keeping the full result lets a later analysis distinguish a recorded missing val
 
 # 6. Hierarchical Columns from Pivot
 
-*pivot() can create MultiIndex not just in rows, but in columns too. This happens when you don't specify the values parameter or when pivoting multiple value columns.*
+_pivot() can create MultiIndex not just in rows, but in columns too. This happens when you don't specify the values parameter or when pivoting multiple value columns._
 
 When pivoting with multiple value columns or without specifying values, pandas creates hierarchical column headers.
 

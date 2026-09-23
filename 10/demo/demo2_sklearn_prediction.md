@@ -188,7 +188,7 @@ First three baseline predictions: [2.068 2.068 2.068]
 mean baseline: MAE=0.925  RMSE=1.172  R²=-0.000
 ```
 
-The baseline's R² is a hair below 0 because it predicts the *training* mean (2.068), which misses the validation rows' own mean (2.084). Anything with MAE above 0.925 is worse than guessing.
+The baseline's R² is a hair below 0 because it predicts the _training_ mean (2.068), which misses the validation rows' own mean (2.084). Anything with MAE above 0.925 is worse than guessing.
 
 ## Part 5: Linear Regression with scikit-learn
 
@@ -304,7 +304,7 @@ linear regression     0.5333      0.7278    0.6142
 lasso (alpha=0.1)     0.6257      0.8262    0.5029
 ```
 
-Both linear models cut the baseline's typical miss almost in half. Ridge and plain linear regression then tie on MAE and separate by 0.0001 of R², a gap far smaller than the difference another random split would produce, so treat them as tied. A tie-break rule fixed *before* looking - prefer the penalized model, and record its `alpha` - selects the Ridge pipeline as the candidate to freeze.
+Both linear models cut the baseline's typical miss almost in half. Ridge and plain linear regression then tie on MAE and separate by 0.0001 of R², a gap far smaller than the difference another random split would produce, so treat them as tied. A tie-break rule fixed _before_ looking - prefer the penalized model, and record its `alpha` - selects the Ridge pipeline as the candidate to freeze.
 
 ## Part 8: Validation Prediction Visualization
 
@@ -484,7 +484,7 @@ Test RMSE: 0.745
 Test R²: 0.576
 ```
 
-The test R² (0.576) is a little below the validation R² (0.614). That is the normal cost of having *chosen* on validation rows, and it is the number that gets reported - no going back to try another `alpha`.
+The test R² (0.576) is a little below the validation R² (0.614). That is the normal cost of having _chosen_ on validation rows, and it is the number that gets reported - no going back to try another `alpha`.
 
 ## Key Takeaways
 

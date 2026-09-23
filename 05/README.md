@@ -15,7 +15,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
-*Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)*
+_Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)_
 
 Lecture 04 showed how to spot problems; this lecture decides what to do about them and proves the result.
 
@@ -46,14 +46,14 @@ Two dtypes here are new: `datetime64` stores calendar dates rather than text, an
 
 A blank blood-pressure cell might mean the cuff failed, the nurse skipped the step, or the patient left before vitals. The blank looks the same in every case, but the right response differs. Gaps are also easy to overlook: pandas statistics skip them by default, so `pd.Series([140, None, 160]).mean()` returns `150.0` as if only two patients existed.
 
-pandas calls a **missing value** NA (*not available*). The marker it prints depends on the column's dtype:
+pandas calls a **missing value** NA (_not available_). The marker it prints depends on the column's dtype:
 
 | Column dtype | Marker shown | Example |
 | --- | --- | --- |
-| `float64` numbers | `NaN` (*Not a Number*) | `pd.Series([120.0, None])` |
+| `float64` numbers | `NaN` (_Not a Number_) | `pd.Series([120.0, None])` |
 | `str` text | `NaN` | `pd.Series(['north', None])` |
 | Nullable `Int64`, `string`, `boolean` (see Data Type Conversion below) | `<NA>` (the value `pd.NA`) | `pd.Series([34, None], dtype='Int64')` |
-| `datetime64` dates | `NaT` (*Not a Time*) | `pd.to_datetime(pd.Series(['2026-01-15', None]))` |
+| `datetime64` dates | `NaT` (_Not a Time_) | `pd.to_datetime(pd.Series(['2026-01-15', None]))` |
 
 `isna()` recognizes all of these, so use it instead of `==` (`np.nan == np.nan` is `False`). Source systems also invent their own codes for "nothing recorded", such as `-9`, `-999`, or `unknown`. These are **sentinel values** (sentinels): stand-ins that mean missing. pandas treats them as real data until you convert them. Lecture 04's `na_values=` converts them at read time; `replace()` converts them afterward.
 
@@ -65,7 +65,7 @@ Why a value is missing matters more than how many are missing:
 
 Counts cannot tell these apart; knowing how the data was collected can.
 
-*Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."*
+_Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."_
 
 ![Dark gray cells are missing. The shade of each other cell shows its value.](media/data_cleaning_workflow.png)
 
@@ -73,7 +73,7 @@ Counts cannot tell these apart; knowing how the data was collected can.
 
 Count before you decide. A per-column count shows which variables have gaps; a per-row count shows which records are incomplete.
 
-*Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up.*
+_Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up._
 
 ### Reference Card: Finding missing values
 
@@ -181,7 +181,7 @@ Blanks are not the only problem an audit finds. Three more hide in the same tabl
 
 An **exact duplicate** is a row identical to an earlier row in every column. Repeated rows or identifiers are evidence to investigate, not an instruction to delete. Use the row meaning and candidate identifier from the data contract: an exact copy of a visit is usually a double entry, but two rows that share a `patient_id` may be two real visits.
 
-*Fun fact: Duplicates are like that one song that gets stuck in your head - they keep showing up everywhere, even when you think you've gotten rid of them all.*
+_Fun fact: Duplicates are like that one song that gets stuck in your head - they keep showing up everywhere, even when you think you've gotten rid of them all._
 
 ### Reference Card: Duplicate detection
 
@@ -273,7 +273,7 @@ A column that should hold numbers often arrives as text. Lecture 04 showed a sin
 
 NumPy's `int64` cannot hold a missing value, which is why a whole-number column with one gap reads as `float64` (`34.0`). pandas adds **nullable** types (capital-I `Int64`, `string`, and `boolean`) that store `<NA>` alongside real values. Dates bring one more trap: `2026-02-30` looks like a date but does not exist.
 
-*Warning: Data type conversion is like trying to fit a square peg in a round hole - sometimes it works perfectly, sometimes you need to shave off a few corners, and sometimes you just need to find a different hole entirely.*
+_Warning: Data type conversion is like trying to fit a square peg in a round hole - sometimes it works perfectly, sometimes you need to shave off a few corners, and sometimes you just need to find a different hole entirely._
 
 ### Reference Card: Converting messy columns
 
@@ -405,7 +405,7 @@ Index(['first column', 'second', 'third'], dtype='str')
 
 Table 1 of almost every clinical paper reports age in bands rather than single years. **Binning** assigns each value to an interval. `pd.cut()` uses edges you choose, so bands can match a clinical definition. `pd.qcut()` picks edges from the data so each bin gets about the same number of rows, as in quartiles; ties can make its edges duplicate, so inspect the result and set an explicit duplicate-edge policy (`duplicates='drop'` in Demo 2) when needed. pandas writes an interval as `(30, 50]`: the round bracket means 30 is not included, and the square bracket means 50 is.
 
-*Pro tip: Categories are like putting your data in organized boxes - everything has its place, and you can find things much faster when you know exactly which box to look in.*
+_Pro tip: Categories are like putting your data in organized boxes - everything has its place, and you can find things much faster when you know exactly which box to look in._
 
 ### Reference Card: Categorical variables
 
@@ -500,7 +500,7 @@ How to store the labels depends on the next job:
 - Keep them as labels, stored compactly and optionally in a meaningful order: the **categorical dtype** (`category`). The `pd.cut()` output above already printed `dtype: category` with the ordered labels `['Young' < 'Middle' < 'Senior']`.
 - Give them to a regression or machine-learning model, which computes only with numbers (Lecture 10): **indicator variables**, one 0/1 column per label.
 
-*Pro tip: Categorical encoding is like translating between languages - categories can be stored efficiently as codes (integers) or expanded into binary columns for models. Choose the right translation for your task!*
+_Pro tip: Categorical encoding is like translating between languages - categories can be stored efficiently as codes (integers) or expanded into binary columns for models. Choose the right translation for your task!_
 
 ## Categorical Data Type
 

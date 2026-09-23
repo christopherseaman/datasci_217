@@ -9,13 +9,13 @@ notion:
 
 # DLC: Advanced Data Cleaning
 
-*These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!*
+_These are power-user features for when you need to go beyond basic data cleaning. Master the core content first!_
 
 # Modern Pandas Extension Types
 
 The core lecture introduces nullable `Int64`, `string`, and `boolean`. This bonus adds nullable floats and their memory and interoperability implications.
 
-*Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!*
+_Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!_
 
 ## Extension Types for Better Missing Data Handling
 
@@ -84,7 +84,7 @@ print(df)
 
 Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks. The core lecture uses `[0-9]` and `{n}` with `str.fullmatch()`; the syntax below goes further.
 
-*Warning: Regular expressions are write-only code - you write them once, and six months later you have no idea what they do. Comment generously!*
+_Warning: Regular expressions are write-only code - you write them once, and six months later you have no idea what they do. Comment generously!_
 
 ## Regex syntax and extraction
 

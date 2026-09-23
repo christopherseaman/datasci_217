@@ -15,7 +15,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
 
-A hospital asking *how many patients will arrive at each emergency department (ED) in the next hour?* needs tools from nearly every lecture in this course; the hard part is keeping the question, the table, and the evidence lined up.
+A hospital asking _how many patients will arrive at each emergency department (ED) in the next hour?_ needs tools from nearly every lecture in this course; the hard part is keeping the question, the table, and the evidence lined up.
 
 # A flexible capstone checklist
 
@@ -49,7 +49,7 @@ flowchart LR
 | Prediction | What is known at prediction time, and what is a fair comparison? | Target, baseline, split, measure, and held-out result |
 | Report | What does the evidence support, and what remains uncertain? | Result, claim, and material limitation |
 
-*Report the result without making the conclusion wear a cape it has not earned.*
+_Report the result without making the conclusion wear a cape it has not earned._
 
 # Start with a question and a candidate claim
 
@@ -68,7 +68,7 @@ Today's worked example has the same shape with public data: a course release bui
 
 Not every question needs a model. A descriptive project can finish with a well-designed table, aggregation, and plot.
 
-*Your capstone is not Pokémon for obscure ML: you don't have to catch 'em all.*
+_Your capstone is not Pokémon for obscure ML: you don't have to catch 'em all._
 
 # Grain, keys, and complete panels
 

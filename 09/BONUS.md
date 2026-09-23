@@ -15,7 +15,7 @@ The forecasting, stationarity, and temporal-modeling material below previews ide
 
 # Period Arithmetic and Fiscal Year Handling
 
-*Periods represent time spans, not specific moments. Understanding periods is crucial for fiscal year analysis and business reporting.*
+_Periods represent time spans, not specific moments. Understanding periods is crucial for fiscal year analysis and business reporting._
 
 ## Period Basics
 
@@ -94,7 +94,7 @@ print(ts_back)
 
 # Advanced Time Series Decomposition
 
-*Decomposition separates time series into trend, seasonal, and residual components, revealing underlying patterns.*
+_Decomposition separates time series into trend, seasonal, and residual components, revealing underlying patterns._
 
 ## Seasonal Decomposition
 
@@ -169,7 +169,7 @@ result.resid     # Residual component
 
 # Time Series Forecasting
 
-*Forecasting uses historical patterns to predict future values. Always be honest about uncertainty and prediction intervals.*
+_Forecasting uses historical patterns to predict future values. Always be honest about uncertainty and prediction intervals._
 
 ## ARIMA Models
 
@@ -229,7 +229,7 @@ forecast = fitted.forecast(steps=30)
 
 # Advanced Resampling Operations
 
-*Resampling with periods requires careful handling of period boundaries and conventions.*
+_Resampling with periods requires careful handling of period boundaries and conventions._
 
 ## Resampling with Periods
 
@@ -265,7 +265,7 @@ quarterly = annual.resample('Q-DEC', convention='start').ffill()
 
 # High-Frequency Data Analysis
 
-*High-frequency data requires special handling for irregular intervals and tick data.*
+_High-frequency data requires special handling for irregular intervals and tick data._
 
 ## Tick Data Processing
 
@@ -295,7 +295,7 @@ def process_tick_data(df, freq='1min'):
 
 # Advanced Time Zone Operations
 
-*Time zones can be complex, especially with daylight saving time transitions and historical data.*
+_Time zones can be complex, especially with daylight saving time transitions and historical data._
 
 ## Resolving Clock-Change Times
 
@@ -352,7 +352,7 @@ print(result.index.tz)  # UTC
 
 # Custom Frequency Classes
 
-*For specialized time series needs, you can create custom frequency classes, though this is rarely necessary.*
+_For specialized time series needs, you can create custom frequency classes, though this is rarely necessary._
 
 ## Custom Business Day Frequencies
 

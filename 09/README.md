@@ -29,7 +29,7 @@ A **single series** is one history, such as one patient's weight. A **panel** st
 
 ## Types of Time Series
 
-*"Time series data comes in many flavors - some are as regular as a Swiss watch, others as unpredictable as a toddler's nap schedule."*
+_"Time series data comes in many flavors - some are as regular as a Swiss watch, others as unpredictable as a toddler's nap schedule."_
 
 ![Regular series tick along like clockwork, while irregular series jump around like a medical appointment schedule.](media/types_of_time_series.png)
 
@@ -247,7 +247,7 @@ Lecture 04's `.loc` selected rows by label. On a DatetimeIndex the labels are ti
 - `df.loc['2024-03']`: Every row in March 2024; `'2024'` selects the whole year
 - `df.loc['2024-03-01':'2024-03-07']`: A date range; both endpoints are included, as with Lecture 04's label slices
 - `df.loc['2024-03-01 08:00']`: One timestamp
-- `ts['2024-03']`: The same shortcut on a Series; on a DataFrame `df['2024-03']` looks for a *column* and raises `KeyError`, so use `.loc`
+- `ts['2024-03']`: The same shortcut on a Series; on a DataFrame `df['2024-03']` looks for a _column_ and raises `KeyError`, so use `.loc`
 - `df.iloc[:10]`: First 10 rows by position
 
 ### Code Snippet: Calendar Selection
@@ -312,7 +312,7 @@ First 3 days: (72,)
 
 # Resampling and Frequency Conversion
 
-*Resampling is like changing the lens on your camera: zoom in for detail, zoom out for the big picture.*
+_Resampling is like changing the lens on your camera: zoom in for detail, zoom out for the big picture._
 
 A bedside monitor records heart rate every minute, but a daily report needs one number per hour or per day. **Resampling** converts a time series from one frequency to another. **Downsampling** combines many readings into fewer, longer bins (minutes to hours, days to months). **Upsampling** asks for more, shorter slots than the data has (monthly to daily), so most new slots start empty.
 

@@ -189,7 +189,7 @@ Then check the notebook's diff in VS Code Source Control (Lecture 02) before you
 
 ![xkcd 2180: Spreadsheets](media/xkcd_2180.png)
 
-*Spreadsheets* by xkcd: a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
+_Spreadsheets_ by xkcd: a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
 
 In Lecture 03, a NumPy array held one type of value and you picked items by integer position, as in `arr[2]`. A clinic's visit table is messier: a text patient ID, an integer age, a decimal temperature, a `True`/`False` smoker flag. You want to ask for "patient P002's temperature" rather than "row 1, column 1", and you want each patient's values to stay together when you sort or filter.
 
@@ -217,7 +217,7 @@ P003   37.2           P003    41    37.2   False
                                   ^ the temp_c column is itself a Series
 ```
 
-*Think of Series inside DataFrames like Russian nesting dolls: one labeled column fits inside the larger labeled table.*
+_Think of Series inside DataFrames like Russian nesting dolls: one labeled column fits inside the larger labeled table._
 
 ### Reference Card: Series attributes and methods
 
@@ -249,7 +249,7 @@ Name: temp_c, dtype: float64
 38.1
 ```
 
-*Pro tip: DataFrames are like Excel spreadsheets, but with superpowers. They can handle millions of rows without breaking a sweat, and they never ask you to "save as" or complain about circular references.*
+_Pro tip: DataFrames are like Excel spreadsheets, but with superpowers. They can handle millions of rows without breaking a sweat, and they never ask you to "save as" or complain about circular references._
 
 ### Reference Card: DataFrame attributes and methods
 
@@ -299,7 +299,7 @@ dtype: object
 
 Most questions need only a few columns: "what were the temperatures?" rather than the whole table. Brackets select columns by label. One label gives a Series; a list of labels (double brackets) gives a DataFrame, even when the list holds one name.
 
-*Think of column selection like picking your team for dodgeball - sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns).*
+_Think of column selection like picking your team for dodgeball - sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns)._
 
 ### Reference Card: Column selection
 
@@ -334,7 +334,7 @@ P003         41    37.2
 
 Brackets pick columns. To pick rows, or rows and columns together, use `.loc` or `.iloc`. In Lecture 03 you selected from a 2D array with `arr[row, col]` positions; `.iloc` works the same way, while `.loc` uses the labels pandas adds.
 
-*Warning: Indexing in pandas is like a choose-your-own-adventure book. There are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
+_Warning: Indexing in pandas is like a choose-your-own-adventure book. There are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended._
 
 | Selector | Uses | Same cell | Slice ending |
 | --- | --- | --- | --- |
@@ -378,7 +378,7 @@ Both slices print the same two rows, P001 and P002.
 ### Common Mistakes: Labels vs Positions
 
 - **`.loc`** = **L**abels; **`.iloc`** = **i**nteger **loc**ations (0, 1, 2, ... like list positions).
-- `visits.loc[1, "age"]` raises `KeyError: 1`: no row is *labeled* 1.
+- `visits.loc[1, "age"]` raises `KeyError: 1`: no row is _labeled_ 1.
 - `visits.iloc["P002", 0]` raises `ValueError`: `.iloc` accepts positions only.
 
 ## Filtering Rows with a Boolean Mask
@@ -515,7 +515,7 @@ P002 and P003 tie at 142, and `patient_id` puts P002 first. The index labels (2,
 
 ![xkcd 1906: Making Progress](media/xkcd_1906.png)
 
-*Making Progress* by xkcd: progress, now with columns.
+_Making Progress_ by xkcd: progress, now with columns.
 
 In Lecture 02 you read a text file with `open()`, and everything came back as one string of text. In Lecture 03 you inspected a CSV with a shell pipeline (`tail`, `cut`, `sort`). A **CSV file** (comma-separated values) is plain text: the first line is the **header** with the column names, and each later line is one record. `pd.read_csv()` opens the file, splits every line into columns, and detects each column's type in one call, returning a DataFrame. `df.to_csv()` writes one back out.
 
@@ -523,9 +523,9 @@ A path such as `"data/visits.csv"` is **relative** to the notebook's working dir
 
 ## Reading and Writing CSV Files
 
-Health data files mark missing values in many ways: a blank, `NA`, `NULL`, `?`. pandas already treats blanks and common markers such as `NA`, `N/A`, and `NULL` as missing and prints each one as **`NaN`** (*Not a Number*). Anything else is read as ordinary text, and a single `?` turns a whole numeric column into text (`str`). List the extra markers with `na_values` when you read.
+Health data files mark missing values in many ways: a blank, `NA`, `NULL`, `?`. pandas already treats blanks and common markers such as `NA`, `N/A`, and `NULL` as missing and prints each one as **`NaN`** (_Not a Number_). Anything else is read as ordinary text, and a single `?` turns a whole numeric column into text (`str`). List the extra markers with `na_values` when you read.
 
-*Fun fact: CSV stands for "Comma-Separated Values," but in reality, it's more like "Comma-Separated Values (unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day)."*
+_Fun fact: CSV stands for "Comma-Separated Values," but in reality, it's more like "Comma-Separated Values (unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day)."_
 
 `visits.csv`:
 
@@ -587,7 +587,7 @@ by_patient.to_csv("no_index.csv", index=False)  # first line: age,temp_c,clinic
 
 Keep the index when it holds meaningful labels such as patient IDs. Use `index=False` when the index is just the default 0, 1, 2, ... row numbers. Reading the saved file back with `pd.read_csv()`, a **round trip**, confirms that the columns you meant to write are there.
 
-*Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!"* pandas has matching readers and writers for other formats, such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
+_Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!"_ pandas has matching readers and writers for other formats, such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
 
 ## Showing a Table: `display()` vs `print()`
 

@@ -179,8 +179,8 @@ print("Pattern-analysis rows used:", f"{len(train):,} train, 0 validation, 0 tes
 
 ## Check feature availability and leakage
 
-At the start of target hour *t*, zone and calendar fields are known. Lag and rolling
-features use timestamps before *t*. The current `pickup_count` is the target and
+At the start of target hour _t_, zone and calendar fields are known. Lag and rolling
+features use timestamps before _t_. The current `pickup_count` is the target and
 must never appear in `X`.
 
 ```python

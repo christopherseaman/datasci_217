@@ -15,13 +15,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 Before running the examples, install the packages in [`demo/requirements.txt`](demo/requirements.txt); `BONUS.md` names a few extras beyond it.
 
-*Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*
+_Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!_
 
 ![xkcd 1838: Machine Learning. "I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."](media/xkcd_1838.png)
 
 # What Is a Model?
 
-A **model** is a simplified mathematical description of how an outcome relates to other variables: a map, not the territory. Lecture 08's `visits.groupby('clinic')['wait_min'].mean()` gave one average wait per clinic; a model does the same job more smoothly, estimating the average outcome for *any* combination of inputs, including ones the table never contains.
+A **model** is a simplified mathematical description of how an outcome relates to other variables: a map, not the territory. Lecture 08's `visits.groupby('clinic')['wait_min'].mean()` gave one average wait per clinic; a model does the same job more smoothly, estimating the average outcome for _any_ combination of inputs, including ones the table never contains.
 
 The same model serves two questions, and the question decides how you judge it:
 
@@ -32,7 +32,7 @@ The same model serves two questions, and the question decides how you judge it:
 
 Python's modeling libraries line up from inference toward flexible prediction. Moving right usually buys predictive power and costs interpretability:
 
-*Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!*
+_Pro tip: Start simple. A well-tuned linear regression often beats a poorly tuned neural network. Remember: "But why male models?" - because sometimes the simplest model is the right model!_
 
 ![Model Interpretability Trade-off](media/interpretability_tradeoff.webp)
 
@@ -52,7 +52,7 @@ Python's modeling libraries line up from inference toward flexible prediction. M
 Suppose a clinic asks whether higher BMI goes with higher SBP, even among patients of the same age. **Linear regression** answers that by fitting `sbp = b0 + b1 * age + b2 * bmi` to the clinic's records. Plugging a patient's age and BMI into it gives a **fitted value**: the model's estimated average SBP for patients like them.
 
 - The **intercept** (`b0`) is the fitted SBP when every predictor is 0: an anchor for the line, rarely a real patient.
-- A **coefficient** (`b2`) is the difference in fitted SBP for a one-unit difference in BMI, *holding age fixed*.
+- A **coefficient** (`b2`) is the difference in fitted SBP for a one-unit difference in BMI, _holding age fixed_.
 - An **association** means two variables move together; **causation** means changing one would change the other. A coefficient from observational records describes an association, so "losing weight would lower SBP by b2" needs a randomized trial.
 - A **95% confidence interval** is a range computed from the sample: repeat the study many times and about 95% of these intervals would contain the true coefficient.
 - A **p-value** asks: if the true coefficient were 0, how surprising would an estimate this far from 0 be? It is not the probability that a hypothesis is true.
@@ -87,7 +87,7 @@ y = β₀ + β₁x₁ + β₂x₂ + ... + ε
 
 Here y is SBP, x₁ is age, x₂ is BMI, and ε (the **error term**) is what the predictors do not explain.
 
-*Think of linear regression as the Derek Zoolander of modeling - simple, reliable, and it can turn left, turn right, or even turn statistically significant.*
+_Think of linear regression as the Derek Zoolander of modeling - simple, reliable, and it can turn left, turn right, or even turn statistically significant._
 
 ![The dashes are vertical: OLS measures each miss straight up or down (`observed y - fitted y`), not as the shortest distance from the point to the line.](media/ols_residuals.png)
 
@@ -134,7 +134,7 @@ A coefficient is an estimate from one sample, so it comes with uncertainty: the 
 
 Plotting each row's residual against its fitted value is a quick assumption check: a shapeless cloud around zero is what we hope for, a curve says the straight-line form is wrong, and a funnel says the spread is not constant.
 
-Predicting for a new patient takes two different intervals: a **mean-response interval**, where the *average* SBP of all 55-year-olds with BMI 30 probably lies, and a **prediction interval**, where *one* such patient's SBP probably lies; the second adds person-to-person variation, so it is always wider.
+Predicting for a new patient takes two different intervals: a **mean-response interval**, where the _average_ SBP of all 55-year-olds with BMI 30 probably lies, and a **prediction interval**, where _one_ such patient's SBP probably lies; the second adds person-to-person variation, so it is always wider.
 
 ![Two residuals-versus-fitted plots. Left: the clinic fit's residuals scatter without pattern around a dashed zero line. Right: a straight line fitted to curved data leaves a U-shaped pattern.](media/ols_residuals_vs_fitted.png)
 
@@ -201,16 +201,16 @@ plt.close(fig)
 
 ![xkcd 539: Boyfriend](media/xkcd_539.png)
 
-![xkcd 552: Correlation. "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_1725.png)
+![xkcd 552: Correlation. "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_552.png)
 
 # Prediction: Features, Targets, and Honest Splits
 
-Prediction asks what *this* patient's SBP will be at the next visit, and it brings one golden rule: never judge a model on data it was fitted on. A model can always describe rows it has already seen, so its error on those rows says nothing about the next patient.
+Prediction asks what _this_ patient's SBP will be at the next visit, and it brings one golden rule: never judge a model on data it was fitted on. A model can always describe rows it has already seen, so its error on those rows says nothing about the next patient.
 
 - The features (Lecture 09) are the input columns the model uses (age, BMI, today's SBP), together called `X`.
 - The **target** is the column to predict (next-visit SBP), called `y`; its **target time** is when that value is measured.
 - The **prediction unit** receives one prediction (one visit); prediction time (Lecture 09) is when it is made, and every feature must be known by then.
-- **Leakage** is information unavailable at prediction time sneaking into training - a lab result that arrives 24 hours *after* the visit (Lecture 09's future leakage).
+- **Leakage** is information unavailable at prediction time sneaking into training - a lab result that arrives 24 hours _after_ the visit (Lecture 09's future leakage).
 
 ## Feature Availability
 
@@ -274,7 +274,7 @@ Validation error: 0.22          Validation error: 0.35
 
 The opposite, **underfitting**, is a model too simple to capture the pattern, so both errors stay high.
 
-When rows have no time order, split them at random; the next topic's `train_test_split` does it in one call. When the model will predict the *future*, use Lecture 09's chronological blocks, and split on the **target** time, not the visit date: the Feb 8 visit predicts SBP measured on Feb 15.
+When rows have no time order, split them at random; the next topic's `train_test_split` does it in one call. When the model will predict the _future_, use Lecture 09's chronological blocks, and split on the **target** time, not the visit date: the Feb 8 visit predicts SBP measured on Feb 15.
 
 | Target weeks (next visit) | Role | Why |
 | --- | --- | --- |
@@ -497,7 +497,7 @@ mean_baseline: MAE=11.73 RMSE=14.13 R2=-0.053
 linear_pipeline: MAE=7.20 RMSE=9.65 R2=0.510
 ```
 
-The baseline's R² is negative because it predicts the *training* mean (140.0), which misses the validation rows' own mean (143.2).
+The baseline's R² is negative because it predicts the _training_ mean (140.0), which misses the validation rows' own mean (143.2).
 
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
@@ -579,7 +579,7 @@ After validation picks a winner, **freeze** it: features, preprocessing, and set
 
 Demo 2 ends with that refit and single test evaluation.
 
-*"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"*
+_"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"_
 
 !["I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"](media/really_really__really_ridiculously_good_looking.jpg)
 
@@ -591,7 +591,7 @@ A linear model shifts its prediction by the same amount for every extra year of 
 
 A **decision tree** predicts by asking yes/no questions about the features ("Is age > 60?" then "Is BMI > 30?") and reporting the average outcome of the training patients in the same final group (a **leaf**). One tree is easy to read but jumpy: change a few training rows and its questions change.
 
-*Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works.*
+_Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action - except the trees are actually smart and the voting actually works._
 
 ## From One Tree to a Forest
 
@@ -645,7 +645,7 @@ The first two columns built the label, and the forest leans on them.
 
 # The Secret Weapon: Gradient Boosting
 
-*Gradient boosting is like the Magnum of machine learning - it's the secret weapon that wins competitions and makes you look like a modeling genius.*
+_Gradient boosting is like the Magnum of machine learning - it's the secret weapon that wins competitions and makes you look like a modeling genius._
 
 ## Why Gradient Boosting?
 
@@ -653,7 +653,7 @@ Boosting builds its trees in sequence instead of in parallel, each aimed at what
 
 A **hyperparameter** is a setting you choose before fitting - number of trees, depth, learning rate - not a value the model learns. The **learning rate** scales each new tree's correction: at 0.1 each tree fixes a tenth of the remaining error, so small steps add up without overshooting.
 
-*Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind).*
+_Fun fact: XGBoost stands for "Extreme Gradient Boosting" - and it lives up to the name. It's so good that it's basically cheating (but legal cheating, which is the best kind)._
 
 For squared-error regression each tree fits the ordinary residuals; the "gradient" in the name is the general version of that idea. Step by step, with made-up numbers:
 
@@ -665,9 +665,9 @@ For squared-error regression each tree fits the ordinary residuals; the "gradien
 | 4 | Add the scaled update to the ensemble | With learning rate 1: [5.4, 3.3, 6.9] |
 | 5 | Recompute targets and repeat | For N rounds, or until validation stops improving |
 
-*It's like having a tutor who only helps with your mistakes!*
+_It's like having a tutor who only helps with your mistakes!_
 
-*"What is this? A model for ants? It needs to be at least... three times more accurate!"*
+_"What is this? A model for ants? It needs to be at least... three times more accurate!"_
 
 ![xkcd 2400: Statistics. "Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."](media/xkcd_2400.png)
 
@@ -697,7 +697,7 @@ For squared-error regression each tree fits the ordinary residuals; the "gradien
 | `subsample` | Fraction of rows each tree sees | Less robust | More variance | 0.8-1.0 |
 | `colsample_bytree` | Fraction of features each tree sees | Trees miss useful features | Trees become more alike | 0.8-1.0 |
 
-*Toy starting points, not universal sweet spots; validate them for the data and budget. Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash.*
+_Toy starting points, not universal sweet spots; validate them for the data and budget. Finding the right hyperparameters is like tuning a car - too conservative and you're slow, too aggressive and you crash._
 
 ### Code Snippet: XGBoost with Early Stopping
 
@@ -730,13 +730,13 @@ Feature importance: [0.498 0.377 0.    0.091 0.035]
 Best iteration: 56
 ```
 
-*"It's all about family. And by family, I mean gradient boosting."*
+_"It's all about family. And by family, I mean gradient boosting."_
 
 ![Fast & Furious Family](media/fast_furious_family.jpg)
 
 # Deep Learning: The Modern Frontier
 
-*Deep learning is like the "Derelicte" of modeling - it's cutting-edge, it's flashy, and everyone wants to use it even when they probably shouldn't.*
+_Deep learning is like the "Derelicte" of modeling - it's cutting-edge, it's flashy, and everyone wants to use it even when they probably shouldn't._
 
 ## Why Deep Learning?
 
@@ -746,7 +746,7 @@ Training repeats one loop: predict, measure the **loss** (how wrong the predicti
 
 All that flexibility pays off for images, text, and audio, where useful features are hard to write by hand and the network learns its own (**representation learning**). On a clinic table of a few hundred rows, a linear model or boosted trees usually match it for far less effort, and a network overfits easily - so watch the loss curves (Demo 3 plots them).
 
-*"But why deep learning models?" "Seriously? I just told you that a moment ago."*
+_"But why deep learning models?" "Seriously? I just told you that a moment ago."_
 
 ![xkcd 2169: Predictive Models. "Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."](media/xkcd_2169.png)
 
@@ -822,7 +822,7 @@ Test accuracy: 0.980
 
 These numbers come from a CPU run; other hardware may differ.
 
-*"What is this? A learning rate for ants? It needs to be at least... three times smaller!"*
+_"What is this? A learning rate for ants? It needs to be at least... three times smaller!"_
 
 ## Comparing Model Families
 
@@ -837,6 +837,6 @@ Each family earns its shortlist place differently:
 
 Measure performance in the intended workflow: dataset, implementation, hardware, and budget rule out universal rankings.
 
-*"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"*
+_"I'm pretty sure there's a lot more to modeling than being really, really, ridiculously good at deep learning." "But it helps!"_
 
 # LIVE DEMO!
