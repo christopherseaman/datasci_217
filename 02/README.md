@@ -173,7 +173,7 @@ A **branch** is a separate line of commits. Build a change on one, such as a new
 
 ## Merge Conflicts
 
-A conflict happens when two branches, or your commits and a teammate's, changed the same lines, so Git cannot pick a version. The merge or sync stops, and the file appears under **Merge Changes** in Source Control.
+A conflict happens when two branches, or your commits and a teammate's, changed the same lines, so Git cannot pick a version. The merge or sync stops, the file appears under **Merge Changes** in Source Control, and `git status --short` marks it `UU`.
 
 ![Dev A and Dev B both update file A; after Dev A pushes, Dev B's pull or push hits a merge conflict](media/git_merge_conflict.png)
 
@@ -195,18 +195,25 @@ Experiment: compare three systolic summaries.
 | `<<<<<<< HEAD` to `=======` | The branch you are on | **Current Change** |
 | `=======` to `>>>>>>> experiment` | The branch you are merging in | **Incoming Change** |
 
-Open the conflicted file and resolve it one of two ways:
+Edit the file to the version you want, delete the three marker lines, then stage and commit to finish the merge:
 
-- **Inline**: Above the block, select **Accept Current Change**, **Accept Incoming Change**, or **Accept Both Changes** (**Compare Changes** shows the two side by side first), or edit the lines yourself and delete the three marker lines. Save, then stage the file with **+**.
-- **Merge editor**: Select **Resolve in Merge Editor** at the lower right of the file. **Incoming** (left) and **Current** (right) sit above **Result**; select **Accept Incoming** or **Accept Current** above each conflict, check **Result**, and select **Complete Merge**, which saves and stages the file.
-
-Then select **Commit**; VS Code fills in the merge message. In the terminal, edit the file to the text you want, with no markers left, then run `git add notes.md` and `git commit -m "Merge branch 'experiment'"`.
+```bash
+git add notes.md
+git commit -m "Merge branch 'experiment'"
+```
 
 ### Resolving in VS Code
 
 Microsoft wrote this up better than me at: [https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts](https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts)
 
 ![VS Code marks a conflict with Accept actions above it and a Resolve in Merge Editor button](media/vscode_merge_conflict_inline.png)
+
+Open the conflicted file from **Merge Changes** and resolve it one of two ways:
+
+- **Inline**: Above the block, select **Accept Current Change**, **Accept Incoming Change**, or **Accept Both Changes** (**Compare Changes** shows the two side by side first), or edit the lines yourself and delete the three marker lines. Save, then stage the file with **+**.
+- **Merge editor**: Select **Resolve in Merge Editor** at the lower right of the file. **Incoming** (left) and **Current** (right) sit above **Result**; select **Accept Incoming** or **Accept Current** above each conflict, check **Result**, and select **Complete Merge**, which saves and stages the file.
+
+Then select **Commit**; VS Code fills in the merge message.
 
 ## Alternative: Git in the Terminal
 
