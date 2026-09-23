@@ -95,7 +95,7 @@ You're working on a data analysis, and the folder fills up:
 - `analysis_v2_final_ACTUALLY_FINAL.py`
 - `analysis_fixed_broken_computer_recovery.py`
 
-Sound familiar? Now imagine four teammates doing the same thing. Chaos! Git tracks every change instead: see what changed, restore any version, work in parallel, and stop losing work. Infinite undo, plus collaboration.
+Sound familiar? Now imagine four teammates doing the same thing. Chaos! Git tracks every change instead: see what changed, restore any version, work in parallel, and stop losing work.
 
 ## Git Concepts - The Mental Model
 
@@ -508,7 +508,9 @@ from vitals_tools import highest_reading
 print(highest_reading([128, 142, 118]))  # 142
 ```
 
-Run `python3 report.py` from that folder. Python finds `vitals_tools.py` because it sits beside the script, and the module name is the filename without `.py`. That first import also creates the `__pycache__/` folder your `.gitignore` keeps out of Git.
+Run `python3 report.py` from that folder. Python finds `vitals_tools.py` beside the script, and the module name is the filename without `.py`. That first import also creates the `__pycache__/` folder your `.gitignore` keeps out of Git.
+
+Importing runs the file top to bottom: that is how the `def` line takes effect. So a `print()` at a module's top level fires on import too, which is the problem `__main__` below solves.
 
 # LIVE DEMO!
 
@@ -653,7 +655,7 @@ The highlighted line runs next; **Variables** on the left shows the values so fa
 
 ## `__main__` for script execution
 
-Python sets a file's special `__name__` variable to `"__main__"` when it runs directly, and to the module's name when another file imports it. A guard keeps script-only work from running during import:
+Python sets a file's `__name__` to `"__main__"` when it runs directly, and to the module's name on import. Guard the script-only work with it:
 
 ### Code Snippet: Run Directly or Import
 
@@ -667,11 +669,11 @@ if __name__ == "__main__":
     main()
 ```
 
-Saved as `analysis.py`, `python3 analysis.py` prints `Average systolic: 129.6 mmHg`, while `python3 -c "import analysis"` prints nothing: importing ran the `def` but skipped `main()`.
+Saved as `analysis.py`, `python3 analysis.py` prints `Average systolic: 129.6 mmHg`, while `python3 -c "import analysis"` prints nothing: the import ran the `def` and skipped `main()`.
 
 ## Document How to Run It
 
-Every repository needs a note saying what it is and how to run it. On GitHub that note is `README.md`, shown below the file list on the front page. The `.md` means **Markdown**: plain text with a few formatting symbols, readable raw in any editor and rendered as formatted text by GitHub, VS Code's preview, and the course site.
+Every repository needs a note saying what it is and how to run it: `README.md`, which GitHub shows below the file list. The `.md` means **Markdown**: plain text with a few formatting symbols, readable raw in any editor and rendered as formatted text by GitHub, VS Code's preview, and the course site.
 
 ### Reference Card: Markdown Documentation
 
