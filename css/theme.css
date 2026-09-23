@@ -237,3 +237,22 @@ code, pre {
     padding: 20px 16px;
   }
 }
+
+/* Notion callouts and side-by-side columns */
+.content .callout {
+  border-left: 4px solid currentColor;
+  padding: 0.25rem 1rem;
+  margin: 1rem 0;
+  background: rgba(127, 127, 127, 0.1);
+}
+.content .columns {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.content .columns .column {
+  min-width: 0;
+}
+.content .columns img {
+  max-width: 100%;
+}

@@ -46,6 +46,20 @@ module.exports = function (eleventyConfig) {
     markdownLibrary.use(markdownItAnchor, { slugify: markdownHeadingSlug });
   });
 
+  // Notion's callout and column blocks are tab-indented tags in the source; turn
+  // them into HTML whose inner Markdown still renders on the site.
+  eleventyConfig.addPreprocessor("notion-blocks", "md", (data, content) => {
+    const dedent = (text) => text.split("\n").map((line) => line.replace(/^\t+/, "")).join("\n").trim();
+    return content
+      .replace(/^<callout[^>]*>\n([\s\S]*?)\n<\/callout>$/gm,
+        (_, inner) => `<aside class="callout">\n\n${dedent(inner)}\n\n</aside>`)
+      .replace(/^<columns>\n([\s\S]*?)\n<\/columns>$/gm, (_, inner) => {
+        const columns = [...inner.matchAll(/<column(?:\s+ratio="([\d.]+)")?[^>]*>\n([\s\S]*?)\n\t*<\/column>/g)]
+          .map(([, ratio, body]) => `<div class="column" style="flex: ${ratio || 1}">\n\n${dedent(body)}\n\n</div>`);
+        return `<div class="columns">\n\n${columns.join("\n\n")}\n\n</div>`;
+      });
+  });
+
   // Passthrough copy — media folders and CSS
   eleventyConfig.addPassthroughCopy("css");
   eleventyConfig.addPassthroughCopy("media/wsl-troubleshooting");

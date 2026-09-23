@@ -107,7 +107,8 @@ def table(block: list[str]) -> str:
     if any(len(row) != width for row in rows):
         raise ValueError("Unequal table row widths; escape literal pipes as \\|")
     return '<table header-row="true">\n' + "\n".join(
-        "<tr>" + "".join("<td>" + cell.strip() + "</td>" for cell in row) + "</tr>"
+        # Inside <td> a pipe is plain text, and Notion would keep the backslash.
+        "<tr>" + "".join("<td>" + cell.strip().replace("\\|", "|") + "</td>" for cell in row) + "</tr>"
         for row in [rows[0], *rows[2:]]
     ) + "\n</table>\n"
 
