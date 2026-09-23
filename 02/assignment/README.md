@@ -1,5 +1,7 @@
 # Assignment 02: Clinic Encounter Summary
 
+*(This is part of the assignment — read on and it will make more sense.)*
+
 ## Project description
 
 TODO: Replace this line with a 30–300 character description of what this project does.
