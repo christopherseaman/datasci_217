@@ -13,7 +13,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-[Lecture 01 Catch-Up](LECTURE_01_CATCHUP.md)
+[Lecture 01 Notes from Lab](LECTURE_01_CATCHUP.md)
 
 # VS Code Basics
 

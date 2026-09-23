@@ -1,17 +1,17 @@
 ---
-title: Lecture 01 Catch-Up
+title: Lecture 01 Notes from Lab
 permalink: /02/lecture-01-catchup/
 notion:
-  title_line: "# Lecture 01 Catch-Up"
+  title_line: "# Lecture 01 Notes from Lab"
   role: catchup
   status: mapped
   page_id: "3e4d9fdd-1a1a-818f-ba42-dd95c3d30d78"
   url: "https://app.notion.com/p/3e4d9fdd1a1a818fba42dd95c3d30d78"
 ---
 
-# Lecture 01 Catch-Up
+# Lecture 01 Notes from Lab
 
-This is a temporary catch-up page for material added to [Lecture 01](../01/README.md) after it was delivered in class, so read it once and use the lecture itself from now on.
+These are the notes from lab, covering material added to [Lecture 01](../01/README.md) after it was delivered in class, so read it once and use the lecture itself from now on.
 
 Nothing here is new coursework: it fills in the explanations behind commands and code you have already run, and it corrects one instruction that did not work in our terminals.
 
