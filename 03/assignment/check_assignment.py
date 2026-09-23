@@ -1,4 +1,4 @@
-"""Run the artifact-only Assignment 03 grader."""
+"""Run the artifact-only Assignment 03 checks and print the score."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from _public_checks import COMPLETE_NOTE, SCOPE_NOTE, SCORE_LABEL
 from grading import grade_submission
 
 
@@ -18,11 +19,19 @@ def main() -> int:
     if args.json:
         print(json.dumps(result))
     else:
+        # Report a count, never a score: these checks have not looked at a value,
+        # so printing anything out of 100 would read as a grade.
+        passed = 0
         for test in result["tests"]:
-            print(f"[{'PASS' if test['passed'] else 'FIX'}]  {test['test-name']}" + (f": {test['detail']}" if test["detail"] else ""))
-        print(f"\nScore: {result['score']}/{result['max-score']}")
-        if result["score"] == result["max-score"]:
-            print("All checks passed.")
+            if test["passed"]:
+                passed += 1
+                print(f"[ OK ] {test['test-name']}")
+            else:
+                print(f"[ FIX ] {test['test-name']}")
+                if test["detail"]:
+                    print(f"        {test['detail']}")
+        print(f"\n{passed} of {len(result['tests'])} shape checks passed.")
+        print(SCOPE_NOTE)
     return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 

@@ -11,7 +11,7 @@ notion:
 
 Everything in this document is optional for Lecture 09. It collects specialized material on periods, decomposition, forecasting, high-frequency data, custom frequencies, advanced time zones, and additional visualization.
 
-**Optional preview/reference ahead of Lecture 10:** The forecasting, stationarity, and temporal-modeling material below is optional for Lecture 09. Use it as specialized reference or as a preview of the broader modeling and evaluation ideas introduced in Lecture 10; it is not required lecture content.
+The forecasting, stationarity, and temporal-modeling material below previews ideas Lecture 10 covers in depth. Treat it as specialized reference rather than required content.
 
 # Period Arithmetic and Fiscal Year Handling
 
@@ -19,7 +19,7 @@ Everything in this document is optional for Lecture 09. It collects specialized 
 
 ## Period Basics
 
-**Reference:**
+### Reference Card: Period Creation and Arithmetic
 
 | Function | Description |
 |----------|-------------|
@@ -29,19 +29,21 @@ Everything in this document is optional for Lecture 09. It collects specialized 
 | `period.asfreq('M', how='start')` | Convert period frequency |
 | `period.to_timestamp()` | Convert period to timestamp |
 
-**Example:**
+### Code Snippet: Period Arithmetic and Fiscal Quarters
 
 ```python
 import pandas as pd
 import numpy as np
+
+rng = np.random.default_rng(42)
 
 # Create annual period
 p = pd.Period('2011', freq='Y-DEC')
 print(f"Period: {p}")
 
 # Period arithmetic
-p + 5  # Shift forward 5 years
-p - 2  # Shift backward 2 years
+print(f"Plus 5 years: {p + 5}")   # Shift forward 5 years
+print(f"Minus 2 years: {p - 2}")  # Shift backward 2 years
 
 # Quarterly periods with fiscal year
 p = pd.Period('2012Q4', freq='Q-JAN')  # Fiscal year ending in January
@@ -51,14 +53,14 @@ print(f"End date: {p.asfreq('D', how='end')}")
 
 # Create period range
 periods = pd.period_range('2000-01-01', '2000-06-30', freq='M')
-ts = pd.Series(np.random.randn(6), index=periods)
+ts = pd.Series(rng.standard_normal(6), index=periods)
 print("\nPeriod-indexed Series:")
 print(ts)
 ```
 
 ## Converting Between Timestamps and Periods
 
-**Reference:**
+### Reference Card: Timestamp-Period Conversion
 
 | Function | Description |
 |----------|-------------|
@@ -67,12 +69,17 @@ print(ts)
 | `pts.to_timestamp()` | Convert periods back to timestamps |
 | `pts.to_timestamp(how='end')` | Use end of period as timestamp |
 
-**Example:**
+### Code Snippet: Convert Timestamps to Periods and Back
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+
 # Timestamp-indexed time series
 dates = pd.date_range('2000-01-01', periods=3, freq='ME')
-ts = pd.Series(np.random.randn(3), index=dates)
+ts = pd.Series(rng.standard_normal(3), index=dates)
 
 # Convert to periods
 pts = ts.to_period()
@@ -91,12 +98,12 @@ print(ts_back)
 
 ## Seasonal Decomposition
 
-**Reference:**
+### Reference Card: Seasonal Decomposition
 
 ```python
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-# Decompose time series
+# Decompose a Series `ts` with a DatetimeIndex
 decomposition = seasonal_decompose(ts, model='additive', period=7)
 # or
 decomposition = seasonal_decompose(ts, model='multiplicative', period=12)
@@ -108,14 +115,21 @@ decomposition.seasonal  # Seasonal component
 decomposition.resid     # Residual component
 ```
 
-**Example:**
+### Code Snippet: Decompose a Seasonal Disease-Count Series
 
 ```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+rng = np.random.default_rng(42)
+
 # Create seasonal time series (daily disease cases over 3 years)
 dates = pd.date_range('2020-01-01', periods=365*3, freq='D')
 trend = np.linspace(100, 200, len(dates))
 seasonal = 10 * np.sin(2 * np.pi * np.arange(len(dates)) / 365.25)
-noise = np.random.normal(0, 5, len(dates))
+noise = rng.normal(0, 5, len(dates))
 values = trend + seasonal + noise
 
 ts = pd.Series(values, index=dates)
@@ -135,12 +149,12 @@ plt.show()
 
 ## STL Decomposition
 
-**Reference:**
+### Reference Card: STL Decomposition
 
 ```python
 from statsmodels.tsa.seasonal import STL
 
-# STL decomposition (more robust to outliers)
+# STL decomposition (more robust to outliers); ts is a Series with a DatetimeIndex
 # `period` is the known number of observations per cycle (annual here).
 # `seasonal` is the odd length of STL's seasonal smoother, not the period.
 stl = STL(ts, period=365, seasonal=13, robust=True)
@@ -159,7 +173,7 @@ result.resid     # Residual component
 
 ## ARIMA Models
 
-**Reference:**
+### Reference Card: ARIMA Models and Stationarity Checks
 
 ```python
 from statsmodels.tsa.arima.model import ARIMA
@@ -192,7 +206,7 @@ def fit_arima(series, order=(1, 1, 1)):
 
 ## Exponential Smoothing
 
-**Reference:**
+### Reference Card: Exponential Smoothing Variants
 
 ```python
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
@@ -219,7 +233,7 @@ forecast = fitted.forecast(steps=30)
 
 ## Resampling with Periods
 
-**Reference:**
+### Reference Card: Resampling with Periods
 
 | Function | Description |
 |----------|-------------|
@@ -229,11 +243,16 @@ forecast = fitted.forecast(steps=30)
 
 `QE` and `YE` are timestamp offset aliases used with a `DatetimeIndex`. Period frequencies describe spans and retain aliases such as `Q-DEC` and `Y-DEC`; do not substitute timestamp aliases mechanically.
 
-**Example:**
+### Code Snippet: Resample a Period-Indexed DataFrame
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+
 # Resample with periods
-frame = pd.DataFrame(np.random.randn(24, 4),
+frame = pd.DataFrame(rng.standard_normal((24, 4)),
                      index=pd.period_range('1-2000', '12-2001', freq='M'),
                      columns=['Colorado', 'Texas', 'New York', 'Ohio'])
 
@@ -244,32 +263,13 @@ annual = frame.resample('Y-DEC').mean()
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
 ```
 
-## Grouped Time Resampling
-
-**Reference:**
-
-```python
-from pandas import Grouper
-
-# Resample multiple time series by group
-df = pd.DataFrame({
-    'time': times.repeat(3),
-    'key': np.tile(['a', 'b', 'c'], N),
-    'value': np.arange(N * 3.)
-})
-
-# Group by key and resample by time
-time_key = Grouper(freq='5min')
-resampled = df.set_index('time').groupby(['key', time_key]).sum()
-```
-
 # High-Frequency Data Analysis
 
 *High-frequency data requires special handling for irregular intervals and tick data.*
 
 ## Tick Data Processing
 
-**Reference:**
+### Reference Card: Tick Data Processing
 
 ```python
 import pandas as pd
@@ -297,41 +297,69 @@ def process_tick_data(df, freq='1min'):
 
 *Time zones can be complex, especially with daylight saving time transitions and historical data.*
 
-## Time Zone Localization and Conversion
+## Resolving Clock-Change Times
 
-**Reference:**
+The lecture sets repeated (fall-back) and skipped (spring-forward) clock times to `NaT` so they can be counted and set aside. When the data carry enough context, pandas can resolve them instead.
+
+### Reference Card: Resolving Clock-Change Times
+
+| Argument | Effect |
+|----------|--------|
+| `ambiguous='infer'` | For a sorted run of readings that passes through the repeated hour, assign the first pass to daylight time and the second to standard time |
+| `ambiguous=[True, False, ...]` | State for each reading whether it is daylight time (`True`) or standard time (`False`) |
+| `nonexistent='shift_forward'` | Move a skipped time to the first valid time after the gap |
+
+### Code Snippet: Resolve Repeated and Skipped Clock Times
 
 ```python
-# Localize naive timestamps
-ts_utc = ts.tz_localize('UTC')
+import pandas as pd
 
-# Convert between time zones
-ts_eastern = ts_utc.tz_convert('US/Eastern')
+# A sorted run of readings that passes through 01:00-01:59 twice
+fall_back = pd.DatetimeIndex(['2024-11-03 00:30', '2024-11-03 01:00', '2024-11-03 01:30',
+                              '2024-11-03 01:00', '2024-11-03 01:30', '2024-11-03 02:00'])
+print(fall_back.tz_localize('America/New_York', ambiguous='infer'))
 
-# Handle ambiguous times (DST transitions)
-ts = ts.tz_localize('US/Eastern', ambiguous='infer')
-ts = ts.tz_localize('US/Eastern', nonexistent='NaT')
+# A skipped spring-forward time moved to 03:00
+spring = pd.DatetimeIndex(['2024-03-10 02:30'])
+print(spring.tz_localize('America/New_York', nonexistent='shift_forward'))
 ```
+
+```text
+DatetimeIndex(['2024-11-03 00:30:00-04:00', '2024-11-03 01:00:00-04:00',
+               '2024-11-03 01:30:00-04:00', '2024-11-03 01:00:00-05:00',
+               '2024-11-03 01:30:00-05:00', '2024-11-03 02:00:00-05:00'],
+              dtype='datetime64[us, America/New_York]', freq=None)
+DatetimeIndex(['2024-03-10 03:00:00-04:00'], dtype='datetime64[us, America/New_York]', freq=None)
+```
+
+`'infer'` relies on the readings being in recording order: it raises `ValueError` when it cannot see the clock repeat, and it can guess wrong if the rows were shuffled. `ambiguous='NaT'` from the lecture is the safer default.
 
 ## Operations Between Different Time Zones
 
-**Reference:**
+### Reference Card: Combining Series Across Time Zones
 
 ```python
+import pandas as pd
+
 # Combining time series with different time zones
-# Result automatically converts to UTC
-ts1 = ts[:7].tz_localize('Europe/London')
-ts2 = ts1[2:].tz_convert('Europe/Moscow')
-result = ts1 + ts2  # Result is in UTC
+dates = pd.date_range('2024-03-01 09:00', periods=4, freq='D')
+ts = pd.Series(range(4), index=dates)
+ts1 = ts.tz_localize('Europe/London')
+ts2 = ts1.iloc[2:].tz_convert('Europe/Moscow')
+result = ts1 + ts2  # Aligned on the same instants
+print(result.index.tz)  # UTC
 ```
 
 # Custom Frequency Classes
 
 *For specialized time series needs, you can create custom frequency classes, though this is rarely necessary.*
 
-**Reference:**
+## Custom Business Day Frequencies
+
+### Reference Card: Custom Business Day Frequencies
 
 ```python
+import pandas as pd
 from pandas.tseries.offsets import CustomBusinessDay
 
 # Create custom business day (e.g., excluding specific holidays)
@@ -343,7 +371,7 @@ dates = pd.date_range('2023-12-01', '2023-12-31', freq=custom_bday)
 
 ## Interactive Time Series Plots
 
-**Reference:**
+### Reference Card: Interactive Time Series Plot with Plotly
 
 ```python
 import plotly.graph_objects as go
@@ -362,9 +390,10 @@ fig.show()
 
 ## Autocorrelation and Partial Autocorrelation
 
-**Reference:**
+### Reference Card: ACF and PACF Plots
 
 ```python
+import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # Plot ACF and PACF

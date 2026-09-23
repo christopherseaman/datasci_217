@@ -1,11 +1,12 @@
-# Demo 1: Statistical Modeling with statsmodels
+# Demo 1: Statistical Modeling and Framing a Prediction Problem
 
 ## Learning Objectives
 - Fit and interpret linear regression models using `statsmodels`
 - Understand statistical inference (p-values, confidence intervals)
 - Compare formula API vs array API
-- Generate and analyze realistic datasets
+- Check residuals against fitted values
 - Visualize model results
+- Frame a prediction problem: target, feature availability, and a chronological split
 
 ## Setup
 
@@ -175,6 +176,34 @@ print(coef_summary)
 - **HouseAge coefficient**: The effect of house age on value
 - **AveRooms coefficient**: The effect of average rooms per household on value
 - Check p-values to see which coefficients are statistically significant (p < 0.05)
+
+Coefficients only mean something if the straight-line form fits. Plot each row's residual (observed minus fitted) against its fitted value: a shapeless cloud around zero is what we want, while a curve or a funnel says the form or the constant-spread assumption is wrong.
+
+```python
+# Residuals versus fitted values
+diagnostics = pd.DataFrame({
+    'fitted': results_formula.fittedvalues,
+    'residual': results_formula.resid,
+})
+print(diagnostics.describe().round(3))
+print(f"\nFitted values below 0 (impossible house values): {(diagnostics['fitted'] < 0).sum()}")
+
+# Plot a sample so the chart stays light
+resid_sample = diagnostics.sample(2000, random_state=42)
+
+resid_points = alt.Chart(resid_sample).mark_circle(opacity=0.3).encode(
+    x=alt.X('fitted:Q', title='Fitted house value (hundreds of thousands)'),
+    y=alt.Y('residual:Q', title='Residual (observed - fitted)')
+).properties(width=400, height=300)
+
+zero_rule = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
+    color='gray', strokeDash=[5, 5]
+).encode(y='y:Q')
+
+resid_points + zero_rule
+```
+
+**What the checkpoint shows:** residuals average 0 by construction, but the fitted values run from about -2.4 to 7.3 while real house values are capped at 5.0. The straight line predicts impossible values at both ends, which is the kind of pattern a residual plot is meant to expose.
 
 ## Part 5: Making Predictions
 
@@ -368,14 +397,103 @@ print(income_coefs)
 - Other coefficients show the difference from the reference
 - For example, "Very High" income areas have higher house values than "Low" income areas
 
+## Part 9: Framing a Prediction Problem
+
+Every model so far used all 20,640 census rows at once, which is the right thing to do when the question is *how* income relates to house value. A prediction question - "what will this unit's value be next time we measure it?" - is judged on rows the model has never seen, and the census table has no time order to split on.
+
+So this part switches to a small clinic table with repeat visits, like the one in the lecture: 30 patients, eight weekly visits each. The target is the patient's **next** visit SBP, so `shift(-1)` pulls each patient's next reading back onto the current row, and the target is measured seven days after the features.
+
+```python
+clinic_rng = np.random.default_rng(217)
+visit_dates = pd.date_range('2026-01-05', periods=8, freq='W-MON')
+
+records = []
+for patient_id in range(1, 31):
+    age = int(clinic_rng.integers(35, 80))
+    sbp = float(clinic_rng.normal(132 + 0.2 * age, 8))
+    for visit_date in visit_dates:
+        sbp = 0.7 * sbp + 0.3 * clinic_rng.normal(132 + 0.2 * age, 8)
+        records.append({
+            'patient_id': patient_id,
+            'visit_date': visit_date,
+            'age': age,
+            'sbp_today': round(sbp, 1),
+            'a1c_result': round(float(clinic_rng.normal(6.4, 0.9)), 1),  # lab reports the next day
+        })
+
+visits = pd.DataFrame(records).sort_values(['patient_id', 'visit_date'])
+visits['sbp_next_visit'] = visits.groupby('patient_id')['sbp_today'].shift(-1)
+visits['target_date'] = visits['visit_date'] + pd.Timedelta(days=7)
+visits = visits.dropna(subset=['sbp_next_visit']).reset_index(drop=True)
+
+print(f"Prediction unit: one visit. Target: sbp_next_visit, measured on target_date.")
+print(f"Rows with a target: {len(visits)}")
+print(visits.head(3)[['patient_id', 'visit_date', 'sbp_today', 'sbp_next_visit', 'target_date']])
+```
+
+Expect 210 rows: 30 patients times eight visits, minus each patient's last visit, which has no next reading.
+
+Now audit every candidate feature. The prediction is made at the end of the visit, so anything that becomes known afterwards is leakage.
+
+```python
+candidates = pd.DataFrame({
+    'candidate_feature': ['age', 'sbp_today', 'a1c_result'],
+    'becomes_known': ['Before the visit', 'During the visit', 'Lab reports next day'],
+    'hours_after_visit': [0, 0, 24],
+})
+candidates['available'] = candidates['hours_after_visit'] <= 0
+candidates['decision'] = np.where(candidates['available'], 'keep', 'exclude (leakage)')
+print(candidates)
+
+features = candidates.loc[candidates['available'], 'candidate_feature'].tolist()
+print(f"\nFeatures the model may use: {features}")
+```
+
+`a1c_result` is excluded: it is measurable, informative, and unavailable at prediction time, which is exactly the trap. Next, split on the **target** date, not the visit date, so no training outcome is measured during the validation weeks.
+
+```python
+train = visits[visits['target_date'] < '2026-02-09']
+valid = visits[(visits['target_date'] >= '2026-02-09') & (visits['target_date'] < '2026-02-23')]
+test = visits[visits['target_date'] >= '2026-02-23']
+
+for name, part in [('train', train), ('valid', valid), ('test', test)]:
+    print(f"{name}: {len(part):3d} rows, targets "
+          f"{part['target_date'].min().date()} to {part['target_date'].max().date()}")
+```
+
+```text
+train: 120 rows, targets 2026-01-12 to 2026-02-02
+valid:  60 rows, targets 2026-02-09 to 2026-02-16
+test:  30 rows, targets 2026-02-23 to 2026-02-23
+```
+
+The three target-date ranges do not overlap. Fit on the training rows only, then read the validation rows with the same prediction intervals from Part 5.
+
+```python
+honest_fit = smf.ols('sbp_next_visit ~ age + sbp_today', data=train).fit()
+print(honest_fit.params.round(3))
+print(honest_fit.conf_int().round(2))
+
+valid_pred = honest_fit.get_prediction(valid).summary_frame(alpha=0.05)
+check = valid[['patient_id', 'target_date', 'sbp_next_visit']].head(3).copy()
+check['predicted'] = valid_pred['mean'].head(3).values.round(1)
+check['pi_lower'] = valid_pred['obs_ci_lower'].head(3).values.round(1)
+check['pi_upper'] = valid_pred['obs_ci_upper'].head(3).values.round(1)
+print(check)
+```
+
+The `sbp_today` coefficient is about 0.67, so a patient's reading carries most of the way to the next one, and each prediction interval spans roughly 10 mmHg. Demo 2 goes back to the California Housing table, where the rows have no time order, and runs the rest of the prediction workflow with scikit-learn: a random split, a baseline to beat, pipelines, and error metrics.
+
 ## Key Takeaways
 
 1. **Formula API** is intuitive and R-like - great for exploration
 2. **Array API** gives more control - useful for custom design matrices
 3. **Model summary** provides rich statistical information (R², p-values, confidence intervals)
-4. **Statistical inference** helps you understand relationships, not just predict
-5. **Model comparison** helps you choose the best model for your needs
-6. **Categorical variables** are automatically handled with dummy encoding
+4. **Residual plots** check the straight-line form before you trust a coefficient
+5. **Statistical inference** helps you understand relationships, not just predict
+6. **Model comparison** with adjusted R², AIC, and BIC weighs fit against complexity
+7. **Categorical variables** are automatically handled with dummy encoding
+8. **Prediction framing** comes before any prediction model: name the target and its time, exclude features that arrive too late, and split chronologically
 
 ## Next Steps
 

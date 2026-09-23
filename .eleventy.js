@@ -32,7 +32,7 @@ function renderedSourceLink(url, sourcePath) {
   if (excludedContent.test(repositoryPath)) {
     return `${repositoryUrl}/blob/main/${repositoryPath}${suffix}`;
   }
-  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/", "wsl_troubleshooting.md": "wsl-troubleshooting/" };
+  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/", "wsl_troubleshooting.md": "wsl-troubleshooting/", "02/LECTURE_01_CATCHUP.md": "02/lecture-01-catchup/" };
   let pagePath = coursePages[repositoryPath] ?? repositoryPath.replace(/\/README\.md$/i, "/");
   pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
   const outputPath = pagePath === repositoryPath ? repositoryPath : pagePath;
@@ -60,6 +60,17 @@ module.exports = function (eleventyConfig) {
     if (!sourcePath) return content;
     return content.replace(/((?:href|src)=["'])([^"']+)(["'])/gi, (_, prefix, url, quote) => {
       return `${prefix}${renderedSourceLink(url, sourcePath)}${quote}`;
+    });
+  });
+
+  // Notion turns an image's link text into the picture's caption; render the
+  // same text as a figcaption so a standalone image reads the same on the site.
+  eleventyConfig.addTransform("image-captions", function (content, outputPath) {
+    if (!outputPath || !outputPath.endsWith(".html")) return content;
+    return content.replace(/<p>(<img\b[^>]*>)<\/p>/gi, (paragraph, image) => {
+      const alt = image.match(/\balt=(["'])(.*?)\1/i);
+      if (!alt || !alt[2].trim()) return paragraph;
+      return `<figure>${image}<figcaption>${alt[2]}</figcaption></figure>`;
     });
   });
 

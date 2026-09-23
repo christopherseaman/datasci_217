@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Prepare mapped Markdown for a Notion page; never performs network writes."""
+"""Prepare mapped Markdown for a Notion page; never performs network writes.
+
+Images are uploaded to Notion rather than linked to GitHub: run scripts/notion_media.py
+first and pass its manifest with --media-manifest, and every local image becomes a
+`file-upload://` source. Without a manifest the image falls back to its raw GitHub URL,
+which keeps the payload usable but leaves the media hosted outside Notion.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +16,7 @@ from pathlib import Path
 
 REPO = "https://github.com/christopherseaman/datasci_217"
 RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main"
+MEDIA: dict[str, str] = {}
 CHILD = re.compile(r"<(?:page|database|file)\b[^>]*>.*?</(?:page|database|file)>|<(?:page|database|file)\b[^>]*/>", re.I | re.S)
 LINK = re.compile(r"(!?)\[([^]]*)\]\(([^)]+)\)")
 
@@ -61,7 +68,13 @@ def _link_url(path: Path, target: str, image: bool) -> str:
         repo_path = resolved.relative_to(Path.cwd().resolve()).as_posix()
     except ValueError:
         repo_path = resolved.relative_to(path.parent).as_posix()
-    base = RAW if image or Path(target).suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"} else REPO + "/blob/main"
+    is_media = image or Path(target).suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+    if is_media and MEDIA:
+        uploaded = MEDIA.get(repo_path)
+        if uploaded is None:
+            raise ValueError(f"no Notion upload recorded for {repo_path}; rerun scripts/notion_media.py")
+        return uploaded
+    base = RAW if is_media else REPO + "/blob/main"
     return f"{base}/{repo_path}" + (hash_sep + fragment if hash_sep else "")
 
 
@@ -161,7 +174,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("current", type=Path, help="fetched Notion page content")
+    parser.add_argument("--media-manifest", type=Path, help="manifest written by scripts/notion_media.py")
     args = parser.parse_args()
+    if args.media_manifest:
+        manifest = json.loads(args.media_manifest.read_text(encoding="utf-8"))
+        MEDIA.update({key: entry["markdown_source"] for key, entry in manifest.items()})
     print(prepare(args.source, args.current), end="")
 
 

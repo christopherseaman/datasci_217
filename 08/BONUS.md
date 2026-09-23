@@ -13,11 +13,17 @@ notion:
 
 ## Custom Aggregation Functions
 
-**Reference:**
+### Reference Card: Named Aggregations with `.agg()`
 
 ```python
 import pandas as pd
 import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B', 'C'], size=12),
+    'value': rng.normal(50, 10, size=12).round(1),
+})
 
 # Named/list aggregations keep each aggregation scalar, producing stable columns.
 summary = df.groupby('category').agg(
@@ -32,9 +38,20 @@ summary = df.groupby('category').agg(
 
 ## Lambda Functions in GroupBy
 
-**Reference:**
+### Reference Card: Lambda Aggregations
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B', 'C'], size=12),
+    'value': rng.normal(50, 10, size=12).round(1),
+    'other': rng.integers(1, 5, size=12),
+    'score': rng.normal(0, 1, size=12).round(2),
+})
+
 # Lambda functions for complex operations
 df.groupby('category').agg({
     'value': lambda x: x.quantile(0.95),  # 95th percentile
@@ -55,9 +72,18 @@ df.groupby('category').agg({
 
 ## GroupBy with Time Windows
 
-**Reference:**
+### Reference Card: Grouping by Time Windows
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=60, freq='7D'),
+    'value': rng.normal(50, 10, size=60).round(1),
+})
+
 # Time-based grouping
 df['date'] = pd.to_datetime(df['date'])
 df = df.set_index('date')
@@ -77,27 +103,52 @@ df.groupby(pd.Grouper(freq='7D')).agg({
 
 ## Multi-Level Pivot Tables
 
-**Reference:**
+### Reference Card: Multi-Level Pivot Tables
 
 ```python
-# Multi-level pivot tables
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'region': rng.choice(['North', 'South'], size=16),
+    'product': rng.choice(['Widget', 'Gadget'], size=16),
+    'quarter': rng.choice(['Q1', 'Q2'], size=16),
+    'year': rng.choice([2023, 2024], size=16),
+    'sales': rng.integers(100, 1000, size=16),
+    'profit': rng.normal(50, 20, size=16).round(1),
+})
+
+# Multi-level pivot tables. No fill_value: 'profit' is a mean, and an
+# absent cell is not a profit of 0.
 pivot = pd.pivot_table(df,
                       values=['sales', 'profit'],
                       index=['region', 'product'],
                       columns=['quarter', 'year'],
                       aggfunc={'sales': 'sum', 'profit': 'mean'},
-                      fill_value=0,
                       margins=True)
 
-# Flatten multi-level columns
-pivot.columns = ['_'.join(col).strip() for col in pivot.columns]
+# Flatten multi-level columns; str() handles integer years, and rstrip('_')
+# tidies the margin columns, whose lower levels are empty
+pivot.columns = ['_'.join(map(str, col)).rstrip('_') for col in pivot.columns]
 ```
 
 ## Pivot Table with Custom Functions
 
-**Reference:**
+### Reference Card: Weighted-Mean Pivot Workaround
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B'], size=12),
+    'region': rng.choice(['North', 'South'], size=12),
+    'value': rng.normal(50, 10, size=12).round(1),
+    'weight': rng.uniform(0.5, 2.0, size=12).round(2),
+})
+
 # A pivot_table aggregator receives only the selected ``values`` series, not
 # the full rows. Compute weighted components first, validate the denominators,
 # then reshape their sums.
@@ -116,34 +167,64 @@ pivot = weighted['weighted_value'].unstack('region').div(weight_totals)
 
 ## Pivot Table with Missing Data Handling
 
-**Reference:**
+### Reference Card: Missing Cells in Pivot Tables
 
-In pandas 3, categorical groupers default to `observed=True`. Use `observed=False` only when a table must include every defined category or category combination.
+A `NaN` cell means no rows had that combination. In a mean table, leave it `NaN`: nothing was measured, and 0 would report a measurement that never happened. Use `fill_value=0` only for counts and sums, where an absent combination really is zero rows. Print a count table beside the mean table so readers can see which cells are empty or rest on only a few rows.
+
+In pandas 3, categorical groupers default to `observed=True`. Use `observed=False` only when a table must include every defined category or category combination. In a mean table, an unused category is an all-`NaN` row, which the default `dropna=True` removes, so also pass `dropna=False`. That also keeps rows with a missing key as a `NaN` row.
 
 ```python
-# Advanced missing data handling
-pivot = pd.pivot_table(df,
-                      values='value',
-                      index='category',
-                      columns='region',
-                      aggfunc='mean',
-                      fill_value=0,           # Fill missing with 0
-                      dropna=False,           # Retain all-NaN result columns
-                      observed=True)          # Show only observed categorical groups
+import pandas as pd
 
-# Handle missing data in different ways
-pivot_filled = pivot.ffill()                 # Forward fill
-pivot_interpolated = pivot.interpolate()     # Linear interpolation
-pivot_dropped = pivot.dropna()               # Drop missing rows
+df = pd.DataFrame({
+    'category': pd.Categorical(['A', 'A', 'B', 'B'], categories=['A', 'B', 'C']),
+    'region': ['North', 'South', 'North', 'North'],
+    'value': [10.0, 12.0, 8.0, 6.0],
+})
+
+# Mean: absent cells stay NaN; C has no rows, so its whole row is NaN
+means = pd.pivot_table(df, values='value', index='category', columns='region',
+                       aggfunc='mean', observed=False, dropna=False)
+
+# Count: an absent combination really is 0 rows
+counts = pd.pivot_table(df, values='value', index='category', columns='region',
+                        aggfunc='count', fill_value=0, observed=False)
+print(means)
+print(counts)
 ```
+
+```text
+region    North  South
+category
+A          10.0   12.0
+B           7.0    NaN
+C           NaN    NaN
+region    North  South
+category
+A             1      1
+B             2      0
+C             0      0
+```
+
+Forward-filling or interpolating fabricates values the same way: `means.ffill()` copies A's South mean (12.0) into B and C, which have no South rows. To keep only complete rows, use `means.dropna()` (here, only A).
 
 # Hierarchical Grouping and MultiIndex
 
 ## MultiIndex Operations
 
-**Reference:**
+### Reference Card: MultiIndex Operations
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'level1': ['A', 'A', 'B', 'B'],
+    'level2': ['X', 'Y', 'X', 'Y'],
+    'value': rng.normal(50, 10, size=4).round(1),
+})
+
 # Create MultiIndex
 df_multi = df.set_index(['level1', 'level2'])
 
@@ -165,7 +246,7 @@ df_multi.xs('A', level=0)  # Cross-section
 
 ## Advanced MultiIndex Grouping
 
-**Reference:**
+### Reference Card: Advanced MultiIndex Grouping
 
 ```python
 # Complex MultiIndex operations
@@ -192,9 +273,18 @@ def hierarchical_analysis(df):
 
 ## Rolling Statistics
 
-**Reference:**
+### Reference Card: Rolling and Expanding Statistics
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': ['A', 'B', 'C'] * 5,
+    'value': rng.normal(50, 10, size=15).round(1),
+})
+
 # Rolling statistics within groups
 grouped_values = df.groupby('category')['value']
 df['rolling_mean'] = grouped_values.transform(lambda s: s.rolling(window=5).mean())
@@ -207,9 +297,18 @@ df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 
 ## Percentile Aggregations
 
-**Reference:**
+### Reference Card: Percentile Aggregations
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B', 'C'], size=12),
+    'value': rng.normal(50, 10, size=12).round(1),
+})
+
 # Custom percentile functions
 def percentile_agg(series):
     """Calculate multiple percentiles"""
@@ -230,10 +329,18 @@ df.groupby('category')['value'].apply(percentile_agg)
 
 This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Install it in the active notebook environment with `%pip install scipy` before running the example.
 
-**Reference:**
+### Reference Card: Statistical Tests in Groups
 
 ```python
+import pandas as pd
+import numpy as np
 from scipy import stats
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': ['A', 'B', 'C'] * 10,
+    'value': rng.normal(50, 10, size=30).round(1),
+})
 
 def statistical_tests(group):
     """Perform statistical tests on group"""
@@ -262,9 +369,21 @@ df.groupby('category').apply(statistical_tests)
 
 ## Pivot Table with Custom Index
 
-**Reference:**
+### Reference Card: Pivot Tables with a Custom Index
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B'], size=12),
+    'level1': rng.choice(['X', 'Y'], size=12),
+    'level2': rng.choice(['P', 'Q'], size=12),
+    'numeric_col': rng.normal(50, 10, size=12).round(1),
+    'value': rng.normal(100, 20, size=12).round(1),
+})
+
 # Custom index in pivot tables
 pivot = pd.pivot_table(df,
                       values='value',
@@ -282,9 +401,19 @@ pivot = pd.pivot_table(df,
 
 ## Pivot Table with Time Index
 
-**Reference:**
+### Reference Card: Pivot Tables with a Time Index
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=12, freq='MS'),
+    'category': rng.choice(['A', 'B'], size=12),
+    'value': rng.normal(100, 20, size=12).round(1),
+})
+
 # Time-based pivot tables
 df['date'] = pd.to_datetime(df['date'])
 df['month'] = df['date'].dt.month
@@ -304,11 +433,22 @@ The grouped weighted-mean workflow in [Pivot Table with Custom Functions](#pivot
 
 # Advanced GroupBy Transformations
 
+Lecture 09 teaches grouped lags and rolling windows for time-ordered rows, including past-only windows for prediction: [Entity-Aware Features and Past-Only Windows](../09/README.md#entity-aware-features-and-past-only-windows).
+
 ## Ranking Within Groups
 
-**Reference:**
+### Reference Card: Ranking Within Groups
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B', 'C'], size=12),
+    'value': rng.normal(50, 10, size=12).round(1),
+})
+
 # Ranking within groups
 df['rank'] = df.groupby('category')['value'].rank(ascending=False)
 df['percentile'] = df.groupby('category')['value'].rank(pct=True)
@@ -321,9 +461,18 @@ df['rank_max'] = df.groupby('category')['value'].rank(method='max')
 
 ## Lag and Lead Operations
 
-**Reference:**
+### Reference Card: Lag and Lead Within Groups
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': ['A', 'B', 'C'] * 5,
+    'value': rng.normal(50, 10, size=15).round(1),
+})
+
 # Lag and lead operations within groups
 df['value_lag1'] = df.groupby('category')['value'].shift(1)
 df['value_lag2'] = df.groupby('category')['value'].shift(2)
@@ -338,9 +487,18 @@ df['value_pct_change'] = df.groupby('category')['value'].pct_change()
 
 ## Window Functions
 
-**Reference:**
+### Reference Card: Window Functions Within Groups
 
 ```python
+import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': ['A', 'B', 'C'] * 5,
+    'value': rng.normal(50, 10, size=15).round(1),
+})
+
 # Window functions within groups
 grouped_values = df.groupby('category')['value']
 df['rolling_mean'] = grouped_values.transform(lambda s: s.rolling(window=3).mean())
@@ -353,9 +511,12 @@ df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 
 ## Custom GroupBy Aggregator
 
-**Reference:**
+### Reference Card: Custom GroupBy Aggregator Class
 
 ```python
+import pandas as pd
+import numpy as np
+
 class CustomGroupBy:
     """Custom groupby aggregator"""
     
@@ -381,8 +542,69 @@ class CustomGroupBy:
         return self.grouped.transform(func)
 
 # Usage
+rng = np.random.default_rng(42)
+df = pd.DataFrame({
+    'category': rng.choice(['A', 'B', 'C'], size=12),
+    'value': rng.normal(50, 10, size=12).round(1),
+})
 custom_gb = CustomGroupBy(df, ['category'])
 result = custom_gb.custom_agg('value', lambda x: x.quantile(0.95))
+```
+
+# Scaling Past Memory: Chunks and Processes
+
+The lecture's first moves are to measure, compute several summaries in one `.agg()` call, prefer built-in aggregations, and store repeated text keys as `category`. When a file is still too large to load, or one CPU core is the bottleneck, two further options exist. Both add complexity, so time the complete operation before and after.
+
+## Chunked Processing
+
+`pd.read_csv(path, chunksize=n)` reads a file `n` rows at a time, so only one chunk is in memory at once. Summarize each chunk, then combine the partial summaries. The partial results must combine correctly: chunk sums add up to the total sum and chunk counts to the total count, but averaging chunk means gives the wrong mean unless you keep each chunk's sum and count. Chunking saves memory; it is not automatically faster.
+
+```python
+import pandas as pd
+
+def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
+    """Sum groups from a CSV that is read in chunks."""
+    results = []
+
+    for chunk in pd.read_csv(file_path, chunksize=chunk_size):
+        if not chunk.empty:
+            results.append(chunk.groupby(group_cols)[agg_cols].sum())
+
+    if not results:
+        raise ValueError("input file must contain at least one data row")
+
+    levels = list(range(results[0].index.nlevels))
+    return pd.concat(results).groupby(level=levels)[agg_cols].sum()
+```
+
+## Parallel Processing
+
+`multiprocessing.Pool` runs a function on several CPU cores at once, each in a separate Python process. Parallel work adds process startup, copying data between processes, and merge costs, so more processes do not guarantee a faster result.
+
+Each worker process must be able to find the worker function (`process_chunk` below). In a notebook, that works only with the `fork` start method, the default on Linux (including Colab). macOS and Windows use `spawn`: a worker function defined in a notebook makes the workers fail and the cell can hang. There, put the worker function in a `.py` file and import it, and start the pool from a script under `if __name__ == "__main__":`.
+
+```python
+from multiprocessing import Pool
+
+import pandas as pd
+
+def process_chunk(chunk):
+    return chunk.groupby('category')[['value']].sum()
+
+def parallel_groupby(df, n_processes=4):
+    if n_processes < 1:
+        raise ValueError("n_processes must be at least 1")
+    if df.empty:
+        raise ValueError("df must contain at least one row")
+
+    chunk_size = max(1, len(df) // n_processes)
+    chunks = [df.iloc[i:i + chunk_size]
+              for i in range(0, len(df), chunk_size)]
+
+    with Pool(n_processes) as pool:
+        results = pool.map(process_chunk, chunks)
+
+    return pd.concat(results).groupby(level=0)[['value']].sum()
 ```
 
 # Advanced Remote Computing
@@ -391,7 +613,7 @@ The core lecture introduces SSH, file transfer, Jupyter port forwarding, and per
 
 ## Distributed Computing
 
-**Reference:**
+### Reference Card: Distributed Computing with Dask
 
 ```python
 # Distributed computing with Dask
@@ -411,7 +633,7 @@ result.to_csv('distributed_results.csv')
 
 ## Cloud Computing
 
-**Reference:**
+### Reference Card: Cloud Computing with S3
 
 ```python
 # Cloud computing with AWS/GCP

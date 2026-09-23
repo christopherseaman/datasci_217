@@ -19,7 +19,7 @@ jupyter:
 
 Choose one regressor from pinned scikit-learn. Fit candidates on training rows only and use validation performance to freeze your choice. A simple model is enough, and it does not need to beat persistence. Do not read any Q6 test file in this notebook.
 
-Prerequisite refresher: [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_ml_boosting.ipynb) cover train-fitted pipelines and validation-based model comparison.
+Prerequisite refresher: [Lecture 10](../../10/README.md) and [Lecture 10 Demo 2](../../10/demo/demo2_sklearn_prediction.ipynb) cover train-fitted pipelines and validation-based model comparison.
 
 ## 7.1 Setup
 

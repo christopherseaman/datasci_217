@@ -108,6 +108,17 @@ code, pre {
   border-radius: 4px;
 }
 
+.content figure {
+  margin: 16px 0;
+}
+
+.content figcaption {
+  margin-top: 6px;
+  font-size: 0.9em;
+  font-style: italic;
+  color: #8b949e;
+}
+
 /* Code */
 .content code {
   background: #161b22;

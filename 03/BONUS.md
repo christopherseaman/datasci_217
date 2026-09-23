@@ -13,7 +13,9 @@ Advanced NumPy topics and optional shell-processing reference.
 
 # Advanced Universal Functions (ufuncs)
 
-**Reference:**
+Beyond the square roots and exponentials in the lecture, these transform a whole array at once: logs compress a skewed lab value, and the trigonometric functions handle periodic signals.
+
+## Code Snippet: Apply Less Common Math Functions
 
 ```python
 import numpy as np
@@ -21,16 +23,16 @@ import numpy as np
 arr = np.array([1, 4, 9, 16, 25])
 
 # Advanced mathematical functions
-sqrt_arr = np.sqrt(arr)              # Square root
 log_arr = np.log(arr)                # Natural log
 log10_arr = np.log10(arr)            # Base-10 log
-exp_arr = np.exp([1, 2, 3])          # Exponential
 sin_arr = np.sin(np.pi * arr)        # Trigonometric
 ```
 
 # Advanced Broadcasting
 
-**Reference:**
+The lecture broadcast a single number across an array. The same rules combine arrays of different shapes, such as subtracting one baseline per column from every row.
+
+## Code Snippet: Broadcast a Row Against a Column
 
 ```python
 # Broadcasting 1D to 2D
@@ -46,7 +48,9 @@ result = row + col          # Shape (2, 3)
 
 # Array Stacking and Concatenation
 
-**Reference:**
+Use these to combine arrays that arrived separately, such as one array per clinic visit, into a single array.
+
+## Code Snippet: Stack Arrays
 
 ```python
 arr1 = np.array([1, 2, 3])
@@ -65,7 +69,9 @@ concatenated = np.concatenate([arr_2d1, arr_2d2], axis=0)  # Stack rows
 
 # Linear Algebra Operations
 
-**Reference:**
+Matrix arithmetic is the machinery under regression and other models; Lecture 10 uses libraries that call these routines for you.
+
+## Code Snippet: Multiply, Invert, and Solve
 
 ```python
 A = np.array([[1, 2], [3, 4]])
@@ -90,7 +96,9 @@ x = np.linalg.solve(A, b)
 
 # Advanced Indexing
 
-**Reference:**
+Use these when a selection needs a grid of chosen rows and columns at once, or when an array has more than two dimensions.
+
+## Code Snippet: Select Grids and Higher Dimensions
 
 ```python
 # Using np.ix_ for outer indexing
@@ -100,13 +108,15 @@ cols = [1, 3, 4]
 result = arr[np.ix_(rows, cols)]
 
 # Using ellipsis for arbitrary dimensions
-arr_3d = np.random.randn(2, 3, 4)
+arr_3d = np.random.default_rng(0).standard_normal((2, 3, 4))
 result = arr_3d[..., 0]  # Same as arr_3d[:, :, 0]
 ```
 
 # Random Number Generation
 
-**Reference:**
+The lecture drew random integers. The same generator draws from named distributions and samples from a list, which is how you simulate a study population or pick a random subset of patient IDs.
+
+## Code Snippet: Draw from Distributions and Samples
 
 ```python
 # Modern random number generation (NumPy 1.17+)
@@ -116,7 +126,6 @@ rng = default_rng(seed=42)
 # Generate random arrays
 uniform = rng.uniform(0, 1, size=(3, 3))       # Uniform [0, 1)
 normal = rng.normal(0, 1, size=(3, 3))         # Normal distribution
-integers = rng.integers(1, 10, size=(3, 3))    # Random integers
 
 # Random sampling
 choices = rng.choice([1, 2, 3, 4, 5], size=10, replace=True)
@@ -129,7 +138,9 @@ old_style = np.random.randn(3, 3)
 
 # Set Operations
 
-**Reference:**
+Use these to compare two ID lists, such as patients enrolled at both sites.
+
+## Code Snippet: Compare Two ID Lists
 
 ```python
 arr1 = np.array([1, 2, 3, 4, 5])
@@ -148,17 +159,12 @@ is_member = np.isin(arr1, arr2)                  # Boolean array
 
 # Advanced Sorting
 
-**Reference:**
+The lecture sorted values and positions for a whole array. Use these when you need only the k smallest values, or when each row of a table must be sorted on its own.
+
+## Code Snippet: Partial and Row-Wise Sorting
 
 ```python
 arr = np.array([3, 1, 4, 1, 5, 9, 2, 6])
-
-# Sorting
-sorted_arr = np.sort(arr)                        # Returns sorted copy
-
-# Indirect sort (get indices)
-sorted_indices = np.argsort(arr)                 # Indices that would sort
-original_arr = arr[sorted_indices]               # Reconstruct sorted array
 
 # Partial sort (find k smallest/largest)
 k = 3
@@ -172,7 +178,9 @@ sorted_2d = np.sort(arr_2d, axis=1)              # Sort each row
 
 # File I/O Operations
 
-**Reference:**
+Use these to save an array between runs without writing and re-parsing a CSV each time; `.npy` keeps the dtype exactly.
+
+## Code Snippet: Save and Load Arrays
 
 ```python
 # Save and load arrays
@@ -202,14 +210,12 @@ np.savez_compressed('arrays_compressed.npz', arr1=arr, arr2=arr*2)
 
 # Conditional Logic with np.where
 
-**Reference:**
+The lecture labeled values with a single `np.where`. Use these when one test is not enough: several bands at once, or the positions rather than the labels.
+
+## Code Snippet: Multiple Conditions and Positions
 
 ```python
 arr = np.array([1, 5, 3, 8, 2, 9, 4])
-
-# np.where for conditional replacement
-result = np.where(arr > 5, arr, 0)               # Keep if >5, else 0
-result = np.where(arr > 5, 'high', 'low')        # String labels
 
 # Multiple conditions
 result = np.where(arr > 7, 'high',
@@ -226,7 +232,9 @@ result = np.select(conditions, choices, default='unknown')
 
 # Structured Arrays
 
-**Reference:**
+One array normally holds one dtype. A structured array holds columns of different types, which is the job the pandas DataFrame does more conveniently from Lecture 04 on.
+
+## Code Snippet: Build a Record Array
 
 ```python
 # Define structured array dtype
@@ -251,9 +259,9 @@ sorted_data = np.sort(data, order='score')
 
 # Memory-Mapped Files
 
-For working with arrays larger than RAM:
+For working with arrays larger than RAM: the array stays on disk and NumPy reads only the parts you touch.
 
-**Reference:**
+## Code Snippet: Work with an On-Disk Array
 
 ```python
 # Create memory-mapped file
@@ -261,7 +269,7 @@ shape = (1000000, 100)  # 800,000,000 bytes (~800 MB) of float64 storage
 mmap_array = np.memmap('large_array.dat', dtype='float64', mode='w+', shape=shape)
 
 # Use like normal array (but stored on disk)
-mmap_array[0] = np.random.randn(100)
+mmap_array[0] = np.random.default_rng(0).standard_normal(100)
 mmap_array.flush()  # Write to disk
 
 # Load existing memory-mapped file
@@ -278,7 +286,7 @@ The advanced examples below are optional reference only.
 
 ## Optional: Advanced Processing
 
-**Reference:**
+### Code Snippet: Transform Text with tr, sed, and awk
 
 ```bash
 # tr: Translate characters
@@ -296,7 +304,7 @@ awk -F',' '$3 > 50' data.csv    # Filter rows
 
 ## Optional: Longer Data Pipelines
 
-**Reference:**
+### Code Snippet: Chain Several Stages
 
 ```bash
 # Complex pipeline
@@ -313,7 +321,7 @@ Terminal visualization is also optional/reference-only. Lecture 07 is the canoni
 
 Command line tools for quick data visualization without leaving the terminal.
 
-**Reference:**
+### Code Snippet: Plot in the Terminal
 
 ```bash
 # sparklines: Inline Unicode graphs

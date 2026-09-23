@@ -167,7 +167,7 @@ From that same practice folder, run:
 cat > 02_cli_navigation_demo.sh
 ```
 
-Paste the script below. Press **Enter** if needed to reach a new line, then **Ctrl+D** to finish input. Enter ends a line; Ctrl+D signals **EOF** (end of file). Ctrl+C interrupts `cat` instead; it leaves text already written in the file. `>` replaces any previous contents.
+Paste the script below. Press **Enter** to reach a new line, then **Ctrl+C** to finish. Enter ends a line; Ctrl+C stops `cat`, and the text already written stays in the file. `>` replaces any previous contents.
 
 [02_cli_navigation_demo.sh on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/02_cli_navigation_demo.sh)
 
@@ -308,7 +308,9 @@ Expect 30 points and a BMI of about 22.86. Change the hours or weight and observ
 
 # Demo 4: Control structures and debugging
 
-Use `python3` for interactive entry or run each saved file from your shell. At the `...` prompt, indent the block exactly as shown. Enter a blank line after each complete `if`/`elif`/`else`, `for`, or `while` block before starting the next top-level statement. Every file includes its own starting values.
+Run each saved file from your shell, for example `python3 04a_decisions.py`. Every file includes its own starting values.
+
+You can also try single lines at the `python3` prompt, but do not retype the indentation shown here: after a line ending in `:`, Python 3.13 indents the next line for you, so typing the spaces as well doubles them and the block fails when it reaches `elif` or `else`. Press Enter on an empty line to finish a block.
 
 ## 4.1 Decisions
 
@@ -427,7 +429,7 @@ From your shell:
 python3 04d_debugging.py
 ```
 
-Run the corrected version first: expect 440, 26, and 42. Then, one at a time, remove the `#` from an error line in `04d_debugging.py`, save it, and run the script again. Read the error, use the corrected line below it to identify the fix, then restore the `#` before trying the next error: fix the misspelled name, convert text with `int()`, or supply numeric text.
+Run the corrected version first: expect 440, 26, and 42. Then uncomment one error line in `04d_debugging.py`: select it and press **Ctrl+/** (**Cmd+/** on Mac), or delete the `#` together with the space after it. Deleting only the `#` leaves the line indented, and Python reports `IndentationError: unexpected indent` instead of the error you are looking for. Save, run the script again, and read the error: use the corrected line below it to identify the fix, which is to spell the name correctly, convert text with `int()`, or supply numeric text. Comment the line again before trying the next error.
 
 ## 4.5 Combine the pieces
 

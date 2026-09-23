@@ -1,2 +1,3 @@
-# TODO: replace this line with the Python cache-directory pattern.
-# TODO: replace this line with the compiled Python cache-file pattern.
+# Python cache
+# TODO: replace this line with the pattern for the cache directory Python creates on import.
+# TODO: replace this line with the pattern for compiled Python cache files.

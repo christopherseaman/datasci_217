@@ -9,21 +9,64 @@ notion:
 
 # DLC: Advanced Modeling Topics
 
+# More scikit-learn Tools
+
+The lecture's main path uses linear models, random forests, and gradient boosting. Once that workflow feels routine, benchmark other candidates whose assumptions fit the task, always against the same baseline, split, and metric:
+
+- Classification: `SVC`, a support vector classifier that looks for the widest possible boundary between classes, beside the lecture's `LogisticRegression`.
+- Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
+- Selection: `cross_val_score` for cross-validation and `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
+
+**Cross-validation** splits the training rows into k parts (folds), fits on k - 1 of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on.
+
+*Let validation evidence—not a favorite algorithm—decide. Blue steel is a style, not a model-selection rule.*
+
+# Other Boosting Libraries
+
+Beyond `XGBoost`, two other gradient-boosting libraries are common. Neither is part of Lecture 10's recorded environment; install them in the active notebook environment with `%pip install lightgbm catboost` before trying them.
+
+## `LightGBM`
+
+- Designed for efficient training and memory use
+- A candidate when scale or training speed is an important constraint
+
+## `CatBoost`
+
+- Provides native mechanisms for categorical features
+- A candidate when the table contains important categorical variables
+
+## The Boosting Family Tree
+
+```
+Gradient Boosting
+├── XGBoost (widely used general implementation)
+├── LightGBM (efficiency-oriented implementation)
+└── CatBoost (native categorical-feature support)
+```
+
+*Benchmark them under the same split, measure, and budget. Blue steel, magnum, and le tigre are all amazing, just slightly different—so test them on your data.*
+
 # Hyperparameter Tuning Strategies
 
 ## Grid Search and Random Search
 
-**Reference:**
+### Reference Card: Grid and Random Search Tools
 
 - `from sklearn.model_selection import GridSearchCV` - Exhaustive grid search
 - `from sklearn.model_selection import RandomizedSearchCV` - Random search
 - `from sklearn.model_selection import cross_val_score` - Cross-validation scoring
 
-**Example:**
+### Code Snippet: Tuning a Random Forest with Grid Search
 
 ```python
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split
+import numpy as np
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Define parameter grid
 param_grid = {
@@ -33,7 +76,7 @@ param_grid = {
 }
 
 # Grid search
-model = RandomForestClassifier()
+model = RandomForestClassifier(random_state=42)
 grid_search = GridSearchCV(model, param_grid, cv=5, scoring='accuracy')
 grid_search.fit(X_train, y_train)
 
@@ -44,19 +87,27 @@ print(f"Best score: {grid_search.best_score_}")
 
 ## Bayesian Optimization
 
-**Reference:**
+This optional example requires `scikit-optimize`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install scikit-optimize` before running the example.
+
+### Reference Card: Bayesian Optimization Tools
 
 - `from skopt import gp_minimize` - Gaussian process optimization
 - `from skopt.space import Real, Integer, Categorical` - Parameter spaces
 
-**Example:**
+### Code Snippet: Bayesian Optimization for XGBoost Hyperparameters
 
 ```python
 from skopt import gp_minimize
 from skopt.space import Real, Integer
 from skopt.utils import use_named_args
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from xgboost import XGBClassifier
+import numpy as np
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Define search space
 space = [
@@ -83,7 +134,7 @@ print(f"Best parameters: {result.x}")
 
 This optional example requires SHAP, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install shap` before running the example.
 
-**Reference:**
+### Reference Card: SHAP Tools
 
 - `import shap` - SHAP library
 - `shap.TreeExplainer(model)` - Create an explainer for a tree-based model
@@ -91,11 +142,18 @@ This optional example requires SHAP, which is not part of Lecture 10's recorded 
 - `shap.plots.beeswarm(shap_values)` - Show feature effects across observations
 - `shap.plots.bar(shap_values)` - Summarize global feature importance
 
-**Example:**
+### Code Snippet: Explaining an XGBoost Model with SHAP
 
 ```python
 import shap
 import xgboost as xgb
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Train model
 model = xgb.XGBClassifier()
@@ -114,19 +172,24 @@ shap.plots.bar(shap_values)
 
 ## Partial Dependence Plots
 
-**Reference:**
+### Reference Card: Partial Dependence Tools
 
 - `from sklearn.inspection import PartialDependenceDisplay` - Partial dependence
 - `PartialDependenceDisplay.from_estimator(model, X, features)` - Create plots
 
-**Example:**
+### Code Snippet: Plotting Partial Dependence
 
 ```python
 from sklearn.inspection import PartialDependenceDisplay
 from sklearn.ensemble import RandomForestRegressor
+import numpy as np
+
+rng = np.random.default_rng(42)
+X_train = rng.normal(size=(200, 2))
+y_train = X_train[:, 0] ** 2 + X_train[:, 1] + rng.normal(scale=0.5, size=200)
 
 # Train model
-model = RandomForestRegressor()
+model = RandomForestRegressor(random_state=42)
 model.fit(X_train, y_train)
 
 # Partial dependence plots
@@ -139,18 +202,41 @@ PartialDependenceDisplay.from_estimator(
 
 # Advanced Statistical Modeling
 
+Choose an inferential model when the question requires interpretable parameters, uncertainty, or hypothesis tests and its design and model assumptions are defensible. Inference quantifies associations under assumptions; prediction estimates performance on new data. Neither alone establishes causation.
+
+## Generalized Linear Models (GLMs)
+
+Linear regression suits a numeric outcome that scatters evenly around the fitted line. **Generalized linear models** keep the same formula interface but change how the outcome is modeled:
+
+- Logistic regression for binary outcomes
+- Poisson regression for count data
+- Other exponential family distributions
+- Use when: You need statistical inference for non-normal data
+
 ## Mixed Effects Models
 
-**Reference:**
+### Reference Card: Mixed Effects Model Tools
 
 - `from statsmodels.regression.mixed_linear_model import MixedLM` - Mixed linear models
 - `MixedLM.from_formula(formula, data, groups)` - Create model
 
-**Example:**
+### Code Snippet: Fitting a Mixed Effects Model
 
 ```python
 from statsmodels.regression.mixed_linear_model import MixedLM
 import statsmodels.formula.api as smf
+import numpy as np
+import pandas as pd
+
+# 10 groups (for example, clinics) with 8 rows each
+rng = np.random.default_rng(42)
+n_groups, n_per_group = 10, 8
+group = np.repeat(np.arange(n_groups), n_per_group)
+x1 = rng.normal(size=n_groups * n_per_group)
+x2 = rng.normal(size=n_groups * n_per_group)
+group_effect = rng.normal(scale=2.0, size=n_groups)[group]
+y = 5 + 1.5 * x1 - 0.5 * x2 + group_effect + rng.normal(scale=1.0, size=n_groups * n_per_group)
+df = pd.DataFrame({'y': y, 'x1': x1, 'x2': x2, 'group': group})
 
 # Mixed effects model
 model = MixedLM.from_formula('y ~ x1 + x2', data=df, groups=df['group'])
@@ -160,16 +246,25 @@ print(result.summary())
 
 ## Generalized Additive Models (GAMs)
 
-**Reference:**
+This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install pygam` before running the example.
+
+### Reference Card: GAM Tools
 
 - `from pygam import LinearGAM` - Generalized additive models
 - `gam = LinearGAM().fit(X, y)` - Fit GAM
 
-**Example:**
+### Code Snippet: Fitting and Plotting a GAM
 
 ```python
 from pygam import LinearGAM
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 2))
+y = X[:, 0] ** 2 + X[:, 1] + rng.normal(scale=0.5, size=200)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Create GAM
 gam = LinearGAM().fit(X_train, y_train)
@@ -189,17 +284,25 @@ for i in range(X_train.shape[1]):
 
 ## Transfer Learning
 
-**Reference:**
+### Reference Card: Transfer Learning Tools
 
 - `from tensorflow.keras.applications import VGG16` - Pre-trained models
 - `model = VGG16(weights='imagenet', include_top=False)` - Load pre-trained
 - `model.trainable = False` - Freeze layers
 
-**Example:**
+### Code Snippet: Fine-Tuning a Pretrained VGG16 Model
 
 ```python
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras import layers, models
+import numpy as np
+
+# Small stand-in image batches (real projects load actual images)
+rng = np.random.default_rng(42)
+X_train = rng.random(size=(20, 224, 224, 3)).astype('float32')
+y_train = np.eye(10)[rng.integers(0, 10, size=20)]
+X_val = rng.random(size=(5, 224, 224, 3)).astype('float32')
+y_val = np.eye(10)[rng.integers(0, 10, size=5)]
 
 # Load pre-trained model
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
@@ -221,11 +324,11 @@ model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
 
 ## Sequence attention with a documented Keras layer
 
-**Reference:**
+### Reference Card: Keras Attention Layer
 
 - `keras.layers.MultiHeadAttention` - Current built-in self/cross-attention layer
 
-**Example:**
+### Code Snippet: Self-Attention with MultiHeadAttention
 
 ```python
 import tensorflow as tf
@@ -243,26 +346,84 @@ model = keras.Model(inputs, outputs)
 model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
 ```
 
+# Other Deep-Learning Frameworks
+
+The lecture uses TensorFlow/Keras for its worked example—a teaching choice, not a universal ranking.
+
+## `PyTorch`
+
+`PyTorch` provides an eager, Python-oriented interface used in research and production. It is not part of Lecture 10's recorded environment; install it in the active notebook environment with `%pip install torch` before running the example.
+
+- **PyTorch:** Eager execution and a Python-oriented modeling ecosystem
+- **TensorFlow/Keras:** High-level Keras APIs within TensorFlow's broader modeling and deployment ecosystem
+- **Both:** Used for research and production; neither role belongs exclusively to one framework
+- **Choice:** Depends on required libraries, deployment target, team expertise, maintenance, and measured performance
+
+### Reference Card: PyTorch Essentials
+
+| Function / method | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `nn.Sequential(...)` | Build a simple ordered neural-network stack. | Module |
+| `torch.optim.Adam(model.parameters(), lr=...)` | Update model parameters using Adam. | Optimizer |
+| `nn.BCELoss()` | Calculate binary cross-entropy for probability outputs. | Loss function |
+| `model.train()` / `model.eval()` | Switch behavior for training or evaluation (for example, Dropout). | Module state change |
+
+### Code Snippet: PyTorch Evaluation Mode
+
+```python
+import torch
+from torch import nn
+
+model = nn.Sequential(
+    nn.Linear(10, 32), nn.ReLU(),
+    nn.Linear(32, 1), nn.Sigmoid(),
+)
+X_test = torch.randn(5, 10)  # 5 rows, 10 features
+
+model.eval()                 # inference behavior for layers such as Dropout
+with torch.no_grad():        # skip gradient tracking while predicting
+    predictions = model(X_test)
+print(predictions.shape)     # torch.Size([5, 1])
+```
+
+## Other Modern Frameworks
+
+Other frameworks serve different computational styles. `JAX` combines NumPy-like arrays with automatic differentiation and JIT compilation; choose it or another specialized tool when its capabilities and dependency cost fit the task.
+
+```
+Deep Learning Frameworks
+├── TensorFlow/Keras (high-level modeling and deployment ecosystem)
+├── PyTorch (eager, Python-oriented modeling ecosystem)
+└── JAX (array programming with transformations and JIT compilation)
+```
+
 # Model Ensembling
 
 ## Stacking
 
-**Reference:**
+### Reference Card: Stacking Tools
 
 - `from sklearn.ensemble import StackingClassifier` - Stacking ensemble
 - `StackingClassifier(estimators, final_estimator)` - Create stacker
 
-**Example:**
+### Code Snippet: Stacking a Random Forest and SVM
 
 ```python
 from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Base models
 base_models = [
-    ('rf', RandomForestClassifier(n_estimators=100)),
-    ('svm', SVC(probability=True))
+    ('rf', RandomForestClassifier(n_estimators=100, random_state=42)),
+    ('svm', SVC(probability=True, random_state=42))
 ]
 
 # Meta-learner
@@ -281,21 +442,27 @@ predictions = stacker.predict(X_test)
 
 ## Blending
 
-**Reference:**
+### Reference Card: Blending Approach
 
 - Manual blending by training models separately and combining predictions
 
-**Example:**
+### Code Snippet: Blending Model Predictions
 
 ```python
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 import numpy as np
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Train multiple models
 models = {
-    'rf': RandomForestClassifier().fit(X_train, y_train),
-    'gb': GradientBoostingClassifier().fit(X_train, y_train),
+    'rf': RandomForestClassifier(random_state=42).fit(X_train, y_train),
+    'gb': GradientBoostingClassifier(random_state=42).fit(X_train, y_train),
     'lr': LogisticRegression().fit(X_train, y_train)
 }
 
@@ -312,20 +479,64 @@ final_predictions = np.argmax(blended, axis=1)
 
 # Time Series Modeling
 
+When each observation depends on the ones just before it, `statsmodels` offers dedicated time-series tools:
+
+- ARIMA models for time series forecasting
+- Seasonal decomposition
+- Use when: You have temporal dependencies in your data
+
+Lecture 09's bonus has worked examples of [decomposition](../09/BONUS.md#advanced-time-series-decomposition) and [ARIMA and exponential smoothing](../09/BONUS.md#time-series-forecasting).
+
+## Persistence Baselines for Time-Ordered Rows
+
+Before fitting anything, check how far "the next value equals the last one" gets you. A grouped `shift(1)` builds that persistence baseline in one line, and every candidate model has to beat it on the same validation rows.
+
+### Code Snippet: A Persistence Baseline
+
+```python
+import pandas as pd
+
+readings = pd.DataFrame({
+    'patient_id': ['P1', 'P1', 'P1', 'P2', 'P2', 'P2'],
+    'visit': [1, 2, 3, 1, 2, 3],
+    'sbp': [138, 142, 135, 150, 147, 139],
+})
+readings['persistence'] = readings.groupby('patient_id')['sbp'].shift(1)
+print(readings)
+```
+
+```text
+  patient_id  visit  sbp  persistence
+0         P1      1  138          NaN
+1         P1      2  142        138.0
+2         P1      3  135        142.0
+3         P2      1  150          NaN
+4         P2      2  147        150.0
+5         P2      3  139        147.0
+```
+
+P2's first visit gets `NaN`, not P1's last reading. Compare every approach on the same rows: those where the baseline has a value. On a complete hourly grid, `shift(168)` gives the same hour last week.
+
 ## ARIMA Models
 
-**Reference:**
+### Reference Card: ARIMA Tools
 
 - `from statsmodels.tsa.arima.model import ARIMA` - ARIMA models
 - `model = ARIMA(data, order=(p, d, q))` - Create ARIMA
 - `result = model.fit()` - Fit model
 - `result.forecast(steps)` - Forecast
 
-**Example:**
+### Code Snippet: Fitting and Forecasting an ARIMA Model
 
 ```python
 from statsmodels.tsa.arima.model import ARIMA
+import numpy as np
 import pandas as pd
+
+# A random-walk-like series (for example, daily readings)
+rng = np.random.default_rng(42)
+dates = pd.date_range('2024-01-01', periods=100, freq='D')
+data = pd.Series(np.cumsum(rng.normal(0, 1, size=100)) + 50, index=dates)
 
 # Create ARIMA model
 model = ARIMA(data, order=(1, 1, 1))  # AR(1), I(1), MA(1)
@@ -341,18 +552,24 @@ conf_int = result.get_forecast(steps=10).conf_int()
 
 ## Prophet for Time Series
 
-**Reference:**
+This optional example requires `prophet`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install prophet` before running the example.
+
+### Reference Card: Prophet Tools
 
 - `from prophet import Prophet` - Facebook Prophet
 - `model = Prophet()` - Create model
 - `model.fit(df)` - Fit model
 - `model.predict(future)` - Make predictions
 
-**Example:**
+### Code Snippet: Forecasting with Prophet
 
 ```python
 from prophet import Prophet
+import numpy as np
 import pandas as pd
+
+rng = np.random.default_rng(42)
+time_series_data = np.cumsum(rng.normal(0, 1, size=365)) + 50
 
 # Prepare data (columns: ds, y)
 df = pd.DataFrame({
@@ -376,7 +593,7 @@ model.plot(forecast)
 
 ## Model Serialization
 
-**Reference:**
+### Reference Card: Model Serialization Tools
 
 - `import joblib` - Joblib for scikit-learn models
 - `joblib.dump(model, 'model.pkl')` - Save model
@@ -384,10 +601,20 @@ model.plot(forecast)
 - `model.save('model.keras')` - Save a Keras model in the native `.keras` format
 - `model.export('saved_model')` - Export a TensorFlow SavedModel for serving (Keras 3)
 
-**Example:**
+### Code Snippet: Saving and Loading a Model with joblib
 
 ```python
 import joblib
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+
+rng = np.random.default_rng(42)
+X_train = rng.normal(size=(100, 3))
+y_train = (X_train[:, 0] + X_train[:, 1] > 0).astype(int)
+feature_names = ['x1', 'x2', 'x3']
+scaler = StandardScaler().fit(X_train)
+model = LogisticRegression().fit(scaler.transform(X_train), y_train)
 
 # Save scikit-learn model
 joblib.dump(model, 'model.pkl')
@@ -410,16 +637,26 @@ Pickle/joblib files can execute arbitrary code while loading. Load them only fro
 
 ## Model Versioning
 
-**Reference:**
+This optional example requires `mlflow`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install mlflow` before running the example.
+
+### Reference Card: Model Versioning Approach
 
 - Use MLflow or similar tools for model versioning
 - Track model metadata, parameters, and performance
 
-**Example:**
+### Code Snippet: Logging a Model Run with MLflow
 
 ```python
 import mlflow
 import mlflow.sklearn
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 4))
+y = (X[:, 0] + X[:, 1] > 0).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Start MLflow run
 with mlflow.start_run():
@@ -428,7 +665,7 @@ with mlflow.start_run():
     mlflow.log_param("max_depth", 5)
     
     # Train model
-    model = RandomForestClassifier(n_estimators=100, max_depth=5)
+    model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
     model.fit(X_train, y_train)
     
     # Log metrics
@@ -443,15 +680,31 @@ with mlflow.start_run():
 
 ## Automated Feature Engineering
 
-**Reference:**
+This optional example requires `featuretools`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install featuretools` before running the example.
+
+### Reference Card: Featuretools Functions
 
 - `EntitySet.add_dataframe` - Register related tables
 - `featuretools.dfs` - Generate features from an EntitySet
 
-**Example:**
+### Code Snippet: Generating Features with Deep Feature Synthesis
 
 ```python
 import featuretools as ft
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(42)
+customer_df = pd.DataFrame({
+    'customer_id': [1, 2, 3],
+    'signup_date': pd.date_range('2024-01-01', periods=3),
+})
+transaction_df = pd.DataFrame({
+    'transaction_id': range(6),
+    'customer_id': [1, 1, 2, 2, 3, 3],
+    'transaction_date': pd.date_range('2024-02-01', periods=6),
+    'amount': rng.normal(50, 10, size=6).round(2),
+})
 
 # Create entity set
 es = ft.EntitySet(id='data')
@@ -488,17 +741,24 @@ feature_matrix, feature_defs = ft.dfs(
 
 ## Polynomial and Interaction Features
 
-**Reference:**
+### Reference Card: Polynomial Feature Tools
 
 - `from sklearn.preprocessing import PolynomialFeatures` - Polynomial features
 - `poly = PolynomialFeatures(degree=2, interaction_only=True)` - Create transformer
 
-**Example:**
+### Code Snippet: Adding Polynomial Features to a Pipeline
 
 ```python
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(100, 2))
+y = 3 + 2 * X[:, 0] * X[:, 1] + rng.normal(scale=0.5, size=100)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Create polynomial features
 poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
@@ -516,15 +776,16 @@ pipeline.fit(X_train, y_train)
 
 ## Drift Detection
 
-**Reference:**
+### Reference Card: Drift Detection Approach
 
 - Monitor model performance over time
 - Detect data drift and concept drift
 
-**Example:**
+### Code Snippet: Detecting Drift with a KS Test
 
 ```python
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 def detect_drift(reference_data, new_data, threshold=0.05):
@@ -546,6 +807,23 @@ def detect_drift(reference_data, new_data, threshold=0.05):
     
     return drift_detected
 
+# Reference window and two later batches (the second shifted, to simulate drift)
+rng = np.random.default_rng(42)
+reference_data = pd.DataFrame({
+    'age': rng.normal(50, 10, size=200),
+    'bmi': rng.normal(27, 4, size=200),
+})
+data_batches = [
+    pd.DataFrame({
+        'age': rng.normal(50, 10, size=200),
+        'bmi': rng.normal(27, 4, size=200),
+    }),
+    pd.DataFrame({
+        'age': rng.normal(58, 10, size=200),  # shifted: simulates drift
+        'bmi': rng.normal(27, 4, size=200),
+    }),
+]
+
 # Monitor over time
 for batch in data_batches:
     drift = detect_drift(reference_data, batch)
@@ -557,14 +835,15 @@ for batch in data_batches:
 
 ## A/B Testing for Models
 
-**Reference:**
+### Reference Card: Model Comparison Approach
 
 - Compare model performance in production
 - Statistical significance testing
 
-**Example:**
+### Code Snippet: Comparing Two Models with McNemar's Test
 
 ```python
+import numpy as np
 from scipy import stats
 
 def compare_models(model_a_predictions, model_b_predictions, true_labels):
@@ -598,6 +877,13 @@ def compare_models(model_a_predictions, model_b_predictions, true_labels):
         'p_value': result.pvalue,
         'significant': result.pvalue < 0.05
     }
+
+rng = np.random.default_rng(42)
+true_labels = rng.integers(0, 2, size=100)
+model_a_predictions = np.where(rng.random(100) < 0.85, true_labels, 1 - true_labels)
+model_b_predictions = np.where(rng.random(100) < 0.70, true_labels, 1 - true_labels)
+
+print(compare_models(model_a_predictions, model_b_predictions, true_labels))
 ```
 
 These advanced topics will help you build production-ready models, understand model behavior, and maintain models over time in real-world applications.

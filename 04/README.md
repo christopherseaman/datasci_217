@@ -1,228 +1,230 @@
 ---
 notion:
-  title_line: "Pandas on Jupyter: Data Structures & I/O"
+  title_line: "# Pandas on Jupyter: Data Structures & I/O"
   role: lecture
   status: mapped
   page_id: "281d9fdd-1a1a-800a-897d-cafb5971c23f"
   url: "https://app.notion.com/p/281d9fdd1a1a800a897dcafb5971c23f"
 ---
 
-Pandas on Jupyter: Data Structures & I/O
+# Pandas on Jupyter: Data Structures & I/O
 
-See [BONUS.md](BONUS.md) for advanced topics:
-
-- Alignment and broadcasting tricks
-- Function application patterns and method chaining notes
-- Ranking strategies and working with duplicate index labels
-- Extended I/O and performance tips (Excel, JSON, chunked reads)
-- Safe non-interactive notebook execution and failure handling
+See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)
 
 # Jupyter Notebooks: Interactive Data Analysis
 
-In Lectures 1-3, Python scripts (`.py`) ran top-to-bottom. Jupyter notebooks (`.ipynb`) arrange code and Markdown in interactive cells, making them useful for exploration and explanation; scripts remain the better fit for automation.
+In Lectures 01–03 you ran Python two ways. Lines typed at the `>>>` prompt (the REPL) are remembered until you exit. A `.py` script starts from nothing and runs top to bottom. Exploring a new dataset needs a bit of both. You load a clinic's visit file once, look at the first rows, notice that temperature was recorded as text, try a fix, and look again, without reloading the file after every question. You also want the explanation next to the results so a colleague can follow your reasoning.
 
-The lecture examples use pandas 3.0.5 APIs. Executable demos and assignments record their exact tested package pins in each activity's requirements.
+A **Jupyter notebook** (`.ipynb` file) does that. It is a document made of **cells**: a **code cell** holds Python, and a **Markdown cell** holds formatted notes like the ones you wrote in Lecture 02. Think of a lab notebook, where the procedure, the measurement, and your interpretation sit on the same page. When you run a code cell, its result appears directly beneath it and is saved in the file.
 
-## Jupyter Notebook Interface
+The code runs in a **kernel**: a Python process that stays alive between cells, like the REPL. A kernel uses one Python environment, so choosing a notebook's kernel is how you point it at the `.venv` you created in Lecture 03. Scripts remain the better fit for automation; notebooks are for exploring and explaining.
 
-This conceptual map names the parts you will use in a Jupyter notebook. The exact buttons vary slightly between JupyterLab, VS Code, and other clients.
+## Opening and Running a Notebook
+
+You will use notebooks in two places. Assignments run locally in VS Code. Lecture demos open in **Google Colab**, a free hosted notebook service, so you can run them without installing anything. In Colab the kernel runs on a Google machine called a **runtime**; files you create there disappear when the runtime shuts down.
+
+![VS Code notebook: add code or Markdown, run cells, run all, and select a kernel](media/vscode-jupyter-kernel-picker.png)
+
+In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and choose the activity's Python environment. **Run All** runs every cell in order; **Clear All Outputs** erases the results saved under the cells. Screenshot: [VS Code notebook documentation](https://code.visualstudio.com/docs/datascience/jupyter-notebooks).
+
+### Reference Card: Notebook controls
+
+| Task | VS Code | Colab | Result |
+| --- | --- | --- | --- |
+| Create a notebook | Command Palette → **Create: New Jupyter Notebook** | **File → New notebook in Drive** | New `.ipynb` file |
+| Run a cell | `Shift+Enter` (run, move on) or `Ctrl+Enter` (run, stay) | Same keys | Output appears below the cell |
+| Add a cell | **+ Code** / **+ Markdown** | **+ Code** / **+ Text** | New cell |
+| Delete a cell | Trash icon, or `DD` in command mode | Trash icon | Cell removed |
+| Choose Python | **Select Kernel** | Managed for you by the runtime | Which interpreter runs the cells |
+| Keep your changes | `Ctrl+S` (`Cmd+S` on macOS) | **File → Save a copy in Drive** | Edits saved; Colab does not save back to the course repository |
+
+Shortcuts such as `A` (add a cell above), `B` (add a cell below), and `DD` (delete) work only in **command mode**: press `Esc` so the cell is selected but not being edited. In Colab, press `Ctrl+M` first, then the letter.
+
+### Code Snippet: A notebook cell
+
+```python
+# Cell 1: the kernel keeps these values
+name = "Ada"
+scores = [8, 9, 10]
+```
+
+```python
+# Cell 2: a later cell can use them, and its output appears below it
+average = sum(scores) / len(scores)
+print(f"{name}'s average: {average:.1f}")
+```
+
+```text
+Ada's average: 9.0
+```
+
+### Alternative: JupyterLab
+
+JupyterLab is Jupyter's own browser interface, started with `jupyter lab` from an environment that has it installed. The parts are the same: a file browser, cells with a run number such as `[4]` beside them, and output beneath each cell.
 
 ![JupyterLab: file browser at left, notebook cells and output in the center](media/jupyterlab-interface.png)
 
 Screenshot: [JupyterLab interface documentation](https://jupyterlab.readthedocs.io/en/latest/user/interface.html).
 
-| Notebook part | Purpose |
-| --- | --- |
-| Code / Markdown cell | Run Python, or explain the analysis |
-| Run controls | Execute the selected cell and choose whether to advance |
-| Kernel selector | Choose the Python interpreter that runs the cells |
-| Output area | Inspect the value, table, or error produced by a cell |
-| Variable explorer | Review names and values currently held by the kernel |
+## Kernel State and Execution Order
 
-![xkcd 1906, “Making Progress”: after hours of work, the same problems are now in a spreadsheet.](media/xkcd_1906.png)
+The kernel's **state** is every name and value it currently holds. Running a cell changes state; editing a cell without running it does not. The number beside a cell, such as the `[4]` in the JupyterLab screenshot, is its **execution count**: the order in which the kernel actually ran it. The kernel follows the order you click, not the order of cells on the page. A notebook can therefore look correct and still depend on something you ran earlier and then changed or deleted.
 
-*Making Progress* by xkcd — progress, now with columns.
+The result saved under a cell is **stored output**: a record of the last time that cell ran, not proof that the notebook works now.
 
-### Reference Card: Notebook controls
+| Step | You do | Execution count | Output under the cell |
+| --- | --- | --- | --- |
+| 1 | Run `units = 12` and `rate = 2` | `[1]` | none |
+| 2 | Run `total = units * rate` and `print(total)` | `[2]` | `24` |
+| 3 | Edit the first cell to `rate = 3` but do not run it | still `[1]` | `24`, now stale |
+| 4 | Restart & Run All | `[1]`, `[2]` | `36` |
 
-| Task | Control | Result |
-| --- | --- | --- |
-| Run code | Code cell; `Shift+Enter` or `Ctrl+Enter` | Output appears below; kernel state changes |
-| Explain work | Markdown cell | Rendered documentation |
-| Add or delete cells | `A`, `B`, `DD` in command mode | Notebook structure changes |
-| Choose Python | Kernel selector | Selected interpreter runs cells |
+### Reference Card: Kernel actions
 
-### Code Snippet: A notebook cell
+| Action | Where | When to use it | Result |
+| --- | --- | --- | --- |
+| Interrupt | VS Code: **Interrupt** (■); Colab: **Runtime → Interrupt execution** | A cell runs far longer than expected; the notebook's Ctrl+C from Lecture 01 | Stops the cell; state is kept |
+| Restart | VS Code: **Restart**; Colab: **Runtime → Restart session** | Values look wrong, the kernel is stuck, or "it worked before but now it doesn't" | Empty state; cells and stored output stay on the page |
+| Run All | VS Code: **Run All**; Colab: **Runtime → Run all** | After a restart | Every cell runs top to bottom |
+| Restart & Run All | VS Code: **Restart**, then **Run All**; Colab: **Runtime → Restart session and run all** | Before you commit or submit | Shows the notebook works from a fresh start |
+
+### Code Snippet: A producer cell and a dependent cell
 
 ```python
-# Cell 1: Core Python values
-name = "Ada"
-scores = [8, 9, 10]
-
-# Cell 2: Run a calculation
-average = sum(scores) / len(scores)
-print(f"{name}'s average: {average:.1f}")
-
-# Cell 3: Markdown can explain the result
+# Cell 1 (producer): defines names
+units = 12
+rate = 3
 ```
+
+```python
+# Cell 2 (dependent): needs the names from Cell 1
+total = units * rate
+print("total:", total)  # total: 36
+```
+
+If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'units' is not defined`. Fix it by moving the producer cell above the dependent cell, not by copying the definition into another cell.
+
+To run a whole notebook from the terminal instead, see [Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
 
 ## Jupyter Magic Commands
 
-Magic commands are like cheat codes for Jupyter - they give you special powers that normal Python doesn't have. Think of them as the "konami code" of data science, except instead of getting 30 extra lives, you get inline plots and package installation!
-
-Magic commands provide special functionality for notebook environments. They start with `%` and extend Jupyter's capabilities for data analysis.
+**Magic commands** are notebook-only shortcuts that start with `%`. Think of them as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch. `%pwd` and `%ls` mirror the Lecture 01 shell commands and show where the notebook is running and which files it can see; check them first when a notebook cannot find a file. `%timeit` times one line of Python by running it many times.
 
 ### Reference Card: Magic commands
 
 | Command | Arguments | Typical output / effect |
 | --- | --- | --- |
-| `%pwd` | None | Current working directory |
+| `%pwd` | None | Current working directory, as a quoted string |
 | `%ls` | None | Directory contents |
 | `%timeit expression` | Python expression | Timing summary |
 | `%pip install -r requirements.txt` | Requirements path | Packages installed into the active kernel |
 | `%pip list` | None | Installed packages |
 | `%pip show package_name` | Package name | Package metadata |
 
-### Code Snippet: Inspecting the notebook environment
+### Code Snippet: Where is the notebook running?
+
+A cell shows the value of its last line only, so give `%pwd` its own cell:
 
 ```python
-# These examples use only notebook mechanics and core Python.
 %pwd
-%ls
-%timeit sum(range(100))
+```
 
+```text
+'/content'
+```
+
+That is Colab's working directory; in VS Code, it is usually the notebook's folder.
+
+```python
+%timeit sum(range(100))
+```
+
+```text
+693 ns ± 3.46 ns per loop (mean ± std. dev. of 7 runs, 1,000,000 loops each)
+```
+
+Times vary by machine.
+
+```python
 # Install the requirements recorded for the current activity
 %pip install -r requirements.txt
 ```
 
-Plotting is deferred until Lecture 07, after the plotting libraries and workflow have been introduced.
+## Notebook Outputs and Git
 
-## Jupyter Notebooks in VS Code
-
-![VS Code notebook: add code or Markdown, run cells, run all, and select a kernel](media/vscode-jupyter-kernel-picker.png)
-
-Use **Select Kernel** at the top right to choose the activity's Python environment. **Run All** executes the notebook in order. Screenshot: [VS Code notebook documentation](https://code.visualstudio.com/docs/datascience/jupyter-notebooks).
-
-VS Code provides excellent Jupyter notebook support with integrated terminal, git management, and debugging capabilities. Understanding how to work with notebooks in VS Code is essential for modern data science workflows.
-
-### Reference Card: VS Code notebook actions
-
-| Task | Control | Result |
-| --- | --- | --- |
-| Create | `Ctrl+Shift+P` → “Jupyter: Create New Jupyter Notebook” | New `.ipynb` file |
-| Open | `Ctrl+O` → select `.ipynb` | Notebook opens in the editor |
-| Run | `Shift+Enter` / `Ctrl+Enter` | Run-and-advance / run-and-stay |
-| Add or delete | `+` or right-click cell menu | Cell inserted or removed |
-| Save | `Ctrl+S` | Notebook file is written |
-
-**Note:** Keyboard shortcuts like `A` and `DD` only work in command mode (when cell is selected but not editing). For beginners, using the GUI buttons and right-click menu is more reliable.
-
-### Code Snippet: Running a notebook cell
-
-```python
-# VS Code automatically detects .ipynb files
-# Just open any .ipynb file and start coding
-message = "Notebook cells can be rerun independently."
-print(message)
-```
-
-## Kernel Management Basics
-
-The kernel is the Python interpreter running your code. Sometimes it gets stuck or needs a fresh start.
-
-### Reference Card: Kernel actions
-
-| Action | Purpose | Result |
-| --- | --- | --- |
-| Restart Kernel | Clear variables and recover from a stuck computation | Fresh interpreter |
-| Run All | Execute cells from top to bottom | Rebuilt notebook state |
-| Restart & Run All | Test reproducibility from a clean state | Fresh state plus outputs |
-
-### When to restart the kernel
-
-When to restart your kernel:
-
-- Code behaves unexpectedly
-- Variables seem to have wrong values
-- "It worked before but now it doesn't"
-- Before submitting assignments (test it runs from top to bottom!)
-
-`Restart & Run All` is the interactive reproducibility check. For optional batch execution that preserves the source notebook and stops on failed cells, see [Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
-
-## Notebook Outputs and Git: The Memory Problem
-
-**Warning:** Jupyter notebooks are like that one friend who screenshots everything you text them. They save both your code AND all the outputs (results, data, plots) in the same file.
+Jupyter notebooks are like that one friend who screenshots everything you text them. They save both your code AND all the outputs (results, data, plots) in the same file.
 
 Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too—like having a photographic memory of your most awkward moments.
 
-**Before committing to git (the "digital hygiene" moment):**
-
-1. **Clear all outputs** - Click the "Clear All Outputs" button in VS Code
-2. **Check for sensitive data** - Make sure no personal information, passwords, or confidential data is visible
-3. **Save the notebook** - The outputs will be removed from the file
-
-### Code Snippet: Clear sensitive output before commit
+### Code Snippet: What Git actually commits
 
 ```python
-# This output contains sensitive data and will be saved in the notebook
 patient_name = "Example Patient"
 blood_pressure = "120/80"
-print(patient_name, blood_pressure)
-# Clear the output before sharing or committing the notebook.
+print(patient_name, blood_pressure)  # Example Patient 120/80
 ```
+
+Open the `.ipynb` file in a text editor and that line is right there, in the file Git will commit:
+
+```json
+{"cell_type": "code",
+ "execution_count": 1,
+ "outputs": [{"name": "stdout", "output_type": "stream",
+              "text": ["Example Patient 120/80\n"]}]}
+```
+
+### Before You Commit a Notebook
+
+1. **Clear all outputs**: click **Clear All Outputs** in VS Code.
+2. **Check for sensitive data**: make sure no personal information, passwords, or confidential data is visible.
+3. **Save the notebook**: the outputs are removed from the file.
+
+Then check the notebook's diff in VS Code Source Control (Lecture 02) before you commit.
 
 # LIVE DEMO!
 
 # Introduction to Pandas
 
-Pandas builds labeled Series and DataFrames on NumPy and adds tabular I/O and missing-data tools.
-
-![xkcd 2180, “Spreadsheets”: a joke about spreadsheet formulas becoming unexpectedly elaborate.](media/xkcd_2180.png)
+![xkcd 2180: Spreadsheets](media/xkcd_2180.png)
 
 *Spreadsheets* by xkcd — a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
 
-*Fun fact: Pandas got its name from "Panel Data" - the economics term for time-series data. The cute bear logo? That's just a happy accident that makes data science more approachable! 🐼*
+In Lecture 03, a NumPy array held one type of value and you picked items by integer position, as in `arr[2]`. A clinic's visit table is messier: a text patient ID, an integer age, a decimal temperature, a `True`/`False` smoker flag. You want to ask for "patient P002's temperature" rather than "row 1, column 1", and you want each patient's values to stay together when you sort or filter.
 
-Pandas is conventionally imported with the short alias `pd`, which the examples below use:
+**pandas** is the Python library for labeled tables. It builds on NumPy and adds two structures:
+
+- A **Series** is one column of values plus an **index**, a label for each value. McKinney describes a Series as a fixed-length, ordered dictionary (Lecture 02): each label maps to one value.
+- A **DataFrame** is a table whose columns share one row index. Each column is a Series with its own **dtype** (data type), so text, numbers, and `True`/`False` can sit side by side.
+
+*Fun fact: the name comes from **panel data**, an econometrics term for datasets that follow the same subjects over time (think of a longitudinal cohort study), and it is also a play on "Python data analysis." No bears were involved. 🐼*
+
+pandas is conventionally imported as `pd`. The course uses pandas 3.0.5, and every output below comes from that version; pandas 2 prints some results differently.
 
 ```python
 import pandas as pd
 ```
 
-## Pandas Data Structures
+## Series and DataFrames
 
-A Series is one labeled dimension; a DataFrame combines labeled columns under a shared row index. That shared index is what makes selection and alignment more than simple list positioning.
+```text
+Series temp_c         DataFrame visits
+index  value          index  age  temp_c  smoker   <- column labels
+P001   36.8           P001    34    36.8   False
+P002   38.1           P002    58    38.1    True
+P003   37.2           P003    41    37.2   False
+                                  ^ the temp_c column is itself a Series
+```
 
 *Think of Series inside DataFrames like Russian nesting dolls: one labeled column fits inside the larger labeled table.*
 
-| Structure | Shape | Labels | Example |
-| --- | --- | --- | --- |
-| `Series` | 1D | One index + values | `age['Ada'] → 36` |
-| `DataFrame` | 2D | Row index + column names | `people.loc['Ada', 'age'] → 36` |
-
-One DataFrame column is a Series; several aligned Series form a DataFrame.
-
-### Reference Card: Series and DataFrame structure
-
-| Object | Construct | Useful inspection | Typical result |
-| --- | --- | --- | --- |
-| `Series` | `pd.Series(data, index=None, name=None)` | `.index`, `.dtype`, `.head()` | One labeled column |
-| `DataFrame` | `pd.DataFrame(data, index=None, columns=None)` | `.shape`, `.dtypes`, `.info()` | Labeled table |
-| Both | — | `.describe()` | Summary statistics for supported columns |
-
-### Series
-
-A Series is a one-dimensional labeled array that can hold any data type. It's like a column in a spreadsheet with an index that labels each value, enabling powerful data manipulation and analysis.
-
 ### Reference Card: Series attributes and methods
-
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `pd.Series(data, index=None, name=None)` | Supply values and optional labels/name | New `Series` |
-| `series.index` | Access index labels | Index labels |
+| `pd.Series(data, index=None, name=None)` | `data` may be a list, a NumPy array, or a dict (its keys become the index); optional labels and name | New `Series` |
+| `series.index` | Access index labels | `Index(['P001', 'P002', 'P003'], dtype='str')` |
 | `series.values` | Access underlying values without labels | NumPy array or extension array, depending on dtype |
 | `series.name` | Get/set Series name | Series name |
 | `series.dtype` | Get data type | Data type |
@@ -230,41 +232,39 @@ A Series is a one-dimensional labeled array that can hold any data type. It's li
 | `series.head(n=5)` | First n elements | `Series` with original labels |
 | `series.tail(n=5)` | Last n elements | `Series` with original labels |
 | `series.describe()` | Summarize values according to dtype | Statistics as a `Series` |
-| `series.value_counts()` | Value frequencies | Frequency Series |
 
 ### Code Snippet: Create and inspect a Series
 
 ```python
-# Create Series
-ages = pd.Series([25, 30, 35, 40], index=['Alice', 'Bob', 'Charlie', 'Diana'])
-display(ages)  # Alice: 25, Bob: 30, Charlie: 35, Diana: 40
-display(ages.index)  # ['Alice', 'Bob', 'Charlie', 'Diana']
-display(ages.values)  # [25 30 35 40]
-
-# Series operations
-display(ages.mean())  # 32.5
-display(ages.describe())  # count, mean, std, min, 25%, 50%, 75%, max
+temp_c = pd.Series([36.8, 38.1, 37.2], index=["P001", "P002", "P003"], name="temp_c")
+print(temp_c)
+print(temp_c["P002"])  # 38.1
 ```
 
-### DataFrame
-
-A DataFrame is a two-dimensional labeled data structure with columns of potentially different types. DataFrames combine multiple Series so you can operate column-wise or row-wise with shared labels. Because columns can hold different dtypes, keep an eye on schema when merging disparate sources.
+```text
+P001    36.8
+P002    38.1
+P003    37.2
+Name: temp_c, dtype: float64
+38.1
+```
 
 *Pro tip: DataFrames are like Excel spreadsheets, but with superpowers. They can handle millions of rows without breaking a sweat, and they never ask you to "save as" or complain about circular references.*
 
 ### Reference Card: DataFrame attributes and methods
 
-
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `pd.DataFrame(data, index=None, columns=None)` | Supply data and optional row/column labels | New `DataFrame` |
+| `pd.DataFrame(data, index=None, columns=None)` | Supply data, such as a dict of lists, and optional row/column labels | New `DataFrame` |
+| `pd.DataFrame(array_2d, index=[...], columns=[...])` | Build from a 2D NumPy array, as in Lecture 03 | Labeled `DataFrame` |
+| `df.index.name = "patient_id"` | Label the row index | Shown above the index; becomes the index column's header when you save a CSV |
 | `df.index` | Access row index | Index labels |
 | `df.columns` | Access column names | Column labels |
 | `df.values` | Get values as NumPy array | NumPy array of values |
-| `df.shape` | (rows, columns) tuple | `(rows, columns)` tuple |
+| `df.shape` | Count rows and columns | `(rows, columns)` tuple |
 | `df.dtypes` | Data types per column | Series of column dtypes |
-| `df.info()` | Inspect types, non-null counts, and memory | Prints a summary; returns `None` |
-| `df.describe()` | Summary statistics | Summary table |
+| `df.info()` | Inspect columns, **non-null counts** (values present, not missing), dtypes, and memory | Prints a summary; returns `None` |
+| `df.describe()` | Summarize numeric columns | count, mean, std, min, quartiles, max per column |
 | `df.head(n=5)` | First n rows | `DataFrame` with original labels |
 | `df.tail(n=5)` | Last n rows | `DataFrame` with original labels |
 | `df.sample(n=5)` | Random n rows | Random sample DataFrame |
@@ -272,461 +272,374 @@ A DataFrame is a two-dimensional labeled data structure with columns of potentia
 ### Code Snippet: Create and inspect a DataFrame
 
 ```python
-# Create DataFrame
-df = pd.DataFrame({
-    'Name': ['Alice', 'Bob', 'Charlie'],
-    'Age': [25, 30, 35],
-    'Salary': [50000, 60000, 70000]
-})
-
-display(df.shape)  # (3, 3)
-display(df.dtypes)  # Name: str, Age: int64, Salary: int64
-display(df.describe())  # Summary statistics for numeric columns
+visits = pd.DataFrame(
+    {"age": [34, 58, 41], "temp_c": [36.8, 38.1, 37.2], "smoker": [False, True, False]},
+    index=["P001", "P002", "P003"],
+)
+visits.index.name = "patient_id"
+print(visits)
+print(visits.shape)  # (3, 3)
+print(visits.dtypes)
 ```
 
-## `display()` vs `print()`
+```text
+            age  temp_c  smoker
+patient_id                     
+P001         34    36.8   False
+P002         58    38.1    True
+P003         41    37.2   False
+(3, 3)
+age         int64
+temp_c    float64
+smoker       bool
+dtype: object
+```
 
-Now that Series and DataFrames are defined, we can compare notebook output choices. `print()` works in scripts and notebooks and shows plain text. In a Jupyter notebook, `display()` renders a Series or DataFrame as rich HTML, which is usually easier to scan. Use `print()` for simple values or code that should also run as a `.py` script; use `display()` when the notebook presentation matters. A DataFrame or Series written as the last expression in a cell is also displayed automatically.
+## Selecting Columns
+
+Most questions need only a few columns: "what were the temperatures?" rather than the whole table. Brackets select columns by label. One label gives a Series; a list of labels (double brackets) gives a DataFrame, even when the list holds one name.
+
+*Think of column selection like picking your team for dodgeball - sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns).*
+
+### Reference Card: Column selection
+
+| Expression | Arguments | Output |
+| --- | --- | --- |
+| `df["column_name"]` | One label | `Series` |
+| `df[["col1", "col2"]]` | List of labels | `DataFrame` |
+| `df.column_name` | Identifier that does not conflict with an attribute | `Series`; fails on names with spaces or names shared with a DataFrame method, so prefer brackets |
+| `df.select_dtypes(include=["number"])` | Dtype selector | Matching-column `DataFrame` |
+
+### Code Snippet: Select Series and DataFrames
+
+```python
+temps = visits["temp_c"]          # one label -> Series
+print(type(temps))
+temp_table = visits[["temp_c"]]   # a list of one label -> DataFrame
+print(type(temp_table))
+print(visits[["age", "temp_c"]])
+```
+
+```text
+<class 'pandas.Series'>
+<class 'pandas.DataFrame'>
+            age  temp_c
+patient_id             
+P001         34    36.8
+P002         58    38.1
+P003         41    37.2
+```
+
+## Selecting with `.loc` and `.iloc`
+
+Brackets pick columns. To pick rows, or rows and columns together, use `.loc` or `.iloc`. In Lecture 03 you selected from a 2D array with `arr[row, col]` positions; `.iloc` works the same way, while `.loc` uses the labels pandas adds.
+
+*Warning: Indexing in pandas is like a choose-your-own-adventure book—there are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
+
+| Selector | Uses | Same cell | Slice ending |
+| --- | --- | --- | --- |
+| `.loc` | Row and column labels | `visits.loc["P002", "temp_c"]` → `38.1` | `visits.loc["P001":"P002"]` includes `P002` |
+| `.iloc` | Integer positions | `visits.iloc[1, 1]` → `38.1` | `visits.iloc[0:2]` stops before position `2` |
+
+*Think of it this way: `.loc` asks for patient "P002" by name; `.iloc` asks for "the 2nd row" by position (0, 1, 2...).*
+
+### Reference Card: Selection by label and position
+
+- `df.loc[row_label, column_label]`: One value, by labels.
+- `df.loc["P001":"P002", ["age", "temp_c"]]`: A label slice (includes the end label) and a list of columns; returns a `DataFrame`.
+- `df.loc["P002"]`: One whole row, as a `Series`.
+- `df.loc[:, ["age"]]`: `:` means every row.
+- `df.iloc[1, 1]`, `df.iloc[0:2, 0:2]`: The same selections by integer position; slices stop before the end position.
+
+### Code Snippet: Compare label and position selection
+
+```python
+print(visits.loc["P002", "temp_c"])                  # 38.1 (row label, column label)
+print(visits.iloc[1, 1])                             # 38.1 (row position 1, column position 1)
+print(visits.loc["P001":"P002", ["age", "temp_c"]])  # label slice includes P002
+print(visits.iloc[0:2, 0:2])                         # position slice stops before 2
+```
+
+```text
+38.1
+38.1
+            age  temp_c
+patient_id             
+P001         34    36.8
+P002         58    38.1
+            age  temp_c
+patient_id             
+P001         34    36.8
+P002         58    38.1
+```
+
+Both slices print the same two rows, P001 and P002.
+
+### Common Mistakes: Labels vs Positions
+
+- **`.loc`** = **L**abels; **`.iloc`** = **i**nteger **loc**ations (0, 1, 2, ... like list positions).
+- `visits.loc[1, "age"]` raises `KeyError: 1`: no row is *labeled* 1.
+- `visits.iloc["P002", 0]` raises `ValueError`: `.iloc` accepts positions only.
+
+## Filtering Rows with a Boolean Mask
+
+In Lecture 03, `arr[arr > 5]` kept the NumPy values that passed a test. pandas works the same way, with one improvement: comparing a column returns a Boolean Series that carries the table's index, so each `True` or `False` stays attached to its patient. A **mask** is that Boolean Series. Give it a descriptive name, then pass it to `.loc` with the columns you want.
+
+```text
+temp_c >= 38.0     has_fever      visits.loc[has_fever, ["age", "temp_c"]]
+P001  36.8   ->    P001  False
+P002  38.1   ->    P002  True  -> P002   58   38.1
+P003  37.2   ->    P003  False
+```
+
+### Reference Card: Boolean masks
+
+- `mask = df["col"] >= value`: Test every row; returns a Boolean `Series` with the same index.
+- `df.loc[mask]`: Keep the rows where `mask` is `True`.
+- `df.loc[mask, ["col1", "col2"]]`: Keep matching rows and only the listed columns.
+- `(df["a"] > 1) & (df["b"] < 5)`, `(...) | (...)`: Combine tests with AND / OR; parentheses are required, as in Lecture 03.
+- `mask.sum()`: Count the `True` rows.
+
+### Code Snippet: Keep patients with a fever
+
+```python
+has_fever = visits["temp_c"] >= 38.0
+print(has_fever)
+print(visits.loc[has_fever, ["age", "temp_c"]])
+```
+
+```text
+patient_id
+P001    False
+P002     True
+P003    False
+Name: temp_c, dtype: bool
+            age  temp_c
+patient_id             
+P002         58    38.1
+```
+
+# LIVE DEMO!
+
+# Deriving and Ordering Data
+
+Selecting answers "which rows and columns?" Two more questions come up in every analysis: "what number do I actually need?" and "which rows matter most?" A clinic export rarely stores the value you want to report. It stores a temperature in Celsius when the chart is in Fahrenheit, or a baseline and a follow-up when the interesting number is the change between them. You compute that value once, for the whole table, and pandas keeps each result attached to its patient.
+
+Then you put the interesting rows on top. In Lecture 03, `np.sort()` reordered bare values. A table has to move whole rows, so each patient's other columns travel with the value you sorted on.
+
+```text
+visits                 add temp_f                    sort by temp_f (highest first)
+     age  temp_c            age  temp_c  temp_f           age  temp_c  temp_f
+P001  34    36.8      P001   34    36.8   98.24     P002   58    38.1  100.58
+P002  58    38.1      P002   58    38.1  100.58     P003   41    37.2   98.96
+P003  41    37.2      P003   41    37.2   98.96     P001   34    36.8   98.24
+```
+
+## Adding Columns
+
+A **derived column** is computed from columns you already have: a temperature in Fahrenheit, a change from baseline, a body-mass index. Assign to a new column name with brackets. As with NumPy's vectorized arithmetic in Lecture 03, pandas computes the whole column at once with no loop, matching rows by index label.
+
+### Reference Card: Adding, updating, and removing columns
+
+- `df["new"] = expression`: Add a column, or replace it if the name exists; values line up by index label.
+- `df.drop(columns=["col1", "col2"])`: Return a new DataFrame without the named columns; `columns=` names what to leave out, as one label or a list, and the original table keeps every column.
+- `df.loc[mask, "col"] = value`: Update only the rows where `mask` is `True`, in the original table.
+- `subset = df.loc[mask].copy()`: Make a separate table you intend to modify, and say so explicitly.
+
+### Code Snippet: Derive and flag
+
+```python
+visits["temp_f"] = visits["temp_c"] * 9 / 5 + 32
+visits["flag"] = "ok"
+visits.loc[visits["temp_c"] >= 38.0, "flag"] = "fever"
+print(visits)
+```
+
+```text
+            age  temp_c  smoker  temp_f   flag
+patient_id                                    
+P001         34    36.8   False   98.24     ok
+P002         58    38.1    True  100.58  fever
+P003         41    37.2   False   98.96     ok
+```
+
+### Common Mistake: Chained Assignment
+
+In Lecture 03, a NumPy slice was a view, so changing the slice changed the original array. pandas 3 uses **Copy-on-Write**: every selection behaves like a separate copy. Two bracket steps in a row therefore change a temporary copy. pandas warns with `ChainedAssignmentError`, and `visits` stays unchanged.
+
+```python
+visits[visits["temp_c"] >= 38.0]["flag"] = "fever"     # warning; visits is not updated
+visits.loc[visits["temp_c"] >= 38.0, "flag"] = "fever"  # one step: updates visits
+```
+
+To change a separate table, such as the fever patients only, copy it first, as with NumPy arrays in Lecture 03: `fever_visits = visits.loc[has_fever].copy()`.
+
+## Sorting Rows
+
+A sorted table answers "who is highest?" at a glance: which patients had the largest blood-pressure drop, or which readings are most extreme. `sort_values()` reorders whole rows, so each patient's other columns and index label travel with the sorted value.
+
+Sorting returns a **new** DataFrame and leaves the original in its old order; assign the result to a name to keep it. When two rows share a value (a **tie**), add a unique second key, such as an ID, so the order is the same on every run: a **deterministic sort**.
+
+### Reference Card: Sorting
+
+- `df.sort_values("col")`: Sort rows by one column, smallest first; returns a new DataFrame.
+- `df.sort_values("col", ascending=False)`: Largest first.
+- `df.sort_values(by=["col1", "col2"], ascending=[False, True])`: Sort by `col1` descending, then break ties with `col2` ascending, one direction per key. `by` may also name the row index, such as `"patient_id"` in `visits`.
+- `df.sort_index()`: Sort rows by their index labels.
+
+### Code Snippet: Break a tie with a unique ID
+
+```python
+vitals = pd.DataFrame({
+    "patient_id": ["P003", "P001", "P002", "P004"],
+    "systolic": [142, 118, 142, 130],
+})
+by_pressure = vitals.sort_values(
+    by=["systolic", "patient_id"],
+    ascending=[False, True],
+)
+print(by_pressure)
+```
+
+```text
+  patient_id  systolic
+2       P002       142
+0       P003       142
+3       P004       130
+1       P001       118
+```
+
+P002 and P003 tie at 142, and `patient_id` puts P002 first. The index labels (2, 0, 3, 1) show where each row started. `vitals` itself is unchanged.
+
+# Data Loading and Storage
+
+![xkcd 1906: Making Progress](media/xkcd_1906.png)
+
+*Making Progress* by xkcd — progress, now with columns.
+
+In Lecture 02 you read a text file with `open()`, and everything came back as one string of text. In Lecture 03 you inspected a CSV with a shell pipeline (`tail`, `cut`, `sort`). A **CSV file** (comma-separated values) is plain text: the first line is the **header** with the column names, and each later line is one record. `pd.read_csv()` opens the file, splits every line into columns, and detects each column's type in one call, returning a DataFrame. `df.to_csv()` writes one back out.
+
+A path such as `"data/visits.csv"` is **relative** to the notebook's working directory; check it with `%pwd`. The wrong directory gives `FileNotFoundError: [Errno 2] No such file or directory: 'data/visits.csv'`. `pd.read_csv()` also accepts a web address (URL), which is handy in Colab, where the files on your computer are not available.
+
+## Reading and Writing CSV Files
+
+Health data files mark missing values in many ways: a blank, `NA`, `NULL`, `?`. pandas already treats blanks and common markers such as `NA`, `N/A`, and `NULL` as missing and prints each one as **`NaN`** (*Not a Number*). Anything else is read as ordinary text, and a single `?` turns a whole numeric column into text (`str`). List the extra markers with `na_values` when you read.
+
+*Fun fact: CSV stands for "Comma-Separated Values," but in reality, it's more like "Comma-Separated Values (unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day)."*
+
+`visits.csv`:
+
+```text
+patient_id,age,temp_c,clinic
+P001,34,36.8,North
+P002,58,?,South
+P003,41,37.2,North
+P004,,38.4,NULL
+P003,41,37.2,North
+```
+
+| Read with | `temp_c` dtype | `?` becomes | `NULL` becomes |
+| --- | --- | --- | --- |
+| `pd.read_csv("visits.csv")` | `str` (text) | the text `"?"` | `NaN` (missing) |
+| `pd.read_csv("visits.csv", na_values=["?"])` | `float64` | `NaN` (missing) | `NaN` (missing) |
+
+### Reference Card: CSV and Parquet input and output
+
+| Task | Call | Key arguments | Result |
+| --- | --- | --- | --- |
+| Read CSV | `pd.read_csv(path)` | `path` may be a file path or URL; `na_values=["?"]` adds missing markers to the defaults (blank, `NA`, `N/A`, `NULL`, ...); `index_col="patient_id"` makes a column the row index; `sep=";"` reads other delimiters | New `DataFrame` |
+| Write CSV | `df.to_csv(path)` | Writes the row index as the first column, headed by `df.index.name` | CSV file; returns `None` |
+| Write CSV | `df.to_csv(path, index=False)` | Leaves the row index out | CSV with only the data columns |
+| Read Parquet | `pd.read_parquet(path)` | Reads a **Parquet** file: a compressed format that stores each column with its dtype, so nothing is re-guessed; needs the `pyarrow` package | New `DataFrame` |
+| Write Parquet | `df.to_parquet(path, index=False)` | `index=False` leaves the row index out, as with `to_csv` | Parquet file |
+
+### Code Snippet: Read with missing markers
+
+```python
+visits = pd.read_csv("visits.csv", na_values=["?"])
+print(visits)
+print(visits.dtypes)
+```
+
+```text
+  patient_id   age  temp_c clinic
+0       P001  34.0    36.8  North
+1       P002  58.0     NaN  South
+2       P003  41.0    37.2  North
+3       P004   NaN    38.4    NaN
+4       P003  41.0    37.2  North
+patient_id        str
+age           float64
+temp_c        float64
+clinic            str
+dtype: object
+```
+
+`age` became `float64` because `NaN` is a floating-point value; Lecture 05 shows how to keep whole numbers when values are missing.
+
+### Code Snippet: Keep or drop the index when writing
+
+```python
+by_patient = pd.read_csv("visits.csv", na_values=["?"], index_col="patient_id")
+by_patient.to_csv("with_index.csv")             # first line: patient_id,age,temp_c,clinic
+by_patient.to_csv("no_index.csv", index=False)  # first line: age,temp_c,clinic
+```
+
+Keep the index when it holds meaningful labels such as patient IDs. Use `index=False` when the index is just the default 0, 1, 2, ... row numbers. Reading the saved file back with `pd.read_csv()`, a **round trip**, confirms that the columns you meant to write are there.
+
+*Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!"* pandas has matching readers and writers for other formats, such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
+
+## Showing a Table: `display()` vs `print()`
+
+`print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a Series or DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan when you are looking over a table you just loaded. As in the `%pwd` example, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
 
 *Think of `print()` as the reliable Honda Civic—works almost anywhere—while `display()` is the sports car: prettier, but happiest in Jupyter.*
 
 ### Code Snippet: Choose notebook output
 
 ```python
-df = pd.DataFrame({"Name": ["Alice", "Bob"], "Age": [25, 30]})
-print(df)       # Plain text, works everywhere
-display(df)     # Rich table output in Jupyter
-print(len(df))  # A simple value: 2
+print(visits)    # Plain text, works everywhere
+display(visits)  # Formatted table in Jupyter
+len(visits)      # Last line: shown automatically as 5
 ```
 
-## Selecting Columns from a DataFrame
+## Inspecting a Loaded Table
 
-Thankfully, we don't have to use the whole DataFrame at all times. We can select subsets of columns to work with instead.
+Before analyzing a new clinic export, answer the questions below. Each check is one line, and its output tells you what Lecture 05's cleaning tools will need to fix.
 
-*Think of column selection like picking your team for dodgeball - sometimes you want just your star player (single column), sometimes you want your entire A-team (multiple columns), and sometimes you want everyone except that one person who always gets you out (column exclusion).*
+### Reference Card: First-look inspection
 
-### Reference Card: Column selection
-
-| Expression | Arguments | Output |
+| Question | Call | Typical output |
 | --- | --- | --- |
-| `df['column_name']` | One label | `Series` |
-| `df[['col1', 'col2']]` | List of labels | `DataFrame` |
-| `df.column_name` | Identifier that does not conflict with an attribute | `Series` (prefer brackets for safety) |
-| `df.select_dtypes(include=['number'])` | Dtype selector | Matching-column `DataFrame` |
+| Size, types, typical values? | `df.shape`, `df.info()`, `df.describe()` | `(rows, columns)`; non-null counts and dtypes; numeric summary (DataFrame card above) |
+| What is missing? | `df.isna().sum()` | Missing count per column |
+| Which categories? | `df["col"].value_counts()` | Count per value, most common first; `dropna=False` also counts missing |
+| Distinct values? | `df["col"].unique()` / `df["col"].nunique()` | The distinct values, including missing, such as `['North', 'South', nan]` / how many, excluding missing: `2` |
+| Repeated records? | `df.duplicated().sum()` | Rows identical to an earlier row; `df.duplicated()` alone is a Boolean mask |
 
-### Code Snippet: Select Series and DataFrames
-
-```python
-# Create sample DataFrame
-employees = pd.DataFrame({
-    'Name': ['Alice', 'Bob', 'Charlie', 'Diana'],
-    'Age': [25, 30, 35, 28],
-    'Salary': [50000, 60000, 70000, 55000],
-    'Department': ['Engineering', 'Sales', 'Engineering', 'Marketing'],
-    'Years_Experience': [2, 5, 8, 3]
-})
-
-# Single column selection (returns Series)
-names = employees['Name']
-display(type(names))  # <class 'pandas.core.series.Series'>
-display(names)
-
-# Single column selection (returns DataFrame)
-names = employees[['Name']]
-display(type(names))  # <class 'pandas.core.frame.DataFrame'>
-display(names)
-
-# Multiple column selection (returns DataFrame)
-basic_info = employees[['Name', 'Age']]
-display(type(basic_info))  # <class 'pandas.core.frame.DataFrame'>
-display(basic_info)
-
-# Dot notation (careful with column names!)
-ages = employees.Age  # Works if column name is valid Python identifier
-display(ages)
-
-# Select numeric columns only
-numeric_data = employees.select_dtypes(include=['number'])
-display(numeric_data.columns)  # ['Age', 'Salary', 'Years_Experience']
-```
-
-> **This is confusing!**
-
-**Tips:**
-
-- Use `df['column']` for single columns when you want a Series
-- Use `df[['column']]` for single columns when you want a DataFrame
-- Bracket notation `df['column']` is safer than dot notation `df.column`
-- Multiple column selection always returns a DataFrame, even if you select just one column
-
-## Data Selection and Indexing
-
-Pandas supports both label-based and position-based selection.
-
-*Warning: Indexing in pandas is like a choose-your-own-adventure book—there are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
-
-### .loc vs .iloc
-
-| Selector | Uses | Same cell | Slice ending |
-| --- | --- | --- | --- |
-| `.loc` | Row and column labels | `employees.loc['emp002', 'Name']` → `'Bob'` | `employees.loc['emp001':'emp003']` includes `emp003` |
-| `.iloc` | Integer positions | `employees.iloc[1, 0]` → `'Bob'` | `employees.iloc[0:3]` stops before position `3` |
-
-*Think of it this way: `.loc` is like asking "Give me the data for employee 'Alice'" (using names/labels), while `.iloc` is like saying "Give me the data from the 2nd row" (using positions like 0, 1, 2...).*
-
-### Reference Card: Selection and indexing
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.loc[row_labels, column_labels]` | Select by labels; label slices include the endpoint | Scalar, `Series`, or `DataFrame`, depending on selectors |
-| `df.iloc[row_positions, column_positions]` | Select by integer position; slice stop is excluded | Scalar, `Series`, or `DataFrame`, depending on selectors |
-| `df.query("expression")` | filter with readable expressions | Filtered DataFrame |
-| `df[df['column'] > value]` | boolean masking | Boolean-filtered DataFrame |
-| `df.isin(sequence)` | Test membership cell by cell | Boolean `DataFrame` |
-| `df['column'].between(left, right)` | Test an inclusive range | Boolean `Series` |
-
-### Code Snippet: Compare label and position selection
+### Code Snippet: Count gaps, categories, and repeats
 
 ```python
-# Create DataFrame with custom index to show the difference clearly
-employees = pd.DataFrame({
-    'Name': ['Alice', 'Bob', 'Charlie', 'Diana'],
-    'Age': [25, 30, 35, 28],
-    'Salary': [50000, 60000, 70000, 55000]
-}, index=['emp001', 'emp002', 'emp003', 'emp004'])
-
-display(employees)
-#          Name  Age  Salary
-# emp001  Alice   25   50000
-# emp002    Bob   30   60000
-# emp003 Charlie  35   70000
-# emp004  Diana   28   55000
-
-# .loc uses LABELS (index names and column names)
-display(employees.loc['emp002', 'Name'])        # 'Bob' - using row label 'emp002'
-display(employees.loc['emp001':'emp003', 'Age']) # Ages for emp001, emp002, AND emp003 (inclusive!)
-
-# .iloc uses POSITIONS (like list indexing: 0, 1, 2, 3...)
-display(employees.iloc[1, 0])      # 'Bob' - position 1 (2nd row), position 0 (1st column)
-display(employees.iloc[0:3, 1])    # Ages for positions 0, 1, 2 (NOT including position 3!)
-
-# Common mistake: mixing them up!
-# employees.loc[1, 'Name']    # ERROR! No row with label '1' 
-# employees.iloc['emp002', 0] # ERROR! Can't use string labels with iloc
-
-# A Boolean Series carries index labels, so .loc aligns it by label
-age_mask = employees['Age'] >= 30
-adults = employees.loc[age_mask]  # Bob and Charlie
-
-# .iloc is positional and does not accept an indexed Boolean Series.
-# Convert deliberately to a positional Boolean array when position is intended.
-adults_by_position = employees.iloc[age_mask.to_numpy()]
-high_earners = employees.loc[employees['Salary'] > 60000]  # Charlie
+print(visits.isna().sum())
+print(visits["clinic"].value_counts(dropna=False))
+print(visits.duplicated().sum())
 ```
 
-**Memory Trick:**
-
-- **`.loc`** = **"L"abels** (names, strings, custom indices)
-- **`.iloc`** = **"i"nteger** **"L"ocations** (0, 1, 2, 3... like list positions)
-
-### Adding Columns to DataFrames
-
-Derived columns capture new features and align automatically with existing indexes. Mutate the owning DataFrame directly when that is the intent; use `.assign()` and bind its returned DataFrame when you want a new result.
-
-### Reference Card: Adding columns
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df['column_name'] = expression` | Insert or replace a column | Updates `df`; Series values align by index |
-| `df.assign(name=lambda d: ...)` | Compute columns using the current DataFrame | New `DataFrame` with assigned columns |
-| `df.insert(loc, column, value)` | Insert a column at integer position `loc` | Updates `df`; returns `None` |
-| `df.eval("new = ...")` | expression syntax for simple arithmetic | DataFrame with evaluated column |
-
-### Code Snippet: Derive columns
-
-```python
-salaries = pd.DataFrame({
-    'Name': ['Avery', 'Bianca', 'Cheng'],
-    'Salary': [120000, 95000, 88000],
-    'Department': ['Engineering', 'Sales', 'People Ops']
-})
-
-salaries['HourlyRate'] = salaries['Salary'] / 2080
-augmented = salaries.assign(
-    Bonus=lambda d: d['Salary'] * 0.05,
-    TotalComp=lambda d: d['Salary'] + d['Salary'] * 0.05
-)
-
-display(augmented[['Name', 'HourlyRate', 'TotalComp']])
+```text
+patient_id    0
+age           1
+temp_c        1
+clinic        1
+dtype: int64
+clinic
+North    3
+South    1
+NaN      1
+Name: count, dtype: int64
+1
 ```
 
-### Label Alignment and Safe Assignment
-
-Pandas aligns Series and DataFrame operations by index label, not merely by row position. Unmatched labels can produce missing values. Use `reindex()` when you need to make the target labels, order, and missing-label policy explicit.
-
-```python
-scores = pd.DataFrame(
-    {'score': [80, 90, 70]},
-    index=['student_a', 'student_b', 'student_c']
-)
-bonus = pd.Series({'student_c': 5, 'student_a': 2})
-
-# Series assignment aligns labels; reindex also supplies the missing student_b value.
-scores['bonus'] = bonus.reindex(scores.index, fill_value=0)
-scores['adjusted_score'] = scores['score'] + scores['bonus']
-
-# Assign through .loc in one operation so the original DataFrame is updated.
-scores['status'] = 'ok'
-scores.loc[scores['score'] < 75, 'status'] = 'review'
-```
-
-With Copy-on-Write, a subset behaves independently: mutating it does not mutate `scores`. Therefore, chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'` never updates the original DataFrame. Update the owner in one statement with `.loc[row_mask, column] = value` (or `.iloc[...] = value` for positional assignment), as above; for a separate result, transform the subset and assign the returned object to a name.
-
-For the version-specific details behind these examples, see the official [pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html), [string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html), and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html).
-
-### Detecting Missing Data at Read Time
-
-Missing-data work begins by telling pandas which source tokens represent missing values and measuring the gaps. This lecture focuses on detection and reproducible read-time handling; [Lecture 05](../05/README.md) covers decisions such as filling or dropping values.
-
-Inspect dtypes and missing-value counts together. In pandas 3, ordinary inferred text columns report `str`; use an explicit nullable `string` dtype only when that distinction is part of the data contract.
-
-### Reference Card: Read-time missing values
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `pd.read_csv(path, na_values=[...], keep_default_na=True)` | Add source-specific tokens to the default missing markers | Parsed `DataFrame` |
-| `series.isna()`, `series.notna()` | Test missing / observed values | Boolean `Series` |
-| `df.isna().sum()` | Count missing values per column | Count `Series` indexed by column |
-
-### Code Snippet: Parse missing tokens
-
-```python
-survey = pd.read_csv(
-    'employee_survey.csv',
-    na_values=['NA', 'NULL', '?'],
-    keep_default_na=True,
-    skiprows=[1],
-    usecols=['name', 'role', 'bonus', 'start_date']
-)
-
-display(survey.isna().sum())
-display(survey.dtypes)
-```
-
-## Data Type Conversion
-
-Converting data to the correct types is essential for proper analysis. This short section introduces the mechanics; Lecture 05 ties each conversion to a data contract and decides what to do with invalid or lossy values.
-
-### Reference Card: Type conversion
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.astype('int64')` | Convert all columns to NumPy integers | `DataFrame`; missing values cannot be represented |
-| `df.astype('float64')` | Convert all columns to floating point | Converted `DataFrame` |
-| `series.astype('string')` | Request nullable string data | `Series` with `pd.NA` for missing values |
-| `pd.to_datetime(df['date_column'])` | Convert to datetime | Datetime Series |
-| `pd.to_numeric(df['column'], errors='coerce')` | Parse numbers and mark invalid values missing | Numeric `Series`; missing marker is `NaN` or `pd.NA`, depending on dtype |
-
-### Code Snippet: Convert columns
-
-```python
-# Convert text digits and whole-valued floats
-df = pd.DataFrame({'A': ['1', '2', '3'], 'B': [4.0, 5.0, 6.0]})
-df['A'] = df['A'].astype('int64')  # Convert string to integer
-df['B'] = df['B'].astype('int64')  # Values are already mathematically whole
-display(df.dtypes)  # A: int64, B: int64
-
-# Handle conversion errors
-df['C'] = ['1', 'invalid', '4']
-df['C'] = pd.to_numeric(df['C'], errors='coerce')  # Invalid becomes NaN
-display(df['C'])  # [1.0, NaN, 4.0]
-```
-
-# LIVE DEMO!
-
-# Essential Pandas Operations
-
-## Sorting Data
-
-Sorting organizes your data by values or index, making it easier to find patterns and outliers. This is one of the most common operations in data analysis.
-
-### Reference Card: Sorting
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.sort_values('column')` | Sort by column values | Sorted DataFrame |
-| `df.sort_values(['col1', 'col2'])` | Sort by multiple columns | Sorted DataFrame |
-| `ascending=False` | Sort in descending order | Sorted DataFrame |
-| `df.sort_index()` | Sort by index | Sorted DataFrame |
-
-### Code Snippet: Sort rows
-
-```python
-# Sort by age
-df = pd.DataFrame({'Name': ['Alice', 'Bob', 'Charlie'], 'Age': [25, 30, 20]})
-df.sort_values('Age')  # Sort by age (youngest first)
-df.sort_values('Age', ascending=False)  # Sort by age (oldest first)
-```
-
-## Finding Unique Values
-
-Exploring unique values helps you understand your data and identify categories. This is essential for data exploration and cleaning.
-
-### Reference Card: Unique values
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `series.unique()` | Get unique values | Array of unique values |
-| `series.nunique()` | Count distinct values; missing excluded by default | Integer count |
-| `series.value_counts()` | Count how often each value appears | Frequency Series |
-| `series.isin(['A', 'B'])` | Check if values are in a list | Boolean membership mask |
-
-### Code Snippet: Inspect categories
-
-```python
-# Find unique values
-categories = pd.Series(['A', 'B', 'A', 'C', 'B'])
-display(categories.unique())  # ['A' 'B' 'C']
-display(categories.value_counts())  # A: 2, B: 2, C: 1
-
-# Filter by membership
-display(categories.isin(['A', 'B']))  # [True, True, True, False, True]
-```
-
-## GroupBy Preview
-
-GroupBy follows a split-apply-combine idea: split rows by a key, compute within each group, and combine the results. For a first glimpse, this calculates one mean per department:
-
-### Code Snippet: Preview grouping
-
-```python
-pay = pd.DataFrame({
-    'Department': ['Engineering', 'Engineering', 'Sales'],
-    'Salary': [120000, 115000, 95000],
-})
-display(pay.groupby('Department')['Salary'].mean())
-```
-
-[Lecture 08](../08/README.md) is the canonical treatment of grouping, aggregation, `transform()`, and `filter()`.
-
-# Data Loading and Storage
-
-*Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!" (Usually `pd.read_[format]()` - pandas is surprisingly comprehensive at reading data from just about anywhere)*
-
-## Reading and Writing CSV Files
-
-CSV files are the most common format for data analysis. Pandas makes it easy to read CSV files with sensible defaults.
-
-*Fun fact: CSV stands for "Comma-Separated Values," but in reality, it's more like "Comma-Separated Values (unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day)."*
-
-### Reference Card: CSV input and output
-
-| Operation | Arguments | Output / side effect |
-| --- | --- | --- |
-| `pd.read_csv(path)` | `sep`, `header`, `index_col`, `na_values` | New `DataFrame` |
-| `df.to_csv(path)` | `index`, `columns`, `na_rep` | CSV file on disk |
-| `pd.read_csv(path, sep=';')` | Custom delimiter | Parsed semicolon-separated table |
-
-### Code Snippet: Read and write CSV
-
-```python
-# Basic CSV reading
-df = pd.read_csv('data.csv')
-display(df.head())
-
-# Custom options
-df = pd.read_csv('data.csv', sep=';', index_col=0)
-display(df.head())
-
-# Save a derived table without adding the row index as a CSV column
-df.to_csv('data_export.csv', index=False)
-```
-
-## Reading and Writing Other Formats
-
-### Reference Card: Excel and JSON I/O
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `pd.read_excel(path, sheet_name=0, usecols=None)` | Read one worksheet; optionally select columns | `DataFrame`; `sheet_name=None` instead returns a dict of sheets |
-| `df.to_excel(path, sheet_name='Summary', index=False)` | Write a named worksheet without row labels | Excel file written; returns `None` |
-| `pd.read_json(path_or_buf, orient='records')` | parse structured payloads | DataFrame parsed from JSON |
-| `df.to_json(path_or_buf, orient='records', indent=2)` | export API-friendly data | JSON output written |
-
-### Code Snippet: Read and write other formats
-
-```python
-#Excel
-sales = pd.read_excel('quarterly_sales.xlsx', sheet_name='Q2')
-sales.to_excel('quarterly_sales_clean.xlsx', sheet_name='Q2', index=False)
-
-# JSON
-payload = pd.read_json('inventory_payload.json')
-payload.to_json('inventory_payload_export.json', orient='records', indent=2)
-```
-
-**Note:** Database access and sql will be covered later course content.
-
-# Data Exploration and Summary Statistics
-
-## Summary Statistics
-
-Summary statistics provide a quick overview of your data's distribution and characteristics. They're essential for understanding data quality and identifying patterns.
-
-*Remember: Correlation does not imply causation! (But it's still useful for understanding patterns in your data)*
-
-### Reference Card: Summary statistics
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.describe()` | Summary statistics for numeric columns | Summary table |
-| `df.info()` | Data types and memory usage | Prints a summary; returns `None` |
-| `df.shape` | (rows, columns) tuple | `(rows, columns)` tuple |
-| `df.count()` | Count non-null values per column | Count `Series` indexed by column |
-| `df.nunique()` | Count distinct non-null values per column | Count `Series` indexed by column |
-| `df.memory_usage(deep=True)` | Estimate bytes per column, including stored object data | Byte-count `Series`; includes the index by default |
-| `df.isna().sum()` | Count missing values per column | Count `Series` indexed by column |
-
-### Code Snippet: Inspect a dataset
-
-```python
-# Summary statistics
-df = pd.DataFrame({'A': [1, 2, 3, 4, 5], 'B': [2, 4, 6, 8, 10]})
-display(df.describe())  # count, mean, std, min, 25%, 50%, 75%, max
-df.info()  # Prints data types and memory usage
-display(df.isna().sum())  # Missing values per column
-```
-
-## Data Quality Assessment
-
-### Inspection preview (decisions come next lecture)
-
-This short preview shows how to inspect missing values and duplicate rows after the pandas introduction. Cleaning decisions and transformations belong to Lecture 05, where they are tied to a documented data contract.
-
-### Reference Card: Inspection checks
-
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.isna().sum()` | Count missing values per column | Count `Series` indexed by column |
-| `df.duplicated().sum()` | Count repeated rows after the first occurrence | Integer count |
-
-### Code Snippet: Run an inspection preview
-
-```python
-# Inspect without changing the table
-display(df.isna().sum())       # Missing values per column
-display(df.duplicated().sum()) # Number of duplicate rows
-```
-
-Lecture 05 picks up from this inspection and documents the cleaning decisions before transforming and validating a working table.
+The row labeled 4 repeats row 2: the same visit entered twice. Because `visits.duplicated()` is a mask, `visits.loc[visits.duplicated()]` shows the repeated row.
 
 > Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.
 

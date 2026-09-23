@@ -21,8 +21,8 @@ jupyter:
 
 - Convert one 1D ndarray to a Series and one 2D ndarray to a DataFrame.
 - Inspect labels, shape, dtypes, and bounded numeric summaries.
-- Select with brackets, `.loc`, `.iloc`, and one boolean mask.
-- Add one derived column and sort with a unique tie-breaker.
+- Select columns with brackets and single cells or blocks with `.loc` and `.iloc`.
+- Filter rows with one named boolean mask, then narrow it with a second condition.
 
 Colab is the default launch experience; local Jupyter runs the same cells. Run this notebook from a fresh kernel and follow its checkpoints. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
 
@@ -157,29 +157,26 @@ print(follow_up_at_least_30)
 selected_measurements
 ```
 
-## Add one derived column
+## Narrow the selection with a second condition
 
-A **derived column** is calculated from existing columns. pandas aligns the arithmetic by row labels, so this calculation needs no explicit Python loop.
-
-```python
-measurement_table["change"] = (
-    measurement_table["follow_up"] - measurement_table["baseline"]
-)
-
-measurement_table
-```
-
-## Sort deterministically
-
-A **deterministic sort** produces the same observable row order for the same input. State every key and direction, and finish with a unique tie-breaker. Here `record_id` names the unique index labels and resolves equal `change` values.
+`&` keeps the rows where both masks are `True`, and `|` keeps the rows where either one is. Written inline, each comparison needs its own parentheses. `mask.sum()` counts the matching rows, because `True` counts as 1.
 
 ```python
-ordered_measurements = measurement_table.sort_values(
-    by=["change", "record_id"],
-    ascending=[False, True],
-)
+baseline_below_30 = measurement_table["baseline"] < 30
+both_conditions = follow_up_at_least_30 & baseline_below_30
 
-ordered_measurements
+# The same mask in one line; the parentheses around each comparison are required
+inline_mask = (measurement_table["follow_up"] >= 30) & (measurement_table["baseline"] < 30)
+
+print("follow_up >= 30:", follow_up_at_least_30.sum(), "rows")
+print("both conditions:", both_conditions.sum(), "rows")
+print("inline version: ", inline_mask.sum(), "rows")
+
+narrowed_measurements = measurement_table.loc[
+    both_conditions,
+    ["baseline", "follow_up"],
+]
+narrowed_measurements
 ```
 
 ```python
@@ -201,13 +198,9 @@ assert isinstance(baseline_table, pd.DataFrame)
 assert same_value_by_label == same_value_by_position == 20
 pd.testing.assert_frame_equal(label_block, position_block)
 assert selected_measurements.index.tolist() == ["obs-002", "obs-003"]
-assert measurement_table["change"].tolist() == [10, 10, 10, 10]
-assert ordered_measurements.index.tolist() == [
-    "obs-001",
-    "obs-002",
-    "obs-003",
-    "obs-004",
-]
+assert follow_up_at_least_30.sum() == 2
+assert both_conditions.sum() == inline_mask.sum() == 1
+assert narrowed_measurements.index.tolist() == ["obs-002"]
 
 print("Demo 2 fresh-run verification passed")
 ```

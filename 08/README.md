@@ -1,146 +1,337 @@
 ---
 notion:
-  title_line: "Data Aggregation and Group Operations"
+  title_line: "# Data Aggregation and Group Operations"
   role: lecture
   status: mapped
   page_id: "2a1d9fdd-1a1a-80f8-b1e8-f7b20e4a2e84"
   url: "https://app.notion.com/p/2a1d9fdd1a1a80f8b1e8f7b20e4a2e84"
 ---
 
-Data Aggregation and Group Operations
+# Data Aggregation and Group Operations
 
-See [BONUS.md](BONUS.md) for advanced extensions:
-
-- Advanced groupby operations with custom functions
-- Hierarchical grouping and MultiIndex operations
-- Advanced performance profiling and debugging
-- Distributed and cloud computing
-- Custom aggregation functions and transformations
-- Advanced pivot table operations
+See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_pivot_tables.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
 
-# Outline
-
-- groupby split-apply-combine essentials
-- pivot tables and crosstab basics
-- performance measurement and scaling larger aggregations
-- remote work with SSH, secure file copying, and persistent sessions
-
 *Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights.*
-
-Data aggregation summarizes and groups data to extract insights. The lecture covers **groupby operations**, **pivot tables**, their result shapes, performance choices for larger workloads, and the shell tools used when the work runs on another machine.
 
 # The Split-Apply-Combine Paradigm
 
 *Reality check: GroupBy operations are the bread and butter of data analysis. Master this concept and you'll be able to answer almost any "what if we group by..." question that comes your way.*
 
-The split-apply-combine paradigm is the foundation of data aggregation. You split data into groups, apply a function to each group, and combine the results.
+A clinic manager asks, "What is the average wait at each clinic?" The visit log has one row per visit, but the answer needs one number per clinic. By hand, you would sort the visits into piles by clinic, average each pile, and copy the averages into a small table. pandas does the same three steps with `groupby()`.
 
-**Visual Guide - GroupBy Operations:**
+Hadley Wickham named this pattern **split-apply-combine**:
 
-```
-BEFORE GROUPBY                    AFTER GROUPBY
-┌─────────┬─────────┬─────────┐   ┌─────────┬─────────┐
-│ Category│ Value   │ Other   │   │ Category│ Mean    │
-├─────────┼─────────┼─────────┤   ├─────────┼─────────┤
-│ A       │ 10      │ X       │   │ A       │ 10.0    │
-│ A       │ 15      │ Y       │   │ B       │ 25.0    │
-│ B       │ 20      │ Z       │   └─────────┴─────────┘
-│ B       │ 25      │ W       │
-│ A       │ 5       │ V       │
-│ B       │ 30      │ U       │
-└─────────┴─────────┴─────────┘
-```
+- **Split**: sort rows into **groups** using a **grouping key**, a column whose values decide which group each row joins (here, `clinic`).
+- **Apply**: run a calculation on each group separately (here, the mean of `wait_min`).
+- **Combine**: collect the per-group results into a new table.
 
-**Visual Guide - Split-Apply-Combine:**
+Lecture 06 reshaped wide tables into long ones so that labels became values you can group by. Lectures 06 and 07 called what one row of a table represents its grain. Grouping usually changes the grain, so name it before and after. Here the input has one row per visit; the result has one row per clinic.
 
-```
-ORIGINAL DATA                    SPLIT BY CATEGORY
-┌─────────┬─────────┬─────────┐   ┌─────────┬─────────┐
-│ Category│ Value   │ Other   │   │ Group A │ Group B │
-├─────────┼─────────┼─────────┤   ├─────────┼─────────┤
-│ A       │ 10      │ X       │   │ A, 10   │ B, 20   │
-│ A       │ 15      │ Y       │   │ A, 15   │ B, 25   │
-│ B       │ 20      │ Z       │   │ A, 5    │ B, 30   │
-│ B       │ 25      │ W       │   └─────────┴─────────┘
-│ A       │ 5       │ V       │
-│ B       │ 30      │ U       │
-└─────────┴─────────┴─────────┘
-
-APPLY FUNCTION (e.g., mean)      COMBINE RESULTS
-┌─────────┬─────────┐            ┌─────────┬─────────┐
-│ Group A │ Group B │            │ Category│ Mean    │
-├─────────┼─────────┤            ├─────────┼─────────┤
-│ mean(10,│ mean(20,│            │ A       │ 10.0    │
-│ 15, 5)  │ 25, 30)│            │ B       │ 25.0    │
-│ = 10.0  │ = 25.0 │            └─────────┴─────────┘
-└─────────┴─────────┘
+```text
+INPUT: one row per visit    SPLIT by clinic          APPLY mean     COMBINE: one row per clinic
+clinic  wait_min
+North   12            ┌──>  North: 12, 15, 6  ──>   11.0  ──┐     clinic  wait_min
+North   15            │                                     │     East         9.0
+North    6            ├──>  South: 20, 30     ──>   25.0  ──┼──>  North       11.0
+South   20            │                                     │     South       25.0
+South   30            └──>  East: 9           ──>    9.0  ──┘
+East     9
 ```
 
 # Basic GroupBy Operations
 
-### Reference Card: GroupBy Aggregation
+`df.groupby('clinic')` performs only the split. It returns a **GroupBy object**: a record of which rows belong to which group, not a summary table. Nothing is calculated until you pick a column and an **aggregation**, a calculation that reduces each group's values to one number such as a mean or a count.
 
-| Call | Purpose and key arguments | Output |
-| :--- | :--- | :--- |
-| `df.groupby('column')` | Split by one key; pass a list for multiple keys | `DataFrameGroupBy` |
-| `grouped.mean()` / `grouped.sum()` | Reduce each group to a numeric summary | One row per group |
-| `grouped.count()` | Count non-null values by column | Per-column counts |
-| `grouped.size()` | Count rows, including null values | One count per group |
-| `grouped.agg(['mean', 'sum', 'count'])` | Compute several named summaries | Summary table |
+## Aggregating Each Group
 
-### Code Snippet: GroupBy Aggregation
+### Code Snippet: One Mean per Clinic
 
 ```python
 import pandas as pd
 import numpy as np
 
-# Create sample data
-df = pd.DataFrame({
-    'Department': ['Sales', 'Sales', 'Engineering', 'Engineering'],
-    'Employee': ['Alice', 'Bob', 'Charlie', 'Diana'],
-    'Salary': [50000, 55000, 80000, 85000],
-    'Experience': [2, 3, 5, 7]
+visits = pd.DataFrame({
+    'clinic': ['North', 'North', 'North', 'South', 'South', 'East'],
+    'visit_type': ['New', 'Follow-up', 'Follow-up', 'New', 'New', 'Follow-up'],
+    'patient_id': ['P01', 'P02', 'P01', 'P03', 'P04', 'P05'],
+    'wait_min': [12, 15, 6, 20, 30, 9],
+    'satisfaction': [4, np.nan, 5, 3, np.nan, 4],
 })
 
-# Basic groupby operations
-print("Group by Department:")
-print(df.groupby('Department')['Salary'].mean())
-
-print("\nMultiple aggregations:")
-print(df.groupby('Department').agg({
-    'Salary': ['mean', 'sum'],
-    'Experience': 'mean'
-}))
+grouped = visits.groupby('clinic')
+print(grouped)
+print(grouped['wait_min'].mean())
 ```
 
-## Choose the Operation for the Result You Need
+```text
+<pandas.api.typing.DataFrameGroupBy object at 0x...>
+clinic
+East      9.0
+North    11.0
+South    25.0
+Name: wait_min, dtype: float64
+```
 
-Start with the question: use aggregation for a summary by group, transform to add group-level values to existing rows, filter to keep qualifying groups, and apply for custom per-group work. Their result shapes are:
+Printing the GroupBy object shows no numbers. Selecting `wait_min` and calling `.mean()` runs the apply and combine steps, and the result is sorted by clinic name.
 
-- **Aggregation** reduces each group to one or more summary values, so the result has one row per group-key combination.
-- **Transform** returns values aligned to the original index and row count, so group statistics can be added back to the original rows.
-- **Filter** keeps or removes whole groups while preserving the rows of groups that pass.
-- **Apply** has a flexible return contract; use it only when aggregation, transform, and filter cannot express the operation.
+### Reference Card: GroupBy Aggregation
 
-Named aggregation gives stable output column names, and `as_index=False` keeps group keys as ordinary columns:
+| Task | Call | Purpose and key arguments | Output |
+| --- | --- | --- | --- |
+| Split | `df.groupby('key')` | Group rows by one key; pass a list for several keys | `DataFrameGroupBy`; nothing computed yet |
+| Select | `grouped['col']` / `grouped[['a', 'b']]` | Choose the columns to summarize | `SeriesGroupBy` / `DataFrameGroupBy` |
+| Summarize | `.mean()`, `.median()`, `.sum()`, `.min()`, `.max()` | One summary per group of the selected numeric column | One row per group |
+| Count | `.size()` | Rows per group, including rows with missing values | One count per group |
+| Count | `['col'].count()` | Non-missing values of `col` per group | One count per group |
+| Count | `['col'].nunique()` | Distinct non-missing values of `col` per group | One count per group |
+| Several at once | `.agg(name=('col', 'func'), ...)` | **Named aggregation**: output name, source column, function | One flat column per name |
+| Several at once | `.agg({'col': ['mean', 'max']})` | Several functions per column | Two-level column labels |
+| Result shape | `groupby(..., as_index=False)` | Keep keys as ordinary columns | Flat table, `0..n-1` index |
+| Result shape | `groupby(..., sort=True)` | Sort rows by key (the default); categorical keys follow category order | Ordered rows |
+
+### Code Snippet: Count and Summarize Each Clinic
 
 ```python
-department_summary = (
-    df.groupby('Department', as_index=False, dropna=False)
-      .agg(mean_salary=('Salary', 'mean'),
-           employee_count=('Employee', 'size'))
+summary = visits.groupby('clinic', as_index=False).agg(
+    visits=('patient_id', 'size'),
+    patients=('patient_id', 'nunique'),
+    rated=('satisfaction', 'count'),
+    mean_wait=('wait_min', 'mean'),
 )
+print(summary)
 ```
 
-When missing group keys should form a group, add `dropna=False`; the default excludes them. In pandas 3, categorical groupers default to `observed=True`, returning only groups present in the data; use `observed=False` only when the result must include every defined category or category combination.
+```text
+  clinic  visits  patients  rated  mean_wait
+0   East       1         1      1        9.0
+1  North       3         2      2       11.0
+2  South       2         2      1       25.0
+```
+
+North had three visits from two patients (P01 came twice), and only two of those visits have a satisfaction score.
+
+### Common Mistakes: Text Columns and Counts
+
+- `visits.groupby('clinic').mean()` raises `TypeError: dtype 'str' does not support operation 'mean'` because `patient_id` and `visit_type` are text. Select numeric columns first.
+- `.sum()` over text does not fail: it glues strings together (`P01P02P01`). Select columns before summing.
+- `size` and `count` differ only when values are missing. Use `size` for "how many rows?" and `count` for "how many recorded values?"
+
+## Grouping by Two Keys
+
+Pass a list of keys to get one group per observed combination. The result has a **MultiIndex** (Lecture 06): one index level per key. `.unstack()` moves the inner level into columns so the table reads like a grid. Combinations with no rows appear as `NaN`.
+
+### Reference Card: Two-Key Results
+
+- `df.groupby(['a', 'b'])['col'].mean()`: One value per observed `(a, b)` pair; MultiIndex `Series`.
+- `result.unstack()`: Move the inner level (`b`) into columns; absent pairs become `NaN`.
+- `wide.stack()`: Move the columns back into the inner index level; absent pairs come back as `NaN` rows.
+- `df.groupby(['a', 'b'], as_index=False)`: Keep `a` and `b` as ordinary columns; one flat row per pair.
+
+### Code Snippet: Mean Wait by Clinic and Visit Type
+
+```python
+by_type = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean()
+print(by_type)
+print(by_type.unstack())
+```
+
+```text
+clinic  visit_type
+East    Follow-up      9.0
+North   Follow-up     10.5
+        New           12.0
+South   New           25.0
+Name: wait_min, dtype: float64
+visit_type  Follow-up   New
+clinic
+East              9.0   NaN
+North            10.5  12.0
+South             NaN  25.0
+```
+
+East had no new-patient visits, so East–New is `NaN`. There was nothing to average, which is not the same as a zero-minute wait.
+
+# Pivot Tables and Cross-Tabulations
+
+![The greatest research skill you can have is being a nosy bitch who wants to find out — a pivot table is how you find out](media/research.png)
+
+In Lecture 06, `pivot()` rearranged a long table into a wide one and raised an error when an index/column pair appeared more than once. A **pivot table** handles those repeats: it groups rows by one key for the rows and another for the columns, aggregates each combination, and lays the results out as a grid. It is the two-key `groupby(...).mean().unstack()` you just built, in a single call, with optional row and column totals called **margins**. A **cross-tabulation** (crosstab) is the special case that counts rows in each combination.
+
+```text
+LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
+clinic  visit_type  wait_min               visit_type  Follow-up   New
+North   New         12                     clinic
+North   Follow-up   15  ┐ mean → 10.5      East              9.0   NaN   ← no East new-patient visits
+North   Follow-up    6  ┘                  North            10.5  12.0
+South   New         20  ┐ mean → 25.0      South             NaN  25.0
+South   New         30  ┘
+East    Follow-up    9
+```
+
+## Basic Pivot Tables
+
+### Reference Card: Pivot Tables and Crosstabs
+
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `pd.pivot_table(df, values=..., index=..., columns=..., aggfunc='mean')` | Group by the `index` and `columns` keys and summarize `values` in each cell; `aggfunc` picks the summary (`'mean'`, `'sum'`, `'count'`, ...) | Wide table; absent combinations are `NaN` |
+| `pd.pivot_table(..., aggfunc=['sum', 'mean'])` | Several summaries at once; `result['sum']` selects one | Two-level column labels |
+| `pd.pivot_table(..., sort=True)` | Order the rows and columns by key (the default); `sort=False` leaves both in first-appearance order | Predictable row and column order |
+| `pd.crosstab(df['a'], df['b'])` | Count rows for each combination of two columns; pass a list such as `[df['a'], df['c']]` for two-level rows | Counts; absent combinations are 0 |
+| `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
+| `pd.crosstab(df['a'], df['b'], margins=True)` | Add an `All` row and column of totals | Counts with totals |
+
+### Code Snippet: A Pivot Table and Its GroupBy Twin
+
+```python
+mean_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
+                           columns='visit_type', aggfunc='mean')
+print(mean_wait)
+
+same = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean().unstack()
+print(mean_wait.equals(same))   # True
+
+print(pd.crosstab(visits['clinic'], visits['visit_type'], margins=True))
+```
+
+```text
+visit_type  Follow-up   New
+clinic
+East              9.0   NaN
+North            10.5  12.0
+South             NaN  25.0
+True
+visit_type  Follow-up  New  All
+clinic
+East                1    0    1
+North               2    1    3
+South               0    2    2
+All                 3    3    6
+```
+
+### Missing Cells: Absent Is Not Zero
+
+A `NaN` cell means no rows had that combination. `fill_value=0` is right for counts and sums, where "no visits" really is 0 visits (the crosstab above already shows 0). It is wrong for means, minimums, or other measurements: filling East–New with 0 would report a zero-minute wait that never happened.
+
+## Totals and Absent Cells
+
+### Reference Card: Pivot Table Totals and Fills
+
+| Option | Purpose and key arguments | Output effect |
+| :--- | :--- | :--- |
+| `margins=True, margins_name='Total'` | Add a row and column of totals computed from the underlying rows; `margins_name` labels them (default `All`) | Extra `Total` row and column |
+| `fill_value=0` | Replace absent cells with 0, only for counts and sums | No-`NaN` cells |
+
+### Code Snippet: Totals Where Zero Is Real
+
+```python
+total_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
+                            columns='visit_type', aggfunc='sum',
+                            fill_value=0, margins=True, margins_name='Total')
+print(total_wait)
+```
+
+```text
+visit_type  Follow-up  New  Total
+clinic
+East                9    0      9
+North              21   12     33
+South               0   50     50
+Total              30   62     92
+```
+
+East had no new-patient visits, so its total new-patient wait really is 0 minutes. The mean table above correctly leaves that cell `NaN`.
+
+# LIVE DEMO!
+
+# Which Groups Appear in a Summary
+
+A fourth clinic opens in March and sees nobody in April. The April report you just built, with `groupby` or with `pivot_table`, lists three clinics, and nothing in the output says the fourth is missing. Rows whose clinic was never recorded vanish just as quietly. Two defaults decide which groups a summary contains, and neither one warns you, so set both on purpose in anything you hand to someone else.
+
+## Missing Keys and Unused Categories
+
+Rows with a missing key are left out before the split. For a categorical key (Lecture 05), only the categories that occur in the data become groups, so the clinic with no visits yet never reaches the report. Declaring the categories yourself also sets the order of the results: with the default `sort=True`, groups follow the order you list in `categories=`, not alphabetical order.
+
+| What April actually held | The default summary | What a handed-off report should show |
+| --- | --- | --- |
+| North 3, South 2, East 1 visits | three rows, alphabetical | three rows, in your reporting order |
+| West opened in March, no visits yet | no West row at all | `West 0` |
+| One visit with no clinic recorded | dropped before the split, uncounted | a `NaN` row you can see and explain |
+
+### Reference Card: Group Coverage Options
+
+- `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
+- `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present. For plain text keys, `observed` does nothing.
+- `pd.Categorical(values, categories=[...], ordered=True)`: Declare the allowed values and their reporting order; `ordered=True` records that the order is meaningful. Prints `Categories (4, str): ['North' < 'South' < 'East' < 'West']` under the values. A value missing from `categories=` becomes `NaN` with a warning, so list every value that occurs.
+- `pd.pivot_table(..., observed=False, dropna=False)`: The same two choices for a pivot table's rows and columns, plus one extra job for `dropna=`. The default, `dropna=True`, also drops any row or column whose cells all came out `NaN`. Counting an unused category gives `0`, so it stays; averaging one gives `NaN`, so it disappears unless you pass `dropna=False`. The kept `NaN` row is not always last: with a categorical key, `observed=False`, and a `columns=` key it comes out first, so find it by its label.
+
+### Code Snippet: A Reporting Order and an Unused Clinic
+
+```python
+levels = ['North', 'South', 'East', 'West']   # reporting order; West has no visits yet
+cat_visits = visits.copy()
+cat_visits['clinic'] = pd.Categorical(visits['clinic'], categories=levels, ordered=True)
+print(cat_visits.groupby('clinic', observed=True)['wait_min'].count())
+print(cat_visits.groupby('clinic', observed=False)['wait_min'].count())
+```
+
+```text
+clinic
+North    3
+South    2
+East     1
+Name: wait_min, dtype: int64
+clinic
+North    3
+South    2
+East     1
+West     0
+Name: wait_min, dtype: int64
+```
+
+The categories set the order, so the report reads North, South, East, West instead of alphabetically, and `observed=False` gives West the `0` that says "open, no visits."
+
+### Code Snippet: A Visit with No Clinic Recorded
+
+```python
+unrecorded = visits.copy()
+unrecorded.loc[5, 'clinic'] = None     # the clinic was not written down for this visit
+print(unrecorded.groupby('clinic')['wait_min'].count())
+print(unrecorded.groupby('clinic', dropna=False)['wait_min'].count())
+```
+
+```text
+clinic
+North    3
+South    2
+Name: wait_min, dtype: int64
+clinic
+North    3
+South    2
+NaN      1
+Name: wait_min, dtype: int64
+```
+
+That visit was East's only one, so East leaves the report entirely: six visits went in, five are counted, and nothing says so. `dropna=False` keeps the unrecorded visit as its own `NaN` group, listed last, so the gap is visible before anyone acts on the numbers.
 
 # GroupBy Result-Shape Choices
 
+Before choosing a method, decide what one row of the answer should represent: its grain. Aggregation changes the grain; transform and filter keep the original rows.
+
+| Operation | Question it answers (clinic visits) | Rows returned | Grain of the result |
+| --- | --- | --- | --- |
+| `agg` | What is the mean wait at each clinic? | 3 | One row per clinic |
+| `transform` | How does each visit compare with its clinic's mean? | 6, same index as `visits` | One row per visit |
+| `filter` | Which visits belong to clinics with at least two visits? | 5 (East dropped) | One row per visit |
+| `apply` | Which visit (the whole row) had the longest wait at each clinic? | Depends on the function (3 here) | Depends on the function (one visit per clinic here) |
+
+Use `agg`, `transform`, or `filter` whenever one fits; a single number such as the longest wait is just `agg('max')`. `apply` is the fallback for custom per-group work, such as returning whole rows. It is slower, and its output shape depends on what your function returns.
+
 ## Transform Operations
 
-Transform operations apply a function to each group and return a result with the same shape as the original data.
+**transform** computes a statistic for each group and copies it back to every row of that group. The result has the same length and index as the original table, so it can become a new column that compares each row with its group.
 
 ### Reference Card: Transform Operations
 
@@ -151,21 +342,51 @@ Transform operations apply a function to each group and return a result with the
 | `grouped.transform(lambda x: x - x.mean())` | Compute a custom within-group value | Same row count as input |
 | `grouped.agg(['mean', 'std'])` | Compare with a reducing summary | One row per group |
 
-### Code Snippet: Transform Operations
+### Code Snippet: Compare Each Visit with Its Clinic
 
 ```python
-# Transform: Add group means as new column
-df['Salary_Mean'] = df.groupby('Department')['Salary'].transform('mean')
-df['Salary_Std'] = df.groupby('Department')['Salary'].transform('std')
-df['Salary_Normalized'] = df.groupby('Department')['Salary'].transform(lambda x: (x - x.mean()) / x.std())
-
-print("Data with group statistics:")
-print(df[['Department', 'Employee', 'Salary', 'Salary_Mean', 'Salary_Std', 'Salary_Normalized']])
+with_context = visits.copy()
+with_context['clinic_mean_wait'] = visits.groupby('clinic')['wait_min'].transform('mean')
+with_context['wait_vs_clinic'] = with_context['wait_min'] - with_context['clinic_mean_wait']
+print(with_context[['clinic', 'patient_id', 'wait_min', 'clinic_mean_wait', 'wait_vs_clinic']])
 ```
+
+```text
+  clinic patient_id  wait_min  clinic_mean_wait  wait_vs_clinic
+0  North        P01        12              11.0             1.0
+1  North        P02        15              11.0             4.0
+2  North        P01         6              11.0            -5.0
+3  South        P03        20              25.0            -5.0
+4  South        P04        30              25.0             5.0
+5   East        P05         9               9.0             0.0
+```
+
+The new columns go on a `.copy()` (Lecture 04), so `visits` is unchanged for the next examples.
+
+### Common Mistake: Attaching a Summary to Rows
+
+```python
+clinic_means = visits.groupby('clinic')['wait_min'].mean()   # 3 rows: East, North, South
+wrong = visits.copy()
+wrong['clinic_mean_wait'] = clinic_means
+print(wrong[['clinic', 'wait_min', 'clinic_mean_wait']])
+```
+
+```text
+  clinic  wait_min  clinic_mean_wait
+0  North        12               NaN
+1  North        15               NaN
+2  North         6               NaN
+3  South        20               NaN
+4  South        30               NaN
+5   East         9               NaN
+```
+
+pandas matches a new column to rows by index label (Lecture 04). The summary's labels are clinic names, and the rows are labeled 0-5, so nothing matches and every value is `NaN`, with no error. Copying the three numbers by position with `clinic_means.values` fails instead: `ValueError: Length of values (3) does not match length of index (6)`. `transform('mean')` returns one value per visit with the original index, so it lines up.
 
 ## Filter Operations
 
-Filter operations remove entire groups based on a condition.
+**filter** runs a test on each whole group and keeps every row of the groups that pass. Rows are kept or dropped, never changed.
 
 ### Reference Card: Filter Operations
 
@@ -175,297 +396,125 @@ Filter operations remove entire groups based on a condition.
 | `grouped.filter(lambda x: x['col'].sum() > threshold)` | Keep groups meeting a total threshold | Filtered DataFrame |
 | `grouped.filter(lambda x: x['col'].mean() > threshold)` | Keep groups meeting a mean threshold | Filtered DataFrame |
 
-### Code Snippet: Filter Operations
+### Code Snippet: Keep Clinics with at Least Two Visits
 
 ```python
-# Filter: Keep only departments with more than 1 employee
-filtered = df.groupby('Department').filter(lambda x: len(x) > 1)
-print("Departments with multiple employees:")
-print(filtered)
+busy = visits.groupby('clinic').filter(lambda g: len(g) >= 2)
+print(busy[['clinic', 'patient_id', 'wait_min']])
+```
 
-# Filter: Keep only departments with average salary > 60000
-high_salary_depts = df.groupby('Department').filter(lambda x: x['Salary'].mean() > 60000)
-print("\nHigh-salary departments:")
-print(high_salary_depts)
+```text
+  clinic patient_id  wait_min
+0  North        P01        12
+1  North        P02        15
+2  North        P01         6
+3  South        P03        20
+4  South        P04        30
 ```
 
 ## Apply Operations
 
-Apply operations let you use custom functions on each group.
+**apply** hands each group to your function as a small DataFrame and stitches the results together. `nlargest(1, 'wait_min')` returns the row with the longest wait.
 
 ### Reference Card: Apply Operations
 
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
-| `grouped.apply(func, include_groups=False)` | Run custom per-group logic; keep grouping columns out of callable input | Depends on `func` |
+| `grouped.apply(func, include_groups=False)` | Run your own function on each group; the function does not receive the grouping column | Depends on `func` |
 | `grouped.apply(lambda x: x.sort_values('col'), include_groups=False)` | Sort rows inside each group | Combined DataFrame |
 | `grouped.apply(lambda x: x.nlargest(2, 'col'), include_groups=False)` | Keep top two rows in each group | Combined DataFrame |
 
-### Code Snippet: Apply Operations
+### Code Snippet: The Longest-Wait Visit at Each Clinic
 
 ```python
-# Apply: Custom function for salary statistics
-def salary_stats(group):
-    # include_groups=False ensures 'group' contains non-grouping columns only.
-    return pd.Series({
-        'count': len(group),
-        'mean': group['Salary'].mean(),
-        'std': group['Salary'].std(),
-        'range': group['Salary'].max() - group['Salary'].min()
-    })
-
-print("Custom statistics by department:")
-# State the callable's input-column contract explicitly.
-print(df.groupby('Department').apply(salary_stats, include_groups=False))
-
-# Apply: Get top earners in each department
-top_earners = df.groupby('Department').apply(
-    lambda x: x.nlargest(1, 'Salary'), 
-    include_groups=False
+longest = visits.groupby('clinic').apply(
+    lambda g: g.nlargest(1, 'wait_min'), include_groups=False
 )
-print("\nTop earners per department:")
-print(top_earners)
+print(longest[['patient_id', 'wait_min']])
 ```
 
-In pandas 3, `DataFrameGroupBy.apply()` excludes grouping columns from the DataFrame passed to the callable, and `include_groups=True` is invalid. `include_groups` controls the callable's input columns; `group_keys` separately controls group labels in the combined result's index.
-
-# LIVE DEMO!
-
-# Hierarchical Grouping
-
-Grouping by multiple keys creates a GroupBy object. Aggregate first to get a MultiIndex summary, then reshape or reorder that result.
-
-### Reference Card: Hierarchical Grouping
-
-| Call | Purpose and key arguments | Output |
-| :--- | :--- | :--- |
-| `df.groupby(['level1', 'level2'])` | Split by combinations of keys | GroupBy object |
-| `summary = df.groupby(['level1', 'level2'])[['value']].sum()` | Aggregate each key combination | MultiIndex DataFrame |
-| `wide = summary.unstack()` | Move one index level into columns | Wide DataFrame |
-| `wide.stack()` | Move the innermost column level into the index | Long DataFrame |
-| `summary.swaplevel(0, 1)` | Reorder MultiIndex levels | Same values, new level order |
-
-### Code Snippet: Hierarchical Grouping
-
-```python
-# Create hierarchical data
-hierarchical_df = pd.DataFrame({
-    'Region': ['North', 'North', 'South', 'South', 'North', 'South'],
-    'Department': ['Sales', 'Engineering', 'Sales', 'Engineering', 'Marketing', 'Marketing'],
-    'Revenue': [100000, 150000, 120000, 180000, 80000, 90000],
-    'Employees': [5, 8, 6, 10, 4, 5]
-})
-
-# Hierarchical grouping
-hierarchical_grouped = (
-    hierarchical_df.groupby(['Region', 'Department'], observed=True)
-    [['Revenue', 'Employees']].sum()
-)
-print("Hierarchical grouping:")
-print(hierarchical_grouped)
-
-# Unstack to wide format
-wide_format = hierarchical_grouped.unstack()
-print("\nWide format:")
-print(wide_format)
+```text
+         patient_id  wait_min
+clinic
+East   5        P05         9
+North  1        P02        15
+South  4        P04        30
 ```
 
-# Pivot Tables and Cross-Tabulations
-![Research vs. Practical](media/research.png)
-
-
-*Think of pivot tables as the data analyst's Swiss Army knife - they can reshape, summarize, and analyze data in ways that would take dozens of lines of code to accomplish manually.*
-
-Pivot tables are powerful tools for summarizing and analyzing data across multiple dimensions.
-
-**Visual Guide - Pivot Table Transformation:**
-
-```
-LONG FORMAT (Original)              WIDE FORMAT (Pivoted)
-┌─────────┬─────────┬─────────┐     ┌─────────┬─────────┬─────────┐
-│ Product │ Region  │ Sales   │     │ Product │ North   │ South   │
-├─────────┼─────────┼─────────┤     ├─────────┼─────────┼─────────┤
-│ A       │ North   │ 1000    │     │ A       │ 1000    │ 1500    │
-│ A       │ South   │ 1500    │     │ B       │ 2000    │ 1200    │
-│ B       │ North   │ 2000    │     └─────────┴─────────┴─────────┘
-│ B       │ South   │ 1200    │
-└─────────┴─────────┴─────────┘
-```
-
-## Basic Pivot Tables
-
-### Reference Card: Pivot Tables and Crosstabs
-
-| Call | Purpose and key arguments | Output |
-| :--- | :--- | :--- |
-| `pd.pivot_table(df, values=..., index=..., columns=...)` | Reshape long data while aggregating cells | DataFrame with row/column keys |
-| `pd.pivot_table(df, aggfunc='mean')` | Choose the cell aggregation | Aggregated cells |
-| `pd.pivot_table(df, fill_value=0)` | Replace missing combinations after aggregation | Filled DataFrame |
-| `pd.pivot_table(df, margins=True)` | Add row and column totals | Table with totals |
-| `pd.crosstab(index, columns)` | Count combinations of categorical values | Frequency table |
-
-### Code Snippet: Pivot Tables
-
-```python
-# Create sample sales data
-sales_data = pd.DataFrame({
-    'Product': ['A', 'A', 'B', 'B', 'C', 'C'],
-    'Region': ['North', 'South', 'North', 'South', 'North', 'South'],
-    'Sales': [1000, 1500, 2000, 1200, 800, 900]
-})
-
-# Basic pivot table
-pivot = pd.pivot_table(sales_data, 
-                    values='Sales', 
-                    index='Product', 
-                    columns='Region', 
-                    aggfunc='sum')
-print("Sales by Product and Region:")
-print(pivot)
-
-# Pivot with multiple aggregations
-pivot_multi = pd.pivot_table(sales_data,
-                            values='Sales',
-                            index='Product',
-                            columns='Region',
-                            aggfunc=['sum', 'mean'])
-print("\nMultiple aggregations:")
-print(pivot_multi)
-```
-
-## Advanced Pivot Operations
-
-### Reference Card: Advanced Pivot Options
-
-| Option | Purpose and key arguments | Output effect |
-| :--- | :--- | :--- |
-| `margins=True, margins_name='Total'` | Add named row and column totals | Extra total labels |
-| `fill_value=0` | Replace missing result cells | No-NA display cells |
-| `dropna=False` | Retain all-NA result columns and NA-key rows for margins | Wider, more complete table |
-| `observed=True` | Show only category combinations present in the data | Smaller categorical result |
-
-### Code Snippet: Advanced Pivot Operations
-
-```python
-# Advanced pivot with totals and missing value handling
-advanced_pivot = pd.pivot_table(sales_data,
-                               values='Sales',
-                               index='Product',
-                               columns='Region',
-                               aggfunc='sum',
-                               margins=True,
-                               margins_name='Total',
-                               fill_value=0)
-print("Advanced pivot with totals:")
-print(advanced_pivot)
-
-# Cross-tabulation
-crosstab = pd.crosstab(sales_data['Product'], 
-                      sales_data['Region'], 
-                      margins=True)
-print("\nCross-tabulation:")
-print(crosstab)
-```
+The index has two levels: the clinic and each row's original index. `include_groups=False` means your function does not receive the `clinic` column. It is the only setting pandas 3 allows; writing it out makes pandas 2.2, which still passes the column by default, give the same result.
 
 # LIVE DEMO!
 
 # Performance Optimization
 
-![xkcd 2533: Slope Hypothesis Testing](media/xkcd_2533.png)
+![xkcd 1319: Automation](media/xkcd_1319.png)
 
-Optimize only after measuring the real workload. Performance depends on the pandas version, data types, group cardinality, memory, and hardware, so any benchmark is illustrative rather than a promise for every dataset.
+A grouped summary that takes a second on a class example can take many minutes on a year of hospital lab results. Before changing code, **measure** by timing the step and checking memory. You already have both tools. `%timeit` (Lecture 04) runs a line several times and reports the typical time. `df.memory_usage(deep=True)` (Lecture 05) reports bytes per column. Results depend on data size, dtypes, number of groups, and hardware, so measure your own workload.
 
-![Performance Benchmarks - All comparisons on 10M rows (lower is better)](media/perf_combined.png)
+![Performance benchmarks on about 100 million rows (lower is better): three separate groupby calls vs one agg, a per-group z-score with apply vs transform, and memory before and after categorical keys](media/perf_combined.png)
 
-Start with an explicit aggregation specification before considering chunking or parallelism:
+The benchmark (about 100 million rows) shows three changes that usually matter:
 
-```python
-def efficient_groupby(df, group_cols, agg_spec):
-    """Group using caller-supplied columns and aggregation functions."""
-    return df.groupby(group_cols, observed=True).agg(agg_spec)
+- One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
+- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code. A Python `lambda` or `apply` runs once per group and can be 20-50× slower.
+- A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
-# Example: {'numeric_col': ['mean', 'sum'], 'other_col': 'count'}
-```
+## Measure, Then Optimize
 
-## Dtype-Aware GroupBy
+### Reference Card: Measure, Then Optimize
 
-### Reference Card: Performance Choices
+| Task | Tool | Use when | Typical output |
+| --- | --- | --- | --- |
+| Measure time | `%timeit expression` | Comparing two ways to get the same result in a notebook | `8.8 ms ± 0.1 ms per loop ...` |
+| Measure time | `time python analysis.py` | Timing a whole script in the terminal | `real 0m12.3s` |
+| Measure memory | `df.memory_usage(deep=True)` | Finding the largest columns | Bytes per column |
+| Faster | One `.agg(...)` with several summaries | You need several statistics per group | One pass, one table |
+| Faster | String aggregations and `transform('mean')` instead of `lambda`/`apply` | The statistic is built in | Same numbers, much faster |
+| Smaller | `.astype('category')` on repeated text keys | Few distinct values repeated many times | Less memory |
 
-| Technique | Use when | Output or trade-off |
-| :--- | :--- | :--- |
-| Explicit `.agg(agg_spec)` | The aggregation is known and measurable | Clear, often efficient summary |
-| Dtype conversion | Numeric/category semantics or memory use justify it | Changed working dtypes |
-| Chunked `read_csv(..., chunksize=...)` | Input does not fit comfortably in memory | Composable partial summaries |
-| Multiprocessing | Profiling shows CPU work dominates overhead | Faster only when merge/startup costs are worthwhile |
-
-```python
-# GroupBy with caller-validated dtype choices
-def configured_groupby(df, group_cols, agg_cols, dtype_map=None):
-    """Group after applying only caller-supplied, validated dtype conversions."""
-
-    working = df.astype(dtype_map) if dtype_map else df
-    return working.groupby(group_cols, observed=True)[agg_cols].sum()
-```
-
-Supply `dtype_map` only after deciding that its numeric precision or category semantics fit the data. Omitting it preserves the input dtypes.
-
-## Chunked Processing
+### Code Snippet: Measure Before and After
 
 ```python
-def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
-    """Sum groups from a CSV that is read in chunks."""
-    results = []
+rng = np.random.default_rng(0)
+n = 1_000_000
+labs = pd.DataFrame({
+    'patient_id': rng.integers(0, 10_000, n),
+    'clinic': rng.choice(['North', 'South', 'East', 'West'], n),   # one random clinic per row
+    'glucose': rng.normal(100, 15, n).round(1),
+})
+print(round(labs['clinic'].memory_usage(deep=True) / 1e6, 1))  # 12.5 (MB as text)
+labs['clinic'] = labs['clinic'].astype('category')
+print(round(labs['clinic'].memory_usage(deep=True) / 1e6, 1))  # 1.0 (MB as category)
 
-    for chunk in pd.read_csv(file_path, chunksize=chunk_size):
-        if not chunk.empty:
-            results.append(
-                chunk.groupby(group_cols, observed=True)[agg_cols].sum()
-            )
-
-    if not results:
-        raise ValueError("input file must contain at least one data row")
-
-    levels = list(range(results[0].index.nlevels))
-    return (pd.concat(results)
-              .groupby(level=levels, observed=True)[agg_cols]
-              .sum())
+by_patient = labs.groupby('patient_id')['glucose']
+%timeit by_patient.agg('std')              # about 9 ms
+%timeit by_patient.agg(lambda s: s.std())  # about 450 ms: same values, ~50x slower
 ```
 
-Chunking helps when the input does not fit in memory, but it is not automatically faster. The partial result must be mathematically composable: sums can be summed; means need both partial sums and counts.
-
-## Parallel Processing
-
-```python
-from multiprocessing import Pool
-
-def process_chunk(chunk):
-    return chunk.groupby('category', observed=True)[['value']].sum()
-
-def parallel_groupby(df, n_processes=4):
-    if n_processes < 1:
-        raise ValueError("n_processes must be at least 1")
-    if df.empty:
-        raise ValueError("df must contain at least one row")
-
-    chunk_size = max(1, len(df) // n_processes)
-    chunks = [df.iloc[i:i + chunk_size]
-              for i in range(0, len(df), chunk_size)]
-
-    with Pool(n_processes) as pool:
-        results = pool.map(process_chunk, chunks)
-
-    return pd.concat(results).groupby(level=0, observed=True)[['value']].sum()
-```
-
-Parallel work adds process startup, serialization, and merge costs. Measure the complete operation; more processes do not guarantee a faster result.
+When data still do not fit in memory, see chunked reading and parallel processing in [BONUS.md](BONUS.md#scaling-past-memory-chunks-and-processes). The simpler move is often a bigger computer, which is the next topic.
 
 # Remote Computing with SSH
 
-![xkcd 2523: Endangered Data](media/xkcd_2523.png)
+![xkcd 2523: Endangered](media/xkcd_2523.png)
 
-*When your data is too big for your laptop, it's time to think about remote computing. SSH is your gateway to powerful remote servers that can handle massive datasets.*
+Some analyses cannot run on a laptop. The dataset may be too large or the job may run all night. Very often in health research, the data are not allowed to leave an approved secure server because they contain **protected health information** (PHI), health records that can identify a person. The answer is to bring your code to the data: log in to the other computer, run the work there, and bring back only results you are allowed to take. Use the hostname, account, and authentication instructions supplied by whoever operates the server.
 
-SSH gives you an encrypted shell on another computer. The basic workflow is: connect, move the needed files, run the work there, and retrieve the results. Use the hostname, account, and authentication instructions supplied by whoever operates the server.
+**SSH** (Secure Shell) opens an encrypted terminal on another computer, called the **server** or **host**. Once connected, you type the same shell commands from Lectures 01-02 (`pwd`, `ls`, `cd`, `python`), but they run on the server. The prompt shows where you are:
+
+```text
+you@laptop:~$ ssh jdoe@analysis.example.org
+The authenticity of host 'analysis.example.org' can't be established.
+ED25519 key fingerprint is SHA256:...
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+jdoe@analysis:~$ hostname
+analysis
+jdoe@analysis:~$ exit
+you@laptop:~$
+```
+
+The first time you connect, SSH shows the server's **host key fingerprint**, a code that identifies that server, and asks whether to trust it. Compare it with the fingerprint the server's administrator published; type `yes` only if they match. SSH remembers the server after that. If it asks for a password, nothing appears as you type; that is normal.
+
+Most servers use an **SSH key pair** instead of a password. `ssh-keygen` creates two files. `~/.ssh/id_ed25519.pub`, the **public key**, works like a padlock: give copies to every server you use. `~/.ssh/id_ed25519`, the **private key**, is the only key that opens that padlock, so it stays on your laptop and is never shared, uploaded, or committed.
 
 ## Connect and Copy Files
 
@@ -478,8 +527,10 @@ SSH gives you an encrypted shell on another computer. The basic workflow is: con
 | `ssh user@host 'command'` | Run one command remotely | Command output locally |
 | `scp local user@host:path` | Copy a local file to the server | Remote file |
 | `scp user@host:path local` | Copy a remote file back | Local file |
-| `ssh-keygen -t ed25519` | Create a public/private key pair | Key files |
+| `ssh-keygen -t ed25519` | Create a public/private key pair | `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` |
 | `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
+
+### Code Snippet: Set Up a Key, Connect, and Copy Files
 
 ```bash
 # Create a key once, then follow the server's instructions to install the public key
@@ -495,46 +546,64 @@ scp data.csv username@server.example:~/data/
 scp username@server.example:~/results/analysis.csv ./
 ```
 
-The private key stays private; do not upload or commit it. A passphrase plus an SSH agent avoids retyping it for every connection.
+`ssh-keygen` first asks where to save the key; press Enter to accept the default location. It then asks for a passphrase that protects the private key file; set one. Run `ssh-add` and type the passphrase once: the **SSH agent**, a background program on your laptop, then remembers the unlocked key until you log out or restart, so `ssh`, `scp`, and `ssh-copy-id` stop asking for the passphrase every time. macOS runs an agent for you. If `ssh-add` says it cannot connect to your authentication agent (common in WSL), skip it and type the passphrase when each command asks.
 
 ## Keep Long Jobs Alive with tmux or screen
 
 ![Punk vs. Process](media/punk.png)
 
-A persistent terminal session lets work continue when the network connection or laptop disappears. Use whichever tool the server provides:
+When an SSH connection drops (laptop sleeps, Wi-Fi changes), the server stops the programs started from that connection, including an analysis three hours into a four-hour run. A **terminal multiplexer** such as `tmux` keeps a shell running on the server on its own. You **detach**, disconnect, and later **attach** again to find the job still running. A tmux session survives disconnects, not a server restart. `screen` is an older alternative; use whichever the server provides. For a guided introduction, see [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/).
 
-For a guided introduction, see [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/).
-
-```bash
-# tmux
-tmux new-session -s analysis
-# Detach with Ctrl+b, then d; reconnect and run:
-tmux attach-session -t analysis
-
-# screen
-screen -S analysis
-# Detach with Ctrl+a, then d; reconnect and run:
-screen -r analysis
+```text
+laptop ── ssh ──> server
+                   └─ tmux session "analysis"   (keeps running after you disconnect)
+                        └─ python analysis.py
 ```
 
-Inside the persistent session, activate the server's project environment and run the analysis. The shell's `time` command is a useful first measurement:
+### Reference Card: tmux Sessions
+
+- `tmux new -s analysis`: Start a session named `analysis`; a status bar appears at the bottom.
+- `Ctrl+b`, then `d`: Detach; the session keeps running and you return to the normal prompt.
+- `tmux ls` (short for `tmux list-sessions`): List sessions; output looks like `analysis: 1 windows (created Fri Sep 18 15:32:45 2026)`.
+- `tmux attach -t analysis`: Reattach to the session.
+- `exit` inside the session: End it when the job is done.
+- `tmux kill-session -t analysis`: End a detached session from outside, stopping anything still running in it.
+- Alternative: `screen -S analysis`; detach with `Ctrl+a`, then `d`; reattach with `screen -r analysis`.
+
+### Code Snippet: Keep an Analysis Running
 
 ```bash
-time python analysis.py
+tmux new -s analysis          # on the server, after ssh
+source .venv/bin/activate     # the project's environment on the server
+time python analysis.py       # start the long job; time reports how long it took
+# press Ctrl+b, then d to detach; now it is safe to disconnect
+tmux ls                       # later, after reconnecting with ssh
+tmux attach -t analysis
 ```
 
 ## Run Jupyter Through an SSH Tunnel
 
-Keep Jupyter bound to the remote machine's loopback interface, then forward a local port through SSH:
+`jupyter lab` (Lecture 04) starts Jupyter as a small web server that your browser talks to. Programs like this listen on a numbered **port**; Jupyter uses 8888 by default. On a shared server, start Jupyter so it accepts connections only from `127.0.0.1`, also called **localhost** ("this same computer"), so nobody else on the network can reach it. Then open an **SSH tunnel**, a private pipe inside your SSH connection that carries anything sent to port 8888 on your laptop to port 8888 on the server. Your browser acts as if Jupyter were local; the kernel, files, memory, and CPU are on the server.
 
 ```text
-local browser :8888  ── encrypted SSH tunnel ──>  remote Jupyter :8888
+laptop browser → localhost:8888 ══ SSH tunnel ══> server localhost:8888 → Jupyter
 ```
 
-For a notebook that should survive a disconnect, start a persistent session on the remote server first, then launch Jupyter inside it:
+### Reference Card: Jupyter Through a Tunnel
+
+- `jupyter lab --ip=127.0.0.1 --port=8888 --no-browser` (on the server, inside tmux): Start Jupyter for localhost only; it prints a URL ending in `?token=...`, a password generated for this session.
+- `ssh -N -L 8888:127.0.0.1:8888 user@host` (in a second, local terminal): `-L laptop_port:server_address:server_port` builds the tunnel; `-N` opens no remote shell, so the terminal shows nothing while the tunnel is open.
+- Paste the printed `http://127.0.0.1:8888/lab?token=...` URL into your laptop's browser.
+- `Ctrl+C` in the tunnel terminal: Close the tunnel; Jupyter keeps running in tmux.
+- If port 8888 is already in use on your laptop (for example, by a local Jupyter), use `-L 8889:127.0.0.1:8888` and change 8888 to 8889 in the URL.
+
+### Code Snippet: Start Jupyter and Open the Tunnel
+
+On the server, start a persistent session first, then launch Jupyter inside it:
 
 ```bash
-tmux new-session -s notebooks
+tmux new -s notebooks
+source .venv/bin/activate     # an environment with JupyterLab installed
 jupyter lab --ip=127.0.0.1 --port=8888 --no-browser
 ```
 
@@ -543,7 +612,5 @@ In a second, local terminal:
 ```bash
 ssh -N -L 8888:127.0.0.1:8888 username@server.example
 ```
-
-Leave the tunnel running and open the tokenized local URL printed by Jupyter, such as `http://127.0.0.1:8888/lab?token=...`. The browser is local; the kernel, files, memory, and CPU are remote.
 
 # LIVE DEMO!
