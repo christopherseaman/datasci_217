@@ -58,7 +58,7 @@ AUDIT_CHECKS = [
 # TODO: Save output/q1_release_audit.csv with AUDIT_COLUMNS and index=False.
 ```
 
-> **Checkpoint — `output/q1_release_audit.csv`**
+> **Checkpoint: `output/q1_release_audit.csv`**
 
 ## 1.3 Station Coverage
 
@@ -75,7 +75,7 @@ SOURCE_TIMEZONE = "America/Chicago"
 # TODO: Save output/q1_station_coverage.csv in station-name order.
 ```
 
-> **Checkpoint — `output/q1_station_coverage.csv`**
+> **Checkpoint: `output/q1_station_coverage.csv`**
 
 ## 1.4 First Visualizations
 
@@ -85,7 +85,7 @@ Create one figure with at least two labeled panels: an ordinary distribution and
 # TODO: Build the two-panel figure and save output/q1_visualizations.png.
 ```
 
-> **Checkpoint — `output/q1_visualizations.png`**
+> **Checkpoint: `output/q1_visualizations.png`**
 
 ## Check Your Work
 

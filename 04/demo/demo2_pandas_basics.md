@@ -15,7 +15,7 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 2 — From NumPy arrays to labeled pandas
+# Demo 2: From NumPy arrays to labeled pandas
 
 **Learning objectives**
 

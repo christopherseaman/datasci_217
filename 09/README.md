@@ -13,7 +13,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
 
-![xkcd 2048: Curve-Fitting — "Cauchy-Lorentz: 'Something alarmingly mathematical is happening, and you should probably stop.'" - Not every pattern in a time series is meaningful.](media/xkcd_2048.png)
+![xkcd 2048: Curve-Fitting. "Cauchy-Lorentz: 'Something alarmingly mathematical is happening, and you should probably stop.'" Not every pattern in a time series is meaningful.](media/xkcd_2048.png)
 
 # Understanding Time Series Data
 
@@ -700,13 +700,13 @@ print(pd.DataFrame({
 2023-01-05          119.00    119.80     119.82
 ```
 
-![xkcd 2289: Scenario 4 — "Remember, models aren't for telling you facts, they're for exploring dynamics. This model apparently explores time travel."](media/xkcd_2289.png)
+![xkcd 2289: Scenario 4. "Remember, models aren't for telling you facts, they're for exploring dynamics. This model apparently explores time travel."](media/xkcd_2289.png)
 
 # LIVE DEMO!
 
 # Time Zone Handling
 
-![xkcd 1799: Bad Map Projection: Time Zones — Pro tip: Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions.](media/xkcd_time_zones.png)
+![xkcd 1799: Bad Map Projection: Time Zones. Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions.](media/xkcd_time_zones.png)
 
 ## Basic Time Zone Operations
 

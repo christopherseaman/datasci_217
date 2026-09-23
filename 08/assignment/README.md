@@ -73,7 +73,7 @@ Before grouping, state the input grain, grouping key and unit, predicted observe
 
 Implement `build_count_summary(request_table)` with explicit `observed=True`, `sort=True`, and `dropna=True`. Return one flat row per observed center and save/read back `center_count_summary.csv`.
 
-> **Checkpoint — `output/center_count_summary.csv`**
+> **Checkpoint: `output/center_count_summary.csv`**
 
 ## Question 2: Aggregation, transform, and two keys
 
@@ -81,19 +81,19 @@ Implement `build_count_summary(request_table)` with explicit `observed=True`, `s
 
 Implement `build_center_summary(request_table)` with flat named aggregation and deliberate `as_index=False`. Save and read back the center summary without rounding results.
 
-> **Checkpoint — `output/center_summary.csv`**
+> **Checkpoint: `output/center_summary.csv`**
 
 ### 2.2 Add request context
 
 Implement `add_center_context(request_table)` with selected-Series `transform("mean")`; its result must preserve the input row count and exact index. Save and read back the request-level result without mutating the source table.
 
-> **Checkpoint — `output/requests_with_context.csv`**
+> **Checkpoint: `output/requests_with_context.csv`**
 
 ### 2.3 Summarize center/channel pairs
 
 Implement `build_center_channel_summary(request_table)` as one flat two-key summary. Save and read back the result without rounding values.
 
-> **Checkpoint — `output/center_channel_summary.csv`**
+> **Checkpoint: `output/center_channel_summary.csv`**
 
 ## Question 3: Aggregating pivot and equivalence
 
@@ -101,7 +101,7 @@ Implement `build_center_channel_summary(request_table)` as one flat two-key summ
 
 Implement `build_resolution_pivot(request_table)` with the assignment's only `pd.pivot_table` call. Its five roles are `index="center"`, `columns="channel"`, `values="resolution_minutes"`, `aggfunc="mean"`, and `observed=True`; also use explicit `sort=True` and `dropna=True`. Compare every populated pivot cell with the equivalent GroupBy mean. Keep Harbor--Phone missing; do not replace it with zero. Save and read back `mean_resolution_pivot.csv`.
 
-> **Checkpoint — `output/mean_resolution_pivot.csv`**
+> **Checkpoint: `output/mean_resolution_pivot.csv`**
 
 ## Check Your Work
 

@@ -228,7 +228,7 @@ def _format_result(result: dict) -> str:
     return "\n".join(
         f"[{'PASS' if test['passed'] else 'FAIL'}] {test['test-name']}: "
         f"{test['score']}/{test['max-score']}"
-        + (f" — {test['detail']}" if test.get("detail") else "")
+        + (f" ({test['detail']})" if test.get("detail") else "")
         for test in result["tests"]
     ) + f"\nScore: {result['score']}/{result['max-score']}"
 

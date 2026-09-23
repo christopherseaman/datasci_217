@@ -36,17 +36,17 @@ The supplied records are course-authored synthetic data and do not describe real
 
 Fit `finish_quality_score ~ mix_minutes + initial_temp_c` with an intercept. Export the coefficient summary, intervals for the supplied new case, and residuals for each run. Interpret the conditional associations and interval meanings.
 
-> **Checkpoint — `output/inference_summary.csv`**
+> **Checkpoint: `output/inference_summary.csv`**
 
-> **Checkpoint — `output/inference_case_intervals.csv`**
+> **Checkpoint: `output/inference_case_intervals.csv`**
 
-> **Checkpoint — `output/inference_residuals.csv`**
+> **Checkpoint: `output/inference_residuals.csv`**
 
 ### 1.2 Inspect residuals
 
 Save a residuals-versus-fitted figure and explain one assumption it can probe.
 
-> **Checkpoint — `output/inference_residuals.png`**
+> **Checkpoint: `output/inference_residuals.png`**
 
 ## Question 2: Prediction contract and chronological split
 
@@ -54,13 +54,13 @@ Save a residuals-versus-fitted figure and explain one assumption it can probe.
 
 State the prediction unit, prediction time, target, and target time. Record when each supplied candidate becomes available and whether to keep it.
 
-> **Checkpoint — `output/availability_decisions.csv`**
+> **Checkpoint: `output/availability_decisions.csv`**
 
 ### 2.2 Split chronologically
 
 Create the supplied train, validation, and test periods and save their row counts and target-time ranges.
 
-> **Checkpoint — `output/split_manifest.csv`**
+> **Checkpoint: `output/split_manifest.csv`**
 
 ## Question 3: Compare, freeze, and evaluate
 
@@ -68,21 +68,21 @@ Create the supplied train, validation, and test periods and save their row count
 
 Fit a mean baseline and the linear pipeline using training rows. Compare their validation MAE, RMSE, and R2, then freeze the validation winner.
 
-> **Checkpoint — `output/validation_metrics.csv`**
+> **Checkpoint: `output/validation_metrics.csv`**
 
 ### 3.2 Evaluate the frozen choice
 
 Evaluate the frozen approach on test once and export aligned predictions and metrics.
 
-> **Checkpoint — `output/final_test_metrics.csv`**
+> **Checkpoint: `output/final_test_metrics.csv`**
 
-> **Checkpoint — `output/final_predictions.csv`**
+> **Checkpoint: `output/final_predictions.csv`**
 
 ### 3.3 Interpret supplied binary predictions
 
 Calculate accuracy, precision, and recall for the supplied model and dummy baseline, using zero precision when there are no predicted positives.
 
-> **Checkpoint — `output/binary_metrics.csv`**
+> **Checkpoint: `output/binary_metrics.csv`**
 
 ## Check Your Work
 

@@ -17,7 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
 
-![xkcd 1945: Scientific Paper Graph Quality — Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
+![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 
 # Start with a visualization contract
 
@@ -58,9 +58,9 @@ An **exploratory visualization** helps you inspect patterns, distributions, or s
 
 An **explanatory visualization** communicates one finding to a named audience. It drops irrelevant alternatives, adds annotation, and uses a title that states what the reader should notice without overstating the evidence.
 
-![xkcd 1845, “State Word Map”: a satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](media/xkcd_1845.png)
+![xkcd 1845: State Word Map. A satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](media/xkcd_1845.png)
 
-*xkcd 1845, “State Word Map”* — If flexible method choices can produce any headline, the chart is not evidence.
+*xkcd 1845, “State Word Map”*: if flexible method choices can produce any headline, the chart is not evidence.
 
 ## Think in marks and encodings
 
@@ -310,7 +310,7 @@ fig.savefig('flu_visits.png', dpi=150, bbox_inches='tight')
 
 Expected result: `flu_visits.png` appears next to your notebook, showing one line with an arrow from 'Peak: 51 visits' to the week-3 point and no top or right frame line.
 
-![xkcd 833: Convincing — "I just think I can do better than someone who doesn't label her axes." Label your axes.](media/xkcd_833.png)
+![xkcd 833: Convincing. "I just think I can do better than someone who doesn't label her axes." Label your axes.](media/xkcd_833.png)
 
 # LIVE DEMO!
 
@@ -393,7 +393,7 @@ A correlation runs from `-1`, one column rising as the other falls, through `0`,
 | `df.plot(kind='box')` | Compare distributions and outliers | `Axes` |
 | `df.plot(kind='pie', y='col')` | Show nonnegative values as parts of their total | `Axes` |
 | `df.plot.bar()`, `df.plot.hist()` | Same as `kind='bar'` / `kind='hist'`; `df.plot.density()` below uses this form | `Axes` |
-| `corr = df[['age', 'bmi']].corr()` | **Correlation matrix**: the Pearson correlation of every pair of the listed columns; `method=` also accepts `'spearman'` and `'kendall'` | Square `DataFrame`, one row and column per listed column. `1.0` down the diagonal, except that a column with nothing to vary — one repeated value, or only one non-missing value — is `NaN` throughout |
+| `corr = df[['age', 'bmi']].corr()` | **Correlation matrix**: the Pearson correlation of every pair of the listed columns; `method=` also accepts `'spearman'` and `'kendall'` | Square `DataFrame`, one row and column per listed column. `1.0` down the diagonal, except that a column with nothing to vary (one repeated value, or only one non-missing value) is `NaN` throughout |
 | `corr.to_csv(path, index=True, index_label='feature')` | Write a frame whose row labels are data, not row numbers: `index=True` keeps them (Lecture 04) and `index_label=` names the column they land in | CSV file whose first column is headed `feature` |
 
 ### Code Snippet: Several Plot Kinds in One Grid
@@ -827,6 +827,6 @@ with open('study_record.json', encoding='utf-8') as file:
 print(saved['grain'])  # one prepared learning session
 ```
 
-![xkcd 1138: Heatmap — "Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.](media/xkcd_1138.png)
+![xkcd 1138: Heatmap. "Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.](media/xkcd_1138.png)
 
 # LIVE DEMO!

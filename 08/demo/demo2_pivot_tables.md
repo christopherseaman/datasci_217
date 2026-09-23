@@ -295,7 +295,7 @@ plt.show()
 
 Two bars are red: Legal, an empty group with a real headcount question behind it, and the 250 employees whose department was never recorded. A default `groupby` prints neither one.
 
-## Part 2: Transform — Keep Every Row
+## Part 2: Transform Keeps Every Row
 
 `transform` computes a statistic per group and copies it back to every row of that group, so the result has the same length and index as the input and can become a new column.
 
@@ -414,7 +414,7 @@ plt.show()
 
 `df` still has 100,000 rows in the same order: `transform` added columns, it did not summarize. `Salary_Normalized` and `Salary_Z_Score` agree to the last decimal, because both compare a salary with its own department's mean and spread. The z-score histogram is centred on 0 by construction, and the department histograms overlap once each one is measured against its own mean.
 
-## Part 3: Filter — Keep or Drop Whole Groups
+## Part 3: Filter Keeps or Drops Whole Groups
 
 `filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
 
@@ -558,7 +558,7 @@ plt.show()
 
 `filter` returns rows, not groups. All six departments clear 15,000 employees, so the first result keeps all 100,000 rows. Only Engineering and Finance average more than $65,000 (33,609 rows) and only Engineering and Sales have a salary spread above $12,000 (33,391 rows). The kept rows are the originals, unchanged.
 
-## Part 4: Apply — Your Own Function per Group
+## Part 4: Apply Runs Your Own Function per Group
 
 `apply` hands each group to your function as a small DataFrame and stitches the results together. Use it when no built-in aggregation fits; it is the slowest of the four, and its output shape depends on what your function returns.
 

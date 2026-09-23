@@ -15,7 +15,7 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 3 — From a CSV file to a saved result
+# Demo 3: From a CSV file to a saved result
 
 **Learning objectives**
 

@@ -155,7 +155,7 @@ East had no new-patient visits, so East–New is `NaN`. There was nothing to ave
 
 # Pivot Tables and Cross-Tabulations
 
-![The greatest research skill you can have is being a nosy bitch who wants to find out — a pivot table is how you find out](media/research.png)
+![The greatest research skill you can have is being a nosy bitch who wants to find out: a pivot table is how you find out](media/research.png)
 
 In Lecture 06, `pivot()` rearranged a long table into a wide one and raised an error when an index/column pair appeared more than once. A **pivot table** handles those repeats: it groups rows by one key for the rows and another for the columns, aggregates each combination, and lays the results out as a grid. It is the two-key `groupby(...).mean().unstack()` you just built, in a single call, with optional row and column totals called **margins**. A **cross-tabulation** (crosstab) is the special case that counts rows in each combination.
 

@@ -73,8 +73,8 @@ The lecture's derived columns line up by index label. This section shows what ha
 
 - Automatic index alignment during arithmetic operations
 - Series align on their index; DataFrames align on both axes when mixed
-- `df.add(series, axis='columns')` / `df.sub(series, axis='index')` / `df.mul(...)` / `df.div(...)` — combine after choosing the broadcast axis
-- `.reindex()` and `.align(join='inner' | 'outer')` — enforce explicit label sets before combining
+- `df.add(series, axis='columns')` / `df.sub(series, axis='index')` / `df.mul(...)` / `df.div(...)`: combine after choosing the broadcast axis
+- `.reindex()` and `.align(join='inner' | 'outer')`: enforce explicit label sets before combining
 
 When you mix a DataFrame and a Series, pandas broadcasts along matching labels and introduces `NaN` wherever labels do not overlap, so make the intended axis explicit when you call arithmetic methods.
 
@@ -157,12 +157,12 @@ The lecture adds columns with bracket assignment and vectorized arithmetic; reac
 
 ## Reference Card: Apply, map, and column helpers
 
-- `df.apply(func)` — column-wise by default; add `axis='columns'` for row-wise logic
-- `series.map(func)` — element-level transformations with optional dict/Series mapping
-- `df.map(func)` — element-wise DataFrame transform (use sparingly for performance)
-- `df.assign(name=lambda d: ...)` — return a new DataFrame with added columns; each `lambda` receives the DataFrame built so far, so later columns can use earlier ones, and the original is unchanged
-- `df.insert(loc, column, value)` — insert a column at integer position `loc`; changes `df` itself and returns `None`
-- `df.eval("new = expression")` — compute a column from an expression string that names columns directly; returns a new DataFrame
+- `df.apply(func)`: column-wise by default; add `axis='columns'` for row-wise logic
+- `series.map(func)`: element-level transformations with optional dict/Series mapping
+- `df.map(func)`: element-wise DataFrame transform (use sparingly for performance)
+- `df.assign(name=lambda d: ...)`: return a new DataFrame with added columns; each `lambda` receives the DataFrame built so far, so later columns can use earlier ones, and the original is unchanged
+- `df.insert(loc, column, value)`: insert a column at integer position `loc`; changes `df` itself and returns `None`
+- `df.eval("new = expression")`: compute a column from an expression string that names columns directly; returns a new DataFrame
 - Chain helpers: `.assign()`, `.pipe()`, `.rename()` to build fluent pipelines
 
 ## Code Snippet: Apply, map, and chain
@@ -206,10 +206,10 @@ Go beyond the lecture's sorting by assigning ranks, controlling tie behavior, an
 
 ## Reference Card: Ranking
 
-- `series.rank()` — mean rank for ties (default)
-- `method='first' | 'min' | 'max' | 'dense'` — tie handling strategies
-- `ascending=False` — reverse ranking
-- `df.rank(axis='columns')` — rank across columns within each row
+- `series.rank()`: mean rank for ties (default)
+- `method='first' | 'min' | 'max' | 'dense'`: tie handling strategies
+- `ascending=False`: reverse ranking
+- `df.rank(axis='columns')`: rank across columns within each row
 
 ## Code Snippet: Rank with ties
 
@@ -227,7 +227,7 @@ The lecture counts repeated rows with `df.duplicated()`. This section covers rep
 
 ## Reference Card: Duplicate index labels
 
-- `index.is_unique` — quick sanity check
+- `index.is_unique`: quick sanity check
 - Label-based selection returns Series/DataFrame when duplicates exist
 - `duplicated()` and `drop_duplicates()` also operate on indexes
 - `groupby(level=0)` or `.reset_index()` can normalize duplicates

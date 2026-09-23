@@ -46,7 +46,7 @@ The rows describe only the prepared fixtures. They do not establish cause, popul
 
 State an exploratory question, the one-session row/mark grain, variable roles, one observation restricted to the twelve supplied rows, and a limitation that rejects causal and generalized conclusions. Implement `build_exploratory_chart(session_table, pathway_order)` as one Altair scatterplot specification of activities completed against reflection score. Use typed quantitative positions and nominal pathway color and point-shape encodings, preserve the caller's two-label order, label units, and include tooltips. Export `exploratory_chart.to_dict()` as `output/exploratory_spec.json`, embedding the plotted session rows.
 
-> **Checkpoint — `output/exploratory_spec.json`**
+> **Checkpoint: `output/exploratory_spec.json`**
 
 ## Question 2: Critique and redesign
 
@@ -56,7 +56,7 @@ Inspect the supplied four-bar comparison for a learning-support coordinator. It 
 
 Implement `build_critique_redesign(summary_table, format_order, stage_order)`. Use a zero baseline, explicit percentage unit, course colors plus hatches, value labels, restrained decoration, and an outside legend. Preserve arbitrary valid caller labels and order. Save the canonical result as `output/critique_redesign.png`.
 
-> **Checkpoint — `output/critique_redesign.png`**
+> **Checkpoint: `output/critique_redesign.png`**
 
 ## Question 3: Audience-focused explanation
 
@@ -64,21 +64,21 @@ Implement `build_critique_redesign(summary_table, format_order, stage_order)`. U
 
 State the question, learning-support coordinator audience and follow-up use, bounded intended claim, unit, grain, roles, comparison, chart rationale, and causal limitation. Copy and export the exact supporting data.
 
-> **Checkpoint — `output/explanatory_supporting_data.csv`**
+> **Checkpoint: `output/explanatory_supporting_data.csv`**
 
 ### 3.2 Build the explanatory chart
 
 Implement `build_explanatory_chart(checkpoint_table, pathway_order)` so the two ordered paths have redundant color, marker, and line-style cues. Derive the leader, checkpoint count, final absolute gap, title, and annotation from any valid two-pathway input; on a final tie, attach the annotation to the second requested pathway. Save the canonical result as `output/pathway_explanatory.png`.
 
-> **Checkpoint — `output/pathway_explanatory.png`**
+> **Checkpoint: `output/pathway_explanatory.png`**
 
 ### 3.3 Export the explanation and inspect the chart
 
 Export the evidence JSON and a matching text alternative. Finish the visual-review checklist with observable evidence rather than yes/no answers.
 
-> **Checkpoint — `output/visualization_evidence.json`**
+> **Checkpoint: `output/visualization_evidence.json`**
 
-> **Checkpoint — `output/explanatory_text_alternative.txt`**
+> **Checkpoint: `output/explanatory_text_alternative.txt`**
 
 ## Check Your Work
 

@@ -67,17 +67,17 @@ For each split, sort by target UTC then station. X and y must use the same uniqu
 # TODO: Save q6_y_train/validation/test.csv with Y_COLUMNS.
 ```
 
-> **Checkpoint — `output/q6_X_train.csv`**
+> **Checkpoint: `output/q6_X_train.csv`**
 
-> **Checkpoint — `output/q6_X_validation.csv`**
+> **Checkpoint: `output/q6_X_validation.csv`**
 
-> **Checkpoint — `output/q6_X_test.csv`**
+> **Checkpoint: `output/q6_X_test.csv`**
 
-> **Checkpoint — `output/q6_y_train.csv`**
+> **Checkpoint: `output/q6_y_train.csv`**
 
-> **Checkpoint — `output/q6_y_validation.csv`**
+> **Checkpoint: `output/q6_y_validation.csv`**
 
-> **Checkpoint — `output/q6_y_test.csv`**
+> **Checkpoint: `output/q6_y_test.csv`**
 
 ## 6.4 Split Summary
 
@@ -87,7 +87,7 @@ SUMMARY_COLUMNS = ["split", "n_rows", "target_start", "target_end", "n_features"
 # TODO: Save output/q6_split_summary.csv in train, validation, test order.
 ```
 
-> **Checkpoint — `output/q6_split_summary.csv`**
+> **Checkpoint: `output/q6_split_summary.csv`**
 
 ## Check Your Work
 

@@ -19,7 +19,7 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 
 **Cross-validation** splits the training rows into k parts (folds), fits on k - 1 of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on.
 
-*Let validation evidence—not a favorite algorithm—decide. Blue steel is a style, not a model-selection rule.*
+*Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule.*
 
 # Other Boosting Libraries
 
@@ -44,7 +44,7 @@ Gradient Boosting
 └── CatBoost (native categorical-feature support)
 ```
 
-*Benchmark them under the same split, measure, and budget. Blue steel, magnum, and le tigre are all amazing, just slightly different—so test them on your data.*
+*Benchmark them under the same split, measure, and budget. Blue steel, magnum, and le tigre are all amazing, just slightly different, so test them on your data.*
 
 # Hyperparameter Tuning Strategies
 
@@ -348,7 +348,7 @@ model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
 
 # Other Deep-Learning Frameworks
 
-The lecture uses TensorFlow/Keras for its worked example—a teaching choice, not a universal ranking.
+The lecture uses TensorFlow/Keras for its worked example. That is a teaching choice, not a universal ranking.
 
 ## `PyTorch`
 

@@ -71,7 +71,7 @@ The canonical result preserves all seven specimens. Its indicator counts are
 six `both`, one `left_only`, and zero `right_only`; `SP106`/`X` is the only
 orphan. Save and explicitly read back the merge audit.
 
-> **Checkpoint — `output/specimen_merge_audit.csv`**
+> **Checkpoint: `output/specimen_merge_audit.csv`**
 > Save all seven specimens in source order, with station fields and the merge indicator.
 
 ## Task 2: concatenation and label alignment
@@ -89,7 +89,7 @@ disposable copies, remove `mass_g` from batch B and add `review_note` only to
 batch B. The resulting three missing masses and four missing notes demonstrate
 column-label alignment; observe them without cleaning them.
 
-> **Checkpoint — `output/combined_specimens.csv`**
+> **Checkpoint: `output/combined_specimens.csv`**
 > Save the seven canonical rows, with `source_partition` labels `batch_a` and `batch_b`.
 
 ### 2.2 Align feature columns
@@ -100,7 +100,7 @@ columns horizontally with outer label alignment. Preserve first-seen union order
 without resetting indexes before alignment. The canonical index is `SP101`,
 `SP102`, `SP103`, `SP108`. Save and read back both artifacts; only the aligned features intentionally serialize their named index.
 
-> **Checkpoint — `output/aligned_features.csv`**
+> **Checkpoint: `output/aligned_features.csv`**
 > Save columns `specimen_id,mass_g,review_score` in the canonical index order above. Leave structural missingness as empty fields.
 
 ## Task 3: reversible structural reshape
@@ -123,10 +123,10 @@ catch the natural `ValueError` when the wide function rejects that ambiguity.
 Do not delete or aggregate the duplicate. Save and read back the long and
 round-trip artifacts.
 
-> **Checkpoint — `output/sensor_scores_long.csv`**
+> **Checkpoint: `output/sensor_scores_long.csv`**
 > Save eight rows with columns `sensor_id,station_code,measurement_label,value`, preserving source order within each measurement label.
 
-> **Checkpoint — `output/sensor_scores_round_trip.csv`**
+> **Checkpoint: `output/sensor_scores_round_trip.csv`**
 > Save the four reconstructed rows with the original wide columns and source order.
 
 ## Check your work

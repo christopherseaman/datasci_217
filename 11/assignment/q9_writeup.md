@@ -66,7 +66,7 @@ display(station_metrics)
 
 Use displayed artifact values rather than hand-recalculating results.
 
-> **Checkpoint — `report.md`**
+> **Checkpoint: `report.md`**
 
 ## Check Your Work
 

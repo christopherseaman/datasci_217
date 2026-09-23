@@ -19,8 +19,8 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 - [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
 - [Python cheat sheet](https://cheatsheets.zip/python)
-- [futurecoder](https://futurecoder.io/) — Python basics with in-browser exercises and feedback
-- [Official Python tutorial](https://docs.python.org/3/tutorial/) — tutorials straight from the source
+- [futurecoder](https://futurecoder.io/): Python basics with in-browser exercises and feedback
+- [Official Python tutorial](https://docs.python.org/3/tutorial/): tutorials straight from the source
 
 <callout icon="🌉" color="green_bg">
 	#### *San Francisco is a walkable city and I will literally die on this hill*
@@ -44,8 +44,8 @@ The **command line (CLI)** is a text-based interface.
 
 Think of it as texting your computer instead of playing charades with icons.
 
-- **Terminal:** The app displaying the session—Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
-- **Shell:** The command interpreter running inside it—Bash, Zsh, or PowerShell.
+- **Terminal:** The app displaying the session, such as Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
+- **Shell:** The command interpreter running inside it, such as Bash, Zsh, or PowerShell.
 
 ## Getting to the Command Line
 
@@ -68,7 +68,7 @@ VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space
 
 ### Alternative: Codespaces instead of a local VS Code installation
 
-[GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser — no local VS Code, WSL, or Homebrew.
+[GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser, with no local VS Code, WSL, or Homebrew.
 
 1. Create your GitHub account and fork the assignment repository using **Creating Your GitHub Account** and **Fork on GitHub** below.
 2. On **your fork**: **Code → Codespaces → Create codespace on main**. Your repository opens automatically; skip cloning.
@@ -79,7 +79,7 @@ VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space
 
 ### macOS, Windows WSL, and Codespaces
 
-Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13**. Run these commands in **VS Code's integrated terminal** — on Windows, the **WSL-connected window**, not PowerShell. Lecture 03 covers uv environments and packages.
+Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13**. Run these commands in **VS Code's integrated terminal**. On Windows, use the **WSL-connected window**, not PowerShell. Lecture 03 covers uv environments and packages.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -101,7 +101,7 @@ python3 --version
 
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. Other editors work too — Sublime Text, PyCharm, nano, Vim — see [BONUS.md](BONUS.md).
+We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. Other editors work too, including Sublime Text, PyCharm, nano, and Vim; see [BONUS.md](BONUS.md).
 
 ### VS Code Basics
 
@@ -202,7 +202,7 @@ A **commit** saves a version of your files. **Staging** a file (the **+** button
 
 ### Verify on GitHub
 
-Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** for the automatic checks; enable workflows once if a new fork prompts you. Your fork is the submission—no pull request to the course repository.
+Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** for the automatic checks; enable workflows once if a new fork prompts you. Your fork is the submission, so there is no pull request to the course repository.
 
 <synced_block url="https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696#3dcd9fdd1a1a806b8fb4fffbf0fdabab">
 
@@ -216,9 +216,9 @@ Open your fork's `output/readiness.txt` and `output/student_identity.txt` and ch
 
 Data science work switches constantly between Python and the command line. It's like being bilingual in the data world: Python speaks to your data, the command line speaks to your computer.
 
-Picture a clinic study that arrives as a folder of CSV exports. From the shell you make a project folder, copy the raw files somewhere safe, peek at the first rows, and run your analysis script—the same few commands every time, nothing to click and nothing to forget.
+Picture a clinic study that arrives as a folder of CSV exports. From the shell you make a project folder, copy the raw files somewhere safe, peek at the first rows, and run your analysis script. It is the same few commands every time, nothing to click and nothing to forget.
 
-**Reality check:** Organizing files and inspecting data are part of the analysis—not chores you finish before the “real” work starts.
+**Reality check:** Organizing files and inspecting data are part of the analysis, not chores you finish before the “real” work starts.
 
 ## How the Shell Reads a Command
 
@@ -320,7 +320,7 @@ visits_copy.csv
 
 ## Writing and Viewing Text Files
 
-`echo` prints text; `>` and `>>` **redirect** that output into a file instead of the screen. `cat`, `head`, and `tail` show what a file holds — `head` is the quick way to check a large data file's column names without opening it.
+`echo` prints text; `>` and `>>` **redirect** that output into a file instead of the screen. `cat`, `head`, and `tail` show what a file holds; `head` is the quick way to check a large data file's column names without opening it.
 
 ### Reference Card: Writing and Viewing Files
 
@@ -368,16 +368,16 @@ Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 
 ## Ctrl+C: Make it Stop!
 
-- **Build the reflex: Ctrl+C to cancel** a running command or unfinished input. On Mac, Control—not Command.
+- **Build the reflex: Ctrl+C to cancel** a running command or unfinished input. On Mac, Control, not Command.
 - **Windows habit to unlearn:** Ctrl+C interrupts here, not copies; terminal copy is often Ctrl+Shift+C.
 
 # LIVE DEMO!
 
 # Python Basics
 
-![xkcd 353: Python — "You're flying! How?" "I just typed import antigravity."](media/xkcd_353.png)
+![xkcd 353: Python. "You're flying! How?" "I just typed import antigravity."](media/xkcd_353.png)
 
-Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files; Python computes with what is inside them—one patient's BMI, then the same calculation for every row of a clinic export.
+Python is a program called an **interpreter**: it reads Python code and runs it one **statement** (one instruction, usually one line) at a time. The shell manages files. Python computes with what is inside them: one patient's BMI, then the same calculation for every row of a clinic export.
 
 You can give Python code two ways:
 
@@ -460,7 +460,7 @@ print("This is code")  # Comments can also go at the end of lines
 
 ## Variables and Data Types
 
-A **variable** is a name for a value, created with `=`: `age = 67` means "let the name `age` refer to 67." Think of a name tag stuck on a value rather than a box: later you can move the tag to a different value, even one of another type. Name variables for what they hold — `student_age`, not `a`, `x1`, or `temp`.
+A **variable** is a name for a value, created with `=`: `age = 67` means "let the name `age` refer to 67." Think of a name tag stuck on a value rather than a box: later you can move the tag to a different value, even one of another type. Name variables for what they hold: `student_age`, not `a`, `x1`, or `temp`.
 
 Every value has a **type** that decides what you can do with it: adding two numbers works, adding a number to text raises an error (see Debugging). One patient record already mixes four types: an ID (`"P001"`, text), an age (`67`, whole number), a temperature (`37.8`, decimal), and whether consent is on file (`True`).
 
@@ -629,7 +629,7 @@ print(x in [1, 2, 3], x not in [1, 2, 3])   # True False
 
 At the `>>>` prompt Python shows a bare expression's value; in a script, only `print()` shows it.
 
-![xkcd 1654: Universal Install Script — what installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
+![xkcd 1654: Universal Install Script. What installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
 
 # LIVE DEMO!
 
@@ -809,7 +809,7 @@ Processing 92
 
 ## Reading a Traceback
 
-An error reports where execution stopped and what operation failed—not necessarily the underlying cause.
+An error reports where execution stopped and what operation failed, but not necessarily the underlying cause.
 
 1. Read the final line for the error type and message.
 2. Find the referenced line in your script.

@@ -57,9 +57,9 @@ METRIC_COLUMNS = ["model", "mae", "rmse", "r2", "n"]
 # TODO: Save q8_test_predictions.csv and q8_test_metrics.csv.
 ```
 
-> **Checkpoint — `output/q8_test_predictions.csv`**
+> **Checkpoint: `output/q8_test_predictions.csv`**
 
-> **Checkpoint — `output/q8_test_metrics.csv`**
+> **Checkpoint: `output/q8_test_metrics.csv`**
 
 ## 8.3 Station Metrics
 
@@ -71,7 +71,7 @@ STATION_METRIC_COLUMNS = ["model", "station_name", "n", "mae", "rmse", "r2"]
 # TODO: Save output/q8_station_metrics.csv ordered by model then station.
 ```
 
-> **Checkpoint — `output/q8_station_metrics.csv`**
+> **Checkpoint: `output/q8_station_metrics.csv`**
 
 ## 8.4 Final Visualizations
 
@@ -81,7 +81,7 @@ Create one readable multi-panel figure containing a validation comparison, a tes
 # TODO: Save output/q8_final_visualizations.png.
 ```
 
-> **Checkpoint — `output/q8_final_visualizations.png`**
+> **Checkpoint: `output/q8_final_visualizations.png`**
 
 ## Check Your Work
 

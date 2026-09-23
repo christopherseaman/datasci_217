@@ -50,7 +50,7 @@ SUMMARY_COLUMNS = [
 # TODO: Aggregate and save output/q5_monthly_station_summary.csv.
 ```
 
-> **Checkpoint — `output/q5_monthly_station_summary.csv`**
+> **Checkpoint: `output/q5_monthly_station_summary.csv`**
 
 ## 5.3 Current-Predictor Correlations
 
@@ -67,7 +67,7 @@ CORRELATION_FEATURES = [
 # output/q5_correlations.csv with row labels as the first column.
 ```
 
-> **Checkpoint — `output/q5_correlations.csv`**
+> **Checkpoint: `output/q5_correlations.csv`**
 
 ## 5.4 Pattern Figure
 
@@ -77,7 +77,7 @@ Make one labeled figure that shows both monthly and local-hour temperature patte
 # TODO: Save the combined figure as output/q5_patterns.png.
 ```
 
-> **Checkpoint — `output/q5_patterns.png`**
+> **Checkpoint: `output/q5_patterns.png`**
 
 ## Check Your Work
 

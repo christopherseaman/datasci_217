@@ -79,9 +79,9 @@ METRIC_COLUMNS = ["model", "mae", "rmse", "r2", "n"]
 # TODO: Save q7_validation_predictions.csv and q7_validation_metrics.csv.
 ```
 
-> **Checkpoint — `output/q7_validation_predictions.csv`**
+> **Checkpoint: `output/q7_validation_predictions.csv`**
 
-> **Checkpoint — `output/q7_validation_metrics.csv`**
+> **Checkpoint: `output/q7_validation_metrics.csv`**
 
 ## 7.4 Frozen Specification and Permutation Importance
 
@@ -98,9 +98,9 @@ IMPORTANCE_COLUMNS = ["feature", "mean_mae_increase", "std_mae_increase"]
 # TODO: Save q7_permutation_importance.csv in fixed feature order.
 ```
 
-> **Checkpoint — `output/q7_model_spec.csv`**
+> **Checkpoint: `output/q7_model_spec.csv`**
 
-> **Checkpoint — `output/q7_permutation_importance.csv`**
+> **Checkpoint: `output/q7_permutation_importance.csv`**
 
 ## Check Your Work
 

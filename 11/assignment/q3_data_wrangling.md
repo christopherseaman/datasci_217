@@ -56,7 +56,7 @@ PANEL_COLUMNS = [
 # TODO: Sort by UTC then station and save output/q3_hourly_panel.csv.
 ```
 
-> **Checkpoint — `output/q3_hourly_panel.csv`**
+> **Checkpoint: `output/q3_hourly_panel.csv`**
 
 ## 3.3 Gap Summary
 
@@ -72,7 +72,7 @@ SUMMARY_COLUMNS = [
 # TODO: Save output/q3_panel_summary.csv in station-name order.
 ```
 
-> **Checkpoint — `output/q3_panel_summary.csv`**
+> **Checkpoint: `output/q3_panel_summary.csv`**
 
 ## Check Your Work
 

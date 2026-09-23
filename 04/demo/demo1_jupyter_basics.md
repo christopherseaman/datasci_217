@@ -15,7 +15,7 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1 — Notebook runtime, state, and fresh execution
+# Demo 1: Notebook runtime, state, and fresh execution
 
 **Learning objectives**
 

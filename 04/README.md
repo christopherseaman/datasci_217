@@ -156,7 +156,7 @@ Times vary by machine.
 
 Jupyter notebooks are like that one friend who screenshots everything you text them. They save both your code AND all the outputs (results, data, plots) in the same file.
 
-Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too—like having a photographic memory of your most awkward moments.
+Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too, like having a photographic memory of your most awkward moments.
 
 ### Code Snippet: What Git actually commits
 
@@ -189,7 +189,7 @@ Then check the notebook's diff in VS Code Source Control (Lecture 02) before you
 
 ![xkcd 2180: Spreadsheets](media/xkcd_2180.png)
 
-*Spreadsheets* by xkcd — a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
+*Spreadsheets* by xkcd: a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
 
 In Lecture 03, a NumPy array held one type of value and you picked items by integer position, as in `arr[2]`. A clinic's visit table is messier: a text patient ID, an integer age, a decimal temperature, a `True`/`False` smoker flag. You want to ask for "patient P002's temperature" rather than "row 1, column 1", and you want each patient's values to stay together when you sort or filter.
 
@@ -334,7 +334,7 @@ P003         41    37.2
 
 Brackets pick columns. To pick rows, or rows and columns together, use `.loc` or `.iloc`. In Lecture 03 you selected from a 2D array with `arr[row, col]` positions; `.iloc` works the same way, while `.loc` uses the labels pandas adds.
 
-*Warning: Indexing in pandas is like a choose-your-own-adventure book—there are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
+*Warning: Indexing in pandas is like a choose-your-own-adventure book. There are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended.*
 
 | Selector | Uses | Same cell | Slice ending |
 | --- | --- | --- | --- |
@@ -515,7 +515,7 @@ P002 and P003 tie at 142, and `patient_id` puts P002 first. The index labels (2,
 
 ![xkcd 1906: Making Progress](media/xkcd_1906.png)
 
-*Making Progress* by xkcd — progress, now with columns.
+*Making Progress* by xkcd: progress, now with columns.
 
 In Lecture 02 you read a text file with `open()`, and everything came back as one string of text. In Lecture 03 you inspected a CSV with a shell pipeline (`tail`, `cut`, `sort`). A **CSV file** (comma-separated values) is plain text: the first line is the **header** with the column names, and each later line is one record. `pd.read_csv()` opens the file, splits every line into columns, and detects each column's type in one call, returning a DataFrame. `df.to_csv()` writes one back out.
 
@@ -593,7 +593,7 @@ Keep the index when it holds meaningful labels such as patient IDs. Use `index=F
 
 `print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a Series or DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan when you are looking over a table you just loaded. As in the `%pwd` example, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
 
-*Think of `print()` as the reliable Honda Civic—works almost anywhere—while `display()` is the sports car: prettier, but happiest in Jupyter.*
+*Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter.*
 
 ### Code Snippet: Choose notebook output
 

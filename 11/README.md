@@ -68,7 +68,7 @@ Today's worked example has the same shape with public data: a course release bui
 
 Not every question needs a model. A descriptive project can finish with a well-designed table, aggregation, and plot.
 
-*Your capstone is not Pokémon for obscure ML—you don't have to catch 'em all.*
+*Your capstone is not Pokémon for obscure ML: you don't have to catch 'em all.*
 
 # Grain, keys, and complete panels
 
@@ -230,16 +230,16 @@ print(frame)
 
 Local midnight on 1 June is 04:00 UTC during daylight saving time, so the 02:00 and 03:00 UTC targets still belong to May.
 
-![xkcd 2582: Data Trap — Analysis should produce understanding, not an unbounded pile of artifacts.](media/xkcd_2582.png)
+![xkcd 2582: Data Trap. Analysis should produce understanding, not an unbounded pile of artifacts.](media/xkcd_2582.png)
 
 # Demo roadmap
 
 The four core notebooks follow the taxi question from evidence to result:
 
-1. **`01_setup.ipynb` — Trust the release before using it.** Check the release files against the manifest's hashes, inspect event-grain records, and make exclusions auditable.
-2. **`02_wrangling.ipynb` — Build a past-only model table.** Load the release's already completed zone-hour panel, verify its key and coverage, then construct calendar and history features.
-3. **`03_model_prep.ipynb` — Analyze training patterns and freeze the split.** Use training data for exploratory summaries and keep later periods separate.
-4. **`04_modeling.ipynb` — Compare, freeze, and report.** Compare a weekly baseline with one pipeline, evaluate held-out performance, and examine error slices.
+1. **`01_setup.ipynb`: Trust the release before using it.** Check the release files against the manifest's hashes, inspect event-grain records, and make exclusions auditable.
+2. **`02_wrangling.ipynb`: Build a past-only model table.** Load the release's already completed zone-hour panel, verify its key and coverage, then construct calendar and history features.
+3. **`03_model_prep.ipynb`: Analyze training patterns and freeze the split.** Use training data for exploratory summaries and keep later periods separate.
+4. **`04_modeling.ipynb`: Compare, freeze, and report.** Compare a weekly baseline with one pipeline, evaluate held-out performance, and examine error slices.
 
 **`05_geo_bonus.ipynb`** is an optional geographic view of zone-level results; see [BONUS.md](BONUS.md). It is enrichment, not a required part of the capstone pattern.
 
@@ -249,14 +249,14 @@ Most of today's code is review; this crosswalk shows where each capstone decisio
 
 | Capstone decision or concept | Earlier canonical lecture | Related demo roadmap stage |
 | --- | --- | --- |
-| Question, claim, and evidence | Lecture 07, Data Visualization | `01_setup.ipynb` — trust and inspect the release |
-| Release files: Parquet tables and a JSON manifest | Lecture 04, Data Loading and Storage (Parquet); Lecture 07, Altair (JSON) | `01_setup.ipynb` — verify the release |
-| Missingness, row meaning, and keys | Lecture 05, What Clean Means: The Data Contract; Handling Missing Data | `01_setup.ipynb` — audit records |
-| Expected grid and coverage join | Lecture 06, Database-Style DataFrame Joins | `02_wrangling.ipynb` — verify that every zone-hour is present |
-| UTC keys, local calendar fields, and daylight-saving transitions | Lecture 09, Time Zone Handling | `02_wrangling.ipynb` — local calendar fields; `03_model_prep.ipynb` — split boundaries |
-| Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb` — construct history features |
-| Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `03_model_prep.ipynb` — training-only summaries; `04_modeling.ipynb` — error slices |
-| Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb` — freeze the split; `04_modeling.ipynb` — compare and evaluate |
+| Question, claim, and evidence | Lecture 07, Data Visualization | `01_setup.ipynb`: trust and inspect the release |
+| Release files: Parquet tables and a JSON manifest | Lecture 04, Data Loading and Storage (Parquet); Lecture 07, Altair (JSON) | `01_setup.ipynb`: verify the release |
+| Missingness, row meaning, and keys | Lecture 05, What Clean Means: The Data Contract; Handling Missing Data | `01_setup.ipynb`: audit records |
+| Expected grid and coverage join | Lecture 06, Database-Style DataFrame Joins | `02_wrangling.ipynb`: verify that every zone-hour is present |
+| UTC keys, local calendar fields, and daylight-saving transitions | Lecture 09, Time Zone Handling | `02_wrangling.ipynb`: local calendar fields; `03_model_prep.ipynb`: split boundaries |
+| Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb`: construct history features |
+| Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `03_model_prep.ipynb`: training-only summaries; `04_modeling.ipynb`: error slices |
+| Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb`: freeze the split; `04_modeling.ipynb`: compare and evaluate |
 
 # Transfer to the final project
 
@@ -294,12 +294,12 @@ bash download_data.sh
 jupyter lab
 ```
 
-JupyterLab opens in your browser; open `01_setup.ipynb` and continue through `04_modeling.ipynb` in order. To skip local setup, use the Colab links at the top of this page—each notebook downloads its own data. Each notebook explains the artifact it reads or rebuilds, so you can pause between them and inspect the intermediate reasoning—not just the final output.
+JupyterLab opens in your browser; open `01_setup.ipynb` and continue through `04_modeling.ipynb` in order. To skip local setup, use the Colab links at the top of this page; each notebook downloads its own data. Each notebook explains the artifact it reads or rebuilds, so you can pause between them and inspect the intermediate reasoning, not just the final output.
 
 # Optional practice after class
 
-- [Advent of Code](https://adventofcode.com) — short programming puzzles for continued practice.
-- [GameShell](https://github.com/phyver/GameShell) — a game for practicing the Unix shell.
+- [Advent of Code](https://adventofcode.com): short programming puzzles for continued practice.
+- [GameShell](https://github.com/phyver/GameShell): a game for practicing the Unix shell.
 
 ![xkcd 1513: Code Quality](media/xkcd_1513.png)
 

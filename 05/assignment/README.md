@@ -39,7 +39,7 @@ Expect `2.3.3 3.0.5` and `True`. If the data is missing, return to the assignmen
 Complete every `TODO` in `assignment.ipynb`, including the cumulative midterm
 checkpoint. Create these four cumulative foundation artifacts before the cleaning artifacts:
 
-> **Checkpoint — `output/raw_preview.txt`**
+> **Checkpoint: `output/raw_preview.txt`**
 
 Save this exact UTF-8 terminal evidence, including the command labels and final newline:
 
@@ -54,7 +54,7 @@ R010,Jamie Okafor,West,Complete,28,2026-07-15
 R011,Kai Patel,south, pending ,0,2026-08-01
 ```
 
-> **Checkpoint — `output/pipeline_summary.txt`**
+> **Checkpoint: `output/pipeline_summary.txt`**
 
 Use a small Python summary function to produce these exact lines, with a final newline:
 
@@ -66,11 +66,11 @@ candidate_id_duplicate_rows=1
 clean_rows=11
 ```
 
-> **Checkpoint — `output/numpy_age_summary.csv`**
+> **Checkpoint: `output/numpy_age_summary.csv`**
 
 Save header `metric,value`, followed by the `count`, `min`, `max`, `sum`, and `mean` of the valid integer ages in that order (`6`, `0`, `52`, `198`, `33.0`).
 
-> **Checkpoint — `output/pandas_selection.csv`**
+> **Checkpoint: `output/pandas_selection.csv`**
 
 Save header `record_id,site,status`, followed by the raw rows for `R001`, `R003`, and `R010` in that order. Preserve their original whitespace and case.
 
@@ -148,13 +148,13 @@ checksum, and repeated 12-to-11 row evidence. Assertions must stop export when
 any invariant fails. Read every CSV back with an explicit schema and compare it
 exactly with the in-memory table.
 
-> **Checkpoint — `output/issue_audit.csv`**
+> **Checkpoint: `output/issue_audit.csv`**
 > Save the 15-row audit with columns `issue,count`.
 
-> **Checkpoint — `output/cleaned_people.csv`**
+> **Checkpoint: `output/cleaned_people.csv`**
 > Save the 11 cleaned records with the seven columns listed above, dates as `YYYY-MM-DD`, and missing values as empty fields.
 
-> **Checkpoint — `output/decision_log.csv`**
+> **Checkpoint: `output/decision_log.csv`**
 > Save the eight decisions with nonblank reasons, source checksum, and before/after row counts.
 
 ## Check your work

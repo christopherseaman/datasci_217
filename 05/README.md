@@ -315,7 +315,7 @@ The tools so far repair values that are missing, repeated, or stored as the wron
 
 ## Applying Custom Functions
 
-![xkcd 1205: Is It Worth the Time? — A reminder to compare the time spent automating with the time it saves.](media/xkcd_1205_apply.png)
+![xkcd 1205: Is It Worth the Time? A reminder to compare the time spent automating with the time it saves.](media/xkcd_1205_apply.png)
 
 Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis. Any of them can take a **`lambda`**, a one-line function without a name: `lambda x: x * 2` does the same as `def double(x): return x * 2`, and is handy for one-time use.
 
@@ -451,7 +451,7 @@ Text columns are where inconsistent categories hide. A hand-typed site column mi
 
 ## Basic String Operations
 
-![String Operations Reference — Python's built-in string methods from Lecture 01; the .str accessor applies them to a whole column.](media/string_operations_reference.png)
+![String Operations Reference: Python's built-in string methods from Lecture 01; the .str accessor applies them to a whole column.](media/string_operations_reference.png)
 
 ### Reference Card: String operations
 
@@ -489,7 +489,7 @@ dtype: bool
 
 One column sometimes holds several facts at once: a full name, a `city, state` pair, or a delimited list of codes. [The bonus](BONUS.md#splitting-and-joining-values) covers `str.split()`, `str.cat()`, and `str.join()` for taking those apart and putting them back together.
 
-![xkcd 1171: Perl Problems — "I got 99 problems, so I used regular expressions. Now I have 100 problems."](media/xkcd_1171.png)
+![xkcd 1171: Perl Problems. "I got 99 problems, so I used regular expressions. Now I have 100 problems."](media/xkcd_1171.png)
 
 # Categorical Data Encoding
 
@@ -572,7 +572,7 @@ print(pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64'
 
 # Data Validation and Quality Assessment
 
-![xkcd 2239: Data Error — A clean-looking analysis cannot rescue corrupted source data.](media/xkcd_2239.png)
+![xkcd 2239: Data Error. A clean-looking analysis cannot rescue corrupted source data.](media/xkcd_2239.png)
 
 Lecture 04 ended with a first look at a loaded table: count gaps with `isna().sum()` and repeats with `duplicated().sum()`. Inspection describes a table; **validation** checks it against the data contract. A **validation rule** is a yes/no question asked of every row, such as "is the age between 0 and 120?" or "does the patient ID look like `P` plus three digits?" Rows that fail are listed for review rather than deleted: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
 
@@ -711,7 +711,7 @@ See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
 
 # Data Cleaning Pipeline
 
-![xkcd 2054: Data Pipeline — A pipeline that collapses on the first weird input is why the last step is validation.](media/data_pipeline_intro.png)
+![xkcd 2054: Data Pipeline. A pipeline that collapses on the first weird input is why the last step is validation.](media/data_pipeline_intro.png)
 
 Treat the file you received like an original lab specimen: you never write on it. Load it into a **raw table** and leave that table untouched. Make every change on a **working copy**, and save the result as a new **cleaned table** only after it passes validation. Keeping the raw table lets you rerun the cleaning from the start and prove nothing changed by accident. Record where the file came from (its **provenance**) and each decision you made, such as one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
 

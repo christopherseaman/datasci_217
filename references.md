@@ -10,25 +10,25 @@ notion:
 
 # Python Practice in Your Browser
 
-- [Exercism: Python](https://exercism.org/tracks/python) — exercises, feedback, and mentoring.
-- [futurecoder](https://futurecoder.io/) — guided Python basics with exercises and feedback.
-- [Snakify](https://snakify.org/en/) — lessons and programming problems.
-- [CS Circles](https://cscircles.cemc.uwaterloo.ca/) — introductory lessons and exercises from the University of Waterloo.
-- [LearnPython.org](https://www.learnpython.org/) — interactive introductory tutorials.
-- [Codecademy: Learn Python 3](https://www.codecademy.com/learn/learn-python-3) — interactive course.
-- [DataCamp](https://www.datacamp.com/) — interactive data-science courses.
-- [Python Tutor](https://pythontutor.com/) — visualize code execution step by step.
+- [Exercism: Python](https://exercism.org/tracks/python): exercises, feedback, and mentoring.
+- [futurecoder](https://futurecoder.io/): guided Python basics with exercises and feedback.
+- [Snakify](https://snakify.org/en/): lessons and programming problems.
+- [CS Circles](https://cscircles.cemc.uwaterloo.ca/): introductory lessons and exercises from the University of Waterloo.
+- [LearnPython.org](https://www.learnpython.org/): interactive introductory tutorials.
+- [Codecademy: Learn Python 3](https://www.codecademy.com/learn/learn-python-3): interactive course.
+- [DataCamp](https://www.datacamp.com/): interactive data-science courses.
+- [Python Tutor](https://pythontutor.com/): visualize code execution step by step.
 
 # Python Books & Tutorials
 
 - [Official Python Tutorial](https://docs.python.org/3/tutorial/)
 - [Real Python](https://realpython.com/)
-- [Automate the Boring Stuff with Python](https://automatetheboringstuff.com/) — Al Sweigart
-- [A Whirlwind Tour of Python](https://jakevdp.github.io/WhirlwindTourOfPython/) — Jake VanderPlas
-- [Think Python](https://greenteapress.com/wp/think-python/) — Allen Downey
+- [Automate the Boring Stuff with Python](https://automatetheboringstuff.com/) by Al Sweigart
+- [A Whirlwind Tour of Python](https://jakevdp.github.io/WhirlwindTourOfPython/) by Jake VanderPlas
+- [Think Python](https://greenteapress.com/wp/think-python/) by Allen Downey
 - [The Hitchhiker’s Guide to Python](https://docs.python-guide.org/)
-- [Python 101](https://leanpub.com/py101/) — Mike Driscoll; book purchase.
-- [Python for Everybody](https://www.py4e.com/) — Charles Severance
+- [Python 101](https://leanpub.com/py101/) by Mike Driscoll; book purchase.
+- [Python for Everybody](https://www.py4e.com/) by Charles Severance
 
 # Quick References
 
@@ -37,14 +37,14 @@ notion:
 
 # Data Science Books
 
-- [Python for Data Analysis, 3rd Edition](https://wesmckinney.com/book/) — Wes McKinney
-- [Python Data Science Handbook](https://jakevdp.github.io/PythonDataScienceHandbook/) — Jake VanderPlas
+- [Python for Data Analysis, 3rd Edition](https://wesmckinney.com/book/) by Wes McKinney
+- [Python Data Science Handbook](https://jakevdp.github.io/PythonDataScienceHandbook/) by Jake VanderPlas
 
 # Command Line & Git
 
-- [The Missing Semester of Your CS Education](https://missing.csail.mit.edu/) — MIT
-- [The Linux Command Line](http://linuxcommand.org/tlcl.php) — William Shotts
-- [Pro Git](https://git-scm.com/book/en/v2) — Scott Chacon & Ben Straub
+- [The Missing Semester of Your CS Education](https://missing.csail.mit.edu/) by MIT
+- [The Linux Command Line](http://linuxcommand.org/tlcl.php) by William Shotts
+- [Pro Git](https://git-scm.com/book/en/v2) by Scott Chacon & Ben Straub
 - [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/)
 
 # Data Science Libraries
@@ -62,4 +62,4 @@ notion:
 
 # Course Source
 
-- [Course repository](https://github.com/christopherseaman/datasci_217) — source files and notebook downloads.
+- [Course repository](https://github.com/christopherseaman/datasci_217): source files and notebook downloads.

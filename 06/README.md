@@ -343,14 +343,14 @@ Later in this lecture, `pivot()` builds its result’s index from an identifier 
 ## Row Labels Before and After
 
 ```
-employees as built from a dict — the RangeIndex down the left edge only counts rows
+employees as built from a dict: the RangeIndex down the left edge only counts rows
 
   emp_id     name   department  salary
 0   E001    Alice  Engineering   95000
 1   E002      Bob        Sales   75000
 2   E003  Charlie  Engineering   88000
 
-employees.set_index('emp_id') — the IDs are the row labels, so .loc['E002'] finds Bob
+employees.set_index('emp_id'): the IDs are the row labels, so .loc['E002'] finds Bob
 
            name   department  salary
 emp_id
@@ -616,11 +616,11 @@ print(back.equals(wide_data))
 # True
 ```
 
-Melting `wide_data` and pivoting the result puts every score back in the cell it came from, and carrying the values back is what makes the two operations inverses. The frame itself does not come back equal: `long.pivot(index='student', columns='subject', values='score').equals(wide_data)` is `False`, because the pivot moved `student` into the row labels, left `subject` behind as a header label, and sorted the columns into `english, math, science`. The fixups in the snippet undo those differences—`reset_index()` restores the `student` column, `back.columns.name = None` clears the leftover label, and reselecting the columns restores the original order, after which `equals()` returns `True`. With two identifier columns, `index=['id1', 'id2']` builds the two-level row index from earlier in this lecture, and `reset_index()` turns both levels back into columns.
+Melting `wide_data` and pivoting the result puts every score back in the cell it came from, and carrying the values back is what makes the two operations inverses. The frame itself does not come back equal: `long.pivot(index='student', columns='subject', values='score').equals(wide_data)` is `False`, because the pivot moved `student` into the row labels, left `subject` behind as a header label, and sorted the columns into `english, math, science`. The fixups in the snippet undo those differences: `reset_index()` restores the `student` column, `back.columns.name = None` clears the leftover label, and reselecting the columns restores the original order, after which `equals()` returns `True`. With two identifier columns, `index=['id1', 'id2']` builds the two-level row index from earlier in this lecture, and `reset_index()` turns both levels back into columns.
 
 If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops: pandas reports `ValueError: Index contains duplicate entries, cannot reshape`. First determine whether the duplicates are data errors or repeated observations. If repeated observations are valid, `pivot_table()` aggregates them into one cell before reshaping, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
 
-If a reshape feels mysterious, write down what one row represents before choosing `pivot()` or `melt()`—your future self will thank you for the labels.
+If a reshape feels mysterious, write down what one row represents before choosing `pivot()` or `melt()`. Your future self will thank you for the labels.
 
 # LIVE DEMO!
 

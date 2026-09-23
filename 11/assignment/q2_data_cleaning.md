@@ -64,7 +64,7 @@ MISSINGNESS_COLUMNS = [
 # TODO: Sort by UTC then station and save output/q2_cleaned_observations.csv.
 ```
 
-> **Checkpoint — `output/q2_cleaned_observations.csv`**
+> **Checkpoint: `output/q2_cleaned_observations.csv`**
 
 ## 2.4 Audit and Missingness
 
@@ -75,9 +75,9 @@ Use concise, unique, nonblank rule descriptions and clear result categories. You
 # TODO: Save output/q2_missingness.csv in station and release-column order.
 ```
 
-> **Checkpoint — `output/q2_cleaning_audit.csv`**
+> **Checkpoint: `output/q2_cleaning_audit.csv`**
 
-> **Checkpoint — `output/q2_missingness.csv`**
+> **Checkpoint: `output/q2_missingness.csv`**
 
 ## Check Your Work
 

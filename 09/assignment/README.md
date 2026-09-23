@@ -47,7 +47,7 @@ The fixture is course-authored, synthetic, and non-identifying. One source row r
 
 State the temporal contract, parse the documented local clock text, localize it to America/New_York, convert to UTC, and sort by zone and time. Preserve source measurements and add `source_row=1`.
 
-> **Checkpoint — `output/prepared_panel.csv`**
+> **Checkpoint: `output/prepared_panel.csv`**
 
 ## Question 2: Change frequency
 
@@ -55,13 +55,13 @@ State the temporal contract, parse the documented local clock text, localize it 
 
 Create a separate hourly grid for each zone. Distinguish missing source values from rows introduced by the grid.
 
-> **Checkpoint — `output/hourly_grid.csv`**
+> **Checkpoint: `output/hourly_grid.csv`**
 
 ### 2.2 Summarize two-hour intervals
 
 Calculate mean recorded CO2 and source-row count in left-closed, left-labeled two-hour bins within each zone.
 
-> **Checkpoint — `output/two_hour_summary.csv`**
+> **Checkpoint: `output/two_hour_summary.csv`**
 
 ## Question 3: Build past-only evidence
 
@@ -69,15 +69,15 @@ Calculate mean recorded CO2 and source-row count in left-closed, left-labeled tw
 
 Create same-zone lag and difference, then compare means over the previous two observations and the previous two elapsed hours. Both means exclude the current observation.
 
-> **Checkpoint — `output/temporal_features.csv`**
+> **Checkpoint: `output/temporal_features.csv`**
 
 ### 3.2 Audit availability and create chronological blocks
 
 Audit the four supplied candidate features at 2026-01-20 18:00 UTC, then label observations before that instant `earlier` and the remaining observations `later_holdout`.
 
-> **Checkpoint — `output/availability_decisions.csv`**
+> **Checkpoint: `output/availability_decisions.csv`**
 
-> **Checkpoint — `output/chronological_blocks.csv`**
+> **Checkpoint: `output/chronological_blocks.csv`**
 
 ## Check Your Work
 

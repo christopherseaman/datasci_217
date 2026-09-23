@@ -147,8 +147,8 @@ imputes missing values with training medians and then scales the numeric columns
 This fixture has no missing predictors after feature construction, so the imputers
 are pipeline robustness rather than evidence that missingness was handled here.
 
-Every learned preprocessing value—category levels, numeric medians, and scaling
-statistics—is fitted on training data and reused unchanged for validation and test.
+Every learned preprocessing value (category levels, numeric medians, and scaling
+statistics) is fitted on training data and reused unchanged for validation and test.
 That keeps later periods from influencing model selection or evaluation. The
 encoder's `sparse_output=False` is a convenience for this small Ridge example;
 dense output is not a universal rule for larger or wider feature matrices.

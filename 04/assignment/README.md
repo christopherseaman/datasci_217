@@ -96,7 +96,7 @@ Use the equivalent positional selection for `position_block` with `.iloc[1:3, 0:
 
 Verify that the two blocks contain the same values. Write `label_block` to `LABELED_OUTPUT_PATH` while preserving its named row index. Reading `output/labeled_block.csv` as an ordinary CSV must produce the columns `record_id`, `baseline_c`, and `follow_up_c`.
 
-> **Checkpoint — `output/labeled_block.csv`**
+> **Checkpoint: `output/labeled_block.csv`**
 > Save the two selected rows with the named `record_id` index and both measurement columns.
 
 ## Task 3: portable CSV round trip
@@ -144,7 +144,7 @@ P008, P003, P004, P006, P001, P011, P007, P009, P012
 
 Write `selected_purchases` to `SELECTED_OUTPUT_PATH` with `index=False`. Read that file back through the same supplied path into `round_trip`. The final supplied verification cell checks the exact schema, nine-row count, mask condition, arithmetic, and deterministic order.
 
-> **Checkpoint — `output/selected_purchases.csv`**
+> **Checkpoint: `output/selected_purchases.csv`**
 > Save the nine selected purchases in the order above with `index=False`, then read the CSV back.
 
 ## Check your work

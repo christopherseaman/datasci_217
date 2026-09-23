@@ -56,7 +56,7 @@ FEATURE_COLUMNS = [
 # output/q4_features.csv without dropping ineligible panel rows.
 ```
 
-> **Checkpoint — `output/q4_features.csv`**
+> **Checkpoint: `output/q4_features.csv`**
 
 ## 4.3 Feature Manifest
 
@@ -72,7 +72,7 @@ MANIFEST_COLUMNS = [
 # output/q4_feature_manifest.csv.
 ```
 
-> **Checkpoint — `output/q4_feature_manifest.csv`**
+> **Checkpoint: `output/q4_feature_manifest.csv`**
 
 ## 4.4 Timing Checks
 

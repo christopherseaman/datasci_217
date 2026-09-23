@@ -17,7 +17,7 @@ Before running the examples, install the packages in [`demo/requirements.txt`](d
 
 *Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards - mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!*
 
-![xkcd 1838: Machine Learning — "I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."](media/xkcd_1838.png)
+![xkcd 1838: Machine Learning. "I'm sorry, I can't do that. I'm a machine learning model, not a magic wand."](media/xkcd_1838.png)
 
 # What Is a Model?
 
@@ -45,7 +45,7 @@ Python's modeling libraries line up from inference toward flexible prediction. M
 | **XGBoost** | Candidate for tabular prediction | Gradient-boosted trees, feature-importance summaries | Benchmarking alongside simpler tabular models |
 | **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops | Deep-learning workflows (PyTorch is in BONUS) |
 
-![xkcd 882: Significant — "We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"](media/xkcd_882.png)
+![xkcd 882: Significant. "We found a statistically significant correlation between the data and our hypothesis. (p < 0.05)"](media/xkcd_882.png)
 
 # Statistical Modeling with `statsmodels`
 
@@ -201,7 +201,7 @@ plt.close(fig)
 
 ![xkcd 539: Boyfriend](media/xkcd_539.png)
 
-![xkcd 552: Correlation — "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_1725.png)
+![xkcd 552: Correlation. "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_1725.png)
 
 # Prediction: Features, Targets, and Honest Splits
 
@@ -669,7 +669,7 @@ For squared-error regression each tree fits the ordinary residuals; the "gradien
 
 *"What is this? A model for ants? It needs to be at least... three times more accurate!"*
 
-![xkcd 2400: Statistics — "Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."](media/xkcd_2400.png)
+![xkcd 2400: Statistics. "Our machine learning model has achieved 99.9% accuracy on the training data!" "Great! How does it do on new data?" "Oh, we haven't tested that yet."](media/xkcd_2400.png)
 
 ## `XGBoost` Basics
 
@@ -748,7 +748,7 @@ All that flexibility pays off for images, text, and audio, where useful features
 
 *"But why deep learning models?" "Seriously? I just told you that a moment ago."*
 
-![xkcd 2169: Predictive Models — "Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."](media/xkcd_2169.png)
+![xkcd 2169: Predictive Models. "Our model is 99% accurate!" "On what?" "On the data we trained it on." "And on new data?" "We're still working on that part."](media/xkcd_2169.png)
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
