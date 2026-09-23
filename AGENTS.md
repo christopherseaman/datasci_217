@@ -34,7 +34,7 @@ The lecture format comes from DataSci 223's lecture style and formatting guide (
 
 Each major topic usually includes these parts, in this order. Omit a part only when it would be empty or would repeat nearby content; when students need a missing part, write it rather than a placeholder.
 
-1. A freeform introduction, which can be several paragraphs. This is where concepts are explained, analogies drawn, and connections to previous lectures made. Motivate the concept with a concrete problem, ideally from health data, and define each new term in **bold** at first use.
+1. A short introduction that says what the thing is and how to use it, as briefly as that allows. Motivate it with a concrete problem, ideally from health data, and define each new term in **bold** at first use. Students need the actual topic stated clearly, not a story, allegory, or paragraph about material from another lecture; a clause is enough to connect to earlier work.
 2. A visual, table, or concrete output that shows the idea: a diagram, a before-and-after table, a screenshot of the actual action, or real output. Visuals go before code.
 3. A reference card: related commands or functions grouped by task, with their purpose, key arguments, and typical output. Students look things up here after class, so it covers what the demos and assignment use.
 4. A short code snippet: the smallest example of one concept, with its expected output and nothing untaught.
@@ -44,7 +44,7 @@ Adapt introductions and examples from the course sources rather than inventing t
 ### Where material belongs
 
 - Lecture: concepts, visuals, reference cards, and short single-concept snippets.
-- Demo: realistic complexity with health data, multiple steps, edge cases, and visible checkpoints. The lecture does not embed full demo walkthroughs. The audience is health data science master's students, so a demo's subject matter is patients, encounters, vitals, labs, or clinic operations — not student rosters, grades, or school subjects. A lecture snippet may keep a simple non-clinical example when it exists only to show syntax; a demo may not. Values carry real units and clinically sensible ranges, and identifiers are synthetic. When extending a demo that still runs on the old student-grade material, recast it rather than adding more of it.
+- Demo: realistic complexity with health data, multiple steps, edge cases, and visible checkpoints. The lecture does not embed full demo walkthroughs. The audience is health data science master's students, so a demo's subject matter is patients, encounters, vitals, labs, or clinic operations, not student rosters, grades, or school subjects. A lecture snippet may keep a simple non-clinical example when it exists only to show syntax; a demo may not. Values carry real units and clinically sensible ranges, and identifiers are synthetic. When extending a demo that still runs on the old student-grade material, recast it rather than adding more of it.
 - `BONUS.md`: advanced options, theoretical depth, specialized use cases, and further reading.
 - Assignment: independent practice of lecture and demo material; it introduces no new required concept.
 
@@ -72,7 +72,7 @@ An optional one-sentence hook.
 
 # First Topic
 
-Freeform introduction, as many paragraphs as the idea needs: the problem this topic solves, the concept explained with an analogy where one helps, each **new term** defined at first use, and the connection to earlier lectures.
+A short introduction: what the thing is, the problem it solves, and how to use it, with each **new term** defined at first use.
 
 ## Subtopic
 
@@ -99,8 +99,9 @@ print(result)  # expected output
 - Notion-native Markdown: multiple `#` topic headings, `##` subtopics, `###` for reference cards, code snippets, and minor subsections, and `####` only when a `###` subsection needs its own children. Do not skip a level. Use real headings rather than bold labels, no hard wrapping within paragraphs, four-space nesting for lists, and no horizontal rules.
 - Demo breaks: exactly `# LIVE DEMO!`, identical at every break, with nothing beneath it. The next line starts a new `#` topic because any `##` heading would nest under the demo marker in Notion. Nothing follows the final marker.
 - Name subsections `Reference Card: ...` and `Code Snippet: ...` after the task or concept they cover. Put visuals before code.
-- Captions: the link text of an image is its caption. Notion renders `![Caption](path)` as a picture captioned `Caption`, and the site renders the same text as a `figcaption`, so never put a caption in a separate italic paragraph beneath the image. Keep it to one line: what the picture shows or the point it makes, not a restatement of the nearby prose.
-- Comics: local images placed between topics rather than inside an explanation, captioned `xkcd NNNN: Title` followed by an em dash and the joke or the point, as in `![xkcd 1987: Python Environment — Virtual environments prevent package chaos](media/xkcd_1987.png)`.
+- Captions: the link text of an image is its caption. Notion renders `![Caption](path)` as a picture captioned `Caption`, and the site renders the same text as a `figcaption`, so never put a caption in a separate italic paragraph beneath the image. Keep it to one line: what the picture shows or the point it makes, not a restatement of the nearby prose. Do not add inline source citations such as `Screenshots: VS Code documentation`.
+- Show, don't narrate: when an example makes the point (good versus bad commit messages, a format-spec table), use a code block or table rather than prose describing it. Write italics as `_italic_`.
+- Comics: local images placed between topics rather than inside an explanation, captioned `xkcd NNNN: Title` followed by the joke or the point as its own sentence, as in `![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)`.
 
 #### Reference card formats
 
@@ -148,8 +149,8 @@ Review content organization first and styling last.
 
 1. Map the lecture: its topics in order, the parts each topic has, and the topic block that leads to each demo.
 2. Lecture organization: Does each topic blend concepts, reference material, and practical examples? Is the order incremental, with nothing used before it is taught and the working path before safeguards? Where a section develops one tool, does it move from problem to tool to options to pitfalls? Does each block build to its demo, and does the demo use only earlier material? Is the lecture lean, with essential tools in the lecture and advanced material in `BONUS.md`? Does it teach what its demos and assignment need?
-3. Topics: Does the introduction explain the concept, draw an analogy where one helps, connect it to earlier lectures, and define new terms, or does the topic jump straight to an API list? Is there a visual or concrete output before code? Does the reference card cover the task? Are snippets minimal and correct for Python 3.13 and pandas 3.0.5, with stated outputs that match real output?
-4. Styling: fix violations of the rules above, not matters of taste. `python3 scripts/lecture_lint.py` checks the mechanical ones — heading levels, demo markers, pseudo-headings, horizontal rules, and captions — and exits non-zero when a page breaks one.
+3. Topics: Does the introduction say directly what the concept is and how to use it, and define new terms, without stories, allegories, or detours into other lectures? Does the topic teach before its reference card, rather than jumping straight to an API list? Is there a visual or concrete output before code? Does the reference card cover the task? Are snippets minimal and correct for Python 3.13 and pandas 3.0.5, with stated outputs that match real output?
+4. Styling: fix violations of the rules above, not matters of taste. `python3 scripts/lecture_lint.py` checks the mechanical ones (heading levels, demo markers, pseudo-headings, horizontal rules, and captions) and exits non-zero when a page breaks one.
 
 Fix substance: add the missing explanation, visual, or example, adapted from the course sources, and reorder or move material when the organization is wrong.
 
@@ -169,8 +170,7 @@ Fix substance: add the missing explanation, visual, or example, adapted from the
 - Assignments assess committed output artifacts. Graders do not inspect student source patterns or run student code. Keep artifact instructions, checker expectations, and point totals consistent.
 - Keep assignments task-first: annotated scaffold trees, numbered subtasks, and prominent artifact checkpoints. Put a positive, artifact-based Completion Contract under Check Your Work. Avoid preambles, forbidden-code lists, and instructor-facing notes. Call the shared grading rules “checks,” not “public checks.”
 - Use VS Code's integrated terminal by default, with native-terminal instructions as a fallback. Assignment checks run automatically on every GitHub push; a new fork may need Actions enabled once.
-- Each run fetches the supplied checker from the course assignment repository (`UCSF-DataSci/ds217-26f-NN`), so a correction to the checks reaches every student on their next push without anyone touching their fork. Fetch the whole course-owned set together — `grading.py`, `check_assignment.py`, the `_public_checks.py` or `_assignment_checks.py` helper, and the test entrypoints — and never a partial set: `grading.py` zips its checks against `POINTS` with `strict=True`, so a mismatched pair raises at run time even though both files parse. Validate what arrives, smoke-test that it runs, and fall back to the copy committed in the fork if either fails; judge a checker by the JSON it emits, never by its exit status, because a working checker exits non-zero for any incomplete submission. Student work is never fetched or overwritten.
-- Each run downloads the current checker files from the assignment's course repository (`CHECKS_REPO` and `CHECKS_REF` in `NN/assignment/.github/workflows/tests.yml`, listed in `assignments-26f.json`) and falls back to the copy committed in the student's repository when the download fails, so a check corrected after handout reaches every student on their next push without touching their fork. Correct a check in both places: the assignment source here and the course repository the workflow names. The vendored copies stay in place as the fallback; a run that can use neither fails rather than passing with no tests.
+- Each run downloads the current checker files from this course repository, so a check corrected after handout reaches every student on their next push without touching their fork. The workflow names them in `NN/assignment/.github/workflows/tests.yml` (`CHECKS_REPO: christopherseaman/datasci_217`, `CHECKS_REF`, `CHECKS_PATH: NN/assignment_checks`, and `CHECKS_FILES`), so correct a check in both places: the vendored copy under `NN/assignment/` and the course-owned copy under `NN/assignment_checks/`. Fetch the course-owned set whole and never a partial set, because `grading.py` zips its checks against `POINTS` with `strict=True` and a mismatched pair raises at run time even though both files parse. Validate what arrives and smoke-test that it runs; judge a checker by the JSON it emits, never by its exit status, because a working checker exits non-zero for any incomplete submission. The vendored copies stay in place as the fallback, and a run that can use neither fails rather than passing with no tests. Student work is never fetched or overwritten.
 
 ## Assets and verification
 
