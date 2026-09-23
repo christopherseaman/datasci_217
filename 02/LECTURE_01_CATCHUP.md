@@ -4,7 +4,9 @@ permalink: /02/lecture-01-catchup/
 notion:
   title_line: "# Lecture 01 Catch-Up"
   role: catchup
-  status: unmapped
+  status: mapped
+  page_id: "3e4d9fdd-1a1a-818f-ba42-dd95c3d30d78"
+  url: "https://app.notion.com/p/3e4d9fdd1a1a818fba42dd95c3d30d78"
 ---
 
 # Lecture 01 Catch-Up
