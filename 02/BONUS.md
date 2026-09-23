@@ -9,7 +9,7 @@ notion:
 
 # DLC: Advanced Git Concepts
 
-*This content is optional and not required for assignments. It's here for students who want to dive deeper into Git.*
+_This content is optional and not required for assignments. It's here for students who want to dive deeper into Git._
 
 # VS Code Extensions, Themes, and Settings
 
@@ -555,7 +555,7 @@ Fixes issue #123"
 
 # Advanced Python CLI Topics
 
-*Optional reference for students interested in command-line data workflows.*
+_Optional reference for students interested in command-line data workflows._
 
 This page owns shell and CLI-specific extensions. Python function design and object-model extensions live in the [Python concepts section](#bonus-python-concepts) below; the core lecture already introduces ordinary functions and the main guard.
 
@@ -681,7 +681,7 @@ Explore `xargs`, `tee`, process substitution, and shell completion in a disposab
 
 # Bonus Python Concepts
 
-*Optional extensions for students who want to explore Python concepts beyond the core lecture.*
+_Optional extensions for students who want to explore Python concepts beyond the core lecture._
 
 ## Function design
 
@@ -802,6 +802,32 @@ def require_columns(columns, required):
     if missing:
         raise DataValidationError(f"missing columns: {sorted(missing)}")
 ```
+
+## Debugging with Breakpoints
+
+<callout icon="📝" color="blue_bg">
+	We will dive deeper into debugging in DataSci-223. Preview: [https://code.visualstudio.com/docs/debugtest/debugging](https://code.visualstudio.com/docs/debugtest/debugging)
+</callout>
+
+The **debugger** runs a script and pauses at a **breakpoint**, a line you mark, so you can read every variable's value and then run one line at a time. It runs the script from the folder open in VS Code, so open the script's own folder first.
+
+![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
+
+| Step | How | Result |
+| --- | --- | --- |
+| Set a breakpoint | Click left of a line number | A red dot; the run will pause before that line |
+| Start | **F5**, or **Run → Start Debugging**; the first time, choose **Python File** from the menu | The script runs until the breakpoint |
+| Inspect | Read **Variables** on the left | Each name's current value; the highlighted line runs next |
+| Step over | **F10**, or **Run → Step Over** | One line runs, then the script pauses again |
+| Continue | **F5**, or **Run → Continue** | The script runs to the next breakpoint |
+| Stop | **Shift+F5**, or **Run → Stop Debugging** | The run ends |
+
+### Try It on Demo 3
+
+1. Keep `02/demo` (or your downloads folder) open: the debugger runs a script from the folder open in VS Code, not the script's own folder, so with the whole course clone open the script prints `Cannot find clinic_vitals.csv: run this script from the 02/demo folder.` and never pauses. Open `module_usage_demo.py` and click left of line 30, `systolic = int(raw_systolic)`, to set a breakpoint (a red dot).
+2. Press **F5**; the first time, a menu opens: choose **Python File**. The script pauses before running line 30, and **Variables** shows `patient_id: 'P001'` and `raw_systolic: '128'` but no `systolic` yet.
+3. Press **F10** to step over the line: `systolic: 128` appears.
+4. Press **F5** to continue, and the loop pauses on the next row, `'P002'`. Press **Shift+F5** to stop, and click the red dot to remove it.
 
 ## Practice prompts
 

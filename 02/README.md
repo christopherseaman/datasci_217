@@ -731,7 +731,7 @@ P003: 118 mmHg
 Saved text matches: True
 ```
 
-## Exceptions, Assertions, and the Debugger
+## Exceptions and Assertions
 
 <columns>
 	<column ratio="37.5">
@@ -793,25 +793,6 @@ The last line stops the script; the traceback ends with:
 AssertionError: a reading is above 140: 142
 ```
 
-### Break(points) the Ice
-
-<callout icon="📝" color="blue_bg">
-	We will dive deeper into debugging in DataSci-223. Preview: [https://code.visualstudio.com/docs/debugtest/debugging](https://code.visualstudio.com/docs/debugtest/debugging)
-</callout>
-
-The **debugger** runs a script and pauses at a **breakpoint**, a line you mark, so you can read every variable's value and then run one line at a time. It runs the script from the folder open in VS Code, so open the script's own folder first.
-
-![Python paused at a breakpoint, with the variable's value visible at left](media/vscode-python-debug-paused.png)
-
-| Step | How | Result |
-| --- | --- | --- |
-| Set a breakpoint | Click left of a line number | A red dot; the run will pause before that line |
-| Start | **F5**, or **Run → Start Debugging**; the first time, choose **Python File** from the menu | The script runs until the breakpoint |
-| Inspect | Read **Variables** on the left | Each name's current value; the highlighted line runs next |
-| Step over | **F10**, or **Run → Step Over** | One line runs, then the script pauses again |
-| Continue | **F5**, or **Run → Continue** | The script runs to the next breakpoint |
-| Stop | **Shift+F5**, or **Run → Stop Debugging** | The run ends |
-
 ## `__main__`: Run Directly or Import
 
 Python sets each file's `__name__` to `"__main__"` when you run the file directly, and to the module's name when another file imports it. Put the script's work in `main()` and call it under that check, so an import only defines the functions.
@@ -854,7 +835,7 @@ Only the first command prints: the import ran the `def` lines and skipped `main(
 | A blank line between lines of text | A new paragraph | Without it, the lines join into one paragraph |
 | `**high**` | **high** | Bold |
 | `_estimated_` | _estimated_ | Italic; `*estimated*` also works |
-| `> Readings are in mmHg.` | An indented quote | Notion's editor starts a quote with `\|` and a space |
+| `> Readings are in mmHg.` | An indented quote | Notion's editor starts a quote with `|` and a space |
 | A line starting with `-` and a space | A bulleted list | Indent four spaces to nest |
 | `1. item` | A numbered list | |
 | A bullet whose text starts `[ ]` or `[x]` | A checklist | GitHub shows checkboxes |

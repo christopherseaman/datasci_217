@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEMOS = ROOT / "02" / "demo"
 GUIDE = DEMOS / "DEMO_GUIDE.md"
 LECTURE = ROOT / "02" / "README.md"
+BONUS = ROOT / "02" / "BONUS.md"
 LECTURE_01 = ROOT / "01" / "README.md"
 SOURCES = ("functions_demo.py", "vitals_tools.py", "module_usage_demo.py", "clinic_vitals.csv")
 PROMPT = "Flag systolic at or above (press Enter for 130): "
@@ -186,7 +187,7 @@ def check_git_demo(scratch, shell):
     assert stops + "\n" in output_of(steps, "git merge")
     assert output_of(steps, "git status --short") == unmerged + "\n"
     markers = only(fences("text"), "<<<<<<< HEAD")
-    assert markers == lecture_block("### Merge Conflicts")
+    assert markers == lecture_block("## Merge Conflicts")
     assert output_of(steps, "cat notes.md") == markers
 
     # The terminal resolution leaves what VS Code's Accept Incoming Change would.
@@ -209,14 +210,19 @@ def check_git_demo(scratch, shell):
     assert f"- `{pattern}`:" in card, f"{pattern} is not on the lecture's ignore card"
     assert (practice / "raw_vitals.csv").exists()
 
+    # Publishing sends every commit on main, so GitHub's count matches the guide's.
+    count = re.search(r"\(\*\*(\d+) Commits\*\*\) for the same", guide).group(1)
+    steps = pasted("git rev-list --count HEAD", practice, env, shell)
+    assert output_of(steps, "git rev-list") == count + "\n"
+
     # Less typing: `cat notes.md` shows the merged notes; `git diff notes.md` shows nothing.
     steps = pasted("cat notes.md\ngit diff notes.md", practice, env, shell)
     assert steps == [("cat notes.md", incoming), ("git diff notes.md", "")]
 
 
 def check_debugger(demo, python):
-    """The guide's breakpoint pauses where it says, showing the values it names."""
-    guide = GUIDE.read_text(encoding="utf-8")
+    """The bonus page's breakpoint exercise pauses where it says, showing the values it names."""
+    guide = BONUS.read_text(encoding="utf-8")
     number, code = re.search(r"click left of line (\d+), `([^`]+)`", guide).groups()
     script_lines = (demo / "module_usage_demo.py").read_text(encoding="utf-8").splitlines()
     assert script_lines[int(number) - 1].strip() == code, f"line {number} is not {code}"

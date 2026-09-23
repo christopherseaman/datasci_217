@@ -20,6 +20,7 @@ assignment/
 ├── clinic_report.py             # scaffold: reads the data and writes both artifacts
 ├── check_assignment.py          # supplied: run it to check the shape of your work; keep unchanged
 ├── grading.py, _shape_checks.py  # supplied: the shape checks themselves; keep unchanged
+├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 └── output/
     ├── vitals_report.txt        # you generate in Task 2
     └── followup_list.txt        # you generate in Task 3

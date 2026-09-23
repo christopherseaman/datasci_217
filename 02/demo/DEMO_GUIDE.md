@@ -140,6 +140,12 @@ Once `.gitignore` covers the export, it leaves `git status --short` and Source C
                      <- committed: nothing to report
 ```
 
+## Publish to GitHub
+
+With `main` as the current branch, select **Publish Branch** in Source Control; sign in to GitHub if VS Code asks. Keep the name `ds217-practice` and select **Publish to GitHub private repository**. When VS Code reports `Successfully published the "<your-username>/ds217-practice" repository to GitHub.`, select **Open on GitHub**.
+
+On GitHub, the **Code** tab lists `.gitignore` and `notes.md` but not `raw_vitals.csv`: the ignored export never left your computer. Select the commit count (**6 Commits**) for the same six commits `git log --oneline` lists, newest first: `Ignore CSV exports` on top of the five above.
+
 ## Less typing: recall and edit
 
 1. In the `ds217-practice` terminal, type `cat no`, press **Tab** to complete `notes.md`, then **Enter**. Expect the heading and the three-summaries line.
@@ -388,13 +394,6 @@ Cannot find clinic_vitals.csv: run this script from the 02/demo folder.
 ```
 
 `cd` into `02/demo` and run it again.
-
-## Pause inside the loop
-
-1. Keep `02/demo` (or your downloads folder) open: the debugger runs a script from the folder open in VS Code, not the script's own folder, so with the whole course clone open the script prints the message above and never pauses. Open `module_usage_demo.py` and click left of line 30, `systolic = int(raw_systolic)`, to set a breakpoint (a red dot).
-2. Press **F5**; the first time, a menu opens: choose **Python File**. The script pauses before running line 30, and **Variables** shows `patient_id: 'P001'` and `raw_systolic: '128'` but no `systolic` yet.
-3. Press **F10** to step over the line: `systolic: 128` appears.
-4. Press **F5** to continue, and the loop pauses on the next row, `'P002'`. Press **Shift+F5** to stop, and click the red dot to remove it.
 
 ## Document how to run it
 
