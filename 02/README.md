@@ -15,6 +15,8 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Lecture 01 Notes from Lab](LECTURE_01_CATCHUP.md)
 
+**Note:** After today we should complete McKinney’s _Python for Data Analysis_ through ch03
+
 # VS Code Basics
 
 The **Command Palette** lists every VS Code action by name: type part of a name instead of hunting through menus.
@@ -100,13 +102,7 @@ analysis_fixed_broken_computer_recovery.py
 
 Git records a project as a series of **commits**: snapshots of the tracked files, each with an author, time, and message saying why. A change moves through these steps:
 
-```text
-edit files        select changes       record snapshot       share
-working tree  →   staging area     →   local commit      →   GitHub (remote)
-               Stage (+)            Commit                 Sync Changes
-```
-
-Staging lets you commit a finished fix to `bp_cleaning.py` while a half-written `bp_plot.py` waits for a later commit.
+![git add stages, git commit records in your local repository, and git push and git pull sync it with the remote](media/git_local_remote_areas.png)
 
 ### Reference Card: Git Vocabulary
 
@@ -145,15 +141,14 @@ Source Control runs the diagram's steps: review a change, stage it, commit, then
 
 In the message box, write a summary that finishes "This commit will...", then a blank line and why:
 
-```text
+```bash
 # Good commit message
-Add blood pressure range check
-
-Systolic readings outside 60-250 mmHg are recording errors,
-so the report now skips them instead of averaging them in.
+git commit -m "Add blood pressure range check" \
+  -m "Systolic readings outside 60-250 mmHg are recording errors,
+so the report now skips them instead of averaging them in."
 
 # Bad commit message
-minor changes
+git commit -m "minor changes"
 ```
 
 ![xkcd 1296: Git Commit. Commit messages get less informative as a project drags on](media/xkcd_1296.png)
@@ -176,11 +171,13 @@ A **branch** is a separate line of commits. Build a change on one, such as a new
 - **Publish Branch** (Source Control): Send a new branch to GitHub; **Sync Changes** keeps it current after that.
 - **Git: Merge...** (Command Palette): Combine the chosen branch's commits into the branch you are on.
 
-### Merge Conflicts
+## Merge Conflicts
 
 A conflict happens when two branches, or your commits and a teammate's, changed the same lines, so Git cannot pick a version. The merge or sync stops, and the file appears under **Merge Changes** in Source Control.
 
 ![Dev A and Dev B both update file A; after Dev A pushes, Dev B's pull or push hits a merge conflict](media/git_merge_conflict.png)
+
+### Resolving on the Command Line (for the adventurous)
 
 Git writes both versions into the file between markers:
 
@@ -205,6 +202,12 @@ Open the conflicted file and resolve it one of two ways:
 
 Then select **Commit**; VS Code fills in the merge message. In the terminal, edit the file to the text you want, with no markers left, then run `git add notes.md` and `git commit -m "Merge branch 'experiment'"`.
 
+### Resolving in VS Code
+
+Microsoft wrote this up better than me at: [https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts](https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts)
+
+![VS Code marks a conflict with Accept actions above it and a Resolve in Merge Editor button](media/vscode_merge_conflict_inline.png)
+
 ## Alternative: Git in the Terminal
 
 Every Source Control button runs a Git command. Demo 1's terminal path uses these; [BONUS.md](BONUS.md) covers the rest.
@@ -223,7 +226,7 @@ Every Source Control button runs a Git command. Demo 1's terminal path uses thes
 | Merge | `git merge NAME` | NAME's commits added to the current branch |
 | History | `git log --oneline` | One line per commit; press `q` if the list fills the screen |
 | Share | `git push` / `git pull` | Send / receive commits on a branch already linked to GitHub |
-| Set your identity | `git config user.name "..."`, `git config user.email "..."` | Your name and GitHub noreply email on this repository's commits; Lecture 01 had you set them, if a commit asked, only in your Assignment 01 clone, so run them in each new repository |
+| Set your identity | `git config user.name "..."`, `git config user.email "..."` | Your name and GitHub noreply email |
 
 ## GitHub Web Interface
 
@@ -237,11 +240,13 @@ GitHub's website shows the remote copy: check what arrived after **Sync Changes*
 - **Actions** tab: Results of the automatic assignment checks.
 - **+ → New repository**: Create an empty remote with a README.
 
-## .gitignore Files
+## `.gitignore`
 
-Never commit protected health information (**PHI**), personally identifiable information (**PII**), passwords, or keys. A commit is permanent: deleting the file later leaves it in every earlier snapshot and every clone. PHI belongs in your institution's approved storage (UCSF has an internal GitHub for it).
+<callout icon="⚠️" color="yellow_bg">
+	Never commit protected health information (**PHI**), personally identifiable information (**PII**), passwords, or keys. A commit is permanent: deleting the file later leaves it in every earlier snapshot and every clone.
+</callout>
 
-A **`.gitignore`** file lists **patterns** for files Git should not track. Matching files stay on disk but never appear under **Changes**, so you cannot stage them by accident. List clutter there too, such as Python's `__pycache__/` folder. A pattern does not untrack files already committed.
+A **`.gitignore`** file lists **patterns** for files Git should not track. List clutter there too, such as Python's `__pycache__/` folder. A pattern does not untrack files already committed and pushed commits with unwanted files are difficult-to-impossible to undo cleanly.
 
 `git status --short` marks untracked files `??`. Before and after a `.gitignore` with `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
 
@@ -268,6 +273,8 @@ Before                  After
 ### Code Snippet: A Project's `.gitignore`
 
 ```gitignore
+# Hint: .gitignore is just a text file
+
 # Python cache files
 __pycache__/
 *.pyc
@@ -287,13 +294,22 @@ data/raw/*.csv
 
 # LIVE DEMO!
 
-# Python Fundamentals (McKinney Ch2+3)
+# Python Fundamentals
 
 ![xkcd 1429: Data. In Python, everything is an object; in Star Trek, Data is too](media/xkcd_1429.png)
 
 Health data rarely fits one value per variable: a patient has several readings, a visit pairs an ID with a date, and a clinic session has a set of patients.
 
 ## F-Strings and Input
+
+<columns>
+	<column ratio="50">
+		![An f-string with a format spec after the colon](media/fstring_price.png)
+	</column>
+	<column ratio="50">
+		![Format specs for decimals, thousands separators, and percentages](media/fstring_format_examples.png)
+	</column>
+</columns>
 
 An **f-string** is a string with `f` before the opening quote. Python replaces each `{expression}` inside it with that expression's value. A **format spec** after a colon inside the braces controls how the value looks.
 
@@ -621,7 +637,7 @@ A data file arrives as lines of text, one record per line. String methods take a
 | --- | --- | --- | --- |
 | `text.strip()` | Remove spaces and newlines from both ends | `"128\n".strip()` | `'128'` |
 | `text.split(",")` | Split at each comma into a list of strings | `"P001,128".split(",")` | `['P001', '128']` |
-| `"\n".join(lines)` | Join strings with a newline between each; add `+ "\n"` for a final one | `"\n".join(["P001", "P002"])` | `'P001\nP002'` |
+| `"\n".join(lines)` | Join strings with a newline between each; for a final one, add `"\n"` with `+` | `"\n".join(["P001", "P002"])` | `'P001\nP002'` |
 | `text.replace(old, new)` | Replace every `old` with `new` | `"P001\nP002".replace("\n", ", ")` | `'P001, P002'` |
 | `text.splitlines()` | Split into lines, dropping the newlines | `"P001\nP002\n".splitlines()` | `['P001', 'P002']` |
 | `text.upper()` | Uppercase copy (Lecture 01) | `"mmHg".upper()` | `'MMHG'` |
@@ -710,6 +726,15 @@ Saved text matches: True
 
 ## Exceptions, Assertions, and the Debugger
 
+<columns>
+	<column ratio="37.5">
+		![try throws, catch catches, finally runs either way; Python spells catch as except](media/try_catch_finally_meme.png)
+	</column>
+	<column ratio="62.5">
+		![try runs the code, except handles an exception, else runs when there was none, and finally always runs](media/try_except_else_finally.png)
+	</column>
+</columns>
+
 An **exception** is the error Python raises when a line cannot run, such as `ValueError` from `int("not recorded")`; unhandled, it stops the script with a traceback. `try`/`except` handles it instead, as the table shows. Name the exception you expect, so any other error still stops the script.
 
 | `raw_systolic` | `int(raw_systolic)` | Block that runs |
@@ -762,6 +787,10 @@ AssertionError: a reading is above 140: 142
 ```
 
 ### Break(points) the Ice
+
+<callout icon="📝" color="blue_bg">
+	We will dive deeper into debugging in DataSci-223. Preview: [https://code.visualstudio.com/docs/debugtest/debugging](https://code.visualstudio.com/docs/debugtest/debugging)
+</callout>
 
 The **debugger** runs a script and pauses at a **breakpoint**, a line you mark, so you can read every variable's value and then run one line at a time. It runs the script from the folder open in VS Code, so open the script's own folder first.
 
@@ -819,9 +848,9 @@ Only the first command prints: the import ran the `def` lines and skipped `main(
 | `**high**` | **high** | Bold |
 | `_estimated_` | _estimated_ | Italic; `*estimated*` also works |
 | `> Readings are in mmHg.` | An indented quote | Notion's editor starts a quote with `\|` and a space |
-| `- item` | A bulleted list | Indent four spaces to nest |
+| A line starting with `-` and a space | A bulleted list | Indent four spaces to nest |
 | `1. item` | A numbered list | |
-| `- [ ] task`, `- [x] done` | A checklist | GitHub shows checkboxes |
+| A bullet whose text starts `[ ]` or `[x]` | A checklist | GitHub shows checkboxes |
 | `mean()` between single backticks | `mean()` in code font | Code inside a sentence |
 | Three backticks and a language such as `bash` on one line, the code, then three backticks | A code block | The language name colors the syntax |
 | `$\bar{x}$` | An equation inside a sentence | Math in LaTeX notation; GitHub renders it |
