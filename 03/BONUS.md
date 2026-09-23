@@ -9,7 +9,27 @@ notion:
 
 # DLC: Advanced NumPy and Shell Reference
 
-Advanced NumPy topics and optional shell-processing reference.
+# Direct and Transitive Dependencies
+
+The lecture's `requirements.txt` lists only the **direct** dependencies, the packages the project's own code imports. Those packages need packages of their own, the **transitive** dependencies, and the installer adds them automatically. Installing pandas, which Lecture 04 uses, into the Lecture 03 environment shows the difference.
+
+## Code Snippet: List Every Installed Package
+
+```bash
+uv pip install pandas==3.0.5
+uv pip freeze
+```
+
+```text
+numpy==2.3.3
+pandas==3.0.5
+python-dateutil==2.9.0.post0
+six==1.17.0
+```
+
+`uv pip freeze` records everything currently installed, including packages that arrived as dependencies of what you asked for: `python-dateutil` came with pandas, `six` came with `python-dateutil`, and on Windows `tzdata` arrives too. That is a record of one environment, which is different from the hand-written list of what the project chose, so keep writing `requirements.txt` by hand.
+
+A **lock file** records the resolved transitive dependencies with their exact versions; generate one when a project needs that complete record. In a project started with `uv init`, `uv lock` writes one named `uv.lock`, covering every platform at once.
 
 # Advanced Universal Functions (ufuncs)
 
@@ -215,20 +235,26 @@ The lecture labeled values with a single `np.where`. Use these when one test is 
 ## Code Snippet: Multiple Conditions and Positions
 
 ```python
-arr = np.array([1, 5, 3, 8, 2, 9, 4])
+systolic = np.array([118, 142, 127, 135, 151, 109, 131])
 
-# Multiple conditions
-result = np.where(arr > 7, 'high',
-                 np.where(arr > 4, 'medium', 'low'))
+# Nested np.where: test the highest band first
+bands = np.where(systolic >= 140, "stage 2",
+                 np.where(systolic >= 130, "stage 1", "below 130"))
+print(bands)
+# ['below 130' 'stage 2' 'below 130' 'stage 1' 'stage 2' 'below 130'
+#  'stage 1']
 
-# Get indices where condition is true
-indices = np.where(arr > 5)[0]                   # Returns tuple of arrays
+# np.select: the same bands as a list; the first true condition wins
+conditions = [systolic >= 140, systolic >= 130]
+choices = ["stage 2", "stage 1"]
+print(np.select(conditions, choices, default="below 130"))  # same labels as above
 
-# np.select for multiple conditions
-conditions = [arr < 3, arr < 6, arr >= 6]
-choices = ['low', 'medium', 'high']
-result = np.select(conditions, choices, default='unknown')
+# Positions where a condition is true
+positions = np.where(systolic >= 140)[0]
+print(positions)  # [1 4]
 ```
+
+With only a condition, `np.where` returns a tuple holding one array of positions per dimension; `[0]` takes the array for this 1D input.
 
 # Structured Arrays
 
@@ -276,13 +302,9 @@ mmap_array.flush()  # Write to disk
 loaded_mmap = np.memmap('large_array.dat', dtype='float64', mode='r', shape=shape)
 ```
 
-These advanced topics are useful for specialized applications but not required for daily data science work.
-
 # Optional shell reference
 
-This reference extends the core activity with `tr`, `sed`, `awk`, and longer pipelines. The canonical visualization lecture is Lecture 07.
-
-The advanced examples below are optional reference only.
+The lecture's pipelines select and count. `tr`, `sed`, and `awk` also rewrite text as it passes through, and longer pipelines chain them.
 
 ## Optional: Advanced Processing
 
@@ -317,15 +339,13 @@ cat data.csv | \
 
 ## Optional reference: Quick Data Visualization
 
-Terminal visualization is also optional/reference-only. Lecture 07 is the canonical place for visualization; these commands are included only as a quick shell-based supplement.
-
-Command line tools for quick data visualization without leaving the terminal.
+These tools plot a column without leaving the terminal: a quick look at a trend, a sanity check on a pipeline's output, or a small dashboard. Lecture 07 covers plotting in Python.
 
 ### Code Snippet: Plot in the Terminal
 
 ```bash
 # sparklines: Inline Unicode graphs
-# Install: pip install sparklines
+# Install into the active environment: uv pip install sparklines
 
 # Visualize systolic readings inline
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines
@@ -347,10 +367,3 @@ cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | \
 cut -d',' -f4 data/raw/encounters.csv | tail -n +2 | sort | uniq -c | \
   gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
 ```
-
-Use cases:
-
-- Quick trend checks in terminal sessions
-- Data quality sanity checks
-- Pipeline debugging visualization
-- Terminal dashboards

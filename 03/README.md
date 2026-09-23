@@ -19,7 +19,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ## Why Virtual Environments?
 
-Unlike `math`, NumPy does not ship with Python: it is a third-party **package**, which must be installed in the active environment before `import` works. A **virtual environment** gives each project its own set of installed packages.
+Unlike `math`, NumPy does not ship with Python. It is a third-party **package**: installable software that provides one or more modules, the importable Python files from Lecture 02, and it must be installed before `import numpy` works. A **virtual environment** gives each project its own set of installed packages.
 
 Without one, every project shares one Python installation. Last year's readmission report ran with an older NumPy; this term's wearable-sensor project needs NumPy 2.3.3. Upgrading for the new project changes the old one, and the published numbers may no longer rerun.
 
@@ -36,71 +36,11 @@ Project B → B/.venv → its Python and package versions
 
 Use uv for the course workflow; standard-library `venv` and Conda are alternatives below.
 
-## Reproducibility vocabulary
-
-A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs.
-
-### Interpreter
-
-The Python **interpreter** is the executable program that reads and runs Python code. Two terminals can resolve the command `python` to different interpreter files, so both version and location matter.
-
-Check the version:
-
-```bash
-python --version
-```
-
-After activation below, Python can report the exact interpreter path without a platform-specific shell command:
-
-```bash
-python -c "import sys; print(sys.executable)"
-```
-
-`-c` runs the Python string that follows it.
-
-### Package, module, and dependency
-
-A package is installable software that can provide one or more modules, the importable Python files from Lecture 02. NumPy is a package; code normally loads its top-level module with `import numpy`.
-
-A **dependency** is software a project needs: **direct** dependencies are chosen by the project; **transitive** dependencies are required by those packages.
-
-A **requirements file** lists packages to install. For this project, record the direct dependency in `requirements.txt`:
-
-```text
-numpy==2.3.3
-```
-
-`==` pins an exact version. Write this file by hand so it lists only the direct dependencies you chose; `uv pip freeze` instead records everything currently installed, including packages that arrived as dependencies of what you asked for, which is a different record. A **lock file** also records the resolved transitive dependencies; it can be generated when the project needs that complete record.
-
-Lecture 04 installs this same file from inside a notebook with `%pip install -r requirements.txt`.
-
-### Environment and activation
-
-An **environment** is the interpreter plus the packages available to it. A virtual environment is an isolated directory containing a project-specific Python command and package installation location.
-
-This course uses `.venv` as the environment directory. Add it to `.gitignore`:
-
-```gitignore
-.venv/
-```
-
-The environment is recreated from instructions and requirements; it is not synchronized through Git.
-
-**Activation** changes the current shell so `python` and installed commands resolve to the selected environment. Activation does not install a package and does not change Python source files.
-
-```text
-$ source .venv/bin/activate
-(.venv) $ python -c "import sys; print(sys.executable)"
-/home/alice/assignment-03/.venv/bin/python
-(.venv) $ deactivate
-$
-```
-
-The `(.venv)` prefix shows the environment is active, and `python` now runs the copy inside the project's `.venv` folder.
-
 ## Using uv
 
 [uv documentation](https://docs.astral.sh/uv/)
+
+uv is a command-line tool that creates environments and installs packages into them. `uv venv` creates the `.venv` folder with its own Python **interpreter**, the program that reads and runs Python code, and a place to install packages. **Activation** switches the current terminal to that environment, so `python` and installed commands run the copies inside `.venv`. Activating installs nothing; `uv pip install` does that.
 
 ### Reference Card: uv environment workflow
 
@@ -109,7 +49,7 @@ The `(.venv)` prefix shows the environment is active, and `python` now runs the 
 | Pin Python | `uv python pin 3.13` | Writes `.python-version` containing `3.13`; later `uv venv` commands in this folder use it. |
 | Create environment | `uv venv --python 3.13 .venv` | Creates the project environment. |
 | Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt shows `(.venv)`; `python` now runs the environment's interpreter. |
-| Install requirements | `uv pip install -r requirements.txt` | Installs the deliberate direct dependencies. |
+| Install requirements | `uv pip install -r requirements.txt` | Installs the packages the file lists. |
 | Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | Confirms Python and NumPy versions. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
@@ -134,7 +74,59 @@ In native Windows PowerShell, replace the Bash activation line with:
 .\.venv\Scripts\Activate.ps1
 ```
 
-### When `import numpy` Fails
+## Reproducibility vocabulary
+
+A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs. Each term below names one part of what the commands above set up.
+
+### Interpreter
+
+Two terminals can resolve the command `python` to different interpreter files, so both version and location matter. `python --version` reports the version. With the environment active, Python can also report the exact interpreter path without a platform-specific shell command:
+
+```bash
+python -c "import sys; print(sys.executable)"
+```
+
+`-c` runs the Python string that follows it.
+
+### Package, module, and dependency
+
+NumPy is a package; code normally loads its top-level module with `import numpy`. A **dependency** is a package a project needs, and the ones the project's own code imports are its **direct** dependencies.
+
+A **requirements file** lists packages to install. For this project, record the direct dependency in `requirements.txt`:
+
+```text
+numpy==2.3.3
+```
+
+`==` pins an exact version. Write this file by hand so it lists only the direct dependencies you chose; [the bonus page](BONUS.md) covers the packages those depend on in turn and how to record every installed version.
+
+Lecture 04 installs this same file from inside a notebook with `%pip install -r requirements.txt`.
+
+### Environment and activation
+
+An **environment** is the interpreter plus the packages available to it. A virtual environment is an isolated directory containing a project-specific Python command and package installation location.
+
+This course uses `.venv` as the environment directory. Add it to `.gitignore`:
+
+```gitignore
+.venv/
+```
+
+The environment is recreated from instructions and requirements; it is not synchronized through Git.
+
+Activation does not change Python source files; it only changes which `python` this terminal runs:
+
+```text
+$ source .venv/bin/activate
+(.venv) $ python -c "import sys; print(sys.executable)"
+/home/alice/assignment-03/.venv/bin/python
+(.venv) $ deactivate
+$
+```
+
+The `(.venv)` prefix shows the environment is active, and `python` now runs the copy inside the project's `.venv` folder.
+
+## When `import numpy` Fails
 
 ```text
 $ python -c "import numpy as np"
@@ -358,7 +350,7 @@ A comprehension is concise, but Python still handles one item at a time. NumPy, 
 
 # Why NumPy Matters
 
-![It's pronounced...](media/numpy.webp)
+![It's pronounced "num pie": NumPy is short for Numerical Python, whatever the cat says](media/numpy.webp)
 
 A wearable heart monitor records one reading per second: 86,400 readings per patient per day. A list comprehension handles those readings one at a time in Python. **NumPy** (Numerical Python) is the package that stores and calculates on numbers in bulk; pandas, which starts in Lecture 04, is built on it.
 
@@ -384,7 +376,7 @@ doubled_array = my_array * 2
 print(doubled_array)        # [ 2  4  6  8 10]
 ```
 
-Both give the same values. On one test machine the list version took about 44 ms and the array version about 1.4 ms; Demo 2 times both on your computer.
+Both give the same values, and with five numbers the time difference is too small to notice. Demo 2 doubles one million values both ways: on one test machine the list took about 42 ms and the array about 1.4 ms, and your timings will differ.
 
 # NumPy Arrays
 
@@ -477,7 +469,7 @@ print(arr1 ** 2)     # [ 1  4  9 16 25]
 print(arr1 * 2)      # [ 2  4  6  8 10]: one number broadcast to every element
 ```
 
-Two arrays combine position by position, so they must have the same shape: `np.array([1, 2, 3]) + np.array([1, 2])` raises `ValueError: operands could not be broadcast together with shapes (3,) (2,)`.
+Two arrays combine position by position, so their shapes must match, or one must stretch to fit the other the way a single number does in `arr1 * 2` ([the bonus page](BONUS.md) gives the stretching rules). Shapes that do neither raise an error: `np.array([1, 2, 3]) + np.array([1, 2])` raises `ValueError: operands could not be broadcast together with shapes (3,) (2,)`.
 
 # Array Indexing and Slicing
 
@@ -627,6 +619,7 @@ systolic[high]              [142           151]
 | :--- | :--- | :--- |
 | `arr > value` | Builds a Boolean mask. | `arr > 5` |
 | `arr[mask]` | Keeps matching elements. | `arr[arr > 5]` |
+| `values[labels == "x"]` | Keeps one group's values, where `labels` names the group at each position; `!=` keeps every other group, and `sorted(set(labels))` lists the groups. | `systolic[clinics == "Cardiology"]` |
 | `(a) & (b)` | Combines conditions with AND. | `(arr > 2) & (arr < 8)` |
 | `(a) \| (b)` | Combines conditions with OR. | `(arr < 2) \| (arr > 8)` |
 | `mask.sum()` | Count `True` values. | `high.sum()` → `2` |
@@ -647,6 +640,25 @@ print(systolic[(systolic >= 120) & (systolic < 140)])  # [128 135]
 Use `&` and `|`, not `and` and `or`, and wrap each comparison in parentheses. `systolic >= 120 and systolic < 140` raises `ValueError: The truth value of an array with more than one element is ambiguous`.
 
 **Fancy indexing** selects by a list of positions rather than by a mask, and also returns a copy: `systolic[[0, 3]]` gives `[128 151]`.
+
+### Code Snippet: Select One Group by a Label
+
+A mask can come from a text array too. When `clinics` names the clinic for each reading in `systolic`, comparing `clinics` with one name keeps that clinic's readings. `.mean()` averages the kept values the way `.sum()` counted them; the next topic covers these summaries.
+
+```python
+clinics = np.array(["Cardiology", "Primary Care", "Cardiology", "Nephrology", "Primary Care"])
+systolic = np.array([142, 118, 151, 135, 128])   # one reading per visit, same order as clinics
+print(clinics == "Cardiology")                   # [ True False  True False False]
+print(systolic[clinics == "Cardiology"])         # [142 151]
+print(systolic[clinics == "Cardiology"].mean())  # 146.5
+for clinic in sorted(set(clinics)):              # each clinic once, in order
+    print(clinic, systolic[clinics == clinic].mean())
+# Cardiology 146.5
+# Nephrology 135.0
+# Primary Care 123.0
+```
+
+The mask and the values must line up position by position: position 2 of `clinics` has to describe the same visit as position 2 of `systolic`. Printing the whole list with `print(sorted(set(clinics)))` shows each name as `np.str_('Cardiology')`, NumPy's text type; printing one name at a time, as the loop does, shows it plainly.
 
 # NumPy Operations
 
@@ -754,7 +766,7 @@ The second call keeps each original value where the test passes and substitutes 
 
 ## Sorting and Ranking
 
-Sorting answers two questions. `np.sort()` returns the _values_ in order. `np.argsort()` returns the _positions_ that would put them in order, which tells you _which_ patient has the highest value. A slice step of `-1` walks backward, so `[::-1]` reverses an order.
+Sorting answers two questions. `np.sort()` returns the _values_ in order. `np.argsort()` returns the _positions_ that would put them in order, which tells you _which_ patient has the highest value; indexing an array of patient IDs kept in the same order turns that position into an ID. A slice step of `-1` walks backward, so `[::-1]` reverses an order.
 
 ### Reference Card: Values Versus Positions
 
@@ -763,20 +775,22 @@ Sorting answers two questions. `np.sort()` returns the _values_ in order. `np.ar
 | `np.sort(arr)` | Sorted copy | No |
 | `arr.sort()` | `None` | Yes |
 | `np.sort(arr, axis=0)` | Each column sorted independently in 2D | No |
-| `arr.argmin()` / `arr.argmax()` | Index of the smallest / largest value in a 1D array | No |
+| `arr.argmin()` / `arr.argmax()` | Index of the smallest / largest value in a 1D array; `ids[arr.argmax()]` looks up the matching ID | No |
 | `np.argsort(arr)` | Indices that would sort the array | No |
 
 ### Code Snippet: Find the Highest Values and Who Has Them
 
 ```python
-avg_glucose = np.array([112, 98, 145, 101, 130])  # one average per patient
+ids = np.array(["P001", "P002", "P003", "P004", "P005"])
+avg_glucose = np.array([112, 98, 145, 101, 130])  # one average per patient, same order as ids
 print(np.sort(avg_glucose))    # [ 98 101 112 130 145]
 order = np.argsort(avg_glucose)
-print(order)                   # [1 3 0 4 2]: patient 1 lowest, patient 2 highest
+print(order)                   # [1 3 0 4 2]: position 1 lowest, position 2 highest
 top_two = order[-2:][::-1]     # last two positions, largest first
 print(top_two)                 # [2 4]
 print(avg_glucose[top_two])    # [145 130]
 print(avg_glucose.argmax())    # 2
+print(ids[avg_glucose.argmax()])  # P003
 ```
 
 ## Random Number Generation
@@ -807,6 +821,6 @@ print(scores)  # [[96 72 91]
 
 Run it again with `seed=42` and the same numbers print. Older tutorials call `np.random.seed()` and `np.random.randn()`; use `default_rng()` in new code.
 
-![Learning to Code...](media/learning_to_code.png)
+![Learning to code, day 1: a husky at the keyboard, which is how everyone starts](media/learning_to_code.png)
 
 # LIVE DEMO!

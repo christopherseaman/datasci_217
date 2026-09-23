@@ -57,6 +57,35 @@ def demo_views_and_copies(readings):
     print()
 
 
+def calibrate_in_place(values):
+    """First draft: += changes the caller's array instead of making a new one."""
+    values += 3
+
+
+def calibrate(values):
+    """Return the readings plus the cuff's 3 mmHg correction as a new array."""
+    return values + 3
+
+
+def demo_function_changes_input(readings):
+    """Show a function changing the caller's array, then the version that returns a new one."""
+    print("=== Functions and the Caller's Array ===")
+
+    # Work on copies of patient 0's row so the rest of the demo sees the original readings.
+    row = readings[0].copy()
+    print("calibrate_in_place(row) on a copy of patient 0's readings:")
+    print(f"  row before: {row}")
+    calibrate_in_place(row)
+    print(f"  row after:  {row}")
+
+    row = readings[0].copy()
+    calibrated = calibrate(row)
+    print("calibrated = calibrate(row) on a fresh copy:")
+    print(f"  row after:  {row}")
+    print(f"  calibrated: {calibrated}")
+    print()
+
+
 def demo_statistical_operations(readings):
     """Demonstrate statistical operations."""
     print("=== Statistical Operations ===")
@@ -77,6 +106,16 @@ def demo_statistical_operations(readings):
     print("\nVisit averages:")
     for i, avg in enumerate(visit_averages, 1):
         print(f"  Visit {i}: {avg:.1f}")
+    print()
+
+def demo_std_by_hand(readings):
+    """Recompute the standard deviation from its definition and compare with .std()."""
+    print("=== Standard Deviation by Hand ===")
+
+    # Distance of every reading from the overall mean, squared, averaged, then square-rooted.
+    by_hand = np.sqrt(((readings - readings.mean()) ** 2).mean())
+    print(f"readings.std(): {readings.std():.4f} mmHg")
+    print(f"By hand:        {by_hand:.4f} mmHg")
     print()
 
 def demo_boolean_indexing(readings):
@@ -149,12 +188,13 @@ def demo_practical_analysis(readings):
     print(f"Lowest-average visit: #{lowest_idx + 1} (avg: {visit_averages[lowest_idx]:.1f} mmHg)")
     print(f"Highest-average visit: #{highest_idx + 1} (avg: {visit_averages[highest_idx]:.1f} mmHg)")
 
-    # Find the 5 patients with the highest averages
+    # Find the 4 patients with the highest averages. Three patients tie for fifth
+    # at 90.6 mmHg, so stopping at four keeps every rank unambiguous.
     patient_averages = readings.mean(axis=1)
-    top_5_indices = np.argsort(patient_averages)[-5:][::-1]
+    top_4_indices = np.argsort(patient_averages)[-4:][::-1]
 
-    print(f"\nHighest 5 patient averages:")
-    for rank, idx in enumerate(top_5_indices, 1):
+    print(f"\nHighest 4 patient averages:")
+    for rank, idx in enumerate(top_4_indices, 1):
         print(f"  #{rank}: Patient {idx:3d}, average {patient_averages[idx]:.1f} mmHg")
 
     # Calculate the change from the first visit to the last
@@ -179,7 +219,9 @@ def main():
     # Run demos
     demo_basic_operations(readings)
     demo_views_and_copies(readings)
+    demo_function_changes_input(readings)
     demo_statistical_operations(readings)
+    demo_std_by_hand(readings)
     demo_boolean_indexing(readings)
     demo_conditional_labels(readings)
     demo_array_reshaping(readings)

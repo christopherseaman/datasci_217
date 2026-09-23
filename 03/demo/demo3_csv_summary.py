@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Optional Demo 3 extra: summarize encounters.csv with Lecture 02 file reading and arrays.
+"""Demo 3.4: summarize encounters.csv by clinic with Lecture 02 file reading and arrays.
 
 Run it from the 03/demo folder so the relative filename below resolves:
     python demo3_csv_summary.py
@@ -52,12 +52,15 @@ def main():
     print(f"Needs referral: {(labels == 'refer').sum()}")
 
     print("\n=== Clinics (the counting a cut | sort | uniq -c pipeline does) ===")
-    counts = {}
-    for clinic in [row[3] for row in rows]:
-        counts[clinic] = counts.get(clinic, 0) + 1
-    for clinic in sorted(counts):
-        clinic_systolic = systolic[clinics == clinic]
-        print(f"{clinic}: {counts[clinic]} encounters, average {clinic_systolic.mean():.1f} mmHg")
+    names = sorted(set(clinics))
+    averages = []  # one average per clinic, in the same order as names
+    for clinic in names:
+        in_clinic = clinics == clinic  # one True or False per encounter, lined up with systolic
+        average = systolic[in_clinic].mean()
+        averages.append(average)
+        print(f"{clinic}: {in_clinic.sum()} encounters, average {average:.1f} mmHg")
+    highest = np.array(averages).argmax()  # a position in averages, which is the same position in names
+    print(f"Highest-average clinic: {names[highest]} ({averages[highest]:.1f} mmHg)")
 
 
 if __name__ == "__main__":

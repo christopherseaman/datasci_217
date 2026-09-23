@@ -65,16 +65,16 @@ numpy: <the version of numpy installed in it>
 interpreter: <the path to the active interpreter>
 ```
 
-Each line is a label, a colon, and the value. Command substitution from the lecture's "Variables and Timestamps" card builds a labelled line from a command's output, and `>` starts the file while `>>` adds to it:
+Each line is a label, a colon, and the value. Command substitution from the lecture's "Shell Variables and Timestamps" card builds a labelled line from a command's output, and `>` starts the file while `>>` adds to it:
 
 ```bash
 echo "python: $(python --version)" > output/environment.txt
 ```
 
-Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path.
+Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path. Quotes inside `$( )` belong to the command inside it, so a `python -c "..."` command goes inside `echo "numpy: $(...)"` unchanged.
 
 > **Checkpoint: `output/environment.txt`**
-> Three lines: the Python version (not graded), the numpy version `requirements.txt` pins, and an interpreter path inside your project's `.venv`.
+> Three lines. With the environment active, the `numpy` line shows the version `requirements.txt` pins and the `interpreter` line shows a path inside your project's `.venv`. The check asks only for a version number on the `numpy` line and a path on the `interpreter` line; the `python` line is not graded.
 
 ## Task 2: Count the dataset from the shell
 
@@ -95,7 +95,7 @@ Count the patients per monitor and save the result under a name carrying the run
 output/monitor_counts_YYYYMMDD_HHMMSS.txt
 ```
 
-Capture the timestamp once into a shell variable and use it in the filename; the lecture's "Variables and Timestamps" reference card gives the `date` format string that produces `YYYYMMDD_HHMMSS`.
+Capture the timestamp once into a shell variable and use it in the filename; the lecture's "Shell Variables and Timestamps" reference card gives the `date` format string that produces `YYYYMMDD_HHMMSS`. Demo 1 ends its pipeline with `| head -n 5` to keep its display short, but this file has six monitors, so leave that stage off or the last monitor goes missing.
 
 > **Checkpoint: `output/monitor_counts_<timestamp>.txt`**
 > One line per monitor with that monitor's count and its id, as `uniq -c` prints them. Spacing, separators such as `M01: 58`, and line order do not matter, and earlier timestamped runs may sit beside it.
@@ -109,7 +109,7 @@ Two definitions the questions use:
 - A patient's **12-hour mean** is the mean of that patient's twelve readings: one number per patient, which is `readings.mean(axis=1)`.
 - A monitor's **average** is the mean of the 12-hour means of the patients it recorded. Every patient has twelve readings, so that is the same number as the mean of all of that monitor's readings.
 
-Grouping patients by their monitor is what the optional Demo 3.4 script does with clinics: `systolic[clinics == clinic]` builds a Boolean mask from a text column and keeps the values belonging to one group. The mask and the values it selects have to be the same length, so group an array holding one value per patient, the 12-hour means, with `monitors`, which also holds one value per patient.
+To group patients by their monitor, use the lecture's "Select One Group by a Label" snippet: comparing a text array with one label, as in `monitors == "M01"`, builds a Boolean mask, and indexing another array with that mask keeps the values belonging to that group. The mask and the values it selects have to be the same length, so group an array holding one value per patient, the 12-hour means, with `monitors`, which also holds one value per patient. To name the monitor with the highest average, collect each monitor's average in a list in the order of `sorted(set(monitors))`, turn that list into an array with `np.array()`, and use its `argmax()` position to pick the name from the sorted list, as the lecture's "Find the Highest Values and Who Has Them" snippet does with `ids[avg_glucose.argmax()]`. Demo 3.4 names its highest-average clinic this way.
 
 Write one line per answer, a key, a colon, and the value:
 
@@ -139,11 +139,12 @@ high_monitor: <monitor id>
 How the values are read:
 
 - Each answer is scored on its own, so a wrong value costs only its own points.
-- mmHg values are accepted within 0.6 of the value recomputed from the data, so a whole number, one decimal, or every digit NumPy prints all pass, and a trailing unit such as `mmHg` is ignored. Counts and whole-number readings must match exactly.
+- mmHg values are accepted within 0.6 of the value recomputed from the data, so one decimal or every digit NumPy prints passes, and so does a whole number, whether rounded with `:.0f` or cut short with `int()`. A trailing unit such as `mmHg` is ignored. Counts and whole-number readings must match exactly.
 - A NumPy scalar printed as `np.float64(121.5)` or `np.int64(96)` reads as the number inside it.
 - Either the population or the sample standard deviation is accepted; at this many readings they agree far inside the tolerance.
 - "140 mmHg or higher" includes a mean of exactly 140.
-- Keys may appear in any order, spacing is free, and extra lines are ignored.
+- A patient id, column name, or monitor id may sit in quotes or brackets, as a one-item list prints it (`['M02']`), and may carry a note before or after it, as in `monitor M02` or `M02 (128.4 mmHg)`, as long as the line names no other id of the same kind.
+- Keys may appear in any order, spacing is free, and extra lines are ignored. When a key appears on more than one line, the first is read, so open the file with `"w"`, which replaces it on each run, rather than `"a"`.
 
 > **Checkpoint: `output/vitals_summary.txt`**
 > One `key: value` line for each of the 14 keys above, holding the answers your analysis computed from `data/bp_readings.csv`.
@@ -157,7 +158,7 @@ python analysis.py
 python check_assignment.py
 ```
 
-`check_assignment.py` runs the same checks GitHub runs. They read only `requirements.txt` and your files in `output/`, and recompute every answer from the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
+`check_assignment.py` runs the same checks GitHub runs. They read only your files in `output/` and recompute every answer from the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
 
 Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 1, for example, the first check reports:
 
@@ -185,10 +186,10 @@ Grading totals 100 points and reads these files relative to the assignment root.
 
 | Artifact | Complete when | Check | Points |
 | --- | --- | --- | ---: |
-| `output/environment.txt` | Its `numpy` line matches the pin in `requirements.txt`, and its `interpreter` line names an interpreter inside `.venv`. The `python` line is not graded. | environment probe | 13 |
+| `output/environment.txt` | Its `numpy` line holds a version number and its `interpreter` line is not empty. Which version and which interpreter are not graded, and neither is the `python` line. | environment probe | 13 |
 | `output/record_count.txt` | It holds the number of patient records in the supplied CSV. | record count artifact | 10 |
 | `output/monitor_counts_<timestamp>.txt` | A timestamped file holds every monitor's patient count. | monitor counts artifact | 15 |
-| `output/vitals_summary.txt` | It has a readable `key: value` line for all 14 keys. | summary artifact format | 12 |
+| `output/vitals_summary.txt` | It has a readable `key: value` line for at least one key in Task 3's table. A missing or unreadable key costs only its own answer check. | summary artifact format | 12 |
 | `output/vitals_summary.txt` | Each of the 14 answers matches the supplied readings. | one check per key, named `answer: <key>` | 50 |
 
 Extra files and extra lines are ignored.

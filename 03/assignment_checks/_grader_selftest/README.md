@@ -5,9 +5,21 @@ assignment with NumPy from `03/assignment/data/bp_readings.csv`, builds
 submissions in ignored `scratch/`, and confirms that:
 
 - the checks score a correct submission 100, accept loose formatting,
-  rounding, a BOM, CRLF, NumPy scalar reprs and the sample standard deviation,
-  and take away exactly the points a wrong, partial, miscounted, unactivated or
-  edited-dataset submission should lose;
+  rounding or truncating mmHg values to whole numbers, a BOM, CRLF, UTF-16,
+  NumPy scalar reprs, `_` digit grouping, the sample standard deviation,
+  keys decorated with Markdown or JSON, `=` or space separators, a label in
+  brackets or with a note before or after it, bulleted or annotated counts
+  lines, trailing whitespace in the dataset, a file name in another letter
+  case, any numpy version and any interpreter path, and take away exactly the
+  points a wrong, partial, hedged, miscounted, cut-short or edited-dataset
+  submission should lose;
+- the feedback names the fix for a misnamed or misplaced summary, unsorted
+  `uniq -c` input, the wrong `cut` field, a counts file without `.txt`, and a
+  key written twice, and a fresh handout prints the README's "Before Task 1"
+  example exactly;
+- no submission loses a check it passed under the checks committed at HEAD:
+  the assignment is out with students, so a change to the checks may only
+  raise a score, and each committed change becomes the baseline for the next;
 - the handout's own `check_assignment.py` reports the same result as the
   checks here for an empty, a correct, and a partly wrong submission;
 - every file the workflow lists in `CHECKS_FILES` is byte-identical in

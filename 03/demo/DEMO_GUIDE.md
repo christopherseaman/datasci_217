@@ -13,27 +13,29 @@ Clone the course repository the way Lecture 01 cloned your fork (Command Palette
 
 # Setup: Create the tested environment
 
-Lecture 03 uses CPython 3.13 and NumPy 2.3.3. With `uv`:
+Lecture 03 uses CPython 3.13 and NumPy 2.3.3. From the demo folder, with `uv`:
 
 ```bash
+uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
 uv venv --python 3.13 .venv
 source .venv/bin/activate
-uv pip install -r requirements.txt
-python --version
-python -c "import numpy as np; print(np.__version__)"
+uv pip install -r requirements.txt                      # + numpy==2.3.3
+python --version                                        # Python 3.13.x
+python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+python -c "import sys; print(sys.executable)"           # a path ending in .venv/bin/python
 ```
 
-Expect Python `3.13.x` and NumPy `2.3.3`. Use the course's Bash/Zsh terminal; in native PowerShell, activation is `.\.venv\Scripts\Activate.ps1`. The lecture also shows standard-library `venv` as an alternative setup.
+The last line prints the interpreter that `python` now runs, and it should sit inside this folder's `.venv`, such as `/Users/alice/datasci_217/03/demo/.venv/bin/python`. A path without `.venv` in it means the environment is not active in this terminal. Use the course's Bash/Zsh terminal; in native PowerShell, activation is `.\.venv\Scripts\Activate.ps1` and the path ends in `.venv\Scripts\python.exe`. The lecture also shows standard-library `venv` as an alternative setup.
 
 ## Recreate the environment from its records
 
-`requirements.txt` is the record another person needs; `.venv/` is not shared, so rebuild it from that record in a throwaway folder and confirm the same NumPy arrives:
+`.python-version` and `requirements.txt` are the records another person needs; `.venv/` is not shared, so rebuild it from those records in a throwaway folder and confirm the same NumPy arrives. These are the lecture's "Recreate from the Records" steps:
 
 ```bash
 mkdir -p scratch/recreation-check
-cp requirements.txt scratch/recreation-check/
+cp .python-version requirements.txt scratch/recreation-check/
 cd scratch/recreation-check
-uv venv --python 3.13 .venv
+uv venv .venv                                           # Using CPython 3.13.x
 source .venv/bin/activate
 uv pip install -r requirements.txt                      # + numpy==2.3.3
 python -c "import numpy as np; print(np.__version__)"   # 2.3.3
@@ -42,7 +44,7 @@ cd ../..
 source .venv/bin/activate                               # back in the demo environment
 ```
 
-The last line matters: activating one environment inside another saves the PATH from before _both_, so a single `deactivate` drops you out of the demo environment too. Re-activating brings the `(.venv)` prompt back, and the rest of this guide needs it.
+`uv venv` reads the copied `.python-version`, so it builds a Python 3.13 environment without `--python 3.13`. The last line matters: activating one environment inside another saves the PATH from before _both_, so a single `deactivate` drops you out of the demo environment too. Re-activating brings the `(.venv)` prompt back, and the rest of this guide needs it.
 
 Assignment 03 records its own environment the same way, with a `.python-version` and a `requirements.txt`.
 
@@ -68,6 +70,8 @@ Clinics (with counts):
 Summary written to results/summary_20260922_184147.txt
 === Demo complete ===
 ```
+
+On macOS, `wc -l` and `uniq -c` pad their counts with a different number of spaces than this output shows, so `Encounter records:` can be followed by several spaces before the `6`. Only the spacing differs; the counts are the same.
 
 Open the saved summary and log:
 
@@ -255,7 +259,7 @@ Calibrated (+3 mmHg): [75 96 93 86 86]
 
 Both arithmetic lines reach all five readings at once: multiplying converts mmHg to kilopascals, the SI pressure unit, and adding applies the correction for a cuff that reads 3 mmHg low. Multiplying by a decimal turns the whole row into floats, which is why that line prints `9.576` where the other two print whole numbers.
 
-## 3.1 Views and Copies
+## 3.1 Views, Copies, and Functions
 
 The script copies a 2×3 block out of the readings, then writes one value through a slice and one value into a `.copy()`:
 
@@ -272,6 +276,32 @@ Original readings row 0, untouched: [72 93 90 83 83]
 ```
 
 The write through the view reached `practice`; the write into the copy did not. That is the difference to remember when you slice an array you still need unchanged.
+
+A function can change an array the same way. Basic Operations applied the cuff correction with `readings[0] + 3`; a first draft of it as a function uses `+=`:
+
+```python
+def calibrate_in_place(values):
+    values += 3
+```
+
+`values` is another name for the caller's array, as in the lecture's "Functions Share the Caller's Array" snippet. The script therefore calls it on a copy of patient 0's readings, so the rest of the run still works from the original data, and prints that copy before and after. The fix returns a new array and leaves its input alone:
+
+```python
+def calibrate(values):
+    return values + 3
+```
+
+```text
+=== Functions and the Caller's Array ===
+calibrate_in_place(row) on a copy of patient 0's readings:
+  row before: [72 93 90 83 83]
+  row after:  [75 96 93 86 86]
+calibrated = calibrate(row) on a fresh copy:
+  row after:  [72 93 90 83 83]
+  calibrated: [75 96 93 86 86]
+```
+
+The first draft returned nothing, yet `row` changed. With the fix, `row` keeps the measured values and the corrected ones arrive in `calibrated`.
 
 ## 3.2 Statistics, Masks, and Labels
 
@@ -294,6 +324,22 @@ Visit averages:
   Visit 4: 84.8
   Visit 5: 85.5
 ```
+
+`readings.std()` is the square root of the average squared distance from the mean. The script rebuilds it from that definition:
+
+```python
+by_hand = np.sqrt(((readings - readings.mean()) ** 2).mean())
+```
+
+Read it from the inside out: `readings - readings.mean()` broadcasts the overall mean across all 500 readings, `** 2` squares each distance, `.mean()` averages the squares, and `np.sqrt()` turns the result back into mmHg.
+
+```text
+=== Standard Deviation by Hand ===
+readings.std(): 8.8560 mmHg
+By hand:        8.8560 mmHg
+```
+
+The two agree, and the `Overall std dev` of 8.9 above is the same number rounded to one decimal.
 
 A comparison such as `patient_averages > 90` gives one True or False per patient, and `.sum()` counts the Trues. The three stage counts split the same 100 patients at the usual diastolic thresholds: below 80 is normal, 80-89 is stage 1 hypertension, and 90 or above is stage 2.
 
@@ -349,12 +395,11 @@ Reshaping fills the grid row by row, and the transpose turns each of those rows 
 Lowest-average visit: #3 (avg: 84.1 mmHg)
 Highest-average visit: #1 (avg: 85.8 mmHg)
 
-Highest 5 patient averages:
+Highest 4 patient averages:
   #1: Patient  63, average 93.2 mmHg
   #2: Patient   9, average 93.0 mmHg
   #3: Patient   2, average 92.6 mmHg
   #4: Patient  80, average 91.6 mmHg
-  #5: Patient  21, average 90.6 mmHg
 
 Change from visit 1 to visit 5:
   Patients whose reading rose: 49
@@ -363,11 +408,11 @@ Change from visit 1 to visit 5:
 NumPy analysis complete.
 ```
 
-`argmin()` and `argmax()` give the position of the lowest and highest visit average rather than the value, which is what names visit #3 as the lowest. The ranking sorts the patient averages, keeps the last five positions, and reverses them, so the five patients a clinic would follow up first come out in order. The change count compares each patient's fifth visit with their first.
+`argmin()` and `argmax()` give the position of the lowest and highest visit average rather than the value, which is what names visit #3 as the lowest. The ranking sorts the patient averages, keeps the last four positions, and reverses them, so the four patients a clinic would follow up first come out in order. It stops at four because three patients tie for fifth at 90.6 mmHg, and any one of them could have been listed fifth. The change count compares each patient's fifth visit with their first.
 
-## 3.4 Optional: Summarize the Bundled CSV
+## 3.4 Summarize the Bundled CSV by Clinic
 
-`encounters.csv` is a 1,500-row synthetic fixture that ships with the demo folder: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This optional script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
+`encounters.csv` is a 1,500-row synthetic fixture that ships with the demo folder: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
 
 ```bash
 python demo3_csv_summary.py
@@ -407,13 +452,14 @@ Neurology: 150 encounters, average 129.6 mmHg
 Obstetrics: 120 encounters, average 115.3 mmHg
 Oncology: 130 encounters, average 126.3 mmHg
 Primary Care: 380 encounters, average 127.3 mmHg
+Highest-average clinic: Nephrology (140.3 mmHg)
 ```
 
-The clinic averages differ the way a real case mix does: nephrology and cardiology see more uncontrolled hypertension than obstetrics or dermatology.
+The clinic section groups the readings the way the lecture's "Select One Group by a Label" snippet does: it loops over `sorted(set(clinics))`, stores the mask `clinics == clinic` as `in_clinic`, counts that clinic's encounters with `in_clinic.sum()`, and averages its readings with `systolic[in_clinic].mean()`. Each average is also appended to a list in the same order as the sorted names, so `np.array(averages).argmax()` is the position of the highest average and the name at that position is its clinic, the way `ids[avg_glucose.argmax()]` names a patient in the lecture. The clinic averages differ the way a real case mix does: nephrology and cardiology see more uncontrolled hypertension than obstetrics or dermatology.
 
 ### Check the counts against the shell
 
-The same file through Lecture 03's pipeline should agree with the script:
+The same file through Lecture 03's pipeline should agree with the script. On macOS the counts sit at a different indent, as in Demo 1:
 
 ```bash
 head -n 3 encounters.csv

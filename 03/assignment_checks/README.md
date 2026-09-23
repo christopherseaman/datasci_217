@@ -49,4 +49,7 @@ uv run --python 3.13 --with numpy==2.3.3 python 03/assignment_checks/_grader_sel
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this
-one byte for byte.
+one byte for byte. Assignment 03 is out with students, so a correction may only
+raise a score: the self-test also grades each submission with the checks
+committed at HEAD and fails if any check that passed there fails now. Run it
+before committing a change to the checks.

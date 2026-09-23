@@ -27,8 +27,10 @@ SPANS = {
     "demo2_python_collections.py": ("## 2.1 Inspect Values", "## 2.2 Compare a List Loop"),
     "demo2_numpy_performance.py": ("## 2.2 Compare a List Loop", "## 2.3 Create Arrays"),
     "demo2_numpy_arrays.py": ("## 2.3 Create Arrays", "# 3. NumPy Blood-Pressure Analysis"),
-    "demo3_bp_analysis.py": ("# 3. NumPy Blood-Pressure Analysis", "## 3.4 Optional"),
-    "demo3_csv_summary.py": ("## 3.4 Optional", "### Check the counts against the shell"),
+    "demo3_bp_analysis.py": ("# 3. NumPy Blood-Pressure Analysis",
+                             "## 3.4 Summarize the Bundled CSV by Clinic"),
+    "demo3_csv_summary.py": ("## 3.4 Summarize the Bundled CSV by Clinic",
+                             "### Check the counts against the shell"),
 }
 
 
