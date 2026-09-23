@@ -1,28 +1,22 @@
-"""Artifact-only shape rules for Assignment 02.
+"""Artifact-only grading rules for Assignment 02: the value checks.
 
-This half of the checks travels in your repository and answers one question per
-artifact: is it well formed? The values themselves are checked by the course
-checks the GitHub Actions run downloads on every push, which is where your
-grade comes from. Both halves report the same result format, so the same
-tooling runs either one.
+This is the half that decides the grade. Each requirement is scored on its own,
+so a partial submission reports exactly which value to fix, and every expected
+value is recomputed from the supplied encounter file.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from _shape_checks import run_checks
+from _value_checks import run_checks
 
 
 POINTS = (5, 5, 5, 10, 8, 7, 10, 15, 5, 5, 5, 5, 15)
 
-REPORT_NOTE = (
-    "These checks confirm the shape of your artifacts; your values are checked when you push."
-)
-
 
 def grade_submission(submission_dir: Path) -> dict:
-    """Check saved artifacts without importing or executing submitted student code."""
+    """Grade saved artifacts without importing or executing submitted student code."""
     diagnostics = run_checks(Path(submission_dir))
     tests = []
     for (name, detail), max_score in zip(diagnostics, POINTS, strict=True):

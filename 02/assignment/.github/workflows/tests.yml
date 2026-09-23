@@ -5,6 +5,26 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  # The course checks repository, which nobody forks: it holds the checks that
+  # decide the grade. They live in the course repository, which students never
+  # fork, under NN/assignment_checks/ beside the lecture and demo they belong to.
+  # If that directory cannot be fetched, every run falls back to the shape-only
+  # checks committed here and reports that no value was verified. Each quarter,
+  # point these three lines at the branch the course is taught from.
+  CHECKS_REPO: christopherseaman/datasci_217
+  CHECKS_REF: main
+  CHECKS_PATH: "02/assignment_checks"
+  # Supplied checker files, refreshed together so a correction cannot land half-applied.
+  # Student work is never listed here.
+  CHECKS_FILES: |
+    .github/test/test_assignment.py
+    .github/test/requirements.txt
+    test_assignment.py
+    _value_checks.py
+    check_assignment.py
+    grading.py
+
 jobs:
   pytest:
     runs-on: ubuntu-latest
@@ -25,13 +45,220 @@ jobs:
             requirements.txt
             .github/test/requirements.txt
 
-      - name: Install assignment and test dependencies
+      # The committed files come first so the rest of the job always has a
+      # working Python and pytest, whatever the download turns out to contain.
+      - name: Install the committed dependencies
         run: |
+          set -euo pipefail
+
           python -m pip install --upgrade pip
           python -m pip install -r .github/test/requirements.txt
           if [ -s requirements.txt ]; then
             python -m pip install -r requirements.txt
           fi
 
+      # Downloading is separate from using. This step only collects the files
+      # and checks that each one is the kind of file it claims to be; the next
+      # step decides whether they are fit to grade with.
+      - name: Download the current checks
+        run: |
+          set -euo pipefail
+
+          base="https://raw.githubusercontent.com/${CHECKS_REPO}/${CHECKS_REF}/${CHECKS_PATH}"
+          staging="$(mktemp -d)"
+
+          cat > "$staging/validate.py" <<'PY'
+          """Accept a download only if it is the file it claims to be, not an error body."""
+          import ast
+          import pathlib
+          import re
+          import sys
+
+          REQUIREMENT = re.compile(r"^(-.*|[A-Za-z0-9][A-Za-z0-9._-]*(\[[^]]*\])?([<>=!~;].*)?)$")
+
+          for argument in sys.argv[1:]:
+              path = pathlib.Path(argument)
+              text = path.read_text(encoding="utf-8")
+              if not text.strip():
+                  raise SystemExit(f"{path.name} is empty")
+              if path.suffix == ".py":
+                  try:
+                      ast.parse(text)
+                  except SyntaxError as error:
+                      raise SystemExit(f"{path.name} is not Python: {error}")
+              else:
+                  for line in text.splitlines():
+                      line = line.split("#", 1)[0].strip()
+                      if line and not REQUIREMENT.match(line):
+                          raise SystemExit(f"{path.name} is not a requirements file: {line!r}")
+          PY
+
+          origin="${CHECKS_REPO}@${CHECKS_REF}:${CHECKS_PATH}/"
+          staged=""
+          problem=""
+          for file in $CHECKS_FILES; do
+            mkdir -p "$staging/$(dirname "$file")"
+            if curl --fail --silent --show-error --location \
+                    --retry 3 --retry-delay 2 --max-time 60 \
+                    --output "$staging/$file" "$base/$file"; then
+              staged="$staged $staging/$file"
+            else
+              status=$?
+              if [ "$status" = 22 ]; then
+                problem="${origin} answered but does not serve ${file}, so the course checks repository needs fixing."
+              else
+                problem="downloading ${file} from ${origin} failed before GitHub answered (curl exit ${status}), which is usually a passing network problem."
+              fi
+              break
+            fi
+          done
+
+          # $staged is an unquoted list of paths on purpose.
+          if [ -z "$problem" ] && ! reason="$(python "$staging/validate.py" $staged 2>&1)"; then
+            problem="${origin} served something unusable (${reason}), so the course checks repository needs fixing."
+          fi
+
+          if [ -n "$problem" ]; then
+            echo "::warning::Checks: ${problem} This run uses the shape-only checks committed in this repository."
+          else
+            echo "CHECKS_STAGING=$staging" >> "$GITHUB_ENV"
+            echo "Checks: downloaded the current version from ${origin}; nothing uses it until it has run."
+          fi
+
+      - name: Confirm the checks run before grading with them
+        run: |
+          set -euo pipefail
+
+          # Reading each file is not enough. Every assignment's grading.py pairs
+          # its checks with their point values in its own way, and the pytest
+          # entrypoint runs the checker, so a set whose files disagree only
+          # fails once it runs. Running it here is what guarantees the set is
+          # coherent, and a download that fails here is rolled back before
+          # anything grades with it - including the requirement list, the one
+          # downloaded file that cannot be judged by reading it.
+          origin="${CHECKS_REPO}@${CHECKS_REF}:${CHECKS_PATH}/"
+          smoke="$(mktemp -d)"
+
+          cat > "$smoke/smoke.py" <<'PY'
+          """Run the supplied checks once and judge them by what they report."""
+          import json
+          import pathlib
+          import subprocess
+          import sys
+          import tempfile
+
+          ENTRYPOINTS = sys.argv[1:]
+
+
+          def give_up(reason, *details):
+              print(reason)
+              for detail in details:
+                  if detail.strip():
+                      print(detail, file=sys.stderr)
+              raise SystemExit(1)
+
+
+          def run(*command):
+              return subprocess.run([sys.executable, *command], capture_output=True, text=True)
+
+
+          # Judge the checker by its report, never by its exit status: a working
+          # checker exits non-zero for an incomplete submission, and an empty
+          # directory is one.
+          checker = run("-B", "check_assignment.py", tempfile.mkdtemp(), "--json")
+          try:
+              report = json.loads(checker.stdout)
+          except ValueError as error:
+              give_up(f"check_assignment.py printed no JSON report ({error})", checker.stdout, checker.stderr)
+          if not isinstance(report, dict):
+              give_up("check_assignment.py printed a report that is not a JSON object", checker.stdout)
+          if not report.get("tests"):
+              give_up("check_assignment.py reported no checks", checker.stdout, checker.stderr)
+          total = report.get("max-score")
+          if isinstance(total, bool) or not isinstance(total, (int, float)) or total <= 0:
+              give_up(f"check_assignment.py reported a total worth {total!r} points", checker.stdout)
+
+          # pytest is what the grading step runs, so collect the file it will run.
+          # pytest exits 5 when it collects nothing, which is how a test file with
+          # no tests left in it is caught here instead of passing silently.
+          for entrypoint in ENTRYPOINTS:
+              if not pathlib.Path(entrypoint).is_file():
+                  give_up(f"{entrypoint} is missing")
+              collected = run("-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", entrypoint)
+              if collected.returncode == 5:
+                  give_up(f"{entrypoint} contains no tests", collected.stdout)
+              if collected.returncode != 0:
+                  give_up(f"pytest cannot collect {entrypoint}", collected.stdout, collected.stderr)
+
+          print(f"{len(report['tests'])} checks worth {total} points, and pytest collects "
+                + " and ".join(ENTRYPOINTS))
+          PY
+
+          entrypoints=""
+          for file in $CHECKS_FILES; do
+            case "${file##*/}" in
+              test_*.py) entrypoints="$entrypoints $file" ;;
+            esac
+          done
+
+          # $entrypoints is an unquoted list of paths on purpose.
+          if [ -n "${CHECKS_STAGING:-}" ]; then
+            # Keep what is being replaced, so the download can be undone.
+            backup="$(mktemp -d)"
+            for file in $CHECKS_FILES; do
+              mkdir -p "$backup/$(dirname "$file")" "$(dirname "$file")"
+              if [ -e "$file" ]; then
+                cp "$file" "$backup/$file"
+              fi
+              cp "$CHECKS_STAGING/$file" "$file"
+            done
+
+            if ! python -m pip install -r .github/test/requirements.txt; then
+              problem="its requirement list does not install"
+            elif outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
+              echo "Checks: ${outcome}, from ${origin}."
+              echo "CHECKS_VALUES_VERIFIED=yes" >> "$GITHUB_ENV"
+              exit 0
+            else
+              problem="$outcome"
+            fi
+
+            echo "::warning::Checks: the set downloaded from ${origin} does not run together (${problem}), so the course checks repository needs fixing. Restoring the shape-only checks committed in this repository."
+            for file in $CHECKS_FILES; do
+              if [ -e "$backup/$file" ]; then
+                cp "$backup/$file" "$file"
+              else
+                rm -f "$file"
+              fi
+            done
+            # The download may have changed the environment before it failed.
+            python -m pip install -r .github/test/requirements.txt
+          fi
+
+          if [ ! -s .github/test/test_assignment.py ]; then
+            echo "::error::No checks to run: this repository has no .github/test/test_assignment.py."
+            exit 1
+          fi
+
+          if outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
+            echo "Checks: ${outcome}, from the shape-only checks committed in this repository."
+            echo "CHECKS_VALUES_VERIFIED=no" >> "$GITHUB_ENV"
+            echo "::warning::Checks: this run could not use ${origin}, so it checked only the SHAPE of your artifacts. None of your values was verified; a green run here does not mean the submission is correct."
+          else
+            echo "::error::No working checks: the copy committed in this repository does not run (${outcome})."
+            exit 1
+          fi
+
       - name: Check assignment artifacts
         run: python -m pytest .github/test/test_assignment.py -q --tb=short
+
+      - name: Say what this run verified
+        if: always()
+        run: |
+          set -euo pipefail
+
+          if [ "${CHECKS_VALUES_VERIFIED:-no}" = "yes" ]; then
+            echo "This run checked your artifacts against the values recomputed from the supplied data."
+          else
+            echo "::warning::This run checked only that your artifacts are well formed. Your values were NOT verified, because the course checks could not be downloaded. Re-run the job once ${CHECKS_REPO} is reachable."
+          fi
