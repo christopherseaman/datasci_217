@@ -2,7 +2,7 @@
 
 ## Current state
 
-- The last committed `main` state is clean and pushed. The latest commit is `ad763a4` (`docs: rebalance lectures and capture WSL troubleshooting`).
+- `main` is clean and pushed; `cleanup-26` merged into it on 2026-09-23 (`114c335`), and later commits sit on `main` directly. Latest: `d34beb5 feat: publish one assignment folder to its own repository`.
 - The course is standardized on Python 3.13 and pandas 3.0.5.
 - Notion is the primary publishing surface. Course Markdown uses Notion-native headings: multiple `#` topic headings, `##` subsections, and unwrapped paragraphs.
 - Lectures 01–03 have been recently reviewed and revised. Lecture 01 now includes the four independent demo breaks, beginner setup guidance, VS Code and terminal workflows, fork/clone and submission guidance, WSL troubleshooting, and the introductory Python material needed for Assignment 01.
@@ -26,7 +26,9 @@
 ## Lecture review (started 2026-09-18)
 
 - Audit and skeptic results for every lecture are in `scratch/review/` (`audit_run1.json`, `verify_01_03.json`, `LECTURE_PLAN.md`). The Notion snapshots used for reconciliation are in `scratch/review/NN/notion_current.md`; the edit, review, and fix-up reports are `apply_run1.json` and `fixup_run1.json`.
-- Status: all eleven lectures are reviewed and edited locally on branch `cleanup-26` (README, BONUS, media, plus `02/LECTURE_01_CATCHUP.md`), each with an independent review pass and a fix-up pass. The bonus pages of Lectures 02 and 04–11 also had a cleanup pass (real headings, seeded `default_rng`, runnable examples). Nothing is published to Notion.
+- Status: all eleven lectures were reviewed and edited, each with an independent review pass and a fix-up pass, and the work is merged to `main`. The bonus pages of Lectures 02 and 04–11 also had a cleanup pass.
+- Published on 2026-09-23, after the merge: all six Notion pages mapped for Lectures 02 and 03 (both lectures, both bonus pages, both demo guides), with media uploaded from local and every child page preserved. Verified afterwards by paginating each page's blocks: 2 child pages on each lecture, 15 real image blocks, zero dangling `file-upload://` links. Lectures 01 and 04–11 remain unpublished, so Notion still holds their pre-review content.
+- Published to the assignment repositories on 2026-09-23: `UCSF-DataSci/ds217-26f-02` and `-03`, using `scripts/publish_assignment.sh NN owner/repo`, which mirrors `NN/assignment/` and deletes what the source does not have. History was preserved deliberately (`--replace-history` exists but was not used). Neither repository had any fork at the time, so no student was mid-assignment.
 - Lecture 01 was already delivered, so its additions are repeated in `02/LECTURE_01_CATCHUP.md`, a temporary catch-up page linked from Lecture 02's opening and rendered at `/02/lecture-01-catchup/` (mapped in `.eleventy.js`; front matter marks it `status: unmapped` for Notion).
 - Instructor decisions recorded on 2026-09-21: keep the Lecture 02 Command-Line Catalog; keep Ctrl+E and drop Ctrl+K in the shell shortcut card; finish `cat` input with Enter then Ctrl+C, not Ctrl+D; keep `.python-version` (Assignment 03 grades it) but demote it to one line and point to `uv init`/`pyproject.toml`; title lines use the `# Title` form matching `title_line`.
 - uv has no Jupyter magic: its docs recommend `!uv pip install` / `!uv add` in a cell and `uv run --with jupyter jupyter lab`, while `%pip install -r requirements.txt` stays the portable form that also works in Colab. Relevant to the `FIXME.md` package-management work.
