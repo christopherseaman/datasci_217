@@ -9,9 +9,9 @@ notion:
 
 # Lecture 02 Demo Guide: Git, Functions, and Modules
 
-Demos 2 and 3 run four files from the [Lecture 02 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/02/demo): [functions_demo.py](functions_demo.py), [vitals_tools.py](vitals_tools.py), [module_usage_demo.py](module_usage_demo.py), and [clinic_vitals.csv](clinic_vitals.csv). Get the whole course repository the way Lecture 01 cloned your fork: open the Command Palette, choose **Git: Clone**, paste `https://github.com/christopherseaman/datasci_217.git`, pick a folder, and open the clone. The folder you land in is the **repository root** that Demo 1 starts from, and the demo files are in its `02/demo` folder.
+Demos 2 and 3 run four files from the [Lecture 02 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/02/demo): [functions_demo.py](functions_demo.py), [vitals_tools.py](vitals_tools.py), [module_usage_demo.py](module_usage_demo.py), and [clinic_vitals.csv](clinic_vitals.csv). Get the whole course repository the way Lecture 01 cloned your fork: open the Command Palette, choose **Git: Clone**, paste `https://github.com/christopherseaman/datasci_217.git`, pick a folder, and open the clone. The demo files are in its `02/demo` folder. Demo 1 does not use the clone at all: it builds a practice repository of its own, outside it.
 
-Without cloning, use **Download raw file** on GitHub for each of the four files and save them together in one folder; for Demo 1, any empty folder stands in for the repository root. Run every command in **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac).
+Without cloning, use **Download raw file** on GitHub for each of the four files and save them together in one folder; Demo 1 needs nothing downloaded. Run every command in **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac).
 
 # 1. Git workflow
 
@@ -55,7 +55,7 @@ Open `ds217-practice` with **File → Open Folder**, then **Terminal → New Ter
 1. Type `cat no`, press **Tab** to complete `notes.md`, then **Enter**. Expect the practice heading and experiment note.
 2. Press **↑** to recall it, then **Ctrl+A** to move to the start. Press **Delete** three times to remove `cat` (on Mac, **Fn+Delete**), type `git diff --`, and press **Ctrl+E** (**End** on Windows/Linux, where VS Code claims Ctrl+E for Quick Open). The line should read `git diff -- notes.md`.
 3. Press **Enter**. Expect no output: you already committed and merged those changes.
-4. Press **Ctrl+R**, type `cat no`, and check that `cat notes.md` appears. Press **Esc** to accept the match, then **Enter** to run it again.
+4. Press **Ctrl+R**, type `cat no`, and check that `cat notes.md` appears. Press **Enter** to run it straight away, or **→** to put it on the prompt first so you can edit it. (**Esc** also accepts the match in Bash, but in Zsh, the macOS default, it leaves you in the search.)
 
 For the Python demos, open the course's `02/demo` folder in VS Code and use **Terminal → New Terminal** (Ctrl+Shift+backtick).
 

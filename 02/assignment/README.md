@@ -27,7 +27,7 @@ assignment/
 
 ## Setup
 
-Open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `clinic_encounters.csv`.
+Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `clinic_encounters.csv`.
 
 Open the repository in VS Code, switch to `main`, select **Sync Changes**, and finish any outstanding changes. Open the Command Palette, select **Git: Create Branch**, and name the new branch `feature/clinic-report`. Work on that branch until the Submit section.
 
@@ -83,7 +83,7 @@ Lowest systolic: <smallest usable reading> mmHg
 
 - Some patients came in twice, so `Patients seen` is not the same as `Usable encounters`. A patient whose only row was skipped was not seen.
 - `Mean systolic` averages every usable reading, including a patient's second visit. Give at least one decimal place. Rounding is not a trap: a value within 0.1 mmHg of the mean passes, and so does the mean rounded to however many decimal places you wrote.
-- Write the labels as shown. Spacing and letter case do not matter, the `mmHg` unit is optional (`mm Hg` is fine too), and words around the number are ignored. Extra lines in the file are ignored.
+- Write each label exactly as shown, followed by a colon and then the number. Around that, the checks are relaxed: letter case and the spaces between words do not matter, the `mmHg` unit is optional (`mm Hg` is fine too), and words around the number are ignored. Extra lines in the file are ignored. What is not optional is the label wording and the colon, so `Usable encounters = 25` or `usable -> 25` does not count.
 
 Read the file back and print it, the way Demo 3 does, so you can see what landed on disk.
 
@@ -122,7 +122,7 @@ python3 clinic_report.py
 python3 check_assignment.py
 ```
 
-The checks come in two halves, and both read only committed artifacts: this `README.md`, `.gitignore`, the supplied `data/clinic_encounters.csv`, and the two files in `output/`. Neither one runs or reads your Python code, so any way of producing a correct artifact counts.
+The checks come in two halves, and neither reads your Python. Both look only at what you committed: this `README.md`, `.gitignore`, and the two files in `output/`. The half that runs on GitHub also reads the supplied `data/clinic_encounters.csv`, to work out what your answers should have been. Neither one runs or reads your Python code, so any way of producing a correct artifact counts.
 
 - **In your repository: the shape checks.** `check_assignment.py` confirms that each file exists, is readable text, carries the labels the tasks ask for, and gives a number where a number belongs. It does not hold the answers and never opens the encounter file, so it cannot tell you whether a value is right. Its last line says exactly that.
 - **On GitHub: the value checks.** Every push runs GitHub Actions, which downloads the course checks, recomputes each expected value from `data/clinic_encounters.csv`, and scores your values one at a time with a message naming what to fix. That run is what your grade comes from, and a check corrected after handout reaches you on your next push.
