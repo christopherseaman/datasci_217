@@ -66,8 +66,11 @@ def run() -> None:
         (root / "data").mkdir()
         shutil.copy(supplied, root / DATA_FILE)
         encounters = load_supplied_encounters(root)
+        # The supplied export's counts, pinned so a change to the row rule shows up here.
+        assert (len(encounters.usable), encounters.skipped_rows) == (25, 6), encounters
         readings = encounters.readings
         mean = sum(readings) / len(readings)
+        top_patient = max(encounters.usable, key=lambda encounter: encounter[1])[0]
         cutoff = 140
         listed = sorted(encounters.patients_at_or_above(cutoff))
         report = (
@@ -96,6 +99,9 @@ def run() -> None:
             report.replace(f"{mean:.1f}", f"{mean:.0f}"),
             report.replace(f"{mean:.1f} mmHg", f"np.float64({mean})"),
             report.replace(f"{max(readings)} mmHg", f"np.int64({max(readings)})"),
+            # A number starts a token; digits inside P018 or float64 are not it.
+            report.replace(f"Highest systolic: {max(readings)}", f"Highest systolic: {top_patient} at {max(readings)}"),
+            report.replace(f"{mean:.1f} mmHg", f"np.float64({mean:.2f}) mmHg"),
         ):
             write_submission(root, report=variant, followup=followup)
             assert grade_submission(root)["score"] == 100, variant
@@ -110,6 +116,8 @@ def run() -> None:
             followup.replace(REASON, REASON + "\nPatients to call\n----------------\n").replace(
                 "\np0", "\n- p0"
             ),
+            # A patient listed twice counts once.
+            followup + f"{listed[0]}\n",
         ):
             write_submission(root, report=report, followup=variant)
             assert grade_submission(root)["score"] == 100, variant
@@ -185,9 +193,16 @@ def run() -> None:
             ("`python clinic_report.py`", 5),
             ("```bash\npy -3.13 ./clinic_report.py\n```", 5),
             ("$ python3.13 clinic_report.py", 5),
+            # The Python version never decides a grade.
+            ("$ python3.14 clinic_report.py", 5),
+            ("py -3.12 clinic_report.py", 5),
             ("Run `python3 clinic_report.py` from this folder.", 5),
             ("- `python3 clinic_report.py`", 5),
+            ("py clinic_report.py", 5),
+            ("Run python3 clinic_report.py.", 5),
             ("python3 clinic_report", 0),
+            ("python3 clinic_report.pyc", 0),
+            ("python3 clinic_report.py.bak", 0),
             ("Run it from this folder.", 0),
         ):
             (root / "README.md").write_text(README.replace("python3 clinic_report.py", run_line), encoding="utf-8")
@@ -202,8 +217,9 @@ def run() -> None:
             ("__pycache__/\n*.pyc\n", 5),
             ("# cache\n**/__pycache__/\n*.pyc\n", 5),
             ("__pycache__\n*.pyc\n", 5),
-            # GitHub's own Python template.
-            ("__pycache__/\n*.py[cod]\n*$py.class\n", 5),
+            # GitHub's own Python template, and its older `*.py[cod]` line.
+            ("__pycache__/\n*.py[codz]\n*$py.class\n", 5),
+            ("*.py[codz]\n", 5),
             ("*.py[cod]\n", 5),
             ("*.pyc\n", 5),
             ("__pycache__/\n", 5),
@@ -213,6 +229,25 @@ def run() -> None:
             (root / ".gitignore").write_text(patterns, encoding="utf-8")
             assert scores(root)[".gitignore bytecode cache"] == expected, patterns
         (root / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
+
+        # Line endings change nothing; a blank line appended to the export is one more
+        # skipped row, the way the student's own loop reads it.
+        original = (root / DATA_FILE).read_text(encoding="utf-8")
+        (root / DATA_FILE).write_text(original.replace("\n", "\r\n"), encoding="utf-8")
+        assert load_supplied_encounters(root) == encounters
+        (root / DATA_FILE).write_text(original + "\n", encoding="utf-8")
+        appended = load_supplied_encounters(root)
+        assert appended.usable == encounters.usable
+        assert appended.skipped_rows == encounters.skipped_rows + 1, appended.skipped_rows
+        assert sum(scores(root).values()) == 100 - CHECK_POINTS["skipped rows"]
+        write_submission(
+            root,
+            report=report.replace(f"Skipped rows: {encounters.skipped_rows}", f"Skipped rows: {appended.skipped_rows}"),
+            followup=followup,
+        )
+        assert grade_submission(root)["score"] == 100
+        (root / DATA_FILE).write_text(original, encoding="utf-8")
+        write_submission(root, report=report, followup=followup)
 
         # A changed encounter file cannot be summarized into a passing answer.
         (root / DATA_FILE).write_text("patient_id,visit_date,systolic\nP001,2026-03-02,140\n", encoding="utf-8")
@@ -259,6 +294,23 @@ def run_shape() -> None:
     sys.modules["_shape_checks"] = shape  # dataclasses look their own module up by name
     specification.loader.exec_module(shape)
 
+    # Both halves parse the artifacts with the same code, so they never disagree about a format.
+    import inspect
+    import _value_checks as value
+
+    for name in ("RUN_COMMAND", "NUMPY_SCALAR", "NUMBER", "CACHE_DIRECTORY_PATTERN", "CACHE_FILE_PATTERN",
+                 "REPORT_FILE", "FOLLOWUP_FILE", "REPORT_LABELS", "LABEL_LINES", "SYSTOLIC_MIN", "SYSTOLIC_MAX",
+                 "CUTOFF_MIN", "CUTOFF_MAX", "REASON_MIN_LENGTH", "REASON_MAX_LENGTH",
+                 "DESCRIPTION_MIN_LENGTH", "DESCRIPTION_MAX_LENGTH"):
+        assert getattr(shape, name) == getattr(value, name), name  # compiled regexes compare pattern and flags
+    for name in ("_assert", "_read_artifact", "_report_values", "_followup_text", "_label", "_labelled_values",
+                 "_readme_section", "check_readme_description", "check_readme_run_command",
+                 "check_gitignore_cache", "check_report_format", "check_followup_reason"):
+        assert inspect.getsource(getattr(shape, name)) == inspect.getsource(getattr(value, name)), name
+    assert [check.name for check in shape.CHECKS] == [check.name for check in VALUE_CHECKS]
+    for shared in ("test_assignment.py", ".github/test/test_assignment.py", ".github/test/requirements.txt"):
+        assert (ASSIGNMENT / shared).read_bytes() == (CHECKS / shared).read_bytes(), shared
+
     with tempfile.TemporaryDirectory(dir=REPO / "scratch", prefix="a02-shape-") as temporary:
         root = Path(temporary) / "submission"
         root.mkdir()
@@ -281,7 +333,13 @@ def run_shape() -> None:
         )
         wrong_followup = f"Cutoff: 121 mmHg\n{REASON}P001\nP007\n"
 
-        for report, followup in ((right, right_followup), (wrong, wrong_followup)):
+        top_patient = max(encounters.usable, key=lambda encounter: encounter[1])[0]
+        for report, followup in (
+            (right, right_followup),
+            (wrong, wrong_followup),
+            # The formats the value checks accept pass here too.
+            (right.replace("Highest systolic: ", f"Highest systolic: {top_patient} at "), right_followup + f"{listed[0]}\n"),
+        ):
             write_submission(root, report=report, followup=followup)
             failures = [detail for _, detail in shape.run_checks(root) if detail]
             assert not failures, failures
@@ -304,7 +362,6 @@ def run_shape() -> None:
             (f"Cutoff: 95\n{REASON}P001\n", "follow-up cutoff"),
             (f"Cutoff: 140\nReason: too short.\nP001\n", "follow-up reason"),
             (f"Cutoff: 140\n{REASON}", "follow-up patient list"),
-            (f"Cutoff: 140\n{REASON}P001\nP001\n", "follow-up patient list"),
         ):
             write_submission(root, report=right, followup=followup)
             broken = {name for name, detail in shape.run_checks(root) if detail}

@@ -1,9 +1,8 @@
 """Value checks for Assignment 02. Course-side only; never shipped in a fork.
 
 Every expected value is recomputed from the supplied encounter file, so there is
-no answer key here either -- but a student who could read this file could read
-the recomputation, so it lives in the course checks repository and reaches a
-submission only through the GitHub Actions run.
+no answer key here either. This file stays out of the student fork: the GitHub
+Actions run fetches it from the course repository on every push.
 
 The checks read committed artifacts only: `README.md`, `.gitignore`,
 `data/clinic_encounters.csv`, and the two files in `output/`. Student source
@@ -48,23 +47,26 @@ REASON_MAX_LENGTH = 300
 DESCRIPTION_MIN_LENGTH = 30
 DESCRIPTION_MAX_LENGTH = 300
 
-# A Python 3.13 command that runs a script, wherever it sits in the `## Run`
-# section: alone on a line, inside a sentence, in a bullet, or in a code fence.
+# A Python command (`python`, `python3`, or the Windows `py` launcher, any version)
+# that runs a `.py` script, wherever it sits in the `## Run` section: alone on a
+# line, inside a sentence (a full stop may follow), in a bullet, or in a code
+# fence. `.pyc` and `.py.bak` are not scripts.
 RUN_COMMAND = re.compile(
-    r"(?<![\w.-])(?:python(?:3(?:\.13)?)?|py\s+-3(?:\.13)?)\s+[\w./\\-]*\.py(?![\w.])",
+    r"(?<![\w.-])(?:python(?:3(?:\.\d+)?)?|py(?:\s+-3(?:\.\d+)?)?)\s+[\w./\\-]*\.py(?!\w|\.\w)",
     re.IGNORECASE,
 )
 # NumPy prints a scalar as `np.float64(129.44)`, which is a correct answer
-# written by a correct program.
+# written by a correct program. A number has to start a token, so the digits
+# inside `P018` or `float64` are never read as the answer.
 NUMPY_SCALAR = re.compile(r"^(?:np|numpy)\.\w+\((.*)\)$")
-NUMBER = re.compile(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?")
+NUMBER = re.compile(r"(?<![\w.])[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?")
 BARE_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 # The bytecode cache, written the standard ways: the directory Python creates,
-# or a glob for the files it puts there, including the `*.py[cod]` line in
+# or a glob for the files it puts there, including the `*.py[codz]` line in
 # GitHub's own Python template.
 CACHE_DIRECTORY_PATTERN = re.compile(r"^/?(?:\*\*/)?__pycache__/?(?:\*\*?/?)?$")
 CACHE_FILE_PATTERN = re.compile(
-    r"^/?(?:\*\*/)?(?:__pycache__/)?\*(?:\.py(?:[cod]|\[[cod]+\])|\$py\.class)$",
+    r"^/?(?:\*\*/)?(?:__pycache__/)?\*(?:\.py(?:[cod]|\[[codz]+\])|\$py\.class)$",
     re.IGNORECASE,
 )
 LABEL_LINES = ("cutoff", "reason")
@@ -106,7 +108,7 @@ def _assert(condition: bool, message: str) -> None:
 
 
 def _read_artifact(root: Path, relative: Path, missing_message: str) -> str:
-    """Read a committed artifact as text, tolerating the BOM Notepad and Excel add."""
+    """Read a saved artifact as text, tolerating the BOM Notepad and Excel add."""
     path = root / relative
     _assert(path.is_file() and not path.is_symlink(), missing_message)
     try:
@@ -126,11 +128,12 @@ def _fingerprint(text: str) -> str:
 
 
 def _data_rows(text: str) -> list[str]:
-    """Every line after the header, minus the blank line a final newline leaves."""
-    rows = text.splitlines()[1:]
-    while rows and not rows[-1].strip():
-        rows.pop()
-    return rows
+    """Every line after the header, as `splitlines()` reads it.
+
+    The fingerprint forgives a blank line appended to the export, but the student's
+    own loop counts it as one more skipped row, so it is counted here too.
+    """
+    return text.splitlines()[1:]
 
 
 def load_supplied_encounters(root: Path) -> SuppliedEncounters:
@@ -271,9 +274,10 @@ def check_readme_run_command(root: Path) -> None:
     _assert(section is not None, "README.md: keep the `## Run` heading and write the command under it.")
     _assert(
         RUN_COMMAND.search(section) is not None,
-        "README.md: put a Python 3.13 command that runs your report script under `## Run`, such as "
+        "README.md: `## Run` has no command that runs your report script. Write the Python command "
+        "(`python3`, `python`, or `py`) and then the script's full file name, such as "
         "`python3 clinic_report.py` or `py -3.13 clinic_report.py`. A sentence, a bullet, a code "
-        "fence, or the bare command all count; the script name has to end in `.py`.",
+        "fence, or the bare command all count.",
     )
 
 
@@ -459,8 +463,7 @@ def check_followup_patients(root: Path) -> None:
         not problems,
         f"{FOLLOWUP_FILE.as_posix()}: "
         + "; ".join(problems)
-        + f". List one patient ID per line, each patient once, for the cutoff of {cutoff:g} mmHg "
-        "you declared.",
+        + f". List one patient ID per line for the cutoff of {cutoff:g} mmHg you declared.",
     )
 
 

@@ -27,9 +27,9 @@ assignment/
 
 ## Setup
 
-Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `clinic_encounters.csv`.
+Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `clinic_encounters.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-Open the repository in VS Code, switch to `main`, select **Sync Changes**, and finish any outstanding changes. Open the Command Palette, select **Git: Create Branch**, and name the new branch `feature/clinic-report`. Work on that branch until the Submit section.
+Open the repository in VS Code, switch to `main`, select **Sync Changes** if Source Control shows it, and finish any outstanding changes. Open the Command Palette, select **Git: Create Branch**, and name the new branch `feature/clinic-report`. Work on that branch until the Submit section.
 
 ## Task 1: Document the project
 
@@ -43,7 +43,7 @@ Replace the `TODO` line under `## Run` with a Python 3.13 command that runs your
 
 ### 1.3 Keep the Python cache out of Git
 
-Importing `vitals_tools` creates a `__pycache__/` folder of compiled files. Replace the two `TODO` comments in `.gitignore` with the pattern for that folder and the pattern for the compiled files it holds. The standard pair is `__pycache__/` and `*.pyc`; GitHub's own Python template writes the second one as `*.py[cod]`, which is equally good.
+Importing `vitals_tools` creates a `__pycache__/` folder of compiled files. Replace the two `TODO` comments in `.gitignore` with the pattern for that folder and the pattern for the compiled files it holds. The standard pair is `__pycache__/` and `*.pyc`; GitHub's own Python template writes the second one as `*.py[codz]`, which is equally good.
 
 > **Checkpoint: `README.md` and `.gitignore`**
 > Confirm in Source Control that both files appear under **Changes**, stage them, and commit with `Document the clinic report`.
@@ -83,7 +83,7 @@ Lowest systolic: <smallest usable reading> mmHg
 
 - Some patients came in twice, so `Patients seen` is not the same as `Usable encounters`. A patient whose only row was skipped was not seen.
 - `Mean systolic` averages every usable reading, including a patient's second visit. Give at least one decimal place. Rounding is not a trap: a value within 0.1 mmHg of the mean passes, and so does the mean rounded to however many decimal places you wrote.
-- Write each label exactly as shown, followed by a colon and then the number. Around that, the checks are relaxed: letter case and the spaces between words do not matter, the `mmHg` unit is optional (`mm Hg` is fine too), and words around the number are ignored. Extra lines in the file are ignored. What is not optional is the label wording and the colon, so `Usable encounters = 25` or `usable -> 25` does not count.
+- Write each label exactly as shown, followed by a colon and then the number. Around that, the checks are relaxed: letter case and the spaces between words do not matter, the `mmHg` unit is optional (`mm Hg` is fine too), and words around the number are ignored. Extra lines in the file are ignored. What is not optional is the label wording and the colon, so `Usable encounters = 12` or `usable -> 12` does not count.
 
 Read the file back and print it, the way Demo 3 does, so you can see what landed on disk.
 
@@ -106,7 +106,7 @@ Reason: <one line, 20-300 characters, saying why you chose it>
 ...
 ```
 
-List the patient ID of every patient with at least one usable reading at or above your cutoff, one per line, each patient once. Order does not matter, the `mmHg` unit on the cutoff is optional, and any other line is ignored, whether it is a heading, a blank line, or a row of dashes.
+List the patient ID of every patient with at least one usable reading at or above your cutoff, one per line. Order does not matter, a repeated ID counts once, the `mmHg` unit on the cutoff is optional, and any other line is ignored, whether it is a heading, a blank line, or a row of dashes.
 
 The checks recompute the list from the cutoff you declared, so every cutoff in range is correct, as long as the patients you list are the ones your cutoff selects.
 
@@ -122,9 +122,9 @@ python3 clinic_report.py
 python3 check_assignment.py
 ```
 
-The checks come in two halves, and neither reads your Python. Both look only at what you committed: this `README.md`, `.gitignore`, and the two files in `output/`. The half that runs on GitHub also reads the supplied `data/clinic_encounters.csv`, to work out what your answers should have been. Neither one runs or reads your Python code, so any way of producing a correct artifact counts.
+The checks come in two halves, and both look only at what you committed: this `README.md`, `.gitignore`, and the two files in `output/`. The GitHub half also reads the supplied `data/clinic_encounters.csv` to work out what your answers should have been. Neither one runs or reads your Python code, so any way of producing a correct artifact counts.
 
-- **In your repository: the shape checks.** `check_assignment.py` confirms that each file exists, is readable text, carries the labels the tasks ask for, and gives a number where a number belongs. It does not hold the answers and never opens the encounter file, so it cannot tell you whether a value is right. Its last line says exactly that.
+- **In your repository: the shape checks.** `check_assignment.py` confirms that each file exists, is readable text, carries the labels the tasks ask for, and gives a number where a number belongs. It does not hold the answers and never opens the encounter file, so it cannot tell you whether a value is right.
 - **On GitHub: the value checks.** Every push runs GitHub Actions, which downloads the course checks, recomputes each expected value from `data/clinic_encounters.csv`, and scores your values one at a time with a message naming what to fix. That run is what your grade comes from, and a check corrected after handout reaches you on your next push.
 
 A clean local run ends with:
@@ -134,7 +134,7 @@ A clean local run ends with:
 These checks confirm the shape of your artifacts; your values are checked when you push.
 ```
 
-If an Actions run ever cannot reach the course checks, it says so in the log, falls back to these same shape checks, and warns that no value was verified. A green run in that case means well formed, not correct.
+If an Actions run ever cannot reach the course checks, it falls back to these same shape checks and warns that no value was verified: a green run then means well formed, not correct.
 
 ### Completion contract
 
@@ -143,7 +143,7 @@ Commit these files at the assignment repository root. Grading totals 100 points.
 | Artifact | Complete when | Points |
 |---|---|---:|
 | `README.md` | `## Project description` holds 30-300 characters of your own text. | 5 |
-| `README.md` | `## Run` holds a Python 3.13 command that runs a `.py` script. | 5 |
+| `README.md` | `## Run` holds a Python command that runs a `.py` script; any Python version counts. | 5 |
 | `.gitignore` | It lists a standard pattern for Python's bytecode cache, such as `__pycache__/` or `*.py[cod]`. | 5 |
 | `output/vitals_report.txt` | UTF-8 text with all six labelled lines present. | 10 |
 | `output/vitals_report.txt` | `Usable encounters` matches the supplied encounters. | 8 |
@@ -156,10 +156,10 @@ Commit these files at the assignment repository root. Grading totals 100 points.
 | `output/followup_list.txt` | `Reason` is 20-300 characters on one line. | 5 |
 | `output/followup_list.txt` | The listed patient IDs are exactly the patients with a usable reading at or above your cutoff. | 15 |
 
-Each row is scored on its own, so a value that is right earns its points whatever else is wrong. Extra files and extra lines are ignored.
+Each row is scored on its own, so a right value earns its points whatever else is wrong. The one exception is the patient list: it is checked against your `Cutoff`, so it scores only when that cutoff is from 120 to 180. Extra files and extra lines are ignored.
 
 ## Submit
 
-Inspect your changes in VS Code Source Control, then stage `vitals_tools.py`, `clinic_report.py`, `output/vitals_report.txt`, and `output/followup_list.txt` and commit with `Summarize clinic encounters`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes left, switch to `main`, run **Git: Merge Branch…**, and select `feature/clinic-report`. Resolve any conflict, inspect the result, and sync. Confirm in the repository browser that `main` holds both scripts and both files under `output/`.
+Inspect your changes in VS Code Source Control, then stage `vitals_tools.py`, `clinic_report.py`, `output/vitals_report.txt`, and `output/followup_list.txt` and commit with `Summarize clinic encounters`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes left, switch to `main`, run **Git: Merge...**, and select `feature/clinic-report`. Resolve any conflict, inspect the result, and sync. Confirm in the repository browser that `main` holds both scripts and both files under `output/`.
 
-GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a local check disagrees with the GitHub run, the GitHub run is the one that counts: it is checking your values, and the local run is checking your formatting.
+GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a local check disagrees with the GitHub run, the GitHub run counts: it checks your values, and the local run checks their format.

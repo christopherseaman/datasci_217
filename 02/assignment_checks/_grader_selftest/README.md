@@ -8,13 +8,17 @@ For the value checks: a complete submission scores 100; formatting differences
 NumPy scalar reprs, line order, extra lines) still score 100; every cutoff from
 120 to 180 mmHg scores 100 when its patient list matches; each wrong value costs
 only its own check; the documented `.gitignore` and run-command forms all pass;
-and a changed `data/clinic_encounters.csv` fails every recomputed check. It also
-confirms the supplied data file still matches `DATA_FINGERPRINT`.
+a repeated patient ID counts once; a blank line appended to the export is one
+more skipped row; and a changed `data/clinic_encounters.csv` fails every
+recomputed check. It also confirms the supplied data file still matches
+`DATA_FINGERPRINT`.
 
-For the shape checks that ship in the fork: a correct submission and a plausibly
-wrong one are indistinguishable, no expected answer appears among the module's
-constants, the supplied data file is never read (the checks still pass with
-`data/` deleted), and implausible artifacts are still caught.
+For the shape checks that ship in the fork: they share the value checks'
+regexes, parsing helpers, and byte-identical test entrypoints; a correct
+submission and a plausibly wrong one are indistinguishable; no expected answer
+appears among the module's constants; the supplied data file is never read (the
+checks still pass with `data/` deleted); and implausible artifacts are still
+caught.
 
 It is not a separate scoring mode; graders use the supplied checker from a
 trusted copy.

@@ -2,7 +2,7 @@
 
 These run in your own repository, so they deliberately know nothing about the
 answers. They confirm that each required file exists, is readable UTF-8, carries
-the labels the assignment asks for, and gives a number where a number belongs --
+the labels the assignment asks for, and gives a number where a number belongs,
 one a clinician could read without blinking. They never open the encounter file,
 never recompute anything from it, and never say whether a value is right.
 
@@ -34,15 +34,15 @@ DESCRIPTION_MIN_LENGTH = 30
 DESCRIPTION_MAX_LENGTH = 300
 
 RUN_COMMAND = re.compile(
-    r"(?<![\w.-])(?:python(?:3(?:\.13)?)?|py\s+-3(?:\.13)?)\s+[\w./\\-]*\.py(?![\w.])",
+    r"(?<![\w.-])(?:python(?:3(?:\.\d+)?)?|py(?:\s+-3(?:\.\d+)?)?)\s+[\w./\\-]*\.py(?!\w|\.\w)",
     re.IGNORECASE,
 )
 NUMPY_SCALAR = re.compile(r"^(?:np|numpy)\.\w+\((.*)\)$")
-NUMBER = re.compile(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?")
+NUMBER = re.compile(r"(?<![\w.])[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?")
 PATIENT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 CACHE_DIRECTORY_PATTERN = re.compile(r"^/?(?:\*\*/)?__pycache__/?(?:\*\*?/?)?$")
 CACHE_FILE_PATTERN = re.compile(
-    r"^/?(?:\*\*/)?(?:__pycache__/)?\*(?:\.py(?:[cod]|\[[cod]+\])|\$py\.class)$",
+    r"^/?(?:\*\*/)?(?:__pycache__/)?\*(?:\.py(?:[cod]|\[[codz]+\])|\$py\.class)$",
     re.IGNORECASE,
 )
 LABEL_LINES = ("cutoff", "reason")
@@ -190,9 +190,10 @@ def check_readme_run_command(root: Path) -> None:
     _assert(section is not None, "README.md: keep the `## Run` heading and write the command under it.")
     _assert(
         RUN_COMMAND.search(section) is not None,
-        "README.md: put a Python 3.13 command that runs your report script under `## Run`, such as "
+        "README.md: `## Run` has no command that runs your report script. Write the Python command "
+        "(`python3`, `python`, or `py`) and then the script's full file name, such as "
         "`python3 clinic_report.py` or `py -3.13 clinic_report.py`. A sentence, a bullet, a code "
-        "fence, or the bare command all count; the script name has to end in `.py`.",
+        "fence, or the bare command all count.",
     )
 
 
@@ -283,19 +284,12 @@ def _listed_ids(text: str) -> list[str]:
 
 
 def check_followup_patients(root: Path) -> None:
-    """The list has patient IDs on it, one per line, and none listed twice."""
-    listed = _listed_ids(_followup_text(root))
+    """The list has patient IDs on it, one per line; a repeated ID counts once."""
     _assert(
-        listed,
+        _listed_ids(_followup_text(root)),
         f"{FOLLOWUP_FILE.as_posix()} has no line that is a patient ID on its own. After the "
         f"`Cutoff:` and `Reason:` lines, "
         "write one patient ID per line.",
-    )
-    repeated = sorted({entry for entry in listed if listed.count(entry) > 1})
-    _assert(
-        not repeated,
-        f"{FOLLOWUP_FILE.as_posix()} lists {', '.join(repeated)} more than once; each patient is "
-        "called back once, however many visits they made.",
     )
 
 

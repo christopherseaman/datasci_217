@@ -1,10 +1,10 @@
 # Assignment 02 value checks (course-side)
 
-This directory is the source for `02/` in the course checks repository that
-`02/assignment/.github/workflows/tests.yml` names in `CHECKS_REPO`
-(`christopherseaman/datasci_217` by default, path `02/assignment_checks`). Nothing here ships in a student
-fork, and nothing here is fetched by a student: the GitHub Actions run
-downloads it, checks it runs, and grades with it.
+These are the checks that decide the Assignment 02 grade.
+`02/assignment/.github/workflows/tests.yml` fetches them on every student push
+from `christopherseaman/datasci_217@main:02/assignment_checks/` (its
+`CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`). Nothing here ships in a student
+fork: the GitHub Actions run downloads it, checks it runs, and grades with it.
 
 The split it belongs to:
 
@@ -20,15 +20,18 @@ The shape half holds no expected value and never opens the encounter file.
 
 ## Publishing
 
-Copy this directory to `02/` in the checks repository, keeping the file names:
-the workflow downloads them over the committed copies, so `grading.py`,
-`check_assignment.py`, `test_assignment.py`, `_value_checks.py`, and the two
-files under `.github/test/` must all be served from `<ref>/02/`. A fetch that
-misses any one of them is rolled back, and the run falls back to the shape
-checks and says in the log that no value was verified.
+Pushing this directory to `main` publishes it; there is no separate checks
+repository. The workflow downloads `grading.py`, `check_assignment.py`,
+`test_assignment.py`, `_value_checks.py`, and the two files under
+`.github/test/` over the committed copies. A fetch that misses any one of them,
+or a set that does not run together, is rolled back, and the run falls back to
+the shape checks and says in the log that no value was verified.
 
-Correct a check here first, then publish; the fork's shape checks only need
-changing when the shape of an artifact changes.
+The two halves parse artifacts with the same regexes, limits, and helpers,
+and `test_assignment.py` and `.github/test/` are byte-identical in both; the
+self-test fails if they drift. Correct a check here, and change
+`02/assignment/_shape_checks.py` too when the edit touches something they share
+or the shape of an artifact.
 
 ## Checking the checks
 
