@@ -835,7 +835,7 @@ Only the first command prints: the import ran the `def` lines and skipped `main(
 | A blank line between lines of text | A new paragraph | Without it, the lines join into one paragraph |
 | `**high**` | **high** | Bold |
 | `_estimated_` | _estimated_ | Italic; `*estimated*` also works |
-| `> Readings are in mmHg.` | An indented quote | Notion's editor starts a quote with `|` and a space |
+| `> Readings are in mmHg.` | An indented quote | Notion's editor starts a quote with `\|` and a space |
 | A line starting with `-` and a space | A bulleted list | Indent four spaces to nest |
 | `1. item` | A numbered list | |
 | A bullet whose text starts `[ ]` or `[x]` | A checklist | GitHub shows checkboxes |

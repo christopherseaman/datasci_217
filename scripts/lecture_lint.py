@@ -97,6 +97,19 @@ def check(path):
         heading = next((l for _, l in lines if l.strip()), "")
         if heading.strip() != meta["title_line"]:
             problems.append(f"{path}: first line is {heading[:40]!r}, not the front matter title_line")
+
+    # The Notion publisher rejects a table whose rows have different cell counts; an unescaped
+    # pipe inside a cell, even in code, adds a cell. Write a literal pipe as \\|.
+    table, previous_number = [], None
+    for number, line in lines + [(None, "")]:
+        if line.startswith("|") and (previous_number is None or number == previous_number + 1):
+            table.append((number, line))
+        else:
+            widths = {len(re.split(r"(?<!\\)\|", row.strip().strip("|"))) for _, row in table}
+            if len(widths) > 1:
+                problems.append(f"{path}:{table[0][0]}: table rows have different cell counts {sorted(widths)}; escape a literal pipe as \\|")
+            table = [(number, line)] if line.startswith("|") else []
+        previous_number = number if line.startswith("|") else None
     return problems
 
 
