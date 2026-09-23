@@ -184,9 +184,9 @@ A **conflict** happens when both branches changed the same lines, so Git cannot 
 ```text
 # Practice notes
 <<<<<<< HEAD
-Experiment: compare median grades.
+Experiment: compare median systolic.
 =======
-Experiment: compare three grade summaries.
+Experiment: compare three systolic summaries.
 >>>>>>> experiment
 ```
 
@@ -239,7 +239,7 @@ Adding a pattern does not untrack files already committed.
 
 ```text
 ?? __pycache__/
-?? analysis_utils.py
+?? vitals_tools.py
 ?? data/
 ?? main.py
 ```
@@ -248,7 +248,7 @@ After a `.gitignore` containing `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
 
 ```text
 ?? .gitignore
-?? analysis_utils.py
+?? vitals_tools.py
 ?? main.py
 ```
 
@@ -289,7 +289,7 @@ data/raw/*.csv
 
 *Data* by xkcd — in Python, everything is an object. In Star Trek, Data is too.
 
-Lecture 01 stored one value per variable and looped over a short list of grades. Health data needs more structure: a patient has a list of blood-pressure readings, a visit record pairs an ID with a date, a study has a set of clinics. Python's containers hold these, f-strings print results people can read, and functions name a job you repeat.
+Lecture 01 stored one value per variable and looped over a short list of numbers. Health data needs more structure: a patient has a list of blood-pressure readings, a visit record pairs an ID with a date, a session has a set of patient IDs. Python's containers hold these, f-strings print results people can read, and functions name a job you repeat.
 
 ## Printing and Basic Input
 
@@ -299,16 +299,16 @@ In Lecture 01, `print("BMI is", bmi)` printed every digit: `BMI is 22.8571428571
 
 | Syntax | Purpose | Example output |
 | --- | --- | --- |
-| `print("Score:", score)` | Print separate values with spaces | `Score: 87.3` |
+| `print("Systolic:", systolic)` | Print separate values with spaces | `Systolic: 128.4` |
 | `print(text, end="")` | Print without adding a newline, useful when `text` already ends with one | Text unchanged |
-| `f"{score}"` | Insert a value into text | `87.3` |
-| `f"{score:.1f}"` | One decimal place | `87.3` |
-| `f"{score:.0f}"` | No decimal places | `87` |
-| `f"{revenue:,.2f}"` | Thousands separator and two decimals | `15,432.50` |
-| `f"{success_rate:.1%}"` | Display a fraction as a percentage | `84.7%` |
+| `f"{systolic}"` | Insert a value into text | `128.4` |
+| `f"{systolic:.1f}"` | One decimal place | `128.4` |
+| `f"{systolic:.0f}"` | No decimal places | `128` |
+| `f"{cost:,.2f}"` | Thousands separator and two decimals | `15,432.50` |
+| `f"{adherence_rate:.1%}"` | Display a fraction as a percentage | `84.7%` |
 | `f"{population:.2e}"` | Scientific notation | `1.40e+09` |
-| `f"{name:<15}"` / `f"{score:>8}"` | Left/right alignment | Padded text |
-| `input("Name: ")` | Read typed input as a string | User's text |
+| `f"{patient_id:<15}"` / `f"{systolic:>8}"` | Left/right alignment | Padded text |
+| `input("Patient ID: ")` | Read typed input as a string | User's text |
 | `int(text)` / `float(text)` | Convert numeric text | A number |
 
 ### Code Snippet: Printing and F-Strings
@@ -316,28 +316,28 @@ In Lecture 01, `print("BMI is", bmi)` printed every digit: `BMI is 22.8571428571
 Choose precision that helps the reader rather than printing every available digit.
 
 ```python
-student_name = "Alice"
-test_score = 87.3
-class_average = 82.1
+patient_id = "P002"
+systolic = 142.0
+clinic_average = 128.4
 
-print(f"Student: {student_name}")                    # Basic variable insertion
-print(f"Score: {test_score:.1f}")                    # One decimal place: 87.3
-print(f"Above average by {test_score - class_average:.1f} points")  # Calculations inside f-strings
+print(f"Patient: {patient_id}")                      # Basic variable insertion
+print(f"Systolic: {systolic:.1f} mmHg")              # One decimal place: 142.0
+print(f"Above average by {systolic - clinic_average:.1f} mmHg")  # Calculations inside f-strings
 ```
 
 ```text
-Student: Alice
-Score: 87.3
-Above average by 5.2 points
+Patient: P002
+Systolic: 142.0 mmHg
+Above average by 13.6 mmHg
 ```
 
 ### Code Snippet: Text In, Number Out
 
 ```python
-raw_score = input("Score: ")       # Typing 87.3 produces the string "87.3"
-score = float(raw_score)           # Convert to the number 87.3
-print(type(score))                 # <class 'float'>
-print(f"Score: {score:.1f}")        # Score: 87.3
+raw_temp = input("Temperature: ")      # Typing 38.4 produces the string "38.4"
+temperature = float(raw_temp)          # Convert to the number 38.4
+print(type(temperature))               # <class 'float'>
+print(f"Temp: {temperature:.1f} °C")   # Temp: 38.4 °C
 ```
 
 ## Data Structures: Lists and Tuples
@@ -346,11 +346,11 @@ Lists are **mutable**: their contents can change. Tuples are **immutable**: thei
 
 | Position | First | Second | Third | Fourth |
 | --- | --- | --- | --- | --- |
-| Value | 85 | 92 | 78 | 96 |
+| Value | 128 | 142 | 118 | 136 |
 | Index | 0 | 1 | 2 | 3 |
 | Negative index | -4 | -3 | -2 | -1 |
 
-For this list, `[1:3]` selects `[92, 78]`: start included, stop excluded.
+For this list, `[1:3]` selects `[142, 118]`: start included, stop excluded.
 
 ### Reference Card: Data Structures: Lists and Tuples
 
@@ -367,21 +367,21 @@ For this list, `[1:3]` selects `[92, 78]`: start included, stop excluded.
 
 ### Reference Card: Summarize a Collection
 
-For `grades = [85, 92, 78]`:
+For `readings = [128, 142, 118]`:
 
-- `sum(grades)`: Total, `255`.
-- `len(grades)`: Number of items, `3`.
-- `min(grades)` / `max(grades)`: Smallest/largest value, `78` / `92`.
-- `sorted(grades)`: New ordered list, `[78, 85, 92]`; leaves `grades` unchanged.
+- `sum(readings)`: Total, `388`.
+- `len(readings)`: Number of items, `3`.
+- `min(readings)` / `max(readings)`: Smallest/largest value, `118` / `142`.
+- `sorted(readings)`: New ordered list, `[118, 128, 142]`; leaves `readings` unchanged.
 
 ### Code Snippet: Data Structures: Lists and Tuples
 
 ```python
-grades = [85, 92, 78, 96]
-print(grades[0], grades[-1])   # 85 96
-print(grades[1:3])             # [92, 78]
-grades.append(88)
-print(grades)                  # [85, 92, 78, 96, 88]
+readings = [128, 142, 118, 136]
+print(readings[0], readings[-1])   # 128 136
+print(readings[1:3])               # [142, 118]
+readings.append(124)
+print(readings)                    # [128, 142, 118, 136, 124]
 
 visit = ("P001", "2026-09-18")  # a fixed record: patient ID and visit date
 patient_id, visit_date = visit  # unpacking
@@ -390,12 +390,12 @@ print(patient_id)               # P001
 
 ## Data Structures: Dictionaries and Sets
 
-A **dictionary** stores each value under a key, like `student["grade"]`. A **set** keeps only distinct values.
+A **dictionary** stores each value under a key, like `encounter["systolic"]`. A **set** keeps only distinct values.
 
 ```text
-Dictionary: "name"  → "Alice"     lookup by key
-            "grade" → 85
-Set:        {"Math", "Science"}   distinct values, no duplicates
+Dictionary: "patient_id" → "P001"   lookup by key
+            "systolic"   → 128
+Set:        {"P001", "P004"}        distinct values, no duplicates
 ```
 
 ### Reference Card: Data Structures: Dictionaries and Sets
@@ -413,13 +413,13 @@ Set:        {"Math", "Science"}   distinct values, no duplicates
 ### Code Snippet: Data Structures: Dictionaries and Sets
 
 ```python
-student = {"name": "Alice", "grade": 85}
-print(student["name"])                # Alice
-print(student.get("gpa", "missing"))  # missing
+encounter = {"patient_id": "P001", "systolic": 128}
+print(encounter["patient_id"])                   # P001
+print(encounter.get("follow_up", "none"))        # none
 
-math_students = {"Alice", "Bob", "Charlie"}
-cs_students = {"Alice", "Diana", "Eve"}
-print(math_students & cs_students)    # {'Alice'}
+morning_session = {"P001", "P002", "P003"}
+flagged = {"P001", "P004", "P005"}
+print(morning_session & flagged)                 # {'P001'}
 ```
 
 A set has no order, so wrap a larger result in `sorted()` for a stable display.
@@ -478,9 +478,9 @@ import math
 import statistics as stats
 from math import pi
 
-print(math.sqrt(16))              # 4.0
-print(stats.mean([85, 92, 78]))   # 85
-print(pi)                         # 3.141592653589793
+print(math.sqrt(16))                   # 4.0
+print(stats.mean([128, 142, 120]))     # 130
+print(pi)                              # 3.141592653589793
 ```
 
 In a terminal, `-c` runs Python code given as a string, handy for a quick check:
@@ -491,24 +491,24 @@ python3 -c "import statistics; print(statistics.mean([1, 2, 3]))"   # 2
 
 ### Code Snippet: Import Your Own Module
 
-Any `.py` file is a module. Save a helper in `student_tools.py`:
+Any `.py` file is a module. Save a helper in `vitals_tools.py`:
 
 ```python
-# student_tools.py
-def calculate_average(grades):
-    return sum(grades) / len(grades)
+# vitals_tools.py
+def highest_reading(readings):
+    return max(readings)
 ```
 
 Import it from another script in the same folder:
 
 ```python
 # report.py
-from student_tools import calculate_average
+from vitals_tools import highest_reading
 
-print(calculate_average([85, 92, 78]))  # 85.0
+print(highest_reading([128, 142, 118]))  # 142
 ```
 
-Run `python3 report.py` from that folder. Python finds `student_tools.py` because it sits beside the script, and the module name is the filename without `.py`. That first import also creates the `__pycache__/` folder your `.gitignore` keeps out of Git.
+Run `python3 report.py` from that folder. Python finds `vitals_tools.py` because it sits beside the script, and the module name is the filename without `.py`. That first import also creates the `__pycache__/` folder your `.gitignore` keeps out of Git.
 
 # LIVE DEMO!
 
@@ -530,22 +530,22 @@ Data often arrives as one line of text per record, such as a row of a CSV file. 
 ### Code Snippet: Split a CSV Row
 
 ```python
-line = "Alice,22,85,Math"
+line = "P001,2026-09-18,128,82"
 fields = line.split(",")
-print(fields)                          # ['Alice', '22', '85', 'Math']
-name, age, grade, subject = fields     # unpack the four fields
-print(name, int(grade) + 5)            # Alice 90
-print("grades.csv".endswith(".csv"))   # True
+print(fields)                                         # ['P001', '2026-09-18', '128', '82']
+patient_id, visit_date, systolic, diastolic = fields  # unpack the four fields
+print(patient_id, int(systolic) - int(diastolic))     # P001 46
+print("clinic_vitals.csv".endswith(".csv"))           # True
 ```
 
 The fields are still text; convert with `int()` before doing arithmetic.
 
 ## Basic File I/O Operations
 
-File **I/O** means input/output: read saved text into Python, or write results for later. `open()` returns a **file handle**, Python's connection to the file, and a `with` block closes it for you. Mode `"w"` replaces the whole file, so check the name first. Build that filename with **`Path`**, the path type in the standard library's `pathlib` module: `Path("output") / "grades.txt"` joins the parts with `/` instead of gluing strings and separators together, and `.mkdir(exist_ok=True)` creates a folder that may already exist. A `Path` works anywhere a filename string does, `open()` included, so these are one system and not two rival ones.
+File **I/O** means input/output: read saved text into Python, or write results for later. `open()` returns a **file handle**, Python's connection to the file, and a `with` block closes it for you. Mode `"w"` replaces the whole file, so check the name first. Build that filename with **`Path`**, the path type in the standard library's `pathlib` module: `Path("output") / "vitals.txt"` joins the parts with `/` instead of gluing strings and separators together, and `.mkdir(exist_ok=True)` creates a folder that may already exist. A `Path` works anywhere a filename string does, `open()` included, so these are one system and not two rival ones.
 
 ```text
-Python text → write → output/grades.txt → read → saved text
+Python text → write → output/vitals.txt → read → saved text
      └──────────────── compare with == ───────────────┘
 ```
 
@@ -555,35 +555,35 @@ Python text → write → output/grades.txt → read → saved text
 | --- | --- | --- | --- |
 | Open | `with open(path, mode, encoding="utf-8") as file:` | Connect to a file and close the handle when the block ends. | File handle |
 | Open | Modes `"r"`, `"w"`, `"a"`, `"x"` | Read (the default); replace the file; add to its end; create, failing if it exists. | — |
-| Read | `file.read()` | The whole file as one string. | `'Alice: 95\nBob: 87\n'` |
-| Read | `file.readlines()` | One list item per line, newlines kept. | `['Alice: 95\n', 'Bob: 87\n']` |
+| Read | `file.read()` | The whole file as one string. | `'P001: 128 mmHg\nP002: 142 mmHg\n'` |
+| Read | `file.readlines()` | One list item per line, newlines kept. | `['P001: 128 mmHg\n', 'P002: 142 mmHg\n']` |
 | Write | `file.write(text)` | Write one string; you supply the `\n`. | Characters written |
 | Write | `print(text, file=file)` | Write one line, newline included. | — |
 | Path | `from pathlib import Path` | Load the path type; once per file. | — |
-| Path | `Path("output") / "grades.txt"` | Join path parts with `/`; either side may be a string. | `PosixPath('output/grades.txt')` |
+| Path | `Path("output") / "vitals.txt"` | Join path parts with `/`; either side may be a string. | `PosixPath('output/vitals.txt')` |
 | Path | `path.mkdir(exist_ok=True)` | Create the folder; `exist_ok=True` accepts one already there, `parents=True` also makes missing parent folders. | — |
 | Path | `path.open(mode, encoding="utf-8")` | Open this path; the same modes as `open()`. | File handle |
 | Path | `path.exists()` | Whether the file or folder is already there. | `True` / `False` |
-| Path | `path.read_text(encoding="utf-8")` / `path.write_text(text, encoding="utf-8")` | Read or replace a whole small file in one call, with no `with` block. | `'Alice: 95\n'` / characters written |
+| Path | `path.read_text(encoding="utf-8")` / `path.write_text(text, encoding="utf-8")` | Read or replace a whole small file in one call, with no `with` block. | `'P001: 128 mmHg\n'` / characters written |
 
 ### Code Snippet: Build a Path, Write, Read Back, Append
 
 ```python
 from pathlib import Path
 
-results = ["Alice: 95", "Bob: 87", "Charlie: 92"]
+results = ["P001: 128 mmHg", "P002: 142 mmHg", "P003: 118 mmHg"]
 
 output_dir = Path("output")
 output_dir.mkdir(exist_ok=True)      # no error when output/ already exists
-grades_path = output_dir / "grades.txt"   # output/grades.txt
+vitals_path = output_dir / "vitals.txt"   # output/vitals.txt
 
 # Write: "w" creates the file, or replaces it if it exists
-with open(grades_path, "w", encoding="utf-8") as file:
+with open(vitals_path, "w", encoding="utf-8") as file:
     for result in results:
         file.write(f"{result}\n")
 
 # Read back and compare; path.open(...) is open(path, ...) started from the path
-with grades_path.open("r", encoding="utf-8") as file:
+with vitals_path.open("r", encoding="utf-8") as file:
     saved_text = file.read()
 print(saved_text, end="")
 print("Saved text matches:", saved_text == "\n".join(results) + "\n")
@@ -594,19 +594,19 @@ with open("log.txt", "a", encoding="utf-8") as file:
 ```
 
 ```text
-Alice: 95
-Bob: 87
-Charlie: 92
+P001: 128 mmHg
+P002: 142 mmHg
+P003: 118 mmHg
 Saved text matches: True
 ```
 
 ## Minimal Exception Handling
 
-In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback, and real data does have `"not available"` sitting in a numeric column. An **exception** is Python's report of such a problem; `try`/`except` lets your script respond instead of stopping. Catch only the exception you expect, so real bugs still show up.
+In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback, and real data does have `"not recorded"` sitting in a numeric column. An **exception** is Python's report of such a problem; `try`/`except` lets your script respond instead of stopping. Catch only the exception you expect, so real bugs still show up.
 
 ### Reference Card: Exceptions You Will Meet
 
-- `ValueError`: Right type, unusable value, such as `float("not available")`.
+- `ValueError`: Right type, unusable value, such as `int("not recorded")`.
 - `FileNotFoundError`: `open()` on a path that does not exist; one kind of `OSError`, the family of file-system failures.
 - `try:` / `except ValueError as error:`: Run the risky line; on that error only, run the handler with the message in `error`.
 - `else:`: Runs only when the `try` block succeeded.
@@ -615,18 +615,18 @@ In Lecture 01, `int("hello")` stopped the script with a `ValueError` traceback, 
 ### Code Snippet: Handle Invalid Numeric Text
 
 ```python
-raw_score = "not available"
+raw_systolic = "not recorded"
 
 try:
-    score = float(raw_score)
+    systolic = int(raw_systolic)
 except ValueError as error:
-    print(f"Could not parse score: {error}")
+    print(f"Could not read systolic: {error}")
 else:
-    print(f"Parsed score: {score:.1f}")
+    print(f"Systolic: {systolic} mmHg")
 ```
 
 ```text
-Could not parse score: could not convert string to float: 'not available'
+Could not read systolic: invalid literal for int() with base 10: 'not recorded'
 ```
 
 Some failures are not errors to catch but expectations to state. `assert condition, message` is how a script or notebook says “this is what I expect to be true here”: a true condition does nothing and the next line runs, while a false one stops the script with an `AssertionError` whose last line is your message. Later demos use `assert` as a visible checkpoint after each step, so silence means the step did what it claimed.
@@ -634,11 +634,11 @@ Some failures are not errors to catch but expectations to state. `assert conditi
 ### Code Snippet: State What You Expect
 
 ```python
-scores = [85, 92, 78]
-assert len(scores) == 3, "expected three scores"   # true: nothing happens, the script goes on
-print(f"Checked {len(scores)} scores")             # Checked 3 scores
-assert min(scores) >= 80, f"a score is below 80: {min(scores)}"
-# AssertionError: a score is below 80: 78
+readings = [128, 142, 118]
+assert len(readings) == 3, "expected three readings"   # true: nothing happens, the script goes on
+print(f"Checked {len(readings)} readings")             # Checked 3 readings
+assert max(readings) <= 140, f"a reading is above 140: {max(readings)}"
+# AssertionError: a reading is above 140: 142
 ```
 
 ## Break(points) the Ice
@@ -659,15 +659,15 @@ Python sets a file's special `__name__` variable to `"__main__"` when it runs di
 
 ```python
 def main():
-    grades = [85, 92, 78, 96, 88]
-    average = sum(grades) / len(grades)
-    print(f"Average grade: {average:.1f}")
+    readings = [128, 142, 118, 136, 124]
+    average = sum(readings) / len(readings)
+    print(f"Average systolic: {average:.1f} mmHg")
 
 if __name__ == "__main__":
     main()
 ```
 
-Saved as `analysis.py`, `python3 analysis.py` prints `Average grade: 87.8`, while `python3 -c "import analysis"` prints nothing: importing ran the `def` but skipped `main()`.
+Saved as `analysis.py`, `python3 analysis.py` prints `Average systolic: 129.6 mmHg`, while `python3 -c "import analysis"` prints nothing: importing ran the `def` but skipped `main()`.
 
 ## Document How to Run It
 
@@ -688,16 +688,16 @@ Every repository needs a note saying what it is and how to run it. On GitHub tha
 ### Code Snippet: Markdown Documentation
 
 ```markdown
-# Data Analysis Report
+# Clinic Vitals Report
 
 ## Overview
-Analyzes study time vs. performance.
+Summarizes systolic readings from one clinic session.
 
 ## Run
 Run `python3 analysis.py` from this folder.
 
 ## Key Findings
-- More hours → higher grades
+- 2 of 5 readings at or above 130 mmHg
 ```
 
 # LIVE DEMO!
