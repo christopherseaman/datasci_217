@@ -37,6 +37,7 @@ import argparse
 import csv
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 import re
 import shutil
@@ -73,6 +74,36 @@ def trusted_checks_dir(number: str) -> Path:
     if (course_owned / "check_assignment.py").is_file():
         return course_owned
     return REPO / number / "assignment"
+
+
+def course_repo_warnings(repo: Path = REPO) -> list[str]:
+    """Why this repository's checks may differ from the ones students' GitHub runs download from main."""
+    warnings = []
+    try:
+        branch = git("rev-parse", "--abbrev-ref", "HEAD", cwd=repo)
+        if branch != "main":
+            warnings.append(f"this repository is on {branch}, not main; students' GitHub runs use main's checks.")
+        remote = git("ls-remote", "origin", "refs/heads/main", cwd=repo).split()
+    except SubmissionError as error:
+        return warnings + [f"could not compare with GitHub ({error}); grading with this repository's checks."]
+    if not remote or remote[0] == git("rev-parse", "HEAD", cwd=repo):
+        return warnings
+    ahead = subprocess.run(["git", "merge-base", "--is-ancestor", remote[0], "HEAD"], cwd=repo,
+                           env=GIT_ENVIRONMENT, capture_output=True, check=False).returncode == 0
+    if ahead:
+        count = git("rev-list", "--count", f"{remote[0]}..HEAD", cwd=repo)
+        warnings.append(f"{count} local commit(s) are not on GitHub's main yet; students' runs do not have them.")
+    else:
+        warnings.append("GitHub's main has commits this repository lacks; run git pull to grade with the latest checks.")
+    return warnings
+
+
+def local_time(iso: str) -> str:
+    """A commit date in the TA's own time zone, to the minute."""
+    try:
+        return datetime.fromisoformat(iso).astimezone().strftime("%Y-%m-%d %H:%M")
+    except ValueError:
+        return iso
 
 
 def checks_version(checks: Path) -> str:
@@ -282,13 +313,16 @@ def main(argv: list[str] | None = None) -> int:
     else:
         forks = list_forks(assignment["repository"], github_token())
         print(f"{len(forks)} forks of {assignment['repository']}")
+    for warning in course_repo_warnings():
+        print(f"Warning: {warning}")
     print(f"Checks: {checks.relative_to(REPO)} at {version}  Clones: {destination}")
 
     errors = 0
     for fork in forks:
         row = write_grades(grade_fork(fork, checks, destination, version), grades)
         if row["status"] == "graded":
-            print(f"{row['github_user']:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}")
+            print(f"{row['github_user']:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "
+                  f"{local_time(row['commit_date'])}")
         else:
             errors += 1
             print(f"{row['github_user']:<24} ERROR  {row['details']}")

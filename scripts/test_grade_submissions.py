@@ -547,6 +547,29 @@ def test_grades_file(work: Path) -> None:
     assert grades.read_bytes() == before
 
 
+def test_course_repo_warnings(work: Path) -> None:
+    """The script says when its checks may not be the ones on GitHub's main."""
+    def git(*arguments, cwd):
+        run(["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *arguments], cwd)
+    remote, local = work / "course-remote.git", work / "course-local"
+    run(["git", "init", "--quiet", "--bare", "--initial-branch=main", str(remote)], work)
+    run(["git", "clone", "--quiet", str(remote), str(local)], work)
+    git("commit", "--quiet", "--allow-empty", "-m", "one", cwd=local)
+    git("push", "--quiet", "origin", "main", cwd=local)
+    assert grade_submissions.course_repo_warnings(local) == []
+    git("commit", "--quiet", "--allow-empty", "-m", "two", cwd=local)
+    assert "1 local commit(s) are not on GitHub's main" in grade_submissions.course_repo_warnings(local)[0]
+    git("push", "--quiet", "origin", "main", cwd=local)
+    git("reset", "--quiet", "--hard", "HEAD~1", cwd=local)
+    assert "run git pull" in grade_submissions.course_repo_warnings(local)[0]
+    git("pull", "--quiet", "origin", "main", cwd=local)
+    git("switch", "--quiet", "-c", "draft", cwd=local)
+    assert "on draft, not main" in grade_submissions.course_repo_warnings(local)[0]
+    git("remote", "set-url", "origin", str(work / "nowhere.git"), cwd=local)
+    assert "could not compare with GitHub" in grade_submissions.course_repo_warnings(local)[-1]
+    assert grade_submissions.local_time("not a date") == "not a date"
+
+
 def main() -> None:
     assert sys.version_info[:2] == (3, 13), (
         f"The checks pin Python 3.13 and exact dependency versions; this is {sys.version.split()[0]}. "
@@ -559,6 +582,7 @@ def main() -> None:
         test_github_names_offline(work)
         test_checker_failures(work)
         test_grades_file(work)
+        test_course_repo_warnings(work)
         test_every_assignment_through_the_script(work)
     print("grade_submissions: Assignment 01 completed as written scores 100/100 from 01/assignment_checks and "
           "from its own local run; partial, untouched, forged, plausible-but-wrong, running-total, other-Python "
