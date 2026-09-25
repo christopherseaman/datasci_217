@@ -36,7 +36,9 @@ IDENTITY_HASH = re.compile(r"[0-9a-f]{64}")
 
 ROSTER_HASHES = frozenset(
     {
-        "e9645171577dbd0d10eaee45d71a3ee4a392b3eaf8c582fa8c16909e2120e5d5",  # new.student, added after handout
+        "e9645171577dbd0d10eaee45d71a3ee4a392b3eaf8c582fa8c16909e2120e5d5",
+        "cc1ab2723b2d220cb650406e0344706bebd86e12507507618e5673e8a4d436ad",
+        "76204d1fff5c01c977cd22aa29e19b6136600c8ab9943df99b7214c80ba88762",
         "919b5177debfaa9db39d1cfa54eb38770be99c312cd76a048dc7e9bdfc344513",
         "07f66adfe2a38fb3a84a2ab2f55d40bdb5cabd85355ecb9f65290385c5cc76b8",
         "1021e732596c04d56e2aa68709e701bb7ea4136bd24c536a3c51997882dd43f2",
@@ -101,7 +103,9 @@ Next checkpoint: 5
 # The first line records whichever Python ran readiness.py and is never graded; every other line is.
 GRADED_LINES = tuple(EXPECTED_READINESS.splitlines()[1:])
 # The script that prints each graded line, in report order: Tasks 1.2, 2.2, and 3.1.
-LINE_SOURCES = ("readiness.py",) * 2 + ("measurement_summary.py",) * 8 + ("debug_report.py",) * 3
+LINE_SOURCES = (
+    ("readiness.py",) * 2 + ("measurement_summary.py",) * 8 + ("debug_report.py",) * 3
+)
 
 
 @dataclass(frozen=True)
@@ -126,7 +130,10 @@ def _read_text(path: Path, missing_message: str, encoding_message: str) -> str:
 
 def _output_dir(root: Path) -> None:
     output = root / OUTPUT_DIR
-    _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
+    _assert(
+        output.is_dir() and not output.is_symlink(),
+        "Create a regular output/ directory.",
+    )
 
 
 def _readiness_report(root: Path) -> str:
@@ -159,8 +166,12 @@ def _unmatched_lines(report: str) -> dict[int, str | None]:
     """
     yours = [" ".join(line.split()) for line in report.split("\n")]
     yours = [line for line in yours if line]
-    matcher = difflib.SequenceMatcher(None, [_without_whitespace(line) for line in GRADED_LINES],
-                                      [_without_whitespace(line) for line in yours], autojunk=False)
+    matcher = difflib.SequenceMatcher(
+        None,
+        [_without_whitespace(line) for line in GRADED_LINES],
+        [_without_whitespace(line) for line in yours],
+        autojunk=False,
+    )
     unmatched: dict[int, str | None] = {}
     for tag, first, last, your_first, your_last in matcher.get_opcodes():
         if tag == "equal":
@@ -206,6 +217,7 @@ def practice_file_check(name: str) -> Callable[[Path], None]:
             (practice / name).is_file() and not (practice / name).is_symlink(),
             f"terminal-practice/{name} must be a regular file; create it with the Task 1.1 commands.",
         )
+
     return check
 
 
@@ -217,9 +229,14 @@ def report_line_check(index: int) -> Callable[[Path], None]:
         unmatched = _unmatched_lines(_readiness_report(root))
         if index in unmatched:
             yours = unmatched[index]
-            _assert(yours is not None,
-                    f"output/readiness.txt is missing the line `{expected}`, or has it out of order. {fix}")
-            raise AssertionError(f"The line should read `{expected}`; yours reads `{yours}`. {fix}")
+            _assert(
+                yours is not None,
+                f"output/readiness.txt is missing the line `{expected}`, or has it out of order. {fix}",
+            )
+            raise AssertionError(
+                f"The line should read `{expected}`; yours reads `{yours}`. {fix}"
+            )
+
     return check
 
 
@@ -245,8 +262,14 @@ def _line_names() -> list[str]:
 
 
 CHECKS = (
-    *(Check(f"terminal-practice/{name}", practice_file_check(name)) for name in PRACTICE_FILES),
-    *(Check(name, report_line_check(index)) for index, name in enumerate(_line_names())),
+    *(
+        Check(f"terminal-practice/{name}", practice_file_check(name))
+        for name in PRACTICE_FILES
+    ),
+    *(
+        Check(name, report_line_check(index))
+        for index, name in enumerate(_line_names())
+    ),
     Check("identity hash on the roster", check_identity),
 )
 
