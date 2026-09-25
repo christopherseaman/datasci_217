@@ -45,7 +45,7 @@ Pin the course interpreter, create the project environment, activate it, and ins
 
 ```bash
 uv python pin 3.13
-uv venv --python 3.13 .venv
+uv venv --seed --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 ```

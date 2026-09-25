@@ -47,7 +47,7 @@ uv is a command-line tool that creates environments and installs packages into t
 | Task | Command | Result |
 | :--- | :--- | :--- |
 | Pin Python | `uv python pin 3.13` | Writes `.python-version` containing `3.13`; later `uv venv` commands in this folder use it. |
-| Create environment | `uv venv --python 3.13 .venv` | Creates the project environment. |
+| Create environment | `uv venv --seed --python 3.13 .venv` | Creates the project environment; `--seed` adds pip, which notebooks' `%pip` needs in Lecture 04. |
 | Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt shows `(.venv)`; `python` now runs the environment's interpreter. |
 | Install requirements | `uv pip install -r requirements.txt` | Installs the packages the file lists. |
 | Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | Confirms Python and NumPy versions. |
@@ -58,7 +58,7 @@ uv is a command-line tool that creates environments and installs packages into t
 ```bash
 uv --version
 uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
-uv venv --python 3.13 .venv
+uv venv --seed --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 python --version                                        # Python 3.13.14
@@ -100,7 +100,7 @@ numpy==2.3.3
 
 `==` pins an exact version. Write this file by hand so it lists only the direct dependencies you chose; [the bonus page](BONUS.md) covers the packages those depend on in turn and how to record every installed version.
 
-Lecture 04 installs this same file from inside a notebook with `%pip install -r requirements.txt`.
+Lecture 04's notebooks use this same environment, so the same `uv pip install -r requirements.txt` in the terminal sets them up.
 
 ### Environment and activation
 
@@ -148,7 +148,7 @@ Keep `requirements.txt` and `.python-version` in Git, not `.venv/`. Recreate the
 mkdir recreation-check
 cp .python-version requirements.txt recreation-check/
 cd recreation-check
-uv venv .venv
+uv venv --seed .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 python -c "import numpy as np; print(np.__version__)"   # 2.3.3

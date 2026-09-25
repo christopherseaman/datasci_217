@@ -17,7 +17,7 @@ Lecture 03 uses CPython 3.13 and NumPy 2.3.3. From the demo folder, with `uv`:
 
 ```bash
 uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
-uv venv --python 3.13 .venv
+uv venv --seed --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt                      # + numpy==2.3.3
 python --version                                        # Python 3.13.x
@@ -35,7 +35,7 @@ The last line prints the interpreter that `python` now runs, and it should sit i
 mkdir -p scratch/recreation-check
 cp .python-version requirements.txt scratch/recreation-check/
 cd scratch/recreation-check
-uv venv .venv                                           # Using CPython 3.13.x
+uv venv --seed .venv                                    # Using CPython 3.13.x
 source .venv/bin/activate
 uv pip install -r requirements.txt                      # + numpy==2.3.3
 python -c "import numpy as np; print(np.__version__)"   # 2.3.3
