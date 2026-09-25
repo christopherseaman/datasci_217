@@ -286,7 +286,7 @@ From the course repository:
 
 ```bash
 cd 11/demo
-uv venv --python 3.13 .venv
+uv venv --seed --python 3.13 .venv
 source .venv/bin/activate
 python --version  # should report Python 3.13
 uv pip install -r requirements.txt

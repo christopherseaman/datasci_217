@@ -1,4 +1,4 @@
-specimen_id,collector_id,collection_number,station_code,material,mass_g
-SP105,C04,1,R,soil,11.5
-SP106,C05,1,X,air,4.0
-SP107,C06,1,S,water,7.5
+specimen_id,patient_id,collection_number,clinic_id,specimen_type,volume_ml
+SP105,P204,1,K01,blood,6.0
+SP106,P205,1,K09,swab,3.0
+SP107,P206,1,K02,urine,40.0

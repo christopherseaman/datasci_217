@@ -1,0 +1,13 @@
+patient_id,program,sessions_attended,walk_distance_m
+R01,Home-based,14,371
+R02,Center-based,20,402
+R03,Home-based,32,431
+R04,Center-based,11,360
+R05,Center-based,28,436
+R06,Home-based,10,352
+R07,Home-based,21,398
+R08,Center-based,34,458
+R09,Home-based,16,380
+R10,Center-based,15,384
+R11,Home-based,27,415
+R12,Center-based,22,413

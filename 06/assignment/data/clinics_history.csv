@@ -1,0 +1,6 @@
+clinic_id,clinic_name,region,record_status
+K01,Bayview Annex,southeast,retired
+K01,Bayview Clinic,southeast,current
+K02,Castro Clinic,central,current
+K03,Richmond Clinic,west,current
+K04,Excelsior Clinic,south,current

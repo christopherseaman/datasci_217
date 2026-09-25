@@ -1,0 +1,16 @@
+visit_id,clinic,patient_id,visit_type,wait_min,satisfaction
+V001,Mission,P101,New,18,4
+V002,Mission,P102,Follow-up,12,5
+V003,Mission,P101,Follow-up,9,
+V004,Mission,P103,Telehealth,5,4
+V005,Mission,P104,New,26,3
+V006,Mission,P102,Follow-up,16,4
+V007,Sunset,P105,New,32,3
+V008,Sunset,P106,Follow-up,21,
+V009,Sunset,P105,Follow-up,17,4
+V010,Sunset,P107,New,41,2
+V011,Sunset,P106,Follow-up,15,
+V012,Bayview,P108,Telehealth,6,5
+V013,Bayview,P109,New,28,3
+V014,Bayview,P110,Follow-up,13,4
+V015,Bayview,P108,Telehealth,8,5

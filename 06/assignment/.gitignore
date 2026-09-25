@@ -3,4 +3,3 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-result.json

@@ -1,0 +1,2 @@
+# Keep the supplied data byte for byte on every OS, so its sha256 matches data/fixture.json.
+data/people_raw.csv -text

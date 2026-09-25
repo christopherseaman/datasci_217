@@ -1,0 +1,9 @@
+program,visit_number,patients_seen,goal_met_pct
+Home-based,1,48,58
+Home-based,2,46,63
+Home-based,3,45,67
+Home-based,4,44,70
+Center-based,1,52,57
+Center-based,2,50,65
+Center-based,3,49,72
+Center-based,4,47,79

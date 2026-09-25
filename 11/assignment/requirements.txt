@@ -2,5 +2,6 @@ numpy==2.3.3
 pandas==3.0.5
 scikit-learn==1.9.0
 matplotlib==3.11.1
+ipykernel==6.29.5
 jupyterlab==4.4.10
 jupytext==1.18.1

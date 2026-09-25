@@ -63,6 +63,7 @@ git clone --quiet "$URL" "$WORK/repo" 2>/dev/null || { echo "cannot clone $URL (
 # Mirror the folder into the checkout, keeping .git and dropping build clutter.
 rsync -a --delete --exclude '.git/' \
       --exclude '__pycache__/' --exclude '.pytest_cache/' --exclude '.ruff_cache/' \
+      --exclude '_grader_selftest/' \
       "$SOURCE/" "$WORK/repo/"
 find "$WORK/repo" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
