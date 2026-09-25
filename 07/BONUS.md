@@ -74,10 +74,10 @@ plt.show()
 
 ### Reference Card: rcParams Basics
 
-- `plt.rcParams` - Access all configuration parameters
-- `plt.rc('font', size=12)` - Set font size
-- `plt.rc('figure', figsize=(8, 6))` - Set default figure size
-- `plt.rcdefaults()` - Reset to defaults
+- `plt.rcParams`: Access all configuration parameters
+- `plt.rc('font', size=12)`: Set font size
+- `plt.rc('figure', figsize=(8, 6))`: Set default figure size
+- `plt.rcdefaults()`: Reset to defaults
 
 ### Code Snippet: Apply Custom rcParams
 
@@ -804,12 +804,12 @@ def calculate_plot_quality(fig):
 
 ## Tufte's Books and Essays
 
-- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi) - Tufte's seminal work
-- [Envisioning Information](https://www.edwardtufte.com/book/envisioning-information/) - Color, layering, and detail
-- [Tufte's website](https://www.edwardtufte.com/) - Essays and resources
+- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi): Tufte's seminal work
+- [Envisioning Information](https://www.edwardtufte.com/book/envisioning-information/): Color, layering, and detail
+- [Tufte's website](https://www.edwardtufte.com/): Essays and resources
 
 ## Color Tools
 
-- [ColorBrewer 2.0](https://colorbrewer2.org/) - Interactive color advice for maps and visualizations
-- [Colorblind-Safe Palettes](https://sronpersonalpages.nl/~pault/) - Paul Tol's color schemes
-- [Adobe Color](https://color.adobe.com/) - Create and explore color schemes
+- [ColorBrewer 2.0](https://colorbrewer2.org/): Interactive color advice for maps and visualizations
+- [Colorblind-Safe Palettes](https://sronpersonalpages.nl/~pault/): Paul Tol's color schemes
+- [Adobe Color](https://color.adobe.com/): Create and explore color schemes

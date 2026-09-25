@@ -11,22 +11,11 @@ notion:
 
 _These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques._
 
-See [README.md](README.md) for core data wrangling operations - master those first!
-
-# Advanced Topics Covered
-
-1. **Advanced MultiIndex Operations** - Deep dive into hierarchical indexing with swaplevel(), level-specific sorting, and summary statistics by level
-2. **Merging on Index** - Join DataFrames using index values instead of columns, including the `DataFrame.join()` shorthand
-3. **Advanced concat Options** - Using keys, levels, names, and verify_integrity for complex concatenations
-4. **MultiIndex Creation Methods** - Programmatically build hierarchical indexes with from_tuples(), from_product(), from_arrays()
-5. **Stack/Unstack with dropna Parameter** - Control how missing data is handled during reshaping
-6. **Hierarchical Columns from Pivot** - Create and work with MultiIndex in column headers
-7. **Repeated Pairs and pivot_table()** - A first look at the call that reshapes when `pivot()` refuses
-
+See [README.md](README.md) for the core data wrangling operations; master those first!
 
 # 1. Advanced MultiIndex Operations
 
-_You've seen basic MultiIndex - now let's go deeper. MultiIndex becomes essential when working with hierarchical data like time series with multiple metrics, or nested business hierarchies._
+_You've seen basic MultiIndex; now let's go deeper. MultiIndex becomes essential when working with hierarchical data like time series with multiple metrics, or nested business hierarchies._
 
 ## Swapping and Reordering Index Levels
 
@@ -34,11 +23,11 @@ When you have multiple index levels, you may need to change their order for diff
 
 ### Reference Card: Swapping and reordering index levels
 
-- `df.index.names = ['level1', 'level2']` - Name the levels; the labels themselves stay the same
-- `df.swaplevel(0, 1)` - Exchange two index levels by position
-- `df.swaplevel('level1', 'level2')` - Exchange by name
-- `df.sort_index(level=0)` - Sort by specific level
-- `df.sort_index(level='level_name')` - Sort by named level
+- `df.index.names = ['level1', 'level2']`: Name the levels; the labels themselves stay the same
+- `df.swaplevel(0, 1)`: Exchange two index levels by position
+- `df.swaplevel('level1', 'level2')`: Exchange by name
+- `df.sort_index(level=0)`: Sort by specific level
+- `df.sort_index(level='level_name')`: Sort by named level
 - Combine swaplevel() + sort_index() for reordering
 
 ### Code Snippet: Swap and sort index levels
@@ -62,7 +51,7 @@ print(data)
 # East   Q1             6      7       8
 #        Q2             9     10      11
 
-# Swap levels - Quarter becomes outer, Region becomes inner
+# Swap levels: Quarter becomes outer, Region becomes inner
 swapped = data.swaplevel('Region', 'Quarter')
 print(swapped)
 #                 Revenue  Costs  Profit
@@ -101,9 +90,9 @@ Aggregate data at specific levels of a MultiIndex without flattening the entire 
 
 ### Reference Card: Summary statistics by level
 
-- `df.groupby(level='level_name').sum()` - Aggregate by named level
-- `df.groupby(level=0).mean()` - Aggregate by level position
-- `df.groupby(level=['level1', 'level2']).agg(['sum', 'mean'])` - Multiple levels and functions
+- `df.groupby(level='level_name').sum()`: Aggregate by named level
+- `df.groupby(level=0).mean()`: Aggregate by level position
+- `df.groupby(level=['level1', 'level2']).agg(['sum', 'mean'])`: Multiple levels and functions
 - Works with any aggregation function (sum, mean, count, std, etc.)
 
 ### Code Snippet: Aggregate by level
@@ -133,7 +122,7 @@ print(quarterly_avg)
 # Q1           3.0    4.0     5.0
 # Q2           6.0    7.0     8.0
 
-# Both axes - sum columns by level too (if you had MultiIndex columns)
+# Columns can have levels too: sum across states for each color
 frame = pd.DataFrame(
     np.arange(12).reshape((3, 4)),
     index=['a', 'b', 'c'],
@@ -166,7 +155,7 @@ print(by_color)
 
 # 2. Merging on Index
 
-_Sometimes your "key" isn't a column - it's the index itself. This is common with time series or when you've already structured data with meaningful indexes._
+_Sometimes your "key" isn't a column; it's the index itself. This is common with time series or when you've already structured data with meaningful indexes._
 
 Instead of merging on columns, you can merge using the index of one or both DataFrames.
 
@@ -174,10 +163,10 @@ Instead of merging on columns, you can merge using the index of one or both Data
 
 ### Reference Card: `pd.merge()` index options
 
-- `pd.merge(left, right, left_index=True, right_index=True)` - Merge both indexes
-- `pd.merge(left, right, left_on='col', right_index=True)` - Column to index
-- `pd.merge(left, right, left_index=True, right_on='col')` - Index to column
-- `how='inner'/'left'/'right'/'outer'` - Still applies
+- `pd.merge(left, right, left_index=True, right_index=True)`: Merge both indexes
+- `pd.merge(left, right, left_on='col', right_index=True)`: Column to index
+- `pd.merge(left, right, left_index=True, right_on='col')`: Index to column
+- `how='inner'/'left'/'right'/'outer'`: Still applies
 
 ### Code Snippet: Merge a column key against an index
 
@@ -213,7 +202,7 @@ print(merged)
 # 1        C001     Mouse   25.99  Alice   Seattle
 # 2        C002  Keyboard   79.99    Bob  Portland
 
-# Notice C003 (Charlie) and C004 (Monitor) are missing - inner join!
+# C003 (Charlie) and C004 (Monitor) are missing: the default is an inner join
 # Use how='left' to keep all purchases
 merged_left = pd.merge(purchases, customers,
                        left_on='customer_id', right_index=True, how='left')
@@ -281,11 +270,11 @@ Beyond basic concatenation, you can add hierarchical labels, name levels, and va
 
 ### Reference Card: `pd.concat()` labeling and validation options
 
-- `keys=['name1', 'name2']` - Add outer level with these labels
-- `names=['level1', 'level2']` - Name the hierarchical levels
-- `verify_integrity=True` - Raise error if indexes overlap
-- `join='inner'/'outer'` - Handle column mismatches
-- `ignore_index=True` - Discard existing indexes
+- `keys=['name1', 'name2']`: Add outer level with these labels
+- `names=['level1', 'level2']`: Name the hierarchical levels
+- `verify_integrity=True`: Raise error if indexes overlap
+- `join='inner'/'outer'`: Handle column mismatches
+- `ignore_index=True`: Discard existing indexes
 
 ### Code Snippet: Concatenate with keys
 
@@ -385,10 +374,10 @@ Pandas provides several factory methods for creating MultiIndex objects from scr
 
 ### Reference Card: MultiIndex factory methods
 
-- `pd.MultiIndex.from_tuples(tuples, names=['level1', 'level2'])` - From list of tuples
-- `pd.MultiIndex.from_product([list1, list2], names=[...])` - Cartesian product
-- `pd.MultiIndex.from_arrays([array1, array2], names=[...])` - From parallel arrays
-- `pd.MultiIndex.from_frame(df)` - From DataFrame columns
+- `pd.MultiIndex.from_tuples(tuples, names=['level1', 'level2'])`: From list of tuples
+- `pd.MultiIndex.from_product([list1, list2], names=[...])`: Cartesian product
+- `pd.MultiIndex.from_arrays([array1, array2], names=[...])`: From parallel arrays
+- `pd.MultiIndex.from_frame(df)`: From DataFrame columns
 
 ### Code Snippet: Build from tuples
 
@@ -422,7 +411,7 @@ quarters = ['Q1', 'Q2', 'Q3', 'Q4']
 
 multi_idx = pd.MultiIndex.from_product([years, quarters],
                                        names=['year', 'quarter'])
-# Creates: (2021, Q1), (2021, Q2), ... (2023, Q4) - all 12 combinations
+# Creates all 12 combinations: (2021, Q1), (2021, Q2), ... (2023, Q4)
 
 rng = np.random.default_rng(42)
 data = pd.Series(rng.integers(100, 500, size=12), index=multi_idx)
@@ -473,9 +462,9 @@ In pandas 3, `stack()` uses the new implementation and preserves missing combina
 
 ### Reference Card: `stack()` and `unstack()` missing-value behavior
 
-- `df.stack()` - Move columns into an index level while preserving missing combinations
-- `df.stack().dropna()` - Keep only observed values after reshaping
-- `series.unstack(fill_value=0)` - Rebuild a table and fill combinations absent from the Series index
+- `df.stack()`: Move columns into an index level while preserving missing combinations
+- `df.stack().dropna()`: Keep only observed values after reshaping
+- `series.unstack(fill_value=0)`: Rebuild a table and fill combinations absent from the Series index
 - Preserving a missing marker is different from replacing it with zero
 
 ### Code Snippet: Preserve vs. drop missing responses
@@ -534,8 +523,8 @@ When pivoting with multiple value columns or without specifying values, pandas c
 
 ### Reference Card: Hierarchical pivot columns
 
-- `df.pivot(index='row', columns='col')` - Creates MultiIndex columns (all values)
-- `df.pivot(index='row', columns='col', values='val')` - Single level columns
+- `df.pivot(index='row', columns='col')`: Creates MultiIndex columns (all values)
+- `df.pivot(index='row', columns='col', values='val')`: Single level columns
 - Access: `df['value_name', 'column_name']` or `df['value_name']['column_name']`
 - Flatten: `df.columns = ['_'.join(col) for col in df.columns]`
 
@@ -557,7 +546,7 @@ print(sales)
 # 2  2024-01-02  Laptop     1200      1
 # 3  2024-01-02   Mouse       60      6
 
-# Pivot without specifying values - creates hierarchical columns
+# Pivot without specifying values: creates hierarchical columns
 wide = sales.pivot(index='date', columns='product')
 print(wide)
 #            revenue        units
@@ -666,74 +655,27 @@ print(swapped)
 ### Code Snippet: Aggregate duplicates while reshaping
 
 ```python
-sales = pd.DataFrame({
-    'month': ['Jan', 'Jan'],
-    'category': ['Electronics', 'Electronics'],
-    'amount': [100, 150],
+# The lecture's rechecked readings: P002's follow-up was measured twice
+rechecked = pd.DataFrame({
+    'patient_id': ['P001', 'P001', 'P002', 'P002', 'P002'],
+    'visit': ['baseline', 'followup', 'baseline', 'followup', 'followup'],
+    'sbp': [152, 138, 138, 148, 136],
 })
 
-# pivot() would fail because Jan/Electronics appears twice.
-# Use this only when summing those rows is part of the question.
-sales_pivot = pd.pivot_table(sales, values='amount',
-                             index='month', columns='category',
-                             aggfunc='sum')
+# pivot() fails because P002/followup appears twice.
+# Use this only when averaging the two readings is part of the question.
+sbp_wide = pd.pivot_table(rechecked, values='sbp',
+                          index='patient_id', columns='visit',
+                          aggfunc='mean')
 
-print(sales_pivot)
-# category  Electronics
-# month
-# Jan               250
+print(sbp_wide)
+# visit       baseline  followup
+# patient_id
+# P001           152.0     138.0
+# P002           138.0     142.0
 ```
 
-# When to Revisit These Topics
+# Further Reading
 
-You'll know it's time to come back to these advanced topics when you encounter:
-
-## Advanced MultiIndex Operations
-
-- Working with hierarchical business data (Region → Store → Department)
-- Multi-level time series (Year → Quarter → Month)
-- Need to aggregate at different hierarchical levels
-- Performance issues with complex MultiIndex selection
-
-## Merging on Index
-
-- Time series joins where datetime is the index
-- Dimension tables using index as primary key
-- After extensive use of set_index()
-- Working with data from databases (often indexed)
-
-## Advanced concat Options
-
-- Need to track data provenance (which source?)
-- Building complex hierarchical datasets
-- Data validation in production (verify_integrity)
-- Combining data from multiple systems/files
-
-## MultiIndex Creation Methods
-
-- Programmatically generating reports with fixed structure
-- Creating test data with hierarchical indexes
-- Building time period hierarchies (year/quarter/month)
-- Need precise control over MultiIndex structure
-
-## Stack/Unstack with dropna
-
-- Time series where gaps matter (NaN ≠ 0)
-- Survey data preserving "no response" vs "N/A"
-- Data quality analysis (counting missing patterns)
-- Maintaining rectangular data structure despite gaps
-
-## Hierarchical Columns from Pivot
-
-- Complex pivot tables with multiple metrics
-- Financial reports (products × metrics × time periods)
-- Need to represent multi-dimensional data in 2D table
-- Building sophisticated summary tables
-
-## Repeated Pairs and pivot_table()
-
-- `pivot()` raises `ValueError: Index contains duplicate entries, cannot reshape`
-- Repeated index/column pairs are real observations, not data errors
-- Need to choose an aggregation (`sum`, `mean`, ...) as part of reshaping
-
-**Bottom Line:** If the basic operations in the main lecture feel limiting, come back here. These advanced topics solve real problems that emerge in complex data wrangling scenarios.
+- Hadley Wickham, [Tidy Data](https://www.jstatsoft.org/article/view/v059i10), _Journal of Statistical Software_ 59(10), 2014: the paper behind the name "tidy" for long data with one observation per row and one variable per column.
+- Wes McKinney, _Python for Data Analysis_, 3rd edition, Chapter 8 (Data Wrangling: Join, Combine, and Reshape): the source of most topics on this page.

@@ -9,7 +9,7 @@ notion:
 
 # DLC: Advanced Time Series Analysis Topics
 
-Everything in this document is optional for Lecture 09. It collects specialized material on periods, decomposition, forecasting, high-frequency data, custom frequencies, advanced time zones, and additional visualization.
+Everything in this document is optional for Lecture 09. It collects specialized material on periods, time-series patterns and decomposition, forecasting, more window options, high-frequency data, custom frequencies, advanced time zones, and additional visualization.
 
 The forecasting, stationarity, and temporal-modeling material below previews ideas Lecture 10 covers in depth. Treat it as specialized reference rather than required content.
 
@@ -95,6 +95,19 @@ print(ts_back)
 # Advanced Time Series Decomposition
 
 _Decomposition separates time series into trend, seasonal, and residual components, revealing underlying patterns._
+
+## Patterns in a Time Series
+
+The lecture sorts series by spacing, regular or irregular. A series can also be described by the pattern its values follow, and decomposition pulls those patterns apart.
+
+![Six kinds of time series: regular and irregular spacing from the lecture, then seasonal, trending, stationary, and combined patterns.](media/types_of_time_series.png)
+
+| Pattern | Description | Example |
+| --- | --- | --- |
+| **Seasonal** | Patterns repeat over time | Monthly flu case counts |
+| **Trending** | Long-term direction | Long-term blood pressure trends |
+| **Stationary** | Statistical properties don't change | Laboratory control measurements |
+| **Combined** | Multiple components (trend + seasonal + noise) | Real-world medical data with all patterns |
 
 ## Seasonal Decomposition
 
@@ -261,6 +274,50 @@ annual = frame.resample('Y-DEC').mean()
 
 # Upsample annual to quarterly
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
+```
+
+# More Window and Selection Options
+
+_The lecture's rolling and EWM windows cover daily work; these options cover the rest._
+
+## Expanding Windows, Rolling Quantiles, and Custom Functions
+
+An **expanding window** grows from the first row to the current one, so its mean is a running average of everything so far. A rolling quantile, such as the median, moves less than a mean when one reading is wild.
+
+### Reference Card: More Window Options
+
+- `ts.expanding().mean()`: Running mean from the first row to the current one; no `NaN` at the start.
+- `ts.rolling(window=5).quantile(0.5)`: Rolling median.
+- `ts.rolling(window=5).apply(custom_func)`: Run your own function on each window's values.
+- `a.rolling(30).corr(b)`: Rolling correlation between two aligned series, such as daily heart rate and blood pressure.
+- `ts.ewm(halflife=2).mean()`: Weighted mean whose weights halve every two observations.
+- `ts.ewm(span=5).std()`: Exponentially weighted standard deviation.
+- `ts.truncate(before='2023-06-01', after='2023-06-30')`: Drop everything outside the range (requires a sorted index).
+
+### Code Snippet: Expanding Mean and Rolling Median
+
+```python
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(42)
+temps = pd.Series(98.6 + np.cumsum(rng.standard_normal(100) * 0.1),
+                  index=pd.date_range('2023-01-01', periods=100, freq='D'))
+print(pd.DataFrame({
+    'temperature': temps,
+    'expanding_mean': temps.expanding().mean(),
+    'rolling_median': temps.rolling(window=5).quantile(0.5),
+}).head(6).round(2))
+```
+
+```text
+            temperature  expanding_mean  rolling_median
+2023-01-01        98.63           98.63             NaN
+2023-01-02        98.53           98.58             NaN
+2023-01-03        98.60           98.59             NaN
+2023-01-04        98.70           98.61             NaN
+2023-01-05        98.50           98.59           98.60
+2023-01-06        98.37           98.55           98.53
 ```
 
 # High-Frequency Data Analysis

@@ -17,190 +17,202 @@ jupyter:
 
 # Demo 2: From NumPy arrays to labeled pandas
 
-**Learning objectives**
+This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. Each step says what to expect, so you can tell whether it worked.
 
-- Convert one 1D ndarray to a Series and one 2D ndarray to a DataFrame.
-- Inspect labels, shape, dtypes, and bounded numeric summaries.
-- Select columns with brackets and single cells or blocks with `.loc` and `.iloc`.
-- Filter rows with one named boolean mask, then narrow it with a second condition.
+Run this notebook in Colab from the course page, or locally in VS Code with the course `.venv` selected as the kernel. Colab does not save your edits back to the course repository; to keep them, use **File → Save a copy in Drive**. The patient IDs and values here are synthetic.
 
-Colab is the default launch experience; local Jupyter runs the same cells. Run this notebook from a fresh kernel and follow its checkpoints. GitHub source opened in Colab is not automatically updated by edits in the Colab tab.
+## Setup
 
-Compatibility candidate: Python 3.13, NumPy 2.3.3, pandas 3.0.5. This is not the final course lock until fresh local and Colab certification is complete. Never place credentials, tokens, protected records, or identifying data in notebook source or output.
+Run this cell first. It installs pandas 3.0.5, the course version, into the notebook's environment: in Colab, which ships an older pandas, and in your local `.venv` alike.
+
+- pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
+- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
+- Locally, the `.venv` you made in Lecture 03 with `uv venv --seed` includes pip, so `%pip` installs into it too. When pandas 3.0.5 is already installed there, the cell prints `Note: you may need to restart the kernel to use updated packages.`, perhaps with a notice that a newer pip exists; neither needs any action.
 
 ```python
-from importlib.metadata import version
-import sys
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
 
-PANDAS_CANDIDATE = "3.0.5"
+```python
+import sys
 
 import numpy as np
 import pandas as pd
 
-assert version("pandas") == PANDAS_CANDIDATE, (
-    "Install the demo requirements before running this notebook; "
-    f"expected pandas {PANDAS_CANDIDATE}, found {version('pandas')}"
-)
 print("Python:", sys.version.split()[0])
 print("NumPy:", np.__version__)
 print("pandas:", pd.__version__)
+assert pd.__version__ == "3.0.5", "Restart the session (Runtime → Restart session), then run all cells from the top"
 ```
 
-## A 1D ndarray becomes a Series
+Expect `pandas: 3.0.5`. If the check fails in Colab, pandas was imported before the install finished: restart the session and run all cells again.
 
-Lecture 03 used a NumPy **ndarray**, a homogeneous array selected by integer position. A pandas **Series** is a one-dimensional labeled object. Its **index** contains row labels, its `dtype` describes the stored values, and its optional `name` identifies the Series.
+## A 1D array becomes a Series
+
+Lecture 03 stored measurements in a NumPy **ndarray** and selected them by integer position. A pandas **Series** adds an **index**: a label for each value, here the patient ID. Its `dtype` describes the stored values, and its `name` identifies the Series.
 
 ```python
-temperatures = np.array([18.5, 21.0, 19.5])
+temps_c = np.array([36.8, 38.1, 37.2])
 
-temperature_by_site = pd.Series(
-    temperatures,
-    index=["north", "south", "west"],
-    name="temperature_c",
+temp_by_patient = pd.Series(
+    temps_c,
+    index=["P001", "P002", "P003"],
+    name="temp_c",
 )
 
-print(temperature_by_site)
-print("index:", temperature_by_site.index)
-print("dtype:", temperature_by_site.dtype)
+print(temp_by_patient)
+print("index:", temp_by_patient.index)
+print("P002:", temp_by_patient["P002"])
 ```
 
-## A 2D ndarray becomes a DataFrame
+Expect three rows labeled `P001` to `P003`, the footer `Name: temp_c, dtype: float64`, and `P002: 38.1`: the label finds the value without knowing its position.
 
-A pandas **DataFrame** is a two-dimensional labeled table. Its `index` labels rows, its `columns` label columns, its `shape` reports `(rows, columns)`, and its `dtypes` report one dtype for each column.
+## A 2D array becomes a DataFrame
+
+A pandas **DataFrame** is a labeled table. Here each row is a patient and the two columns are systolic blood pressure (mmHg) at a baseline visit and at follow-up. `index=` labels the rows, `columns=` labels the columns, and naming the index says what the labels are.
 
 ```python
-measurements = np.array(
+sbp_readings = np.array(
     [
-        [10, 20],
-        [20, 30],
-        [30, 40],
-        [10, 20],
+        [128, 124],
+        [142, 136],
+        [150, 138],
+        [118, 131],
     ]
 )
 
-measurement_table = pd.DataFrame(
-    measurements,
-    index=["obs-001", "obs-002", "obs-003", "obs-004"],
-    columns=["baseline", "follow_up"],
+sbp = pd.DataFrame(
+    sbp_readings,
+    index=["P001", "P002", "P003", "P004"],
+    columns=["baseline_sbp", "follow_up_sbp"],
 )
-measurement_table.index.name = "record_id"
+sbp.index.name = "patient_id"
 
-print("index:", measurement_table.index)
-print("columns:", measurement_table.columns)
-print("shape:", measurement_table.shape)
+print("shape:", sbp.shape)
 print("dtypes:")
-print(measurement_table.dtypes)
-measurement_table
+print(sbp.dtypes)
+sbp
 ```
 
-## Bounded inspection
+Expect `shape: (4, 2)`, both columns `int64`, and a table with `patient_id` shown above the four row labels.
 
-`head(3)` returns a small structural preview. `info()` prints index details, column names, **non-null counts** (entries present rather than missing), dtypes, and a memory summary. Numeric `describe()` reports count, mean, standard deviation (`std`), minimum, percentile cut points, and maximum. This lecture inspects those results; decisions about missing values or cleaning belong to Lecture 05. Call `info()` directly because it prints its report and returns `None`.
+## First look at the table
+
+`head(3)` shows the first three rows. `info()` prints the index, column names, **non-null counts** (values present rather than missing), dtypes, and memory; it prints its report and returns `None`, so call it on its own line. `describe()` summarizes each numeric column.
 
 ```python
-first_three = measurement_table.head(3)
-print(first_three)
+print(sbp.head(3))
 
-measurement_table.info()
+sbp.info()
 
-numeric_summary = measurement_table.describe()
-print(numeric_summary)
+sbp_summary = sbp.describe()
+print(sbp_summary)
 ```
+
+Expect `4 non-null` for both columns (nothing is missing), and in the summary a `mean` of `134.5` mmHg for `baseline_sbp` and `132.25` for `follow_up_sbp`, with minimums of `118` and `124`.
 
 ## Select columns with brackets
 
-Brackets select columns by label. `df["column"]` returns a Series, while a list of column labels inside double brackets returns a DataFrame. Bracket notation also works with names containing spaces or names shared by DataFrame methods.
+One label in brackets returns a Series; a list of labels (double brackets) returns a DataFrame, even when the list holds one name.
 
 ```python
-baseline_series = measurement_table["baseline"]
-baseline_table = measurement_table[["baseline"]]
-two_columns = measurement_table[["baseline", "follow_up"]]
+baseline = sbp["baseline_sbp"]
+baseline_table = sbp[["baseline_sbp"]]
 
-print(type(baseline_series))
+print(type(baseline))
 print(type(baseline_table))
-two_columns
+print(baseline_table.shape)
 ```
 
-## Labels with `.loc`; positions with `.iloc`
+Expect `<class 'pandas.Series'>`, then `<class 'pandas.DataFrame'>`, then `(4, 1)`: the same column, two different shapes.
 
-`.loc` selects by row and column **labels**. `.iloc` selects by zero-based integer **positions**. Label slices include both named endpoints when present; positional slices follow ordinary Python slicing and exclude the stop position.
+## Labels with `.loc`, positions with `.iloc`
+
+`.loc` selects by row and column **labels**; `.iloc` selects by zero-based integer **positions**. A label slice includes its end label; a position slice stops before its end position, as in ordinary Python. `.equals()` checks that two selections hold the same labels and values.
 
 ```python
-same_value_by_label = measurement_table.loc["obs-002", "baseline"]
-same_value_by_position = measurement_table.iloc[1, 0]
+by_label = sbp.loc["P002", "baseline_sbp"]
+by_position = sbp.iloc[1, 0]
+print("one cell by label:", by_label)
+print("one cell by position:", by_position)
 
-label_block = measurement_table.loc[
-    "obs-002":"obs-003",
-    ["baseline", "follow_up"],
-]
-position_block = measurement_table.iloc[1:3, 0:2]
-
-print(same_value_by_label)
-print(same_value_by_position)
+label_block = sbp.loc["P002":"P003", ["baseline_sbp", "follow_up_sbp"]]
+position_block = sbp.iloc[1:3, 0:2]
 print(label_block)
-print(position_block)
+print("same block:", label_block.equals(position_block))
 ```
 
-## Filter with one mask
+Expect `142` twice, a block with rows `P002` and `P003`, and `same block: True`. The label slice ends at `"P003"` and includes it; the position slice `1:3` stops before position 3, which is the same row.
 
-Lecture 03 defined a **mask** as `True` and `False` values used to select elements. A pandas mask carries the same row index as the Series or DataFrame. Build it separately and give it a descriptive name so the selection condition remains visible.
+## Intentional error: a position given to `.loc`
+
+`.loc` only understands labels, and no row is _labeled_ `1`. The next cell asks for one anyway, catches the error with `try`/`except` from Lecture 02, and prints it instead of stopping the notebook.
 
 ```python
-follow_up_at_least_30 = measurement_table["follow_up"] >= 30
+try:
+    sbp.loc[1, "baseline_sbp"]
+except KeyError as error:
+    print("KeyError:", error)
 
-selected_measurements = measurement_table.loc[
-    follow_up_at_least_30,
-    ["baseline", "follow_up"],
-]
-
-print(follow_up_at_least_30)
-selected_measurements
+print("fixed with .iloc:", sbp.iloc[1, 0])
+print("fixed with the label:", sbp.loc["P002", "baseline_sbp"])
 ```
+
+Expect `KeyError: 1`, then `142` from each fix: use `.iloc` for a position, or `.loc` with the label.
+
+## Filter rows with a mask
+
+A **mask** is a Boolean Series with the same index as the table. Build it on its own line with a descriptive name, then pass it to `.loc` with the columns you want. Here the question is which patients still had a systolic pressure of 130 mmHg or higher at follow-up.
+
+```python
+high_at_follow_up = sbp["follow_up_sbp"] >= 130
+
+print(high_at_follow_up)
+print("rows:", high_at_follow_up.sum())
+sbp.loc[high_at_follow_up, ["baseline_sbp", "follow_up_sbp"]]
+```
+
+Expect `False` for `P001` and `True` for the other three, `rows: 3`, and a table of `P002`, `P003`, and `P004`.
 
 ## Narrow the selection with a second condition
 
-`&` keeps the rows where both masks are `True`, and `|` keeps the rows where either one is. Written inline, each comparison needs its own parentheses. `mask.sum()` counts the matching rows, because `True` counts as 1.
+`&` keeps rows where both masks are `True`; `|` keeps rows where either is. Written inline, each comparison needs its own parentheses. Which of those patients were below 130 mmHg at baseline, so their high reading is new?
 
 ```python
-baseline_below_30 = measurement_table["baseline"] < 30
-both_conditions = follow_up_at_least_30 & baseline_below_30
+normal_at_baseline = sbp["baseline_sbp"] < 130
+newly_high = high_at_follow_up & normal_at_baseline
 
-# The same mask in one line; the parentheses around each comparison are required
-inline_mask = (measurement_table["follow_up"] >= 30) & (measurement_table["baseline"] < 30)
+# The same mask written inline; the parentheses are required
+inline_mask = (sbp["follow_up_sbp"] >= 130) & (sbp["baseline_sbp"] < 130)
 
-print("follow_up >= 30:", follow_up_at_least_30.sum(), "rows")
-print("both conditions:", both_conditions.sum(), "rows")
-print("inline version: ", inline_mask.sum(), "rows")
-
-narrowed_measurements = measurement_table.loc[
-    both_conditions,
-    ["baseline", "follow_up"],
-]
-narrowed_measurements
+print("newly high:", newly_high.sum(), "row")
+print("inline version:", inline_mask.sum(), "row")
+print("same mask:", newly_high.equals(inline_mask))
+sbp.loc[newly_high]
 ```
 
+Expect `1 row` twice, `same mask: True`, and one row: `P004`, which went from 118 to 131 mmHg. `P001` was below 130 at baseline too, but its follow-up reading (124) stayed below 130.
+
+## Fresh-run check
+
+Run **Restart session and run all** (VS Code: **Restart**, then **Run All**). This cell checks the checkpoints above.
+
 ```python
-assert np.array_equal(temperatures, np.array([18.5, 21.0, 19.5]))
-assert temperature_by_site.index.tolist() == ["north", "south", "west"]
-assert temperature_by_site.name == "temperature_c"
-assert measurement_table.index.name == "record_id"
-assert measurement_table.index.tolist() == [
-    "obs-001",
-    "obs-002",
-    "obs-003",
-    "obs-004",
-]
-assert measurement_table[["baseline", "follow_up"]].shape == (4, 2)
-assert first_three.shape == (3, 2)
-assert numeric_summary.shape == (8, 2)
-assert isinstance(baseline_series, pd.Series)
+assert temp_by_patient["P002"] == 38.1
+assert temp_by_patient.name == "temp_c"
+assert sbp.index.name == "patient_id"
+assert sbp.shape == (4, 2)
+assert sbp_summary.loc["mean", "baseline_sbp"] == 134.5
+assert isinstance(baseline, pd.Series)
 assert isinstance(baseline_table, pd.DataFrame)
-assert same_value_by_label == same_value_by_position == 20
-pd.testing.assert_frame_equal(label_block, position_block)
-assert selected_measurements.index.tolist() == ["obs-002", "obs-003"]
-assert follow_up_at_least_30.sum() == 2
-assert both_conditions.sum() == inline_mask.sum() == 1
-assert narrowed_measurements.index.tolist() == ["obs-002"]
+assert by_label == by_position == 142
+assert label_block.equals(position_block)
+assert high_at_follow_up.sum() == 3
+assert newly_high.sum() == inline_mask.sum() == 1
+assert list(sbp.loc[newly_high].index) == ["P004"]
 
-print("Demo 2 fresh-run verification passed")
+print("Demo 2 fresh-run check passed")
 ```
+
+Expect `Demo 2 fresh-run check passed`.

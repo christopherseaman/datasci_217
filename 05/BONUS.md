@@ -15,7 +15,7 @@ _These are power-user features for when you need to go beyond basic data cleanin
 
 The core lecture introduces nullable `Int64`, `string`, and `boolean`. This bonus adds nullable floats and their memory and interoperability implications.
 
-_Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this - no more mysterious float64 columns!_
+_Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this: no more mysterious float64 columns!_
 
 ## Extension Types for Better Missing Data Handling
 
@@ -23,12 +23,12 @@ Traditional NumPy-based types couldn't represent missing integers or booleans. E
 
 ### Reference Card: Nullable extension types
 
-- `astype('Int64')` - Nullable integer (note capital I)
-- `astype('Float64')` - Nullable float
-- `astype('boolean')` - Nullable boolean
-- `astype('string')` - Explicit nullable string type
-- `pd.NA` - Missing value marker used by nullable extension types
-- `np.nan` - Floating missing-value sentinel also used by pandas 3's inferred `str` dtype
+- `astype('Int64')`: Nullable integer (note capital I)
+- `astype('Float64')`: Nullable float
+- `astype('boolean')`: Nullable boolean
+- `astype('string')`: Explicit nullable string type
+- `pd.NA`: Missing value marker used by nullable extension types
+- `np.nan`: Floating missing-value sentinel also used by pandas 3's inferred `str` dtype
 
 ### Code Snippet: Old vs. new missing-data handling
 
@@ -84,23 +84,23 @@ print(df)
 
 Regular expressions (regex) are powerful for complex pattern matching, but they can be overkill for simple tasks. The core lecture uses `[0-9]` and `{n}` with `str.fullmatch()`; the syntax below goes further.
 
-_Warning: Regular expressions are write-only code - you write them once, and six months later you have no idea what they do. Comment generously!_
+_Warning: Regular expressions are write-only code. You write them once, and six months later you have no idea what they do. Comment generously!_
 
 ## Regex syntax and extraction
 
 ### Reference Card: Regex syntax
 
-- `\d` - Any digit (0-9)
-- `\w` - Any word character (letter, digit, underscore)
-- `\s` - Any whitespace
-- `+` - One or more of previous
-- `*` - Zero or more of previous
-- `{n,m}` - Between n and m of previous
-- `[abc]` - Any of a, b, or c
-- `^` - Start of string
-- `$` - End of string
-- `()` - Capture group
-- `df.replace(pattern, replacement, regex=True)` - Replace regex matches in text values
+- `\d`: Any digit (0-9)
+- `\w`: Any word character (letter, digit, underscore)
+- `\s`: Any whitespace
+- `+`: One or more of previous
+- `*`: Zero or more of previous
+- `{n,m}`: Between n and m of previous
+- `[abc]`: Any of a, b, or c
+- `^`: Start of string
+- `$`: End of string
+- `()`: Capture group
+- `df.replace(pattern, replacement, regex=True)`: Replace regex matches in text values
 
 ### Code Snippet: Extract phone numbers and validate emails
 
@@ -129,7 +129,7 @@ Beyond simple threshold-based outlier detection, statistical methods can identif
 
 ### Reference Card: Outlier detection methods
 
-- **IQR Method**: Values beyond Q1 - 1.5×IQR or Q3 + 1.5×IQR
+- **IQR Method**: Values below `Q1 - 1.5 * IQR` or above `Q3 + 1.5 * IQR`
 - **Z-Score Method**: Values with |z-score| > 3
 - **Modified Z-Score**: More robust for skewed data
 - **Isolation Forest**: Machine learning approach (sklearn)
@@ -198,11 +198,11 @@ dtype: object
 
 ### Reference Card: Advanced string methods
 
-- `str.extract(pattern, expand=True)` - Extract regex groups into columns
-- `str.extractall(pattern)` - Extract all matches (returns MultiIndex)
-- `str.normalize('NFKD')` - Unicode normalization
-- `str.translate(table)` - Character-level replacement
-- `str.encode()` / `str.decode()` - Character encoding conversion
+- `str.extract(pattern, expand=True)`: Extract regex groups into columns
+- `str.extractall(pattern)`: Extract all matches (returns MultiIndex)
+- `str.normalize('NFKD')`: Unicode normalization
+- `str.translate(table)`: Character-level replacement
+- `str.encode()` / `str.decode()`: Character encoding conversion
 
 ### Code Snippet: Parse addresses and normalize unicode
 
@@ -258,10 +258,10 @@ Reduce memory usage by choosing optimal data types.
 
 ### Reference Card: Memory-efficient dtypes
 
-- `pd.to_numeric(downcast='integer')` - Use smallest int type
-- `pd.to_numeric(downcast='float')` - Use smallest float type
-- `astype('category')` - For repeated string values
-- `astype('Int8')`, `astype('Int16')`, etc. - Specific sizes
+- `pd.to_numeric(downcast='integer')`: Use smallest int type
+- `pd.to_numeric(downcast='float')`: Use smallest float type
+- `astype('category')`: For repeated string values
+- `astype('Int8')`, `astype('Int16')`, etc.: Specific sizes
 
 ### Code Snippet: Shrink a DataFrame's memory footprint
 
@@ -287,26 +287,35 @@ Use `np.where()` and `np.select()` for complex conditional replacements.
 
 ### Reference Card: np.where and np.select
 
-- `np.where(condition, if_true, if_false)` - Simple if-else
-- `np.select(conditions_list, choices_list, default)` - Multiple conditions
+- `np.where(condition, if_true, if_false)`: Two outcomes, like `if`/`else`.
+- `np.select(conditions_list, choices_list, default)`: Several outcomes; the first `True` condition wins, like `if`/`elif`, and `default` covers rows where none is `True`.
 
-### Code Snippet: Assign pass/fail and letter grades
+### Code Snippet: Stage blood pressure without apply
+
+The lecture's `bp_stage()` runs once per row through `apply(axis=1)`. The same rule written as whole-column conditions gives the same stages in one step.
 
 ```python
-# Simple conditional replacement
-df = pd.DataFrame({'score': [55, 65, 75, 85, 95]})
-df['grade'] = np.where(df['score'] >= 70, 'Pass', 'Fail')
+vitals = pd.DataFrame({'sbp': [118, 142, 134, 126], 'dbp': [76, 84, 78, 92]})  # mmHg
 
-# Multiple conditions
+# Two outcomes: np.where
+vitals['sbp_140_plus'] = np.where(vitals['sbp'] >= 140, 'yes', 'no')
+
+# Several outcomes: the first True condition wins, as in if/elif
 conditions = [
-    df['score'] >= 90,
-    df['score'] >= 80,
-    df['score'] >= 70,
-    df['score'] >= 60
+    (vitals['sbp'] >= 140) | (vitals['dbp'] >= 90),
+    (vitals['sbp'] >= 130) | (vitals['dbp'] >= 80),
 ]
-choices = ['A', 'B', 'C', 'D']
-df['letter_grade'] = np.select(conditions, choices, default='F')
-print(df)
+choices = ['stage 2', 'stage 1']
+vitals['bp_stage'] = np.select(conditions, choices, default='below stage 1')
+print(vitals)
+```
+
+```text
+   sbp  dbp sbp_140_plus       bp_stage
+0  118   76           no  below stage 1
+1  142   84          yes        stage 2
+2  134   78           no        stage 1
+3  126   92           no        stage 2
 ```
 
 # Configuration-Driven Cleaning
@@ -326,7 +335,7 @@ Use a Python dictionary for a small, local configuration; use a reviewed CSV, JS
 - **Complex String Operations**: Parsing addresses, standardizing names, cleaning web-scraped data.
 - **Fuzzy Matching**: Merging datasets with typos, de-duplicating user input, matching company names.
 - **Memory Optimization**: Working with large datasets (>1GB), when speed is critical, preparing data for deployment.
-- **Conditional Replacement**: Complex business logic, deriving new categories, data validation with multiple rules.
+- **Conditional Replacement**: Clinical staging rules on large tables, deriving new categories, data validation with multiple rules.
 - **Configuration-Driven Cleaning**: The same cleaning rules reused across sites, sources, or repeated data deliveries.
 
 # Optional Reference: Sampling Designs and Resampling
@@ -353,7 +362,7 @@ print(by_site)
 ## Weighted and Systematic Sampling
 
 - `df.sample(weights='weight')` uses caller-supplied selection weights, which must be validated and justified by the sampling design.
-- Systematic sampling chooses a random start and then every *step*th row. Ordering or periodic structure can make it biased, so `df.iloc[start::step]` is only appropriate when that risk has been considered.
+- Systematic sampling chooses a random start and then every _step_-th row. Ordering or periodic structure can make it biased, so `df.iloc[start::step]` is only appropriate when that risk has been considered.
 
 ```python
 weighted_frame = frame.assign(weight=[1, 1, 1, 1, 2, 2, 2, 2])

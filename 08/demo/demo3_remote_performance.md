@@ -1,545 +1,273 @@
-# Demo 3: Remote Computing and Performance
+---
+jupyter:
+  jupytext:
+    notebook_metadata_filter: language_info
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.13
+---
 
-## Learning Objectives
-- Set up SSH connections for remote computing
-- Use tmux for persistent sessions
-- Optimize performance for large datasets
-- Apply parallel processing techniques
+# Demo 3: Measure, Then Optimize, and Keep a Long Job Running
+
+Part 1 runs here in the notebook: it times grouped summaries of one million synthetic fasting-glucose results and measures how much memory a repeated text key costs. Part 2 runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you will repeat on a remote server. Everything here comes from Lecture 08 up to the third demo break, plus Lectures 01 to 07.
+
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03), and run Part 1 from top to bottom; after each step, an **Expect** line says what you should see. Timings depend on the computer, so compare the ratios between two timings, not the exact milliseconds; Colab is usually slower than a recent laptop. Part 1 takes about a minute, most of it in the `%timeit` cells. Part 2 needs a terminal on your own computer (macOS Terminal, Linux, WSL Ubuntu on Windows, or VS Code's integrated terminal), not Colab. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, OpenSSH 10.2, and tmux 3.6. The patient IDs and values are synthetic.
 
 ## Setup
 
+The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+
 ```python
-import pandas as pd
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+
+```python
 import numpy as np
+import pandas as pd
+
+print('pandas', pd.__version__)
+```
+
+**Expect:** `pandas 3.0.5`.
+
+## Part 1: Measure, Then Optimize
+
+### Build One Million Lab Results
+
+```python
+rng = np.random.default_rng(0)
+n = 1_000_000
+labs = pd.DataFrame({
+    "patient_id": rng.integers(0, 10_000, n),                # 10,000 patients, about 100 results each
+    "clinic": rng.choice(["North", "South", "East", "West"], n),
+    "glucose": rng.normal(100, 15, n).round(1),              # fasting glucose, mg/dL
+})
+print(labs.shape)
+print(f"Patients: {labs['patient_id'].nunique():,}")
+labs.head()
+```
+
+**Expect:** `(1000000, 3)`, `Patients: 10,000`, and five rows of patient numbers, clinic names, and glucose values around 100 mg/dL. The grain is one row per lab result.
+
+### One `.agg()` Instead of Three `groupby()` Calls
+
+Before timing two ways of getting an answer, check that they give the same answer.
+
+```python
+def three_calls(df):
+    """Mean, SD, and count of glucose per patient, one groupby() call each."""
+    mean = df.groupby("patient_id")["glucose"].mean()
+    sd = df.groupby("patient_id")["glucose"].std()
+    count = df.groupby("patient_id")["glucose"].count()
+    return mean, sd, count
+
+def one_agg(df):
+    """The same three summaries from one groupby() and one .agg() call."""
+    return df.groupby("patient_id")["glucose"].agg(["mean", "std", "count"])
+
+# Checkpoint: identical results
+mean, sd, count = three_calls(labs)
+together = one_agg(labs)
+print(mean.equals(together["mean"]), sd.equals(together["std"]), count.equals(together["count"]))
+```
+
+**Expect:** `True True True`.
+
+```python
+%timeit three_calls(labs)
+%timeit one_agg(labs)
+```
+
+**Expect:** two lines such as `55.8 ms ± 217 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)` and `32.2 ms ± 112 μs per loop (...)`. The single `.agg()` is about 1.5 to 2 times faster, because every `groupby()` call splits the million rows again.
+
+### Built-in Aggregations vs a Lambda
+
+```python
+by_patient = labs.groupby("patient_id")["glucose"]
+fast = by_patient.agg("std")
+slow = by_patient.agg(lambda s: s.std())
+print("Largest difference:", (fast - slow).abs().max())
+```
+
+**Expect:** a number around `1e-14`: the same values, apart from rounding in the last decimal place.
+
+```python
+%timeit by_patient.agg("std")
+%timeit by_patient.agg(lambda s: s.std())
+```
+
+**Expect:** about 10 ms against about 450 ms, so the lambda is roughly 50 times slower. It runs as Python once for each of the 10,000 patients; `"std"` runs as one compiled loop over all of them. This cell takes several seconds, because `%timeit` runs the slow version seven times.
+
+### `transform`: Built-in vs Lambda
+
+```python
+centered_fast = labs["glucose"] - by_patient.transform("mean")
+centered_slow = by_patient.transform(lambda s: s - s.mean())
+print("Largest difference:", (centered_fast - centered_slow).abs().max())
+print("Same index as labs?", centered_fast.index.equals(labs.index))
+```
+
+**Expect:** a difference around `6e-14`, then `True`: both give each result's distance from its patient's own mean, one value per lab row.
+
+```python
+%timeit labs["glucose"] - by_patient.transform("mean")
+%timeit by_patient.transform(lambda s: s - s.mean())
+```
+
+**Expect:** about 10 ms against more than a second: over 100 times slower. This cell takes about ten seconds.
+
+### Memory: Text Key vs `category`
+
+```python
+print(labs.memory_usage(deep=True))
+
+text_mb = labs["clinic"].memory_usage(deep=True) / 1e6
+labs["clinic"] = labs["clinic"].astype("category")
+category_mb = labs["clinic"].memory_usage(deep=True) / 1e6
+print(f"\nclinic as text:     {text_mb:.1f} MB")
+print(f"clinic as category: {category_mb:.1f} MB")
+```
+
+**Expect:** `clinic` is the largest column: 53,500,245 bytes (about 12.5 million in Colab, as explained below), against 8,000,000 for each number column. Then `53.5 MB` as text and `1.0 MB` as a category: four labels stored once, plus one small code per row. Colab has the `pyarrow` package installed, which stores text more compactly, so there the text line reads about `12.5 MB`; the category version is still far smaller.
+
+## Part 2: Keep a Long Job Running (Terminal)
+
+This part runs on your own computer, which plays the server: you run the commands you would type after `ssh`, and closing a terminal window stands in for a dropped connection. Type the commands below into a terminal, not into this notebook.
+
+Check that tmux is installed:
+
+```shell
+tmux -V
+```
+
+**Expect:** a version such as `tmux 3.6`; any 3.x works. If you see `command not found`, install it with `sudo apt install tmux` (Ubuntu or WSL) or, with Homebrew on macOS, `brew install tmux`.
+
+### Step 1: Make a Practice Key Pair
+
+Work in a new folder, and use `-f demo_key` so the practice pair is saved there under its own name. Without `-f`, `ssh-keygen` offers `~/.ssh/id_ed25519`, and saving over that file would replace your real key.
+
+```shell
+mkdir -p ~/ds217_ssh_practice
+cd ~/ds217_ssh_practice
+ssh-keygen -t ed25519 -f demo_key -C "ds217 practice key"
+```
+
+When it asks for a passphrase, type one (such as `practice`) and press Enter; nothing appears as you type. Type it again to confirm.
+
+**Expect:** (your fingerprint and picture will differ)
+
+```text
+Generating public/private ed25519 key pair.
+Your identification has been saved in demo_key
+Your public key has been saved in demo_key.pub
+The key fingerprint is:
+SHA256:Quuk5GjxuLAT+BgTU7tk7mIv5JZ9MdQsKg0F0JYgl1M ds217 practice key
+The key's randomart image is:
++--[ED25519 256]--+
+...
++----[SHA256]-----+
+```
+
+```shell
+ls -l demo_key*
+cat demo_key.pub
+```
+
+**Expect:**
+
+```text
+-rw------- 1 you you 464 Sep 24 23:50 demo_key
+-rw-r--r-- 1 you you 100 Sep 24 23:50 demo_key.pub
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICm6gIA8vEmA6qytDJwgDG4zKtuAyeK7Iq3OA9m5BPFe ds217 practice key
+```
+
+`demo_key` is the private key: `-rw-------` means only you can read it, and it never leaves this computer. The one line in `demo_key.pub` is the padlock: on a real server, `ssh-copy-id` installs it, or the server's instructions tell you where to paste it.
+
+### Step 2: Keep a Job Running in tmux
+
+<!-- #region -->
+In VS Code (or any editor), save this stand-in for a long analysis as `long_job.py` in `~/ds217_ssh_practice`:
+
+```python
 import time
-import os
-from multiprocessing import Pool
-import matplotlib.pyplot as plt
 
-# Set inline plotting for Jupyter
-%matplotlib inline
+# One progress line per second for two minutes
+for step in range(1, 121):
+    print("step", step, "of 120")
+    time.sleep(1)  # wait one second
+print("done")
+```
+<!-- #endregion -->
 
-# Set random seed for reproducibility
-np.random.seed(42)
+Start a session, then start the job inside it:
+
+```shell
+tmux new -s analysis
+time python3 long_job.py
 ```
 
-## Part 1: Performance Optimization
+**Expect:** a status bar across the bottom with `[analysis]` at its left, then `step 1 of 120`, `step 2 of 120`, ... once a second. (If `python3` is not found, run `uv run python long_job.py` instead.)
 
-### Create Large Dataset
+Press `Ctrl+b`, let go, then press `d`.
 
-```python
-# Create very large dataset for performance testing (1 million rows)
-print("=== Creating Very Large Dataset ===")
-n_rows = 1000000  # 1 million rows
-n_groups = 10000  # 10,000 groups
+**Expect:** `[detached (from session analysis)]` and your normal prompt. The job is still running inside the session.
 
-# Generate realistic data with correlations
-np.random.seed(42)
-groups = np.random.randint(0, n_groups, n_rows)
-categories = np.random.choice(["A", "B", "C", "D", "E", "F"], n_rows)
-
-# Create correlated values: value2 depends on value1, value3 depends on category
-value1 = np.random.randn(n_rows)
-value2 = value1 * 0.7 + np.random.randn(n_rows) * 0.3  # Correlated with value1
-value3 = np.random.randn(n_rows) + np.where(
-    categories == "A", 2, np.where(categories == "B", 1, 0)
-)
-
-# Add small-integer label columns (a month number and its quarter)
-month = np.random.randint(1, 13, n_rows)
-quarter = (month - 1) // 3 + 1
-
-# Create DataFrame
-df_large = pd.DataFrame({
-    "group": groups,
-    "category": categories,
-    "value1": value1,
-    "value2": value2,
-    "value3": value3,
-    "month": month,
-    "quarter": quarter,
-})
-
-# Add some additional numeric columns
-df_large["value4"] = np.random.exponential(2, n_rows)
-df_large["value5"] = np.random.uniform(0, 100, n_rows)
-
-print(f"Dataset shape: {df_large.shape}")
-print(f"Number of unique groups: {df_large['group'].nunique():,}")
-print(f"Number of unique categories: {df_large['category'].nunique()}")
-print(
-    f"Memory usage: {df_large.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
-)
-print("\nSample data:")
-print(df_large.head())
-print("\nBasic statistics:")
-print(df_large.describe())
+```shell
+tmux ls
 ```
 
-### Performance Comparison
+**Expect:** `analysis: 1 windows (created Thu Sep 24 23:50:11 2026)`, with your date and time.
 
-```python
-# Compare different aggregation methods
-print("=== Performance Comparison: GroupBy Methods ===")
+Now drop the connection: open a **new** terminal window, then close the old one. (Open the new one first; on Windows, closing every WSL window can shut WSL down.) In the new window:
 
-# Method 1: Multiple groupby operations
-print("Method 1: Multiple separate groupby operations...")
-start_time = time.time()
-result1 = df_large.groupby("group")["value1"].sum()
-result2 = df_large.groupby("group")["value2"].sum()
-result3 = df_large.groupby("group")["value3"].sum()
-result4 = df_large.groupby("group")["value4"].mean()
-method1_time = time.time() - start_time
-
-# Method 2: Single groupby with multiple aggregations
-print("Method 2: Single groupby with multiple aggregations...")
-start_time = time.time()
-result5 = df_large.groupby("group").agg({
-    "value1": "sum",
-    "value2": "sum",
-    "value3": "sum",
-    "value4": "mean",
-})
-method2_time = time.time() - start_time
-
-# Method 3: Using list of functions
-print("Method 3: Single groupby with list of functions...")
-start_time = time.time()
-result6 = df_large.groupby("group")[
-    ["value1", "value2", "value3", "value4"]
-].agg(["sum", "mean"])
-method3_time = time.time() - start_time
-
-# Method 4: Using transform (for comparison)
-print("Method 4: Using transform operations...")
-start_time = time.time()
-df_large["group_sum_v1"] = df_large.groupby("group")["value1"].transform("sum")
-df_large["group_sum_v2"] = df_large.groupby("group")["value2"].transform("sum")
-method4_time = time.time() - start_time
-
-print(f"\nResults:")
-print(f"Method 1 (multiple groupby): {method1_time:.4f} seconds")
-print(f"Method 2 (single groupby): {method2_time:.4f} seconds")
-print(f"Method 3 (list of functions): {method3_time:.4f} seconds")
-print(f"Method 4 (transform): {method4_time:.4f} seconds")
-print(
-    f"\nPerformance improvement (Method 1 → Method 2): {method1_time / method2_time:.2f}x faster"
-)
-print(
-    f"Performance improvement (Method 1 → Method 3): {method1_time / method3_time:.2f}x faster"
-)
-
-# Visualize performance comparison
-fig, ax = plt.subplots(figsize=(12, 6))
-methods = [
-    "Multiple\nGroupBy",
-    "Single\nGroupBy\n(Agg)",
-    "List of\nFunctions",
-    "Transform",
-]
-times = [method1_time, method2_time, method3_time, method4_time]
-colors = ["red", "green", "blue", "orange"]
-bars = ax.bar(
-    methods, times, color=colors, alpha=0.7, edgecolor="black", linewidth=2
-)
-ax.set_title(
-    "Performance Comparison: GroupBy Methods (1M rows)",
-    fontsize=14,
-    fontweight="bold",
-)
-ax.set_ylabel("Execution Time (seconds)")
-ax.set_xlabel("Method")
-ax.grid(axis="y", alpha=0.3)
-
-# Add value labels on bars
-for bar, time_val in zip(bars, times):
-    height = bar.get_height()
-    ax.text(
-        bar.get_x() + bar.get_width() / 2.0,
-        height,
-        f"{time_val:.4f}s",
-        ha="center",
-        va="bottom",
-        fontweight="bold",
-        fontsize=10,
-    )
-
-plt.tight_layout()
-plt.show()
+```shell
+tmux ls
+tmux attach -t analysis
 ```
 
-### Memory Optimization
+**Expect:** the session is still listed, and after you attach, the count has kept going while no window was showing it: if you were away 30 seconds, it is about 30 steps further along. When the job finishes, it prints `done`, and `time` reports that it ran for about two minutes: bash prints a line such as `real 2m0.130s`, and zsh (the macOS default) ends its line with `2:00.13 total`.
 
-```python
-# Memory optimization techniques
-print("=== Memory Optimization ===")
+End the session and check that nothing is left running:
 
-# Check original data types and memory
-print("Original data types:")
-print(df_large.dtypes)
-original_memory = df_large.memory_usage(deep=True).sum() / 1024**2
-print(f"Original memory usage: {original_memory:.2f} MB")
-
-# Optimize data types
-df_optimized = df_large.copy()
-
-# Convert integer columns to appropriate types
-df_optimized["group"] = pd.Categorical(df_optimized["group"])
-df_optimized["category"] = df_optimized["category"].astype("category")
-df_optimized["month"] = df_optimized["month"].astype("int8")
-df_optimized["quarter"] = df_optimized["quarter"].astype("int8")
-
-# Optimize float columns (use float32 instead of float64 where precision allows)
-df_optimized["value1"] = df_optimized["value1"].astype("float32")
-df_optimized["value2"] = df_optimized["value2"].astype("float32")
-df_optimized["value3"] = df_optimized["value3"].astype("float32")
-df_optimized["value4"] = df_optimized["value4"].astype("float32")
-df_optimized["value5"] = df_optimized["value5"].astype("float32")
-
-print("\nOptimized data types:")
-print(df_optimized.dtypes)
-optimized_memory = df_optimized.memory_usage(deep=True).sum() / 1024**2
-print(f"Optimized memory usage: {optimized_memory:.2f} MB")
-memory_reduction = (1 - optimized_memory / original_memory) * 100
-print(f"Memory reduction: {memory_reduction:.1f}%")
-print(f"Memory saved: {original_memory - optimized_memory:.2f} MB")
-
-# Compare performance with optimized types
-print("\n=== Performance with Optimized Types ===")
-start_time = time.time()
-result_original = df_large.groupby("group")[
-    ["value1", "value2", "value3"]
-].sum()
-time_original = time.time() - start_time
-
-start_time = time.time()
-result_optimized = df_optimized.groupby("group")[
-    ["value1", "value2", "value3"]
-].sum()
-time_optimized = time.time() - start_time
-
-print(f"Original types: {time_original:.4f} seconds")
-print(f"Optimized types: {time_optimized:.4f} seconds")
-print(f"Speed improvement: {time_original / time_optimized:.2f}x")
-
-# Visualize memory optimization
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-
-# 1. Memory usage comparison
-memory_data = pd.DataFrame({
-    "Memory (MB)": [original_memory, optimized_memory],
-    "Type": ["Original", "Optimized"],
-})
-bars = axes[0].bar(
-    memory_data["Type"],
-    memory_data["Memory (MB)"],
-    color=["red", "green"],
-    alpha=0.7,
-    edgecolor="black",
-    linewidth=2,
-)
-axes[0].set_title("Memory Usage Comparison", fontsize=14, fontweight="bold")
-axes[0].set_ylabel("Memory (MB)")
-axes[0].grid(axis="y", alpha=0.3)
-for bar, mem in zip(bars, memory_data["Memory (MB)"]):
-    height = bar.get_height()
-    axes[0].text(
-        bar.get_x() + bar.get_width() / 2.0,
-        height,
-        f"{mem:.1f} MB",
-        ha="center",
-        va="bottom",
-        fontweight="bold",
-    )
-
-# 2. Column-wise memory comparison
-col_memory_orig = df_large.memory_usage(deep=True) / 1024**2
-col_memory_opt = df_optimized.memory_usage(deep=True) / 1024**2
-memory_comparison = pd.DataFrame({
-    "Original": col_memory_orig,
-    "Optimized": col_memory_opt,
-})
-memory_comparison.plot(
-    kind="bar", ax=axes[1], width=0.8, color=["red", "green"], alpha=0.7
-)
-axes[1].set_title("Memory Usage by Column", fontsize=14, fontweight="bold")
-axes[1].set_ylabel("Memory (MB)")
-axes[1].set_xlabel("Column")
-axes[1].legend()
-axes[1].tick_params(axis="x", rotation=45)
-axes[1].grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+```shell
+exit
+tmux ls
 ```
 
-## Part 2: Parallel Processing
+**Expect:** `[exited]`, then `no server running on /tmp/tmux-1000/default` (the path differs by computer): no sessions are left.
 
-### Chunked Processing
+### Step 3: Run Jupyter Inside tmux
 
-```python
-# Process data in chunks
-def process_chunk(chunk):
-    """Process a single chunk of data"""
-    return chunk.groupby("group").agg({
-        "value1": "sum",
-        "value2": "sum",
-        "value3": "sum",
-    })
+On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. On your own computer you can rehearse everything except the tunnel. Go to a project folder whose `.venv` has JupyterLab (the Lecture 03 setup; add it with `uv pip install jupyterlab` if needed):
 
-
-# Sequential processing
-print("=== Sequential Processing ===")
-start_time = time.time()
-chunk_size = 10000
-chunks = [
-    df_large.iloc[i : i + chunk_size]
-    for i in range(0, len(df_large), chunk_size)
-]
-sequential_results = []
-for chunk in chunks:
-    result = process_chunk(chunk)
-    sequential_results.append(result)
-sequential_time = time.time() - start_time
-
-print(f"Sequential processing time: {sequential_time:.4f} seconds")
+```shell
+tmux new -s notebooks
+source .venv/bin/activate
+jupyter lab --ip=127.0.0.1 --port=8888 --no-browser
 ```
 
-### Parallel Processing
+**Expect:** log lines ending in a URL such as `http://127.0.0.1:8888/lab?token=...`. Copy that URL into your browser, and JupyterLab opens. (If port 8888 is busy, Jupyter picks 8889 and prints that URL instead.)
 
-```python
-# Parallel processing (simplified for demo)
-print("=== Parallel Processing ===")
-print("Note: Multiprocessing requires proper __main__ guard in production code")
-print("For this demo, we'll simulate parallel processing benefits:")
-print(f"Sequential processing time: {sequential_time:.4f} seconds")
-print(f"Estimated parallel processing time: {sequential_time / 4:.4f} seconds")
-print(f"Estimated speedup: 4.0x")
+Detach with `Ctrl+b`, then `d`, and reload the browser page.
+
+**Expect:** JupyterLab still works, because Jupyter keeps running inside tmux. On a server, the one extra step is the `ssh -N -L 8888:127.0.0.1:8888 ...` tunnel from the lecture, in a second terminal on your laptop.
+
+Clean up: `tmux attach -t notebooks`, press `Ctrl+C` twice to stop Jupyter, type `exit`, and delete the practice folder:
+
+```shell
+rm -r ~/ds217_ssh_practice
 ```
 
-## Part 3: Remote Computing Simulation
-
-### SSH Connection Simulation
-
-```python
-# Simulate SSH connection setup
-print("=== SSH Connection Simulation ===")
-print("In a real scenario, you would:")
-print("1. Generate SSH key pair: ssh-keygen -t ed25519")
-print("   (private key ~/.ssh/id_ed25519, public key ~/.ssh/id_ed25519.pub)")
-print("2. Copy public key to server: ssh-copy-id username@server.com")
-print("3. Connect to server: ssh username@server.com")
-print("4. Set up environment on remote server")
-```
-
-### tmux Session Management
-
-```python
-# Simulate tmux session management
-print("=== tmux Session Management ===")
-print("tmux commands for persistent sessions:")
-print("- tmux new-session -s analysis")
-print("- tmux list-sessions")
-print("- tmux attach-session -t analysis")
-print("- Ctrl+b d (detach from session)")
-print("- tmux kill-session -t analysis")
-```
-
-### Remote Data Analysis Workflow
-
-```python
-# Simulate remote data analysis workflow
-def simulate_remote_analysis():
-    """Simulate remote data analysis workflow"""
-    print("=== Remote Data Analysis Workflow ===")
-
-    # Simulate loading large dataset
-    print("1. Loading large dataset on remote server...")
-    time.sleep(0.1)  # Simulate loading time
-
-    # Simulate analysis
-    print("2. Performing aggregation analysis...")
-    start_time = time.time()
-    result = df_large.groupby("group").agg({
-        "value1": ["sum", "mean", "std"],
-        "value2": ["sum", "mean", "std"],
-        "value3": ["sum", "mean", "std"],
-    })
-    analysis_time = time.time() - start_time
-
-    print(f"3. Analysis completed in {analysis_time:.4f} seconds")
-    print(f"4. Results shape: {result.shape}")
-
-    # Simulate saving results
-    print("5. Saving results to remote server...")
-    time.sleep(0.1)  # Simulate saving time
-
-    # Simulate downloading results
-    print("6. Downloading results to local machine...")
-    time.sleep(0.1)  # Simulate download time
-
-    print("7. Remote analysis workflow completed!")
-    return result
-
-
-# Run simulation
-remote_result = simulate_remote_analysis()
-```
-
-## Part 4: Performance Monitoring
-
-### Memory Usage Tracking
-
-```python
-# Monitor memory usage during operations
-import psutil
-import os
-
-
-def monitor_memory():
-    """Monitor memory usage"""
-    process = psutil.Process(os.getpid())
-    memory_mb = process.memory_info().rss / 1024 / 1024
-    return memory_mb
-
-
-print("=== Memory Usage Monitoring ===")
-print(f"Initial memory usage: {monitor_memory():.2f} MB")
-
-# Perform memory-intensive operation
-start_memory = monitor_memory()
-large_operation = df_large.groupby("group").agg({
-    "value1": "sum",
-    "value2": "sum",
-    "value3": "sum",
-})
-end_memory = monitor_memory()
-
-print(f"Memory usage after operation: {end_memory:.2f} MB")
-print(f"Memory increase: {end_memory - start_memory:.2f} MB")
-```
-
-### Performance Profiling
-
-```python
-# Performance profiling
-def profile_operation(func, *args, **kwargs):
-    """Profile a function's performance"""
-    start_time = time.time()
-    start_memory = monitor_memory()
-
-    result = func(*args, **kwargs)
-
-    end_time = time.time()
-    end_memory = monitor_memory()
-
-    return {
-        "result": result,
-        "execution_time": end_time - start_time,
-        "memory_usage": end_memory - start_memory,
-    }
-
-
-# Profile different operations
-print("=== Performance Profiling ===")
-
-# Profile groupby operation
-groupby_profile = profile_operation(
-    lambda: df_large.groupby("group")["value1"].sum()
-)
-print(
-    f"GroupBy operation: {groupby_profile['execution_time']:.4f}s, {groupby_profile['memory_usage']:.2f}MB"
-)
-
-# Profile pivot table operation
-pivot_profile = profile_operation(
-    lambda: pd.pivot_table(
-        df_large,
-        values="value1",
-        index="group",
-        columns="category",
-        aggfunc="sum",
-    )
-)
-print(
-    f"Pivot table operation: {pivot_profile['execution_time']:.4f}s, {pivot_profile['memory_usage']:.2f}MB"
-)
-```
-
-## Part 5: Optimization Strategies
-
-### Data Type Optimization
-
-```python
-# Optimize data types for better performance
-print("=== Data Type Optimization ===")
-
-# Check current data types
-print("Current data types:")
-print(df_large.dtypes)
-
-# Optimize integer columns
-df_optimized = df_large.copy()
-df_optimized["group"] = pd.Categorical(df_optimized["group"])
-
-# Measure performance improvement
-start_time = time.time()
-result_optimized = df_optimized.groupby("group")["value1"].sum()
-optimized_time = time.time() - start_time
-
-start_time = time.time()
-result_original = df_large.groupby("group")["value1"].sum()
-original_time = time.time() - start_time
-
-print(f"Original performance: {original_time:.4f} seconds")
-print(f"Optimized performance: {optimized_time:.4f} seconds")
-print(f"Performance improvement: {original_time / optimized_time:.2f}x")
-```
-
-### Chunked Processing Strategy
-
-```python
-# Chunked processing for large datasets
-def process_large_dataset(df, chunk_size=10000):
-    """Process large dataset in chunks"""
-    results = []
-
-    for i in range(0, len(df), chunk_size):
-        chunk = df.iloc[i : i + chunk_size]
-        chunk_result = chunk.groupby("group").agg({
-            "value1": "sum",
-            "value2": "sum",
-            "value3": "sum",
-        })
-        results.append(chunk_result)
-
-    # Combine results
-    final_result = pd.concat(results).groupby(level=0).sum()
-    return final_result
-
-
-print("=== Chunked Processing Strategy ===")
-start_time = time.time()
-chunked_result = process_large_dataset(df_large, chunk_size=5000)
-chunked_time = time.time() - start_time
-
-print(f"Chunked processing time: {chunked_time:.4f} seconds")
-print(f"Result shape: {chunked_result.shape}")
-```
-
-## Key Takeaways
-
-1. **Performance Optimization**: Use single groupby with multiple aggregations
-2. **Memory Optimization**: Optimize data types and use categorical data
-3. **Parallel Processing**: Use multiprocessing for CPU-intensive tasks
-4. **Remote Computing**: Use SSH and tmux for large dataset analysis
-5. **Chunked Processing**: Process large datasets in manageable chunks
-6. **Performance Monitoring**: Track memory usage and execution time
-7. **Data Type Optimization**: Use appropriate data types for better performance
-
-## Next Steps
-
-- Practice with your own large datasets
-- Set up remote computing environment
-- Learn about distributed computing frameworks
-- Explore cloud computing options for big data analysis
+**Expect:** `[exited]` after `exit`, and no output from `rm`. The practice key pair is gone, and your real `~/.ssh` was never touched.

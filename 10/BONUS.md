@@ -17,7 +17,7 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 - Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
 - Selection: `cross_val_score` for cross-validation and `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
 
-**Cross-validation** splits the training rows into k parts (folds), fits on k - 1 of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on.
+**Cross-validation** splits the training rows into k parts (folds), fits on all but one of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
 
@@ -52,9 +52,9 @@ _Benchmark them under the same split, measure, and budget. Blue steel, magnum, a
 
 ### Reference Card: Grid and Random Search Tools
 
-- `from sklearn.model_selection import GridSearchCV` - Exhaustive grid search
-- `from sklearn.model_selection import RandomizedSearchCV` - Random search
-- `from sklearn.model_selection import cross_val_score` - Cross-validation scoring
+- `from sklearn.model_selection import GridSearchCV`: Exhaustive grid search
+- `from sklearn.model_selection import RandomizedSearchCV`: Random search
+- `from sklearn.model_selection import cross_val_score`: Cross-validation scoring
 
 ### Code Snippet: Tuning a Random Forest with Grid Search
 
@@ -91,8 +91,8 @@ This optional example requires `scikit-optimize`, which is not part of Lecture 1
 
 ### Reference Card: Bayesian Optimization Tools
 
-- `from skopt import gp_minimize` - Gaussian process optimization
-- `from skopt.space import Real, Integer, Categorical` - Parameter spaces
+- `from skopt import gp_minimize`: Gaussian process optimization
+- `from skopt.space import Real, Integer, Categorical`: Parameter spaces
 
 ### Code Snippet: Bayesian Optimization for XGBoost Hyperparameters
 
@@ -136,11 +136,11 @@ This optional example requires SHAP, which is not part of Lecture 10's recorded 
 
 ### Reference Card: SHAP Tools
 
-- `import shap` - SHAP library
-- `shap.TreeExplainer(model)` - Create an explainer for a tree-based model
-- `explainer(X)` - Return SHAP values with feature and observation metadata
-- `shap.plots.beeswarm(shap_values)` - Show feature effects across observations
-- `shap.plots.bar(shap_values)` - Summarize global feature importance
+- `import shap`: SHAP library
+- `shap.TreeExplainer(model)`: Create an explainer for a tree-based model
+- `explainer(X)`: Return SHAP values with feature and observation metadata
+- `shap.plots.beeswarm(shap_values)`: Show feature effects across observations
+- `shap.plots.bar(shap_values)`: Summarize global feature importance
 
 ### Code Snippet: Explaining an XGBoost Model with SHAP
 
@@ -174,8 +174,8 @@ shap.plots.bar(shap_values)
 
 ### Reference Card: Partial Dependence Tools
 
-- `from sklearn.inspection import PartialDependenceDisplay` - Partial dependence
-- `PartialDependenceDisplay.from_estimator(model, X, features)` - Create plots
+- `from sklearn.inspection import PartialDependenceDisplay`: Partial dependence
+- `PartialDependenceDisplay.from_estimator(model, X, features)`: Create plots
 
 ### Code Snippet: Plotting Partial Dependence
 
@@ -217,8 +217,8 @@ Linear regression suits a numeric outcome that scatters evenly around the fitted
 
 ### Reference Card: Mixed Effects Model Tools
 
-- `from statsmodels.regression.mixed_linear_model import MixedLM` - Mixed linear models
-- `MixedLM.from_formula(formula, data, groups)` - Create model
+- `from statsmodels.regression.mixed_linear_model import MixedLM`: Mixed linear models
+- `MixedLM.from_formula(formula, data, groups)`: Create model
 
 ### Code Snippet: Fitting a Mixed Effects Model
 
@@ -250,8 +250,8 @@ This optional example requires `pygam`, which is not part of Lecture 10's record
 
 ### Reference Card: GAM Tools
 
-- `from pygam import LinearGAM` - Generalized additive models
-- `gam = LinearGAM().fit(X, y)` - Fit GAM
+- `from pygam import LinearGAM`: Generalized additive models
+- `gam = LinearGAM().fit(X, y)`: Fit GAM
 
 ### Code Snippet: Fitting and Plotting a GAM
 
@@ -286,9 +286,9 @@ for i in range(X_train.shape[1]):
 
 ### Reference Card: Transfer Learning Tools
 
-- `from tensorflow.keras.applications import VGG16` - Pre-trained models
-- `model = VGG16(weights='imagenet', include_top=False)` - Load pre-trained
-- `model.trainable = False` - Freeze layers
+- `from tensorflow.keras.applications import VGG16`: Pre-trained models
+- `model = VGG16(weights='imagenet', include_top=False)`: Load pre-trained
+- `model.trainable = False`: Freeze layers
 
 ### Code Snippet: Fine-Tuning a Pretrained VGG16 Model
 
@@ -326,7 +326,7 @@ model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
 
 ### Reference Card: Keras Attention Layer
 
-- `keras.layers.MultiHeadAttention` - Current built-in self/cross-attention layer
+- `keras.layers.MultiHeadAttention`: Current built-in self/cross-attention layer
 
 ### Code Snippet: Self-Attention with MultiHeadAttention
 
@@ -403,8 +403,8 @@ Deep Learning Frameworks
 
 ### Reference Card: Stacking Tools
 
-- `from sklearn.ensemble import StackingClassifier` - Stacking ensemble
-- `StackingClassifier(estimators, final_estimator)` - Create stacker
+- `from sklearn.ensemble import StackingClassifier`: Stacking ensemble
+- `StackingClassifier(estimators, final_estimator)`: Create stacker
 
 ### Code Snippet: Stacking a Random Forest and SVM
 
@@ -521,10 +521,10 @@ P2's first visit gets `NaN`, not P1's last reading. Compare every approach on th
 
 ### Reference Card: ARIMA Tools
 
-- `from statsmodels.tsa.arima.model import ARIMA` - ARIMA models
-- `model = ARIMA(data, order=(p, d, q))` - Create ARIMA
-- `result = model.fit()` - Fit model
-- `result.forecast(steps)` - Forecast
+- `from statsmodels.tsa.arima.model import ARIMA`: ARIMA models
+- `model = ARIMA(data, order=(p, d, q))`: Create ARIMA
+- `result = model.fit()`: Fit model
+- `result.forecast(steps)`: Forecast
 
 ### Code Snippet: Fitting and Forecasting an ARIMA Model
 
@@ -556,10 +556,10 @@ This optional example requires `prophet`, which is not part of Lecture 10's reco
 
 ### Reference Card: Prophet Tools
 
-- `from prophet import Prophet` - Facebook Prophet
-- `model = Prophet()` - Create model
-- `model.fit(df)` - Fit model
-- `model.predict(future)` - Make predictions
+- `from prophet import Prophet`: Facebook Prophet
+- `model = Prophet()`: Create model
+- `model.fit(df)`: Fit model
+- `model.predict(future)`: Make predictions
 
 ### Code Snippet: Forecasting with Prophet
 
@@ -595,11 +595,11 @@ model.plot(forecast)
 
 ### Reference Card: Model Serialization Tools
 
-- `import joblib` - Joblib for scikit-learn models
-- `joblib.dump(model, 'model.pkl')` - Save model
-- `model = joblib.load('model.pkl')` - Load model
-- `model.save('model.keras')` - Save a Keras model in the native `.keras` format
-- `model.export('saved_model')` - Export a TensorFlow SavedModel for serving (Keras 3)
+- `import joblib`: Joblib for scikit-learn models
+- `joblib.dump(model, 'model.pkl')`: Save model
+- `model = joblib.load('model.pkl')`: Load model
+- `model.save('model.keras')`: Save a Keras model in the native `.keras` format
+- `model.export('saved_model')`: Export a TensorFlow SavedModel for serving (Keras 3)
 
 ### Code Snippet: Saving and Loading a Model with joblib
 
@@ -684,8 +684,8 @@ This optional example requires `featuretools`, which is not part of Lecture 10's
 
 ### Reference Card: Featuretools Functions
 
-- `EntitySet.add_dataframe` - Register related tables
-- `featuretools.dfs` - Generate features from an EntitySet
+- `EntitySet.add_dataframe`: Register related tables
+- `featuretools.dfs`: Generate features from an EntitySet
 
 ### Code Snippet: Generating Features with Deep Feature Synthesis
 
@@ -743,8 +743,8 @@ feature_matrix, feature_defs = ft.dfs(
 
 ### Reference Card: Polynomial Feature Tools
 
-- `from sklearn.preprocessing import PolynomialFeatures` - Polynomial features
-- `poly = PolynomialFeatures(degree=2, interaction_only=True)` - Create transformer
+- `from sklearn.preprocessing import PolynomialFeatures`: Polynomial features
+- `poly = PolynomialFeatures(degree=2, interaction_only=True)`: Create transformer
 
 ### Code Snippet: Adding Polynomial Features to a Pipeline
 

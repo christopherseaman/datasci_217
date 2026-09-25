@@ -1,492 +1,255 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.13
+---
+
+# Demo 2: Resampling Summaries, Patient Grids, and Rolling Windows
+
+An ICU patient's bedside monitor records heart rate and temperature every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days. You summarize the readings by day and week, count what the monitor missed, lay sparse charted readings onto an hourly grid, resample two patients separately, and smooth the daily series with rolling windows and an EWM. Everything here comes from Lecture 09 up to the second demo break, plus Lectures 01 to 08. Patient values are synthetic.
+
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
+
+## Setup
+
+The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+
 ```python
-import pandas as pd
-import numpy as np
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+
+```python
 import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
 
-# Set random seed for reproducibility
-np.random.seed(42)
-
-# Set plotting style
-sns.set_style('whitegrid')
-plt.rcParams['figure.figsize'] = (14, 8)
+print('pandas', pd.__version__)
+print('NumPy', np.__version__)
 ```
 
-## Part 1: ICU Monitoring Data - Resampling
+**Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
 
-In medical settings, you often have high-frequency data (hourly monitoring) that needs to be summarized for analysis or reporting. Resampling allows you to convert between frequencies while aggregating the data appropriately.
+## 1. One patient's monitor export
 
-### Understanding Resampling
-
-Resampling is similar to groupby operations (from Lecture 08), but instead of grouping by categories, you're grouping by time intervals. Downsampling aggregates higher frequency data to lower frequency (e.g., hourly to daily), while upsampling converts lower frequency to higher frequency (often creating missing values).
-
-### Load and Prepare ICU Data
-
-Let's create realistic ICU monitoring data to work with. This simulates hourly measurements of vital signs over 6 months, which is typical for ICU patient monitoring.
+The monitor writes one row per hour for January 1 to 28, 2024. Two things happened that the summaries should reveal: a fever from January 15 through 17 (temperature up 2.5 °F, heart rate up 15 beats per minute), and a 10-hour disconnection on January 5, from 08:00 through 17:00, when the monitor wrote no rows at all. `rng` makes the same "random" values on every run (Lecture 03).
 
 ```python
-# Simulate hourly ICU patient monitoring data (6 months)
-print("=== ICU Patient Monitoring Data ===\n")
+rng = np.random.default_rng(42)
+hours = pd.date_range('2024-01-01', periods=24 * 28, freq='h')
+monitor = pd.DataFrame({
+    'heart_rate': rng.normal(78, 4, len(hours)).round().astype(int),  # mean 78, standard deviation 4
+    'temperature': (98.4 + rng.normal(0, 0.2, len(hours))).round(1),
+}, index=hours)
 
-# Create hourly dates for 6 months
-hourly_dates = pd.date_range('2023-01-01', periods=24*30*6, freq='h')
+fever = (monitor.index >= '2024-01-15') & (monitor.index < '2024-01-18')
+monitor.loc[fever, 'temperature'] += 2.5
+monitor.loc[fever, 'heart_rate'] += 15
 
-# Generate realistic ICU monitoring data
-np.random.seed(42)
-icu_data = pd.DataFrame({
-    'heart_rate': np.random.randint(60, 100, len(hourly_dates)),
-    'blood_pressure_systolic': np.random.randint(110, 140, len(hourly_dates)),
-    'blood_pressure_diastolic': np.random.randint(70, 90, len(hourly_dates)),
-    'oxygen_saturation': np.random.randint(95, 100, len(hourly_dates)),
-    'temperature': np.random.normal(98.6, 0.5, len(hourly_dates))
-}, index=hourly_dates)
+unplugged = pd.date_range('2024-01-05 08:00', periods=10, freq='h')
+monitor = monitor[~monitor.index.isin(unplugged)]
 
-print(f"ICU data shape: {icu_data.shape}")
-print(f"Date range: {icu_data.index.min()} to {icu_data.index.max()}")
-print(f"\nSample data:")
-print(icu_data.head())
-print(f"\nData summary:")
-print(icu_data.describe())
+print(monitor.shape)
+print(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
 ```
 
-Notice we have over 4,000 hourly measurements. This volume of data is common in medical monitoring but can be overwhelming for analysis. Resampling helps us create manageable summaries while preserving important information.
+**Expect:** `(662, 2)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
 
-### Basic Resampling - Hourly to Daily
+## 2. Daily summaries: averages, extremes, and counts
 
-Downsampling from hourly to daily data reduces complexity while preserving important patterns. We can aggregate using mean, max, min, or other functions depending on what's clinically relevant.
-
-**Note:** When resampling DataFrames (not Series) that contain non-numeric columns like patient IDs, you'll need to either select only numeric columns first using `df.select_dtypes(include=[np.number])`, or specify which columns to aggregate in `.agg()`. In this demo, we're working with Series (single columns), so this isn't an issue, but keep it in mind for DataFrames.
+A daily mean alone hides the disconnection. Adding `count` shows how many readings each day's mean stands on.
 
 ```python
-# Resample hourly data to daily (aggregate to daily summaries)
-print("=== Resampling: Hourly to Daily ===\n")
-
-# Daily resampling with different aggregations
-daily_icu = pd.DataFrame({
-    'heart_rate_mean': icu_data['heart_rate'].resample('D').mean(),
-    'heart_rate_max': icu_data['heart_rate'].resample('D').max(),
-    'heart_rate_min': icu_data['heart_rate'].resample('D').min(),
-    'blood_pressure_systolic_mean': icu_data['blood_pressure_systolic'].resample('D').mean(),
-    'oxygen_saturation_mean': icu_data['oxygen_saturation'].resample('D').mean(),
-    'temperature_mean': icu_data['temperature'].resample('D').mean(),
-    'observation_count': icu_data['heart_rate'].resample('D').count()  # Count of hourly readings
-})
-
-print(f"Daily resampled shape: {daily_icu.shape}")
-print(f"Original hourly shape: {icu_data.shape}")
-print(f"Reduction: {icu_data.shape[0] / daily_icu.shape[0]:.1f}x fewer rows")
-print(f"\nDaily summary:")
-print(daily_icu.head())
+daily = monitor['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count'])
+print(daily.shape)
+print(daily.loc['2024-01-04':'2024-01-06'].round(1))
+print('Days with fewer than 24 readings:', (daily['count'] < 24).sum())
 ```
 
-Daily summaries are often more useful than hourly data for reporting. The mean provides the average, while max/min can identify critical events. The observation count helps identify days with missing data.
+**Expect:** `(28, 4)`. January 5 has `count` `14` while its neighbors have `24`; its mean (`77.9`) looks as ordinary as theirs, which is exactly why the count belongs next to it. One day has fewer than 24 readings.
+
+Named aggregation (Lecture 08) takes a different column and function for each output column.
 
 ```python
-# Visualize resampling effect: hourly vs daily
-fig, axes = plt.subplots(2, 1, figsize=(14, 10))
-
-# Sample of hourly data (first week)
-hourly_sample = icu_data['heart_rate']['2023-01-01':'2023-01-07']
-axes[0].plot(hourly_sample.index, hourly_sample.values, 
-             marker='o', markersize=3, alpha=0.7, linewidth=1, color='blue', label='Hourly')
-axes[0].set_title('Original Hourly Data (First Week)', fontsize=12, fontweight='bold')
-axes[0].set_ylabel('Heart Rate (bpm)')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
-axes[0].tick_params(axis='x', rotation=45)
-
-# Daily resampled (first month)
-daily_sample = daily_icu.loc['2023-01-01':'2023-01-31']
-axes[1].plot(daily_sample.index, daily_sample['heart_rate_mean'], 
-             marker='s', markersize=6, linewidth=2, color='red', label='Daily Mean')
-axes[1].fill_between(daily_sample.index,
-                     daily_sample['heart_rate_min'],
-                     daily_sample['heart_rate_max'],
-                     alpha=0.2, color='red', label='Daily Range (min-max)')
-axes[1].set_title('Daily Resampled Data (January)', fontsize=12, fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Heart Rate (bpm)')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3)
-axes[1].tick_params(axis='x', rotation=45)
-
-plt.tight_layout()
-plt.show()
-```
-
-### Resampling with Multiple Aggregations
-
-Just like groupby operations, you can apply multiple aggregation functions when resampling. This allows you to calculate comprehensive statistics for each time period.
-
-```python
-# Resample with multiple aggregations (like groupby from Lecture 08)
-print("=== Resampling with Multiple Aggregations ===\n")
-
-# Resample to weekly with multiple statistics
-weekly_stats = icu_data.resample('W').agg({
-    'heart_rate': ['mean', 'std', 'min', 'max'],
-    'blood_pressure_systolic': ['mean', 'std'],
-    'oxygen_saturation': ['mean', 'min'],
-    'temperature': ['mean', 'std']
-})
-
-print(f"Weekly stats shape: {weekly_stats.shape}")
-print(f"\nWeekly statistics:")
-print(weekly_stats.head())
-
-# Resample to monthly
-monthly_stats = icu_data.resample('ME').agg({
-    'heart_rate': 'mean',
-    'blood_pressure_systolic': 'mean',
-    'oxygen_saturation': 'mean',
-    'temperature': 'mean'
-})
-
-print(f"\nMonthly averages:")
-print(monthly_stats.head())
-```
-
-The ability to calculate multiple statistics simultaneously (mean, std, min, max) in one resampling operation is incredibly efficient. This creates a comprehensive view of patient vital signs at different time scales.
-
-### Handling Missing Data in Resampling
-
-When upsampling (converting to higher frequency), you often create missing values because there's no data for the new time points. Understanding how to handle these missing values is crucial for time series analysis.
-
-```python
-# Demonstrate handling missing data (upsampling)
-print("=== Handling Missing Data in Resampling ===\n")
-
-# Create daily summary (some days missing)
-daily_summary = icu_data['heart_rate'].resample('D').mean()
-
-# Upsample to hourly (creates missing values)
-hourly_upsampled = daily_summary.resample('h').asfreq()
-print(f"Upsampled data - missing values: {hourly_upsampled.isna().sum()}")
-print(f"Missing percentage: {hourly_upsampled.isna().sum() / len(hourly_upsampled) * 100:.1f}%")
-
-# Forward fill missing values
-hourly_filled = daily_summary.resample('h').ffill()
-print(f"\nAfter forward fill - missing values: {hourly_filled.isna().sum()}")
-
-# Interpolate missing values
-hourly_interpolated = daily_summary.resample('h').interpolate()
-print(f"After interpolation - missing values: {hourly_interpolated.isna().sum()}")
-```
-
-When upsampling, you must choose how to handle missing values. Forward fill (`ffill`) carries the last value forward, while interpolation estimates intermediate values. The choice depends on your analysis needs - forward fill is simpler but less accurate, while interpolation is more sophisticated but may introduce artifacts.
-
-## Part 2: Rolling Window Operations
-
-Rolling windows are like looking through a moving frame - they smooth out noise while preserving trends. This is essential for identifying patterns in noisy medical data where individual measurements might fluctuate significantly.
-
-### Understanding Rolling Windows
-
-A rolling window calculates statistics over a fixed-size window that moves through the time series. For example, a 7-day rolling mean calculates the average of the last 7 days at each point. This smooths out daily fluctuations while preserving weekly trends.
-
-### Basic Rolling Window Statistics
-
-Let's apply rolling windows to our ICU data to identify trends in patient vital signs. Rolling windows are particularly useful for smoothing noisy data and identifying underlying patterns.
-
-```python
-# Apply rolling windows to ICU data
-print("=== Rolling Window Operations ===\n")
-
-# Calculate rolling statistics for heart rate
-daily_heart_rate = pd.DataFrame({
-    'heart_rate': icu_data['heart_rate'].resample('D').mean()
-})
-
-# 7-day rolling window (1 week)
-daily_heart_rate['rolling_7d_mean'] = daily_heart_rate['heart_rate'].rolling(window=7).mean()
-daily_heart_rate['rolling_7d_std'] = daily_heart_rate['heart_rate'].rolling(window=7).std()
-daily_heart_rate['rolling_7d_min'] = daily_heart_rate['heart_rate'].rolling(window=7).min()
-daily_heart_rate['rolling_7d_max'] = daily_heart_rate['heart_rate'].rolling(window=7).max()
-
-# 30-day rolling window (1 month)
-daily_heart_rate['rolling_30d_mean'] = daily_heart_rate['heart_rate'].rolling(window=30).mean()
-
-print("Daily heart rate with rolling statistics:")
-print(daily_heart_rate.head(10))
-print(f"\nRolling statistics summary:")
-print(daily_heart_rate[['rolling_7d_mean', 'rolling_30d_mean']].describe())
-```
-
-Rolling windows help identify trends in patient vital signs. A 7-day rolling mean smooths out daily fluctuations while preserving weekly patterns, while a 30-day rolling mean identifies longer-term trends. The rolling standard deviation helps identify periods of increased variability.
-
-### Advanced Rolling Operations
-
-Rolling windows can be customized in various ways - centered windows look both forward and backward, expanding windows use all data from the start, and minimum periods allow calculations even when the window isn't full.
-
-```python
-# Advanced rolling operations
-print("=== Advanced Rolling Operations ===\n")
-
-# Centered rolling window (looks both forward and backward)
-daily_heart_rate['rolling_7d_centered'] = daily_heart_rate['heart_rate'].rolling(
-    window=7, center=True
-).mean()
-
-# Expanding window (from start to current)
-daily_heart_rate['expanding_mean'] = daily_heart_rate['heart_rate'].expanding().mean()
-
-# Rolling with minimum periods (starts calculating earlier)
-daily_heart_rate['rolling_7d_min_periods'] = daily_heart_rate['heart_rate'].rolling(
-    window=7, min_periods=3
-).mean()
-
-print("Advanced rolling operations:")
-print(daily_heart_rate[['heart_rate', 'rolling_7d_centered', 'expanding_mean']].head(10))
-```
-
-Centered windows (`center=True`) look both forward and backward, which is useful for smoothing but introduces a delay. Expanding windows use all data from the start, creating a cumulative average that's useful for tracking overall trends. Minimum periods (`min_periods=3`) allow calculations even when the window isn't full, providing earlier results at the cost of less stability.
-
-```python
-# Visualize advanced rolling operations
-fig, axes = plt.subplots(2, 1, figsize=(14, 10))
-
-# Sample data for visualization
-sample_period = daily_heart_rate['2023-01-01':'2023-03-31']
-
-# Centered vs trailing window
-axes[0].plot(sample_period.index, sample_period['heart_rate'], 
-             alpha=0.4, linewidth=1, label='Daily Heart Rate', color='gray')
-axes[0].plot(sample_period.index, sample_period['rolling_7d_mean'], 
-             linewidth=2, label='7-Day Trailing Mean', color='blue')
-axes[0].plot(sample_period.index, sample_period['rolling_7d_centered'], 
-             linewidth=2, label='7-Day Centered Mean', color='red', linestyle='--')
-axes[0].set_title('Trailing vs Centered Rolling Windows', fontsize=12, fontweight='bold')
-axes[0].set_ylabel('Heart Rate (bpm)')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
-
-# Expanding window
-axes[1].plot(sample_period.index, sample_period['heart_rate'], 
-             alpha=0.4, linewidth=1, label='Daily Heart Rate', color='gray')
-axes[1].plot(sample_period.index, sample_period['expanding_mean'], 
-             linewidth=2, label='Expanding Mean (Cumulative)', color='green')
-axes[1].set_title('Expanding Window (Cumulative Average)', fontsize=12, fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Heart Rate (bpm)')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3)
-axes[1].tick_params(axis='x', rotation=45)
-
-plt.tight_layout()
-plt.show()
-```
-
-### Exponentially Weighted Moving Average
-
-Exponentially weighted moving averages (EWM) give more weight to recent observations, making them more responsive to recent changes. This is particularly useful in medical monitoring where recent trends are often more important than historical averages.
-
-```python
-# Exponentially weighted moving average (more responsive to recent changes)
-print("=== Exponentially Weighted Moving Average ===\n")
-
-# Calculate EWM with different spans
-daily_heart_rate['ewm_span_7'] = daily_heart_rate['heart_rate'].ewm(span=7).mean()
-daily_heart_rate['ewm_span_30'] = daily_heart_rate['heart_rate'].ewm(span=30).mean()
-
-# Compare with simple moving average
-print("Comparison: Simple MA vs EWM")
-print(daily_heart_rate[['heart_rate', 'rolling_7d_mean', 'ewm_span_7']].head(10))
-
-# EWM with different parameters
-daily_heart_rate['ewm_alpha_0.3'] = daily_heart_rate['heart_rate'].ewm(alpha=0.3).mean()
-daily_heart_rate['ewm_halflife_7'] = daily_heart_rate['heart_rate'].ewm(halflife=7).mean()
-
-print(f"\nEWM comparison:")
-print(daily_heart_rate[['ewm_span_7', 'ewm_alpha_0.3', 'ewm_halflife_7']].head(10))
-```
-
-In clinical settings, recent trends are often more important than historical averages. EWM responds faster to recent changes while still incorporating historical data. The `span` parameter controls how much weight to give recent observations - smaller spans are more responsive, larger spans are more stable.
-
-**Parameter choices**:
-- **span**: Roughly equivalent to a simple moving average window size
-- **alpha**: Direct smoothing factor (0 < alpha <= 1), where larger alpha = more weight to recent
-- **halflife**: Half-life of exponential decay, where values decay to half their weight after the halflife period
-
-## Part 3: Visualization with Resampling and Rolling Windows
-
-Visualizing resampling and rolling window operations helps you understand their effects and choose appropriate parameters for your analysis.
-
-### Visualizing Resampling Effects
-
-Comparing data at different frequencies helps you understand what information is preserved or lost at different scales.
-
-```python
-# Visualize resampling effects
-fig, axes = plt.subplots(3, 1, figsize=(14, 12))
-
-# Original hourly data (sample of first week)
-hourly_sample = icu_data['heart_rate']['2023-01-01':'2023-01-07']
-axes[0].plot(hourly_sample.index, hourly_sample.values, 
-             marker='o', markersize=3, alpha=0.7, linewidth=1, label='Hourly')
-axes[0].set_title('High Frequency: Hourly Heart Rate (First Week)', fontsize=14, fontweight='bold')
-axes[0].set_ylabel('Heart Rate (bpm)')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
-
-# Daily resampled
-daily_sample = daily_heart_rate['2023-01-01':'2023-01-31']
-axes[1].plot(daily_sample.index, daily_sample['heart_rate'], 
-             marker='o', markersize=5, linewidth=2, label='Daily Mean', color='red')
-axes[1].set_title('Medium Frequency: Daily Heart Rate (January)', fontsize=14, fontweight='bold')
-axes[1].set_ylabel('Heart Rate (bpm)')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3)
-
-# Weekly resampled
-weekly_sample = daily_heart_rate['heart_rate'].resample('W').mean()['2023-01-01':'2023-01-31']
-axes[2].plot(weekly_sample.index, weekly_sample.values, 
-             marker='o', markersize=8, linewidth=2, label='Weekly Mean', color='green')
-axes[2].set_title('Low Frequency: Weekly Heart Rate (January)', fontsize=14, fontweight='bold')
-axes[2].set_xlabel('Date')
-axes[2].set_ylabel('Heart Rate (bpm)')
-axes[2].legend()
-axes[2].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-
-Notice how higher frequency data (hourly) shows more variability and noise, while lower frequency data (weekly) shows smoother trends. The choice of frequency depends on your analysis goals - use higher frequency for detailed analysis, lower frequency for trend identification.
-
-### Visualizing Rolling Windows
-
-Comparing rolling windows with different sizes helps you understand how window size affects smoothing and trend detection.
-
-```python
-# Visualize rolling window effects
-fig, axes = plt.subplots(2, 1, figsize=(14, 10))
-
-# Rolling mean comparison
-sample_data = daily_heart_rate['2023-01-01':'2023-03-31']
-axes[0].plot(sample_data.index, sample_data['heart_rate'], 
-             alpha=0.5, linewidth=1, label='Daily Heart Rate', color='gray')
-axes[0].plot(sample_data.index, sample_data['rolling_7d_mean'], 
-             linewidth=2, label='7-Day Rolling Mean', color='blue')
-axes[0].plot(sample_data.index, sample_data['rolling_30d_mean'], 
-             linewidth=2, label='30-Day Rolling Mean', color='red')
-axes[0].fill_between(sample_data.index,
-                     sample_data['rolling_7d_mean'] - sample_data['rolling_7d_std'],
-                     sample_data['rolling_7d_mean'] + sample_data['rolling_7d_std'],
-                     alpha=0.2, color='blue', label='±1 Std Dev')
-axes[0].set_title('Rolling Window Comparison', fontsize=14, fontweight='bold')
-axes[0].set_ylabel('Heart Rate (bpm)')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
-
-# EWM vs Simple MA
-axes[1].plot(sample_data.index, sample_data['heart_rate'], 
-             alpha=0.3, linewidth=1, label='Daily Heart Rate', color='gray')
-axes[1].plot(sample_data.index, sample_data['rolling_7d_mean'], 
-             linewidth=2, label='7-Day Simple MA', color='blue', linestyle='--')
-axes[1].plot(sample_data.index, sample_data['ewm_span_7'], 
-             linewidth=2, label='7-Day EWM', color='red')
-axes[1].set_title('Simple Moving Average vs Exponentially Weighted', fontsize=14, fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Heart Rate (bpm)')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-
-Notice how the 7-day rolling mean is smoother than daily data but still responsive, while the 30-day rolling mean shows longer-term trends. The EWM follows recent changes more closely than the simple moving average, making it more responsive to recent trends.
-
-## Part 4: Combining Concepts - Multi-Variable Analysis
-
-Real-world analysis often involves multiple variables. Let's combine resampling and rolling windows to analyze multiple vital signs simultaneously.
-
-### Multi-Variable Rolling Analysis
-
-Analyzing multiple variables together helps identify relationships and patterns that might not be apparent when analyzing variables individually.
-
-```python
-# Analyze multiple variables with rolling windows
-print("=== Multi-Variable Rolling Analysis ===\n")
-
-# Create daily summary for all variables
-daily_summary = icu_data.resample('D').agg({
-    'heart_rate': 'mean',
-    'blood_pressure_systolic': 'mean',
-    'oxygen_saturation': 'mean',
-    'temperature': 'mean'
-})
-
-# Calculate rolling correlations (7-day window)
-rolling_corr = daily_summary['heart_rate'].rolling(window=7).corr(
-    daily_summary['blood_pressure_systolic']
+daily_named = monitor.resample('D').agg(
+    mean_hr=('heart_rate', 'mean'),
+    max_temp=('temperature', 'max'),
+    n_readings=('heart_rate', 'count'),
 )
-
-print("Rolling correlation (7-day window) between heart rate and blood pressure:")
-print(rolling_corr.head(10))
-
-# Multiple rolling statistics
-daily_summary['hr_rolling_mean'] = daily_summary['heart_rate'].rolling(window=7).mean()
-daily_summary['bp_rolling_mean'] = daily_summary['blood_pressure_systolic'].rolling(window=7).mean()
-daily_summary['temp_rolling_mean'] = daily_summary['temperature'].rolling(window=7).mean()
-
-print(f"\nDaily summary with rolling statistics:")
-print(daily_summary.head(10))
+print(daily_named.loc['2024-01-13':'2024-01-19'].round(1))
 ```
 
-Rolling correlations help identify relationships that change over time. For example, the relationship between heart rate and blood pressure might vary during different phases of patient recovery. This temporal analysis is crucial for understanding dynamic patterns.
+**Expect:** the fever days, January 15 to 17, show `mean_hr` near 93 (`93.2`, `93.6`, `92.7`) and `max_temp` above 101 °F (`101.2`, `101.4`, `101.5`); the days around them sit near 78 bpm and 98.8 °F.
 
-### Visualization with Multiple Variables
-
-Visualizing multiple variables together helps identify relationships and patterns across vital signs.
+A dictionary asks for different summaries of different columns. Weeks end on Sunday, and January 1, 2024 was a Monday, so the four weeks are complete.
 
 ```python
-# Create comprehensive multi-variable visualization
-fig, axes = plt.subplots(4, 1, figsize=(14, 14))
+weekly = monitor.resample('W').agg({'heart_rate': ['mean', 'max'], 'temperature': ['mean', 'max']})
+print(weekly.round(1))
+```
 
-# Heart rate
-axes[0].plot(daily_summary.index, daily_summary['heart_rate'], 
-             alpha=0.5, linewidth=1, label='Daily', color='gray')
-axes[0].plot(daily_summary.index, daily_summary['hr_rolling_mean'], 
-             linewidth=2, label='7-Day Rolling Mean', color='blue')
-axes[0].set_title('Heart Rate with Rolling Mean', fontsize=12, fontweight='bold')
-axes[0].set_ylabel('Heart Rate (bpm)')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
+**Expect:** four rows labeled `2024-01-07`, `01-14`, `01-21`, and `01-28`. Only the week ending January 21 stands out: mean heart rate `84.4`, maximum temperature `101.5`.
 
-# Blood pressure
-axes[1].plot(daily_summary.index, daily_summary['blood_pressure_systolic'], 
-             alpha=0.5, linewidth=1, label='Daily', color='gray')
-axes[1].plot(daily_summary.index, daily_summary['bp_rolling_mean'], 
-             linewidth=2, label='7-Day Rolling Mean', color='red')
-axes[1].set_title('Blood Pressure (Systolic) with Rolling Mean', fontsize=12, fontweight='bold')
-axes[1].set_ylabel('BP Systolic (mmHg)')
+## 3. Upsampling charted temperatures
+
+During the fever, a nurse also charted temperature by hand every four hours. To line these up with the hourly monitor, lay them on an hourly grid and choose how to fill the new slots.
+
+```python
+charted_temp = pd.Series(
+    [98.8, 99.6, 100.9, 101.2, 100.4, 99.5],
+    index=pd.date_range('2024-01-15 00:00', periods=6, freq='4h'),
+)
+hourly = pd.DataFrame({
+    'asfreq': charted_temp.resample('h').asfreq(),
+    'ffill_2': charted_temp.resample('h').ffill(limit=2),
+    'interpolate': charted_temp.resample('h').interpolate(),
+})
+print(hourly.head(9))
+print(hourly.shape)
+print(hourly.isna().sum())
+```
+
+**Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `99.2` at 02:00. The filled values are estimates, not measurements.
+
+## 4. Two patients: resample each separately
+
+Now a step-down unit's charted vitals for two patients, P01 and P02, taken at irregular hours. P01 is deteriorating; P02 is stable. At 12:00 a nurse started a row for P01 but did not record the heart rate.
+
+```python
+charted = pd.DataFrame({
+    'patient_id': ['P01', 'P01', 'P01', 'P01', 'P01', 'P02', 'P02', 'P02', 'P02'],
+    'recorded_at': pd.to_datetime([
+        '2024-01-15 08:00', '2024-01-15 09:00', '2024-01-15 12:00', '2024-01-15 13:00', '2024-01-15 14:00',
+        '2024-01-15 09:00', '2024-01-15 10:00', '2024-01-15 11:00', '2024-01-15 14:00',
+    ]),
+    'heart_rate': [88, 92, np.nan, 104, 110, 71, 69, 74, 72],
+})
+print(charted)
+```
+
+**Expect:** nine rows, five for P01 and four for P02; row 2 (P01 at 12:00) has `NaN` heart rate.
+
+Resampling the whole table averages the two patients together.
+
+```python
+print(charted.set_index('recorded_at')['heart_rate'].resample('2h').mean().round(1))
+```
+
+**Expect:** `83.7` for the 08:00 bin, a mix of P01's 88 and 92 with P02's 71 that describes neither patient.
+
+Group by patient first, then resample inside each group. A `source_row` column of ones counts the rows that exist, including the one whose heart rate is missing.
+
+```python
+charted['source_row'] = 1
+per_patient = (
+    charted.set_index('recorded_at')
+    .groupby('patient_id')
+    .resample('2h')
+    .agg(mean_hr=('heart_rate', 'mean'),
+         n_hr=('heart_rate', 'count'),
+         n_rows=('source_row', 'count'))
+    .reset_index()
+)
+print(per_patient)
+```
+
+**Expect:** eight rows, four two-hour bins per patient. P01's 08:00 bin has `mean_hr` `90.0` from 2 readings; P02's is `71.0` from 1. P01's 12:00 bin shows `n_hr` `1` but `n_rows` `2`: two rows were charted, and only one had a heart rate. Empty bins (P01 at 10:00, P02 at 12:00) show `NaN` and counts of `0`.
+
+## 5. Each patient's hourly grid
+
+An hourly grid gives every patient one row per hour from their first reading to their last. `asfreq()` keeps only readings exactly on the grid, so check that every timestamp sits on the hour first.
+
+```python
+print('All on the hour:', charted['recorded_at'].eq(charted['recorded_at'].dt.floor('h')).all())
+
+grid = (
+    charted.set_index('recorded_at')
+    .groupby('patient_id')[['heart_rate', 'source_row']]
+    .resample('h')
+    .asfreq()
+    .reset_index()
+)
+grid['grid_created'] = grid['source_row'].isna()
+grid['value_missing'] = grid['source_row'].notna() & grid['heart_rate'].isna()
+print(grid.drop(columns='source_row'))
+print(grid[['grid_created', 'value_missing']].sum())
+```
+
+**Expect:** `All on the hour: True`, then 13 rows: P01 from 08:00 to 14:00 (7 hours) and P02 from 09:00 to 14:00 (6 hours). Four rows are `grid_created` (P01 at 10:00 and 11:00, P02 at 12:00 and 13:00), and one is `value_missing` (P01 at 12:00). All five show `NaN` heart rate; only the flags tell the empty hours from the charted row with no value.
+
+## 6. Rolling windows and EWM on the daily means
+
+Back to the four-week monitor. Smooth the daily mean heart rate four ways and watch how each responds to the fever.
+
+```python
+daily_hr = monitor['heart_rate'].resample('D').mean()
+smooth = pd.DataFrame({
+    'daily_mean': daily_hr,
+    'rolling_7': daily_hr.rolling(7).mean(),
+    'early_7': daily_hr.rolling(7, min_periods=3).mean(),
+    'centered_7': daily_hr.rolling(7, center=True).mean(),
+    'ewm_7': daily_hr.ewm(span=7).mean(),
+})
+print(smooth.head(4).round(1))
+print(smooth.loc['2024-01-11':'2024-01-21'].round(1))
+```
+
+**Expect:** in the first rows, `rolling_7` is `NaN` until January 7, `early_7` starts on January 3 (`78.1`), `centered_7` starts on January 4, and `ewm_7` has a value from the first day. Around the fever:
+
+- `daily_mean` jumps from `78.5` on January 14 to `93.2` on January 15 and falls back to `76.9` on January 18.
+- `ewm_7` reacts faster than `rolling_7` on the way up (`86.9` against `84.7` on January 17) and on the way down (`80.7` against `84.4` on January 21, when the 7-day mean still carries all three fever days).
+- `centered_7` starts rising on January 12 (`80.2`), three days before the fever began, because each value averages three later days.
+
+## 7. Count window versus time window across the gap
+
+On the hourly readings, a count window and a time window differ exactly where the monitor was unplugged.
+
+```python
+hr = monitor['heart_rate']
+windows = pd.DataFrame({
+    'heart_rate': hr,
+    'last_3_readings': hr.rolling(3).mean(),
+    'last_3_hours': hr.rolling('3h').mean(),
+})
+print(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
+```
+
+**Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
+
+## 8. Plot the counts and the smoothers
+
+The top panel shows the reading counts, so the gap is visible; the bottom panel shows the daily means with the 7-day rolling mean, the EWM, and a band of plus or minus one rolling standard deviation.
+
+```python
+band_low = smooth['rolling_7'] - daily_hr.rolling(7).std()
+band_high = smooth['rolling_7'] + daily_hr.rolling(7).std()
+
+fig, axes = plt.subplots(2, 1, figsize=(10, 7))
+axes[0].bar(daily.index, daily['count'], color='gray')
+axes[0].set(title='Monitor readings per day', ylabel='Readings', ylim=(0, 26))
+
+axes[1].plot(smooth.index, smooth['daily_mean'], 'o', color='gray', label='Daily mean')
+axes[1].plot(smooth.index, smooth['rolling_7'], color='blue', label='7-day rolling mean')
+axes[1].plot(smooth.index, smooth['ewm_7'], color='red', linestyle='--', label='EWM, span 7')
+axes[1].fill_between(smooth.index, band_low, band_high, color='blue', alpha=0.2, label='Rolling mean ± 1 SD')
+axes[1].set(title='Daily heart rate', xlabel='Date', ylabel='Heart rate (bpm)')
 axes[1].legend()
-axes[1].grid(True, alpha=0.3)
-
-# Oxygen saturation
-axes[2].plot(daily_summary.index, daily_summary['oxygen_saturation'], 
-             alpha=0.5, linewidth=1, label='Daily', color='gray')
-axes[2].axhline(y=95, color='red', linestyle='--', label='Critical Threshold (95%)')
-axes[2].set_title('Oxygen Saturation', fontsize=12, fontweight='bold')
-axes[2].set_ylabel('O2 Sat (%)')
-axes[2].legend()
-axes[2].grid(True, alpha=0.3)
-
-# Temperature
-axes[3].plot(daily_summary.index, daily_summary['temperature'], 
-             alpha=0.5, linewidth=1, label='Daily', color='gray')
-axes[3].plot(daily_summary.index, daily_summary['temp_rolling_mean'], 
-             linewidth=2, label='7-Day Rolling Mean', color='orange')
-axes[3].axhline(y=98.6, color='red', linestyle='--', label='Normal (98.6°F)')
-axes[3].set_title('Temperature with Rolling Mean', fontsize=12, fontweight='bold')
-axes[3].set_xlabel('Date')
-axes[3].set_ylabel('Temperature (°F)')
-axes[3].legend()
-axes[3].grid(True, alpha=0.3)
-
+axes[1].grid(alpha=0.3)
 plt.tight_layout()
 plt.show()
 ```
 
-This multi-variable visualization allows you to compare trends across different vital signs simultaneously. Notice how rolling means help identify underlying trends despite daily fluctuations, and how reference lines (like the critical oxygen saturation threshold) provide clinical context.
+**Expect:** in the top panel, 27 bars of height 24 and one short bar (14) on January 5. In the bottom panel, the daily means form a three-day plateau near 93 bpm; the dashed EWM climbs and falls sooner than the solid rolling mean, and the shaded band widens while the fever days are inside the 7-day window.

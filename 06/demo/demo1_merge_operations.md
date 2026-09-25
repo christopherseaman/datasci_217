@@ -16,359 +16,298 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1: Customer Purchase Analysis with pd.merge()
+# Demo 1: Joining Patient and Lab Tables with `pd.merge()`
 
-## Learning Objectives
+A clinic keeps a patient registry and a separate lab results table. This demo joins them every way Lecture 06 teaches, finds the patients with no labs and the labs with no patient, matches monthly visit counts to targets on several keys, names overlapping columns, and catches a registry export that would silently duplicate lab rows. Everything here comes from Lecture 06 up to the first demo break, plus Lectures 01 to 05.
 
-- Master database-style joins using `pd.merge()`
-- Understand the four join types: inner, left, right, outer
-- Handle duplicate keys in merge operations
-- Merge on multiple columns with composite keys
-- Handle overlapping column names with suffixes
-- Validate merge results with `indicator=True`
-
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13 and pandas 3.0.5; the whole notebook runs in a few seconds. The patient IDs and values are synthetic.
 
 ## Setup
 
+The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+
+```python
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+
 ```python
 import pandas as pd
-import numpy as np
 
-# Set random seed for reproducibility
-np.random.seed(42)
+print('pandas', pd.__version__)
 ```
 
-## Create Sample Data
+**Expect:** `pandas 3.0.5`.
 
-We'll create two realistic datasets:
-- **Customers table**: Customer information (master list)
-- **Purchases table**: Purchase transactions
+## 1. The two tables
+
+The registry has one row per patient, so `patient_id` is its primary key. The lab table has one row per test; its `patient_id` is a foreign key that can repeat.
 
 ```python
-# Customer master data
-customers = pd.DataFrame({
-    'customer_id': ['C001', 'C002', 'C003', 'C004', 'C005'],
-    'name': ['Alice Chen', 'Bob Martinez', 'Charlie Kim', 'Diana Patel', 'Eric Thompson'],
-    'city': ['Seattle', 'Portland', 'Seattle', 'Eugene', 'Tacoma'],
-    'signup_date': pd.to_datetime(['2023-01-15', '2023-02-20', '2023-03-10',
-                                    '2023-04-05', '2023-05-12'])
+patients = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P004', 'P005'],
+    'birth_year': [1958, 1971, 1964, 1990, 1983],
+    'clinic': ['North', 'South', 'North', 'South', 'North'],
 })
 
-print("Customers Table:")
-customers.head()
-```
-
-```python
-# Purchase transaction data
-purchases = pd.DataFrame({
-    'customer_id': ['C001', 'C001', 'C002', 'C003', 'C006', 'C001', 'C002'],
-    'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Tablet', 'USB Cable', 'Webcam'],
-    'amount': [999.99, 25.99, 79.99, 299.99, 449.99, 12.99, 89.99],
-    'purchase_date': pd.to_datetime(['2023-06-01', '2023-06-15', '2023-06-20',
-                                     '2023-07-01', '2023-07-05', '2023-07-10',
-                                     '2023-07-15'])
+labs = pd.DataFrame({
+    'lab_id': ['L01', 'L02', 'L03', 'L04', 'L05', 'L06', 'L07'],
+    'patient_id': ['P001', 'P001', 'P002', 'P003', 'P006', 'P001', 'P002'],
+    'test': ['A1c', 'LDL', 'A1c', 'A1c', 'A1c', 'A1c', 'LDL'],
+    'value': [7.2, 142.0, 5.6, 8.1, 6.4, 6.9, 118.0],     # A1c in %, LDL in mg/dL
+    'collected': ['2026-01-12', '2026-01-12', '2026-01-20', '2026-02-03',
+                  '2026-02-05', '2026-04-14', '2026-04-22'],
 })
 
-print("Purchases Table:")
-purchases.head(10)
+print(patients)
+print(labs)
+print(patients['patient_id'].is_unique, labs['patient_id'].is_unique)
 ```
 
-**Key Observations:**
-- C001 (Alice) has **3 purchases** - many-to-one relationship
-- C004 (Diana) and C005 (Eric) have **no purchases** - will be relevant for join types
-- C006 has a purchase but **no customer record** - orphaned transaction
+**Expect:** 5 patients and 7 lab rows, then `True False`: patient IDs are unique in the registry but repeat in the lab table.
 
+Before merging, note three things the join types will reveal:
 
-## Inner Join (Default)
+- P001 has **three** lab results, so patients to labs is **one-to-many**: one registry row can match many lab rows.
+- P004 and P005 have **no** lab results yet.
+- P006 has a lab result but **no registry record**, for example a referral that was never registered.
 
-Inner join returns **only rows with matching keys in BOTH tables**.
+## 2. Inner join: only matching keys
 
-**Use case:** "Show me all purchases with complete customer information"
+**Question:** "Which lab results can I attach to a registered patient?"
 
 ```python
-# Inner join - only matching customer_ids
-inner_merge = pd.merge(customers, purchases, on='customer_id', how='inner')
+inner_merge = pd.merge(patients, labs, on='patient_id', how='inner')
+print(len(inner_merge))
 inner_merge
 ```
 
-**Interpretation:**
-- Result has **6 rows** (only customers C001, C002, C003 who made purchases)
-- Missing customers: C004, C005 (no purchases)
-- Missing purchase: C006's tablet (no customer record)
-- Alice (C001) appears **3 times** because she has 3 purchases
+**Expect:** 6 rows. P001 appears 3 times, P002 twice, P003 once. P004 and P005 (no labs) and P006's lab (no registry record) are gone.
 
-**Common pitfall:** Always check row counts! If you expected all customers, inner join silently dropped C004 and C005.
+Always check row counts: if you expected every patient, the inner join silently dropped two of them.
 
+## 3. Left join: every patient
 
-## Left Join
-
-Left join returns **ALL rows from left table** + matching rows from right.
-
-**Use case:** "Show me all customers, including those who haven't purchased anything"
+**Question:** "Show every registered patient, with labs where they exist."
 
 ```python
-# Left join - keep ALL customers
-left_merge = pd.merge(customers, purchases, on='customer_id', how='left')
+left_merge = pd.merge(patients, labs, on='patient_id', how='left')
+print(len(left_merge))
 left_merge
 ```
 
-**Interpretation:**
-- Result has **8 rows** (all 5 unique customers, but C001 appears 3x)
-- C004 and C005 appear with **NaN values** for purchase columns
-- C006's orphaned purchase is **still excluded** (not in customers table)
+**Expect:** 8 rows: the 6 matched rows plus P004 and P005 with `NaN` in `lab_id`, `test`, `value`, and `collected`. P006's lab is still excluded because P006 is not in the left table.
 
-**Real-world application:** Identify customers who need marketing engagement (those with NaN purchases).
+A missing lab value is a clinical to-do list: these patients are due for their first A1c.
 
 ```python
-# Find customers who haven't made purchases
-no_purchases = left_merge[left_merge['product'].isna()][['customer_id', 'name', 'city']]
-print("Customers with no purchases (marketing opportunity):")
-no_purchases
+no_labs = left_merge[left_merge['lab_id'].isna()]
+no_labs[['patient_id', 'clinic']]
 ```
 
-## Right Join
+**Expect:** 2 rows: P004 (South) and P005 (North).
 
-Right join returns **ALL rows from right table** + matching rows from left.
+## 4. Right join: every lab result
 
-**Use case:** "Show me all purchases, including those with missing customer info"
+**Question:** "Show every lab result, even when the patient is not registered."
 
 ```python
-# Right join - keep ALL purchases
-right_merge = pd.merge(customers, purchases, on='customer_id', how='right')
-right_merge
+right_merge = pd.merge(patients, labs, on='patient_id', how='right')
+print(len(right_merge))
+orphans = right_merge[right_merge['birth_year'].isna()]
+orphans[['lab_id', 'patient_id', 'test', 'value']]
 ```
 
-**Interpretation:**
-- Result has **7 rows** (all purchases preserved)
-- C006's tablet purchase appears with **NaN customer info**
-- C004 and C005 are **excluded** (no purchases)
+**Expect:** 7 rows in the right join, one per lab. The orphan table has 1 row: `L05`, `P006`, `A1c`, `6.4`. An orphaned lab is a data-quality issue to send back to registration.
 
-**Real-world application:** Identify data quality issues (orphaned transactions).
+## 5. Outer join with `indicator=True`: the full audit
+
+**Question:** "Show everything, and say where each row came from."
 
 ```python
-# Find orphaned purchases (data quality issue)
-orphaned = right_merge[right_merge['name'].isna()][['customer_id', 'product', 'amount']]
-print("Orphaned purchases (data quality issue):")
-orphaned
+audit = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
+print(len(audit))
+print(audit['_merge'].value_counts())
 ```
 
-## Outer Join
-
-Outer join returns **ALL rows from BOTH tables**.
-
-**Use case:** "Show me everything - all customers AND all purchases, regardless of matches"
+**Expect:** 9 rows, with `both` 6, `left_only` 2, and `right_only` 1: the 6 matched labs, the 2 patients without labs, and the 1 orphaned lab.
 
 ```python
-# Outer join - keep EVERYTHING
-outer_merge = pd.merge(customers, purchases, on='customer_id', how='outer')
-outer_merge
+audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_merge']]
 ```
 
-**Interpretation:**
-- Result has **9 rows** (complete picture of all data)
-- Includes customers with no purchases (C004, C005)
-- Includes orphaned purchase (C006)
-- NaN values appear where no match exists
+**Expect:** 3 rows: P004 and P005 as `left_only`, and P006 as `right_only` with `NaN` clinic.
 
-**Real-world application:** Comprehensive data audit to identify all gaps.
+`indicator=True` is the quickest way to see what matched and what didn't. Use it whenever a merge's row count surprises you.
 
+## 6. Check the cardinality before you trust a merge
 
-## Validating Merge Results with indicator=True
-
-The `indicator=True` parameter adds a `_merge` column showing the source of each row.
+Patients to labs should be one-to-many. `validate=` turns that expectation into a check: the merge runs only if the left keys are unique.
 
 ```python
-# Add indicator column to track merge sources
-validated_merge = pd.merge(customers, purchases, on='customer_id',
-                           how='outer', indicator=True)
-validated_merge
+checked = pd.merge(patients, labs, on='patient_id', how='left', validate='one_to_many')
+print(len(checked))
 ```
 
-```python
-# Check merge statistics
-print("Merge source breakdown:")
-print(validated_merge['_merge'].value_counts())
-print()
+**Expect:** `8`, the same as the unchecked left join, because the registry has no repeated `patient_id`.
 
-# Find each category
-print("Customers only (no purchases):")
-print(validated_merge[validated_merge['_merge'] == 'left_only'][['customer_id', 'name']].values)
-print()
-
-print("Purchases only (no customer record):")
-print(validated_merge[validated_merge['_merge'] == 'right_only'][['customer_id', 'product']].values)
-print()
-
-print("Matched records:")
-print(f"{len(validated_merge[validated_merge['_merge'] == 'both'])} purchase records with customer info")
-```
-
-**Pro tip:** Always use `indicator=True` when debugging merges to understand what matched and what didn't!
-
-
-## Merging on Multiple Columns (Composite Keys)
-
-Sometimes a single column isn't unique enough - you need multiple columns to identify matches.
+Next month's registry export arrives. Looking up each lab's patient is a **many-to-one** merge (many lab rows, one registry row per patient). Watch the row count.
 
 ```python
-# Create quarterly sales data
-sales_q1 = pd.DataFrame({
-    'store_id': ['S01', 'S01', 'S02', 'S02', 'S03'],
-    'quarter': ['Q1', 'Q1', 'Q1', 'Q1', 'Q1'],
-    'product_category': ['Electronics', 'Clothing', 'Electronics', 'Clothing', 'Electronics'],
-    'sales': [50000, 30000, 42000, 25000, 38000]
+registry = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P003', 'P004', 'P005'],
+    'clinic': ['North', 'South', 'North', 'South', 'South', 'North'],
+    'record_status': ['current', 'current', 'retired', 'current', 'current', 'current'],
 })
 
-# Create targets by store, quarter, and category
+print('missing keys:', labs['patient_id'].isna().sum(), registry['patient_id'].isna().sum())
+unchecked = pd.merge(labs, registry, on='patient_id', how='left')
+print('lab rows before:', len(labs), 'after:', len(unchecked))
+```
+
+**Expect:** `missing keys: 0 0`, so no blank key can match another blank. Then `lab rows before: 7 after: 8`: one lab row was photocopied, and nothing raised an error.
+
+Find the repeated key:
+
+```python
+print(registry['patient_id'].is_unique)
+registry[registry.duplicated(subset=['patient_id'], keep=False)]
+```
+
+**Expect:** `False`, then 2 rows for P003: a `retired` North record and a `current` South record. P003 moved clinics, and the export kept both rows.
+
+**Intentional error:** declare the contract with `validate='many_to_one'`, and pandas refuses the merge. The `try`/`except` (Lecture 02) catches the `MergeError` so the notebook keeps running.
+
+```python
+try:
+    pd.merge(labs, registry, on='patient_id', how='left', validate='many_to_one')
+except pd.errors.MergeError as error:
+    print('MergeError:', error)
+```
+
+**Expect:** `MergeError: Merge keys are not unique in right dataset; not a many-to-one merge`, followed by a `Duplicates in right:` list that names `P003`.
+
+**The fix:** apply a documented rule (keep only `current` records), confirm the key is now unique, and merge again with both the check and the audit column.
+
+```python
+current = registry[registry['record_status'] == 'current']
+print(current['patient_id'].is_unique)
+
+labs_with_clinic = pd.merge(labs, current, on='patient_id', how='left',
+                            validate='many_to_one', indicator=True)
+print(len(labs_with_clinic))
+print(labs_with_clinic['_merge'].value_counts())
+labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']]
+```
+
+**Expect:** `True`, then 7 rows (one per lab, as it should be), with `both` 6, `left_only` 1, and `right_only` 0 (pandas lists every `_merge` label, even an empty one). P003's lab `L04` now shows the `South` clinic, and P006's lab is the one `left_only` row.
+
+## 7. Merging on several keys: visits against targets
+
+Clinic operations tracks monthly visits by clinic and service. Targets are set per clinic, month, and service, so a visit count matches a target only when **all three** keys agree.
+
+```python
+visits = pd.DataFrame({
+    'clinic': ['North', 'North', 'South', 'South', 'East'],
+    'month': ['2026-01'] * 5,
+    'service': ['primary_care', 'cardiology', 'primary_care', 'cardiology', 'primary_care'],
+    'visits': [410, 120, 380, 95, 150],
+})
+
 targets = pd.DataFrame({
-    'store_id': ['S01', 'S01', 'S02', 'S02', 'S01', 'S02'],
-    'quarter': ['Q1', 'Q1', 'Q1', 'Q1', 'Q2', 'Q2'],
-    'product_category': ['Electronics', 'Clothing', 'Electronics', 'Clothing', 'Electronics', 'Electronics'],
-    'target': [52000, 28000, 45000, 22000, 58000, 50000]
+    'clinic': ['North', 'North', 'South', 'South', 'North', 'South'],
+    'month': ['2026-01', '2026-01', '2026-01', '2026-01', '2026-02', '2026-02'],
+    'service': ['primary_care', 'cardiology', 'primary_care', 'cardiology',
+                'primary_care', 'primary_care'],
+    'target': [400, 130, 400, 90, 420, 410],
 })
 
-print("Q1 Sales:")
-display(sales_q1)
-print("\nTargets:")
-display(targets)
+keys = ['clinic', 'month', 'service']
+print(visits.duplicated(subset=keys).sum(), targets.duplicated(subset=keys).sum())
 ```
 
+**Expect:** `0 0`: each key combination appears once in each table, so this is a one-to-one merge.
+
 ```python
-# Merge on composite key: store_id + quarter + product_category
-sales_vs_target = pd.merge(sales_q1, targets,
-                           on=['store_id', 'quarter', 'product_category'],
-                           how='left')
-
-# Calculate performance
-sales_vs_target['performance'] = (sales_vs_target['sales'] / sales_vs_target['target'] * 100).round(1)
-sales_vs_target['status'] = sales_vs_target['performance'].apply(
-    lambda x: 'Above Target' if x >= 100 else 'Below Target' if pd.notna(x) else 'No Target'
-)
-
-sales_vs_target
+vs_target = pd.merge(visits, targets, on=keys, how='left', validate='one_to_one')
+vs_target['pct_of_target'] = (vs_target['visits'] / vs_target['target'] * 100).round(1)
+vs_target
 ```
 
-**Interpretation:**
-- Each row requires **all three keys** to match (store + quarter + category)
-- S03 has no target set (NaN values)
-- Most stores are performing close to targets
+**Expect:** 5 rows. `pct_of_target` is 102.5 for North primary care, 92.3 for North cardiology, 95.0 for South primary care, and 105.6 for South cardiology. East has no target, so its `target` and `pct_of_target` are `NaN`.
 
-**Why composite keys matter:** If we merged only on `store_id`, we'd match Q1 sales with Q2 targets - wrong!
-
-
-## Handling Overlapping Column Names
-
-When both DataFrames have columns with the same name (besides merge keys), pandas adds suffixes.
+Why all three keys matter: merging on `clinic` alone pairs every January count with every target for that clinic, including February's.
 
 ```python
-# Create two datasets with overlapping 'total' column
-monthly_sales = pd.DataFrame({
-    'product_id': ['P001', 'P002', 'P003', 'P004'],
-    'product_name': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
-    'total': [150000, 45000, 32000, 78000],  # Sales total
-    'units_sold': [150, 1800, 400, 260]
+wrong = pd.merge(visits, targets, on='clinic')
+print(len(wrong))
+print(list(wrong.columns))
+```
+
+**Expect:** `12` rows from 5 visit counts, with the key columns that were left out renamed `month_x`, `month_y`, `service_x`, and `service_y`.
+
+## 8. Which clinic-service pairs have no target? A cross join
+
+A missing target leaves no row to find. Build the expected grid of every clinic with every service using `how='cross'`, then left-merge January's targets onto it.
+
+```python
+clinic_list = pd.DataFrame({'clinic': ['North', 'South', 'East']})
+services = pd.DataFrame({'service': ['primary_care', 'cardiology']})
+expected = pd.merge(clinic_list, services, how='cross')
+print(len(expected))
+
+jan_targets = targets[targets['month'] == '2026-01']
+coverage = pd.merge(expected, jan_targets, on=['clinic', 'service'],
+                    how='left', indicator=True)
+coverage[coverage['_merge'] == 'left_only'][['clinic', 'service']]
+```
+
+**Expect:** `6` (3 clinics × 2 services), then 2 rows: East primary care and East cardiology have no January target.
+
+## 9. Overlapping column names: two A1c sources
+
+The central lab and a point-of-care (POC) device both report A1c in a column named `a1c`. `a1c` is not the key, so pandas must rename one of them.
+
+```python
+central = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P004'],
+    'a1c': [7.2, 5.6, 8.1, 6.3],
+    'collected': ['2026-01-12', '2026-01-20', '2026-02-03', '2026-02-10'],
+})
+poc = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P004'],
+    'a1c': [7.0, 5.8, 7.4, 6.4],
+    'device': ['DCA-1', 'DCA-1', 'DCA-2', 'DCA-2'],
 })
 
-monthly_inventory = pd.DataFrame({
-    'product_id': ['P001', 'P002', 'P003', 'P004'],
-    'total': [45, 520, 125, 85],  # Inventory total
-    'warehouse': ['Seattle', 'Seattle', 'Portland', 'Portland']
-})
-
-print("Monthly Sales:")
-display(monthly_sales)
-print("\nMonthly Inventory:")
-display(monthly_inventory)
+pd.merge(central, poc, on='patient_id', validate='one_to_one')
 ```
+
+**Expect:** 4 rows with columns `patient_id`, `a1c_x`, `collected`, `a1c_y`, `device`. Which `a1c` is which? The names do not say.
 
 ```python
-# Merge with default suffixes (_x and _y)
-merged_default = pd.merge(monthly_sales, monthly_inventory, on='product_id')
-print("Default suffixes (_x and _y):")
-merged_default
+paired = pd.merge(central, poc, on='patient_id', validate='one_to_one',
+                  suffixes=('_lab', '_poc'))
+paired['poc_minus_lab'] = (paired['a1c_poc'] - paired['a1c_lab']).round(1)
+paired[['patient_id', 'a1c_lab', 'a1c_poc', 'device', 'poc_minus_lab']]
 ```
 
-**Problem:** `total_x` and `total_y` are confusing! Which is which?
+**Expect:** columns `a1c_lab` and `a1c_poc`, and `poc_minus_lab` of -0.2, 0.2, -0.7, and 0.1. P003's device reading is 0.7 points below the lab, the largest gap, and it came from device `DCA-2`: a question for the lab's quality team. This comparison needs the descriptive suffixes to be readable.
+
+## 10. Putting it together: a checked patient-lab table
+
+Merge the registry with the labs, keep every patient, check the cardinality, and flag who has results.
 
 ```python
-# Merge with descriptive suffixes
-merged_clear = pd.merge(monthly_sales, monthly_inventory,
-                        on='product_id',
-                        suffixes=('_sales', '_inventory'))
-
-print("Clear suffixes (_sales and _inventory):")
-merged_clear
+patient_labs = pd.merge(patients, labs, on='patient_id', how='left',
+                        validate='one_to_many', indicator=True)
+patient_labs['has_lab'] = patient_labs['_merge'] == 'both'
+print(patient_labs['has_lab'].value_counts())
+patient_labs.sort_values(['clinic', 'patient_id'])[
+    ['clinic', 'patient_id', 'test', 'value', 'collected', 'has_lab']
+]
 ```
 
-**Much better!** Now it's immediately clear:
-- `total_sales` = revenue from sales
-- `total_inventory` = units in stock
-
-**Best practice:** Always use descriptive suffixes that explain what each column represents.
-
-```python
-# Calculate inventory turnover rate
-merged_clear['turnover_rate'] = (merged_clear['units_sold'] /
-                                 merged_clear['total_inventory']).round(1)
-
-print("Inventory Analysis:")
-merged_clear[['product_name', 'units_sold', 'total_inventory', 'turnover_rate']]
-```
-
-**Interpretation:**
-- Mouse has highest turnover (3.5x) - selling fast!
-- Laptop has lowest turnover (3.3x) - slower movement
-- This analysis was only possible by properly merging overlapping column names
-
-
-## Real-World Application: Complete Customer Analysis
-
-Combining multiple merge operations to inspect customer coverage and row-level
-purchase data. Aggregation is introduced in Lecture 08.
-
-```python
-# Step 1: Left join to keep all customers
-customer_purchases = pd.merge(customers, purchases, on='customer_id', how='left')
-
-# Step 2: Mark whether each merged row has a purchase
-customer_purchases['has_purchase'] = customer_purchases['product'].notna()
-
-# Step 3: Inspect row-level purchase data, including customers without matches
-customer_purchases.sort_values(['city', 'amount'], na_position='last')
-```
-
-**What the merge makes visible:**
-- Customers without a matching purchase remain in the left join.
-- `has_purchase` distinguishes matched and unmatched rows without summarizing.
-- A later aggregation can answer questions such as spending by city.
-
-**Key workflow:** merge → inspect matches → derive row-level fields → analyze later
-
-
-## Key Takeaways
-
-1. **Join types matter:** Choose based on which data you want to preserve
-   - **Inner:** Only matches (most restrictive)
-   - **Left:** All left table + matches (common for "master" tables)
-   - **Right:** All right table + matches (less common)
-   - **Outer:** Everything (comprehensive audit)
-
-2. **Always validate merges:**
-   - Check row counts before and after
-   - Use `indicator=True` to track merge sources
-   - Look for unexpected NaN values
-
-3. **Composite keys prevent wrong matches:**
-   - Use `on=['col1', 'col2']` when single column isn't unique
-   - Common for hierarchical data (store + date, region + quarter)
-
-4. **Handle overlapping columns properly:**
-   - Use descriptive suffixes like `('_sales', '_inventory')`
-   - Avoid default `_x` and `_y` for readability
-
-5. **Left joins are most common in practice:**
-   - Preserve your "master" table (customers, products, etc.)
-   - Add related information from other tables
-   - Handle missing data appropriately
-
-**Next steps:** Practice with your own datasets. Start simple, validate results, then build complexity!
+**Expect:** `True` 6 and `False` 2, then 8 rows sorted by clinic (North first) and patient: North holds P001's three labs, P003's A1c, and P005 with no lab; South holds P002's two labs and P004 with no lab.

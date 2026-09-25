@@ -15,9 +15,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
-_Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120% - data science is just that intense!)_
-
-Lecture 04 showed how to spot problems; this lecture decides what to do about them and proves the result.
+_Reality check: Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120%; data science is just that intense!)_
 
 # What Clean Means: The Data Contract
 
@@ -65,15 +63,11 @@ Why a value is missing matters more than how many are missing:
 
 Counts cannot tell these apart; knowing how the data was collected can.
 
-_Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."_
-
-![Dark gray cells are missing. The shade of each other cell shows its value.](media/data_cleaning_workflow.png)
+![MCAR, MAR, and MNAR: gray cells are missing, and the gaps fall at random, where an observed column is low (light), or where an unobserved value is high (dark)](media/data_cleaning_workflow.png)
 
 ## Find and Count Missing Values
 
 Count before you decide. A per-column count shows which variables have gaps; a per-row count shows which records are incomplete.
-
-_Pro tip: Missing data is like that one friend who's always late to everything - you know they're supposed to be there, but you can never quite predict when (or if) they'll show up._
 
 ### Reference Card: Finding missing values
 
@@ -173,6 +167,8 @@ print(readings.ffill(limit=1))
 dtype: float64
 ```
 
+_Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."_
+
 # Repeated Rows, Sentinels, and Wrong Types
 
 Blanks are not the only problem an audit finds. Three more hide in the same table: the same record entered twice, missing values disguised as numbers such as `-999`, and numbers or dates stored as text. Each one silently changes counts and averages, so check for them before you trust a mean or a fill.
@@ -180,8 +176,6 @@ Blanks are not the only problem an audit finds. Three more hide in the same tabl
 ## Detecting and Resolving Duplicates
 
 An **exact duplicate** is a row identical to an earlier row in every column. Repeated rows or identifiers are evidence to investigate, not an instruction to delete. Use the row meaning and candidate identifier from the data contract: an exact copy of a visit is usually a double entry, but two rows that share a `patient_id` may be two real visits.
-
-_Fun fact: Duplicates are like that one song that gets stuck in your head - they keep showing up everywhere, even when you think you've gotten rid of them all._
 
 ### Reference Card: Duplicate detection
 
@@ -217,11 +211,11 @@ print(visits.drop_duplicates())                                    # P003's two 
 4       P003  2026-02-10  122
 ```
 
+_Fun fact: Duplicates are like a song stuck in your head. They keep showing up, even after you think you have gotten rid of them all._
+
 ## Replacing Values
 
 The sentinel values from the missing-data introduction, such as `-999` for "nothing recorded", look like real measurements to pandas, so it averages them in: `pd.Series([140, -999, 160]).mean()` is `-233.0`. `replace()` swaps exact cell values for others. Replacing the sentinel with `np.nan` restores the correct mean of `150.0`. When the bad values follow a rule rather than a fixed code, such as any age above 120, `mask()` blanks every value where a condition is `True`.
-
-*Think of `replace()` as find-and-replace for your data - but way more powerful than Word's version!*
 
 ### Reference Card: Value replacement
 
@@ -273,8 +267,6 @@ A column that should hold numbers often arrives as text. Lecture 04 showed a sin
 
 NumPy's `int64` cannot hold a missing value, which is why a whole-number column with one gap reads as `float64` (`34.0`). pandas adds **nullable** types (capital-I `Int64`, `string`, and `boolean`) that store `<NA>` alongside real values. Dates bring one more trap: `2026-02-30` looks like a date but does not exist.
 
-_Warning: Data type conversion is like trying to fit a square peg in a round hole - sometimes it works perfectly, sometimes you need to shave off a few corners, and sometimes you just need to find a different hole entirely._
-
 ### Reference Card: Converting messy columns
 
 | Task | Code | Output / note |
@@ -313,64 +305,87 @@ print(visits)
 
 The tools so far repair values that are missing, repeated, or stored as the wrong type. The next ones change how correct values are expressed: turn a text answer into a score, give columns consistent names, or group exact ages into bands. Each follows a rule you choose, so write the rule where others can read it: a dictionary, a function from Lecture 02, or a list of bin edges. Each returns a new object; assign the result to keep it.
 
-## Applying Custom Functions
-
 ![xkcd 1205: Is It Worth the Time? A reminder to compare the time spent automating with the time it saves.](media/xkcd_1205_apply.png)
 
-Sometimes built-in methods aren't enough, so you need custom logic. Choose the method according to what the function receives: `Series.map` maps Series values (or looks them up in a dictionary), `DataFrame.map` is elementwise across a DataFrame, and `apply` invokes a function along a Series or a DataFrame axis. Any of them can take a **`lambda`**, a one-line function without a name: `lambda x: x * 2` does the same as `def double(x): return x * 2`, and is handy for one-time use.
+## Applying Custom Functions
+
+A nursing export records pain as text such as `'7/10'`, smoking status as words, and blood pressure in two columns that together decide a stage. Each rule is easy to write for one value, with Lecture 01's `if`/`elif` inside a Lecture 02 function. `map()` and `apply()` run that rule on every value of a column, or on every row of a table.
+
+A **`lambda`** is a one-line function without a name, handy for a rule you use once: `lambda x: x * 2` does the same as `def double(x): return x * 2`.
+
+Arithmetic and comparisons need no `apply`. `vitals['sbp'] - vitals['dbp']` and `vitals['sbp'] >= 140` already work on whole columns (Lecture 04) and run much faster. Save `apply` for rules that need `if`/`elif` or a function written for one value.
+
+| Raw value | Rule | Result |
+| --- | --- | --- |
+| `'7/10'` | `apply`: keep the number before the slash | `7` |
+| `'former'` | `map`: look up `{'never': 0, 'former': 1, 'current': 2}` | `1` |
+| `sbp` 126 and `dbp` 92 | `apply(axis=1)`: stage from both pressures | `'stage 2'` |
 
 ### Reference Card: Custom functions
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `series.map(dict_or_func)` | Transform values or look them up in a dictionary | `Series`; unmatched dictionary keys become missing |
-| `df.map(func)` | Pass each individual cell value to a function | `DataFrame` with the same shape |
-| `series.apply(func)` | An ordinary Python callable receives each value by default | Usually a `Series`; returned Series values expand into a `DataFrame` |
-| `df.apply(func, axis=0)` | Pass each column as a Series | Scalar returns produce a `Series` indexed by column |
-| `df.apply(func, axis=1)` | Pass each row as a Series | Scalar returns produce a `Series` indexed by row |
+| `series.map(dictionary)` | Look each value up in a dictionary; `series.map(func)` calls a function instead | `Series`; values missing from the dictionary become missing |
+| `series.apply(func)` | Call `func` on each value; `func` may be a `lambda` | `Series` of the return values |
+| `df.apply(func, axis=1)` | Call `func` on each row, passed as a `Series`; `row['sbp']` reads one value | `Series` indexed by row |
+| `df.apply(func, axis=0)` | Call `func` on each column, passed as a `Series` | `Series` indexed by column |
+| `df.map(func)` | Call `func` on every cell | `DataFrame` with the same shape |
 
-### Code Snippet: Map and apply transformations
+### Code Snippet: Map and apply clinical rules
 
 ```python
-# Apply custom numeric logic to each value of a Series
-def performance_band(score):
-    """Assign a documented band from a numeric score."""
-    return 'high' if score >= 80 else 'standard'
+vitals = pd.DataFrame({
+    'sbp': [118, 142, 134, 126],  # systolic, mmHg
+    'dbp': [76, 84, 78, 92],      # diastolic, mmHg
+    'pain': ['2/10', '7/10', '0/10', '5/10'],
+    'smoking': ['never', 'current', 'former', 'never'],
+})
 
-scores = pd.Series([72, 91, 84])
-print(scores.apply(performance_band))
+# A lambda on each value: keep the number before the slash
+print(vitals['pain'].apply(lambda text: int(text.split('/')[0])))
 
-# Map categorical values to numbers
-status = pd.Series(['active', 'inactive', 'active', 'pending'])
-print(status.map({'active': 1, 'inactive': 0, 'pending': 2}))
+# A dictionary lookup: one code per label
+print(vitals['smoking'].map({'never': 0, 'former': 1, 'current': 2}))
 
-# Apply a lambda to each row; axis=1 passes the row as a Series
-vitals = pd.DataFrame({'min': [1, 4, 7], 'max': [5, 9, 12]})
-vitals['range'] = vitals.apply(lambda row: row['max'] - row['min'], axis=1)
-print(vitals)
+# axis=1 passes each row, so one rule can read two columns
+def bp_stage(row):
+    """Stage one reading from both pressures (simplified ACC/AHA)."""
+    if row['sbp'] >= 140 or row['dbp'] >= 90:
+        return 'stage 2'
+    elif row['sbp'] >= 130 or row['dbp'] >= 80:
+        return 'stage 1'
+    else:
+        return 'below stage 1'
+
+vitals['bp_stage'] = vitals.apply(bp_stage, axis=1)
+print(vitals[['sbp', 'dbp', 'bp_stage']])
 ```
 
 ```text
-0    standard
-1        high
-2        high
-dtype: str
-0    1
-1    0
+0    2
+1    7
+2    0
+3    5
+Name: pain, dtype: int64
+0    0
+1    2
 2    1
-3    2
-dtype: int64
-   min  max  range
-0    1    5      4
-1    4    9      5
-2    7   12      5
+3    0
+Name: smoking, dtype: int64
+   sbp  dbp       bp_stage
+0  118   76  below stage 1
+1  142   84        stage 2
+2  134   78        stage 1
+3  126   92        stage 2
 ```
+
+Row 3 reaches stage 2 on its diastolic pressure alone. [The bonus](BONUS.md#conditional-data-replacement) stages whole columns at once with `np.select()`, which is faster on large tables.
 
 ## Renaming Axis Indexes
 
 Exports rarely arrive with tidy column names. A clinic extract might label its columns `'Patient ID '`, `'SBP (mmHg)'`, and `'VisitDate'`. Every Lecture 04 selection, `df['col']` or `df.loc[rows, 'col']`, must spell a label exactly, so the trailing space alone makes `df['Patient ID']` raise `KeyError`. A table has two **axis indexes**: the row labels (`df.index`) and the column labels (`df.columns`). **Renaming** changes those labels without touching any values. Choose one naming style, such as lowercase words joined by underscores (`patient_id`, `sbp`, `visit_date`), and rename right after loading so every later step can type the names without guessing.
 
-`rename()` takes the same two kinds of rule as `map()` above: a dictionary of old-to-new labels (Lecture 02), or a function such as `str.lower` that it calls on every label. It returns a new table, so assign the result; for targeted value changes, assign directly with `.loc`. Both forms are clear under pandas 3 Copy-on-Write behavior.
+`rename()` takes the same two kinds of rule as `map()` above: a dictionary of old-to-new labels (Lecture 02), or a function such as `str.lower` that it calls on every label. It returns a new table, so assign the result; for targeted value changes, assign directly with `.loc`.
 
 ### Reference Card: Renaming labels
 
@@ -405,8 +420,6 @@ Index(['first column', 'second', 'third'], dtype='str')
 
 Table 1 of almost every clinical paper reports age in bands rather than single years. **Binning** assigns each value to an interval. `pd.cut()` uses edges you choose, so bands can match a clinical definition. `pd.qcut()` picks edges from the data so each bin gets about the same number of rows, as in quartiles; ties can make its edges duplicate, so inspect the result and set an explicit duplicate-edge policy (`duplicates='drop'` in Demo 2) when needed. pandas writes an interval as `(30, 50]`: the round bracket means 30 is not included, and the square bracket means 50 is.
 
-_Pro tip: Categories are like putting your data in organized boxes - everything has its place, and you can find things much faster when you know exactly which box to look in._
-
 ### Reference Card: Categorical variables
 
 | Item | Purpose / arguments | Output / note |
@@ -414,6 +427,7 @@ _Pro tip: Categories are like putting your data in organized boxes - everything 
 | `pd.cut(series, bins=4)` | Cut the value range into four equal-width bins | Categorical Series of bins |
 | `pd.cut(series, bins=[...])` | Cut at explicitly supplied edges (not necessarily equal-width) | Categorical Series of bins |
 | `pd.qcut(series, q)` | Use quantiles to target equal-frequency bins | Categorical `Series`; duplicate edges raise by default |
+| `pd.qcut(series, q, duplicates='drop')` | Merge repeated edges caused by tied values instead of raising | Fewer than `q` bins; leave out `labels`, whose count must match the bins |
 | `bins=[0, 30, 50, 100]` | Supply three explicit intervals | `(0, 30]`, `(30, 50]`, `(50, 100]` by default |
 | `labels=['Young', 'Middle', 'Senior']` | Name the three bins | One label per bin is required |
 
@@ -446,8 +460,6 @@ Text columns are where inconsistent categories hide. A hand-typed site column mi
 | `' north'` | 1 | `'north'` | (same group) |
 | `'NORTH'` | 1 | `'north'` | (same group) |
 | `'south'` | 1 | `'south'` | 1 |
-
-*Pro tip: The `.str` accessor is like having a Swiss Army knife for text data. It can split, join, replace, extract, and transform text in ways that would make a regex wizard jealous.*
 
 ## Basic String Operations
 
@@ -500,8 +512,6 @@ How to store the labels depends on the next job:
 - Keep them as labels, stored compactly and optionally in a meaningful order: the **categorical dtype** (`category`). The `pd.cut()` output above already printed `dtype: category` with the ordered labels `['Young' < 'Middle' < 'Senior']`.
 - Give them to a regression or machine-learning model, which computes only with numbers (Lecture 10): **indicator variables**, one 0/1 column per label.
 
-_Pro tip: Categorical encoding is like translating between languages - categories can be stored efficiently as codes (integers) or expanded into binary columns for models. Choose the right translation for your task!_
-
 ## Categorical Data Type
 
 A `category` column stores each distinct label once and gives every row a small integer **code** that points to its label. That can shrink a column with few distinct labels, but measure the effect on the actual data.
@@ -518,15 +528,24 @@ A `category` column stores each distinct label once and gives every row a small 
 ### Code Snippet: Store repeated categories efficiently
 
 ```python
-# 5,000 values drawn from three labels
-colors = pd.Series(['red', 'blue', 'red', 'green', 'blue'] * 1000)
-colors_cat = colors.astype('category')
+# 5,000 smoking-status values drawn from three labels
+smoking = pd.Series(['never', 'former', 'never', 'current', 'former'] * 1000)
+smoking_cat = smoking.astype('category')
 
-print(f"As str: {colors.memory_usage(deep=True)} bytes")        # tens of thousands
-print(f"As category: {colors_cat.memory_usage(deep=True)} bytes")  # a few thousand
-print(colors_cat.cat.categories)           # Index(['blue', 'green', 'red'], dtype='str')
-print(colors_cat.cat.codes[:5].tolist())   # [2, 0, 2, 1, 0]
+print(f"As str: {smoking.memory_usage(deep=True)} bytes")
+print(f"As category: {smoking_cat.memory_usage(deep=True)} bytes")
+print(smoking_cat.cat.categories)
+print(smoking_cat.cat.codes[:5].tolist())  # .tolist() makes a plain Python list
 ```
+
+```text
+As str: 274132 bytes
+As category: 5297 bytes
+Index(['current', 'former', 'never'], dtype='str')
+[2, 1, 2, 0, 1]
+```
+
+Colab has the `pyarrow` package installed, which stores text more compactly, so there the `str` line reads about 69,000 bytes. The category version is far smaller either way.
 
 ## Creating Indicator (Dummy) Variables
 
@@ -574,7 +593,7 @@ print(pd.get_dummies(df['color'], prefix='color', drop_first=True, dtype='int64'
 
 ![xkcd 2239: Data Error. A clean-looking analysis cannot rescue corrupted source data.](media/xkcd_2239.png)
 
-Lecture 04 ended with a first look at a loaded table: count gaps with `isna().sum()` and repeats with `duplicated().sum()`. Inspection describes a table; **validation** checks it against the data contract. A **validation rule** is a yes/no question asked of every row, such as "is the age between 0 and 120?" or "does the patient ID look like `P` plus three digits?" Rows that fail are listed for review rather than deleted: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
+Inspection describes a table; **validation** checks it against the data contract. A **validation rule** is a yes/no question asked of every row, such as "is the age between 0 and 120?" or "does the patient ID look like `P` plus three digits?" Rows that fail are listed for review rather than deleted: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
 
 | Issue | Detection | Possible response after investigation |
 |-------|-----------|---------------------------------------|

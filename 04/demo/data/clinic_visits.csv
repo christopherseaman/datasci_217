@@ -1,0 +1,13 @@
+patient_id,clinic,age,temp_c,systolic
+P001,North,34,36.8,118
+P002,South,58,?,142
+P003,North,41,37.2,131
+P004,East,,38.4,150
+P005,South,67,38.4,136
+P006,East,29,36.9,
+P007,NULL,52,37.8,127
+P008,North,45,38.1,145
+P009,South,73,39.0,158
+P010,East,38,37.2,122
+P003,North,41,37.2,131
+P011,North,61,37.6,139

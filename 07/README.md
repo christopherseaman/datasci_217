@@ -13,24 +13,20 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo1_matplotlib_basics.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo2_seaborn_statistical.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo3_pandas_altair.ipynb)
 
-_Fun fact: The word "visualization" comes from the Latin "visus" meaning "sight." In data science, we're literally making data visible - turning numbers into stories that our eyes can understand and our brains can process._
+![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 
 This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
 
-![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
-
 # Start with a visualization contract
 
-In the 1850s, Florence Nightingale had monthly counts of British Army deaths in the Crimean War, split by cause. Her diagram made one comparison impossible to miss: the blue wedges (deaths from preventable disease) dwarf the red wedges (deaths from wounds), and she used it to argue for sanitary reform in army hospitals. Decide what the reader should compare before you draw anything.
-
-![Florence Nightingale's Diagram of the Causes of Mortality in the Army in the East: blue wedges for preventable disease are far larger than red wedges for wounds.](media/Nightingale-mortality-1600.jpg)
-
-A **visualization** maps data values to visible properties so a reader can make a comparison: each column becomes something the eye can compare, such as a position, a length, or a color. Before choosing a chart type, write these four plain-language statements:
+A **visualization** maps data values to visible properties so a reader can make a comparison: each column becomes something the eye can compare, such as a position, a length, or a color. Decide what the reader should compare before you draw anything. A **visualization contract** is that decision written down as four plain-language statements:
 
 1. **Question:** What comparison or pattern should the chart help the reader understand?
 2. **Audience and claim:** Who reads the chart, and what descriptive conclusion should it support? A visible pattern alone does not prove why that pattern occurred.
 3. **Unit and grain:** What does one mark represent, and what does one row of the plotting table represent?
 4. **Variables:** What is each variable's data type and role, and which visible property encodes it?
+
+![Florence Nightingale's 1858 diagram of British Army deaths in the Crimean War: blue wedges (preventable disease) dwarf red wedges (wounds), the one comparison it was drawn to make.](media/Nightingale-mortality-1600.jpg)
 
 ## State the unit and grain shown
 
@@ -57,10 +53,6 @@ A variable's **role** is the job it does here: the measure compared, the groupin
 An **exploratory visualization** helps you inspect patterns, distributions, or surprises while the question is still forming. It can be quick, but it still needs truthful scales and labels.
 
 An **explanatory visualization** communicates one finding to a named audience. It drops irrelevant alternatives, adds annotation, and uses a title that states what the reader should notice without overstating the evidence.
-
-![xkcd 1845: State Word Map. A satirical U.S. map labeled with supposedly distinctive search words, followed by notes about arbitrary methods and random noise.](media/xkcd_1845.png)
-
-_xkcd 1845, “State Word Map”_: if flexible method choices can produce any headline, the chart is not evidence.
 
 ## Think in marks and encodings
 
@@ -114,11 +106,11 @@ The question and the variable types narrow the choice of chart.
 
 ![Six common jobs and the chart each one calls for. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.](media/chart_selection.png)
 
+![xkcd 1845: State Word Map. If flexible method choices can produce any headline, the chart is not evidence.](media/xkcd_1845.png)
+
 # matplotlib: Foundation Layer
 
-_Think of matplotlib as the foundation of your visualization house - you can build anything on it, but you need to understand the plumbing before you can install the fancy fixtures._
-
-pandas and seaborn draw through matplotlib, so their charts are matplotlib objects you can adjust with the same methods. Two objects are enough to fix almost any of them:
+**matplotlib** is Python's foundational plotting library: you build each chart step by step, placing every mark, label, and legend yourself. pandas and seaborn draw through matplotlib, so their charts are matplotlib objects you can adjust with the same methods. Two objects are enough to fix almost any of them:
 
 - A **Figure** is the whole canvas: the image you display or save with `fig.savefig()`.
 - An **Axes** is one painting on that canvas: a plotting area with its own x-axis, y-axis, title, and marks, set with methods such as `ax.set_title()`. "Axes" names one plotting area; it is not the plural of "axis".
@@ -215,6 +207,7 @@ Titles, axis labels with units, deliberate limits, and a restrained grid give th
 | `ax.set(title=..., xlabel=..., ylabel=...)` | Set visible context for the reader | Updated `Axes` |
 | `ax.set_title(text)`, `ax.set_xlabel(text)`, `ax.set_ylabel(text)` | Set one label at a time | Updated `Axes` |
 | `ax.set_xlim(left, right)` / `ax.set_ylim(bottom, top)` | Control displayed ranges; use deliberately | Updated limits |
+| `ax.get_ylim()` / `ax.get_xlim()` | Read the current limits back to check what a chart shows; `bottom, top = ax.get_ylim()` unpacks them | Two numbers: bottom and top |
 | `ax.set_xticks(positions, labels)` | Choose where ticks sit and, optionally, what they say | Updated ticks |
 | `ax.tick_params(axis='x', rotation=45)` | Turn the tick labels on one axis so long category names stop overlapping; `labelsize=` shrinks them instead | Updated tick labels |
 | `ax.grid(axis='y', alpha=0.3)` | Add restrained reference lines | Updated `Axes` |
@@ -287,7 +280,7 @@ An explanatory chart usually points at one thing. An **annotation** is text atta
 - `ax.annotate(text, xy=(x, y), xytext=(x2, y2), arrowprops=dict(arrowstyle='->'))`: Put `text` at `xytext` with an arrow pointing to the data point `xy`. Add `color=` for the text, and a `color=` inside `arrowprops` for the arrow.
 - `ax.text(x, y, text, va='center')`: Put text at a point with no arrow, such as a direct line label; `va=` (vertical alignment) and `ha=` (horizontal alignment) set which part of the text sits on that point.
 - `ax.spines[['top', 'right']].set_visible(False)`: Hide the two frame lines that carry no data.
-- `ax.legend(loc='upper left', bbox_to_anchor=(1, 1), frameon=False)`: Place the legend just outside the right edge, without a box.
+- `ax.legend(title='Clinic', loc='upper left', bbox_to_anchor=(1, 1), frameon=False)`: Place a legend headed Clinic just outside the right edge, without a box. With `loc=` alone, such as `loc='lower right'`, the legend stays inside the Axes in that corner.
 - `fig.savefig('chart.png', dpi=150, bbox_inches='tight')`: Save a PNG at 150 dots per inch; `bbox_inches='tight'` trims extra margin so labels are not cut off. Use `.svg` or `.pdf` for vector output.
 
 ### Code Snippet: Point to the Peak and Save
@@ -344,8 +337,6 @@ Arrows mean “renders through,” not a required learning order.
 plotnine, Bokeh, and Plotly are surveyed in [BONUS.md](BONUS.md).
 
 # pandas: Quick Data Exploration
-
-_Think of pandas plotting as your data exploration Swiss Army knife - not the most specialized tool, but incredibly useful for getting a quick sense of your data._
 
 `df.plot()` is the fastest look at a table you have just loaded: one call on the DataFrame you already have (Lecture 04). It returns a matplotlib `Axes`, so matplotlib methods still work afterward, and `ax=` draws into one panel of a `plt.subplots()` grid.
 
@@ -453,9 +444,7 @@ Expected output: three stacked panels (North, South, East), each labeled Visits,
 
 # seaborn: Statistical Graphics
 
-_seaborn is like having a visualization expert sitting next to you, quietly picking the colors, styles, and statistics for you._
-
-seaborn builds on matplotlib to draw statistical graphics from a DataFrame in one call. It expects long data from Lecture 06: one row per observation, one column per variable. You pass column names, and seaborn maps each one to an encoding:
+seaborn builds on matplotlib to draw statistical graphics from a DataFrame in one call, picking readable colors and styles and computing summaries such as group means for you. It expects long data from Lecture 06: one row per observation, one column per variable. You pass column names, and seaborn maps each one to an encoding:
 
 - `data=`: the DataFrame the column names come from
 - `x=` and `y=`: horizontal and vertical position
@@ -477,6 +466,7 @@ That is the visualization contract written as code: `sns.scatterplot(data=visits
 | `sns.histplot(data=df, x=..., kde=True)` | Show distribution, optionally with density | `Axes` |
 | `sns.boxplot(data=df, x=..., y=...)` | Compare distributions and outliers | `Axes` |
 | `sns.heatmap(data=df, annot=True)` | Encode a wide table of numbers (index as rows, columns as columns) as color; `annot=True` writes each value in its cell | `Axes` |
+| `sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, vmin=-1, vmax=1)` | Color a correlation matrix with two hues that meet at 0: blue for negative, white near 0, red for positive, over the full range from -1 to 1 | `Axes` |
 | `errorbar=None` | Hide the error band or bar on lineplot/barplot | Updated `Axes` |
 
 ### Code Snippet: Statistical Plots
@@ -571,13 +561,9 @@ Expected output: a single-peaked pandas KDE, a two-peaked seaborn KDE with peaks
 
 # Edward Tufte's Principles of Data Visualization
 
-_Good visualization is like good writing - it should be clear, honest, and serve the reader (or viewer) first._
-
-**"Above all else, show the data."** - Edward Tufte
-
 A chart can get every number right and still mislead. Picture a hospital dashboard showing hand-hygiene compliance of 96% in March and 97% in April, drawn as bars on a y-axis that starts at 95%. The April bar is twice as tall, so readers see compliance double when it rose one point. Nothing in the data is wrong; the drawing is.
 
-Tufte's principles check that the drawing lets the reader make the contract's comparison honestly. They are also the vocabulary you use to critique and redesign a chart in the assignment.
+Edward Tufte, a statistician who writes about chart design, sums up his principles as **"Above all else, show the data."** They check that the drawing lets the reader make the contract's comparison honestly, and they are the vocabulary you use to critique and redesign a chart in the assignment.
 
 ## Five Principles
 
@@ -600,7 +586,9 @@ Raise it by removing ink that carries no data:
 
 ### Chartjunk
 
-**Chartjunk** is non-data ink that competes with the marks: 3D effects, heavy grid lines, decorative fills and patterns, excessive colors, and redundant labels.
+**Chartjunk** is non-data ink that competes with the marks: 3D effects, heavy grid lines, decorative fills and patterns, excessive colors, and redundant labels. Color or a fill pattern is data ink only when it encodes something: a pattern that marks a group, as in the accessibility section below, carries data, but the same pattern on every bar does not.
+
+![Before (left): five colors and one hatch pattern on five clinics, so neither encodes anything. After (right): one color, sorted bars, and each value written at the bar's end.](media/tufte_bar_comparison.png)
 
 ### Lie Factor
 
@@ -611,6 +599,8 @@ Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
 ```
 
 A lie factor close to 1.0 means no distortion. In the hand-hygiene dashboard, the April bar grows 100% (from 1 to 2 units above the 95% baseline) while compliance grows about 1% (96 → 97), so the lie factor is roughly 100 / 1.04 ≈ 96.
+
+![Hand-hygiene compliance of 96% and 97%: on a 95% baseline (left) April's bar is twice as tall; from zero (right) the bars differ by one point, as the data do.](media/tufte_lie_factor.png)
 
 Common distortions to avoid:
 
@@ -623,7 +613,7 @@ Common distortions to avoid:
 
 Use small, repeated charts with the same scale to enable easy comparison across categories or time; `sharey=True` from the pandas section does this.
 
-![Small Multiples Example](media/tufte_small_multiples.png)
+![Six clinics on one shared y-axis, so Central's tall flu peak and West's flat season compare at a glance.](media/tufte_small_multiples.png)
 
 ### Show the Detail
 
@@ -638,25 +628,15 @@ Show as much detail as the data allows; don't oversimplify or aggregate unnecess
 | **Small multiples** | Are repeated groups comparable? | Keep scale and encoding consistent across panels |
 | **Resolution** | Did aggregation hide meaningful variation? | Show raw points or label the summary clearly |
 
-## Before/After Examples: Applying Tufte's Principles
-
-### Example 1: Bar Chart Redesign
-
-![Before (left): excessive colors, patterns, and heavy gridlines. After (right): direct labeling and a high data-ink ratio.](media/tufte_bar_comparison.png)
-
-### Example 2: Line Chart with Truncated Axis (Lie Factor)
-
-![Before (left): The narrow y-range exaggerates modest growth. After (right): starting at zero restores useful magnitude context.](media/tufte_lie_factor.png)
-
 ## Color Palette Best Practices
 
 Match the palette to the data type:
 
-![Color Palette Guide](media/color_palettes.png)
+![Sequential shades one hue, diverging meets two hues at a midpoint, qualitative uses unrelated hues, and the colorblind-safe set stays distinct for most readers.](media/color_palettes.png)
 
-- **Sequential:** ordered data (temperature, age, income) - single hue gradient
-- **Diverging:** data with a meaningful midpoint (profit/loss, correlation) - two contrasting hues
-- **Qualitative:** categories with no inherent order - distinct, unrelated colors
+- **Sequential:** ordered data such as age or a lab value; one hue from light to dark.
+- **Diverging:** data with a meaningful midpoint, such as a change from baseline or a correlation; two contrasting hues that meet at the midpoint, like `cmap='RdBu_r', center=0` in the seaborn heatmap card.
+- **Qualitative:** categories with no inherent order, such as clinics; distinct, unrelated hues.
 
 ## Make the chart accessible
 
@@ -671,13 +651,13 @@ An accessible chart is designed so more readers can recover its comparison.
 
 Example text alternative:
 
-> Line chart of mean prepared score by study round for standard and guided programs. Both rise across five rounds; the guided series rises from 61 to 79 and finishes seven points above the standard series. These are descriptive prepared summaries and do not establish a causal program effect.
+> Line chart of mean systolic blood pressure (mmHg) at five follow-up visits for a standard-care clinic and a nurse-led clinic. Both fall across the visits; the nurse-led series drops from 153 to 135 mmHg and finishes 9 mmHg below standard care. These are descriptive clinic summaries; patients were not randomized, so the chart does not show that the nurse-led model caused the difference.
 
 ### Reference Card: Redundant Cues for Bars and Lines
 
 - `ax.plot(x, y, color=..., marker='o', linestyle='-')`: Pair each line color with its own marker and line style.
 - `x = np.arange(n)`: One position per category group (Lecture 03); `ax.set_xticks(x, labels)` names the positions.
-- `ax.bar(x - width / 2, heights, width, label=..., hatch='//')`: Draw one set of side-by-side bars, shifted left by half a bar width. A fill pattern (**hatch**) such as `'//'` or `'..'` keeps groups distinguishable in grayscale; because it encodes the group, it is data ink, not chartjunk.
+- `ax.bar(x - width / 2, heights, width, label=..., hatch='//')`: Draw one set of side-by-side bars, shifted left by half a bar width. A fill pattern (**hatch**) such as `'//'` or `'..'` keeps groups distinguishable in grayscale; because it encodes the group, it is data ink, not chartjunk. `edgecolor=` colors each bar's outline and its hatch lines, and `linewidth=` sets the outline's thickness.
 - `ax.bar_label(bars, fmt='%d%%')`: Write each bar's value on it, such as `64%`; `bars` is what `ax.bar()` returns.
 - `ax.set_ylim(0, 100)`: Start bar axes at zero, because bar length encodes magnitude.
 
@@ -688,26 +668,26 @@ The text alternative above describes this chart: color is reinforced with marker
 ```python
 import matplotlib.pyplot as plt
 
-rounds = [1, 2, 3, 4, 5]
-standard = [60, 62, 65, 68, 72]
-guided = [61, 65, 70, 74, 79]
+visits = [1, 2, 3, 4, 5]
+standard = [152, 149, 147, 145, 144]
+nurse_led = [153, 147, 142, 138, 135]
 
 fig, ax = plt.subplots(figsize=(8, 5))
-ax.plot(rounds, standard, color='#E69F00', marker='s', linestyle='--')
-ax.plot(rounds, guided, color='#0072B2', marker='o', linestyle='-')
+ax.plot(visits, standard, color='#E69F00', marker='s', linestyle='--')
+ax.plot(visits, nurse_led, color='#0072B2', marker='o', linestyle='-')
 
-ax.text(5.08, standard[-1], 'Standard', va='center')
-ax.text(5.08, guided[-1], 'Guided', va='center')
-ax.set(xlabel='Study round', ylabel='Mean prepared score',
-       title='Guided program finishes 7 points higher by round 5')
-ax.set_xticks(rounds)
-ax.set_xlim(1, 5.7)
+ax.text(5.08, standard[-1], 'Standard care', va='center')
+ax.text(5.08, nurse_led[-1], 'Nurse-led', va='center')
+ax.set(xlabel='Follow-up visit', ylabel='Mean systolic BP (mmHg)',
+       title='Nurse-led clinic finishes 9 mmHg lower by visit 5')
+ax.set_xticks(visits)
+ax.set_xlim(1, 5.9)
 ax.grid(axis='y', alpha=0.25)
 fig.tight_layout()
 plt.show()
 ```
 
-Expected output: two rising lines labeled at their right ends, orange dashed squares for Standard (ending at 72) and blue solid circles for Guided (ending at 79), with no legend needed.
+Expected output: two falling lines labeled at their right ends, orange dashed squares for Standard care (ending at 144) and blue solid circles for Nurse-led (ending at 135), with no legend needed.
 
 ### Code Snippet: Grouped Bars That Work in Grayscale
 
@@ -738,7 +718,7 @@ Expected output: two pairs of bars rising from 0, labeled 58% and 55% for 2023-2
 
 Altair is **declarative**: you describe _what_ the chart shows and Altair works out _how_ to draw it, like ordering from a menu instead of cooking; matplotlib gives drawing steps one at a time. An Altair chart is **data → mark → typed encodings**; it becomes a **Vega-Lite specification**, a JSON document a browser renders and you can save and share. Each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
 
-![Six sessions show reflection scores increasing with activities completed; color and shape distinguish independent and guided pathways. This tiny example demonstrates encodings, not a causal effect.](media/altair_study_reference.png)
+![Six patients: systolic BP rises with age at both clinics, and color and shape both mark the clinic. Six points describe these patients, not a population.](media/altair_study_reference.png)
 
 ## Data, Mark, and Typed Encodings
 
@@ -747,10 +727,11 @@ Altair is **declarative**: you describe _what_ the chart shows and Altair works 
 | Task | Call | Purpose / arguments | Result |
 | :--- | :--- | :--- | :--- |
 | Build | `alt.Chart(study)` | Supply the source DataFrame | Chart to configure |
-| Build | `.mark_point(filled=True, size=90)` | Choose filled points and their area; `.mark_bar()` and `.mark_line()` draw bars or lines | Chart with marks |
+| Build | `.mark_point(filled=True, size=90)` | Choose filled points and their area; `.mark_bar()` and `.mark_line()` draw bars or lines, and `color='gray'` gives every mark one fixed color | Chart with marks |
 | Build | `.properties(title=..., width=360, height=260)` | Add a visible title and set size in pixels | Chart |
 | Encode | `.encode(x='field:Q', color='group:N')` | Map quantitative and categorical fields to visible properties | Encoded chart |
 | Encode | `alt.X('field:Q', title='Label (unit)')` | Set an axis title with its unit (also `alt.Y`) | Encoding channel |
+| Encode | `alt.Y('field:Q', scale=alt.Scale(zero=False))` | Let a point or line axis start near the data; Altair starts quantitative axes at zero by default, which bars need | Encoding channel |
 | Encode | `alt.Color('group:N', sort=['A', 'B'])` | Fix category and legend order (also for `alt.Shape`); `legend=None` hides the legend | Encoding channel |
 | Encode | `y='mean(field):Q'` | Let Altair average rows per x category; the unit becomes one summary per group | Aggregated encoding |
 | Interact | `.encode(tooltip=['field:Q'])` | Choose values shown on hover | Chart with tooltips |
@@ -764,25 +745,24 @@ Altair is **declarative**: you describe _what_ the chart shows and Altair works 
 import altair as alt
 import pandas as pd
 
-study = pd.DataFrame({
-    'activities_completed': [1, 2, 3, 4, 5, 6],
-    'reflection_score': [54, 58, 63, 66, 71, 75],
-    'pathway': ['Independent', 'Independent', 'Independent',
-                'Guided', 'Guided', 'Guided'],
+study = pd.DataFrame({  # six patients in a small blood-pressure study
+    'age': [38, 52, 67, 41, 55, 70],
+    'systolic_bp': [118, 129, 141, 124, 136, 150],
+    'clinic': ['North', 'North', 'North', 'South', 'South', 'South'],
 })
 
 scatter = alt.Chart(study).mark_point(filled=True, size=90).encode(
-    x=alt.X('activities_completed:Q', title='Activities completed (count)'),
-    y=alt.Y('reflection_score:Q', title='Reflection score (points)'),
-    color=alt.Color('pathway:N', title='Pathway'),
-    shape=alt.Shape('pathway:N', title='Pathway'),
-    tooltip=['activities_completed:Q', 'reflection_score:Q', 'pathway:N'],
-).properties(title='Prepared sessions: reflection score and activity count')
+    x=alt.X('age:Q', title='Age (years)'),
+    y=alt.Y('systolic_bp:Q', title='Systolic BP (mmHg)', scale=alt.Scale(zero=False)),
+    color=alt.Color('clinic:N', title='Clinic'),
+    shape=alt.Shape('clinic:N', title='Clinic'),
+    tooltip=['age:Q', 'systolic_bp:Q', 'clinic:N'],
+).properties(title='Systolic BP and age at two clinics')
 
 scatter.interactive()
 ```
 
-The color-plus-shape encodings identify the pathways redundantly. Tooltips and `.interactive()` help a reader inspect or zoom, but the title, axes, legend, and main comparison must stay visible without hover. `alt.hconcat(left, right)` and `alt.vconcat(top, bottom)` compose two already honest charts, as the last demo does.
+The color-plus-shape encodings identify the clinics redundantly. Tooltips and `.interactive()` help a reader inspect or zoom, but the title, axes, legend, and main comparison must stay visible without hover. `alt.hconcat(left, right)` and `alt.vconcat(top, bottom)` compose two already honest charts, as Demo 3 does.
 
 Altair does not replace the contract: state grain and roles first, choose truthful scales and marks, add redundant cues, and supply a text alternative for the shared view.
 
@@ -815,16 +795,16 @@ print(spec['mark'])                 # {'type': 'point', 'filled': True, 'size': 
 import json
 
 chart_record = {
-    'question': 'Do guided sessions show higher reflection scores at similar activity counts?',
-    'grain': 'one prepared learning session',
-    'text_alternative': 'Scatter plot of reflection score (points) against activities completed for six prepared sessions.',
+    'question': 'Does systolic BP rise with age at both clinics?',
+    'grain': 'one patient at one visit',
+    'text_alternative': 'Scatter plot of systolic BP (mmHg) against age (years) for six patients at two clinics.',
 }
 with open('study_record.json', 'w', encoding='utf-8') as file:
     json.dump(chart_record, file, indent=2, ensure_ascii=False)
 
 with open('study_record.json', encoding='utf-8') as file:
     saved = json.load(file)
-print(saved['grain'])  # one prepared learning session
+print(saved['grain'])  # one patient at one visit
 ```
 
 ![xkcd 1138: Heatmap. "Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.](media/xkcd_1138.png)

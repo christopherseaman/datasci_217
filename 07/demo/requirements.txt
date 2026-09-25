@@ -2,6 +2,7 @@ numpy==2.3.3
 pandas==3.0.5
 matplotlib==3.11.1
 seaborn==0.13.2
+scipy==1.18.1
 jupyterlab==4.4.10
 jupytext==1.18.1
 altair==5.5.0

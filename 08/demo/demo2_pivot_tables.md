@@ -1,696 +1,344 @@
+---
+jupyter:
+  jupytext:
+    notebook_metadata_filter: language_info
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.13
+---
+
 # Demo 2: Group Coverage and Result Shapes
 
-## Learning Objectives
-- See which rows and which groups a default summary silently leaves out
-- Keep unrecorded keys visible with `dropna=False`
-- Set a reporting order with `pd.Categorical` and show empty groups with `observed=False`
-- Add group context to every row with `transform`
-- Keep or drop whole groups with `filter`
-- Run a custom function per group with `apply`
+A clinic network's quarterly report groups 100,000 synthetic visits by clinic and by department. This demo checks which visits and which clinics the default report silently leaves out, then adds department context to every visit with `transform`, keeps or drops whole departments with `filter`, and runs custom per-department summaries with `apply`. Everything here comes from Lecture 08 up to the second demo break, plus Lectures 01 to 07.
+
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3; the whole notebook runs in under a minute. The patient IDs and values are synthetic.
 
 ## Setup
 
+The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+
 ```python
-import pandas as pd
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+
+```python
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-# Set inline plotting for Jupyter
-%matplotlib inline
-
-# Set random seed for reproducibility
-np.random.seed(42)
+print('pandas', pd.__version__)
 ```
+
+**Expect:** `pandas 3.0.5`.
 
 ## Part 1: Which Groups Appear in a Summary
 
-This demo builds the same employee table Demo 1 used, so it runs on its own. Rerun the next cell even if you still have Demo 1 open.
+This demo builds the same visit log Demo 1 used, so it runs on its own. Rerun the next cell even if you still have Demo 1 open.
 
-### Create Sample Data
+### Build the Visit Log
 
 ```python
-# Create large-scale employee dataset (100,000 rows)
-print("=== Creating Large-Scale Employee Dataset ===")
-n_employees = 100000
+rng = np.random.default_rng(42)
+n_visits = 100_000
+n_patients = 30_000
 
-# Generate realistic employee data
-departments = [
-    "Sales",
-    "Engineering",
-    "Marketing",
-    "HR",
-    "Finance",
-    "Operations",
-]
-regions = ["North", "South", "East", "West", "Central"]
-employee_names = [f"Emp_{i:05d}" for i in range(n_employees)]
+# One age per patient; about 15% of patients are children
+patient_age = np.where(
+    rng.random(n_patients) < 0.15,
+    rng.integers(0, 18, n_patients),
+    rng.integers(18, 96, n_patients),
+)
 
-# Create correlated data: Engineering has higher salaries, Sales varies more
-dept_salary_base = {
-    "Engineering": 85000,
-    "Finance": 75000,
-    "Marketing": 65000,
-    "Sales": 60000,
-    "HR": 55000,
-    "Operations": 50000,
-}
-
-dept_salary_std = {
-    "Engineering": 15000,
-    "Finance": 12000,
-    "Marketing": 10000,
-    "Sales": 20000,  # Higher variance
-    "HR": 8000,
-    "Operations": 7000,
-}
-
-# Generate data
-np.random.seed(42)
-departments_list = np.random.choice(departments, n_employees)
-regions_list = np.random.choice(regions, n_employees)
-
-# Create correlated salaries based on department
-salaries = []
-for dept in departments_list:
-    base = dept_salary_base[dept]
-    std = dept_salary_std[dept]
-    salary = np.random.normal(base, std)
-    salaries.append(max(30000, salary))  # Minimum wage floor
-
-# Experience correlates with salary (but with noise)
-experience = []
-for salary in salaries:
-    # More experienced employees tend to earn more, but with variation
-    exp_base = (salary - 40000) / 8000
-    exp = max(0, int(np.random.normal(exp_base, 2)))
-    experience.append(min(exp, 30))  # Cap at 30 years
-
-# Create DataFrame
-df = pd.DataFrame({
-    "Employee": employee_names,
-    "Department": departments_list,
-    "Region": regions_list,
-    "Salary": np.round(salaries, 2),
-    "Experience": experience,
+# Each visit belongs to one patient; patients visit about three times each
+who = rng.integers(0, n_patients, n_visits)
+visits = pd.DataFrame({
+    "visit_id": [f"V{i:06d}" for i in range(1, n_visits + 1)],
+    "patient_id": [f"P{i:05d}" for i in who],
+    "age": patient_age[who],   # each visit gets its patient's age (fancy indexing, Lecture 03)
+    "clinic": rng.choice(["North", "South", "East", "West", "Central"], n_visits),
+    "visit_type": rng.choice(["New", "Follow-up"], n_visits, p=[0.3, 0.7]),
 })
 
-# Add some additional features
-df["Years_At_Company"] = np.round(np.random.uniform(0.5, 14, n_employees), 1)
-df["Performance_Score"] = np.random.uniform(1, 5, n_employees)
-df["Bonus"] = df["Salary"] * df["Performance_Score"] * 0.1
+# Children go to Pediatrics; adults to one of five adult departments
+adult_departments = ["Family Medicine", "Cardiology", "Orthopedics", "Endocrinology", "Dermatology"]
+visits["department"] = np.where(
+    visits["age"] < 18,
+    "Pediatrics",
+    rng.choice(adult_departments, n_visits, p=[0.40, 0.20, 0.17, 0.13, 0.10]),
+)
 
-# Bonuses are paid after a full year, so this year's hires have no bonus on file
-df.loc[df["Years_At_Company"] < 1, "Bonus"] = np.nan
+# Typical wait (minutes) and its spread differ by department; walk-in Family Medicine varies most
+typical_wait = {"Orthopedics": 38, "Cardiology": 30, "Endocrinology": 26,
+                "Family Medicine": 22, "Dermatology": 18, "Pediatrics": 15}
+wait_spread = {"Orthopedics": 10, "Cardiology": 9, "Endocrinology": 8,
+               "Family Medicine": 14, "Dermatology": 6, "Pediatrics": 5}
+visits["wait_min"] = rng.normal(
+    visits["department"].map(typical_wait), visits["department"].map(wait_spread)
+).round()
+visits["wait_min"] = visits["wait_min"].clip(lower=0).astype(int)
 
-print(f"Dataset shape: {df.shape}")
-print(f"Employees in their first year (no bonus yet): {df['Bonus'].isna().sum():,}")
-print(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-print("\nFirst few rows:")
-print(df.head())
-print("\nBasic statistics:")
-print(df.describe())
+# Systolic blood pressure (mmHg) rises with age
+visits["systolic_bp"] = rng.normal(100 + 0.5 * visits["age"], 14).round().astype(int)
+
+# Satisfaction survey, 1 (poor) to 5 (excellent): longer waits, lower scores
+visits["satisfaction"] = (5.5 - visits["wait_min"] / 15 + rng.normal(0, 0.8, n_visits)).round()
+visits["satisfaction"] = visits["satisfaction"].clip(lower=1, upper=5)
+# About 3% of surveys were never returned
+visits.loc[rng.random(n_visits) < 0.03, "satisfaction"] = np.nan
+
+print(visits.shape)
+print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum():,}")
 ```
+
+**Expect:** `(100000, 9)` and 2,984 visits with no survey, the same log as Demo 1.
 
 ### Two Realities the Default Summary Hides
 
 ```python
-# Work on a copy so the original table stays clean for Parts 2-4
-reported = df.copy()
+# Work on a copy so `visits` stays unchanged for Parts 2-4
+reported = visits.copy()
 
-# 1. Some records arrived without a department
-unrecorded = np.random.choice(reported.index, size=250, replace=False)
-reported.loc[unrecorded, "Department"] = None
+# 1. Some visits were logged without a clinic (sample, Lecture 05, picks the same 250 every run)
+unrecorded = reported.sample(n=250, random_state=8).index
+reported.loc[unrecorded, "clinic"] = None
 
-# 2. Legal opened this quarter and has not hired anyone yet
-reporting_order = [
-    "Engineering",
-    "Finance",
-    "Marketing",
-    "Sales",
-    "HR",
-    "Operations",
-    "Legal",
-]
+# 2. Bayview opened this quarter and has not seen a patient yet
+reporting_order = ["North", "South", "East", "West", "Central", "Bayview"]
 
-print("=== What the Table Contains ===")
 print(f"Rows: {len(reported):,}")
-print(f"Rows with no department recorded: {reported['Department'].isna().sum()}")
-print(f"Departments named in the report: {len(reporting_order)}")
-print(f"Departments present in the data: {reported['Department'].nunique()}")
+print(f"Visits with no clinic recorded: {reported['clinic'].isna().sum()}")
+print(f"Clinics named in the report: {len(reporting_order)}")
+print(f"Clinics present in the data: {reported['clinic'].nunique()}")
 ```
 
-Six departments have employees, a seventh exists on paper, and 250 rows name no department at all. A default `groupby` shows six groups and says nothing about the rest.
+**Expect:** 100,000 rows, 250 visits with no clinic, 6 clinics in the report, and 5 in the data. A default `groupby` shows five groups and says nothing about the rest.
 
 ### Missing Keys: `dropna`
 
 ```python
 # The default drops rows whose key is missing, before the split
-default_counts = reported.groupby("Department")["Salary"].count()
-kept_counts = reported.groupby("Department", dropna=False)["Salary"].count()
+default_counts = reported.groupby("clinic")["wait_min"].count()
+kept_counts = reported.groupby("clinic", dropna=False)["wait_min"].count()
 
 print("=== Default: dropna=True ===")
 print(default_counts)
-print(f"Employees counted: {default_counts.sum():,} of {len(reported):,}")
+print(f"Visits counted: {default_counts.sum():,} of {len(reported):,}")
 
 print("\n=== dropna=False ===")
 print(kept_counts)
-print(f"Employees counted: {kept_counts.sum():,} of {len(reported):,}")
+print(f"Visits counted: {kept_counts.sum():,} of {len(reported):,}")
 ```
 
-The default report loses 250 people with no warning; `dropna=False` keeps them as a `NaN` group, listed last, so the gap is visible and someone can go find the missing departments.
+**Expect:** the default report counts 99,750 of 100,000 visits across five clinics, with no warning that 250 are missing. `dropna=False` keeps them as a `NaN` group, listed last, so the counts add up to 100,000 and someone can go find the missing clinic names.
 
 ### Reporting Order and Empty Groups: `pd.Categorical` and `observed`
 
 ```python
 # Declare the allowed values and the order the report should use
-reported["Department"] = pd.Categorical(
-    reported["Department"], categories=reporting_order, ordered=True
-)
+reported["clinic"] = pd.Categorical(reported["clinic"], categories=reporting_order, ordered=True)
 
-present_only = reported.groupby("Department", observed=True, dropna=False)[
-    "Salary"
-].agg(["count", "mean"])
-every_department = reported.groupby("Department", observed=False, dropna=False)[
-    "Salary"
-].agg(["count", "mean"])
+present_only = reported.groupby("clinic", observed=True, dropna=False)["wait_min"].agg(["count", "mean"])
+every_clinic = reported.groupby("clinic", observed=False, dropna=False)["wait_min"].agg(["count", "mean"])
 
-print("=== observed=True: Only Departments With Employees ===")
-print(present_only.round(0))
-print("\n=== observed=False: Every Declared Department ===")
-print(every_department.round(0))
+print("=== observed=True: only clinics with visits ===")
+print(present_only.round(1))
+print("\n=== observed=False: every declared clinic ===")
+print(every_clinic.round(1))
 ```
 
-Both tables follow the order you declared, not alphabetical order. Only the second one shows Legal, with a count of `0` and a mean of `NaN`: no salaries to average is not the same as a mean salary of zero.
+**Expect:** both tables follow the declared order (North, South, East, West, Central) instead of alphabetical order, and both keep the `NaN` group last because of `dropna=False`. Only the second shows Bayview, with a count of `0` and a mean of `NaN`: no waits to average is not a mean wait of zero.
 
 ### The Same Choices in a Pivot Table
 
 ```python
-# pivot_table makes the same two choices, and dropna= has one extra job here
-staffing = pd.pivot_table(
-    reported,
-    values="Salary",
-    index="Department",
-    columns="Region",
-    aggfunc="count",
-    observed=False,
-    dropna=False,
-    fill_value=0,
-)
-print("=== Headcount by Department × Region (dropna=False) ===")
-print(staffing)
-print("\nRows in the table:", len(staffing))
+# Counts: an empty clinic gives 0, which is a real value
+counts_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                             aggfunc="count", observed=False, dropna=False, fill_value=0)
+print("=== Visit counts, dropna=False ===")
+print(counts_kept)
+print("Rows:", len(counts_kept))
 
-# The same counts with the default dropna=True
-counted_default = pd.pivot_table(
-    reported,
-    values="Salary",
-    index="Department",
-    columns="Region",
-    aggfunc="count",
-    observed=False,
-    dropna=True,
-    fill_value=0,
-)
-print("\n=== Same Counts with dropna=True ===")
-print(counted_default)
-print("\nRows in the table:", len(counted_default))
-
-# Mean salary instead of a count, with the default dropna=True
-mean_default = pd.pivot_table(
-    reported,
-    values="Salary",
-    index="Department",
-    columns="Region",
-    aggfunc="mean",
-    observed=False,
-    dropna=True,
-)
-print("\n=== Mean Salary with dropna=True ===")
-print(mean_default.round(0))
-print("\nRows in the table:", len(mean_default))
-
-# The same means with dropna=False, to see which rows the default removed
-mean_kept = pd.pivot_table(
-    reported,
-    values="Salary",
-    index="Department",
-    columns="Region",
-    aggfunc="mean",
-    observed=False,
-    dropna=False,
-)
-print("\n=== Mean Salary with dropna=False ===")
-print(mean_kept.round(0))
-print("\nRows in the table:", len(mean_kept))
+counts_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                                aggfunc="count", observed=False, dropna=True, fill_value=0)
+print("\n=== Visit counts, dropna=True ===")
+print(counts_default)
+print("Rows:", len(counts_default))
 ```
 
-`observed=False` asks for every declared department, so Legal gets a row in three of the four tables; only the mean with `dropna=True` loses it. `dropna=False` adds the rows whose department was never recorded: eight rows, the six staffed departments, Legal, and the `NaN` group. Switching to `dropna=True` drops that `NaN` group but keeps Legal at seven rows, because counting an empty group gives `0`, and `0` is not missing. The extra job `dropna=` has in a pivot table is about the result, not the category: `dropna=True` also removes any row or column whose cells all came out `NaN`. Both rules cut a row from the table of means: the `NaN` group goes because its key is missing, and Legal goes because its five cells are all `NaN`, leaving six rows. The last table keeps both, and its `NaN` row is not empty at all: five real means, from `61288` in East to `67633` in Central, averaging the salaries of the 250 people the default report never mentions. Counting rows is exactly the case where `fill_value=0` is right.
+**Expect:** 7 rows with `dropna=False`: the five open clinics, Bayview with six zeros, and the `NaN` group. The `NaN` row comes first here, not last: with a categorical key, `observed=False`, and a `columns=` key, `pivot_table` puts it at the top, so find that row by its label, not by its position. With `dropna=True`, 6 rows: the `NaN` group goes, but Bayview stays, because a count of `0` is a value, not a missing one.
 
-One thing to read carefully: the `NaN` row is not last here. `groupby(dropna=False)` lists it after every named group, but `pivot_table` with a categorical key, `observed=False`, and a `columns=` key puts it at the top, above Engineering, in both tables that keep it. Find that row by its label, not by its position.
+```python
+# Means: an empty clinic gives NaN in every cell, and dropna=True removes all-NaN rows
+means_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                               aggfunc="mean", observed=False, dropna=True)
+print("=== Mean wait, dropna=True ===")
+print(means_default.round(1))
+print("Rows:", len(means_default))
+
+means_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                            aggfunc="mean", observed=False, dropna=False)
+print("\n=== Mean wait, dropna=False ===")
+print(means_kept.round(1))
+print("Rows:", len(means_kept))
+```
+
+**Expect:** 5 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Bayview goes because all six of its cells are `NaN`. With `dropna=False`, 7 rows. The `NaN` row, again at the top, is not empty: six real means, from 16.5 minutes in Pediatrics to 38.6 in Orthopedics, computed from the 250 visits the default report never mentions.
 
 ### Show the Difference
 
 ```python
-# Every group the data can produce, marking the ones a default report hides
-full_counts = reported.groupby("Department", observed=False, dropna=False)[
-    "Salary"
-].count()
-default_groups = list(
-    reported.groupby("Department", observed=True)["Salary"].count().index
-)
+# Every group the data can produce, from the observed=False, dropna=False table above
+full_counts = every_clinic["count"]
+# One label and color per row, in the same order; red marks the two the default report hides
+labels = ["North", "South", "East", "West", "Central", "Bayview", "(not recorded)"]
+colors = ["steelblue", "steelblue", "steelblue", "steelblue", "steelblue", "red", "red"]
 
-labels = [
-    name if pd.notna(name) else "(not recorded)" for name in full_counts.index
-]
-hidden = [
-    pd.isna(name) or name not in default_groups for name in full_counts.index
-]
-colors = ["tab:red" if is_hidden else "tab:blue" for is_hidden in hidden]
-
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.bar(labels, full_counts.to_numpy(), color=colors, alpha=0.85)
-for i, (value, is_hidden) in enumerate(zip(full_counts.to_numpy(), hidden)):
-    if is_hidden:
-        ax.text(
-            i,
-            value + 600,
-            "missing from the default report",
-            ha="center",
-            va="bottom",
-            rotation=90,
-            color="tab:red",
-            fontsize=9,
-            fontweight="bold",
-        )
-ax.set_title(
-    "What the Default Report Leaves Out", fontsize=14, fontweight="bold"
-)
-ax.set_ylabel("Employees Counted")
-ax.tick_params(axis="x", rotation=45)
-ax.grid(axis="y", alpha=0.3)
-
+fig, ax = plt.subplots(figsize=(9, 4))
+bars = ax.bar(labels, full_counts, color=colors)
+ax.bar_label(bars)
+ax.set_title("Visits per clinic; red bars are missing from the default report")
+ax.set_ylabel("Visits counted")
 plt.tight_layout()
 plt.show()
 ```
 
-Two bars are red: Legal, an empty group with a real headcount question behind it, and the 250 employees whose department was never recorded. A default `groupby` prints neither one.
+**Expect:** five blue bars of about 20,000 visits each, then Bayview labelled `0` with no bar at all and a thin red bar labelled `250` for the visits with no clinic. Neither would appear in a default report, and neither is easy to see even here, which is why a report needs `observed=False` and `dropna=False` to list them.
 
 ## Part 2: Transform Keeps Every Row
 
-`transform` computes a statistic per group and copies it back to every row of that group, so the result has the same length and index as the input and can become a new column.
+`transform` computes a statistic per group and copies it back to every row of that group, so the result has the same length and index as the input and can become a new column. The rest of the demo uses `visits`, which still has every clinic recorded.
 
-### Add Department Statistics to Every Row
+### Intentional Mistake: Attaching a Summary to Rows
 
 ```python
-# Transform: Add group statistics as new columns
-print("=== Transform Operations ===")
-print("Adding department-level statistics to each employee record...")
+# A per-department summary has 6 rows, labeled by department
+dept_mean = visits.groupby("department")["wait_min"].mean()
 
-df["Dept_Salary_Mean"] = df.groupby("Department")["Salary"].transform("mean")
-df["Dept_Salary_Std"] = df.groupby("Department")["Salary"].transform("std")
-df["Dept_Salary_Median"] = df.groupby("Department")["Salary"].transform(
-    "median"
-)
-df["Salary_Normalized"] = df.groupby("Department")["Salary"].transform(
-    lambda x: (x - x.mean()) / x.std()
-)
-df["Salary_Percentile_Rank"] = df.groupby("Department")["Salary"].transform(
-    lambda x: pd.qcut(
-        x, q=4, labels=["Q1", "Q2", "Q3", "Q4"], duplicates="drop"
-    )
-)
-
-# Calculate how many standard deviations each employee is from their department mean
-df["Salary_Z_Score"] = (df["Salary"] - df["Dept_Salary_Mean"]) / df[
-    "Dept_Salary_Std"
-]
-
-print("Sample of transformed data:")
-sample_cols = [
-    "Department",
-    "Employee",
-    "Salary",
-    "Dept_Salary_Mean",
-    "Dept_Salary_Std",
-    "Salary_Normalized",
-    "Salary_Z_Score",
-    "Salary_Percentile_Rank",
-]
-print(df[sample_cols].head(10))
-
-# Visualize transform results
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-
-# 1. Distribution of normalized salaries by department
-for dept in df["Department"].unique():
-    dept_data = df[df["Department"] == dept]["Salary_Normalized"]
-    axes[0, 0].hist(dept_data, alpha=0.5, label=dept, bins=30)
-axes[0, 0].set_title(
-    "Normalized Salary Distribution by Department",
-    fontsize=14,
-    fontweight="bold",
-)
-axes[0, 0].set_xlabel("Normalized Salary (Z-score)")
-axes[0, 0].set_ylabel("Frequency")
-axes[0, 0].legend()
-axes[0, 0].grid(alpha=0.3)
-
-# 2. Z-score distribution
-df["Salary_Z_Score"].hist(
-    bins=50, ax=axes[0, 1], color="steelblue", edgecolor="black"
-)
-axes[0, 1].axvline(
-    0, color="red", linestyle="--", linewidth=2, label="Department Mean"
-)
-axes[0, 1].set_title(
-    "Salary Z-Score Distribution (All Employees)",
-    fontsize=14,
-    fontweight="bold",
-)
-axes[0, 1].set_xlabel("Z-Score (Standard Deviations from Dept Mean)")
-axes[0, 1].set_ylabel("Frequency")
-axes[0, 1].legend()
-axes[0, 1].grid(alpha=0.3)
-
-# 3. Salary vs Department Mean (scatter)
-for dept in df["Department"].unique():
-    dept_data = df[df["Department"] == dept]
-    axes[1, 0].scatter(
-        dept_data["Dept_Salary_Mean"],
-        dept_data["Salary"],
-        alpha=0.3,
-        label=dept,
-        s=10,
-    )
-axes[1, 0].plot(
-    [df["Salary"].min(), df["Salary"].max()],
-    [df["Salary"].min(), df["Salary"].max()],
-    "r--",
-    linewidth=2,
-    label="y=x (at mean)",
-)
-axes[1, 0].set_title(
-    "Individual Salary vs Department Mean", fontsize=14, fontweight="bold"
-)
-axes[1, 0].set_xlabel("Department Mean Salary ($)")
-axes[1, 0].set_ylabel("Individual Salary ($)")
-axes[1, 0].legend()
-axes[1, 0].grid(alpha=0.3)
-
-# 4. Percentile rank distribution
-percentile_counts = df["Salary_Percentile_Rank"].value_counts().sort_index()
-percentile_counts.plot(kind="bar", ax=axes[1, 1], color="coral")
-axes[1, 1].set_title(
-    "Salary Percentile Rank Distribution", fontsize=14, fontweight="bold"
-)
-axes[1, 1].set_xlabel("Percentile Rank")
-axes[1, 1].set_ylabel("Number of Employees")
-axes[1, 1].tick_params(axis="x", rotation=0)
-axes[1, 1].grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+wrong = visits.copy()
+wrong["dept_mean_wait"] = dept_mean
+print(wrong[["department", "wait_min", "dept_mean_wait"]].head())
+print("Missing values in the new column:", wrong["dept_mean_wait"].isna().sum())
 ```
 
-`df` still has 100,000 rows in the same order: `transform` added columns, it did not summarize. `Salary_Normalized` and `Salary_Z_Score` agree to the last decimal, because both compare a salary with its own department's mean and spread. The z-score histogram is centred on 0 by construction, and the department histograms overlap once each one is measured against its own mean.
+**Expect:** every `dept_mean_wait` is `NaN` (100,000 missing), with no error. The summary's labels are department names and the visits are labeled 0 to 99,999, so nothing lines up. The fix is `transform`, next.
+
+### Add Department Context to Every Visit
+
+```python
+by_dept = visits.groupby("department")["wait_min"]
+visits["dept_mean_wait"] = by_dept.transform("mean")
+visits["dept_sd_wait"] = by_dept.transform("std")
+visits["wait_vs_dept"] = visits["wait_min"] - visits["dept_mean_wait"]
+visits["wait_z"] = visits["wait_vs_dept"] / visits["dept_sd_wait"]
+
+# The same z-score with a lambda: the function receives one department's waits at a time
+z_lambda = by_dept.transform(lambda x: (x - x.mean()) / x.std())
+
+print(visits[["department", "wait_min", "dept_mean_wait", "wait_vs_dept", "wait_z"]].head().round(2))
+print("\nRows:", len(visits))
+print("Same index as visits?", z_lambda.index.equals(visits.index))
+print("Largest difference between the two z-scores:", (visits["wait_z"] - z_lambda).abs().max())
+```
+
+**Expect:** the first five visits with their department's mean, the difference, and the z-score; row 0 is a 28-minute Family Medicine wait, 5.70 minutes above that department's 22.30, so `wait_z` is 0.43. Then `Rows: 100000`, `True`, and a difference of about `6e-15`: the two z-scores agree to rounding error. `transform` added columns; it did not summarize.
+
+```python
+# The same 30-minute wait, measured against each department's own waits
+thirty = visits[visits["wait_min"] == 30]
+print(thirty.groupby("department")["wait_z"].mean().round(2))
+```
+
+**Expect:** the same 30-minute wait is ordinary in Cardiology (z = 0.01), about 3 standard deviations above the Pediatrics mean (2.99), and shorter than usual in Orthopedics (-0.8). Group context changes what one number means.
+
+### Quartiles Within Each Department
+
+```python
+# qcut (Lecture 05) inside transform: quartiles of each department's own waits
+visits["wait_quartile"] = by_dept.transform(
+    lambda x: pd.qcut(x, q=4, labels=["Q1", "Q2", "Q3", "Q4"])
+)
+print(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True))
+```
+
+**Expect:** each department split into Q1 to Q4 by its own waits, with row totals equal to its visit counts and 100,000 in the corner. The quarters are not exactly equal (Pediatrics Q1 has 4,628 visits, Q3 has 3,153) because many visits share the same whole-minute wait, and tied waits always land in the same quartile.
 
 ## Part 3: Filter Keeps or Drops Whole Groups
 
 `filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
 
-### Keep Only the Groups That Qualify
+### Keep Only the Departments That Qualify
 
 ```python
-# Filter: Keep only departments with more than threshold employees
-print("=== Filter Operations ===")
-min_employees = 15000  # Filter departments with at least 15,000 employees
-filtered_large_depts = df.groupby("Department").filter(
-    lambda x: len(x) >= min_employees
-)
-print(f"Departments with at least {min_employees:,} employees:")
-print(f"Filtered dataset shape: {filtered_large_depts.shape}")
-print(f"Departments kept: {filtered_large_depts['Department'].unique()}")
+by_department = visits.groupby("department")
 
-# Filter: Keep only departments with average salary > threshold
-salary_threshold = 65000
-high_salary_depts = df.groupby("Department").filter(
-    lambda x: x["Salary"].mean() > salary_threshold
-)
-print(f"\nDepartments with average salary > ${salary_threshold:,}:")
-print(f"Filtered dataset shape: {high_salary_depts.shape}")
-print(f"Departments kept: {high_salary_depts['Department'].unique()}")
+# Departments with at least 15,000 visits
+busy = by_department.filter(lambda g: len(g) >= 15_000)
+print(f"At least 15,000 visits: {len(busy):,} rows, departments {sorted(busy['department'].unique())}")
 
-# Filter: Keep departments with high variance (interesting for analysis)
-high_variance_depts = df.groupby("Department").filter(
-    lambda x: x["Salary"].std() > 12000
-)
-print(f"\nDepartments with salary std > $12,000:")
-print(f"Filtered dataset shape: {high_variance_depts.shape}")
-print(f"Departments kept: {high_variance_depts['Department'].unique()}")
+# Departments whose mean wait is over 25 minutes
+slow = by_department.filter(lambda g: g["wait_min"].mean() > 25)
+print(f"Mean wait over 25 min:  {len(slow):,} rows, departments {sorted(slow['department'].unique())}")
 
-# Visualize filtering effects
-fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+# Departments whose waits vary the most (standard deviation over 9.5 minutes)
+variable = by_department.filter(lambda g: g["wait_min"].std() > 9.5)
+print(f"Wait SD over 9.5 min:   {len(variable):,} rows, departments {sorted(variable['department'].unique())}")
 
-# 1. Department sizes (original vs filtered)
-dept_counts_original = df["Department"].value_counts().sort_index()
-dept_counts_filtered = (
-    filtered_large_depts["Department"].value_counts().sort_index()
-)
-x_pos = np.arange(len(dept_counts_original.index))
-width = 0.35
-axes[0].bar(
-    x_pos - width / 2,
-    dept_counts_original.values,
-    width,
-    label="Original",
-    alpha=0.7,
-)
-axes[0].bar(
-    x_pos + width / 2,
-    dept_counts_filtered.values,
-    width,
-    label="Filtered",
-    alpha=0.7,
-)
-axes[0].set_xticks(x_pos)
-axes[0].set_xticklabels(dept_counts_original.index, rotation=45)
-axes[0].set_title(
-    f"Department Size: Original vs Filtered (min {min_employees:,})",
-    fontsize=12,
-    fontweight="bold",
-)
-axes[0].set_ylabel("Number of Employees")
-axes[0].legend()
-axes[0].grid(axis="y", alpha=0.3)
-
-# 2. Salary distributions: original vs high-salary departments
-axes[1].hist(
-    df["Salary"], bins=50, alpha=0.5, label="All Departments", color="blue"
-)
-axes[1].hist(
-    high_salary_depts["Salary"],
-    bins=50,
-    alpha=0.5,
-    label=f"Avg Salary > ${salary_threshold:,}",
-    color="red",
-)
-axes[1].set_title(
-    "Salary Distribution: Filtering Effect", fontsize=12, fontweight="bold"
-)
-axes[1].set_xlabel("Salary ($)")
-axes[1].set_ylabel("Frequency")
-axes[1].legend()
-axes[1].grid(alpha=0.3)
-
-# 3. Department salary statistics comparison
-dept_stats_all = df.groupby("Department")["Salary"].agg(["mean", "std"])
-dept_stats_filtered = high_salary_depts.groupby("Department")["Salary"].agg([
-    "mean",
-    "std",
-])
-# Only compare departments that exist in both datasets
-common_depts = dept_stats_all.index.intersection(dept_stats_filtered.index)
-if len(common_depts) > 0:
-    dept_stats_all_subset = dept_stats_all.loc[common_depts]
-    dept_stats_filtered_subset = dept_stats_filtered.loc[common_depts]
-    x_pos = np.arange(len(common_depts))
-    axes[2].bar(
-        x_pos - width / 2,
-        dept_stats_all_subset["mean"],
-        width,
-        label="All",
-        alpha=0.7,
-        yerr=dept_stats_all_subset["std"],
-        capsize=5,
-    )
-    axes[2].bar(
-        x_pos + width / 2,
-        dept_stats_filtered_subset["mean"],
-        width,
-        label="Filtered",
-        alpha=0.7,
-        yerr=dept_stats_filtered_subset["std"],
-        capsize=5,
-    )
-    axes[2].set_xticks(x_pos)
-    axes[2].set_xticklabels(common_depts, rotation=45)
-else:
-    axes[2].text(
-        0.5,
-        0.5,
-        "No common departments\nbetween filtered datasets",
-        ha="center",
-        va="center",
-        transform=axes[2].transAxes,
-    )
-axes[2].set_title(
-    f"Mean Salary: Original vs Filtered (avg > ${salary_threshold:,})",
-    fontsize=12,
-    fontweight="bold",
-)
-axes[2].set_ylabel("Mean Salary ($)")
-axes[2].legend()
-axes[2].grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+# Checkpoint: the kept rows are the original rows, unchanged
+print("\nRows unchanged?", busy.equals(visits.loc[busy.index]))
 ```
 
-`filter` returns rows, not groups. All six departments clear 15,000 employees, so the first result keeps all 100,000 rows. Only Engineering and Finance average more than $65,000 (33,609 rows) and only Engineering and Sales have a salary spread above $12,000 (33,391 rows). The kept rows are the originals, unchanged.
+**Expect:** only Family Medicine and Cardiology have 15,000 or more visits (51,310 rows); Pediatrics, at 14,672, just misses. Cardiology, Endocrinology, and Orthopedics average over 25 minutes (42,724 rows). Family Medicine and Orthopedics have the most variable waits (48,659 rows). Then `True`: `filter` returns the original rows of the passing groups, not one row per group.
 
 ## Part 4: Apply Runs Your Own Function per Group
 
 `apply` hands each group to your function as a small DataFrame and stitches the results together. Use it when no built-in aggregation fits; it is the slowest of the four, and its output shape depends on what your function returns.
 
-### Custom Statistics and Top-N per Group
+### A Custom Summary per Department
 
 ```python
-# Apply: Custom function for comprehensive salary statistics
-def comprehensive_salary_stats(group):
-    """Calculate comprehensive statistics for a group"""
+def wait_summary(group):
+    """Summarize one department's waits (minutes) as a Series."""
+    q25 = group["wait_min"].quantile(0.25)
+    q75 = group["wait_min"].quantile(0.75)
     return pd.Series({
-        "count": len(group),
-        "mean": group["Salary"].mean(),
-        "median": group["Salary"].median(),
-        "std": group["Salary"].std(),
-        "min": group["Salary"].min(),
-        "max": group["Salary"].max(),
-        "range": group["Salary"].max() - group["Salary"].min(),
-        "q25": group["Salary"].quantile(0.25),
-        "q75": group["Salary"].quantile(0.75),
-        "iqr": group["Salary"].quantile(0.75) - group["Salary"].quantile(0.25),
-        "mean_experience": group["Experience"].mean(),
-        "mean_performance": group["Performance_Score"].mean(),
+        "visits": len(group),
+        "median": group["wait_min"].median(),
+        "q25": q25,
+        "q75": q75,
+        "iqr": q75 - q25,
+        "over_60_min": (group["wait_min"] > 60).sum(),
     })
 
-print("=== Apply Operations ===")
-print("Comprehensive statistics by department:")
-dept_stats_apply = df.groupby("Department").apply(
-    comprehensive_salary_stats, include_groups=False
-)
-print(dept_stats_apply)
+dept_summary = visits.groupby("department").apply(wait_summary, include_groups=False)
+print(dept_summary)
 
-# Apply: Get top N earners in each department
-top_n = 5
-top_earners = df.groupby("Department").apply(
-    lambda x: x.nlargest(top_n, "Salary"), include_groups=False
-)
-print(f"\nTop {top_n} earners per department:")
-# Department is in the index, so we need to reset it or access it differently
-top_earners_display = top_earners.reset_index(level=0, drop=False)
-print(
-    top_earners_display[
-        ["Department", "Employee", "Salary", "Experience", "Performance_Score"]
-    ]
-)
-
-# Apply: Calculate department-specific percentiles
-def calculate_percentiles(group):
-    """Calculate salary percentiles for a group"""
-    percentiles = [10, 25, 50, 75, 90, 95, 99]
-    return pd.Series({
-        f"p{p}": group["Salary"].quantile(p / 100) for p in percentiles
-    })
-
-dept_percentiles = df.groupby("Department").apply(
-    calculate_percentiles, include_groups=False
-)
-print("\nSalary percentiles by department:")
-print(dept_percentiles)
-
-# Visualize apply results
-fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-
-# 1. Top earners visualization
-top_earners_plot = (
-    top_earners_display.groupby("Department")["Salary"]
-    .mean()
-    .sort_values(ascending=False)
-)
-top_earners_plot.plot(kind="barh", ax=axes[0, 0], color="gold")
-axes[0, 0].set_title(
-    f"Mean Salary of Top {top_n} Earners by Department",
-    fontsize=14,
-    fontweight="bold",
-)
-axes[0, 0].set_xlabel("Mean Salary ($)")
-axes[0, 0].grid(axis="x", alpha=0.3)
-
-# 2. Percentile comparison across departments
-dept_percentiles.T.plot(kind="bar", ax=axes[0, 1], width=0.8)
-axes[0, 1].set_title(
-    "Salary Percentiles by Department", fontsize=14, fontweight="bold"
-)
-axes[0, 1].set_ylabel("Salary ($)")
-axes[0, 1].set_xlabel("Percentile")
-axes[0, 1].legend(
-    title="Department", bbox_to_anchor=(1.05, 1), loc="upper left"
-)
-axes[0, 1].tick_params(axis="x", rotation=0)
-axes[0, 1].grid(axis="y", alpha=0.3)
-
-# 3. IQR comparison (shows salary spread)
-iqr_data = dept_stats_apply["iqr"].sort_values(ascending=False)
-iqr_data.plot(kind="bar", ax=axes[1, 0], color="steelblue")
-axes[1, 0].set_title(
-    "Interquartile Range (IQR) by Department", fontsize=14, fontweight="bold"
-)
-axes[1, 0].set_ylabel("IQR ($)")
-axes[1, 0].tick_params(axis="x", rotation=45)
-axes[1, 0].grid(axis="y", alpha=0.3)
-
-# 4. Mean vs Median comparison (shows skewness)
-comparison_df = pd.DataFrame({
-    "Mean": dept_stats_apply["mean"],
-    "Median": dept_stats_apply["median"],
-})
-comparison_df.plot(kind="bar", ax=axes[1, 1], width=0.8)
-axes[1, 1].set_title(
-    "Mean vs Median Salary by Department", fontsize=14, fontweight="bold"
-)
-axes[1, 1].set_ylabel("Salary ($)")
-axes[1, 1].tick_params(axis="x", rotation=45)
-axes[1, 1].legend()
-axes[1, 1].grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+# Checkpoint: the medians match the built-in aggregation
+builtin = visits.groupby("department")["wait_min"].median()
+print("\nSame medians as agg('median')?", dept_summary["median"].equals(builtin))
 ```
 
-The shape of an `apply` result follows the function you pass. Returning a `Series` of statistics gives one row per department, just like `agg`; returning `nlargest(5, "Salary")` gives whole employee rows, five per department, with the department in an outer index level. When the function could have been `agg` or `transform`, prefer those: they run as compiled code instead of once per group.
+**Expect:** one row per department, like `agg`, with the columns your function named. Every number prints with `.0` because a `Series` that holds a median stores all its values as floats. Family Medicine has the widest interquartile range (18 minutes) and Orthopedics the most waits over an hour (187). Then `True`.
 
-## Key Takeaways
+### The Longest Waits in Each Department
 
-1. **Coverage is a choice**: `dropna=` decides whether rows with a missing key are counted, `observed=` whether empty categories appear
-2. **Declare the categories**: `pd.Categorical(..., categories=[...], ordered=True)` fixes the reporting order and names the groups that should exist
-3. **Pivot tables make the same choices**: plus `dropna=False` to keep rows with a missing key and any row or column whose cells all came out `NaN`
-4. **Transform**: same rows, same index, one new column of group context
-5. **Filter**: original rows from the groups that pass a whole-group test
-6. **Apply**: any per-group function, at the cost of speed and a shape you have to check
-7. **Check the totals**: every result in this demo can be checked by counting rows before and after
+```python
+longest = visits.groupby("department").apply(
+    lambda g: g.nlargest(2, "wait_min"), include_groups=False
+)
+print(longest[["patient_id", "clinic", "wait_min"]])
+print("\nRows:", len(longest))
+```
 
-## Next Steps
-
-- Rerun Part 1 with `dropna=True` and confirm exactly 250 employees disappear
-- Rewrite one `apply` call in Part 4 as `agg` or `transform`, and compare the results
-
+**Expect:** 12 rows: the two longest waits in each department, with the department as the outer index level and each visit's original row number as the inner one. Family Medicine's longest wait was 80 minutes. When the function returns whole rows, `apply` returns rows; when it returns one `Series` per group, it returns one row per group. When `agg` or `transform` can do the job, prefer them: they run as compiled code instead of once per group.

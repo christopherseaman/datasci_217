@@ -15,19 +15,19 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 # Jupyter Notebooks: Interactive Data Analysis
 
-In Lectures 01–03 you ran Python two ways. Lines typed at the `>>>` prompt (the REPL) are remembered until you exit. A `.py` script starts from nothing and runs top to bottom. Exploring a new dataset needs a bit of both. You load a clinic's visit file once, look at the first rows, notice that temperature was recorded as text, try a fix, and look again, without reloading the file after every question. You also want the explanation next to the results so a colleague can follow your reasoning.
+A **Jupyter notebook** (`.ipynb` file) is a document made of **cells**: a **code cell** holds Python, and a **Markdown cell** holds formatted notes like the ones you wrote in Lecture 02. Think of a lab notebook, where the procedure, the measurement, and your interpretation sit on the same page. When you run a code cell, its result appears directly beneath it and is saved in the file.
 
-A **Jupyter notebook** (`.ipynb` file) does that. It is a document made of **cells**: a **code cell** holds Python, and a **Markdown cell** holds formatted notes like the ones you wrote in Lecture 02. Think of a lab notebook, where the procedure, the measurement, and your interpretation sit on the same page. When you run a code cell, its result appears directly beneath it and is saved in the file.
+Notebooks suit exploring data. You load a clinic's visit file once, look at the first rows, try a fix, and look again without reloading the file, and your explanation sits next to the results so a colleague can follow your reasoning.
 
-The code runs in a **kernel**: a Python process that stays alive between cells, like the REPL. A kernel uses one Python environment, so choosing a notebook's kernel is how you point it at the `.venv` you created in Lecture 03. Scripts remain the better fit for automation; notebooks are for exploring and explaining.
+The code runs in a **kernel**: a Python process that stays alive between cells, so values persist as they do at the `>>>` prompt instead of starting fresh like a `.py` script. A kernel uses one Python environment, so choosing a notebook's kernel is how you point it at the `.venv` you created in Lecture 03. Scripts remain the better fit for automation; notebooks are for exploring and explaining.
 
 ## Opening and Running a Notebook
 
-You will use notebooks in two places. Assignments run locally in VS Code. Lecture demos open in **Google Colab**, a free hosted notebook service, so you can run them without installing anything. In Colab the kernel runs on a Google machine called a **runtime**; files you create there disappear when the runtime shuts down.
+You will use notebooks in two places. Assignments run locally in VS Code. Lecture demos open in **Google Colab**, a free hosted notebook service that runs in your browser. In Colab the kernel runs on a Google machine called a **runtime**; files you create there disappear when the runtime shuts down. Colab ships an older pandas, so each demo's first cell installs the course version with the `%pip` magic command shown below.
 
 ![VS Code notebook: add code or Markdown, run cells, run all, and select a kernel](media/vscode-jupyter-kernel-picker.png)
 
-In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and choose the activity's Python environment. **Run All** runs every cell in order; **Clear All Outputs** erases the results saved under the cells. Screenshot: [VS Code notebook documentation](https://code.visualstudio.com/docs/datascience/jupyter-notebooks).
+In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and choose the activity's Python environment. If VS Code offers the **Jupyter** extension when you open the file, install it. The environment also needs **ipykernel**, the package that lets Jupyter start a kernel from that environment's Python: once per environment, activate it in the terminal and run `uv pip install ipykernel`. **Run All** runs every cell in order; **Clear All Outputs** erases the results saved under the cells. Screenshot: [VS Code notebook documentation](https://code.visualstudio.com/docs/datascience/jupyter-notebooks).
 
 ### Reference Card: Notebook controls
 
@@ -37,6 +37,7 @@ In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and cho
 | Run a cell | `Shift+Enter` (run, move on) or `Ctrl+Enter` (run, stay) | Same keys | Output appears below the cell |
 | Add a cell | **+ Code** / **+ Markdown** | **+ Code** / **+ Text** | New cell |
 | Delete a cell | Trash icon, or `DD` in command mode | Trash icon | Cell removed |
+| Prepare an environment | `uv pip install ipykernel` in the activated `.venv`, once | Nothing to do | The environment can run notebook cells |
 | Choose Python | **Select Kernel** | Managed for you by the runtime | Which interpreter runs the cells |
 | Keep your changes | `Ctrl+S` (`Cmd+S` on macOS) | **File → Save a copy in Drive** | Edits saved; Colab does not save back to the course repository |
 
@@ -46,18 +47,18 @@ Shortcuts such as `A` (add a cell above), `B` (add a cell below), and `DD` (dele
 
 ```python
 # Cell 1: the kernel keeps these values
-name = "Ada"
-scores = [8, 9, 10]
+patient_id = "P001"
+temps_c = [36.8, 37.4, 38.1]
 ```
 
 ```python
 # Cell 2: a later cell can use them, and its output appears below it
-average = sum(scores) / len(scores)
-print(f"{name}'s average: {average:.1f}")
+average = sum(temps_c) / len(temps_c)
+print(f"{patient_id} average temperature: {average:.1f} °C")
 ```
 
 ```text
-Ada's average: 9.0
+P001 average temperature: 37.4 °C
 ```
 
 ### Alternative: JupyterLab
@@ -76,9 +77,9 @@ The result saved under a cell is **stored output**: a record of the last time th
 
 | Step | You do | Execution count | Output under the cell |
 | --- | --- | --- | --- |
-| 1 | Run `units = 12` and `rate = 2` | `[1]` | none |
-| 2 | Run `total = units * rate` and `print(total)` | `[2]` | `24` |
-| 3 | Edit the first cell to `rate = 3` but do not run it | still `[1]` | `24`, now stale |
+| 1 | Run `days = 12` and `doses_per_day = 2` | `[1]` | none |
+| 2 | Run `total_doses = days * doses_per_day` and `print(total_doses)` | `[2]` | `24` |
+| 3 | Edit the first cell to `doses_per_day = 3` but do not run it | still `[1]` | `24`, now stale |
 | 4 | Restart & Run All | `[1]`, `[2]` | `36` |
 
 ### Reference Card: Kernel actions
@@ -94,23 +95,23 @@ The result saved under a cell is **stored output**: a record of the last time th
 
 ```python
 # Cell 1 (producer): defines names
-units = 12
-rate = 3
+days = 12
+doses_per_day = 3
 ```
 
 ```python
 # Cell 2 (dependent): needs the names from Cell 1
-total = units * rate
-print("total:", total)  # total: 36
+total_doses = days * doses_per_day
+print("total doses:", total_doses)  # total doses: 36
 ```
 
-If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'units' is not defined`. Fix it by moving the producer cell above the dependent cell, not by copying the definition into another cell.
+If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'days' is not defined`. Fix it by moving the producer cell above the dependent cell, not by copying the definition into another cell.
 
 To run a whole notebook from the terminal instead, see [Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
 
 ## Jupyter Magic Commands
 
-**Magic commands** are notebook-only shortcuts that start with `%`. Think of them as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch. `%pwd` and `%ls` mirror the Lecture 01 shell commands and show where the notebook is running and which files it can see; check them first when a notebook cannot find a file. `%timeit` times one line of Python by running it many times.
+**Magic commands** are notebook-only shortcuts that start with `%`. Think of them as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch. `%pwd` and `%ls` mirror the Lecture 01 shell commands and show where the notebook is running and which files it can see; check them first when a notebook cannot find a file. `%timeit` times one line of Python by running it many times. `%pip install` installs a package into the running kernel's environment; every demo notebook's first cell uses it to install the course's pandas 3.0.5.
 
 ### Reference Card: Magic commands
 
@@ -119,9 +120,9 @@ To run a whole notebook from the terminal instead, see [Running notebooks non-in
 | `%pwd` | None | Current working directory, as a quoted string |
 | `%ls` | None | Directory contents |
 | `%timeit expression` | Python expression | Timing summary |
-| `%pip install -r requirements.txt` | Requirements path | Packages installed into the active kernel |
-| `%pip list` | None | Installed packages |
-| `%pip show package_name` | Package name | Package metadata |
+| `%pip install -q pandas==3.0.5` | Package and exact version; `-q` prints less | Package installed into the kernel's environment; restart the kernel if it was already imported |
+| `%pip install -r requirements.txt` | Requirements path | Every listed package installed |
+| `%pip show package_name` | Package name | Installed version and location |
 
 ### Code Snippet: Where is the notebook running?
 
@@ -147,16 +148,24 @@ That is Colab's working directory; in VS Code, it is usually the notebook's fold
 
 Times vary by machine.
 
+### Code Snippet: Install a package into the kernel
+
 ```python
-# Install the requirements recorded for the current activity
-%pip install -r requirements.txt
+# First cell of each demo notebook, in Colab or VS Code
+%pip install -q pandas==3.0.5
 ```
+
+```text
+Note: you may need to restart the kernel to use updated packages.
+```
+
+`%pip` installs with the kernel environment's own pip. The `.venv` you made in Lecture 03 with `uv venv --seed` includes pip, so the same cell works in VS Code as in Colab.
+
+A package that was already imported keeps its old version until the kernel restarts, which is what the note means. If Colab asks you to restart after the install, choose **Runtime → Restart session** and run the notebook from the top; the install then finishes at once.
 
 ## Notebook Outputs and Git
 
-Jupyter notebooks are like that one friend who screenshots everything you text them. They save both your code AND all the outputs (results, data, plots) in the same file.
-
-Accidentally printed passwords, patient data, or embarrassing test results are saved in the notebook too, like having a photographic memory of your most awkward moments.
+A notebook saves each cell's output inside the `.ipynb` file, next to the code. Anything a cell printed, such as a patient name or a password, is committed with the notebook and stays in Git history. Notebooks are like that one friend who screenshots everything you text them.
 
 ### Code Snippet: What Git actually commits
 
@@ -177,28 +186,28 @@ Open the `.ipynb` file in a text editor and that line is right there, in the fil
 
 ### Before You Commit a Notebook
 
-1. **Clear all outputs**: click **Clear All Outputs** in VS Code.
+1. **Clear all outputs**: click **Clear All Outputs** in VS Code (Colab: **Edit → Clear all outputs**).
 2. **Check for sensitive data**: make sure no personal information, passwords, or confidential data is visible.
 3. **Save the notebook**: the outputs are removed from the file.
 
 Then check the notebook's diff in VS Code Source Control (Lecture 02) before you commit.
 
+> Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.
+
 # LIVE DEMO!
 
 # Introduction to Pandas
 
-![xkcd 2180: Spreadsheets](media/xkcd_2180.png)
-
-_Spreadsheets_ by xkcd: a reminder that a DataFrame is useful when the spreadsheet is becoming a program.
+![xkcd 2180: Spreadsheets. A spreadsheet quietly grows into a program; pandas lets you write the real code instead](media/xkcd_2180.png)
 
 In Lecture 03, a NumPy array held one type of value and you picked items by integer position, as in `arr[2]`. A clinic's visit table is messier: a text patient ID, an integer age, a decimal temperature, a `True`/`False` smoker flag. You want to ask for "patient P002's temperature" rather than "row 1, column 1", and you want each patient's values to stay together when you sort or filter.
 
 **pandas** is the Python library for labeled tables. It builds on NumPy and adds two structures:
 
-- A **Series** is one column of values plus an **index**, a label for each value. McKinney describes a Series as a fixed-length, ordered dictionary (Lecture 02): each label maps to one value.
+- A **Series** is one column of values plus an **index**, a label for each value. It works like a dictionary from Lecture 02 whose keys stay in order: each label maps to one value.
 - A **DataFrame** is a table whose columns share one row index. Each column is a Series with its own **dtype** (data type), so text, numbers, and `True`/`False` can sit side by side.
 
-*Fun fact: the name comes from **panel data**, an econometrics term for datasets that follow the same subjects over time (think of a longitudinal cohort study), and it is also a play on "Python data analysis." No bears were involved. 🐼*
+_Fun fact: the name comes from **panel data**, an econometrics term for datasets that follow the same subjects over time (think of a longitudinal cohort study), and it is also a play on "Python data analysis." No bears were involved. 🐼_
 
 pandas is conventionally imported as `pd`. The course uses pandas 3.0.5, and every output below comes from that version; pandas 2 prints some results differently.
 
@@ -299,7 +308,7 @@ dtype: object
 
 Most questions need only a few columns: "what were the temperatures?" rather than the whole table. Brackets select columns by label. One label gives a Series; a list of labels (double brackets) gives a DataFrame, even when the list holds one name.
 
-_Think of column selection like picking your team for dodgeball - sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns)._
+_Think of column selection like picking your team for dodgeball: sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns)._
 
 ### Reference Card: Column selection
 
@@ -341,8 +350,6 @@ _Warning: Indexing in pandas is like a choose-your-own-adventure book. There are
 | `.loc` | Row and column labels | `visits.loc["P002", "temp_c"]` → `38.1` | `visits.loc["P001":"P002"]` includes `P002` |
 | `.iloc` | Integer positions | `visits.iloc[1, 1]` → `38.1` | `visits.iloc[0:2]` stops before position `2` |
 
-*Think of it this way: `.loc` asks for patient "P002" by name; `.iloc` asks for "the 2nd row" by position (0, 1, 2...).*
-
 ### Reference Card: Selection by label and position
 
 - `df.loc[row_label, column_label]`: One value, by labels.
@@ -350,14 +357,17 @@ _Warning: Indexing in pandas is like a choose-your-own-adventure book. There are
 - `df.loc["P002"]`: One whole row, as a `Series`.
 - `df.loc[:, ["age"]]`: `:` means every row.
 - `df.iloc[1, 1]`, `df.iloc[0:2, 0:2]`: The same selections by integer position; slices stop before the end position.
+- `df1.equals(df2)`: `True` when two tables (or two Series) have the same labels, values, and dtypes; a quick check that two selections match.
 
 ### Code Snippet: Compare label and position selection
 
 ```python
-print(visits.loc["P002", "temp_c"])                  # 38.1 (row label, column label)
-print(visits.iloc[1, 1])                             # 38.1 (row position 1, column position 1)
-print(visits.loc["P001":"P002", ["age", "temp_c"]])  # label slice includes P002
-print(visits.iloc[0:2, 0:2])                         # position slice stops before 2
+print(visits.loc["P002", "temp_c"])                     # 38.1 (row label, column label)
+print(visits.iloc[1, 1])                                # 38.1 (row position 1, column position 1)
+by_label = visits.loc["P001":"P002", ["age", "temp_c"]]  # label slice includes P002
+by_position = visits.iloc[0:2, 0:2]                     # position slice stops before 2
+print(by_label)
+print(by_label.equals(by_position))
 ```
 
 ```text
@@ -367,13 +377,10 @@ print(visits.iloc[0:2, 0:2])                         # position slice stops befo
 patient_id             
 P001         34    36.8
 P002         58    38.1
-            age  temp_c
-patient_id             
-P001         34    36.8
-P002         58    38.1
+True
 ```
 
-Both slices print the same two rows, P001 and P002.
+Both slices hold the same two rows, P001 and P002, so `.equals()` returns `True`.
 
 ### Common Mistakes: Labels vs Positions
 
@@ -513,9 +520,7 @@ P002 and P003 tie at 142, and `patient_id` puts P002 first. The index labels (2,
 
 # Data Loading and Storage
 
-![xkcd 1906: Making Progress](media/xkcd_1906.png)
-
-_Making Progress_ by xkcd: progress, now with columns.
+![xkcd 1906: Making Progress. Hours of work can still end with the same problems, now in a spreadsheet](media/xkcd_1906.png)
 
 In Lecture 02 you read a text file with `open()`, and everything came back as one string of text. In Lecture 03 you inspected a CSV with a shell pipeline (`tail`, `cut`, `sort`). A **CSV file** (comma-separated values) is plain text: the first line is the **header** with the column names, and each later line is one record. `pd.read_csv()` opens the file, splits every line into columns, and detects each column's type in one call, returning a DataFrame. `df.to_csv()` writes one back out.
 
@@ -593,7 +598,7 @@ _Pro tip: If you're ever stuck with a weird file format, remember: "There's a pa
 
 `print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a Series or DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan when you are looking over a table you just loaded. As in the `%pwd` example, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
 
-*Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter.*
+_Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter._
 
 ### Code Snippet: Choose notebook output
 
@@ -616,6 +621,9 @@ Before analyzing a new clinic export, answer the questions below. Each check is 
 | Which categories? | `df["col"].value_counts()` | Count per value, most common first; `dropna=False` also counts missing |
 | Distinct values? | `df["col"].unique()` / `df["col"].nunique()` | The distinct values, including missing, such as `['North', 'South', nan]` / how many, excluding missing: `2` |
 | Repeated records? | `df.duplicated().sum()` | Rows identical to an earlier row; `df.duplicated()` alone is a Boolean mask |
+| Typical value of one column? | `df["col"].mean()`, `.median()`, `.min()`, `.max()` | One number; missing values are skipped |
+| Which row holds the extreme? | `df["col"].idxmax()` / `df["col"].idxmin()` | Index label of the largest / smallest value (the first one if tied) |
+| Mean of every numeric column? | `df.mean(numeric_only=True)` | `Series` with one mean per numeric column; text columns are left out |
 
 ### Code Snippet: Count gaps, categories, and repeats
 
@@ -641,6 +649,24 @@ Name: count, dtype: int64
 
 The row labeled 4 repeats row 2: the same visit entered twice. Because `visits.duplicated()` is a mask, `visits.loc[visits.duplicated()]` shows the repeated row.
 
-> Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.
+### Code Snippet: Summarize one column
+
+```python
+print(visits["temp_c"].mean())    # P002's missing temperature is skipped
+print(visits["temp_c"].max())
+print(visits["temp_c"].idxmax())  # index label of the highest temperature
+print(visits.mean(numeric_only=True))
+```
+
+```text
+37.400000000000006
+38.4
+3
+age       43.5
+temp_c    37.4
+dtype: float64
+```
+
+pandas skips missing values in summaries, so the mean averages the four recorded temperatures; NumPy's `.mean()` returns `nan` when any value is missing. The trailing `...006` is binary rounding: most decimals cannot be stored exactly, so format the value with `:.1f` (Lecture 02) when you report it. The duplicated P003 visit is counted twice here, one more reason to find repeats before summarizing.
 
 # LIVE DEMO!

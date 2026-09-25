@@ -1,270 +1,212 @@
-# Demo 1: matplotlib Fundamentals
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.13
+---
 
-## Learning Objectives
-- Create figures and subplots
-- Customize plot appearance
-- Use different plot types effectively
-- Apply colors, markers, and line styles
+# Demo 1: Contract first, then matplotlib
+
+A clinic network hands you two prepared plotting tables: one row per blood-pressure reading, and one row per week of flu visits. You write the visualization contract first, let it pick the chart, then draw exploratory and explanatory charts with `fig, ax = plt.subplots()` and Axes methods. Everything here comes from Lecture 07 up to the first demo break, plus Lectures 01 to 06. The patient IDs and values are synthetic.
+
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-24 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
 
 ## Setup
 
+Run this cell first. It installs pandas 3.0.5, the course version, into the notebook's environment: in Colab, which ships an older pandas, and in your local `.venv` alike.
+
+- pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
+- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
+- Locally, the `.venv` you made with `uv venv --seed` includes pip, so `%pip` installs into it too. When pandas 3.0.5 is already there, the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
+
 ```python
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+```python
+from pathlib import Path
+
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# Set inline plotting for Jupyter
-%matplotlib inline
+print("pandas:", pd.__version__)
+print("NumPy:", np.__version__)
+print("matplotlib:", matplotlib.__version__)
 ```
 
-## Part 1: Figures and Subplots
+Expect `pandas: 3.0.5`. If Colab shows an older pandas, it was imported before the install finished: restart the session and run all cells again.
 
-Every matplotlib plot requires a Figure object. The Figure contains one or more subplots (Axes objects) where the actual plotting occurs.
+## 1. Meet the plotting tables
 
-### Create a Basic Figure
-
-The basic matplotlib workflow: create data, create figure, plot data, customize, display.
+The first table has one row per systolic blood-pressure reading: 20 patients at the North clinic and 20 at the South clinic. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
 
 ```python
-# Create a simple line plot
-x = np.linspace(0, 10, 100)
-y = np.sin(x)
+rng = np.random.default_rng(42)
+ages = rng.integers(30, 80, size=40)             # 30 through 79 years
+noise = rng.normal(0, 8, size=40)                # reading-to-reading variation, mmHg
+clinic = np.array(['North'] * 20 + ['South'] * 20)
+systolic = 95 + 0.6 * ages + np.where(clinic == 'South', 6, 0) + noise
 
-plt.figure(figsize=(8, 6))
-plt.plot(x, y)
-plt.title('Sine Wave')
-plt.xlabel('X values')
-plt.ylabel('Y values')
-plt.grid(True)
+readings = pd.DataFrame({
+    'patient_id': np.arange(1001, 1041),
+    'clinic': clinic,
+    'age': ages,
+    'systolic_bp': systolic.round().astype(int),
+})
+print(readings.shape)
+print(readings.head())
+print(readings.dtypes)
+```
+
+Expect `(40, 4)`, five rows starting with patient `1001`, and three `int64` columns plus `clinic` as `str`.
+
+The second table is already one row per week: flu visits at each clinic over a ten-week season.
+
+```python
+weekly = pd.DataFrame({
+    'week': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'North': [12, 15, 21, 30, 42, 51, 47, 36, 24, 17],
+    'South': [10, 11, 14, 18, 23, 29, 34, 33, 27, 20],
+})
+print(weekly)
+```
+
+Expect ten rows. North peaks at 51 visits in week 6; South peaks at 34 in week 7.
+
+## 2. Write the contract before plotting
+
+Three `int64` columns do not mean three measures. The contract records what each column means and which job it does, and that is what picks the chart.
+
+```python
+contract = {
+    'question': 'How do systolic readings compare between the North and South clinics?',
+    'audience_and_claim': 'Clinic managers; a descriptive comparison of levels and spread, not a cause',
+    'unit_and_grain': 'One row and one mark per systolic reading at one visit',
+    'variables': 'systolic_bp: quantitative measure (y); clinic: categorical group (x); '
+                 'age: quantitative, not used here; patient_id: identifier, never averaged or plotted',
+}
+for part, answer in contract.items():
+    print(f'{part}: {answer}')
+```
+
+Expect four lines, one per part of the contract.
+
+The question compares a distribution across two groups, so the chart-selection figure in the lecture points to a **box plot** (one box per clinic), with a **histogram** to check the overall shape first. The other questions in this demo pick other charts:
+
+| Question | Data types | Chart |
+| --- | --- | --- |
+| How are all 40 readings distributed? | One quantitative | Histogram |
+| How do readings compare by clinic? | Quantitative by categorical | Box plot |
+| Does systolic BP rise with age? | Two quantitative | Scatter plot |
+| How many flu visits did each clinic have in total? | Quantitative by categorical, one value each | Bar chart from zero |
+| How did weekly flu visits change? | Quantitative over temporal | Line chart |
+
+## 3. An exploratory look: one Figure, four Axes
+
+`plt.subplots(2, 2)` returns one Figure and a 2-D array of Axes, so `axes[0, 1]` is row 0, column 1. The two clinics' readings come from boolean selection with `.loc` (Lecture 04).
+
+```python
+north_bp = readings.loc[readings['clinic'] == 'North', 'systolic_bp']
+south_bp = readings.loc[readings['clinic'] == 'South', 'systolic_bp']
+print('North median:', north_bp.median(), 'mmHg')
+print('South median:', south_bp.median(), 'mmHg')
+print('Total flu visits:', weekly['North'].sum(), 'North,', weekly['South'].sum(), 'South')
+```
+
+Expect `North median: 130.5 mmHg`, `South median: 139.0 mmHg`, and totals of 295 (North) and 219 (South).
+
+```python
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+print(type(fig))
+print(axes.shape)
+
+axes[0, 0].hist(readings['systolic_bp'], bins=10)
+axes[0, 0].set(title='All readings', xlabel='Systolic BP (mmHg)', ylabel='Readings')
+
+axes[0, 1].boxplot([north_bp, south_bp], tick_labels=['North', 'South'])
+axes[0, 1].set(title='Readings by clinic', xlabel='Clinic', ylabel='Systolic BP (mmHg)')
+
+axes[1, 0].scatter(readings['age'], readings['systolic_bp'], alpha=0.6)
+axes[1, 0].set(title='Systolic BP by age', xlabel='Age (years)', ylabel='Systolic BP (mmHg)')
+
+axes[1, 1].bar(['North', 'South'], [weekly['North'].sum(), weekly['South'].sum()], color='steelblue')
+axes[1, 1].set(title='Flu visits, weeks 1-10', xlabel='Clinic', ylabel='Flu visits')
+
+fig.tight_layout()
 plt.show()
 ```
 
-### Create Multiple Subplots
+Expect `<class 'matplotlib.figure.Figure'>`, `(2, 2)`, and four panels. The histogram spans about 110 to 156 mmHg, with most readings between 125 and 145. South's box sits higher, with its middle line at the 139.0 median; the two open circles below it are readings beyond its whisker. The scatter drifts upward from left to right. Both bars start at 0 and reach 295 and 219, in one color, because the clinic is already named on the x-axis.
 
-Use `plt.subplots()` to create a grid of subplots. Access individual subplots using array indexing: `axes[row, col]`.
+This is exploratory work: quick, but with honest scales and units on every axis.
 
-```python
-# Create a 2x2 subplot grid
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+## 4. Customize: units, a legend, and a redundant cue
 
-# Plot on each subplot
-x = np.linspace(0, 10, 100)
-
-# Top-left: Line plot
-axes[0, 0].plot(x, np.sin(x))
-axes[0, 0].set_title('Sine Wave')
-axes[0, 0].grid(True)
-
-# Top-right: Cosine
-axes[0, 1].plot(x, np.cos(x), color='red')
-axes[0, 1].set_title('Cosine Wave')
-axes[0, 1].grid(True)
-
-# Bottom-left: Scatter plot
-x_scatter = np.random.randn(100)
-y_scatter = 2 * x_scatter + np.random.randn(100)
-axes[1, 0].scatter(x_scatter, y_scatter, alpha=0.6)
-axes[1, 0].set_title('Scatter Plot')
-axes[1, 0].grid(True)
-
-# Bottom-right: Histogram
-data = np.random.normal(0, 1, 1000)
-axes[1, 1].hist(data, bins=30, alpha=0.7)
-axes[1, 1].set_title('Histogram')
-axes[1, 1].grid(True)
-
-plt.tight_layout()
-plt.show()
-```
-
-## Part 2: Plot Customization
-
-Control plot appearance through color, marker, and line style parameters.
-
-### Colors, Markers, and Line Styles
-
-Format string syntax: `'markerstyle-linestyle-color'` (e.g., `'o-', 's--', '^-.'`).
+The scatter above cannot tell the clinics apart. Draw each clinic as its own series, giving each a color **and** a marker shape, so the groups stay distinct in grayscale.
 
 ```python
-# Create sample data
-x = np.linspace(0, 10, 20)
-y1 = x
-y2 = x**0.5
-y3 = np.log(x + 1)
-y4 = np.sin(x)
+north = readings.loc[readings['clinic'] == 'North']
+south = readings.loc[readings['clinic'] == 'South']
 
-# Create figure with multiple lines
-fig, ax = plt.subplots(figsize=(10, 6))
-
-# Different line styles and markers
-ax.plot(x, y1, 'o-', label='Linear', color='blue', markersize=8)
-ax.plot(x, y2, 's--', label='Square Root', color='red', markersize=6)
-ax.plot(x, y3, '^-.', label='Logarithm', color='green', markersize=8)
-ax.plot(x, y4, '*:', label='Sine', color='purple', markersize=10)
-
-# Customize appearance
-ax.set_title('Different Line Styles and Markers')
-ax.set_xlabel('X values')
-ax.set_ylabel('Y values')
-ax.legend()
-ax.grid(True, alpha=0.3)
-
-plt.tight_layout()
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.scatter(north['age'], north['systolic_bp'], color='#0072B2', marker='o', alpha=0.7, label='North')
+ax.scatter(south['age'], south['systolic_bp'], color='#D55E00', marker='s', alpha=0.7, label='South')
+ax.set(title='Systolic BP by age at two clinics', xlabel='Age (years)', ylabel='Systolic BP (mmHg)')
+ax.grid(alpha=0.3)
+ax.legend(title='Clinic', loc='lower right')
 plt.show()
+print(len(north), 'North points and', len(south), 'South points')
 ```
 
-### Advanced Customization
+Expect blue circles and orange squares that both rise with age, a legend titled Clinic in the empty lower-right corner, and `20 North points and 20 South points`. At similar ages the orange squares tend to sit higher.
 
-Set font sizes, colors, and annotations for publication-quality output.
+## 5. An explanatory chart: annotate, declutter, and save
+
+Now one finding for one audience. Write its contract, then build the chart it asks for.
 
 ```python
-# Create a more sophisticated plot
-fig, ax = plt.subplots(figsize=(12, 8))
-
-# Generate sample data
-np.random.seed(42)
-x = np.linspace(0, 10, 100)
-y1 = np.sin(x) + 0.1 * np.random.randn(100)
-y2 = np.cos(x) + 0.1 * np.random.randn(100)
-
-# Plot with customization
-ax.plot(x, y1, label='Sine + Noise', color='#1f77b4', linewidth=2, alpha=0.8)
-ax.plot(x, y2, label='Cosine + Noise', color='#ff7f0e', linewidth=2, alpha=0.8)
-
-# Add trend lines
-z1 = np.polyfit(x, y1, 1)
-p1 = np.poly1d(z1)
-ax.plot(x, p1(x), '--', color='#1f77b4', alpha=0.5, label='Sine Trend')
-
-z2 = np.polyfit(x, y2, 1)
-p2 = np.poly1d(z2)
-ax.plot(x, p2(x), '--', color='#ff7f0e', alpha=0.5, label='Cosine Trend')
-
-# Customize appearance
-ax.set_title('Trigonometric Functions with Trend Lines', fontsize=16, fontweight='bold')
-ax.set_xlabel('X values', fontsize=12)
-ax.set_ylabel('Y values', fontsize=12)
-ax.legend(fontsize=10)
-ax.grid(True, alpha=0.3)
-ax.set_facecolor('#f8f9fa')
-
-# Add annotations
-ax.annotate('Peak', xy=(np.pi/2, 1), xytext=(np.pi/2 + 1, 1.5),
-            arrowprops=dict(arrowstyle='->', color='red'),
-            fontsize=12, color='red')
-
-plt.tight_layout()
-plt.show()
+flu_contract = {
+    'question': 'When did flu visits peak at each clinic?',
+    'audience_and_claim': 'Clinic managers; North peaked a week earlier and higher than South',
+    'unit_and_grain': 'One point per clinic per week',
+    'variables': 'week: temporal order (x); North and South: quantitative visit counts (y), one line each',
+}
+for part, answer in flu_contract.items():
+    print(f'{part}: {answer}')
 ```
 
-## Part 3: Different Plot Types
+Expect four lines, one per part of the contract.
 
-Common plot types: line plots, bar charts, histograms, scatter plots, box plots.
-
-### Bar Charts and Histograms
-
-Bar charts: categorical data. Histograms: numerical data distribution.
+The line chart pairs each color with its own marker and line style, points an arrow at North's peak, hides the two frame lines that carry no data, and puts the legend outside the plotting area.
 
 ```python
-# Create sample data
-categories = ['A', 'B', 'C', 'D', 'E']
-values = [23, 45, 56, 12, 78]
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(weekly['week'], weekly['North'], color='#0072B2', marker='o', linestyle='-', label='North')
+ax.plot(weekly['week'], weekly['South'], color='#D55E00', marker='s', linestyle='--', label='South')
+ax.annotate('North peak: 51 visits', xy=(6, 51), xytext=(7.2, 56),
+            arrowprops=dict(arrowstyle='->'))
+ax.set(title='North flu visits peaked a week earlier and higher than South',
+       xlabel='Week of season', ylabel='Flu visits', ylim=(0, 60))
+ax.set_xticks(weekly['week'])
+ax.spines[['top', 'right']].set_visible(False)
+ax.legend(title='Clinic', loc='upper left', bbox_to_anchor=(1, 1), frameon=False)
 
-# Create subplots
-fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-
-# Bar chart
-axes[0].bar(categories, values, color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
-axes[0].set_title('Bar Chart')
-axes[0].set_xlabel('Categories')
-axes[0].set_ylabel('Values')
-axes[0].grid(True, alpha=0.3)
-
-# Add value labels on bars
-for i, v in enumerate(values):
-    axes[0].text(i, v + 1, str(v), ha='center', va='bottom', fontweight='bold')
-
-# Histogram
-data = np.random.normal(0, 1, 1000)
-axes[1].hist(data, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-axes[1].set_title('Histogram')
-axes[1].set_xlabel('Values')
-axes[1].set_ylabel('Frequency')
-axes[1].grid(True, alpha=0.3)
-
-plt.tight_layout()
+fig.savefig('weekly_flu_visits.png', dpi=150, bbox_inches='tight')
 plt.show()
+print(Path('weekly_flu_visits.png').exists())
 ```
 
-### Scatter Plots and Box Plots
-
-Scatter plots: relationships between two variables. Box plots: distribution and outliers.
-
-```python
-# Create sample data
-np.random.seed(42)
-n = 100
-x = np.random.randn(n)
-y = 2 * x + np.random.randn(n)
-categories = np.random.choice(['Group A', 'Group B', 'Group C'], n)
-data_by_group = [np.random.normal(i, 1, 50) for i in range(3)]
-
-# Create subplots
-fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-
-# Scatter plot
-scatter = axes[0].scatter(x, y, c=range(n), cmap='viridis', alpha=0.6)
-axes[0].set_title('Scatter Plot with Color Mapping')
-axes[0].set_xlabel('X values')
-axes[0].set_ylabel('Y values')
-axes[0].grid(True, alpha=0.3)
-plt.colorbar(scatter, ax=axes[0])
-
-# Box plot
-box_plot = axes[1].boxplot(data_by_group, tick_labels=['Group 1', 'Group 2', 'Group 3'])
-axes[1].set_title('Box Plot')
-axes[1].set_xlabel('Groups')
-axes[1].set_ylabel('Values')
-axes[1].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-
-## Part 4: Saving and Exporting
-
-### Save Figures
-
-Use `plt.savefig()` with appropriate format and DPI settings.
-
-```python
-# Create a publication-quality figure
-fig, ax = plt.subplots(figsize=(10, 6))
-
-# Generate data
-x = np.linspace(0, 10, 100)
-y = np.sin(x) * np.exp(-x/5)
-
-# Create plot
-ax.plot(x, y, linewidth=2, color='#2E8B57')
-ax.set_title('Damped Sine Wave', fontsize=16, fontweight='bold')
-ax.set_xlabel('Time', fontsize=12)
-ax.set_ylabel('Amplitude', fontsize=12)
-ax.grid(True, alpha=0.3)
-
-# Save in different formats
-plt.savefig('damped_sine.png', dpi=300, bbox_inches='tight')
-plt.savefig('damped_sine.pdf', bbox_inches='tight')
-plt.savefig('damped_sine.svg', bbox_inches='tight')
-
-plt.show()
-print("Figures saved as PNG, PDF, and SVG")
-```
-
-## Key Takeaways
-
-1. **Figures and Subplots**: Use `plt.subplots()` to create multiple plots in one figure
-2. **Customization**: Control colors, markers, line styles, and text elements
-3. **Plot Types**: Choose the right plot type for your data (line, bar, scatter, histogram, box)
-4. **Export**: Save figures in high quality for presentations and publications
-5. **Best Practices**: Use clear labels, appropriate colors, and good contrast
+Expect a blue solid line with circles and an orange dashed line with squares, an arrow from "North peak: 51 visits" to the week-6 point, ticks at weeks 1 through 10, no top or right frame line, and the legend just outside the right edge. The last line prints `True`: `weekly_flu_visits.png` is in the notebook's folder (in Colab, open the folder icon in the left sidebar).

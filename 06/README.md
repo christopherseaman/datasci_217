@@ -9,19 +9,17 @@ notion:
 
 # 06) Data Wrangling: Join, Combine, and Reshape
 
-**Assignment 6:** [assignment instructions](assignment/README.md)
-
 See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo2_pivot_melt.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo3_concat_timeseries.ipynb)
 
-_Fun fact: “wrangle” comes from the Low German “wrangeln,” meaning “to dispute; to wrestle.” Surprisingly accurate - data wrangling is arguing and wrestling with your data until it finally agrees to cooperate._
+_Fun fact: “wrangle” comes from the Low German “wrangeln,” meaning “to dispute; to wrestle.” Surprisingly accurate: data wrangling is arguing and wrestling with your data until it finally agrees to cooperate._
 
 # Database-Style DataFrame Joins
 
 _Reality check: Merging datasets is the single most common data wrangling task you’ll perform. Master pd.merge() and you’ll save yourself countless hours of frustration._
 
-Health data rarely arrives in one table. A clinic keeps a patients table (one row per patient: ID, birth year, clinic) and a lab results table (one row per test: patient ID, test name, value). To ask whether older patients have higher A1c, you need each lab value next to that patient's birth year. **Joining** lines those rows up using a **key**: a column, such as `patient_id`, whose values name the same thing in both tables. In pandas the main tool is `pd.merge()`, so joins are often called **merges**.
+Health data rarely arrives in one table. A clinic keeps a patients table (one row per patient: ID and birth year) and a lab results table (one row per test: patient ID, test name, value). To ask whether older patients have higher A1c, you need each lab value next to that patient's birth year. **Joining** lines those rows up using a **key**: a column, such as `patient_id`, whose values name the same thing in both tables. In pandas the main tool is `pd.merge()`, so joins are often called **merges**.
 
 Join keys are the table's name tags: if two rows share a tag, pandas brings their columns together. A good key makes matching boring; a bad key turns the merge into an enthusiastic photocopier.
 
@@ -32,40 +30,29 @@ This builds on Lecture 05's row meaning, which is also called the table's **grai
 - A **foreign key** refers to another table's primary key: `patient_id` in the lab table, where one patient can appear many times.
 - **Cardinality** says how many rows can match on each side, for example one patient to many lab results (**one-to-many**).
 
-The examples below use the same shape with customers (one row per customer) and purchases (one row per purchase). First get a merge working with `pd.merge()`; at the end of this topic, `validate=` makes pandas check that the keys behave the way you expect.
+The examples below use three patients and four lab results. First get a merge working with `pd.merge()`; at the end of this topic, `validate=` makes pandas check that the keys behave the way you expect.
 
 ```
-Table A: customers          Table B: purchases
-┌─────────────┬─────────┐   ┌─────────────┬─────────┐
-│ customer_id │  name   │   │ customer_id │ amount  │
-├─────────────┼─────────┤   ├─────────────┼─────────┤
-│     1       │  Alice  │   │     1       │   $50   │
-│     2       │   Bob   │   │     2       │   $30   │
-│     3       │ Charlie │   │     4       │   $25   │
-└─────────────┴─────────┘   └─────────────┴─────────┘
-
-INNER JOIN (how='inner')     LEFT JOIN (how='left')
-┌─────────────┬─────────┬─────────┐  ┌─────────────┬─────────┬─────────┐
-│ customer_id │  name   │ amount  │  │ customer_id │  name   │ amount  │
-├─────────────┼─────────┼─────────┤  ├─────────────┼─────────┼─────────┤
-│     1       │  Alice  │   $50   │  │     1       │  Alice  │   $50   │
-│     2       │   Bob   │   $30   │  │     2       │   Bob   │   $30   │
-└─────────────┴─────────┴─────────┘  │     3       │Charlie  │   NaN   │
- (Only matching rows)                └─────────────┴─────────┴─────────┘
-                                      (All from A, missing from B = NaN)
-
-RIGHT JOIN (how='right')     OUTER JOIN (how='outer')
-┌─────────────┬─────────┬─────────┐  ┌─────────────┬─────────┬─────────┐
-│ customer_id │  name   │ amount  │  │ customer_id │  name   │ amount  │
-├─────────────┼─────────┼─────────┤  ├─────────────┼─────────┼─────────┤
-│     1       │  Alice  │   $50   │  │     1       │  Alice  │   $50   │
-│     2       │   Bob   │   $30   │  │     2       │   Bob   │   $30   │
-│     4       │   NaN   │   $25   │  │     3       │Charlie  │   NaN   │
-└─────────────┴─────────┴─────────┘  │     4       │   NaN   │   $25   │
- (All from B, missing from A = NaN)  └─────────────┴─────────┴─────────┘
-                                      (Everything from both tables)
-
+patients                    labs
+┌────────────┬────────────┐ ┌────────────┬──────┬───────┐
+│ patient_id │ birth_year │ │ patient_id │ test │ value │
+├────────────┼────────────┤ ├────────────┼──────┼───────┤
+│ P001       │ 1958       │ │ P001       │ A1c  │   6.8 │
+│ P002       │ 1971       │ │ P001       │ LDL  │ 131.0 │
+│ P003       │ 1985       │ │ P002       │ A1c  │   5.4 │
+└────────────┴────────────┘ │ P004       │ A1c  │   7.9 │
+                            └────────────┴──────┴───────┘
 ```
+
+Every row either table can contribute, and the join types (`how=`) that keep it:
+
+| patient_id | birth_year | test | value | Why | `inner` | `left` | `right` | `outer` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P001 | 1958 | A1c | 6.8 | Key in both tables | ✓ | ✓ | ✓ | ✓ |
+| P001 | 1958 | LDL | 131.0 | Key in both tables | ✓ | ✓ | ✓ | ✓ |
+| P002 | 1971 | A1c | 5.4 | Key in both tables | ✓ | ✓ | ✓ | ✓ |
+| P003 | 1985 | NaN | NaN | Patient with no labs yet |  | ✓ |  | ✓ |
+| P004 | NaN | A1c | 7.9 | Lab with no patient record |  |  | ✓ | ✓ |
 
 ## The Basics of pd.merge()
 
@@ -87,24 +74,23 @@ The `pd.merge()` function is your workhorse for combining datasets. At its simpl
 ```python
 import pandas as pd
 
-customers = pd.DataFrame({
-    'customer_id': ['C001', 'C002', 'C003', 'C004'],
-    'name': ['Alice', 'Bob', 'Charlie', 'Diana'],
-    'city': ['Seattle', 'Portland', 'Seattle', 'Eugene']
+patients = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003'],
+    'birth_year': [1958, 1971, 1985],
 })
-purchases = pd.DataFrame({
-    'customer_id': ['C001', 'C001', 'C002', 'C005'],
-    'product': ['Laptop', 'Mouse', 'Keyboard', 'Monitor'],
-    'amount': [999.99, 25.99, 79.99, 299.99]
+labs = pd.DataFrame({
+    'patient_id': ['P001', 'P001', 'P002', 'P004'],
+    'test': ['A1c', 'LDL', 'A1c', 'A1c'],    # A1c in %, LDL in mg/dL
+    'value': [6.8, 131.0, 5.4, 7.9],
 })
 
-# pandas would find the shared 'customer_id' column on its own, but name it anyway
-merged = pd.merge(customers, purchases, on='customer_id')
+# pandas would find the shared 'patient_id' column on its own, but name it anyway
+merged = pd.merge(patients, labs, on='patient_id')
 display(merged)
-#   customer_id   name      city   product  amount
-# 0        C001  Alice   Seattle    Laptop  999.99
-# 1        C001  Alice   Seattle     Mouse   25.99
-# 2        C002    Bob  Portland  Keyboard   79.99
+#   patient_id  birth_year test  value
+# 0       P001        1958  A1c    6.8
+# 1       P001        1958  LDL  131.0
+# 2       P002        1971  A1c    5.4
 ```
 
 ## Join Types: The Four Horsemen of Data Merging (Plus One)
@@ -126,75 +112,73 @@ Add `indicator=True` to any merge to get a `_merge` column that says where each 
 ### Code Snippet: Compare join types
 
 ```python
-# Inner join (default) - only customers with purchases
-inner = pd.merge(customers, purchases, on='customer_id', how='inner')
-display(inner)
-# Result: 3 rows (Alice twice, Bob once) - only matching customers
+# Inner join (default): only patients with labs
+inner = pd.merge(patients, labs, on='patient_id', how='inner')
+print(len(inner))
+# 3   <- P001 twice, P002 once
 
-# Left join - ALL customers, even without purchases
-left = pd.merge(customers, purchases, on='customer_id', how='left')
+# Left join: ALL patients, even without labs
+left = pd.merge(patients, labs, on='patient_id', how='left')
 display(left)
-#   customer_id     name      city   product  amount
-# 0        C001    Alice   Seattle    Laptop  999.99
-# 1        C001    Alice   Seattle     Mouse   25.99
-# 2        C002      Bob  Portland  Keyboard   79.99
-# 3        C003  Charlie   Seattle       NaN     NaN  # No purchase
-# 4        C004    Diana    Eugene       NaN     NaN  # No purchase
+#   patient_id  birth_year test  value
+# 0       P001        1958  A1c    6.8
+# 1       P001        1958  LDL  131.0
+# 2       P002        1971  A1c    5.4
+# 3       P003        1985  NaN    NaN   <- no labs yet
 
-# Right join - ALL purchases, even without customer info
-right = pd.merge(customers, purchases, on='customer_id', how='right')
-display(right)
-# Result: 4 rows - includes C005's monitor (customer info is NaN)
+# Right join: ALL labs, even without a patient record
+right = pd.merge(patients, labs, on='patient_id', how='right')
+print(len(right))
+# 4   <- includes P004's A1c with birth_year NaN
 
-# Outer join - EVERYTHING; indicator=True labels where each row came from
-outer = pd.merge(customers, purchases, on='customer_id', how='outer', indicator=True)
+# Outer join: EVERYTHING; indicator=True labels where each row came from
+outer = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
 display(outer)
-#   customer_id     name      city   product  amount      _merge
-# 0        C001    Alice   Seattle    Laptop  999.99        both
-# 1        C001    Alice   Seattle     Mouse   25.99        both
-# 2        C002      Bob  Portland  Keyboard   79.99        both
-# 3        C003  Charlie   Seattle       NaN     NaN   left_only
-# 4        C004    Diana    Eugene       NaN     NaN   left_only
-# 5        C005      NaN       NaN   Monitor  299.99  right_only
+#   patient_id  birth_year test  value      _merge
+# 0       P001      1958.0  A1c    6.8        both
+# 1       P001      1958.0  LDL  131.0        both
+# 2       P002      1971.0  A1c    5.4        both
+# 3       P003      1985.0  NaN    NaN   left_only
+# 4       P004         NaN  A1c    7.9  right_only
 ```
 
-**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use left joins when the left DataFrame is your “master” list (e.g., all customers), right joins for the opposite, and outer joins when you need to see ALL the data from both sides. An inner join drops customers without purchases; a left join keeps them.
+`birth_year` prints as `1958.0` in the outer join because P004's missing birth year makes the whole column `float64` (Lecture 05).
+
+**Pro tip:** Most beginners default to inner joins and lose data without realizing it. Use a left join when the left table is your master list (every patient in the registry), a right join for the opposite, and an outer join when you need to see everything from both sides. An inner join silently drops P003; a left join keeps P003 with `NaN` labs, which is exactly the patient who is due for a test.
 
 ## Merging on Multiple Columns
 
-Sometimes one key column isn’t enough to identify a match: several columns must match together (like matching on BOTH `store_id` AND `quarter`). Lecture 05’s visit table worked the same way: `patient_id` repeats across visits, so its candidate identifier was `patient_id` + `visit_date`. Pass a list, `on=['store_id', 'quarter']`, and every listed column must match.
+Sometimes one key column isn’t enough to identify a match: several columns must match together. Lecture 05’s visit table worked the same way: `patient_id` repeats across visits, so its candidate identifier was `patient_id` + `visit_date`. Below, each patient has a baseline and a follow-up visit in both a vitals table and a lab table, so a row is named by `patient_id` and `visit` together. Pass a list, `on=['patient_id', 'visit']`, and every listed column must match.
 
 ### Code Snippet: Merge on multiple columns
 
 ```python
-# Monthly sales for each store in Q1
-sales_q1 = pd.DataFrame({
-    'store_id': ['S01', 'S01', 'S02', 'S02'],
-    'quarter': ['Q1', 'Q1', 'Q1', 'Q1'],
-    'month': ['Jan', 'Feb', 'Jan', 'Feb'],
-    'sales': [50000, 55000, 42000, 48000]
+vitals = pd.DataFrame({
+    'patient_id': ['P001', 'P001', 'P002', 'P002'],
+    'visit': ['baseline', 'followup', 'baseline', 'followup'],
+    'sbp': [152, 138, 128, 124],          # systolic blood pressure, mmHg
+})
+a1c = pd.DataFrame({
+    'patient_id': ['P001', 'P001', 'P002', 'P002'],
+    'visit': ['baseline', 'followup', 'baseline', 'followup'],
+    'a1c': [7.4, 6.9, 5.6, 5.5],          # %
 })
 
-# One target per store and quarter
-targets = pd.DataFrame({
-    'store_id': ['S01', 'S02', 'S01', 'S02'],
-    'quarter': ['Q1', 'Q1', 'Q2', 'Q2'],
-    'target': [52000, 45000, 58000, 50000]
-})
-
-# Merge on BOTH store_id AND quarter
-merged = pd.merge(sales_q1, targets, on=['store_id', 'quarter'])
+# Merge on BOTH patient_id AND visit
+merged = pd.merge(vitals, a1c, on=['patient_id', 'visit'])
 display(merged)
-#   store_id quarter month  sales  target
-# 0      S01      Q1   Jan  50000   52000  # Each monthly row gets its store's Q1 target (many-to-one)
-# 1      S01      Q1   Feb  55000   52000
-# 2      S02      Q1   Jan  42000   45000
-# 3      S02      Q1   Feb  48000   45000
+#   patient_id     visit  sbp  a1c
+# 0       P001  baseline  152  7.4
+# 1       P001  followup  138  6.9
+# 2       P002  baseline  128  5.6
+# 3       P002  followup  124  5.5
 
-# Merging on store_id alone pairs every Q1 sale with the Q2 target too
-wrong = pd.merge(sales_q1, targets, on='store_id')
+# Merging on patient_id alone pairs every visit with every other visit
+wrong = pd.merge(vitals, a1c, on='patient_id')
 print(len(wrong))
-# 8
+# 8   <- the baseline SBP now sits next to the follow-up A1c too
+print(list(wrong.columns))
+# ['patient_id', 'visit_x', 'sbp', 'visit_y', 'a1c']
 ```
 
 ## Listing Every Combination with a Cross Join
@@ -231,35 +215,34 @@ North’s 10:00 report of zero arrivals is real data; its 9:00 report never arri
 
 ## Handling Overlapping Column Names
 
-When both DataFrames have columns with the same name (besides the merge key), pandas adds suffixes to distinguish them.
+When both DataFrames have columns with the same name (besides the merge key), pandas adds suffixes to distinguish them. The multi-column snippet above already produced `visit_x` and `visit_y` when `visit` was left out of the key.
 
 ### Reference Card: Overlapping columns
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | `total_x` from the left table, `total_y` from the right |
-| `suffixes=('_sales', '_inventory')` | Say what each column means | Named output columns |
+| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | `a1c_x` from the left table, `a1c_y` from the right |
+| `suffixes=('_lab', '_poc')` | Say what each column means | Named output columns |
 
 ### Code Snippet: Name overlapping columns
 
 ```python
-# Both tables have a 'total' column: revenue in one, units in stock in the other
-sales = pd.DataFrame({'product_id': ['P001', 'P002'], 'total': [100, 200]})
-inventory = pd.DataFrame({'product_id': ['P001', 'P002'], 'total': [50, 75]})
+# Both tables have an 'a1c' column: the central lab's result and a point-of-care device's
+lab = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.4, 5.6]})
+poc = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.1, 5.9]})
 
-display(pd.merge(sales, inventory, on='product_id'))
-#   product_id  total_x  total_y
-# 0       P001      100       50
-# 1       P002      200       75
+display(pd.merge(lab, poc, on='patient_id'))
+#   patient_id  a1c_x  a1c_y
+# 0       P001    7.4    7.1
+# 1       P002    5.6    5.9
 
-display(pd.merge(sales, inventory, on='product_id',
-                 suffixes=('_sales', '_inventory')))
-#   product_id  total_sales  total_inventory
-# 0       P001          100               50
-# 1       P002          200               75
+display(pd.merge(lab, poc, on='patient_id', suffixes=('_lab', '_poc')))
+#   patient_id  a1c_lab  a1c_poc
+# 0       P001      7.4      7.1
+# 1       P002      5.6      5.9
 ```
 
-**Pro tip:** Always use descriptive suffixes! `_sales` and `_inventory` are much clearer than `_x` and `_y`.
+**Pro tip:** Always use descriptive suffixes! `_lab` and `_poc` say which device measured each value; `_x` and `_y` do not.
 
 ## Checking Merge Cardinality
 
@@ -331,32 +314,32 @@ Missing keys match each other. If two visits and two clinic rows all have a blan
 
 # Working with DataFrame Indexes
 
-_Pro tip: Understanding when to move columns to the index (and back) is like understanding when to put your keys in your pocket vs. your hand - it’s all about what you need to access quickly!_
+_Pro tip: Knowing when to move columns into the index (and back) is like knowing when to keep your keys in your hand or in your pocket: it’s all about what you need to reach quickly!_
 
-Lecture 04 gave `visits` an index of patient IDs, the row labels printed down the left side, so `visits.loc["P002"]` found a patient by name. A table built from a dict or read from a CSV gets the default `0, 1, 2, …` instead, a **RangeIndex** that only counts rows. When a column already identifies rows, such as `patient_id` or `emp_id`, you can move it into the index. Then `.loc['E002']` finds that row directly, and pandas can line up rows from two tables by label, just as Lecture 04’s derived columns lined up with their rows by index label.
+A DataFrame’s **index** is its row labels, printed down the left side. A table built from a dict or read from a CSV gets the default `0, 1, 2, …`, a **RangeIndex** that only counts rows. `set_index('patient_id')` makes an identifier column the row labels, so `.loc['P002']` finds that patient’s row (label selection, Lecture 04) and pandas can line up rows from two tables by label. `reset_index()` moves the labels back into an ordinary column.
 
 Later in this lecture, `pivot()` builds its result’s index from an identifier column, and horizontal concatenation and `combine_first()` match rows by index label.
 
 - An index is not automatically unique. Check `df.index.is_unique` when each label should appear once.
-- `set_index()` and `reset_index()` return a new DataFrame, so assign the result: `indexed = df.set_index('emp_id')`.
+- `set_index()` and `reset_index()` return a new DataFrame, so assign the result: `indexed = df.set_index('patient_id')`.
 
 ## Row Labels Before and After
 
 ```
-employees as built from a dict: the RangeIndex down the left edge only counts rows
+patients as built from a dict: the RangeIndex down the left edge only counts rows
 
-  emp_id     name   department  salary
-0   E001    Alice  Engineering   95000
-1   E002      Bob        Sales   75000
-2   E003  Charlie  Engineering   88000
+  patient_id  age clinic
+0       P001   67  North
+1       P002   54  South
+2       P003   41  North
 
-employees.set_index('emp_id'): the IDs are the row labels, so .loc['E002'] finds Bob
+patients.set_index('patient_id'): the IDs are the row labels, so .loc['P002'] finds that patient
 
-           name   department  salary
-emp_id
-E001      Alice  Engineering   95000
-E002        Bob        Sales   75000
-E003    Charlie  Engineering   88000
+            age clinic
+patient_id
+P001         67  North
+P002         54  South
+P003         41  North
 ```
 
 ## set_index(): Moving Columns to Index
@@ -374,26 +357,24 @@ E003    Charlie  Engineering   88000
 ### Code Snippet: Set an identifier index
 
 ```python
-employees = pd.DataFrame({
-    'emp_id': ['E001', 'E002', 'E003'],
-    'name': ['Alice', 'Bob', 'Charlie'],
-    'department': ['Engineering', 'Sales', 'Engineering'],
-    'salary': [95000, 75000, 88000]
+patients = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003'],
+    'age': [67, 54, 41],
+    'clinic': ['North', 'South', 'North'],
 })
 
-indexed = employees.set_index('emp_id')  # row labels become E001, E002, E003
-assert indexed.index.is_unique           # each employee should appear once
+indexed = patients.set_index('patient_id')  # row labels become P001, P002, P003
+assert indexed.index.is_unique              # each patient should appear once
 
-display(indexed.loc['E002'])             # Bob's record, found by label
-# name            Bob
-# department    Sales
-# salary        75000
-# Name: E002, dtype: object
+display(indexed.loc['P002'])                # one patient's record, found by label
+# age          54
+# clinic    South
+# Name: P002, dtype: object
 ```
 
 ## reset_index(): Moving Index to Columns
 
-The opposite operation - converts index back to a regular column.
+`reset_index()` is the opposite: it moves the index labels back into an ordinary column. With `drop=True` it discards them instead, which renumbers a table whose labels carry no information, such as the gaps a filter leaves in a RangeIndex.
 
 ### Reference Card: `reset_index()`
 
@@ -407,22 +388,22 @@ The opposite operation - converts index back to a regular column.
 ```python
 # Move the labels back into a column: the original structure returns
 display(indexed.reset_index())
-#   emp_id     name   department  salary
-# 0   E001    Alice  Engineering   95000
-# 1   E002      Bob        Sales   75000
-# 2   E003  Charlie  Engineering   88000
+#   patient_id  age clinic
+# 0       P001   67  North
+# 1       P002   54  South
+# 2       P003   41  North
 
 # Discard the labels instead of keeping them
 display(indexed.reset_index(drop=True))
-#       name   department  salary
-# 0    Alice  Engineering   95000
-# 1      Bob        Sales   75000
-# 2  Charlie  Engineering   88000
+#    age clinic
+# 0   67  North
+# 1   54  South
+# 2   41  North
 ```
 
 ## Two-Level Row Labels
 
-One column does not always name a row on its own: a quarterly sales figure is identified by region _and_ quarter together. Passing `set_index()` a list of columns gives each row a two-part label, and pandas calls the result a **MultiIndex** (hierarchical index): each row label has more than one level, such as a `(region, quarter)` pair. Later in this lecture, `pivot()` with a list of identifier columns builds the same kind of label.
+One column does not always name a row on its own: a clinic’s quarterly visit count is identified by clinic _and_ quarter together. Passing `set_index()` a list of columns gives each row a two-part label, and pandas calls the result a **MultiIndex** (hierarchical index): each row label has more than one level, such as a `(clinic, quarter)` pair. Later in this lecture, `pivot()` with a list of identifier columns builds the same kind of label.
 
 ### Reference Card: Two-level row labels
 
@@ -435,51 +416,49 @@ One column does not always name a row on its own: a quarterly sales figure is id
 ### Code Snippet: Build a MultiIndex
 
 ```python
-# Sales data
-sales = pd.DataFrame({
-    'region': ['West', 'West', 'East', 'East'],
+# Visits per clinic and quarter
+visits = pd.DataFrame({
+    'clinic': ['North', 'North', 'South', 'South'],
     'quarter': ['Q1', 'Q2', 'Q1', 'Q2'],
-    'sales': [100, 150, 120, 180]
+    'visits': [410, 455, 380, 362],
 })
 
 # Build the two-level index directly from unique row labels.
-summary = sales.set_index(['region', 'quarter']).sort_index()
+summary = visits.set_index(['clinic', 'quarter']).sort_index()
 assert summary.index.is_unique
 display(summary)
-#                 sales
-# region quarter
-# East   Q1         120
-#        Q2         180
-# West   Q1         100
-#        Q2         150
+#                 visits
+# clinic quarter
+# North  Q1          410
+#        Q2          455
+# South  Q1          380
+#        Q2          362
 
 # Every row under one outer label
-display(summary.loc['East'])
-#          sales
+display(summary.loc['South'])
+#          visits
 # quarter
-# Q1         120
-# Q2         180
+# Q1          380
+# Q2          362
 
 # Both levels back into ordinary columns
 display(summary.reset_index())
-#   region quarter  sales
-# 0   East      Q1    120
-# 1   East      Q2    180
-# 2   West      Q1    100
-# 3   West      Q2    150
+#   clinic quarter  visits
+# 0  North      Q1     410
+# 1  North      Q2     455
+# 2  South      Q1     380
+# 3  South      Q2     362
 ```
-
-After `pivot()` or a horizontal concatenation later in this lecture, `reset_index()` turns the identifiers left in the index back into ordinary columns.
 
 # Reshaping: Wide vs Long Format
 
 _Fun fact: 90% of data reshaping confusion comes from not understanding which format you have and which format you need. Once you know that, the solution is usually obvious!_
 
-A blood-pressure study measures each patient at baseline and again at follow-up. The clinic’s spreadsheet has one row per patient and a column per visit: `baseline_sbp`, `followup_sbp`. That layout is **wide**: several measurements of the same kind spread across columns. Plotting and grouping tools usually want **long** layout: one row per patient-visit, a `visit` column saying which measurement it is, and a single `sbp` column holding the value.
+A blood-pressure study measures each patient’s systolic blood pressure (SBP, mmHg) at baseline and again at follow-up. The clinic’s spreadsheet has one row per patient and a column per visit: `baseline` and `followup`. That layout is **wide**: several measurements of the same kind spread across columns. Plotting and grouping tools usually want **long** layout: one row per patient-visit, a `visit` column saying which measurement it is, and a single `sbp` column holding the value.
 
-Both tables hold exactly the same numbers; only the row meaning (Lecture 05) changes. In long format the **identifier columns** (`patient_id`, `visit`) say which observation a row is, and the **value column** holds the measurement. Long data with one observation per row and one variable per column is often called **tidy** data, after Hadley Wickham's [Tidy Data](https://www.jstatsoft.org/article/view/v059i10) paper.
+Both tables hold exactly the same numbers; only the row meaning (Lecture 05) changes. In long format the **identifier columns** (`patient_id`, `visit`) say which observation a row is, and the **value column** holds the measurement. Long data with one observation per row and one variable per column is often called **tidy** data.
 
-Reshaping never adds or removes observations. `melt()` turns wide into long. `pivot()` turns long back into wide, which works only when each identifier combination appears once. The examples below use a small student-score table with the same structure: one row per student with a column per subject (wide), or one row per student-subject score (long).
+Reshaping never adds or removes observations. `melt()` turns wide into long. `pivot()` turns long back into wide, which works only when each identifier combination appears once.
 
 | Shape | One row represents | Best for | Conversion |
 | --- | --- | --- | --- |
@@ -487,58 +466,50 @@ Reshaping never adds or removes observations. `melt()` turns wide into long. `pi
 | Long | One entity/variable observation | Grouping and tidy plotting | `pivot()` to wide |
 
 ```
-WIDE FORMAT (subject columns)       LONG FORMAT (subject-value rows)
-┌─────────┬──────┬─────────┬────────┐  ┌─────────┬─────────┬───────┐
-│ student │ math │ english │ science│  │ student │ subject │ score │
-├─────────┼──────┼─────────┼────────┤  ├─────────┼─────────┼───────┤
-│ Alice   │  95  │   90    │   92   │  │ Alice   │ math    │  95   │
-│ Bob     │  88  │   85    │   90   │  │ Alice   │ english │  90   │
-│ Charlie │  92  │   94    │   89   │  │ Alice   │ science │  92   │
-└─────────┴──────┴─────────┴────────┘  │ Bob     │ math    │  88   │
-                                       │ Bob     │ english │  85   │
-                                       │ Bob     │ science │  90   │
-                                       │ Charlie │ math    │  92   │
-                                       │ Charlie │ english │  94   │
-                                       │ Charlie │ science │  89   │
-                                       └─────────┴─────────┴───────┘
-
-Wide: One row per student in this example      Long: One row per student-subject observation
-Useful for: matrix-like comparisons            Useful for: grouping/filtering by subject
-
+WIDE FORMAT (a column per visit)          LONG FORMAT (a row per patient-visit)
+┌────────────┬──────────┬──────────┐      ┌────────────┬──────────┬─────┐
+│ patient_id │ baseline │ followup │      │ patient_id │ visit    │ sbp │
+├────────────┼──────────┼──────────┤      ├────────────┼──────────┼─────┤
+│ P001       │   152    │   138    │      │ P001       │ baseline │ 152 │
+│ P002       │   138    │   132    │      │ P001       │ followup │ 138 │
+│ P003       │   145    │   129    │      │ P002       │ baseline │ 138 │
+└────────────┴──────────┴──────────┘      │ P002       │ followup │ 132 │
+                                          │ P003       │ baseline │ 145 │
+Useful for: each patient's change         │ P003       │ followup │ 129 │
+at a glance                               └────────────┴──────────┴─────┘
+                                          Useful for: grouping or plotting by visit
 ```
 
 ## Building Both Shapes
 
-The two frames below hold exactly the numbers in the diagram above. The wide one keeps a column per subject, which suits side-by-side comparison; the long one makes `subject` a value that can be filtered, grouped, or handed to a plotting library. “Wide” describes values spread across columns, not a universal one-row-per-entity rule: another dataset may put something else in a row.
+The two frames below hold exactly the numbers in the diagram above. The wide one keeps a column per visit, which suits side-by-side comparison; the long one makes `visit` a value that can be filtered, grouped, or handed to a plotting library. “Wide” describes values spread across columns, not a universal one-row-per-entity rule: another dataset may put something else in a row.
 
-### Code Snippet: Wide and long versions of the same scores
+### Code Snippet: Wide and long versions of the same readings
 
 ```python
-# Wide: one row per student, one column per subject
+# Wide: one row per patient, one SBP column per visit
 wide_data = pd.DataFrame({
-    'student': ['Alice', 'Bob', 'Charlie'],
-    'math': [95, 88, 92],
-    'english': [90, 85, 94],
-    'science': [92, 90, 89]
+    'patient_id': ['P001', 'P002', 'P003'],
+    'baseline': [152, 138, 145],
+    'followup': [138, 132, 129],
 })
 
-# Long: one row per student-subject score
+# Long: one row per patient-visit reading
 long_data = pd.DataFrame({
-    'student': ['Alice', 'Alice', 'Alice', 'Bob', 'Bob', 'Bob',
-                'Charlie', 'Charlie', 'Charlie'],
-    'subject': ['math', 'english', 'science'] * 3,
-    'score': [95, 90, 92, 88, 85, 90, 92, 94, 89]
+    'patient_id': ['P001', 'P001', 'P002', 'P002', 'P003', 'P003'],
+    'visit': ['baseline', 'followup'] * 3,
+    'sbp': [152, 138, 138, 132, 145, 129],
 })
 display(long_data.head(3))
-#   student  subject  score
-# 0   Alice     math     95
-# 1   Alice  english     90
-# 2   Alice  science     92
+#   patient_id     visit  sbp
+# 0       P001  baseline  152
+# 1       P001  followup  138
+# 2       P002  baseline  138
 ```
 
 ## Melting Wide to Long with melt()
 
-The `melt()` function, written `pd.melt(df, ...)` or `df.melt(...)`, is the wide-to-long step: it holds the identifier columns fixed and turns each selected wide column into variable-value rows. The blood-pressure table that opened this topic needs exactly this before anything can group or plot by visit.
+The `melt()` function, written `pd.melt(df, ...)` or `df.melt(...)`, is the wide-to-long step: it holds the identifier columns fixed and turns each selected wide column into variable-value rows. The old column names become the values of the new variable column.
 
 ### Reference Card: `melt()`
 
@@ -554,28 +525,25 @@ The `melt()` function, written `pd.melt(df, ...)` or `df.melt(...)`, is the wide
 ```python
 # Convert wide format to long format
 long = pd.melt(wide_data,
-               id_vars=['student'],
-               value_vars=['math', 'english', 'science'],
-               var_name='subject',
-               value_name='score')
+               id_vars=['patient_id'],
+               value_vars=['baseline', 'followup'],
+               var_name='visit',
+               value_name='sbp')
 display(long)
-#    student  subject  score
-# 0    Alice     math     95
-# 1      Bob     math     88
-# 2  Charlie     math     92
-# 3    Alice  english     90
-# 4      Bob  english     85
-# 5  Charlie  english     94
-# 6    Alice  science     92
-# 7      Bob  science     90
-# 8  Charlie  science     89
+#   patient_id     visit  sbp
+# 0       P001  baseline  152
+# 1       P002  baseline  138
+# 2       P003  baseline  145
+# 3       P001  followup  138
+# 4       P002  followup  132
+# 5       P003  followup  129
 ```
 
-The subject label is now a value in a tidy column, ready for a later aggregation (Lecture 08) or plot. Survey responses stored in `Q1`, `Q2`, and `Q3` columns melt the same way when a downstream step needs the question name as a row value.
+The visit is now a value in its own column, ready for a later aggregation (Lecture 08) or a plot of SBP by visit. Survey responses stored in `Q1`, `Q2`, and `Q3` columns melt the same way when a downstream step needs the question name as a row value.
 
 ## Pivoting Long Back to Wide with pivot()
 
-`pivot()` runs `melt()` backwards: the variable column supplies the new headers, the value column fills the cells, and the identifier column becomes the row labels. Reach for it when data arrives long, one row per observation the way `long_data` is, and a reader or a matrix-shaped tool wants a column per subject. `pivot()` never aggregates, so each `index`/`columns` pair must identify exactly one value.
+`pivot()` runs `melt()` backwards: the variable column supplies the new headers, the value column fills the cells, and the identifier column becomes the row labels. Reach for it when data arrives long, one row per observation the way `long_data` is, and a reader or a matrix-shaped tool wants a column per visit. `pivot()` never aggregates, so each `index`/`columns` pair must identify exactly one value.
 
 ### Reference Card: `pivot()`
 
@@ -590,35 +558,67 @@ The subject label is now a value in a tidy column, ready for a later aggregation
 ### Code Snippet: Pivot long data back to wide
 
 ```python
-# long_data was typed by hand and long came out of melt(): the same nine scores
+# long_data was typed by hand and long came out of melt(): the same six readings
 # in a different row order, which pivot() files by label into one frame.
-wide = long_data.pivot(index='student', columns='subject', values='score')
+wide = long_data.pivot(index='patient_id', columns='visit', values='sbp')
 display(wide)
-# subject  english  math  science
-# student
-# Alice         90    95       92
-# Bob           85    88       90
-# Charlie       94    92       89
+# visit       baseline  followup
+# patient_id
+# P001             152       138
+# P002             138       132
+# P003             145       129
 
-print(wide.equals(long.pivot(index='student', columns='subject', values='score')))
+print(wide.equals(long.pivot(index='patient_id', columns='visit', values='sbp')))
 # True
 
-back = long.pivot(index='student', columns='subject', values='score').reset_index()
+back = long.pivot(index='patient_id', columns='visit', values='sbp').reset_index()
+back.columns.name = None                 # drop the leftover 'visit' header label
 display(back)
-# subject  student  english  math  science   <- 'subject' is a leftover header label
-# 0          Alice       90    95       92
-# 1            Bob       85    88       90
-# 2        Charlie       94    92       89
-
-back.columns.name = None                                # drop the leftover label
-back = back[['student', 'math', 'english', 'science']]  # pivot sorted the columns
+#   patient_id  baseline  followup
+# 0       P001       152       138
+# 1       P002       138       132
+# 2       P003       145       129
 print(back.equals(wide_data))
 # True
 ```
 
-Melting `wide_data` and pivoting the result puts every score back in the cell it came from, and carrying the values back is what makes the two operations inverses. The frame itself does not come back equal: `long.pivot(index='student', columns='subject', values='score').equals(wide_data)` is `False`, because the pivot moved `student` into the row labels, left `subject` behind as a header label, and sorted the columns into `english, math, science`. The fixups in the snippet undo those differences: `reset_index()` restores the `student` column, `back.columns.name = None` clears the leftover label, and reselecting the columns restores the original order, after which `equals()` returns `True`. With two identifier columns, `index=['id1', 'id2']` builds the two-level row index from earlier in this lecture, and `reset_index()` turns both levels back into columns.
+Melting and then pivoting puts every reading back in the cell it came from; `reset_index()` restores the `patient_id` column, so the round trip reproduces `wide_data` exactly.
 
-If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops: pandas reports `ValueError: Index contains duplicate entries, cannot reshape`. First determine whether the duplicates are data errors or repeated observations. If repeated observations are valid, `pivot_table()` aggregates them into one cell before reshaping, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
+## When pivot() Finds a Repeated Pair
+
+If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops with `ValueError: Index contains duplicate entries, cannot reshape`. List the repeated pairs with `duplicated(subset=[...], keep=False)` (Lecture 05), then decide whether they are data errors or real repeated observations.
+
+### Code Snippet: Find the pair that stops pivot()
+
+```python
+# P002's follow-up blood pressure was rechecked, so that pair appears twice
+rechecked = pd.DataFrame({
+    'patient_id': ['P001', 'P001', 'P002', 'P002', 'P002'],
+    'visit': ['baseline', 'followup', 'baseline', 'followup', 'followup'],
+    'sbp': [152, 138, 138, 148, 136],
+})
+
+display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
+#   patient_id     visit  sbp
+# 3       P002  followup  148
+# 4       P002  followup  136
+
+try:
+    rechecked.pivot(index='patient_id', columns='visit', values='sbp')
+except ValueError as error:
+    print('ValueError:', error)
+# ValueError: Index contains duplicate entries, cannot reshape
+
+# Clinic rule: after a recheck, record the second reading
+fixed = rechecked.drop_duplicates(subset=['patient_id', 'visit'], keep='last')
+display(fixed.pivot(index='patient_id', columns='visit', values='sbp'))
+# visit       baseline  followup
+# patient_id
+# P001             152       138
+# P002             138       136
+```
+
+A recheck is a real repeated observation, so the fix is a documented rule, not a guess. If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; aggregation and pivot tables are taught canonically in [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations).
 
 If a reshape feels mysterious, write down what one row represents before choosing `pivot()` or `melt()`. Your future self will thank you for the labels.
 
@@ -626,7 +626,7 @@ If a reshape feels mysterious, write down what one row represents before choosin
 
 # Concatenating DataFrames Along an Axis
 
-_Think of concatenation as stacking LEGO bricks - you can stack them vertically (add more rows) or horizontally (add more columns). Just make sure they fit together!_
+_Think of concatenation as stacking LEGO bricks: you can stack them vertically (add more rows) or horizontally (add more columns). Just make sure they fit together!_
 
 A hospital system exports admissions one month at a time: `jan_admissions.csv`, `feb_admissions.csv`, and so on. Every file has the same columns and the same row meaning (one admission), so nothing needs matching by key: the files just need to go one after another. That is **concatenation**: gluing tables together along an **axis**, numbered as in NumPy (Lecture 03). Stacking rows is `axis=0`; placing columns side by side is `axis=1`.
 
@@ -674,7 +674,7 @@ DataFrame B:                               =
 
 ## Vertical Concatenation: Adding More Rows
 
-The most common use case - combining datasets with the same columns.
+The most common case stacks monthly extracts that share the same columns.
 
 ### Reference Card: Vertical `concat()`
 
@@ -688,39 +688,39 @@ The most common use case - combining datasets with the same columns.
 ### Code Snippet: Stack rows
 
 ```python
-# Sales from different months; the month column records which file each row came from
-jan_sales = pd.DataFrame({
-    'product': ['Laptop', 'Mouse', 'Keyboard'],
-    'quantity': [5, 20, 15],
+# Two monthly admission extracts; source_file records which file each row came from
+jan = pd.DataFrame({
+    'admission_id': ['A101', 'A102', 'A103'],
+    'unit': ['ICU', 'Med', 'Surg'],
+    'los_days': [4, 2, 3],                # length of stay
 })
-feb_sales = pd.DataFrame({
-    'product': ['Laptop', 'Monitor', 'Tablet'],
-    'quantity': [8, 3, 12],
+feb = pd.DataFrame({
+    'admission_id': ['A201', 'A202'],
+    'unit': ['Med', 'ICU'],
+    'los_days': [5, 1],
 })
-jan_sales['month'] = 'Jan'
-feb_sales['month'] = 'Feb'
+jan['source_file'] = 'jan_admissions.csv'
+feb['source_file'] = 'feb_admissions.csv'
 
-# Stack them vertically - combines rows
-combined = pd.concat([jan_sales, feb_sales])
+# Stack them vertically: the rows of feb go under the rows of jan
+combined = pd.concat([jan, feb])
 display(combined)
-#     product  quantity month
-# 0    Laptop         5   Jan
-# 1     Mouse        20   Jan
-# 2  Keyboard        15   Jan
-# 0    Laptop         8   Feb  # Index repeats! (0, 1, 2 again)
-# 1   Monitor         3   Feb
-# 2    Tablet        12   Feb
+#   admission_id  unit  los_days         source_file
+# 0         A101   ICU         4  jan_admissions.csv
+# 1         A102   Med         2  jan_admissions.csv
+# 2         A103  Surg         3  jan_admissions.csv
+# 0         A201   Med         5  feb_admissions.csv   <- index repeats (0, 1 again)
+# 1         A202   ICU         1  feb_admissions.csv
 
 # Clean indexes with ignore_index=True
-combined = pd.concat([jan_sales, feb_sales], ignore_index=True)
+combined = pd.concat([jan, feb], ignore_index=True)
 display(combined)
-#     product  quantity month
-# 0    Laptop         5   Jan
-# 1     Mouse        20   Jan
-# 2  Keyboard        15   Jan
-# 3    Laptop         8   Feb  # Clean sequential index
-# 4   Monitor         3   Feb
-# 5    Tablet        12   Feb
+#   admission_id  unit  los_days         source_file
+# 0         A101   ICU         4  jan_admissions.csv
+# 1         A102   Med         2  jan_admissions.csv
+# 2         A103  Surg         3  jan_admissions.csv
+# 3         A201   Med         5  feb_admissions.csv   <- clean sequential index
+# 4         A202   ICU         1  feb_admissions.csv
 ```
 
 ## Horizontal Concatenation: Adding More Columns
@@ -739,28 +739,26 @@ Horizontal concatenation is useful for adding related columns side-by-side when 
 
 ```python
 # Put the real identity in the index before aligning independent sources.
-grades = pd.DataFrame({
-    'student_id': ['S001', 'S002', 'S003'],
-    'name': ['Alice', 'Bob', 'Charlie'],
-    'grade': [95, 88, 92]
-}).set_index('student_id')
+a1c = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003'],
+    'a1c': [7.4, 5.6, 6.1],
+}).set_index('patient_id')
 
-attendance = pd.DataFrame({
-    'student_id': ['S002', 'S003', 'S004'],
-    'days_present': [18, 20, 19],
-    'days_total': [20, 20, 20]
-}).set_index('student_id')
+vitals = pd.DataFrame({
+    'patient_id': ['P002', 'P003', 'P004'],
+    'sbp': [128, 141, 119],
+    'weight_kg': [81.5, 67.0, 90.2],
+}).set_index('patient_id')
 
-# Horizontal concatenation aligns the student_id labels.
-combined = pd.concat([grades, attendance], axis=1)
+# Horizontal concatenation aligns the patient_id labels.
+combined = pd.concat([a1c, vitals], axis=1)
 display(combined)
-#                name  grade  days_present  days_total
-# student_id
-# S001          Alice   95.0           NaN         NaN
-# S002            Bob   88.0          18.0        20.0
-# S003        Charlie   92.0          20.0        20.0
-# S004            NaN    NaN          19.0        20.0
-
+#             a1c    sbp  weight_kg
+# patient_id
+# P001        7.4    NaN        NaN
+# P002        5.6  128.0       81.5
+# P003        6.1  141.0       67.0
+# P004        NaN  119.0       90.2
 ```
 
 Do not rely on default `RangeIndex` values from independently loaded tables: two unrelated first rows would both have label `0` and would appear to match. If identity is stored in ordinary columns rather than the index, use `merge()` on those keys.
@@ -780,39 +778,35 @@ The `join=` argument of `concat()` is not a merge. When stacking rows, it decide
 ### Code Snippet: Choose a column set
 
 ```python
-# Different columns in each DataFrame
-df1 = pd.DataFrame({
-    'A': [1, 2, 3],
-    'B': [4, 5, 6]
+# The February extract dropped 'age' and added 'payer'
+jan = pd.DataFrame({
+    'admission_id': ['A101', 'A102'],
+    'age': [67, 45],
+    'los_days': [4, 2],
+})
+feb = pd.DataFrame({
+    'admission_id': ['A201', 'A202'],
+    'los_days': [5, 1],
+    'payer': ['Medicare', 'Private'],
 })
 
-df2 = pd.DataFrame({
-    'B': [7, 8, 9],
-    'C': [10, 11, 12]
-})
-
-# Outer join (default) - keeps all columns
-outer = pd.concat([df1, df2], join='outer')
+# Outer (default): keeps every column; a column a file lacks is NaN for its rows
+outer = pd.concat([jan, feb], join='outer', ignore_index=True)
 display(outer)
-#      A  B     C
-# 0  1.0  4   NaN  # From df1
-# 1  2.0  5   NaN
-# 2  3.0  6   NaN
-# 0  NaN  7  10.0  # From df2
-# 1  NaN  8  11.0
-# 2  NaN  9  12.0
+#   admission_id   age  los_days     payer
+# 0         A101  67.0         4       NaN
+# 1         A102  45.0         2       NaN
+# 2         A201   NaN         5  Medicare
+# 3         A202   NaN         1   Private
 
-# Inner join - keeps only column B (common to both)
-inner = pd.concat([df1, df2], join='inner')
+# Inner: keeps only the columns both files share
+inner = pd.concat([jan, feb], join='inner', ignore_index=True)
 display(inner)
-#    B
-# 0  4
-# 1  5
-# 2  6
-# 0  7
-# 1  8
-# 2  9
-
+#   admission_id  los_days
+# 0         A101         4
+# 1         A102         2
+# 2         A201         5
+# 3         A202         1
 ```
 
 ## Patching Gaps with combine_first()
@@ -829,25 +823,24 @@ Sometimes two sources hold the same variables for the same labeled rows, and one
 ### Code Snippet: Patch from a fallback source
 
 ```python
-# A primary extract plus a lower-priority repair source, keyed by product
-primary_sales = pd.DataFrame(
-    {'sales': [100.0, None, 150.0]},
-    index=pd.Index(['A', 'B', 'C'], name='product')
-)
-backup_sales = pd.DataFrame(
-    {'sales': [200.0, 175.0, 90.0]},
-    index=pd.Index(['B', 'C', 'D'], name='product')
-)
+# Weights from the primary record, plus a lower-priority intake form
+primary = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003'],
+    'weight_kg': [81.5, None, 67.0],
+}).set_index('patient_id')
+intake = pd.DataFrame({
+    'patient_id': ['P002', 'P003', 'P004'],
+    'weight_kg': [74.8, 66.1, 90.2],
+}).set_index('patient_id')
 
-complete = primary_sales.combine_first(backup_sales)
+complete = primary.combine_first(intake)
 display(complete)
-#          sales
-# product
-# A        100.0  # Kept from the primary source
-# B        200.0  # Filled from the backup source
-# C        150.0  # Primary value wins over backup value 175.0
-# D         90.0  # Label found only in the backup source
-
+#             weight_kg
+# patient_id
+# P001             81.5   <- kept from the primary source
+# P002             74.8   <- filled from the intake form
+# P003             67.0   <- primary value wins over the intake value 66.1
+# P004             90.2   <- label found only in the intake form
 ```
 
 Confirm that row and column labels mean the same thing in both sources before combining them.

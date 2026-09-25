@@ -13,15 +13,13 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_pivot_tables.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
 
-_Fun fact: The term "aggregation" comes from the Latin "aggregare" meaning "to add to a flock." In data science, we're literally gathering scattered data points into meaningful groups - turning a flock of individual observations into organized insights._
+_Fun fact: "aggregation" comes from the Latin "aggregare," to add to a flock, which is what a groupby does with scattered rows._
 
 # The Split-Apply-Combine Paradigm
 
-_Reality check: GroupBy operations are the bread and butter of data analysis. Master this concept and you'll be able to answer almost any "what if we group by..." question that comes your way._
-
 A clinic manager asks, "What is the average wait at each clinic?" The visit log has one row per visit, but the answer needs one number per clinic. By hand, you would sort the visits into piles by clinic, average each pile, and copy the averages into a small table. pandas does the same three steps with `groupby()`.
 
-Hadley Wickham named this pattern **split-apply-combine**:
+The pattern is called **split-apply-combine**:
 
 - **Split**: sort rows into **groups** using a **grouping key**, a column whose values decide which group each row joins (here, `clinic`).
 - **Apply**: run a calculation on each group separately (here, the mean of `wait_min`).
@@ -86,12 +84,14 @@ Printing the GroupBy object shows no numbers. Selecting `wait_min` and calling `
 | Count | `.size()` | Rows per group, including rows with missing values | One count per group |
 | Count | `['col'].count()` | Non-missing values of `col` per group | One count per group |
 | Count | `['col'].nunique()` | Distinct non-missing values of `col` per group | One count per group |
-| Several at once | `.agg(name=('col', 'func'), ...)` | **Named aggregation**: output name, source column, function | One flat column per name |
+| Several at once | `.agg(name=('col', 'func'), ...)` | Named aggregation: output name, source column, function | One flat column per name |
 | Several at once | `.agg({'col': ['mean', 'max']})` | Several functions per column | Two-level column labels |
 | Result shape | `groupby(..., as_index=False)` | Keep keys as ordinary columns | Flat table, `0..n-1` index |
 | Result shape | `groupby(..., sort=True)` | Sort rows by key (the default); categorical keys follow category order | Ordered rows |
 
 ### Code Snippet: Count and Summarize Each Clinic
+
+**Named aggregation** builds a whole summary table in one `.agg()` call. Each keyword becomes an output column name, and its value is a `(source column, function)` pair: `mean_wait=('wait_min', 'mean')` means "average `wait_min` and call the result `mean_wait`." `size` counts rows whichever column you pair it with.
 
 ```python
 summary = visits.groupby('clinic', as_index=False).agg(
@@ -117,6 +117,8 @@ North had three visits from two patients (P01 came twice), and only two of those
 - `visits.groupby('clinic').mean()` raises `TypeError: dtype 'str' does not support operation 'mean'` because `patient_id` and `visit_type` are text. Select numeric columns first.
 - `.sum()` over text does not fail: it glues strings together (`P01P02P01`). Select columns before summing.
 - `size` and `count` differ only when values are missing. Use `size` for "how many rows?" and `count` for "how many recorded values?"
+
+![xkcd 2533: Slope Hypothesis Testing. Measuring the same people again adds rows, not people, which is why size and nunique answer different questions](media/xkcd_2533.png)
 
 ## Grouping by Two Keys
 
@@ -181,7 +183,6 @@ East    Follow-up    9
 | `pd.pivot_table(..., sort=True)` | Order the rows and columns by key (the default); `sort=False` leaves both in first-appearance order | Predictable row and column order |
 | `pd.crosstab(df['a'], df['b'])` | Count rows for each combination of two columns; pass a list such as `[df['a'], df['c']]` for two-level rows | Counts; absent combinations are 0 |
 | `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
-| `pd.crosstab(df['a'], df['b'], margins=True)` | Add an `All` row and column of totals | Counts with totals |
 
 ### Code Snippet: A Pivot Table and Its GroupBy Twin
 
@@ -193,7 +194,7 @@ print(mean_wait)
 same = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean().unstack()
 print(mean_wait.equals(same))   # True
 
-print(pd.crosstab(visits['clinic'], visits['visit_type'], margins=True))
+print(pd.crosstab(visits['clinic'], visits['visit_type']))
 ```
 
 ```text
@@ -203,25 +204,22 @@ East              9.0   NaN
 North            10.5  12.0
 South             NaN  25.0
 True
-visit_type  Follow-up  New  All
+visit_type  Follow-up  New
 clinic
-East                1    0    1
-North               2    1    3
-South               0    2    2
-All                 3    3    6
+East                1    0
+North               2    1
+South               0    2
 ```
 
-### Missing Cells: Absent Is Not Zero
-
-A `NaN` cell means no rows had that combination. `fill_value=0` is right for counts and sums, where "no visits" really is 0 visits (the crosstab above already shows 0). It is wrong for means, minimums, or other measurements: filling East–New with 0 would report a zero-minute wait that never happened.
-
 ## Totals and Absent Cells
+
+A `NaN` cell means no rows had that combination. `fill_value=0` is right for counts and sums, where "no visits" really is 0 visits (the crosstab above already shows 0). It is wrong for means, minimums, or other measurements: filling East–New with 0 would report a zero-minute wait that never happened. The margins are computed from the underlying rows, not from the cells: in a table of means, the `Total` column is the mean of all of a clinic's visits, not the average of its cell means.
 
 ### Reference Card: Pivot Table Totals and Fills
 
 | Option | Purpose and key arguments | Output effect |
 | :--- | :--- | :--- |
-| `margins=True, margins_name='Total'` | Add a row and column of totals computed from the underlying rows; `margins_name` labels them (default `All`) | Extra `Total` row and column |
+| `margins=True, margins_name='Total'` | Add a row and column of totals computed from the underlying rows; `margins_name` labels them (default `All`); `pd.crosstab()` takes the same two options | Extra `Total` row and column |
 | `fill_value=0` | Replace absent cells with 0, only for counts and sums | No-`NaN` cells |
 
 ### Code Snippet: Totals Where Zero Is Real
@@ -447,7 +445,7 @@ The index has two levels: the clinic and each row's original index. `include_gro
 
 # Performance Optimization
 
-![xkcd 1319: Automation](media/xkcd_1319.png)
+![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 
 A grouped summary that takes a second on a class example can take many minutes on a year of hospital lab results. Before changing code, **measure** by timing the step and checking memory. You already have both tools. `%timeit` (Lecture 04) runs a line several times and reports the typical time. `df.memory_usage(deep=True)` (Lecture 05) reports bytes per column. Results depend on data size, dtypes, number of groups, and hardware, so measure your own workload.
 
@@ -482,7 +480,7 @@ labs = pd.DataFrame({
     'clinic': rng.choice(['North', 'South', 'East', 'West'], n),   # one random clinic per row
     'glucose': rng.normal(100, 15, n).round(1),
 })
-print(round(labs['clinic'].memory_usage(deep=True) / 1e6, 1))  # 12.5 (MB as text)
+print(round(labs['clinic'].memory_usage(deep=True) / 1e6, 1))  # 53.5 (MB as text; 12.5 in Colab)
 labs['clinic'] = labs['clinic'].astype('category')
 print(round(labs['clinic'].memory_usage(deep=True) / 1e6, 1))  # 1.0 (MB as category)
 
@@ -491,11 +489,11 @@ by_patient = labs.groupby('patient_id')['glucose']
 %timeit by_patient.agg(lambda s: s.std())  # about 450 ms: same values, ~50x slower
 ```
 
+Colab has the `pyarrow` package installed, which stores text more compactly, so there the text column takes 12.5 MB instead of 53.5. The category version is 1.0 MB either way.
+
 When data still do not fit in memory, see chunked reading and parallel processing in [BONUS.md](BONUS.md#scaling-past-memory-chunks-and-processes). The simpler move is often a bigger computer, which is the next topic.
 
 # Remote Computing with SSH
-
-![xkcd 2523: Endangered](media/xkcd_2523.png)
 
 Some analyses cannot run on a laptop. The dataset may be too large or the job may run all night. Very often in health research, the data are not allowed to leave an approved secure server because they contain **protected health information** (PHI), health records that can identify a person. The answer is to bring your code to the data: log in to the other computer, run the work there, and bring back only results you are allowed to take. Use the hostname, account, and authentication instructions supplied by whoever operates the server.
 
@@ -527,8 +525,10 @@ Most servers use an **SSH key pair** instead of a password. `ssh-keygen` creates
 | `ssh user@host 'command'` | Run one command remotely | Command output locally |
 | `scp local user@host:path` | Copy a local file to the server | Remote file |
 | `scp user@host:path local` | Copy a remote file back | Local file |
-| `ssh-keygen -t ed25519` | Create a public/private key pair | `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` |
+| `ssh-keygen -t ed25519` | Create a public/private key pair; `-C "email"` labels it | `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` |
+| `ssh-keygen -t ed25519 -f path` | Save the pair at `path` instead of the default, such as a practice key that must not replace your real one | `path` and `path.pub` |
 | `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
+| `ssh-add` | Unlock your private key once per login session; the SSH agent keeps it unlocked | Later `ssh` and `scp` stop asking for the passphrase |
 
 ### Code Snippet: Set Up a Key, Connect, and Copy Files
 
@@ -550,8 +550,6 @@ scp username@server.example:~/results/analysis.csv ./
 
 ## Keep Long Jobs Alive with tmux or screen
 
-![Punk vs. Process](media/punk.png)
-
 When an SSH connection drops (laptop sleeps, Wi-Fi changes), the server stops the programs started from that connection, including an analysis three hours into a four-hour run. A **terminal multiplexer** such as `tmux` keeps a shell running on the server on its own. You **detach**, disconnect, and later **attach** again to find the job still running. A tmux session survives disconnects, not a server restart. `screen` is an older alternative; use whichever the server provides. For a guided introduction, see [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/).
 
 ```text
@@ -562,6 +560,7 @@ laptop ── ssh ──> server
 
 ### Reference Card: tmux Sessions
 
+- Install: servers usually have tmux already. To practice on your laptop, `brew install tmux` (macOS) or `sudo apt install tmux` (Ubuntu or WSL); `tmux -V` prints the version.
 - `tmux new -s analysis`: Start a session named `analysis`; a status bar appears at the bottom.
 - `Ctrl+b`, then `d`: Detach; the session keeps running and you return to the normal prompt.
 - `tmux ls` (short for `tmux list-sessions`): List sessions; output looks like `analysis: 1 windows (created Fri Sep 18 15:32:45 2026)`.

@@ -1,4 +1,0 @@
-# Tells badmath (https://pypi.org/project/badmath) which assignment this is.
-# Run `uvx badmath` in this folder to grade it with the course's current checks.
-course = "217"
-assignment = "11"

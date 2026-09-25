@@ -1,319 +1,255 @@
+---
+jupyter:
+  jupytext:
+    notebook_metadata_filter: language_info
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.13
+---
+
 # Demo 1: GroupBy Summaries and Pivot Tables
 
-## Learning Objectives
-- Split rows into groups and combine one summary row per group
-- State the grain of the input and of the result before every grouping
-- Summarize several columns at once with `.agg()` and named aggregation
-- Group by two keys and read the result as a MultiIndex or as a grid
-- Build the same grid with `pd.pivot_table()`, add totals, and count combinations with `pd.crosstab()`
+A health system's visit log has one row per clinic visit: 100,000 synthetic visits across five clinics and six departments. This demo answers the questions a clinic manager asks of that log (how long each department's patients wait, how many patients each one sees, how the answers differ by clinic) with `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations. Everything here comes from Lecture 08 up to the first demo break, plus Lectures 01 to 07.
+
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3; the whole notebook runs in under a minute. The patient IDs and values are synthetic.
 
 ## Setup
 
+The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+
 ```python
-import pandas as pd
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+
+```python
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Set inline plotting for Jupyter
-%matplotlib inline
-
-# Set random seed for reproducibility
-np.random.seed(42)
+print('pandas', pd.__version__)
 ```
+
+**Expect:** `pandas 3.0.5`.
 
 ## Part 1: One Row per Group
 
-The input table has one row per employee. Every question in this part has an answer with one row per department, so each answer is a split (by `Department`), an apply (mean, count, ...), and a combine.
+The visit log has one row per visit. Every question in this part has an answer with one row per department, so each answer is a split (by `department`), an apply (mean, count, ...), and a combine.
 
-### Create Sample Data
+### Build the Visit Log
+
+The next cell generates the log. You do not need to follow every line: it draws a fixed set of patients, gives each visit a clinic, a department, a wait, a blood pressure, and a satisfaction score, and leaves some surveys blank. The seed makes every run produce the same table.
 
 ```python
-# Create large-scale employee dataset (100,000 rows)
-print("=== Creating Large-Scale Employee Dataset ===")
-n_employees = 100000
+rng = np.random.default_rng(42)
+n_visits = 100_000
+n_patients = 30_000
 
-# Generate realistic employee data
-departments = [
-    "Sales",
-    "Engineering",
-    "Marketing",
-    "HR",
-    "Finance",
-    "Operations",
-]
-regions = ["North", "South", "East", "West", "Central"]
-employee_names = [f"Emp_{i:05d}" for i in range(n_employees)]
+# One age per patient; about 15% of patients are children
+patient_age = np.where(
+    rng.random(n_patients) < 0.15,
+    rng.integers(0, 18, n_patients),
+    rng.integers(18, 96, n_patients),
+)
 
-# Create correlated data: Engineering has higher salaries, Sales varies more
-dept_salary_base = {
-    "Engineering": 85000,
-    "Finance": 75000,
-    "Marketing": 65000,
-    "Sales": 60000,
-    "HR": 55000,
-    "Operations": 50000,
-}
-
-dept_salary_std = {
-    "Engineering": 15000,
-    "Finance": 12000,
-    "Marketing": 10000,
-    "Sales": 20000,  # Higher variance
-    "HR": 8000,
-    "Operations": 7000,
-}
-
-# Generate data
-np.random.seed(42)
-departments_list = np.random.choice(departments, n_employees)
-regions_list = np.random.choice(regions, n_employees)
-
-# Create correlated salaries based on department
-salaries = []
-for dept in departments_list:
-    base = dept_salary_base[dept]
-    std = dept_salary_std[dept]
-    salary = np.random.normal(base, std)
-    salaries.append(max(30000, salary))  # Minimum wage floor
-
-# Experience correlates with salary (but with noise)
-experience = []
-for salary in salaries:
-    # More experienced employees tend to earn more, but with variation
-    exp_base = (salary - 40000) / 8000
-    exp = max(0, int(np.random.normal(exp_base, 2)))
-    experience.append(min(exp, 30))  # Cap at 30 years
-
-# Create DataFrame
-df = pd.DataFrame({
-    "Employee": employee_names,
-    "Department": departments_list,
-    "Region": regions_list,
-    "Salary": np.round(salaries, 2),
-    "Experience": experience,
+# Each visit belongs to one patient; patients visit about three times each
+who = rng.integers(0, n_patients, n_visits)
+visits = pd.DataFrame({
+    "visit_id": [f"V{i:06d}" for i in range(1, n_visits + 1)],
+    "patient_id": [f"P{i:05d}" for i in who],
+    "age": patient_age[who],   # each visit gets its patient's age (fancy indexing, Lecture 03)
+    "clinic": rng.choice(["North", "South", "East", "West", "Central"], n_visits),
+    "visit_type": rng.choice(["New", "Follow-up"], n_visits, p=[0.3, 0.7]),
 })
 
-# Add some additional features
-df["Years_At_Company"] = np.round(np.random.uniform(0.5, 14, n_employees), 1)
-df["Performance_Score"] = np.random.uniform(1, 5, n_employees)
-df["Bonus"] = df["Salary"] * df["Performance_Score"] * 0.1
+# Children go to Pediatrics; adults to one of five adult departments
+adult_departments = ["Family Medicine", "Cardiology", "Orthopedics", "Endocrinology", "Dermatology"]
+visits["department"] = np.where(
+    visits["age"] < 18,
+    "Pediatrics",
+    rng.choice(adult_departments, n_visits, p=[0.40, 0.20, 0.17, 0.13, 0.10]),
+)
 
-# Bonuses are paid after a full year, so this year's hires have no bonus on file
-df.loc[df["Years_At_Company"] < 1, "Bonus"] = np.nan
+# Typical wait (minutes) and its spread differ by department; walk-in Family Medicine varies most
+typical_wait = {"Orthopedics": 38, "Cardiology": 30, "Endocrinology": 26,
+                "Family Medicine": 22, "Dermatology": 18, "Pediatrics": 15}
+wait_spread = {"Orthopedics": 10, "Cardiology": 9, "Endocrinology": 8,
+               "Family Medicine": 14, "Dermatology": 6, "Pediatrics": 5}
+visits["wait_min"] = rng.normal(
+    visits["department"].map(typical_wait), visits["department"].map(wait_spread)
+).round()
+visits["wait_min"] = visits["wait_min"].clip(lower=0).astype(int)
 
-print(f"Dataset shape: {df.shape}")
-print(f"Employees in their first year (no bonus yet): {df['Bonus'].isna().sum():,}")
-print(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-print("\nFirst few rows:")
-print(df.head())
-print("\nBasic statistics:")
-print(df.describe())
+# Systolic blood pressure (mmHg) rises with age
+visits["systolic_bp"] = rng.normal(100 + 0.5 * visits["age"], 14).round().astype(int)
+
+# Satisfaction survey, 1 (poor) to 5 (excellent): longer waits, lower scores
+visits["satisfaction"] = (5.5 - visits["wait_min"] / 15 + rng.normal(0, 0.8, n_visits)).round()
+visits["satisfaction"] = visits["satisfaction"].clip(lower=1, upper=5)
+# About 3% of surveys were never returned
+visits.loc[rng.random(n_visits) < 0.03, "satisfaction"] = np.nan
+
+print(visits.shape)
+print(f"Distinct patients: {visits['patient_id'].nunique():,}")
+print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum():,}")
+visits.head()
 ```
+
+**Expect:** `(100000, 9)`, 28,929 distinct patients, and 2,984 visits with no survey. The grain is one row per visit, so a patient who came three times has three rows.
 
 ### Basic Aggregation
 
 ```python
-# Group by department and calculate comprehensive statistics
-print("=== Basic Aggregation ===")
-print("Mean salary by department:")
-dept_salary_mean = df.groupby("Department")["Salary"].mean()
-print(dept_salary_mean)
+# One mean per department: split by department, average wait_min, combine
+dept_wait = visits.groupby("department")["wait_min"].mean()
+print(dept_wait.round(1))
 
-print("\n=== Comprehensive Department Statistics ===")
-dept_stats = df.groupby("Department").agg({
-    "Salary": ["mean", "median", "std", "min", "max", "count"],
-    "Experience": ["mean", "max"],
-    "Performance_Score": "mean",
-    "Bonus": "sum",
+# Several summaries per column: a dictionary gives two-level column labels
+dept_stats = visits.groupby("department").agg({
+    "wait_min": ["mean", "median", "std", "min", "max"],
+    "age": ["mean", "max"],
+    "satisfaction": "mean",
 })
-print(dept_stats)
+dept_stats.round(1)
+```
 
-# Visualize department statistics
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9). Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
 
-# 1. Mean salary by department
-dept_salary_mean.plot(kind="bar", ax=axes[0, 0], color="steelblue")
-axes[0, 0].set_title(
-    "Mean Salary by Department", fontsize=14, fontweight="bold"
-)
-axes[0, 0].set_ylabel("Salary ($)")
-axes[0, 0].tick_params(axis="x", rotation=45)
-axes[0, 0].grid(axis="y", alpha=0.3)
+```python
+# Two views of the same groups (Lecture 07): the means, and the spread behind them
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-# 2. Salary distribution by department (box plot)
-df.boxplot(column="Salary", by="Department", ax=axes[0, 1])
-axes[0, 1].set_title(
-    "Salary Distribution by Department", fontsize=14, fontweight="bold"
-)
-axes[0, 1].set_xlabel("Department")
-axes[0, 1].set_ylabel("Salary ($)")
-axes[0, 1].tick_params(axis="x", rotation=45)
+dept_wait.sort_values().plot(kind="bar", ax=axes[0], color="steelblue")
+axes[0].set_title("Mean wait by department")
+axes[0].set_ylabel("Mean wait (minutes)")
+axes[0].set_xlabel("")
+axes[0].tick_params(axis="x", rotation=45)
 
-# 3. Employee count by department
-dept_counts = df["Department"].value_counts().sort_index()
-dept_counts.plot(kind="bar", ax=axes[1, 0], color="coral")
-axes[1, 0].set_title(
-    "Employee Count by Department", fontsize=14, fontweight="bold"
-)
-axes[1, 0].set_ylabel("Number of Employees")
-axes[1, 0].tick_params(axis="x", rotation=45)
-axes[1, 0].grid(axis="y", alpha=0.3)
-
-# 4. Total bonus by department
-dept_bonus = df.groupby("Department")["Bonus"].sum()
-dept_bonus.plot(kind="bar", ax=axes[1, 1], color="green")
-axes[1, 1].set_title(
-    "Total Bonus by Department", fontsize=14, fontweight="bold"
-)
-axes[1, 1].set_ylabel("Total Bonus ($)")
-axes[1, 1].tick_params(axis="x", rotation=45)
-axes[1, 1].grid(axis="y", alpha=0.3)
+sns.boxplot(data=visits, x="department", y="wait_min", ax=axes[1])
+axes[1].set_title("Wait distribution by department")
+axes[1].set_ylabel("Wait (minutes)")
+axes[1].set_xlabel("")
+axes[1].tick_params(axis="x", rotation=45)
 
 plt.tight_layout()
 plt.show()
 ```
 
+**Expect:** two panels. The bars climb from Pediatrics (shortest mean wait) to Orthopedics (longest). In the box plot, Family Medicine's box and whiskers are the widest: its mean is middling, but its waits are the least predictable.
+
 ### Named Aggregation: One Flat Row per Department
 
+Each keyword below becomes an output column, and its value is a `(source column, function)` pair.
+
 ```python
-# Named aggregation: output name = (source column, function)
-# as_index=False keeps Department as an ordinary column instead of the index
-# size counts rows; count counts recorded Bonus values, so the two differ
-dept_report = df.groupby("Department", as_index=False).agg(
-    employees=("Employee", "size"),
-    people_with_bonus=("Bonus", "count"),
-    mean_salary=("Salary", "mean"),
-    median_salary=("Salary", "median"),
-    top_salary=("Salary", "max"),
-    mean_experience=("Experience", "mean"),
+dept_report = visits.groupby("department", as_index=False).agg(
+    visits=("visit_id", "size"),
+    patients=("patient_id", "nunique"),
+    rated=("satisfaction", "count"),
+    mean_wait=("wait_min", "mean"),
+    median_wait=("wait_min", "median"),
+    longest_wait=("wait_min", "max"),
 )
-print("=== One Flat Row per Department ===")
 print(dept_report.round(1))
 
-# Checkpoint: state the grain before and after
-print(f"\nInput grain:  one row per employee  -> {len(df):,} rows")
+# Checkpoint: name the grain before and after
+print(f"\nInput grain:  one row per visit      -> {len(visits):,} rows")
 print(f"Output grain: one row per department -> {len(dept_report)} rows")
-print(f"Employees accounted for: {dept_report['employees'].sum():,}")
-
-# Checkpoint: the size/count gap is exactly the first-year hires
-gap = dept_report["employees"].sum() - dept_report["people_with_bonus"].sum()
-print(f"\nEmployees without a recorded bonus: {gap:,}")
-print(f"Employees in their first year:      {(df['Years_At_Company'] < 1).sum():,}")
-print("\nFirst-year hires per department:")
-print(df[df["Bonus"].isna()].groupby("Department").size())
+print(f"Visits accounted for: {dept_report['visits'].sum():,}")
 ```
 
-Expect six departments, `employees` summing to 100,000, and flat column names (no two-level labels) because every aggregation was named. `employees` and `people_with_bonus` are different numbers in every row: `size` counts the rows in the group, while `count` counts the rows whose `Bonus` is recorded. The 3,337 employees hired within the last year have no bonus yet, and those are exactly the rows in the gap - 539 in Engineering, 573 in Finance, 575 in HR, 558 in Marketing, 575 in Operations, and 517 in Sales.
+**Expect:** six rows with flat column names and `visits` adding up to 100,000. `patients` is smaller than `visits` in every row because patients come back: Pediatrics saw 4,285 children across 14,672 visits. `rated` is smaller than `visits` too, because `count` skips the blank surveys while `size` counts every row.
+
+```python
+# Checkpoint: the size/count gap is exactly the surveys that never came back
+gap = dept_report["visits"].sum() - dept_report["rated"].sum()
+print(f"Visits without a satisfaction score: {gap:,}")
+print(f"Blank satisfaction values:           {visits['satisfaction'].isna().sum():,}")
+
+# Checkpoint: nunique does not add up across groups
+print(f"\nSum of per-department patients: {dept_report['patients'].sum():,}")
+print(f"Distinct patients overall:      {visits['patient_id'].nunique():,}")
+```
+
+**Expect:** `2,984` twice: the whole size/count gap is the unreturned surveys. The per-department patient counts add up to 63,091, more than twice the 28,929 distinct patients, because an adult seen in both Cardiology and Endocrinology counts once in each. Row counts add up across groups; distinct counts do not.
 
 ## Part 2: Grouping by Two Keys
 
 Two keys means one group per observed combination. The result carries a MultiIndex, one level per key; `.unstack()` moves the inner level into columns so the same numbers read as a grid.
 
-### Summarize by Department and Region
+### Summarize by Department and Clinic
 
 ```python
-# Group by multiple columns - Department and Region
-print("=== Multi-column Grouping: Department × Region ===")
-result = df.groupby(["Department", "Region"]).agg({
-    "Salary": ["mean", "std", "count"],
-    "Experience": "mean",
-    "Performance_Score": "mean",
-    "Bonus": "sum",
+by_dept_clinic = visits.groupby(["department", "clinic"]).agg({
+    "wait_min": ["mean", "count"],
+    "satisfaction": "mean",
 })
-print(result.head(20))
-
-# Visualize multi-dimensional grouping
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-
-# 1. Heatmap of mean salary by Department × Region (Lecture 07)
-salary_grid = df.groupby(["Department", "Region"])["Salary"].mean().unstack()
-sns.heatmap(
-    salary_grid, annot=True, fmt=",.0f", cmap="YlOrRd", ax=axes[0],
-    cbar_kws={"label": "Mean Salary ($)"},
-)
-axes[0].set_title(
-    "Mean Salary Heatmap: Department × Region", fontsize=14, fontweight="bold"
-)
-axes[0].set_xlabel("Region")
-axes[0].set_ylabel("Department")
-axes[0].tick_params(axis="y", rotation=0)
-
-# 2. Grouped bar chart
-dept_region_salary = (
-    df.groupby(["Department", "Region"])["Salary"].mean().unstack()
-)
-dept_region_salary.plot(kind="bar", ax=axes[1], width=0.8)
-axes[1].set_title(
-    "Mean Salary by Department and Region", fontsize=14, fontweight="bold"
-)
-axes[1].set_ylabel("Mean Salary ($)")
-axes[1].set_xlabel("Department")
-axes[1].legend(title="Region", bbox_to_anchor=(1.05, 1), loc="upper left")
-axes[1].tick_params(axis="x", rotation=45)
-axes[1].grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+print(f"Groups: {len(by_dept_clinic)}")
+by_dept_clinic.head(10).round(1)
 ```
 
-Six departments × five regions gives 30 groups, all of them present in 100,000 rows, so `result` has 30 rows and a two-level index. The columns are two-level as well, because `.agg()` received a dictionary rather than named aggregations.
+**Expect:** `Groups: 30` (six departments × five clinics, all observed), then the first 10 rows of a two-level index: Cardiology's five clinics, then Dermatology's. Cardiology waits about 30 minutes at every clinic.
+
+```python
+# The same means as a grid: one row per department, one column per clinic
+wait_grid = visits.groupby(["department", "clinic"])["wait_min"].mean().unstack()
+wait_grid.round(1)
+```
+
+**Expect:** a 6 × 5 grid with clinics in alphabetical order (Central, East, North, South, West). Each row is nearly flat: clinic was assigned at random, so the department, not the clinic, sets the wait.
 
 ### A Small Table You Can Read Row by Row
 
-The 100,000-row result is too tall to check by eye. Six rows make the same structure obvious: two keys in, one row per observed combination out.
+The 100,000-row result is too tall to check by eye. Two days of visit counts from two clinics make the same structure easy to follow.
 
 ```python
-# Create hierarchical data
-hierarchical_data = {
-    "Region": ["North", "North", "South", "South", "North", "South"],
-    "Department": [
-        "Sales",
-        "Engineering",
-        "Sales",
-        "Engineering",
-        "Marketing",
-        "Marketing",
-    ],
-    "Revenue": [100000, 150000, 120000, 180000, 80000, 90000],
-    "Employees": [5, 8, 6, 10, 4, 5],
-}
+daily = pd.DataFrame({
+    "day": ["Mon", "Mon", "Mon", "Mon", "Tue", "Tue", "Tue", "Tue"],
+    "clinic": ["North", "North", "South", "South", "North", "North", "South", "South"],
+    "department": ["Cardiology", "Pediatrics", "Cardiology", "Pediatrics",
+                   "Cardiology", "Pediatrics", "Cardiology", "Dermatology"],
+    "visits": [42, 35, 38, 51, 40, 30, 36, 18],
+    "no_shows": [3, 5, 2, 6, 4, 2, 1, 2],
+})
+print(daily)
 
-hierarchical_df = pd.DataFrame(hierarchical_data)
-print("=== Hierarchical Grouping ===")
-print("Original data:")
-print(hierarchical_df)
-
-# Hierarchical grouping
-hierarchical_grouped = hierarchical_df.groupby(["Region", "Department"]).sum()
-print("\nHierarchical grouping:")
-print(hierarchical_grouped)
-
-# Unstack to wide format
-wide_format = hierarchical_grouped.unstack()
-print("\nWide format:")
-print(wide_format)
+# Select the numeric columns first: summing "day" would glue the text together
+two_day = daily.groupby(["clinic", "department"])[["visits", "no_shows"]].sum()
+print()
+print(two_day)
+print()
+print(two_day["visits"].unstack())
 ```
+
+**Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, North–Dermatology is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
 
 ### Work with the MultiIndex
 
+`two_day` has two index levels: `clinic` on the outside, `department` inside.
+
 ```python
-# Work with MultiIndex
-print("=== MultiIndex Operations ===")
-print("Index levels:", hierarchical_grouped.index.names)
-print("Index values:", hierarchical_grouped.index.values)
+# .loc on the outer level keeps the inner level as the index
+print("North only:")
+print(two_day.loc["North"])
 
-# Access specific groups
-print("\nNorth region data:")
-print(hierarchical_grouped.loc["North"])
-
-# Reset index to flatten
-flattened = hierarchical_grouped.reset_index()
-print("\nFlattened data:")
-print(flattened)
+# reset_index() (Lecture 06) turns both levels back into ordinary columns
+print("\nFlattened:")
+print(two_day.reset_index())
 ```
 
-`hierarchical_grouped` has six rows and a two-level index (`Region`, `Department`). `.loc["North"]` selects the outer level and leaves the inner one as the index; `.unstack()` turns that inner level into columns; `.reset_index()` flattens both levels back into ordinary columns.
+**Expect:** North's two departments, Cardiology and Pediatrics, with `department` as the index; then 5 rows with `clinic` and `department` as ordinary columns and a `0..4` index.
 
 ## Part 3: Pivot Tables
 
@@ -322,140 +258,107 @@ A pivot table is the two-key grouping from Part 2 in one call: `index` picks the
 ### The Pivot Table and Its GroupBy Twin
 
 ```python
-# Same numbers, one call instead of two steps
-# sort=True is the default: order the rows and columns by key, not by luck
-salary_pivot = pd.pivot_table(
-    df, values="Salary", index="Department", columns="Region", aggfunc="mean",
-    sort=True,
+wait_pivot = pd.pivot_table(
+    visits, values="wait_min", index="department", columns="clinic", aggfunc="mean",
 )
-print("=== Mean Salary by Department × Region ===")
-print(salary_pivot.round(0))
-
-twin = df.groupby(["Department", "Region"])["Salary"].mean().unstack()
-print("\nSame table as groupby(...).mean().unstack()?", salary_pivot.equals(twin))
+print(wait_pivot.round(1))
+print("\nSame table as groupby(...).mean().unstack()?", wait_pivot.equals(wait_grid))
 
 # sort=False keeps whichever key turned up first in the rows
 unsorted = pd.pivot_table(
-    df, values="Salary", index="Department", columns="Region", aggfunc="mean",
+    visits, values="wait_min", index="department", columns="clinic", aggfunc="mean",
     sort=False,
 )
-print("\nRow order with sort=True: ", list(salary_pivot.index))
+print("\nRow order with sort=True: ", list(wait_pivot.index))
 print("Row order with sort=False:", list(unsorted.index))
 ```
 
-The `equals()` check must print `True`: `pivot_table` and the two-key groupby answer the same question in the same layout. The two row orders differ: `sort=True` gives alphabetical Engineering, Finance, HR, Marketing, Operations, Sales, while `sort=False` gives HR, Finance, Marketing, Engineering, Operations, Sales - the order those departments happen to appear in the rows. Pass `sort=` when a reader will compare your table with another one.
+**Expect:** the same 6 × 5 grid as `wait_grid`, then `True`. `sort=True` lists departments alphabetically; `sort=False` lists them in the order each first appears in the rows: Family Medicine, Dermatology, Pediatrics, Orthopedics, Cardiology, Endocrinology. Pass `sort=` when a reader will compare your table with another one.
 
 ### Several Summaries at Once
 
 ```python
 # aggfunc as a list gives two-level column labels: result["count"], result["mean"]
-salary_multi = pd.pivot_table(
-    df,
-    values="Salary",
-    index="Department",
-    columns="Region",
+wait_multi = pd.pivot_table(
+    visits, values="wait_min", index="department", columns="clinic",
     aggfunc=["count", "mean"],
 )
-print("=== Employees Behind Each Cell ===")
-print(salary_multi["count"])
-print("\n=== Mean Salary in Each Cell ===")
-print(salary_multi["mean"].round(0))
-print("\nTotal employees counted:", salary_multi["count"].to_numpy().sum())
+print("=== Visits behind each cell ===")
+print(wait_multi["count"])
+print("\n=== Mean wait in each cell ===")
+print(wait_multi["mean"].round(1))
+# .sum() adds up each clinic's column; the second .sum() adds those totals
+print("\nTotal visits counted:", wait_multi["count"].sum().sum())
 ```
 
-Read the two tables together: a mean is only as trustworthy as the count underneath it. The counts must still add up to 100,000.
+**Expect:** two tables with the same shape, and `Total visits counted: 100000`. The smallest cell is Dermatology at North with 1,647 visits, so every mean rests on well over a thousand visits. Read the two tables together: a mean is only as trustworthy as the count underneath it.
 
 ### Totals with `margins`
 
 ```python
-# margins adds a row and a column of totals computed from the underlying rows
-bonus_totals = pd.pivot_table(
-    df,
-    values="Bonus",
-    index="Department",
-    columns="Region",
-    aggfunc="sum",
-    margins=True,
-    margins_name="Total",
+# Total patient-minutes spent waiting, with a Total row and column
+wait_totals = pd.pivot_table(
+    visits, values="wait_min", index="department", columns="clinic",
+    aggfunc="sum", margins=True, margins_name="Total",
 )
-print("=== Total Bonus by Department × Region ===")
-print(bonus_totals.round(0))
+print(wait_totals)
 
-# Checkpoint: the corner cell is the total of every bonus paid
-print(f"\nCorner cell:    {bonus_totals.loc['Total', 'Total']:,.0f}")
-print(f"Sum of Bonus:   {df['Bonus'].sum():,.0f}")
+# Checkpoint: the corner cell is every minute of waiting in the log
+print(f"\nCorner cell:     {wait_totals.loc['Total', 'Total']:,.0f}")
+print(f"Sum of wait_min: {visits['wait_min'].sum():,.0f}")
 ```
 
-The two printed numbers must match. Totals come from the raw rows, not from adding up rounded cells.
+**Expect:** a `Total` row and column, and `2,485,272` on both checkpoint lines. Totals come from the raw rows, not from adding up rounded cells.
 
 ### Absent Cells: `NaN` or Zero?
 
 ```python
-# A small table where one combination never happened
-new_offices = pd.DataFrame({
-    "Department": ["Sales", "Sales", "Engineering", "Engineering", "HR"],
-    "Region": ["North", "South", "North", "South", "North"],
-    "Headcount": [4, 6, 9, 5, 2],
+# Nurses scheduled per department and clinic; Dermatology has no South clinic
+nurses = pd.DataFrame({
+    "department": ["Cardiology", "Cardiology", "Pediatrics", "Pediatrics", "Dermatology"],
+    "clinic": ["North", "South", "North", "South", "North"],
+    "nurses": [4, 6, 9, 5, 2],
 })
-print("=== Raw Rows ===")
-print(new_offices)
 
-raw = pd.pivot_table(
-    new_offices, values="Headcount", index="Department", columns="Region", aggfunc="sum"
-)
-print("\n=== Absent Combination Shows as NaN ===")
+raw = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic", aggfunc="sum")
+print("=== The absent combination shows as NaN ===")
 print(raw)
 
-filled = pd.pivot_table(
-    new_offices,
-    values="Headcount",
-    index="Department",
-    columns="Region",
-    aggfunc="sum",
-    fill_value=0,
-)
-print("\n=== fill_value=0: HR Really Has Nobody in the South ===")
+filled = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic",
+                        aggfunc="sum", fill_value=0)
+print("\n=== fill_value=0: Dermatology really has no nurses in the South ===")
 print(filled)
 ```
 
-HR–South is missing from the rows, so the first table prints `NaN`. For a headcount, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean salary: filling an empty cell with 0 would report a salary nobody earns.
+**Expect:** Dermatology–South is `NaN` in the first table and `0` in the second, and the other cells are unchanged. For a count of nurses, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean wait: filling an empty cell with 0 would report a zero-minute wait that never happened.
 
 ### Read a Pivot Table as a Heatmap
 
 ```python
 # A pivot table is already the shape sns.heatmap() wants (Lecture 07)
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.heatmap(
-    salary_pivot,
-    annot=True,
-    fmt=",.0f",
-    cmap="YlOrRd",
-    ax=ax,
-    cbar_kws={"label": "Mean Salary ($)"},
-)
-ax.set_title("Mean Salary: Department × Region", fontsize=14, fontweight="bold")
-ax.set_xlabel("Region")
-ax.set_ylabel("Department")
-ax.tick_params(axis="y", rotation=0)
-
+fig, ax = plt.subplots(figsize=(9, 5))
+# fmt=".1f" writes each value with one decimal, like an f-string's :.1f
+sns.heatmap(wait_pivot, annot=True, fmt=".1f", cmap="YlOrRd", ax=ax)
+ax.set_title("Mean wait (minutes) by department and clinic")
+ax.set_xlabel("Clinic")
+ax.set_ylabel("")
 plt.tight_layout()
 plt.show()
 ```
 
-The rows separate clearly by department, Engineering highest and Operations lowest, while each row looks flat across the columns: region was assigned at random, so it carries no signal. A heatmap makes that pattern obvious in a way 30 printed numbers do not.
+**Expect:** horizontal bands of color: Orthopedics darkest, Pediatrics palest, and each row nearly one color across the clinics. A heatmap makes that pattern obvious in a way 30 printed numbers do not.
 
 ### Back to Long Form
 
 ```python
 # stack() moves the columns back into the index, undoing unstack()
-long_form = salary_pivot.stack()
-print("=== One Row per Department × Region ===")
-print(long_form.head(8).round(0))
+long_form = wait_pivot.stack()
+print(long_form.head(6).round(1))
 print("\nRows in long form:", len(long_form))
-print("Round trip back to the grid?", long_form.unstack().equals(salary_pivot))
+print("Round trip back to the grid?", long_form.unstack().equals(wait_pivot))
 ```
 
-Thirty rows (six departments × five regions) and a `True` round trip: wide and long are two layouts of the same summary.
+**Expect:** 30 rows (six departments × five clinics) and `True`: wide and long are two layouts of the same summary.
 
 ## Part 4: Cross-Tabulations
 
@@ -464,59 +367,35 @@ Thirty rows (six departments × five regions) and a `True` round trip: wide and 
 ### Count Every Combination
 
 ```python
-# Counts, plus row and column totals
-headcount = pd.crosstab(df["Department"], df["Region"], margins=True)
-print("=== Employees per Department × Region ===")
-print(headcount)
-print("\nGrand total:", headcount.loc["All", "All"])
+visit_counts = pd.crosstab(visits["department"], visits["clinic"], margins=True)
+print(visit_counts)
+print("\nGrand total:", visit_counts.loc["All", "All"])
 ```
 
-The `All` corner must equal 100,000. An absent combination would show `0` here, not `NaN`: crosstab counts rows, and "no rows" is a count of zero.
+**Expect:** the same counts as the `count` table above, plus an `All` row and column; the grand total is `100000`. An absent combination would show `0` here, not `NaN`: crosstab counts rows, and no rows is a count of zero.
 
 ### Summarize a Third Column Instead of Counting
 
 ```python
 # values= plus aggfunc= turns crosstab into a pivot table
-mean_salary = pd.crosstab(
-    df["Department"], df["Region"], values=df["Salary"], aggfunc="mean"
-)
-print("=== Mean Salary by Department × Region (crosstab) ===")
-print(mean_salary.round(0))
-print("\nSame numbers as the pivot table?", mean_salary.round(6).equals(salary_pivot.round(6)))
+mean_wait = pd.crosstab(visits["department"], visits["clinic"],
+                        values=visits["wait_min"], aggfunc="mean")
+print(mean_wait.round(1))
+print("\nSame numbers as the pivot table?", mean_wait.round(6).equals(wait_pivot.round(6)))
 ```
+
+**Expect:** the same grid as the pivot table, and `True`.
 
 ### Two-Level Rows
 
 ```python
-# Bin experience into bands (Lecture 05), then use two row keys
-df["Experience_Band"] = pd.cut(
-    df["Experience"],
-    bins=[-1, 4, 9, 14, 100],
-    labels=["0-4 yrs", "5-9 yrs", "10-14 yrs", "15+ yrs"],
+# Bin age into bands (Lecture 05), then use two row keys
+visits["age_band"] = pd.cut(
+    visits["age"], bins=[-1, 17, 39, 64, 120], labels=["0-17", "18-39", "40-64", "65+"],
 )
-
-band_counts = pd.crosstab(
-    [df["Department"], df["Experience_Band"]], df["Region"]
-)
-print("=== Department × Experience Band, by Region ===")
-print(band_counts.head(12))
+band_counts = pd.crosstab([visits["department"], visits["age_band"]], visits["clinic"])
+print(band_counts)
 print("\nRows in the table:", len(band_counts))
 ```
 
-The index now has two levels, so the table is much taller than the crosstab above: 19 rows, not the 6 of the single-key version. It is not 24 either, because a band with no employees anywhere in a department never becomes a row. Engineering, the best-paid department, is the only one whose employees cluster in the 5-9 year band, while HR and Operations sit almost entirely in 0-4, since the dataset ties experience to salary.
-
-## Key Takeaways
-
-1. **Split-apply-combine**: `groupby` splits rows, the aggregation applies to each group, and pandas combines one row per group
-2. **Name the grain**: one row per employee going in, one row per department coming out, and the counts must still add up
-3. **Named aggregation**: `.agg(name=("column", "function"))` gives flat, self-describing column names, and `size` and `count` differ by exactly the rows whose value is missing
-4. **Two keys**: one group per observed combination, with `.unstack()` and `.stack()` switching between a MultiIndex and a grid
-5. **Pivot tables**: `pd.pivot_table()` is that two-key summary in one call, with `margins=True` for totals and `sort=` for the row and column order
-6. **Absent is not zero**: `fill_value=0` is right for counts and sums, wrong for means
-7. **Cross-tabulations**: `pd.crosstab()` counts combinations, and `values=` with `aggfunc=` summarizes a third column instead
-
-## Next Steps
-
-- Rebuild each summary in this demo with the other layout, and check the two agree
-- Try the same groupings on a dataset of your own, predicting the number of output rows first
-
+**Expect:** 16 rows, not 24 (six departments × four bands). Pediatrics has only a `0-17` row and the adult departments have none, because a combination with no visits never becomes a row.

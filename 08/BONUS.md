@@ -613,6 +613,8 @@ The core lecture introduces SSH, file transfer, Jupyter port forwarding, and per
 
 ## Distributed Computing
 
+Dask is not part of Lecture 08's core environment. Install it with `%pip install "dask[dataframe]"` before running this example.
+
 ### Reference Card: Distributed Computing with Dask
 
 ```python
@@ -633,15 +635,14 @@ result.to_csv('distributed_results.csv')
 
 ## Cloud Computing
 
+pandas reads and writes `s3://` paths directly once the `s3fs` package is installed (`%pip install s3fs`) and your AWS credentials are configured. Without `s3fs`, `pd.read_csv('s3://...')` raises `ImportError: Install s3fs to access S3`.
+
 ### Reference Card: Cloud Computing with S3
 
 ```python
-# Cloud computing with AWS/GCP
-import boto3
 import pandas as pd
 
-# Read from S3
-s3 = boto3.client('s3')
+# Read from S3 (needs s3fs and AWS credentials)
 df = pd.read_csv('s3://bucket/data.csv')
 
 # Process data
@@ -651,18 +652,13 @@ result = df.groupby('category', observed=True)[['value']].sum()
 result.to_csv('s3://bucket/results.csv')
 ```
 
-These advanced topics will help you handle complex aggregation scenarios and optimize performance for large datasets in your data science work.
-
-
-
-
-# Bonus: Advanced Data Analysis Debugging and Profiling
-
-This bonus content covers advanced debugging techniques, performance profiling, and enterprise-level data analysis patterns for students ready to work with complex, large-scale datasets.
+# Debugging and Profiling Data Pipelines
 
 Under pandas 3, inferred text uses the `str` dtype and Copy-on-Write makes view-oriented mutation advice obsolete. Profile first, treat dtype changes as reviewed data-contract decisions, and apply them through explicit returned objects rather than automatic guesses.
 
 ## Memory Profiling and Optimization
+
+The example below needs the `psutil` and `memory_profiler` packages (`%pip install psutil memory_profiler`).
 
 ### Understanding Memory Usage in pandas
 
@@ -887,7 +883,7 @@ class PipelineDebugger:
                     self.logger.error(f"  ✗ {validation_name}: FAILED")
             except Exception as e:
                 validation_results[validation_name] = {'passed': False, 'error': str(e)}
-                self.logger.error(f"  ✗ {validation_name}: FAILED - {str(e)}")
+                self.logger.error(f"  ✗ {validation_name}: FAILED: {str(e)}")
 
         # Overall validation
         all_passed = all(r['passed'] for r in validation_results.values())
@@ -1006,7 +1002,7 @@ class PerformanceAnalyzer:
                     end_time = time.perf_counter()
                     times.append(end_time - start_time)
                 except Exception as e:
-                    print(f"  {name}: FAILED - {str(e)}")
+                    print(f"  {name}: FAILED: {str(e)}")
                     times.append(float('inf'))
                     break
 
@@ -1063,7 +1059,7 @@ class PerformanceAnalyzer:
                 print(f"  Size {size:,}: {execution_time:.4f}s ({execution_time/size*1000:.2f}ms per 1000 rows)")
 
             except Exception as e:
-                print(f"  Size {size:,}: FAILED - {str(e)}")
+                print(f"  Size {size:,}: FAILED: {str(e)}")
                 results.append({'size': size, 'time': float('inf'), 'error': str(e)})
 
         return results
@@ -1174,7 +1170,7 @@ class DataValidator:
                     details={'error': str(e)}
                 )
                 self.results.append(error_result)
-                print(f"✗ {rule_name} (CRITICAL): Rule execution failed - {str(e)}")
+                print(f"✗ {rule_name} (CRITICAL): Rule execution failed: {str(e)}")
 
         return self.results
 
@@ -1219,7 +1215,7 @@ class DataValidator:
             f.write("## Detailed Results\n\n")
             for result in self.results:
                 status = "✅ PASSED" if result.passed else "❌ FAILED"
-                f.write(f"### {result.rule_name} - {status}\n")
+                f.write(f"### {result.rule_name}: {status}\n")
                 f.write(f"**Severity:** {result.severity.value.upper()}\n")
                 f.write(f"**Message:** {result.message}\n")
 
@@ -1314,7 +1310,7 @@ def run_enterprise_validation(df):
             rule_name="sufficient_data_size",
             severity=ValidationSeverity.ERROR,
             passed=len(df) >= 1000,
-            message=f"Dataset has {len(df)} rows - {'sufficient' if len(df) >= 1000 else 'insufficient'} for analysis",
+            message=f"Dataset has {len(df)} rows, {'sufficient' if len(df) >= 1000 else 'insufficient'} for analysis",
             details={'row_count': len(df), 'minimum_required': 1000}
         ),
         ValidationSeverity.ERROR
@@ -1335,5 +1331,3 @@ def run_enterprise_validation(df):
 
     return results, summary
 ```
-
-This bonus content provides enterprise-level debugging, profiling, and validation techniques that professional data scientists use in production environments. These advanced patterns help ensure robust, scalable data analysis workflows.

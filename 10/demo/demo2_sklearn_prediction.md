@@ -1,163 +1,157 @@
+---
+jupyter:
+  jupytext:
+    notebook_metadata_filter: language_info
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+  language_info:
+    name: python
+    version: 3.13
+---
+
 # Demo 2: Honest Prediction with scikit-learn
 
-## Learning Objectives
-- Master the scikit-learn fit/predict pattern
-- Split rows into training, validation, and test roles
-- Beat a mean baseline before believing any model
-- Keep preprocessing honest with `Pipeline` and `ColumnTransformer`
-- Compare candidates with MAE, RMSE, and R² on validation rows
-- Read what a fitted pipeline relies on with permutation importance
-- Score a yes/no decision with accuracy, precision, and recall
-- Freeze one candidate and evaluate it on the test set exactly once
+Demo 1 asked how disease progression _relates_ to BMI in 442 diabetes patients. This demo asks a prediction question about the same records: from a new patient's baseline measurements, how close can we get to their progression score one year later? You split the patients into training, validation, and test rows, set a baseline to beat, write down a selection rule, compare linear pipelines, read what the chosen one relies on, turn its predictions into a yes/no flag, and evaluate it on the test rows exactly once. Everything here comes from Lecture 10 up to the second demo break, plus Lectures 01 to 09. The records are real and de-identified.
+
+**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
 
 ## Setup
 
+The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+
 ```python
-import pandas as pd
+# Setup: install the course's pandas version (Colab and local)
+%pip install -q pandas==3.0.5
+```
+
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+
+```python
+import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import train_test_split
+import pandas as pd
+import sklearn
 from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
+from sklearn.datasets import load_diabetes
 from sklearn.dummy import DummyRegressor
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
+from sklearn.metrics import (accuracy_score, confusion_matrix, mean_absolute_error,
+                             mean_squared_error, precision_score, r2_score, recall_score)
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-import altair as alt
 
-np.random.seed(42)
+print('pandas', pd.__version__)
+print('scikit-learn', sklearn.__version__)
 ```
 
-## Part 1: Load Real Dataset
+**Expect:** `pandas 3.0.5` and `scikit-learn 1.9.0` (Colab may show an older scikit-learn; that is fine).
 
-Let's use the California Housing dataset - a real-world dataset from the 1990 US Census. This is the same dataset used in Demo 1, but now we'll apply machine learning techniques to it.
+## 1. Load the diabetes records
+
+The same table as Demo 1: ten baseline measurements per patient (age, sex, BMI, average blood pressure, and six blood tests) and the progression score one year later, which runs from 25 to 346. Every error below is in those score points.
 
 ```python
-# Load California Housing dataset from scikit-learn
-from sklearn.datasets import fetch_california_housing
-
-# Fetch the dataset
-housing_data = fetch_california_housing(as_frame=True)
-df = housing_data.frame
-
-# Rename target for clarity
-df = df.rename(columns={'MedHouseVal': 'house_value'})
-
-# The dataset contains:
-# - MedInc: median income in block group
-# - HouseAge: median house age in block group
-# - AveRooms: average number of rooms per household
-# - AveBedrms: average number of bedrooms per household
-# - Population: block group population
-# - AveOccup: average number of household members
-# - Latitude: block group latitude
-# - Longitude: block group longitude
-# - house_value: median house value (target, in hundreds of thousands of dollars)
-
-print("Dataset shape:", df.shape)
-print("\nFeature names:", housing_data.feature_names)
-print("\nFirst few rows:")
-print(df.head())
-print("\nSummary statistics:")
-print(df.describe())
+diabetes = load_diabetes(scaled=False, as_frame=True).frame
+diabetes = diabetes.rename(columns={'s1': 'tc', 's2': 'ldl', 's3': 'hdl', 's4': 'tch',
+                                    's5': 'ltg', 's6': 'glu', 'target': 'progression'})
+feature_cols = ['age', 'sex', 'bmi', 'bp', 'tc', 'ldl', 'hdl', 'tch', 'ltg', 'glu']
+X = diabetes[feature_cols]
+y = diabetes['progression']
+print(X.shape, y.shape)
 ```
 
-Every number reported below is in the target's own units: **hundreds of thousands of dollars**. An MAE of 0.53 means the typical miss is about $53,000.
+**Expect:** `(442, 10) (442,)`: ten feature columns in `X` and one target column in `y`.
 
-## Part 2: Train/Validation/Test Split
+## 2. Train, validation, and test rows
 
-The golden rule: never evaluate on data the model has seen during training!
-
-Before we can train any machine learning model, we need to split our data. The validation set selects models and tuning choices; the test set stays untouched until one final evaluation of the frozen choice. These census rows have no time order, so a seeded random split is fair here; Demo 1's clinic visits needed a chronological one.
+These patients were all measured at one baseline and have no time order, so a seeded random split is fair here; Demo 1's weekly readings needed a chronological one. Set the test rows aside first, then split the rest into training and validation rows.
 
 ```python
-# Prepare features and target
-feature_cols = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 
-                'Population', 'AveOccup', 'Latitude', 'Longitude']
-X = df[feature_cols]
-y = df['house_value']
-
-# Reserve 20% as an untouched final test set, then split the remainder for validation.
+# Reserve 20% as the untouched test set, then take 25% of the rest for validation.
 X_train_valid, X_test, y_train_valid, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+    X, y, test_size=0.2, random_state=42)
 X_train, X_valid, y_train, y_valid = train_test_split(
-    X_train_valid, y_train_valid, test_size=0.25, random_state=42
-)
+    X_train_valid, y_train_valid, test_size=0.25, random_state=42)
 
-print(f"Training set: {X_train.shape[0]} samples")
-print(f"Validation set: {X_valid.shape[0]} samples")
-print(f"Test set: {X_test.shape[0]} samples")
-print(f"\nTraining target statistics:")
-print(y_train.describe())
-print(f"\nValidation target statistics:")
-print(y_valid.describe())
+print(f"Training rows:   {len(X_train)}")
+print(f"Validation rows: {len(X_valid)}")
+print(f"Test rows:       {len(X_test)}")
+print(f"Mean progression, training: {y_train.mean():.1f}, validation: {y_valid.mean():.1f}")
 ```
 
-Expect 12,384 / 4,128 / 4,128 rows.
+**Expect:**
 
-**Why split the data?**
-- **Training set**: Used to teach the model patterns in the data
-- **Validation set**: Used to compare candidate models and tune training choices
-- **Test set**: Held untouched until the final, one-time evaluation
-- **60/20/20 split**: A simple teaching split; proportions depend on dataset size
-- **random_state=42**: Ensures reproducible splits (same random seed = same split)
+```text
+Training rows:   264
+Validation rows: 89
+Test rows:       89
+Mean progression, training: 149.8, validation: 165.4
+```
 
-## Part 3: Leakage-Safe Mixed-Type Preprocessing
+A 60/20/20 split. By chance, the validation patients progressed more on average than the training patients; Part 4 shows what that does to a baseline.
 
-The housing table is numeric, but many real tables mix numeric and categorical
-predictors. This compact pattern fits every preprocessing step on training rows
-and reuses it unchanged on validation or test rows. `ColumnTransformer` routes
-columns to numeric and categorical branches; the categorical branch imputes
-missing values and ignores categories it did not see during fitting.
+## 3. Preprocessing inside the pipeline
+
+The diabetes table is all numbers with no gaps, but many clinic tables mix numbers with categories and have missing values. This small standalone table shows the pattern: `ColumnTransformer` sends the numeric columns to an imputer and a scaler, and the site column to an imputer and a one-hot encoder. Every step learns from the training rows only, and a site it never saw becomes all zeros instead of an error.
 
 ```python
-# A small standalone example of the pattern used before model fitting.
-mixed_train = pd.DataFrame({
-    'income': [3.2, 5.1, np.nan, 2.8],
-    'rooms': [4.0, 6.5, 5.2, 3.8],
-    'region': ['north', 'south', 'north', 'south'],
+clinic_train = pd.DataFrame({
+    'age': [54, 61, 47, 70],
+    'ldl': [130.0, np.nan, 110.0, 145.0],   # mg/dL; one missing
+    'site': ['north', 'south', 'north', 'south'],
 })
-mixed_target = pd.Series([1.2, 2.4, 1.8, 1.0], name='target')
-mixed_valid = pd.DataFrame({
-    'income': [4.4, 3.0],
-    'rooms': [5.9, np.nan],
-    'region': ['central', 'north'],  # 'central' is unseen during fitting
+clinic_sbp = pd.Series([138, 146, 129, 152])  # mmHg
+clinic_valid = pd.DataFrame({
+    'age': [58, 66],
+    'ldl': [np.nan, 150.0],
+    'site': ['west', 'north'],   # 'west' never appears in training
 })
 
-numeric_branch = Pipeline([
-    ('imputer', SimpleImputer(strategy='median')),
-    ('scale', StandardScaler()),
-])
-categorical_branch = Pipeline([
-    ('imputer', SimpleImputer(strategy='most_frequent')),
-    ('one_hot', OneHotEncoder(handle_unknown='ignore')),
-])
-mixed_preprocess = ColumnTransformer([
-    ('numeric', numeric_branch, ['income', 'rooms']),
-    ('categorical', categorical_branch, ['region']),
-])
-mixed_model = Pipeline([
-    ('preprocess', mixed_preprocess),
-    ('regressor', Ridge(alpha=1.0)),
-])
-mixed_model.fit(mixed_train, mixed_target)
-mixed_predictions = mixed_model.predict(mixed_valid)
-print('Predictions for mixed-type validation rows:', mixed_predictions)
+numeric = Pipeline([('impute', SimpleImputer(strategy='median')), ('scale', StandardScaler())])
+categorical = Pipeline([('impute', SimpleImputer(strategy='most_frequent')),
+                        ('one_hot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))])
+preprocess = ColumnTransformer([('numeric', numeric, ['age', 'ldl']),
+                                ('categorical', categorical, ['site'])])
+clinic_model = Pipeline([('preprocess', preprocess), ('model', Ridge(alpha=1.0))])
+clinic_model.fit(clinic_train, clinic_sbp)
+
+print('What the model sees for the two validation rows:')
+print(clinic_model.named_steps['preprocess'].transform(clinic_valid).round(2))
+print('Predicted SBP:', clinic_model.predict(clinic_valid).round(1))
 ```
 
-`SimpleImputer` is one documented option when missing predictors need a value;
-it is not automatically required. The important boundary is that the imputer,
-encoder, and scaler learn from training data only. In cross-validation, put the
-whole pipeline inside the candidate being evaluated so each fold has the same
-protection.
+**Expect:**
 
-## Part 4: A Baseline to Beat
+```text
+What the model sees for the two validation rows:
+[[0.   0.1  0.   0.  ]
+ [0.94 1.71 1.   0.  ]]
+Predicted SBP: [141.6 147.7]
+```
 
-Before celebrating any model, ask what a guess would score. `DummyRegressor(strategy='mean')` predicts the training mean for every row, and it defines the bar: a model that cannot beat it has learned nothing useful.
+Read the columns as scaled age, scaled LDL, `site_north`, `site_south`. The first row's age, 58, equals the training mean, so it scales to 0.0; its missing LDL was filled with the training median, 130 mg/dL, which scales to 0.1; and its unseen site, `west`, became all zeros. The second row is a `north` patient, `[1, 0]`. `named_steps['preprocess']` reached inside the fitted pipeline to show this.
 
-Every candidate below is scored the same way, so the comparison is fair.
+## 4. A baseline, and the rule for choosing
+
+Before scoring any real model, ask what a guess would score. `DummyRegressor(strategy='mean')` predicts the training mean for every patient; a model that cannot beat it has learned nothing useful.
+
+Write the selection rule down now, before any candidate is scored, so the comparison table cannot be read backwards to favor one model:
+
+- The lowest validation MAE wins.
+- With only 89 validation patients, candidates within 1 point of the best MAE count as tied.
+- A tie goes to the candidate that uses the fewest features, because every feature is a measurement someone must collect for each new patient.
+
+Every candidate is scored by the same function, so the comparison is fair.
 
 ```python
 results = []
@@ -172,335 +166,258 @@ def score_candidate(name, fitted_model):
         'valid_R2': r2_score(y_valid, predictions),
     }
     results.append(row)
-    print(f"{name}: MAE={row['valid_MAE']:.3f}  RMSE={row['valid_RMSE']:.3f}  R²={row['valid_R2']:.3f}")
+    print(f"{name}: MAE={row['valid_MAE']:.2f}  RMSE={row['valid_RMSE']:.2f}  R²={row['valid_R2']:.3f}")
 
 baseline = DummyRegressor(strategy='mean')
 baseline.fit(X_train, y_train)
-
-print(f"Training mean: {y_train.mean():.3f}")
-print(f"First three baseline predictions: {baseline.predict(X_valid)[:3].round(3)}")
+print(f"First three baseline predictions: {baseline.predict(X_valid)[:3].round(1)}")
 score_candidate('mean baseline', baseline)
 ```
 
+**Expect:**
+
 ```text
-Training mean: 2.068
-First three baseline predictions: [2.068 2.068 2.068]
-mean baseline: MAE=0.925  RMSE=1.172  R²=-0.000
+First three baseline predictions: [149.8 149.8 149.8]
+mean baseline: MAE=64.13  RMSE=75.64  R²=-0.044
 ```
 
-The baseline's R² is a hair below 0 because it predicts the _training_ mean (2.068), which misses the validation rows' own mean (2.084). Anything with MAE above 0.925 is worse than guessing.
+The baseline's R² is below 0 because it predicts the _training_ mean, 149.8, which misses these validation patients' own mean, 165.4. Any candidate with an MAE above 64.13 is worse than guessing.
 
-## Part 5: Linear Regression with scikit-learn
+## 5. A linear regression pipeline
 
-scikit-learn's API is consistent across all models: create, fit, predict.
-
-The scikit-learn workflow is beautifully simple: create the model, fit it to training data, then make predictions. Wrapping the model in a `Pipeline` with `StandardScaler` keeps that simplicity and guarantees the scaler learns its means and standard deviations from training rows only.
+Wrap the model in a `Pipeline` with `StandardScaler`, so the scaler learns each feature's mean and spread from the training rows only. Compare training and validation R² to check for overfitting.
 
 ```python
-# Create and fit a scaled linear regression pipeline
 linear = Pipeline([('scale', StandardScaler()), ('model', LinearRegression())])
 linear.fit(X_train, y_train)
-
 score_candidate('linear regression', linear)
 
-# Training performance, for comparison with validation performance
-train_r2 = r2_score(y_train, linear.predict(X_train))
-print(f"Training R²: {train_r2:.3f}")
-
-print("\nCoefficients (on scaled features, so they are comparable):")
-coef_df = pd.DataFrame({
-    'feature': feature_cols,
-    'coefficient': linear.named_steps['model'].coef_.round(3)
-})
-print(coef_df)
-print(f"\nIntercept: {linear.named_steps['model'].intercept_:.3f}")
+print(f"Training R²: {r2_score(y_train, linear.predict(X_train)):.3f}")
+print("\nCoefficients on scaled features (score points per standard deviation):")
+print(pd.Series(linear.named_steps['model'].coef_, index=feature_cols).round(1))
 ```
 
-**Understanding the metrics:**
-- **MAE (mean absolute error)**: The average size of a miss, in hundreds of thousands of dollars. Lower is better.
-- **RMSE (root mean squared error)**: Like MAE, but large misses count extra, so it is never smaller than MAE.
-- **R²**: How much better than predicting the mean of these rows. 1 is perfect, 0 ties the mean, and **negative is worse than the mean**.
-- **Training vs validation**: If training performance is much better than validation, the model may be overfitting. Here they are close, so this model is not memorizing.
-- **Coefficients**: Because the pipeline scaled the features first, these are comparable across columns.
+**Expect:**
 
-## Part 6: Regularized Linear Models
+```text
+linear regression: MAE=42.94  RMSE=51.19  R²=0.522
+Training R²: 0.520
 
-Regularization adds a penalty on the coefficients that can reduce overfitting. Think of it as a "simplicity penalty" - the model is rewarded for using smaller coefficients.
+Coefficients on scaled features (score points per standard deviation):
+age     1.1
+sex   -11.4
+bmi    25.1
+bp     15.2
+tc    -51.1
+ldl    27.5
+hdl    10.8
+tch    15.0
+ltg    37.3
+glu     3.8
+dtype: float64
+```
 
-**Ridge (L2) regularization** shrinks all coefficients toward zero but doesn't eliminate them. **Lasso (L1) regularization** can set coefficients to exactly zero, which selects features. Both penalties treat every coefficient alike, so the features must be scaled first - which is exactly what the pipeline does.
+- **Better than guessing:** the typical miss drops from 64 points to 43.
+- **No overfitting:** training R² (0.520) and validation R² (0.522) are nearly equal, so the model is not memorizing its 264 training rows.
+- **Coefficients that cancel:** `tc` (-51.1) and `ldl` (+27.5) are large and opposite. Total cholesterol and LDL move together (their correlation is 0.90), so the unpenalized fit can trade a big negative on one against a big positive on the other. Neither number means much on its own.
+
+## 6. Ridge and Lasso
+
+Regularization adds a penalty that shrinks coefficients. Ridge (L2) shrinks them all toward zero; Lasso (L1) can set some to exactly zero, which drops those features. Both treat every coefficient alike, so the scaler stays in front of them in the pipeline. The `alpha` values here are fixed in advance, not tuned.
 
 ```python
-# Ridge Regression (L2 regularization)
 ridge = Pipeline([('scale', StandardScaler()), ('model', Ridge(alpha=10.0))])
 ridge.fit(X_train, y_train)
 score_candidate('ridge (alpha=10)', ridge)
 
-# Lasso Regression (L1 regularization - can zero out coefficients)
-lasso = Pipeline([('scale', StandardScaler()), ('model', Lasso(alpha=0.1))])
+lasso = Pipeline([('scale', StandardScaler()), ('model', Lasso(alpha=2.0))])
 lasso.fit(X_train, y_train)
-score_candidate('lasso (alpha=0.1)', lasso)
+score_candidate('lasso (alpha=2)', lasso)
 
-# Compare coefficients
-coef_comparison = pd.DataFrame({
-    'feature': feature_cols,
-    'linear': linear.named_steps['model'].coef_.round(3),
-    'ridge': ridge.named_steps['model'].coef_.round(3),
-    'lasso': lasso.named_steps['model'].coef_.round(3),
-})
-print("\n=== Coefficient Comparison (scaled features) ===")
-print(coef_comparison)
-
-# Lasso can zero out features (feature selection)
-nonzero = int((lasso.named_steps['model'].coef_ != 0).sum())
-print(f"\nFeatures kept by Lasso (non-zero coefficients): {nonzero} of {len(feature_cols)}")
+coefficients = pd.DataFrame({
+    'linear': linear.named_steps['model'].coef_,
+    'ridge': ridge.named_steps['model'].coef_,
+    'lasso': lasso.named_steps['model'].coef_,
+}, index=feature_cols)
+print(coefficients.round(1))
+print(f"\nFeatures Lasso keeps: {(coefficients['lasso'] != 0).sum()} of {len(feature_cols)}")
 ```
+
+**Expect:**
 
 ```text
-ridge (alpha=10): MAE=0.533  RMSE=0.728  R²=0.614
-lasso (alpha=0.1): MAE=0.626  RMSE=0.826  R²=0.503
+ridge (alpha=10): MAE=42.62  RMSE=51.16  R²=0.522
+lasso (alpha=2): MAE=42.45  RMSE=51.03  R²=0.525
+     linear  ridge  lasso
+age     1.1    1.6    0.0
+sex   -11.4  -11.0   -7.9
+bmi    25.1   25.1   25.5
+bp     15.2   14.6   13.2
+tc    -51.1  -11.7   -6.7
+ldl    27.5   -2.9   -0.0
+hdl    10.8   -5.8   -9.7
+tch    15.0    9.3    0.0
+ltg    37.3   22.5   23.7
+glu     3.8    4.4    2.6
+
+Features Lasso keeps: 7 of 10
 ```
 
-**What the numbers say here:** with 12,384 training rows and only 8 features, there is little overfitting for a penalty to fix, so Ridge lands on top of plain linear regression. Lasso at `alpha=0.1` keeps 3 of 8 features - it zeroes `Longitude` outright and shrinks `Latitude` to -0.012 - and pays for dropping location with a clearly worse validation score. Regularization is a setting to validate, not a free improvement.
+Ridge pulls `tc` from -51.1 to -11.7 and `ldl` from 27.5 to -2.9: the penalty stops the two correlated columns from canceling each other with large opposite coefficients. Lasso goes further and sets `age`, `ldl`, and `tch` to exactly zero (`-0.0` is still zero). The strong predictors, `bmi`, `bp`, and `ltg`, barely move.
 
-**When to reach for it:**
-- **Many features**: helpful when features outnumber observations
-- **Multicollinearity**: correlated features make unpenalized coefficients unstable
-- **Feature selection**: Lasso reports a shorter feature list
-- **Overfitting**: a large train-validation gap is the symptom to look for
+## 7. Compare the candidates and apply the rule
 
-## Part 7: Model Comparison
-
-Let's put every candidate side by side. One table, one metric set, one validation set.
+One table, one metric set, one validation set.
 
 ```python
-comparison = pd.DataFrame(results).round(4)
-print("=== Validation Comparison ===")
-print(comparison.to_string(index=False))
-
-# Visualize comparison
-comparison_long = comparison.melt(
-    id_vars='model',
-    value_vars=['valid_MAE', 'valid_RMSE'],
-    var_name='metric',
-    value_name='error'
-)
-
-alt.Chart(comparison_long).mark_bar().encode(
-    x=alt.X('model:N', title='Model', sort='-y'),
-    y=alt.Y('error:Q', title='Validation error (hundreds of thousands of dollars)'),
-    color='metric:N',
-    column='metric:N'
-).properties(
-    width=150,
-    height=300
-)
+comparison = pd.DataFrame(results)
+comparison['features_used'] = [0, 10, 10, (coefficients['lasso'] != 0).sum()]
+print(comparison.round(3).to_string(index=False))
 ```
+
+**Expect:**
 
 ```text
-            model  valid_MAE  valid_RMSE  valid_R2
-    mean baseline     0.9248      1.1719   -0.0002
-linear regression     0.5333      0.7278    0.6142
- ridge (alpha=10)     0.5333      0.7278    0.6143
-lasso (alpha=0.1)     0.6257      0.8262    0.5029
+            model  valid_MAE  valid_RMSE  valid_R2  features_used
+    mean baseline     64.129      75.639    -0.044              0
+linear regression     42.939      51.194     0.522             10
+ ridge (alpha=10)     42.620      51.160     0.522             10
+  lasso (alpha=2)     42.451      51.034     0.525              7
 ```
 
-Both linear models cut the baseline's typical miss almost in half. Ridge and plain linear regression then tie on MAE and separate by 0.0001 of R², a gap far smaller than the difference another random split would produce, so treat them as tied. A tie-break rule fixed _before_ looking - prefer the penalized model, and record its `alpha` - selects the Ridge pipeline as the candidate to freeze.
+Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42.939) and Ridge (42.620) are within 1 point of it, so all three count as tied: on 89 patients a half-point gap is noise. The tie goes to the fewest features, which is the Lasso with 7 of 10. **Selected: the Lasso pipeline with `alpha=2`.** All three cut the baseline's typical miss by about a third.
 
-## Part 8: Validation Prediction Visualization
+## 8. Look at the validation predictions
 
-Visualize how well the selected model predicts house values.
+Two plots of the selected pipeline's validation predictions, with Lecture 07's Axes methods: predicted against actual, where perfect predictions would sit on the dashed diagonal, and residuals against predictions, where we hope for a shapeless cloud around zero.
 
 ```python
-# Use validation predictions while the test set remains sealed.
-ridge_valid_pred = ridge.predict(X_valid)
-pred_df = pd.DataFrame({
-    'actual': y_valid.values,
-    'predicted': ridge_valid_pred,
-    'error': y_valid.values - ridge_valid_pred
-})
+lasso_valid_pred = lasso.predict(X_valid)
+residuals = y_valid - lasso_valid_pred
+print(f"Mean residual: {residuals.mean():.1f}")
 
-# Scatter plot: actual vs predicted
-scatter = alt.Chart(pred_df).mark_circle(opacity=0.5).encode(
-    x=alt.X('actual:Q', title='Actual house value (hundreds of thousands)'),
-    y=alt.Y('predicted:Q', title='Predicted house value (hundreds of thousands)'),
-    color=alt.Color('error:Q', scale=alt.Scale(scheme='redblue', domainMid=0), 
-                    title='Error')
-).properties(
-    width=400,
-    height=400
-)
-
-# Add perfect prediction line (y=x)
-perfect_line = alt.Chart(pd.DataFrame({'x': [pred_df['actual'].min(), pred_df['actual'].max()]})).mark_line(
-    color='red', strokeDash=[5, 5]
-).encode(
-    x='x:Q',
-    y='x:Q'
-)
-
-(scatter + perfect_line).resolve_scale(color='independent')
+fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+axes[0].scatter(y_valid, lasso_valid_pred, alpha=0.6)
+axes[0].plot([25, 346], [25, 346], color='gray', linestyle='--')
+axes[0].set_xlabel('Actual progression')
+axes[0].set_ylabel('Predicted progression')
+axes[1].scatter(lasso_valid_pred, residuals, alpha=0.6)
+axes[1].axhline(0, color='gray', linestyle='--')
+axes[1].set_xlabel('Predicted progression')
+axes[1].set_ylabel('Residual (actual - predicted)')
+plt.show()
+plt.close(fig)
 ```
 
-```python
-# Residual plot (errors vs predicted)
-residual_chart = alt.Chart(pred_df).mark_circle(opacity=0.5).encode(
-    x=alt.X('predicted:Q', title='Predicted house value (hundreds of thousands)'),
-    y=alt.Y('error:Q', title='Residual (actual - predicted)'),
-    color=alt.Color('error:Q', scale=alt.Scale(scheme='redblue', domainMid=0))
-).properties(
-    width=400,
-    height=300
-)
+**Expect:** `Mean residual: 14.2`, and two panels:
 
-# Add zero line
-zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y:Q')
+- **Left:** the points follow the diagonal but more flatly. The highest actual scores are predicted too low and the lowest too high, as expected from a model that explains about half the variation.
+- **Right:** no curve and no funnel, but more points above the zero line than below. That is the 14.2-point average shift: these validation patients progressed more than the training mean suggested.
 
-residual_chart + zero_line
-```
+## 9. What does the pipeline rely on?
 
-**What to look for:**
-- **Scatter plot**: Points should cluster around the red diagonal line (perfect predictions)
-- **Residual plot**: Errors should be randomly distributed around zero (no patterns)
-- **The flat band at 5.0**: the census capped house values there, so the model cannot follow the most expensive blocks
-
-## Part 9: What Does the Model Rely On?
-
-A metric says how well the pipeline predicts; it does not say which columns carry the prediction. Permutation importance shuffles one column of the validation set at a time and measures how much the score gets worse. It works on any fitted estimator, including a pipeline, because it only needs `predict`.
-
-We use the validation set, not the final test set, and keep MAE as the evaluation measure. scikit-learn orients scorers so higher is better, so MAE uses the negative-MAE scorer; a positive result below is the increase in validation MAE after shuffling.
+A metric says how well the pipeline predicts, not which columns carry the prediction. Permutation importance shuffles one validation column at a time and measures how much worse the MAE gets. scikit-learn scorers count higher as better, so MAE is `'neg_mean_absolute_error'`, and each result below is the increase in validation MAE after shuffling.
 
 ```python
-# Measure predictive reliance on validation data with reproducible shuffles.
 permutation_result = permutation_importance(
-    ridge,
-    X_valid,
-    y_valid,
-    scoring='neg_mean_absolute_error',
-    n_repeats=10,
-    random_state=42,
-    n_jobs=-1,
+    lasso, X_valid, y_valid,
+    scoring='neg_mean_absolute_error', n_repeats=10, random_state=42,
 )
-
-permutation_df = pd.DataFrame({
+importance = pd.DataFrame({
     'feature': feature_cols,
-    'validation_mae_increase': permutation_result.importances_mean.round(3),
-    'repeat_std': permutation_result.importances_std.round(3),
-}).sort_values('validation_mae_increase', ascending=False)
-
-print("=== Ridge Permutation Importance (Validation MAE Increase) ===")
-print(permutation_df.to_string(index=False))
+    'mae_increase': permutation_result.importances_mean,
+    'std': permutation_result.importances_std,
+}).sort_values('mae_increase', ascending=False)
+print(importance.round(2).to_string(index=False))
 ```
+
+**Expect:**
 
 ```text
-   feature  validation_mae_increase  repeat_std
-  Latitude                    0.629       0.011
- Longitude                    0.605       0.007
-    MedInc                    0.566       0.009
- AveBedrms                    0.068       0.004
-  AveRooms                    0.061       0.004
-  HouseAge                    0.011       0.002
-  AveOccup                    0.003       0.000
-Population                   -0.000       0.000
+feature  mae_increase  std
+    bmi         10.50 1.98
+    ltg         10.43 2.06
+     bp          3.79 1.07
+    hdl          2.90 1.01
+     tc          0.78 0.59
+    glu          0.42 0.27
+    sex          0.23 0.49
+    age          0.00 0.00
+    ldl          0.00 0.00
+    tch          0.00 0.00
 ```
 
-Location and income carry the model; shuffling `Population` costs nothing at all. Two cautions: correlated features can substitute for one another, so shuffling either one may show little damage or divide importance between them, and these values describe this fitted model's reliance under shuffling. They are not causal effects, and they do not establish that changing a feature would change house values.
+BMI and triglycerides carry the pipeline: shuffling either one adds about 10.5 points to the validation MAE. `age`, `ldl`, and `tch` show exactly 0.00 because the Lasso set their coefficients to zero, so shuffling them cannot change a single prediction. Two cautions: correlated features such as `tc` and `ldl` can share or hide importance, and these numbers describe what this fitted pipeline relies on. They do not say that lowering a patient's triglycerides would slow their disease.
 
-## Part 10: When the Prediction Becomes a Yes/No Decision
+## 10. When the prediction becomes a yes/no decision
 
-Predictions usually end in a decision. Suppose a housing programme wants to flag
-block groups whose median value is above 3.5 (that is, $350,000) so an analyst can
-review them. Turning the frozen model's numeric prediction into a flag turns a
-regression problem into a yes/no one, and yes/no results need different metrics.
-
-The comparison here is the flag against the laziest possible policy: never flag
-anything. Watch what that does to accuracy.
+Predictions usually end in a decision. Suppose the clinic wants to schedule an early specialist review for patients whose progression score will exceed 200. Turning the selected pipeline's numeric prediction into a flag turns regression into classification, and yes/no results need different metrics. Compare the flag with the laziest possible policy: never flag anyone.
 
 ```python
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+threshold = 200
+actual_high = (y_valid > threshold).astype(int)
+lasso_flag = (lasso_valid_pred > threshold).astype(int)
+never_flag = np.full(len(actual_high), 0)
 
-threshold = 3.5
-actual_expensive = (y_valid.values > threshold).astype(int)
-ridge_flag = (ridge_valid_pred > threshold).astype(int)
-never_flag = np.zeros_like(actual_expensive)
-
-print(f"Expensive block groups in validation: {actual_expensive.sum()} of {len(actual_expensive)}")
+print(f"Validation patients above {threshold}: {actual_high.sum()} of {len(actual_high)}")
 
 binary_rows = []
-for name, predicted in [('ridge_flag', ridge_flag), ('never_flag', never_flag)]:
+for name, predicted in [('lasso_flag', lasso_flag), ('never_flag', never_flag)]:
     binary_rows.append({
-        'approach': name,
-        'accuracy': accuracy_score(actual_expensive, predicted),
-        'precision': precision_score(actual_expensive, predicted, zero_division=0),
-        'recall': recall_score(actual_expensive, predicted),
+        'policy': name,
+        'accuracy': accuracy_score(actual_high, predicted),
+        'precision': precision_score(actual_high, predicted, zero_division=0),
+        'recall': recall_score(actual_high, predicted),
     })
 print(pd.DataFrame(binary_rows).round(3).to_string(index=False))
 
-print("\nRidge flag, confusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(actual_expensive, ridge_flag))
+print("\nLasso flag, confusion matrix [[TN, FP], [FN, TP]]:")
+print(confusion_matrix(actual_high, lasso_flag))
 ```
+
+**Expect:**
 
 ```text
-Expensive block groups in validation: 520 of 4128
-  approach  accuracy  precision  recall
-ridge_flag     0.917      0.876   0.394
-never_flag     0.874      0.000   0.000
+Validation patients above 200: 29 of 89
+    policy  accuracy  precision  recall
+lasso_flag     0.753      0.706   0.414
+never_flag     0.674      0.000   0.000
 
-Ridge flag, confusion matrix [[TN, FP], [FN, TP]]:
-[[3579   29]
- [ 315  205]]
+Lasso flag, confusion matrix [[TN, FP], [FN, TP]]:
+[[55  5]
+ [17 12]]
 ```
 
-Never flagging anything is 87.4% accurate and finds nothing: when positives are
-rare, accuracy mostly measures how rare they are. `zero_division=0` is what keeps
-`precision_score` from warning about the 0/0 that policy produces. The model's
-flags are trustworthy when it raises them (precision 0.876) but it stays silent on
-315 of the 520 expensive block groups (recall 0.394). Which of those two failures
-costs more is a question about the programme, not about the model - and the answer
-decides whether 3.5 is the right threshold.
+Never flagging anyone is right 67.4% of the time and finds nobody: accuracy mostly measures how common the negatives are. `zero_division=0` keeps `precision_score` from warning about the 0/0 that policy produces. The Lasso flag is right when it fires 12 times out of 17 (precision 0.706), but it misses 17 of the 29 patients who went above 200 (recall 0.414). Whether a missed patient costs more than an unneeded appointment is the clinic's call, and that answer decides whether 200 is the right point to flag at.
 
-## Part 11: One Final Test Evaluation
+## 11. Freeze, then test once
 
-Validation chose the Ridge pipeline, so **freeze** it: same steps, same `alpha`, no more changes. Refitting the frozen configuration on the combined training and validation rows gives it more data without changing any setting. This is the first and only point at which the test set is used.
+Validation chose the Lasso pipeline, so **freeze** it: same steps, same `alpha`, no more changes. Record what is frozen, refit that configuration on the training and validation rows together (more data, no new choices), and score it on the test rows. This is the first and only time the test rows are used.
 
 ```python
-# Record exactly what is being frozen
-print("Frozen steps:", [name for name, _ in ridge.steps])
-print("Frozen settings:", ridge.named_steps['model'].get_params())
+print("Frozen steps:", [name for name, _ in lasso.steps])
+print("Frozen alpha:", lasso.named_steps['model'].get_params()['alpha'])
 
-final_model = Pipeline([('scale', StandardScaler()), ('model', Ridge(alpha=10.0))])
+final_model = Pipeline([('scale', StandardScaler()), ('model', Lasso(alpha=2.0))])
 final_model.fit(X_train_valid, y_train_valid)
 
 final_test_pred = final_model.predict(X_test)
-print("\n=== Final Test Performance: frozen Ridge pipeline ===")
-print(f"Test MAE: {mean_absolute_error(y_test, final_test_pred):.3f}")
-print(f"Test RMSE: {np.sqrt(mean_squared_error(y_test, final_test_pred)):.3f}")
-print(f"Test R²: {r2_score(y_test, final_test_pred):.3f}")
+print("\nFinal test performance, frozen Lasso pipeline:")
+print(f"Test MAE:  {mean_absolute_error(y_test, final_test_pred):.2f}")
+print(f"Test RMSE: {np.sqrt(mean_squared_error(y_test, final_test_pred)):.2f}")
+print(f"Test R²:   {r2_score(y_test, final_test_pred):.3f}")
 ```
+
+**Expect:**
 
 ```text
-=== Final Test Performance: frozen Ridge pipeline ===
-Test MAE: 0.533
-Test RMSE: 0.745
-Test R²: 0.576
+Frozen steps: ['scale', 'model']
+Frozen alpha: 2.0
+
+Final test performance, frozen Lasso pipeline:
+Test MAE:  42.84
+Test RMSE: 52.90
+Test R²:   0.472
 ```
 
-The test R² (0.576) is a little below the validation R² (0.614). That is the normal cost of having _chosen_ on validation rows, and it is the number that gets reported - no going back to try another `alpha`.
-
-## Key Takeaways
-
-1. **scikit-learn API**: Consistent fit/predict pattern across all models
-2. **Train/validation/test split**: Select with validation; report the test result once
-3. **Baseline first**: `DummyRegressor` sets the bar every model has to clear
-4. **Pipelines**: Scaling and imputation belong inside the model so they learn from training rows only
-5. **Metrics**: MAE, RMSE, and R² on validation rows, computed the same way for every candidate
-6. **Regularization**: Ridge and Lasso are settings to validate, not free improvements
-7. **Permutation importance**: Held-out reliance for any fitted estimator, not a causal claim
-8. **Yes/no decisions**: When positives are rare, accuracy flatters a policy that finds nothing; read precision and recall
-9. **Freeze, then test once**: Record the settings, refit, and report the test number as it comes
-
-## Next Steps
-
-- Experiment with hyperparameter tuning (GridSearchCV)
-- Try other scikit-learn models (SVM, KNN)
-- Learn about cross-validation for better model evaluation
-- Demo 3 takes the same workflow to trees, boosting, and neural networks
+The test MAE (42.84) is close to the validation MAE (42.45); the test R² (0.472) is a little below the validation R² (0.525). A small drop is the normal cost of having _chosen_ on the validation rows, and these are also 89 different patients. This is the number that goes in the report, with no going back to try another `alpha`.
