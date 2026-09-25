@@ -1,4 +1,3 @@
-# Tells badmath (https://pypi.org/project/badmath) which assignment this is.
-# Run `uvx badmath` in this folder to grade it with the course's current checks.
+# Names this assignment for the course grading tools.
 course = "217"
 assignment = "01"

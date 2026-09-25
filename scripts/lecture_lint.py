@@ -90,7 +90,7 @@ def check(path):
     for index, (number, line) in enumerate(lines[:-1]):
         if re.fullmatch(r"!\[[^]]*\]\([^)]+\)", line.strip()):
             rest = [l for _, l in lines[index + 1 : index + 3] if l.strip()]
-            if rest and re.fullmatch(r"[*_].+[*_]", rest[0].strip()):
+            if rest and re.match(r"[*_][^*_\s]", rest[0].strip()):  # an italic caption, whole or leading
                 problems.append(f"{path}:{number}: italic paragraph under an image; captions belong in the link text")
 
     if meta.get("role") == "lecture" and meta.get("title_line"):
