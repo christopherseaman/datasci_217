@@ -2,8 +2,9 @@
 """Build the supplied dataset for Assignment 03.
 
 Course tooling, not part of the student handout: the assignment ships the CSV
-this writes, and `03/assignment/_public_checks.py` pins its SHA-256 so a graded
-submission is always scored against the file the students were given.
+this writes, and `03/assignment_checks/_public_checks.py` carries a copy of it
+(`SUPPLIED_READINGS`), so a submission is scored against the file students were
+given, never against its own copy. Rebuilding the data means updating that copy.
 
     python scripts/make_assignment03_data.py
 

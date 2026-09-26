@@ -12,8 +12,11 @@ The handout ships a byte-identical copy of every file the workflow lists in
 `python3 check_assignment.py` in a student's repository prints each check's
 result, what to fix, and the score, exactly as GitHub will, then a `Left to fix`
 line that only the local run prints. The checks recompute every expected value
-from the supplied `data/clinic_encounters.csv`, which ships in the handout, so
-there is no answer key to hide.
+from their own copy of the supplied `data/clinic_encounters.csv`
+(`SUPPLIED_ENCOUNTERS` in `_value_checks.py`), so there is no answer key to hide.
+They read only what the student writes: `README.md`, `.gitignore`, and
+`output/`. A student's copy of the data file, like the scaffold scripts, is
+never read, so changing it cannot change a score.
 
 ## Publishing
 

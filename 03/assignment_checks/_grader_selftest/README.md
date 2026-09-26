@@ -11,8 +11,12 @@ submissions in ignored `scratch/`, and confirms that:
   brackets or with a note before or after it, bulleted or annotated counts
   lines, trailing whitespace in the dataset, a file name in another letter
   case, any numpy version and any interpreter path, and take away exactly the
-  points a wrong, partial, hedged, miscounted, cut-short or edited-dataset
-  submission should lose;
+  points a wrong, partial, hedged, miscounted or cut-short submission should
+  lose;
+- the checks read only `output/`: editing or deleting the dataset, the
+  scaffold, or the requirement list changes neither a score nor a word of
+  feedback, and `SUPPLIED_READINGS` at the end of `_public_checks.py` is
+  `03/assignment/data/bp_readings.csv` byte for byte;
 - the feedback names the fix for a misnamed or misplaced summary, unsorted
   `uniq -c` input, the wrong `cut` field, a counts file without `.txt`, and a
   key written twice, and says what the data gives for a wrong answer; the
@@ -37,5 +41,5 @@ uv run --python 3.13 --with numpy==2.3.3 python 03/assignment_checks/_grader_sel
 
 `solve()` is an independent NumPy answer to the assignment, which is why it
 lives here and not in the handout. The supplied dataset is rebuilt by
-`scripts/make_assignment03_data.py`, which also prints the SHA-256 that
-`_public_checks.py` pins.
+`scripts/make_assignment03_data.py`; a rebuilt file also has to be copied into
+`SUPPLIED_READINGS`, which the self-test confirms.

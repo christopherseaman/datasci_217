@@ -27,7 +27,7 @@ patient_id,monitor,sbp_h01,sbp_h02, ... ,sbp_h12
 P0001,M06,111,122, ... ,108
 ```
 
-Leave this file exactly as it ships: the checks that grade your answers recompute them from it.
+Leave this file exactly as it ships: the checks compare your answers with the ones the supplied file gives.
 
 ## Setup
 
@@ -158,7 +158,7 @@ python analysis.py
 python check_assignment.py
 ```
 
-`check_assignment.py` runs the same checks GitHub runs. They read only your files in `output/` and recompute every answer from the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
+`check_assignment.py` runs the same checks GitHub runs. They read only your files in `output/` and recompute every answer from their own copy of the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
 
 Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
 

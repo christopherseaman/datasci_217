@@ -27,7 +27,7 @@ CHECKS = Path(__file__).resolve().parents[1]
 FORK = CHECKS.parent / "assignment"
 SCRATCH = CHECKS.parents[2] / "scratch"
 sys.path.insert(0, str(CHECKS))
-from _public_checks import DATA_FILE  # noqa: E402
+from _public_checks import DATA_FILE, SUPPLIED_READINGS  # noqa: E402
 from grading import POINTS, grade_submission  # noqa: E402
 
 COUNTS_NAME = "monitor_counts_20260922_101500.txt"
@@ -184,6 +184,9 @@ def replaced(summary: list[str], **values: str) -> list[str]:
 
 
 def run() -> None:
+    assert (FORK / DATA_FILE).read_bytes().decode("utf-8") == SUPPLIED_READINGS, (
+        f"03/assignment/{DATA_FILE} changed; copy it into SUPPLIED_READINGS at the end of _public_checks.py"
+    )
     summary, counts = solve(FORK / DATA_FILE)
     records = sum(counts.values())
     answers = dict(line.partition(": ")[::2] for line in summary)
@@ -448,18 +451,30 @@ def run() -> None:
             encoding="utf-8")
         assert failing(graded(bare)) == set(), failing(graded(bare))
 
-        # The counting artifacts must not be gradeable against an edited dataset.
+        # The checks read only output/. Editing or deleting a supplied file, the data, the scaffold, or the
+        # requirement list, changes nothing: not a score, not a word of feedback.
         tampered = workspace / "tampered"
         build(tampered, summary, counts, records)
+        untouched = graded(tampered)
+        assert untouched["score"] == 100, failing(untouched)
         rows = (tampered / DATA_FILE).read_text(encoding="utf-8").splitlines()[:4]
         (tampered / DATA_FILE).write_text("\n".join(rows) + "\n", encoding="utf-8")
-        result = graded(tampered)
-        assert "record count artifact" in failing(result)
-        assert all(
-            "not the supplied dataset" in test["detail"]
-            for test in result["tests"]
-            if not test["passed"] and test["test-name"] not in {"summary artifact format"}
-        ), failing(result)
+        (tampered / "analysis.py").write_text("raise SystemExit('never run')\n", encoding="utf-8")
+        (tampered / "requirements.txt").write_text("numpy==1.0\n", encoding="utf-8")
+        assert graded(tampered) == untouched, failing(graded(tampered))
+        (tampered / DATA_FILE).unlink()
+        (tampered / "data").rmdir()
+        (tampered / "requirements.txt").unlink()
+        assert graded(tampered) == untouched, failing(graded(tampered))
+        wrong_mean = workspace / "wrong-mean-no-data"
+        build(wrong_mean, replaced(summary, mean_sbp=f"{float(answers['mean_sbp']) + 3.0:.1f}"), counts, records)
+        with_data = graded(wrong_mean)
+        (wrong_mean / DATA_FILE).write_text("\n".join(rows) + "\n", encoding="utf-8")
+        assert graded(wrong_mean) == with_data
+        (wrong_mean / DATA_FILE).unlink()
+        assert graded(wrong_mean) == with_data
+        # A wrong value names the supplied dataset, in case the student's copy was edited.
+        assert f"the supplied {DATA_FILE} gives" in detail(with_data, "answer: mean_sbp")
 
         # Validation found correct work the released checks marked wrong. Each of these
         # now scores 100, and the baseline comparison proves none of them lost a check.
@@ -624,8 +639,8 @@ def run() -> None:
             [sys.executable, "-B", str(CHECKS / "check_assignment.py"), str(workspace / "mixed")],
             capture_output=True, text=True, check=False,
         ).stdout
-        assert f"which is not the monitor whose patients' 12-hour means average highest: {DATA_FILE} gives " \
-               f"`{answers['high_monitor']}`." in printed, printed
+        assert f"which is not the monitor whose patients' 12-hour means average highest: the supplied {DATA_FILE} " \
+               f"gives `{answers['high_monitor']}`." in printed, printed
         assert printed.endswith("Score: 93/100\nLeft to fix (7 points): output/vitals_summary.txt: sd_sbp and "
                                 "high_monitor.\n"), printed
         assert subprocess.run(
@@ -643,7 +658,7 @@ def run() -> None:
         "Assignment 03 checks: empty, correct, extra-file, loosely formatted, NumPy-repr, "
         "sample-SD, one-wrong, two-wrong, all-wrong, partial, single-answer, unreadable, cut-counts, "
         "bracketed and annotated label, hedged label, miscounted, unactivated, other-numpy, "
-        "unversioned-probe, tampered-data, truncated, Markdown and JSON, re-separated, leading-note, "
+        "unversioned-probe, supplied-files-edited, truncated, Markdown and JSON, re-separated, leading-note, "
         "UTF-16, whitespace-edited, renamed, appended and miscounted-monitor submissions all score as intended."
     )
     print(

@@ -1,13 +1,16 @@
 """Checks for Assignment 02.
 
-Every expected value is recomputed from the supplied encounter file, so there is
-no answer key here. The course owns this file in 02/assignment_checks/, the
-handout ships a byte-identical copy so students can run the checks locally, and
-the GitHub Actions run downloads the course's current copy on every push.
+Every expected value is recomputed from the copy of the supplied encounter file
+kept below, so there is no answer key here. The course owns this file in
+02/assignment_checks/, the handout ships a byte-identical copy so students can
+run the checks locally, and the GitHub Actions run downloads the course's
+current copy on every push.
 
-The checks read committed artifacts only: `README.md`, `.gitignore`,
-`data/clinic_encounters.csv`, and the two files in `output/`. Student source
-code is never read, imported, or executed.
+The checks read only files the student writes: `README.md` and `.gitignore`,
+whose TODO lines the student replaces, and the two files in `output/`. Supplied
+files, `data/clinic_encounters.csv` among them, are never read, so changing or
+deleting one never changes a score. Student source code is never read,
+imported, or executed.
 """
 
 from __future__ import annotations
@@ -16,14 +19,47 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import difflib
 from pathlib import Path
-import hashlib
 import re
 
 
 DATA_FILE = Path("data") / "clinic_encounters.csv"
-# The supplied encounter file, ignoring line-ending and trailing-whitespace
-# differences. A changed file cannot be summarized into a known answer.
-DATA_FINGERPRINT = "2ff169aa160fb1d0e4157aae93164ff59bd6c7cac0f0a8115db5b24f5c0e21df"
+# The supplied data/clinic_encounters.csv, byte for byte; the self-test confirms
+# it matches the handout's. The expected values come from this copy, never from
+# the file in a submission.
+SUPPLIED_ENCOUNTERS = """\
+patient_id,visit_date,systolic
+P001,2026-03-02,118
+P002,2026-03-02,142
+P003,2026-03-02,126
+P004,2026-03-02,not recorded
+P005,2026-03-02,134
+P006,2026-03-03,151
+P007,2026-03-03,108
+P008,2026-03-03,912
+P009,2026-03-03,138
+P010,2026-03-03,124
+
+P011,2026-03-04,163
+P012,2026-03-04,119
+P013,2026-03-04,
+P014,2026-03-04,145
+P015,2026-03-04,131
+P016,2026-03-04,128,retake
+P017,2026-03-05,122
+P018,2026-03-05,186
+P019,2026-03-05,48
+P020,2026-03-05,137
+P006,2026-03-05,148
+P021,2026-03-06,115
+P022,2026-03-06,140
+P023,2026-03-06,133
+P024,2026-03-06,127
+P025,2026-03-06,158
+P011,2026-03-06,169
+P026,2026-03-06,121
+P027,2026-03-06,98
+P028,2026-03-06,144
+"""
 
 README_FILE = Path("README.md")
 GITIGNORE_FILE = Path(".gitignore")
@@ -91,6 +127,11 @@ REPORT_MEANINGS = {
     "lowest systolic": "the smallest usable reading",
 }
 REPORT_FIX = "Fix vitals_tools.py or clinic_report.py, rerun clinic_report.py, and commit output/vitals_report.txt."
+# A wrong value can also come from an edited data file, so its fix names the supplied one.
+VALUE_FIX = (
+    f"Fix vitals_tools.py or clinic_report.py, rerun clinic_report.py on the supplied {DATA_FILE.as_posix()}, "
+    "and commit output/vitals_report.txt."
+)
 LIST_FIX = "Then rerun clinic_report.py and commit output/followup_list.txt."
 
 
@@ -176,50 +217,15 @@ def _read_artifact(root: Path, relative: Path, save: str) -> str:
         raise AssertionError(f"{name} cannot be opened ({error.strerror or 'unreadable'}). {save}") from None
 
 
-def _fingerprint(text: str) -> str:
-    lines = [line.rstrip() for line in text.splitlines()]
-    while lines and not lines[-1]:
-        lines.pop()
-    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+def summarize_encounters(text: str) -> SuppliedEncounters:
+    """Apply the assignment's usable-row rule to an encounter file's text.
 
-
-def _data_rows(text: str) -> list[str]:
-    """Every line after the header, as `splitlines()` reads it.
-
-    The fingerprint forgives a blank line appended to the export, but the student's
-    own loop counts it as one more skipped row, so it is counted here too.
+    Every line after the header is a data row, as `splitlines()` reads it, so the
+    blank line inside the export is one, the way the student's own loop reads it.
     """
-    return text.splitlines()[1:]
-
-
-DATA_RESTORE = (
-    f"Restore it with `git checkout {DATA_FILE.as_posix()}`, rerun clinic_report.py on it, "
-    "and commit the new output files."
-)
-
-
-def load_supplied_encounters(root: Path) -> SuppliedEncounters:
-    """Apply the assignment's usable-row rule to the supplied encounter file."""
-    path, name = root / DATA_FILE, DATA_FILE.as_posix()
-    _assert(
-        path.is_file() and not path.is_symlink(),
-        f"{name} {_file_state(path)}, and the answers are recomputed from it. {DATA_RESTORE}",
-    )
-    try:
-        # utf-8-sig drops a leading byte-order mark and is otherwise plain UTF-8.
-        text = path.read_text(encoding="utf-8-sig")
-    except UnicodeDecodeError:
-        text = None  # not the supplied file, which is UTF-8
-    except OSError as error:
-        raise AssertionError(f"{name} cannot be opened ({error.strerror or 'unreadable'}). {DATA_RESTORE}") from None
-    _assert(
-        text is not None and _fingerprint(text) == DATA_FINGERPRINT,
-        f"{name} is not the file the assignment supplies, and the answers are recomputed from it. {DATA_RESTORE}",
-    )
-
     usable: list[tuple[str, int]] = []
     all_ids: set[str] = set()
-    rows = _data_rows(text)
+    rows = text.splitlines()[1:]
     for row in rows:
         fields = row.strip().split(",")
         if fields[0].strip():
@@ -233,6 +239,9 @@ def load_supplied_encounters(root: Path) -> SuppliedEncounters:
         if SYSTOLIC_MIN <= systolic <= SYSTOLIC_MAX:
             usable.append((fields[0].strip(), systolic))
     return SuppliedEncounters(usable=tuple(usable), data_rows=len(rows), all_ids=frozenset(all_ids))
+
+
+ENCOUNTERS = summarize_encounters(SUPPLIED_ENCOUNTERS)
 
 
 def _labelled_values(text: str) -> dict[str, str]:
@@ -328,13 +337,13 @@ def _wrong(root: Path, label: str, expected: str, hint: str) -> str:
     written = _report_values(root)[label]
     return (
         f"{REPORT_FILE.as_posix()} has `{label.capitalize()}: {_shown(written)}`, but {expected}. {hint} "
-        + REPORT_FIX
+        + VALUE_FIX
     )
 
 
-def _check_count(root: Path, label: str, expected: int, found: str, hint: str) -> None:
+def _check_count(root: Path, label: str, expected: int, found: str, hint: str, also: int | None = None) -> None:
     reported, _ = _report_number(root, label)
-    if abs(reported - expected) < COUNT_TOLERANCE:
+    if any(abs(reported - value) < COUNT_TOLERANCE for value in (expected, also) if value is not None):
         return
     raise AssertionError(_wrong(root, label, found, hint))
 
@@ -453,7 +462,7 @@ def check_report_format(root: Path) -> None:
 
 
 def check_usable_encounters(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     _check_count(
         root,
         "usable encounters",
@@ -465,7 +474,7 @@ def check_usable_encounters(root: Path) -> None:
 
 
 def check_skipped_rows(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     _check_count(
         root,
         "skipped rows",
@@ -473,11 +482,13 @@ def check_skipped_rows(root: Path) -> None:
         f"{DATA_FILE.as_posix()} has {encounters.skipped_rows} data rows to skip",
         "Every data row that is not usable is skipped (Task 2.1): the header is not a data row, but the blank "
         "line inside the export is one, the way Demo 3 reports it.",
+        # An editor can append a blank line to the export on save; counting it is not a mistake.
+        also=encounters.skipped_rows + 1,
     )
 
 
 def check_distinct_patients(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     _check_count(
         root,
         "patients seen",
@@ -489,7 +500,7 @@ def check_distinct_patients(root: Path) -> None:
 
 
 def check_mean_systolic(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     reported, decimals = _report_number(root, "mean systolic")
     expected = sum(encounters.readings) / len(encounters.readings)
     # Compared at the precision the student wrote, so rounding never decides a grade.
@@ -508,7 +519,7 @@ def check_mean_systolic(root: Path) -> None:
 
 
 def check_highest_systolic(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     _check_count(
         root,
         "highest systolic",
@@ -519,7 +530,7 @@ def check_highest_systolic(root: Path) -> None:
 
 
 def check_lowest_systolic(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     _check_count(
         root,
         "lowest systolic",
@@ -615,7 +626,7 @@ def check_followup_reason(root: Path) -> None:
 
 
 def check_followup_patients(root: Path) -> None:
-    encounters = load_supplied_encounters(root)
+    encounters = ENCOUNTERS
     _followup_text(root)  # a missing list gives the same advice as the checks before it
     try:
         cutoff = _declared_cutoff(root)
@@ -642,7 +653,7 @@ def check_followup_patients(root: Path) -> None:
         not problems,
         f"{FOLLOWUP_FILE.as_posix()} should list the {len(expected)} patients with a usable reading at or above "
         f"your cutoff of {cutoff:g} mmHg, but " + "; ".join(problems) + ". List one patient ID per line "
-        "(Task 3.1), rerun clinic_report.py, and commit the new list.",
+        f"(Task 3.1), rerun clinic_report.py on the supplied {DATA_FILE.as_posix()}, and commit the new list.",
     )
 
 

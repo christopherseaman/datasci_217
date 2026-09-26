@@ -1,7 +1,11 @@
 # Assignment 03 checks (course-owned)
 
 These are the checks that decide the Assignment 03 grade. They compare each
-answer with the value recomputed from the supplied `data/bp_readings.csv`.
+answer with the value recomputed from their own copy of the supplied
+`data/bp_readings.csv` (`SUPPLIED_READINGS` at the end of `_public_checks.py`),
+and read only the student's files in `output/`: a student's copy of the data,
+like the scaffold and the requirement list, is never read, so changing it
+cannot change a score.
 `03/assignment/.github/workflows/tests.yml` downloads them on every student
 push from `christopherseaman/datasci_217@main:03/assignment_checks/` (its
 `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
@@ -11,8 +15,8 @@ The handout ships a byte-identical copy of every file the workflow lists in
 `CHECKS_FILES`, so `python check_assignment.py` in a student's repository prints
 each check's result, what to fix, and the score, exactly as GitHub will, then a
 `Left to fix` line that only the local run prints. The checks recompute every
-expected value from the supplied dataset, which ships in the handout, so there
-is no answer key to hide. The listed files:
+expected value from the supplied dataset, so there is no answer key to hide.
+The listed files:
 
 ```text
 .github/test/test_assignment.py

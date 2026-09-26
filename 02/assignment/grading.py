@@ -1,8 +1,8 @@
 """Artifact-only grading rules for Assignment 02.
 
 Each requirement is scored on its own, so a partial submission reports exactly
-which value to fix, and every expected value is recomputed from the supplied
-encounter file.
+which value to fix, and every expected value is recomputed from the checks' own
+copy of the supplied encounter file.
 """
 
 from __future__ import annotations

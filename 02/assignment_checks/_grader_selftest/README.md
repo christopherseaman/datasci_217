@@ -8,13 +8,16 @@ line endings, decimal places, `mm Hg`, a UTF-8 BOM, NumPy scalar reprs, line
 order, extra lines) still score 100; every cutoff from 120 to 180 mmHg scores
 100 when its patient list matches; each wrong value costs only its own check;
 the documented `.gitignore` and run-command forms all pass; a repeated patient
-ID counts once; a blank line appended to the export is one more skipped row;
-and a changed `data/clinic_encounters.csv` fails every recomputed check. The
-printed report says what a wrong value should be and shows the closest line
-for a misspelled label, gives a fix shared by consecutive checks once, marking
-the rest `(same fix as above)`, and ends with a `Left to fix` line naming the
-failing checks by file. It also confirms the supplied data file still matches
-`DATA_FINGERPRINT`.
+ID counts once; and editing or deleting a supplied file, the data or a
+scaffold script, changes neither a score nor a word of feedback, because the
+checks read only `README.md`, `.gitignore`, and `output/`. A report made from
+an edited data file is marked against the supplied one, and its fix says so.
+The printed report says what a wrong value should be and shows the closest
+line for a misspelled label, gives a fix shared by consecutive checks once,
+marking the rest `(same fix as above)`, and ends with a `Left to fix` line
+naming the failing checks by file. It also confirms that `SUPPLIED_ENCOUNTERS`
+in `_value_checks.py` is `02/assignment/data/clinic_encounters.csv` byte for
+byte.
 
 For the handout: every file the workflow lists in `CHECKS_FILES` is
 byte-identical in `02/assignment/` and here, so students run locally exactly

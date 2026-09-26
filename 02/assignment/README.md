@@ -51,7 +51,7 @@ Importing `vitals_tools` creates a `__pycache__/` folder of compiled files. Repl
 
 ## Task 2: Summarize the supplied encounters
 
-`data/clinic_encounters.csv` is a week of encounters from one clinic: a patient ID, a visit date, and the systolic blood pressure recorded at that visit, in mmHg. Like any export, it has rows nobody can use. Demo 3 of the [Lecture 02 demo guide](https://github.com/christopherseaman/datasci_217/blob/main/02/demo/DEMO_GUIDE.md) reads a file of this shape. Keep the file exactly as it ships: the checks recompute the answers from it.
+`data/clinic_encounters.csv` is a week of encounters from one clinic: a patient ID, a visit date, and the systolic blood pressure recorded at that visit, in mmHg. Like any export, it has rows nobody can use. Demo 3 of the [Lecture 02 demo guide](https://github.com/christopherseaman/datasci_217/blob/main/02/demo/DEMO_GUIDE.md) reads a file of this shape. Keep the file exactly as it ships: the checks compare your answers with the ones the supplied file gives.
 
 ### 2.1 Decide which rows you can use
 
@@ -123,7 +123,7 @@ python3 clinic_report.py
 python3 check_assignment.py
 ```
 
-`check_assignment.py` runs the same checks GitHub runs. They look only at your artifacts: this `README.md`, `.gitignore`, and the two files in `output/`. They also read the supplied `data/clinic_encounters.csv` to work out what your answers should be, and never run or read your Python code, so any way of producing a correct artifact counts.
+`check_assignment.py` runs the same checks GitHub runs. They look only at your artifacts: this `README.md`, `.gitignore`, and the two files in `output/`. They work out what your answers should be from their own copy of the supplied `data/clinic_encounters.csv`, and never run or read your Python code, so any way of producing a correct artifact counts.
 
 Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
 

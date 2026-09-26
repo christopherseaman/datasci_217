@@ -20,9 +20,9 @@ sys.path.insert(0, str(CHECKS))
 from _value_checks import (  # noqa: E402
     CHECKS as VALUE_CHECKS,
     DATA_FILE,
-    DATA_FINGERPRINT,
-    _fingerprint,
-    load_supplied_encounters,
+    ENCOUNTERS,
+    SUPPLIED_ENCOUNTERS,
+    summarize_encounters,
 )
 from grading import POINTS, grade_submission  # noqa: E402
 
@@ -54,9 +54,10 @@ def write_submission(root: Path, *, report: str, followup: str) -> None:
 
 def run() -> None:
     supplied = ASSIGNMENT / DATA_FILE
-    assert _fingerprint(supplied.read_text(encoding="utf-8")) == DATA_FINGERPRINT, (
-        f"{DATA_FILE.as_posix()} changed; update DATA_FINGERPRINT in _value_checks.py"
+    assert supplied.read_bytes().decode("utf-8") == SUPPLIED_ENCOUNTERS, (
+        f"{DATA_FILE.as_posix()} changed; copy it into SUPPLIED_ENCOUNTERS in _value_checks.py"
     )
+    assert summarize_encounters(supplied.read_text(encoding="utf-8")) == ENCOUNTERS
 
     with tempfile.TemporaryDirectory(dir=REPO / "scratch", prefix="a02-selftest-") as temporary:
         root = Path(temporary) / "submission"
@@ -66,9 +67,10 @@ def run() -> None:
         assert grade_submission(root)["score"] == 0
         assert len(grade_submission(root)["tests"]) == len(POINTS)
 
+        # A fork keeps the supplied data file; the checks never read it.
         (root / "data").mkdir()
         shutil.copy(supplied, root / DATA_FILE)
-        encounters = load_supplied_encounters(root)
+        encounters = ENCOUNTERS
         # The supplied export's counts, pinned so a change to the row rule shows up here.
         assert (len(encounters.usable), encounters.skipped_rows) == (25, 6), encounters
         readings = encounters.readings
@@ -233,23 +235,57 @@ def run() -> None:
             assert scores(root)[".gitignore bytecode cache"] == expected, patterns
         (root / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
 
-        # Line endings change nothing; a blank line appended to the export is one more
-        # skipped row, the way the student's own loop reads it.
-        original = (root / DATA_FILE).read_text(encoding="utf-8")
-        (root / DATA_FILE).write_text(original.replace("\n", "\r\n"), encoding="utf-8")
-        assert load_supplied_encounters(root) == encounters
-        (root / DATA_FILE).write_text(original + "\n", encoding="utf-8")
-        appended = load_supplied_encounters(root)
-        assert appended.usable == encounters.usable
-        assert appended.skipped_rows == encounters.skipped_rows + 1, appended.skipped_rows
-        assert sum(scores(root).values()) == 100 - CHECK_POINTS["skipped rows"]
+        # The checks read only what the student writes. Changing or deleting a supplied file, the data
+        # or a scaffold script, changes nothing: not a score, not a word of feedback.
+        write_submission(root, report=report.replace(f"{mean:.1f}", f"{mean + 4:.1f}"), followup=followup)
+        untouched = grade_submission(root)
+        original = (root / DATA_FILE).read_bytes()
+        for name, rewrite in (
+            ("crlf", lambda raw: raw.replace(b"\n", b"\r\n")),
+            ("appended blank line", lambda raw: raw + b"\n"),
+            ("one row", lambda raw: b"patient_id,visit_date,systolic\nP001,2026-03-02,140\n"),
+            ("empty", lambda raw: b""),
+            ("not UTF-8", lambda raw: b"\xff\xfe\x00" + raw),
+        ):
+            (root / DATA_FILE).write_bytes(rewrite(original))
+            assert grade_submission(root) == untouched, name
+        (root / DATA_FILE).unlink()
+        assert grade_submission(root) == untouched, "data file deleted"
+        (root / "data").rmdir()
+        for scaffold in ("clinic_report.py", "vitals_tools.py"):
+            (root / scaffold).write_text("raise SystemExit('never run')\n", encoding="utf-8")
+        assert grade_submission(root) == untouched, "data folder deleted and scaffolds changed"
+        (root / "data").mkdir()
+        (root / DATA_FILE).write_bytes(original)
+        for scaffold in ("clinic_report.py", "vitals_tools.py"):
+            (root / scaffold).unlink()
+        assert grade_submission(root) == untouched
+
+        # An editor can append a blank line to the export on save, so counting it as a skipped row passes.
+        (root / DATA_FILE).write_bytes(original + b"\n")
         write_submission(
             root,
-            report=report.replace(f"Skipped rows: {encounters.skipped_rows}", f"Skipped rows: {appended.skipped_rows}"),
+            report=report.replace(
+                f"Skipped rows: {encounters.skipped_rows}", f"Skipped rows: {encounters.skipped_rows + 1}"
+            ),
             followup=followup,
         )
-        assert grade_submission(root)["score"] == 100
-        (root / DATA_FILE).write_text(original, encoding="utf-8")
+        assert sum(scores(root).values()) == 100
+
+        # A report made from an otherwise edited data file is marked against the supplied one, and the fix says so.
+        write_submission(
+            root,
+            report=report.replace(
+                f"Skipped rows: {encounters.skipped_rows}", f"Skipped rows: {encounters.skipped_rows + 2}"
+            ),
+            followup=followup,
+        )
+        result = grade_submission(root)
+        assert sum(scores(root).values()) == 100 - CHECK_POINTS["skipped rows"]
+        assert "rerun clinic_report.py on the supplied data/clinic_encounters.csv" in next(
+            test["detail"] for test in result["tests"] if test["test-name"] == "skipped rows"
+        )
+        (root / DATA_FILE).write_bytes(original)
         write_submission(root, report=report, followup=followup)
 
         # The printed report says each shared fix once, says what a wrong value should be, and ends by
@@ -273,20 +309,12 @@ def run() -> None:
         assert shown.endswith("Left to fix (25 points): output/followup_list.txt (all 3 checks).\n"), shown
         write_submission(root, report=report, followup=followup)
         assert printed(CHECKS).endswith("Score: 100/100\nAll checks passed.\n")
-
-        # A changed encounter file cannot be summarized into a passing answer.
-        (root / DATA_FILE).write_text("patient_id,visit_date,systolic\nP001,2026-03-02,140\n", encoding="utf-8")
-        result = scores(root)
-        assert result["usable encounters"] == 0
-        assert result["skipped rows"] == 0
-        assert result["mean systolic"] == 0
-        assert result["follow-up patient list"] == 0
-        assert result["README project description"] == 5
-        assert result["vitals report format"] == 10
+        (root / DATA_FILE).unlink()
+        assert printed(CHECKS).endswith("Score: 100/100\nAll checks passed.\n")
 
     print(
         f"Assignment 02 checks: {len(POINTS)} checks worth {sum(POINTS)} points, recomputed "
-        "answers, tolerant formats, and per-check partial credit all pass."
+        "answers, tolerant formats, per-check partial credit, and grading that ignores the supplied files all pass."
     )
 
 
