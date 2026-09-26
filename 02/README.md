@@ -13,8 +13,6 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-[Lecture 01 Notes from Lab](LECTURE_01_CATCHUP.md)
-
 **Note:** After today we should complete McKinney’s _Python for Data Analysis_ through ch03
 
 # VS Code Basics
