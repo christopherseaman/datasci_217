@@ -207,7 +207,6 @@ Shifting counts rows, not time: with irregular clinic visits, the "previous" rea
 - `ts.shift(-1)`: Lead: each row gets the next row's value; the last row becomes `NaN`
 - `ts.diff()`: Current value minus the previous row's value
 - `ts.pct_change()`: Fractional change: `0.1` means 10%; multiply by 100 for percent
-- `ts.shift(1, freq='D')`: Move the timestamps one day later instead of the values, so nothing becomes `NaN`
 
 ### Code Snippet: Lagged Features
 
@@ -247,7 +246,6 @@ On a DatetimeIndex, Lecture 04's `.loc` also accepts partial dates: `'2024-03'` 
 - `df.loc['2024-03-01':'2024-03-07']`: A date range, both endpoints included, as with Lecture 04's label slices
 - `df.loc['2024-03-01 08:00']`: One timestamp
 - `ts['2024-03']`: The same shortcut on a Series; on a DataFrame `df['2024-03']` looks for a _column_ and raises `KeyError`, so use `.loc`
-- `df.iloc[:10]`: First 10 rows by position
 
 ### Code Snippet: Calendar Selection
 
@@ -408,7 +406,6 @@ Any aggregation that works after `groupby()` works after `resample()`, including
 - `ts.resample('D').mean()`, `.sum()`, `.max()`, `.min()`, `.std()`: One summary value per bin
 - `ts.resample('D').count()`: Non-missing readings per bin; `0` marks a bin with no data
 - `ts.resample('D').agg(['mean', 'std', 'min', 'max'])`: Multiple aggregations
-- `ts.resample('ME').agg(mean='mean', count='count')`: Named columns, one row per bin
 - `df.resample('W').agg({'temperature': ['mean', 'std'], 'heart_rate': 'mean'})`: Different summaries for different columns
 
 ### Code Snippet: Resampling Aggregations
@@ -427,13 +424,6 @@ weekly_stats = df.resample('W').agg({
     'heart_rate': 'mean'
 })
 print(weekly_stats.head(2).round(2))
-
-# Named aggregation (Lecture 08): one readable column per monthly summary
-monthly_temp = df['temperature'].resample('ME').agg(
-    mean='mean', std='std', min='min', max='max', count='count'
-)
-monthly_temp['range'] = monthly_temp['max'] - monthly_temp['min']
-print(monthly_temp.head(2).round(2))
 ```
 
 ```text
@@ -441,9 +431,6 @@ print(monthly_temp.head(2).round(2))
                   mean   std    min    max       mean
 2023-01-01       98.75   NaN  98.75  98.75      65.00
 2023-01-08       98.40  0.54  97.62  99.07      85.29
-             mean   std    min    max  count  range
-2023-01-31  98.64  0.43  97.62  99.67     31   2.05
-2023-02-28  98.61  0.36  97.87  99.35     28   1.48
 ```
 
 The first weekly bin holds only January 1, so its standard deviation is `NaN`.
@@ -683,7 +670,6 @@ An **exponentially weighted moving average (EWM)** uses every earlier reading bu
 ### Reference Card: Exponentially Weighted Windows
 
 - `ts.ewm(span=5).mean()`: Weighted mean with decay `alpha = 2 / (span + 1)`; larger span means slower decay
-- `ts.ewm(alpha=0.3).mean()`: Weighted mean; larger `alpha` gives recent observations more relative weight
 
 ### Code Snippet: Exponentially Weighted Features
 
@@ -696,17 +682,16 @@ bp = pd.Series(np.cumsum(rng.standard_normal(50)) + 120,
 print(pd.DataFrame({
     'blood_pressure': bp,
     'ewm_span': bp.ewm(span=5).mean(),        # decay set by span
-    'ewm_alpha': bp.ewm(alpha=0.3).mean(),    # decay set directly
 }).head(5).round(2))
 ```
 
 ```text
-            blood_pressure  ewm_span  ewm_alpha
-2023-01-01          120.30    120.30     120.30
-2023-01-02          119.26    119.68     119.69
-2023-01-03          120.02    119.84     119.84
-2023-01-04          120.96    120.30     120.28
-2023-01-05          119.00    119.80     119.82
+            blood_pressure  ewm_span
+2023-01-01          120.30    120.30
+2023-01-02          119.26    119.68
+2023-01-03          120.02    119.84
+2023-01-04          120.96    120.30
+2023-01-05          119.00    119.80
 ```
 
 ![xkcd 2289: Scenario 4. The fourth scenario's curve bends back in time: the modelers think it is a graphing error, and if not, they definitely want to avoid it.](media/xkcd_2289.png)

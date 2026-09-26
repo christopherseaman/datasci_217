@@ -290,7 +290,10 @@ An **expanding window** grows from the first row to the current one, so its mean
 - `ts.rolling(window=5).quantile(0.5)`: Rolling median.
 - `ts.rolling(window=5).apply(custom_func)`: Run your own function on each window's values.
 - `a.rolling(30).corr(b)`: Rolling correlation between two aligned series, such as daily heart rate and blood pressure.
+- `ts.ewm(alpha=0.3).mean()`: Set the decay directly instead of through `span`; larger `alpha` weights recent observations more.
 - `ts.ewm(halflife=2).mean()`: Weighted mean whose weights halve every two observations.
+- `ts.shift(1, freq='D')`: Move the timestamps one day later instead of the values, so nothing becomes `NaN`.
+- `ts.resample('ME').agg(mean='mean', count='count')`: Named aggregation on a Series, one named column per summary.
 - `ts.ewm(span=5).std()`: Exponentially weighted standard deviation.
 - `ts.truncate(before='2023-06-01', after='2023-06-30')`: Drop everything outside the range (requires a sorted index).
 
