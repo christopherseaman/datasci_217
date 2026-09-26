@@ -1185,18 +1185,22 @@ def check_source_observed(sub: Submission, points: int) -> tuple[int, str]:
         f"exists for that station and hour; fix Q3 section 3.2.")
 
 
-def calendar_check(column: str, meaning: str):
-    def check(sub: Submission, points: int) -> tuple[int, str]:
-        found, problem = _panel_found(sub)
-        if found is None:
-            return 0, problem
-        result = compare_column(found, column, _panel_candidates(sub)[:1], "exact", numbers, "q3_hourly_panel.csv")
-        if result.ok:
-            return points, ""
-        return proportional(points, result.right, result.total), (
-            f"output/q3_hourly_panel.csv: {result.detail}. {column} is {meaning} of the row's America/Chicago "
-            f"local time; fix Q3 section 3.2.")
-    return check
+CALENDAR_COLUMNS = ["hour", "day_of_week", "month"]
+
+
+def check_calendar(sub: Submission, points: int) -> tuple[int, str]:
+    found, problem = _panel_found(sub)
+    if found is None:
+        return 0, problem
+    results = [compare_column(found, column, _panel_candidates(sub)[:1], "exact", numbers, "q3_hourly_panel.csv")
+               for column in CALENDAR_COLUMNS]
+    right = sum(result.ok for result in results)
+    if right == len(results):
+        return points, ""
+    return proportional(points, right, len(results)), (
+        f"output/q3_hourly_panel.csv: {right} of {len(results)} columns right; {join(*(r.detail for r in results))}. "
+        f"From the row's America/Chicago local time, hour is the hour (0 to 23), day_of_week the weekday (Monday 0 "
+        f"to Sunday 6), and month the month (1 to 12); fix Q3 section 3.2.")
 
 
 def check_panel_summary(sub: Submission, points: int) -> tuple[int, str]:
@@ -1251,13 +1255,22 @@ def check_feature_rows(sub: Submission, points: int) -> tuple[int, str]:
                       "station and cutoff-hour pairs (every panel row, eligible or not)", "Q4 section 4.2")
 
 
-def feature_check(columns: list[str], rule: str, own: bool = True, kind: str = "number", parse=numbers, label=None):
+def feature_check(columns: list[str], rule: str, own: bool | list[str] = True, kind: str = "number", parse=numbers,
+                  label=None):
+    """Score q4_features.csv columns in proportion to those right.
+
+    `own` names the columns that may instead follow from the student's own Q3 panel: all of them (True), none
+    (False), or the ones listed.
+    """
+    own_columns = set(columns) if own is True else set(own or ())
+
     def check(sub: Submission, points: int) -> tuple[int, str]:
         found, problem = _features_found(sub)
         if found is None:
             return 0, problem
-        candidates = _feature_candidates(sub) if own else _feature_candidates(sub)[:1]
-        results = [compare_column(found, column, candidates, kind, parse, "q4_features.csv", label=label)
+        candidates = _feature_candidates(sub)
+        results = [compare_column(found, column, candidates if column in own_columns else candidates[:1], kind, parse,
+                                  "q4_features.csv", label=label)
                    for column in columns]
         right = sum(result.ok for result in results)
         if right == len(results):
@@ -1542,19 +1555,19 @@ def prediction_check(name: str, split: str, part: str):
         if part == "rows":
             return rows_check(points, found, candidates[0].index, name, f"rows of q6_X_{split}.csv", task,
                               [candidate.index for candidate in candidates[1:]])
-        if part == "ids":
+        if part == "copied":
             results = [compare_column(found, "station_name", candidates, "text", parse_station, name),
-                       compare_column(found, "target_timestamp_utc", candidates, "time", parse_time, name)]
-            if all(result.ok for result in results):
+                       compare_column(found, "target_timestamp_utc", candidates, "time", parse_time, name),
+                       *(compare_column(found, column, candidates, "number", numbers, name)
+                         for column in ("actual", "persistence_prediction"))]
+            right = sum(result.ok for result in results)
+            if right == len(results):
                 return points, ""
-            return 0, (f"output/{name}: {join(*(r.detail for r in results))}. Copy station_name and "
-                       f"target_timestamp_utc from q6_X_{split}.csv for each row_id; fix {task}.")
-        if part in ("actual", "persistence_prediction"):
-            source = f"{TARGET} from q6_y_{split}.csv" if part == "actual" else f"air_temperature_c_t from q6_X_{split}.csv"
-            result = compare_column(found, part, candidates, "number", numbers, name)
-            if result.ok:
-                return points, ""
-            return 0, f"output/{name}: {result.detail}. {part} is {source} for the same row_id; fix {task}."
+            return proportional(points, right, len(results)), (
+                f"output/{name}: {right} of {len(results)} copied columns right; "
+                f"{join(*(r.detail for r in results))}. For each row_id, copy station_name, target_timestamp_utc, "
+                f"and air_temperature_c_t (as persistence_prediction) from q6_X_{split}.csv, and {TARGET} (as "
+                f"actual) from q6_y_{split}.csv; fix {task}.")
         if part == "model_prediction":
             if "model_prediction" not in found.unique.columns:
                 return 0, f"output/{name} is missing column model_prediction; fix {task}."
@@ -1733,15 +1746,14 @@ def check_report(sub: Submission, points: int) -> tuple[int, str]:
 
 CHECKS = [
     ("Q1 q1_release_audit.csv", 2, check_release_audit),
-    ("Q1 q1_station_coverage.csv", 3, check_coverage),
+    ("Q1 q1_station_coverage.csv", 2, check_coverage),
     ("Q1 q1_visualizations.png", 1, png_check("q1_visualizations.png")),
     ("Q2 q2_cleaned_observations.csv: rows", 2, check_clean_rows),
     ("Q2 q2_cleaned_observations.csv: measurement_timestamp_utc", 2, check_clean_utc),
-    ("Q2 q2_cleaned_observations.csv: solar_radiation_w_m2", 1, clean_columns_check(
-        ["solar_radiation_w_m2"], "Values from -20 up to but not including 0 become 0, and values outside -20 to 1500 "
-                                  "become missing.")),
-    ("Q2 q2_cleaned_observations.csv: interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps", 2, clean_columns_check(
-        RULE_COLUMNS, "Values outside each column's inclusive valid range become missing.")),
+    ("Q2 q2_cleaned_observations.csv: solar_radiation_w_m2, interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps", 2,
+     clean_columns_check(["solar_radiation_w_m2", *RULE_COLUMNS],
+                         "Values outside each column's inclusive valid range become missing, and solar values from "
+                         "-20 up to but not including 0 become 0.")),
     ("Q2 q2_cleaned_observations.csv: the other nine sensor columns", 1, clean_columns_check(
         UNCHANGED_COLUMNS, "Keep valid values unchanged and set only invalid values to missing; do not fill, "
                            "interpolate, or clip.")),
@@ -1750,9 +1762,7 @@ CHECKS = [
     ("Q3 q3_hourly_panel.csv: rows", 2, check_panel_rows),
     ("Q3 q3_hourly_panel.csv: sensor columns", 2, check_panel_sensors),
     ("Q3 q3_hourly_panel.csv: source_observed", 2, check_source_observed),
-    ("Q3 q3_hourly_panel.csv: hour", 1, calendar_check("hour", "the hour (0 to 23)")),
-    ("Q3 q3_hourly_panel.csv: day_of_week", 1, calendar_check("day_of_week", "the weekday, Monday 0 to Sunday 6,")),
-    ("Q3 q3_hourly_panel.csv: month", 1, calendar_check("month", "the month (1 to 12)")),
+    ("Q3 q3_hourly_panel.csv: hour, day_of_week, and month", 2, check_calendar),
     ("Q3 q3_panel_summary.csv", 2, check_panel_summary),
     ("Q4 q4_features.csv: rows", 1, check_feature_rows),
     ("Q4 q4_features.csv: row_id", 1, feature_check(
@@ -1768,53 +1778,42 @@ CHECKS = [
         kind="exact", parse=flags, label=flag_label)),
     ("Q4 q4_features.csv: current-hour predictors", 1, feature_check(
         CURRENT_FEATURES, "Each _t column copies the panel value at the cutoff hour.")),
-    ("Q4 q4_features.csv: wind direction sine and cosine", 1, feature_check(
-        WIND_FEATURES, "Take np.sin and np.cos of 2 * pi * wind_direction_deg / 360.")),
-    ("Q4 q4_features.csv: lags", 1, feature_check(
-        LAG_FEATURES, "Shift air temperature 1, 24, and 168 rows within each station on the complete panel.")),
-    ("Q4 q4_features.csv: air_temperature_mean_past_24h_c", 1, feature_check(
-        [MEAN_FEATURE], "Roll 24 rows within each station, including the cutoff row, with min_periods=1.")),
-    ("Q4 q4_features.csv: air_temperature_change_1h_c", 1, feature_check(
-        [CHANGE_FEATURE], "Subtract the 1-hour lag from the cutoff temperature.")),
-    ("Q4 q4_features.csv: target hour sine and cosine", 1, feature_check(
-        HOUR_FEATURES, "Use the target's America/Chicago hour with the angle 2 * pi * hour / 24.", own=False)),
-    ("Q4 q4_features.csv: target day-of-year sine and cosine", 1, feature_check(
-        DAY_FEATURES, "Use the target's America/Chicago day of year with the angle 2 * pi * (dayofyear - 1) / 366.",
-        own=False)),
+    ("Q4 q4_features.csv: lags, 24-hour mean, and 1-hour change", 2, feature_check(
+        [*LAG_FEATURES, MEAN_FEATURE, CHANGE_FEATURE],
+        "Within each station on the complete panel, shift air temperature 1, 24, and 168 rows; roll 24 rows "
+        "including the cutoff row with min_periods=1; and subtract the 1-hour lag from the cutoff temperature.")),
+    ("Q4 q4_features.csv: wind direction, target hour, and target day-of-year sine and cosine", 2, feature_check(
+        [*WIND_FEATURES, *HOUR_FEATURES, *DAY_FEATURES],
+        "Take np.sin and np.cos of 2 * pi * wind_direction_deg / 360, of 2 * pi * hour / 24 with the target's "
+        "America/Chicago hour, and of 2 * pi * (dayofyear - 1) / 366 with the target's America/Chicago day of year.",
+        own=WIND_FEATURES)),
     ("Q4 q4_feature_manifest.csv", 2, check_manifest),
-    ("Q5 q5_monthly_station_summary.csv", 3, check_monthly),
+    ("Q5 q5_monthly_station_summary.csv", 2, check_monthly),
     ("Q5 q5_correlations.csv", 2, check_correlations),
     ("Q5 q5_patterns.png", 1, png_check("q5_patterns.png")),
     ("Q6 q6_X_train/validation/test.csv: rows", 3, check_x_rows),
-    ("Q6 q6_X_train/validation/test.csv: values", 3, check_x_values),
+    ("Q6 q6_X_train/validation/test.csv: values", 2, check_x_values),
     ("Q6 q6_y_train/validation/test.csv", 3, check_y),
     ("Q6 q6_split_summary.csv", 2, check_split_summary),
     ("Q7 q7_model_spec.csv", 4, check_model_spec),
     ("Q7 q7_validation_predictions.csv: rows", 1, prediction_check("q7_validation_predictions.csv", "validation", "rows")),
-    ("Q7 q7_validation_predictions.csv: station_name and target_timestamp_utc", 1,
-     prediction_check("q7_validation_predictions.csv", "validation", "ids")),
-    ("Q7 q7_validation_predictions.csv: actual", 1,
-     prediction_check("q7_validation_predictions.csv", "validation", "actual")),
-    ("Q7 q7_validation_predictions.csv: persistence_prediction", 1,
-     prediction_check("q7_validation_predictions.csv", "validation", "persistence_prediction")),
+    ("Q7 q7_validation_predictions.csv: station_name, target_timestamp_utc, actual, and persistence_prediction", 2,
+     prediction_check("q7_validation_predictions.csv", "validation", "copied")),
     ("Q7 q7_validation_predictions.csv: model_prediction", 1,
      prediction_check("q7_validation_predictions.csv", "validation", "model_prediction")),
     ("Q7 q7_validation_metrics.csv", 2,
      metrics_check("q7_validation_metrics.csv", "q7_validation_predictions.csv", "validation", False)),
     ("Q7 q7_permutation_importance.csv", 2, check_importance),
     ("Q8 q8_test_predictions.csv: rows", 1, prediction_check("q8_test_predictions.csv", "test", "rows")),
-    ("Q8 q8_test_predictions.csv: station_name and target_timestamp_utc", 1,
-     prediction_check("q8_test_predictions.csv", "test", "ids")),
-    ("Q8 q8_test_predictions.csv: actual", 1, prediction_check("q8_test_predictions.csv", "test", "actual")),
-    ("Q8 q8_test_predictions.csv: persistence_prediction", 1,
-     prediction_check("q8_test_predictions.csv", "test", "persistence_prediction")),
+    ("Q8 q8_test_predictions.csv: station_name, target_timestamp_utc, actual, and persistence_prediction", 2,
+     prediction_check("q8_test_predictions.csv", "test", "copied")),
     ("Q8 q8_test_predictions.csv: model_prediction", 1,
      prediction_check("q8_test_predictions.csv", "test", "model_prediction")),
     ("Q8 q8_test_predictions.csv: model_error", 1, prediction_check("q8_test_predictions.csv", "test", "model_error")),
     ("Q8 q8_test_predictions.csv: model_absolute_error", 1,
      prediction_check("q8_test_predictions.csv", "test", "model_absolute_error")),
     ("Q8 q8_test_metrics.csv", 2, metrics_check("q8_test_metrics.csv", "q8_test_predictions.csv", "test", False)),
-    ("Q8 q8_station_metrics.csv", 3, metrics_check("q8_station_metrics.csv", "q8_test_predictions.csv", "test", True)),
+    ("Q8 q8_station_metrics.csv", 2, metrics_check("q8_station_metrics.csv", "q8_test_predictions.csv", "test", True)),
     ("Q8 q8_final_visualizations.png", 1, png_check("q8_final_visualizations.png")),
     ("Q9 report.md structure (0 points; human review grades the report)", 0, check_report),
 ]

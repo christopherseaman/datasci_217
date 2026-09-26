@@ -9,14 +9,19 @@ order, extra lines) still score 100; every cutoff from 120 to 180 mmHg scores
 100 when its patient list matches; each wrong value costs only its own check;
 the documented `.gitignore` and run-command forms all pass; a repeated patient
 ID counts once; a blank line appended to the export is one more skipped row;
-and a changed `data/clinic_encounters.csv` fails every recomputed check. It
-also confirms the supplied data file still matches `DATA_FINGERPRINT`.
+and a changed `data/clinic_encounters.csv` fails every recomputed check. The
+printed report says what a wrong value should be and shows the closest line
+for a misspelled label, gives a fix shared by consecutive checks once, marking
+the rest `(same fix as above)`, and ends with a `Left to fix` line naming the
+failing checks by file. It also confirms the supplied data file still matches
+`DATA_FINGERPRINT`.
 
 For the handout: every file the workflow lists in `CHECKS_FILES` is
 byte-identical in `02/assignment/` and here, so students run locally exactly
 the checks GitHub runs; the list names every checker file here, so a download
-never misses a module; and the handout's only other Python files are the two
-scaffolds the student completes.
+never misses a module; the handout's only other Python files are the two
+scaffolds the student completes; and a fresh handout prints the README's
+"Before Task 1" example exactly.
 
 It is not a separate scoring mode; graders use the supplied checker from a
 trusted copy.

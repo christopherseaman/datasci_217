@@ -15,7 +15,7 @@ jupyter:
 
 # Q1: Setup and Exploration
 
-**6 points**
+**5 points**
 
 Before analyzing Chicago beach weather, confirm that you have the same frozen release as everyone else. Then look at each station's coverage, an ordinary sensor distribution, and the shape of the time series.
 
@@ -56,7 +56,7 @@ weather.head()
 
 ## 1.2 Release Audit
 
-Measure each fact from the file itself rather than copying the manifest into both columns. The Lecture 11 demo's `01_setup` notebook computes a file's hash with `hashlib.sha256(path.read_bytes()).hexdigest()` and its size with `path.stat().st_size`. In the `column_names` row, write both lists of names joined with `|` in file order.
+Measure each fact from the file itself rather than copying the manifest into both columns. Lecture 05's "Fingerprint the source file" snippet measures a file's name with `path.name`, its hash with `hashlib.sha256(path.read_bytes()).hexdigest()`, and its size with `path.stat().st_size`. In the `column_names` row, write both lists of names joined with `|` in file order.
 
 ```python
 AUDIT_COLUMNS = ["check_name", "expected", "observed", "passed"]

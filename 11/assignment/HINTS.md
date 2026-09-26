@@ -11,7 +11,7 @@ Use these nudges after trying the question yourself. Each names the lecture that
 
 ## Q1: Release Audit and Coverage
 
-- Read the expected values from `data/release_manifest.json` with `json.load()` (Lecture 07), and measure the observed ones from the file: the Lecture 11 demo's `01_setup` notebook shows `hashlib.sha256(path.read_bytes()).hexdigest()` and `path.stat().st_size`.
+- Read the expected values from `data/release_manifest.json` with `json.load()` (Lecture 07), and measure the observed ones from the file with `path.name`, `hashlib.sha256(path.read_bytes()).hexdigest()`, and `path.stat().st_size` (Lecture 05's "Fingerprint the source file" snippet).
 - `"|".join(weather.columns)` joins the column names in file order (Lecture 02's string methods).
 - Parse the source timestamps with `pd.to_datetime()` first. They are naive Chicago wall times, so `.dt.tz_localize("America/Chicago", ambiguous="NaT", nonexistent="NaT")` (Lecture 09's clock-change snippet) marks the times that cannot name one instant.
 - Build the expected hours from the two local endpoints converted to UTC, with `pd.date_range(start, end, freq="h", inclusive="left")` (Lecture 09). Its length is the expected hour count.
@@ -30,14 +30,14 @@ Use these nudges after trying the question yourself. Each names the lecture that
 
 - Convert the local start and end to UTC, then build the hours with `pd.date_range(..., freq="h", inclusive="left")`; this handles the 23-hour and 25-hour local days for you (Lecture 09).
 - `pd.merge(stations, hours, how="cross")` builds every station at every hour (Lecture 06's cross-join snippet).
-- Left-join the cleaned rows with `validate="one_to_one"` and `indicator=True`, and set `source_observed` from `_merge == "both"` (Lectures 06 and 11). A source row can have a missing temperature, so do not use temperature to decide.
+- Left-join the cleaned rows with `validate="one_to_one"` and `indicator=True`, and set `source_observed` from `_merge == "both"` (Lecture 06). A source row can have a missing temperature, so do not use temperature to decide.
 - Never fill the sensor columns after the join. A missing panel value is a real gap.
-- For gap runs, a `for` loop over one station's `source_observed` values in time order can count each False that follows a True, and track the current and longest run (Lecture 02).
+- For gap runs, sort by station and time, then number the hours with `groupby("station_name")["source_observed"].cumsum()`, a running count of observed hours that stays flat through each gap. Group the rows with `source_observed` False by station and that number: each group's `size()` is one run's length (Lecture 09's "Count Gap Runs per Patient" snippet).
 
 ## Q4: Past-Only Forecast Features
 
 - Sort by station and UTC time before any grouped `shift` or `rolling` (Lecture 09).
-- The target and the lags are shifts of panel rows, because Q3 made every hour a row: `frame.groupby("station_name")["air_temperature_c"].shift(1)` is the value one hour earlier, and `shift(-1)` one hour later (Lectures 09 and 11).
+- The target and the lags are shifts of panel rows, because Q3 made every hour a row: `frame.groupby("station_name")["air_temperature_c"].shift(1)` is the value one hour earlier, and `shift(-1)` one hour later (Lecture 09).
 - For the rolling mean, `groupby("station_name")["air_temperature_c"].transform(lambda s: s.rolling(24, min_periods=1).mean())` includes the cutoff row; do not shift before rolling (Lecture 09).
 - The cyclic features use Lecture 10's "Cyclic Time Features" card, `np.sin(2 * np.pi * value / cycle_length)`: 360 for wind direction, 24 for the hour, and 366 for the day of the year minus 1.
 - The target's calendar features describe cutoff plus one hour in Chicago local time: `.dt.tz_convert("America/Chicago").dt.hour` and `.dt.dayofyear` (Lecture 09).
@@ -53,7 +53,7 @@ Use these nudges after trying the question yourself. Each names the lecture that
 
 ## Q6: Fixed Splits
 
-- Compare the UTC target times with local boundaries written as `pd.Timestamp("2024-01-01", tz="America/Chicago")`; pandas compares the instants (Lecture 11's split snippet).
+- Compare the UTC target times with local boundaries written as `pd.Timestamp("2024-01-01", tz="America/Chicago")`; pandas compares the instants (Lecture 10's "Splitting on Target Time" card).
 - Use only `model_eligible` rows and keep the rows with missing predictors.
 - Sort once, then take X and y from the same sorted rows so their `row_id` values line up.
 - `n_features` is 19: the station plus 18 numeric predictors. The IDs and timestamps are not model features.
@@ -66,7 +66,8 @@ Use these nudges after trying the question yourself. Each names the lecture that
 - RMSE is `np.sqrt(mean_squared_error(actual, prediction))` (Lecture 10).
 - R2 can be negative for a weak model. That is a valid result and does not cost points.
 - With `scoring="neg_mean_absolute_error"`, `result.importances_mean` is positive when shuffling a feature makes MAE worse (Lecture 10).
-- `json.dumps(model.get_params(deep=False))` writes the settings as text, as the Lecture 11 demo's `03_model_prep` notebook does with its manifest.
+- `json.dumps(model.get_params(deep=False))` writes the settings as text, and Q8's `json.loads()` reads them back (Lecture 07's "Saving Charts and Records" card).
+- `estimator_module` and `estimator_class` come from your import line: `from sklearn.linear_model import Ridge` gives `sklearn.linear_model` and `Ridge` (Lecture 02's imports).
 
 ## Q8: Test Once
 

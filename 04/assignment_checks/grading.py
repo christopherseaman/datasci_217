@@ -12,8 +12,16 @@ from _value_checks import run_checks
 
 
 # One value per check in _value_checks.CHECKS, in the same order: the four
-# fridge-block checks (Task 2), then the four selected-supplies checks (Task 3).
-POINTS = (10, 10, 10, 10, 15, 15, 15, 15)
+# fridge-block checks (Task 2), then the selected-supplies checks (Task 3): one
+# per column, no extra columns, one per selected line, no other lines, and the
+# two sort rules.
+POINTS = (
+    10, 10, 10, 10,
+    2, 2, 2, 2, 2, 2,
+    4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4,
+    4, 4,
+)
 
 
 def grade_submission(submission_dir: Path) -> dict:

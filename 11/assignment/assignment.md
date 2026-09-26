@@ -63,7 +63,7 @@ target_day_of_year_cos
 
 ## Split Boundaries
 
-Apply the boundaries to the **target time** (cutoff plus one hour). Each boundary is local midnight in `America/Chicago`; compare it with the UTC target times as `pd.Timestamp("2024-01-01", tz="America/Chicago")` (Lecture 11's split snippet).
+Apply the boundaries to the **target time** (cutoff plus one hour). Each boundary is local midnight in `America/Chicago`; compare it with the UTC target times as `pd.Timestamp("2024-01-01", tz="America/Chicago")` (Lecture 10's "Splitting on Target Time" card).
 
 | Split | Target local time |
 | --- | --- |
@@ -78,7 +78,7 @@ Finish model and feature choices in Q7 without reading any test row, label, pred
 > **Checkpoint: `output/q1_release_audit.csv`**
 > First line `check_name,expected,observed,passed`; 8 lines.
 
-One row for each check, in this order: `release_filename`, `release_sha256`, `release_byte_size`, `row_count`, `column_count`, `column_names`, `source_timezone`. `expected` holds the manifest's value. `observed` holds the value you measure from the CSV file itself: its file name, `hashlib.sha256(path.read_bytes()).hexdigest()` and `path.stat().st_size` as in the Lecture 11 demo's `01_setup` notebook, and the loaded table's rows, columns, and column names. In the `column_names` row, write both lists of names joined with `|` in file order, such as `"|".join(manifest["columns"])`. For `source_timezone`, observe `America/Chicago`, the zone you localize with. `passed` is True when the two agree.
+One row for each check, in this order: `release_filename`, `release_sha256`, `release_byte_size`, `row_count`, `column_count`, `column_names`, `source_timezone`. `expected` holds the manifest's value. `observed` holds the value you measure from the CSV file itself: its name, SHA-256, and size in bytes (`path.name`, `hashlib.sha256(path.read_bytes()).hexdigest()`, and `path.stat().st_size`, as in Lecture 05's "Fingerprint the source file" snippet), and the loaded table's rows, columns, and column names. In the `column_names` row, write both lists of names joined with `|` in file order, such as `"|".join(manifest["columns"])`. For `source_timezone`, observe `America/Chicago`, the zone you localize with. `passed` is True when the two agree.
 
 > **Checkpoint: `output/q1_station_coverage.csv`**
 > First line `station_name,expected_hours,observed_hours,missing_hours,coverage_pct,first_timestamp,last_timestamp`; 3 lines.
@@ -140,14 +140,14 @@ Build every station crossed with every elapsed UTC hour from local 2022-01-01 00
 > **Checkpoint: `output/q3_panel_summary.csv`**
 > First line `station_name,expected_hours,observed_hours,missing_hours,gap_runs,longest_gap_hours`; 3 lines.
 
-One row per station, counted from the panel. A gap run is one or more consecutive hours with `source_observed` False; `gap_runs` counts the runs and `longest_gap_hours` is the longest run's length.
+One row per station, counted from the panel. A gap run is one or more consecutive hours with `source_observed` False; `gap_runs` counts the runs and `longest_gap_hours` is the longest run's length (Lecture 09's "Count Gap Runs per Patient" snippet).
 
 ## Q4: Feature Engineering
 
 > **Checkpoint: `output/q4_features.csv`**
 > First line `row_id,station_name,cutoff_timestamp_utc,target_timestamp_utc,target_air_temperature_c,model_eligible,air_temperature_c_t,relative_humidity_pct_t,interval_rain_mm_t,wind_speed_mps_t,maximum_wind_speed_mps_t,barometric_pressure_hpa_t,solar_radiation_w_m2_t,wind_direction_sin_t,wind_direction_cos_t,air_temperature_lag_1h_c,air_temperature_lag_24h_c,air_temperature_lag_168h_c,air_temperature_mean_past_24h_c,air_temperature_change_1h_c,target_hour_sin,target_hour_cos,target_day_of_year_sin,target_day_of_year_cos`; the same line count as `q3_hourly_panel.csv`: one row per panel row, eligible or not. Sort by `cutoff_timestamp_utc`, then `station_name`.
 
-Each panel row is a cutoff: `cutoff_timestamp_utc` is its `measurement_timestamp_utc`. Sort the panel by station and time, then compute every feature within station with `groupby("station_name")` (Lectures 09 and 11):
+Each panel row is a cutoff: `cutoff_timestamp_utc` is its `measurement_timestamp_utc`. Sort the panel by station and time, then compute every feature within station with `groupby("station_name")` (Lecture 09):
 
 | Column | Rule |
 | --- | --- |
@@ -220,7 +220,7 @@ Fit candidates on the training rows and use the validation rows to freeze one fi
 > **Checkpoint: `output/q7_model_spec.csv`**
 > First line `estimator_module,estimator_class,parameters_json,feature_columns,random_state`; 2 lines.
 
-One row: the regressor's module and class (`type(model).__module__` and `type(model).__name__`), its settings from `model.get_params(deep=False)` (Lecture 10) written as text with `json.dumps()` (as in the Lecture 11 demo's `03_model_prep` notebook), the 19 fixed predictors joined with `|`, and `217`. Record the regressor itself, not the whole pipeline.
+One row: the module you imported the regressor from and its class name (`sklearn.linear_model` and `Ridge` for `from sklearn.linear_model import Ridge`), its settings from `model.get_params(deep=False)` (Lecture 10) written as text with `json.dumps()` (Lecture 07), the 19 fixed predictors joined with `|`, and `217`. Record the regressor itself, not the whole pipeline.
 
 > **Checkpoint: `output/q7_permutation_importance.csv`**
 > First line `feature,mean_mae_increase,std_mae_increase`; 20 lines, one per fixed predictor.
@@ -267,4 +267,4 @@ Under **Model Results**, keep the six-column metrics table with columns `Evaluat
 ![Final model results](output/q8_final_visualizations.png)
 ```
 
-The report earns the 15 human-review points; the [README](README.md#completion-contract) says what each category reads and what earns full credit. The model does not need to beat persistence.
+The report and the notebooks earn the 25 human-review points, 5 for each of five categories; the [README](README.md#completion-contract) says what each category reads and what earns full credit. The model does not need to beat persistence.

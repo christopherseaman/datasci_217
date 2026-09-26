@@ -27,12 +27,20 @@ lines (`difflib.SequenceMatcher`); an expected line passes when the alignment
 matches it. So an extra line costs nothing, whether it is the Python version
 line (which is never graded, whatever it says), a leftover debug print, or a
 blank line, and a missing line costs only itself instead of moving every later
-line out of place. A report that is missing, not a regular file, or not UTF-8
-fails every line with that reason. A failing line says what it should read and
-names the script that prints it; when the unmatched stretch of the report
-around it has a line with the same label, the message shows that line too, and
-otherwise it says the line is missing or out of order. The README already
-shows every expected line.
+line out of place. A report that is missing, empty, not a regular file, or not
+UTF-8 fails every line with that reason. A failing line says what it should
+read and names the script that prints it and its task. When the unmatched
+stretch of the report around it has a line with the same label, the message
+shows that line; otherwise, when the stretch holds exactly one line for each
+line left to show and does not start the report, it shows the line in the same
+place; otherwise it names the expected lines around it and says whether the
+report has the line out of order or not at all. The README already shows every
+expected line.
+
+`check_assignment.py` prints a fix shared by consecutive checks once, marking
+the rest `(same fix as above)`, and ends a run that is not complete with a
+`Left to fix` line naming the failing checks by the file they read, from the
+`artifact` and `label` of each check in `CHECKS`.
 
 The checks replaced the vendored `01/assignment/_assignment_checks.py` and
 `grading.py` at commit `f39598b`, which gave 20 points for the practice files

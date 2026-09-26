@@ -16,7 +16,7 @@ from pathlib import Path
 from grading import grade_submission
 
 
-HUMAN_REVIEW_POINTS = 15
+HUMAN_REVIEW_POINTS = 25
 
 
 def main() -> int:

@@ -15,8 +15,11 @@ submissions in ignored `scratch/`, and confirms that:
   submission should lose;
 - the feedback names the fix for a misnamed or misplaced summary, unsorted
   `uniq -c` input, the wrong `cut` field, a counts file without `.txt`, and a
-  key written twice, and a fresh handout prints the README's "Before Task 1"
-  example exactly;
+  key written twice, and says what the data gives for a wrong answer; the
+  printed report gives a fix shared by consecutive checks once, marking the
+  rest `(same fix as above)`, and ends with a `Left to fix` line naming the
+  failing checks by file; and a fresh handout prints the README's "Before
+  Task 1" example exactly;
 - no submission loses a check it passed under the checks committed at HEAD:
   the assignment is out with students, so a change to the checks may only
   raise a score, and each committed change becomes the baseline for the next;

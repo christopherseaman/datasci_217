@@ -64,7 +64,17 @@ def task2_unspaced(report: str) -> str:
 RUNNING_TOTAL = task2_double_spaced(
     EXPECTED_READINESS.replace("Measurement: 19 within range", "Measurement: 19 review")
     .replace("Review count: 2", "Review count: 3"))
-MISSING_REPORT = "Run make_output.py (Task 3.2), then commit output/readiness.txt as a regular file."
+MISSING_REPORT = "output/readiness.txt is missing. Run make_output.py (Task 3.2) to save the report, then commit it."
+FOLDER_REPORT = ("output/readiness.txt is a folder, not a file. Delete it, then run make_output.py (Task 3.2) to save "
+                 "the report, and commit the new file.")
+NOT_UTF8_REPORT = ("output/readiness.txt is not saved as UTF-8 text, so it cannot be read. Run make_output.py "
+                   "(Task 3.2) to save the report again, then commit it.")
+EMPTY_REPORT = ("output/readiness.txt is empty. Run make_output.py (Task 3.2) once all three scripts run cleanly, "
+                "then commit the report it saves.")
+MISSING_IDENTITY = ("Run capture_identity.py (Task 3.3) with your course roster email, then commit the file it saves: "
+                    "output/student_identity.txt is missing.")
+# The task that completes each script, as a failing line names it.
+SCRIPT_TASKS = {"readiness.py": "Task 1.2", "measurement_summary.py": "Task 2.1", "debug_report.py": "Task 3.1"}
 # Report variants that lose no points: whitespace anywhere, and blank or extra lines anywhere.
 FULL_MARKS_REPORTS = ("expected", "trailing space", "tab after colon", "no-break space", "no space after a colon",
                       "space before a colon", "no space after any Task 2 colon", "leading blank line",
@@ -368,13 +378,23 @@ def failing(root: Path) -> dict[str, str]:
     return failed
 
 
-def line_detail(expected: str, yours: str, script: str) -> str:
-    return f"The line should read `{expected}`; yours reads `{yours}`. Fix {script}, then rerun make_output.py."
+def fix(script: str) -> str:
+    return (f"Fix {script} ({SCRIPT_TASKS[script]}), which prints this line, then rerun make_output.py (Task 3.2) "
+            "and commit output/readiness.txt.")
+
+
+def line_detail(expected: str, yours: str, script: str, same_label: bool = True) -> str:
+    place = "yours reads" if same_label else "in its place yours reads"
+    return f"The line should read `{expected}`; {place} `{yours}`. {fix(script)}"
 
 
 def missing_detail(expected: str, script: str) -> str:
-    return (f"output/readiness.txt is missing the line `{expected}`, or has it out of order. Fix {script}, "
-            "then rerun make_output.py.")
+    graded = EXPECTED_READINESS.splitlines()[1:]
+    index = graded.index(expected)
+    before, after = graded[index - 1] if index else None, graded[index + 1] if index + 1 < len(graded) else None
+    where = (f"between `{before}` and `{after}`" if before and after
+             else f"before `{after}`" if after else f"after `{before}`")
+    return f"output/readiness.txt has no line reading `{expected}` {where}. {fix(script)}"
 
 
 def run() -> None:
@@ -423,12 +443,17 @@ def run() -> None:
         # A missing report fails every report line with the same advice, which says how to make it.
         assert set(failing(root).values()) == {MISSING_REPORT}
         (output / "readiness.txt").mkdir()
-        assert set(failing(root).values()) == {MISSING_REPORT}
+        assert set(failing(root).values()) == {FOLDER_REPORT}
         (output / "readiness.txt").rmdir()
+        (root / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
+        assert set(failing(root).values()) == {
+            "output/readiness.txt is missing. Found readiness.txt; rename or move it to output/readiness.txt, "
+            "then commit it."}
+        (root / "readiness.txt").unlink()
         (output / "readiness.txt").write_bytes(EXPECTED_READINESS.encode("utf-16"))
-        assert set(failing(root).values()) == {"output/readiness.txt must be UTF-8 text."} and score(root) == 35
+        assert set(failing(root).values()) == {NOT_UTF8_REPORT} and score(root) == 35
         (output / "readiness.txt").write_bytes(EXPECTED_READINESS.encode() + b"caf\xe9\n")
-        assert set(failing(root).values()) == {"output/readiness.txt must be UTF-8 text."} and score(root) == 35
+        assert set(failing(root).values()) == {NOT_UTF8_REPORT} and score(root) == 35
 
         # A hash off the roster, or not a hash at all, costs the identity's 15 and nothing else.
         (output / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
@@ -444,7 +469,7 @@ def run() -> None:
             assert list(failed) == [IDENTITY_TEST] and advice in failed[IDENTITY_TEST], failed
             assert score(root) == 85
         (output / "student_identity.txt").unlink()
-        assert failing(root) == {IDENTITY_TEST: "Run capture_identity.py and commit output/student_identity.txt."}
+        assert failing(root) == {IDENTITY_TEST: MISSING_IDENTITY}
         (output / "student_identity.txt").write_text(ROSTER_HASH + "\n", encoding="utf-8")
 
         def report_scores(text: str) -> int:
@@ -514,7 +539,8 @@ def run() -> None:
         assert failing(root) == {"report: Total": line_detail("Total: 82", "Total: 83", "measurement_summary.py")}
         # Two lines swapped: one of them is out of order, and only it fails.
         assert report_scores(EXPECTED_READINESS.replace("Count: 4\nTotal: 82\n", "Total: 82\nCount: 4\n")) == 95
-        assert len(failing(root)) == 1 and "or has it out of order" in next(iter(failing(root).values()))
+        assert failing(root) == {"report: Total": "output/readiness.txt has `Total: 82`, but out of order: it belongs "
+                                 "between `Count: 4` and `Mean: 20.5`. " + fix("measurement_summary.py")}
         # Several wrong lines in a row are each shown beside the line with the same label, in order.
         assert report_scores(EXPECTED_READINESS.replace("21 review", "21 within range")
                              .replace("24 review", "24 within range")) == 90
@@ -524,18 +550,23 @@ def run() -> None:
             "report: Measurement 3": line_detail("Measurement: 24 review", "Measurement: 24 within range",
                                                  "measurement_summary.py"),
         }
-        # A report with none of the lines fails each with the same kind of message.
+        # A line with the wrong label is shown beside the line it should read when it stands in that line's place.
+        assert report_scores(EXPECTED_READINESS.replace("Review count: 2", "Reviews: 2")) == 95
+        assert failing(root) == {"report: Review count": line_detail("Review count: 2", "Reviews: 2",
+                                                                     "measurement_summary.py", same_label=False)}
+        # A report with none of the lines fails each with the same kind of message, and an empty one says so.
         assert report_scores("wrong\n") == 35
         assert failing(root)["report: Project"] == missing_detail("Project: DataSci 217 Assignment 01",
                                                                     "readiness.py")
         assert report_scores("") == 35
-        assert failing(root)["report: Next checkpoint"] == missing_detail("Next checkpoint: 5", "debug_report.py")
+        assert set(failing(root).values()) == {EMPTY_REPORT}
 
         # A practice file costs its own 10 points.
         (output / "readiness.txt").write_text(EXPECTED_READINESS, encoding="utf-8")
         (root / "terminal-practice" / "source.txt").unlink()
-        assert failing(root) == {"terminal-practice/source.txt": "terminal-practice/source.txt must be a regular "
-                                 "file; create it with the Task 1.1 commands."}
+        assert failing(root) == {"terminal-practice/source.txt": "terminal-practice/source.txt is missing. Run the "
+                                 "Task 1.1 commands from the folder that holds README.md again, then commit the empty "
+                                 "file they create."}
         assert score(root) == 90
 
         # An output folder that is a symlink holds no artifact of this submission.
@@ -543,12 +574,14 @@ def run() -> None:
         os.rename(output, root / "elsewhere")
         output.symlink_to("elsewhere")
         assert set(failing(root)) == set(LINE_TESTS + [IDENTITY_TEST]) and score(root) == 20
-        assert set(failing(root).values()) == {"Create a regular output/ directory."}
+        assert set(failing(root).values()) == {
+            "output/ is a link, not a folder. Delete it, then run make_output.py (Task 3.2) and capture_identity.py "
+            "(Task 3.3), which create the folder, and commit the two files they save."}
 
     print("Assignment 01 checks: every roster hash, identity and report failures on their own, the running-total "
           "submission at 90, whitespace, blank and extra lines, and the Python version line ungraded, a missing "
-          "line costing only itself, and each failing line saying what it should read, all score as the contract "
-          "states.")
+          "line costing only itself, and each failing line saying what it should read and which script and task "
+          "to fix, all score as the contract states.")
 
 
 def checks_files() -> list[str]:
@@ -608,6 +641,27 @@ def run_handout() -> None:
         shown = checker(ASSIGNMENT, submissions["running total"])
         assert shown.returncode == 1 and "Score: 75/100\n" in shown.stdout, shown.stdout
         assert "yours reads `Measurement: 19 review`" in shown.stdout, shown.stdout
+        assert shown.stdout.endswith("Left to fix (25 points): output/readiness.txt: Measurement 4 and Review count; "
+                                     "output/student_identity.txt: identity hash on the roster.\n"), shown.stdout
+
+        # A fix shared by the checks right after it is printed once, and the report ends by naming what is left.
+        shown = checker(ASSIGNMENT, submissions["empty"])
+        assert shown.stdout.count("output/ is missing.") == 1, shown.stdout
+        assert "[FIX ]  0/10 terminal-practice/path-check.txt  (same fix as above)\n" in shown.stdout, shown.stdout
+        assert "[FIX ]  0/5  report: Next checkpoint  (same fix as above)\n" in shown.stdout, shown.stdout
+        assert shown.stdout.endswith(
+            "Score: 0/100\nLeft to fix (100 points): terminal-practice/source.txt; terminal-practice/path-check.txt; "
+            "output/readiness.txt (all 13 checks); output/student_identity.txt: identity hash on the roster.\n"
+        ), shown.stdout
+
+        # A wrong total ends with the Left to fix line the README quotes.
+        wrong_total = Path(temporary) / "wrong total"
+        wrong_total.mkdir()
+        practice(wrong_total)
+        outputs(wrong_total, EXPECTED_READINESS.replace("Total: 82", "Total: 83"), ROSTER_HASH + "\n")
+        shown = checker(ASSIGNMENT, wrong_total)
+        quoted = re.search(r"as in `(Left to fix [^`]*)`", readme)
+        assert quoted and shown.stdout.endswith(f"Score: 95/100\n{quoted.group(1)}\n"), (shown.stdout, quoted)
 
         # A clean local run ends the way the README promises.
         shown = checker(ASSIGNMENT, submissions["complete"])

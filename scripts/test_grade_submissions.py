@@ -306,7 +306,7 @@ def test_every_assignment_through_the_script(work: Path) -> None:
         assert grade(destination, url, assignment=number) == 0, number
         row = read_grades(destination)[f"handout{number}"]
         assert row["status"] == "graded" and row["score"] == "0", (number, row)
-        assert row["max_score"] == ("85" if number in ("05", "11") else "100"), (number, row)
+        assert row["max_score"] == ("75" if number in ("05", "11") else "100"), (number, row)
         assert not re.search(r": failed( \||$)", row["details"]), (number, "a failing check gave no reason", row)
         assert run(CLEAN, destination / f"handout{number}") == "", (number, "the checks wrote into the clone")
 

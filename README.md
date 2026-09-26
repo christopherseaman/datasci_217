@@ -49,7 +49,7 @@ Points are awarded only for documented student grading materials, not supplied n
 
 For grading another submission, run the trusted assignment's `check_assignment.py /path/to/submission --json`. Use the published assignment version and its dependencies, not checker code supplied by the submission. The JSON report contains the same milestone results and automated score shown to students; batch collection and reporting do not change grading criteria.
 
-Assignments 01–04 and 06–10 have 100 automated points. Both exams, Assignments 05 and 11, have 85 automated points plus 15 human-review points. Both exams publish their tests and full rubrics, including human-review criteria. Passing automated checks does not award human-review points. Exam test visibility may be revisited before the midterm; there is no separate student/grader scoring mode.
+Assignments 01–04 and 06–10 have 100 automated points. Both exams, Assignments 05 and 11, have 75 automated points plus 25 human-review points. Exam handouts ship no checks: after the deadline the course grades each exam's committed files with the course-owned checks in `05/assignment_checks/` and `11/assignment_checks/`, and each exam README gives the full rubric, including the human-review criteria. Passing automated checks does not award human-review points.
 
 ## Lectures
 

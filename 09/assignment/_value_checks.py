@@ -519,7 +519,13 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     """
     path = _artifact_path(root, artifact.path)
     _assert(path is not None, _missing(root, artifact))
-    lines = _csv_rows(_decode(path.read_bytes()))
+    try:
+        lines = _csv_rows(_decode(path.read_bytes()))
+    except csv.Error as error:
+        raise AssertionError(
+            f"{artifact.path} cannot be read as a CSV table ({error}); run the {artifact.task} cell again so "
+            "to_csv() writes it, then compare it with the checkpoint in README.md."
+        ) from None
     _assert(lines, f"{artifact.path} is empty; run the {artifact.task} cell again to write it.")
     header = [_fold(cell) for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]

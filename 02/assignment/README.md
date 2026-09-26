@@ -125,14 +125,14 @@ python3 check_assignment.py
 
 `check_assignment.py` runs the same checks GitHub runs. They look only at your artifacts: this `README.md`, `.gitignore`, and the two files in `output/`. They also read the supplied `data/clinic_encounters.csv` to work out what your answers should be, and never run or read your Python code, so any way of producing a correct artifact counts.
 
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 1, for example, the first check reports:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
 
 ```text
 [FIX ]  0/5  README project description
-         README.md: replace the TODO line under `## Project description` with your own description.
+         README.md still has the TODO line under `## Project description`. Replace it with 30-300 characters of your own saying what this project reads and what it produces (Task 1.1).
 ```
 
-Fix what it names, rerun your script and the checks, and repeat until every check passes. A clean local run ends with:
+Below the score, `Left to fix` lists the checks still failing, by file, and the points they are worth. Fix what they name, rerun your script and the checks, and repeat until every check passes. A clean local run ends with:
 
 ```text
 [PASS]  5/5  follow-up cutoff

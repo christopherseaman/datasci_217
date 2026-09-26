@@ -180,7 +180,13 @@ def read_table(root: Path, name: str, task: str) -> Table:
     """
     path = _artifact(root, name)
     _assert(path is not None, _missing(root, name, task))
-    lines = _csv_rows(_decode(path.read_bytes()))
+    try:
+        lines = _csv_rows(_decode(path.read_bytes()))
+    except csv.Error as error:
+        raise AssertionError(
+            f"{name} cannot be read as a CSV table ({error}); run the {task} cells again so to_csv() "
+            "writes it, then compare it with the checkpoint in README.md."
+        ) from None
     _assert(bool(lines), f"{name} is empty; run the {task} cells again to write it.")
     header = [_clean(cell).casefold() for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
@@ -337,7 +343,7 @@ def _check_temperature(root: Path, column: str) -> None:
 def _total_column(table: Table) -> str | None:
     """The line-total column: line_total_usd, or else the one unexpected column named like a total.
 
-    A misnamed total then costs only the columns check, not the values check too.
+    A misnamed total then costs only the line_total_usd column check, not every line's check too.
     """
     if "line_total_usd" in table.columns:
         return "line_total_usd"
@@ -345,11 +351,8 @@ def _total_column(table: Table) -> str | None:
     return totals[0] if len(totals) == 1 else None
 
 
-def _listed(problems: list[str], limit: int = 3) -> str:
-    shown = "; ".join(problems[:limit])
-    if len(problems) > limit:
-        shown += f"; and {len(problems) - limit} more like {'it' if len(problems) - limit == 1 else 'them'}"
-    return shown
+def _extra_columns(table: Table) -> list[str]:
+    return [column or "a column with no header" for column in table.columns if column not in SUPPLY_COLUMNS]
 
 
 def _supply_rows(table: Table) -> list[tuple[str, dict[str, str]]]:
@@ -369,159 +372,209 @@ def _supply_rows(table: Table) -> list[tuple[str, dict[str, str]]]:
     return [(lookup[row[column].casefold()], row) for row in table.rows if row[column].casefold() in lookup]
 
 
-def check_supply_columns(root: Path) -> None:
-    """The saved selection has exactly the five Task 3 columns, in any order."""
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    missing = [column for column in SUPPLY_COLUMNS if column not in table.columns]
-    extra = [column or "(blank)" for column in table.columns if column not in SUPPLY_COLUMNS]
-    problems = []
-    if missing:
-        problems.append(f"is missing {_join(missing)}")
-    if extra:
-        problems.append(f"also has {_join(extra)}")
-    hints = []
-    misnamed_total = _total_column(table) if "line_total_usd" in missing else None
-    if misnamed_total is not None:
-        hints.append(f"In Task 3.1, name the derived column line_total_usd rather than {misnamed_total}.")
-    elif "line_total_usd" in missing:
-        hints.append("Task 3.1 adds line_total_usd = quantity * unit_price_usd.")
-    if [column for column in missing if column != "line_total_usd"] or [
-        column for column in extra if column != misnamed_total
-    ]:
-        hints.append("Task 3.1 selects item_id, item, quantity, and unit_price_usd with .loc.")
-    _assert(
-        not problems,
-        f"{SUPPLIES_FILE} " + " and ".join(problems) + "; "
-        f"it should have the columns {_join(SUPPLY_COLUMNS)}. " + " ".join(hints),
-    )
-
-
-def check_supply_rows(root: Path) -> None:
-    """The saved selection holds exactly the order lines with quantity 2 or more, once each."""
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
+def _require_line_key(table: Table) -> None:
     _assert(
         "item_id" in table.columns or "item" in table.columns,
-        f"{SUPPLIES_FILE} has no item_id column, so its rows cannot be matched to the supply order; "
-        "keep item_id in the Task 3.1 selection.",
+        f"{SUPPLIES_FILE} has no item_id column, so its lines cannot be matched to data/supply_order.csv; "
+        "keep item_id in the Task 3.1 .loc selection.",
     )
-    named = [item_id for item_id, _ in _supply_rows(table)]
-    expected = expected_selection()
-    missing = [item_id for item_id in expected if item_id not in named]
-    extra = sorted(item_id for item_id in set(named) if item_id not in expected)
-    repeated = sorted(item_id for item_id in set(named) if named.count(item_id) > 1)
-    unknown = len(table.rows) - len(named)
-    problems = []
-    if missing:
-        problems.append(f"is missing {_join(missing)}")
-    if extra:
-        problems.append(
-            f"also holds {_join(f'{item_id} (quantity {SUPPLY_ORDER[item_id][1]})' for item_id in extra)}"
+
+
+def _column_check(column: str, hint: str) -> Callable[[Path], None]:
+    """The saved selection has this one Task 3 column, under its own name."""
+
+    def check(root: Path) -> None:
+        table = read_table(root, SUPPLIES_FILE, "Task 3")
+        if column in table.columns:
+            return
+        stand_in = _total_column(table) if column == "line_total_usd" else None
+        missing = [name for name in SUPPLY_COLUMNS if name not in table.columns]
+        extra = _extra_columns(table)
+        if stand_in is None and len(missing) == 1 and len(extra) == 1:
+            stand_in = extra[0]
+        if stand_in is not None:
+            raise AssertionError(
+                f"{SUPPLIES_FILE} has a column named {stand_in} where Task 3.1 names it {column}; "
+                f"rename it to {column}. {hint}"
+            )
+        raise AssertionError(
+            f"{SUPPLIES_FILE} has no {column} column (its columns are {_join(table.columns) or 'none'}). {hint}"
         )
+
+    return check
+
+
+def check_supply_extra_columns(root: Path) -> None:
+    """No column beyond the five, other than one standing in for a missing, misnamed column."""
+    table = read_table(root, SUPPLIES_FILE, "Task 3")
+    missing = [column for column in SUPPLY_COLUMNS if column not in table.columns]
+    extra = _extra_columns(table)
+    _assert(
+        len(extra) <= len(missing),
+        f"{SUPPLIES_FILE} also has {_join(extra)}; Task 3.1 saves only the five columns "
+        f"{_join(SUPPLY_COLUMNS)}, so leave {'it' if len(extra) == 1 else 'them'} out of the selection.",
+    )
+
+
+def _line_check(item_id: str) -> Callable[[Path], None]:
+    """This selected order line is in the file, with its supplied values and quantity * unit price as its total."""
+    item, quantity, unit_price = SUPPLY_ORDER[item_id]
+
+    def check(root: Path) -> None:
+        table = read_table(root, SUPPLIES_FILE, "Task 3")
+        _require_line_key(table)
+        rows = [row for found, row in _supply_rows(table) if found == item_id]
+        if not rows:
+            why = (
+                f'supplies["quantity"] >= {MIN_QUANTITY} keeps it, while > {MIN_QUANTITY} drops it'
+                if quantity == MIN_QUANTITY
+                else f'build the mask quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY} and select with it'
+            )
+            raise AssertionError(
+                f"{SUPPLIES_FILE} has no line for {item_id} ({item}, quantity {quantity}); "
+                f"Task 3.1 keeps every line with quantity {MIN_QUANTITY} or more: {why}."
+            )
+        wrong = []
+        for row in rows:
+            if "item" in row and row["item"].casefold() != _clean(item).casefold():
+                wrong.append(f"item is {row['item'] or 'blank'}, expected {item}")
+            if "quantity" in row and not _same(row["quantity"], quantity):
+                wrong.append(f"quantity is {row['quantity'] or 'blank'}, expected {quantity}")
+            if "unit_price_usd" in row and not _same(row["unit_price_usd"], unit_price):
+                wrong.append(f"unit_price_usd is {row['unit_price_usd'] or 'blank'}, expected {unit_price:.2f}")
+        if wrong:
+            raise AssertionError(
+                f"{SUPPLIES_FILE}: {item_id}'s " + "; its ".join(dict.fromkeys(wrong)) + ", as in "
+                "data/supply_order.csv. Keep the data file unchanged and copy the selected rows as they are in Task 3.1."
+            )
+        total = _total_column(table)
+        _assert(
+            total is not None,
+            f"{SUPPLIES_FILE} has no line_total_usd column, so no line total can be checked; "
+            "Task 3.1 adds line_total_usd = quantity * unit_price_usd.",
+        )
+        expected = quantity * unit_price
+        given = [row[total] or "blank" for row in rows if not _same(row[total], expected)]
+        _assert(
+            not given,
+            f"{SUPPLIES_FILE}: {item_id}'s {total} is {_join(dict.fromkeys(given))}, expected "
+            f"{quantity} * {unit_price:.2f} = {expected:.2f}; in Task 3.1, line_total_usd = quantity * unit_price_usd.",
+        )
+
+    return check
+
+
+def check_supply_other_lines(root: Path) -> None:
+    """No line with quantity 1, no line twice, and no row naming an item outside the supply order."""
+    table = read_table(root, SUPPLIES_FILE, "Task 3")
+    _require_line_key(table)
+    rows = _supply_rows(table)
+    named = [item_id for item_id, _ in rows]
+    expected = expected_selection()
+    extra = [item_id for item_id in SUPPLY_ORDER if item_id in named and item_id not in expected]
+    repeated = [item_id for item_id in dict.fromkeys(named) if named.count(item_id) > 1]
+    key = "item_id" if "item_id" in table.columns else "item"
+    matched = {id(row) for _, row in rows}
+    unknown = [row[key] or "blank" for row in table.rows if id(row) not in matched]
+    problems = []
+    if extra:
+        verb = "has" if len(extra) == 1 else "have"
+        problems.append(f"also holds {_join(extra)}, which {verb} quantity 1")
     if repeated:
-        problems.append(f"lists {_join(repeated)} more than once")
+        problems.append("lists " + _join(f"{item_id} {named.count(item_id)} times" for item_id in repeated))
     if unknown:
-        problems.append(f"has {unknown} row{'s' if unknown != 1 else ''} naming no item in data/supply_order.csv")
+        shown = _join(unknown[:4]) + (f" and {len(unknown) - 4} more" if len(unknown) > 4 else "")
+        problems.append(f"has {key} {shown}, which {'is' if len(unknown) == 1 else 'are'} not in data/supply_order.csv")
     _assert(
         not problems,
-        f"{SUPPLIES_FILE} " + "; ".join(problems) + f". It should hold the {len(expected)} order lines with "
-        f"quantity {MIN_QUANTITY} or more, once each: build the mask quantity_at_least_two = "
-        f'supplies["quantity"] >= {MIN_QUANTITY} in Task 3.1 and select with it.',
+        f"{SUPPLIES_FILE} " + "; ".join(problems) + f". Task 3.1 keeps only the lines with quantity "
+        f"{MIN_QUANTITY} or more, once each: select them with the mask quantity_at_least_two = "
+        f'supplies["quantity"] >= {MIN_QUANTITY}.',
     )
 
 
-def check_supply_values(root: Path) -> None:
-    """Each selected line keeps its supplied values, and line_total_usd = quantity * unit_price_usd."""
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    total = _total_column(table)
-    _assert(
-        total is not None,
-        f"{SUPPLIES_FILE} has no line_total_usd column to compare; "
-        "Task 3.1 adds line_total_usd = quantity * unit_price_usd.",
-    )
-    selected = set(expected_selection())
-    rows = [(item_id, row) for item_id, row in _supply_rows(table) if item_id in selected]
-    _assert(
-        bool(rows),
-        f"{SUPPLIES_FILE} has no row naming one of the selected order lines, so its values cannot be "
-        "compared; the rows check says what to fix.",
-    )
-    wrong = []
-    for item_id, row in rows:
-        item, quantity, unit_price = SUPPLY_ORDER[item_id]
-        if "item" in row and row["item"].casefold() != _clean(item).casefold():
-            wrong.append(f"{item_id}'s item is {row['item'] or 'blank'}, not {item}")
-        if "quantity" in row and not _same(row["quantity"], quantity):
-            wrong.append(f"{item_id}'s quantity is {row['quantity'] or 'blank'}, not {quantity}")
-        if "unit_price_usd" in row and not _same(row["unit_price_usd"], unit_price):
-            wrong.append(f"{item_id}'s unit_price_usd is {row['unit_price_usd'] or 'blank'}, not {unit_price:.2f}")
-        if not _same(row[total], quantity * unit_price):
-            wrong.append(
-                f"{item_id}'s {total} is {row[total] or 'blank'}, not "
-                f"{quantity} * {unit_price:.2f} = {quantity * unit_price:.2f}"
-            )
-    _assert(
-        not wrong,
-        f"{SUPPLIES_FILE}: " + _listed(wrong) + ". Copy the selected rows unchanged, then compute "
-        'line_total_usd from the quantity and unit_price_usd columns in Task 3.1.',
-    )
+def _order_bases(table: Table, rows: list[tuple[str, dict[str, str]]]) -> list[dict[str, float]]:
+    """The totals the order is judged by: the true line totals, and the file's own when every one is a number.
 
-
-def _sorted_by(ids: list[str], totals: dict[str, float]) -> tuple[str, str] | None:
-    """The first adjacent pair out of order by total (highest first), then item_id (A to Z), or None."""
-    for first, second in zip(ids, ids[1:]):
-        if (-totals[first], first) > (-totals[second], second):
-            return first, second
-    return None
-
-
-def check_supply_order(root: Path) -> None:
-    """Rows run from the highest line total to the lowest, with ties in item_id order.
-
-    The order is judged by the true line totals, and also by the totals the
-    file itself holds, so a wrong total or a wrong row costs its own check
-    rather than this one too.
+    Judging by the file's own totals too means a wrong total costs only its line's check.
     """
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    rows = _supply_rows(table)
-    ids = [item_id for item_id, _ in rows]
-    _assert(
-        len(ids) >= 2,
-        f"{SUPPLIES_FILE} names fewer than two items from data/supply_order.csv, so its order cannot be "
-        "checked; the rows check says what to fix.",
-    )
-    true_totals = {item_id: line_total(item_id) for item_id in ids}
-    out_of_order = _sorted_by(ids, true_totals)
-    if out_of_order is None:
-        return
+    bases = [{item_id: line_total(item_id) for item_id, _ in rows}]
     total = _total_column(table)
-    saved = {item_id: _number(row[total]) if total else None for item_id, row in rows}
-    if all(value is not None for value in saved.values()) and _sorted_by(ids, saved) is None:
+    if total is not None:
+        saved = {item_id: _number(row[total]) for item_id, row in rows}
+        if all(value is not None for value in saved.values()):
+            bases.append(saved)
+    return bases
+
+
+def _ordered_rows(root: Path) -> tuple[list[str], list[dict[str, float]]]:
+    table = read_table(root, SUPPLIES_FILE, "Task 3")
+    _require_line_key(table)
+    rows = _supply_rows(table)
+    _assert(
+        len(rows) >= 2,
+        f"{SUPPLIES_FILE} names fewer than two lines from data/supply_order.csv, so its order cannot be "
+        "checked; the line checks say what to fix.",
+    )
+    return [item_id for item_id, _ in rows], _order_bases(table, rows)
+
+
+def check_supply_descending(root: Path) -> None:
+    """Each line's total is at least the next line's: the highest line total comes first."""
+    ids, bases = _ordered_rows(root)
+
+    def first_rise(totals: dict[str, float]) -> tuple[str, str] | None:
+        return next(((a, b) for a, b in zip(ids, ids[1:]) if totals[a] < totals[b] - TOLERANCE), None)
+
+    rises = [first_rise(totals) for totals in bases]
+    if None in rises:
         return
-    first, second = out_of_order
-    if true_totals[first] == true_totals[second]:
-        reason = (
-            f"{first} comes before {second}, but both total {true_totals[first]:.2f}, "
-            f"so the tie goes to the smaller item_id, {second}"
-        )
-    else:
-        reason = (
-            f"{first} (total {true_totals[first]:.2f}) comes before {second} (total {true_totals[second]:.2f})"
-        )
+    first, second = rises[0]
     raise AssertionError(
-        f"{SUPPLIES_FILE} is not sorted by line_total_usd from highest to lowest with ties broken by item_id: "
-        f"{reason}. In Task 3.2, sort with by=[\"line_total_usd\", \"item_id\"] and ascending=[False, True]."
+        f"{SUPPLIES_FILE} is not sorted from the highest line_total_usd to the lowest: {first} "
+        f"(line total {line_total(first):.2f}) comes before {second} (line total {line_total(second):.2f}). "
+        'In Task 3.2, sort with by=["line_total_usd", "item_id"] and ascending=[False, True].'
     )
 
 
+def check_supply_ties(root: Path) -> None:
+    """Lines with the same total appear in item_id order, A to Z."""
+    ids, bases = _ordered_rows(root)
+
+    def first_tie_out_of_order(totals: dict[str, float]) -> tuple[str, str] | None:
+        for i, first in enumerate(ids):
+            for second in ids[i + 1:]:
+                if abs(totals[first] - totals[second]) <= TOLERANCE and first > second:
+                    return first, second
+        return None
+
+    found = [first_tie_out_of_order(totals) for totals in bases]
+    if None in found:
+        return
+    first, second = found[0]
+    raise AssertionError(
+        f"{SUPPLIES_FILE} lists {first} before {second}, but both have the line total {line_total(first):.2f}, "
+        f"so the tie goes to the smaller item_id, {second}. In Task 3.2, break ties with "
+        'by=["line_total_usd", "item_id"] and ascending=[False, True].'
+    )
+
+
+SELECT_HINT = "Task 3.1 selects item_id, item, quantity, and unit_price_usd with one .loc."
 CHECKS = (
     Check("fridge block: fridge_id index column", check_fridge_id_column),
     Check("fridge block: rows FRG-102 and FRG-103", check_fridge_rows),
     Check("fridge block: am_temp_c values", lambda root: _check_temperature(root, "am_temp_c")),
     Check("fridge block: pm_temp_c values", lambda root: _check_temperature(root, "pm_temp_c")),
-    Check("selected supplies: columns", check_supply_columns),
-    Check("selected supplies: rows with quantity 2 or more", check_supply_rows),
-    Check("selected supplies: values and line totals", check_supply_values),
-    Check("selected supplies: sort order", check_supply_order),
+    *(Check(f"selected supplies: {column} column", _column_check(column, SELECT_HINT)) for column in SUPPLY_COLUMNS[:4]),
+    Check(
+        "selected supplies: line_total_usd column",
+        _column_check("line_total_usd", "Task 3.1 adds line_total_usd = quantity * unit_price_usd."),
+    ),
+    Check("selected supplies: no extra columns", check_supply_extra_columns),
+    *(Check(f"selected supplies: line {item_id}", _line_check(item_id)) for item_id in expected_selection()),
+    Check("selected supplies: no other lines", check_supply_other_lines),
+    Check("selected supplies: highest line total first", check_supply_descending),
+    Check("selected supplies: ties in item_id order", check_supply_ties),
 )
 
 

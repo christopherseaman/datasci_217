@@ -16,10 +16,17 @@ notebook's supplied `fridge_readings` array, builds submissions in ignored
   separated by semicolons (with decimal commas) or tabs;
 - each single mistake (index left out or unnamed, a slice one row short or
   long, a missing column, a wrong value, no mask, `>` for `>=`, no tie-break,
-  the wrong sort direction, a wrong or misnamed total, an extra column, a
-  missing file) costs exactly the check it gets wrong, with a message that
-  names the fix, and so does a wrong reading in a block saved without its
-  index or a wrong value in a semicolon- or tab-separated file;
+  the wrong sort direction or both keys descending, one wrong line total or
+  quantity, every total computed wrongly, a missing or misnamed total, a
+  misnamed column, an extra column, a missing file) costs exactly the checks
+  it gets wrong, with a message that names the fix, and so does a wrong
+  reading in a block saved without its index or a wrong value in a semicolon-
+  or tab-separated file. The selected supplies are checked per column, per
+  order line, and per sort rule, so one wrong line total costs only that
+  line's 4 points;
+- the printed report gives a fix shared by consecutive checks once, marking
+  the rest `(same fix as above)`, and ends with a `Left to fix` line naming
+  the failing checks by file and the points they are worth;
 - a fresh handout prints the README's "Before Task 2" example, and the
   README's checkpoint order and completion contract agree with the checks;
 - the values the checks hold match `data/supply_order.csv` and the notebook,

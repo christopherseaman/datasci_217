@@ -26,6 +26,7 @@ CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
 SCRATCH = CHECKS.parents[1] / "scratch"
 sys.path.insert(0, str(CHECKS))
+import check_assignment  # noqa: E402
 import grading  # noqa: E402
 
 DATA = HANDOUT / "data" / "chicago_beach_sensors_2022_2024.csv"
@@ -33,6 +34,67 @@ MANIFEST = HANDOUT / "data" / "release_manifest.json"
 TZ = "America/Chicago"
 FEATURES = grading.FEATURES
 NUMERIC = grading.NUMERIC_FEATURES
+AUTOMATED = sum(points for _, points, _ in grading.CHECKS)
+README = HANDOUT / "README.md"
+
+
+def graded_points(part) -> dict[str, int]:
+    """The checks' points summed by the part of each check's name that `part` picks out."""
+    totals: dict[str, int] = {}
+    for name, points, _ in grading.CHECKS:
+        if points:
+            totals[part(name)] = totals.get(part(name), 0) + points
+    return totals
+
+
+def readme_contract() -> dict[str, int]:
+    """Each output file's points from the README's Completion contract table."""
+    points = {}
+    for line in README.read_text(encoding="utf-8").splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 3 and (name := re.fullmatch(r"`output/([^`]+)`", cells[0])) and cells[2].isdigit():
+            points[name.group(1)] = int(cells[2])
+    return points
+
+
+def readme_questions() -> dict[str, int]:
+    """Each question's points from the README's table of questions."""
+    rows = re.findall(r"^\| (Q\d) \| .* \| (\d+)(?:, human review)? \|$", README.read_text(encoding="utf-8"), re.M)
+    return {question: int(points) for question, points in rows}
+
+
+def readme_rubric() -> tuple[int, list[str]]:
+    """The human-review rubric's full credit per category and its category names."""
+    table = re.search(r"^\| Category \| What it reads \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
+                      README.read_text(encoding="utf-8"), re.M)
+    assert table, "the README shows no human-review rubric table"
+    return int(table.group(1)), [line.split("|")[1].strip() for line in table.group(2).splitlines()]
+
+
+def check_points_documented() -> None:
+    """The README, the notebooks, and assignment.md state the points the checks and the rubric give."""
+    readme = README.read_text(encoding="utf-8")
+    by_file = graded_points(lambda name: name.split()[1].split(":")[0].replace("train/validation/test", "*"))
+    assert readme_contract() == by_file, ("README Completion contract points", readme_contract(), by_file)
+    credit, categories = readme_rubric()
+    review = credit * len(categories)
+    assert AUTOMATED + review == 100 and review == check_assignment.HUMAN_REVIEW_POINTS, (AUTOMATED, review)
+    assert (f"{AUTOMATED} points graded from your committed files after the deadline, {review} by human review"
+            in readme), "the README states a different point split"
+    by_question = {**graded_points(lambda name: name.split()[0]), "Q9": review}
+    assert readme_questions() == by_question, ("README question points", readme_questions(), by_question)
+    for question, points in by_question.items():
+        stated = f"**{points} points" + (", human review**" if question == "Q9" else "**")
+        for path in HANDOUT.glob(f"q{question[1]}_*"):
+            text = path.read_text(encoding="utf-8")
+            if path.suffix == ".ipynb":
+                text = "".join(json.loads(text)["cells"][0]["source"])
+            assert stated in text, (path.name, stated)
+    writeup = (HANDOUT / "q9_writeup.md").read_text(encoding="utf-8")
+    assert re.findall(r"^\| (.+) \| (\d+) \|$", writeup, re.M) == [(name, str(credit)) for name in categories], \
+        "q9_writeup's category table differs from the README rubric"
+    assert f"{review} human-review points" in (HANDOUT / "assignment.md").read_text(encoding="utf-8"), \
+        "assignment.md states different human-review points"
 
 
 def png(path: Path) -> None:
@@ -396,13 +458,13 @@ def mutations() -> list[tuple[str, str, object, dict[str, int]]]:
          {"Q2 q2_cleaned_observations.csv: rows": 1}),
         ("forgot the solar near-zero rule", "q2_cleaned_observations.csv",
          column("solar_radiation_w_m2", lambda f: f["solar_radiation_w_m2"].replace("0.0", "-1.0")),
-         {"Q2 q2_cleaned_observations.csv: solar_radiation_w_m2": 1}),
+         {"Q2 q2_cleaned_observations.csv: solar_radiation_w_m2, interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps": 1}),
         ("did not convert to UTC", "q2_cleaned_observations.csv",
          column("measurement_timestamp_utc", lambda f: f["measurement_timestamp"].str.slice(0, 19)),
          {"Q2 q2_cleaned_observations.csv: measurement_timestamp_utc": 2}),
         ("forgot the wind speed rule", "q2_cleaned_observations.csv",
          column("wind_speed_mps", lambda f: f["wind_speed_mps"].replace("", "999.9")),
-         {"Q2 q2_cleaned_observations.csv: interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps": 1,
+         {"Q2 q2_cleaned_observations.csv: solar_radiation_w_m2, interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps": 1,
           "Q2 q2_cleaned_observations.csv: the other nine sensor columns": 0}),
         ("filled Foster's wet bulb", "q2_cleaned_observations.csv",
          column("wet_bulb_temperature_c", lambda f: f["wet_bulb_temperature_c"].replace("", "0.0")),
@@ -414,15 +476,20 @@ def mutations() -> list[tuple[str, str, object, dict[str, int]]]:
          {"Q3 q3_hourly_panel.csv: sensor columns": 1}),
         ("weekday Monday=1", "q3_hourly_panel.csv",
          column("day_of_week", lambda f: (f["day_of_week"].astype(int) + 1).astype(str)),
-         {"Q3 q3_hourly_panel.csv: day_of_week": 1}),
+         {"Q3 q3_hourly_panel.csv: hour, day_of_week, and month": 1}),
         ("dropped ineligible rows", "q4_features.csv", lambda f: f[f["model_eligible"] == "True"],
          {"Q4 q4_features.csv: rows": 1}),
         ("lag of 2 hours", "q4_features.csv",
          column("air_temperature_lag_1h_c", lambda f: f["air_temperature_lag_24h_c"]),
-         {"Q4 q4_features.csv: lags": 1, "Q4 q4_features.csv: air_temperature_change_1h_c": 0}),
+         {"Q4 q4_features.csv: lags, 24-hour mean, and 1-hour change": 1}),
         ("rolling mean shifted", "q4_features.csv",
          column("air_temperature_mean_past_24h_c", lambda f: f["air_temperature_lag_1h_c"]),
-         {"Q4 q4_features.csv: air_temperature_mean_past_24h_c": 1}),
+         {"Q4 q4_features.csv: lags, 24-hour mean, and 1-hour change": 1}),
+        ("target hour in UTC", "q4_features.csv",
+         lambda f: f.assign(**{name: func(2 * np.pi * pd.to_datetime(f["target_timestamp_utc"], utc=True).dt.hour
+                                          / 24).astype(str)
+                               for name, func in (("target_hour_sin", np.sin), ("target_hour_cos", np.cos))}),
+         {"Q4 q4_features.csv: wind direction, target hour, and target day-of-year sine and cosine": 1}),
         ("manifest offset", "q4_feature_manifest.csv",
          lambda f: f.assign(earliest_offset_hours=np.where(f["feature_name"] == grading.MEAN_FEATURE, "-24",
                                                            f["earliest_offset_hours"])),
@@ -437,6 +504,10 @@ def mutations() -> list[tuple[str, str, object, dict[str, int]]]:
         ("nonfinite model prediction", "q7_validation_predictions.csv",
          lambda f: f.assign(model_prediction=["inf"] + f["model_prediction"].tolist()[1:]),
          {"Q7 q7_validation_predictions.csv: model_prediction": 1, "Q7 q7_validation_metrics.csv": 1}),
+        ("persistence set to the actual value", "q7_validation_predictions.csv",
+         lambda f: f.assign(persistence_prediction=f["actual"]),
+         {"Q7 q7_validation_predictions.csv: station_name, target_timestamp_utc, actual, and persistence_prediction": 1,
+          "Q7 q7_validation_metrics.csv": 0}),
         ("error sign flipped", "q8_test_predictions.csv",
          column("model_error", lambda f: (-pd.to_numeric(f["model_error"])).astype(str)),
          {"Q8 q8_test_predictions.csv: model_error": 1}),
@@ -456,39 +527,42 @@ def run() -> None:
             if re.search(r"python_versio[n]|sys\.versio[n]|version_inf[o]", path.read_text(encoding="utf-8"))
             and path.name != "run.py"]
     assert not grep, f"a check reads the Python version: {grep}"
+    check_points_documented()
+    print(f"README, notebooks, and assignment.md state the checks' {AUTOMATED} points and the rubric's "
+          f"{100 - AUTOMATED}")
 
     with tempfile.TemporaryDirectory(dir=SCRATCH, prefix="a11-selftest-") as directory:
         base = Path(directory)
         empty = base / "empty"
         empty.mkdir()
         result, code = checker(empty)
-        assert result["score"] == 0 and result["max-score"] == 85 and code == 1, result
+        assert result["score"] == 0 and result["max-score"] == 75 and code == 1, result
         result, code = checker(HANDOUT)
-        assert result["score"] == 0 and code == 1, losses(result)
-        print("empty directory and untouched handout: 0/85")
+        assert result["score"] == 0 and result["max-score"] == 75 and code == 1, losses(result)
+        print("empty directory and untouched handout: 0/75")
 
         correct = base / "correct"
         solve(correct)
         (correct / "grading.py").write_text("raise SystemExit('submitted code must not run')\n")
         (correct / "output" / "pandas.py").write_text("raise SystemExit('submitted code must not run')\n")
         result, code = checker(correct)
-        assert result["score"] == 85 and code == 0, details(result)
-        print("independent correct answer: 85/85, and no submitted file ran")
+        assert result["score"] == 75 and code == 0, details(result)
+        print("independent correct answer: 75/75, and no submitted file ran")
 
         loose = copy(correct, base / "loose")
         loosen(loose)
         result, _ = checker(loose)
-        assert result["score"] == 85, details(result)
+        assert result["score"] == 75, details(result)
         print("reordered columns and rows, upper-case labels, CRLF, BOM, header and trailing spaces, "
-              "index columns, yes/no flags: 85/85")
+              "index columns, yes/no flags: 75/75")
 
         alt = copy(correct, base / "alternative")
         alternative(alt)
         result, _ = checker(alt)
-        assert result["score"] == 85, details(result)
+        assert result["score"] == 75, details(result)
         print("naive local times, Z suffixes, rounding, fractions for percents, population std, unlabeled "
               "correlation index, Python-dict parameters, semicolon and tab separators, an upper-case release "
-              "file name: 85/85")
+              "file name: 75/75")
 
         for label, name, change, expected in mutations():
             case = copy(correct, base / re.sub(r"\W+", "-", label))
@@ -529,19 +603,19 @@ def run() -> None:
         print("a wrong mae in a semicolon-separated q8_station_metrics.csv: -1, that check only")
 
         # Without its predictions file a metrics file is judged on what can still be checked: the missing file
-        # costs its own seven points, while a model n that disagrees with the baseline's still costs the metrics.
+        # costs its own six points, while a model n that disagrees with the baseline's still costs the metrics.
         unpredicted = copy(correct, base / "no-test-predictions")
         (unpredicted / "output" / "q8_test_predictions.csv").unlink()
         result, _ = checker(unpredicted)
         lost = losses(result)
-        assert all(name.startswith("Q8 q8_test_predictions.csv") for name in lost) and sum(lost.values()) == 7, \
+        assert all(name.startswith("Q8 q8_test_predictions.csv") for name in lost) and sum(lost.values()) == 6, \
             details(result)
         metrics = pd.read_csv(unpredicted / "output" / "q8_test_metrics.csv", dtype=str, keep_default_na=False)
         metrics.loc[metrics["model"] == "student_model", "n"] = "1"
         metrics.to_csv(unpredicted / "output" / "q8_test_metrics.csv", index=False)
         result, _ = checker(unpredicted)
         assert losses(result).get("Q8 q8_test_metrics.csv") == 1, details(result)
-        print("q8_test_predictions.csv missing: -7, its own checks only; with a wrong model n as well, the metrics -1")
+        print("q8_test_predictions.csv missing: -6, its own checks only; with a wrong model n as well, the metrics -1")
 
         # Documented handout contract: tree and checklist name every artifact with its header.
         readme = (HANDOUT / "README.md").read_text(encoding="utf-8")

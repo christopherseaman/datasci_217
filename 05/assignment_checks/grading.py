@@ -645,19 +645,19 @@ CHECKS = (
     Check("numpy_age_summary.csv", 5, "Task 1.3", check_numpy_age_summary),
     Check("pandas_selection.csv", 4, "Task 1.4", check_pandas_selection),
     Check("issue_audit.csv", 15, "Task 2.2", check_issue_audit),
-    Check("cleaned_people.csv: record_id", 5, CLEANED_TASK, check_cleaned_record_ids),
-    *(Check(f"cleaned_people.csv: {column}", 5, CLEANED_TASK, cleaned_column_check(column))
+    Check("cleaned_people.csv: record_id", 4, CLEANED_TASK, check_cleaned_record_ids),
+    *(Check(f"cleaned_people.csv: {column}", 4, CLEANED_TASK, cleaned_column_check(column))
       for column in CLEANED_COLUMNS[1:]),
     Check("decision_log.csv: decisions", 8, "Task 3.1", check_decisions),
     Check("decision_log.csv: reason", 2, "Task 3.1",
           provenance_check("reason", "a written reason", _reason)),
     Check("decision_log.csv: source", 1, "Task 4.2",
           provenance_check("source", f"'{SOURCE}'", _source)),
-    Check("decision_log.csv: source_sha256", 2, "Task 4.2",
+    Check("decision_log.csv: source_sha256", 1, "Task 4.2",
           provenance_check("source_sha256", "the sha256 value from data/fixture.json", _sha)),
-    Check("decision_log.csv: rows_before", 2, "Task 4.2",
+    Check("decision_log.csv: rows_before", 1, "Task 4.2",
           provenance_check("rows_before", f"the raw table's row count, {RAW_ROWS}", _rows_before)),
-    Check("decision_log.csv: rows_after", 2, "Task 4.2",
+    Check("decision_log.csv: rows_after", 1, "Task 4.2",
           provenance_check("rows_after", f"the cleaned table's row count, {CLEAN_ROWS}", _rows_after)),
 )
 MAX_SCORE = sum(check.points for check in CHECKS)

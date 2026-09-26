@@ -245,17 +245,22 @@ The four core notebooks follow the taxi question from evidence to result:
 
 ## Where this connects to earlier lectures
 
-Most of today's code is review; this crosswalk shows where each capstone decision was first taught. Each decision should still be justified by the question and data.
+Most of today's code is review; this crosswalk shows where each capstone decision, and each skill the final exam needs, was first taught. Each decision should still be justified by the question and data.
 
-| Capstone decision or concept | Earlier canonical lecture | Related demo roadmap stage |
+| Capstone decision or concept | Earlier canonical lecture | Related demo stage or final question |
 | --- | --- | --- |
 | Question, claim, and evidence | Lecture 07, Data Visualization | `01_setup.ipynb`: trust and inspect the release |
-| Release files: Parquet tables and a JSON manifest | Lecture 04, Data Loading and Storage (Parquet); Lecture 07, Altair (JSON) | `01_setup.ipynb`: verify the release |
+| Release files: Parquet tables and a JSON manifest | Lecture 04, Data Loading and Storage (Parquet); Lecture 07, Save the Chart and Its Record (JSON) | `01_setup.ipynb`: verify the release |
+| File fingerprint: SHA-256 hash (`hashlib.sha256`) and size in bytes (`path.stat().st_size`) | Lecture 05, Data Cleaning Pipeline | `01_setup.ipynb`: verify the release; final Q1: release audit |
+| Settings saved as JSON text in one CSV cell (`json.dumps`, `json.loads`) | Lecture 07, Save the Chart and Its Record | `03_model_prep.ipynb`: split manifest; final Q7 and Q8: model specification |
 | Missingness, row meaning, and keys | Lecture 05, What Clean Means: The Data Contract; Handling Missing Data | `01_setup.ipynb`: audit records |
 | Expected grid and coverage join | Lecture 06, Database-Style DataFrame Joins | `02_wrangling.ipynb`: verify that every zone-hour is present |
+| Gap runs: consecutive missing hours within each entity | Lecture 09, Resampling Each Patient Separately | final Q3: gap summary (the taxi panel has no gaps, because an hour without trips is a true 0) |
 | UTC keys, local calendar fields, and daylight-saving transitions | Lecture 09, Time Zone Handling | `02_wrangling.ipynb`: local calendar fields; `03_model_prep.ipynb`: split boundaries |
+| Times written as text (`Series.dt.strftime`) | Lecture 09, pandas DatetimeIndex | `01_setup.ipynb`: audit records; final Q4: `row_id` |
 | Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb`: construct history features |
 | Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `03_model_prep.ipynb`: training-only summaries; `04_modeling.ipynb`: error slices |
+| Aware UTC target times compared with a zoned local cutoff | Lecture 10, Splitting on Target Time | final Q5 and Q6: split boundaries |
 | Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb`: freeze the split; `04_modeling.ipynb`: compare and evaluate |
 
 # Transfer to the final project

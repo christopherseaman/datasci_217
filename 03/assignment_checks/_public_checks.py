@@ -37,6 +37,18 @@ MONITOR_COUNTS_NAME = "output/monitor_counts_<timestamp>.txt"
 
 STAGE_2_MMHG = 140
 MMHG_TOLERANCE = 0.6
+# A saved value is shown in feedback up to this many characters.
+SHOWN_LENGTH = 80
+# How closely a key must resemble a missing one to be shown as the likely attempt at it.
+SIMILAR_KEY = 0.6
+
+# The step that saves each artifact, as a sentence that a missing-file message ends with.
+SAVE_STEPS = {
+    ENVIRONMENT_FILE: "Save its three labelled lines with the Task 1.2 commands, then commit it.",
+    RECORD_COUNT_FILE: "Save the patient count there with the Task 2.1 pipeline, then commit it.",
+    SUMMARY_FILE: "Run analysis.py so it writes one `key: value` line per answer there (Task 3), then commit it.",
+}
+SUMMARY_FIX = f"Fix that answer in analysis.py (Task 3), rerun it, and commit {SUMMARY_FILE}."
 
 # What `check_assignment.py` prints before and after the report.
 SCOPE_NOTE = "These checks recompute every answer from data/bp_readings.csv and compare it with your artifacts."
@@ -112,6 +124,9 @@ ANSWER_KEYS = (
 class PublicCheck:
     name: str
     action: Callable[[Path], None]
+    # The file the check reads and the check's name within it, for the report's `Left to fix` line.
+    artifact: str = ""
+    label: str = ""
 
 
 @dataclass(frozen=True)
@@ -125,6 +140,20 @@ class Dataset:
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def _shown(text: str) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= SHOWN_LENGTH else text[: SHOWN_LENGTH - 3] + "..."
+
+
+def _file_state(path: Path) -> str:
+    """What stands where a file belongs, in plain words."""
+    if path.is_symlink():
+        return "is a link, not a file"
+    if path.is_dir():
+        return "is a folder, not a file"
+    return "is not a regular file" if path.exists() else "is missing"
 
 
 def _decode(raw: bytes) -> str:
@@ -165,8 +194,9 @@ def _artifact(root: Path, name: str) -> Path | None:
 
 def _missing(root: Path, name: str) -> str:
     """Say an artifact is missing, and name any file that looks like a misnamed or misplaced copy."""
-    message = f"{name} is missing; commit it as a regular file."
     wanted = root / name
+    if wanted.exists() or wanted.is_symlink():
+        return f"{name} {_file_state(wanted)}. Delete it, then {SAVE_STEPS[name][0].lower()}{SAVE_STEPS[name][1:]}"
     look_alikes = sorted(
         path.relative_to(root).as_posix()
         for folder in {root, wanted.parent}
@@ -177,15 +207,24 @@ def _missing(root: Path, name: str) -> str:
         and difflib.SequenceMatcher(None, wanted.name.casefold(), path.name.casefold()).ratio() >= 0.8
     )
     if look_alikes:
-        message += f" Found {', '.join(look_alikes)}; rename or move it to {name}."
-    return message
+        return f"{name} is missing. Found {', '.join(look_alikes)}; rename or move it to {name}, then commit it."
+    return f"{name} is missing. {SAVE_STEPS[name]}"
+
+
+def _read(path: Path, name: str) -> str:
+    try:
+        return _decode(path.read_bytes())
+    except OSError as error:
+        raise AssertionError(
+            f"{name} cannot be opened ({error.strerror or 'unreadable'}); save it again, then commit it."
+        ) from None
 
 
 def _text(root: Path, name: str) -> str:
     path = _artifact(root, name)
     if path is None:
         raise AssertionError(_missing(root, name))
-    return _decode(path.read_bytes())
+    return _read(path, name)
 
 
 def load_dataset(root: Path) -> Dataset:
@@ -195,12 +234,18 @@ def load_dataset(root: Path) -> Dataset:
     the fingerprint is taken with them removed; the supplied file has none.
     """
     path = root / DATA_FILE
-    _assert(path.is_file() and not path.is_symlink(), f"{DATA_FILE} is missing; restore the supplied dataset.")
-    lines = [line.rstrip() for line in _decode(path.read_bytes()).splitlines() if line.strip()]
+    restore = (
+        f"Restore it with `git checkout {DATA_FILE}`, rerun your Task 2 pipelines and analysis.py on it, "
+        "and commit the new outputs."
+    )
+    _assert(
+        path.is_file() and not path.is_symlink(),
+        f"{DATA_FILE} {_file_state(path)}, and every answer is recomputed from it. {restore}",
+    )
+    lines = [line.rstrip() for line in _read(path, DATA_FILE).splitlines() if line.strip()]
     _assert(
         hashlib.sha256(("\n".join(lines) + "\n").encode("utf-8")).hexdigest() == DATA_SHA256,
-        f"{DATA_FILE} is not the supplied dataset. Restore it with "
-        f"`git checkout {DATA_FILE}` and rerun your analysis on it.",
+        f"{DATA_FILE} is not the supplied dataset, and every answer is recomputed from it. {restore}",
     )
 
     header = lines[0].split(",")
@@ -483,17 +528,24 @@ def check_environment_probe(root: Path) -> None:
     probe = read_environment(root)
     problems: list[str] = []
     if "numpy" not in probe:
-        problems.append(f"{ENVIRONMENT_FILE} has no `numpy` line.")
+        problems.append(f"{ENVIRONMENT_FILE} has no `numpy` line; Task 1.2 saves `numpy: <version>` there.")
     elif _VERSION.search(probe["numpy"]) is None:
         problems.append(
-            f"The `numpy` line in {ENVIRONMENT_FILE} holds no version number such as `2.3.3`; "
-            "save the version numpy reports."
+            f"The `numpy` line in {ENVIRONMENT_FILE} reads `{_shown(probe['numpy'])}`, which holds no version "
+            "number such as `2.3.3`; save the version numpy reports."
         )
     if "interpreter" not in probe:
-        problems.append(f"{ENVIRONMENT_FILE} has no `interpreter` line.")
+        problems.append(
+            f"{ENVIRONMENT_FILE} has no `interpreter` line; Task 1.2 saves `interpreter: <path>` there."
+        )
     elif not probe["interpreter"]:
         problems.append(
-            f"The `interpreter` line in {ENVIRONMENT_FILE} is empty; save the path to the interpreter."
+            f"The `interpreter` line in {ENVIRONMENT_FILE} is empty; save the path to the active interpreter."
+        )
+    if problems:
+        problems.append(
+            f"Rerun the Task 1.2 commands with the environment active, using Lecture 03's one-line Python "
+            f"commands for the numpy version and the interpreter path, then commit {ENVIRONMENT_FILE}."
         )
     _report(problems)
 
@@ -501,52 +553,73 @@ def check_environment_probe(root: Path) -> None:
 def check_record_count(root: Path) -> None:
     """`output/record_count.txt` counts the patient records in the dataset."""
     data = load_dataset(root)
-    readings = _as_numbers(_text(root, RECORD_COUNT_FILE))
-    _assert(bool(readings), f"{RECORD_COUNT_FILE} contains no number.")
+    text = _text(root, RECORD_COUNT_FILE)
+    readings = _as_numbers(text)
+    _assert(
+        bool(readings),
+        f"{RECORD_COUNT_FILE} "
+        + (f"reads `{_shown(text)}`, which holds no number" if text.strip() else "is empty")
+        + f"; Task 2.1 saves the number of patient records in {DATA_FILE} there. Save the count your pipeline "
+        "prints, then commit the file.",
+    )
     if any(abs(value - len(data.patients)) < 1e-9 for value in readings):
         return
     given = readings[0]
     if abs(given - (len(data.patients) + 1)) < 1e-9:
         raise AssertionError(
             f"{RECORD_COUNT_FILE} records {given:g}, which counts the header line as a patient record; "
-            "drop the header with `tail -n +2` before counting."
+            f"{DATA_FILE} has {len(data.patients)} patient rows. Drop the header with `tail -n +2` before counting "
+            "(Task 2.1), then save the new count and commit it."
         )
     raise AssertionError(
-        f"{RECORD_COUNT_FILE} records {given:g}, which is not the number of patient rows in {DATA_FILE}."
+        f"{RECORD_COUNT_FILE} records {given:g}, but {DATA_FILE} has {len(data.patients)} patient rows. Count the "
+        "lines after the header with the Task 2.1 pipeline, then save the new count and commit it."
     )
 
 
 def _timestamped_counts_files(root: Path) -> list[Path]:
     output = root / "output"
-    _assert(output.is_dir() and not output.is_symlink(), "Create a regular output/ directory.")
+    _assert(
+        output.is_dir() and not output.is_symlink(),
+        "output/ " + ("is missing" if not (output.exists() or output.is_symlink()) else "is not a folder")
+        + ", so no Task 2.2 counts file is there. Make it a folder, save the per-monitor counts in it as "
+        "monitor_counts_YYYYMMDD_HHMMSS.txt, and commit them.",
+    )
     candidates = sorted(path for path in output.glob("monitor_counts*") if path.is_file())
     timestamped = [path for path in candidates if MONITOR_COUNTS_PATTERN.match(path.name)]
     if timestamped:
         return timestamped
     if not candidates:
-        hint = "; save the per-monitor counts under a name that carries the run timestamp, as YYYYMMDD_HHMMSS."
+        hint = (
+            ". Task 2.2 saves the per-monitor counts under a name that carries the run timestamp, as "
+            "monitor_counts_YYYYMMDD_HHMMSS.txt."
+        )
     elif any(path.suffix != ".txt" for path in candidates):
         hint = (
-            f" (output/ holds {', '.join(path.name for path in candidates)}); name the file "
-            "monitor_counts_YYYYMMDD_HHMMSS.txt, with the run timestamp and the `.txt` extension."
+            f"; it holds {', '.join(path.name for path in candidates)}. Name the file "
+            "monitor_counts_YYYYMMDD_HHMMSS.txt, with the run timestamp and the `.txt` extension (Task 2.2)."
         )
     else:
         hint = (
-            f" (output/ holds {', '.join(path.name for path in candidates)}); name the file with the "
-            "run timestamp, as YYYYMMDD_HHMMSS."
+            f"; it holds {', '.join(path.name for path in candidates)}. Name the file with the run timestamp, "
+            "as monitor_counts_YYYYMMDD_HHMMSS.txt (Task 2.2)."
         )
-    raise AssertionError(f"No {MONITOR_COUNTS_NAME} found{hint}")
+    raise AssertionError(f"output/ has no {MONITOR_COUNTS_NAME.removeprefix('output/')} file{hint} Then commit it.")
 
 
 def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
     """What keeps one counts file from listing every monitor with its count."""
+    name = f"output/{name}"
     found = read_monitor_lines(text, expected)
     if not found:
         if not read_count_pairs(text):
-            return f"{name} holds no `count monitor` pairs."
+            return (
+                f"{name} holds no `count monitor` pairs; Task 2.2 saves one line per monitor with its patient "
+                "count and its id, as `uniq -c` prints them."
+            )
         return (
             f"{name} names none of the monitors {', '.join(monitor.upper() for monitor in sorted(expected))}; "
-            "count field 2 of each row, the monitor, with `cut -d',' -f2`."
+            "count field 2 of each row, the monitor, with `cut -d',' -f2` (Task 2.2)."
         )
     counted = {monitor for monitor, counts in found.items() if counts and monitor in expected}
     missing = sorted(set(expected) - counted)
@@ -566,7 +639,11 @@ def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
     if repeated:
         details.append("several lines for " + ", ".join(monitor.upper() for monitor in repeated))
     if wrong:
-        details.append("the wrong count for " + ", ".join(monitor.upper() for monitor in wrong))
+        details.append(
+            "the wrong count for "
+            + ", ".join(f"{monitor.upper()} ({found[monitor][0]}, where {DATA_FILE} has {expected[monitor]})"
+                        for monitor in wrong)
+        )
     problem = f"{name} has " + "; ".join(details) + "."
     uncounted = [monitor for monitor in missing if monitor in found]
     if uncounted:
@@ -588,7 +665,7 @@ def check_monitor_counts(root: Path) -> None:
     expected = {monitor.casefold(): count for monitor, count in monitor_counts(load_dataset(root)).items()}
     problems: list[str] = []
     for path in timestamped:
-        text = _decode(path.read_bytes())
+        text = _read(path, f"output/{path.name}")
         # Every monitor has to be there with the right count. A label that is not a
         # monitor is an extra line, which the README says is ignored: a run total or
         # a title must not cost the student this check.
@@ -600,12 +677,34 @@ def check_monitor_counts(root: Path) -> None:
             return
         problems.append(_counts_problem(path.name, text, expected))
 
+    if problems:
+        problems.append("Rerun the Task 2.2 pipeline to save a new timestamped file, then commit it.")
     _report(problems)
 
 
 def _readable(key: str, value: str) -> bool:
     """Whether an answer check can read this value: any text for a label, a number otherwise."""
     return bool(value) and (key in LABEL_KEYS or _as_number(value) is not None)
+
+
+def _format_problem(text: str, summary: dict[str, str]) -> str | None:
+    """Why the summary has no readable answer line at all, or None when it has one."""
+    if any(_readable(key, summary.get(key, "")) for key in ANSWER_KEYS):
+        return None
+    unknown = next(
+        (
+            key.strip()
+            for key, colon, _ in (line.strip().partition(":") for line in text.splitlines())
+            if colon and key.strip() and not key.startswith("#") and _answer_key(_key_name(key)) is None
+        ),
+        None,
+    )
+    found = ": it is empty" if not text.strip() else f"; its first key, `{_shown(unknown)}`, is not one of them" if unknown else ""
+    return (
+        f"{SUMMARY_FILE} has no readable line for any key in README.md's table{found}. Task 3 writes one "
+        "`key: value` line per answer, such as `patients: <whole number>`. Fix analysis.py, rerun it, and commit "
+        f"{SUMMARY_FILE}."
+    )
 
 
 def check_summary_format(root: Path) -> None:
@@ -615,24 +714,9 @@ def check_summary_format(root: Path) -> None:
     this check does not take points a second time for the same gap.
     """
     text = _text(root, SUMMARY_FILE)
-    summary = _read_pairs(text, _answer_key)[0]
-    if any(_readable(key, summary.get(key, "")) for key in ANSWER_KEYS):
-        return
-    message = (
-        f"{SUMMARY_FILE} has no readable line for any key in README.md's table; "
-        "write one `key: value` line per answer, such as `patients: <whole number>`."
-    )
-    unknown = next(
-        (
-            key.strip()
-            for key, colon, _ in (line.strip().partition(":") for line in text.splitlines())
-            if colon and key.strip() and not key.startswith("#") and _answer_key(_key_name(key)) is None
-        ),
-        None,
-    )
-    if unknown:
-        message += f" Its first key, `{unknown}`, is not one of them."
-    raise AssertionError(message)
+    problem = _format_problem(text, _read_pairs(text, _answer_key)[0])
+    if problem is not None:
+        raise AssertionError(problem)
 
 
 def _mmhg_matches(given: float, expected: float) -> bool:
@@ -640,16 +724,42 @@ def _mmhg_matches(given: float, expected: float) -> bool:
     return abs(given - expected) <= MMHG_TOLERANCE or (given.is_integer() and given == math.trunc(expected))
 
 
+def _asked(key: str) -> str:
+    """What an answer holds, as the README's table asks for it."""
+    return (LABEL_KEYS | COUNT_KEYS | MMHG_KEYS)[key]
+
+
+def _closest_key(text: str, key: str) -> str:
+    """`; the closest line reads ...` naming the line whose key most resembles `key`, or nothing."""
+    best, best_ratio = None, SIMILAR_KEY
+    for line in text.splitlines():
+        head = _LIST_MARKER.sub("", line.strip()).partition(":")[0]
+        candidate = _key_name(head)
+        if not candidate or _answer_key(candidate) is not None:
+            continue
+        ratio = difflib.SequenceMatcher(None, key, candidate).ratio()
+        if ratio >= best_ratio:
+            best, best_ratio = line, ratio
+    return f"; the closest line reads `{_shown(best)}`" if best is not None else ""
+
+
 def _check_answer(root: Path, key: str) -> None:
     """Compare one answer with the value recomputed from the supplied readings."""
-    _assert(
-        _artifact(root, SUMMARY_FILE) is not None,
-        f"There is no {SUMMARY_FILE} to read; the summary artifact format check says why.",
-    )
-    summary, lines_naming = _read_pairs(_text(root, SUMMARY_FILE), _answer_key)
-    _assert(key in summary, f"{SUMMARY_FILE} has no `{key}` line.")
+    _assert(_artifact(root, SUMMARY_FILE) is not None, _missing(root, SUMMARY_FILE))
+    text = _text(root, SUMMARY_FILE)
+    summary, lines_naming = _read_pairs(text, _answer_key)
+    if key not in summary:
+        # With no readable answer at all, every missing key has the format check's advice.
+        raise AssertionError(
+            _format_problem(text, summary)
+            or f"{SUMMARY_FILE} has no `{key}` line{_closest_key(text, key)}. Add `{key}: <value>` with "
+            f"{_asked(key)}. {SUMMARY_FIX}"
+        )
     raw = summary[key]
-    _assert(raw, f"The `{key}` line in {SUMMARY_FILE} has no value after the colon.")
+    _assert(
+        raw,
+        f"The `{key}` line in {SUMMARY_FILE} has no value after the colon; write {_asked(key)} there. {SUMMARY_FIX}",
+    )
     expected = expected_answers(load_dataset(root))[key]
     repeated = (
         f" `{key}` appears on {lines_naming[key]} lines and the checks read the first; "
@@ -658,37 +768,38 @@ def _check_answer(root: Path, key: str) -> None:
         else ""
     )
 
+    given = f"{SUMMARY_FILE} gives `{key}: {_shown(raw)}`, which is not"
     if key in LABEL_KEYS:
         _assert(
             _label_matches(raw, str(expected)),
-            f"`{key}` is `{raw}`, which is not {LABEL_KEYS[key]} in {DATA_FILE}." + repeated,
+            f"{given} {LABEL_KEYS[key]}: {DATA_FILE} gives `{expected}`.{repeated} {SUMMARY_FIX}",
         )
         return
 
     readings = _as_numbers(raw)
-    _assert(bool(readings), f"`{key}` is `{raw}`, which is not a number." + repeated)
+    _assert(bool(readings), f"{given} a number; write {_asked(key)} there as a number.{repeated} {SUMMARY_FIX}")
     if key in COUNT_KEYS:
         _assert(
-            any(abs(given - float(expected)) <= 1e-9 for given in readings),
-            f"`{key}` is {raw}, which is not {COUNT_KEYS[key]} in {DATA_FILE}." + repeated,
+            any(abs(given_value - float(expected)) <= 1e-9 for given_value in readings),
+            f"{given} {COUNT_KEYS[key]}: {DATA_FILE} gives {expected}.{repeated} {SUMMARY_FIX}",
         )
     else:
         _assert(
-            any(_mmhg_matches(given, float(expected)) for given in readings),
-            f"`{key}` is {raw}, which is not {MMHG_KEYS[key]} in {DATA_FILE} "
-            f"(allowed difference {MMHG_TOLERANCE} mmHg)." + repeated,
+            any(_mmhg_matches(given_value, float(expected)) for given_value in readings),
+            f"{given} {MMHG_KEYS[key]}: {DATA_FILE} gives {float(expected):.2f} mmHg "
+            f"(allowed difference {MMHG_TOLERANCE} mmHg).{repeated} {SUMMARY_FIX}",
         )
 
 
 def _answer_check(key: str) -> PublicCheck:
-    return PublicCheck(f"answer: {key}", lambda root, key=key: _check_answer(root, key))
+    return PublicCheck(f"answer: {key}", lambda root, key=key: _check_answer(root, key), SUMMARY_FILE, key)
 
 
 PUBLIC_CHECKS = (
-    PublicCheck("environment probe", check_environment_probe),
-    PublicCheck("record count artifact", check_record_count),
-    PublicCheck("monitor counts artifact", check_monitor_counts),
-    PublicCheck("summary artifact format", check_summary_format),
+    PublicCheck("environment probe", check_environment_probe, ENVIRONMENT_FILE, "environment probe"),
+    PublicCheck("record count artifact", check_record_count, RECORD_COUNT_FILE, "record count"),
+    PublicCheck("monitor counts artifact", check_monitor_counts, MONITOR_COUNTS_NAME, "monitor counts"),
+    PublicCheck("summary artifact format", check_summary_format, SUMMARY_FILE, "format"),
 ) + tuple(_answer_check(key) for key in ANSWER_KEYS)
 
 
@@ -698,8 +809,22 @@ def run_public_checks(root: Path) -> list[tuple[str, str | None]]:
     for check in PUBLIC_CHECKS:
         try:
             check.action(Path(root))
-        except (AssertionError, OSError, ValueError, UnicodeDecodeError) as error:
+        except AssertionError as error:
             results.append((check.name, str(error)))
+        except OSError as error:
+            results.append((check.name, _unreadable(Path(root), error)))
+        except (ValueError, UnicodeDecodeError):
+            results.append((check.name, f"{check.artifact} could not be read; save it again as plain text, then commit it."))
         else:
             results.append((check.name, None))
     return results
+
+
+def _unreadable(root: Path, error: OSError) -> str:
+    """An error opening a file, in plain words."""
+    name = error.filename
+    try:
+        name = Path(name).relative_to(root).as_posix()
+    except (TypeError, ValueError):
+        pass
+    return f"{name or 'A file'} cannot be opened ({error.strerror or 'unreadable'}); save it again, then commit it."

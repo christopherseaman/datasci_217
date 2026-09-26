@@ -15,7 +15,7 @@ jupyter:
 
 # Q3: Data Wrangling
 
-**11 points**
+**10 points**
 
 An absent source row is different from a measured zero. Build a complete station-by-hour panel so later lags refer to exact hours and sensor dropouts stay visible.
 
@@ -62,7 +62,7 @@ PANEL_COLUMNS = [
 
 ## 3.3 Gap Summary
 
-A gap run is one or more consecutive `source_observed == False` hours within a station. Count the runs and the longest run. A `for` loop over one station's `source_observed` values in time order works (Lecture 02): a run starts at each False that follows a True or starts the series.
+A gap run is one or more consecutive `source_observed == False` hours within a station. Count the runs and the longest run. Lecture 09's "Count Gap Runs per Patient" snippet does this with a grouped running count of observed hours, `cumsum()`, which stays flat through each gap; use the station where it uses the patient.
 
 ```python
 SUMMARY_COLUMNS = [

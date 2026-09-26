@@ -141,17 +141,18 @@ python check_assignment.py
 
 `check_assignment.py` runs the same checks GitHub runs. They read only the two CSV files in `output/` and compare them with the supplied readings and order. They never run or read your notebook, so any way of producing correct files counts.
 
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 2, for example, the first check reports:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, they say `(same fix as above)`. Before Task 2, for example, the fridge block checks report:
 
 ```text
 [FIX ]  0/10 fridge block: fridge_id index column
          output/fridge_block.csv is missing; run the Task 2 cells to write it, then commit it.
+[FIX ]  0/10 fridge block: rows FRG-102 and FRG-103  (same fix as above)
 ```
 
-Fix what it names, rerun the notebook and then the checks, and repeat until every check passes. A clean run ends with:
+Below the score, `Left to fix` lists the checks still failing and the points they are worth. Fix what they name, rerun the notebook and then the checks, and repeat until every check passes. A clean run ends with:
 
 ```text
-[PASS] 15/15 selected supplies: sort order
+[PASS]  4/4  selected supplies: ties in item_id order
 
 Score: 100/100
 All checks passed.
@@ -177,10 +178,24 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/fridge_block.csv` | Its rows are `FRG-102` and `FRG-103`, and no others. | fridge block: rows FRG-102 and FRG-103 | 10 |
 | `output/fridge_block.csv` | Its `am_temp_c` values match the supplied array: 3.8 and 5.0. | fridge block: am_temp_c values | 10 |
 | `output/fridge_block.csv` | Its `pm_temp_c` values match the supplied array: 6.2 and 7.4. | fridge block: pm_temp_c values | 10 |
-| `output/selected_supplies.csv` | Its columns are `item_id`, `item`, `quantity`, `unit_price_usd`, and `line_total_usd`. | selected supplies: columns | 15 |
-| `output/selected_supplies.csv` | It holds each of the nine order lines with a quantity of 2 or more, once. | selected supplies: rows with quantity 2 or more | 15 |
-| `output/selected_supplies.csv` | Each line keeps its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: values and line totals | 15 |
-| `output/selected_supplies.csv` | Its lines run from the highest `line_total_usd` to the lowest, with ties in `item_id` order. | selected supplies: sort order | 15 |
+| `output/selected_supplies.csv` | It has an `item_id` column. | selected supplies: item_id column | 2 |
+| `output/selected_supplies.csv` | It has an `item` column. | selected supplies: item column | 2 |
+| `output/selected_supplies.csv` | It has a `quantity` column. | selected supplies: quantity column | 2 |
+| `output/selected_supplies.csv` | It has a `unit_price_usd` column. | selected supplies: unit_price_usd column | 2 |
+| `output/selected_supplies.csv` | It has a `line_total_usd` column. | selected supplies: line_total_usd column | 2 |
+| `output/selected_supplies.csv` | It has no columns beyond those five. | selected supplies: no extra columns | 2 |
+| `output/selected_supplies.csv` | Line `C1833` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C1833 | 4 |
+| `output/selected_supplies.csv` | Line `C3150` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C3150 | 4 |
+| `output/selected_supplies.csv` | Line `C3012` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C3012 | 4 |
+| `output/selected_supplies.csv` | Line `C4105` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C4105 | 4 |
+| `output/selected_supplies.csv` | Line `C2210` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2210 | 4 |
+| `output/selected_supplies.csv` | Line `C2877` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2877 | 4 |
+| `output/selected_supplies.csv` | Line `C2655` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2655 | 4 |
+| `output/selected_supplies.csv` | Line `C2904` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2904 | 4 |
+| `output/selected_supplies.csv` | Line `C2318` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2318 | 4 |
+| `output/selected_supplies.csv` | It holds no line with quantity 1, and no line twice. | selected supplies: no other lines | 4 |
+| `output/selected_supplies.csv` | Its lines run from the highest `line_total_usd` to the lowest. | selected supplies: highest line total first | 4 |
+| `output/selected_supplies.csv` | Lines with the same `line_total_usd` are in `item_id` order. | selected supplies: ties in item_id order | 4 |
 
 Extra files are ignored.
 

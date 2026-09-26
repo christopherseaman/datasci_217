@@ -15,15 +15,17 @@ jupyter:
 
 # Q9: Writeup
 
-**15 points, human review**
+**25 points, human review**
 
-Complete the root [`report.md`](report.md) using facts from your saved files. Concise, factual writing is welcome, and the model does not need to beat persistence. The [README's completion contract](README.md#completion-contract) says which report sections each review category reads and what earns full credit:
+Complete the root [`report.md`](report.md) using facts from your saved files. Concise, factual writing is welcome, and the model does not need to beat persistence. The [README's completion contract](README.md#completion-contract) says which report sections and notebook cells each review category reads and what earns full credit:
 
 | Category | Points |
 | --- | ---: |
-| Justified cleaning and forecast decisions | 5 |
-| Interpretation tied to evidence | 5 |
-| Limitations and clear communication | 5 |
+| Data and cleaning decisions | 5 |
+| Training patterns | 5 |
+| Forecast design and model choice | 5 |
+| Model results tied to evidence | 5 |
+| Summary, limitations, and reproducibility | 5 |
 
 ## 9.1 Required Structure
 
@@ -73,4 +75,5 @@ display(station_metrics)
 - [ ] The four table rows match `q7_validation_metrics.csv` and `q8_test_metrics.csv`.
 - [ ] All three images show when you preview `report.md` in VS Code.
 - [ ] The limitations are specific to this release and this evaluation design.
+- [ ] Q4 section 4.4 prints rows that show one lag and one target, and a Markdown cell in Q7 section 7.2 says which regressor you kept and why.
 - [ ] Every notebook was saved after **Run All**, so its outputs show.

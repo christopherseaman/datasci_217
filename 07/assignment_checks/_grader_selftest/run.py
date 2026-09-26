@@ -332,10 +332,10 @@ def run() -> None:
                 save_chart(scatter(patients).encode(x="walk_distance_m:Q", y="sessions_attended:Q")),
                 {"exploratory spec: x encoding", "exploratory spec: y encoding"}, "encodes walk_distance_m as x")
         mistake("spec-one-patient-changed", save_chart(scatter(patients.replace({"walk_distance_m": {431: 413}}))),
-                {"exploratory spec: embedded patient rows"}, "R03: Home-based, 32 sessions, 431 m")
+                {"exploratory spec: embedded patient rows"}, "R03 has walk_distance_m 413, expected 431")
         mistake("spec-one-program-only",
                 save_chart(scatter(patients.loc[patients["program"] == "Home-based"])),
-                {"exploratory spec: embedded patient rows"}, "6 of the 12 patients are missing")
+                {"exploratory spec: embedded patient rows"}, "is missing 6 of the 12 patients: R02, R04")
         from_url = alt.Chart("data/rehab_patients.csv").mark_point().encode(
             x="sessions_attended:Q", y="walk_distance_m:Q", color="program:N", shape="program:N")
         mistake("spec-data-url", save_chart(from_url),
@@ -371,11 +371,22 @@ def run() -> None:
                 {"supporting data: columns"}, "is missing goal_met_pct and also has goal_pct")
         mistake("supporting-one-wrong-value",
                 lambda root: edit_text(root, SUPPORTING, lambda text: text.replace("Center-based,4,79", "Center-based,4,97")),
-                {"supporting data: rows and values"}, "center-based, visit 4, 79%")
+                {"supporting data: rows and values"}, "Center-based, visit 4 has goal_met_pct 97, expected 79")
         mistake("supporting-row-dropped",
                 lambda root: followup[["program", "visit_number", "goal_met_pct"]].iloc[:7].to_csv(
                     root / SUPPORTING, index=False),
-                {"supporting data: rows and values"}, "1 of the 8 rows is missing")
+                {"supporting data: rows and values"}, "has no row for Center-based, visit 4")
+        mistake("supporting-row-repeated",
+                lambda root: pd.concat([followup[["program", "visit_number", "goal_met_pct"]]] * 2).iloc[:9].to_csv(
+                    root / SUPPORTING, index=False),
+                {"supporting data: rows and values"}, "lists Home-based, visit 1 twice")
+        mistake("critique-null", lambda root: edit_json(root, EVIDENCE, lambda value: value.update(critique=None)),
+                CRITIQUE_CHECKS, "critique is null, not a list of entries")
+        mistake("data-types-list",
+                lambda root: edit_json(root, EVIDENCE, lambda value: value.update(data_types=["categorical"])),
+                {name for name in NAMES if name.startswith("data type:")}, "data_types is a list, not an object")
+        mistake("spec-json-null", lambda root: (root / SPEC).write_text("null", encoding="utf-8"),
+                SPEC_CHECKS, "holds null, not a chart specification")
         mistake("supporting-missing", lambda root: (root / SUPPORTING).unlink(), SUPPORTING_CHECKS,
                 "run the Task 3.1 cell")
 
@@ -400,7 +411,7 @@ def run() -> None:
         mistake("supporting-semicolons-one-wrong-value",
                 lambda root: pd.read_csv(correct / SUPPORTING).replace({79: 97}).to_csv(
                     root / SUPPORTING, sep=";", index=False),
-                {"supporting data: rows and values"}, "center-based, visit 4, 79%")
+                {"supporting data: rows and values"}, "Center-based, visit 4 has goal_met_pct 97, expected 79")
         mistake("data-types-missing", lambda root: edit_json(root, EVIDENCE, lambda value: value.pop("data_types")),
                 {name for name in NAMES if name.startswith("data type:")}, "has no data_types key")
         mistake("text-alternative-differs",

@@ -15,7 +15,7 @@ jupyter:
 
 # Q4: Feature Engineering
 
-**14 points**
+**12 points**
 
 At each cutoff hour you may use measurements from that hour or earlier. The answer is the air temperature exactly one elapsed hour later. Build the features on the complete panel so every lag has an exact meaning in hours.
 

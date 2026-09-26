@@ -179,7 +179,7 @@ A count of 0 is a finding too; keep its row. Auditing must not change `raw`: the
 
 ### 3.1 Record the decisions
 
-In the notebook, build `decision_table`, a DataFrame with the columns `field`, `issue`, `action`, and `reason`: one row for each decision below, in this order, with `field`, `issue`, and `action` copied exactly. Write each `reason` yourself: one sentence, on one line, about this file.
+In the notebook, build `decision_table`, a DataFrame with the columns `field`, `issue`, `action`, and `reason`: one row for each decision below, in this order, with `field`, `issue`, and `action` copied exactly. Write each `reason` yourself: one sentence, on one line, about this file. Human review reads each reason.
 
 | `field` | `issue` | `action` |
 |---|---|---|
@@ -282,7 +282,7 @@ Restart the kernel and **Run All**. Every cell should finish without an error, t
 
 ### Completion contract
 
-The midterm totals 100 points: 85 points graded from your committed files after the deadline, 15 by human review. Each file is graded on its own, so a wrong value costs only its own points.
+The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, so a wrong value costs only its own points.
 
 | File | What earns the points | Points |
 | --- | --- | ---: |
@@ -291,8 +291,8 @@ The midterm totals 100 points: 85 points graded from your committed files after 
 | `output/numpy_age_summary.csv` | 1 for each metric's value | 5 |
 | `output/pandas_selection.csv` | 1 for each requested record with its raw `site` and `status`, less 1 for each other row; 1 for exactly the three columns | 4 |
 | `output/issue_audit.csv` | 1 for each issue's count | 15 |
-| `output/cleaned_people.csv` | 5 for each of the seven columns, in proportion to the records whose value in that column follows the cleaning rules (rounded down) | 35 |
-| `output/decision_log.csv` | 1 for each decision with its `field`, `issue`, and `action`; 2 for a reason on every row; 1 for `source`, 2 for `source_sha256`, 2 for `rows_before`, and 2 for `rows_after` on every row | 17 |
+| `output/cleaned_people.csv` | 4 for each of the seven columns, in proportion to the records whose value in that column follows the cleaning rules (rounded down) | 28 |
+| `output/decision_log.csv` | 1 for each decision with its `field`, `issue`, and `action`; 2 for a reason on every row; 1 each for `source`, `source_sha256`, `rows_before`, and `rows_after` on every row | 14 |
 
 How the files are read:
 
@@ -300,13 +300,17 @@ How the files are read:
 - `True`/`False`, `true`/`false`, `1`/`0`, and `yes`/`no` all read as booleans; an empty field, `NaN`, and `<NA>` all read as missing; a date may carry a `00:00:00` time after it.
 - `needs_review` is also right when it follows the rule from your own `age` and `visit_date` columns, and `rows_after` is also right when it equals the rows in your own `cleaned_people.csv`, so one mistake is not charged twice.
 
-Human review reads the notebook:
+Human review reads the notebook and the decision reasons, 5 points for each category:
 
 | Category | What it reads | Full credit (5) | Partial credit |
 | --- | --- | --- | --- |
 | Lecture 01 to 05 evidence map | The "Cumulative midterm checkpoint" cell | One entry for each of Lectures 01 to 05, each naming a concrete technique or file from that lecture and saying in one sentence where this notebook uses it | 2 to 4 for three or four lectures, or for entries that name a tool without saying where it is used here |
-| Cleaning decisions and rationale | The `reason` column of `output/decision_log.csv` and the Task 3.2 cell | Every reason names the problem in this file and why its action fits; Task 3.2 covers filling, flagged values, and what clean means here | 2 to 4 for generic reasons, such as "to clean the data", or a Task 3.2 answer missing one of its three points |
-| Validation, provenance, organization, and privacy | The Task 2.1, 4.1, and 4.3 cells, the Task 1.1 commands, and the notebook as a whole | The contract defines all six terms; the checks are named and stop the save; each read-back prints `True`; the notebook runs top to bottom with its outputs saved; no credentials or personal information appear | 2 to 4 when a part is missing or unclear |
+| Data contract | The Task 2.1 cell | States the row meaning and the candidate identifier, says how the raw table differs from the cleaned table, and defines all six terms in your own words, each in a way that fits this file | 2 to 4 when one or two parts are missing, or a definition is wrong or does not fit this file |
+| Decision reasons | The `reason` column of `output/decision_log.csv` | Each of the eight reasons names the problem in this file, such as the values or records it affects, and why its action fits | 2 to 4 when some reasons are generic, such as "to clean the data", or do not match their decision |
+| What you will not do | The Task 3.2 cell | Explains why filling across these person records is wrong, why flagged values stay missing for review, and why clean means meeting the contract, each tied to this file | 2 to 4 when one of the three points is missing or stays general |
+| Validation, read-back, and reproducibility | The Task 1.1 commands, the Task 4.1 and 4.3 cells, and the notebook as a whole | The Task 1.1 cell shows the commands that made `raw_preview.txt`; the checks are named and stop the save; each read-back prints `True`; the notebook runs top to bottom with its outputs saved; no credentials or personal information appear | 2 to 4 when a part is missing or unclear |
+
+A category whose cell still holds its **TODO** text earns 0.
 
 ## Submit
 

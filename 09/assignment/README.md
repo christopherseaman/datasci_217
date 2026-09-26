@@ -153,14 +153,14 @@ python check_assignment.py
 
 `check_assignment.py` runs the same checks GitHub runs. They read only the six CSV files in `output/` and compare them with values computed from the supplied data. They never run or read your notebook, so any way of producing correct files counts.
 
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 1, for example, the first check reports:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
 
 ```text
 [FIX ]  0/3  prepared vitals: columns
          output/prepared_vitals.csv is missing; run the Task 1.1 cell to write it, then commit it.
 ```
 
-Fix what it names, rerun the notebook and then the checks, and repeat until every check passes. A clean run ends with:
+Below the score, `Left to fix` lists the checks still failing and the points they are worth. Fix what they name, rerun the notebook and then the checks, and repeat until every check passes. A clean run ends with:
 
 ```text
 [PASS]  6/6  chronological blocks: block labels

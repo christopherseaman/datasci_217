@@ -15,7 +15,7 @@ jupyter:
 
 # Q7: Modeling
 
-**13 points**
+**12 points**
 
 Choose one regressor from the pinned scikit-learn. Fit candidates on the training rows only and use validation performance to freeze your choice. A simple model is enough, and it does not need to beat persistence. Do not open any Q6 test file in this notebook.
 
@@ -87,7 +87,7 @@ METRIC_COLUMNS = ["model", "mae", "rmse", "r2", "n"]
 
 ## 7.4 Frozen Specification and Permutation Importance
 
-Record the chosen regressor, not the whole pipeline: its module and class (`type(model).__module__` and `type(model).__name__`), and its settings as `json.dumps(model.get_params(deep=False))`. Then run `permutation_importance` on the fitted pipeline with the validation rows, `scoring="neg_mean_absolute_error"`, `n_repeats=10`, and `random_state=217`, and save `result.importances_mean` as `mean_mae_increase` and `result.importances_std` as `std_mae_increase`. A positive value means shuffling that feature made MAE worse.
+Record the chosen regressor, not the whole pipeline: the module and class from your import line (`sklearn.linear_model` and `Ridge` for `from sklearn.linear_model import Ridge`), and its settings as `json.dumps(model.get_params(deep=False))` (Lecture 07). Then run `permutation_importance` on the fitted pipeline with the validation rows, `scoring="neg_mean_absolute_error"`, `n_repeats=10`, and `random_state=217`, and save `result.importances_mean` as `mean_mae_increase` and `result.importances_std` as `std_mae_increase`. A positive value means shuffling that feature made MAE worse.
 
 ```python
 SPEC_COLUMNS = [

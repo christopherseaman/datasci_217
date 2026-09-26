@@ -166,9 +166,11 @@ Run the checks from the assignment directory:
 python3 check_assignment.py
 ```
 
-These are the same checks GitHub runs. They look only at the four files you commit in `terminal-practice/` and `output/`, and never run or read your Python code. Each check prints its points, and each failing check says what to fix: a report line that differs shows what it should read and what yours reads. Whitespace and blank lines are ignored, and so is the report's first line, your Python version.
+These are the same checks GitHub runs. They look only at the four files you commit in `terminal-practice/` and `output/`, and never run or read your Python code. Whitespace and blank lines are ignored, and so is the report's first line, your Python version.
 
-A clean local run ends with:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. A report line that differs shows what it should read, what yours reads, and which script prints it.
+
+Below the score, `Left to fix` lists the checks still failing and the points they are worth, as in `Left to fix (5 points): output/readiness.txt: Total.` Fix what they name, rerun `python3 make_output.py` when a report line changed, and check again until every check passes. A clean local run ends with:
 
 ```text
 [PASS] 15/15 identity hash on the roster
@@ -176,8 +178,6 @@ A clean local run ends with:
 Score: 100/100
 All checks passed.
 ```
-
-If a report line fails, fix the script that prints it, rerun `python3 make_output.py`, and check again.
 
 GitHub Actions reruns these checks on every push with the course's current copy of them, and that run is what counts. A check corrected after you forked reaches you on your next push. If a run cannot download the course's copy, it uses the copy in your repository and says so in its log.
 

@@ -27,6 +27,7 @@ CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
 SCRATCH = CHECKS.parents[1] / "scratch"
 sys.path.insert(0, str(CHECKS))
+import check_assignment  # noqa: E402
 import grading  # noqa: E402
 
 DATA = HANDOUT / "data" / "people_raw.csv"
@@ -67,6 +68,24 @@ def readme_checklist() -> dict[str, tuple[str, int]]:
     rows = re.findall(r"^\| `output/([^`]+)` \| [^|]+ \| `([^`]+)` \| (\d+) \|$",
                       README.read_text(encoding="utf-8"), re.M)
     return {name: (header, int(lines)) for name, header, lines in rows}
+
+
+def readme_contract() -> dict[str, int]:
+    """Each output file's points from the README's Completion contract table."""
+    points = {}
+    for line in README.read_text(encoding="utf-8").splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 3 and (name := re.fullmatch(r"`output/([^`]+)`", cells[0])) and cells[2].isdigit():
+            points[name.group(1)] = int(cells[2])
+    return points
+
+
+def readme_review_points() -> int:
+    """The human-review points in the README's rubric: each category's full credit times the categories."""
+    table = re.search(r"^\| Category \| What it reads \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
+                      README.read_text(encoding="utf-8"), re.M)
+    assert table, "the README shows no human-review rubric table"
+    return int(table.group(1)) * len(table.group(2).splitlines())
 
 
 def solve() -> dict[str, str]:
@@ -267,6 +286,15 @@ def run() -> None:
         assert len(text.splitlines()) == count, (name, count, len(text.splitlines()))
         tree = readme.split("## The data")[0]
         assert re.search(rf"── {re.escape(name)} +# you make in Task", tree), (name, "missing from the file tree")
+    graded: dict[str, int] = {}
+    for check in grading.CHECKS:
+        file_name = check.name.split(":")[0]
+        graded[file_name] = graded.get(file_name, 0) + check.points
+    assert readme_contract() == graded, ("README Completion contract points", readme_contract(), graded)
+    review = readme_review_points()
+    assert grading.MAX_SCORE + review == 100 and check_assignment.HUMAN_REVIEW_POINTS == review, review
+    assert (f"{grading.MAX_SCORE} points graded from your committed files after the deadline, "
+            f"{review} by human review") in readme, "the README states a different point split"
     # Every line of every answer file except the labels and headers the README has to show.
     shown = {HEADERS[name] for name in files} | {"$ tail -n 2 data/people_raw.csv", ",".join(RAW_COLUMNS)}
     leaks = [line for name in files if name != "decision_log.csv"
@@ -291,16 +319,16 @@ def run() -> None:
         empty.mkdir()
         for root in (empty, HANDOUT):
             result, code = checker(root)
-            assert (result["score"], result["max-score"], code) == (0, 85, 1), (root, result["score"], code)
+            assert (result["score"], result["max-score"], code) == (0, 75, 1), (root, result["score"], code)
             assert all(test["detail"] for test in result["tests"]), "every failing check says why"
 
         complete = write(work / "complete", files)
         result, code = checker(complete)
-        assert (result["score"], code) == (85, 0), losses(result)
+        assert (result["score"], code) == (75, 0), losses(result)
         assert grading.grade_submission(complete) == result
 
         result, _ = checker(write(work / "loose", loose(files)))
-        assert result["score"] == 85, [(name, detail(result, name)) for name in losses(result)]
+        assert result["score"] == 75, [(name, detail(result, name)) for name in losses(result)]
 
         # No submitted file runs: every one of these would leave a marker if imported or executed.
         trapped = write(work / "trapped", files)
@@ -310,7 +338,7 @@ def run() -> None:
                      "output/grading.py"):
             (trapped / name).write_text(trap, encoding="utf-8")
         result, _ = checker(trapped)
-        assert result["score"] == 85 and not marker.exists(), "a submitted file ran"
+        assert result["score"] == 75 and not marker.exists(), "a submitted file ran"
 
         def cleaned(change) -> str:
             return edit_csv(files["cleaned_people.csv"], change)
@@ -347,11 +375,11 @@ def run() -> None:
                 {"cleaned_people.csv: record_id": 1}, ("R002",)),
             "needs_review left out": (
                 {"cleaned_people.csv": cleaned(lambda t: t.drop(columns="needs_review"))},
-                {"cleaned_people.csv: needs_review": 5}, ("needs_review",)),
+                {"cleaned_people.csv: needs_review": 4}, ("needs_review",)),
             "rows with any gap dropped": (
                 {"cleaned_people.csv": cleaned(lambda t: t[t.ne("").all(axis=1)]),
                  "decision_log.csv": decisions(lambda t: t.assign(rows_after="4"))},
-                {"cleaned_people.csv: record_id": 4, **{f"cleaned_people.csv: {column}": 4
+                {"cleaned_people.csv: record_id": 3, **{f"cleaned_people.csv: {column}": 3
                                                         for column in grading.CLEANED_COLUMNS[1:]}}, ("missing",)),
             "one audit count off by one": (
                 {"issue_audit.csv": edit_csv(files["issue_audit.csv"], lambda t: t.assign(
@@ -396,12 +424,12 @@ def run() -> None:
                 {"decision_log.csv": "field,issue\n" + "x" * 200_000 + "\n"},
                 {name: points for name, points in (
                     ("decision_log.csv: decisions", 8), ("decision_log.csv: reason", 2),
-                    ("decision_log.csv: source", 1), ("decision_log.csv: source_sha256", 2),
-                    ("decision_log.csv: rows_before", 2), ("decision_log.csv: rows_after", 2))},
+                    ("decision_log.csv: source", 1), ("decision_log.csv: source_sha256", 1),
+                    ("decision_log.csv: rows_before", 1), ("decision_log.csv: rows_after", 1))},
                 ("cannot be read",)),
             "the record_id column left out": (
                 {"cleaned_people.csv": cleaned(lambda t: t.drop(columns="record_id"))},
-                {"cleaned_people.csv: record_id": 5}, ("record_id",)),
+                {"cleaned_people.csv: record_id": 4}, ("record_id",)),
             "cleaned_people.csv written with a space after every comma": (
                 {"cleaned_people.csv": files["cleaned_people.csv"].replace(",", ", ")}, {}, ()),
             "cleaned_people.csv with its columns padded to line up": (
@@ -419,7 +447,7 @@ def run() -> None:
                 {"numpy_age_summary.csv": 1}, ("mean", "39.6")),
             "a checksum computed from the wrong file": (
                 {"decision_log.csv": decisions(lambda t: t.assign(source_sha256="0" * 64))},
-                {"decision_log.csv: source_sha256": 2}, ("sha256",)),
+                {"decision_log.csv: source_sha256": 1}, ("sha256",)),
         }
         for description, (changes, expected_losses, mentions) in mutations.items():
             root = write(work / re.sub(r"\W+", "-", description), files)
@@ -430,15 +458,16 @@ def run() -> None:
                     (root / "output" / name).write_text(content, encoding="utf-8")
             result, code = checker(root)
             assert losses(result) == expected_losses, (description, losses(result))
-            assert result["score"] == 85 - sum(expected_losses.values()), description
+            assert result["score"] == 75 - sum(expected_losses.values()), description
             assert code == (0 if not expected_losses else 1), (description, code)
             for name in expected_losses:
                 text = detail(result, name)
                 assert "Fix: Task" in text and all(word in text for word in mentions), (description, text)
 
     print("Assignment 05 checks: constants match an independent pandas solution; the README lists every "
-          "artifact with its header and line count and publishes no expected value; the handout ships no "
-          "checks; empty and handout score 0; complete and loosely formatted submissions score 85; no "
+          "artifact with its header, line count, and points, states the 75/25 split, and publishes no "
+          "expected value; the handout ships no "
+          "checks; empty and handout score 0; complete and loosely formatted submissions score 75; no "
           f"submitted file runs; {len(mutations)} single variations each cost exactly their own points.")
 
 

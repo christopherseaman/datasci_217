@@ -92,15 +92,15 @@ Then complete the nine notebooks in order, Q1 through Q9. Each notebook starts b
 
 | Question | Notebook | What you build | Points |
 | --- | --- | --- | ---: |
-| Q1 | [`q1_setup_exploration.ipynb`](q1_setup_exploration.ipynb) | Audit the release against its manifest, measure each station's coverage, and plot a first look | 6 |
-| Q2 | [`q2_data_cleaning.ipynb`](q2_data_cleaning.ipynb) | Convert times to UTC, apply the sensor rules, and record what changed | 11 |
-| Q3 | [`q3_data_wrangling.ipynb`](q3_data_wrangling.ipynb) | Build the complete station-by-hour panel and summarize its gaps | 11 |
-| Q4 | [`q4_feature_engineering.ipynb`](q4_feature_engineering.ipynb) | Build the next-hour target and the past-only predictors | 14 |
-| Q5 | [`q5_pattern_analysis.ipynb`](q5_pattern_analysis.ipynb) | Describe monthly and hourly patterns in the training period only | 6 |
-| Q6 | [`q6_modeling_preparation.ipynb`](q6_modeling_preparation.ipynb) | Split the eligible rows into train, validation, and test by time | 11 |
-| Q7 | [`q7_modeling.ipynb`](q7_modeling.ipynb) | Fit one scikit-learn pipeline and compare it with persistence on validation | 13 |
-| Q8 | [`q8_results.ipynb`](q8_results.ipynb) | Refit the frozen choice and evaluate the test period once | 13 |
-| Q9 | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` | 15, human review |
+| Q1 | [`q1_setup_exploration.ipynb`](q1_setup_exploration.ipynb) | Audit the release against its manifest, measure each station's coverage, and plot a first look | 5 |
+| Q2 | [`q2_data_cleaning.ipynb`](q2_data_cleaning.ipynb) | Convert times to UTC, apply the sensor rules, and record what changed | 10 |
+| Q3 | [`q3_data_wrangling.ipynb`](q3_data_wrangling.ipynb) | Build the complete station-by-hour panel and summarize its gaps | 10 |
+| Q4 | [`q4_feature_engineering.ipynb`](q4_feature_engineering.ipynb) | Build the next-hour target and the past-only predictors | 12 |
+| Q5 | [`q5_pattern_analysis.ipynb`](q5_pattern_analysis.ipynb) | Describe monthly and hourly patterns in the training period only | 5 |
+| Q6 | [`q6_modeling_preparation.ipynb`](q6_modeling_preparation.ipynb) | Split the eligible rows into train, validation, and test by time | 10 |
+| Q7 | [`q7_modeling.ipynb`](q7_modeling.ipynb) | Fit one scikit-learn pipeline and compare it with persistence on validation | 12 |
+| Q8 | [`q8_results.ipynb`](q8_results.ipynb) | Refit the frozen choice and evaluate the test period once | 11 |
+| Q9 | [`q9_writeup.ipynb`](q9_writeup.ipynb) | Complete `report.md` | 25, human review |
 
 ## Check Your Work
 
@@ -143,33 +143,33 @@ Restart each notebook's kernel and **Run All**, Q1 through Q8, and confirm every
 
 ### Completion contract
 
-The exam totals 100 points: 85 points graded from your committed files after the deadline, 15 by human review. Each file is graded on its own, and most files are split into several parts, so a wrong value costs only the part it belongs to.
+The exam totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, and most files are split into several parts, so a wrong value costs only the part it belongs to.
 
 | File | What earns the points | Points |
 | --- | --- | ---: |
 | `output/q1_release_audit.csv` | Each of the seven checks with the manifest value in `expected`, your measured value in `observed`, and `passed` True | 2 |
-| `output/q1_station_coverage.csv` | Each station's six values, in proportion to the values right | 3 |
+| `output/q1_station_coverage.csv` | Each station's six values, in proportion to the values right | 2 |
 | `output/q1_visualizations.png` | A PNG image | 1 |
-| `output/q2_cleaned_observations.csv` | 2 for exactly the valid release rows; 2 for `measurement_timestamp_utc`; 1 for `solar_radiation_w_m2`; 2 for the other sensor columns whose values a range rule changes, in proportion to those right; 1 for the sensor columns no rule changes | 8 |
+| `output/q2_cleaned_observations.csv` | 2 for exactly the valid release rows; 2 for `measurement_timestamp_utc`; 2 for `solar_radiation_w_m2` and the other sensor columns whose values a range rule changes, in proportion to those right; 1 for the sensor columns no rule changes | 7 |
 | `output/q2_cleaning_audit.csv` | The `affected_values` totals of the `rows_rejected`, `set_missing`, and `set_to_zero` rows | 2 |
 | `output/q2_missingness.csv` | Every station and sensor column's missing count and percent | 1 |
-| `output/q3_hourly_panel.csv` | 2 for exactly one row per station and hour; 2 for the 13 sensor columns; 2 for `source_observed`; 1 each for `hour`, `day_of_week`, and `month` | 9 |
+| `output/q3_hourly_panel.csv` | 2 for exactly one row per station and hour; 2 for the 13 sensor columns; 2 for `source_observed`; 2 for `hour`, `day_of_week`, and `month`, in proportion to those right | 8 |
 | `output/q3_panel_summary.csv` | Each station's five values, in proportion to the values right | 2 |
-| `output/q4_features.csv` | 1 each for: the rows; `row_id`; `target_timestamp_utc`; `target_air_temperature_c`; `model_eligible`; the seven `_t` copies; the wind sine and cosine; the three lags; the 24-hour mean; the 1-hour change; the target-hour sine and cosine; the target day-of-year sine and cosine | 12 |
+| `output/q4_features.csv` | 1 each for: the rows; `row_id`; `target_timestamp_utc`; `target_air_temperature_c`; `model_eligible`; the seven `_t` copies. 2 for the three lags, the 24-hour mean, and the 1-hour change, and 2 for the sines and cosines of wind direction, target hour, and target day of year, each in proportion to the columns right | 10 |
 | `output/q4_feature_manifest.csv` | Each predictor's offsets, role, and a nonblank source, in proportion to the rows right | 2 |
-| `output/q5_monthly_station_summary.csv` | Each station-month's five values, in proportion to the values right | 3 |
+| `output/q5_monthly_station_summary.csv` | Each station-month's five values, in proportion to the values right | 2 |
 | `output/q5_correlations.csv` | The 49 correlations, in proportion to the values right | 2 |
 | `output/q5_patterns.png` | A PNG image | 1 |
-| `output/q6_X_*.csv` | 1 for each file's rows; 3 for the values, in proportion to the columns right across the three files | 6 |
+| `output/q6_X_*.csv` | 1 for each file's rows; 2 for the values, in proportion to the columns right across the three files | 5 |
 | `output/q6_y_*.csv` | Each file's rows and target values, in proportion to the six parts right | 3 |
 | `output/q6_split_summary.csv` | Each split's four values, in proportion to the values right | 2 |
 | `output/q7_model_spec.csv` | 1 each for: one row naming a scikit-learn module and class; `parameters_json` as a dictionary with `random_state` 217 and `n_jobs` 1 where the estimator has them; the 19 predictors in `feature_columns`; `random_state` 217 | 4 |
-| `output/q7_validation_predictions.csv` | 1 each for: the rows; `station_name` and `target_timestamp_utc`; `actual`; `persistence_prediction`; a finite `model_prediction` in every row | 5 |
+| `output/q7_validation_predictions.csv` | 1 each for the rows and a finite `model_prediction` in every row; 2 for `station_name`, `target_timestamp_utc`, `actual`, and `persistence_prediction`, in proportion to those right | 4 |
 | `output/q7_validation_metrics.csv` | The eight values, computed from your `q7_validation_predictions.csv`, in proportion to the values right | 2 |
 | `output/q7_permutation_importance.csv` | 1 for one row per fixed predictor; 1 for finite values with a nonnegative `std_mae_increase` | 2 |
-| `output/q8_test_predictions.csv` | 1 each for: the rows; `station_name` and `target_timestamp_utc`; `actual`; `persistence_prediction`; a finite `model_prediction`; `model_error`; `model_absolute_error` | 7 |
+| `output/q8_test_predictions.csv` | 1 each for: the rows; a finite `model_prediction`; `model_error`; `model_absolute_error`. 2 for `station_name`, `target_timestamp_utc`, `actual`, and `persistence_prediction`, in proportion to those right | 6 |
 | `output/q8_test_metrics.csv` | The eight values, computed from your `q8_test_predictions.csv`, in proportion to the values right | 2 |
-| `output/q8_station_metrics.csv` | The 16 values, computed from your `q8_test_predictions.csv`, in proportion to the values right | 3 |
+| `output/q8_station_metrics.csv` | The 16 values, computed from your `q8_test_predictions.csv`, in proportion to the values right | 2 |
 | `output/q8_final_visualizations.png` | A PNG image | 1 |
 
 "In proportion" means the part's points times the share right, rounded down.
@@ -185,13 +185,17 @@ How the files are read:
 - A file built correctly from one of your own earlier files counts as right even when that earlier file has a mistake: for example, a Q3 panel joined from your Q2 table, Q4 features computed from your Q3 panel, Q6 splits taken from your Q4 file, and metrics computed from your prediction files. A mistake costs points once, where you made it.
 - The model's accuracy is not graded: it does not need to beat persistence.
 
-Human review reads `report.md` and the notebooks:
+Human review reads `report.md` and the notebooks, 5 points for each category:
 
 | Category | What it reads | Full credit (5) | Partial credit |
 | --- | --- | --- | --- |
-| Justified cleaning and forecast decisions | `report.md` sections **Data and Cleaning** and **Forecast Design**; notebook sections 2.2, 2.3, 4.2, and 7.2 | Each decision (UTC conversion and the rejected rows, the sensor rules and no filling, the complete panel, the next-hour target and past-only predictors, the persistence baseline, the time-ordered split, the chosen regressor) is stated with a reason that comes from this data | 2 to 4 when decisions are listed without reasons, or one area is missing |
-| Interpretation tied to evidence | `report.md` sections **Patterns** and **Model Results**, the metrics table, and the three figures | At least one training-period pattern with numbers from your Q5 files; the model compared with persistence using the table's numbers; one station difference from `q8_station_metrics.csv`; every claim matches a saved file | 2 to 4 when numbers are missing, or a claim goes beyond what the files show |
-| Limitations and clear communication | `report.md` sections **Executive Summary** and **Limitations**, the figures, and the notebooks as a whole | The summary states the question, the data, the model, and one test result; the limitations are specific to this release and design (two stations, sensor gaps, one test period); figures have titles and labeled axes; every notebook runs top to bottom with its outputs saved | 2 to 4 when limitations are generic, figures are hard to read, or a notebook stops with an error |
+| Data and cleaning decisions | `report.md` section **Data and Cleaning** and `q1_visualizations.png`; notebook sections 2.2, 2.3, and 3.2 | The release audit result and each station's coverage from your Q1 files; the UTC conversion and why the ambiguous fall-back rows are rejected; the sensor rules and why invalid values become missing rather than filled; the complete panel that keeps gaps visible; each with a reason that comes from this data; a Q1 figure whose labeled panels show a sensor distribution and each station's time series | 2 to 4 when decisions are listed without reasons or numbers, one area is missing, or the figure is hard to read |
+| Training patterns | `report.md` section **Patterns** and `q5_patterns.png` | One or two monthly or local-hour patterns with numbers from `q5_monthly_station_summary.csv` or `q5_correlations.csv`, stated as training-period results; a correlation described as a pattern, not as proof that a predictor helps; a figure that shows both patterns with titles and labeled axes | 2 to 4 when numbers are missing, a claim goes beyond the files, or the figure is hard to read |
+| Forecast design and model choice | `report.md` section **Forecast Design**; notebook section 4.4 and the Markdown cell in section 7.2 | The next-hour target, the past-only predictors, the persistence baseline, the preprocessing fit inside the pipeline on training rows, and the split by target time, each with its reason; section 4.4 prints rows that show one lag and one target matching the panel; the 7.2 cell names the regressor you kept and why, from its validation results | 2 to 4 when decisions are listed without reasons, section 4.4 shows no lag or target, or the 7.2 cell is missing |
+| Model results tied to evidence | `report.md` section **Model Results**, its metrics table, and `q8_final_visualizations.png` | The four table rows match your Q7 and Q8 metric files; the model compared with persistence on validation and test using the table's numbers; one station difference from `q8_station_metrics.csv`; the test results reported, not used to tune; a figure with its three views, titles, and labeled axes | 2 to 4 when numbers are missing or differ from the files, or a claim goes beyond what the files show |
+| Summary, limitations, and reproducibility | `report.md` sections **Executive Summary** and **Limitations**, and the notebooks as a whole | The summary states the question, the data, the model, and one test result; the limitations are specific to this release and design (two stations, sensor gaps, one test period); every notebook runs top to bottom with its outputs saved | 2 to 4 when the summary misses a part, the limitations are generic, or a notebook stops with an error or shows no outputs |
+
+A category whose `report.md` section still holds its bracketed placeholder earns 0.
 
 ## Submit
 

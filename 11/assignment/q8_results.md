@@ -15,7 +15,7 @@ jupyter:
 
 # Q8: Results
 
-**13 points**
+**11 points**
 
 Your Q7 regressor, its settings, and the feature list are frozen. Rebuild the same pipeline, fit it on train plus validation, and evaluate the July to December 2024 test period once. The test results describe the final model; they are not another chance to tune it.
 

@@ -9,7 +9,7 @@ uv run --python 3.13 --with-requirements 11/assignment/requirements.txt \
     python 11/assignment_checks/check_assignment.py path/to/submission --json   # datasci217/grading-result/v1
 ```
 
-The report covers the 85 points graded from files; the other 15 come from human review of `report.md` and the notebooks, as the handout README's Completion contract describes. The command exits 0 only when every check passes, 1 when any does not, and 2 when the supplied release is missing or changed, so judge a run by its JSON, not its exit status. A run takes about 15 seconds.
+The report covers the 75 points graded from files; the other 25 come from human review of `report.md` and the notebooks, five 5-point categories that the handout README's Completion contract lists with the report sections and notebook cells each one reads. The command exits 0 only when every check passes, 1 when any does not, and 2 when the supplied release is missing or changed, so judge a run by its JSON, not its exit status. A run takes about 15 seconds.
 
 The checks read only the CSV and PNG files in the submission's `output/` and its `report.md`. They never import, run, or read submitted code, and they ignore the submission's own `data/`: every expected value is recomputed from `11/assignment/data/` in this repository, after its SHA-256 is checked against the frozen release. They need NumPy and pandas at the versions `11/assignment/requirements.txt` pins.
 
@@ -18,35 +18,36 @@ The checks read only the CSV and PNG files in the submission's `output/` and its
 | Check | Points | Unit scored |
 | --- | ---: | --- |
 | `q1_release_audit.csv` | 2 | In proportion to the 7 checks with right `expected`, `observed`, and `passed` |
-| `q1_station_coverage.csv` | 3 | In proportion to the 12 station values right |
+| `q1_station_coverage.csv` | 2 | In proportion to the 12 station values right |
 | `q1_visualizations.png`, `q5_patterns.png`, `q8_final_visualizations.png` | 1 each | A PNG image at least 50 pixels on each side |
 | `q2_cleaned_observations.csv: rows` | 2 | 1 for every valid release row present, 1 for no other, repeated, or unreadable row |
 | `q2_cleaned_observations.csv: measurement_timestamp_utc` | 2 | In proportion to the rows right, rounded down |
-| `q2_cleaned_observations.csv: solar_radiation_w_m2` | 1 | The column right in every row |
-| `q2_cleaned_observations.csv: interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps` | 2 | In proportion to the 3 columns right (the only range rules this release triggers) |
+| `q2_cleaned_observations.csv: solar_radiation_w_m2, interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps` | 2 | In proportion to the 4 columns right (the only columns this release's rules change) |
 | `q2_cleaned_observations.csv: the other nine sensor columns` | 1 | All nine unchanged apart from their rules |
 | `q2_cleaning_audit.csv` | 2 | In proportion to the 3 result totals (`rows_rejected`, `set_missing`, `set_to_zero`) right |
 | `q2_missingness.csv` | 1 | All 26 station and column counts and percents right |
 | `q3_hourly_panel.csv: rows` | 2 | As for the Q2 rows, over the station-hour grid |
 | `q3_hourly_panel.csv: sensor columns` | 2 | In proportion to the 13 columns right |
 | `q3_hourly_panel.csv: source_observed` | 2 | In proportion to the rows right |
-| `q3_hourly_panel.csv: hour`, `day_of_week`, `month` | 1 each | The column right in every row |
+| `q3_hourly_panel.csv: hour, day_of_week, and month` | 2 | In proportion to the 3 columns right in every row |
 | `q3_panel_summary.csv` | 2 | In proportion to the 10 station values right |
-| `q4_features.csv`: rows, `row_id`, `target_timestamp_utc`, target, `model_eligible`, `_t` copies, wind, lags, 24-hour mean, 1-hour change, target hour, target day | 1 each | The column or column group right in every row present |
+| `q4_features.csv`: rows, `row_id`, `target_timestamp_utc`, target, `model_eligible`, `_t` copies | 1 each | The column or column group right in every row present |
+| `q4_features.csv: lags, 24-hour mean, and 1-hour change` | 2 | In proportion to the 5 columns right in every row present |
+| `q4_features.csv: wind direction, target hour, and target day-of-year sine and cosine` | 2 | In proportion to the 6 columns right in every row present |
 | `q4_feature_manifest.csv` | 2 | In proportion to the 19 predictors with right offsets and role and a nonblank source |
-| `q5_monthly_station_summary.csv` | 3 | In proportion to the 240 station-month values right |
+| `q5_monthly_station_summary.csv` | 2 | In proportion to the 240 station-month values right |
 | `q5_correlations.csv` | 2 | In proportion to the 49 correlations right |
 | `q6_X_*.csv: rows` | 3 | 1 per split with exactly its eligible rows |
-| `q6_X_*.csv: values` | 3 | In proportion to the 63 split columns right |
+| `q6_X_*.csv: values` | 2 | In proportion to the 63 split columns right |
 | `q6_y_*.csv` | 3 | In proportion to the 6 parts (each split's rows and targets) right |
 | `q6_split_summary.csv` | 2 | In proportion to the 12 split values right |
 | `q7_model_spec.csv` | 4 | 1 each for the module and class, `parameters_json`, `feature_columns`, and `random_state` |
-| `q7_validation_predictions.csv` | 5 | 1 each for the rows, the IDs, `actual`, `persistence_prediction`, and a finite `model_prediction` |
+| `q7_validation_predictions.csv` | 4 | 1 each for the rows and a finite `model_prediction`; 2 in proportion to the 4 copied columns right (`station_name`, `target_timestamp_utc`, `actual`, `persistence_prediction`) |
 | `q7_validation_metrics.csv` | 2 | In proportion to the 8 metric values right |
 | `q7_permutation_importance.csv` | 2 | 1 for the 19 features, 1 for finite values with a nonnegative standard deviation |
-| `q8_test_predictions.csv` | 7 | As for Q7, plus 1 each for `model_error` and `model_absolute_error` |
+| `q8_test_predictions.csv` | 6 | As for Q7, plus 1 each for `model_error` and `model_absolute_error` |
 | `q8_test_metrics.csv` | 2 | In proportion to the 8 metric values right |
-| `q8_station_metrics.csv` | 3 | In proportion to the 16 metric values right |
+| `q8_station_metrics.csv` | 2 | In proportion to the 16 metric values right |
 | `report.md` structure | 0 | Notes for the human reviewer: headings, placeholders, the metrics table against the saved metric files, and the three image embeds |
 
 "In proportion" means the check's points times the share right, rounded down. A check scores only its own file, so no check depends on another passing, and one wrong value costs only its own share. Every failure says what was expected, what was found (with the first differing row), and which question and section to fix.
@@ -57,7 +58,7 @@ A missing or extra row costs only the rows check: the value checks compare the r
 
 ## Changing a check
 
-Edit `grading.py`, keep the handout README's checklist and Completion contract and `assignment.md` in agreement with it, and rerun both tests:
+Edit `grading.py`, keep the handout README's checklist, question table, and Completion contract, each notebook's points line, and `assignment.md` in agreement with it (the self-test compares their points), and rerun both tests:
 
 ```bash
 uv run --python 3.13 --with-requirements 11/assignment/requirements.txt python 11/assignment_checks/_grader_selftest/run.py

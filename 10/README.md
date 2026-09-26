@@ -288,6 +288,7 @@ When rows have no time order, split them at random; the next topic's `train_test
 
 - `df['visit_date'] + pd.Timedelta(days=7)`: Target time for a next-week target (Lecture 09).
 - `df[df['target_date'] < cutoff]`, `df[(df['target_date'] >= start) & (df['target_date'] < end)]`: Rows whose target falls before a cutoff, or inside one period.
+- `df['target_utc'] < pd.Timestamp('2024-01-01', tz='America/Chicago')`: With aware UTC target times (Lecture 09), write a local-midnight boundary as an aware timestamp in the local zone; pandas compares the instants, so this boundary is 06:00 UTC and nothing needs converting.
 - `len(part)`, `part['target_date'].min()`, `part['target_date'].max()`: Each partition's size and target-time range; check before fitting.
 
 ### Code Snippet: A Chronological Split

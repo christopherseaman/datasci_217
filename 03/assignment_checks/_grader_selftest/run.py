@@ -567,7 +567,7 @@ def run() -> None:
             result = graded(misplaced)
             assert result["score"] == ARTIFACT_POINTS - POINTS[3], result["score"]
             assert f"Found {moved}; rename or move it" in detail(result, "summary artifact format"), name
-            assert "summary artifact format check says why" in detail(result, "answer: patients"), name
+            assert detail(result, "answer: patients") == detail(result, "summary artifact format"), name
 
         # A key written twice reads its first line, and the feedback says so.
         appended = workspace / "appended-summary"
@@ -613,6 +613,25 @@ def run() -> None:
             [sys.executable, "-B", "check_assignment.py"], cwd=fresh, capture_output=True, text=True, check=False
         ).stdout
         assert shown.group(1) in printed, (shown.group(1), printed)
+        assert "[FIX ]   0/4   answer: patients  (same fix as above)\n" in printed, printed
+        assert printed.endswith(
+            "Score: 0/100\nLeft to fix (100 points): output/environment.txt: environment probe; "
+            "output/record_count.txt: record count; output/monitor_counts_<timestamp>.txt: monitor counts; "
+            "output/vitals_summary.txt (all 15 checks).\n"), printed
+
+        # A wrong answer says what the data gives, and the report ends by naming what is left to fix.
+        printed = subprocess.run(
+            [sys.executable, "-B", str(CHECKS / "check_assignment.py"), str(workspace / "mixed")],
+            capture_output=True, text=True, check=False,
+        ).stdout
+        assert f"which is not the monitor whose patients' 12-hour means average highest: {DATA_FILE} gives " \
+               f"`{answers['high_monitor']}`." in printed, printed
+        assert printed.endswith("Score: 93/100\nLeft to fix (7 points): output/vitals_summary.txt: sd_sbp and "
+                                "high_monitor.\n"), printed
+        assert subprocess.run(
+            [sys.executable, "-B", str(CHECKS / "check_assignment.py"), str(complete)],
+            capture_output=True, text=True, check=False,
+        ).stdout.endswith("Score: 100/100\nAll checks passed.\n")
 
         # Every submission this self-test graded before the lenient-only rule went
         # through the baseline comparison too.

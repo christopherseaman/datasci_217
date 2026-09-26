@@ -234,47 +234,83 @@ def run() -> None:
             frame["line_total_usd"] = frame["quantity"] * frame["unit_price_usd"]
             return frame.sort_values(by=["line_total_usd", "item_id"], ascending=[False, True])
 
+        line_checks = {f"selected supplies: line {item_id}" for item_id in expected_selection()}
         mistake("supplies-no-mask", lambda root: rewrite(root, with_totals(source)),
-                {"selected supplies: rows with quantity 2 or more"}, "C1022 (quantity 1)")
+                {"selected supplies: no other lines"}, "C1022, C1407 and C1560, which have quantity 1")
         mistake("supplies-mask-greater-than",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] > 2])),
-                {"selected supplies: rows with quantity 2 or more"}, "missing C1833")
+                {"selected supplies: line C1833", "selected supplies: line C4105", "selected supplies: line C2655"},
+                '>= 2 keeps it, while > 2 drops it')
         mistake("supplies-no-tiebreak",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).sort_index()
                                      .sort_values("line_total_usd", ascending=False)),
-                {"selected supplies: sort order"}, "C3150 comes before C1833, but both total 57.00")
+                {"selected supplies: ties in item_id order"}, "C3150 before C1833, but both have the line total 57.00")
         mistake("supplies-ascending",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2])
                                      .sort_values(by=["line_total_usd", "item_id"])),
-                {"selected supplies: sort order"})
+                {"selected supplies: highest line total first"}, "C2318 (line total 12.75) comes before")
+        mistake("supplies-both-descending",
+                lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2])
+                                     .sort_values(by=["line_total_usd", "item_id"], ascending=False)),
+                {"selected supplies: ties in item_id order"}, "the tie goes to the smaller item_id")
         mistake("supplies-one-wrong-total",
                 lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("12.75", "12.5")),
-                {"selected supplies: values and line totals"}, "C2318's line_total_usd is 12.5")
+                {"selected supplies: line C2318"}, "C2318's line_total_usd is 12.5, expected 3 * 4.25 = 12.75")
+        mistake("supplies-one-wrong-quantity",
+                lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace(",6,9.5,", ",7,9.5,")),
+                {"selected supplies: line C3150"}, "C3150's quantity is 7, expected 6")
         mistake("supplies-sum-not-product",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).assign(
                     line_total_usd=lambda frame: frame["quantity"] + frame["unit_price_usd"])),
-                {"selected supplies: values and line totals"})
+                line_checks)
         mistake("supplies-extra-column",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).assign(flag="bulk")),
-                {"selected supplies: columns"}, "also has flag")
+                {"selected supplies: no extra columns"}, "also has flag")
         mistake("supplies-total-misnamed",
                 lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("line_total_usd", "line_total", 1)),
-                {"selected supplies: columns"}, "rather than line_total")
+                {"selected supplies: line_total_usd column"}, "a column named line_total where")
+        mistake("supplies-quantity-misnamed",
+                lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("quantity", "qty", 1)),
+                {"selected supplies: quantity column"}, "a column named qty where")
         mistake("supplies-no-total",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).drop(
                     columns=["line_total_usd"])),
-                {"selected supplies: columns", "selected supplies: values and line totals"}, None)
+                {"selected supplies: line_total_usd column"} | line_checks, None)
         mistake("supplies-missing", lambda root: (root / SUPPLIES_FILE).unlink(), SUPPLY_CHECKS)
         mistake("supplies-tabs-one-wrong-total",
                 lambda root: pd.read_csv(correct / SUPPLIES_FILE).replace({12.75: 12.5}).to_csv(
                     root / SUPPLIES_FILE, sep="\t", index=False),
-                {"selected supplies: values and line totals"}, "C2318's line_total_usd is 12.5")
+                {"selected supplies: line C2318"}, "C2318's line_total_usd is 12.5")
+
+        # The printed report says each shared fix once and ends by naming the checks left to fix.
+        def printed(root: Path) -> str:
+            return subprocess.run(
+                [sys.executable, "-B", str(CHECKS / "check_assignment.py"), str(root)],
+                capture_output=True, text=True, check=False,
+            ).stdout
+
+        report = printed(empty)
+        assert report.count("is missing; run the Task") == 2, report
+        assert "[FIX ]  0/10 fridge block: rows FRG-102 and FRG-103  (same fix as above)" in report, report
+        assert report.rstrip().endswith(
+            "Left to fix (100 points): fridge block (all 4 checks); selected supplies (all 18 checks)."), report
+        report = printed(workspace / "supplies-one-wrong-total")
+        assert report.rstrip().endswith("Score: 96/100\nLeft to fix (4 points): selected supplies: line C2318."), report
+        report = printed(workspace / "supplies-mask-greater-than")
+        assert report.rstrip().endswith(
+            "Left to fix (12 points): selected supplies: line C1833, line C4105 and line C2655."), report
+        report = printed(workspace / "supplies-quantity-misnamed")
+        assert report.rstrip().endswith("Left to fix (2 points): selected supplies: quantity column."), report
+        report = printed(workspace / "supplies-no-total")
+        assert report.rstrip().endswith("Left to fix (38 points): selected supplies: line_total_usd column, "
+                                        "line C1833, line C3150 and 7 more."), report
+        assert printed(correct).rstrip().endswith("Score: 100/100\nAll checks passed."), printed(correct)
 
         single_mistakes = len(mistakes)
 
     # A fresh handout prints exactly the "Before Task 2" example README.md shows.
     readme = (HANDOUT / "README.md").read_text(encoding="utf-8")
-    shown = re.search(r"Before Task 2, for example, the first check reports:\n\n```text\n(.*?)```", readme, re.DOTALL)
+    shown = re.search(r"Before Task 2, for example, the fridge block checks report:\n\n```text\n(.*?)```", readme, re.DOTALL)
     assert shown is not None, "README.md no longer shows the Before Task 2 example"
     printed = subprocess.run(
         [sys.executable, "-B", "check_assignment.py"], cwd=HANDOUT, capture_output=True, text=True, check=False

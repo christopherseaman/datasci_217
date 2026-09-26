@@ -778,6 +778,7 @@ Saving a chart as JSON keeps the Vega-Lite specification and its rows together, 
 | `chart.to_dict()` | Return the same spec as a Python dictionary | `dict` |
 | `json.dump(obj, file, indent=2, ensure_ascii=False)` | Write a dict or list as readable JSON; `ensure_ascii=False` keeps characters such as é unescaped. It does not end the file with a newline; call `file.write('\n')` afterward if one is required | JSON file |
 | `json.load(file)` | Read a JSON file back | `dict` or `list` |
+| `json.dumps(obj)` / `json.loads(text)` | The same JSON as a string instead of a file, such as a settings dictionary stored in one CSV cell; `json.loads()` turns the string back | `'{"alpha": 1.0}'` / `dict` or `list` |
 
 ### Code Snippet: Save the Chart Specification
 

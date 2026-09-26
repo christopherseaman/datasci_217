@@ -245,6 +245,27 @@ def _cell(value, numeric: bool):
     return _label(value)
 
 
+def _json_kind(value) -> str:
+    """A JSON value's kind as JSON names it: an object, a list, a string, a number, true or false, or null."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true or false"
+    if isinstance(value, dict):
+        return "an object"
+    if isinstance(value, list):
+        return "a list"
+    if isinstance(value, str):
+        return "a string"
+    return "a number"
+
+
+def _brief(value, limit: int = 60) -> str:
+    """A JSON value as saved, shortened with ... past `limit` characters."""
+    text = json.dumps(value, ensure_ascii=False)
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
 def _load_json(root: Path, name: str, task: str):
     text = _read_text(root, name, task)
     _assert(bool(text.strip()), f"{name} is empty; run the {task} cell again to write it.")
@@ -264,7 +285,7 @@ def _spec(root: Path) -> dict:
     spec = _load_json(root, SPEC_FILE, "Task 1.1")
     _assert(
         isinstance(spec, dict),
-        f"{SPEC_FILE} holds a JSON {type(spec).__name__}, not a chart specification; "
+        f"{SPEC_FILE} holds {_json_kind(spec)}, not a chart specification (a JSON object); "
         "in Task 1.1, save the chart itself with exploratory_chart.save(EXPLORATORY_SPEC_PATH).",
     )
     return spec
@@ -308,10 +329,13 @@ def check_spec_mark(root: Path) -> None:
         "alt.Chart(patients).mark_point(filled=True, size=90).",
     )
     view, _ = found
-    mark = _mark_type(view)
+    mark = view.get("mark")
+    if isinstance(mark, dict):
+        mark = mark.get("type")
+    shown = f"{mark} marks" if isinstance(mark, str) and mark.strip() else f"the mark {_brief(mark, 40)}"
     _assert(
-        mark == "point",
-        f"{SPEC_FILE} draws {mark or 'an unnamed'} marks, not points; in Task 1.1, use .mark_point(), "
+        _mark_type(view) == "point",
+        f"{SPEC_FILE} draws {shown}, not points; in Task 1.1, use .mark_point(), "
         "the one mark that shows the shape encoding.",
     )
 
@@ -352,6 +376,10 @@ def check_spec_rows(root: Path) -> None:
     adding a column costs nothing.
     """
     rows = _embedded_rows(_spec(root))
+    records = [{_key(key): value for key, value in row.items()} if isinstance(row, dict) else {} for row in rows]
+    if records and all("patient_id" in record for record in records):
+        _check_spec_rows_by_patient(records)
+        return
     described = {
         (_label(program), float(sessions), float(distance)): f"{patient_id}: {program}, {sessions} sessions, {distance} m"
         for patient_id, (program, sessions, distance) in REHAB_PATIENTS.items()
@@ -371,8 +399,9 @@ def check_spec_rows(root: Path) -> None:
     if not found:
         columns = sorted({_key(key) for row in rows if isinstance(row, dict) for key in row})
         raise AssertionError(
-            f"{SPEC_FILE} embeds {len(rows)} rows, but none has all of {_join(PLOTTED_FIELDS)} "
-            f"(its rows have {_join(columns) or 'no columns'}); in Task 1.1, build the chart from "
+            f"{SPEC_FILE} embeds {'1 row' if len(rows) == 1 else f'{len(rows)} rows'}, but none has all of "
+            f"{_join(PLOTTED_FIELDS)} "
+            f"(its rows have {_join(columns) or 'no column names'}); in Task 1.1, build the chart from "
             "patients, read unchanged from data/rehab_patients.csv."
         )
     missing = list((expected - found).elements())
@@ -396,6 +425,61 @@ def check_spec_rows(root: Path) -> None:
     )
 
 
+def _listed(problems: list[str], limit: int = 4) -> str:
+    shown = "; ".join(problems[:limit])
+    if len(problems) > limit:
+        shown += f"; and {len(problems) - limit} more like {'it' if len(problems) - limit == 1 else 'them'}"
+    return shown
+
+
+def _times(count: int) -> str:
+    return "twice" if count == 2 else f"{count} times"
+
+
+def _problems(name: str, row_problems: list[str], value_problems: list[str]) -> str:
+    """'{name} is missing ...; lists ...; R03 has ...' or, with only wrong values, '{name}: R03 has ...'."""
+    if row_problems:
+        return f"{name} " + "; ".join(row_problems) + ("; " + _listed(value_problems) if value_problems else "")
+    return f"{name}: " + _listed(value_problems)
+
+
+def _check_spec_rows_by_patient(records: list[dict]) -> None:
+    """Match embedded rows to patients by patient_id and name each wrong or missing value."""
+    by_id = {patient_id.casefold(): patient_id for patient_id in REHAB_PATIENTS}
+    seen: dict[str, list[dict]] = {}
+    unknown = []
+    for record in records:
+        patient_id = by_id.get(_label(record["patient_id"]))
+        if patient_id is None:
+            unknown.append(_clean(record["patient_id"]) or "blank")
+        else:
+            seen.setdefault(patient_id, []).append(record)
+    problems, wrong = [], []
+    missing = [patient_id for patient_id in REHAB_PATIENTS if patient_id not in seen]
+    if missing:
+        problems.append(f"is missing {len(missing)} of the 12 patients: {_join(missing)}")
+    repeated = [patient_id for patient_id, found in seen.items() if len(found) > 1]
+    if repeated:
+        problems.append("embeds " + _join(f"{patient_id} {_times(len(seen[patient_id]))}" for patient_id in repeated))
+    if unknown:
+        problems.append(f"also embeds patient_id {_join(unknown[:4])}, which data/rehab_patients.csv does not have")
+    for patient_id, found in seen.items():
+        for field, expected in zip(PLOTTED_FIELDS, REHAB_PATIENTS[patient_id]):
+            numeric = field != "program"
+            given = sorted({
+                _shown(record[field]) if field in record else "nothing"
+                for record in found
+                if field not in record or _cell(record[field], numeric) != _cell(expected, numeric)
+            })
+            if given:
+                wrong.append(f"{patient_id} has {field} {_join(given)}, expected {expected}")
+    _assert(
+        not (problems or wrong),
+        _problems(SPEC_FILE, problems, wrong) + ". In Task 1.1, chart every row of patients, read unchanged "
+        "from data/rehab_patients.csv.",
+    )
+
+
 def _check_encoding(root: Path, channel: str, field: str, data_type: str, how: str) -> None:
     spec = _spec(root)
     found = _plotted_view(spec)
@@ -412,7 +496,7 @@ def _check_encoding(root: Path, channel: str, field: str, data_type: str, how: s
     )
     _assert(
         isinstance(entry, dict) and "field" in entry,
-        f"{SPEC_FILE}'s {channel} encoding names no column (it holds {json.dumps(entry)[:80]}); "
+        f"{SPEC_FILE}'s {channel} encoding names no column (it holds {_brief(entry)}); "
         f"in Task 1.1, encode {how}.",
     )
     given = str(entry.get("field"))
@@ -436,7 +520,7 @@ def _evidence(root: Path, task: str) -> dict:
     evidence = _load_json(root, EVIDENCE_FILE, task)
     _assert(
         isinstance(evidence, dict),
-        f"{EVIDENCE_FILE} holds a JSON {type(evidence).__name__}, not an object with named keys; "
+        f"{EVIDENCE_FILE} holds {_json_kind(evidence)}, not a JSON object with named keys; "
         "save a dict with json.dump in Tasks 2.2 and 3.3.",
     )
     keyed: dict = {}
@@ -451,17 +535,17 @@ def _category(text) -> str:
 
 def _critique_entries(evidence: dict) -> dict[str, dict]:
     """{normalized category: entry with normalized keys} from a list of entries or a dict keyed by category."""
-    critique = evidence.get("critique")
     _assert(
-        critique is not None,
+        "critique" in evidence,
         f"{EVIDENCE_FILE} has no critique key (its keys are {_join(sorted(evidence)) or 'none'}); "
         'Task 2.2 saves {"critique": critique}, and Task 3.3 keeps critique when it saves the file again.',
     )
+    critique = evidence["critique"]
     if isinstance(critique, dict):
         critique = [{"category": category, **entry} for category, entry in critique.items() if isinstance(entry, dict)]
     _assert(
         isinstance(critique, list),
-        f"{EVIDENCE_FILE}'s critique is a {type(critique).__name__}, not a list of entries; "
+        f"{EVIDENCE_FILE}'s critique is {_json_kind(critique)}, not a list of entries; "
         "keep the list of five dicts Task 2.2 supplies.",
     )
     entries: dict[str, dict] = {}
@@ -500,10 +584,12 @@ def _check_evidence_text(root: Path, key: str) -> None:
         f"in Task 3.3, add {key} to visualization_evidence and save it again.",
     )
     value = evidence[key]
+    where = f"write {key} in Task 3.3 and save the file again" if task == "Task 3.3" else (
+        f"write {key} in {task}, then save the file again in Task 3.3"
+    )
     _assert(
         isinstance(value, str) and value.strip() != "",
-        f"{EVIDENCE_FILE}'s {key} is {json.dumps(value)[:40]}, where it should be your own text; "
-        f"write {key} in {task}, then save the file again in Task 3.3.",
+        f"{EVIDENCE_FILE}'s {key} is {_brief(value, 40)}, where it should be your own text; {where}.",
     )
 
 
@@ -542,7 +628,7 @@ def _check_data_type(root: Path, column: str) -> None:
     types = evidence[key]
     _assert(
         isinstance(types, dict),
-        f"{EVIDENCE_FILE}'s {key} is a {type(types).__name__}, not a dict of column names and data types; "
+        f"{EVIDENCE_FILE}'s {key} is {_json_kind(types)}, not an object of column names and data types; "
         "keep the data_types dict Task 3.1 supplies.",
     )
     by_column = {_key(name): value for name, value in types.items()}
@@ -556,7 +642,7 @@ def _check_data_type(root: Path, column: str) -> None:
     hint = " visit_number is the visits' order, not a date." if column == "visit_number" else ""
     _assert(
         found == expected,
-        f"{EVIDENCE_FILE} gives {column} the data type {json.dumps(given)[:60]}, not {expected}; in Task 3.1, "
+        f"{EVIDENCE_FILE} gives {column} the data type {_brief(given)}, not {expected}; in Task 3.1, "
         f"use one of Lecture 07's words: categorical, quantitative, ordinal, or temporal.{hint}",
     )
 
@@ -614,7 +700,13 @@ def read_table(root: Path, name: str, task: str) -> Table:
     that way again adds a second such column, which is set aside too.
     """
     text = _read_text(root, name, task)
-    lines = _csv_rows(text)
+    try:
+        lines = _csv_rows(text)
+    except csv.Error as error:
+        raise AssertionError(
+            f"{name} cannot be read as a CSV table ({error}); run the {task} cell again so to_csv() writes it, "
+            "then compare it with the checkpoint in README.md."
+        ) from None
     _assert(bool(lines), f"{name} is empty; run the {task} cell again to write it.")
     header = [_key(cell) for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
@@ -665,11 +757,52 @@ def _describe_goal(columns: tuple[str, ...], values: tuple) -> str:
     return ", ".join(parts)
 
 
+def _check_supporting_rows_by_visit(table: Table, with_values: bool) -> None:
+    """Match rows on program and visit_number, then compare each goal_met_pct with the supplied one."""
+    expected = {(_label(program), float(visit)): (program, visit, pct) for program, visit, pct in FOLLOWUP_GOALS}
+    seen: dict[tuple, list[dict[str, str]]] = {}
+    unknown = []
+    for row in table.rows:
+        visit = _number(row["visit_number"])
+        key = (_label(row["program"]), round(visit, 2) if visit is not None else None)
+        if key in expected:
+            seen.setdefault(key, []).append(row)
+        else:
+            unknown.append(f"{row['program'] or 'blank'}, visit {row['visit_number'] or 'blank'}")
+    problems, wrong = [], []
+    missing = [f"{program}, visit {visit}" for key, (program, visit, _) in expected.items() if key not in seen]
+    if missing:
+        problems.append(f"has no row for {_join(missing)}")
+    repeated = [key for key, rows in seen.items() if len(rows) > 1]
+    if repeated:
+        problems.append("lists " + _join(
+            f"{expected[key][0]}, visit {expected[key][1]} {_times(len(seen[key]))}" for key in repeated))
+    if unknown:
+        shown = _join(unknown[:3]) + (f" and {len(unknown) - 3} more" if len(unknown) > 3 else "")
+        problems.append(f"also has {shown}, which data/followup_goals.csv does not")
+    if with_values:
+        for key, rows in seen.items():
+            program, visit, pct = expected[key]
+            given = sorted({
+                row["goal_met_pct"] or "blank" for row in rows
+                if _cell(row["goal_met_pct"], True) != _cell(pct, True)
+            })
+            if given:
+                wrong.append(f"{program}, visit {visit} has goal_met_pct {_join(given)}, expected {pct}")
+    _assert(
+        not (problems or wrong),
+        _problems(SUPPORTING_FILE, problems, wrong) + ". In Task 3.1, save the three plotted columns of every "
+        "row of followup, unchanged.",
+    )
+
+
 def check_supporting_rows(root: Path) -> None:
     """The supporting data holds the eight program-and-visit rows with their goal percentages.
 
-    Rows are compared on whichever of the three plotted columns the file has,
-    so a missing or misnamed column costs only the columns check.
+    Rows are matched on program and visit_number, so a wrong percentage is named
+    with its row. Without one of those columns, rows are compared on whichever
+    of the three plotted columns the file has, so a missing or misnamed column
+    costs only the columns check.
     """
     table = read_table(root, SUPPORTING_FILE, "Task 3.1")
     present = tuple(column for column in SUPPORTING_COLUMNS if column in table.columns)
@@ -678,6 +811,9 @@ def check_supporting_rows(root: Path) -> None:
         f"{SUPPORTING_FILE} has none of the columns {_join(SUPPORTING_COLUMNS)}, so its rows cannot be "
         "compared; in Task 3.1, select those three columns of followup, then save with index=False.",
     )
+    if "program" in present and "visit_number" in present:
+        _check_supporting_rows_by_visit(table, "goal_met_pct" in present)
+        return
     positions = [SUPPORTING_COLUMNS.index(column) for column in present]
     numeric = {"visit_number", "goal_met_pct"}
     expected = Counter(
@@ -753,9 +889,14 @@ def run_checks(root: Path) -> list[tuple[str, str | None]]:
     for check in CHECKS:
         try:
             check.action(Path(root))
-        except (AssertionError, OSError, ValueError, UnicodeDecodeError, csv.Error,
-                AttributeError, KeyError, TypeError, RecursionError) as error:
+        except (AssertionError, OSError, ValueError, UnicodeDecodeError, csv.Error) as error:
             results.append((check.name, str(error)))
+        except (AttributeError, KeyError, TypeError, RecursionError) as error:
+            # JSON can nest anything anywhere; a shape no check anticipated fails this check alone.
+            results.append((check.name, (
+                f"a file this check reads is not laid out the way its task saves it ({type(error).__name__}: "
+                f"{error}); compare it with its checkpoint in README.md, run that cell again, and rerun the checks."
+            )))
         else:
             results.append((check.name, None))
     return results

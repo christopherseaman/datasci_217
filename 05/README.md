@@ -734,6 +734,8 @@ See [the bonus](BONUS.md#optional-reference-sampling-designs-and-resampling) for
 
 Treat the file you received like an original lab specimen: you never write on it. Load it into a **raw table** and leave that table untouched. Make every change on a **working copy**, and save the result as a new **cleaned table** only after it passes validation. Keeping the raw table lets you rerun the cleaning from the start and prove nothing changed by accident. Record where the file came from (its **provenance**) and each decision you made, such as one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
 
+A **hash** records the file itself: SHA-256 turns a file's bytes into a 64-character fingerprint, and changing any byte changes it. When a data release publishes its files' hashes, as PhysioNet does, a matching hash shows your copy is the same file.
+
 ## From Source to Cleaned Table
 
 ```mermaid
@@ -752,6 +754,8 @@ graph TD
 - `pd.read_csv(path, dtype='string', keep_default_na=False)`: Read every column as text, keeping blanks and codes such as `NA` exactly as written, so the audit can count them.
 - `raw.copy(deep=True)`: An independent copy; changes to it never reach `raw`.
 - `raw.equals(raw_snapshot)`: `True` when values and dtypes are identical.
+- `hashlib.sha256(path.read_bytes()).hexdigest()`: The file's SHA-256 hash as text, to compare with the published one (`import hashlib`; `path` is a Lecture 02 `Path`, and `read_bytes()` reads its raw bytes rather than text).
+- `path.name`, `path.stat().st_size`: The file's name and its size in bytes, two more facts a release often lists.
 
 ### Code Snippet: Load once, change only the copy
 
@@ -785,6 +789,24 @@ print(raw.equals(raw_snapshot))  # the raw table is untouched
 2      R003         pending
 True
 ```
+
+### Code Snippet: Fingerprint the source file
+
+```python
+import hashlib
+from pathlib import Path
+
+source = Path('intake.csv')
+print(source.name, source.stat().st_size)               # name and size in bytes
+print(hashlib.sha256(source.read_bytes()).hexdigest())  # the same 64 characters every run
+```
+
+```text
+intake.csv 70
+2a1e54b64ddd61d9768e604e4bc91342b2ee33191ea6902c9ad38b54a2765420
+```
+
+Change one letter in `intake.csv` and the hash is completely different, even though the size stays 70 bytes.
 
 ## Validate Before You Save
 

@@ -160,14 +160,14 @@ python check_assignment.py
 
 `check_assignment.py` runs the same checks GitHub runs. They read only your files in `output/` and recompute every answer from the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
 
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. Before Task 1, for example, the first check reports:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
 
 ```text
 [FIX ]   0/13  environment probe
-         output/environment.txt is missing; commit it as a regular file.
+         output/environment.txt is missing. Save its three labelled lines with the Task 1.2 commands, then commit it.
 ```
 
-Fix what it names, rerun whatever produces that artifact and then the checks, and repeat until every check passes. A clean local run ends with:
+Below the score, `Left to fix` lists the checks still failing, by file, and the points they are worth. Fix what they name, rerun whatever produces that artifact and then the checks, and repeat until every check passes. A clean local run ends with:
 
 ```text
 [PASS]   4/4   answer: high_monitor

@@ -15,7 +15,7 @@ jupyter:
 
 # Q2: Data Cleaning
 
-**11 points**
+**10 points**
 
 A sensor reading can hold one invalid value without making the whole observation useless. In this phase, reject the rows whose station and time cannot be trusted, keep every other row, and turn only rule-breaking sensor values into missing data. Do not smooth away real gaps or unusual but valid weather.
 

@@ -18,7 +18,7 @@ import sys
 from grading import InfrastructureError, SCHEMA, grade_submission
 
 
-HUMAN_REVIEW_POINTS = 15
+HUMAN_REVIEW_POINTS = 25
 
 
 def main() -> int:

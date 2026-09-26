@@ -15,7 +15,7 @@ jupyter:
 
 # Q6: Modeling Preparation
 
-**11 points**
+**10 points**
 
 A random split would let future weather into training. Keep only the eligible forecast rows and cut the fixed train, validation, and test periods by each row's target time.
 

@@ -251,6 +251,13 @@ def _key_name(key: tuple[str, ...]) -> str:
     return " ".join(key)
 
 
+def _expected_keys(names: list[str]) -> str:
+    """The expected row keys, shortened past six: 'V001, V002, V003, ... and V015 (15 in all)'."""
+    if len(names) <= 6:
+        return _join(names)
+    return f"{', '.join(names[:3])}, ... and {names[-1]} ({len(names)} in all)"
+
+
 def _decode(raw: bytes) -> str:
     """An artifact's text without a byte-order mark; UTF-16 is read through its mark."""
     if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
@@ -331,7 +338,13 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     """
     path = _artifact_path(root, artifact.path)
     _assert(path is not None, _missing(root, artifact))
-    lines = _csv_rows(_decode(path.read_bytes()))
+    try:
+        lines = _csv_rows(_decode(path.read_bytes()))
+    except csv.Error as error:
+        raise AssertionError(
+            f"{artifact.path} cannot be read as a CSV table ({error}); run the {artifact.task} cell again so "
+            "to_csv() writes it, then compare it with the checkpoint in README.md."
+        ) from None
     _assert(lines, f"{artifact.path} is empty; run the {artifact.task} cell again to write it.")
     header = [_fold(cell) for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
@@ -488,8 +501,8 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             problems.append(f"also has {shown}")
         _assert(
             not problems,
-            f"{artifact.path} should hold one row for each of {_join(_key_name(key) for key in artifact.rows)}, "
-            f"but it " + "; ".join(problems) + f". Fix it in {artifact.task}: {hint}",
+            f"{artifact.path} " + "; ".join(problems) + "; it should hold one row for each of "
+            f"{_expected_keys([_key_name(key) for key in artifact.rows])}. Fix it in {artifact.task}: {hint}",
         )
 
     return check

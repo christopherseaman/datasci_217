@@ -102,16 +102,22 @@ Next checkpoint: 5
 
 # The first line records whichever Python ran readiness.py and is never graded; every other line is.
 GRADED_LINES = tuple(EXPECTED_READINESS.splitlines()[1:])
-# The script that prints each graded line, in report order: Tasks 1.2, 2.2, and 3.1.
+# The script that prints each graded line, in report order, and the task that completes each script.
 LINE_SOURCES = (
     ("readiness.py",) * 2 + ("measurement_summary.py",) * 8 + ("debug_report.py",) * 3
 )
+SCRIPT_TASKS = {"readiness.py": "Task 1.2", "measurement_summary.py": "Task 2.1", "debug_report.py": "Task 3.1"}
+# A saved line is shown in feedback up to this many characters.
+SHOWN_LENGTH = 80
 
 
 @dataclass(frozen=True)
 class Check:
     name: str
     action: Callable[[Path], None]
+    # The file the check reads and the check's name within it, for the report's `Left to fix` line.
+    artifact: str = ""
+    label: str = ""
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -119,30 +125,111 @@ def _assert(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def _read_text(path: Path, missing_message: str, encoding_message: str) -> str:
-    """Read a committed artifact as UTF-8 text; a folder or a symlink is not one."""
-    _assert(path.is_file() and not path.is_symlink(), missing_message)
+def _join(items) -> str:
+    items = list(items)
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _shown(text: str) -> str:
+    return text if len(text) <= SHOWN_LENGTH else text[: SHOWN_LENGTH - 3] + "..."
+
+
+def _is_regular_file(path: Path) -> bool:
+    return path.is_file() and not path.is_symlink()
+
+
+def _file_state(path: Path) -> str:
+    """What stands where a file belongs, in plain words."""
+    if path.is_symlink():
+        return "is a link, not a file"
+    if path.is_dir():
+        return "is a folder, not a file"
+    return "is not a regular file" if path.exists() else "is missing"
+
+
+def _folder_state(path: Path) -> str:
+    """What stands where a folder belongs, in plain words."""
+    if path.is_symlink():
+        return "is a link, not a folder"
+    return "is a file, not a folder" if path.exists() else "is missing"
+
+
+def _look_alikes(root: Path, relative: Path) -> list[str]:
+    """Files of the same type beside the wanted one, or at the assignment root, named almost the same."""
+    wanted = root / relative
+    found = []
+    for folder in dict.fromkeys((wanted.parent, root)):
+        if not folder.is_dir() or folder.is_symlink():
+            continue
+        for path in sorted(folder.iterdir()):
+            if (
+                path != wanted
+                and _is_regular_file(path)
+                and path.suffix.casefold() == wanted.suffix.casefold()
+                and difflib.SequenceMatcher(None, relative.name.casefold(), path.name.casefold()).ratio() >= 0.8
+            ):
+                found.append(path.relative_to(root).as_posix())
+    return found
+
+
+def _not_saved(root: Path, relative: Path, save: str) -> str:
+    """Say what stands where an artifact belongs, and how to save it; `save` is the step that saves it."""
+    path, name = root / relative, relative.as_posix()
+    if path.exists() or path.is_symlink():
+        return f"{name} {_file_state(path)}. Delete it, then {save}, and commit the new file."
+    found = _look_alikes(root, relative)
+    if found:
+        return f"{name} is missing. Found {_join(found)}; rename or move it to {name}, then commit it."
+    return f"{name} is missing. {save[0].upper()}{save[1:]}, then commit it."
+
+
+def _read_text(root: Path, relative: Path, missing: Callable[[], str], save: str) -> str:
+    """Read a committed artifact as UTF-8 text; `missing()` says why when it is not a regular file."""
+    path = root / relative
+    if not _is_regular_file(path):
+        raise AssertionError(missing())
     try:
         return path.read_text(encoding="utf-8")
-    except UnicodeDecodeError as error:
-        raise AssertionError(encoding_message) from error
+    except UnicodeDecodeError:
+        raise AssertionError(
+            f"{relative.as_posix()} is not saved as UTF-8 text, so it cannot be read. "
+            f"{save[0].upper()}{save[1:]} again, then commit it."
+        ) from None
+    except OSError as error:
+        raise AssertionError(
+            f"{relative.as_posix()} cannot be opened ({error.strerror or 'unreadable'}). "
+            f"{save[0].upper()}{save[1:]} again, then commit it."
+        ) from None
 
 
 def _output_dir(root: Path) -> None:
     output = root / OUTPUT_DIR
-    _assert(
-        output.is_dir() and not output.is_symlink(),
-        "Create a regular output/ directory.",
+    if output.is_dir() and not output.is_symlink():
+        return
+    state = _folder_state(output)
+    if state == "is missing":
+        raise AssertionError(
+            "output/ is missing. Run make_output.py (Task 3.2) and capture_identity.py (Task 3.3), "
+            "which create it, then commit the two files they save."
+        )
+    raise AssertionError(
+        f"output/ {state}. Delete it, then run make_output.py (Task 3.2) and capture_identity.py "
+        "(Task 3.3), which create the folder, and commit the two files they save."
     )
+
+
+REPORT_SAVE = "run make_output.py (Task 3.2) to save the report"
 
 
 def _readiness_report(root: Path) -> str:
     _output_dir(root)
-    return _read_text(
-        root / READINESS_FILE,
-        "Run make_output.py (Task 3.2), then commit output/readiness.txt as a regular file.",
-        "output/readiness.txt must be UTF-8 text.",
+    report = _read_text(root, READINESS_FILE, lambda: _not_saved(root, READINESS_FILE, REPORT_SAVE), REPORT_SAVE)
+    _assert(
+        bool(report.strip()),
+        "output/readiness.txt is empty. Run make_output.py (Task 3.2) once all three scripts run cleanly, "
+        "then commit the report it saves.",
     )
+    return report
 
 
 def _without_whitespace(line: str) -> str:
@@ -155,14 +242,17 @@ def _label(line: str) -> str:
     return _without_whitespace(line).partition(":")[0].casefold()
 
 
-def _unmatched_lines(report: str) -> dict[int, str | None]:
+def _unmatched_lines(report: str) -> dict[int, tuple[str | None, bool]]:
     """Each graded line the report lacks, by index, mapped to the report's line to show in its place.
 
     The report's non-blank lines are aligned in order with the graded lines, whitespace ignored.
     A graded line passes when the alignment matches it, so an extra line (the Python version, a
-    blank line, a leftover debug print) costs nothing and a missing line costs only itself. A line
-    that fails is shown beside the report's line with the same label from the stretch of report
-    between the same matched lines, or None when that stretch has no such line.
+    blank line, a leftover debug print) costs nothing and a missing line costs only itself.
+
+    A line that fails is shown beside a line from the stretch of report between the same matched
+    lines: first the line with the same label, marked True; otherwise, when the rest of the
+    stretch holds exactly as many lines as are left to show and does not start the report, the
+    line in the same place, marked False. With neither, the line is paired with None.
     """
     yours = [" ".join(line.split()) for line in report.split("\n")]
     yours = [line for line in yours if line]
@@ -172,32 +262,69 @@ def _unmatched_lines(report: str) -> dict[int, str | None]:
         [_without_whitespace(line) for line in yours],
         autojunk=False,
     )
-    unmatched: dict[int, str | None] = {}
+    unmatched: dict[int, tuple[str | None, bool]] = {}
     for tag, first, last, your_first, your_last in matcher.get_opcodes():
         if tag == "equal":
             continue
         candidates = yours[your_first:your_last]
+        unlabelled = []
         for index in range(first, last):
             label = _label(GRADED_LINES[index])
             shown = next((line for line in candidates if _label(line) == label), None)
             if shown is not None:
                 candidates.remove(shown)
-            unmatched[index] = shown
+                unmatched[index] = (shown, True)
+            else:
+                unlabelled.append(index)
+        paired = your_first > 0 and len(candidates) == len(unlabelled)
+        for position, index in enumerate(unlabelled):
+            unmatched[index] = (candidates[position] if paired else None, False)
     return unmatched
+
+
+def _between(index: int) -> str:
+    """Where a graded line belongs, named by the graded lines around it."""
+    before = GRADED_LINES[index - 1] if index > 0 else None
+    after = GRADED_LINES[index + 1] if index + 1 < len(GRADED_LINES) else None
+    if before and after:
+        return f"between `{before}` and `{after}`"
+    return f"before `{after}`" if after else f"after `{before}`"
+
+
+IDENTITY_SAVE = "run capture_identity.py (Task 3.3) with your course roster email"
 
 
 def _identity_hash(root: Path) -> str:
     """The saved hash with surrounding whitespace and letter case ignored."""
-    text = _read_text(
-        root / IDENTITY_FILE,
-        "Run capture_identity.py and commit output/student_identity.txt.",
-        "student_identity.txt must be UTF-8 text.",
-    )
+
+    def missing() -> str:
+        path = root / IDENTITY_FILE
+        if path.exists() or path.is_symlink():
+            return _not_saved(root, IDENTITY_FILE, IDENTITY_SAVE)
+        found = _look_alikes(root, IDENTITY_FILE)
+        return (
+            "Run capture_identity.py (Task 3.3) with your course roster email, then commit the file it saves: "
+            f"{IDENTITY_FILE.as_posix()} is missing."
+            + (f" Found {_join(found)}; rename or move it to {IDENTITY_FILE.as_posix()}." if found else "")
+        )
+
+    text = _read_text(root, IDENTITY_FILE, missing, IDENTITY_SAVE)
     identity_hash = text.strip().lower()
-    _assert(
-        IDENTITY_HASH.fullmatch(identity_hash) is not None,
-        "student_identity.txt must contain one SHA-256 hash; surrounding whitespace and letter case are ignored.",
-    )
+    if IDENTITY_HASH.fullmatch(identity_hash) is None:
+        saved = text.strip()
+        if not saved:
+            found = "but the file is empty"
+        elif "@" in saved:
+            found = "but it holds an email address instead; keep your email out of your files and commits"
+        elif len(saved.splitlines()) > 1:
+            found = f"but it holds {len(saved.splitlines())} lines"
+        else:
+            found = f"but it holds `{_shown(saved)}`"
+        raise AssertionError(
+            f"{IDENTITY_FILE.as_posix()} should hold one SHA-256 hash, the 64 characters capture_identity.py "
+            f"saves, {found}. Rerun capture_identity.py (Task 3.3) with your course roster email, then commit "
+            "the file it saves."
+        )
     return identity_hash
 
 
@@ -207,15 +334,34 @@ def _identity_hash(root: Path) -> str:
 
 
 def practice_file_check(name: str) -> Callable[[Path], None]:
+    relative = PRACTICE_DIR / name
+    commands = "the Task 1.1 commands from the folder that holds README.md"
+
     def check(root: Path) -> None:
         practice = root / PRACTICE_DIR
-        _assert(
-            practice.is_dir() and not practice.is_symlink(),
-            "Create a regular terminal-practice directory with the Task 1.1 commands.",
-        )
-        _assert(
-            (practice / name).is_file() and not (practice / name).is_symlink(),
-            f"terminal-practice/{name} must be a regular file; create it with the Task 1.1 commands.",
+        if not practice.is_dir() or practice.is_symlink():
+            state = _folder_state(practice)
+            start = "Run" if state == "is missing" else "Delete it, then run"
+            raise AssertionError(
+                f"terminal-practice/ {state}. {start} {commands} to create it with source.txt and "
+                "path-check.txt, then commit both files."
+            )
+        path = root / relative
+        if _is_regular_file(path):
+            return
+        if path.exists() or path.is_symlink():
+            raise AssertionError(
+                f"{relative.as_posix()} {_file_state(path)}. Delete it, then run {commands} again and commit "
+                "the empty file they create."
+            )
+        found = _look_alikes(root, relative)
+        if found:
+            raise AssertionError(
+                f"{relative.as_posix()} is missing. Found {_join(found)}; rename or move it to "
+                f"{relative.as_posix()}, then commit it."
+            )
+        raise AssertionError(
+            f"{relative.as_posix()} is missing. Run {commands} again, then commit the empty file they create."
         )
 
     return check
@@ -223,19 +369,26 @@ def practice_file_check(name: str) -> Callable[[Path], None]:
 
 def report_line_check(index: int) -> Callable[[Path], None]:
     expected, source = GRADED_LINES[index], LINE_SOURCES[index]
-    fix = f"Fix {source}, then rerun make_output.py."
+    fix = (
+        f"Fix {source} ({SCRIPT_TASKS[source]}), which prints this line, then rerun make_output.py "
+        "(Task 3.2) and commit output/readiness.txt."
+    )
 
     def check(root: Path) -> None:
-        unmatched = _unmatched_lines(_readiness_report(root))
-        if index in unmatched:
-            yours = unmatched[index]
-            _assert(
-                yours is not None,
-                f"output/readiness.txt is missing the line `{expected}`, or has it out of order. {fix}",
-            )
+        report = _readiness_report(root)
+        unmatched = _unmatched_lines(report)
+        if index not in unmatched:
+            return
+        yours, same_label = unmatched[index]
+        if yours is None:
+            elsewhere = _without_whitespace(expected) in map(_without_whitespace, report.split("\n"))
             raise AssertionError(
-                f"The line should read `{expected}`; yours reads `{yours}`. {fix}"
+                f"output/readiness.txt has `{expected}`, but out of order: it belongs {_between(index)}. {fix}"
+                if elsewhere
+                else f"output/readiness.txt has no line reading `{expected}` {_between(index)}. {fix}"
             )
+        place = "yours reads" if same_label else "in its place yours reads"
+        raise AssertionError(f"The line should read `{expected}`; {place} `{_shown(yours)}`. {fix}")
 
     return check
 
@@ -244,8 +397,9 @@ def check_identity(root: Path) -> None:
     _output_dir(root)
     _assert(
         _identity_hash(root) in ROSTER_HASHES,
-        "The identity hash does not match the course roster. Rerun capture_identity.py with your "
-        "course roster email; contact the course team if it still fails.",
+        f"{IDENTITY_FILE.as_posix()} holds a hash that is not on the course roster. Rerun capture_identity.py "
+        "(Task 3.3) with the email address the course roster lists for you, then commit the file it saves; "
+        "contact the course team if it still does not match.",
     )
 
 
@@ -263,15 +417,26 @@ def _line_names() -> list[str]:
 
 CHECKS = (
     *(
-        Check(f"terminal-practice/{name}", practice_file_check(name))
+        Check(f"terminal-practice/{name}", practice_file_check(name),
+              (PRACTICE_DIR / name).as_posix(), (PRACTICE_DIR / name).as_posix())
         for name in PRACTICE_FILES
     ),
     *(
-        Check(name, report_line_check(index))
+        Check(name, report_line_check(index), READINESS_FILE.as_posix(), name.removeprefix("report: "))
         for index, name in enumerate(_line_names())
     ),
-    Check("identity hash on the roster", check_identity),
+    Check("identity hash on the roster", check_identity, IDENTITY_FILE.as_posix(), "identity hash on the roster"),
 )
+
+
+def _unreadable(root: Path, error: OSError) -> str:
+    """An error opening a file, in plain words."""
+    name = error.filename
+    try:
+        name = Path(name).relative_to(root).as_posix()
+    except (TypeError, ValueError):
+        pass
+    return f"{name or 'A file'} cannot be opened ({error.strerror or 'unreadable'}); save it again, then commit it."
 
 
 def run_checks(root: Path) -> list[tuple[str, str | None]]:
@@ -279,8 +444,10 @@ def run_checks(root: Path) -> list[tuple[str, str | None]]:
     for check in CHECKS:
         try:
             check.action(root)
-        except (AssertionError, OSError) as error:
+        except AssertionError as error:
             results.append((check.name, str(error)))
+        except OSError as error:
+            results.append((check.name, _unreadable(root, error)))
         else:
             results.append((check.name, None))
     return results

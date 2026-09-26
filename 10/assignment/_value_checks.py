@@ -452,6 +452,13 @@ def _key_name(key: tuple, artifact: Artifact) -> str:
     return " and ".join(f"{column} {part}" for column, part in zip(artifact.key, key))
 
 
+def _expected_keys(names: list[str]) -> str:
+    """The expected row keys, shortened past six: 'V001, V002, V003, ... and V015 (15 in all)'."""
+    if len(names) <= 6:
+        return _join(names)
+    return f"{', '.join(names[:3])}, ... and {names[-1]} ({len(names)} in all)"
+
+
 def _decode(raw: bytes) -> str:
     """An artifact's text without a byte-order mark; UTF-16 is read through its mark."""
     if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
@@ -535,7 +542,13 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     """
     path = _artifact_path(root, artifact.path)
     _assert(path is not None, _missing(root, artifact.path, artifact.task))
-    lines = _csv_rows(_decode(path.read_bytes()))
+    try:
+        lines = _csv_rows(_decode(path.read_bytes()))
+    except csv.Error as error:
+        raise AssertionError(
+            f"{artifact.path} cannot be read as a CSV table ({error}); run the {artifact.task} cell again so "
+            "to_csv() writes it, then compare it with the checkpoint in README.md."
+        ) from None
     _assert(lines, f"{artifact.path} is empty; run the {artifact.task} cell again to write it.")
     header = [_fold(cell) for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
@@ -744,11 +757,11 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
         if unknown:
             shown = _join(unknown[:4]) + (f" and {len(unknown) - 4} more" if len(unknown) > 4 else "")
             problems.append(f"also has {shown}")
-        wanted = _join(_key_name(key, artifact) for key in artifact.rows)
+        names = [_key_name(key, artifact) for key in artifact.rows]
+        wanted = f"one row for each of {_expected_keys(names)}" if len(names) > 1 else f"one row, for {names[0]}"
         _assert(
             not problems,
-            f"{artifact.path} should hold one row for {'each of ' if len(artifact.rows) > 1 else ''}{wanted}, "
-            f"but it " + "; ".join(problems) + f". Fix it in {artifact.task}: {hint}",
+            f"{artifact.path} " + "; ".join(problems) + f"; it should hold {wanted}. Fix it in {artifact.task}: {hint}",
         )
 
     return check

@@ -15,7 +15,7 @@ jupyter:
 
 # Q5: Pattern Analysis
 
-**6 points**
+**5 points**
 
 Explore only the training period: Q4 rows with `model_eligible` True whose target local time is before 2024-01-01 in `America/Chicago`. Use this same subset for the monthly summary, the correlations, and the figure; looking at later periods would leak them into your modeling choices.
 

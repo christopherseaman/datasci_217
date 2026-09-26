@@ -14,16 +14,18 @@ line with the same advice, which names make_output.py. Whitespace of any
 kind (including a missing space or a no-break space), blank lines, extra lines,
 line endings, and the first line (any Python version, other text, or none) are
 never graded; a missing line costs only itself, and a wrong value or a letter's
-case costs that line's 5 points and says what the line should read. The real
-submission that compared the running total instead of each measurement,
-printed with double spaces, scores 90.
+case costs that line's 5 points and says what the line should read and which
+script and task to fix. The real submission that compared the running total
+instead of each measurement, printed with double spaces, scores 90.
 
 For the handout: each file in the workflow's `CHECKS_FILES` is byte-identical
 in `01/assignment/` and here, and no shape-only checks remain; the README shows
 every expected line, and its contract table agrees with `POINTS` row by row;
 the handout's `check_assignment.py` prints the same JSON as this directory's
-for the same submission; and a clean local run ends with the lines the README
-quotes.
+for the same submission; the printed report gives a shared fix once, marking
+the rest `(same fix as above)`, and ends with a `Left to fix` line naming the
+failing checks by file; a wrong total ends with the `Left to fix` line the
+README quotes; and a clean local run ends with the lines the README quotes.
 
 For never scoring lower: these checks replaced the checker the fork used to
 carry, `01/assignment/_assignment_checks.py` and `grading.py` at commit

@@ -23,7 +23,8 @@ import sys
 import tempfile
 
 
-EXAMS = (5, 11)
+# Exams and their automated points; human review makes up the rest of 100.
+EXAMS = {5: 75, 11: 75}
 
 
 def ships_course_checks(assignment: Path, course_owned: Path) -> bool:
@@ -67,7 +68,7 @@ def main():
                     report = json.loads(result.stdout)
                     assert report["schema"] == "datasci217/grading-result/v1", report
                     assert report["score"] == 0, (number, checks, submission, report)
-                    assert report["max-score"] == (85 if number in EXAMS else 100), report
+                    assert report["max-score"] == EXAMS.get(number, 100), report
                     assert sum(test["max-score"] for test in report["tests"]) == report["max-score"], report
                     assert sum(test["score"] for test in report["tests"]) == 0, report
                     assert "submission code must not run" not in result.stdout + result.stderr, report
