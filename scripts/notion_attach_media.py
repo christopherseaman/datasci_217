@@ -75,6 +75,11 @@ def captioned_images(source: Path) -> list[tuple[str, Path]]:
     return pairs
 
 
+def caption_key(caption: str) -> str:
+    """A caption as Notion stores it: plain text, so Markdown code and emphasis marks are gone."""
+    return re.sub(r"[`*_]", "", caption).strip()
+
+
 def placeholder(block: dict) -> bool:
     """True when the image block has no usable source, however it is typed."""
     image = block.get("image", {})
@@ -92,7 +97,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    wanted = dict(captioned_images(args.source))
+    wanted = {caption_key(caption): path for caption, path in captioned_images(args.source)}
     broken = [b for b in page_blocks(args.page) if b["type"] == "image" and placeholder(b)]
     if not broken:
         print("no placeholder images on this page")
@@ -101,7 +106,7 @@ def main() -> int:
     repaired, skipped = 0, []
     for block in broken:
         caption = caption_of(block)
-        local = wanted.get(caption)
+        local = wanted.get(caption_key(caption))
         if local is None:
             skipped.append(caption[:70] or "(no caption)")
             continue
