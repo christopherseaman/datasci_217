@@ -41,8 +41,10 @@ GitHub run counts.
 and `SUPPLY_ORDER`); change it together with `data/supply_order.csv` or the
 notebook's `fridge_readings` array. A change to the check list or to `POINTS`
 belongs in `_value_checks.py` and `grading.py` at once, in the same order:
-`grading.py` zips the checks against `POINTS` with `strict=True`. Keep the
-README's completion contract in agreement with `POINTS`.
+`grading.py` pairs the checks with `POINTS` and raises when their counts
+differ. It compares the counts itself rather than using `zip(strict=True)`, so
+a student's Python 3.9 still runs the checks. Keep the README's completion
+contract in agreement with `POINTS`.
 
 ## Checking the checks
 

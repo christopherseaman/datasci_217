@@ -36,6 +36,16 @@ Project B → B/.venv → its Python and package versions
 
 Use uv for the course workflow; standard-library `venv` and Conda are alternatives below.
 
+### The Requirements File
+
+A **dependency** is a package a project needs, and the ones the project's own code imports are its **direct** dependencies. A **requirements file** lists the packages to install, one per line. This project's `requirements.txt` holds one line:
+
+```text
+numpy==2.3.3
+```
+
+`==` pins an exact version. Write this file by hand so it lists only the direct dependencies you chose; [the bonus page](BONUS.md) covers the packages those depend on in turn and how to record every installed version.
+
 ## Using uv
 
 [uv documentation](https://docs.astral.sh/uv/)
@@ -50,6 +60,7 @@ uv is a command-line tool that creates environments and installs packages into t
 | Create environment | `uv venv --seed --python 3.13 .venv` | Creates the project environment; `--seed` adds pip, which notebooks' `%pip` needs in Lecture 04. |
 | Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt shows `(.venv)`; `python` now runs the environment's interpreter. |
 | Install requirements | `uv pip install -r requirements.txt` | Installs the packages the file lists. |
+| Install one package | `uv pip install numpy==2.3.3` | Installs that exact version; add the same line to `requirements.txt` when the project's code imports it. |
 | Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | Confirms Python and NumPy versions. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
@@ -58,6 +69,7 @@ uv is a command-line tool that creates environments and installs packages into t
 ```bash
 uv --version
 uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
+echo "numpy==2.3.3" > requirements.txt                  # the requirements file above
 uv venv --seed --python 3.13 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
@@ -66,7 +78,11 @@ python -c "import numpy as np; print(np.__version__)"   # 2.3.3
 deactivate
 ```
 
-`uv python pin 3.13` writes that printed version into a `.python-version` file, so later `uv venv` commands in the folder use it without `--python`. For larger projects, `uv init` starts a project with a `pyproject.toml` that records `requires-python` instead of a pinned version file plus `requirements.txt`.
+`uv python pin 3.13` writes that printed version into a `.python-version` file, so later `uv venv` commands in the folder use it without `--python`. If `.venv` already exists, `uv venv` asks whether to replace it: answer `n` to keep the working environment (uv then stops with `error: Failed to create virtual environment` and changes nothing), or `y` for a fresh, empty one, then rerun `uv pip install -r requirements.txt`.
+
+For larger projects, `uv init` starts a project with a `pyproject.toml` whose dependency list takes the place of `requirements.txt`; it writes `.python-version` too.
+
+Lecture 04's notebooks use this same `.venv`: Lecture 04 adds one package with `uv pip install ipykernel`, and each notebook's first cell installs pandas itself.
 
 In native Windows PowerShell, replace the Bash activation line with:
 
@@ -74,47 +90,9 @@ In native Windows PowerShell, replace the Bash activation line with:
 .\.venv\Scripts\Activate.ps1
 ```
 
-## Reproducibility vocabulary
+## Which Python Is Running?
 
-A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs. Each term below names one part of what the commands above set up.
-
-### Interpreter
-
-Two terminals can resolve the command `python` to different interpreter files, so both version and location matter. `python --version` reports the version. With the environment active, Python can also report the exact interpreter path without a platform-specific shell command:
-
-```bash
-python -c "import sys; print(sys.executable)"
-```
-
-`-c` runs the Python string that follows it.
-
-### Package, module, and dependency
-
-NumPy is a package; code normally loads its top-level module with `import numpy`. A **dependency** is a package a project needs, and the ones the project's own code imports are its **direct** dependencies.
-
-A **requirements file** lists packages to install. For this project, record the direct dependency in `requirements.txt`:
-
-```text
-numpy==2.3.3
-```
-
-`==` pins an exact version. Write this file by hand so it lists only the direct dependencies you chose; [the bonus page](BONUS.md) covers the packages those depend on in turn and how to record every installed version.
-
-Lecture 04's notebooks use this same environment, so the same `uv pip install -r requirements.txt` in the terminal sets them up.
-
-### Environment and activation
-
-An **environment** is the interpreter plus the packages available to it. A virtual environment is an isolated directory containing a project-specific Python command and package installation location.
-
-This course uses `.venv` as the environment directory. Add it to `.gitignore`:
-
-```gitignore
-.venv/
-```
-
-The environment is recreated from instructions and requirements; it is not synchronized through Git.
-
-Activation does not change Python source files; it only changes which `python` this terminal runs:
+Two terminals can resolve the command `python` to different interpreter files, so both version and location matter. `python --version` reports the version, and `sys.executable` reports the exact interpreter file; `-c` runs the Python string that follows it:
 
 ```text
 $ source .venv/bin/activate
@@ -136,11 +114,20 @@ Traceback (most recent call last):
 ModuleNotFoundError: No module named 'numpy'
 ```
 
-`ModuleNotFoundError` means the Python that ran the code is not the project's environment. Activation applies only to the terminal where you ran it, so look for the `(.venv)` prefix and run `source .venv/bin/activate` again if it is missing. VS Code's **Run** and **Debug** buttons use the interpreter chosen with **Python: Select Interpreter** (Lecture 02); for this project, choose the one inside `.venv` (`./.venv/bin/python`).
+`ModuleNotFoundError` means the Python that ran the code cannot find NumPy. Check two things, in order:
+
+1. Is it the project's Python? Run `python -c "import sys; print(sys.executable)"`. If the path does not end in `.venv/bin/python` (`.venv\Scripts\python.exe` in PowerShell), activate the environment in this terminal with `source .venv/bin/activate`; activation applies only to the terminal where you ran it. VS Code's **Run** and **Debug** buttons use the interpreter chosen with **Python: Select Interpreter** (Lecture 02); for this project, choose `./.venv/bin/python`.
+2. Is NumPy installed there? If the path does end in `.venv/bin/python`, the environment is right but the install was skipped or failed. Run `uv pip install -r requirements.txt` and try the import again.
 
 ## Recreate an Environment
 
-Keep `requirements.txt` and `.python-version` in Git, not `.venv/`. Recreate the environment in a new directory from those records to check that someone else can reproduce it.
+A result is **reproducible** when another person can reconstruct the needed software environment and rerun the documented program with the same supplied inputs. Keep the records, `requirements.txt` and `.python-version`, in Git, and keep `.venv/` out of it by adding this line to `.gitignore`:
+
+```gitignore
+.venv/
+```
+
+Recreate the environment in a new directory from those records to check that someone else can reproduce it.
 
 ### Code Snippet: Recreate from the Records
 
@@ -376,7 +363,7 @@ doubled_array = my_array * 2
 print(doubled_array)        # [ 2  4  6  8 10]
 ```
 
-Both give the same values, and with five numbers the time difference is too small to notice. Demo 2 doubles one million values both ways: on one test machine the list took about 42 ms and the array about 1.4 ms, and your timings will differ.
+Both give the same values, and with five numbers the time difference is too small to notice. Demo 2 adds a heart monitor's 2 bpm calibration offset to one million readings both ways: on one test machine the list took about 24 ms and the array under 1 ms, and your timings will differ.
 
 # NumPy Arrays
 
@@ -399,7 +386,7 @@ row 1  →       4         5         6
 | `np.array(values)` | Converts a list or nested lists to an array. | 1D or 2D `ndarray` |
 | `np.zeros(shape)` | Fills an array with zeros. | `float` array |
 | `np.ones(shape)` | Fills an array with ones. | `float` array |
-| `np.arange(stop)` | Creates evenly spaced integer values. | `[0, 1, ..., stop - 1]` |
+| `np.arange(stop)` / `np.arange(start, stop)` | Creates evenly spaced integers, stopping before `stop`. | `np.arange(5)` → `[0 1 2 3 4]`; `np.arange(1, 13)` → 1 through 12 |
 | `np.full(shape, value)` | Fills an array with one value. | Array matching `shape` |
 
 ### Code Snippet: Create arrays
@@ -409,10 +396,15 @@ import numpy as np
 
 arr = np.array([1, 2, 3, 4, 5])
 arr_2d = np.array([[1, 2, 3], [4, 5, 6]])
-zeros = np.zeros(5)         # array([0., 0., 0., 0., 0.])
-ones = np.ones((2, 3))      # 2x3 array of ones
-range_arr = np.arange(10)   # array([0, 1, 2, ..., 9])
-full = np.full((2, 3), 7)   # 2x3 array filled with 7
+print(arr)                  # [1 2 3 4 5]
+print(arr_2d)               # [[1 2 3]
+                            #  [4 5 6]]
+print(np.zeros(5))          # [0. 0. 0. 0. 0.]: floats print with a trailing dot
+print(np.ones((2, 3)))      # [[1. 1. 1.]
+                            #  [1. 1. 1.]]
+print(np.arange(10))        # [0 1 2 3 4 5 6 7 8 9]
+print(np.full((2, 3), 7))   # [[7 7 7]
+                            #  [7 7 7]]
 ```
 
 ## Array Properties
@@ -449,6 +441,14 @@ print(temps_f.astype(int))  # [ 98 101  99]: decimals dropped, not rounded
 
 ## Arithmetic and Vectorized Operations
 
+The arithmetic operators `+`, `-`, `*`, `/`, and `**` work on whole arrays: each applies to every element and returns a new array of the same shape. Two arrays of the same shape combine position by position. An array and a single number combine by applying that number to every element, which NumPy calls **broadcasting**.
+
+| Expression | Printed result | Meaning |
+| --- | --- | --- |
+| `systolic` | `[128 142 118]` | Three readings in mmHg |
+| `systolic - 120` | `[ 8 22 -2]` | How far each reading is above 120 mmHg |
+| `systolic * 0.133` | `[17.024 18.886 15.694]` | The same readings in kPa |
+
 ### Reference Card: vectorized arithmetic
 
 | Operation | Meaning | Example |
@@ -456,7 +456,7 @@ print(temps_f.astype(int))  # [ 98 101  99]: decimals dropped, not rounded
 | `a + b` | Element-wise addition. | `arr1 + arr2` |
 | `a * b` | Element-wise multiplication. | `arr1 * arr2` |
 | `a ** n` | Element-wise power. | `arr1 ** 2` |
-| `a * scalar` | **Broadcasting**: NumPy stretches one value across every element. | `arr1 * 2` → `[ 2  4  6  8 10]` |
+| `a * scalar` | Broadcasting: one number applies to every element. | `arr1 * 2` → `[ 2  4  6  8 10]` |
 
 ### Code Snippet: Calculate without an explicit loop
 
@@ -697,16 +697,17 @@ print(arr.mean())        # 3.5: one mean for the whole array
 
 ## Array Reshaping
 
-Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 readings becomes 3 patients by 4 visits. `reshape` returns a view when possible but may need to copy data; `flatten` always returns a copy.
+Reshaping rearranges the same values into a different grid without changing any of them: a flat run of 12 readings becomes 3 patients by 4 visits. The grid fills row by row, and `-1` in one position tells NumPy to work out that length from the others. `reshape` and `ravel` return a view when possible but may need to copy data; `flatten` always returns a copy.
 
-![NumPy reshaping cheatsheet: this lecture uses only the top-left reshape panel; the bonus page covers stacking](media/nparray_cheatsheet.png)
+![NumPy reshape: 12 values fill a 3×4 grid row by row, and ravel() turns the grid back into one row](media/numpy_reshape_panel.png)
 
 ### Reference Card: reshape and transpose
 
 | Operation | Purpose | Result |
 | :--- | :--- | :--- |
 | `arr.reshape(rows, columns)` | Changes dimensions without changing values. | New shape `(rows, columns)` |
-| `arr.flatten()` | Makes a 1D copy. | Independent 1D array |
+| `arr.reshape(-1, columns)` | `-1` lets NumPy compute that length from the array's size. | `np.arange(1, 13).reshape(-1, 4)` → shape `(3, 4)` |
+| `arr.flatten()` / `arr.ravel()` | Back to 1D; `flatten` always copies, `ravel` returns a view when it can. | `[1 2 3 4 5 6]` for `arr` below |
 | `arr.T` | Swaps rows and columns. | Transposed view when possible |
 | `np.reshape(arr, (rows, columns))` | Function form of `reshape`; `np.reshape(arr, arr.size)` makes a 1D array. | `[1 2 3 4 5 6]` for `arr.size` |
 

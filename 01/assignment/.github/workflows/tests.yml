@@ -42,21 +42,19 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            .github/test/requirements.txt
+          cache-dependency-path: .github/test/requirements.txt
 
-      # The committed files come first so the rest of the job always has a
-      # working Python and pytest, whatever the download turns out to contain.
-      - name: Install the committed dependencies
+      # The checks only read the committed artifacts and need nothing beyond
+      # pytest, so the job never installs the assignment's own requirements.txt:
+      # a line there that does not install cannot stop grading. The committed
+      # list comes first so the rest of the job always has a working Python and
+      # pytest, whatever the download turns out to contain.
+      - name: Install the test runner
         run: |
           set -euo pipefail
 
           python -m pip install --upgrade pip
           python -m pip install -r .github/test/requirements.txt
-          if [ -s requirements.txt ]; then
-            python -m pip install -r requirements.txt
-          fi
 
       # Downloading is separate from using. This step only collects the files
       # and checks that each one is the kind of file it claims to be; the next
@@ -94,7 +92,6 @@ jobs:
                           raise SystemExit(f"{path.name} is not a requirements file: {line!r}")
           PY
 
-          origin="${CHECKS_REPO}@${CHECKS_REF}:${CHECKS_PATH}/"
           staged=""
           problem=""
           for file in $CHECKS_FILES; do
@@ -106,9 +103,9 @@ jobs:
             else
               status=$?
               if [ "$status" = 22 ]; then
-                problem="${origin} answered but does not serve ${file}, so the course checks repository needs fixing."
+                problem="${CHECKS_REPO}@${CHECKS_REF} answered but does not serve ${CHECKS_PATH}/${file}, so the course repository needs fixing."
               else
-                problem="downloading ${file} from ${origin} failed before GitHub answered (curl exit ${status}), which is usually a passing network problem."
+                problem="downloading ${CHECKS_PATH}/${file} from ${CHECKS_REPO}@${CHECKS_REF} failed before GitHub answered (curl exit ${status}), which is usually a passing network problem."
               fi
               break
             fi
@@ -116,14 +113,14 @@ jobs:
 
           # $staged is an unquoted list of paths on purpose.
           if [ -z "$problem" ] && ! reason="$(python "$staging/validate.py" $staged 2>&1)"; then
-            problem="${origin} served something unusable (${reason}), so the course checks repository needs fixing."
+            problem="${CHECKS_REPO}@${CHECKS_REF} served something unusable (${reason}), so the course repository needs fixing."
           fi
 
           if [ -n "$problem" ]; then
             echo "::warning::Checks: ${problem} This run uses the copy of the checks committed in this repository."
           else
             echo "CHECKS_STAGING=$staging" >> "$GITHUB_ENV"
-            echo "Checks: downloaded the current version from ${origin}; nothing uses it until it has run."
+            echo "Checks: downloaded the current version from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH}; nothing uses it until it has run."
           fi
 
       - name: Confirm the checks run before grading with them
@@ -137,7 +134,6 @@ jobs:
           # coherent, and a download that fails here is rolled back before
           # anything grades with it. That includes the requirement list, the
           # one downloaded file that cannot be judged by reading it.
-          origin="${CHECKS_REPO}@${CHECKS_REF}:${CHECKS_PATH}/"
           smoke="$(mktemp -d)"
 
           cat > "$smoke/smoke.py" <<'PY'
@@ -217,14 +213,14 @@ jobs:
             if ! python -m pip install -r .github/test/requirements.txt; then
               problem="its requirement list does not install"
             elif outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
-              echo "Checks: ${outcome}, from ${origin}."
+              echo "Checks: ${outcome}, from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH}."
               echo "CHECKS_CURRENT=yes" >> "$GITHUB_ENV"
               exit 0
             else
               problem="$outcome"
             fi
 
-            echo "::warning::Checks: the set downloaded from ${origin} does not run together (${problem}), so the course checks repository needs fixing. Restoring the copy of the checks committed in this repository."
+            echo "::warning::Checks: the set downloaded from ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH} does not run together (${problem}), so the course repository needs fixing. Restoring the copy of the checks committed in this repository."
             for file in $CHECKS_FILES; do
               if [ -e "$backup/$file" ]; then
                 cp "$backup/$file" "$file"
@@ -244,21 +240,29 @@ jobs:
           if outcome="$(python "$smoke/smoke.py" $entrypoints)"; then
             echo "Checks: ${outcome}, from the copy committed in this repository."
             echo "CHECKS_CURRENT=no" >> "$GITHUB_ENV"
-            echo "::warning::Checks: this run could not use ${origin}, so it graded with the copy of the checks committed in this repository. That copy checks your values too, but it misses any correction made to the checks after handout."
+            echo "::warning::Checks: this run could not use ${CHECKS_REPO}@${CHECKS_REF}/${CHECKS_PATH}, so it graded with the copy of the checks committed in this repository. That copy checks your answers too, but it misses any correction made to the checks after handout."
           else
             echo "::error::No working checks: the copy committed in this repository does not run (${outcome})."
             exit 1
           fi
 
       - name: Check assignment artifacts
+        id: grade
         run: python -m pytest .github/test/test_assignment.py -q --tb=short
 
+      # The grading step ends in success or failure only when pytest ran to the
+      # end. When an earlier step fails it is skipped, and then nothing was
+      # graded, whichever copy of the checks was chosen.
       - name: Say which checks this run used
         if: always()
+        env:
+          GRADING_OUTCOME: ${{ steps.grade.outcome }}
         run: |
           set -euo pipefail
 
-          if [ "${CHECKS_CURRENT:-no}" = "yes" ]; then
+          if [ "$GRADING_OUTCOME" != "success" ] && [ "$GRADING_OUTCOME" != "failure" ]; then
+            echo "::error::This run graded nothing: the job stopped before the step \"Check assignment artifacts\" could finish. Open the first failed step above to see why, or re-run the job if it was cancelled."
+          elif [ "${CHECKS_CURRENT:-no}" = "yes" ]; then
             echo "This run graded your artifacts with the course's current checks from ${CHECKS_REPO}."
           else
             echo "::warning::This run graded your artifacts with the copy of the checks committed in this repository, because the course's current checks could not be used. That copy may miss a correction made after handout. Re-run the job once ${CHECKS_REPO} is reachable."

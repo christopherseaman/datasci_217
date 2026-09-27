@@ -595,12 +595,13 @@ def run() -> None:
         assert "appears on 2 lines and the checks read the first" in detail(result, "answer: high_monitor")
 
         # Counts files that are wrong say what to change.
+        data_rows = (FORK / DATA_FILE).read_text(encoding="utf-8").splitlines()[1:]
         for name, content, extension, problem in (
             ("unsorted-counts", "".join(f"{count - count // 3:>7} {monitor}\n" for monitor, count in counts.items())
              + "".join(f"{count // 3:>7} {monitor}\n" for monitor, count in counts.items()), ".txt", "`sort` before it"),
             ("patient-counts", "      1 P0001\n      1 P0002\n", ".txt", "field 2"),
-            ("csv-counts", "".join(f"{count:>7} {monitor}\n" for monitor, count in counts.items()), ".csv",
-             "the `.txt` extension"),
+            # `cut -f2` without `-d','` splits at tabs and passes each CSV row through whole.
+            ("undelimited-counts", "".join(f"      1 {line}\n" for line in data_rows), ".txt", "`cut -d',' -f2`"),
         ):
             miscounted_monitors = workspace / name
             build(miscounted_monitors, summary, counts, records)
@@ -611,6 +612,122 @@ def run() -> None:
             result = graded(miscounted_monitors)
             assert failing(result) == {"monitor counts artifact"}, (name, failing(result))
             assert problem in detail(result, "monitor counts artifact"), (name, detail(result, "monitor counts artifact"))
+
+        # A counts file's name only has to carry a run timestamp: another timestamp layout, another
+        # extension, or another letter case passes.
+        for name in ("monitor_counts_2026-09-26_15-30-00.txt", "monitor_counts_20260926-153000.txt",
+                     "monitor_counts_20260926_1015.txt", "monitor_counts_20260926_153000.csv",
+                     "Monitor_Counts_20260926_101010.txt"):
+            dated = workspace / f"dated-{name}"
+            build(dated, summary, counts, records)
+            (dated / "output" / COUNTS_NAME).rename(dated / "output" / name)
+            assert graded(dated)["score"] == 100, (name, failing(graded(dated)))
+        # A name with no timestamp, or a file outside output/, fails and says so, and says when
+        # the counts inside are right.
+        for name, moved, problem in (
+            ("undated-counts", "output/monitor_counts.txt", "only the name is off"),
+            ("root-counts", "monitor_counts_20260926_150530.txt", "at the top level of the repository, with every "
+             "monitor's count right; move it into output/."),
+        ):
+            misplaced = workspace / name
+            build(misplaced, summary, counts, records)
+            (misplaced / "output" / COUNTS_NAME).rename(misplaced / moved)
+            result = graded(misplaced)
+            assert failing(result) == {"monitor counts artifact"}, (name, failing(result))
+            assert problem in detail(result, "monitor counts artifact"), (name, detail(result, "monitor counts artifact"))
+        # A script at the top level that makes the counts is not a misplaced counts file.
+        scripted = workspace / "root-counts-script"
+        build(scripted, summary, counts, records)
+        (scripted / "output" / COUNTS_NAME).unlink()
+        (scripted / "monitor_counts.sh").write_text(
+            "ts=$(date +%Y%m%d_%H%M%S)\ntail -n +2 data/bp_readings.csv | cut -d',' -f2 | sort | uniq -c "
+            "> output/monitor_counts_$ts.txt\n", encoding="utf-8"
+        )
+        result = graded(scripted)
+        assert failing(result) == {"monitor counts artifact"}, failing(result)
+        assert "monitor_counts.sh" not in detail(result, "monitor counts artifact"), detail(
+            result, "monitor counts artifact"
+        )
+
+        # monitor_offset and stage2_other_monitors are also accepted for the monitor high_monitor
+        # names, so a wrong pick, as averaging with .sum() makes, costs only the high_monitor check.
+        monitor_names = np.array([row.split(",")[1] for row in data_rows])
+        row_means = readings.mean(axis=1)
+        sums = {name: row_means[monitor_names == name].sum() for name in sorted(counts)}
+        summed_pick = max(sums, key=sums.get)
+        assert summed_pick != answers["high_monitor"], "the .sum() slip no longer picks another monitor"
+        picked_rest = row_means[monitor_names != summed_pick]
+        picked = {
+            "monitor_offset": f"{row_means[monitor_names == summed_pick].mean() - picked_rest.mean():.2f}",
+            "stage2_other_monitors": str(int((picked_rest >= 140).sum())),
+        }
+        follow_on = workspace / "follow-on-pick"
+        build(follow_on, replaced(summary, high_monitor=summed_pick, **picked), counts, records)
+        result = graded(follow_on)
+        assert failing(result) == {"answer: high_monitor"}, failing(result)
+        assert result["score"] == 100 - answers_cost("high_monitor"), result["score"]
+        assert f"are right for {summed_pick}, so only this answer is wrong" in detail(result, "answer: high_monitor")
+        follow_off = workspace / "follow-on-wrong"
+        build(follow_off, replaced(summary, high_monitor=summed_pick, monitor_offset="99.0",
+                                   stage2_other_monitors="1"), counts, records)
+        result = graded(follow_off)
+        assert failing(result) == {f"answer: {key}" for key in ("high_monitor", "monitor_offset",
+                                                                 "stage2_other_monitors")}, failing(result)
+        assert f"or {picked['stage2_other_monitors']} with {summed_pick}, the monitor your `high_monitor` line " \
+               "names" in detail(result, "answer: stage2_other_monitors"), detail(result, "answer: stage2_other_monitors")
+        assert "are right for" not in detail(result, "answer: high_monitor")
+
+        # A line whose first number is not the answer says which number the checks read, and a label
+        # line that names two ids says so.
+        noted_first = workspace / "noted-first"
+        build(noted_first, replaced(
+            summary,
+            readings=f"300 x 12 = {answers['readings']}",
+            peak_hour_mean=f"hour {int(answers['peak_hour_column'][-2:])} averages {answers['peak_hour_mean']} mmHg",
+            high_monitor=f"{answers['high_monitor']} ({answers['monitor_offset']} mmHg above {other_monitor})",
+        ), counts, records)
+        result = graded(noted_first)
+        assert failing(result) == {"answer: readings", "answer: peak_hour_mean", "answer: high_monitor"}, failing(result)
+        assert (f"the checks read its first number, 300, which is not" in detail(result, "answer: readings")
+                and f"The line also holds {answers['readings']}; put the answer first" in detail(result, "answer: readings"))
+        assert f"The line also holds {answers['peak_hour_mean']}" in detail(result, "answer: peak_hour_mean")
+        assert f"which names {answers['high_monitor']} and {other_monitor}" in detail(result, "answer: high_monitor")
+
+        # Whole-file layouts: a Markdown table, a row number before each key, and a dict printed on
+        # one line all read like `key: value` lines; so does a record count below a title line.
+        for name, content in (
+            ("table-summary", "| key | value |\n| --- | --- |\n"
+             + "".join(f"| {line.replace(': ', ' | ', 1)} |\n" for line in summary)),
+            ("indexed-summary", "".join(f"{n} {line}\n" for n, line in enumerate(summary))),
+            ("dict-summary", "{" + ", ".join(
+                f"'{key}': " + (value if _is_number(value) else f"'{value}'") for key, value in answers.items()
+            ) + "}\n"),
+        ):
+            laid_out = workspace / name
+            build(laid_out, summary, counts, records)
+            (laid_out / "output" / "vitals_summary.txt").write_text(content, encoding="utf-8")
+            assert graded(laid_out)["score"] == 100, (name, failing(graded(laid_out)))
+        titled = workspace / "titled-record-count"
+        build(titled, summary, counts, records)
+        (titled / "output" / "record_count.txt").write_text(f"Assignment 03 record count\n{records}\n",
+                                                           encoding="utf-8")
+        assert graded(titled)["score"] == 100, failing(graded(titled))
+
+        # An empty numpy line is what the probe saves when numpy is not installed: the fix says to install it.
+        uninstalled = workspace / "numpy-uninstalled"
+        build(uninstalled, summary, counts, records)
+        (uninstalled / "output" / "environment.txt").write_text(
+            "python: Python 3.13.14\nnumpy: \ninterpreter: /home/alice/a03/.venv/bin/python\n", encoding="utf-8")
+        result = graded(uninstalled)
+        assert failing(result) == {"environment probe"}, failing(result)
+        assert "uv pip install -r requirements.txt" in detail(result, "environment probe")
+
+        # Known false pass, kept because a released check may not get stricter: mean_sbp written as
+        # the per-hour array `readings.mean(axis=0)` prints reads its first element, which happens to
+        # sit within the tolerance. 03/assignment_checks/README.md records the change for next term.
+        per_hour = workspace / "mean-per-hour"
+        build(per_hour, replaced(summary, mean_sbp=str(readings.mean(axis=0))), counts, records)
+        assert graded(per_hour)["score"] == 100, failing(graded(per_hour))
 
         # A fresh handout prints exactly the "Before Task 1" example README.md shows.
         fresh = workspace / "fresh-handout"
@@ -659,7 +776,9 @@ def run() -> None:
         "sample-SD, one-wrong, two-wrong, all-wrong, partial, single-answer, unreadable, cut-counts, "
         "bracketed and annotated label, hedged label, miscounted, unactivated, other-numpy, "
         "unversioned-probe, supplied-files-edited, truncated, Markdown and JSON, re-separated, leading-note, "
-        "UTF-16, whitespace-edited, renamed, appended and miscounted-monitor submissions all score as intended."
+        "UTF-16, whitespace-edited, renamed, appended, miscounted-monitor, undelimited-cut, dated, undated and "
+        "misplaced counts, follow-on pick, first-number, table, numbered, dict, titled-count, uninstalled-numpy "
+        "and per-hour-mean submissions all score as intended."
     )
     print(
         f"Assignment 03 checks against {BASELINE_REVISION}: none of {len(compared)} submissions lost a check; "

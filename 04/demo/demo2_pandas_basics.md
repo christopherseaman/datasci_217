@@ -19,13 +19,13 @@ jupyter:
 
 This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. Each step says what to expect, so you can tell whether it worked.
 
-Run this notebook in Colab from the course page, or locally in VS Code with the course `.venv` selected as the kernel. Colab does not save your edits back to the course repository; to keep them, use **File → Save a copy in Drive**. The patient IDs and values here are synthetic.
+Run this notebook in Colab from the course page, or locally in VS Code with the course `.venv` selected as the kernel. For a local copy, clone the course repository the way Lecture 01 cloned your fork (Command Palette → **Git: Clone**, paste `https://github.com/christopherseaman/datasci_217.git`) and open its `04/demo` folder, or use **Download raw file** on this notebook's GitHub page; it needs no other files. Colab does not save your edits back to the course repository; to keep them, use **File → Save a copy in Drive**. The patient IDs and values here are synthetic.
 
 ## Setup
 
 Run this cell first. It installs pandas 3.0.5, the course version, into the notebook's environment: in Colab, which ships an older pandas, and in your local `.venv` alike.
 
-- pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
+- In Colab, pip may print `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed...` and a line such as `google-colab ... requires pandas==..., but you have pandas 3.0.5 which is incompatible.` That is expected: the install still succeeded, this demo does not use those Colab packages, and the version check in the next cell confirms pandas 3.0.5.
 - If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
 - Locally, the `.venv` you made in Lecture 03 with `uv venv --seed` includes pip, so `%pip` installs into it too. When pandas 3.0.5 is already installed there, the cell prints `Note: you may need to restart the kernel to use updated packages.`, perhaps with a notice that a newer pip exists; neither needs any action.
 

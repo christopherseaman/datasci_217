@@ -31,7 +31,7 @@ C1022,Blood pressure cuff (adult),1,24.00
 
 ## Setup
 
-Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `supply_order.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
+Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it, so the terminal starts there. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `supply_order.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
 Create the project environment, activate it, and install the supplied requirements, as in Lecture 03:
 
@@ -45,7 +45,7 @@ uv pip install -r requirements.txt
 
 > **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. In PowerShell instead, activate with `.\.venv\Scripts\Activate.ps1`.
 
-Run the notebook's first code cell. It prints the NumPy and pandas versions and `data file found: True`. `False` means the notebook is not running from the assignment directory, so open the folder itself in VS Code, not a folder above it.
+Run the notebook's first code cell. It prints the NumPy and pandas versions and `data file found: True`. `False` means the notebook cannot see `data/supply_order.csv` from the folder it runs in. Run `%pwd` in a new cell and `%ls` in another, as in Lecture 04: `%pwd` should end in your assignment folder, and `%ls` should list `data/` beside `assignment.ipynb`. Keep the notebook in the assignment folder, next to `data/`, and keep `data/supply_order.csv` under that name.
 
 ## Task 1: Put the cells in running order
 
@@ -160,7 +160,8 @@ All checks passed.
 
 How the files are read:
 
-- Each check is scored on its own, so one mistake costs only that check's points.
+- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd`, for example, costs its column check and the line totals check, not the nine line checks.
+- A column saved under another name, such as `am_temp` for `am_temp_c`, costs only its 2-point name check; its values are still graded.
 - Spacing, line endings, quoting, and column order never cost points.
 - Numbers are compared as numbers, so `57`, `57.0`, and `57.00` are the same value.
 - IDs, item descriptions, and column names are compared in any letter case.
@@ -176,23 +177,26 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | --- | --- | --- | ---: |
 | `output/fridge_block.csv` | It has a `fridge_id` column holding the saved index. | fridge block: fridge_id index column | 10 |
 | `output/fridge_block.csv` | Its rows are `FRG-102` and `FRG-103`, and no others. | fridge block: rows FRG-102 and FRG-103 | 10 |
-| `output/fridge_block.csv` | Its `am_temp_c` values match the supplied array: 3.8 and 5.0. | fridge block: am_temp_c values | 10 |
-| `output/fridge_block.csv` | Its `pm_temp_c` values match the supplied array: 6.2 and 7.4. | fridge block: pm_temp_c values | 10 |
+| `output/fridge_block.csv` | It has an `am_temp_c` column. | fridge block: am_temp_c column | 2 |
+| `output/fridge_block.csv` | It has a `pm_temp_c` column. | fridge block: pm_temp_c column | 2 |
+| `output/fridge_block.csv` | Its `am_temp_c` values match the supplied array: 3.8 and 5.0. | fridge block: am_temp_c values | 8 |
+| `output/fridge_block.csv` | Its `pm_temp_c` values match the supplied array: 6.2 and 7.4. | fridge block: pm_temp_c values | 8 |
 | `output/selected_supplies.csv` | It has an `item_id` column. | selected supplies: item_id column | 2 |
 | `output/selected_supplies.csv` | It has an `item` column. | selected supplies: item column | 2 |
 | `output/selected_supplies.csv` | It has a `quantity` column. | selected supplies: quantity column | 2 |
 | `output/selected_supplies.csv` | It has a `unit_price_usd` column. | selected supplies: unit_price_usd column | 2 |
 | `output/selected_supplies.csv` | It has a `line_total_usd` column. | selected supplies: line_total_usd column | 2 |
 | `output/selected_supplies.csv` | It has no columns beyond those five. | selected supplies: no extra columns | 2 |
-| `output/selected_supplies.csv` | Line `C1833` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C1833 | 4 |
-| `output/selected_supplies.csv` | Line `C3150` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C3150 | 4 |
-| `output/selected_supplies.csv` | Line `C3012` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C3012 | 4 |
-| `output/selected_supplies.csv` | Line `C4105` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C4105 | 4 |
-| `output/selected_supplies.csv` | Line `C2210` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2210 | 4 |
-| `output/selected_supplies.csv` | Line `C2877` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2877 | 4 |
-| `output/selected_supplies.csv` | Line `C2655` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2655 | 4 |
-| `output/selected_supplies.csv` | Line `C2904` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2904 | 4 |
-| `output/selected_supplies.csv` | Line `C2318` is there with its supplied item, quantity, and unit price, and its `line_total_usd` is quantity times unit price. | selected supplies: line C2318 | 4 |
+| `output/selected_supplies.csv` | Line `C1833` is there with its supplied item, quantity, and unit price. | selected supplies: line C1833 | 3 |
+| `output/selected_supplies.csv` | Line `C3150` is there with its supplied item, quantity, and unit price. | selected supplies: line C3150 | 3 |
+| `output/selected_supplies.csv` | Line `C3012` is there with its supplied item, quantity, and unit price. | selected supplies: line C3012 | 3 |
+| `output/selected_supplies.csv` | Line `C4105` is there with its supplied item, quantity, and unit price. | selected supplies: line C4105 | 3 |
+| `output/selected_supplies.csv` | Line `C2210` is there with its supplied item, quantity, and unit price. | selected supplies: line C2210 | 3 |
+| `output/selected_supplies.csv` | Line `C2877` is there with its supplied item, quantity, and unit price. | selected supplies: line C2877 | 3 |
+| `output/selected_supplies.csv` | Line `C2655` is there with its supplied item, quantity, and unit price. | selected supplies: line C2655 | 3 |
+| `output/selected_supplies.csv` | Line `C2904` is there with its supplied item, quantity, and unit price. | selected supplies: line C2904 | 3 |
+| `output/selected_supplies.csv` | Line `C2318` is there with its supplied item, quantity, and unit price. | selected supplies: line C2318 | 3 |
+| `output/selected_supplies.csv` | Every line's `line_total_usd` is its quantity times its unit price. | selected supplies: line totals | 9 |
 | `output/selected_supplies.csv` | It holds no line with quantity 1, and no line twice. | selected supplies: no other lines | 4 |
 | `output/selected_supplies.csv` | Its lines run from the highest `line_total_usd` to the lowest. | selected supplies: highest line total first | 4 |
 | `output/selected_supplies.csv` | Lines with the same `line_total_usd` are in `item_id` order. | selected supplies: ties in item_id order | 4 |

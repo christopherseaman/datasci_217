@@ -58,7 +58,7 @@ cd scratch/lecture03-cli
 bash ../../demo1_cli_pipeline.sh
 ```
 
-Source: [demo1_cli_pipeline.sh](demo1_cli_pipeline.sh). The script writes a six-record CSV of clinic encounters, counts the records with `wc -l`, and counts encounters per clinic with a bounded `tail | cut | sort | uniq | head` pipeline. Your timestamp will differ from the one below:
+Source: [demo1_cli_pipeline.sh](demo1_cli_pipeline.sh). The script writes a six-record CSV of clinic encounters, counts the records with `wc -l`, and counts encounters per clinic with a bounded `tail | cut | sort | uniq | head` pipeline. Three pieces of it are script plumbing, explained in its comments, that you do not need to write yourself: `set -euo pipefail` stops the script at the first failing command, the lines between `<<'EOF'` and `EOF` are written into the CSV unchanged, and a trailing `\` continues one pipeline onto the next line. Your timestamp will differ from the one below:
 
 ```text
 === Lecture 03: bounded CLI pipeline ===
@@ -149,29 +149,31 @@ Tachycardic (100 bpm or above): ['P002', 'P003']
 python demo2_numpy_performance.py
 ```
 
-Source: [demo2_numpy_performance.py](demo2_numpy_performance.py). Both approaches double the same million values, so their result samples must match. The two timings, the speedup, and the time saved come from one machine and yours will differ; every other line should match exactly:
+Source: [demo2_numpy_performance.py](demo2_numpy_performance.py). A wrist monitor that records one heart rate per second produces a million readings in under 12 days. This script applies 2.1's 2 bpm calibration offset to one million readings twice: once with a list comprehension, once with array arithmetic. Both calibrate the same readings, so their result samples must match. The two timings, the speedup, and the time saved come from one machine and yours will differ; every other line should match exactly:
 
 ```text
 NumPy Performance Comparison
 ========================================
-Operation: Multiply 1 million numbers by 2
+Heart-rate readings: 1000000
+First five (bpm): [72, 88, 104, 65, 91]
+Operation: add the monitor's 2 bpm calibration offset to every reading
 
 === Python List Approach ===
-Time: 42.43 ms
-Result sample: [0, 2, 4, 6, 8]
+Time: 23.64 ms
+Result sample: [74, 90, 106, 67, 93]
 
 === NumPy Array Approach ===
-Time: 1.35 ms
-Result sample: [0 2 4 6 8]
+Time: 0.86 ms
+Result sample: [ 74  90 106  67  93]
 
 ========================================
-Speedup: 31.4x faster!
-Time saved: 41.08 ms
+Speedup: 27.5x faster!
+Time saved: 22.78 ms
 
 Timing is machine-dependent; vectorized arithmetic does the work in array operations.
 ```
 
-The list prints with commas and the array without. The script writes the count as `1_000_000`; Python ignores the underscores, so that is the number `1000000` with its digits grouped for reading. The timing wrapper uses `time.perf_counter()` to read a clock before and after each calculation; subtracting gives elapsed seconds.
+The list prints with commas and the array without. The script builds the readings as `[72, 88, 104, 65, 91] * 200_000`, the list repetition from the lecture's "Lists Versus Arrays"; Python ignores the underscores in `200_000`, which group the digits for reading. The timing wrapper uses `time.perf_counter()` to read a clock before and after each calculation; subtracting gives elapsed seconds.
 
 ## 2.3 Create Arrays, Check Properties, Select Parts
 
@@ -179,16 +181,16 @@ The list prints with commas and the array without. The script writes the count a
 python demo2_numpy_arrays.py
 ```
 
-Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This is the array half of the block: creation functions, the four properties, `astype()` on numeric text, and selection in one and two dimensions.
+Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This is the array half of the block: creation functions, the four properties, `astype()` on numeric text, and selection in one and two dimensions. The one-dimensional array, `temps_f`, holds six patients' body temperatures in °F.
 
 ```text
 NumPy Arrays: Creation, Properties, and Selection
 ==================================================
 
 === Creating Arrays ===
-From a list:   [ 98.6 101.2  99.5 103.1  97.9 100.8]
-np.arange(6):  [0 1 2 3 4 5]
-np.zeros(6):   [0. 0. 0. 0. 0. 0.]
+Temperatures (°F): [ 98.6 101.2  99.5 103.1  97.9 100.8]
+np.arange(6):      [0 1 2 3 4 5]
+np.zeros(6):       [0. 0. 0. 0. 0. 0.]
 
 === Array Properties ===
 shape: (6,)
@@ -204,15 +206,15 @@ As ints:    [ 98 101  99]  decimals dropped, not rounded
 
 `np.zeros` prints `0.` with a trailing dot because it makes floats, and `<U5` is text of up to five characters until `astype(float)` converts it.
 
-The rest of the run selects parts of the six readings and of a 3×3 table of blood-pressure readings:
+The rest of the run selects parts of the six temperatures and of a 3×3 table of systolic blood-pressure readings in mmHg:
 
 ```text
 === Indexing and Slicing: 1D ===
-readings:       [ 98.6 101.2  99.5 103.1  97.9 100.8]
-readings[0]:    98.6
-readings[-1]:   100.8
-readings[2:5]:  [ 99.5 103.1  97.9]
-readings[::2]:  [98.6 99.5 97.9]
+temps_f (°F):  [ 98.6 101.2  99.5 103.1  97.9 100.8]
+temps_f[0]:    98.6
+temps_f[-1]:   100.8
+temps_f[2:5]:  [ 99.5 103.1  97.9]
+temps_f[::2]:  [98.6 99.5 97.9]
 
 === Indexing and Slicing: 2D ===
 bp shape: (3, 3), dtype: int64
@@ -233,7 +235,7 @@ bp - 120 (mmHg above 120), every cell at once:
  [-2  1 -1]]
 ```
 
-`readings[2:5]` stops before position 5, and `bp[:, 0]` reads down a column. Subtracting 120 broadcasts one number across all nine cells without a loop.
+`temps_f[2:5]` stops before position 5, and `bp[:, 0]` reads down a column. Subtracting 120 broadcasts one number across all nine cells without a loop.
 
 # 3. NumPy Blood-Pressure Analysis
 
@@ -341,15 +343,15 @@ By hand:        8.8560 mmHg
 
 The two agree, and the `Overall std dev` of 8.9 above is the same number rounded to one decimal.
 
-A comparison such as `patient_averages > 90` gives one True or False per patient, and `.sum()` counts the Trues. The three stage counts split the same 100 patients at the usual diastolic thresholds: below 80 is normal, 80-89 is stage 1 hypertension, and 90 or above is stage 2.
+A comparison such as `patient_averages >= 90` gives one True or False per patient, and `.sum()` counts the Trues. The three stage counts split the same 100 patients at the usual diastolic thresholds: below 80 is normal, 80-89 is stage 1 hypertension, and 90 or above is stage 2.
 
 ```text
 === Boolean Indexing ===
-Patients averaging above 90 mmHg: 9
+Patients averaging 90 mmHg or above: 9
 First five of their averages: [92.6 93.  90.6 90.4 90.6]
 
 Diastolic stages:
-  Stage 2 (90+): 9 patients
+  Stage 2 (90 mmHg or above): 9 patients
   Stage 1 (80-89): 85 patients
   Normal (below 80): 6 patients
 ```

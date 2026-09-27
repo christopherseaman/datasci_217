@@ -8,25 +8,26 @@ def show_creation():
     """Build arrays with the creation functions from the lecture."""
     print("=== Creating Arrays ===")
 
-    readings = np.array([98.6, 101.2, 99.5, 103.1, 97.9, 100.8])
+    # Six patients' body temperatures in degrees Fahrenheit.
+    temps_f = np.array([98.6, 101.2, 99.5, 103.1, 97.9, 100.8])
     positions = np.arange(6)
     placeholders = np.zeros(6)
 
-    print(f"From a list:   {readings}")
-    print(f"np.arange(6):  {positions}")
-    print(f"np.zeros(6):   {placeholders}")
+    print(f"Temperatures (°F): {temps_f}")
+    print(f"np.arange(6):      {positions}")
+    print(f"np.zeros(6):       {placeholders}")
     print()
 
-    return readings
+    return temps_f
 
 
-def show_properties(readings):
+def show_properties(temps_f):
     """Report shape, ndim, size, and dtype."""
     print("=== Array Properties ===")
-    print(f"shape: {readings.shape}")
-    print(f"ndim:  {readings.ndim}")
-    print(f"size:  {readings.size}")
-    print(f"dtype: {readings.dtype}")
+    print(f"shape: {temps_f.shape}")
+    print(f"ndim:  {temps_f.ndim}")
+    print(f"size:  {temps_f.size}")
+    print(f"dtype: {temps_f.dtype}")
     print()
 
 
@@ -34,23 +35,24 @@ def show_data_types():
     """Convert numeric text to numbers with astype()."""
     print("=== Data Types ===")
 
-    text_readings = np.array(["98.6", "101.2", "99.5"])
-    print(f"As text:    {text_readings}  dtype: {text_readings.dtype}")
+    # Temperatures in °F as they arrive from a text file.
+    text_temps = np.array(["98.6", "101.2", "99.5"])
+    print(f"As text:    {text_temps}  dtype: {text_temps.dtype}")
 
-    numbers = text_readings.astype(float)
+    numbers = text_temps.astype(float)
     print(f"As floats:  {numbers}  dtype: {numbers.dtype}")
     print(f"As ints:    {numbers.astype(int)}  decimals dropped, not rounded")
     print()
 
 
-def show_one_dimensional(readings):
+def show_one_dimensional(temps_f):
     """Select single elements and slices from a 1D array."""
     print("=== Indexing and Slicing: 1D ===")
-    print(f"readings:       {readings}")
-    print(f"readings[0]:    {readings[0]}")
-    print(f"readings[-1]:   {readings[-1]}")
-    print(f"readings[2:5]:  {readings[2:5]}")
-    print(f"readings[::2]:  {readings[::2]}")
+    print(f"temps_f (°F):  {temps_f}")
+    print(f"temps_f[0]:    {temps_f[0]}")
+    print(f"temps_f[-1]:   {temps_f[-1]}")
+    print(f"temps_f[2:5]:  {temps_f[2:5]}")
+    print(f"temps_f[::2]:  {temps_f[::2]}")
     print()
 
 
@@ -81,10 +83,10 @@ def main():
     print("=" * 50)
     print()
 
-    readings = show_creation()
-    show_properties(readings)
+    temps_f = show_creation()
+    show_properties(temps_f)
     show_data_types()
-    show_one_dimensional(readings)
+    show_one_dimensional(temps_f)
     show_two_dimensional()
 
 

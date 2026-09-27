@@ -27,7 +27,7 @@ You will use notebooks in two places. Assignments run locally in VS Code. Lectur
 
 ![VS Code notebook: add code or Markdown, run cells, run all, and select a kernel](media/vscode-jupyter-kernel-picker.png)
 
-In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and choose the activity's Python environment. If VS Code offers the **Jupyter** extension when you open the file, install it. The environment also needs **ipykernel**, the package that lets Jupyter start a kernel from that environment's Python: once per environment, activate it in the terminal and run `uv pip install ipykernel`. **Run All** runs every cell in order; **Clear All Outputs** erases the results saved under the cells. Screenshot: [VS Code notebook documentation](https://code.visualstudio.com/docs/datascience/jupyter-notebooks).
+In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and choose the activity's Python environment. If VS Code offers the **Jupyter** extension when you open the file, install it. The environment also needs **ipykernel**, the package that lets Jupyter start a kernel from that environment's Python: once per environment, activate it in the terminal and run `uv pip install ipykernel`. **Run All** runs every cell in order; **Clear All Outputs** erases the results saved under the cells.
 
 ### Reference Card: Notebook controls
 
@@ -37,11 +37,12 @@ In VS Code, open any `.ipynb` file, click **Select Kernel** (top right), and cho
 | Run a cell | `Shift+Enter` (run, move on) or `Ctrl+Enter` (run, stay) | Same keys | Output appears below the cell |
 | Add a cell | **+ Code** / **+ Markdown** | **+ Code** / **+ Text** | New cell |
 | Delete a cell | Trash icon, or `DD` in command mode | Trash icon | Cell removed |
+| Move a cell | Drag the bar at the cell's left, or `Alt+Up` / `Alt+Down` in command mode (`Option` on Mac) | `Ctrl+M K` (up) / `Ctrl+M J` (down), or the arrows on the cell's toolbar | Cell moves, code and output together |
 | Prepare an environment | `uv pip install ipykernel` in the activated `.venv`, once | Nothing to do | The environment can run notebook cells |
 | Choose Python | **Select Kernel** | Managed for you by the runtime | Which interpreter runs the cells |
 | Keep your changes | `Ctrl+S` (`Cmd+S` on macOS) | **File → Save a copy in Drive** | Edits saved; Colab does not save back to the course repository |
 
-Shortcuts such as `A` (add a cell above), `B` (add a cell below), and `DD` (delete) work only in **command mode**: press `Esc` so the cell is selected but not being edited. In Colab, press `Ctrl+M` first, then the letter.
+Shortcuts such as `A` (add a cell above), `B` (add a cell below), `DD` (delete), and `Alt+Up` (move up) work only in **command mode**: press `Esc` so the cell is selected but not being edited. In Colab, press `Ctrl+M` first, then the letter; there, `Ctrl+M K` moves a cell up.
 
 ### Code Snippet: A notebook cell
 
@@ -66,8 +67,6 @@ P001 average temperature: 37.4 °C
 JupyterLab is Jupyter's own browser interface, started with `jupyter lab` from an environment that has it installed. The parts are the same: a file browser, cells with a run number such as `[4]` beside them, and output beneath each cell.
 
 ![JupyterLab: file browser at left, notebook cells and output in the center](media/jupyterlab-interface.png)
-
-Screenshot: [JupyterLab interface documentation](https://jupyterlab.readthedocs.io/en/latest/user/interface.html).
 
 ## Kernel State and Execution Order
 
@@ -105,13 +104,15 @@ total_doses = days * doses_per_day
 print("total doses:", total_doses)  # total doses: 36
 ```
 
-If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'days' is not defined`. Fix it by moving the producer cell above the dependent cell, not by copying the definition into another cell.
+If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'days' is not defined`. Fix it by moving the producer cell above the dependent cell (**Move a cell** in the controls card), not by copying the definition into another cell.
 
 To run a whole notebook from the terminal instead, see [Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
 
 ## Jupyter Magic Commands
 
-**Magic commands** are notebook-only shortcuts that start with `%`. Think of them as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch. `%pwd` and `%ls` mirror the Lecture 01 shell commands and show where the notebook is running and which files it can see; check them first when a notebook cannot find a file. `%timeit` times one line of Python by running it many times. `%pip install` installs a package into the running kernel's environment; every demo notebook's first cell uses it to install the course's pandas 3.0.5.
+**Magic commands** are notebook-only shortcuts that start with `%`. `%pwd` and `%ls` mirror the Lecture 01 shell commands and show where the notebook is running and which files it can see; check them first when a notebook cannot find a file. `%timeit` times one line of Python by running it many times. `%pip install` installs a package into the running kernel's environment; every demo notebook's first cell uses it to install the course's pandas 3.0.5.
+
+_Think of magic commands as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch._
 
 ### Reference Card: Magic commands
 
@@ -162,6 +163,8 @@ Note: you may need to restart the kernel to use updated packages.
 `%pip` installs with the kernel environment's own pip. The `.venv` you made in Lecture 03 with `uv venv --seed` includes pip, so the same cell works in VS Code as in Colab.
 
 A package that was already imported keeps its old version until the kernel restarts, which is what the note means. If Colab asks you to restart after the install, choose **Runtime → Restart session** and run the notebook from the top; the install then finishes at once.
+
+In Colab, pip may also print `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed...` followed by a line such as `google-colab ... requires pandas==..., but you have pandas 3.0.5 which is incompatible.` The install still succeeded: the demos do not use those Colab packages, and Demos 2 and 3 confirm the version with `pd.__version__` in the next cell.
 
 ## Notebook Outputs and Git
 
@@ -273,7 +276,7 @@ _Pro tip: DataFrames are like Excel spreadsheets, but with superpowers. They can
 | `df.shape` | Count rows and columns | `(rows, columns)` tuple |
 | `df.dtypes` | Data types per column | Series of column dtypes |
 | `df.info()` | Inspect columns, **non-null counts** (values present, not missing), dtypes, and memory | Prints a summary; returns `None` |
-| `df.describe()` | Summarize numeric columns | count, mean, std, min, quartiles, max per column |
+| `df.describe()` | Summarize numeric columns | count, mean, std, min, quartiles, max per column; `std` is the sample SD (`ddof=1`, divides by n − 1), unlike NumPy's `.std()` default (`ddof=0`) |
 | `df.head(n=5)` | First n rows | `DataFrame` with original labels |
 | `df.tail(n=5)` | Last n rows | `DataFrame` with original labels |
 | `df.sample(n=5)` | Random n rows | Random sample DataFrame |
@@ -304,11 +307,40 @@ smoker       bool
 dtype: object
 ```
 
+### Code Snippet: Summarize a DataFrame
+
+```python
+visits.info()
+print(visits.describe())
+```
+
+```text
+<class 'pandas.DataFrame'>
+Index: 3 entries, P001 to P003
+Data columns (total 3 columns):
+ #   Column  Non-Null Count  Dtype  
+---  ------  --------------  -----  
+ 0   age     3 non-null      int64  
+ 1   temp_c  3 non-null      float64
+ 2   smoker  3 non-null      bool   
+dtypes: bool(1), float64(1), int64(1)
+memory usage: 87.0 bytes
+             age     temp_c
+count   3.000000   3.000000
+mean   44.333333  37.366667
+std    12.342339   0.665833
+min    34.000000  36.800000
+25%    37.500000  37.000000
+50%    41.000000  37.200000
+75%    49.500000  37.650000
+max    58.000000  38.100000
+```
+
+`info()` shows that every column has 3 non-null values, so nothing is missing; the memory figure varies with installed packages. `describe()` summarizes only the numeric columns, so `smoker` is left out. Its `std` row is the sample standard deviation, which divides by n − 1 (`0.665833` for `temp_c`); NumPy's `np.std(visits["temp_c"])` divides by n and gives about `0.544` unless you pass `ddof=1` (Lecture 03).
+
 ## Selecting Columns
 
 Most questions need only a few columns: "what were the temperatures?" rather than the whole table. Brackets select columns by label. One label gives a Series; a list of labels (double brackets) gives a DataFrame, even when the list holds one name.
-
-_Think of column selection like picking your team for dodgeball: sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns)._
 
 ### Reference Card: Column selection
 
@@ -339,11 +371,11 @@ P002         58    38.1
 P003         41    37.2
 ```
 
+_Think of column selection like picking your team for dodgeball: sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns)._
+
 ## Selecting with `.loc` and `.iloc`
 
 Brackets pick columns. To pick rows, or rows and columns together, use `.loc` or `.iloc`. In Lecture 03 you selected from a 2D array with `arr[row, col]` positions; `.iloc` works the same way, while `.loc` uses the labels pandas adds.
-
-_Warning: Indexing in pandas is like a choose-your-own-adventure book. There are multiple ways to get to the same destination, and sometimes you end up in a completely different story than you intended._
 
 | Selector | Uses | Same cell | Slice ending |
 | --- | --- | --- | --- |
@@ -387,6 +419,8 @@ Both slices hold the same two rows, P001 and P002, so `.equals()` returns `True`
 - **`.loc`** = **L**abels; **`.iloc`** = **i**nteger **loc**ations (0, 1, 2, ... like list positions).
 - `visits.loc[1, "age"]` raises `KeyError: 1`: no row is _labeled_ 1.
 - `visits.iloc["P002", 0]` raises `ValueError`: `.iloc` accepts positions only.
+
+_Indexing in pandas is like a choose-your-own-adventure book: there are multiple ways to reach the same destination, and sometimes you end up in a completely different story than you intended._
 
 ## Filtering Rows with a Boolean Mask
 
@@ -485,7 +519,7 @@ To change a separate table, such as the fever patients only, copy it first, as w
 
 A sorted table answers "who is highest?" at a glance: which patients had the largest blood-pressure drop, or which readings are most extreme. `sort_values()` reorders whole rows, so each patient's other columns and index label travel with the sorted value.
 
-Sorting returns a **new** DataFrame and leaves the original in its old order; assign the result to a name to keep it. When two rows share a value (a **tie**), add a unique second key, such as an ID, so the order is the same on every run: a **deterministic sort**.
+Sorting returns a **new** DataFrame and leaves the original in its old order; assign the result to a name to keep it. When two rows share a value (a **tie**), their order depends on the order the rows arrived in, which a re-export or an earlier filter can change. Add a unique second key, such as an ID, so the result does not depend on it: a **deterministic sort**.
 
 ### Reference Card: Sorting
 
@@ -522,7 +556,7 @@ P002 and P003 tie at 142, and `patient_id` puts P002 first. The index labels (2,
 
 ![xkcd 1906: Making Progress. Hours of work can still end with the same problems, now in a spreadsheet](media/xkcd_1906.png)
 
-In Lecture 02 you read a text file with `open()`, and everything came back as one string of text. In Lecture 03 you inspected a CSV with a shell pipeline (`tail`, `cut`, `sort`). A **CSV file** (comma-separated values) is plain text: the first line is the **header** with the column names, and each later line is one record. `pd.read_csv()` opens the file, splits every line into columns, and detects each column's type in one call, returning a DataFrame. `df.to_csv()` writes one back out.
+A **CSV file** (comma-separated values), the format you split into fields with `cut -d','` in Lecture 03, is plain text: the first line is the **header** with the column names, and each later line is one record. `pd.read_csv()` opens the file, splits every line into columns, and detects each column's type in one call, returning a DataFrame. `df.to_csv()` writes one back out.
 
 A path such as `"data/visits.csv"` is **relative** to the notebook's working directory; check it with `%pwd`. The wrong directory gives `FileNotFoundError: [Errno 2] No such file or directory: 'data/visits.csv'`. `pd.read_csv()` also accepts a web address (URL), which is handy in Colab, where the files on your computer are not available.
 
@@ -592,11 +626,28 @@ by_patient.to_csv("no_index.csv", index=False)  # first line: age,temp_c,clinic
 
 Keep the index when it holds meaningful labels such as patient IDs. Use `index=False` when the index is just the default 0, 1, 2, ... row numbers. Reading the saved file back with `pd.read_csv()`, a **round trip**, confirms that the columns you meant to write are there.
 
+### Code Snippet: Save a table as Parquet
+
+Use Parquet for a table you or a later notebook will load back into pandas: each column's dtype and missing values come back as saved, with no `na_values` or re-guessing, while CSV stays the choice for files people open in a spreadsheet. It needs the `pyarrow` package, installed once with `uv pip install pyarrow` in the activated environment.
+
+```python
+visits.to_parquet("visits.parquet", index=False)
+print(pd.read_parquet("visits.parquet").dtypes)  # the same dtypes as visits
+```
+
+```text
+patient_id        str
+age           float64
+temp_c        float64
+clinic            str
+dtype: object
+```
+
 _Pro tip: If you're ever stuck with a weird file format, remember: "There's a pandas function for that!"_ pandas has matching readers and writers for other formats, such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
 
 ## Showing a Table: `display()` vs `print()`
 
-`print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a Series or DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan when you are looking over a table you just loaded. As in the `%pwd` example, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
+`print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan when you are looking over a table you just loaded; a Series still shows as plain text. As in the `%pwd` example, a cell shows only its last line's value automatically; anything earlier needs `print()` or `display()`.
 
 _Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter._
 

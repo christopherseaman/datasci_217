@@ -58,3 +58,16 @@ one byte for byte. Assignment 03 is out with students, so a correction may only
 raise a score: the self-test also grades each submission with the checks
 committed at HEAD and fails if any check that passed there fails now. Run it
 before committing a change to the checks.
+
+## Changes held for next term
+
+A released check may only get more lenient, so these stricter changes wait for
+a new handout:
+
+- `mean_sbp` written as the per-hour array, as `readings.mean(axis=0)` prints
+  it (`mean_sbp: [130.86666667 133.98333333 ...`), passes: only the first
+  number on the line is read, and the first hour's mean happens to sit within
+  0.6 mmHg of the overall mean. The self-test's `mean-per-hour` submission
+  keeps it passing this term. Next term, report a bracketed value holding
+  several numbers as an array ("holds 12 numbers; `mean_sbp` is one number, so
+  drop `axis=`") and change that submission to expect the failure.

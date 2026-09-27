@@ -202,7 +202,21 @@ def run() -> None:
         mistake("fridge-slice-long", lambda root: fridge.loc["FRG-101":"FRG-103"].to_csv(root / FRIDGE_FILE),
                 {"fridge block: rows FRG-102 and FRG-103"}, "also holds FRG-101")
         mistake("fridge-am-only", lambda root: fridge.loc["FRG-102":"FRG-103", ["am_temp_c"]].to_csv(root / FRIDGE_FILE),
-                {"fridge block: pm_temp_c values"}, "no pm_temp_c column")
+                {"fridge block: pm_temp_c column", "fridge block: pm_temp_c values"}, "no pm_temp_c column")
+
+        # A reading column saved under another name costs only its name check; its values are still graded.
+        def renamed_columns(*names: str):
+            def change(root: Path) -> None:
+                block = fridge.loc["FRG-102":"FRG-103"].copy()
+                block.columns = list(names)
+                block.to_csv(root / FRIDGE_FILE)
+            return change
+
+        mistake("fridge-am-renamed", renamed_columns("am_tmp_c", "pm_temp_c"), {"fridge block: am_temp_c column"},
+                'a column named am_tmp_c where Task 2.1 names it am_temp_c; build fridge_log with '
+                'columns=["am_temp_c", "pm_temp_c"]')
+        mistake("fridge-both-renamed", renamed_columns("am_temp", "pm_temp"),
+                {"fridge block: am_temp_c column", "fridge block: pm_temp_c column"}, "Task 2.1 names it")
         mistake("fridge-one-wrong-value",
                 lambda root: edit(root, FRIDGE_FILE, lambda text: text.replace("FRG-103,5.0,", "FRG-103,5.5,")),
                 {"fridge block: am_temp_c values"}, "FRG-103 has 5.5")
@@ -223,6 +237,31 @@ def run() -> None:
                 {"fridge block: fridge_id index column", "fridge block: am_temp_c values"})
         assert "FRG-103 has 5.5" in detail(workspace / "fridge-index-dropped-and-wrong-value",
                                            "fridge block: am_temp_c values")
+
+        # Without the index, two rows are the block by position when a row's readings name no fridge,
+        # so wrong readings cost the value checks, not the rows check.
+        def unlabeled_rows(*readings: tuple[float, float]):
+            def change(root: Path) -> None:
+                pd.DataFrame(list(readings), columns=["am_temp_c", "pm_temp_c"]).to_csv(root / FRIDGE_FILE, index=False)
+            return change
+
+        unlabeled_values = {"fridge block: fridge_id index column", "fridge block: am_temp_c values",
+                            "fridge block: pm_temp_c values"}
+        mistake("fridge-index-dropped-row-wrong", unlabeled_rows((3.8, 6.2), (5.5, 7.9)), unlabeled_values)
+        assert "FRG-103 has 7.9" in detail(workspace / "fridge-index-dropped-row-wrong", "fridge block: pm_temp_c values")
+        mistake("fridge-index-dropped-columns-swapped", unlabeled_rows((6.2, 3.8), (7.4, 5.0)), unlabeled_values)
+        mistake("fridge-index-dropped-wrong-slice", unlabeled_rows((4.1, 5.6), (3.8, 6.2)),
+                {"fridge block: fridge_id index column", "fridge block: rows FRG-102 and FRG-103"})
+        assert "missing FRG-103; it also holds FRG-101" in detail(workspace / "fridge-index-dropped-wrong-slice",
+                                                                  "fridge block: rows FRG-102 and FRG-103")
+
+        # A file saved in the assignment folder instead of output/ is named in the fix.
+        def saved_at_root(root: Path) -> None:
+            (root / FRIDGE_FILE).rename(root / "fridge_block.csv")
+
+        mistake("fridge-saved-at-root", saved_at_root, FRIDGE_CHECKS,
+                "the assignment folder itself has fridge_block.csv; in Task 2.2, save with "
+                "label_block.to_csv(FRIDGE_OUTPUT_PATH)")
 
         source = pd.read_csv(HANDOUT / "data" / "supply_order.csv")
 
@@ -255,32 +294,54 @@ def run() -> None:
                 {"selected supplies: ties in item_id order"}, "the tie goes to the smaller item_id")
         mistake("supplies-one-wrong-total",
                 lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("12.75", "12.5")),
-                {"selected supplies: line C2318"}, "C2318's line_total_usd is 12.5, expected 3 * 4.25 = 12.75")
+                {"selected supplies: line totals"}, "C2318's line_total_usd is 12.5, expected 3 * 4.25 = 12.75")
         mistake("supplies-one-wrong-quantity",
                 lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace(",6,9.5,", ",7,9.5,")),
                 {"selected supplies: line C3150"}, "C3150's quantity is 7, expected 6")
         mistake("supplies-sum-not-product",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).assign(
                     line_total_usd=lambda frame: frame["quantity"] + frame["unit_price_usd"])),
-                line_checks)
+                {"selected supplies: line totals"}, "C1833's line_total_usd is 30.5, expected 2 * 28.50 = 57.00")
         mistake("supplies-extra-column",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).assign(flag="bulk")),
                 {"selected supplies: no extra columns"}, "also has flag")
         mistake("supplies-total-misnamed",
                 lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("line_total_usd", "line_total", 1)),
                 {"selected supplies: line_total_usd column"}, "a column named line_total where")
+        mistake("supplies-total-renamed-cost",
+                lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("line_total_usd", "line_cost_usd", 1)),
+                {"selected supplies: line_total_usd column"}, "a column named line_cost_usd where")
         mistake("supplies-quantity-misnamed",
                 lambda root: edit(root, SUPPLIES_FILE, lambda text: text.replace("quantity", "qty", 1)),
                 {"selected supplies: quantity column"}, "a column named qty where")
         mistake("supplies-no-total",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).drop(
                     columns=["line_total_usd"])),
-                {"selected supplies: line_total_usd column"} | line_checks, None)
+                {"selected supplies: line_total_usd column", "selected supplies: line totals"}, None)
+        assert 'add selected_supplies["line_total_usd"]' in detail(workspace / "supplies-no-total",
+                                                                  "selected supplies: line totals")
+        mistake("supplies-header-only",
+                lambda root: rewrite(root, with_totals(source.loc[source["quantity"] > 10])),
+                line_checks | {"selected supplies: line totals", "selected supplies: highest line total first",
+                               "selected supplies: ties in item_id order"})
+        for name in line_checks | {"selected supplies: line totals"}:
+            assert "has a header but no order lines" in detail(workspace / "supplies-header-only", name), name
+
+        # sort_values() without assigning the result back leaves the lines in data order.
+        def not_reassigned(root: Path) -> None:
+            selected = source.loc[source["quantity"] >= 2].copy()
+            selected["line_total_usd"] = selected["quantity"] * selected["unit_price_usd"]
+            selected.sort_values(by=["line_total_usd", "item_id"], ascending=[False, True])
+            rewrite(root, selected)
+
+        mistake("supplies-not-reassigned", not_reassigned,
+                {"selected supplies: highest line total first", "selected supplies: ties in item_id order"},
+                "so assign the result back: selected_supplies = selected_supplies.sort_values(")
         mistake("supplies-missing", lambda root: (root / SUPPLIES_FILE).unlink(), SUPPLY_CHECKS)
         mistake("supplies-tabs-one-wrong-total",
                 lambda root: pd.read_csv(correct / SUPPLIES_FILE).replace({12.75: 12.5}).to_csv(
                     root / SUPPLIES_FILE, sep="\t", index=False),
-                {"selected supplies: line C2318"}, "C2318's line_total_usd is 12.5")
+                {"selected supplies: line totals"}, "C2318's line_total_usd is 12.5")
 
         # The printed report says each shared fix once and ends by naming the checks left to fix.
         def printed(root: Path) -> str:
@@ -293,17 +354,23 @@ def run() -> None:
         assert report.count("is missing; run the Task") == 2, report
         assert "[FIX ]  0/10 fridge block: rows FRG-102 and FRG-103  (same fix as above)" in report, report
         assert report.rstrip().endswith(
-            "Left to fix (100 points): fridge block (all 4 checks); selected supplies (all 18 checks)."), report
+            "Left to fix (100 points): fridge block (all 6 checks); selected supplies (all 19 checks)."), report
         report = printed(workspace / "supplies-one-wrong-total")
-        assert report.rstrip().endswith("Score: 96/100\nLeft to fix (4 points): selected supplies: line C2318."), report
+        assert report.rstrip().endswith("Score: 91/100\nLeft to fix (9 points): selected supplies: line totals."), report
         report = printed(workspace / "supplies-mask-greater-than")
         assert report.rstrip().endswith(
-            "Left to fix (12 points): selected supplies: line C1833, line C4105 and line C2655."), report
+            "Left to fix (9 points): selected supplies: line C1833, line C4105 and line C2655."), report
         report = printed(workspace / "supplies-quantity-misnamed")
         assert report.rstrip().endswith("Left to fix (2 points): selected supplies: quantity column."), report
         report = printed(workspace / "supplies-no-total")
-        assert report.rstrip().endswith("Left to fix (38 points): selected supplies: line_total_usd column, "
-                                        "line C1833, line C3150 and 7 more."), report
+        assert report.rstrip().endswith(
+            "Left to fix (11 points): selected supplies: line_total_usd column and line totals."), report
+        report = printed(workspace / "fridge-am-renamed")
+        assert report.rstrip().endswith("Left to fix (2 points): fridge block: am_temp_c column."), report
+        report = printed(workspace / "supplies-header-only")
+        assert report.count("has a header but no order lines") == 1, report
+        report = printed(workspace / "supplies-not-reassigned")
+        assert report.count("so assign the result back") == 1, report
         assert printed(correct).rstrip().endswith("Score: 100/100\nAll checks passed."), printed(correct)
 
         single_mistakes = len(mistakes)
@@ -337,6 +404,8 @@ def run_handout() -> None:
     supplies = pd.read_csv(HANDOUT / "data" / "supply_order.csv")
     held = {row.item_id: (row.item, row.quantity, row.unit_price_usd) for row in supplies.itertuples()}
     assert held == SUPPLY_ORDER, "data/supply_order.csv differs from SUPPLY_ORDER in _value_checks.py"
+    # The unsorted-file message recognizes the data file's order, so SUPPLY_ORDER keeps it.
+    assert list(held) == list(SUPPLY_ORDER), "SUPPLY_ORDER lists the lines in another order than data/supply_order.csv"
     readings = supplied_fridge_log().to_dict(orient="index")
     assert readings == FRIDGE_READINGS, "the notebook's fridge_readings differ from FRIDGE_READINGS"
 

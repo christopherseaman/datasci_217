@@ -125,18 +125,17 @@ def demo_boolean_indexing(readings):
     # Calculate patient averages
     patient_averages = readings.mean(axis=1)
 
-    # Find the patients who run high
-    uncontrolled = patient_averages > 90
-    print(f"Patients averaging above 90 mmHg: {uncontrolled.sum()}")
-    print(f"First five of their averages: {patient_averages[uncontrolled][:5]}")
+    # Find the patients who average in stage 2: 90 mmHg or above
+    stage_2 = patient_averages >= 90
+    print(f"Patients averaging 90 mmHg or above: {stage_2.sum()}")
+    print(f"First five of their averages: {patient_averages[stage_2][:5]}")
 
     # Multiple conditions
-    stage_2 = patient_averages >= 90
     stage_1 = (patient_averages >= 80) & (patient_averages < 90)
     normal = patient_averages < 80
 
     print(f"\nDiastolic stages:")
-    print(f"  Stage 2 (90+): {stage_2.sum()} patients")
+    print(f"  Stage 2 (90 mmHg or above): {stage_2.sum()} patients")
     print(f"  Stage 1 (80-89): {stage_1.sum()} patients")
     print(f"  Normal (below 80): {normal.sum()} patients")
     print()

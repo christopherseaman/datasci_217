@@ -23,11 +23,12 @@ uv pip freeze
 ```text
 numpy==2.3.3
 pandas==3.0.5
+pip==26.2.1
 python-dateutil==2.9.0.post0
 six==1.17.0
 ```
 
-`uv pip freeze` records everything currently installed, including packages that arrived as dependencies of what you asked for: `python-dateutil` came with pandas, `six` came with `python-dateutil`, and on Windows `tzdata` arrives too. That is a record of one environment, which is different from the hand-written list of what the project chose, so keep writing `requirements.txt` by hand.
+`uv pip freeze` records everything currently installed, including packages that arrived as dependencies of what you asked for: `python-dateutil` came with pandas, `six` came with `python-dateutil`, `pip` came from `uv venv --seed` (your pip version may differ), and on Windows `tzdata` arrives too. That is a record of one environment, which is different from the hand-written list of what the project chose, so keep writing `requirements.txt` by hand.
 
 A **lock file** records the resolved transitive dependencies with their exact versions; generate one when a project needs that complete record. In a project started with `uv init`, `uv lock` writes one named `uv.lock`, covering every platform at once.
 
@@ -50,25 +51,35 @@ sin_arr = np.sin(np.pi * arr)        # Trigonometric
 
 # Advanced Broadcasting
 
-The lecture broadcast a single number across an array. The same rules combine arrays of different shapes, such as subtracting one baseline per column from every row.
+The lecture broadcast a single number across an array. The same rules combine arrays of different shapes, such as subtracting each patient's first reading from all of that patient's visits.
 
-## Code Snippet: Broadcast a Row Against a Column
+![Broadcasting: a row of three stretches down the rows, and a column of three stretches across the columns, to match a 3×3 array](media/broadcasting.png)
+
+NumPy compares the two shapes from the last dimension backward:
+
+- A missing dimension counts as 1, so a `(3,)` row acts like `(1, 3)`.
+- Two dimensions fit when they are equal or one of them is 1.
+- A dimension of 1 stretches to match the other, so the result takes the larger length in each dimension. Any other mismatch raises `ValueError`.
+
+## Code Snippet: Subtract Each Patient's Baseline
 
 ```python
-# Broadcasting 1D to 2D
-row = np.array([1, 2, 3])
-col = np.array([[1], [2]])
-result = row + col          # Shape (2, 3)
+bp = np.array([[128, 131, 126],   # patient 0: systolic at visits 1-3, mmHg
+               [142, 145, 139]])  # patient 1
+baseline = bp[:, :1]              # shape (2, 1): each patient's visit 1
+print(bp - baseline)              # [[ 0  3 -2]
+                                  #  [ 0  3 -3]]: change from visit 1
 
-# Broadcasting rules:
-# 1. If arrays have different dimensions, prepend 1s to smaller shape
-# 2. Arrays are compatible if dimensions are equal or one is 1
-# 3. After broadcasting, each array behaves as if it had shape equal to elementwise max
+row = np.array([1, 2, 3])         # shape (3,)
+col = np.array([[1], [2]])        # shape (2, 1)
+print((row + col).shape)          # (2, 3)
 ```
 
 # Array Stacking and Concatenation
 
 Use these to combine arrays that arrived separately, such as one array per clinic visit, into a single array.
+
+![NumPy array cheatsheet: reshaping (order='F' fills columns first), stacking along each axis, and flattening 3D arrays](media/nparray_cheatsheet.png)
 
 ## Code Snippet: Stack Arrays
 
@@ -285,13 +296,15 @@ sorted_data = np.sort(data, order='score')
 
 # Memory-Mapped Files
 
-For working with arrays larger than RAM: the array stays on disk and NumPy reads only the parts you touch.
+For working with arrays larger than RAM: the array stays on disk and NumPy reads only the parts you touch. A real memory-mapped file is gigabytes, so keep it outside any Git repository; GitHub rejects files over 100 MB. The snippet uses a small shape and deletes its file at the end.
 
 ## Code Snippet: Work with an On-Disk Array
 
 ```python
+from pathlib import Path
+
 # Create memory-mapped file
-shape = (1000000, 100)  # 800,000,000 bytes (~800 MB) of float64 storage
+shape = (1000, 100)  # 800,000 bytes (~800 KB) of float64 storage
 mmap_array = np.memmap('large_array.dat', dtype='float64', mode='w+', shape=shape)
 
 # Use like normal array (but stored on disk)
@@ -300,6 +313,11 @@ mmap_array.flush()  # Write to disk
 
 # Load existing memory-mapped file
 loaded_mmap = np.memmap('large_array.dat', dtype='float64', mode='r', shape=shape)
+print(loaded_mmap.shape)  # (1000, 100)
+
+# Release both maps, then delete the file
+del mmap_array, loaded_mmap
+Path('large_array.dat').unlink()
 ```
 
 # Optional shell reference

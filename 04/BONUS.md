@@ -14,7 +14,7 @@ _This material builds on the lecture essentials in [README.md](README.md). Revis
 
 # Running Notebooks Non-Interactively
 
-Notebooks are interactive by default, but you can also run one from the command line, as a reproducibility check or as one step in a batch workflow.
+Notebooks are interactive by default, but you can also run one from the command line, as a reproducibility check or as one step in a batch workflow. The `jupyter nbconvert` command comes with JupyterLab; in an environment without it, install it once with `uv pip install nbconvert`.
 
 ```bash
 # Execute every cell in order and write a separate output notebook.

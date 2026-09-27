@@ -35,8 +35,17 @@ DATA_FILE = "data/bp_readings.csv"
 SUMMARY_FILE = "output/vitals_summary.txt"
 RECORD_COUNT_FILE = "output/record_count.txt"
 ENVIRONMENT_FILE = "output/environment.txt"
-MONITOR_COUNTS_PATTERN = re.compile(r"^monitor_counts_\d{8}_\d{6}\.txt$")
 MONITOR_COUNTS_NAME = "output/monitor_counts_<timestamp>.txt"
+# A counts file's name, in any letter case: `monitor_counts_...`, and `monitor-counts` or `monitorcounts` too.
+_COUNTS_PREFIX = re.compile(r"^monitor[_-]?counts", re.IGNORECASE)
+# A run of digits that `-`, `_`, `.`, `:` or a space may break, as a timestamp prints:
+# `20260926_153000`, `2026-09-26_15-30-00`, `20260926-1530`.
+_DIGIT_RUN = re.compile(r"\d+(?:[-_.: ]\d+)*")
+# How many digits such a run needs to count as a run timestamp: `%y%m%d` prints six.
+TIMESTAMP_DIGITS = 6
+# A file at the top level with one of these suffixes is a script that makes the counts, such as
+# `monitor_counts.sh`, not a misplaced counts file, so the feedback does not tell anyone to move it.
+_SCRIPT_SUFFIXES = {".py", ".sh", ".bash", ".zsh", ".ps1", ".ipynb"}
 
 STAGE_2_MMHG = 140
 MMHG_TOLERANCE = 0.6
@@ -55,7 +64,7 @@ SUMMARY_FIX = f"Fix that answer in analysis.py (Task 3), rerun it, and commit {S
 
 # What `check_assignment.py` prints before and after the report.
 SCOPE_NOTE = (
-    "These checks read only your files in output/ and compare them with the answers the supplied "
+    "These checks grade only your files in output/ and compare them with the answers the supplied "
     "data/bp_readings.csv gives."
 )
 SCORE_LABEL = "Score"
@@ -79,6 +88,10 @@ _LABEL_DECORATION = "`'\"*_"
 _UNCOLONED = re.compile(r"^([^\s=,]+)\s*(?:==?|,)?\s*(.*)$")
 # A word that turns an id into a non-answer, as in `not M04`.
 _NEGATION = re.compile(r"(?<!\w)(?:not|no|never|except|excluding|without)(?!\w)")
+# A row number in front of a key, as `0 patients: 300` or a printed table row carries it.
+_ROW_INDEX = re.compile(r"^\d+\s+(?=\D)")
+# Where a dict printed on one line starts its next key: a comma, then the key's opening quote.
+_DICT_ITEM = re.compile(r",\s*(?=[\"'])")
 
 # key -> what the value must answer, phrased for a failure message.
 COUNT_KEYS = {
@@ -107,6 +120,11 @@ LABEL_KEYS = {
     "peak_hour_column": "the header name of the hour column with the highest mean",
     "high_monitor": "the monitor whose patients' 12-hour means average highest",
 }
+# What one id of each label answer is called, for a line that names several.
+LABEL_KINDS = {"highest_patient": "patient", "peak_hour_column": "hour column", "high_monitor": "monitor"}
+# Answers computed from the monitor `high_monitor` names; they are also accepted for the monitor a
+# student named, so a wrong pick costs only the high_monitor check.
+FOLLOW_UP_KEYS = ("monitor_offset", "stage2_other_monitors")
 # Report order: the order README.md lists the answers in.
 ANSWER_KEYS = (
     "patients",
@@ -271,7 +289,6 @@ def expected_answers(data: Dataset) -> dict[str, float | str]:
         for monitor in set(data.monitors)
     }
     high_monitor = max(monitor_means, key=monitor_means.__getitem__)
-    other_means = [mean for mean, owner in zip(patient_means, data.monitors) if owner != high_monitor]
 
     return {
         "patients": len(data.patients),
@@ -286,12 +303,18 @@ def expected_answers(data: Dataset) -> dict[str, float | str]:
         "peak_hour_column": data.hour_columns[peak_hour],
         "peak_hour_mean": hour_means[peak_hour],
         "high_monitor": high_monitor,
-        "monitor_offset": monitor_means[high_monitor] - _mean(other_means),
-        "stage2_other_monitors": sum(
-            1
-            for mean, owner in zip(patient_means, data.monitors)
-            if owner != high_monitor and mean >= STAGE_2_MMHG
-        ),
+        **follow_up_answers(data, high_monitor),
+    }
+
+
+def follow_up_answers(data: Dataset, monitor: str) -> dict[str, float]:
+    """`monitor_offset` and `stage2_other_monitors`, computed as if `monitor` were the high-reading monitor."""
+    patient_means = [_mean(row) for row in data.readings]
+    on_monitor = [mean for mean, owner in zip(patient_means, data.monitors) if owner == monitor]
+    others = [mean for mean, owner in zip(patient_means, data.monitors) if owner != monitor]
+    return {
+        "monitor_offset": _mean(on_monitor) - _mean(others),
+        "stage2_other_monitors": sum(1 for mean in others if mean >= STAGE_2_MMHG),
     }
 
 
@@ -334,6 +357,11 @@ def _as_number(raw: str) -> float | None:
     return readings[0] if readings else None
 
 
+def _numbers_written(raw: str) -> list[str]:
+    """Every number in raw as it is written, in order, for feedback: `300 x 12 = 3600` -> 300, 12, 3600."""
+    return [number.rstrip(",") for number in _GROUPED_NUMBER.findall(_unwrap(raw))]
+
+
 def _bare(text: str, decoration: str) -> str:
     """text with whitespace and decoration characters removed from both ends."""
     previous = None
@@ -362,12 +390,43 @@ def _label_matches(raw: str, expected: str) -> bool:
     if _as_label(raw) == target:
         return True
     text = _unwrap(raw).casefold()
-    same_kind = re.compile(r"(?<!\w)" + re.sub(r"\d+", r"\\d+", re.escape(target)) + r"(?!\w)")
+    same_kind = _same_kind(target)
     if set(same_kind.findall(text)) != {target}:
         return False
     if text.lstrip("[({`'\"*_ \t").startswith(target):
         return True
     return _NEGATION.search(text[: same_kind.search(text).start()]) is None
+
+
+def _same_kind(target: str, flags: int = 0) -> re.Pattern[str]:
+    """Any id of target's kind: its letters followed by any digits, standing as a whole word."""
+    return re.compile(r"(?<!\w)" + re.sub(r"\d+", r"\\d+", re.escape(target)) + r"(?!\w)", flags)
+
+
+def _label_problem(raw: str, expected: str, kind: str) -> str | None:
+    """Why a label line that names the expected id is not read as naming it, or None when it does not name it."""
+    text = _unwrap(raw)
+    target = expected.casefold()
+    same_kind = _same_kind(target, re.IGNORECASE)
+    written: dict[str, str] = {}
+    for match in same_kind.finditer(text):
+        written.setdefault(match.group().casefold(), match.group())
+    if target not in written:
+        return None
+    named = list(written.values())
+    if len(named) > 1:
+        return (
+            f"which names {', '.join(named[:-1])} and {named[-1]}. A line that names more than one {kind} reads "
+            f"as a hedge, so the checks accept only a line that names one; write `{expected}` alone and put any "
+            "comparison on a line of its own."
+        )
+    negation = _NEGATION.search(text[: same_kind.search(text).start()].casefold())
+    if negation is None:
+        return None
+    return (
+        f"which puts `{negation.group()}` before {expected}, so it reads as not naming it; write the answer "
+        "without that word."
+    )
 
 
 def _key_name(raw: str) -> str:
@@ -394,6 +453,32 @@ def _lenient_pair(line: str, known: Callable[[str], str | None]) -> tuple[str | 
     return None, ""
 
 
+def _layout_pairs(line: str, known: Callable[[str], str | None]) -> list[tuple[str, str]]:
+    """The known keys and values in a whole-file layout the other readings miss.
+
+    That is a Markdown table row, `| patients | 300 |`, whose first cell is the
+    key and whose next non-empty cell is the value; a row number in front of the
+    key, `0 patients: 300`; and a dict printed on one line,
+    `{'patients': 300, 'readings': 3600}`. A key read this way needs a value.
+    """
+    if line.startswith("|"):
+        cells = [cell.strip() for cell in line.strip("|").split("|") if cell.strip()]
+        key = known(_key_name(cells[0])) if len(cells) > 1 else None
+        return [(key, cells[1])] if key else []
+    if line.startswith("{"):
+        parts = _DICT_ITEM.split(line.strip("{}"))
+    else:
+        unindexed = _ROW_INDEX.sub("", line, count=1)
+        parts = [unindexed] if unindexed != line else []
+    pairs = []
+    for part in parts:
+        key, value = _lenient_pair(part.strip(), known)
+        value = value.rstrip(",").strip()
+        if key is not None and value:
+            pairs.append((key, value))
+    return pairs
+
+
 def _read_pairs(text: str, known: Callable[[str], str | None]) -> tuple[dict[str, str], dict[str, int]]:
     """The value graded for each known key, and how many lines name each key.
 
@@ -401,10 +486,13 @@ def _read_pairs(text: str, known: Callable[[str], str | None]) -> tuple[dict[str
     value, so no submission reads worse than it did. A key they could not read
     comes from the first line that names it once Markdown or JSON decoration
     is removed, or, on a line without a usable colon, from `key = value`,
-    `key,value`, or `key value`.
+    `key,value`, or `key value`. Only a key neither reading finds comes from a
+    Markdown table row, a numbered row, or a dict printed on one line, so those
+    layouts add answers without changing one that was already read.
     """
     released: dict[str, str] = {}
     lenient: dict[str, str] = {}
+    layout: dict[str, str] = {}
     lines_naming: dict[str, int] = {}
     for line in text.splitlines():
         line = line.strip()
@@ -420,9 +508,13 @@ def _read_pairs(text: str, known: Callable[[str], str | None]) -> tuple[dict[str
         if key is not None:
             lenient.setdefault(key, value)
             keys.add(key)
+        if not keys:
+            for key, value in _layout_pairs(line, known):
+                layout.setdefault(key, value)
+                keys.add(key)
         for key in keys:
             lines_naming[key] = lines_naming.get(key, 0) + 1
-    return {**lenient, **released}, lines_naming
+    return {**layout, **lenient, **released}, lines_naming
 
 
 def _answer_key(key: str) -> str | None:
@@ -517,11 +609,18 @@ def check_environment_probe(root: Path) -> None:
     problems: list[str] = []
     if "numpy" not in probe:
         problems.append(f"{ENVIRONMENT_FILE} has no `numpy` line; Task 1.2 saves `numpy: <version>` there.")
+    elif not probe["numpy"]:
+        problems.append(
+            f"The `numpy` line in {ENVIRONMENT_FILE} is empty, which is what it records when the Python that ran "
+            "the command cannot import numpy; it should hold a version number such as `2.3.3`."
+        )
     elif _VERSION.search(probe["numpy"]) is None:
         problems.append(
             f"The `numpy` line in {ENVIRONMENT_FILE} reads `{_shown(probe['numpy'])}`, which holds no version "
             "number such as `2.3.3`; save the version numpy reports."
         )
+    # An empty or unversioned `numpy` line is what the probe saves when numpy is not installed.
+    numpy_unread = "numpy" in probe and bool(problems)
     if "interpreter" not in probe:
         problems.append(
             f"{ENVIRONMENT_FILE} has no `interpreter` line; Task 1.2 saves `interpreter: <path>` there."
@@ -529,6 +628,12 @@ def check_environment_probe(root: Path) -> None:
     elif not probe["interpreter"]:
         problems.append(
             f"The `interpreter` line in {ENVIRONMENT_FILE} is empty; save the path to the active interpreter."
+        )
+    if numpy_unread:
+        problems.append(
+            "With the environment active, run `python -c \"import numpy\"`: if it fails with "
+            "`ModuleNotFoundError`, numpy is not installed in the environment, so run Task 1.1's "
+            "`uv pip install -r requirements.txt`."
         )
     if problems:
         problems.append(
@@ -539,7 +644,11 @@ def check_environment_probe(root: Path) -> None:
 
 
 def check_record_count(root: Path) -> None:
-    """`output/record_count.txt` counts the patient records in the dataset."""
+    """`output/record_count.txt` counts the patient records in the dataset.
+
+    The first number in the file is read, and so is the first number on its
+    last line, so a title line above the count still passes.
+    """
     data = load_dataset()
     text = _text(root, RECORD_COUNT_FILE)
     readings = _as_numbers(text)
@@ -550,57 +659,68 @@ def check_record_count(root: Path) -> None:
         + f"; Task 2.1 saves the number of patient records in {DATA_FILE} there. Save the count your pipeline "
         "prints, then commit the file.",
     )
-    if any(abs(value - len(data.patients)) < 1e-9 for value in readings):
+    last_line = [line for line in text.splitlines() if line.strip()][-1]
+    last_readings = _as_numbers(last_line)
+    if any(abs(value - len(data.patients)) < 1e-9 for value in readings + last_readings):
         return
-    given = readings[0]
-    if abs(given - (len(data.patients) + 1)) < 1e-9:
+    if any(abs(value - (len(data.patients) + 1)) < 1e-9 for value in readings + last_readings):
         raise AssertionError(
-            f"{RECORD_COUNT_FILE} records {given:g}, which counts the header line as a patient record; "
-            f"the supplied {DATA_FILE} has {len(data.patients)} patient rows. Drop the header with `tail -n +2` "
-            "before counting "
-            "(Task 2.1), then save the new count and commit it."
+            f"{RECORD_COUNT_FILE} records {len(data.patients) + 1}, which counts the header line as a patient "
+            f"record; the supplied {DATA_FILE} has {len(data.patients)} patient rows. Drop the header with "
+            "`tail -n +2` before counting (Task 2.1), then save the new count and commit it."
         )
+    given = f"{readings[0]:g}"
+    if last_readings and last_readings[0] != readings[0]:
+        given += f" as its first number and {last_readings[0]:g} on its last line"
     raise AssertionError(
-        f"{RECORD_COUNT_FILE} records {given:g}, but the supplied {DATA_FILE} has {len(data.patients)} patient rows. "
-        "Count the "
-        "lines after the header with the Task 2.1 pipeline, then save the new count and commit it."
+        f"{RECORD_COUNT_FILE} records {given}, but the supplied {DATA_FILE} has {len(data.patients)} patient rows. "
+        "Count the lines after the header with the Task 2.1 pipeline, then save the new count and commit it."
     )
 
 
-def _timestamped_counts_files(root: Path) -> list[Path]:
-    output = root / "output"
-    _assert(
-        output.is_dir() and not output.is_symlink(),
-        "output/ " + ("is missing" if not (output.exists() or output.is_symlink()) else "is not a folder")
-        + ", so no Task 2.2 counts file is there. Make it a folder, save the per-monitor counts in it as "
-        "monitor_counts_YYYYMMDD_HHMMSS.txt, and commit them.",
-    )
-    candidates = sorted(path for path in output.glob("monitor_counts*") if path.is_file())
-    timestamped = [path for path in candidates if MONITOR_COUNTS_PATTERN.match(path.name)]
-    if timestamped:
-        return timestamped
-    if not candidates:
-        hint = (
-            ". Task 2.2 saves the per-monitor counts under a name that carries the run timestamp, as "
-            "monitor_counts_YYYYMMDD_HHMMSS.txt."
-        )
-    elif any(path.suffix != ".txt" for path in candidates):
-        hint = (
-            f"; it holds {', '.join(path.name for path in candidates)}. Name the file "
-            "monitor_counts_YYYYMMDD_HHMMSS.txt, with the run timestamp and the `.txt` extension (Task 2.2)."
-        )
-    else:
-        hint = (
-            f"; it holds {', '.join(path.name for path in candidates)}. Name the file with the run timestamp, "
-            "as monitor_counts_YYYYMMDD_HHMMSS.txt (Task 2.2)."
-        )
-    raise AssertionError(f"output/ has no {MONITOR_COUNTS_NAME.removeprefix('output/')} file{hint} Then commit it.")
+def _counts_files(folder: Path) -> list[Path]:
+    """The files in folder whose name starts `monitor_counts`, in any letter case."""
+    if not folder.is_dir() or folder.is_symlink():
+        return []
+    return sorted(path for path in folder.iterdir() if _COUNTS_PREFIX.match(path.name) and path.is_file())
+
+
+def _has_timestamp(name: str) -> bool:
+    """Whether a counts file's name carries a run timestamp: a digit run of at least TIMESTAMP_DIGITS digits.
+
+    `monitor_counts_20260926_153000.txt` is what Task 2.2 asks for, and
+    `monitor_counts_2026-09-26_15-30-00.txt`, `monitor_counts_20260926_1530.txt`,
+    or a `.csv` extension carry the timestamp just as well.
+    """
+    stem = _COUNTS_PREFIX.sub("", name)
+    return any(len(re.sub(r"\D", "", run)) >= TIMESTAMP_DIGITS for run in _DIGIT_RUN.findall(stem))
+
+
+def _counts_right(text: str, expected: dict[str, int]) -> bool:
+    """Whether a counts file lists every monitor with its count.
+
+    A label that is not a monitor is an extra line, which the README says is
+    ignored: a run total or a title must not cost the student this check.
+    """
+    pairs = read_count_pairs(text)
+    if all(pairs.get(monitor) == count for monitor, count in expected.items()):
+        return True
+    found = read_monitor_lines(text, expected)
+    return all(set(found.get(monitor, [])) == {count} for monitor, count in expected.items())
 
 
 def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
-    """What keeps one counts file from listing every monitor with its count."""
-    name = f"output/{name}"
+    """What keeps one counts file, `name` as the student's repository shows it, from listing every monitor's count."""
     found = read_monitor_lines(text, expected)
+    counted = {monitor for monitor, counts in found.items() if counts and monitor in expected}
+    # `cut -f2` without `-d','` splits at tabs, finds none, and passes each CSV row through whole.
+    whole_rows = [line.strip() for line in text.splitlines() if line.count(",") >= 2]
+    if whole_rows and not counted:
+        return (
+            f"{name} holds whole CSV rows, such as `{_shown(whole_rows[0])}`, where Task 2.2 counts one monitor "
+            "id per line. `cut` splits fields at tabs unless `-d` names another delimiter, so `cut -f2` passed "
+            "each comma-separated row through whole; use `cut -d',' -f2` (Task 2.2)."
+        )
     if not found:
         if not read_count_pairs(text):
             return (
@@ -611,7 +731,6 @@ def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
             f"{name} names none of the monitors {', '.join(monitor.upper() for monitor in sorted(expected))}; "
             "count field 2 of each row, the monitor, with `cut -d',' -f2` (Task 2.2)."
         )
-    counted = {monitor for monitor, counts in found.items() if counts and monitor in expected}
     missing = sorted(set(expected) - counted)
     # A monitor on several lines usually means `uniq -c` ran on unsorted input.
     repeated = sorted(
@@ -650,27 +769,64 @@ def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
     return problem
 
 
+def _no_counts_file(root: Path, undated: list[Path], expected: dict[str, int]) -> str:
+    """Why no timestamped counts file sits in output/, naming any undated or misplaced one."""
+    output = root / "output"
+    name = MONITOR_COUNTS_NAME.removeprefix("output/")
+    if output.is_dir() and not output.is_symlink():
+        where = f"output/ has no {name} file"
+    else:
+        where = "output/ " + ("is missing" if not (output.exists() or output.is_symlink()) else "is not a folder")
+        where += ", so no Task 2.2 counts file is there"
+    notes = []
+    for path in undated:
+        shown = f"output/{path.name}"
+        text = _read(path, shown)
+        right = _counts_right(text, expected)
+        notes.append(
+            f"{shown} has no run timestamp in its name"
+            + ("; its counts are right, so only the name is off." if right else ".")
+        )
+        if not right:
+            notes.append(_counts_problem(shown, text, expected))
+    misplaced = [path for path in _counts_files(root) if path.suffix.casefold() not in _SCRIPT_SUFFIXES]
+    for path in misplaced:
+        text = _read(path, path.name)
+        right = _counts_right(text, expected)
+        notes.append(
+            f"Found {path.name} at the top level of the repository"
+            + (", with every monitor's count right" if right else "")
+            + "; move it into output/"
+            + ("." if _has_timestamp(path.name) else " and give its name the run timestamp.")
+        )
+        if not right:
+            notes.append(_counts_problem(path.name, text, expected))
+    only_moved = misplaced and not undated and all(_has_timestamp(path.name) for path in misplaced)
+    fix = (
+        "Task 2.2 saves the per-monitor counts in output/ under a name that carries the run timestamp, as "
+        "monitor_counts_YYYYMMDD_HHMMSS.txt. "
+        + ("Move the file there, then commit it." if only_moved else
+           "Rerun the pipeline to save the file under that name, then commit it.")
+    )
+    return f"{where}. " + " ".join(notes + [fix])
+
+
 def check_monitor_counts(root: Path) -> None:
-    """A timestamped counts file lists how many patients each monitor recorded."""
-    timestamped = _timestamped_counts_files(root)
+    """A counts file in output/ whose name carries a run timestamp lists how many patients each monitor recorded."""
     expected = {monitor.casefold(): count for monitor, count in monitor_counts(load_dataset()).items()}
+    in_output = _counts_files(root / "output")
+    timestamped = [path for path in in_output if _has_timestamp(path.name)]
     problems: list[str] = []
     for path in timestamped:
-        text = _read(path, f"output/{path.name}")
-        # Every monitor has to be there with the right count. A label that is not a
-        # monitor is an extra line, which the README says is ignored: a run total or
-        # a title must not cost the student this check.
-        pairs = read_count_pairs(text)
-        if all(pairs.get(monitor) == count for monitor, count in expected.items()):
+        shown = f"output/{path.name}"
+        text = _read(path, shown)
+        if _counts_right(text, expected):
             return
-        found = read_monitor_lines(text, expected)
-        if all(set(found.get(monitor, [])) == {count} for monitor, count in expected.items()):
-            return
-        problems.append(_counts_problem(path.name, text, expected))
-
+        problems.append(_counts_problem(shown, text, expected))
     if problems:
         problems.append("Rerun the Task 2.2 pipeline to save a new timestamped file, then commit it.")
-    _report(problems)
+        _report(problems)
+    raise AssertionError(_no_counts_file(root, in_output, expected))
 
 
 def _readable(key: str, value: str) -> bool:
@@ -751,7 +907,9 @@ def _check_answer(root: Path, key: str) -> None:
         raw,
         f"The `{key}` line in {SUMMARY_FILE} has no value after the colon; write {_asked(key)} there. {SUMMARY_FIX}",
     )
-    expected = expected_answers(load_dataset())[key]
+    data = load_dataset()
+    answers = expected_answers(data)
+    expected = answers[key]
     repeated = (
         f" `{key}` appears on {lines_naming[key]} lines and the checks read the first; "
         'write the file with "w" so each run replaces it.'
@@ -759,27 +917,80 @@ def _check_answer(root: Path, key: str) -> None:
         else ""
     )
 
-    given = f"{SUMMARY_FILE} gives `{key}: {_shown(raw)}`, which is not"
+    given = f"{SUMMARY_FILE} gives `{key}: {_shown(raw)}`"
     if key in LABEL_KEYS:
-        _assert(
-            _label_matches(raw, str(expected)),
-            f"{given} {LABEL_KEYS[key]}: the supplied {DATA_FILE} gives `{expected}`.{repeated} {SUMMARY_FIX}",
-        )
-        return
+        if _label_matches(raw, str(expected)):
+            return
+        why = _label_problem(raw, str(expected), LABEL_KINDS[key])
+        if why is None:
+            why = f"which is not {LABEL_KEYS[key]}: the supplied {DATA_FILE} gives `{expected}`."
+            if key == "high_monitor":
+                why += _follow_ups_note(summary, data, answers)
+        raise AssertionError(f"{given}, {why}{repeated} {SUMMARY_FIX}")
 
     readings = _as_numbers(raw)
-    _assert(bool(readings), f"{given} a number; write {_asked(key)} there as a number.{repeated} {SUMMARY_FIX}")
-    if key in COUNT_KEYS:
-        _assert(
-            any(abs(given_value - float(expected)) <= 1e-9 for given_value in readings),
-            f"{given} {COUNT_KEYS[key]}: the supplied {DATA_FILE} gives {expected}.{repeated} {SUMMARY_FIX}",
-        )
+    _assert(bool(readings), f"{given}, which is not a number; write {_asked(key)} there as a number.{repeated} "
+                            f"{SUMMARY_FIX}")
+    # The follow-up answers are also accepted for the monitor the `high_monitor` line names.
+    accepted = [float(expected)]
+    named = _named_monitor(summary.get("high_monitor", ""), data) if key in FOLLOW_UP_KEYS else None
+    if named is not None and named != answers["high_monitor"]:
+        accepted.append(float(follow_up_answers(data, named)[key]))
     else:
-        _assert(
-            any(_mmhg_matches(given_value, float(expected)) for given_value in readings),
-            f"{given} {MMHG_KEYS[key]}: the supplied {DATA_FILE} gives {float(expected):.2f} mmHg "
-            f"(allowed difference {MMHG_TOLERANCE} mmHg).{repeated} {SUMMARY_FIX}",
+        named = None
+    if any(_value_matches(key, value, target) for value in readings for target in accepted):
+        return
+
+    written = _numbers_written(raw)
+    read, hint = ", which is not", ""
+    if len(written) > 1:
+        read = f"; the checks read its first number, {written[0]}, which is not"
+        also = next((number for number in written[1:] if any(
+            _value_matches(key, value, target) for value in _as_numbers(number) for target in accepted)), None)
+        if also is not None:
+            hint = f" The line also holds {also}; put the answer first and any note after it."
+    as_text = (lambda value: f"{value:.2f} mmHg") if key in MMHG_KEYS else (lambda value: f"{value:g}")
+    gives = f"the supplied {DATA_FILE} gives {as_text(accepted[0])}"
+    if named is not None:
+        gives += (
+            f" with {answers['high_monitor']} as the high-reading monitor, or {as_text(accepted[1])} with {named}, "
+            "the monitor your `high_monitor` line names"
         )
+    if key in MMHG_KEYS:
+        gives += f" (allowed difference {MMHG_TOLERANCE} mmHg)"
+    raise AssertionError(
+        f"{given}{read} {(COUNT_KEYS | MMHG_KEYS)[key]}: {gives}.{hint}{repeated} {SUMMARY_FIX}"
+    )
+
+
+def _value_matches(key: str, value: float, target: float) -> bool:
+    """Whether a number read for `key` answers it: exactly for a count, within the tolerance for mmHg."""
+    return _mmhg_matches(value, target) if key in MMHG_KEYS else abs(value - target) <= 1e-9
+
+
+def _named_monitor(raw: str, data: Dataset) -> str | None:
+    """The one real monitor a `high_monitor` value names, or None for no monitor, several, or a hedge."""
+    if not raw:
+        return None
+    named = [monitor for monitor in sorted(set(data.monitors)) if _label_matches(raw, monitor)]
+    return named[0] if len(named) == 1 else None
+
+
+def _follow_ups_note(summary: dict[str, str], data: Dataset, answers: dict[str, float | str]) -> str:
+    """A note for a wrong `high_monitor` whose follow-up answers are right for the monitor it names."""
+    named = _named_monitor(summary.get("high_monitor", ""), data)
+    if named is None or named == answers["high_monitor"]:
+        return ""
+    for_named = follow_up_answers(data, named)
+    if not all(
+        any(_value_matches(key, value, float(for_named[key])) for value in _as_numbers(summary.get(key, "")))
+        for key in FOLLOW_UP_KEYS
+    ):
+        return ""
+    return (
+        f" Your `monitor_offset` and `stage2_other_monitors` are right for {named}, so only this answer is wrong; "
+        "once it is fixed, recompute those two for the new monitor."
+    )
 
 
 def _answer_check(key: str) -> PublicCheck:

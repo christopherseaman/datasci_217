@@ -52,6 +52,8 @@ uv pip install -r requirements.txt
 
 `uv python pin` writes the `.python-version` file for you; commit it.
 
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv pip install -r requirements.txt` again after it.
+
 > **Checkpoint: `requirements.txt`**
 > Still pins numpy as `numpy==<version>`.
 
@@ -85,7 +87,7 @@ Build both answers with a shell pipeline (`tail`, `cut`, `sort`, `uniq -c`, `wc 
 Save the count of patient records to `output/record_count.txt`. The header line is not a patient record, so drop it before counting.
 
 > **Checkpoint: `output/record_count.txt`**
-> Holds the number of patient rows in `data/bp_readings.csv`. Only the first number in the file is read, so a bare count or a line with a word after it both work. Counting the whole CSV counts the header too, which is one too many.
+> Holds the number of patient rows in `data/bp_readings.csv`. The checks read the first number in the file and the first number on its last line, so a bare count, a count with a word after it, and a title line above the count all work. Counting the whole CSV counts the header too, which is one too many.
 
 ### 2.2 How many patients did each monitor record?
 
@@ -98,7 +100,7 @@ output/monitor_counts_YYYYMMDD_HHMMSS.txt
 Capture the timestamp once into a shell variable and use it in the filename; the lecture's "Shell Variables and Timestamps" reference card gives the `date` format string that produces `YYYYMMDD_HHMMSS`. Demo 1 ends its pipeline with `| head -n 5` to keep its display short, but this file has six monitors, so leave that stage off or the last monitor goes missing.
 
 > **Checkpoint: `output/monitor_counts_<timestamp>.txt`**
-> One line per monitor with that monitor's count and its id, as `uniq -c` prints them. Spacing, separators such as `M01: 58`, and line order do not matter, and earlier timestamped runs may sit beside it.
+> Sits in `output/`, with a name that starts `monitor_counts` and carries the run timestamp; another timestamp layout, such as `monitor_counts_2026-09-26_15-30-00.txt`, also works. Holds one line per monitor with that monitor's count and its id, as `uniq -c` prints them. Spacing, separators such as `M01: 58`, and line order do not matter, and earlier timestamped runs may sit beside it.
 
 ## Task 3: Answer the ward's questions with NumPy
 
@@ -138,13 +140,14 @@ high_monitor: <monitor id>
 
 How the values are read:
 
-- Each answer is scored on its own, so a wrong value costs only its own points.
+- Each answer is scored on its own, so a wrong value costs only its own points. `monitor_offset` and `stage2_other_monitors` are also accepted when they are right for the monitor your `high_monitor` line names, so a wrong `high_monitor` costs only its own points.
+- A number answer is read from the first number after the colon, so put the answer first and any note after it: `readings: 3600 (300 x 12)` reads 3600, but `readings: 300 x 12 = 3600` reads 300.
 - mmHg values are accepted within 0.6 of the value recomputed from the data, so one decimal or every digit NumPy prints passes, and so does a whole number, whether rounded with `:.0f` or cut short with `int()`. A trailing unit such as `mmHg` is ignored. Counts and whole-number readings must match exactly.
 - A NumPy scalar printed as `np.float64(121.5)` or `np.int64(96)` reads as the number inside it.
 - Either the population or the sample standard deviation is accepted; at this many readings they agree far inside the tolerance.
 - "140 mmHg or higher" includes a mean of exactly 140.
 - A patient id, column name, or monitor id may sit in quotes or brackets, as a one-item list prints it (`['M02']`), and may carry a note before or after it, as in `monitor M02` or `M02 (128.4 mmHg)`, as long as the line names no other id of the same kind.
-- Keys may appear in any order, spacing is free, and extra lines are ignored. When a key appears on more than one line, the first is read, so open the file with `"w"`, which replaces it on each run, rather than `"a"`.
+- Keys may appear in any order, spacing is free, a Markdown table row such as `| patients | 300 |` reads like `patients: 300`, and extra lines are ignored. When a key appears on more than one line, the first is read, so open the file with `"w"`, which replaces it on each run, rather than `"a"`.
 
 > **Checkpoint: `output/vitals_summary.txt`**
 > One `key: value` line for each of the 14 keys above, holding the answers your analysis computed from `data/bp_readings.csv`.
@@ -158,7 +161,7 @@ python analysis.py
 python check_assignment.py
 ```
 
-`check_assignment.py` runs the same checks GitHub runs. They read only your files in `output/` and recompute every answer from their own copy of the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
+`check_assignment.py` runs the same checks GitHub runs. They grade only your files in `output/` and recompute every answer from their own copy of the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
 
 Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
 
