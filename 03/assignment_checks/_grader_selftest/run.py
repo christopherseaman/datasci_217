@@ -3,8 +3,9 @@
 Builds submissions in ignored `scratch/`, computes the correct answers with
 NumPy (independently of the pure-Python recomputation the checks use), and
 confirms what each kind of submission scores. Every submission is also graded
-with the checks as committed at HEAD, and no check HEAD passed may fail now:
-Assignment 03 is out with students, so a change to the checks may only ever
+with the checks as committed at HEAD, and no check HEAD passed may fail now,
+except a check a submission is built to show tightened: Assignment 03 opens to
+students on 2026-09-30, and from then on a change to the checks may only ever
 raise a score. It also confirms that the handout in `03/assignment/` ships the
 course-owned checks byte for byte, so a student's local run reports exactly
 what the GitHub run reports.
@@ -140,16 +141,22 @@ def baseline_checks(directory: Path) -> Path:
     return directory
 
 
-def no_check_lost(root: Path, result: dict, baseline: Path) -> bool:
-    """Assert the baseline passed nothing the current checks fail; return whether the score rose."""
+def no_check_lost(root: Path, result: dict, baseline: Path, tightened: frozenset[str] = frozenset()) -> bool:
+    """Assert the baseline passed nothing the current checks fail; return whether the score rose.
+
+    `tightened` names the checks this submission shows failing on purpose: a
+    stricter rule made before the assignment opened. Once that rule is committed,
+    the baseline fails them too and the allowance goes unused.
+    """
     before = checker_report(baseline, root)
-    passed_before = {test["test-name"] for test in before["tests"] if test["passed"]}
+    passed_before = {test["test-name"] for test in before["tests"] if test["passed"]} - tightened
     passed_now = {test["test-name"] for test in result["tests"] if test["passed"]}
     assert passed_before <= passed_now, (
         f"{root.name}: {sorted(passed_before - passed_now)} passed under the checks at "
         f"{BASELINE_REVISION} and fail now; a released assignment's checks may only get more lenient"
     )
-    assert result["score"] >= before["score"], (root.name, before["score"], result["score"])
+    lost = sum(test["score"] for test in before["tests"] if test["test-name"] in tightened)
+    assert result["score"] >= before["score"] - lost, (root.name, before["score"], result["score"])
     return result["score"] > before["score"]
 
 
@@ -157,9 +164,10 @@ def build(root: Path, summary: list[str], counts: dict[str, int], records: int) 
     root.mkdir(parents=True, exist_ok=True)
     (root / "data").mkdir(exist_ok=True)
     shutil.copy(FORK / DATA_FILE, root / DATA_FILE)
-    requirements = (FORK / "requirements.txt").read_text(encoding="utf-8")
-    (root / "requirements.txt").write_text(requirements, encoding="utf-8")
-    pinned = re.search(r"numpy==([^\s]+)", requirements).group(1)
+    project = (FORK / "pyproject.toml").read_text(encoding="utf-8")
+    (root / "pyproject.toml").write_text(project, encoding="utf-8")
+    shutil.copy(FORK / "uv.lock", root / "uv.lock")
+    pinned = re.search(r'"numpy==([^"\s]+)"', project).group(1)
     (root / ".python-version").write_text("3.13\n", encoding="utf-8")
     output = root / "output"
     output.mkdir(exist_ok=True)
@@ -198,11 +206,11 @@ def run() -> None:
         compared: set[str] = set()
         raised: set[str] = set()
 
-        def graded(root: Path) -> dict:
+        def graded(root: Path, tightened: frozenset[str] = frozenset()) -> dict:
             """Grade with the current checks, and prove the baseline scored this submission no higher."""
             result = grade_submission(root)
             compared.add(root.name)
-            if no_check_lost(root, result, baseline):
+            if no_check_lost(root, result, baseline, tightened):
                 raised.add(root.name)
             return result
 
@@ -403,7 +411,7 @@ def run() -> None:
 
         # Which numpy and which interpreter are never graded: a probe from outside
         # the project environment, another numpy, or a Windows path all pass, and
-        # so does a submission whose requirements.txt is gone.
+        # so does a submission whose pyproject.toml and uv.lock are gone.
         for name, probe in (
             ("unactivated", "python: Python 3.13.14\nnumpy: 2.3.3\ninterpreter: /usr/bin/python3\n"),
             ("other-numpy", "numpy: 2.2.6\ninterpreter: /home/alice/a03/.venv/bin/python\n"),
@@ -413,9 +421,10 @@ def run() -> None:
             build(probed, summary, counts, records)
             (probed / "output" / "environment.txt").write_text(probe, encoding="utf-8")
             assert failing(graded(probed)) == set(), (name, failing(graded(probed)))
-        unpinned = workspace / "no-requirements"
+        unpinned = workspace / "no-project-files"
         build(unpinned, summary, counts, records)
-        (unpinned / "requirements.txt").unlink()
+        (unpinned / "pyproject.toml").unlink()
+        (unpinned / "uv.lock").unlink()
         assert failing(graded(unpinned)) == set(), failing(graded(unpinned))
 
         # The probe still has to record a numpy version and an interpreter.
@@ -460,11 +469,14 @@ def run() -> None:
         rows = (tampered / DATA_FILE).read_text(encoding="utf-8").splitlines()[:4]
         (tampered / DATA_FILE).write_text("\n".join(rows) + "\n", encoding="utf-8")
         (tampered / "analysis.py").write_text("raise SystemExit('never run')\n", encoding="utf-8")
-        (tampered / "requirements.txt").write_text("numpy==1.0\n", encoding="utf-8")
+        (tampered / "pyproject.toml").write_text(
+            (tampered / "pyproject.toml").read_text(encoding="utf-8").replace("numpy==", "numpy==1.0 # was "),
+            encoding="utf-8")
         assert graded(tampered) == untouched, failing(graded(tampered))
         (tampered / DATA_FILE).unlink()
         (tampered / "data").rmdir()
-        (tampered / "requirements.txt").unlink()
+        (tampered / "pyproject.toml").unlink()
+        (tampered / "uv.lock").unlink()
         assert graded(tampered) == untouched, failing(graded(tampered))
         wrong_mean = workspace / "wrong-mean-no-data"
         build(wrong_mean, replaced(summary, mean_sbp=f"{float(answers['mean_sbp']) + 3.0:.1f}"), counts, records)
@@ -720,14 +732,35 @@ def run() -> None:
             "python: Python 3.13.14\nnumpy: \ninterpreter: /home/alice/a03/.venv/bin/python\n", encoding="utf-8")
         result = graded(uninstalled)
         assert failing(result) == {"environment probe"}, failing(result)
-        assert "uv pip install -r requirements.txt" in detail(result, "environment probe")
+        assert "Task 1.1's `uv sync`" in detail(result, "environment probe")
 
-        # Known false pass, kept because a released check may not get stricter: mean_sbp written as
-        # the per-hour array `readings.mean(axis=0)` prints reads its first element, which happens to
-        # sit within the tolerance. 03/assignment_checks/README.md records the change for next term.
-        per_hour = workspace / "mean-per-hour"
-        build(per_hour, replaced(summary, mean_sbp=str(readings.mean(axis=0))), counts, records)
-        assert graded(per_hour)["score"] == 100, failing(graded(per_hour))
+        # mean_sbp written as the per-hour array `readings.mean(axis=0)` prints: its first element sits
+        # within the tolerance of the overall mean, so reading only the first number passed it. An array
+        # of several numbers now fails, printed or repr'd, wrapped or not, and says why; a one-item list
+        # still reads as its number. The baseline checks predate this rule, so it is a declared tightening.
+        mean_sbp_check = frozenset({"answer: mean_sbp"})
+        hour_means = readings.mean(axis=0)
+        assert abs(hour_means[0] - readings.mean()) <= 0.6, "the per-hour case no longer tests a first-number pass"
+        for name, value in (
+            ("mean-per-hour", str(hour_means)),
+            ("mean-per-hour-repr", repr(hour_means)),
+            ("mean-per-hour-list", str(hour_means.tolist())),
+        ):
+            per_hour = workspace / name
+            build(per_hour, replaced(summary, mean_sbp=value), counts, records)
+            result = graded(per_hour, mean_sbp_check)
+            assert failing(result) == {"answer: mean_sbp"}, (name, failing(result))
+            assert result["score"] == 100 - answers_cost("mean_sbp"), (name, result["score"])
+            assert "holds 12 numbers" in detail(result, "answer: mean_sbp"), detail(result, "answer: mean_sbp")
+            assert "`readings.mean()`, with no `axis=`" in detail(result, "answer: mean_sbp")
+        per_hour_sd = workspace / "sd-per-hour"
+        build(per_hour_sd, replaced(summary, sd_sbp=str(readings.std(axis=0))), counts, records)
+        result = graded(per_hour_sd, frozenset({"answer: sd_sbp"}))
+        assert failing(result) == {"answer: sd_sbp"}, failing(result)
+        assert "`readings.std()`, with no `axis=`" in detail(result, "answer: sd_sbp")
+        one_item = workspace / "mean-one-item-list"
+        build(one_item, replaced(summary, mean_sbp=f"[{answers['mean_sbp']}]"), counts, records)
+        assert graded(one_item)["score"] == 100, failing(graded(one_item))
 
         # A fresh handout prints exactly the "Before Task 1" example README.md shows.
         fresh = workspace / "fresh-handout"
@@ -777,8 +810,8 @@ def run() -> None:
         "bracketed and annotated label, hedged label, miscounted, unactivated, other-numpy, "
         "unversioned-probe, supplied-files-edited, truncated, Markdown and JSON, re-separated, leading-note, "
         "UTF-16, whitespace-edited, renamed, appended, miscounted-monitor, undelimited-cut, dated, undated and "
-        "misplaced counts, follow-on pick, first-number, table, numbered, dict, titled-count, uninstalled-numpy "
-        "and per-hour-mean submissions all score as intended."
+        "misplaced counts, follow-on pick, first-number, table, numbered, dict, titled-count, uninstalled-numpy, "
+        "per-hour-array and one-item-list submissions all score as intended."
     )
     print(
         f"Assignment 03 checks against {BASELINE_REVISION}: none of {len(compared)} submissions lost a check; "

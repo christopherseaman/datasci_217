@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Stop at the first failing command, unset variable, or failing pipeline stage.
 set -euo pipefail
 
-# A bounded, repeatable shell pipeline. Run from a disposable directory:
-# every path below is created relative to the current directory.
+# A bounded, repeatable shell pipeline. Run it from ~/03-demo with
+# `bash demo1_cli_pipeline.sh`: it creates data/, logs/, and results/ there.
 echo "=== Lecture 03: bounded CLI pipeline ==="
 mkdir -p data/raw logs results
 

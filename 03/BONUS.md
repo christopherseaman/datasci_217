@@ -11,26 +11,59 @@ notion:
 
 # Direct and Transitive Dependencies
 
-The lecture's `requirements.txt` lists only the **direct** dependencies, the packages the project's own code imports. Those packages need packages of their own, the **transitive** dependencies, and the installer adds them automatically. Installing pandas, which Lecture 04 uses, into the Lecture 03 environment shows the difference.
+`pyproject.toml` lists only the **direct** dependencies, the packages the project's own code imports. Those packages need packages of their own, the **transitive** dependencies, which uv installs automatically and records in `uv.lock`. Adding pandas, which Lecture 04 uses, to the lecture's `clinic-project` shows the difference.
 
-## Code Snippet: List Every Installed Package
+## Code Snippet: Show the Dependency Tree
 
 ```bash
-uv pip install pandas==3.0.5
-uv pip freeze
+uv add pandas==3.0.5
+uv tree
 ```
 
 ```text
-numpy==2.3.3
-pandas==3.0.5
-pip==26.2.1
-python-dateutil==2.9.0.post0
-six==1.17.0
+clinic-project v0.1.0
+├── numpy v2.3.3
+└── pandas v3.0.5
+    ├── numpy v2.3.3
+    └── python-dateutil v2.9.0.post0
+        └── six v1.17.0
 ```
 
-`uv pip freeze` records everything currently installed, including packages that arrived as dependencies of what you asked for: `python-dateutil` came with pandas, `six` came with `python-dateutil`, `pip` came from `uv venv --seed` (your pip version may differ), and on Windows `tzdata` arrives too. That is a record of one environment, which is different from the hand-written list of what the project chose, so keep writing `requirements.txt` by hand.
+`pyproject.toml` now names numpy and pandas; `python-dateutil` came with pandas, and `six` came with `python-dateutil`. `uv.lock` records all of them, and also `tzdata`, which pandas needs only on Windows, so one lock file covers every platform; `uv lock` refreshes it without installing anything.
 
-A **lock file** records the resolved transitive dependencies with their exact versions; generate one when a project needs that complete record. In a project started with `uv init`, `uv lock` writes one named `uv.lock`, covering every platform at once.
+Both requirements-file commands include the transitive packages too, in different ways. `uv pip freeze` lists what is installed in the active environment, so it adds `pip` (from `uv venv --seed`) and leaves out `tzdata` on macOS and Linux. `uv export` lists what `uv.lock` records for every platform, marking `tzdata` with a condition that limits it to Windows, and noting under each package which one pulled it in:
+
+```text
+python-dateutil==2.9.0.post0
+    # via pandas
+six==1.17.0
+    # via python-dateutil
+```
+
+# More Comprehensions
+
+The lecture built lists. The same pattern builds dictionaries and sets, and an `if`/`else` expression inside it relabels every item instead of filtering.
+
+## Code Snippet: Dictionary, Set, and Conditional Comprehensions
+
+```python
+patients = ["P001", "P002", "P003"]
+systolic = [128, 142, 118]
+
+by_patient = {p: s for p, s in zip(patients, systolic)}
+print(by_patient)        # {'P001': 128, 'P002': 142, 'P003': 118}
+
+clinics = {c for c in ["Cardiology", "Nephrology", "Cardiology"]}
+print(sorted(clinics))   # ['Cardiology', 'Nephrology']
+
+labels = ["high" if s >= 140 else "ok" for s in systolic]
+print(labels)            # ['ok', 'high', 'ok']
+
+pairs = [(p, visit) for p in ["P001", "P002"] for visit in [1, 2]]
+print(pairs)             # [('P001', 1), ('P001', 2), ('P002', 1), ('P002', 2)]
+```
+
+A filtering `if` goes at the end and drops items; an `if`/`else` goes before `for` and keeps every item with one of two values. Two `for` clauses run like nested loops, the first one outermost.
 
 # Advanced Universal Functions (ufuncs)
 
@@ -190,21 +223,22 @@ is_member = np.isin(arr1, arr2)                  # Boolean array
 
 # Advanced Sorting
 
-The lecture sorted values and positions for a whole array. Use these when you need only the k smallest values, or when each row of a table must be sorted on its own.
+The lecture sorted whole arrays, sorted along an axis, and ordered rows by one column. Use `np.argpartition` when you need only the k smallest values, and `np.lexsort` to order by one key and break ties with another.
 
-## Code Snippet: Partial and Row-Wise Sorting
+## Code Snippet: Partial Sorts and Tie-Breaking
 
 ```python
 arr = np.array([3, 1, 4, 1, 5, 9, 2, 6])
 
-# Partial sort (find k smallest/largest)
+# Partial sort: the k smallest values, without sorting everything
 k = 3
-partition_indices = np.argpartition(arr, k)      # k smallest at start
-k_smallest = np.sort(arr[partition_indices[:k]]) # Get k smallest, sorted
+partition_indices = np.argpartition(arr, k)      # k smallest at the start, in no set order
+print(np.sort(arr[partition_indices[:k]]))       # [1 1 2]
 
-# 2D sorting
-arr_2d = np.array([[3, 2, 1], [6, 5, 4]])
-sorted_2d = np.sort(arr_2d, axis=1)              # Sort each row
+# Sort by clinic, then by systolic within each clinic; lexsort reads the keys last-first
+clinic = np.array([2, 1, 2, 1])
+systolic = np.array([130, 142, 118, 128])
+print(np.lexsort((systolic, clinic)))            # [3 1 2 0]
 ```
 
 # File I/O Operations
@@ -239,33 +273,23 @@ arr2 = loaded_dict['arr2']
 np.savez_compressed('arrays_compressed.npz', arr1=arr, arr2=arr*2)
 ```
 
-# Conditional Logic with np.where
+# Positions Where a Condition Holds
 
-The lecture labeled values with a single `np.where`. Use these when one test is not enough: several bands at once, or the positions rather than the labels.
+The lecture gave `np.where` three arguments to choose values. Given only a condition, it returns the positions where the condition is true.
 
-## Code Snippet: Multiple Conditions and Positions
+## Code Snippet: Find Positions
 
 ```python
 systolic = np.array([118, 142, 127, 135, 151, 109, 131])
-
-# Nested np.where: test the highest band first
-bands = np.where(systolic >= 140, "stage 2",
-                 np.where(systolic >= 130, "stage 1", "below 130"))
-print(bands)
-# ['below 130' 'stage 2' 'below 130' 'stage 1' 'stage 2' 'below 130'
-#  'stage 1']
-
-# np.select: the same bands as a list; the first true condition wins
-conditions = [systolic >= 140, systolic >= 130]
-choices = ["stage 2", "stage 1"]
-print(np.select(conditions, choices, default="below 130"))  # same labels as above
-
-# Positions where a condition is true
 positions = np.where(systolic >= 140)[0]
-print(positions)  # [1 4]
+print(positions)    # [1 4]
+
+bp = np.array([[128, 131, 126], [142, 145, 139], [118, 121, 119]])
+rows, cols = np.where(bp >= 140)
+print(rows, cols)   # [1 1] [0 1]: the row and column of each match
 ```
 
-With only a condition, `np.where` returns a tuple holding one array of positions per dimension; `[0]` takes the array for this 1D input.
+With only a condition, `np.where` returns a tuple holding one array of positions per dimension; `[0]` takes the array for a 1-D input.
 
 # Structured Arrays
 
@@ -320,6 +344,59 @@ del mmap_array, loaded_mmap
 Path('large_array.dat').unlink()
 ```
 
+# Shell Script Extras
+
+The lecture's script ran top to bottom on one fixed file. These additions make a script safer and reusable: stop at the first error, take the input file as an argument, and group repeated steps in a function.
+
+## Reference Card: Script Building Blocks
+
+- `set -euo pipefail`: Stop at the first failing command (`-e`), at an unset variable (`-u`), or when any stage of a pipeline fails (`-o pipefail`).
+- `$1`, `$2`, ...: The arguments after the script's name; `$#` counts them.
+- `${1:-default}`: The first argument, or `default` when none was given.
+- `name() { ...; }`: Define a function; inside it, `$1` is the function's own first argument, and `name file.csv 4` calls it.
+- `chmod +x script.sh`, then `./script.sh`: Mark the file executable and run it directly; the `#!/bin/bash` line picks the shell.
+
+## Code Snippet: A Reusable Counting Script
+
+Save this as `count_by.sh`:
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+count_column() {
+    # $1: a CSV file with a header; $2: the field number to count
+    tail -n +2 "$1" | cut -d',' -f"$2" | sort | uniq -c
+}
+
+input=${1:-data/raw/encounters.csv}
+echo "Encounters per clinic in $input:"
+count_column "$input" 4
+```
+
+```bash
+chmod +x count_by.sh
+./count_by.sh                           # the default file
+./count_by.sh data/raw/encounters.csv   # the same file, named
+./count_by.sh missing.csv; echo "exit status: $?"
+```
+
+```text
+Encounters per clinic in data/raw/encounters.csv:
+      3 Cardiology
+      2 Nephrology
+      1 Primary Care
+Encounters per clinic in data/raw/encounters.csv:
+      3 Cardiology
+      2 Nephrology
+      1 Primary Care
+Encounters per clinic in missing.csv:
+tail: cannot open 'missing.csv' for reading: No such file or directory
+exit status: 1
+```
+
+Without `set -euo pipefail`, the script prints the same error but exits with status 0, as if it had succeeded. On macOS, `tail` words its error differently.
+
 # Optional shell reference
 
 The lecture's pipelines select and count. `tr`, `sed`, and `awk` also rewrite text as it passes through, and longer pipelines chain them.
@@ -363,7 +440,7 @@ These tools plot a column without leaving the terminal: a quick look at a trend,
 
 ```bash
 # sparklines: Inline Unicode graphs
-# Install into the active environment: uv pip install sparklines
+# Add it to the project: uv add sparklines
 
 # Visualize systolic readings inline
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines

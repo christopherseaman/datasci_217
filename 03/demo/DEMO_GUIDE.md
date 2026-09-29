@@ -9,56 +9,169 @@ notion:
 
 # Lecture 03 Demo Guide: Environments and NumPy
 
-Clone the course repository the way Lecture 01 cloned your fork (Command Palette → **Git: Clone**, paste `https://github.com/christopherseaman/datasci_217.git`, pick a folder), and the files are in its `03/demo` folder. Without cloning, open the [Lecture 03 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/03/demo), use **Download raw file** for `requirements.txt`, `encounters.csv`, and the six demo scripts, and save them together in one folder. Open that folder in VS Code and select **Terminal → New Terminal**. Run the three demos below in order. Every file name starts with the demo that runs it: `demo1_` for the shell pipeline, `demo2_` for Python collections and array basics, `demo3_` for the analysis workflow.
+All three demos run in one folder, `~/03-demo`, which the first command of Demo 1 creates and fills. Run every command in VS Code's **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac); on Windows, use the **WSL: Ubuntu** window from Lecture 01. Apart from `setup_demo.sh` and the data file `encounters.csv`, each file name starts with the demo that runs it: `demo1_` for the shell pipeline, `demo2_` for types, lists, and array basics, `demo3_` for the analysis.
 
-# Setup: Create the tested environment
+# Demo 1: Virtual Environments, Shell Pipelines, and Scripts
 
-Lecture 03 uses CPython 3.13 and NumPy 2.3.3. From the demo folder, with `uv`:
+## 1.1 Download the Demo Files
+
+This one command downloads the demo files, the same `curl ... | sh` pattern you used to install uv in Lecture 01. Its source is [setup_demo.sh](setup_demo.sh), and 1.5 reads it line by line.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo/setup_demo.sh | sh
+```
+
+```text
+Made ~/03-demo with the Lecture 03 demo scripts and encounters.csv.
+Next: cd ~/03-demo
+```
+
+```bash
+cd ~/03-demo
+ls
+```
+
+`ls` lists eight files: `setup_demo.sh`, the six demo scripts from `demo1_cli_pipeline.sh` to `demo3_csv_summary.py`, and `encounters.csv`. The script never overwrites earlier work: run it a second time and `mkdir` reports that `~/03-demo` already exists (`File exists`), and nothing else happens. To start over, rename the old folder first with `mv ~/03-demo ~/03-demo-old`, then run the `curl` line again. If a download fails partway, do the same. To browse the files in VS Code, use **File → Open Folder…** and choose `03-demo` in your home folder; new terminals then start there.
+
+## 1.2 Create the Environment with `pyproject.toml`
+
+Pin Python, start the project, create and activate the environment, then add NumPy, as in the lecture's "Create and Verify an Environment" snippet:
 
 ```bash
 uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
-uv venv --seed --python 3.13 .venv
-source .venv/bin/activate
-uv pip install -r requirements.txt                      # + numpy==2.3.3
+uv init --bare                                          # Initialized project `03-demo`
+uv venv --seed                                          # Creating virtual environment with seed packages at: .venv
+source .venv/bin/activate                               # the prompt now starts with (03-demo)
+uv add numpy==2.3.3                                     # + numpy==2.3.3
 python --version                                        # Python 3.13.x
 python -c "import numpy as np; print(np.__version__)"   # 2.3.3
-python -c "import sys; print(sys.executable)"           # a path ending in .venv/bin/python
+python -c "import sys; print(sys.executable)"           # a path ending in 03-demo/.venv/bin/python
+cat pyproject.toml
 ```
 
-The last line prints the interpreter that `python` now runs, and it should sit inside this folder's `.venv`, such as `/Users/alice/datasci_217/03/demo/.venv/bin/python`. A path without `.venv` in it means the environment is not active in this terminal. Use the course's Bash/Zsh terminal; in native PowerShell, activation is `.\.venv\Scripts\Activate.ps1` and the path ends in `.venv\Scripts\python.exe`. The lecture also shows standard-library `venv` as an alternative setup.
+`uv add` recorded NumPy in the project file that `uv init --bare` started:
 
-## Recreate the environment from its records
+```toml
+[project]
+name = "03-demo"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy==2.3.3",
+]
+```
 
-`.python-version` and `requirements.txt` are the records another person needs; `.venv/` is not shared, so rebuild it from those records in a throwaway folder and confirm the same NumPy arrives. These are the lecture's "Recreate from the Records" steps:
+The `sys.executable` line shows which interpreter `python` runs; it should sit inside this folder's `.venv`, such as `/Users/alice/03-demo/.venv/bin/python`. A path without `.venv` in it means the environment is not active in this terminal. In native PowerShell, activation is `.\.venv\Scripts\Activate.ps1` and the path ends in `.venv\Scripts\python.exe`. `ls -a` now also lists `.python-version`, `pyproject.toml`, `uv.lock`, and `.venv`.
+
+## 1.3 Recreate It from the Records
+
+`.python-version`, `pyproject.toml`, and `uv.lock` are the records another person needs; `.venv/` is not shared. Rebuild the environment from those three files in a new folder, as in the lecture's "Recreate from the Records" snippet:
 
 ```bash
-mkdir -p scratch/recreation-check
-cp .python-version requirements.txt scratch/recreation-check/
-cd scratch/recreation-check
-uv venv --seed .venv                                    # Using CPython 3.13.x
+deactivate
+mkdir recreation-check
+cp .python-version pyproject.toml uv.lock recreation-check/
+cd recreation-check
+uv venv --seed                                                 # Using CPython 3.13.x
+uv sync                                                        # + numpy==2.3.3
+uv run python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+cd ..
+```
+
+`deactivate` comes first because `uv sync` ignores an active environment from another folder and warns about it. `uv sync` installed exactly the NumPy that `uv.lock` records, and `uv run` ran Python in the new `.venv` without activating it.
+
+## 1.4 Share It as `requirements.txt`
+
+Tools such as pip and Colab read `requirements.txt` instead. Write one for the same environment from `uv.lock`, and look at it:
+
+```bash
+uv export --no-hashes > requirements.txt
+cat requirements.txt
+```
+
+```text
+# This file was autogenerated by uv via the following command:
+#    uv export --no-hashes
+numpy==2.3.3
+    # via 03-demo
+```
+
+`uv export` also prints `Resolved 2 packages` in the terminal; only the lines above go into the file. The `# via` comment says which project needs NumPy. Now install from that file into a fresh environment, the way a `requirements.txt` project is set up:
+
+```bash
+mkdir pip-check
+cp .python-version requirements.txt pip-check/
+cd pip-check
+uv venv --seed
 source .venv/bin/activate
 uv pip install -r requirements.txt                      # + numpy==2.3.3
 python -c "import numpy as np; print(np.__version__)"   # 2.3.3
 deactivate
-cd ../..
-source .venv/bin/activate                               # back in the demo environment
+cd ..
+source .venv/bin/activate                               # (03-demo) again
 ```
 
-`uv venv` reads the copied `.python-version`, so it builds a Python 3.13 environment without `--python 3.13`. The last line matters: activating one environment inside another saves the PATH from before _both_, so a single `deactivate` drops you out of the demo environment too. Re-activating brings the `(.venv)` prompt back, and the rest of this guide needs it.
+Both routes installed NumPy 2.3.3. The last line matters: Demos 2 and 3 run in the `03-demo` environment, so check that the prompt starts with `(03-demo)` again.
 
-Assignment 03 records its own environment the same way, with a `.python-version` and a `requirements.txt`.
+## 1.5 Read a Shell Script
 
-# 1. Shell Pipeline
-
-Run this from a disposable project-local directory because it creates `data/`, `logs/`, and `results/` below the current directory:
+The command in 1.1 ran a shell script, and it saved a copy of itself. Open it:
 
 ```bash
-mkdir -p scratch/lecture03-cli
-cd scratch/lecture03-cli
-bash ../../demo1_cli_pipeline.sh
+cat setup_demo.sh
 ```
 
-Source: [demo1_cli_pipeline.sh](demo1_cli_pipeline.sh). The script writes a six-record CSV of clinic encounters, counts the records with `wc -l`, and counts encounters per clinic with a bounded `tail | cut | sort | uniq | head` pipeline. Three pieces of it are script plumbing, explained in its comments, that you do not need to write yourself: `set -euo pipefail` stops the script at the first failing command, the lines between `<<'EOF'` and `EOF` are written into the CSV unchanged, and a trailing `\` continues one pipeline onto the next line. Your timestamp will differ from the one below:
+```bash
+#!/bin/sh
+# Download the Lecture 03 demo files into a new folder, ~/03-demo.
+# Run it with:
+#   curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo/setup_demo.sh | sh
+
+# Plumbing: stop at the first command that fails (-e) or at an unset variable (-u).
+set -eu
+
+# Where the files come from. The course's tests set DEMO_BASE_URL to read local copies instead.
+base_url="${DEMO_BASE_URL:-https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo}"
+
+# mkdir without -p stops the script here if ~/03-demo already exists, so earlier work is never overwritten.
+mkdir ~/03-demo
+cd ~/03-demo
+
+# One download per file; -o saves it under the name that follows.
+curl -fsSL "$base_url/setup_demo.sh" -o setup_demo.sh
+curl -fsSL "$base_url/demo1_cli_pipeline.sh" -o demo1_cli_pipeline.sh
+curl -fsSL "$base_url/demo2_types_and_lists.py" -o demo2_types_and_lists.py
+curl -fsSL "$base_url/demo2_numpy_performance.py" -o demo2_numpy_performance.py
+curl -fsSL "$base_url/demo2_numpy_arrays.py" -o demo2_numpy_arrays.py
+curl -fsSL "$base_url/demo3_bp_analysis.py" -o demo3_bp_analysis.py
+curl -fsSL "$base_url/demo3_csv_summary.py" -o demo3_csv_summary.py
+curl -fsSL "$base_url/encounters.csv" -o encounters.csv
+
+echo "Made ~/03-demo with the Lecture 03 demo scripts and encounters.csv."
+echo "Next: cd ~/03-demo"
+```
+
+Read it top to bottom, the order the shell ran it:
+
+- `#!/bin/sh` names the shell the script expects: `sh`, a smaller relative of Bash that runs the same basic commands.
+- Lines starting with `#` are comments; the shell skips them.
+- `set -eu` is plumbing you do not need to write yourself: it stops the script at the first failing command, so a failed download cannot leave you with a half-made folder and no warning.
+- `base_url=...` stores the download address in a variable once, and every `curl` line uses it as `"$base_url/..."`, as the lecture's "Shell Variables and Timestamps" card does with `timestamp`. The `${DEMO_BASE_URL:-...}` around the address lets the course's tests substitute local files; when `DEMO_BASE_URL` is not set, as on your computer, the address is used as written.
+- `mkdir ~/03-demo` and `cd ~/03-demo` make the folder and move into it. Without `-p`, `mkdir` fails when the folder exists, and `set -e` then stops the script before any download.
+- Each `curl -fsSL URL -o FILE` line downloads one file: `-f` fails on a missing file instead of saving an error page, `-s` hides the progress bar, `-S` still shows errors, `-L` follows redirects, and `-o` saves to `FILE` instead of printing it.
+- The two `echo` lines printed the output you saw in 1.1.
+
+`curl ... | sh` ran it like this: `curl` printed the script's text, and the pipe sent that text into `sh`, which ran the commands in order, just as `bash FILE.sh` runs a saved file. That `sh` was a separate shell, so its `cd ~/03-demo` changed only its own folder, which is why the script tells you to run `cd ~/03-demo` yourself.
+
+## 1.6 Run a Pipeline Script
+
+[demo1_cli_pipeline.sh](demo1_cli_pipeline.sh) writes a six-record CSV of clinic encounters to `data/raw/encounters.csv`, counts the records with `wc -l`, and counts encounters per clinic with a bounded `tail | cut | sort | uniq | head` pipeline. It creates `data/`, `logs/`, and `results/` in the current folder, so run it from `~/03-demo`:
+
+```bash
+bash demo1_cli_pipeline.sh
+```
+
+Three pieces of it are script plumbing, explained in its comments, that you do not need to write yourself: `set -euo pipefail` stops the script at the first failing command, the lines between `<<'EOF'` and `EOF` are written into the CSV unchanged, and a trailing `\` continues one pipeline onto the next line. Your timestamp will differ from the one below:
 
 ```text
 === Lecture 03: bounded CLI pipeline ===
@@ -78,7 +191,6 @@ Open the saved summary and log:
 ```bash
 cat results/summary_*.txt
 cat logs/processing.log
-cd ../..
 ```
 
 The summary repeats the counts under the timestamp that named the file:
@@ -99,30 +211,67 @@ The log records the same run:
 20260922_184147 wrote results/summary_20260922_184147.txt
 ```
 
-One captured timestamp names the result file and labels both log lines. Run the script again a second or more later and you get a second summary file (so `cat results/summary_*.txt` then prints both) and two more log lines, which is how a timestamped run keeps every result instead of overwriting it. The longer shell-processing examples are optional reference material in the [bonus page](../BONUS.md).
+One captured timestamp names the result file and labels both log lines. Run the script again a second or more later and you get a second summary file (so `cat results/summary_*.txt` then prints both) and two more log lines, which is how a timestamped run keeps every result instead of overwriting it. The lecture's pipeline snippets read the same `data/raw/encounters.csv`, so they now run in this folder too.
 
-# 2. Python Collections and NumPy Arrays
+## 1.7 Save a Pipeline as a Script
 
-Run these three from the demo folder.
-
-## 2.1 Inspect Values, Pair Sequences, Build Lists
+Now write a script of your own, the way the lecture's "Save a Pipeline as a Script" snippet does, but for `encounters.csv`, the 1,500-row file Demo 3 analyzes. Run `cat > count_clinics.sh`, paste these lines, press **Enter**, then **Ctrl+C**:
 
 ```bash
-python demo2_python_collections.py
+#!/bin/bash
+# Count encounters per clinic in the 1,500-row file; save the counts under this run's timestamp.
+timestamp=$(date +"%Y%m%d_%H%M%S")
+mkdir -p results
+tail -n +2 encounters.csv \
+  | cut -d',' -f4 | sort | uniq -c > "results/clinic_counts_${timestamp}.txt"
+echo "Saved results/clinic_counts_${timestamp}.txt"
 ```
 
-Source: [demo2_python_collections.py](demo2_python_collections.py). A heart rate exported as text arrives as `"88"`, not `88`. Check the type before and after conversion, pair patient IDs with their heart rates, then build four lists in one line each:
+Check it with `cat count_clinics.sh`, then run it and open what it saved:
+
+```bash
+bash count_clinics.sh
+cat results/clinic_counts_*.txt
+```
 
 ```text
-Python Tools for Collections
+Saved results/clinic_counts_20260922_184530.txt
+    260 Cardiology
+    145 Dermatology
+    190 Endocrinology
+    125 Nephrology
+    150 Neurology
+    120 Obstetrics
+    130 Oncology
+    380 Primary Care
+```
+
+Eight clinics, 1,500 encounters in all. Only the input file differs from the lecture's script, which is the point of saving a pipeline: the same commands rerun on new data with one line. Demo 3.4 gets the same counts from Python.
+
+# Demo 2: Types, Lists, and NumPy Basics
+
+Run these three from `~/03-demo` with the `(03-demo)` environment active.
+
+## 2.1 Check Types and Loop over Lists
+
+```bash
+python demo2_types_and_lists.py
+```
+
+Source: [demo2_types_and_lists.py](demo2_types_and_lists.py). Heart rates exported as text arrive as `"88"`, not `88`. The script checks each value with `isinstance()` and converts the text ones, pairs patient IDs with the cleaned rates, then builds four lists in one line each:
+
+```text
+Checking Types and Looping over Lists
 ==================================================
 
-=== Introspection ===
-Original value: 88 Type: <class 'str'>
-Converted value: 88 Type: <class 'int'>
+=== Checking Types ===
+Raw heart rates: ['88', 104, '112']
+Types of the first two: <class 'str'> <class 'int'>
+Cleaned: [88, 104, 112]
+Average: 101.3 bpm
 Strings have split: True
 
-=== Sequence functions ===
+=== Sequence Functions ===
 Numbered patients:
   Patient 1: P001
   Patient 2: P002
@@ -134,14 +283,14 @@ Paired records:
 Reverse order: ['P003', 'P002', 'P001']
 Sorted heart rates: [88, 104, 112]
 
-=== List comprehensions ===
-Fevers (100.4 or above): [101.2, 103.1]
+=== List Comprehensions ===
+Fevers (100.4 °F or above): [101.2, 103.1]
 Doses in grams: [0.25, 0.5, 0.125]
 Calibrated heart rates: [90, 106, 114]
 Tachycardic (100 bpm or above): ['P002', 'P003']
 ```
 
-`"split" in dir("88")` asks the string what it can do; the comprehensions filter (fevers at or above 100.4 °F), transform (milligrams to grams, and the wrist monitor's 2 bpm calibration offset), and combine `zip()` with a condition (which patient IDs are tachycardic).
+`sum(raw_rates)` on the raw list would raise `TypeError`, which is why the loop converts first. `"split" in dir("88")` asks the string what it can do. The comprehensions filter (fevers at or above 100.4 °F), transform (milligrams to grams, and the wrist monitor's 2 bpm calibration offset), and combine `zip()` with a condition (which patient IDs are tachycardic).
 
 ## 2.2 Compare a List Loop with Array Arithmetic
 
@@ -173,19 +322,25 @@ Time saved: 22.78 ms
 Timing is machine-dependent; vectorized arithmetic does the work in array operations.
 ```
 
-The list prints with commas and the array without. The script builds the readings as `[72, 88, 104, 65, 91] * 200_000`, the list repetition from the lecture's "Lists Versus Arrays"; Python ignores the underscores in `200_000`, which group the digits for reading. The timing wrapper uses `time.perf_counter()` to read a clock before and after each calculation; subtracting gives elapsed seconds.
+The list prints with commas and the array without. The script builds the readings as `[72, 88, 104, 65, 91] * 200_000`, the list repetition from the lecture's "Why NumPy"; Python ignores the underscores in `200_000`, which group the digits for reading. The timing wrapper uses `time.perf_counter()` to read a clock before and after each calculation; subtracting gives elapsed seconds.
 
-## 2.3 Create Arrays, Check Properties, Select Parts
+## 2.3 Data Types, Arrays, and Indexing
 
 ```bash
 python demo2_numpy_arrays.py
 ```
 
-Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This is the array half of the block: creation functions, the four properties, `astype()` on numeric text, and selection in one and two dimensions. The one-dimensional array, `temps_f`, holds six patients' body temperatures in °F.
+Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This follows the rest of the block in the lecture's order: data types, creating arrays, their properties, random arrays, arithmetic, and indexing in one, two, and three dimensions. It starts with numeric text, as a file delivers it, and six patients' body temperatures in °F:
 
 ```text
-NumPy Arrays: Creation, Properties, and Selection
+NumPy Basics: Types, Arrays, and Indexing
 ==================================================
+
+=== NumPy Data Types ===
+As text:    ['98.6' '101.2' '99.5']  dtype: <U5
+As floats:  [ 98.6 101.2  99.5]  dtype: float64
+As ints:    [ 98 101  99]  decimals dropped, not rounded
+As a list:  [98.6, 101.2, 99.5]  plain Python floats
 
 === Creating Arrays ===
 Temperatures (°F): [ 98.6 101.2  99.5 103.1  97.9 100.8]
@@ -197,16 +352,29 @@ shape: (6,)
 ndim:  1
 size:  6
 dtype: float64
-
-=== Data Types ===
-As text:    ['98.6' '101.2' '99.5']  dtype: <U5
-As floats:  [ 98.6 101.2  99.5]  dtype: float64
-As ints:    [ 98 101  99]  decimals dropped, not rounded
 ```
 
-`np.zeros` prints `0.` with a trailing dot because it makes floats, and `<U5` is text of up to five characters until `astype(float)` converts it.
+`<U5` is text of up to five characters until `astype(float)` converts it, and `tolist()` turns the array back into a Python list, commas and all. `np.zeros` prints `0.` with a trailing dot because it makes floats.
 
-The rest of the run selects parts of the six temperatures and of a 3×3 table of systolic blood-pressure readings in mmHg:
+Next, a seeded generator simulates a week of heart rates, and arithmetic runs on whole arrays:
+
+```text
+=== Random Arrays ===
+week shape: (2, 7, 3), ndim: 3, size: 42
+Patient 0, days 1-3 (one row per day, three readings each):
+[[63 91 86]
+ [77 77 95]
+ [63 88 68]]
+
+=== Vectorized Arithmetic ===
+Above 98.6 °F:      [ 0.   2.6  0.9  4.5 -0.7  2.2]
+Evening (°F):       [ 99.1 100.4  99.  102.   98.2 101.5]
+Evening - morning:  [ 0.5 -0.8 -0.5 -1.1  0.3  0.7]
+```
+
+`rng.integers(60, 101, size=(2, 7, 3))` holds 2 patients × 7 days × 3 readings in bpm, and the seed `42` makes it print the same numbers on every machine. `temps_f - 98.6` applies one number to every temperature; `evening_f - temps_f` pairs the two arrays position by position, so each patient's evening reading is compared with that patient's morning one.
+
+The rest of the run selects parts of the temperatures, of a 3×3 table of systolic blood-pressure readings in mmHg, and of the simulated week:
 
 ```text
 === Indexing and Slicing: 1D ===
@@ -227,23 +395,28 @@ bp[:, 0] (visit 1 for every patient): [128 142 118]
 bp[:2, 1:] (patients 0-1, visits 2-3):
 [[131 126]
  [145 139]]
-
-=== Vectorized Arithmetic ===
 bp - 120 (mmHg above 120), every cell at once:
 [[ 8 11  6]
  [22 25 19]
  [-2  1 -1]]
+
+=== Indexing: 3D ===
+week[0, 6]    (patient 0, day 7): [94 78 80]
+week[1, :, 0] (patient 1, first reading each day): [75 92 93 78 82 95 85]
+week[:, :, 0].shape (every patient's first reading each day): (2, 7)
 ```
 
-`temps_f[2:5]` stops before position 5, and `bp[:, 0]` reads down a column. Subtracting 120 broadcasts one number across all nine cells without a loop.
+`temps_f[2:5]` stops before position 5, and `bp[:, 0]` reads down a column. In the 3-D array, each single-number index removes one dimension: `week[0, 6]` leaves the three readings of one day, and `week[:, :, 0]` keeps patients and days but only the first reading, so its shape is `(2, 7)`.
 
-# 3. NumPy Blood-Pressure Analysis
+# Demo 3: Selecting, Reshaping, and Analyzing Arrays
+
+Run these from `~/03-demo` with the `(03-demo)` environment active.
 
 ```bash
 python demo3_bp_analysis.py
 ```
 
-Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in this section are the whole run, in order.
+Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in 3.1 to 3.3 are the whole run, in order, following the lecture's two topics.
 
 ```text
 Blood Pressure Analysis with NumPy
@@ -261,25 +434,9 @@ Calibrated (+3 mmHg): [75 96 93 86 86]
 
 Both arithmetic lines reach all five readings at once: multiplying converts mmHg to kilopascals, the SI pressure unit, and adding applies the correction for a cuff that reads 3 mmHg low. Multiplying by a decimal turns the whole row into floats, which is why that line prints `9.576` where the other two print whole numbers.
 
-## 3.1 Views, Copies, and Functions
+## 3.1 Aliases, Views, and Copies
 
-The script copies a 2×3 block out of the readings, then writes one value through a slice and one value into a `.copy()`:
-
-```text
-=== Views vs Copies ===
-Practice block (2 patients, 3 visits):
-[[72 93 90]
- [96 72 91]]
-After view[0] = 0, practice row 0: [ 0 93 90]
-After independent[1] = 0, the copy: [72  0 90]
-View shares memory with practice: True
-Copy shares memory with practice: False
-Original readings row 0, untouched: [72 93 90 83 83]
-```
-
-The write through the view reached `practice`; the write into the copy did not. That is the difference to remember when you slice an array you still need unchanged.
-
-A function can change an array the same way. Basic Operations applied the cuff correction with `readings[0] + 3`; a first draft of it as a function uses `+=`:
+Basic Operations applied the cuff correction with `readings[0] + 3`. A first draft of it as a function uses `+=`:
 
 ```python
 def calibrate_in_place(values):
@@ -305,74 +462,50 @@ calibrated = calibrate(row) on a fresh copy:
 
 The first draft returned nothing, yet `row` changed. With the fix, `row` keeps the measured values and the corrected ones arrive in `calibrated`.
 
-## 3.2 Statistics, Masks, and Labels
-
-Row averages summarize patients and column averages summarize visits. `axis=1` averages across a row, giving one number per patient; `axis=0` averages down a column, giving one number per visit:
+A slice shares data the same way. The script copies a 2×3 block out of the readings, then writes one value through a slice and one value into a `.copy()`:
 
 ```text
-=== Statistical Operations ===
-Overall average: 85.0 mmHg
-Overall std dev: 8.9 mmHg
-Highest reading: 100
-Lowest reading: 70
-
-Patient averages (first 5):
-[84.2 81.4 92.6 86.2 86.6]
-
-Visit averages:
-  Visit 1: 85.8
-  Visit 2: 84.6
-  Visit 3: 84.1
-  Visit 4: 84.8
-  Visit 5: 85.5
+=== Views vs Copies ===
+Practice block (2 patients, 3 visits):
+[[72 93 90]
+ [96 72 91]]
+After view[0] = 0, practice row 0: [ 0 93 90]
+After independent[1] = 0, the copy: [72  0 90]
+View shares memory with practice: True
+Copy shares memory with practice: False
+Original readings row 0, untouched: [72 93 90 83 83]
 ```
 
-`readings.std()` is the square root of the average squared distance from the mean. The script rebuilds it from that definition:
+The write through the view reached `practice`; the write into the copy did not. That is the difference to remember when you slice an array you still need unchanged.
 
-```python
-by_hand = np.sqrt(((readings - readings.mean()) ** 2).mean())
-```
+## 3.2 Masks, Positions, and Shapes
 
-Read it from the inside out: `readings - readings.mean()` broadcasts the overall mean across all 500 readings, `** 2` squares each distance, `.mean()` averages the squares, and `np.sqrt()` turns the result back into mmHg.
-
-```text
-=== Standard Deviation by Hand ===
-readings.std(): 8.8560 mmHg
-By hand:        8.8560 mmHg
-```
-
-The two agree, and the `Overall std dev` of 8.9 above is the same number rounded to one decimal.
-
-A comparison such as `patient_averages >= 90` gives one True or False per patient, and `.sum()` counts the Trues. The three stage counts split the same 100 patients at the usual diastolic thresholds: below 80 is normal, 80-89 is stage 1 hypertension, and 90 or above is stage 2.
+A comparison on the whole `(100, 5)` array gives one `True` or `False` per reading. `readings[mask]` keeps the matching readings as a 1-D array, and `.sum()` counts them. A mask on one column, `readings[:, 0] >= 98`, keeps whole rows instead, so the result stays 2-D:
 
 ```text
 === Boolean Indexing ===
-Patients averaging 90 mmHg or above: 9
-First five of their averages: [92.6 93.  90.6 90.4 90.6]
-
-Diastolic stages:
-  Stage 2 (90 mmHg or above): 9 patients
-  Stage 1 (80-89): 85 patients
-  Normal (below 80): 6 patients
+Readings of 90 mmHg or above: 180 of 500
+First five of them: [ 93  90  96  91 100]
+Readings from 80 to 89 mmHg: 155
+Patients whose visit 1 was 98 mmHg or above: 14
+Their first three rows:
+[[100  83  97  91  94]
+ [ 98  93  81  99  82]
+ [ 99  83  74  95  89]]
 ```
 
-`np.where()` then turns the same comparison into labels, and into substituted values:
+The 80 to 89 count combines two comparisons with `&`, each in its own parentheses. A list of positions picks columns in the order given; `[0, -1]` takes each patient's first and last visit:
 
 ```text
-=== Conditional Labels (np.where) ===
-First five averages: [84.2 81.4 92.6 86.2 86.6]
-First five labels:   ['monitor' 'monitor' 'refer' 'monitor' 'monitor']
-Patients to refer: 9
-
-Patient 0 readings:    [72 93 90 83 83]
-Stage 2 visits only:   [ 0 93 90  0  0]
+=== Fancy Indexing ===
+readings[:, [0, -1]] shape: (100, 2)
+Visit 1 and visit 5, first three patients:
+[[72 83]
+ [96 72]
+ [86 92]]
 ```
 
-The second call keeps a reading where it is 90 or above and substitutes `0` everywhere else, which picks out the visits that were in stage 2. The zeros mark positions that failed the test; they are not measured pressures.
-
-## 3.3 Reshaping and Ranking
-
-The last two sections follow the first 12 readings into a `(3, 4)` grid and its `(4, 3)` transpose, then use sorted indices to rank patients:
+Reshaping follows the first 12 readings into a `(3, 4)` grid and its `(4, 3)` transpose:
 
 ```text
 === Array Reshaping ===
@@ -392,8 +525,69 @@ Transposed (4x3):
 
 Reshaping fills the grid row by row, and the transpose turns each of those rows into a column: row `[72 93 90 83]` becomes the first column `72, 93, 90, 83` reading down.
 
+## 3.3 Summaries, Labels, and Rankings
+
+Row averages summarize patients and column averages summarize visits. `axis=1` averages across a row, giving one number per patient; `axis=0` averages down a column, giving one number per visit:
+
 ```text
-=== Practical Analysis Workflow ===
+=== Summary Statistics ===
+Overall average: 85.0 mmHg
+Overall median:  85.0 mmHg
+Overall std dev: 8.9 mmHg
+Highest reading: 100
+Lowest reading: 70
+25th, 50th, 75th percentiles: [78. 85. 93.]
+
+Patient averages (first 5):
+[84.2 81.4 92.6 86.2 86.6]
+
+Visit averages:
+  Visit 1: 85.8
+  Visit 2: 84.6
+  Visit 3: 84.1
+  Visit 4: 84.8
+  Visit 5: 85.5
+```
+
+About a quarter of the readings fall below the 25th percentile, 78 mmHg, and about a quarter above the 75th, 93 mmHg; the 50th percentile is the median. `readings.std()` is the square root of the average squared distance from the mean. The script rebuilds it from that definition with the ufunc `np.sqrt()`:
+
+```python
+by_hand = np.sqrt(((readings - readings.mean()) ** 2).mean())
+```
+
+Read it from the inside out: `readings - readings.mean()` broadcasts the overall mean across all 500 readings, `** 2` squares each distance, `.mean()` averages the squares, and `np.sqrt()` turns the result back into mmHg.
+
+```text
+=== Standard Deviation by Hand ===
+readings.std(): 8.8560 mmHg
+By hand:        8.8560 mmHg
+```
+
+The two agree, and the `Overall std dev` of 8.9 above is the same number rounded to one decimal.
+
+`np.where()` turns one comparison of the patient averages into two labels, or into substituted values, and `np.select()` gives three. Its conditions follow the usual diastolic thresholds, highest band first: 90 or above is stage 2 hypertension, 80-89 is stage 1, and below 80 is normal.
+
+```text
+=== Conditional Labels (np.where and np.select) ===
+First five averages: [84.2 81.4 92.6 86.2 86.6]
+First five labels:   ['monitor' 'monitor' 'refer' 'monitor' 'monitor']
+Patients to refer: 9
+
+Patient 0 readings:    [72 93 90 83 83]
+Stage 2 visits only:   [ 0 93 90  0  0]
+
+First five stages: ['stage 1' 'stage 1' 'stage 2' 'stage 1' 'stage 1']
+  Stage 2 (90 mmHg or above): 9 patients
+  Stage 1 (80-89): 85 patients
+  Normal (below 80): 6 patients
+```
+
+The second `np.where` keeps a reading where it is 90 or above and substitutes `0` everywhere else, which picks out the visits that were in stage 2; the zeros mark positions that failed the test, not measured pressures. `np.select` checks `>= 90` before `>= 80`, so an average of 92.6 gets `stage 2`, and `default="normal"` fills every position where neither is true. The 9 stage-2 patients are the same 9 marked `refer`.
+
+The last section ranks visits and patients:
+
+```text
+=== Sorting and Ranking ===
 Lowest-average visit: #3 (avg: 84.1 mmHg)
 Highest-average visit: #1 (avg: 85.8 mmHg)
 
@@ -402,6 +596,16 @@ Highest 4 patient averages:
   #2: Patient   9, average 93.0 mmHg
   #3: Patient   2, average 92.6 mmHg
   #4: Patient  80, average 91.6 mmHg
+Their readings, readings[top_4]:
+[[ 90  92  92  99  93]
+ [100  83  97  91  94]
+ [ 86 100  92  93  92]
+ [100  94  79 100  85]]
+
+Each row sorted, np.sort(readings[:3], axis=1):
+[[ 72  83  83  90  93]
+ [ 72  72  76  91  96]
+ [ 86  92  92  93 100]]
 
 Change from visit 1 to visit 5:
   Patients whose reading rose: 49
@@ -410,11 +614,11 @@ Change from visit 1 to visit 5:
 NumPy analysis complete.
 ```
 
-`argmin()` and `argmax()` give the position of the lowest and highest visit average rather than the value, which is what names visit #3 as the lowest. The ranking sorts the patient averages, keeps the last four positions, and reverses them, so the four patients a clinic would follow up first come out in order. It stops at four because three patients tie for fifth at 90.6 mmHg, and any one of them could have been listed fifth. The change count compares each patient's fifth visit with their first.
+`argmin()` and `argmax()` give the position of the lowest and highest visit average rather than the value, which is what names visit #3 as the lowest. The ranking sorts the patient averages with `np.argsort()`, keeps the last four positions, and reverses them, so the four patients a clinic would follow up first come out in order; `readings[top_4]` then pulls their whole rows with fancy indexing. It stops at four because three patients tie for fifth at 90.6 mmHg, and any one of them could have been listed fifth. `np.sort(..., axis=1)` orders each patient's readings on its own, which loses which visit each came from. The change count compares each patient's fifth visit with their first.
 
 ## 3.4 Summarize the Bundled CSV by Clinic
 
-`encounters.csv` is a 1,500-row synthetic fixture that ships with the demo folder: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
+`encounters.csv` is a 1,500-row synthetic fixture: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
 
 ```bash
 python demo3_csv_summary.py
@@ -461,7 +665,7 @@ The clinic section groups the readings the way the lecture's "Select One Group b
 
 ### Check the counts against the shell
 
-The same file through Lecture 03's pipeline should agree with the script. On macOS the counts sit at a different indent, as in Demo 1:
+The encounter counts match the ones your `count_clinics.sh` saved in Demo 1.7. Straight from the shell, the same file gives them again; on macOS the counts sit at a different indent, as in Demo 1:
 
 ```bash
 head -n 3 encounters.csv
@@ -485,4 +689,4 @@ P0002,25,141,Neurology
     380 Primary Care
 ```
 
-Two tools, one answer: the pipeline counts lines of text, the script counts array positions. The [bonus page](../BONUS.md) shows shell tools such as `awk` and `sparklines`, which are beyond this lecture and are not installed by `requirements.txt`.
+Two tools, one answer: the pipeline counts lines of text, the script counts array positions. The [bonus page](../BONUS.md) shows shell tools such as `awk` and `sparklines`, which are beyond this lecture; `uv add sparklines` adds the second to the demo project if you want to try it.

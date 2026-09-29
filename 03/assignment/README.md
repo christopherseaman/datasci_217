@@ -6,7 +6,8 @@
 assignment/
 ├── data/bp_readings.csv    # supplied readings; keep this file exactly as handed out
 ├── analysis.py             # starter script: the CSV loader is written, the analysis is yours
-├── requirements.txt        # supplied: the one direct dependency this project installs
+├── pyproject.toml          # supplied: the project's one direct dependency, numpy
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _public_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
@@ -41,21 +42,21 @@ Switch to `main`, select **Sync Changes** if Source Control shows it, and use **
 
 ### 1.1 Create the environment
 
-Pin the course interpreter, create the project environment, activate it, and install the supplied requirement:
+The handout already lists numpy in `pyproject.toml` and records its exact version in `uv.lock`, so `uv sync` installs it, as in the lecture's "Recreate from the Records" snippet. Pin the course interpreter, create the project environment, activate it, and sync:
 
 ```bash
 uv python pin 3.13
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`uv python pin` writes the `.python-version` file for you; commit it.
+`uv python pin` writes the `.python-version` file for you; commit it. `uv sync` prints `+ numpy==2.3.3` as it installs NumPy. Do not run `uv init`: the handout's `pyproject.toml` already exists.
 
-If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv pip install -r requirements.txt` again after it.
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
 
-> **Checkpoint: `requirements.txt`**
-> Still pins numpy as `numpy==<version>`.
+> **Checkpoint: the environment**
+> With it active, `python -c "import numpy as np; print(np.__version__)"` prints `2.3.3`, the version `pyproject.toml` lists.
 
 ### 1.2 Save an environment probe
 
@@ -76,11 +77,11 @@ echo "python: $(python --version)" > output/environment.txt
 Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path. Quotes inside `$( )` belong to the command inside it, so a `python -c "..."` command goes inside `echo "numpy: $(...)"` unchanged.
 
 > **Checkpoint: `output/environment.txt`**
-> Three lines. With the environment active, the `numpy` line shows the version `requirements.txt` pins and the `interpreter` line shows a path inside your project's `.venv`. The check asks only for a version number on the `numpy` line and a path on the `interpreter` line; the `python` line is not graded.
+> Three lines. With the environment active, the `numpy` line shows the version `pyproject.toml` lists and the `interpreter` line shows a path inside your project's `.venv`. The check asks only for a version number on the `numpy` line and a path on the `interpreter` line; the `python` line is not graded.
 
 ## Task 2: Count the dataset from the shell
 
-Build both answers with a shell pipeline (`tail`, `cut`, `sort`, `uniq -c`, `wc -l`), not with Python. Demo 1 of the [Lecture 03 demo guide](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/DEMO_GUIDE.md) counts a smaller file the same way.
+Build both answers with a shell pipeline (`tail`, `cut`, `sort`, `uniq -c`, `wc -l`), not with Python. Demos 1.6 and 1.7 of the [Lecture 03 demo guide](https://github.com/christopherseaman/datasci_217/blob/main/03/demo/DEMO_GUIDE.md) count clinic encounters the same way.
 
 ### 2.1 How many patients are in the file?
 
@@ -97,7 +98,7 @@ Count the patients per monitor and save the result under a name carrying the run
 output/monitor_counts_YYYYMMDD_HHMMSS.txt
 ```
 
-Capture the timestamp once into a shell variable and use it in the filename; the lecture's "Shell Variables and Timestamps" reference card gives the `date` format string that produces `YYYYMMDD_HHMMSS`. Demo 1 ends its pipeline with `| head -n 5` to keep its display short, but this file has six monitors, so leave that stage off or the last monitor goes missing.
+Capture the timestamp once into a shell variable and use it in the filename; the lecture's "Shell Variables and Timestamps" reference card gives the `date` format string that produces `YYYYMMDD_HHMMSS`, and Demo 1.7's `count_clinics.sh` saves its counts under a timestamped name the same way. Demo 1.6's script ends its pipeline with `| head -n 5` to keep its display short, but this file has six monitors, so leave that stage off or the last monitor goes missing.
 
 > **Checkpoint: `output/monitor_counts_<timestamp>.txt`**
 > Sits in `output/`, with a name that starts `monitor_counts` and carries the run timestamp; another timestamp layout, such as `monitor_counts_2026-09-26_15-30-00.txt`, also works. Holds one line per monitor with that monitor's count and its id, as `uniq -c` prints them. Spacing, separators such as `M01: 58`, and line order do not matter, and earlier timestamped runs may sit beside it.
@@ -142,6 +143,7 @@ How the values are read:
 
 - Each answer is scored on its own, so a wrong value costs only its own points. `monitor_offset` and `stage2_other_monitors` are also accepted when they are right for the monitor your `high_monitor` line names, so a wrong `high_monitor` costs only its own points.
 - A number answer is read from the first number after the colon, so put the answer first and any note after it: `readings: 3600 (300 x 12)` reads 3600, but `readings: 300 x 12 = 3600` reads 300.
+- A number answer is one number, not an array. A line holding a printed array, such as `mean_sbp: [130.86666667 133.98333333 ...`, fails whatever its first number is: `readings.mean(axis=0)` gives one mean per hour column, and `mean_sbp` is the mean of every reading, which `readings.mean()` gives.
 - mmHg values are accepted within 0.6 of the value recomputed from the data, so one decimal or every digit NumPy prints passes, and so does a whole number, whether rounded with `:.0f` or cut short with `int()`. A trailing unit such as `mmHg` is ignored. Counts and whole-number readings must match exactly.
 - A NumPy scalar printed as `np.float64(121.5)` or `np.int64(96)` reads as the number inside it.
 - Either the population or the sample standard deviation is accepted; at this many readings they agree far inside the tolerance.

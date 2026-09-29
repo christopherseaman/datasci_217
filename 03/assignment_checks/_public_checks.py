@@ -13,9 +13,12 @@ The checks read only the files the student writes, in ``output/``. Supplied
 files, the data among them, are never read, so changing or deleting one never
 changes a score.
 
-Assignment 03 is out with students, so every reading rule here only adds ways
-to pass: where a more lenient rule was added, the rule the released checks
-applied is tried first and still passes whatever it passed.
+Every reading rule here only adds ways to pass: where a more lenient rule was
+added, the rule the released checks applied is tried first and still passes
+whatever it passed. The one exception is a number answer written as a printed
+array, such as `[130.87 133.98 ...`, which fails even when its first number is
+right, because it answers a different question. Once Assignment 03 opens to
+students (2026-09-30), a change here may only add ways to pass.
 
 Nothing here imports, runs, or inspects student source code.
 """
@@ -88,6 +91,10 @@ _LABEL_DECORATION = "`'\"*_"
 _UNCOLONED = re.compile(r"^([^\s=,]+)\s*(?:==?|,)?\s*(.*)$")
 # A word that turns an id into a non-answer, as in `not M04`.
 _NEGATION = re.compile(r"(?<!\w)(?:not|no|never|except|excluding|without)(?!\w)")
+# A value that opens a printed array: `[130.87 133.98`, `array([130.87,`, or `np.array([130.87,`.
+_ARRAY_OPENING = re.compile(r"^(?:(?:np|numpy)\.)?(?:array\(\s*)?\[")
+# A line that only continues a wrapped array: numbers, spaces, commas, and the closing `]` or `])`.
+_ARRAY_CONTINUATION = re.compile(r"^[-+\d.eE\s,\])]+$")
 # A row number in front of a key, as `0 patients: 300` or a printed table row carries it.
 _ROW_INDEX = re.compile(r"^\d+\s+(?=\D)")
 # Where a dict printed on one line starts its next key: a comma, then the key's opening quote.
@@ -125,6 +132,13 @@ LABEL_KINDS = {"highest_patient": "patient", "peak_hour_column": "hour column", 
 # Answers computed from the monitor `high_monitor` names; they are also accepted for the monitor a
 # student named, so a wrong pick costs only the high_monitor check.
 FOLLOW_UP_KEYS = ("monitor_offset", "stage2_other_monitors")
+# Answers that summarize every reading, and the NumPy call that gives each as one number.
+SINGLE_VALUE_CALLS = {
+    "mean_sbp": "readings.mean()",
+    "sd_sbp": "readings.std()",
+    "min_sbp": "readings.min()",
+    "max_sbp": "readings.max()",
+}
 # Report order: the order README.md lists the answers in.
 ANSWER_KEYS = (
     "patients",
@@ -360,6 +374,27 @@ def _as_number(raw: str) -> float | None:
 def _numbers_written(raw: str) -> list[str]:
     """Every number in raw as it is written, in order, for feedback: `300 x 12 = 3600` -> 300, 12, 3600."""
     return [number.rstrip(",") for number in _GROUPED_NUMBER.findall(_unwrap(raw))]
+
+
+def _array_numbers(text: str, raw: str) -> list[str]:
+    """The numbers of a printed array written as a value, following it onto the lines it wraps to.
+
+    NumPy wraps a long array, so `mean_sbp: [130.86666667 133.98333333 ...`
+    continues on lines that hold only numbers until its closing bracket. A
+    value that does not open with a bracket, such as `130.9` or
+    `np.float64(130.9)`, gives no numbers, and a one-item list gives one.
+    """
+    if not _ARRAY_OPENING.match(raw):
+        return []
+    written = raw
+    lines = text.splitlines()
+    start = next((index for index, line in enumerate(lines) if raw in line), None)
+    if start is not None:
+        for line in lines[start + 1:]:
+            if "]" in written or not _ARRAY_CONTINUATION.match(line.strip()):
+                break
+            written += " " + line.strip()
+    return _numbers_written(written.split("]", 1)[0])
 
 
 def _bare(text: str, decoration: str) -> str:
@@ -633,7 +668,7 @@ def check_environment_probe(root: Path) -> None:
         problems.append(
             "With the environment active, run `python -c \"import numpy\"`: if it fails with "
             "`ModuleNotFoundError`, numpy is not installed in the environment, so run Task 1.1's "
-            "`uv pip install -r requirements.txt`."
+            "`uv sync`."
         )
     if problems:
         problems.append(
@@ -931,6 +966,16 @@ def _check_answer(root: Path, key: str) -> None:
     readings = _as_numbers(raw)
     _assert(bool(readings), f"{given}, which is not a number; write {_asked(key)} there as a number.{repeated} "
                             f"{SUMMARY_FIX}")
+    array = _array_numbers(text, raw)
+    call = SINGLE_VALUE_CALLS.get(key)
+    _assert(
+        len(array) < 2,
+        f"{given}, which holds {len(array)} numbers, as a printed array does; `{key}` is one number, "
+        f"{_asked(key)}."
+        + (f" `axis=` gives one value per row or column; `{call}`, with no `axis=`, gives the one number."
+           if call else "")
+        + f"{repeated} {SUMMARY_FIX}",
+    )
     # The follow-up answers are also accepted for the monitor the `high_monitor` line names.
     accepted = [float(expected)]
     named = _named_monitor(summary.get("high_monitor", ""), data) if key in FOLLOW_UP_KEYS else None

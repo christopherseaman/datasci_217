@@ -17,8 +17,8 @@ submissions in ignored `scratch/`, and confirms that:
   submission should lose; `monitor_offset` and `stage2_other_monitors` right
   for the monitor a wrong `high_monitor` names cost nothing more;
 - the checks read only `output/`: editing or deleting the dataset, the
-  scaffold, or the requirement list changes neither a score nor a word of
-  feedback, and `SUPPLIED_READINGS` at the end of `_public_checks.py` is
+  scaffold, `pyproject.toml`, or `uv.lock` changes neither a score nor a word
+  of feedback, and `SUPPLIED_READINGS` at the end of `_public_checks.py` is
   `03/assignment/data/bp_readings.csv` byte for byte;
 - the feedback names the fix for a misnamed or misplaced summary, an undated
   or misplaced counts file (saying when its counts are right), unsorted
@@ -30,11 +30,16 @@ submissions in ignored `scratch/`, and confirms that:
   rest `(same fix as above)`, and ends with a `Left to fix` line naming the
   failing checks by file; and a fresh handout prints the README's "Before
   Task 1" example exactly;
-- the known `mean_sbp` false pass (the per-hour array) keeps passing, as the
-  checks README records for next term;
-- no submission loses a check it passed under the checks committed at HEAD:
-  the assignment is out with students, so a change to the checks may only
-  raise a score, and each committed change becomes the baseline for the next;
+- a number answer written as an array of several numbers fails with a
+  message that counts them and names the call without `axis=`: `mean_sbp`
+  as the per-hour array `readings.mean(axis=0)` prints, whose first number
+  sits within the tolerance, fails printed, repr'd, or as a list, and so does
+  `sd_sbp` per hour, while a one-item list still reads as its number;
+- no submission loses a check it passed under the checks committed at HEAD,
+  except a check it declares tightened (the array rule above, made before the
+  assignment opened on 2026-09-30): from then on a change to the checks may
+  only raise a score, and each committed change becomes the baseline for the
+  next;
 - the handout's own `check_assignment.py` reports the same result as the
   checks here for an empty, a correct, and a partly wrong submission;
 - every file the workflow lists in `CHECKS_FILES` is byte-identical in

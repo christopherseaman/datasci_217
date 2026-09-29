@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
-"""Demo 2: inspect values, walk sequences together, and build lists in one line."""
+"""Demo 2.1: check types, walk two lists together, and build lists with comprehensions."""
 
 
 def main():
-    """Run the Python collections practice before the NumPy examples."""
-    print("Python Tools for Collections")
+    """Practice checking types and looping over lists before the NumPy examples."""
+    print("Checking Types and Looping over Lists")
     print("=" * 50)
 
-    print("\n=== Introspection ===")
-    value = "88"  # a heart rate exported from a spreadsheet as text
-    print("Original value:", value, "Type:", type(value))
-    if isinstance(value, str):
-        value = int(value)
-    print("Converted value:", value, "Type:", type(value))
+    print("\n=== Checking Types ===")
+    # Heart rates in bpm: one typed in, two exported from a spreadsheet as text.
+    raw_rates = ["88", 104, "112"]
+    print("Raw heart rates:", raw_rates)
+    print("Types of the first two:", type(raw_rates[0]), type(raw_rates[1]))
+    heart_rates = []
+    for value in raw_rates:
+        if isinstance(value, str):
+            value = int(value)
+        heart_rates.append(value)
+    print("Cleaned:", heart_rates)
+    print(f"Average: {sum(heart_rates) / len(heart_rates):.1f} bpm")
     print("Strings have split:", "split" in dir("88"))
 
     patient_ids = ["P001", "P002", "P003"]
-    heart_rates = [88, 104, 112]
 
-    print("\n=== Sequence functions ===")
+    print("\n=== Sequence Functions ===")
     print("Numbered patients:")
     for number, patient_id in enumerate(patient_ids, start=1):
         print(f"  Patient {number}: {patient_id}")
@@ -28,10 +33,10 @@ def main():
     print(f"Reverse order: {list(reversed(patient_ids))}")
     print(f"Sorted heart rates: {sorted(heart_rates)}")
 
-    print("\n=== List comprehensions ===")
+    print("\n=== List Comprehensions ===")
     temps_f = [98.6, 101.2, 99.5, 103.1]
     fevers = [t for t in temps_f if t >= 100.4]
-    print(f"Fevers (100.4 or above): {fevers}")
+    print(f"Fevers (100.4 °F or above): {fevers}")
 
     doses_mg = [250, 500, 125]
     doses_g = [mg / 1000 for mg in doses_mg]

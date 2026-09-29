@@ -4,8 +4,8 @@ These are the checks that decide the Assignment 03 grade. They compare each
 answer with the value recomputed from their own copy of the supplied
 `data/bp_readings.csv` (`SUPPLIED_READINGS` at the end of `_public_checks.py`),
 and read only the student's files in `output/`: a student's copy of the data,
-like the scaffold and the requirement list, is never read, so changing it
-cannot change a score.
+like the scaffold, `pyproject.toml`, and `uv.lock`, is never read, so changing
+it cannot change a score.
 `03/assignment/.github/workflows/tests.yml` downloads them on every student
 push from `christopherseaman/datasci_217@main:03/assignment_checks/` (its
 `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
@@ -54,20 +54,9 @@ uv run --python 3.13 --with numpy==2.3.3 python 03/assignment_checks/_grader_sel
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this
-one byte for byte. Assignment 03 is out with students, so a correction may only
-raise a score: the self-test also grades each submission with the checks
-committed at HEAD and fails if any check that passed there fails now. Run it
-before committing a change to the checks.
-
-## Changes held for next term
-
-A released check may only get more lenient, so these stricter changes wait for
-a new handout:
-
-- `mean_sbp` written as the per-hour array, as `readings.mean(axis=0)` prints
-  it (`mean_sbp: [130.86666667 133.98333333 ...`), passes: only the first
-  number on the line is read, and the first hour's mean happens to sit within
-  0.6 mmHg of the overall mean. The self-test's `mean-per-hour` submission
-  keeps it passing this term. Next term, report a bracketed value holding
-  several numbers as an array ("holds 12 numbers; `mean_sbp` is one number, so
-  drop `axis=`") and change that submission to expect the failure.
+one byte for byte. Assignment 03 opens to students on 2026-09-30, and from then
+on a correction may only raise a score: the self-test also grades each
+submission with the checks committed at HEAD and fails if any check that passed
+there fails now. The only exceptions are the checks a submission declares
+tightened, which the array rule for number answers needed before the
+assignment opened. Run it before committing a change to the checks.
