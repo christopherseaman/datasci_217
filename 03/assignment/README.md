@@ -36,7 +36,7 @@ Fork the assignment repository on GitHub and clone your fork the way Lecture 01 
 
 Switch to `main`, select **Sync Changes** if Source Control shows it, and use **Git: Create Branch** to create `feature/numpy-analysis`. Work on that branch until the Submit section.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Task 2 uses `tail`, `cut`, `sort`, `uniq`, and `wc`, which native PowerShell does not have. Git Bash also provides them; there the environment activates with `source .venv/Scripts/activate` instead.
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Task 2 uses `tail`, `cut`, `sort`, `uniq`, and `wc`, which native PowerShell does not have. Git Bash also provides them; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`.
 
 ## Task 1: Build and record the environment
 

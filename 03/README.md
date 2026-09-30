@@ -819,7 +819,7 @@ A mask the same shape as `bp` picks out single values and flattens them. To keep
 
 1. Build a 1-D mask with one `True` or `False` per row, such as `bp[:, 0] >= 140`, or one per column.
 2. Put it in that dimension's slot: `bp[row_mask]` keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D.
-3. Match the mask's length to that dimension; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0`.
+3. Match the mask's length to that dimension; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0` (`axis 1` for a column mask).
 
 `.any()` and `.all()` build such a mask from every value at once. Given an axis, they collapse it:
 
