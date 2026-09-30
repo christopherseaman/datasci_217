@@ -77,7 +77,7 @@ echo "python: $(python --version)" > output/environment.txt
 Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path. Quotes inside `$( )` belong to the command inside it, so a `python -c "..."` command goes inside `echo "numpy: $(...)"` unchanged.
 
 > **Checkpoint: `output/environment.txt`**
-> Three lines. With the environment active, the `numpy` line shows the version `pyproject.toml` lists and the `interpreter` line shows a path inside your project's `.venv`. The check asks only for a version number on the `numpy` line and a path on the `interpreter` line; the `python` line is not graded.
+> Three lines. With the environment active, the `numpy` line shows the version `pyproject.toml` lists and the `interpreter` line shows a path inside your project's `.venv`. The checks ask only for a version number on the `numpy` line and a path on the `interpreter` line; the `python` line is not graded.
 
 ## Task 2: Count the dataset from the shell
 
@@ -114,7 +114,7 @@ Two definitions the questions use:
 
 To group patients by their monitor, use the lecture's "Select One Group by a Label" snippet: comparing a text array with one label, as in `monitors == "M01"`, builds a Boolean mask, and indexing another array with that mask keeps the values belonging to that group. The mask and the values it selects have to be the same length, so group an array holding one value per patient, the 12-hour means, with `monitors`, which also holds one value per patient. To name the monitor with the highest average, collect each monitor's average in a list in the order of `sorted(set(monitors))`, turn that list into an array with `np.array()`, and use its `argmax()` position to pick the name from the sorted list, as the lecture's "Find the Highest Values and Who Has Them" snippet does with `ids[avg_glucose.argmax()]`. Demo 3.4 names its highest-average clinic this way.
 
-Write one line per answer, a key, a colon, and the value:
+Write one line per answer, a key, a colon, and the value, ending each write with `"\n"` as Lecture 02's `file.write(f"{result}\n")` does:
 
 ```text
 patients: <whole number>
@@ -165,11 +165,12 @@ python check_assignment.py
 
 `check_assignment.py` runs the same checks GitHub runs. They grade only your files in `output/` and recompute every answer from their own copy of the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.
 
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
+Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first two checks report:
 
 ```text
-[FIX ]   0/13  environment probe
+[FIX ]   0/7   environment probe: numpy
          output/environment.txt is missing. Save its three labelled lines with the Task 1.2 commands, then commit it.
+[FIX ]   0/6   environment probe: interpreter  (same fix as above)
 ```
 
 Below the score, `Left to fix` lists the checks still failing, by file, and the points they are worth. Fix what they name, rerun whatever produces that artifact and then the checks, and repeat until every check passes. A clean local run ends with:
@@ -191,9 +192,11 @@ Grading totals 100 points and reads these files relative to the assignment root.
 
 | Artifact | Complete when | Check | Points |
 | --- | --- | --- | ---: |
-| `output/environment.txt` | Its `numpy` line holds a version number and its `interpreter` line is not empty. Which version and which interpreter are not graded, and neither is the `python` line. | environment probe | 13 |
+| `output/environment.txt` | Its `numpy` line holds a version number. Which version is not graded, and neither is the `python` line. | environment probe: numpy | 7 |
+| `output/environment.txt` | Its `interpreter` line is not empty. Which interpreter is not graded. | environment probe: interpreter | 6 |
 | `output/record_count.txt` | It holds the number of patient records in the supplied CSV. | record count artifact | 10 |
-| `output/monitor_counts_<timestamp>.txt` | A timestamped file holds every monitor's patient count. | monitor counts artifact | 15 |
+| `output/monitor_counts_<timestamp>.txt` | A counts file in `output/` has the run timestamp in its name. | monitor counts: timestamped name | 3 |
+| `output/monitor_counts_<timestamp>.txt` | A counts file in `output/` holds that monitor's patient count. | one check per monitor, named `monitor counts: M01` to `M06` | 12 |
 | `output/vitals_summary.txt` | It has a readable `key: value` line for at least one key in Task 3's table. A missing or unreadable key costs only its own answer check. | summary artifact format | 12 |
 | `output/vitals_summary.txt` | Each of the 14 answers matches the supplied readings. | one check per key, named `answer: <key>` | 50 |
 

@@ -28,26 +28,26 @@ CHECKS = Path(__file__).resolve().parents[1]
 FORK = CHECKS.parent / "assignment"
 SCRATCH = CHECKS.parents[2] / "scratch"
 sys.path.insert(0, str(CHECKS))
-from _public_checks import DATA_FILE, SUPPLIED_READINGS  # noqa: E402
+from _public_checks import ANSWER_KEYS, DATA_FILE, MONITORS, PUBLIC_CHECKS, SUPPLIED_READINGS  # noqa: E402
 from grading import POINTS, grade_submission  # noqa: E402
 
 COUNTS_NAME = "monitor_counts_20260922_101500.txt"
 # The released checks each change is compared with. Once a change is committed
 # it becomes the baseline for the next, so scores can only ratchet upward.
 BASELINE_REVISION = "HEAD"
-ARTIFACT_POINTS = sum(POINTS[:4])
-ANSWER_POINTS = dict(
-    zip(
-        (
-            "patients", "readings", "mean_sbp", "sd_sbp", "min_sbp", "max_sbp",
-            "stage2_patients", "highest_patient", "highest_patient_mean",
-            "peak_hour_column", "peak_hour_mean", "high_monitor", "monitor_offset",
-            "stage2_other_monitors",
-        ),
-        POINTS[4:],
-        strict=True,
-    )
-)
+CHECK_POINTS = dict(zip((check.name for check in PUBLIC_CHECKS), POINTS, strict=True))
+ANSWER_POINTS = {key: CHECK_POINTS[f"answer: {key}"] for key in ANSWER_KEYS}
+ARTIFACT_POINTS = 100 - sum(ANSWER_POINTS.values())
+FORMAT_POINTS = CHECK_POINTS["summary artifact format"]
+NUMPY_CHECK, INTERPRETER_CHECK = "environment probe: numpy", "environment probe: interpreter"
+NAME_CHECK = "monitor counts: timestamped name"
+MONITOR_CHECKS = {f"monitor counts: {monitor}" for monitor in MONITORS}
+# Checks the baseline ran as one and the current checks run in parts: a submission that passed the
+# whole check passes every part. Once the split is committed, the baseline has the parts' names.
+SPLIT_CHECKS = {
+    "environment probe": {NUMPY_CHECK, INTERPRETER_CHECK},
+    "monitor counts artifact": {NAME_CHECK} | MONITOR_CHECKS,
+}
 
 
 def solve(data_path: Path) -> tuple[list[str], dict[str, int]]:
@@ -149,7 +149,10 @@ def no_check_lost(root: Path, result: dict, baseline: Path, tightened: frozenset
     the baseline fails them too and the allowance goes unused.
     """
     before = checker_report(baseline, root)
-    passed_before = {test["test-name"] for test in before["tests"] if test["passed"]} - tightened
+    passed_before = {
+        part for test in before["tests"] if test["passed"] and test["test-name"] not in tightened
+        for part in SPLIT_CHECKS.get(test["test-name"], {test["test-name"]})
+    }
     passed_now = {test["test-name"] for test in result["tests"] if test["passed"]}
     assert passed_before <= passed_now, (
         f"{root.name}: {sorted(passed_before - passed_now)} passed under the checks at "
@@ -196,6 +199,7 @@ def run() -> None:
         f"03/assignment/{DATA_FILE} changed; copy it into SUPPLIED_READINGS at the end of _public_checks.py"
     )
     summary, counts = solve(FORK / DATA_FILE)
+    assert tuple(counts) == MONITORS, f"MONITORS in _public_checks.py must list {sorted(counts)}"
     records = sum(counts.values())
     answers = dict(line.partition(": ")[::2] for line in summary)
 
@@ -306,7 +310,7 @@ def run() -> None:
         build(partial, summary[:6], counts, records)
         (partial / "output" / COUNTS_NAME).rename(partial / "output" / "monitor_counts.txt")
         result = graded(partial)
-        assert failing(result) == {"monitor counts artifact"} | {
+        assert failing(result) == {NAME_CHECK} | {
             f"answer: {key}" for key in list(ANSWER_POINTS)[6:]
         }, failing(result)
         assert "has no `highest_patient` line" in detail(result, "answer: highest_patient")
@@ -328,7 +332,7 @@ def run() -> None:
         assert failing(result) == {"summary artifact format"} | {f"answer: {key}" for key in ANSWER_POINTS}, (
             failing(result)
         )
-        assert result["score"] == ARTIFACT_POINTS - POINTS[3], result["score"]
+        assert result["score"] == ARTIFACT_POINTS - FORMAT_POINTS, result["score"]
         assert "no readable line" in detail(result, "summary artifact format")
         assert "not a number" in detail(result, "answer: mean_sbp")
         assert "no value" in detail(result, "answer: high_monitor")
@@ -343,12 +347,14 @@ def run() -> None:
             "".join(f"{counts[name]:>7} {name}\n" for name in kept), encoding="utf-8"
         )
         result = graded(cut)
-        assert failing(result) == {"monitor counts artifact"}, failing(result)
         dropped = sorted(set(counts) - set(kept))
-        assert f"with none for {', '.join(dropped)}" in detail(result, "monitor counts artifact"), detail(
-            result, "monitor counts artifact"
+        # Each monitor is its own check, so the five counted monitors keep their points.
+        assert failing(result) == {f"monitor counts: {name}" for name in dropped}, failing(result)
+        assert result["score"] == 100 - sum(CHECK_POINTS[f"monitor counts: {name}"] for name in dropped)
+        assert f"with none for {', '.join(dropped)}" in detail(result, f"monitor counts: {dropped[0]}"), detail(
+            result, f"monitor counts: {dropped[0]}"
         )
-        assert "no `head` stage" in detail(result, "monitor counts artifact")
+        assert "no `head` stage" in detail(result, f"monitor counts: {dropped[0]}")
 
         # A label may sit in brackets or quotes, or be followed by a note, when it
         # names no other id of the same kind.
@@ -427,18 +433,25 @@ def run() -> None:
         (unpinned / "uv.lock").unlink()
         assert failing(graded(unpinned)) == set(), failing(graded(unpinned))
 
-        # The probe still has to record a numpy version and an interpreter.
-        for name, probe, problem in (
-            ("numpy-unversioned", "numpy: installed\ninterpreter: /usr/bin/python3\n", "no version number"),
-            ("interpreter-empty", "numpy: 2.3.3\ninterpreter:\n", "is empty"),
-            ("numpy-missing", "python: Python 3.13.14\ninterpreter: /usr/bin/python3\n", "no `numpy` line"),
+        # The probe still has to record a numpy version and an interpreter, each its own check. Writing
+        # every probe line with `>` leaves only the last, and the feedback says `>` replaced the file.
+        for name, probe, check, problem in (
+            ("numpy-unversioned", "numpy: installed\ninterpreter: /usr/bin/python3\n", NUMPY_CHECK,
+             "no version number"),
+            ("interpreter-empty", "numpy: 2.3.3\ninterpreter:\n", INTERPRETER_CHECK, "is empty"),
+            ("numpy-missing", "python: Python 3.13.14\ninterpreter: /usr/bin/python3\n", NUMPY_CHECK,
+             "no `numpy` line"),
+            ("probe-overwritten", "interpreter: /home/alice/a03/.venv/bin/python\n", NUMPY_CHECK,
+             "`>` replaces the file each time"),
         ):
             probed = workspace / name
             build(probed, summary, counts, records)
             (probed / "output" / "environment.txt").write_text(probe, encoding="utf-8")
             result = graded(probed)
-            assert failing(result) == {"environment probe"}, (name, failing(result))
-            assert problem in detail(result, "environment probe"), (name, detail(result, "environment probe"))
+            assert failing(result) == {check}, (name, failing(result))
+            assert result["score"] == 100 - CHECK_POINTS[check], (name, result["score"])
+            assert problem in detail(result, check), (name, detail(result, check))
+        assert "`>`" not in detail(graded(workspace / "numpy-missing"), NUMPY_CHECK)
 
         # The Python version is never graded: any .python-version and any python line, even none, pass.
         for series, reported, expected in (("3.14", "Python 3.14.4", set()), ("3.12.7", "Python 3.12.7", set()),
@@ -592,7 +605,7 @@ def run() -> None:
             build(misplaced, summary, counts, records)
             (misplaced / "output" / "vitals_summary.txt").rename(misplaced / moved)
             result = graded(misplaced)
-            assert result["score"] == ARTIFACT_POINTS - POINTS[3], result["score"]
+            assert result["score"] == ARTIFACT_POINTS - FORMAT_POINTS, result["score"]
             assert f"Found {moved}; rename or move it" in detail(result, "summary artifact format"), name
             assert detail(result, "answer: patients") == detail(result, "summary artifact format"), name
 
@@ -612,6 +625,8 @@ def run() -> None:
             ("unsorted-counts", "".join(f"{count - count // 3:>7} {monitor}\n" for monitor, count in counts.items())
              + "".join(f"{count // 3:>7} {monitor}\n" for monitor, count in counts.items()), ".txt", "`sort` before it"),
             ("patient-counts", "      1 P0001\n      1 P0002\n", ".txt", "field 2"),
+            # `cut -f3` counts readings: no monitor anywhere, and the same field-2 hint.
+            ("reading-counts", "      2 111\n      3 130\n", ".txt", "count field 2 of each row, the monitor"),
             # `cut -f2` without `-d','` splits at tabs and passes each CSV row through whole.
             ("undelimited-counts", "".join(f"      1 {line}\n" for line in data_rows), ".txt", "`cut -d',' -f2`"),
         ):
@@ -622,8 +637,9 @@ def run() -> None:
                 content, encoding="utf-8"
             )
             result = graded(miscounted_monitors)
-            assert failing(result) == {"monitor counts artifact"}, (name, failing(result))
-            assert problem in detail(result, "monitor counts artifact"), (name, detail(result, "monitor counts artifact"))
+            assert failing(result) == MONITOR_CHECKS, (name, failing(result))
+            assert problem in detail(result, "monitor counts: M01"), (name, detail(result, "monitor counts: M01"))
+            assert len({detail(result, check) for check in MONITOR_CHECKS}) == 1, name
 
         # A counts file's name only has to carry a run timestamp: another timestamp layout, another
         # extension, or another letter case passes.
@@ -634,19 +650,21 @@ def run() -> None:
             build(dated, summary, counts, records)
             (dated / "output" / COUNTS_NAME).rename(dated / "output" / name)
             assert graded(dated)["score"] == 100, (name, failing(graded(dated)))
-        # A name with no timestamp, or a file outside output/, fails and says so, and says when
-        # the counts inside are right.
-        for name, moved, problem in (
-            ("undated-counts", "output/monitor_counts.txt", "only the name is off"),
-            ("root-counts", "monitor_counts_20260926_150530.txt", "at the top level of the repository, with every "
-             "monitor's count right; move it into output/."),
+        # A name with no timestamp costs only the name check, and says the counts inside are right; an
+        # empty `$timestamp` says so. A file outside output/ fails every counts check and says to move it.
+        for name, moved, failed, problem in (
+            ("undated-counts", "output/monitor_counts.txt", {NAME_CHECK}, "only the name is off"),
+            ("empty-timestamp", "output/monitor_counts_.txt", {NAME_CHECK}, "`$timestamp` was empty"),
+            ("root-counts", "monitor_counts_20260926_150530.txt", {NAME_CHECK} | MONITOR_CHECKS,
+             "at the top level of the repository, with every monitor's count right; move it into output/."),
         ):
             misplaced = workspace / name
             build(misplaced, summary, counts, records)
             (misplaced / "output" / COUNTS_NAME).rename(misplaced / moved)
             result = graded(misplaced)
-            assert failing(result) == {"monitor counts artifact"}, (name, failing(result))
-            assert problem in detail(result, "monitor counts artifact"), (name, detail(result, "monitor counts artifact"))
+            assert failing(result) == failed, (name, failing(result))
+            assert problem in detail(result, NAME_CHECK), (name, detail(result, NAME_CHECK))
+        assert "`$timestamp`" not in detail(graded(workspace / "undated-counts"), NAME_CHECK)
         # A script at the top level that makes the counts is not a misplaced counts file.
         scripted = workspace / "root-counts-script"
         build(scripted, summary, counts, records)
@@ -656,9 +674,9 @@ def run() -> None:
             "> output/monitor_counts_$ts.txt\n", encoding="utf-8"
         )
         result = graded(scripted)
-        assert failing(result) == {"monitor counts artifact"}, failing(result)
-        assert "monitor_counts.sh" not in detail(result, "monitor counts artifact"), detail(
-            result, "monitor counts artifact"
+        assert failing(result) == {NAME_CHECK} | MONITOR_CHECKS, failing(result)
+        assert all("monitor_counts.sh" not in detail(result, check) for check in {NAME_CHECK} | MONITOR_CHECKS), (
+            detail(result, NAME_CHECK)
         )
 
         # monitor_offset and stage2_other_monitors are also accepted for the monitor high_monitor
@@ -731,8 +749,59 @@ def run() -> None:
         (uninstalled / "output" / "environment.txt").write_text(
             "python: Python 3.13.14\nnumpy: \ninterpreter: /home/alice/a03/.venv/bin/python\n", encoding="utf-8")
         result = graded(uninstalled)
-        assert failing(result) == {"environment probe"}, failing(result)
-        assert "Task 1.1's `uv sync`" in detail(result, "environment probe")
+        assert failing(result) == {NUMPY_CHECK}, failing(result)
+        assert "Task 1.1's `uv sync`" in detail(result, NUMPY_CHECK)
+
+        # Writes that leave out "\n" run the answers onto one line. The first answer still reads; every
+        # answer it hides says why, in the same words, so the printed report says it once.
+        joined = workspace / "joined-summary"
+        build(joined, summary, counts, records)
+        (joined / "output" / "vitals_summary.txt").write_text("".join(summary), encoding="utf-8")
+        result = graded(joined)
+        hidden = {f"answer: {key}" for key in list(ANSWER_POINTS)[1:]}
+        assert failing(result) == hidden, failing(result)
+        assert len({detail(result, check) for check in hidden}) == 1
+        assert "holds several answers on one line" in detail(result, "answer: readings")
+        assert 'end each write with "\\n"' in detail(result, "answer: readings"), detail(result, "answer: readings")
+        # Some lines joined, some not: a joined line's first answer is read with the next one stuck to
+        # it, and the feedback says so.
+        (joined / "output" / "vitals_summary.txt").write_text(
+            "\n".join(summary[:11]) + "\n" + "".join(summary[11:]) + "\n", encoding="utf-8")
+        result = graded(joined)
+        assert failing(result) == {"answer: high_monitor", "answer: monitor_offset",
+                                   "answer: stage2_other_monitors"}, failing(result)
+        assert "This line holds another answer after this one" in detail(result, "answer: high_monitor")
+        assert "holds several answers on one line" in detail(result, "answer: monitor_offset")
+        # Two joined lines: each hidden answer quotes the line that hides it.
+        lines = [line.rstrip("\n") for line in summary]
+        (joined / "output" / "vitals_summary.txt").write_text(
+            "\n".join(lines[:1]) + "\n" + "".join(lines[1:3]) + "\n" + "\n".join(lines[3:11]) + "\n"
+            + "".join(lines[11:13]) + "\n" + lines[13] + "\n", encoding="utf-8")
+        result = graded(joined)
+        assert f"`{lines[1]}{lines[2]}`" in detail(result, "answer: mean_sbp"), detail(result, "answer: mean_sbp")
+        assert f"`{lines[11]}{lines[12]}`" in detail(result, "answer: monitor_offset"), \
+            detail(result, "answer: monitor_offset")
+
+        # Patient answers computed with axis=0, one mean per hour column, say that a 12-hour mean is
+        # axis=1. A count of 0 alone is too common a slip to name its cause.
+        hour_means = readings.mean(axis=0)
+        peak = int(hour_means.argmax())
+        per_column = workspace / "patients-axis0"
+        build(per_column, replaced(
+            summary,
+            stage2_patients=str(int((hour_means >= 140).sum())),
+            highest_patient=patient_ids[peak],
+            highest_patient_mean=f"{hour_means[peak]:.2f}",
+        ), counts, records)
+        result = graded(per_column)
+        slips = {"answer: stage2_patients", "answer: highest_patient", "answer: highest_patient_mean"}
+        assert failing(result) == slips, failing(result)
+        assert all("`readings.mean(axis=1)`, one per patient" in detail(result, check) for check in slips)
+        zero_only = workspace / "stage2-zero"
+        build(zero_only, replaced(summary, stage2_patients="0"), counts, records)
+        result = graded(zero_only)
+        assert failing(result) == {"answer: stage2_patients"}, failing(result)
+        assert "axis=" not in detail(result, "answer: stage2_patients")
 
         # mean_sbp written as the per-hour array `readings.mean(axis=0)` prints: its first element sits
         # within the tolerance of the overall mean, so reading only the first number passed it. An array
@@ -769,7 +838,7 @@ def run() -> None:
             if artifact.name != ".gitkeep":
                 artifact.unlink()
         shown = re.search(
-            r"Before Task 1, for example, the first check reports:\n\n```text\n(.*?)```",
+            r"Before Task 1, for example, the first two checks report:\n\n```text\n(.*?)```",
             (FORK / "README.md").read_text(encoding="utf-8"),
             re.DOTALL,
         )
@@ -780,8 +849,8 @@ def run() -> None:
         assert shown.group(1) in printed, (shown.group(1), printed)
         assert "[FIX ]   0/4   answer: patients  (same fix as above)\n" in printed, printed
         assert printed.endswith(
-            "Score: 0/100\nLeft to fix (100 points): output/environment.txt: environment probe; "
-            "output/record_count.txt: record count; output/monitor_counts_<timestamp>.txt: monitor counts; "
+            "Score: 0/100\nLeft to fix (100 points): output/environment.txt (both checks); "
+            "output/record_count.txt: record count; output/monitor_counts_<timestamp>.txt (all 7 checks); "
             "output/vitals_summary.txt (all 15 checks).\n"), printed
 
         # A wrong answer says what the data gives, and the report ends by naming what is left to fix.
@@ -810,8 +879,9 @@ def run() -> None:
         "bracketed and annotated label, hedged label, miscounted, unactivated, other-numpy, "
         "unversioned-probe, supplied-files-edited, truncated, Markdown and JSON, re-separated, leading-note, "
         "UTF-16, whitespace-edited, renamed, appended, miscounted-monitor, undelimited-cut, dated, undated and "
-        "misplaced counts, follow-on pick, first-number, table, numbered, dict, titled-count, uninstalled-numpy, "
-        "per-hour-array and one-item-list submissions all score as intended."
+        "misplaced counts, empty-timestamp, follow-on pick, first-number, table, numbered, dict, titled-count, "
+        "uninstalled-numpy, overwritten-probe, joined-answer, per-column patient, per-hour-array and one-item-list "
+        "submissions all score as intended."
     )
     print(
         f"Assignment 03 checks against {BASELINE_REVISION}: none of {len(compared)} submissions lost a check; "

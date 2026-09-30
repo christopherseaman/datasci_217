@@ -9,9 +9,10 @@ to copy and any submission that answers the questions in README.md scores,
 whatever code produced it. Numeric answers are compared with a tolerance, so
 rounding and spacing never decide a score.
 
-The checks read only the files the student writes, in ``output/``. Supplied
+The checks score only the files the student writes, in ``output/``. Supplied
 files, the data among them, are never read, so changing or deleting one never
-changes a score.
+changes a score. Feedback may name a student's look-alike file outside
+``output/``, such as a counts file saved at the top level, but never scores it.
 
 Every reading rule here only adds ways to pass: where a more lenient rule was
 added, the rule the released checks applied is tried first and still passes
@@ -46,9 +47,11 @@ _COUNTS_PREFIX = re.compile(r"^monitor[_-]?counts", re.IGNORECASE)
 _DIGIT_RUN = re.compile(r"\d+(?:[-_.: ]\d+)*")
 # How many digits such a run needs to count as a run timestamp: `%y%m%d` prints six.
 TIMESTAMP_DIGITS = 6
-# A file at the top level with one of these suffixes is a script that makes the counts, such as
-# `monitor_counts.sh`, not a misplaced counts file, so the feedback does not tell anyone to move it.
+# A file with one of these suffixes is a script that makes the counts, such as `monitor_counts.sh`,
+# not a counts file, so no check reads it as one or tells anyone to move it.
 _SCRIPT_SUFFIXES = {".py", ".sh", ".bash", ".zsh", ".ps1", ".ipynb"}
+# The monitors in SUPPLIED_READINGS, one counts check each; the self-test confirms the list.
+MONITORS = ("M01", "M02", "M03", "M04", "M05", "M06")
 
 STAGE_2_MMHG = 140
 MMHG_TOLERANCE = 0.6
@@ -155,6 +158,20 @@ ANSWER_KEYS = (
     "high_monitor",
     "monitor_offset",
     "stage2_other_monitors",
+)
+# Any answer key followed by its colon, wherever it sits on a line: writes that leave out "\n" run the
+# answers together, as `patients: 300readings: 3600`.
+_ANSWER_LABEL = re.compile(
+    "(?:" + "|".join(re.escape(key) for key in sorted(ANSWER_KEYS, key=len, reverse=True)) + r")\s*:",
+    re.IGNORECASE,
+)
+JOINED_FIX = (
+    'end each write with "\\n", as Lecture 02\'s `file.write(f"{result}\\n")` does, so every answer gets '
+    "its own line."
+)
+AXIS_HINT = (
+    " That is what `readings.mean(axis=0)`, one mean per hour column, gives; a patient's 12-hour mean is "
+    "`readings.mean(axis=1)`, one per patient."
 )
 
 
@@ -318,6 +335,17 @@ def expected_answers(data: Dataset) -> dict[str, float | str]:
         "peak_hour_mean": hour_means[peak_hour],
         "high_monitor": high_monitor,
         **follow_up_answers(data, high_monitor),
+    }
+
+
+def per_column_answers(data: Dataset) -> dict[str, float | str]:
+    """The patient answers computed from the hour-column means, as `readings.mean(axis=0)` gives them."""
+    hour_means = [_mean(row[hour] for row in data.readings) for hour in range(len(data.hour_columns))]
+    peak_hour = max(range(len(hour_means)), key=hour_means.__getitem__)
+    return {
+        "stage2_patients": sum(1 for mean in hour_means if mean >= STAGE_2_MMHG),
+        "highest_patient": data.patients[peak_hour],
+        "highest_patient_mean": hour_means[peak_hour],
     }
 
 
@@ -633,49 +661,65 @@ def _report(problems: list[str]) -> None:
     _assert(not problems, " ".join(problems))
 
 
-def check_environment_probe(root: Path) -> None:
-    """`output/environment.txt` records a numpy version and an interpreter path.
+ENVIRONMENT_RERUN = (
+    f"Rerun the Task 1.2 commands with the environment active, using Lecture 03's one-line Python "
+    f"commands for the numpy version and the interpreter path, then commit {ENVIRONMENT_FILE}."
+)
 
-    Only that the probe was taken is graded. Which numpy version, which
-    interpreter, and the `python` line never cost points, so a probe saved
-    outside the project environment still passes.
+
+def _overwritten(text: str) -> str:
+    """A note for a probe that holds one line, which is what `>` on every command leaves."""
+    if len([line for line in text.splitlines() if line.strip()]) != 1:
+        return ""
+    return (
+        f" {ENVIRONMENT_FILE} holds only one line, which is what `>` on every command leaves: `>` replaces "
+        "the file each time, so write the first line with `>` and add the others with `>>` (Task 1.2)."
+    )
+
+
+def check_environment_numpy(root: Path) -> None:
+    """`output/environment.txt` records a numpy version.
+
+    Only that the probe was taken is graded: which numpy version never costs
+    points, so a probe saved outside the project environment still passes.
     """
-    probe = read_environment(root)
-    problems: list[str] = []
+    text = _text(root, ENVIRONMENT_FILE)
+    probe = _read_pairs(text, _environment_key)[0]
+    # An empty or unversioned `numpy` line is what the probe saves when numpy is not installed.
+    install = (
+        " With the environment active, run `python -c \"import numpy\"`: if it fails with "
+        "`ModuleNotFoundError`, numpy is not installed in the environment, so run Task 1.1's `uv sync`."
+    )
     if "numpy" not in probe:
-        problems.append(f"{ENVIRONMENT_FILE} has no `numpy` line; Task 1.2 saves `numpy: <version>` there.")
+        problem = (f"{ENVIRONMENT_FILE} has no `numpy` line; Task 1.2 saves `numpy: <version>` there."
+                   + _overwritten(text))
     elif not probe["numpy"]:
-        problems.append(
+        problem = (
             f"The `numpy` line in {ENVIRONMENT_FILE} is empty, which is what it records when the Python that ran "
-            "the command cannot import numpy; it should hold a version number such as `2.3.3`."
+            "the command cannot import numpy; it should hold a version number such as `2.3.3`." + install
         )
     elif _VERSION.search(probe["numpy"]) is None:
-        problems.append(
+        problem = (
             f"The `numpy` line in {ENVIRONMENT_FILE} reads `{_shown(probe['numpy'])}`, which holds no version "
-            "number such as `2.3.3`; save the version numpy reports."
+            "number such as `2.3.3`; save the version numpy reports." + install
         )
-    # An empty or unversioned `numpy` line is what the probe saves when numpy is not installed.
-    numpy_unread = "numpy" in probe and bool(problems)
+    else:
+        return
+    raise AssertionError(f"{problem} {ENVIRONMENT_RERUN}")
+
+
+def check_environment_interpreter(root: Path) -> None:
+    """`output/environment.txt` records an interpreter path; which interpreter is never graded."""
+    text = _text(root, ENVIRONMENT_FILE)
+    probe = _read_pairs(text, _environment_key)[0]
     if "interpreter" not in probe:
-        problems.append(
-            f"{ENVIRONMENT_FILE} has no `interpreter` line; Task 1.2 saves `interpreter: <path>` there."
-        )
+        problem = (f"{ENVIRONMENT_FILE} has no `interpreter` line; Task 1.2 saves `interpreter: <path>` there."
+                   + _overwritten(text))
     elif not probe["interpreter"]:
-        problems.append(
-            f"The `interpreter` line in {ENVIRONMENT_FILE} is empty; save the path to the active interpreter."
-        )
-    if numpy_unread:
-        problems.append(
-            "With the environment active, run `python -c \"import numpy\"`: if it fails with "
-            "`ModuleNotFoundError`, numpy is not installed in the environment, so run Task 1.1's "
-            "`uv sync`."
-        )
-    if problems:
-        problems.append(
-            f"Rerun the Task 1.2 commands with the environment active, using Lecture 03's one-line Python "
-            f"commands for the numpy version and the interpreter path, then commit {ENVIRONMENT_FILE}."
-        )
-    _report(problems)
+        problem = f"The `interpreter` line in {ENVIRONMENT_FILE} is empty; save the path to the active interpreter."
+    else:
+        return
+    raise AssertionError(f"{problem} {ENVIRONMENT_RERUN}")
 
 
 def check_record_count(root: Path) -> None:
@@ -714,10 +758,13 @@ def check_record_count(root: Path) -> None:
 
 
 def _counts_files(folder: Path) -> list[Path]:
-    """The files in folder whose name starts `monitor_counts`, in any letter case."""
+    """The files in folder whose name starts `monitor_counts`, in any letter case, leaving out scripts."""
     if not folder.is_dir() or folder.is_symlink():
         return []
-    return sorted(path for path in folder.iterdir() if _COUNTS_PREFIX.match(path.name) and path.is_file())
+    return sorted(
+        path for path in folder.iterdir()
+        if _COUNTS_PREFIX.match(path.name) and path.is_file() and path.suffix.casefold() not in _SCRIPT_SUFFIXES
+    )
 
 
 def _has_timestamp(name: str) -> bool:
@@ -731,17 +778,20 @@ def _has_timestamp(name: str) -> bool:
     return any(len(re.sub(r"\D", "", run)) >= TIMESTAMP_DIGITS for run in _DIGIT_RUN.findall(stem))
 
 
-def _counts_right(text: str, expected: dict[str, int]) -> bool:
-    """Whether a counts file lists every monitor with its count.
+def _monitor_right(text: str, monitor: str, expected: dict[str, int]) -> bool:
+    """Whether a counts file gives one monitor's count, `monitor` in lower case.
 
     A label that is not a monitor is an extra line, which the README says is
     ignored: a run total or a title must not cost the student this check.
     """
-    pairs = read_count_pairs(text)
-    if all(pairs.get(monitor) == count for monitor, count in expected.items()):
+    if read_count_pairs(text).get(monitor) == expected[monitor]:
         return True
-    found = read_monitor_lines(text, expected)
-    return all(set(found.get(monitor, [])) == {count} for monitor, count in expected.items())
+    return set(read_monitor_lines(text, expected).get(monitor, [])) == {expected[monitor]}
+
+
+def _counts_right(text: str, expected: dict[str, int]) -> bool:
+    """Whether a counts file lists every monitor with its count."""
+    return all(_monitor_right(text, monitor, expected) for monitor in expected)
 
 
 def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
@@ -757,10 +807,10 @@ def _counts_problem(name: str, text: str, expected: dict[str, int]) -> str:
             "each comma-separated row through whole; use `cut -d',' -f2` (Task 2.2)."
         )
     if not found:
-        if not read_count_pairs(text):
+        if not text.strip():
             return (
-                f"{name} holds no `count monitor` pairs; Task 2.2 saves one line per monitor with its patient "
-                "count and its id, as `uniq -c` prints them."
+                f"{name} is empty; Task 2.2 saves one line per monitor with its patient count and its id, as "
+                "`uniq -c` prints them."
             )
         return (
             f"{name} names none of the monitors {', '.join(monitor.upper() for monitor in sorted(expected))}; "
@@ -816,15 +866,18 @@ def _no_counts_file(root: Path, undated: list[Path], expected: dict[str, int]) -
     notes = []
     for path in undated:
         shown = f"output/{path.name}"
-        text = _read(path, shown)
-        right = _counts_right(text, expected)
+        right = _counts_right(_read(path, shown), expected)
         notes.append(
             f"{shown} has no run timestamp in its name"
             + ("; its counts are right, so only the name is off." if right else ".")
         )
-        if not right:
-            notes.append(_counts_problem(shown, text, expected))
-    misplaced = [path for path in _counts_files(root) if path.suffix.casefold() not in _SCRIPT_SUFFIXES]
+        # `monitor_counts_.txt`: the name was built from a `$timestamp` never set in that terminal.
+        if re.fullmatch(r"[-_]", _COUNTS_PREFIX.sub("", path.name).removesuffix(path.suffix)):
+            notes.append(
+                "Nothing follows `monitor_counts_` in its name because `$timestamp` was empty in that terminal: run "
+                '`timestamp=$(date +"%Y%m%d_%H%M%S")` first, in the same terminal as the pipeline.'
+            )
+    misplaced = _counts_files(root)
     for path in misplaced:
         text = _read(path, path.name)
         right = _counts_right(text, expected)
@@ -846,22 +899,33 @@ def _no_counts_file(root: Path, undated: list[Path], expected: dict[str, int]) -
     return f"{where}. " + " ".join(notes + [fix])
 
 
-def check_monitor_counts(root: Path) -> None:
-    """A counts file in output/ whose name carries a run timestamp lists how many patients each monitor recorded."""
-    expected = {monitor.casefold(): count for monitor, count in monitor_counts(load_dataset()).items()}
+def _expected_counts() -> dict[str, int]:
+    return {monitor.casefold(): count for monitor, count in monitor_counts(load_dataset()).items()}
+
+
+def check_counts_name(root: Path) -> None:
+    """A counts file in output/ has a name that carries a run timestamp."""
     in_output = _counts_files(root / "output")
-    timestamped = [path for path in in_output if _has_timestamp(path.name)]
-    problems: list[str] = []
-    for path in timestamped:
-        shown = f"output/{path.name}"
-        text = _read(path, shown)
-        if _counts_right(text, expected):
-            return
-        problems.append(_counts_problem(shown, text, expected))
-    if problems:
-        problems.append("Rerun the Task 2.2 pipeline to save a new timestamped file, then commit it.")
-        _report(problems)
-    raise AssertionError(_no_counts_file(root, in_output, expected))
+    if not any(_has_timestamp(path.name) for path in in_output):
+        raise AssertionError(_no_counts_file(root, in_output, _expected_counts()))
+
+
+def check_monitor_count(root: Path, monitor: str) -> None:
+    """A counts file in output/, timestamped or not, gives this monitor's patient count.
+
+    Every failing monitor gets the same report on the files, so the printed
+    report shows it once.
+    """
+    expected = _expected_counts()
+    files = [(f"output/{path.name}", path) for path in _counts_files(root / "output")]
+    if not files:
+        raise AssertionError(_no_counts_file(root, [], expected))
+    texts = [(shown, _read(path, shown)) for shown, path in files]
+    if any(_monitor_right(text, monitor.casefold(), expected) for _, text in texts):
+        return
+    problems = [_counts_problem(shown, text, expected) for shown, text in texts if not _counts_right(text, expected)]
+    problems.append("Rerun the Task 2.2 pipeline to save a new timestamped file, then commit it.")
+    _report(problems)
 
 
 def _readable(key: str, value: str) -> bool:
@@ -931,6 +995,18 @@ def _check_answer(root: Path, key: str) -> None:
     text = _text(root, SUMMARY_FILE)
     summary, lines_naming = _read_pairs(text, _answer_key)
     if key not in summary:
+        # The joined line that hides this key, after its first answer.
+        hiding = [
+            line.strip() for line in text.splitlines()
+            if key in {label.rstrip(":").strip().casefold() for label in _ANSWER_LABEL.findall(line)[1:]}
+        ]
+        if hiding:
+            # The same words for every key one joined line hides, so the printed report shows them once.
+            raise AssertionError(
+                f"{SUMMARY_FILE} holds several answers on one line, `{_shown(hiding[0])}`, and the checks read only "
+                f"the first answer on a line. A write without \"\\n\" leaves the next answer on the same line; "
+                f"{JOINED_FIX} {SUMMARY_FIX}"
+            )
         # With no readable answer at all, every missing key has the format check's advice.
         raise AssertionError(
             _format_problem(text, summary)
@@ -951,6 +1027,9 @@ def _check_answer(root: Path, key: str) -> None:
         if lines_naming.get(key, 0) > 1
         else ""
     )
+    if _ANSWER_LABEL.search(raw):
+        repeated += f" This line holds another answer after this one; {JOINED_FIX}"
+    axis_hint = AXIS_HINT if _per_column_slip(summary, data, key) else ""
 
     given = f"{SUMMARY_FILE} gives `{key}: {_shown(raw)}`"
     if key in LABEL_KEYS:
@@ -961,6 +1040,7 @@ def _check_answer(root: Path, key: str) -> None:
             why = f"which is not {LABEL_KEYS[key]}: the supplied {DATA_FILE} gives `{expected}`."
             if key == "high_monitor":
                 why += _follow_ups_note(summary, data, answers)
+            why += axis_hint
         raise AssertionError(f"{given}, {why}{repeated} {SUMMARY_FIX}")
 
     readings = _as_numbers(raw)
@@ -1003,6 +1083,7 @@ def _check_answer(root: Path, key: str) -> None:
         )
     if key in MMHG_KEYS:
         gives += f" (allowed difference {MMHG_TOLERANCE} mmHg)"
+    hint += axis_hint
     raise AssertionError(
         f"{given}{read} {(COUNT_KEYS | MMHG_KEYS)[key]}: {gives}.{hint}{repeated} {SUMMARY_FIX}"
     )
@@ -1011,6 +1092,25 @@ def _check_answer(root: Path, key: str) -> None:
 def _value_matches(key: str, value: float, target: float) -> bool:
     """Whether a number read for `key` answers it: exactly for a count, within the tolerance for mmHg."""
     return _mmhg_matches(value, target) if key in MMHG_KEYS else abs(value - target) <= 1e-9
+
+
+def _per_column_slip(summary: dict[str, str], data: Dataset, key: str) -> bool:
+    """Whether a patient answer is what `readings.mean(axis=0)` gives in place of the 12-hour means.
+
+    A count of 0 is too common to tell a cause by, so `stage2_patients` also
+    needs `highest_patient` or `highest_patient_mean` to match its per-column value.
+    """
+    per_column = per_column_answers(data)
+
+    def matches(name: str) -> bool:
+        raw = summary.get(name, "")
+        if name in LABEL_KEYS:
+            return bool(raw) and _label_matches(raw, str(per_column[name]))
+        return any(_value_matches(name, value, float(per_column[name])) for value in _as_numbers(raw))
+
+    if key not in per_column or not matches(key):
+        return False
+    return key != "stage2_patients" or matches("highest_patient") or matches("highest_patient_mean")
 
 
 def _named_monitor(raw: str, data: Dataset) -> str | None:
@@ -1042,12 +1142,23 @@ def _answer_check(key: str) -> PublicCheck:
     return PublicCheck(f"answer: {key}", lambda root, key=key: _check_answer(root, key), SUMMARY_FILE, key)
 
 
+def _monitor_check(monitor: str) -> PublicCheck:
+    return PublicCheck(f"monitor counts: {monitor}", lambda root, monitor=monitor: check_monitor_count(root, monitor),
+                       MONITOR_COUNTS_NAME, monitor)
+
+
 PUBLIC_CHECKS = (
-    PublicCheck("environment probe", check_environment_probe, ENVIRONMENT_FILE, "environment probe"),
-    PublicCheck("record count artifact", check_record_count, RECORD_COUNT_FILE, "record count"),
-    PublicCheck("monitor counts artifact", check_monitor_counts, MONITOR_COUNTS_NAME, "monitor counts"),
-    PublicCheck("summary artifact format", check_summary_format, SUMMARY_FILE, "format"),
-) + tuple(_answer_check(key) for key in ANSWER_KEYS)
+    (
+        PublicCheck("environment probe: numpy", check_environment_numpy, ENVIRONMENT_FILE, "numpy line"),
+        PublicCheck("environment probe: interpreter", check_environment_interpreter, ENVIRONMENT_FILE,
+                    "interpreter line"),
+        PublicCheck("record count artifact", check_record_count, RECORD_COUNT_FILE, "record count"),
+        PublicCheck("monitor counts: timestamped name", check_counts_name, MONITOR_COUNTS_NAME, "timestamped name"),
+    )
+    + tuple(_monitor_check(monitor) for monitor in MONITORS)
+    + (PublicCheck("summary artifact format", check_summary_format, SUMMARY_FILE, "format"),)
+    + tuple(_answer_check(key) for key in ANSWER_KEYS)
+)
 
 
 def run_public_checks(root: Path) -> list[tuple[str, str | None]]:

@@ -6,13 +6,14 @@ Adapted from DataSci 223's student-facing lecture and demo style. The course-spe
 
 - Write for health data science master's students who are beginners in programming. Define jargon at first use and build knowledge incrementally.
 - Students should be able to scan the material and understand a concept on first exposure. Teach how to get something working before adding safeguards.
-- Prefer diagrams, screenshots, concrete outputs, and concise bullets over walls of prose. The lecturer speaks to the content; the document is not a speaking script.
-- Preserve relevant humor and comics. Keep core explanations clear; place jokes between relevant topics rather than letting them obscure the concept.
+- Lectures and demos are not the words said in class. A lecture holds all the content the instructor talks through and students come back to for reference: explanations, visuals, reference cards, and snippets. It is not a speaking script, so it needs no narration, transitions, or asides. A demo is what students redo on their own after the instructor has run it in class, or in place of a class they missed. It gives step-by-step instructions, visual output wherever possible, and expected results, with enough teaching context to work through it alone.
+- Prefer diagrams, screenshots, concrete outputs, and concise bullets over walls of prose.
+- Humor, comics, and emojis are encouraged when used sparingly: spread a few through each lecture, placed between sections or subsections, and keep core explanations clear rather than jokey. Preserve relevant humor and comics when editing.
 - Do not include time estimates, instructor instructions, recap/summary sections, or filler that merely repeats a heading.
 
 ## Lecture format
 
-The lecture format comes from DataSci 223's lecture style and formatting guide (`../datasci_223/AGENTS.md`), adapted here: content organization first, styling second. Where the two differ, the course-specific rules below take precedence. The reviewed Lectures 01–03 are the working examples.
+The lecture format comes from DataSci 223's lecture style and formatting guide (`../datasci_223/AGENTS.md`), adapted here: content organization first, styling second. When the two disagree on something this file does not decide, follow 223. Where the two differ, the course-specific rules below take precedence. The reviewed Lectures 01–03 are the working examples.
 
 - Use Python 3.13 throughout lectures, demos, assignments, and grading. Keep pandas at the course's pinned 3.0.5 version.
 - Lectures explain concepts; they are presentation material, not executable documents. Keep prose concise and student-facing, and preserve humor.
@@ -32,12 +33,12 @@ The lecture format comes from DataSci 223's lecture style and formatting guide (
 
 ### Topic organization
 
-Each major topic usually includes these parts, in this order. Omit a part only when it would be empty or would repeat nearby content; when students need a missing part, write it rather than a placeholder.
+Each major topic (a `#` section) should usually include these parts, in this order. They describe a major topic, not every subsection: a subsection uses only the parts it needs, and a short one may be just a reference card or a snippet. Skip a part that would be empty or would repeat nearby content; when students need a missing part, write it rather than a placeholder.
 
-1. A short introduction that says what the thing is and how to use it, as briefly as that allows. Motivate it with a concrete problem, ideally from health data, and define each new term in **bold** at first use. Students need the actual topic stated clearly, not a story, allegory, or paragraph about material from another lecture; a clause is enough to connect to earlier work.
+1. An introduction, where the concept is explained: what it is, why it matters (the problem it solves, ideally in health data), and the key ideas students need before the details. It can be several short paragraphs or concise bullets, and it may draw an analogy or connect to earlier lectures when that explains the new topic. It introduces _this_ topic: not a story or a recap standing in for the explanation, and not a lead-in about some other topic. Define each new term in **bold** at first use. Prefer concise bullets over long prose.
 2. A visual, table, or concrete output that shows the idea: a diagram, a before-and-after table, a screenshot of the actual action, or real output. Visuals go before code.
 3. A reference card: related commands or functions grouped by task, with their purpose, key arguments, and typical output. Students look things up here after class, so it covers what the demos and assignment use.
-4. A short code snippet: the smallest example of one concept, with its expected output and nothing untaught.
+4. A short code snippet: the smallest example of one concept, shown in place, with its expected output and nothing untaught. Leave out setup and boilerplate (imports, seeding, building sample data, environment steps) that the concept does not need; the demos carry the full end-to-end examples.
 
 Adapt introductions and examples from the course sources rather than inventing them: McKinney's chapters (`work/mckinney_content/`, summarized in `work/mckinney_topics_summary.md`), `work/tlcl_topics.md` and `work/missing_semester_topics.md` for the shell and developer tools, and the previous year's slides and narration in `work/lectures_bkp/` (its lecture numbering differs from the current sequence).
 
@@ -149,7 +150,7 @@ Review content organization first and styling last.
 
 1. Map the lecture: its topics in order, the parts each topic has, and the topic block that leads to each demo.
 2. Lecture organization: Does each topic blend concepts, reference material, and practical examples? Is the order incremental, with nothing used before it is taught and the working path before safeguards? Where a section develops one tool, does it move from problem to tool to options to pitfalls? Does each block build to its demo, and does the demo use only earlier material? Is the lecture lean, with essential tools in the lecture and advanced material in `BONUS.md`? Does it teach what its demos and assignment need?
-3. Topics: Does the introduction say directly what the concept is and how to use it, and define new terms, without stories, allegories, or detours into other lectures? Does the topic teach before its reference card, rather than jumping straight to an API list? Is there a visual or concrete output before code? Does the reference card cover the task? Are snippets minimal and correct for Python 3.13 and pandas 3.0.5, with stated outputs that match real output?
+3. Topics: Does each major topic's introduction actually explain the concept (what it is, why it matters, the key ideas) and define new terms, without a story, recap, or detour standing in for the explanation? Are subsections free of intros they do not need? Does the topic teach before its reference card, rather than jumping straight to an API list? Is there a visual or concrete output before code? Does the reference card cover the task? Are snippets minimal and correct for Python 3.13 and pandas 3.0.5, with stated outputs that match real output?
 4. Styling: fix violations of the rules above, not matters of taste. `python3 scripts/lecture_lint.py` checks the mechanical ones (heading levels, demo markers, pseudo-headings, horizontal rules, and captions) and exits non-zero when a page breaks one.
 
 Fix substance: add the missing explanation, visual, or example, adapted from the course sources, and reorder or move material when the organization is wrong.

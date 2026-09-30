@@ -2,24 +2,30 @@
 """
 NumPy Performance Demonstration
 Applies a heart monitor's calibration offset to one million readings, first with a
-list comprehension and then with array arithmetic, and times both.
+list comprehension and then with array arithmetic, and times both. Each approach
+runs several times and reports its fastest run, because a background task can slow
+any single run.
 """
 
 import numpy as np
 import time
 
 OFFSET_BPM = 2  # the wrist monitor reads 2 bpm low
+RUNS = 5  # each approach runs this many times; the fastest run is reported
 
 
 def measure_python_list(heart_rates):
-    """Time the list comprehension."""
+    """Time the list comprehension; return its fastest run in ms."""
     print("=== Python List Approach ===")
 
-    start = time.perf_counter()
-    calibrated = [bpm + OFFSET_BPM for bpm in heart_rates]
-    end = time.perf_counter()
+    run_times_ms = []
+    for run in range(RUNS):
+        start = time.perf_counter()
+        calibrated = [bpm + OFFSET_BPM for bpm in heart_rates]
+        end = time.perf_counter()
+        run_times_ms.append((end - start) * 1000)
 
-    elapsed_ms = (end - start) * 1000
+    elapsed_ms = min(run_times_ms)
     print(f"Time: {elapsed_ms:.2f} ms")
     print(f"Result sample: {calibrated[:5]}")
 
@@ -27,14 +33,17 @@ def measure_python_list(heart_rates):
 
 
 def measure_numpy_array(heart_rates):
-    """Time the array arithmetic."""
+    """Time the array arithmetic; return its fastest run in ms."""
     print("\n=== NumPy Array Approach ===")
 
-    start = time.perf_counter()
-    calibrated = heart_rates + OFFSET_BPM
-    end = time.perf_counter()
+    run_times_ms = []
+    for run in range(RUNS):
+        start = time.perf_counter()
+        calibrated = heart_rates + OFFSET_BPM
+        end = time.perf_counter()
+        run_times_ms.append((end - start) * 1000)
 
-    elapsed_ms = (end - start) * 1000
+    elapsed_ms = min(run_times_ms)
     print(f"Time: {elapsed_ms:.2f} ms")
     print(f"Result sample: {calibrated[:5]}")
 

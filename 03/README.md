@@ -26,9 +26,13 @@ Project B → B/.venv → Python 3.12, numpy 1.26.4
 
 ## Course Environment
 
-- Python 3.13, with one environment per project in a folder named `.venv`
-- The project's packages listed in `pyproject.toml`: NumPy 2.3.3 now, pandas 3.0.5 from Lecture 04
-- uv manages all of it; `requirements.txt`, standard-library `venv`, and Conda are alternatives later in this topic
+- **Versions**:
+    - `python`: 3.13
+    - `numpy`: 2.3.3
+    - `pandas`: 3.0.5, from Lecture 04
+- **Environment**: one per project, in a folder named `.venv`
+- **Packages**: listed in `pyproject.toml`
+- **Tool**: uv; `requirements.txt`, `venv`, and Conda are alternatives at the end of this topic
 
 ## Using uv
 
@@ -60,7 +64,7 @@ Python 3.13.14
 | Pin one project | `uv python pin 3.13` | Writes `.python-version`; `uv venv` in this folder uses it over the global pin. |
 | Create environment | `uv venv --seed` | Creates `.venv` with the pinned Python; `--seed` adds pip, which Lecture 04's notebooks use. |
 | Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt starts with the folder name, such as `(assignment-03)`. |
-| Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | The Python and NumPy versions. |
+| Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | The Python and NumPy versions; `python -c` runs the Python code in the quoted string. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
 ## Recording Packages in `pyproject.toml`
@@ -85,7 +89,7 @@ dependencies = [
 | :--- | :--- | :--- |
 | Start a project | `uv init --bare` | Writes `pyproject.toml` for a project named after the folder; run it once per project. |
 | Add a package | `uv add numpy==2.3.3` | Installs that version into `.venv`, lists it in `pyproject.toml`, and updates `uv.lock`. |
-| Rebuild from the records | `uv sync` | Makes `.venv` match `pyproject.toml` and `uv.lock`, removing packages they do not list, so install new packages with `uv add`, not `uv pip install`. |
+| Rebuild from the records | `uv sync` | Makes `.venv` match `pyproject.toml` and `uv.lock`, removing packages you installed with `uv pip install` (the pip from `--seed` stays), so install new packages with `uv add`. |
 | Run in the environment | `uv run python script.py` | Runs the command with the project's `.venv`, active or not. |
 
 ### Code Snippet: Create and Verify an Environment
@@ -102,6 +106,45 @@ python -c "import numpy as np; print(np.__version__)"   # 2.3.3
 ```
 
 `.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild.
+
+## Recreate an Environment
+
+A result is **reproducible** when another person can rebuild the software environment and rerun the program on the same inputs. Commit the records and check them by rebuilding in a new folder; the same commands set up a project someone else made, such as an assignment handout.
+
+### Code Snippet: Recreate from the Records
+
+In a new folder holding copies of `.python-version`, `pyproject.toml`, and `uv.lock`:
+
+```bash
+uv venv --seed                                                 # Using CPython 3.13.14, as .python-version says
+uv sync                                                        # + numpy==2.3.3, as uv.lock says
+uv run python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+```
+
+## Which Python Is Running?
+
+`sys.executable` is the path of the interpreter running the code, so it shows whether `python` runs the project's `.venv`:
+
+```text
+(assignment-03) ~/assignment-03 $ python -c "import sys; print(sys.executable)"
+/home/alice/assignment-03/.venv/bin/python
+```
+
+### When `import numpy` Fails
+
+```text
+$ python -c "import numpy as np"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+```
+
+`ModuleNotFoundError` means the Python that ran the code cannot find the package. The usual causes:
+
+- **The environment is not active**, or VS Code picked another interpreter: `sys.executable` does not end in `.venv/bin/python`. Run `source .venv/bin/activate` in this terminal, and in VS Code run **Python: Select Interpreter** (Lecture 02) and choose `./.venv/bin/python`.
+- **The project's packages are not installed**: run `uv sync`.
+- **The package is new to this project**: `uv add pandas==3.0.5` installs it and records it in `pyproject.toml`.
 
 ## Using `requirements.txt` (alternative)
 
@@ -131,45 +174,6 @@ cat requirements.txt
 #    uv export --no-hashes
 numpy==2.3.3
     # via clinic-project
-```
-
-## Which Python Is Running?
-
-`sys.executable` is the path of the interpreter running the code, so it shows whether `python` runs the project's `.venv`; `python -c` runs the Python code in the string that follows it:
-
-```text
-(assignment-03) ~/assignment-03 $ python -c "import sys; print(sys.executable)"
-/home/alice/assignment-03/.venv/bin/python
-```
-
-### When `import numpy` Fails
-
-```text
-$ python -c "import numpy as np"
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-    import numpy as np
-ModuleNotFoundError: No module named 'numpy'
-```
-
-`ModuleNotFoundError` means the Python that ran the code cannot find the package. The usual causes:
-
-- **The environment is not active**, or VS Code picked another interpreter: `sys.executable` does not end in `.venv/bin/python`. Run `source .venv/bin/activate` in this terminal, and in VS Code run **Python: Select Interpreter** (Lecture 02) and choose `./.venv/bin/python`.
-- **The project's packages are not installed**: run `uv sync`, or `uv pip install -r requirements.txt` for a `requirements.txt` project.
-- **The package is new to this project**: `uv add pandas==3.0.5` installs it and records it in `pyproject.toml`.
-
-## Recreate an Environment
-
-A result is **reproducible** when another person can rebuild the software environment and rerun the program on the same inputs. Commit the records and check them by rebuilding in a new folder; the same commands set up a project someone else made, such as an assignment handout.
-
-### Code Snippet: Recreate from the Records
-
-In a new folder holding copies of `.python-version`, `pyproject.toml`, and `uv.lock`:
-
-```bash
-uv venv --seed                                                 # Using CPython 3.13.14, as .python-version says
-uv sync                                                        # + numpy==2.3.3, as uv.lock says
-uv run python -c "import numpy as np; print(np.__version__)"   # 2.3.3
 ```
 
 ## Using standard-library venv (alternative)
@@ -277,6 +281,7 @@ A **shell script** is a file of commands, so a whole pipeline reruns with one co
 #!/bin/bash
 # Count encounters per clinic; save the counts under this run's timestamp.
 timestamp=$(date +"%Y%m%d_%H%M%S")
+mkdir -p results
 tail -n +2 data/raw/encounters.csv \
   | cut -d',' -f4 | sort | uniq -c > "results/clinic_counts_${timestamp}.txt"
 echo "Saved results/clinic_counts_${timestamp}.txt"
@@ -298,6 +303,12 @@ Three tools shorten everyday list code: `isinstance()` checks what a value is, `
 ## Checking Types
 
 Values read from a file start as text, so check a value's type before calculating with it. **Introspection** means asking an object what it is while the program runs: `type()` (Lecture 01) names the type, and `isinstance()` answers yes or no, which suits an `if`.
+
+| Value | `type(value)` | `isinstance(value, str)` |
+| --- | --- | --- |
+| `"72"` | `<class 'str'>` | `True` |
+| `80` | `<class 'int'>` | `False` |
+| `"88"` | `<class 'str'>` | `True` |
 
 ### Reference Card: Object Introspection
 
@@ -389,7 +400,7 @@ my_array = np.array(my_list)
 print(my_array * 2)               # [ 2  4  6  8 10]
 ```
 
-`import numpy as np` loads NumPy under its standard alias `np` (Lecture 02), which the snippets below assume, and `np.array()` turns a list into an array. On Demo 2's one million heart-rate readings, the list took about 24 ms and the array under 1 ms.
+`import numpy as np` loads NumPy under its standard alias `np` (Lecture 02), which the snippets below assume, and `np.array()` turns a list into an array. On Demo 2's one million heart-rate readings, the list took about 24 ms and the array about 1 ms on one machine.
 
 ## NumPy Data Types
 
@@ -599,7 +610,8 @@ print(values, copied_values)  # [99 20 30] [10 20 30]
 ```
 
 <callout icon="⚠️" color="yellow_bg">
-	`b = a` never copies: a change through `b`, such as `b[0] = 99` or `b += 1`, changes `a` too, and a function that changes an array passed to it changes the caller's array. Write `b = a.copy()` when you need a separate array.
+	## b = a is an alias! Not a copy!
+	A change through `b`, such as `b[0] = 99` or `b += 1`, changes `a` too, and a function that changes an array passed to it changes the caller's array. Write `b = a.copy()` when you need a separate array.
 </callout>
 
 ### Code Snippet: Functions Share the Caller's Array
@@ -623,8 +635,6 @@ A slice is a **view**: a second window onto the same numbers, so changing a valu
 
 - `arr[1:3]`, `arr[:, 0]`, `arr[:2, 1:]`: A slice is a view; it shares data with `arr`.
 - `arr[1:3].copy()`: An independent copy; changes stay local.
-- `arr[mask]`, `arr[[0, 3]]`: Boolean and fancy indexing (below) always return a new copy.
-- `arr[mask] = value`: Assignment through a mask, or through `arr[[0, 3]]`, changes `arr` itself.
 - `np.shares_memory(a, b)`: `True` when two arrays share data.
 
 ### Code Snippet: Change a View, Keep a Copy
@@ -656,8 +666,7 @@ bp[bp >= 140]  →  [142 145]     the matching values, as a 1-D array
 | Pattern | Purpose | Example |
 | :--- | :--- | :--- |
 | `arr > value` | Builds a Boolean mask; in this card `arr` is a 1-D array. | `arr > 5` |
-| `arr[mask]` | Keeps matching elements; a 2-D array gives a 1-D result. | `arr[arr > 5]` |
-| `arr2d[arr2d[:, 0] >= x]` | Keeps whole rows whose column 0 passes; the result stays 2-D. | `bp[bp[:, 0] >= 140]` |
+| `arr[mask]` | Keeps matching elements as a new copy; a 2-D array gives a 1-D result. | `arr[arr > 5]` |
 | `values[labels == "x"]` | Keeps one group's values, where `labels` names the group at each position. | `systolic[clinics == "Cardiology"]` |
 | `(a) & (b)` / `(a) \| (b)` | Combines conditions with AND / OR; use these, not `and` and `or`, with each test in parentheses. | `(arr > 2) & (arr < 8)` |
 | `~mask` | Flips every `True` and `False`. | `arr[~(arr > 5)]` |
@@ -672,21 +681,75 @@ high = bp >= 140                      # bp from "Select Cells, Rows, Columns, an
 print(bp[high])                       # [142 145]
 print(high.sum())                     # 2
 print(bp[(bp >= 120) & (bp < 130)])   # [128 126 121]
-print(bp[bp[:, 0] >= 140])            # [[142 145 139]]: patients whose visit 1 was high
+```
+
+## Multidimensional Boolean Indexing
+
+A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits), build a 1-D mask with one `True` or `False` per row or per column, and put it in that dimension's slot: `bp[row_mask]` (the same as `bp[row_mask, :]`) keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D. A row mask usually comes from one column (`bp[:, 0] >= 140`) or from a whole row at once with `.any(axis=1)` or `.all(axis=1)`. A mask's length must match the dimension it indexes; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0`.
+
+```text
+              visit 1  visit 2  visit 3     bp[:, 0] >= 140   (row mask, axis 0)
+patient 0   [[  128      131      126 ]         False
+patient 1    [  142      145      139 ]         True      ← bp[row_mask] keeps this row
+patient 2    [  118      121      119 ]]        False
+
+(bp >= 140).any(axis=0)  →  [ True   True   False ]      (column mask, axis 1)
+                               ↑      ↑
+                    bp[:, col_mask] keeps visits 1 and 2
+```
+
+### Reference Card: Masks Along One Dimension
+
+| Pattern | Purpose | Example |
+| :--- | :--- | :--- |
+| `arr2d[:, j] >= x` | Row mask from one column: one `True`/`False` per row. | `bp[:, 0] >= 140` → `[False  True False]` |
+| `arr2d[row_mask]` / `arr2d[row_mask, :]` | Keeps whole rows; the result stays 2-D. | `bp[bp[:, 0] >= 140]` → `[[142 145 139]]` |
+| `(arr2d > x).any(axis=1)` / `.all(axis=1)` | Row mask from every column: any / every value in the row passes. | `(bp >= 130).any(axis=1)` → `[ True  True False]` |
+| `(arr2d > x).any(axis=0)` | Column mask from every row. | `(bp >= 140).any(axis=0)` → `[ True  True False]` |
+| `arr2d[:, col_mask]` | Keeps whole columns. | `bp[:, [True, False, True]]` keeps visits 1 and 3 |
+| `arr2d[row_mask, j]` | Rows by mask, then one column by position. | `bp[bp[:, 0] >= 140, 2]` → `[139]` |
+
+### Code Snippet: Keep Rows or Columns by a Condition
+
+```python
+visit1_high = bp[:, 0] >= 140               # one True/False per patient
+print(bp[visit1_high])                      # [[142 145 139]]
+print(bp[(bp >= 130).any(axis=1)])          # patients with any visit at 130 or above
+# [[128 131 126]
+#  [142 145 139]]
+print(bp[:, (bp >= 140).any(axis=0)])       # visits where any patient reached 140
+# [[128 131]
+#  [142 145]
+#  [118 121]]
 ```
 
 ## Fancy Indexing
 
 **Fancy indexing** selects by a list of positions instead of a mask, in any order you choose. Like a mask, it returns a copy.
 
-### Code Snippet: Pick Positions and Rows
+### Reference Card: Fancy Indexing
+
+- `arr[[i, j]]`: The elements at positions `i` and `j`, in that order; a new copy.
+- `arr2d[[i, j]]`: Rows `i` and `j`, in that order.
+- `arr2d[:, [j, k]]`: Columns `j` and `k` of every row, in that order.
+- `arr[[i, j]] = value`: Replaces those elements in place; changes `arr`.
+
+### Code Snippet: Pick Positions, Rows, and Columns
 
 ```python
 ids = np.array(["P001", "P002", "P003"])   # one ID per row of bp
-print(ids[[2, 0]])   # ['P003' 'P001']
-print(bp[[2, 0]])    # [[118 121 119]
-                     #  [128 131 126]]: rows 2 and 0, in that order
+print(ids[[2, 0]])       # ['P003' 'P001']
+print(bp[[2, 0]])        # [[118 121 119]
+                         #  [128 131 126]]: rows 2 and 0, in that order
+print(bp[:, [0, -1]])    # [[128 126]
+                         #  [142 139]
+                         #  [118 119]]: each patient's first and last visit
 ```
+
+<callout icon="🐼" color="blue_bg">
+	## Preview: pandas selects the same way, by name
+	Masks and lists of positions are how you will work in **pandas** (Lecture 04), the higher-level library that is the everyday workhorse for wrangling data tables. A pandas table labels its rows and columns, so the same moves use names: `df[df["systolic"] >= 140]` keeps rows by a condition, `df[["patient_id", "systolic"]]` picks columns by name, and `df.loc[mask, ["patient_id", "systolic"]]` does both at once.
+</callout>
 
 ## Array Reshaping
 

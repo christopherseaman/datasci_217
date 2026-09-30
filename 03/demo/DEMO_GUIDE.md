@@ -61,7 +61,7 @@ dependencies = [
 ]
 ```
 
-The `sys.executable` line shows which interpreter `python` runs; it should sit inside this folder's `.venv`, such as `/Users/alice/03-demo/.venv/bin/python`. A path without `.venv` in it means the environment is not active in this terminal. In native PowerShell, activation is `.\.venv\Scripts\Activate.ps1` and the path ends in `.venv\Scripts\python.exe`. `ls -a` now also lists `.python-version`, `pyproject.toml`, `uv.lock`, and `.venv`.
+The `sys.executable` line shows which interpreter `python` runs; it should sit inside this folder's `.venv`, such as `/Users/alice/03-demo/.venv/bin/python`. A path without `.venv` in it means the environment is not active in this terminal. `ls -a` now also lists `.python-version`, `pyproject.toml`, `uv.lock`, and `.venv`.
 
 ## 1.3 Recreate It from the Records
 
@@ -234,6 +234,8 @@ bash count_clinics.sh
 cat results/clinic_counts_*.txt
 ```
 
+If you ran `count_clinics.sh` before in this folder, the lecture's version included, `cat` prints those earlier files' counts too; the file this run saved is the one its `Saved` line names.
+
 ```text
 Saved results/clinic_counts_20260922_184530.txt
     260 Cardiology
@@ -246,11 +248,16 @@ Saved results/clinic_counts_20260922_184530.txt
     380 Primary Care
 ```
 
-Eight clinics, 1,500 encounters in all. Only the input file differs from the lecture's script, which is the point of saving a pipeline: the same commands rerun on new data with one line. Demo 3.4 gets the same counts from Python.
+Eight clinics, 1,500 encounters in all. Apart from its comment, only the input file differs from the lecture's script, which is the point of saving a pipeline: the same commands rerun on new data with one line. Demo 3.4 gets the same counts from Python.
 
 # Demo 2: Types, Lists, and NumPy Basics
 
-Run these three from `~/03-demo` with the `(03-demo)` environment active.
+Run these three from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with:
+
+```bash
+cd ~/03-demo
+source .venv/bin/activate   # the prompt now starts with (03-demo)
+```
 
 ## 2.1 Check Types and Loop over Lists
 
@@ -298,7 +305,7 @@ Tachycardic (100 bpm or above): ['P002', 'P003']
 python demo2_numpy_performance.py
 ```
 
-Source: [demo2_numpy_performance.py](demo2_numpy_performance.py). A wrist monitor that records one heart rate per second produces a million readings in under 12 days. This script applies 2.1's 2 bpm calibration offset to one million readings twice: once with a list comprehension, once with array arithmetic. Both calibrate the same readings, so their result samples must match. The two timings, the speedup, and the time saved come from one machine and yours will differ; every other line should match exactly:
+Source: [demo2_numpy_performance.py](demo2_numpy_performance.py). A wrist monitor that records one heart rate per second produces a million readings in under 12 days. This script applies 2.1's 2 bpm calibration offset to one million readings two ways: with a list comprehension and with array arithmetic. Both calibrate the same readings, so their result samples must match. The two timings, the speedup, and the time saved come from one machine and yours will differ; every other line should match exactly:
 
 ```text
 NumPy Performance Comparison
@@ -322,7 +329,7 @@ Time saved: 22.78 ms
 Timing is machine-dependent; vectorized arithmetic does the work in array operations.
 ```
 
-The list prints with commas and the array without. The script builds the readings as `[72, 88, 104, 65, 91] * 200_000`, the list repetition from the lecture's "Why NumPy"; Python ignores the underscores in `200_000`, which group the digits for reading. The timing wrapper uses `time.perf_counter()` to read a clock before and after each calculation; subtracting gives elapsed seconds.
+The list prints with commas and the array without. The script builds the readings as `[72, 88, 104, 65, 91] * 200_000`, the list repetition from the lecture's "Why NumPy"; Python ignores the underscores in `200_000`, which group the digits for reading. The timing wrapper uses `time.perf_counter()` to read a clock before and after each calculation; subtracting gives elapsed seconds. Each approach runs five times in a `for` loop and the script reports the fastest run with `min()`, because a background task can slow any single run.
 
 ## 2.3 Data Types, Arrays, and Indexing
 
@@ -410,7 +417,12 @@ week[:, :, 0].shape (every patient's first reading each day): (2, 7)
 
 # Demo 3: Selecting, Reshaping, and Analyzing Arrays
 
-Run these from `~/03-demo` with the `(03-demo)` environment active.
+Run these from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with:
+
+```bash
+cd ~/03-demo
+source .venv/bin/activate   # the prompt now starts with (03-demo)
+```
 
 ```bash
 python demo3_bp_analysis.py
