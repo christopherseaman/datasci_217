@@ -781,35 +781,48 @@ def run() -> None:
         assert failing(result) == {NUMPY_CHECK}, failing(result)
         assert "Task 1.1's `uv sync`" in detail(result, NUMPY_CHECK)
 
-        # Writes that leave out "\n" run the answers onto one line. The first answer still reads; every
-        # answer it hides says why, in the same words, so the printed report says it once.
-        joined = workspace / "joined-summary"
-        build(joined, summary, counts, records)
-        (joined / "output" / "vitals_summary.txt").write_text("".join(summary), encoding="utf-8")
-        result = graded(joined)
-        hidden = {f"answer: {key}" for key in list(ANSWER_POINTS)[1:]}
-        assert failing(result) == hidden, failing(result)
-        assert len({detail(result, check) for check in hidden}) == 1
-        assert "holds several answers on one line" in detail(result, "answer: readings")
-        assert 'end each write with "\\n"' in detail(result, "answer: readings"), detail(result, "answer: readings")
-        # Some lines joined, some not: a joined line's first answer is read with the next one stuck to
-        # it, and the feedback says so.
-        (joined / "output" / "vitals_summary.txt").write_text(
-            "\n".join(summary[:11]) + "\n" + "".join(summary[11:]) + "\n", encoding="utf-8")
-        result = graded(joined)
-        assert failing(result) == {"answer: high_monitor", "answer: monitor_offset",
-                                   "answer: stage2_other_monitors"}, failing(result)
-        assert "This line holds another answer after this one" in detail(result, "answer: high_monitor")
-        assert "holds several answers on one line" in detail(result, "answer: monitor_offset")
-        # Two joined lines: each hidden answer quotes the line that hides it.
+        # Writes that leave out "\n" run the answers onto one line, `patients: 300readings: 3600...`. Each
+        # answer is read up to the next answer's key, so right values score in full however many lines
+        # are joined, including a label run straight into the next key (`high_monitor: M02monitor_offset:`).
         lines = [line.rstrip("\n") for line in summary]
-        (joined / "output" / "vitals_summary.txt").write_text(
-            "\n".join(lines[:1]) + "\n" + "".join(lines[1:3]) + "\n" + "\n".join(lines[3:11]) + "\n"
-            + "".join(lines[11:13]) + "\n" + lines[13] + "\n", encoding="utf-8")
-        result = graded(joined)
-        assert f"`{lines[1]}{lines[2]}`" in detail(result, "answer: mean_sbp"), detail(result, "answer: mean_sbp")
-        assert f"`{lines[11]}{lines[12]}`" in detail(result, "answer: monitor_offset"), \
-            detail(result, "answer: monitor_offset")
+        for name, content in (
+            ("joined-summary", "".join(lines)),
+            ("joined-last-three", "\n".join(lines[:11]) + "\n" + "".join(lines[11:]) + "\n"),
+            ("joined-two-runs", "\n".join(lines[:1]) + "\n" + "".join(lines[1:3]) + "\n"
+             + "\n".join(lines[3:11]) + "\n" + "".join(lines[11:13]) + "\n" + lines[13] + "\n"),
+        ):
+            joined = workspace / name
+            build(joined, summary, counts, records)
+            (joined / "output" / "vitals_summary.txt").write_text(content, encoding="utf-8")
+            result = graded(joined)
+            assert result["score"] == 100, (name, failing(result))
+        assert handout_grade(workspace / "joined-summary") == graded(workspace / "joined-summary")
+        # A wrong answer on a joined line quotes only its own value and still says to end each write with "\n".
+        wrong_joined = workspace / "joined-wrong"
+        build(wrong_joined, summary, counts, records)
+        wrong_lines = replaced(summary, sd_sbp="99.9", high_monitor=other_monitor)
+        (wrong_joined / "output" / "vitals_summary.txt").write_text("".join(wrong_lines), encoding="utf-8")
+        result = graded(wrong_joined)
+        assert failing(result) == {"answer: sd_sbp", "answer: high_monitor"}, failing(result)
+        for key, value in (("sd_sbp", "99.9"), ("high_monitor", other_monitor)):
+            message = detail(result, f"answer: {key}")
+            assert f"gives `{key}: {value}`" in message, message
+            assert 'end each write with "\\n"' in message, message
+        # An empty value run into the next answer says it has no value; the answer after it still scores.
+        empty_joined = workspace / "joined-empty-value"
+        build(empty_joined, summary, counts, records)
+        (empty_joined / "output" / "vitals_summary.txt").write_text(
+            "patients: " + "".join(lines[1:3]) + "\n" + "\n".join(lines[3:]) + "\n", encoding="utf-8")
+        result = graded(empty_joined)
+        assert failing(result) == {"answer: patients"}, failing(result)
+        assert "has no value after the colon" in detail(result, "answer: patients")
+        assert 'end each write with "\\n"' in detail(result, "answer: patients")
+        # A key mentioned in a note on another answer's line never replaces the key's own line.
+        noted = workspace / "joined-note"
+        build(noted, replaced(summary, mean_sbp=f"{answers['mean_sbp']} (over all readings: 12)"), counts,
+              records)
+        result = graded(noted)
+        assert result["score"] == 100, failing(result)
 
         # Patient answers computed with axis=0, one mean per hour column, say that a 12-hour mean is
         # axis=1. A count of 0 alone is too common a slip to name its cause.

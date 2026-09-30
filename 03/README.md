@@ -15,8 +15,8 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 This lecture covers these readings:
 
-- McKinney, _Python for Data Analysis_ (3rd ed.): 2.3 (`isinstance`), 3.1 (built-in sequence functions and list comprehensions), and 4.1 to 4.4 (NumPy arrays, random numbers, universal functions, and array-oriented programming)
-- Shotts, _The Linux Command Line_: Chapters 6 (redirection and pipelines), 7 (command substitution), 20 (text processing with `cut`, `sort`, and `uniq`), and 24 (writing your first script)
+- McKinney, _Python for Data Analysis_ (3rd ed.): 2.3 (`isinstance`, variables and argument passing, mutable and immutable objects), 3.1 (built-in sequence functions and list comprehensions), and 4.1 to 4.4 (NumPy arrays, random numbers, universal functions, and array-oriented programming)
+- Shotts, _The Linux Command Line_: Chapters 4 (wildcards), 6 (redirection, pipelines, and `grep`), 7 (command substitution), 19 (regular expressions, through anchors), 20 (text processing with `cut`, `sort`, and `uniq`), 24 (writing your first script), and 25 (shell variables)
 
 # Virtual Environments
 
@@ -97,15 +97,28 @@ dependencies = [
 In an empty folder named `clinic-project`:
 
 ```bash
-uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
-uv init --bare                                          # Initialized project `clinic-project`
+uv python pin 3.13
+uv init --bare
 uv venv --seed
 source .venv/bin/activate
-uv add numpy==2.3.3                                     # + numpy==2.3.3
-python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+uv add numpy==2.3.3
+python -c "import numpy as np; print(np.__version__)"
 ```
 
-`.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild.
+```text
+Pinned `.python-version` to `3.13`
+Initialized project `clinic-project`
+Using CPython 3.13.14
+Creating virtual environment with seed packages at: .venv
+ + pip==26.2.1
+Activate with: source .venv/bin/activate
+Resolved 2 packages in 3ms
+Installed 1 package in 13ms
+ + numpy==2.3.3
+2.3.3
+```
+
+Timings vary, and the first download of a package adds lines of its own. `.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild.
 
 ## Recreate an Environment
 
@@ -116,10 +129,23 @@ A result is **reproducible** when another person can rebuild the software enviro
 In a new folder holding copies of `.python-version`, `pyproject.toml`, and `uv.lock`:
 
 ```bash
-uv venv --seed                                                 # Using CPython 3.13.14, as .python-version says
-uv sync                                                        # + numpy==2.3.3, as uv.lock says
-uv run python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+uv venv --seed
+uv sync
+uv run python -c "import numpy as np; print(np.__version__)"
 ```
+
+```text
+Using CPython 3.13.14
+Creating virtual environment with seed packages at: .venv
+ + pip==26.2.1
+Activate with: source .venv/bin/activate
+Resolved 2 packages in 0.77ms
+Installed 1 package in 13ms
+ + numpy==2.3.3
+2.3.3
+```
+
+`uv venv` used the Python that `.python-version` names, and `uv sync` installed the NumPy version that `uv.lock` records.
 
 ## Which Python Is Running?
 
@@ -148,7 +174,7 @@ ModuleNotFoundError: No module named 'numpy'
 
 ## Using `requirements.txt` (alternative)
 
-Many projects, and tools such as pip and Google Colab, list their packages in a **requirements file**, `requirements.txt`, instead: one package per line, with `==` pinning an exact version and no lock file beside it.
+Many projects list their packages in a **requirements file**, `requirements.txt`, instead, and tools such as pip and Google Colab install from one. It holds one package per line, with `==` pinning an exact version, and has no lock file beside it.
 
 ```text
 numpy==2.3.3
@@ -246,6 +272,54 @@ tail -n +2 data/raw/encounters.csv | wc -l
 6
 ```
 
+## Wildcards and Searching
+
+A **wildcard** stands for part of a file name: `*` matches any run of characters and `?` exactly one, as in Lecture 02's `.gitignore` patterns such as `*.csv`. The shell replaces the pattern with every matching file name before the command runs. `grep` searches inside files instead: it prints each line that contains a pattern.
+
+In Demo 1's `~/03-demo` folder, as the download leaves it:
+
+| Pattern | The shell replaces it with |
+| --- | --- |
+| `*.sh` | `demo1_cli_pipeline.sh setup_demo.sh` |
+| `demo2_*.py` | `demo2_numpy_arrays.py demo2_numpy_performance.py demo2_types_and_lists.py` |
+| `demo?_*.py` | The five `demo2_` and `demo3_` scripts |
+| `*.txt` | Nothing matches: Bash passes `*.txt` on as typed, so `ls *.txt` reports `No such file or directory`, and zsh stops with `no matches found: *.txt` |
+
+A `grep` pattern is a **regular expression**: most characters match themselves, and a few have special meanings. On `data/raw/encounters.csv`:
+
+| Pattern | Matches a line that | Matching lines |
+| --- | --- | --- |
+| `Cardiology` | Contains `Cardiology` | `P001,54,128,Cardiology`, `P004,45,131,Cardiology`, `P006,58,126,Cardiology` |
+| `^P` | Starts with `P` | The six records, not the header |
+| `,Cardiology$` | Ends with `,Cardiology` | The same three records as `Cardiology` |
+| `,14.,` | Holds `,14`, any one character, then `,` | `P003,67,142,Nephrology`, `P005,72,145,Nephrology` |
+
+### Reference Card: Wildcards and `grep`
+
+- `*`: In a file name, any run of characters, including none; `*.csv` is every CSV file.
+- `?`: In a file name, exactly one character.
+- `grep 'PATTERN' FILE`: Print each line that contains `PATTERN`; single quotes pass `*`, `$`, and spaces to `grep` unchanged.
+- `grep -c`: Count matching lines instead of printing them.
+- `grep -v`: Print the lines that do _not_ match.
+- `grep -i`: Ignore upper and lower case.
+- `^` / `$`: In a pattern, the start / end of the line.
+- `.`: In a pattern, any one character.
+- `command | grep 'PATTERN'`: Keep only the matching lines of another command's output.
+
+### Code Snippet: Search the Encounter File
+
+```bash
+grep -c ',Cardiology$' data/raw/encounters.csv
+grep -v '^P' data/raw/encounters.csv
+tail -n +2 data/raw/encounters.csv | grep -i 'primary care'
+```
+
+```text
+3
+patient_id,age,systolic_bp,clinic
+P002,39,118,Primary Care
+```
+
 ## Variables and Timestamps
 
 The shell stores text in a **variable** and captures a command's output with **command substitution**, `$(...)`; together they put the time a run started into its output file's name, so each run keeps its own result instead of `>` replacing the last one.
@@ -260,9 +334,18 @@ The shell stores text in a **variable** and captures a command's output with **c
 ### Code Snippet: Name and Log a Run
 
 ```bash
-timestamp=$(date +"%Y%m%d_%H%M%S")                    # 20260918_162001; yours will differ
+timestamp=$(date +"%Y%m%d_%H%M%S")
+echo "$timestamp"
 echo "Run: $timestamp" > "results/summary_${timestamp}.txt"
-echo "${timestamp} complete" >> logs/processing.log    # adds the line: 20260918_162001 complete
+echo "${timestamp} complete" >> logs/processing.log
+tail -n 1 logs/processing.log
+```
+
+Your timestamp will differ:
+
+```text
+20260918_162001
+20260918_162001 complete
 ```
 
 ## Shell Scripts
@@ -271,7 +354,7 @@ echo "${timestamp} complete" >> logs/processing.log    # adds the line: 20260918
 
 - `cat > count_clinics.sh`: Paste the script, press **Enter**, then **Ctrl+C** (Lecture 01).
 - `#!/bin/bash`: The first line; names the shell the script expects.
-- `# note`: A comment; Bash skips it.
+- `# note`: A comment; Bash skips it in a script. At a zsh prompt, the Mac default, `#` is not a comment, so type commands without notes.
 - `\` at the end of a line: Continue the same command on the next line.
 - `bash count_clinics.sh`: Run the script from top to bottom.
 

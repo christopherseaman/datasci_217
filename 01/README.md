@@ -371,6 +371,19 @@ Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
 - **Build the reflex: Ctrl+C to cancel** a running command or unfinished input. On Mac, Control, not Command.
 - **Windows habit to unlearn:** Ctrl+C interrupts here, not copies; terminal copy is often Ctrl+Shift+C.
 
+## Shell Shortcuts
+
+These save retyping at the prompt; on Mac, **Ctrl** means Control, not Command.
+
+### Reference Card: Shell Shortcuts
+
+- **Tab**: Complete a file, folder, or command name you have started typing: `ls data/vi` then **Tab** gives `ls data/visits.csv`. If several names match, it stops where they differ; press **Tab** once or twice more to see the choices, or type another letter and press **Tab** again.
+- **↑ / ↓**: Step back and forward through the commands you have run; press **Enter** to run the one shown, or edit it first.
+- **Ctrl+R**: Search your command history. Type part of an old command to bring back the latest match; **Ctrl+R** again finds an older one, **Enter** runs it, and **Ctrl+C** cancels.
+- `history`: List your recent commands, numbered, oldest first.
+- `clear` or **Ctrl+L**: Clear the screen; your files and command history stay as they are.
+- `*`: A **wildcard** that matches any run of characters in a file name, so `ls data/*.csv` lists every `.csv` file in `data`. If nothing matches, you get an error: `zsh: no matches found` on Mac, `No such file or directory` in Bash.
+
 # LIVE DEMO!
 
 # Python Basics

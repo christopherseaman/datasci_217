@@ -8,12 +8,20 @@ runs from the resulting ~/03-demo with the Python of the environment Demo 1 buil
 uv cache and installed Pythons, and `uv add` needs the package index, as it does for students. Outside
 the environment, `python` is the uv-managed Python 3.13 that Lecture 01 installs, with no NumPy.
 
+A student pastes the guide into Bash or into Zsh, the macOS default, where `#` starts no comment at an
+interactive prompt. So no command line in the guide, the lecture, or the bonus page carries a `#`, and
+the whole guide is then pasted, block by block, into an interactive Bash and, when it is installed,
+an interactive Zsh, each in a fresh home; every expectation the guide states has to hold in both.
+
     python3 scripts/test_lecture03_demos.py
 """
 
 from pathlib import Path
 import os
+import pty
 import re
+import select
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -23,6 +31,9 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 DEMOS = ROOT / "03" / "demo"
 GUIDE_TEXT = (DEMOS / "DEMO_GUIDE.md").read_text(encoding="utf-8")
+# Every page a student copies shell commands from.
+PAGES = {name: (ROOT / "03" / name).read_text(encoding="utf-8") for name in ("README.md", "BONUS.md")}
+PAGES["demo/DEMO_GUIDE.md"] = GUIDE_TEXT
 SETUP_COMMAND = (
     "curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo/setup_demo.sh | sh"
 )
@@ -39,24 +50,31 @@ PYTHON_SCRIPTS = (
 SPANS = {
     "setup_demo.sh": ("## 1.1 Download the Demo Files", "```bash\ncd ~/03-demo"),
     "demo1_cli_pipeline.sh": ("## 1.6 Run a Pipeline Script", "Open the saved summary and log:"),
-    "count_clinics.sh": ("## 1.7 Save a Pipeline as a Script", "# Demo 2:"),
+    "count_clinics.sh": ("## 1.7 Save a Pipeline as a Script", "## 1.8 Search"),
+    "search": ("## 1.8 Search", "# Demo 2:"),
     "demo2_types_and_lists.py": ("## 2.1 Check Types", "## 2.2 Compare a List Loop"),
     "demo2_numpy_performance.py": ("## 2.2 Compare a List Loop", "## 2.3 Data Types"),
     "demo2_numpy_arrays.py": ("## 2.3 Data Types", "# Demo 3:"),
     "demo3_bp_analysis.py": ("# Demo 3:", "## 3.4 Summarize the Bundled CSV by Clinic"),
     "demo3_csv_summary.py": ("## 3.4 Summarize the Bundled CSV by Clinic", "### Check the counts against the shell"),
 }
-# What Demo 1's environment commands print, as the guide's comments state it; `x` stands for any digit.
-ENVIRONMENT_OUTPUT = (
-    "Pinned `.python-version` to `3.13`",
-    "Initialized project `03-demo`",
-    "Creating virtual environment with seed packages at: .venv",
-    "Using CPython 3.13.x",
-    "+ numpy==2.3.3",
-    "Python 3.13.x",
-)
+# The span of the guide whose text blocks name, in order, the lines to look for among what uv prints.
+ENVIRONMENT_SPAN = ("## 1.2 Create the Environment", "## 1.5 Read a Shell Script")
 # The command Demo 1.3 runs with the environment off, to show the lecture's ModuleNotFoundError.
 EXPECTED_ERROR_COMMAND = 'python -c "import numpy as np"\n'
+# An interactive shell with no startup files, as a student's terminal pastes into it.
+SHELLS = {
+    "bash": ["bash", "--norc", "--noprofile", "--noediting", "-i", "-s"],
+    "zsh": ["zsh", "-f", "+o", "promptsp", "-i", "-s"],
+}
+MARK = "--- next command ---"
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+# The `(name) ` an active environment puts before the prompt, which a shell prints before each command.
+ENVIRONMENT_PROMPT = re.compile(r"(?:\([\w.-]+\) )+")
+# The same prompt printed once the command's output has ended.
+PROMPT_AFTER = re.compile(r"(?<=\n)(?:\([\w.-]+\) )+\Z")
+# What a shell or uv prints when it cannot run a pasted line, such as `uv python pin 3.13 # note` in Zsh.
+SHELL_ERROR = re.compile(r"^(?:(?:bash|zsh)(?::\d+)?: |error: )|command not found|no matches found", re.M)
 
 
 TIMESTAMP = re.compile(r"\d{8}_\d{6}")
@@ -137,6 +155,144 @@ def accounts_for(output, blocks):
     return not any(line.strip() for line in lines[position:])
 
 
+def pasted_lines(block):
+    """The lines of a bash block a student types or pastes at the prompt.
+
+    A block that opens with `#!` is a file, shown to read or to paste into `cat > FILE`, and a
+    here-document's body is file contents too: their `#` lines are comments in a script.
+    """
+    if block.startswith("#!"):
+        return []
+    lines, closing = [], None
+    for line in block.splitlines():
+        if closing is not None:
+            closing = None if line.strip() == closing else closing
+            continue
+        lines.append(line)
+        heredoc = re.search(r"<<-?\s*['\"]?(\w+)", line)
+        if heredoc:
+            closing = heredoc.group(1)
+    return lines
+
+
+def check_no_prompt_comments():
+    """No command line a student copies carries a `#`: Zsh passes it on as an argument, not a comment."""
+    for name, text in PAGES.items():
+        for block in fenced(text, "bash"):
+            for line in pasted_lines(block):
+                assert not re.search(r"(^|\s)#", line), (
+                    f"03/{name}: Zsh passes # to the command, not a comment: {line!r}")
+
+
+def in_order(output, block):
+    """True when each line of the block is a line of the output, in the same order, with any lines between.
+
+    `3.13.x` stands for any 3.13 release, and leading and trailing spaces do not count.
+    """
+    lines = [line.strip() for line in output.splitlines()]
+    position = 0
+    for wanted in block.splitlines():
+        pattern = re.compile(re.escape(wanted.strip()).replace(r"3\.13\.x", r"3\.13\.\d+"))
+        found = next((index for index in range(position, len(lines)) if pattern.fullmatch(lines[index])), None)
+        if found is None:
+            return False
+        position = found + 1
+    return True
+
+
+def guide_commands(setup_command):
+    """Every command the guide has a student paste at the prompt, in guide order.
+
+    Each line of a bash block is one command. A block that opens with `#!` is a file: the one the
+    prose before it says to paste into `cat > FILE` is written with a here-document, as that paste
+    does, and any other is a listing to read. The setup command downloads this repository's files.
+    """
+    commands, position = [], 0
+    for match in re.finditer(r"^```bash\n(.*?)^```$", GUIDE_TEXT, re.M | re.S):
+        block, before, position = match.group(1), GUIDE_TEXT[position:match.start()], match.end()
+        if block.startswith("#!"):
+            target = re.findall(r"`cat > (\S+)`", before)
+            if target:
+                commands.append(f"cat > {target[-1]} <<'PASTED'\n{block}PASTED")
+            continue
+        commands += [setup_command if line == SETUP_COMMAND else line for line in block.splitlines() if line.strip()]
+    return commands
+
+
+def terminal(argv, cwd, env, script):
+    """Run an interactive shell on a pty with the script piped in; return everything it printed."""
+    master, slave = pty.openpty()
+    process = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=slave, stderr=slave)
+    os.close(slave)
+    process.stdin.write(script.encode())      # small enough for the pipe buffer
+    process.stdin.close()
+    chunks = []
+    while select.select([master], [], [], 300)[0]:
+        try:
+            data = os.read(master, 4096)
+        except OSError:                       # the shell closed the pty and exited
+            break
+        if not data:
+            break
+        chunks.append(data)
+    os.close(master)
+    process.wait()
+    return b"".join(chunks).decode().replace("\r\n", "\n")
+
+
+def paste_guide(shell, home, env, setup_command):
+    """Paste the whole guide into one interactive shell, as a student in one terminal would.
+
+    Returns (command, environment prompt shown before it, output) for each command.
+    """
+    commands = guide_commands(setup_command)
+    script = "".join(f"echo '{MARK}'\n{command}\n" for command in [*commands, ""])
+    env = {**env, "TERM": "dumb", "PS1": "", "PS2": ""}
+    transcript = ANSI.sub("", terminal(SHELLS[shell], home, env, script))
+    outputs = transcript.split(MARK + "\n")[1:]
+    assert len(outputs) == len(commands) + 1, transcript    # the last is the shell leaving
+    steps = []
+    for command, output in zip(commands, outputs):
+        prompt = ENVIRONMENT_PROMPT.match(output)
+        prompt = prompt.group() if prompt else ""
+        shown = PROMPT_AFTER.sub("", output[len(prompt):])
+        steps.append((command, prompt, shown))
+    return steps
+
+
+def output_of(steps, start):
+    """The output of the one pasted command that starts with start."""
+    found = [output for command, _, output in steps if command.startswith(start)]
+    assert len(found) == 1, f"{start!r} ran {len(found)} times"
+    return found[0]
+
+
+def check_pasted(shell, steps, look_for, shown_error):
+    """What a student sees after pasting the guide into this shell is what the guide says they see."""
+    for command, prompt, output in steps:
+        if command == EXPECTED_ERROR_COMMAND.strip():
+            assert output == shown_error and not prompt, (shell, prompt, output)
+        else:
+            assert not SHELL_ERROR.search(output), (shell, command, output)
+        # Demos 2 and 3 run in the (03-demo) environment, which the guide says the prompt shows.
+        if command.startswith("python demo"):
+            assert prompt == "(03-demo) ", (shell, command, prompt)
+    transcript = "".join(output for _, _, output in steps)
+    assert in_order(transcript, "".join(look_for)), (shell, transcript)
+    search = pasted_lines(fenced(span(*SPANS["search"]), "bash")[0])
+    printed = {
+        "setup_demo.sh": output_of(steps, "curl "),
+        "demo1_cli_pipeline.sh": output_of(steps, "bash demo1_cli_pipeline.sh"),
+        "count_clinics.sh": output_of(steps, "bash count_clinics.sh") + output_of(steps, "cat results/clinic_counts_"),
+        "search": "".join(output for command, _, output in steps if command in search),
+        **{name: output_of(steps, f"python {name}") for name in PYTHON_SCRIPTS},
+    }
+    for name, (first_heading, last_heading) in SPANS.items():
+        assert accounts_for(normalize(printed[name]), guide_blocks(first_heading, last_heading)), (shell, name)
+    for block in guide_blocks():
+        assert block in look_for or quotes(normalize(transcript), block), (shell, block)
+
+
 def uv_location(*command):
     """A directory uv reports for the real user, such as its cache, read before HOME moves."""
     return subprocess.run(["uv", *command], check=True, capture_output=True, text=True).stdout.strip()
@@ -181,6 +337,7 @@ def run():
     shipped = {path.name for path in DEMOS.iterdir() if path.is_file() and path.name != "DEMO_GUIDE.md"}
     assert {source for source, _ in downloads} == shipped, (sorted(downloads), sorted(shipped))
     assert setup in fenced(span("## 1.5 Read a Shell Script", "## 1.6"), "bash"), "1.5 must show setup_demo.sh"
+    check_no_prompt_comments()
 
     (ROOT / "scratch").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=ROOT / "scratch", prefix="lecture03-") as temporary:
@@ -193,11 +350,14 @@ def run():
         local_setup.write_text(setup.replace(base_url_line, f'base_url="{DEMOS.as_uri()}"'), encoding="utf-8")
         setup_command = f"curl -fsSL {local_setup.as_uri()} | sh"
 
-        def shell(command, cwd=demo, check=True):
-            """Run a Bash command as the student's terminal would, with pipefail so a pipe cannot hide a failure."""
+        def shell(command, cwd=demo, check=True, merged=False):
+            """Run a Bash command as the student's terminal would, with pipefail so a pipe cannot hide a failure.
+
+            `merged` sends error output into the standard output, in the order a terminal shows both.
+            """
             return subprocess.run(
                 ["bash", "-c", f"set -o pipefail\n{command}"], cwd=cwd, env=env, check=check,
-                capture_output=True, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT if merged else subprocess.PIPE, text=True,
             )
 
         # Demo 1.1: one command makes ~/03-demo and fills it with byte-identical copies of the demo files.
@@ -214,24 +374,25 @@ def run():
 
         # Demo 1.2 to 1.4: the guide's environment commands, run as written in one terminal session,
         # except the one 1.3 runs to show an expected error, which runs on its own at the same point.
-        blocks = fenced(span("## 1.2 Create the Environment", "## 1.5 Read a Shell Script"), "bash")
+        blocks = fenced(span(*ENVIRONMENT_SPAN), "bash")
         failing = blocks.index(EXPECTED_ERROR_COMMAND)
         assert EXPECTED_ERROR_COMMAND in fenced(span("## 1.3 Recreate It", "## 1.4"), "bash")
-        before_error = shell("set -e\n" + "\n".join(blocks[:failing]))
+        before_error = shell("set -e\n" + "\n".join(blocks[:failing]), merged=True)
         # A new shell is the state `deactivate` leaves: the student's PATH, with no environment active.
         error = shell(EXPECTED_ERROR_COMMAND, check=False)
         assert error.returncode != 0 and not error.stdout, error
-        [shown_error] = fenced(span(EXPECTED_ERROR_COMMAND, "## 1.4"), "text")
+        shown_error = fenced(span(EXPECTED_ERROR_COMMAND, "## 1.4"), "text")[0]
         assert error.stderr == shown_error, (error.stderr, shown_error)
-        after_error = shell("set -e\n" + "\n".join(blocks[failing + 1:]))
+        after_error = shell("set -e\n" + "\n".join(blocks[failing + 1:]), merged=True)
         # With the environment off, sys.executable is the Python outside it, with no .venv in its path.
         assert before_error.stdout.endswith(f"\n{home / '.local' / 'bin' / 'python'}\n"), before_error.stdout
-        stdout = before_error.stdout + after_error.stdout
-        printed = stdout + before_error.stderr + after_error.stderr
-        for expected in ENVIRONMENT_OUTPUT:
-            assert expected in GUIDE_TEXT, expected
-            pattern = re.escape(expected).replace("x", r"\d+")
-            assert re.search(pattern, printed), (expected, printed)
+        stdout = printed = before_error.stdout + after_error.stdout
+        # The guide's other text blocks here are the error and requirements.txt; the rest name, in
+        # order, the lines to look for among everything uv and Python print.
+        requirements = (demo / "requirements.txt").read_text(encoding="utf-8")
+        look_for = [block for block in fenced(span(*ENVIRONMENT_SPAN), "text")
+                    if block not in (shown_error, requirements)]
+        assert len(look_for) == 3 and in_order(printed, "".join(look_for)), (look_for, printed)
         assert printed.count("+ numpy==2.3.3") == 3, printed  # uv add, uv sync, uv pip install -r
         assert stdout.count("\n2.3.3\n") == 3, stdout
         venv_python = demo / ".venv" / "bin" / "python"
@@ -241,7 +402,6 @@ def run():
             (demo / "pyproject.toml").read_text(encoding="utf-8")]
         assert quotes(stdout, (demo / "pyproject.toml").read_text(encoding="utf-8"))
         assert (demo / "uv.lock").is_file() and (demo / "recreation-check" / "uv.lock").is_file()
-        requirements = (demo / "requirements.txt").read_text(encoding="utf-8")
         assert fenced(span("## 1.4 Share It", "## 1.5"), "text")[0] == requirements, requirements
         # --seed put pip in the demo environment, and neither uv add nor uv sync removed it.
         for folder in (demo, demo / "recreation-check", demo / "pip-check"):
@@ -298,6 +458,12 @@ def run():
         counted = shell("bash count_clinics.sh\ncat results/clinic_counts_*.txt").stdout
         assert len(list((demo / "results").glob("clinic_counts_*.txt"))) == 1
 
+        # Demo 1.8: a wildcard and grep, whose counts match the two pipelines' Cardiology counts.
+        [search_block] = fenced(span(*SPANS["search"]), "bash")
+        searched = shell(search_block).stdout
+        cardiology = [line.split()[0] for line in (first + counted).splitlines() if line.endswith(" Cardiology")]
+        assert searched.splitlines()[1:3] == cardiology == ["3", "260"], (searched, cardiology)
+
         runs = {name: python(name) for name in PYTHON_SCRIPTS}
         # Apart from its timings, every Demo 2 and Demo 3 script repeats itself exactly.
         for name, text in runs.items():
@@ -326,7 +492,7 @@ def run():
 
         # The guide accounts for every line these scripts print, block by block and in order.
         printed = {**runs, "setup_demo.sh": installed, "demo1_cli_pipeline.sh": first,
-                   "count_clinics.sh": counted}
+                   "count_clinics.sh": counted, "search": searched}
         for name, (first_heading, last_heading) in SPANS.items():
             blocks = guide_blocks(first_heading, last_heading)
             assert blocks, name
@@ -337,15 +503,29 @@ def run():
         counts = shell("cut -d',' -f4 encounters.csv | tail -n +2 | sort | uniq -c").stdout
         assert counts == counted.split("\n", 1)[1], (counts, counted)
 
-        # No block anywhere in the guide goes unverified, including Demo 1's and the shell's.
+        # No block anywhere in the guide goes unverified, including Demo 1's and the shell's; the
+        # environment's lines to look for were matched in order above.
         outputs = [normalize(text) for text in
-                   (installed, requirements, error.stderr, first, summary, log, counted, *runs.values(),
-                    previews, counts)]
+                   (installed, requirements, error.stderr, first, summary, log, counted, searched,
+                    *runs.values(), previews, counts)]
         for block in guide_blocks():
-            assert any(quotes(output, block) for output in outputs), block
+            assert block in look_for or any(quotes(output, block) for output in outputs), block
 
-    print("Lecture 03: setup, environment commands, demo outputs, repeat runs, and every guide "
-          "expectation matched real runs.")
+        # The whole guide pasted into an interactive shell, in a fresh home for each shell.
+        pasted_into = []
+        for name in SHELLS:
+            if not shutil.which(name):
+                print(f"{name} is not installed: the guide was not pasted into {name}.")
+                continue
+            student = Path(temporary) / f"paste-{name}"
+            student.mkdir()
+            steps = paste_guide(name, student, student_environment(student), setup_command)
+            check_pasted(name, steps, look_for, shown_error)
+            pasted_into.append(name)
+
+    print("Lecture 03: no pasted command carries a # comment; setup, environment commands, demo outputs, "
+          "repeat runs, and every guide expectation matched real runs, and the whole guide pasted into "
+          f"{' and '.join(pasted_into)} matched too.")
 
 
 if __name__ == "__main__":

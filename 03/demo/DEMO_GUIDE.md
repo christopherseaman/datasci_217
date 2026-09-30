@@ -38,15 +38,27 @@ ls
 Pin Python, start the project, create and activate the environment, then add NumPy, as in the lecture's "Create and Verify an Environment" snippet:
 
 ```bash
-uv python pin 3.13                                      # Pinned `.python-version` to `3.13`
-uv init --bare                                          # Initialized project `03-demo`
-uv venv --seed                                          # Creating virtual environment with seed packages at: .venv
-source .venv/bin/activate                               # the prompt now starts with (03-demo)
-uv add numpy==2.3.3                                     # + numpy==2.3.3
-python --version                                        # Python 3.13.x
-python -c "import numpy as np; print(np.__version__)"   # 2.3.3
-python -c "import sys; print(sys.executable)"           # a path ending in 03-demo/.venv/bin/python
+uv python pin 3.13
+uv init --bare
+uv venv --seed
+source .venv/bin/activate
+uv add numpy==2.3.3
+python --version
+python -c "import numpy as np; print(np.__version__)"
+python -c "import sys; print(sys.executable)"
 cat pyproject.toml
+```
+
+From `source .venv/bin/activate` on, the prompt starts with `(03-demo)`. uv also prints lines that differ from run to run, such as how long each step took; these are the lines that show each step worked, in order, where `3.13.x` is whichever 3.13 release you have, such as `3.13.14`:
+
+```text
+Pinned `.python-version` to `3.13`
+Initialized project `03-demo`
+Using CPython 3.13.x
+Creating virtual environment with seed packages at: .venv
+ + numpy==2.3.3
+Python 3.13.x
+2.3.3
 ```
 
 `uv add` recorded NumPy in the project file that `uv init --bare` started:
@@ -68,11 +80,11 @@ The `sys.executable` line shows which interpreter `python` runs; it should sit i
 First leave the environment, and check which Python `python` runs now:
 
 ```bash
-deactivate                                      # the prompt no longer starts with (03-demo)
-python -c "import sys; print(sys.executable)"   # a path without .venv, such as /Users/alice/.local/bin/python
+deactivate
+python -c "import sys; print(sys.executable)"
 ```
 
-That is the Python Lecture 01 installed, and it has no NumPy, so importing NumPy fails. This error is expected:
+The prompt no longer starts with `(03-demo)`, and the path has no `.venv` in it, such as `/Users/alice/.local/bin/python`. That is the Python Lecture 01 installed, and it has no NumPy, so importing NumPy fails. This error is expected:
 
 ```bash
 python -c "import numpy as np"
@@ -93,10 +105,18 @@ This is the lecture's "When `import numpy` Fails" pitfall, and the `sys.executab
 mkdir recreation-check
 cp .python-version pyproject.toml uv.lock recreation-check/
 cd recreation-check
-uv venv --seed                                                 # Using CPython 3.13.x
-uv sync                                                        # + numpy==2.3.3
-uv run python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+uv venv --seed
+uv sync
+uv run python -c "import numpy as np; print(np.__version__)"
 cd ..
+```
+
+Among the lines these commands print, these show the rebuild worked:
+
+```text
+Using CPython 3.13.x
+ + numpy==2.3.3
+2.3.3
 ```
 
 The environment stays off because `uv sync` ignores an active environment from another folder and warns about it. `uv sync` installed exactly the NumPy that `uv.lock` records, and `uv run` ran Python in the new `.venv` without activating it.
@@ -125,11 +145,18 @@ cp .python-version requirements.txt pip-check/
 cd pip-check
 uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt                      # + numpy==2.3.3
-python -c "import numpy as np; print(np.__version__)"   # 2.3.3
+uv pip install -r requirements.txt
+python -c "import numpy as np; print(np.__version__)"
 deactivate
 cd ..
-source .venv/bin/activate                               # (03-demo) again
+source .venv/bin/activate
+```
+
+Among the lines these commands print, these show the install worked:
+
+```text
+ + numpy==2.3.3
+2.3.3
 ```
 
 Both routes installed NumPy 2.3.3. The last line matters: Demos 2 and 3 run in the `03-demo` environment, so check that the prompt starts with `(03-demo)` again.
@@ -175,7 +202,7 @@ echo "Next: cd ~/03-demo"
 Read it top to bottom, the order the shell ran it:
 
 - `#!/bin/sh` names the shell the script expects: `sh`, a smaller relative of Bash that runs the same basic commands.
-- Lines starting with `#` are comments; the shell skips them.
+- Lines starting with `#` are comments; the shell skips them when it runs a script.
 - `set -eu` is plumbing you do not need to write yourself: it stops the script at the first failing command, so a failed download cannot leave you with a half-made folder and no warning.
 - `base_url=...` stores the download address in a variable once, and every `curl` line uses it as `"$base_url/..."`, as the lecture's "Shell Variables and Timestamps" card does with `timestamp`.
 - `mkdir ~/03-demo` and `cd ~/03-demo` make the folder and move into it. Without `-p`, `mkdir` fails when the folder exists, and `set -e` then stops the script before any download.
@@ -214,7 +241,7 @@ cat results/summary_*.txt
 cat logs/processing.log
 ```
 
-The summary repeats the counts under the timestamp that named the file:
+The `*` in `summary_*.txt` is a wildcard from the lecture's "Wildcards and Searching", like the `*.csv` patterns in Lecture 02's `.gitignore`: the shell replaces the pattern with the name of every summary file before `cat` runs, so you never type the timestamp. The summary repeats the counts under the timestamp that named the file:
 
 ```text
 run timestamp: 20260922_184147
@@ -271,13 +298,38 @@ Saved results/clinic_counts_20260922_184530.txt
 
 Eight clinics, 1,500 encounters in all. Apart from its comment, only the input file differs from the lecture's script, which is the point of saving a pipeline: the same commands rerun on new data with one line. Demo 3.4 gets the same counts from Python.
 
+## 1.8 Search with Wildcards and `grep`
+
+Practice the lecture's "Wildcards and Searching" in the same folder: see what a wildcard expands to, count each file's Cardiology encounters a second way, and check the files' contents with patterns.
+
+```bash
+echo demo2_*.py
+grep -c ',Cardiology$' data/raw/encounters.csv
+grep -c ',Cardiology$' encounters.csv
+grep -v '^P' encounters.csv
+grep ',17.,' encounters.csv
+```
+
+```text
+demo2_numpy_arrays.py demo2_numpy_performance.py demo2_types_and_lists.py
+3
+260
+patient_id,age,systolic_bp,clinic
+P0280,48,174,Neurology
+```
+
+- `echo` prints the arguments it receives, so the first line shows the three names the shell put in place of `demo2_*.py`.
+- The two counts match 1.6's `3 Cardiology` and 1.7's `260 Cardiology`. `$` ties `,Cardiology` to the end of the line, the clinic column, and the single quotes pass the `$` to `grep` unchanged.
+- `-v '^P'` prints the lines that do _not_ start with `P`. Only the header is left, so every record starts with a patient ID.
+- In `,17.,` the `.` matches any one character, so the pattern finds a field from 170 to 179: one reading, 174 mmHg, the highest in the file, as Demo 3.4 reports.
+
 # Demo 2: Types, Lists, and NumPy Basics
 
-Run these three from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with:
+Run these three from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with these two lines, after which the prompt starts with `(03-demo)`:
 
 ```bash
 cd ~/03-demo
-source .venv/bin/activate   # the prompt now starts with (03-demo)
+source .venv/bin/activate
 ```
 
 ## 2.1 Check Types and Loop over Lists
@@ -450,11 +502,11 @@ week[:, :, 0].shape (every patient's first reading each day): (2, 7)
 
 # Demo 3: Selecting, Reshaping, and Analyzing Arrays
 
-Run these from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with:
+Run these from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with these two lines, after which the prompt starts with `(03-demo)`:
 
 ```bash
 cd ~/03-demo
-source .venv/bin/activate   # the prompt now starts with (03-demo)
+source .venv/bin/activate
 ```
 
 ```bash

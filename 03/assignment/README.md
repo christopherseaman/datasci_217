@@ -150,6 +150,7 @@ How the values are read:
 - "140 mmHg or higher" includes a mean of exactly 140.
 - A patient id, column name, or monitor id may sit in quotes or brackets, as a one-item list prints it (`['M02']`), and may carry a note before or after it, as in `monitor M02` or `M02 (128.4 mmHg)`, as long as the line names no other id of the same kind.
 - Keys may appear in any order, spacing is free, a Markdown table row such as `| patients | 300 |` reads like `patients: 300`, and extra lines are ignored. When a key appears on more than one line, the first is read, so open the file with `"w"`, which replaces it on each run, rather than `"a"`.
+- A write without `"\n"` runs the next answer onto the same line, as in `patients: 300readings: 3600`. Each answer on such a line is read up to the next answer's key and still scored on its own, but end each write with `"\n"` so every answer gets its own line; a wrong answer on a joined line says so in its feedback.
 
 > **Checkpoint: `output/vitals_summary.txt`**
 > One `key: value` line for each of the 14 keys above, holding the answers your analysis computed from `data/bp_readings.csv`.

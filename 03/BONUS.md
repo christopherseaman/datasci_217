@@ -374,10 +374,12 @@ echo "Encounters per clinic in $input:"
 count_column "$input" 4
 ```
 
+The first run reads the default file, the second names the same file, and the third names a file that does not exist:
+
 ```bash
 chmod +x count_by.sh
-./count_by.sh                           # the default file
-./count_by.sh data/raw/encounters.csv   # the same file, named
+./count_by.sh
+./count_by.sh data/raw/encounters.csv
 ./count_by.sh missing.csv; echo "exit status: $?"
 ```
 
@@ -399,38 +401,49 @@ Without `set -euo pipefail`, the script prints the same error but exits with sta
 
 # Optional shell reference
 
-The lecture's pipelines select and count. `tr`, `sed`, and `awk` also rewrite text as it passes through, and longer pipelines chain them.
+The lecture's pipelines select and count. `tr`, `sed`, and `awk` also rewrite text as it passes through, and longer pipelines chain them. These snippets run in Demo 1's `~/03-demo` folder.
 
 ## Optional: Advanced Processing
 
 ### Code Snippet: Transform Text with tr, sed, and awk
 
 ```bash
-# tr: Translate characters
-tr 'a-z' 'A-Z' < file.txt       # Uppercase
-tr -d ' ' < file.txt            # Delete spaces
-
-# sed: Stream editor
-sed 's/old/new/g' file.txt      # Replace all
-sed '/pattern/d' file.txt       # Delete lines
-
-# awk: Pattern processing
-awk '{print $1, $3}' file.txt   # Print columns 1, 3
-awk -F',' '$3 > 50' data.csv    # Filter rows
+head -n 3 data/raw/encounters.csv | tr 'a-z' 'A-Z'
+grep 'Primary Care' data/raw/encounters.csv | sed 's/Primary Care/PCP/'
+tail -n +2 data/raw/encounters.csv | awk -F',' '$3 >= 140 {print $1, $3}'
 ```
+
+```text
+PATIENT_ID,AGE,SYSTOLIC_BP,CLINIC
+P001,54,128,CARDIOLOGY
+P002,39,118,PRIMARY CARE
+P002,39,118,PCP
+P003 142
+P005 145
+```
+
+- `tr 'a-z' 'A-Z'`: Translate characters, here lowercase to uppercase; `tr -d ' '` deletes spaces instead.
+- `sed 's/old/new/'`: Replace the first `old` on each line with `new`; `s/old/new/g` replaces every one, and `sed '/pattern/d'` deletes the lines that match.
+- `awk -F',' '$3 >= 140 {print $1, $3}'`: Split each line at commas, keep the lines whose third field is 140 or more, and print fields 1 and 3.
 
 ## Optional: Longer Data Pipelines
 
 ### Code Snippet: Chain Several Stages
 
 ```bash
-# Complex pipeline
-cat data.csv | \
-  cut -d',' -f2,4 | \
-  tr '[:lower:]' '[:upper:]' | \
-  sort -t',' -k2,2n | \
-  head -n 10 > results.csv
+tail -n +2 data/raw/encounters.csv \
+  | cut -d',' -f3,4 \
+  | sort -t',' -k1,1nr \
+  | head -n 3
 ```
+
+```text
+145,Nephrology
+142,Nephrology
+131,Cardiology
+```
+
+`sort -t',' -k1,1nr` sorts by the first comma-separated field as a number (`n`), largest first (`r`), so the pipeline lists the three highest readings with their clinics.
 
 ## Optional reference: Quick Data Visualization
 
@@ -438,27 +451,27 @@ These tools plot a column without leaving the terminal: a quick look at a trend,
 
 ### Code Snippet: Plot in the Terminal
 
+`sparklines` draws one bar per value. `uv add sparklines` adds it to the project, and the active environment then runs it:
+
 ```bash
-# sparklines: Inline Unicode graphs
-# Add it to the project: uv add sparklines
-
-# Visualize systolic readings inline
+uv add sparklines
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines
-#     Extract column 3 -> Skip header (line 1) -> Graph
-#     tail -n +2 means "start at line 2" (skip the header)
-# Output: one bar per record, six for this file
-
-# Taller bars: two rows per sparkline
 cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | sparklines -n 2
+```
 
-# gnuplot: Create terminal plots (optional; many dependencies)
-# Install: brew install gnuplot (Mac) or apt install gnuplot (Linux)
+```text
+▄▁▇▄█▃
+  ▆ █
+▇▁███▅
+```
 
-# Simple plot of systolic readings
-cut -d',' -f3 data/raw/encounters.csv | tail -n +2 | \
-  gnuplot -e "set terminal dumb; plot '-' with linespoints"
+The first sparkline has one bar per record, six for this file; `-n 2` draws taller bars over two rows.
 
-# Bar chart: count encounters by clinic
-cut -d',' -f4 data/raw/encounters.csv | tail -n +2 | sort | uniq -c | \
-  gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
+`gnuplot` draws text plots too. It is optional and brings many dependencies: install it with `brew install gnuplot` on a Mac or `sudo apt install gnuplot` on Linux. The first command plots the systolic readings, and the second draws one bar per clinic's count:
+
+```bash
+cut -d',' -f3 data/raw/encounters.csv | tail -n +2 \
+  | gnuplot -e "set terminal dumb; plot '-' with linespoints"
+cut -d',' -f4 data/raw/encounters.csv | tail -n +2 | sort | uniq -c \
+  | gnuplot -e "set terminal dumb; plot '-' using 1 with boxes"
 ```

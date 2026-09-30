@@ -26,7 +26,8 @@ submissions in ignored `scratch/`, and confirms that:
   or misplaced counts file (saying when its counts are right), unsorted
   `uniq -c` input, the wrong `cut` field, `cut` without `-d','`, an empty
   `$timestamp`, an empty numpy probe, a probe whose lines `>` overwrote,
-  answers run onto one line by writes without `"\n"`, patient answers
+  a wrong or empty answer on a line that writes without `"\n"` ran
+  together (whose right answers each score in full), patient answers
   computed with `axis=0`, a label line naming two ids, a label written as
   its position rather than its id, a stage 2 count of readings rather than
   patients, and a key written twice, says which number it read from a line holding several, and says

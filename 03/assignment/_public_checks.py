@@ -600,7 +600,9 @@ def _layout_pairs(line: str, known: Callable[[str], str | None]) -> list[tuple[s
     return pairs
 
 
-def _read_pairs(text: str, known: Callable[[str], str | None]) -> tuple[dict[str, str], dict[str, int]]:
+def _read_pairs(
+    text: str, known: Callable[[str], str | None], labels: re.Pattern[str] | None = None
+) -> tuple[dict[str, str], dict[str, int]]:
     """The value graded for each known key, and how many lines name each key.
 
     The first line the released checks read for a key always supplies its
@@ -610,10 +612,16 @@ def _read_pairs(text: str, known: Callable[[str], str | None]) -> tuple[dict[str
     `key,value`, or `key value`. Only a key neither reading finds comes from a
     Markdown table row, a numbered row, or a dict printed on one line, so those
     layouts add answers without changing one that was already read.
+
+    With `labels`, a line holding several of them, as writes without "\\n"
+    leave `patients: 300readings: 3600`, is also read in parts that each start
+    at a label after the first. A part supplies only a key that no other
+    reading finds, so it too adds answers without changing one.
     """
     released: dict[str, str] = {}
     lenient: dict[str, str] = {}
     layout: dict[str, str] = {}
+    joined: dict[str, str] = {}
     lines_naming: dict[str, int] = {}
     for line in text.splitlines():
         line = line.strip()
@@ -633,9 +641,30 @@ def _read_pairs(text: str, known: Callable[[str], str | None]) -> tuple[dict[str
             for key, value in _layout_pairs(line, known):
                 layout.setdefault(key, value)
                 keys.add(key)
+        starts = [match.start() for match in labels.finditer(line)][1:] if labels is not None else []
+        for start, end in zip(starts, [*starts[1:], len(line)]):
+            key, value = _lenient_pair(line[start:end].strip(), known)
+            if key is not None:
+                joined.setdefault(key, value)
+                keys.add(key)
         for key in keys:
             lines_naming[key] = lines_naming.get(key, 0) + 1
-    return {**layout, **lenient, **released}, lines_naming
+    return {**joined, **layout, **lenient, **released}, lines_naming
+
+
+def _own_value(value: str) -> str:
+    """A value up to the next answer's key, where a write without "\\n" ran that answer onto its line."""
+    label = _ANSWER_LABEL.search(value)
+    return value[: label.start()].strip() if label else value
+
+
+def _shares_line(text: str, key: str) -> bool:
+    """Whether a line of text holds `key`'s answer and another answer after or before it."""
+    for line in text.splitlines():
+        named = {label.rstrip(":").strip().casefold() for label in _ANSWER_LABEL.findall(line)}
+        if key in named and len(named) > 1:
+            return True
+    return False
 
 
 def _answer_key(key: str) -> str | None:
@@ -653,7 +682,7 @@ def _environment_key(key: str) -> str | None:
 
 def read_summary(root: Path) -> dict[str, str]:
     """Return the answer each `key: value` line in the summary artifact gives, however it is spaced."""
-    return _read_pairs(_text(root, SUMMARY_FILE), _answer_key)[0]
+    return _read_pairs(_text(root, SUMMARY_FILE), _answer_key, _ANSWER_LABEL)[0]
 
 
 def read_environment(root: Path) -> dict[str, str]:
@@ -1030,7 +1059,7 @@ def check_summary_format(root: Path) -> None:
     this check does not take points a second time for the same gap.
     """
     text = _text(root, SUMMARY_FILE)
-    problem = _format_problem(text, _read_pairs(text, _answer_key)[0])
+    problem = _format_problem(text, _read_pairs(text, _answer_key, _ANSWER_LABEL)[0])
     if problem is not None:
         raise AssertionError(problem)
 
@@ -1060,33 +1089,40 @@ def _closest_key(text: str, key: str) -> str:
 
 
 def _check_answer(root: Path, key: str) -> None:
-    """Compare one answer with the value recomputed from the supplied readings."""
+    """Compare one answer with the value recomputed from the supplied readings.
+
+    A value that runs on into the next answer's key, as a write without "\\n"
+    leaves `high_monitor: M02monitor_offset: 4.1`, is judged as the released
+    checks read it first and then up to that key, so every answer on a joined
+    line scores on its own.
+    """
     _assert(_artifact(root, SUMMARY_FILE) is not None, _missing(root, SUMMARY_FILE))
     text = _text(root, SUMMARY_FILE)
-    summary, lines_naming = _read_pairs(text, _answer_key)
+    summary, lines_naming = _read_pairs(text, _answer_key, _ANSWER_LABEL)
     if key not in summary:
-        # The joined line that hides this key, after its first answer.
-        hiding = [
-            line.strip() for line in text.splitlines()
-            if key in {label.rstrip(":").strip().casefold() for label in _ANSWER_LABEL.findall(line)[1:]}
-        ]
-        if hiding:
-            # The same words for every key one joined line hides, so the printed report shows them once.
-            raise AssertionError(
-                f"{SUMMARY_FILE} holds several answers on one line, `{_shown(hiding[0])}`, and the checks read only "
-                f"the first answer on a line. A write without \"\\n\" leaves the next answer on the same line; "
-                f"{JOINED_FIX} {SUMMARY_FIX}"
-            )
         # With no readable answer at all, every missing key has the format check's advice.
         raise AssertionError(
             _format_problem(text, summary)
             or f"{SUMMARY_FILE} has no `{key}` line{_closest_key(text, key)}. Add `{key}: <value>` with "
             f"{_asked(key)}. {SUMMARY_FIX}"
         )
+    own = {name: _own_value(value) for name, value in summary.items()}
+    try:
+        _judge_answer(text, key, summary, lines_naming)
+    except AssertionError:
+        if own == summary:
+            raise
+        _judge_answer(text, key, own, lines_naming)
+
+
+def _judge_answer(text: str, key: str, summary: dict[str, str], lines_naming: dict[str, int]) -> None:
+    """Raise AssertionError saying what to fix unless `summary` gives the right value for `key`."""
+    joined = f" Its line holds another answer too; {JOINED_FIX}" if _shares_line(text, key) else ""
     raw = summary[key]
     _assert(
         raw,
-        f"The `{key}` line in {SUMMARY_FILE} has no value after the colon; write {_asked(key)} there. {SUMMARY_FIX}",
+        f"The `{key}` line in {SUMMARY_FILE} has no value after the colon; write {_asked(key)} there.{joined} "
+        f"{SUMMARY_FIX}",
     )
     data = load_dataset()
     answers = expected_answers(data)
@@ -1096,9 +1132,7 @@ def _check_answer(root: Path, key: str) -> None:
         'write the file with "w" so each run replaces it.'
         if lines_naming.get(key, 0) > 1
         else ""
-    )
-    if _ANSWER_LABEL.search(raw):
-        repeated += f" This line holds another answer after this one; {JOINED_FIX}"
+    ) + joined
     axis_hint = AXIS_HINT if _per_column_slip(summary, data, key) else ""
 
     given = f"{SUMMARY_FILE} gives `{key}: {_shown(raw)}`"
