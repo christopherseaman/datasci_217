@@ -203,17 +203,18 @@ def in_order(output, block):
 def guide_commands(setup_command):
     """Every command the guide has a student paste at the prompt, in guide order.
 
-    Each line of a bash block is one command. A block that opens with `#!` is a file: the one the
-    prose before it says to paste into `cat > FILE` is written with a here-document, as that paste
-    does, and any other is a listing to read. The setup command downloads this repository's files.
+    Each line of a bash block is one command. A block that opens with `#!` is a file, which the
+    prose before it says to paste into `cat > FILE`, so it is written with a here-document, as that
+    paste does. A script shown only to read belongs in a ```text block, like every other output, so
+    that pasting it by mistake cannot run it. The setup command downloads this repository's files.
     """
     commands, position = [], 0
     for match in re.finditer(r"^```bash\n(.*?)^```$", GUIDE_TEXT, re.M | re.S):
         block, before, position = match.group(1), GUIDE_TEXT[position:match.start()], match.end()
         if block.startswith("#!"):
             target = re.findall(r"`cat > (\S+)`", before)
-            if target:
-                commands.append(f"cat > {target[-1]} <<'PASTED'\n{block}PASTED")
+            assert target, f"a script to read goes in a ```text block, not a ```bash one: {block.splitlines()[0]!r}"
+            commands.append(f"cat > {target[-1]} <<'PASTED'\n{block}PASTED")
             continue
         commands += [setup_command if line == SETUP_COMMAND else line for line in block.splitlines() if line.strip()]
     return commands
@@ -336,7 +337,7 @@ def run():
     assert all(source == target for source, target in downloads), downloads
     shipped = {path.name for path in DEMOS.iterdir() if path.is_file() and path.name != "DEMO_GUIDE.md"}
     assert {source for source, _ in downloads} == shipped, (sorted(downloads), sorted(shipped))
-    assert setup in fenced(span("## 1.5 Read a Shell Script", "## 1.6"), "bash"), "1.5 must show setup_demo.sh"
+    assert setup in fenced(span("## 1.5 Read a Shell Script", "## 1.6"), "text"), "1.5 must show setup_demo.sh"
     check_no_prompt_comments()
 
     (ROOT / "scratch").mkdir(exist_ok=True)
@@ -365,6 +366,9 @@ def run():
         assert sorted(path.name for path in demo.iterdir()) == sorted(shipped), sorted(demo.iterdir())
         for name in shipped:
             assert (demo / name).read_bytes() == (DEMOS / name).read_bytes(), name
+
+        # 1.5 shows what `cat setup_demo.sh` prints.
+        setup_listing = shell("cat setup_demo.sh").stdout
 
         # A second run stops at mkdir and leaves every file as it was.
         before = {path: path.read_bytes() for path in demo.iterdir()}
@@ -406,6 +410,16 @@ def run():
         # --seed put pip in the demo environment, and neither uv add nor uv sync removed it.
         for folder in (demo, demo / "recreation-check", demo / "pip-check"):
             assert (folder / ".venv" / "bin" / "pip").is_file(), folder
+
+        # A student who picks Demo 1 up again at 1.3 or 1.5 in a new terminal, in any folder, starts with the
+        # same two re-entry lines as Demos 2 and 3, so 1.3's `deactivate` always has an environment to leave.
+        reentry = "cd ~/03-demo\nsource .venv/bin/activate\n"
+        for first_heading, last_heading in (("## 1.3 Recreate It", "## 1.4"), ("## 1.5 Read", "## 1.6"),
+                                            ("# Demo 2:", "## 2.1"), ("# Demo 3:", "## 3.1")):
+            assert fenced(span(first_heading, last_heading), "bash")[0] == reentry, first_heading
+        resumed = shell("set -e\n" + "".join(fenced(span("## 1.3 Recreate It", "## 1.4"), "bash")[:2]),
+                        cwd=home, merged=True)
+        assert resumed.stdout == f"{home / '.local' / 'bin' / 'python'}\n", resumed.stdout
 
         def python(*arguments):
             """Run the demo environment's Python from ~/03-demo, as `python` does once it is active."""
@@ -506,7 +520,7 @@ def run():
         # No block anywhere in the guide goes unverified, including Demo 1's and the shell's; the
         # environment's lines to look for were matched in order above.
         outputs = [normalize(text) for text in
-                   (installed, requirements, error.stderr, first, summary, log, counted, searched,
+                   (installed, setup_listing, requirements, error.stderr, first, summary, log, counted, searched,
                     *runs.values(), previews, counts)]
         for block in guide_blocks():
             assert block in look_for or any(quotes(output, block) for output in outputs), block

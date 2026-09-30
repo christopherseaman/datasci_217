@@ -168,7 +168,7 @@ ModuleNotFoundError: No module named 'numpy'
 
 `ModuleNotFoundError` means the Python that ran the code cannot find the package. The usual causes:
 
-- **The environment is not active**, or VS Code picked another interpreter: `sys.executable` does not end in `.venv/bin/python`. Run `source .venv/bin/activate` in this terminal, and in VS Code run **Python: Select Interpreter** (Lecture 02) and choose `./.venv/bin/python`.
+- **The environment is not active**, or VS Code picked another interpreter: `sys.executable` has no `.venv` in its path. Run `source .venv/bin/activate` in this terminal, and in VS Code run **Python: Select Interpreter** (Lecture 02) and choose `./.venv/bin/python`.
 - **The project's packages are not installed**: run `uv sync`.
 - **The package is new to this project**: `uv add pandas==3.0.5` installs it and records it in `pyproject.toml`.
 

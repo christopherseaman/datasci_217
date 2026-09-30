@@ -30,7 +30,8 @@ submissions in ignored `scratch/`, and confirms that:
   together (whose right answers each score in full), patient answers
   computed with `axis=0`, a label line naming two ids, a label written as
   its position rather than its id, a stage 2 count of readings rather than
-  patients, and a key written twice, says which number it read from a line holding several, and says
+  patients, a record count written after the arithmetic that found it, and a key written twice, says
+  which number it read from a line holding several, and says
   what the data gives for a wrong answer; the printed report gives a fix
   shared by consecutive checks once, marking the
   rest `(same fix as above)`, and ends with a `Left to fix` line naming the

@@ -33,6 +33,8 @@ ls
 
 `ls` lists eight files: `setup_demo.sh`, the six demo scripts from `demo1_cli_pipeline.sh` to `demo3_csv_summary.py`, and `encounters.csv`. The script never overwrites earlier work: run it a second time and `mkdir` reports that `~/03-demo` already exists (`File exists`), and nothing else happens. To start over, rename the old folder first with `mv ~/03-demo ~/03-demo-old`, then run the `curl` line again. If a download fails partway, do the same. To browse the files in VS Code, use **File → Open Folder…** and choose `03-demo` in your home folder; new terminals then start there.
 
+To repeat only one block from 1.2 to 1.4, paste it again in `~/03-demo`. Lines that made something the first time now say it already exists: `uv init --bare` reports `Project is already initialized`, `mkdir` reports `File exists`, and `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the rest of the block still works.
+
 ## 1.2 Create the Environment with `pyproject.toml`
 
 Pin Python, start the project, create and activate the environment, then add NumPy, as in the lecture's "Create and Verify an Environment" snippet:
@@ -77,7 +79,14 @@ The `sys.executable` line shows which interpreter `python` runs; it should sit i
 
 ## 1.3 Recreate It from the Records
 
-First leave the environment, and check which Python `python` runs now:
+Sections 1.3 and 1.4 continue in `~/03-demo` with the environment from 1.2. In a new terminal, start with these two lines, after which the prompt starts with `(03-demo)`:
+
+```bash
+cd ~/03-demo
+source .venv/bin/activate
+```
+
+Leave the environment, and check which Python `python` runs now:
 
 ```bash
 deactivate
@@ -119,7 +128,7 @@ Using CPython 3.13.x
 2.3.3
 ```
 
-The environment stays off because `uv sync` ignores an active environment from another folder and warns about it. `uv sync` installed exactly the NumPy that `uv.lock` records, and `uv run` ran Python in the new `.venv` without activating it.
+`uv sync` installed exactly the NumPy that `uv.lock` records, and `uv run` ran Python in the new `.venv` without activating it. Turning the environment off first also kept `uv sync` quiet: with `(03-demo)` active, it prints a `warning:` that `VIRTUAL_ENV` does not match the project's `.venv`, ignores the active environment, and builds `recreation-check/.venv` just the same.
 
 ## 1.4 Share It as `requirements.txt`
 
@@ -163,13 +172,22 @@ Both routes installed NumPy 2.3.3. The last line matters: Demos 2 and 3 run in t
 
 ## 1.5 Read a Shell Script
 
+Sections 1.5 to 1.8 run from `~/03-demo` too. In a new terminal, start with the same two lines:
+
+```bash
+cd ~/03-demo
+source .venv/bin/activate
+```
+
 The command in 1.1 ran a shell script, and it saved a copy of itself. Open it:
 
 ```bash
 cat setup_demo.sh
 ```
 
-```bash
+It prints the script, which is for reading, not pasting:
+
+```text
 #!/bin/sh
 # Download the Lecture 03 demo files into a new folder, ~/03-demo.
 # Run it with:

@@ -829,16 +829,11 @@ def check_record_count(root: Path) -> None:
     last_readings = _as_numbers(last_line)
     if any(abs(value - len(data.patients)) < 1e-9 for value in readings + last_readings):
         return
-    if any(abs(value - (len(data.patients) + 1)) < 1e-9 for value in readings + last_readings):
-        raise AssertionError(
-            f"{RECORD_COUNT_FILE} records {len(data.patients) + 1}, which counts the header line as a patient "
-            f"record; the supplied {DATA_FILE} has {len(data.patients)} patient rows. Drop the header with "
-            "`tail -n +2` before counting (Task 2.1), then save the new count and commit it."
-        )
     given = f"{readings[0]:g}"
     if last_readings and last_readings[0] != readings[0]:
         given += f" as its first number and {last_readings[0]:g} on its last line"
-    # A label with a number in it, as `Task 2.1: 300`, puts the right count second.
+    # A label with a number in it, as `Task 2.1: 300`, puts the right count second, and so does a note that
+    # shows its arithmetic, as `301 lines - 1 header = 300`, which has already dropped the header.
     lines = [line for line in text.splitlines() if line.strip()]
     later = [number for line in dict.fromkeys((lines[0], last_line)) for number in _numbers_written(line)[1:]
              if any(abs(value - len(data.patients)) < 1e-9 for value in _as_numbers(number))]
@@ -847,6 +842,12 @@ def check_record_count(root: Path) -> None:
             f"{RECORD_COUNT_FILE} records {given}: the checks read the first number on its first and last lines. "
             f"The patient count, {later[0]}, comes later on the line, so put it first and any label after it, as "
             f"`{len(data.patients)} patient records`, then commit the file."
+        )
+    if any(abs(value - (len(data.patients) + 1)) < 1e-9 for value in readings + last_readings):
+        raise AssertionError(
+            f"{RECORD_COUNT_FILE} records {len(data.patients) + 1}, which counts the header line as a patient "
+            f"record; the supplied {DATA_FILE} has {len(data.patients)} patient rows. Drop the header with "
+            "`tail -n +2` before counting (Task 2.1), then save the new count and commit it."
         )
     raise AssertionError(
         f"{RECORD_COUNT_FILE} records {given}, but the supplied {DATA_FILE} has {len(data.patients)} patient rows. "

@@ -767,6 +767,18 @@ def run() -> None:
             message = detail(result, "record count artifact")
             assert f"The patient count, {records}, comes later on the line, so put it first" in message, message
             assert "Count the lines after the header" not in message, message
+        # A note that shows its arithmetic has already dropped the header, so it too is told to put the count
+        # first, not that it counts the header line.
+        for name, content in (("worked-count", f"{records + 1} lines - 1 header = {records} patients\n"),
+                              ("labelled-worked-count", f"records: {records + 1} lines, {records} patients\n")):
+            worked = workspace / name
+            build(worked, summary, counts, records)
+            (worked / "output" / "record_count.txt").write_text(content, encoding="utf-8")
+            result = graded(worked)
+            assert failing(result) == {"record count artifact"}, (name, failing(result))
+            message = detail(result, "record count artifact")
+            assert f"The patient count, {records}, comes later on the line, so put it first" in message, message
+            assert "counts the header line" not in message, message
         wrong_label = workspace / "numbered-label-wrong-count"
         build(wrong_label, summary, counts, records)
         (wrong_label / "output" / "record_count.txt").write_text(f"Task 2.1: {records + 5}\n", encoding="utf-8")
