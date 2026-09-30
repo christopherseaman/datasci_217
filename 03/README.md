@@ -172,6 +172,11 @@ Python 3.13.14
 
 Inside Python, `sys.executable` gives the same path; Assignment 03 records it that way.
 
+<callout icon="🐍" color="yellow_bg">
+	## Multiple Python Installations
+	On "lived-in" computers with multiple Python installations (e.g., native, Homebrew, Conda), `python` and `python3` can point to entirely different versions or installations, each with different packages available.
+</callout>
+
 ## When `import numpy` Fails
 
 ```text
