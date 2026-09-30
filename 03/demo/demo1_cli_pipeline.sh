@@ -2,10 +2,15 @@
 # Stop at the first failing command, unset variable, or failing pipeline stage.
 set -euo pipefail
 
-# A bounded, repeatable shell pipeline. Run it from ~/03-demo with
+# A repeatable shell pipeline. Run it from ~/03-demo with
 # `bash demo1_cli_pipeline.sh`: it creates data/, logs/, and results/ there.
-echo "=== Lecture 03: bounded CLI pipeline ==="
+echo "=== Lecture 03: CLI pipeline ==="
 mkdir -p data/raw logs results
+
+# Capture one timestamp and reuse it for every output from this run. Log the
+# start before any work, so a run that stops partway still leaves a line.
+timestamp=$(date +"%Y%m%d_%H%M%S")
+echo "${timestamp} pipeline started" >> logs/processing.log
 
 # Write the lines between <<'EOF' and EOF into the file, unchanged.
 cat > data/raw/encounters.csv <<'EOF'
@@ -20,17 +25,15 @@ EOF
 
 echo "Encounter records: $(tail -n +2 data/raw/encounters.csv | wc -l)"
 echo "Clinics (with counts):"
-# Skip the header, select one field, sort it for uniq, count it, and bound
-# the displayed result to five lines. A trailing \ continues the command on
-# the next line, so this is still one pipeline.
+# Skip the header, select one field, sort it for uniq, count it, and keep the
+# first five lines. A trailing \ continues the command on the next line, so
+# this is still one pipeline.
 tail -n +2 data/raw/encounters.csv \
   | cut -d',' -f4 \
   | sort \
   | uniq -c \
   | head -n 5
 
-# Capture one timestamp and reuse it for every output from this run.
-timestamp=$(date +"%Y%m%d_%H%M%S")
 summary="results/summary_${timestamp}.txt"
 echo "run timestamp: ${timestamp}" > "$summary"
 echo "encounters: $(tail -n +2 data/raw/encounters.csv | wc -l)" >> "$summary"
@@ -41,9 +44,7 @@ tail -n +2 data/raw/encounters.csv \
   | uniq -c \
   | head -n 5 >> "$summary"
 
-# Append concise status messages to a log; the same timestamp identifies the
-# run without repeatedly calling date.
-echo "${timestamp} pipeline started" >> logs/processing.log
+# Log what the run wrote, under the same timestamp as its start.
 echo "${timestamp} wrote ${summary}" >> logs/processing.log
 echo "Summary written to ${summary}"
 echo "=== Demo complete ==="

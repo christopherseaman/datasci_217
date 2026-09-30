@@ -6,8 +6,8 @@
 # Plumbing: stop at the first command that fails (-e) or at an unset variable (-u).
 set -eu
 
-# Where the files come from. The course's tests set DEMO_BASE_URL to read local copies instead.
-base_url="${DEMO_BASE_URL:-https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo}"
+# Where the files come from: the course repository's 03/demo folder on GitHub.
+base_url="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo"
 
 # mkdir without -p stops the script here if ~/03-demo already exists, so earlier work is never overwritten.
 mkdir ~/03-demo

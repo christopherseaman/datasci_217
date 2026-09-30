@@ -1,7 +1,8 @@
 """Run the Lecture 03 demos the way a student does and check the guide's expected output against real runs.
 
-setup_demo.sh runs through `curl | sh` with HOME pointed at a scratch folder and DEMO_BASE_URL at this
-repository's 03/demo, so it downloads the working-tree files and never touches the real home folder.
+setup_demo.sh runs through `curl | sh` with HOME pointed at a scratch folder. The script the students run
+downloads from GitHub, so the test runs a scratch copy whose `base_url` names this repository's 03/demo
+instead: it downloads the working-tree files and never touches the real home folder.
 Demo 1's environment commands then run with uv exactly as the guide gives them, and every demo script
 runs from the resulting ~/03-demo with the Python of the environment Demo 1 built. uv reuses the real
 uv cache and installed Pythons, and `uv add` needs the package index, as it does for students. Outside
@@ -163,7 +164,6 @@ def student_environment(home):
         XDG_CACHE_HOME=str(home / ".cache"),
         UV_CACHE_DIR=uv_location("cache", "dir"),
         UV_PYTHON_INSTALL_DIR=uv_location("python", "dir"),
-        DEMO_BASE_URL=DEMOS.as_uri(),
         PYTHONDONTWRITEBYTECODE="1",
     )
     return env
@@ -174,7 +174,8 @@ def run():
     setup = (DEMOS / "setup_demo.sh").read_text(encoding="utf-8")
     assert SETUP_COMMAND in GUIDE_TEXT, "the guide no longer gives the one-line setup command"
     base_url = SETUP_COMMAND.split()[2].rsplit("/", 1)[0]
-    assert f'base_url="${{DEMO_BASE_URL:-{base_url}}}"' in setup, "setup_demo.sh downloads from elsewhere"
+    base_url_line = f'base_url="{base_url}"'
+    assert setup.count(base_url_line) == 1, "setup_demo.sh downloads from elsewhere"
     downloads = re.findall(r'^curl -fsSL "\$base_url/([^"]+)" -o (\S+)$', setup, re.M)
     assert all(source == target for source, target in downloads), downloads
     shipped = {path.name for path in DEMOS.iterdir() if path.is_file() and path.name != "DEMO_GUIDE.md"}
@@ -187,6 +188,10 @@ def run():
         home.mkdir()
         env = student_environment(home)
         demo = home / "03-demo"
+        # The same script with only its download address changed, so it reads this repository's files.
+        local_setup = Path(temporary) / "setup_demo.sh"
+        local_setup.write_text(setup.replace(base_url_line, f'base_url="{DEMOS.as_uri()}"'), encoding="utf-8")
+        setup_command = f"curl -fsSL {local_setup.as_uri()} | sh"
 
         def shell(command, cwd=demo, check=True):
             """Run a Bash command as the student's terminal would, with pipefail so a pipe cannot hide a failure."""
@@ -196,14 +201,14 @@ def run():
             )
 
         # Demo 1.1: one command makes ~/03-demo and fills it with byte-identical copies of the demo files.
-        installed = shell(f"curl -fsSL {env['DEMO_BASE_URL']}/setup_demo.sh | sh", cwd=home).stdout
+        installed = shell(setup_command, cwd=home).stdout
         assert sorted(path.name for path in demo.iterdir()) == sorted(shipped), sorted(demo.iterdir())
         for name in shipped:
             assert (demo / name).read_bytes() == (DEMOS / name).read_bytes(), name
 
         # A second run stops at mkdir and leaves every file as it was.
         before = {path: path.read_bytes() for path in demo.iterdir()}
-        again = shell(f"curl -fsSL {env['DEMO_BASE_URL']}/setup_demo.sh | sh", cwd=home, check=False)
+        again = shell(setup_command, cwd=home, check=False)
         assert again.returncode != 0 and "File exists" in again.stderr and not again.stdout, again
         assert {path: path.read_bytes() for path in demo.iterdir()} == before
 

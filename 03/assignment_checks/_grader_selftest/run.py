@@ -665,6 +665,19 @@ def run() -> None:
             assert failing(result) == failed, (name, failing(result))
             assert problem in detail(result, NAME_CHECK), (name, detail(result, NAME_CHECK))
         assert "`$timestamp`" not in detail(graded(workspace / "undated-counts"), NAME_CHECK)
+        assert "Move the file there, then commit it." in detail(graded(workspace / "root-counts"), NAME_CHECK)
+        # A misplaced file whose counts are also wrong, as `head -n 5` leaves them, is told to rerun the
+        # pipeline, not only to move the file.
+        root_short = workspace / "root-counts-short"
+        build(root_short, summary, counts, records)
+        kept = (root_short / "output" / COUNTS_NAME).read_text(encoding="utf-8").splitlines(keepends=True)[:5]
+        (root_short / "output" / COUNTS_NAME).unlink()
+        (root_short / "monitor_counts_20260926_150530.txt").write_text("".join(kept), encoding="utf-8")
+        result = graded(root_short)
+        assert failing(result) == {NAME_CHECK} | MONITOR_CHECKS, failing(result)
+        message = detail(result, NAME_CHECK)
+        assert "with no `head` stage after it" in message and "Move the file there" not in message, message
+        assert message.endswith("Rerun the pipeline to save the file under that name, then commit it."), message
         # A script at the top level that makes the counts is not a misplaced counts file.
         scripted = workspace / "root-counts-script"
         build(scripted, summary, counts, records)
@@ -742,6 +755,22 @@ def run() -> None:
         (titled / "output" / "record_count.txt").write_text(f"Assignment 03 record count\n{records}\n",
                                                            encoding="utf-8")
         assert graded(titled)["score"] == 100, failing(graded(titled))
+        # A label with a number in it puts the right count second: it still fails, and the fix says to put the
+        # count first rather than to recount.
+        for name, content in (("numbered-label-count", f"Task 2.1: {records}\n"),
+                              ("bracketed-label-count", f"Records (Task 2.1): {records}\n")):
+            labelled = workspace / name
+            build(labelled, summary, counts, records)
+            (labelled / "output" / "record_count.txt").write_text(content, encoding="utf-8")
+            result = graded(labelled)
+            assert failing(result) == {"record count artifact"}, (name, failing(result))
+            message = detail(result, "record count artifact")
+            assert f"The patient count, {records}, comes later on the line, so put it first" in message, message
+            assert "Count the lines after the header" not in message, message
+        wrong_label = workspace / "numbered-label-wrong-count"
+        build(wrong_label, summary, counts, records)
+        (wrong_label / "output" / "record_count.txt").write_text(f"Task 2.1: {records + 5}\n", encoding="utf-8")
+        assert "Count the lines after the header" in detail(graded(wrong_label), "record count artifact")
 
         # An empty numpy line is what the probe saves when numpy is not installed: the fix says to install it.
         uninstalled = workspace / "numpy-uninstalled"
@@ -842,6 +871,9 @@ def run() -> None:
         stage2 = {"answer: stage2_patients", "answer: stage2_other_monitors"}
         assert failing(result) == stage2, failing(result)
         assert all("counting every hour of every patient" in detail(result, check) for check in stage2)
+        assert "every patient on the other monitors" in detail(result, "answer: stage2_other_monitors")
+        assert "& others" in detail(result, "answer: stage2_other_monitors")
+        assert "other monitors" not in detail(result, "answer: stage2_patients")
         off_by_one = workspace / "stage2-off-by-one"
         build(off_by_one, replaced(summary, stage2_patients=str(int(answers["stage2_patients"]) + 1)), counts,
               records)
@@ -925,7 +957,8 @@ def run() -> None:
         "bracketed and annotated label, hedged label, miscounted, unactivated, other-numpy, "
         "unversioned-probe, supplied-files-edited, truncated, Markdown and JSON, re-separated, leading-note, "
         "UTF-16, whitespace-edited, renamed, appended, miscounted-monitor, undelimited-cut, dated, undated and "
-        "misplaced counts, empty-timestamp, follow-on pick, first-number, table, numbered, dict, titled-count, "
+        "misplaced counts, wrong misplaced counts, empty-timestamp, follow-on pick, first-number, table, numbered, "
+        "dict, titled-count, numbered-label count, "
         "uninstalled-numpy, overwritten-probe, joined-answer, per-column patient, position label, stage 2 readings, "
         "per-hour-array and one-item-list submissions all score as intended."
     )

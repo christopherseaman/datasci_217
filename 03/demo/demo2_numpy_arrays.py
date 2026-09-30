@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo 2.3: convert types, create arrays, read their properties, calculate, and select parts."""
+"""Demo 2.3: convert types, create arrays, read their properties, calculate, apply ufuncs, and select parts."""
 
 import numpy as np
 
@@ -71,6 +71,24 @@ def show_arithmetic(temps_f):
     print(f"Evening - morning:  {evening_f - temps_f}")
     print()
 
+    return evening_f
+
+
+def show_ufuncs(temps_f, evening_f):
+    """Apply NumPy's element-by-element functions: to two arrays position by position, then to one."""
+    print("=== Universal Functions ===")
+
+    # Each patient's higher temperature of the day, morning or evening.
+    print(f"Higher of the two (°F): {np.maximum(temps_f, evening_f)}")
+
+    # Body surface area by the Mosteller formula: the square root of height (cm) x weight (kg) / 3600.
+    height_cm = np.array([170, 158, 182])
+    weight_kg = np.array([72, 55, 90])
+    print(f"Height (cm):            {height_cm}")
+    print(f"Weight (kg):            {weight_kg}")
+    print(f"Body surface area (m²): {np.sqrt(height_cm * weight_kg / 3600)}")
+    print()
+
 
 def show_one_dimensional(temps_f):
     """Select single elements and slices from a 1D array."""
@@ -120,7 +138,8 @@ def main():
     temps_f = show_creation()
     show_properties(temps_f)
     week = show_random_arrays()
-    show_arithmetic(temps_f)
+    evening_f = show_arithmetic(temps_f)
+    show_ufuncs(temps_f, evening_f)
     show_one_dimensional(temps_f)
     show_two_dimensional()
     show_three_dimensional(week)

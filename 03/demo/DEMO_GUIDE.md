@@ -151,8 +151,8 @@ cat setup_demo.sh
 # Plumbing: stop at the first command that fails (-e) or at an unset variable (-u).
 set -eu
 
-# Where the files come from. The course's tests set DEMO_BASE_URL to read local copies instead.
-base_url="${DEMO_BASE_URL:-https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo}"
+# Where the files come from: the course repository's 03/demo folder on GitHub.
+base_url="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/03/demo"
 
 # mkdir without -p stops the script here if ~/03-demo already exists, so earlier work is never overwritten.
 mkdir ~/03-demo
@@ -177,7 +177,7 @@ Read it top to bottom, the order the shell ran it:
 - `#!/bin/sh` names the shell the script expects: `sh`, a smaller relative of Bash that runs the same basic commands.
 - Lines starting with `#` are comments; the shell skips them.
 - `set -eu` is plumbing you do not need to write yourself: it stops the script at the first failing command, so a failed download cannot leave you with a half-made folder and no warning.
-- `base_url=...` stores the download address in a variable once, and every `curl` line uses it as `"$base_url/..."`, as the lecture's "Shell Variables and Timestamps" card does with `timestamp`. The `${DEMO_BASE_URL:-...}` around the address lets the course's tests substitute local files; when `DEMO_BASE_URL` is not set, as on your computer, the address is used as written.
+- `base_url=...` stores the download address in a variable once, and every `curl` line uses it as `"$base_url/..."`, as the lecture's "Shell Variables and Timestamps" card does with `timestamp`.
 - `mkdir ~/03-demo` and `cd ~/03-demo` make the folder and move into it. Without `-p`, `mkdir` fails when the folder exists, and `set -e` then stops the script before any download.
 - Each `curl -fsSL URL -o FILE` line downloads one file: `-f` fails on a missing file instead of saving an error page, `-s` hides the progress bar, `-S` still shows errors, `-L` follows redirects, and `-o` saves to `FILE` instead of printing it.
 - The two `echo` lines printed the output you saw in 1.1.
@@ -186,16 +186,16 @@ Read it top to bottom, the order the shell ran it:
 
 ## 1.6 Run a Pipeline Script
 
-[demo1_cli_pipeline.sh](demo1_cli_pipeline.sh) writes a six-record CSV of clinic encounters to `data/raw/encounters.csv`, counts the records with `wc -l`, and counts encounters per clinic with a bounded `tail | cut | sort | uniq | head` pipeline. It creates `data/`, `logs/`, and `results/` in the current folder, so run it from `~/03-demo`:
+[demo1_cli_pipeline.sh](demo1_cli_pipeline.sh) writes a six-record CSV of clinic encounters to `data/raw/encounters.csv`, counts the records with `wc -l`, and counts encounters per clinic with a `tail | cut | sort | uniq | head` pipeline, whose `head -n 5` caps what it prints at five lines. It creates `data/`, `logs/`, and `results/` in the current folder, so run it from `~/03-demo`:
 
 ```bash
 bash demo1_cli_pipeline.sh
 ```
 
-Three pieces of it are script plumbing, explained in its comments, that you do not need to write yourself: `set -euo pipefail` stops the script at the first failing command, the lines between `<<'EOF'` and `EOF` are written into the CSV unchanged, and a trailing `\` continues one pipeline onto the next line. Your timestamp will differ from the one below:
+Two pieces of it are script plumbing, explained in its comments, that you do not need to write yourself: `set -euo pipefail` stops the script at the first failing command, and the lines between `<<'EOF'` and `EOF` are written into the CSV unchanged. Its pipelines span several lines with a trailing `\`, the line continuation from the lecture's "Shell Scripts" card. Your timestamp will differ from the one below:
 
 ```text
-=== Lecture 03: bounded CLI pipeline ===
+=== Lecture 03: CLI pipeline ===
 Encounter records: 6
 Clinics (with counts):
       3 Cardiology
@@ -358,7 +358,7 @@ The list prints with commas and the array without. The script builds the reading
 python demo2_numpy_arrays.py
 ```
 
-Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This follows the rest of the block in the lecture's order: data types, creating arrays, their properties, random arrays, arithmetic, and indexing in one, two, and three dimensions. It starts with numeric text, as a file delivers it, and six patients' body temperatures in °F:
+Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This follows the rest of the block in the lecture's order: data types, creating arrays, their properties, random arrays, arithmetic, ufuncs, and indexing in one, two, and three dimensions. It starts with numeric text, as a file delivers it, and six patients' body temperatures in °F:
 
 ```text
 NumPy Basics: Types, Arrays, and Indexing
@@ -401,6 +401,18 @@ Evening - morning:  [ 0.5 -0.8 -0.5 -1.1  0.3  0.7]
 ```
 
 `rng.integers(60, 101, size=(2, 7, 3))` holds 2 patients × 7 days × 3 readings in bpm, and the seed `42` makes it print the same numbers on every machine. `temps_f - 98.6` applies one number to every temperature; `evening_f - temps_f` pairs the two arrays position by position, so each patient's evening reading is compared with that patient's morning one.
+
+Two ufuncs follow. `np.maximum(temps_f, evening_f)` pairs the arrays the same way and keeps each patient's higher temperature of the day. `np.sqrt()` finishes the Mosteller formula for body surface area, which drug dosing uses: the square root of height in cm × weight in kg / 3600, for three patients at once:
+
+```text
+=== Universal Functions ===
+Higher of the two (°F): [ 99.1 101.2  99.5 103.1  98.2 101.5]
+Height (cm):            [170 158 182]
+Weight (kg):            [72 55 90]
+Body surface area (m²): [1.84390889 1.55366949 2.1330729 ]
+```
+
+NumPy prints floats to eight decimal places and drops trailing zeros, so `2.13307290` shows as `2.1330729` with a space in place of the zero.
 
 The rest of the run selects parts of the temperatures, of a 3×3 table of systolic blood-pressure readings in mmHg, and of the simulated week:
 
@@ -553,7 +565,7 @@ Visit 1 and visit 5, first three patients:
  [86 92]]
 ```
 
-Reshaping follows the first 12 readings into a `(3, 4)` grid and its `(4, 3)` transpose:
+Reshaping puts the first 12 readings into a `(3, 4)` grid; its transpose is `(4, 3)`:
 
 ```text
 === Array Reshaping ===
@@ -666,7 +678,7 @@ NumPy analysis complete.
 
 ## 3.4 Summarize the Bundled CSV by Clinic
 
-`encounters.csv` is a 1,500-row synthetic fixture: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
+`encounters.csv` is a 1,500-row synthetic data file: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
 
 ```bash
 python demo3_csv_summary.py

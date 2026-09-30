@@ -13,6 +13,11 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
+This lecture covers these readings:
+
+- McKinney, _Python for Data Analysis_ (3rd ed.): 2.3 (`isinstance`), 3.1 (built-in sequence functions and list comprehensions), and 4.1 to 4.4 (NumPy arrays, random numbers, universal functions, and array-oriented programming)
+- Shotts, _The Linux Command Line_: Chapters 6 (redirection and pipelines), 7 (command substitution), 20 (text processing with `cut`, `sort`, and `uniq`), and 24 (writing your first script)
+
 # Virtual Environments
 
 ![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)
@@ -59,7 +64,7 @@ Python 3.13.14
 | Pin one project | `uv python pin 3.13` | Writes `.python-version`; `uv venv` in this folder uses it over the global pin. |
 | Create environment | `uv venv --seed` | Creates `.venv` with the pinned Python; `--seed` adds pip, which Lecture 04's notebooks use. |
 | Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt starts with the folder name, such as `(assignment-03)`. |
-| Verify | `python --version` and `python -c "import numpy as np; print(np.__version__)"` | The Python and NumPy versions; `python -c` runs the Python code in the quoted string. |
+| Verify | `python --version` | The environment's Python version, such as `Python 3.13.14`. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
 ## Recording Packages in `pyproject.toml`
@@ -514,6 +519,24 @@ print(arr1 + arr2)   # [6 6 6 6 6]
 print(arr1 ** 2)     # [ 1  4  9 16 25]
 ```
 
+## Universal Functions (ufuncs)
+
+A **universal function** (ufunc) applies one math operation to every element and returns a new array: where Lecture 02's `math.sqrt(16)` takes one number, `np.sqrt(arr)` takes the square root of every element.
+
+### Reference Card: ufuncs
+
+- `np.sqrt(arr)`: Square root of each element.
+- `np.exp(arr)`: Exponential of each element.
+- `np.maximum(a, b)`: The larger value at each position of two arrays.
+
+### Code Snippet: Apply Mathematical Functions
+
+```python
+print(np.sqrt(np.array([1, 4, 9, 16, 25])))   # [1. 2. 3. 4. 5.]
+print(np.exp([1, 2, 3]))                      # [ 2.71828183  7.3890561  20.08553692]
+print(np.maximum([1, 5, 3], [4, 2, 6]))       # [4 5 6]
+```
+
 ## Indexing and Slicing
 
 Array indexing works like Lecture 02's list indexing: square brackets, positions counted from 0, negative positions counted from the end, and half-open `start:stop` slices. A multidimensional array takes one index per dimension, separated by commas.
@@ -661,6 +684,7 @@ bp[bp >= 140]  →  [142 145]     the matching values, as a 1-D array
 | `arr > value` | Builds a Boolean mask; in this card `arr` is a 1-D array. | `arr > 5` |
 | `arr[mask]` | Keeps matching elements as a new copy; a 2-D array gives a 1-D result. | `arr[arr > 5]` |
 | `values[labels == "x"]` | Keeps one group's values, where `labels` names the group at each position. | `systolic[clinics == "Cardiology"]` |
+| `np.unique(labels)` | The distinct labels, sorted, as an array; loop over it to visit each group once. `sorted(set(labels))` gives them as a list, which prints each as `np.str_('Cardiology')`. | `np.unique(clinics)` → `['Cardiology' 'Nephrology' 'Primary Care']` |
 | `(a) & (b)` / `(a) \| (b)` | Combines conditions with AND / OR; use these, not `and` and `or`, with each test in parentheses. | `(arr > 2) & (arr < 8)` |
 | `~mask` | Flips every `True` and `False`. | `arr[~(arr > 5)]` |
 | `mask.sum()` | Counts `True` values. | `(arr > 5).sum()` |
@@ -775,7 +799,7 @@ print(arr.T)              # [[1 4]
 
 # Analyzing Arrays
 
-NumPy turns an array of readings into answers with one expression each, where plain Python needs a loop: summarize values (a mean over the whole array, along one axis, or for one group), transform every value, label values by a rule, and rank them.
+NumPy turns an array of readings into answers with one expression each, where plain Python needs a loop: summarize values (a mean over the whole array, along one axis, or for one group), label values by a rule, and rank them.
 
 ## Summary Statistics
 
@@ -827,24 +851,6 @@ for clinic in sorted(set(clinics)):              # each clinic once, in order
 # Cardiology 146.5
 # Nephrology 135.0
 # Primary Care 123.0
-```
-
-## Universal Functions (ufuncs)
-
-A **universal function** (ufunc) applies one math operation to every element and returns a new array: where Lecture 02's `math.sqrt(16)` takes one number, `np.sqrt(arr)` takes the square root of every element.
-
-### Reference Card: ufuncs
-
-- `np.sqrt(arr)`: Square root of each element.
-- `np.exp(arr)`: Exponential of each element.
-- `np.maximum(a, b)`: The larger value at each position of two arrays.
-
-### Code Snippet: Apply Mathematical Functions
-
-```python
-print(np.sqrt(np.array([1, 4, 9, 16, 25])))   # [1. 2. 3. 4. 5.]
-print(np.exp([1, 2, 3]))                      # [ 2.71828183  7.3890561  20.08553692]
-print(np.maximum([1, 5, 3], [4, 2, 6]))       # [4 5 6]
 ```
 
 ## Conditional Logic

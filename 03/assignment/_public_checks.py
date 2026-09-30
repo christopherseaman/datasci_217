@@ -179,10 +179,20 @@ LABEL_ARRAYS = {
     "peak_hour_column": ("`hour_columns`", "column name"),
     "high_monitor": ("the sorted monitor ids, `sorted(set(monitors))`,", "monitor id"),
 }
-READINGS_HINT = (
-    f" That is how many readings are {STAGE_2_MMHG} mmHg or higher, counting every hour of every patient; the "
-    f"question counts patients, so compare each patient's 12-hour mean, `readings.mean(axis=1)`, with {STAGE_2_MMHG}."
-)
+# For a stage 2 count of readings rather than patients: what was counted, and how to count patients instead.
+READINGS_HINTS = {
+    "stage2_patients": (
+        f" That is how many readings are {STAGE_2_MMHG} mmHg or higher, counting every hour of every patient; the "
+        f"question counts patients, so compare each patient's 12-hour mean, `readings.mean(axis=1)`, with "
+        f"{STAGE_2_MMHG}."
+    ),
+    "stage2_other_monitors": (
+        f" That is how many readings are {STAGE_2_MMHG} mmHg or higher, counting every hour of every patient on "
+        f"the other monitors; the question counts patients, so compare each patient's 12-hour mean, "
+        f"`readings.mean(axis=1)`, with {STAGE_2_MMHG} and combine that mask with the other monitors' mask, as "
+        f"`(patient_means >= {STAGE_2_MMHG}) & others`, the way Demo 3.4 combines `stage_2 & others`."
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -799,6 +809,16 @@ def check_record_count(root: Path) -> None:
     given = f"{readings[0]:g}"
     if last_readings and last_readings[0] != readings[0]:
         given += f" as its first number and {last_readings[0]:g} on its last line"
+    # A label with a number in it, as `Task 2.1: 300`, puts the right count second.
+    lines = [line for line in text.splitlines() if line.strip()]
+    later = [number for line in dict.fromkeys((lines[0], last_line)) for number in _numbers_written(line)[1:]
+             if any(abs(value - len(data.patients)) < 1e-9 for value in _as_numbers(number))]
+    if later:
+        raise AssertionError(
+            f"{RECORD_COUNT_FILE} records {given}: the checks read the first number on its first and last lines. "
+            f"The patient count, {later[0]}, comes later on the line, so put it first and any label after it, as "
+            f"`{len(data.patients)} patient records`, then commit the file."
+        )
     raise AssertionError(
         f"{RECORD_COUNT_FILE} records {given}, but the supplied {DATA_FILE} has {len(data.patients)} patient rows. "
         "Count the lines after the header with the Task 2.1 pipeline, then save the new count and commit it."
@@ -926,9 +946,11 @@ def _no_counts_file(root: Path, undated: list[Path], expected: dict[str, int]) -
                 '`timestamp=$(date +"%Y%m%d_%H%M%S")` first, in the same terminal as the pipeline.'
             )
     misplaced = _counts_files(root)
+    all_right = True
     for path in misplaced:
         text = _read(path, path.name)
         right = _counts_right(text, expected)
+        all_right = all_right and right
         notes.append(
             f"Found {path.name} at the top level of the repository"
             + (", with every monitor's count right" if right else "")
@@ -937,7 +959,7 @@ def _no_counts_file(root: Path, undated: list[Path], expected: dict[str, int]) -
         )
         if not right:
             notes.append(_counts_problem(path.name, text, expected))
-    only_moved = misplaced and not undated and all(_has_timestamp(path.name) for path in misplaced)
+    only_moved = misplaced and not undated and all_right and all(_has_timestamp(path.name) for path in misplaced)
     fix = (
         "Task 2.2 saves the per-monitor counts in output/ under a name that carries the run timestamp, as "
         "monitor_counts_YYYYMMDD_HHMMSS.txt. "
@@ -1134,7 +1156,7 @@ def _check_answer(root: Path, key: str) -> None:
     hint += axis_hint
     monitors = [str(answers["high_monitor"])] + ([named] if named is not None else [])
     if any(value in _stage2_readings(key, data, monitors) for value in readings):
-        hint += READINGS_HINT
+        hint += READINGS_HINTS[key]
     raise AssertionError(
         f"{given}{read} {(COUNT_KEYS | MMHG_KEYS)[key]}: {gives}.{hint}{repeated} {SUMMARY_FIX}"
     )

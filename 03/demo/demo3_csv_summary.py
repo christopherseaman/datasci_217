@@ -18,7 +18,7 @@ def load_rows(filename):
 
 
 def main():
-    """Summarize the bundled fixture."""
+    """Summarize the bundled synthetic data file, encounters.csv."""
     rows = load_rows("encounters.csv")
 
     print("Clinic Encounter Summary")
