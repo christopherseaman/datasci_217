@@ -17,12 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)
 
-A **package** is installable code that provides modules. `math` (Lecture 02) ships with Python, but NumPy, pandas, and most other data-science tools are third-party packages, so `import numpy` works only after NumPy is installed. Packages change between versions: a function is renamed or a default changes, so code written for pandas 2 can fail or behave differently under pandas 3. If every project shares one Python, every project must use the same versions.
-
-A **virtual environment** gives each project its own Python: a folder in the project, named `.venv`, that holds a Python **interpreter** (the program that runs Python code) and the packages installed for that project alone.
-
-- **Isolation**: each project keeps the versions it was written with, so upgrading pandas for this course cannot break an analysis written for an older pandas.
-- **Rebuilding**: the project records the packages and exact versions it needs, so a collaborator, a grader, or you a year later answering a journal reviewer can rebuild the same environment and get the same numbers from the same data.
+A **package** is installable code such as NumPy or pandas. Unlike Lecture 02's `math`, it works only after it is installed, and its behavior can change between versions. A **virtual environment** is a project folder, `.venv`, with its own Python **interpreter** (the program that runs Python code) and its own packages, so each project keeps the versions it was written with and anyone can rebuild them to get the same results.
 
 ## Course Environment
 
@@ -208,11 +203,7 @@ Conda manages Python environments and packages, including non-Python dependencie
 
 # Shell Pipelines and Scripts
 
-The shell answers quick questions about a data file without any Python. A clinic's encounter export is plain text with one visit per line, and the first questions about it are simple: how many visits, which clinics, and how many visits each. Lecture 01's commands each do one small job (`cat` prints a file, `head` its first lines, `tail` its last); joined together, they answer each question in one line, and run the same way on a file of millions of rows.
-
-- A **pipeline** chains commands so that each works on the previous one's output, like an assembly line.
-- A timestamp in each output file's name keeps every run's result, where rerunning with `>` would replace the last one.
-- A **shell script** saves the commands in a file, so the whole analysis reruns with one command when next month's export arrives.
+Lecture 01's shell commands can answer quick questions about a data file, such as how many visits each clinic had, without any Python. A **pipeline** chains commands so each works on the previous one's output, and a **shell script** saves them in a file so the analysis reruns with one command when next month's export arrives.
 
 ## Pipelines
 
@@ -252,7 +243,7 @@ tail -n +2 data/raw/encounters.csv | wc -l
 
 ## Variables and Timestamps
 
-The shell stores text in a **variable** and captures a command's output with **command substitution**, `$(...)`; together they put the time a run started into its output file's name.
+The shell stores text in a **variable** and captures a command's output with **command substitution**, `$(...)`; together they put the time a run started into its output file's name, so each run keeps its own result instead of `>` replacing the last one.
 
 ### Reference Card: Shell Variables and Timestamps
 
@@ -302,11 +293,7 @@ Scripts can also take arguments and stop at the first failing command; [the bonu
 
 # Checking Types and Looping over Lists
 
-Values read from a file or a form rarely arrive ready to calculate with: numbers stored as text, patient IDs in one list and their readings in another, and more values than a question needs. Three plain-Python tools do the list work that cleaning starts with:
-
-- **Check what a value is** with `isinstance()` before calculating with it: `"72"` is text and `80` is a number, and adding them raises a `TypeError`, so convert the text first.
-- **Walk two lists together** with `zip()`, so each patient's ID stays paired with that patient's reading instead of the two lists drifting out of step.
-- **Build a new list in one line** with a **list comprehension**, keeping only the values that pass a test (fevers at or above 100.4 °F) or converting every value (milligrams to grams), in place of a loop that starts with an empty list and appends.
+Values from files and forms rarely arrive ready to calculate with: numbers stored as text, and IDs and readings in separate lists. `isinstance()` checks what a value is before you calculate with it, `zip()` walks two lists together so each ID stays with its reading, and a **list comprehension** builds a new list in one line, keeping or converting values.
 
 ## Checking Types
 
@@ -387,10 +374,7 @@ print([mg / 1000 for mg in [250, 500, 125]])  # [0.25, 0.5, 0.125]: mg to g
 
 ![It's pronounced "num pie": NumPy is short for Numerical Python, whatever the cat says](media/numpy.webp)
 
-**NumPy** (Numerical Python) is the package for calculating on many numbers at once, and pandas (Lecture 04) is built on it. Health data is mostly numbers in bulk: a wearable records a heart rate every second, 86,400 readings a day, and a lab table holds a result for every patient and every test. A list can hold those numbers, but every calculation on it is a loop that visits them one at a time, which is long to write and slow on data this size.
-
-- NumPy's core object is the **array**, a grid of values that all share one data type: a 1-D array is one run of readings, and a 2-D array is a table, such as patients × visits.
-- One expression works on every element at once: `readings * 2` doubles every reading with no loop. This style is called **vectorization**, and it is far faster than a loop over a list.
+**NumPy** (Numerical Python) is the package for calculating on many numbers at once, and pandas (Lecture 04) is built on it. Its **array** is a grid of values that share one data type, such as patients × visits, and one expression like `readings * 2` works on every element with no loop. This **vectorization** is far faster than looping over a list, which matters when a wearable records 86,400 readings a day.
 
 ## Why NumPy
 
@@ -593,13 +577,7 @@ print(week[:, :, 0].shape)   # (2, 7): every patient's first reading of each day
 
 # Selecting and Reshaping Arrays
 
-Analysis questions rarely use a whole array: which patients reached a systolic reading of 140 mmHg, what were the Cardiology readings, what was each patient's first and last visit? Indexing by position answers only when you already know where the values sit. NumPy also selects values by what they are, and rearranges them:
-
-- **By a condition**: compare the array with a value, such as `bp >= 140`, and keep the values where the comparison is true. This is the everyday way to filter data.
-- **By a list of positions**: pick elements, rows, or columns in the order you name them, such as each patient's first and last visit.
-- **Into a new shape**: rearrange the same values into a different grid, such as a flat run of 12 readings into 3 patients by 4 visits.
-
-Some arrays share their numbers with the original, so a change to one shows up in the other: a second name for the array, a slice of it, and usually a reshape. Selecting by a condition or by a list of positions makes an independent copy. Setting outliers to zero in what you thought was a copy can overwrite the raw readings, so this topic starts with which is which.
+NumPy selects values by what they are, not only by where they sit: by a condition such as `bp >= 140`, or by a list of positions. It also rearranges the same values into new shapes. Some results share their numbers with the original array and others are copies, so this topic starts with which is which: changing what you thought was a copy can overwrite the raw readings.
 
 ## Names, Aliases, and Mutability
 
@@ -797,12 +775,7 @@ print(arr.T)              # [[1 4]
 
 # Analyzing Arrays
 
-Analysis turns an array of readings into answers: each patient's average blood pressure, how many readings crossed a threshold, which guideline category each reading falls in, and which patients rank highest. In plain Python each answer is a loop with a running total or an `if`/`elif` chain; in NumPy each is one expression over the whole array.
-
-- **Summarize**: collapse many values into one, such as a mean, over the whole array, along one axis (one result per patient or per visit), or for one group picked by a mask, such as one clinic's readings.
-- **Transform**: apply a math function, such as a square root, to every element.
-- **Label**: apply one rule to every position, such as marking readings of 140 mmHg or more as `"high"`, in place of an `if`/`else` inside a loop.
-- **Rank**: sort the values, or find the positions that would sort them, to learn which patient has the highest value.
+NumPy turns an array of readings into answers with one expression each, where plain Python needs a loop: summarize values (a mean over the whole array, along one axis, or for one group), transform every value, label values by a rule, and rank them.
 
 ## Summary Statistics
 
