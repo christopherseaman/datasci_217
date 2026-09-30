@@ -774,7 +774,7 @@ def check_environment_numpy(root: Path) -> None:
     probe = _read_pairs(text, _environment_key)[0]
     # An empty or unversioned `numpy` line is what the probe saves when numpy is not installed.
     install = (
-        " With the environment active, run `python -c \"import numpy\"`: if it fails with "
+        " With the environment active, run `python3 -c \"import numpy\"`: if it fails with "
         "`ModuleNotFoundError`, numpy is not installed in the environment, so run Task 1.1's `uv sync`."
     )
     if "numpy" not in probe:

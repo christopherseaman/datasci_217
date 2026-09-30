@@ -56,7 +56,7 @@ uv sync
 If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
 
 > **Checkpoint: the environment**
-> With it active, `python -c "import numpy as np; print(np.__version__)"` prints `2.3.3`, the version `pyproject.toml` lists.
+> With it active, `python3 -c "import numpy as np; print(np.__version__)"` prints `2.3.3`, the version `pyproject.toml` lists.
 
 ### 1.2 Save an environment probe
 
@@ -71,10 +71,10 @@ interpreter: <the path to the active interpreter>
 Each line is a label, a colon, and the value. Command substitution from the lecture's "Shell Variables and Timestamps" card builds a labelled line from a command's output, and `>` starts the file while `>>` adds to it:
 
 ```bash
-echo "python: $(python --version)" > output/environment.txt
+echo "python: $(python3 --version)" > output/environment.txt
 ```
 
-Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path. Quotes inside `$( )` belong to the command inside it, so a `python -c "..."` command goes inside `echo "numpy: $(...)"` unchanged.
+Lecture 03 gives the one-line Python commands that print the installed NumPy version and the interpreter path. Quotes inside `$( )` belong to the command inside it, so a `python3 -c "..."` command goes inside `echo "numpy: $(...)"` unchanged.
 
 > **Checkpoint: `output/environment.txt`**
 > Three lines. With the environment active, the `numpy` line shows the version `pyproject.toml` lists and the `interpreter` line shows a path inside your project's `.venv`. The checks ask only for a version number on the `numpy` line and a path on the `interpreter` line; the `python` line is not graded.
@@ -160,8 +160,8 @@ How the values are read:
 With the environment active, run your script and then the checks, from the assignment directory:
 
 ```bash
-python analysis.py
-python check_assignment.py
+python3 analysis.py
+python3 check_assignment.py
 ```
 
 `check_assignment.py` runs the same checks GitHub runs. They grade only your files in `output/` and recompute every answer from their own copy of the supplied `data/bp_readings.csv`. They never run or read your Python code, so any way of producing a correct artifact counts.

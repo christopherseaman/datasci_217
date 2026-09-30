@@ -2,7 +2,7 @@
 
 Run from the assignment directory with the project environment active:
 
-    python analysis.py
+    python3 analysis.py
 """
 
 import numpy as np

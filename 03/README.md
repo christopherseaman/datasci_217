@@ -13,7 +13,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-This lecture covers these readings:
+This lecture covers:
 
 - McKinney, _Python for Data Analysis_ (3rd ed.): 2.3 (`isinstance`, variables and argument passing, mutable and immutable objects), 3.1 (built-in sequence functions and list comprehensions), and 4.1 to 4.4 (NumPy arrays, random numbers, universal functions, and array-oriented programming)
 - Shotts, _The Linux Command Line_: Chapters 4 (wildcards), 6 (redirection, pipelines, and `grep`), 7 (command substitution), 19 (regular expressions, through anchors), 20 (text processing with `cut`, `sort`, and `uniq`), 24 (writing your first script), and 25 (shell variables)
@@ -29,16 +29,20 @@ A **virtual environment** is a project's own Python **interpreter** (the program
 - **Versions**:
     - `python`: 3.13
     - `numpy`: 2.3.3
-    - `pandas`: 3.0.5, from Lecture 04
+    - `pandas`: 3.0.5
 - **Environment**: one per project, in a folder named `.venv`
-- **Packages**: listed in `pyproject.toml`; unlike Lecture 02's `math`, NumPy works only after it is installed
-- **Tool**: uv; `requirements.txt`, `venv`, and Conda are alternatives at the end of this topic
+- **Packages**: listed in `pyproject.toml`
+    - Lecture 02's `math` is part of Python's **standard library**, so it came preinstalled
+    - Other packages, such as `numpy`, work only after they are installed
+- **Tool**:
+    - `uv` and `pyproject.toml` will be used by default in this course
+    - Alternatives: `requirements.txt` instead of `pyproject.toml`, `python3 -m venv`, and Conda are touched on at the end of this topic
 
 ## Using uv
 
 [uv documentation](https://docs.astral.sh/uv/)
 
-`uv venv --seed` creates `.venv` in the current folder. **Activation** switches the terminal to that environment, so `python` runs the copy inside `.venv` and uv installs packages there:
+`uv venv --seed` creates `.venv` in the current folder. **Activation** switches the terminal to that environment, so `python3` runs the copy inside `.venv` and uv installs packages there:
 
 ```text
 ~/assignment-03 $ uv venv --seed
@@ -47,12 +51,13 @@ Creating virtual environment with seed packages at: .venv
  + pip==26.2.1
 Activate with: source .venv/bin/activate
 ~/assignment-03 $ source .venv/bin/activate
-(assignment-03) ~/assignment-03 $ python --version
+(assignment-03) ~/assignment-03 $ python3 --version
 Python 3.13.14
 ```
 
 <callout icon="⚠️" color="yellow_bg">
-	Keep `.venv/` out of Git: add the line `.venv/` to the project's `.gitignore` (Lecture 02). Its thousands of files work only on the computer that built them; the project's records, below, rebuild it anywhere.
+	## Keep `.venv/` out of Git!
+	Add the line `.venv/` to the project's `.gitignore` (Lecture 02). The packages inside `.venv/` are built for one computer's operating system and hardware (macOS, Linux, or Windows; Intel, AMD, or Apple processors; with or without an Nvidia GPU), so they may not run anywhere else. Git keeps the project's records instead (below), and any computer rebuilds `.venv/` from them.
 </callout>
 
 ### Reference Card: uv Environment Workflow
@@ -63,8 +68,8 @@ Python 3.13.14
 | Set the default Python | `uv python pin --global 3.13` | New environments use 3.13; `--default` alone sets only the `python` commands. |
 | Pin one project | `uv python pin 3.13` | Writes `.python-version`; `uv venv` in this folder uses it over the global pin. |
 | Create environment | `uv venv --seed` | Creates `.venv` with the pinned Python; `--seed` adds pip, which Lecture 04's notebooks use. |
-| Activate | `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) | The prompt starts with the folder name, such as `(assignment-03)`. |
-| Verify | `python --version` | The environment's Python version, such as `Python 3.13.14`. |
+| Activate | `source .venv/bin/activate`<br>PowerShell: `.\.venv\Scripts\Activate.ps1` | The prompt starts with the folder name, such as `(assignment-03)`. |
+| Verify | `python3 --version` | The environment's Python version, such as `Python 3.13.14`. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
 ## Recording Packages in `pyproject.toml`
@@ -87,10 +92,12 @@ dependencies = [
 
 | Task | Command | Result |
 | :--- | :--- | :--- |
-| Start a project | `uv init --bare` | Writes `pyproject.toml` for a project named after the folder; run it once per project. |
+| Start a project | `uv init --bare` | Writes only `pyproject.toml`, for a project named after the folder; run it once per project. Plain `uv init` also adds `.python-version`, `README.md`, `.gitignore`, and a `src/` package folder, and starts a Git repository. |
 | Add a package | `uv add numpy==2.3.3` | Installs that version into `.venv`, lists it in `pyproject.toml`, and updates `uv.lock`. |
 | Rebuild from the records | `uv sync` | Makes `.venv` match `pyproject.toml` and `uv.lock`, removing packages you installed with `uv pip install` (the pip from `--seed` stays), so install new packages with `uv add`. |
-| Run in the environment | `uv run python script.py` | Runs the command with the project's `.venv`, active or not. |
+| Run in the environment | `uv run python3 script.py` | Runs the command with the project's `.venv`, active or not. |
+| Remove a package | `uv remove numpy` | Uninstalls it and deletes it from `pyproject.toml` and `uv.lock`. |
+| See what is installed | `uv tree` / `uv pip list` | `uv tree` shows the project's packages and what each one needs; `uv pip list` lists everything in `.venv`, pip included. |
 
 ### Code Snippet: Create and Verify an Environment
 
@@ -102,7 +109,7 @@ uv init --bare
 uv venv --seed
 source .venv/bin/activate
 uv add numpy==2.3.3
-python -c "import numpy as np; print(np.__version__)"
+python3 -c "import numpy as np; print(np.__version__)"
 ```
 
 ```text
@@ -118,7 +125,12 @@ Installed 1 package in 13ms
 2.3.3
 ```
 
-Timings vary, and the first download of a package adds lines of its own. `.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild.
+Timings vary, and the first download of a package adds lines of its own. `.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild. Commit all three to Git; none of them belongs in `.gitignore`.
+
+<callout icon="💡" color="blue_bg">
+	## Skip activation with `uv run`
+	Most of the time `uv run` saves the manual steps: `uv run python3 analysis.py` finds the project's `.venv`, brings it up to date with `pyproject.toml` and `uv.lock`, and runs the command there, whether or not the environment is active.
+</callout>
 
 ## Recreate an Environment
 
@@ -131,7 +143,7 @@ In a new folder holding copies of `.python-version`, `pyproject.toml`, and `uv.l
 ```bash
 uv venv --seed
 uv sync
-uv run python -c "import numpy as np; print(np.__version__)"
+uv run python3 -c "import numpy as np; print(np.__version__)"
 ```
 
 ```text
@@ -149,17 +161,21 @@ Installed 1 package in 13ms
 
 ## Which Python Is Running?
 
-`sys.executable` is the path of the interpreter running the code, so it shows whether `python` runs the project's `.venv`:
+After `source .venv/bin/activate`, the prompt starts with the project's name, such as `(assignment-03)`. To check, ask the shell which `python3` it runs and which version:
 
 ```text
-(assignment-03) ~/assignment-03 $ python -c "import sys; print(sys.executable)"
-/home/alice/assignment-03/.venv/bin/python
+(assignment-03) ~/assignment-03 $ which python3
+/home/alice/assignment-03/.venv/bin/python3
+(assignment-03) ~/assignment-03 $ python3 --version
+Python 3.13.14
 ```
 
-### When `import numpy` Fails
+Inside Python, `sys.executable` gives the same path; Assignment 03 records it that way.
+
+## When `import numpy` Fails
 
 ```text
-$ python -c "import numpy as np"
+$ python3 -c "import numpy as np"
 Traceback (most recent call last):
   File "<string>", line 1, in <module>
     import numpy as np
@@ -168,7 +184,7 @@ ModuleNotFoundError: No module named 'numpy'
 
 `ModuleNotFoundError` means the Python that ran the code cannot find the package. The usual causes:
 
-- **The environment is not active**, or VS Code picked another interpreter: `sys.executable` has no `.venv` in its path. Run `source .venv/bin/activate` in this terminal, and in VS Code run **Python: Select Interpreter** (Lecture 02) and choose `./.venv/bin/python`.
+- **The environment is not active**, or VS Code picked another interpreter: `which python3` in the terminal, or `sys.executable` in the code that failed, has no `.venv` in its path. Run `source .venv/bin/activate` in this terminal, and in VS Code run **Python: Select Interpreter** (Lecture 02) and choose `./.venv/bin/python`.
 - **The project's packages are not installed**: run `uv sync`.
 - **The package is new to this project**: `uv add pandas==3.0.5` installs it and records it in `pyproject.toml`.
 
@@ -186,7 +202,7 @@ pandas==3.0.5
 - `uv pip install -r requirements.txt`: Install every listed package into the active environment; `pyproject.toml` is unchanged.
 - `uv export --no-hashes > requirements.txt`: Write the packages `uv.lock` records; `--no-hashes` leaves out download checksums.
 - `uv pip freeze > requirements.txt`: Write every package installed in the active environment, pip included.
-- `python -m pip install -r requirements.txt`: The same install with pip, as Colab and the alternatives below do.
+- `python3 -m pip install -r requirements.txt`: The same install with pip, as Colab and the alternatives below do.
 
 ### Code Snippet: Share the Environment as `requirements.txt`
 
@@ -210,9 +226,9 @@ Python's standard library includes `venv`, which creates an environment with pip
 
 | Task | Command | Note |
 | :--- | :--- | :--- |
-| Create | `python -m venv .venv` | Uses the installed Python 3.13. |
+| Create | `python3 -m venv .venv` | Uses the installed Python 3.13. |
 | Activate | `source .venv/bin/activate` | PowerShell: `.\.venv\Scripts\Activate.ps1`. |
-| Install | `python -m pip install -r requirements.txt` | Uses the active environment's pip. |
+| Install | `python3 -m pip install -r requirements.txt` | Uses the active environment's pip. |
 | Leave | `deactivate` | Returns to the previous shell environment. |
 
 ## Using Conda (alternative comparison)
@@ -227,7 +243,7 @@ Conda manages Python environments and packages, including non-Python dependencie
 | :--- | :--- | :--- |
 | Create | `conda create --prefix ./.venv python=3.13 pip` | Creates the same `.venv` location with Conda. |
 | Activate | `conda activate ./.venv` (PowerShell: `conda activate .\.venv`) | Selects the Conda environment. |
-| Install | `python -m pip install -r requirements.txt` | Installs the packages a requirements file lists. |
+| Install | `python3 -m pip install -r requirements.txt` | Installs the packages a requirements file lists. |
 | Leave | `conda deactivate` | Returns to the previous environment. |
 
 ![xkcd 2347: Dependency. Every project stands on packages other people maintain, which is why yours records exactly which versions it needs](media/xkcd_2347.png)
@@ -235,6 +251,37 @@ Conda manages Python environments and packages, including non-Python dependencie
 # Shell Pipelines and Scripts
 
 A **pipeline** chains shell commands so each works on the previous one's output, answering quick questions about a data file, such as visits per clinic, without Python. A **shell script** saves the commands in a file, so the analysis reruns with one command when new data arrives.
+
+## Shell Scripts
+
+### Reference Card: Shell Scripts
+
+- `cat > count_clinics.sh`: Paste the script, press **Enter**, then **Ctrl+C** (Lecture 01).
+- `#!/bin/bash`: The first line; names the shell the script expects.
+- `# note`: A comment; Bash skips it in a script. At a zsh prompt, the Mac default, `#` is not a comment, so type commands without notes.
+- `\` at the end of a line: Continue the same command on the next line.
+- `bash count_clinics.sh`: Run the script from top to bottom.
+
+### Code Snippet: Save a Pipeline as a Script
+
+The pipeline and the timestamp variable in this script are explained in the next sections.
+
+```bash
+#!/bin/bash
+# Count encounters per clinic; save the counts under this run's timestamp.
+timestamp=$(date +"%Y%m%d_%H%M%S")
+mkdir -p results
+tail -n +2 data/raw/encounters.csv \
+  | cut -d',' -f4 | sort | uniq -c > "results/clinic_counts_${timestamp}.txt"
+echo "Saved results/clinic_counts_${timestamp}.txt"
+```
+
+```text
+$ bash count_clinics.sh
+Saved results/clinic_counts_20260918_162310.txt
+```
+
+Scripts can also take arguments and stop at the first failing command; [the bonus page](BONUS.md) covers those.
 
 ## Pipelines
 
@@ -275,6 +322,8 @@ tail -n +2 data/raw/encounters.csv | wc -l
 ## Wildcards and Searching
 
 A **wildcard** stands for part of a file name: `*` matches any run of characters and `?` exactly one, as in Lecture 02's `.gitignore` patterns such as `*.csv`. The shell replaces the pattern with every matching file name before the command runs. `grep` searches inside files instead: it prints each line that contains a pattern.
+
+### Examples of Wildcards
 
 In Demo 1's `~/03-demo` folder, as the download leaves it:
 
@@ -348,35 +397,6 @@ Your timestamp will differ:
 20260918_162001 complete
 ```
 
-## Shell Scripts
-
-### Reference Card: Shell Scripts
-
-- `cat > count_clinics.sh`: Paste the script, press **Enter**, then **Ctrl+C** (Lecture 01).
-- `#!/bin/bash`: The first line; names the shell the script expects.
-- `# note`: A comment; Bash skips it in a script. At a zsh prompt, the Mac default, `#` is not a comment, so type commands without notes.
-- `\` at the end of a line: Continue the same command on the next line.
-- `bash count_clinics.sh`: Run the script from top to bottom.
-
-### Code Snippet: Save a Pipeline as a Script
-
-```bash
-#!/bin/bash
-# Count encounters per clinic; save the counts under this run's timestamp.
-timestamp=$(date +"%Y%m%d_%H%M%S")
-mkdir -p results
-tail -n +2 data/raw/encounters.csv \
-  | cut -d',' -f4 | sort | uniq -c > "results/clinic_counts_${timestamp}.txt"
-echo "Saved results/clinic_counts_${timestamp}.txt"
-```
-
-```text
-$ bash count_clinics.sh
-Saved results/clinic_counts_20260918_162310.txt
-```
-
-Scripts can also take arguments and stop at the first failing command; [the bonus page](BONUS.md) covers those.
-
 # LIVE DEMO!
 
 # Checking Types and Looping over Lists
@@ -423,7 +443,7 @@ sum(readings)                 # TypeError: unsupported operand type(s) for +: 'i
 - `enumerate(items, start=0)`: Yield position-value pairs (Lecture 01).
 - `zip(left, right)`: Yield pairs until the shorter input ends.
 - `reversed(items)`: Iterate from the last item to the first.
-- `sorted(items)`: Return a new sorted list (Lecture 02).
+- `sorted(items)`: Return a new sorted list. For a NumPy array use `np.sort()` (Sorting and Ranking, below): `sorted()` on a 2-D array raises `ValueError`.
 
 ### Code Snippet: Keep Related Values Together
 
@@ -567,7 +587,7 @@ Simulated data lets you practice an analysis before touching patient records. A 
 
 | Method | Purpose | Example |
 | :--- | :--- | :--- |
-| `np.random.default_rng(seed)` | Creates a random generator; the seed makes the sequence reproducible. | `rng = np.random.default_rng(seed=42)` |
+| `np.random.default_rng(seed)` | Creates a random generator, NumPy's recommended way; the seed makes the sequence reproducible. Older code calls `np.random.seed()`. | `rng = np.random.default_rng(seed=42)` |
 | `rng.random(size)` | Uniform floats in `[0, 1)`. | `rng.random(5)` |
 | `rng.integers(low, high, size)` | Integers in `[low, high)`, which excludes `high`, so a `high` of `101` reaches 100; `size` may be a shape. | `rng.integers(60, 101, size=(100, 5))` |
 | `rng.standard_normal(size)` | Standard normal draws. | `rng.standard_normal(5)` |
@@ -692,7 +712,7 @@ An object is **mutable** when its contents can change in place: lists (Lecture 0
 ```text
 values ───────┐
               ├──> [10, 20, 30]   one array
-same_values ──┘
+alias_values ──┘
 copied_values ───> [10, 20, 30]   a separate array
 ```
 
@@ -700,9 +720,9 @@ copied_values ───> [10, 20, 30]   a separate array
 
 ```python
 values = np.array([10, 20, 30])
-same_values = values
-same_values[0] = 99
-print(values, same_values is values)  # [99 20 30] True: `is` compares identity, `==` compares values
+alias_values = values
+alias_values[0] = 99
+print(values, alias_values is values)  # [99 20 30] True: `is` compares identity, `==` compares values
 copied_values = values.copy()
 copied_values[0] = 10
 print(values, copied_values)  # [99 20 30] [10 20 30]
@@ -785,9 +805,16 @@ print(bp[(bp >= 120) & (bp < 130)])   # [128 126 121]
 
 ## Multidimensional Boolean Indexing
 
-A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits), build a 1-D mask with one `True` or `False` per row or per column, and put it in that dimension's slot: `bp[row_mask]` keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D. A mask's length must match the dimension it indexes; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0`.
+A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits) instead:
 
-`.any()` and `.all()` build such a mask from every value at once. Given an axis, they collapse it: `axis=1` checks across each row and gives one `True`/`False` per row (did this patient have any visit at 130 or above?), and `axis=0` checks down each column and gives one per column.
+1. Build a 1-D mask with one `True` or `False` per row, such as `bp[:, 0] >= 140`, or one per column.
+2. Put it in that dimension's slot: `bp[row_mask]` keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D.
+3. Match the mask's length to that dimension; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0`.
+
+`.any()` and `.all()` build such a mask from every value at once. Given an axis, they collapse it:
+
+- `axis=1` checks across each row and gives one `True`/`False` per row (did this patient have any visit at 130 or above?).
+- `axis=0` checks down each column and gives one per column.
 
 ```text
               visit 1  visit 2  visit 3     bp[:, 0] >= 140   (row mask, one per patient)

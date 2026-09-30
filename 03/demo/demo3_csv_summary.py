@@ -2,7 +2,7 @@
 """Demo 3.4: summarize encounters.csv by clinic with Lecture 02 file reading and arrays.
 
 Run it from ~/03-demo, the folder setup_demo.sh made, so the relative filename below resolves:
-    python demo3_csv_summary.py
+    python3 demo3_csv_summary.py
 It only prints; it writes no files.
 """
 

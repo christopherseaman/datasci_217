@@ -61,7 +61,7 @@ SPANS = {
 # The span of the guide whose text blocks name, in order, the lines to look for among what uv prints.
 ENVIRONMENT_SPAN = ("## 1.2 Create the Environment", "## 1.5 Read a Shell Script")
 # The command Demo 1.3 runs with the environment off, to show the lecture's ModuleNotFoundError.
-EXPECTED_ERROR_COMMAND = 'python -c "import numpy as np"\n'
+EXPECTED_ERROR_COMMAND = 'python3 -c "import numpy as np"\n'
 # An interactive shell with no startup files, as a student's terminal pastes into it.
 SHELLS = {
     "bash": ["bash", "--norc", "--noprofile", "--noediting", "-i", "-s"],
@@ -276,7 +276,7 @@ def check_pasted(shell, steps, look_for, shown_error):
         else:
             assert not SHELL_ERROR.search(output), (shell, command, output)
         # Demos 2 and 3 run in the (03-demo) environment, which the guide says the prompt shows.
-        if command.startswith("python demo"):
+        if command.startswith("python3 demo"):
             assert prompt == "(03-demo) ", (shell, command, prompt)
     transcript = "".join(output for _, _, output in steps)
     assert in_order(transcript, "".join(look_for)), (shell, transcript)
@@ -286,7 +286,7 @@ def check_pasted(shell, steps, look_for, shown_error):
         "demo1_cli_pipeline.sh": output_of(steps, "bash demo1_cli_pipeline.sh"),
         "count_clinics.sh": output_of(steps, "bash count_clinics.sh") + output_of(steps, "cat results/clinic_counts_"),
         "search": "".join(output for command, _, output in steps if command in search),
-        **{name: output_of(steps, f"python {name}") for name in PYTHON_SCRIPTS},
+        **{name: output_of(steps, f"python3 {name}") for name in PYTHON_SCRIPTS},
     }
     for name, (first_heading, last_heading) in SPANS.items():
         assert accounts_for(normalize(printed[name]), guide_blocks(first_heading, last_heading)), (shell, name)
@@ -312,7 +312,10 @@ def student_environment(home):
     # setup puts first on PATH; link the same uv-managed Python there, never a virtual environment's.
     bin_dir = home / ".local" / "bin"
     bin_dir.mkdir(parents=True)
-    (bin_dir / "python").symlink_to(uv_location("python", "find", "--system", "--managed-python", "3.13"))
+    managed = uv_location("python", "find", "--system", "--managed-python", "3.13")
+    # `uv python install 3.13 --default` (Lecture 01) puts both `python` and `python3` here.
+    (bin_dir / "python").symlink_to(managed)
+    (bin_dir / "python3").symlink_to(managed)
     env.update(
         PATH=f"{bin_dir}{os.pathsep}{env.get('PATH', os.defpath)}",
         HOME=str(home),
@@ -389,7 +392,7 @@ def run():
         assert error.stderr == shown_error, (error.stderr, shown_error)
         after_error = shell("set -e\n" + "\n".join(blocks[failing + 1:]), merged=True)
         # With the environment off, sys.executable is the Python outside it, with no .venv in its path.
-        assert before_error.stdout.endswith(f"\n{home / '.local' / 'bin' / 'python'}\n"), before_error.stdout
+        assert before_error.stdout.endswith(f"\n{home / '.local' / 'bin' / 'python3'}\n"), before_error.stdout
         stdout = printed = before_error.stdout + after_error.stdout
         # The guide's other text blocks here are the error and requirements.txt; the rest name, in
         # order, the lines to look for among everything uv and Python print.
@@ -399,7 +402,7 @@ def run():
         assert len(look_for) == 3 and in_order(printed, "".join(look_for)), (look_for, printed)
         assert printed.count("+ numpy==2.3.3") == 3, printed  # uv add, uv sync, uv pip install -r
         assert stdout.count("\n2.3.3\n") == 3, stdout
-        venv_python = demo / ".venv" / "bin" / "python"
+        venv_python = demo / ".venv" / "bin" / "python3"
         assert f"\n{venv_python}\n" in stdout, stdout
         assert (demo / ".python-version").read_text(encoding="utf-8") == "3.13\n"
         assert fenced(span("## 1.2 Create the Environment", "## 1.3"), "toml") == [
@@ -419,7 +422,7 @@ def run():
             assert fenced(span(first_heading, last_heading), "bash")[0] == reentry, first_heading
         resumed = shell("set -e\n" + "".join(fenced(span("## 1.3 Recreate It", "## 1.4"), "bash")[:2]),
                         cwd=home, merged=True)
-        assert resumed.stdout == f"{home / '.local' / 'bin' / 'python'}\n", resumed.stdout
+        assert resumed.stdout == f"{home / '.local' / 'bin' / 'python3'}\n", resumed.stdout
 
         def python(*arguments):
             """Run the demo environment's Python from ~/03-demo, as `python` does once it is active."""

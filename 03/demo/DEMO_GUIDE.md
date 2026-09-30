@@ -45,9 +45,9 @@ uv init --bare
 uv venv --seed
 source .venv/bin/activate
 uv add numpy==2.3.3
-python --version
-python -c "import numpy as np; print(np.__version__)"
-python -c "import sys; print(sys.executable)"
+python3 --version
+python3 -c "import numpy as np; print(np.__version__)"
+python3 -c "import sys; print(sys.executable)"
 cat pyproject.toml
 ```
 
@@ -75,7 +75,7 @@ dependencies = [
 ]
 ```
 
-The `sys.executable` line shows which interpreter `python` runs; it should sit inside this folder's `.venv`, such as `/Users/alice/03-demo/.venv/bin/python`. A path without `.venv` in it means the environment is not active in this terminal. `ls -a` now also lists `.python-version`, `pyproject.toml`, `uv.lock`, and `.venv`.
+The `sys.executable` line shows which interpreter `python3` runs; it should sit inside this folder's `.venv`, such as `/Users/alice/03-demo/.venv/bin/python3`. A path without `.venv` in it means the environment is not active in this terminal. `ls -a` now also lists `.python-version`, `pyproject.toml`, `uv.lock`, and `.venv`.
 
 ## 1.3 Recreate It from the Records
 
@@ -86,17 +86,17 @@ cd ~/03-demo
 source .venv/bin/activate
 ```
 
-Leave the environment, and check which Python `python` runs now:
+Leave the environment, and check which Python `python3` runs now:
 
 ```bash
 deactivate
-python -c "import sys; print(sys.executable)"
+python3 -c "import sys; print(sys.executable)"
 ```
 
-The prompt no longer starts with `(03-demo)`, and the path has no `.venv` in it, such as `/Users/alice/.local/bin/python`. That is the Python Lecture 01 installed, and it has no NumPy, so importing NumPy fails. This error is expected:
+The prompt no longer starts with `(03-demo)`, and the path has no `.venv` in it, such as `/Users/alice/.local/bin/python3`. That is the Python Lecture 01 installed, and it has no NumPy, so importing NumPy fails. This error is expected:
 
 ```bash
-python -c "import numpy as np"
+python3 -c "import numpy as np"
 ```
 
 ```text
@@ -116,7 +116,7 @@ cp .python-version pyproject.toml uv.lock recreation-check/
 cd recreation-check
 uv venv --seed
 uv sync
-uv run python -c "import numpy as np; print(np.__version__)"
+uv run python3 -c "import numpy as np; print(np.__version__)"
 cd ..
 ```
 
@@ -155,7 +155,7 @@ cd pip-check
 uv venv --seed
 source .venv/bin/activate
 uv pip install -r requirements.txt
-python -c "import numpy as np; print(np.__version__)"
+python3 -c "import numpy as np; print(np.__version__)"
 deactivate
 cd ..
 source .venv/bin/activate
@@ -353,7 +353,7 @@ source .venv/bin/activate
 ## 2.1 Check Types and Loop over Lists
 
 ```bash
-python demo2_types_and_lists.py
+python3 demo2_types_and_lists.py
 ```
 
 Source: [demo2_types_and_lists.py](demo2_types_and_lists.py). Heart rates exported as text arrive as `"88"`, not `88`. The script checks each value with `isinstance()` and converts the text ones, pairs patient IDs with the cleaned rates, then builds four lists in one line each:
@@ -393,7 +393,7 @@ Tachycardic (100 bpm or above): ['P002', 'P003']
 ## 2.2 Compare a List Loop with Array Arithmetic
 
 ```bash
-python demo2_numpy_performance.py
+python3 demo2_numpy_performance.py
 ```
 
 Source: [demo2_numpy_performance.py](demo2_numpy_performance.py). A wrist monitor that records one heart rate per second produces a million readings in under 12 days. This script applies 2.1's 2 bpm calibration offset to one million readings two ways: with a list comprehension and with array arithmetic. Both calibrate the same readings, so their result samples must match. The two timings, the speedup, and the time saved come from one machine and yours will differ; every other line should match exactly:
@@ -425,7 +425,7 @@ The list prints with commas and the array without. The script builds the reading
 ## 2.3 Data Types, Arrays, and Indexing
 
 ```bash
-python demo2_numpy_arrays.py
+python3 demo2_numpy_arrays.py
 ```
 
 Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This follows the rest of the block in the lecture's order: data types, creating arrays, their properties, random arrays, arithmetic, ufuncs, and indexing in one, two, and three dimensions. It starts with numeric text, as a file delivers it, and six patients' body temperatures in °F:
@@ -528,7 +528,7 @@ source .venv/bin/activate
 ```
 
 ```bash
-python demo3_bp_analysis.py
+python3 demo3_bp_analysis.py
 ```
 
 Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in 3.1 to 3.3 are the whole run, in order, following the lecture's two topics.
@@ -751,7 +751,7 @@ NumPy analysis complete.
 `encounters.csv` is a 1,500-row synthetic data file: one clinic visit per row, with a patient ID, an age, a systolic reading in mmHg, and the clinic that saw the patient. This script reads it with Lecture 02's `open()` and `split()`, then answers the same questions with arrays. It only prints; it writes no files.
 
 ```bash
-python demo3_csv_summary.py
+python3 demo3_csv_summary.py
 ```
 
 Source: [demo3_csv_summary.py](demo3_csv_summary.py). This column is systolic pressure, so its bands use the systolic thresholds rather than the diastolic ones above: below 120 is normal, 120-129 is elevated, 130-139 is stage 1, and 140 or above is stage 2.
