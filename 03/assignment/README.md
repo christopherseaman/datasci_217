@@ -3,7 +3,7 @@
 ## Files
 
 ```text
-assignment/
+ds217-03/
 ├── data/bp_readings.csv    # supplied readings; keep this file exactly as handed out
 ├── analysis.py             # starter script: the CSV loader is written, the analysis is yours
 ├── pyproject.toml          # supplied: the project's one direct dependency, numpy
@@ -122,22 +122,22 @@ mean_sbp: <number>
 high_monitor: <monitor id>
 ```
 
-| Key | The question it answers | Value | Points |
-| --- | --- | --- | ---: |
-| `patients` | How many patients does the file describe? | Whole number | 4 |
-| `readings` | How many individual readings does it hold, counting every patient and every hour? | Whole number | 4 |
-| `mean_sbp` | What is the mean of every reading in the file? | mmHg | 3 |
-| `sd_sbp` | What is the standard deviation of every reading? | mmHg | 3 |
-| `min_sbp` | What is the lowest single reading? | Whole number of mmHg | 3 |
-| `max_sbp` | What is the highest single reading? | Whole number of mmHg | 3 |
-| `stage2_patients` | How many patients have a 12-hour mean of 140 mmHg or higher? | Whole number | 4 |
-| `highest_patient` | Which patient has the highest 12-hour mean? | `patient_id` as written in the file | 4 |
-| `highest_patient_mean` | What is that patient's 12-hour mean? | mmHg | 4 |
-| `peak_hour_column` | Which hour column has the highest mean across all patients? | Column name as written in the header | 4 |
-| `peak_hour_mean` | What is that column's mean? | mmHg | 4 |
-| `high_monitor` | Which monitor's average is highest? | Monitor id as written in the file | 4 |
-| `monitor_offset` | How far above the average of the patients on the _other_ monitors does that monitor's average sit? | mmHg | 3 |
-| `stage2_other_monitors` | Leaving out the patients on that monitor, how many of the rest have a 12-hour mean of 140 mmHg or higher? | Whole number | 3 |
+| Key                     | The question it answers                                                                                   | Value                                | Points |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------ | -----: |
+| `patients`              | How many patients does the file describe?                                                                 | Whole number                         |      4 |
+| `readings`              | How many individual readings does it hold, counting every patient and every hour?                         | Whole number                         |      4 |
+| `mean_sbp`              | What is the mean of every reading in the file?                                                            | mmHg                                 |      3 |
+| `sd_sbp`                | What is the standard deviation of every reading?                                                          | mmHg                                 |      3 |
+| `min_sbp`               | What is the lowest single reading?                                                                        | Whole number of mmHg                 |      3 |
+| `max_sbp`               | What is the highest single reading?                                                                       | Whole number of mmHg                 |      3 |
+| `stage2_patients`       | How many patients have a 12-hour mean of 140 mmHg or higher?                                              | Whole number                         |      4 |
+| `highest_patient`       | Which patient has the highest 12-hour mean?                                                               | `patient_id` as written in the file  |      4 |
+| `highest_patient_mean`  | What is that patient's 12-hour mean?                                                                      | mmHg                                 |      4 |
+| `peak_hour_column`      | Which hour column has the highest mean across all patients?                                               | Column name as written in the header |      4 |
+| `peak_hour_mean`        | What is that column's mean?                                                                               | mmHg                                 |      4 |
+| `high_monitor`          | Which monitor's average is highest?                                                                       | Monitor id as written in the file    |      4 |
+| `monitor_offset`        | How far above the average of the patients on the _other_ monitors does that monitor's average sit?        | mmHg                                 |      3 |
+| `stage2_other_monitors` | Leaving out the patients on that monitor, how many of the rest have a 12-hour mean of 140 mmHg or higher? | Whole number                         |      3 |
 
 How the values are read:
 
@@ -191,15 +191,15 @@ Every push also runs GitHub Actions, which downloads the course's current copy o
 
 Grading totals 100 points and reads these files relative to the assignment root.
 
-| Artifact | Complete when | Check | Points |
-| --- | --- | --- | ---: |
-| `output/environment.txt` | Its `numpy` line holds a version number. Which version is not graded, and neither is the `python` line. | environment probe: numpy | 7 |
-| `output/environment.txt` | Its `interpreter` line is not empty. Which interpreter is not graded. | environment probe: interpreter | 6 |
-| `output/record_count.txt` | It holds the number of patient records in the supplied CSV. | record count artifact | 10 |
-| `output/monitor_counts_<timestamp>.txt` | A counts file in `output/` has the run timestamp in its name. | monitor counts: timestamped name | 3 |
-| `output/monitor_counts_<timestamp>.txt` | A counts file in `output/` holds that monitor's patient count. | one check per monitor, named `monitor counts: M01` to `M06` | 12 |
-| `output/vitals_summary.txt` | It has a readable `key: value` line for at least one key in Task 3's table. A missing or unreadable key costs only its own answer check. | summary artifact format | 12 |
-| `output/vitals_summary.txt` | Each of the 14 answers matches the supplied readings. | one check per key, named `answer: <key>` | 50 |
+| Artifact                                | Complete when                                                                                                                            | Check                                                       | Points |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -----: |
+| `output/environment.txt`                | Its `numpy` line holds a version number. Which version is not graded, and neither is the `python` line.                                  | environment probe: numpy                                    |      7 |
+| `output/environment.txt`                | Its `interpreter` line is not empty. Which interpreter is not graded.                                                                    | environment probe: interpreter                              |      6 |
+| `output/record_count.txt`               | It holds the number of patient records in the supplied CSV.                                                                              | record count artifact                                       |     10 |
+| `output/monitor_counts_<timestamp>.txt` | A counts file in `output/` has the run timestamp in its name.                                                                            | monitor counts: timestamped name                            |      3 |
+| `output/monitor_counts_<timestamp>.txt` | A counts file in `output/` holds that monitor's patient count.                                                                           | one check per monitor, named `monitor counts: M01` to `M06` |     12 |
+| `output/vitals_summary.txt`             | It has a readable `key: value` line for at least one key in Task 3's table. A missing or unreadable key costs only its own answer check. | summary artifact format                                     |     12 |
+| `output/vitals_summary.txt`             | Each of the 14 answers matches the supplied readings.                                                                                    | one check per key, named `answer: <key>`                    |     50 |
 
 Extra files and extra lines are ignored.
 
