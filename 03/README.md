@@ -603,7 +603,7 @@ print(values, copied_values)  # [99 20 30] [10 20 30]
 ```
 
 <callout icon="⚠️" color="yellow_bg">
-	## b = a is an alias! Not a copy!
+	## `b = a` is an alias! Not a copy!
 	A change through `b`, such as `b[0] = 99` or `b += 1`, changes `a` too, and a function that changes an array passed to it changes the caller's array. Write `b = a.copy()` when you need a separate array.
 </callout>
 
