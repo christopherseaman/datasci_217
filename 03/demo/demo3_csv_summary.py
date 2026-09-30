@@ -62,6 +62,16 @@ def main():
     highest = np.array(averages).argmax()  # a position in averages, which is the same position in names
     print(f"Highest-average clinic: {names[highest]} ({averages[highest]:.1f} mmHg)")
 
+    print(f"\n=== {names[highest]} compared with every other clinic ===")
+    # Rebuild the mask from the name: after the loop, in_clinic holds the last clinic's mask.
+    in_highest = clinics == names[highest]
+    others = ~in_highest  # ~ flips the mask: True for every encounter outside that clinic
+    # Every other encounter pooled together, not an average of the other clinics' averages.
+    others_average = systolic[others].mean()
+    print(f"Every other clinic: {others.sum()} encounters, average {others_average:.1f} mmHg")
+    print(f"Difference: {averages[highest] - others_average:.1f} mmHg")
+    print(f"Stage 2 readings outside {names[highest]}: {(stage_2 & others).sum()}")
+
 
 if __name__ == "__main__":
     main()

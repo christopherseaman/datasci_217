@@ -173,6 +173,16 @@ AXIS_HINT = (
     " That is what `readings.mean(axis=0)`, one mean per hour column, gives; a patient's 12-hour mean is "
     "`readings.mean(axis=1)`, one per patient."
 )
+# For a label answer written as a position: the array of names that position indexes, and what one is called.
+LABEL_ARRAYS = {
+    "highest_patient": ("`patient_ids`", "patient_id"),
+    "peak_hour_column": ("`hour_columns`", "column name"),
+    "high_monitor": ("the sorted monitor ids, `sorted(set(monitors))`,", "monitor id"),
+}
+READINGS_HINT = (
+    f" That is how many readings are {STAGE_2_MMHG} mmHg or higher, counting every hour of every patient; the "
+    f"question counts patients, so compare each patient's 12-hour mean, `readings.mean(axis=1)`, with {STAGE_2_MMHG}."
+)
 
 
 @dataclass(frozen=True)
@@ -490,6 +500,44 @@ def _label_problem(raw: str, expected: str, kind: str) -> str | None:
         f"which puts `{negation.group()}` before {expected}, so it reads as not naming it; write the answer "
         "without that word."
     )
+
+
+def _position_hint(raw: str, key: str, data: Dataset, expected: str) -> str:
+    """A hint for a label answer that names no id but holds the expected id's position, counted from 0 or 1.
+
+    Demo 3.3 prints positions, as in `Patient  63`, so an answer copied in that style writes where the id
+    sits instead of the id.
+    """
+    text = _unwrap(raw)
+    if _same_kind(expected.casefold(), re.IGNORECASE).search(text):
+        return ""
+    numbers = _WHOLE_NUMBER.findall(text)
+    ids = {
+        "highest_patient": data.patients,
+        "peak_hour_column": data.hour_columns,
+        "high_monitor": tuple(sorted(set(data.monitors))),
+    }[key]
+    position = ids.index(expected)
+    if not numbers or int(numbers[0]) not in (position, position + 1):
+        return ""
+    array, name = LABEL_ARRAYS[key]
+    return (
+        f" `{numbers[0]}` is a position, not a {name}: index {array} with the position `argmax()` gives, as the "
+        f"lecture's `ids[avg_glucose.argmax()]` does, and write the {name} it returns."
+    )
+
+
+def _stage2_readings(key: str, data: Dataset, monitors: list[str]) -> set[int]:
+    """For a stage 2 count, how many readings, rather than patients, reach stage 2 in the same group."""
+    def high(rows) -> int:
+        return sum(1 for row in rows for value in row if value >= STAGE_2_MMHG)
+
+    if key == "stage2_patients":
+        return {high(data.readings)}
+    if key == "stage2_other_monitors":
+        return {high(row for row, owner in zip(data.readings, data.monitors) if owner != monitor)
+                for monitor in monitors}
+    return set()
 
 
 def _key_name(raw: str) -> str:
@@ -1040,7 +1088,7 @@ def _check_answer(root: Path, key: str) -> None:
             why = f"which is not {LABEL_KEYS[key]}: the supplied {DATA_FILE} gives `{expected}`."
             if key == "high_monitor":
                 why += _follow_ups_note(summary, data, answers)
-            why += axis_hint
+            why += axis_hint + _position_hint(raw, key, data, str(expected))
         raise AssertionError(f"{given}, {why}{repeated} {SUMMARY_FIX}")
 
     readings = _as_numbers(raw)
@@ -1084,6 +1132,9 @@ def _check_answer(root: Path, key: str) -> None:
     if key in MMHG_KEYS:
         gives += f" (allowed difference {MMHG_TOLERANCE} mmHg)"
     hint += axis_hint
+    monitors = [str(answers["high_monitor"])] + ([named] if named is not None else [])
+    if any(value in _stage2_readings(key, data, monitors) for value in readings):
+        hint += READINGS_HINT
     raise AssertionError(
         f"{given}{read} {(COUNT_KEYS | MMHG_KEYS)[key]}: {gives}.{hint}{repeated} {SUMMARY_FIX}"
     )

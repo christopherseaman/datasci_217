@@ -17,12 +17,12 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)
 
-NumPy is a third-party **package**, installable code that provides modules, so unlike Lecture 02's `math`, `import numpy` works only after it is installed. A **virtual environment** is a project folder, `.venv`, holding its own Python **interpreter** (the program that runs Python code) and its own installed packages, so each project keeps the versions it was written with.
+A **package** is installable code that provides modules. `math` (Lecture 02) ships with Python, but NumPy, pandas, and most other data-science tools are third-party packages, so `import numpy` works only after NumPy is installed. Packages change between versions: a function is renamed or a default changes, so code written for pandas 2 can fail or behave differently under pandas 3. If every project shares one Python, every project must use the same versions.
 
-```text
-Project A → A/.venv → Python 3.13, numpy 2.3.3
-Project B → B/.venv → Python 3.12, numpy 1.26.4
-```
+A **virtual environment** gives each project its own Python: a folder in the project, named `.venv`, that holds a Python **interpreter** (the program that runs Python code) and the packages installed for that project alone.
+
+- **Isolation**: each project keeps the versions it was written with, so upgrading pandas for this course cannot break an analysis written for an older pandas.
+- **Rebuilding**: the project records the packages and exact versions it needs, so a collaborator, a grader, or you a year later answering a journal reviewer can rebuild the same environment and get the same numbers from the same data.
 
 ## Course Environment
 
@@ -208,9 +208,15 @@ Conda manages Python environments and packages, including non-Python dependencie
 
 # Shell Pipelines and Scripts
 
+The shell answers quick questions about a data file without any Python. A clinic's encounter export is plain text with one visit per line, and the first questions about it are simple: how many visits, which clinics, and how many visits each. Lecture 01's commands each do one small job (`cat` prints a file, `head` its first lines, `tail` its last); joined together, they answer each question in one line, and run the same way on a file of millions of rows.
+
+- A **pipeline** chains commands so that each works on the previous one's output, like an assembly line.
+- A timestamp in each output file's name keeps every run's result, where rerunning with `>` would replace the last one.
+- A **shell script** saves the commands in a file, so the whole analysis reruns with one command when next month's export arrives.
+
 ## Pipelines
 
-A **pipe** (`|`) sends one command's output into the next command, as `>` (Lecture 01) sends it into a file. A **pipeline** chains small commands, each doing one job, to answer quick questions about a file, such as how many encounters each clinic had. On Demo 1's `data/raw/encounters.csv`, a header and six rows, each stage works on the previous stage's output:
+A **pipe** (`|`) sends one command's output into the next command, as `>` (Lecture 01) sends it into a file. On Demo 1's `data/raw/encounters.csv`, a header and six rows, this pipeline counts encounters per clinic, one stage at a time:
 
 | Stage | Command | Output |
 | --- | --- | --- |
@@ -246,7 +252,7 @@ tail -n +2 data/raw/encounters.csv | wc -l
 
 ## Variables and Timestamps
 
-Rerunning a pipeline with `>` replaces the last result; naming each output file with the time it ran keeps every result. The shell stores text in a **variable** and captures a command's output with **command substitution**, `$(...)`.
+The shell stores text in a **variable** and captures a command's output with **command substitution**, `$(...)`; together they put the time a run started into its output file's name.
 
 ### Reference Card: Shell Variables and Timestamps
 
@@ -264,8 +270,6 @@ echo "${timestamp} complete" >> logs/processing.log    # adds the line: 20260918
 ```
 
 ## Shell Scripts
-
-A **shell script** is a file of commands, so a whole pipeline reruns with one command when the data change.
 
 ### Reference Card: Shell Scripts
 
@@ -298,11 +302,15 @@ Scripts can also take arguments and stop at the first failing command; [the bonu
 
 # Checking Types and Looping over Lists
 
-Three tools shorten everyday list code: `isinstance()` checks what a value is, `zip()` and `reversed()` walk lists, and a list comprehension builds a list in one line.
+Values read from a file or a form rarely arrive ready to calculate with: numbers stored as text, patient IDs in one list and their readings in another, and more values than a question needs. Three plain-Python tools do the list work that cleaning starts with:
+
+- **Check what a value is** with `isinstance()` before calculating with it: `"72"` is text and `80` is a number, and adding them raises a `TypeError`, so convert the text first.
+- **Walk two lists together** with `zip()`, so each patient's ID stays paired with that patient's reading instead of the two lists drifting out of step.
+- **Build a new list in one line** with a **list comprehension**, keeping only the values that pass a test (fevers at or above 100.4 °F) or converting every value (milligrams to grams), in place of a loop that starts with an empty list and appends.
 
 ## Checking Types
 
-Values read from a file start as text, so check a value's type before calculating with it. **Introspection** means asking an object what it is while the program runs: `type()` (Lecture 01) names the type, and `isinstance()` answers yes or no, which suits an `if`.
+**Introspection** means asking an object what it is while the program runs: `type()` (Lecture 01) names the type, and `isinstance()` answers yes or no, which suits an `if`.
 
 | Value | `type(value)` | `isinstance(value, str)` |
 | --- | --- | --- |
@@ -335,14 +343,12 @@ sum(readings)                 # TypeError: unsupported operand type(s) for +: 'i
 
 ## Sequence Functions
 
-Beside `enumerate()` (Lecture 01) and `sorted()` (Lecture 02), `zip()` walks two lists side by side, keeping each patient's ID with that patient's reading, and `reversed()` walks a sequence from the end.
-
 ### Reference Card: Sequence Functions
 
-- `enumerate(items, start=0)`: Yield position-value pairs.
+- `enumerate(items, start=0)`: Yield position-value pairs (Lecture 01).
 - `zip(left, right)`: Yield pairs until the shorter input ends.
 - `reversed(items)`: Iterate from the last item to the first.
-- `sorted(items)`: Return a new sorted list.
+- `sorted(items)`: Return a new sorted list (Lecture 02).
 
 ### Code Snippet: Keep Related Values Together
 
@@ -356,7 +362,7 @@ print(list(reversed(patients)))       # ['P003', 'P002', 'P001']
 
 ## List Comprehensions
 
-A **list comprehension** builds a list in one line: `[expression for item in items if condition]` reads as "make this, for each item, keeping only items that pass." A plain loop always works too; [the bonus page](BONUS.md) shows more forms.
+`[expression for item in items if condition]` reads as "make this, for each item, keeping only items that pass." A plain loop always works too; [the bonus page](BONUS.md) shows more forms.
 
 ### Reference Card: List Comprehensions
 
@@ -381,9 +387,12 @@ print([mg / 1000 for mg in [250, 500, 125]])  # [0.25, 0.5, 0.125]: mg to g
 
 ![It's pronounced "num pie": NumPy is short for Numerical Python, whatever the cat says](media/numpy.webp)
 
-## Why NumPy
+**NumPy** (Numerical Python) is the package for calculating on many numbers at once, and pandas (Lecture 04) is built on it. Health data is mostly numbers in bulk: a wearable records a heart rate every second, 86,400 readings a day, and a lab table holds a result for every patient and every test. A list can hold those numbers, but every calculation on it is a loop that visits them one at a time, which is long to write and slow on data this size.
 
-**NumPy** (Numerical Python) is the package for calculating on many numbers at once, and pandas (Lecture 04) is built on it. Its core object is the **array**, a grid of values that all share one data type, so one expression such as `readings * 2` applies to every element with no loop. This style is called **vectorization**, and on a wearable's 86,400 readings a day it is far faster than a loop over a list.
+- NumPy's core object is the **array**, a grid of values that all share one data type: a 1-D array is one run of readings, and a 2-D array is a table, such as patients × visits.
+- One expression works on every element at once: `readings * 2` doubles every reading with no loop. This style is called **vectorization**, and it is far faster than a loop over a list.
+
+## Why NumPy
 
 ```text
 Python list: [1, 2, 3] * 2  → [1, 2, 3, 1, 2, 3]   repeats the list
@@ -547,7 +556,7 @@ print(arr[::2])          # [0 2 4 6 8]
 
 ### Multidimensional Arrays
 
-A 2-D array is a table: the first index picks rows (**axis 0**) and the second picks columns (**axis 1**). A 3-D array of patients × days × readings takes three indexes, `arr[patient, day, reading]`.
+A 2-D array is a table: the first index picks a row and the second picks a column. Each index moves along an **axis**: axis 0 runs down the rows, and axis 1 runs across the columns. A 3-D array of patients × days × readings takes three indexes, `arr[patient, day, reading]`.
 
 ```text
 bp              visit 1  visit 2  visit 3
@@ -584,7 +593,13 @@ print(week[:, :, 0].shape)   # (2, 7): every patient's first reading of each day
 
 # Selecting and Reshaping Arrays
 
-NumPy selects values by a condition or by a list of positions and rearranges them into new shapes. Some results share data with the original array, so this topic starts with when a change to one array shows up in another.
+Analysis questions rarely use a whole array: which patients reached a systolic reading of 140 mmHg, what were the Cardiology readings, what was each patient's first and last visit? Indexing by position answers only when you already know where the values sit. NumPy also selects values by what they are, and rearranges them:
+
+- **By a condition**: compare the array with a value, such as `bp >= 140`, and keep the values where the comparison is true. This is the everyday way to filter data.
+- **By a list of positions**: pick elements, rows, or columns in the order you name them, such as each patient's first and last visit.
+- **Into a new shape**: rearrange the same values into a different grid, such as a flat run of 12 readings into 3 patients by 4 visits.
+
+Some arrays share their numbers with the original, so a change to one shows up in the other: a second name for the array, a slice of it, and usually a reshape. Selecting by a condition or by a list of positions makes an independent copy. Setting outliers to zero in what you thought was a copy can overwrite the raw readings, so this topic starts with which is which.
 
 ## Names, Aliases, and Mutability
 
@@ -685,15 +700,17 @@ print(bp[(bp >= 120) & (bp < 130)])   # [128 126 121]
 
 ## Multidimensional Boolean Indexing
 
-A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits), build a 1-D mask with one `True` or `False` per row or per column, and put it in that dimension's slot: `bp[row_mask]` (the same as `bp[row_mask, :]`) keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D. A row mask usually comes from one column (`bp[:, 0] >= 140`) or from a whole row at once with `.any(axis=1)` or `.all(axis=1)`. A mask's length must match the dimension it indexes; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0`.
+A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits), build a 1-D mask with one `True` or `False` per row or per column, and put it in that dimension's slot: `bp[row_mask]` keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D. A mask's length must match the dimension it indexes; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0`.
+
+`.any()` and `.all()` build such a mask from every value at once. Given an axis, they collapse it: `axis=1` checks across each row and gives one `True`/`False` per row (did this patient have any visit at 130 or above?), and `axis=0` checks down each column and gives one per column.
 
 ```text
-              visit 1  visit 2  visit 3     bp[:, 0] >= 140   (row mask, axis 0)
+              visit 1  visit 2  visit 3     bp[:, 0] >= 140   (row mask, one per patient)
 patient 0   [[  128      131      126 ]         False
 patient 1    [  142      145      139 ]         True      ← bp[row_mask] keeps this row
 patient 2    [  118      121      119 ]]        False
 
-(bp >= 140).any(axis=0)  →  [ True   True   False ]      (column mask, axis 1)
+(bp >= 140).any(axis=0)  →  [ True   True   False ]      (column mask, one per visit)
                                ↑      ↑
                     bp[:, col_mask] keeps visits 1 and 2
 ```
@@ -753,8 +770,6 @@ print(bp[:, [0, -1]])    # [[128 126]
 
 ## Array Reshaping
 
-Reshaping rearranges the same values into a different grid: a flat run of 12 readings becomes 3 patients by 4 visits, filled row by row.
-
 ![NumPy reshape: 12 values fill a 3×4 grid row by row, and ravel() turns the grid back into one row](media/numpy_reshape_panel.png)
 
 ### Reference Card: Reshape and Transpose
@@ -782,11 +797,16 @@ print(arr.T)              # [[1 4]
 
 # Analyzing Arrays
 
-NumPy's analysis tools work on a whole array or along one axis: they summarize values, transform each one, label them by rule, and rank them.
+Analysis turns an array of readings into answers: each patient's average blood pressure, how many readings crossed a threshold, which guideline category each reading falls in, and which patients rank highest. In plain Python each answer is a loop with a running total or an `if`/`elif` chain; in NumPy each is one expression over the whole array.
+
+- **Summarize**: collapse many values into one, such as a mean, over the whole array, along one axis (one result per patient or per visit), or for one group picked by a mask, such as one clinic's readings.
+- **Transform**: apply a math function, such as a square root, to every element.
+- **Label**: apply one rule to every position, such as marking readings of 140 mmHg or more as `"high"`, in place of an `if`/`else` inside a loop.
+- **Rank**: sort the values, or find the positions that would sort them, to learn which patient has the highest value.
 
 ## Summary Statistics
 
-A **reduction** collapses many values into one, such as a mean. Passing `axis` reduces along one dimension instead: `axis=0` collapses the rows and gives one result per column, and `axis=1` collapses the columns and gives one result per row. For a patients × visits table, `axis=1` gives each patient's mean and `axis=0` each visit's.
+A **reduction** collapses many values into one, such as a mean. Passing `axis` reduces along one dimension instead, as `.any(axis=1)` did for masks: `axis=0` collapses the rows and gives one result per column, and `axis=1` collapses the columns and gives one result per row. For a patients × visits table, `axis=1` gives each patient's mean and `axis=0` each visit's.
 
 ```text
 [[1, 2, 3],  → axis=1 mean: 2.0 for this row
@@ -825,8 +845,6 @@ print(arr.max(axis=0))    # [4 5 6]: the largest value in each column
 
 ### Code Snippet: Select One Group by a Label
 
-A mask can come from a text array: when `clinics` names the clinic for each reading in `systolic`, `systolic[clinics == "Cardiology"]` keeps that clinic's readings.
-
 ```python
 clinics = np.array(["Cardiology", "Primary Care", "Cardiology", "Nephrology", "Primary Care"])
 systolic = np.array([142, 118, 151, 135, 128])   # one reading per visit, same order as clinics
@@ -858,7 +876,7 @@ print(np.maximum([1, 5, 3], [4, 2, 6]))       # [4 5 6]
 
 ## Conditional Logic
 
-`np.where(condition, value_if_true, value_if_false)` is the array version of `if`/`else`: it checks every position and picks one of two values. For more than two labels, nest `np.where` calls or use `np.select`.
+`np.where(condition, value_if_true, value_if_false)` is the array version of `if`/`else`: it checks every position and picks one of two values.
 
 ### Reference Card: Labels by Rule
 

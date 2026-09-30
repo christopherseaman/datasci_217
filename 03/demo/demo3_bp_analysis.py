@@ -62,16 +62,21 @@ def demo_function_changes_input(readings):
 
 
 def demo_views_and_copies(readings):
-    """Show that a slice shares its data and .copy() does not."""
-    print("=== Views vs Copies ===")
+    """Show that a second name and a slice share their data and .copy() does not."""
+    print("=== Aliases, Views, and Copies ===")
 
     # Work on an independent block so the rest of the demo sees the original readings.
     practice = readings[:2, :3].copy()
     print("Practice block (2 patients, 3 visits):")
     print(practice)
 
-    view = practice[0]           # a view: another window onto practice
-    independent = practice[0].copy()
+    same = practice              # an alias: a second name for the same array
+    same[1, 0] = 0               # writing through the alias changes practice
+    print(f"After same[1, 0] = 0, practice row 1: {practice[1]}")
+    print(f"same is practice: {same is practice}")
+
+    view = practice[0, :]        # a view: a slice, another window onto practice
+    independent = practice[0, :].copy()
 
     view[0] = 0                  # writing through the view reaches practice
     independent[1] = 0           # writing to the copy stays local
@@ -85,7 +90,7 @@ def demo_views_and_copies(readings):
 
 
 def demo_boolean_indexing(readings):
-    """Select readings, and whole rows, with masks on the 2-D array."""
+    """Select readings, replace them in a copy, and keep whole rows or columns with masks."""
     print("=== Boolean Indexing ===")
 
     # One True or False per reading: stage 2 is 90 mmHg or above.
@@ -96,11 +101,27 @@ def demo_boolean_indexing(readings):
     stage_1 = (readings >= 80) & (readings < 90)
     print(f"Readings from 80 to 89 mmHg: {stage_1.sum()}")
 
+    # Assigning through a mask changes the array it indexes, so cap a copy and keep the raw readings.
+    capped = readings.copy()
+    capped[capped > 95] = 95
+    print(f"Capped at 95 mmHg, patient 2: {capped[2]}")
+    print(f"Raw readings, patient 2:      {readings[2]}")
+
     # A mask on one column keeps whole rows, so the result stays 2-D.
     high_first = readings[readings[:, 0] >= 98]
     print(f"Patients whose visit 1 was 98 mmHg or above: {high_first.shape[0]}")
     print("Their first three rows:")
     print(high_first[:3])
+
+    # .any(axis=1) collapses each patient's five visits into one True or False per patient.
+    reached_100 = (readings >= 100).any(axis=1)
+    print(f"Patients with any visit at 100 mmHg or above: {reached_100.sum()}")
+    print(f"Their visit 5 readings: {readings[reached_100, -1]}")
+
+    # One True or False per visit is a column mask: it keeps whole columns.
+    high_visits = readings.mean(axis=0) >= 85
+    print(f"Visits averaging 85 mmHg or above: {high_visits}")
+    print(f"readings[:, high_visits] shape: {readings[:, high_visits].shape}")
     print()
 
 

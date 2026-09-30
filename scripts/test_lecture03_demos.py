@@ -4,7 +4,8 @@ setup_demo.sh runs through `curl | sh` with HOME pointed at a scratch folder and
 repository's 03/demo, so it downloads the working-tree files and never touches the real home folder.
 Demo 1's environment commands then run with uv exactly as the guide gives them, and every demo script
 runs from the resulting ~/03-demo with the Python of the environment Demo 1 built. uv reuses the real
-uv cache and installed Pythons, and `uv add` needs the package index, as it does for students.
+uv cache and installed Pythons, and `uv add` needs the package index, as it does for students. Outside
+the environment, `python` is the uv-managed Python 3.13 that Lecture 01 installs, with no NumPy.
 
     python3 scripts/test_lecture03_demos.py
 """
@@ -53,6 +54,8 @@ ENVIRONMENT_OUTPUT = (
     "+ numpy==2.3.3",
     "Python 3.13.x",
 )
+# The command Demo 1.3 runs with the environment off, to show the lecture's ModuleNotFoundError.
+EXPECTED_ERROR_COMMAND = 'python -c "import numpy as np"\n'
 
 
 TIMESTAMP = re.compile(r"\d{8}_\d{6}")
@@ -147,7 +150,13 @@ def student_environment(home):
     redirecting = {"UV_PYTHON", "UV_PROJECT_ENVIRONMENT", "UV_SYSTEM_PYTHON", "UV_CONFIG_FILE", "UV_NO_CONFIG"}
     env = {name: value for name, value in os.environ.items()
            if name not in redirecting and not name.startswith(("VIRTUAL_ENV", "CONDA", "PYTHON"))}
+    # Lecture 01's `uv python install 3.13 --default` links `python` in ~/.local/bin, which its shell
+    # setup puts first on PATH; link the same uv-managed Python there, never a virtual environment's.
+    bin_dir = home / ".local" / "bin"
+    bin_dir.mkdir(parents=True)
+    (bin_dir / "python").symlink_to(uv_location("python", "find", "--system", "--managed-python", "3.13"))
     env.update(
+        PATH=f"{bin_dir}{os.pathsep}{env.get('PATH', os.defpath)}",
         HOME=str(home),
         XDG_CONFIG_HOME=str(home / ".config"),
         XDG_DATA_HOME=str(home / ".local" / "share"),
@@ -198,22 +207,34 @@ def run():
         assert again.returncode != 0 and "File exists" in again.stderr and not again.stdout, again
         assert {path: path.read_bytes() for path in demo.iterdir()} == before
 
-        # Demo 1.2 to 1.4: the guide's environment commands, run as written in one terminal session.
-        commands = "\n".join(fenced(span("## 1.2 Create the Environment", "## 1.5 Read a Shell Script"), "bash"))
-        environment = shell(f"set -e\n{commands}")
-        printed = environment.stdout + environment.stderr
+        # Demo 1.2 to 1.4: the guide's environment commands, run as written in one terminal session,
+        # except the one 1.3 runs to show an expected error, which runs on its own at the same point.
+        blocks = fenced(span("## 1.2 Create the Environment", "## 1.5 Read a Shell Script"), "bash")
+        failing = blocks.index(EXPECTED_ERROR_COMMAND)
+        assert EXPECTED_ERROR_COMMAND in fenced(span("## 1.3 Recreate It", "## 1.4"), "bash")
+        before_error = shell("set -e\n" + "\n".join(blocks[:failing]))
+        # A new shell is the state `deactivate` leaves: the student's PATH, with no environment active.
+        error = shell(EXPECTED_ERROR_COMMAND, check=False)
+        assert error.returncode != 0 and not error.stdout, error
+        [shown_error] = fenced(span(EXPECTED_ERROR_COMMAND, "## 1.4"), "text")
+        assert error.stderr == shown_error, (error.stderr, shown_error)
+        after_error = shell("set -e\n" + "\n".join(blocks[failing + 1:]))
+        # With the environment off, sys.executable is the Python outside it, with no .venv in its path.
+        assert before_error.stdout.endswith(f"\n{home / '.local' / 'bin' / 'python'}\n"), before_error.stdout
+        stdout = before_error.stdout + after_error.stdout
+        printed = stdout + before_error.stderr + after_error.stderr
         for expected in ENVIRONMENT_OUTPUT:
             assert expected in GUIDE_TEXT, expected
             pattern = re.escape(expected).replace("x", r"\d+")
             assert re.search(pattern, printed), (expected, printed)
         assert printed.count("+ numpy==2.3.3") == 3, printed  # uv add, uv sync, uv pip install -r
-        assert environment.stdout.count("\n2.3.3\n") == 3, environment.stdout
+        assert stdout.count("\n2.3.3\n") == 3, stdout
         venv_python = demo / ".venv" / "bin" / "python"
-        assert f"\n{venv_python}\n" in environment.stdout, environment.stdout
+        assert f"\n{venv_python}\n" in stdout, stdout
         assert (demo / ".python-version").read_text(encoding="utf-8") == "3.13\n"
         assert fenced(span("## 1.2 Create the Environment", "## 1.3"), "toml") == [
             (demo / "pyproject.toml").read_text(encoding="utf-8")]
-        assert quotes(environment.stdout, (demo / "pyproject.toml").read_text(encoding="utf-8"))
+        assert quotes(stdout, (demo / "pyproject.toml").read_text(encoding="utf-8"))
         assert (demo / "uv.lock").is_file() and (demo / "recreation-check" / "uv.lock").is_file()
         requirements = (demo / "requirements.txt").read_text(encoding="utf-8")
         assert fenced(span("## 1.4 Share It", "## 1.5"), "text")[0] == requirements, requirements
@@ -313,7 +334,8 @@ def run():
 
         # No block anywhere in the guide goes unverified, including Demo 1's and the shell's.
         outputs = [normalize(text) for text in
-                   (installed, requirements, first, summary, log, counted, *runs.values(), previews, counts)]
+                   (installed, requirements, error.stderr, first, summary, log, counted, *runs.values(),
+                    previews, counts)]
         for block in guide_blocks():
             assert any(quotes(output, block) for output in outputs), block
 

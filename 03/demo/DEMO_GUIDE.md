@@ -65,10 +65,31 @@ The `sys.executable` line shows which interpreter `python` runs; it should sit i
 
 ## 1.3 Recreate It from the Records
 
-`.python-version`, `pyproject.toml`, and `uv.lock` are the records another person needs; `.venv/` is not shared. Rebuild the environment from those three files in a new folder, as in the lecture's "Recreate from the Records" snippet:
+First leave the environment, and check which Python `python` runs now:
 
 ```bash
-deactivate
+deactivate                                      # the prompt no longer starts with (03-demo)
+python -c "import sys; print(sys.executable)"   # a path without .venv, such as /Users/alice/.local/bin/python
+```
+
+That is the Python Lecture 01 installed, and it has no NumPy, so importing NumPy fails. This error is expected:
+
+```bash
+python -c "import numpy as np"
+```
+
+```text
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+```
+
+This is the lecture's "When `import numpy` Fails" pitfall, and the `sys.executable` path, with no `.venv` in it, names the cause: the environment is not active. `source .venv/bin/activate` fixes it, and so does `uv run`, which runs a command in the project's `.venv` without activating it, as the next block does. If the import printed nothing instead, the Python you reached already has NumPy, as Anaconda's does, but it is still not the project's Python.
+
+`.python-version`, `pyproject.toml`, and `uv.lock` are the records another person needs; `.venv/` is not shared. With the environment still off, rebuild it from those three files in a new folder, as in the lecture's "Recreate from the Records" snippet:
+
+```bash
 mkdir recreation-check
 cp .python-version pyproject.toml uv.lock recreation-check/
 cd recreation-check
@@ -78,7 +99,7 @@ uv run python -c "import numpy as np; print(np.__version__)"   # 2.3.3
 cd ..
 ```
 
-`deactivate` comes first because `uv sync` ignores an active environment from another folder and warns about it. `uv sync` installed exactly the NumPy that `uv.lock` records, and `uv run` ran Python in the new `.venv` without activating it.
+The environment stays off because `uv sync` ignores an active environment from another folder and warns about it. `uv sync` installed exactly the NumPy that `uv.lock` records, and `uv run` ran Python in the new `.venv` without activating it.
 
 ## 1.4 Share It as `requirements.txt`
 
@@ -474,13 +495,15 @@ calibrated = calibrate(row) on a fresh copy:
 
 The first draft returned nothing, yet `row` changed. With the fix, `row` keeps the measured values and the corrected ones arrive in `calibrated`.
 
-A slice shares data the same way. The script copies a 2×3 block out of the readings, then writes one value through a slice and one value into a `.copy()`:
+A second name and a slice share data the same way. The script copies a 2×3 block out of the readings and names it twice, `same = practice`. It then writes one value through `same`, one through the slice `view = practice[0, :]`, and one into `independent`, a `.copy()` of that row:
 
 ```text
-=== Views vs Copies ===
+=== Aliases, Views, and Copies ===
 Practice block (2 patients, 3 visits):
 [[72 93 90]
  [96 72 91]]
+After same[1, 0] = 0, practice row 1: [ 0 72 91]
+same is practice: True
 After view[0] = 0, practice row 0: [ 0 93 90]
 After independent[1] = 0, the copy: [72  0 90]
 View shares memory with practice: True
@@ -488,25 +511,38 @@ Copy shares memory with practice: False
 Original readings row 0, untouched: [72 93 90 83 83]
 ```
 
-The write through the view reached `practice`; the write into the copy did not. That is the difference to remember when you slice an array you still need unchanged.
+`same is practice` is `True` because both names point to one array, so the write through `same` reached `practice`. The write through the view reached it too; the write into the copy did not. That is the difference to remember when you name or slice an array you still need unchanged.
 
 ## 3.2 Masks, Positions, and Shapes
 
-A comparison on the whole `(100, 5)` array gives one `True` or `False` per reading. `readings[mask]` keeps the matching readings as a 1-D array, and `.sum()` counts them. A mask on one column, `readings[:, 0] >= 98`, keeps whole rows instead, so the result stays 2-D:
+A comparison on the whole `(100, 5)` array gives one `True` or `False` per reading. `readings[mask]` keeps the matching readings as a 1-D array, and `.sum()` counts them. Assigning through a mask, `capped[capped > 95] = 95`, changes the array it indexes, so the script caps a `.copy()` of the readings and leaves the raw ones alone:
 
 ```text
 === Boolean Indexing ===
 Readings of 90 mmHg or above: 180 of 500
 First five of them: [ 93  90  96  91 100]
 Readings from 80 to 89 mmHg: 155
+Capped at 95 mmHg, patient 2: [86 95 92 93 92]
+Raw readings, patient 2:      [ 86 100  92  93  92]
+```
+
+The 80 to 89 count combines two comparisons with `&`, each in its own parentheses. Patient 2's 100 became 95 in `capped` only.
+
+A mask with one `True` or `False` per patient keeps whole rows, so the result stays 2-D. It can come from one column, `readings[:, 0] >= 98`, or from all five visits at once: `.any(axis=1)` collapses each patient's row into one answer, so `(readings >= 100).any(axis=1)` marks the patients with any visit at 100 mmHg. `readings[reached_100, -1]` then keeps those rows and one column, visit 5. A mask with one value per visit keeps whole columns instead: `readings.mean(axis=0)` gives each visit's average (3.3 prints all five), and comparing it with 85 gives the column mask `high_visits`:
+
+```text
 Patients whose visit 1 was 98 mmHg or above: 14
 Their first three rows:
 [[100  83  97  91  94]
  [ 98  93  81  99  82]
  [ 99  83  74  95  89]]
+Patients with any visit at 100 mmHg or above: 13
+Their visit 5 readings: [ 92  94 100  82  94 100 100  75 100  93  85  85  85]
+Visits averaging 85 mmHg or above: [ True False False False  True]
+readings[:, high_visits] shape: (100, 2)
 ```
 
-The 80 to 89 count combines two comparisons with `&`, each in its own parentheses. A list of positions picks columns in the order given; `[0, -1]` takes each patient's first and last visit:
+Five of the 13 patients who reached 100 mmHg were below 90 by visit 5. Visits 1 and 5 average 85 or above, so `readings[:, high_visits]` keeps those two columns for all 100 patients. A list of positions picks columns too, in the order given; `[0, -1]` takes the same two visits, each patient's first and last:
 
 ```text
 === Fancy Indexing ===
@@ -674,6 +710,17 @@ Highest-average clinic: Nephrology (140.3 mmHg)
 ```
 
 The clinic section groups the readings the way the lecture's "Select One Group by a Label" snippet does: it loops over `sorted(set(clinics))`, stores the mask `clinics == clinic` as `in_clinic`, counts that clinic's encounters with `in_clinic.sum()`, and averages its readings with `systolic[in_clinic].mean()`. Each average is also appended to a list in the same order as the sorted names, so `np.array(averages).argmax()` is the position of the highest average and the name at that position is its clinic, the way `ids[avg_glucose.argmax()]` names a patient in the lecture. The clinic averages differ the way a real case mix does: nephrology and cardiology see more uncontrolled hypertension than obstetrics or dermatology.
+
+The last section compares Nephrology with every other clinic. It rebuilds Nephrology's mask from its name, `in_highest = clinics == names[highest]`, because after the loop `in_clinic` holds the last clinic's mask, Primary Care's. `~` flips a mask, so `others = ~in_highest` is `True` for every encounter outside Nephrology; `clinics != names[highest]` gives the same mask.
+
+```text
+=== Nephrology compared with every other clinic ===
+Every other clinic: 1375 encounters, average 128.6 mmHg
+Difference: 11.6 mmHg
+Stage 2 readings outside Nephrology: 269
+```
+
+`systolic[others].mean()` pools all 1,375 of those encounters, which is not the same as averaging the seven other clinic averages, because the clinics differ in size. `stage_2 & others` keeps the stage 2 readings outside Nephrology, 269 of the 341.
 
 ### Check the counts against the shell
 

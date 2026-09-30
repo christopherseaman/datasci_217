@@ -803,6 +803,52 @@ def run() -> None:
         assert failing(result) == {"answer: stage2_patients"}, failing(result)
         assert "axis=" not in detail(result, "answer: stage2_patients")
 
+        # Labels written as positions, as Demo 3.3 prints them (`Patient  63`, `#1`), counting from 0 or
+        # from 1, say to index the ids with the position; a number that is not the position says nothing.
+        best = patient_ids.index(answers["highest_patient"])
+        peak_hour = hour_columns.index(answers["peak_hour_column"])
+        high_position = sorted(counts).index(answers["high_monitor"])
+        positions = workspace / "label-positions"
+        build(positions, replaced(
+            summary,
+            highest_patient=f"Patient {best:3d}",
+            peak_hour_column=f"#{peak_hour + 1}",
+            high_monitor=str(high_position),
+        ), counts, records)
+        result = graded(positions)
+        labels = {"answer: highest_patient", "answer: peak_hour_column", "answer: high_monitor"}
+        assert failing(result) == labels, failing(result)
+        assert result["score"] == 100 - answers_cost("highest_patient", "peak_hour_column", "high_monitor")
+        for check, array in (("answer: highest_patient", "`patient_ids`"), ("answer: peak_hour_column",
+                             "`hour_columns`"), ("answer: high_monitor", "`sorted(set(monitors))`")):
+            assert "is a position, not a " in detail(result, check), detail(result, check)
+            assert array in detail(result, check), detail(result, check)
+        not_position = workspace / "label-not-position"
+        build(not_position, replaced(summary, highest_patient=str(best + 2)), counts, records)
+        result = graded(not_position)
+        assert failing(result) == {"answer: highest_patient"}, failing(result)
+        assert "is a position" not in detail(result, "answer: highest_patient")
+
+        # Stage 2 counts of readings rather than patients say that the question counts patients.
+        monitors = np.array([line.split(",")[1] for line in data_lines[1:]])
+        on_others = monitors != answers["high_monitor"]
+        counted_readings = workspace / "stage2-readings"
+        build(counted_readings, replaced(
+            summary,
+            stage2_patients=str(int((readings >= 140).sum())),
+            stage2_other_monitors=str(int((readings[on_others] >= 140).sum())),
+        ), counts, records)
+        result = graded(counted_readings)
+        stage2 = {"answer: stage2_patients", "answer: stage2_other_monitors"}
+        assert failing(result) == stage2, failing(result)
+        assert all("counting every hour of every patient" in detail(result, check) for check in stage2)
+        off_by_one = workspace / "stage2-off-by-one"
+        build(off_by_one, replaced(summary, stage2_patients=str(int(answers["stage2_patients"]) + 1)), counts,
+              records)
+        result = graded(off_by_one)
+        assert failing(result) == {"answer: stage2_patients"}, failing(result)
+        assert "counting every hour" not in detail(result, "answer: stage2_patients")
+
         # mean_sbp written as the per-hour array `readings.mean(axis=0)` prints: its first element sits
         # within the tolerance of the overall mean, so reading only the first number passed it. An array
         # of several numbers now fails, printed or repr'd, wrapped or not, and says why; a one-item list
@@ -880,8 +926,8 @@ def run() -> None:
         "unversioned-probe, supplied-files-edited, truncated, Markdown and JSON, re-separated, leading-note, "
         "UTF-16, whitespace-edited, renamed, appended, miscounted-monitor, undelimited-cut, dated, undated and "
         "misplaced counts, empty-timestamp, follow-on pick, first-number, table, numbered, dict, titled-count, "
-        "uninstalled-numpy, overwritten-probe, joined-answer, per-column patient, per-hour-array and one-item-list "
-        "submissions all score as intended."
+        "uninstalled-numpy, overwritten-probe, joined-answer, per-column patient, position label, stage 2 readings, "
+        "per-hour-array and one-item-list submissions all score as intended."
     )
     print(
         f"Assignment 03 checks against {BASELINE_REVISION}: none of {len(compared)} submissions lost a check; "
