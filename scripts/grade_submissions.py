@@ -292,7 +292,15 @@ def write_grades(row: dict, path: Path) -> dict:
     return row
 
 
-def main(argv: list[str] | None = None) -> int:
+def first_full_score(path: Path) -> dict | None:
+    """The saved row with full marks and the earliest commit date, or None."""
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        full = [row for row in csv.DictReader(handle)
+                if row.get("score") and row["score"] == row.get("max_score")]
+    return min(full, key=lambda row: datetime.fromisoformat(row["commit_date"]), default=None)
+
+
+def main(argv: list[str] | None = None, show_names: bool = True) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("assignment", help="two-digit assignment number, such as 02")
     parser.add_argument("--fork", action="append", default=[], metavar="USER/REPO",
@@ -318,15 +326,23 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Checks: {checks.relative_to(REPO)} at {version}  Clones: {destination}")
 
     errors = 0
-    for fork in forks:
+    for number_graded, fork in enumerate(forks, start=1):
         row = write_grades(grade_fork(fork, checks, destination, version), grades)
+        label, details = row["github_user"], row.get("details", "")
+        if not show_names:
+            # Error details can quote the clone path or URL, which hold the user name.
+            label = f"student {number_graded}"
+            details = re.sub(re.escape(row["github_user"]), "<student>", details, flags=re.IGNORECASE)
         if row["status"] == "graded":
-            print(f"{row['github_user']:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "
+            print(f"{label:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "
                   f"{local_time(row['commit_date'])}")
         else:
             errors += 1
-            print(f"{row['github_user']:<24} ERROR  {row['details']}")
+            print(f"{label:<24} ERROR  {details}")
     print(f"Updated {grades}: {len(forks) - errors} graded, {errors} not graded")
+    if first := first_full_score(grades):
+        print(f"\n⭐ First {first['score']}/{first['max_score']}: {first['github_user']}  {first['commit'][:7]}  "
+              f"{local_time(first['commit_date'])}")
     return 1 if errors else 0
 
 
