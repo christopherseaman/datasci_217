@@ -23,5 +23,5 @@ RESULT = grade_submission(ASSIGNMENT_DIR)
 def test_assignment_artifact(check):
     assert check["passed"], (
         f"{check['detail']} "
-        f"[{check['score']}/{check['max-score']} points; run `python check_assignment.py` for the full report]"
+        f"[{check['score']}/{check['max-score']} points; run `python3 check_assignment.py` for the full report]"
     )

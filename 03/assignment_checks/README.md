@@ -12,7 +12,7 @@ push from `christopherseaman/datasci_217@main:03/assignment_checks/` (its
 grades with them.
 
 The handout ships a byte-identical copy of every file the workflow lists in
-`CHECKS_FILES`, so `python check_assignment.py` in a student's repository prints
+`CHECKS_FILES`, so `python3 check_assignment.py` in a student's repository prints
 each check's result, what to fix, and the score, exactly as GitHub will, then a
 `Left to fix` line that only the local run prints. The checks recompute every
 expected value from the supplied dataset, so there is no answer key to hide.

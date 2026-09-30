@@ -68,7 +68,7 @@ Python 3.13.14
 | Set the default Python | `uv python pin --global 3.13` | New environments use 3.13; `--default` alone sets only the `python` commands. |
 | Pin one project | `uv python pin 3.13` | Writes `.python-version`; `uv venv` in this folder uses it over the global pin. |
 | Create environment | `uv venv --seed` | Creates `.venv` with the pinned Python; `--seed` adds pip, which Lecture 04's notebooks use. |
-| Activate | `source .venv/bin/activate`<br>PowerShell: `.\.venv\Scripts\Activate.ps1` | The prompt starts with the folder name, such as `(assignment-03)`. |
+| Activate | `source .venv/bin/activate`<br>PowerShell: `.\.venv\Scripts\Activate.ps1`, then type `python` where this lecture says `python3` | The prompt starts with the folder name, such as `(assignment-03)`. |
 | Verify | `python3 --version` | The environment's Python version, such as `Python 3.13.14`. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
@@ -170,7 +170,12 @@ After `source .venv/bin/activate`, the prompt starts with the project's name, su
 Python 3.13.14
 ```
 
-Inside Python, `sys.executable` gives the same path; Assignment 03 records it that way.
+Inside Python, `sys.executable` gives the same path; this one-line command is the form Assignment 03 records:
+
+```text
+(assignment-03) ~/assignment-03 $ python3 -c "import sys; print(sys.executable)"
+/home/alice/assignment-03/.venv/bin/python3
+```
 
 <callout icon="🐍" color="yellow_bg">
 	## Multiple Python Installations
@@ -712,11 +717,11 @@ NumPy selects array values by a condition, such as `bp >= 140`, or by a list of 
 
 ## Names, Aliases, and Mutability
 
-An object is **mutable** when its contents can change in place: lists (Lecture 02), dictionaries, sets, and arrays are mutable, while numbers, strings, and tuples are not. Assignment binds a name to an object without copying it, so `same_values = values` makes an **alias**, a second name for the same array:
+An object is **mutable** when its contents can change in place: lists (Lecture 02), dictionaries, sets, and arrays are mutable, while numbers, strings, and tuples are not. Assignment binds a name to an object without copying it, so `alias_values = values` makes an **alias**, a second name for the same array:
 
 ```text
-values ───────┐
-              ├──> [10, 20, 30]   one array
+values ────────┐
+               ├──> [10, 20, 30]   one array
 alias_values ──┘
 copied_values ───> [10, 20, 30]   a separate array
 ```
