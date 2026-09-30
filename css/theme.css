@@ -256,3 +256,10 @@ code, pre {
 .content .columns img {
   max-width: 100%;
 }
+
+/* Notion inline highlight, as in <span color="yellow_bg"> */
+.content span[color="yellow_bg"] {
+  background: rgba(251, 243, 219, 0.9);
+  border-radius: 3px;
+  padding: 0 2px;
+}

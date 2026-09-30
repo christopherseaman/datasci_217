@@ -79,7 +79,9 @@ The `sys.executable` line shows which interpreter `python3` runs; it should sit 
 
 ## 1.3 Recreate It from the Records
 
-Sections 1.3 and 1.4 continue in `~/03-demo` with the environment from 1.2. In a new terminal, start with these two lines, after which the prompt starts with `(03-demo)`:
+Sections 1.3 and 1.4 continue in `~/03-demo` with the environment from 1.2.
+
+<span color="yellow_bg">**In a new terminal**</span>, start with these two lines, after which the prompt starts with `(03-demo)`:
 
 ```bash
 cd ~/03-demo
@@ -172,7 +174,9 @@ Both routes installed NumPy 2.3.3. The last line matters: Demos 2 and 3 run in t
 
 ## 1.5 Read a Shell Script
 
-Sections 1.5 to 1.8 run from `~/03-demo` too. In a new terminal, start with the same two lines:
+Sections 1.5 to 1.8 run from `~/03-demo` too.
+
+<span color="yellow_bg">**In a new terminal**</span>, start with the same two lines:
 
 ```bash
 cd ~/03-demo
@@ -343,7 +347,9 @@ P0280,48,174,Neurology
 
 # Demo 2: Types, Lists, and NumPy Basics
 
-Run these three from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with these two lines, after which the prompt starts with `(03-demo)`:
+Run these three from `~/03-demo` with the `(03-demo)` environment active.
+
+<span color="yellow_bg">**In a new terminal**</span>, start with these two lines, after which the prompt starts with `(03-demo)`:
 
 ```bash
 cd ~/03-demo
@@ -520,7 +526,9 @@ week[:, :, 0].shape (every patient's first reading each day): (2, 7)
 
 # Demo 3: Selecting, Reshaping, and Analyzing Arrays
 
-Run these from `~/03-demo` with the `(03-demo)` environment active. In a new terminal, start with these two lines, after which the prompt starts with `(03-demo)`:
+Run these from `~/03-demo` with the `(03-demo)` environment active.
+
+<span color="yellow_bg">**In a new terminal**</span>, start with these two lines, after which the prompt starts with `(03-demo)`:
 
 ```bash
 cd ~/03-demo
