@@ -17,7 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)
 
-A **package** is installable code such as NumPy or pandas. Unlike Lecture 02's `math`, it works only after it is installed, and its behavior can change between versions. A **virtual environment** is a project folder, `.venv`, with its own Python **interpreter** (the program that runs Python code) and its own packages, so each project keeps the versions it was written with and anyone can rebuild them to get the same results.
+A **virtual environment** is a project's own Python **interpreter** (the program that runs Python code) and installed **packages** (code such as NumPy), kept in a `.venv` folder in the project. Each project keeps the package versions it was written with, so updating one project cannot break another, and anyone can rebuild the environment from the project's records.
 
 ## Course Environment
 
@@ -26,7 +26,7 @@ A **package** is installable code such as NumPy or pandas. Unlike Lecture 02's `
     - `numpy`: 2.3.3
     - `pandas`: 3.0.5, from Lecture 04
 - **Environment**: one per project, in a folder named `.venv`
-- **Packages**: listed in `pyproject.toml`
+- **Packages**: listed in `pyproject.toml`; unlike Lecture 02's `math`, NumPy works only after it is installed
 - **Tool**: uv; `requirements.txt`, `venv`, and Conda are alternatives at the end of this topic
 
 ## Using uv
@@ -203,7 +203,7 @@ Conda manages Python environments and packages, including non-Python dependencie
 
 # Shell Pipelines and Scripts
 
-Lecture 01's shell commands can answer quick questions about a data file, such as how many visits each clinic had, without any Python. A **pipeline** chains commands so each works on the previous one's output, and a **shell script** saves them in a file so the analysis reruns with one command when next month's export arrives.
+A **pipeline** chains shell commands so each works on the previous one's output, answering quick questions about a data file, such as visits per clinic, without Python. A **shell script** saves the commands in a file, so the analysis reruns with one command when new data arrives.
 
 ## Pipelines
 
@@ -293,7 +293,7 @@ Scripts can also take arguments and stop at the first failing command; [the bonu
 
 # Checking Types and Looping over Lists
 
-Values from files and forms rarely arrive ready to calculate with: numbers stored as text, and IDs and readings in separate lists. `isinstance()` checks what a value is before you calculate with it, `zip()` walks two lists together so each ID stays with its reading, and a **list comprehension** builds a new list in one line, keeping or converting values.
+Three Python tools handle everyday list work: `isinstance()` checks a value's type before you calculate with it (numbers read from files are often text), `zip()` walks two lists together so each ID stays with its reading, and a **list comprehension** builds a new list in one line.
 
 ## Checking Types
 
@@ -374,7 +374,7 @@ print([mg / 1000 for mg in [250, 500, 125]])  # [0.25, 0.5, 0.125]: mg to g
 
 ![It's pronounced "num pie": NumPy is short for Numerical Python, whatever the cat says](media/numpy.webp)
 
-**NumPy** (Numerical Python) is the package for calculating on many numbers at once, and pandas (Lecture 04) is built on it. Its **array** is a grid of values that share one data type, such as patients × visits, and one expression like `readings * 2` works on every element with no loop. This **vectorization** is far faster than looping over a list, which matters when a wearable records 86,400 readings a day.
+**NumPy** (Numerical Python) is the package for calculating on many numbers at once; pandas (Lecture 04) is built on it. Its **array** is a grid of same-type values, such as patients × visits, and one expression like `readings * 2` works on every element with no loop, which is called **vectorization** and runs far faster than a loop.
 
 ## Why NumPy
 
@@ -577,7 +577,7 @@ print(week[:, :, 0].shape)   # (2, 7): every patient's first reading of each day
 
 # Selecting and Reshaping Arrays
 
-NumPy selects values by what they are, not only by where they sit: by a condition such as `bp >= 140`, or by a list of positions. It also rearranges the same values into new shapes. Some results share their numbers with the original array and others are copies, so this topic starts with which is which: changing what you thought was a copy can overwrite the raw readings.
+NumPy selects array values by a condition, such as `bp >= 140`, or by a list of positions, and rearranges them into new shapes. Some results share data with the original array and others are copies, and changing what you thought was a copy can overwrite the raw readings, so views and copies come first.
 
 ## Names, Aliases, and Mutability
 
