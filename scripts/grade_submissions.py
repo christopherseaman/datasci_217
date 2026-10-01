@@ -12,10 +12,12 @@ For teaching assistants, from a clone of this course repository:
 The first form grades every fork of the assignment's course repository named
 in assignments.json, read from this course's main branch on GitHub (the local
 copy is used when GitHub cannot be reached); `--fork` (repeatable) grades only
-the forks named.
-Each fork is cloned, or updated on later runs, under
-scratch/submissions/NN/<github-user>/ so it can be opened afterwards.
-Results go to scratch/submissions/NN/grades.csv, one row per fork, updated
+the forks named. It also runs straight from its URL, `uv run URL 02`, outside
+any clone; it then downloads the checks from GitHub's main.
+
+Each fork is cloned, or updated on later runs, under scratch/submissions/NN/
+(./submissions/NN/ when run from a URL), one folder per GitHub user, so it can
+be opened afterwards. Results go to grades.csv there, one row per fork, updated
 after every fork: a fork graded again replaces its own row, and every other
 row stays. A fork that cannot be regraded keeps its last score, marked with
 the error, and the `checks` column records which version of the checks
@@ -51,7 +53,8 @@ import urllib.request
 
 REPO = Path(__file__).resolve().parents[1]
 ASSIGNMENTS_FILE = REPO / "assignments.json"
-ASSIGNMENTS_URL = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/assignments.json"
+COURSE_REPO = "christopherseaman/datasci_217"
+ASSIGNMENTS_URL = f"https://raw.githubusercontent.com/{COURSE_REPO}/main/assignments.json"
 GRADE_TIMEOUT_SECONDS = 300
 GIT_TIMEOUT_SECONDS = 600
 GIT_ENVIRONMENT = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
@@ -68,6 +71,8 @@ def load_assignments() -> list[dict]:
         with urllib.request.urlopen(ASSIGNMENTS_URL, timeout=30) as response:
             return json.load(response)["assignments"]
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as error:
+        if not ASSIGNMENTS_FILE.is_file():
+            raise SystemExit(f"Could not read {ASSIGNMENTS_URL} ({error}), and there is no local copy.") from None
         print(f"Warning: could not read {ASSIGNMENTS_URL} ({error}); using {ASSIGNMENTS_FILE.name}.")
         return json.loads(ASSIGNMENTS_FILE.read_text(encoding="utf-8"))["assignments"]
 
@@ -79,6 +84,47 @@ def load_assignment(number: str) -> dict:
             return assignment
     known = ", ".join(assignment["number"] for assignment in assignments)
     raise SystemExit(f"No assignment {number} in {ASSIGNMENTS_FILE.name}; choose one of {known}.")
+
+
+def in_course_clone() -> bool:
+    """Whether this script runs from a clone of the course repository, not a downloaded copy."""
+    return (REPO / ".git").exists() and (REPO / "assignments.json").is_file()
+
+
+def github_get(url: str, token: str | None):
+    request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    if token and url.startswith("https://api.github.com/"):
+        request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return response.read()
+
+
+def download_checks(number: str, cache: Path, token: str | None) -> tuple[Path, str]:
+    """The course-owned checks (and supplied data they read) from one commit of GitHub's main.
+
+    Used when the script runs from a URL rather than a clone, so it grades with the
+    same checks students' GitHub runs download.
+    """
+    try:
+        commit = json.loads(github_get(f"https://api.github.com/repos/{COURSE_REPO}/commits/main", token))["sha"]
+        tree = json.loads(github_get(f"https://api.github.com/repos/{COURSE_REPO}/git/trees/{commit}?recursive=1", token))
+        wanted = [item["path"] for item in tree["tree"] if item["type"] == "blob"
+                  and item["path"].startswith((f"{number}/assignment_checks/", f"{number}/assignment/data/"))
+                  and "_grader_selftest" not in item["path"] and "__pycache__" not in item["path"]]
+        root = cache / commit[:12]
+        for path in wanted:
+            target = root / path
+            if not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(github_get(f"https://raw.githubusercontent.com/{COURSE_REPO}/{commit}/{path}", token))
+    except urllib.error.HTTPError as error:
+        raise SystemExit(fork_listing_error(COURSE_REPO, error)) from None
+    except urllib.error.URLError as error:
+        raise SystemExit(f"Could not reach GitHub to download the checks: {error.reason}") from None
+    checks = root / number / "assignment_checks"
+    if not (checks / "check_assignment.py").is_file():
+        raise SystemExit(f"{COURSE_REPO} has no {number}/assignment_checks/check_assignment.py on main.")
+    return checks, commit[:7]
 
 
 def trusted_checks_dir(number: str) -> Path:
@@ -318,15 +364,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("assignment", help="two-digit assignment number, such as 02")
     parser.add_argument("--fork", action="append", default=[], metavar="USER/REPO",
                         help="grade only this fork; repeat for several")
-    parser.add_argument("--dest", type=Path, help="where clones and grades.csv go (default scratch/submissions/NN)")
+    parser.add_argument("--dest", type=Path, help="where clones and grades.csv go (default scratch/submissions/NN in a course clone, else ./submissions/NN)")
     args = parser.parse_args(argv)
 
     number = args.assignment.zfill(2)
     assignment = load_assignment(number)
-    checks = trusted_checks_dir(number)
-    version = checks_version(checks)
-    destination = (args.dest or REPO / "scratch" / "submissions" / number).resolve()
+    local = in_course_clone()
+    default_root = REPO / "scratch" / "submissions" if local else Path.cwd() / "submissions"
+    destination = (args.dest or default_root / number).resolve()
     destination.mkdir(parents=True, exist_ok=True)
+    if local:
+        checks = trusted_checks_dir(number)
+        version = checks_version(checks)
+    else:
+        checks, version = download_checks(number, destination.parent / ".checks", github_token())
     grades = destination / "grades.csv"
 
     if args.fork:
@@ -334,9 +385,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         forks = list_forks(assignment["repository"], github_token())
         print(f"{len(forks)} forks of {assignment['repository']}")
-    for warning in course_repo_warnings():
-        print(f"Warning: {warning}")
-    print(f"Checks: {checks.relative_to(REPO)} at {version}  Clones: {destination}")
+    if local:
+        for warning in course_repo_warnings():
+            print(f"Warning: {warning}")
+        print(f"Checks: {checks.relative_to(REPO)} at {version}  Clones: {destination}")
+    else:
+        print(f"Checks: {COURSE_REPO} main at {version}  Clones: {destination}")
 
     errors = 0
     for fork in forks:
