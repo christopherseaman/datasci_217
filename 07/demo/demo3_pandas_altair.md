@@ -19,19 +19,32 @@ jupyter:
 
 A draft dashboard chart about flu vaccination misleads its readers. You critique it with Tufte's checks, one problem and repair at a time, redesign it so it works without color, draw a line chart with redundant cues, write text alternatives, and save the chart record as JSON. Then you build an Altair chart of patient blood pressure and save its Vega-Lite specification. Everything here comes from Lecture 07 up to the last demo break, plus Lectures 01 to 06. All values are synthetic.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-24 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and Altair 5.5.0; the whole notebook runs in a few seconds.
+Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
+
+| Route | Work and visible checkpoint |
+| --- | --- |
+| [Core walkthrough](#core-walkthrough) | Record five repairs, save the accessible vaccination redesign and JSON record, and save/check typed Altair encodings with embedded rows. |
+| [Independent practice](#independent-practice) | Draw directly labeled HbA1c lines and compute the misleading draft's lie factor. |
+
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and Altair 5.5.0.
+
+**In Colab:** open this notebook from the lecture page's Colab link. A new runtime needs only the setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+
+**Locally in VS Code:** open the `~/07-demo` folder that Demo 1's setup made (**File → Open Folder…**), open `demo3_pandas_altair.ipynb`, and choose the Python in `.venv` with **Select Kernel**. Its environment is already built. In a new terminal, `cd ~/07-demo` and `source .venv/bin/activate` bring the folder and environment back. If the folder does not exist yet, run the five setup lines under "How to run" in Demo 1 first.
 
 ## Setup
 
-Run this cell first. It installs pandas 3.0.5, the course version, into the notebook's environment: in Colab, which ships an older pandas, and in your local `.venv` alike. Colab already has Altair.
+Run this cell first. It installs pandas 3.0.5 and Altair 5.5.0, the versions used below, into the notebook's environment.
 
 - pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
 - If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- Locally, the `.venv` you made with `uv venv --seed` includes pip, so `%pip` installs into it too. When pandas 3.0.5 is already there, the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
+- Locally, `uv sync` already installed both versions, so the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+# Setup: install the course versions (Colab and local)
+%pip install -q pandas==3.0.5 altair==5.5.0
 ```
 
 ```python
@@ -46,9 +59,11 @@ print("pandas:", pd.__version__)
 print("Altair:", alt.__version__)
 ```
 
-Expect `pandas: 3.0.5` and an Altair version starting with `5.`. If Colab shows an older pandas, it was imported before the install finished: restart the session and run all cells again.
+Expect `pandas: 3.0.5` and `Altair: 5.5.0`. If either version differs, it was imported before the install finished: restart the session and run all cells again.
 
-## 1. A chart that gets the numbers right and still misleads
+## Core walkthrough
+
+### 1. A chart that gets the numbers right and still misleads
 
 The prepared table has one row per clinic: the percentage of adult patients vaccinated against flu in two seasons. North started sending reminder texts before the 2025-26 season.
 
@@ -86,20 +101,7 @@ print(clinics, x)
 
 Expect `['North', 'South', 'East'] [0 1 2]` and three pairs of thick-edged bars, every bar striped the same way, with only red versus green telling the seasons apart. North's green bar looks more than twice as tall as its red one, and the y-axis has no label.
 
-## 2. Critique it with Tufte's checks
-
-The **lie factor** compares the change the drawing shows with the change in the data. On a y-axis that starts at 50, North's bars are 6 and 13 units tall.
-
-```python
-baseline = 50
-shown_change = ((63 - baseline) - (56 - baseline)) / (56 - baseline)  # change in bar length
-data_change = (63 - 56) / 56                                          # change in the data
-print('Bars grow by', round(shown_change * 100), '%')
-print('Uptake grows by', round(data_change * 100, 1), '%')
-print('Lie factor:', round(shown_change / data_change, 1))
-```
-
-Expect `Bars grow by 117 %`, `Uptake grows by 12.5 %`, and `Lie factor: 9.3`: the drawing exaggerates North's change about ninefold.
+### 2. Critique it with Tufte's checks
 
 Write the critique down: for each problem, what is wrong and how to repair it. The truncated baseline is the lie-factor check from the lecture's Tufte card, and the decoration is the data-ink check; the claim and the color-only encoding come from the contract and the accessibility section.
 
@@ -128,7 +130,7 @@ for entry in critique:
 
 Expect five problems, each followed by its repair.
 
-## 3. Redesign: zero baseline, redundant cues, labels on the bars
+### 3. Redesign: zero baseline, redundant cues, labels on the bars
 
 The contract for the redesign: the question is how uptake changed at each clinic; the audience is clinic managers; the claim is descriptive; one bar is one clinic in one season. Each repair from the critique appears in the code below, reusing `clinics`, `x`, and `width`.
 
@@ -151,38 +153,12 @@ fig.savefig('vaccination_redesign.png', dpi=150, bbox_inches='tight')
 plt.show()
 bottom, top = ax.get_ylim()                                # reads back the limits set above
 print(bottom, top)
-print([label.get_text() for label in after_labels])  # the text bar_label() wrote
+print([label.get_text() for label in after_labels])  # each label's text
 ```
 
-Expect `0.0 100.0` and `['63%', '60%', '62%']`. Three pairs of bars rise from 0: orange dotted bars for 2024-25 and blue striped bars for 2025-26, each labeled with its value, and the legend just outside the right edge. Here the hatch is data ink: it marks the season, so the pairs stay distinguishable in grayscale.
+`ax.bar_label()` returns one text label per bar, and `.get_text()` reads a label's words. Expect `0.0 100.0` and `['63%', '60%', '62%']`. Three pairs of bars rise from 0: orange dotted bars for 2024-25 and blue striped bars for 2025-26, each labeled with its value, and the legend just outside the right edge. Here the hatch is data ink: it marks the season, so the pairs stay distinguishable in grayscale.
 
-## 4. A line chart with redundant cues and one annotation
-
-A second prepared table: mean HbA1c (%) at four quarterly visits for patients in two diabetes programs. Lower is better. Each series gets its own color, marker, and line style, plus a direct label, so the chart needs no legend.
-
-```python
-visits = [1, 2, 3, 4]
-standard = [8.4, 8.2, 8.1, 8.0]
-education = [8.5, 8.0, 7.7, 7.5]
-
-fig, ax = plt.subplots(figsize=(7, 4.5))
-ax.plot(visits, standard, color='#E69F00', marker='s', linestyle='--')
-ax.plot(visits, education, color='#0072B2', marker='o', linestyle='-')
-ax.text(4.08, standard[-1], 'Standard care', va='center')
-ax.text(4.08, education[-1], 'Group education', va='center')
-ax.annotate('0.5 points lower at visit 4', xy=(4, 7.5), xytext=(2.3, 7.4),
-            arrowprops=dict(arrowstyle='->'))
-ax.set(xlabel='Quarterly visit', ylabel='Mean HbA1c (%)', ylim=(7, 9), xlim=(0.8, 4.9),
-       title='HbA1c fell further in the group-education program')
-ax.set_xticks(visits)
-ax.spines[['top', 'right']].set_visible(False)
-plt.show()
-print(round(standard[-1] - education[-1], 1))
-```
-
-Expect two falling lines, orange dashed squares for Standard care and blue solid circles for Group education, each labeled at its right end, and an arrow from the annotation to the last blue point. `0.5` prints. This y-axis starts at 7 rather than 0: a line chart need not start at zero because position, not length, encodes the value, and the axis labels make the range clear.
-
-## 5. Write the text alternatives and save the chart record
+### 5. Write the text alternatives and save the chart record
 
 A **text alternative** states the chart type, axes, main pattern, and a relevant limitation, so a reader who cannot see the chart still gets its comparison.
 
@@ -228,7 +204,7 @@ print(len(saved['critique_of_draft']), 'critique entries')
 
 Expect the seven keys from `chart` to `text_alternative`, then `one clinic in one season` and `5 critique entries`.
 
-## 6. Altair: data, mark, and typed encodings
+### 6. Altair: data, mark, and typed encodings
 
 Twelve patients, one row each: age in years, systolic blood pressure in mmHg, and clinic. Each Altair field carries its data type: `:Q` quantitative, `:N` nominal (categorical).
 
@@ -280,7 +256,7 @@ combined
 
 Expect the scatter on the left and two gray bars from 0 on the right, North near 131 and South near 139 mmHg, with one legend of colored circles and squares. Hovering over a bar shows its mean to one decimal.
 
-## 7. Save the Altair chart and check the specification
+### 7. Save the Altair chart and check the specification
 
 `chart.save()` writes the Vega-Lite specification with the twelve rows embedded, so anyone with the file can render the same chart.
 
@@ -313,3 +289,47 @@ print(bp_alt)
 ```
 
 Expect the paragraph printed in full. Check its two means against the bars' tooltips.
+## Independent practice
+
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+
+### 4. A line chart with redundant cues and one annotation
+
+A second prepared table: mean HbA1c (%) at four quarterly visits for patients in two diabetes programs. Lower is better. Each series gets its own color, marker, and line style, plus a direct label, so the chart needs no legend.
+
+```python
+visits = [1, 2, 3, 4]
+standard = [8.4, 8.2, 8.1, 8.0]
+education = [8.5, 8.0, 7.7, 7.5]
+
+fig, ax = plt.subplots(figsize=(7, 4.5))
+ax.plot(visits, standard, color='#E69F00', marker='s', linestyle='--')
+ax.plot(visits, education, color='#0072B2', marker='o', linestyle='-')
+ax.text(4.08, standard[-1], 'Standard care', va='center')
+ax.text(4.08, education[-1], 'Group education', va='center')
+ax.annotate('0.5 points lower at visit 4', xy=(4, 7.5), xytext=(2.3, 7.4),
+            arrowprops=dict(arrowstyle='->'))
+ax.set(xlabel='Quarterly visit', ylabel='Mean HbA1c (%)', ylim=(7, 9), xlim=(0.8, 4.9),
+       title='HbA1c fell further in the group-education program')
+ax.set_xticks(visits)
+ax.spines[['top', 'right']].set_visible(False)
+plt.show()
+print(round(standard[-1] - education[-1], 1))
+```
+
+Expect two falling lines, orange dashed squares for Standard care and blue solid circles for Group education, each labeled at its right end, and an arrow from the annotation to the last blue point. `0.5` prints. This y-axis starts at 7 rather than 0: a line chart need not start at zero because position, not length, encodes the value, and the axis labels make the range clear.
+
+### Calculate the lie factor
+
+The **lie factor** compares the change the drawing shows with the change in the data. On a y-axis that starts at 50, North's bars are 6 and 13 units tall.
+
+```python
+baseline = 50
+shown_change = ((63 - baseline) - (56 - baseline)) / (56 - baseline)  # change in bar length
+data_change = (63 - 56) / 56                                          # change in the data
+print('Bars grow by', round(shown_change * 100), '%')
+print('Uptake grows by', round(data_change * 100, 1), '%')
+print('Lie factor:', round(shown_change / data_change, 1))
+```
+
+Expect `Bars grow by 117 %`, `Uptake grows by 12.5 %`, and `Lie factor: 9.3`: the drawing exaggerates North's change about ninefold.

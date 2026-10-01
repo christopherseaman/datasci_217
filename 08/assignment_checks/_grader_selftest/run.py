@@ -9,7 +9,11 @@ rounded to one decimal, row-number columns, `NaN` for an empty cell, and the
 zero-visit rows `observed=False` adds). An empty directory and the untouched
 handout earn 0, one wrong value or one misnamed column costs exactly its own
 check, a summary saved without its key column costs only the columns check,
-and a missing file costs only its own artifact's checks. It also confirms that
+and a missing file costs only its own artifact's checks, with no advice to
+rename another required file. A pivot with its axes swapped costs only its
+columns check, margins=True is named as the cause of a Total row and column,
+and wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the
+clinic_mean_wait check. It also confirms that
 the copy of the visit log in `_value_checks.py` matches
 `08/assignment/data/clinic_visits.csv`, that the README's checkpoints and
 completion contract agree with the checks, that the handout ships every file in
@@ -302,6 +306,29 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
 
+        # Schema owns an omitted column; recognizable present siblings still need correct values.
+        partial = frames["output/visits_with_context.csv"].drop(columns="satisfaction").copy()
+        for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
+            changed = partial.copy()
+            if label == "missing-and-wrong":
+                changed.loc[changed.index[0], "wait_min"] += 17
+            elif label == "header-only":
+                changed = changed.iloc[:0]
+            elif label == "unrecognizable":
+                changed = changed.iloc[:1].astype(object)
+                changed.iloc[0, :] = "WRONG"
+            files = dict(correct)
+            files["output/visits_with_context.csv"] = changed.to_csv(index=False)
+            result = graded(submission("present-siblings-" + label, files))
+            if label == "missing":
+                assert failing(result) == {"visit context: columns"}, failing(result)
+            elif label == "missing-and-wrong":
+                assert failing(result) == {"visit context: columns", "visit context: original visit values"}, failing(result)
+                message = detail(result, "visit context: original visit values")
+                assert "expected" in message and "wait_min" in message, message
+            else:
+                assert "visit context: original visit values" in failing(result), failing(result)
+
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
         (root / "data" / "clinic_visits.csv").write_text("poison\n", encoding="utf-8")
@@ -362,6 +389,47 @@ def run() -> None:
         lost = {"clinic counts: columns", "clinic and visit type: columns", "mean wait pivot: columns"}
         assert failing(result) == lost, {name: detail(result, name) for name in failing(result)}
         assert "is missing clinic" in detail(result, "clinic counts: columns"), detail(result, "clinic counts: columns")
+
+        files = dict(correct)
+        counts = files["output/clinic_counts.csv"]
+        files["output/clinic_counts.csv"] = "\n".join(
+            line + "," + line.split(",")[1] for line in counts.splitlines())
+        assert graded(submission("duplicate-header", files))["score"] == 100
+        files["output/clinic_counts.csv"] = files["output/clinic_counts.csv"].replace("Mission,6,", "Mission,99,")
+        result = graded(submission("conflicting-duplicate", files))
+        assert failing(result) == {"clinic counts: visit_count values"}, failing(result)
+
+        # A conflicting duplicate cannot hide behind a correct occurrence in either order.
+        counts_frame = frames["output/clinic_counts.csv"]
+        for wrong_first in (False, True):
+            original = counts_frame.to_csv(index=False).splitlines()
+            changed = [original[0] + ",visit_count"]
+            for line in original[1:]:
+                cells = line.split(",")
+                duplicate = cells[1] if wrong_first else "99"
+                if wrong_first:
+                    cells[1] = "99"
+                changed.append(",".join(cells) + "," + duplicate)
+            files = dict(correct)
+            files["output/clinic_counts.csv"] = "\n".join(changed)
+            result = graded(submission(f"conflicting-duplicate-{wrong_first}", files))
+            assert failing(result) == {"clinic counts: visit_count values"}, failing(result)
+            assert result["score"] == 96
+        files = dict(correct)
+        original = counts_frame.to_csv(index=False).splitlines()
+        files["output/clinic_counts.csv"] = "\n".join(
+            line + "," + ("visit_count" if i == 0 else str(float(line.split(",")[1])))
+            for i, line in enumerate(original))
+        assert graded(submission("numeric-equivalent-duplicate", files))["score"] == 100
+        files["output/clinic_counts.csv"] = "\n".join(
+            line + "," + ("visit_count" if i == 0 else "") for i, line in enumerate(original))
+        assert graded(submission("blank-duplicate", files))["score"] == 100
+
+        # CSV readers differ by Python version on NUL; a broken file is unreadable on both.
+        files = dict(correct)
+        files["output/clinic_counts.csv"] = b"\xff\xfe\x00"
+        result = graded(submission("nul-byte-file", files))
+        assert failing(result) == {name for name in NAMES if name.startswith(PREFIX["output/clinic_counts.csv"])}, failing(result)
 
         # One mistake costs exactly its own check.
         counts, summary = correct["output/clinic_counts.csv"], correct["output/clinic_summary.csv"]
@@ -431,9 +499,7 @@ def run() -> None:
         files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].dropna().to_csv()
         result = graded(submission("pivot-dropna", files))
         assert failing(result) == {
-            "mean wait pivot: one row per clinic", "mean wait pivot: empty cell stays empty"}, failing(result)
-        message = detail(result, "mean wait pivot: empty cell stays empty")
-        assert "Sunset's Telehealth cell" in message and "dropping the row" in message, message
+            "mean wait pivot: one row per clinic"}, failing(result)
 
         # Only the optional zero-visit row earns no value checks: there is nothing required to compare.
         files = dict(correct)
@@ -459,6 +525,81 @@ def run() -> None:
         message = detail(graded(submission("feedback-columns", files)), "clinic and visit type: columns")
         assert "is missing visit_type and also has type" in message and "as_index=False" in message, message
 
+        # A missing file is never told to take another required file's name, however alike the two names are.
+        tasks_1_to_2_2 = ("output/clinic_counts.csv", "output/clinic_summary.csv", "output/visits_with_context.csv")
+        result = graded(submission("midway", {path: correct[path] for path in tasks_1_to_2_2}))
+        assert failing(result) == set(artifact_checks("output/clinic_visit_type_summary.csv")) | set(
+            artifact_checks("output/mean_wait_pivot.csv")), failing(result)
+        assert not any("Found" in detail(result, name) for name in failing(result)), [
+            detail(result, name) for name in failing(result)]
+        files = {path: text for path, text in correct.items() if path != "output/clinic_summary.csv"}
+        message = detail(graded(submission("summary-missing", files)), "clinic summary: columns")
+        assert "Found" not in message, message
+        files = dict(correct)
+        files["output/clinic_visit_types_summary.csv"] = files.pop("output/clinic_visit_type_summary.csv")
+        message = detail(graded(submission("typo-name", files)), "clinic and visit type: columns")
+        assert message.endswith("Found output/clinic_visit_types_summary.csv; save it as "
+                                "output/clinic_visit_type_summary.csv instead."), message
+
+        # A pivot with index= and columns= swapped is read the right way round: only its columns check fails.
+        files = dict(correct)
+        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
+            visits, values="wait_min", index="visit_type", columns="clinic", aggfunc="mean").to_csv()
+        result = graded(submission("pivot-swapped", files))
+        assert failing(result) == {"mean wait pivot: columns"}, {name: detail(result, name) for name in failing(result)}
+        message = detail(result, "mean wait pivot: columns")
+        assert "swapped" in message and 'index="clinic" and columns="visit_type"' in message, message
+
+        # margins=True adds a Total row and column: the columns and rows checks say where it came from.
+        files = dict(correct)
+        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
+            visits, values="wait_min", index="clinic", columns="visit_type", aggfunc="mean", margins=True,
+            margins_name="Total").to_csv()
+        result = graded(submission("pivot-margins", files))
+        assert failing(result) == {"mean wait pivot: columns", "mean wait pivot: one row per clinic"}, failing(result)
+        for name in failing(result):
+            assert "Total comes from margins=True" in detail(result, name), detail(result, name)
+        # Headers are quoted as the file writes them, not lowercased.
+        assert "also has Total;" in detail(result, "mean wait pivot: columns"), detail(result, "mean wait pivot: columns")
+
+        # wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the clinic_mean_wait check.
+        context = visits.copy()
+        context["clinic_mean_wait"] = visits.groupby("clinic")["wait_min"].transform("median")
+        context["wait_vs_clinic"] = context["wait_min"] - context["clinic_mean_wait"]
+        files = dict(correct)
+        files["output/visits_with_context.csv"] = context.to_csv(index=False)
+        result = graded(submission("context-median", files))
+        assert failing(result) == {"visit context: clinic_mean_wait values"}, failing(result)
+
+        # A column assigned from .mean() is blank on every row, and the message names that likely cause.
+        context["clinic_mean_wait"] = visits.groupby("clinic")["wait_min"].mean()
+        context["wait_vs_clinic"] = context["wait_min"] - context["clinic_mean_wait"]
+        files["output/visits_with_context.csv"] = context.to_csv(index=False)
+        result = graded(submission("context-mean-not-transform", files))
+        assert failing(result) == {"visit context: clinic_mean_wait values"}
+        message = detail(result, "visit context: clinic_mean_wait values")
+        assert "Every clinic_mean_wait is blank" in message and "transform" in message, message
+
+        # A mistake copied from an earlier artifact is charged at its source.
+        files = dict(correct)
+        for path in ("output/clinic_counts.csv", "output/clinic_summary.csv"):
+            files[path] = edit(files[path], "Mission", "patient_count", "6")
+        result = graded(submission("copied-count-error", files))
+        assert failing(result) == {"clinic counts: patient_count values"}, failing(result)
+        files = dict(correct)
+        files["output/clinic_visit_type_summary.csv"] = edit(pairs, "Sunset|New", "mean_wait_min", "99")
+        files["output/mean_wait_pivot.csv"] = edit(pivot, "Sunset", "New", "99")
+        result = graded(submission("copied-pair-error", files))
+        assert failing(result) == {"clinic and visit type: mean_wait_min values"}, failing(result)
+        files = dict(correct)
+        files["output/clinic_summary.csv"] = edit(summary, "Sunset", "mean_wait_min", "99")
+        changed = frames["output/visits_with_context.csv"].copy()
+        changed.loc[changed["clinic"] == "Sunset", "clinic_mean_wait"] = 99
+        changed["wait_vs_clinic"] = changed["wait_min"] - changed["clinic_mean_wait"]
+        files["output/visits_with_context.csv"] = changed.to_csv(index=False)
+        result = graded(submission("copied-clinic-mean-error", files))
+        assert failing(result) == {"clinic summary: mean_wait_min values"}, failing(result)
+
         # pytest, which GitHub runs, reports one test per check.
         for name, expected_failures in (("correct", 0), ("scaffold", len(NAMES))):
             target = workspace / f"pytest-{name}"
@@ -481,7 +622,8 @@ def run() -> None:
         "byte-identical checks agree; empty and scaffold earn 0; correct, plain-string, alternative, with-index, "
         "semicolon- and tab-separated, "
         f"and index-key submissions earn 100; lost key columns cost only the columns checks; each of the "
-        f"{len(NAMES)} single mistakes and each missing file costs only its own checks; feedback and pytest pass."
+        f"{len(NAMES)} single mistakes and each missing file costs only its own checks; swapped axes, margins, "
+        "and a derived column cost only their own checks; feedback and pytest pass."
     )
 
 

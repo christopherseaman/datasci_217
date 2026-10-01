@@ -20,18 +20,57 @@ jupyter:
 
 A diabetes clinic recorded age, sex, BMI, average blood pressure, and six blood tests for 442 patients, then scored how far each patient's disease had progressed one year later. You fit linear regressions with `statsmodels`, read coefficients with their uncertainty, check residuals, compare models, and add a categorical predictor. Then you switch to a home blood-pressure program and frame a prediction problem: the target and its time, a feature audit, clock-face hour features, and a chronological split. Everything here comes from Lecture 10 up to the first demo break, plus Lectures 01 to 09. The diabetes records are real and de-identified; the blood-pressure readings are synthetic.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, statsmodels 0.14.6, scikit-learn 1.9.0, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
+**How to run in Colab:** open this notebook from the lecture page's Colab link and run the cells from top to bottom; the first code cell installs the course's pandas. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+
+**How to run on your own computer:** run these lines once in VS Code's terminal (**Terminal → New Terminal**; on Windows, the **WSL: Ubuntu** window from Lecture 01). The first line downloads the three demo notebooks and their environment files (`pyproject.toml`, `uv.lock`, and `.python-version`) into a new folder, `~/10-demo`; the rest create, activate, and fill its environment, as in Lecture 03:
+
+<!-- #region -->
+```bash
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
+cd ~/10-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Among the lines they print, these show each step worked; `3.13.x` is whichever 3.13 release you have:
+
+```text
+Made ~/10-demo with the Lecture 10 demo notebooks and their environment files.
+Using CPython 3.13.x
+ + ipykernel==6.29.5
+ + pandas==3.0.5
+ + tensorflow==2.21.0
+```
+
+TensorFlow, which Demo 3 uses, makes the first `uv sync` a large download, and it has no Intel Mac version, so on an Intel Mac `uv sync` fails: run the demos in Colab instead. `pyproject.toml` lists **ipykernel**, the package a notebook kernel needs (Lecture 04), so VS Code can run the notebooks on this environment: choose **File → Open Folder…**, open `10-demo` in your home folder, open `demo1_statistical_modeling.ipynb`, click **Select Kernel** at the top right, and choose the Python in `.venv`. In Git Bash, activate with `source .venv/Scripts/activate` instead.
+
+If `~/10-demo` already exists, the script stops with `File exists` and changes nothing; `cd ~/10-demo` and go on. To start over, or if a download failed partway, rename the old folder with `mv ~/10-demo ~/10-demo-old`, then run the `curl` line again. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before.
+<!-- #endregion -->
+
+After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, statsmodels 0.14.6, scikit-learn 1.9.0, and matplotlib 3.11.1.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup and the first code cell in [1. Load the diabetes records](#1-load-the-diabetes-records). Run both cells in [2. The formula API](#2-the-formula-api), the first cell in [4. Uncertainty and residuals](#4-uncertainty-and-residuals), and [5. Intervals for new patients](#5-intervals-for-new-patients). |
+| Independent practice | After class, make the exploratory and residual plots, compare the array interface and formulas, add categories, and frame the time-dependent prediction problem. Main Lecture 10 teaches availability, cycles, and honest splits before this demo. |
+
+**Core checkpoint:** The BMI coefficient is about 8.5 progression points per kg/m²; its interval is 7.1–9.9. Individual-patient intervals are wider than mean-response intervals.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell changes nothing.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, after `uv sync`, that note is all it prints, and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import matplotlib.pyplot as plt
@@ -50,7 +89,7 @@ print('statsmodels', statsmodels.__version__)
 
 ## 1. Load the diabetes records
 
-scikit-learn ships a few small real datasets. `load_diabetes(scaled=False, as_frame=True)` returns this one in its original units as a DataFrame, with the six blood tests named `s1` to `s6`; rename them so the formulas below read clearly.
+scikit-learn ships a few small real datasets. `load_diabetes(scaled=False, as_frame=True)` returns this one in its original units, with the table as a DataFrame in its `.frame` and the six blood tests named `s1` to `s6`; rename them so the formulas below read clearly.
 
 | Column | Meaning | Units |
 | --- | --- | --- |
@@ -60,7 +99,7 @@ scikit-learn ships a few small real datasets. `load_diabetes(scaled=False, as_fr
 | `bp` | Average blood pressure | mmHg |
 | `tc`, `ldl`, `hdl` | Total, LDL, and HDL cholesterol | mg/dL |
 | `tch` | Total cholesterol divided by HDL | ratio |
-| `ltg` | Serum triglycerides, on a log scale | log units |
+| `ltg` | Possibly log serum triglycerides, according to the source | source does not specify |
 | `glu` | Blood glucose | mg/dL |
 | `progression` | Disease progression one year after baseline | score, 25 to 346 |
 
@@ -151,7 +190,7 @@ Read each coefficient as an association, holding the other two predictors fixed:
 - **age:** 0.09 points per year, with p = 0.68. Among patients with the same BMI and blood pressure, these data show no clear association with age. That is not proof that age does not matter.
 - **Intercept:** the fitted score for age 0, BMI 0, and BP 0, a patient who cannot exist. It anchors the line and is not interpreted.
 
-These are observational records, so none of this says that lowering a patient's BMI _would_ slow progression; that needs a trial. R² of 0.396 means the three predictors explain about 40% of the variation in progression.
+These are observational records, so none of this says that lowering a patient's BMI _would_ slow progression; that needs additional causal evidence, such as a trial. R² of 0.396 means the three predictors explain about 40% of the variation in progression.
 
 ## 3. The array API
 
@@ -215,7 +254,7 @@ bmi          8.502    0.707     7.113     9.890
 bp           1.357    0.235     0.894     1.820
 ```
 
-The residual degrees of freedom are 442 rows minus 4 estimated coefficients. The F-test asks whether all three slopes could be 0 together; p = 1.09e-47 says no. The `age` interval runs from -0.36 to 0.55 and contains 0, which is the same message as its p-value of 0.68. The `bmi` interval, 7.1 to 9.9, is far from 0.
+The residual degrees of freedom are 442 rows minus 4 estimated coefficients. The F-test asks whether all three slopes are 0 together; p = 1.09e-47 is strong evidence against that joint hypothesis under the model assumptions. The `age` interval runs from -0.36 to 0.55 and contains 0, which is the same message as its p-value of 0.68. The `bmi` interval, 7.1 to 9.9, is far from 0.
 
 Coefficients only mean something if the straight-line form fits. Plot each patient's residual (observed minus fitted) against the fitted value: a shapeless cloud around zero is what we want, a curve says the form is wrong, and a funnel says the spread is not constant.
 
@@ -233,10 +272,10 @@ plt.close(fig)
 
 **Expect:** residuals with mean 0.0 (least squares guarantees it), standard deviation 59.9, and a range of -145.7 to 154.4. In the plot there is no curve, but two things stand out:
 
-- The lower-left edge is a straight diagonal line. Progression cannot fall below 25, so a patient with a low fitted score cannot miss by much on the low side.
+- The lower-left edge is a straight diagonal line. The smallest observed progression score in this dataset is 25, so the plotted residuals lie above `25 - fitted`; this sample minimum does not establish the score's clinical lower bound.
 - The cloud is narrower at low fitted scores than in the middle, a mild funnel: the spread is not quite constant.
 
-Neither ruins the fit, but both say the straight-line model is an approximation near the bottom of the scale.
+Both show where the straight-line model is an approximation. The default intervals assume independent, normally distributed errors with constant spread, so the funnel also warns that their stated coverage may be inaccurate.
 
 ## 5. Intervals for new patients
 
@@ -264,7 +303,7 @@ print(intervals.drop(columns='mean_se').round(1))
 2  231.1          219.8          242.4         112.5         349.8
 ```
 
-The average score for patients like the second one is pinned down to about 160 to 173, but a single such patient could land anywhere from about 48 to 285: the prediction interval adds person-to-person variation. The first prediction interval starts at -16.5, a score no patient can have (the scale starts at 25). The straight line and its normal-shaped errors do not know the scale has a floor, which is the same issue the residual plot showed.
+Under the model assumptions, the mean-response interval for patients like the second one is about 160 to 173, while an individual's prediction interval is about 48 to 285: it adds person-to-person variation. The first prediction interval starts at -16.5, below every observed score in these data. The model allows values outside the observed range; judging whether they are clinically possible requires the outcome's definition, which this dataset does not supply.
 
 ## 6. Compare models
 
@@ -284,18 +323,19 @@ for name, formula in formulas.items():
     rows.append({'model': name, 'n_coef': len(fitted.params),
                  'r2': fitted.rsquared, 'adj_r2': fitted.rsquared_adj,
                  'aic': fitted.aic, 'bic': fitted.bic})
-comparison = pd.DataFrame(rows)
-print(comparison.round(4).to_string(index=False))
+comparison = pd.DataFrame(rows).set_index('model')
+print(comparison.round(4))
 ```
 
 **Expect:**
 
 ```text
-                  model  n_coef     r2  adj_r2       aic       bic
-           Model 1: bmi       2 0.3439  0.3424 4912.0382 4920.2208
-      Model 2: bmi + bp       3 0.3960  0.3932 4877.4878 4889.7618
-Model 3: age + bmi + bp       4 0.3962  0.3921 4879.3210 4895.6863
-       Model 4: all ten      11 0.5177  0.5066 4793.9857 4838.9901
+                         n_coef      r2  adj_r2        aic        bic
+model
+Model 1: bmi                  2  0.3439  0.3424  4912.0382  4920.2208
+Model 2: bmi + bp             3  0.3960  0.3932  4877.4878  4889.7618
+Model 3: age + bmi + bp       4  0.3962  0.3921  4879.3210  4895.6863
+Model 4: all ten             11  0.5177  0.5066  4793.9857  4838.9901
 ```
 
 - **R² never falls when a predictor is added.** Adding age (Model 2 to Model 3) nudges it from 0.3960 to 0.3962.
@@ -423,20 +463,20 @@ readings['reading_hour'] = readings['reading_time'].dt.hour
 readings['hour_sin'] = np.sin(2 * np.pi * readings['reading_hour'] / 24)
 readings['hour_cos'] = np.cos(2 * np.pi * readings['reading_hour'] / 24)
 
-clock = readings[['reading_hour', 'hour_sin', 'hour_cos']].drop_duplicates()
-clock = clock.sort_values('reading_hour')
-print(clock.loc[clock['reading_hour'].isin([0, 1, 9, 22, 23])].round(2).to_string(index=False))
+clock = readings[['reading_hour', 'hour_sin', 'hour_cos']].drop_duplicates().set_index('reading_hour')
+print(clock.loc[[0, 1, 9, 22, 23]].round(2))
 ```
 
 **Expect:**
 
 ```text
- reading_hour  hour_sin  hour_cos
-            0      0.00      1.00
-            1      0.26      0.97
-            9      0.71     -0.71
-           22     -0.50      0.87
-           23     -0.26      0.97
+              hour_sin  hour_cos
+reading_hour
+0                 0.00      1.00
+1                 0.26      0.97
+9                 0.71     -0.71
+22               -0.50      0.87
+23               -0.26      0.97
 ```
 
 Hour 23 sits at (-0.26, 0.97) and hour 0 at (0.00, 1.00): neighbors on the clock face, exactly as far apart as hours 0 and 1. The 9 o'clock readers sit on the other side of the circle. Both columns go to the model together, because either one alone gives two different hours the same value.
@@ -471,10 +511,17 @@ test     30 2026-02-23 00:44:00 2026-02-23 23:53:00
 
 ### Fit on training rows, read the validation rows
 
-Fit with the kept features only, on training rows only. Then give each validation row a 95% prediction interval: `conf_int(obs=True)` returns just the individual-prediction bounds, as an array with one row per patient reading.
+The 120 training targets precede the validation target period, but some were measured after the first validation reading uploaded. Fit only the rows whose target was already measured by that earliest prediction cutoff; this assumes uploads have no extra reporting delay. Use the kept features only. Then give each validation row a nominal 95% prediction interval. These repeated readings share patients, so independent errors are not assured: the bounds demonstrate the API, not validated 95% coverage for this program. `conf_int(obs=True)` returns just the individual-prediction bounds, as an array with one row per patient reading.
+
+`get_prediction(valid)` uses the training-fitted coefficients for every validation row.
 
 ```python
-honest_fit = smf.ols('sbp_next ~ age + sbp_today + hour_sin + hour_cos', data=train).fit()
+# Target periods do not overlap, but later training labels must also be available.
+first_valid_cutoff = valid['reading_time'].min()
+fit_rows = train[train['target_time'] <= first_valid_cutoff]
+assert fit_rows['target_time'].max() <= first_valid_cutoff
+print('Rows with labels available at first validation cutoff:', len(fit_rows))
+honest_fit = smf.ols('sbp_next ~ age + sbp_today + hour_sin + hour_cos', data=fit_rows).fit()
 print(honest_fit.params.round(3))
 
 valid_bounds = honest_fit.get_prediction(valid).conf_int(obs=True)
@@ -488,20 +535,21 @@ print(check)
 **Expect:**
 
 ```text
-Intercept    83.248
-age           0.040
-sbp_today     0.401
-hour_sin      0.934
-hour_cos     -1.632
+Rows with labels available at first validation cutoff: 91
+Intercept    85.969
+age           0.051
+sbp_today     0.376
+hour_sin      0.868
+hour_cos     -1.962
 dtype: float64
     reading_hour  sbp_today  sbp_next  predicted  pi_lower  pi_upper
-4              9      143.4     146.8      145.3     137.7     152.8
-5              7      146.8     149.3      146.2     138.6     153.7
-11            10      144.9     141.7      145.6     138.1     153.2
+4              9      143.4     146.8      145.4     137.8     153.0
+5              7      146.8     149.3      146.1     138.4     153.7
+11            10      144.9     141.7      145.7     138.1     153.3
 ```
 
-- **sbp_today, 0.40:** today's reading carries part of the way to next week's, holding the other features fixed.
-- **hour_sin and hour_cos:** read them together. A 9:00 reading gets a prediction about 3.4 mmHg higher than a midnight reading with the same `sbp_today`, because patients who measure mid-morning also read higher the next week.
+- **sbp_today, 0.38:** each 1 mmHg higher reading is associated with about 0.38 mmHg higher fitted next-week SBP, holding the other features fixed.
+- **hour_sin and hour_cos:** read them together. A 9:00 reading gets a prediction about 4.0 mmHg higher than a midnight reading with the same age and `sbp_today`; in this simulated program, mid-morning readers also tend to read higher the next week.
 - **The intervals** are about 15 mmHg wide, and all three validation readings fall inside theirs.
 
 Demo 2 measures how far off predictions like these are, on average, and whether they beat a simple guess.

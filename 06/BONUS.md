@@ -15,7 +15,7 @@ See [README.md](README.md) for the core data wrangling operations; master those 
 
 # 1. Advanced MultiIndex Operations
 
-_You've seen basic MultiIndex; now let's go deeper. MultiIndex becomes essential when working with hierarchical data like time series with multiple metrics, or nested business hierarchies._
+A **MultiIndex** identifies rows or columns with several label levels. Changing which level comes first lets the same clinic-by-quarter table support selection by clinic or by quarter without changing its values.
 
 ## Swapping and Reordering Index Levels
 
@@ -81,7 +81,7 @@ result = data.swaplevel(0, 1).sort_index(level=0)
 - Preparing data for specific groupby operations
 - Making partial selection easier (e.g., all Q1 data across regions)
 
-**Gotcha:** Sorting is critical for performance with MultiIndex. Always sort after creating or modifying MultiIndex for faster .loc[] operations.
+Sorting the levels prepares a MultiIndex for label-range slices with `.loc`; an unsorted index can reject those slices. Selecting one complete label does not require sorting first.
 
 
 ## Summary Statistics by Level
@@ -360,7 +360,7 @@ print(result)
 
 - **keys**: Tracking data source after concatenation
 - **names**: Making MultiIndex levels meaningful
-- **verify_integrity**: Ensuring no accidental duplicates in production
+- **verify_integrity**: Rejecting repeated labels on the concatenation axis; it does not detect duplicate records with different labels
 - **join='inner'**: Only keeping columns common to all DataFrames
 
 
@@ -679,3 +679,89 @@ print(sbp_wide)
 
 - Hadley Wickham, [Tidy Data](https://www.jstatsoft.org/article/view/v059i10), _Journal of Statistical Software_ 59(10), 2014: the paper behind the name "tidy" for long data with one observation per row and one variable per column.
 - Wes McKinney, _Python for Data Analysis_, 3rd edition, Chapter 8 (Data Wrangling: Join, Combine, and Reshape): the source of most topics on this page.
+
+# Extended Example: Compare join types
+
+This variation uses the example tables and imports from the lecture.
+
+## Code Snippet: Compare join types
+
+```python
+inner = pd.merge(patients, labs, on='patient_id', how='inner')
+print(len(inner))    # 3: P001 twice, P002 once
+
+left = pd.merge(patients, labs, on='patient_id', how='left')
+display(left)
+#   patient_id  birth_year test  value
+# 0       P001        1958  A1c    6.8
+# 1       P001        1958  LDL  131.0
+# 2       P002        1971  A1c    5.4
+# 3       P003        1985  NaN    NaN   <- no labs yet
+
+right = pd.merge(patients, labs, on='patient_id', how='right')
+print(len(right))    # 4: includes P004's A1c with birth_year NaN
+
+outer = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
+display(outer)
+#   patient_id  birth_year test  value      _merge
+# 0       P001      1958.0  A1c    6.8        both
+# 1       P001      1958.0  LDL  131.0        both
+# 2       P002      1971.0  A1c    5.4        both
+# 3       P003      1985.0  NaN    NaN   left_only
+# 4       P004         NaN  A1c    7.9  right_only
+```
+
+`birth_year` prints as `1958.0` in the outer join because P004's missing birth year makes the whole column `float64` (Lecture 05).
+
+# Extended Example: Find missing reports with a cross join
+
+This variation uses the example tables and imports from the lecture.
+
+## Code Snippet: Find missing reports with a cross join
+
+```python
+clinic_list = pd.DataFrame({'clinic': ['North', 'South']})
+hours = pd.DataFrame({'hour': [8, 9, 10]})
+expected = pd.merge(clinic_list, hours, how='cross')
+print(len(expected))   # 6: 2 clinics × 3 hours
+
+reports = pd.DataFrame({'clinic': ['North', 'North', 'South', 'South'],
+                        'hour': [8, 10, 8, 9], 'arrivals': [3, 0, 5, 2]})
+coverage = pd.merge(expected, reports, on=['clinic', 'hour'], how='left', indicator=True)
+display(coverage)
+#   clinic  hour  arrivals     _merge
+# 0  North     8       3.0       both
+# 1  North     9       NaN  left_only   <- North sent no 9:00 report: NaN, not 0
+# 2  North    10       0.0       both    <- a real report of zero arrivals
+# 3  South     8       5.0       both
+# 4  South     9       2.0       both
+# 5  South    10       NaN  left_only
+```
+
+# Extended Example: Build a MultiIndex
+
+This variation uses the example tables and imports from the lecture.
+
+## Code Snippet: Build a MultiIndex
+
+```python
+quarterly = pd.DataFrame({'clinic': ['North', 'North', 'South', 'South'],
+                          'quarter': ['Q1', 'Q2', 'Q1', 'Q2'],
+                          'visits': [410, 455, 380, 362]})
+summary = quarterly.set_index(['clinic', 'quarter']).sort_index()
+display(summary)
+#                 visits
+# clinic quarter
+# North  Q1          410
+#        Q2          455
+# South  Q1          380
+#        Q2          362
+
+display(summary.loc['South'])   # every row under one outer label
+#          visits
+# quarter
+# Q1          380
+# Q2          362
+
+print(list(summary.reset_index().columns))   # ['clinic', 'quarter', 'visits']
+```

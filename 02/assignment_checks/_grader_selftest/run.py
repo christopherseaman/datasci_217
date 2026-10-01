@@ -137,6 +137,13 @@ def run() -> None:
             )
             assert grade_submission(root)["score"] == 100, alternative
 
+        # A readable out-of-range cutoff still defines its downstream patient list.
+        for alternative in (95, 190):
+            write_submission(root, report=report, followup=f"Cutoff: {alternative}\n{REASON}"
+                             + "".join(f"{patient}\n" for patient in sorted(encounters.patients_at_or_above(alternative))))
+            assert grade_submission(root)["score"] == 95
+            assert scores(root)["follow-up patient list"] == 15
+
         # A cutoff outside the range, or a list from another cutoff, loses only its own check.
         write_submission(root, report=report, followup=f"Cutoff: 95\n{REASON}" + "".join(f"{p}\n" for p in listed))
         assert scores(root)["follow-up cutoff"] == 0
@@ -170,7 +177,7 @@ def run() -> None:
             assert result["vitals report format"] == 10, (label, result)
             assert sum(result.values()) == 100 - CHECK_POINTS[check], (label, result)
 
-        # A missing label costs the format check and that value's check only.
+        # A missing label costs only its value check.
         write_submission(
             root,
             report="\n".join(line for line in report.splitlines() if not line.startswith("Patients seen")) + "\n",
@@ -180,7 +187,7 @@ def run() -> None:
             "README project description": 5,
             "README run command": 5,
             ".gitignore bytecode cache": 5,
-            "vitals report format": 0,
+            "vitals report format": 10,
             "usable encounters": 8,
             "skipped rows": 7,
             "patients seen": 0,
@@ -301,7 +308,7 @@ def run() -> None:
         write_submission(root, report=report.replace("Usable encounters:", "Usable rows:"), followup=followup)
         shown = printed(CHECKS)
         assert f"the closest line reads `Usable rows: {len(encounters.usable)}`" in shown, shown
-        assert shown.endswith("Left to fix (18 points): output/vitals_report.txt: format and usable encounters.\n"), shown
+        assert shown.endswith("Left to fix (8 points): output/vitals_report.txt: usable encounters.\n"), shown
         write_submission(root, report=report, followup=followup)
         (root / "output" / "followup_list.txt").unlink()
         shown = printed(CHECKS)

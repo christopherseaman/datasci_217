@@ -1168,6 +1168,16 @@ def _judge_answer(text: str, key: str, summary: dict[str, str], lines_naming: di
         accepted.append(float(follow_up_answers(data, named)[key]))
     else:
         named = None
+    selected_label = None
+    if key == "highest_patient_mean":
+        selected_label = _named_label(summary.get("highest_patient", ""), data.patients)
+        if selected_label is not None and selected_label != answers["highest_patient"]:
+            accepted.append(_mean(data.readings[data.patients.index(selected_label)]))
+    elif key == "peak_hour_mean":
+        selected_label = _named_label(summary.get("peak_hour_column", ""), data.hour_columns)
+        if selected_label is not None and selected_label != answers["peak_hour_column"]:
+            hour = data.hour_columns.index(selected_label)
+            accepted.append(_mean(row[hour] for row in data.readings))
     if any(_value_matches(key, value, target) for value in readings for target in accepted):
         return
 
@@ -1186,6 +1196,8 @@ def _judge_answer(text: str, key: str, summary: dict[str, str], lines_naming: di
             f" with {answers['high_monitor']} as the high-reading monitor, or {as_text(accepted[1])} with {named}, "
             "the monitor your `high_monitor` line names"
         )
+    if selected_label is not None and len(accepted) > 1:
+        gives += f", or {as_text(accepted[-1])} for {selected_label}, the label your earlier answer names"
     if key in MMHG_KEYS:
         gives += f" (allowed difference {MMHG_TOLERANCE} mmHg)"
     hint += axis_hint
@@ -1221,12 +1233,16 @@ def _per_column_slip(summary: dict[str, str], data: Dataset, key: str) -> bool:
     return key != "stage2_patients" or matches("highest_patient") or matches("highest_patient_mean")
 
 
-def _named_monitor(raw: str, data: Dataset) -> str | None:
-    """The one real monitor a `high_monitor` value names, or None for no monitor, several, or a hedge."""
+def _named_label(raw: str, labels) -> str | None:
+    """The one real label named, excluding absent, ambiguous, and hedged answers."""
     if not raw:
         return None
-    named = [monitor for monitor in sorted(set(data.monitors)) if _label_matches(raw, monitor)]
+    named = [label for label in labels if _label_matches(raw, label)]
     return named[0] if len(named) == 1 else None
+
+
+def _named_monitor(raw: str, data: Dataset) -> str | None:
+    return _named_label(raw, sorted(set(data.monitors)))
 
 
 def _follow_ups_note(summary: dict[str, str], data: Dataset, answers: dict[str, float | str]) -> str:

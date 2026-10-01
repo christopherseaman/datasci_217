@@ -141,7 +141,7 @@ high_monitor: <monitor id>
 
 How the values are read:
 
-- Each answer is scored on its own, so a wrong value costs only its own points. `monitor_offset` and `stage2_other_monitors` are also accepted when they are right for the monitor your `high_monitor` line names, so a wrong `high_monitor` costs only its own points.
+- Each answer is scored on its own, so a wrong value costs only its own points. `highest_patient_mean` and `peak_hour_mean` are also accepted when they are right for the patient or hour your earlier label names. `monitor_offset` and `stage2_other_monitors` are accepted when they are right for your `high_monitor`. A wrong selection costs only its own points; an independently wrong calculation still costs its own points.
 - A number answer is read from the first number after the colon, so put the answer first and any note after it: `readings: 3600 (300 x 12)` reads 3600, but `readings: 300 x 12 = 3600` reads 300.
 - A number answer is one number, not an array. A line holding a printed array, such as `mean_sbp: [130.86666667 133.98333333 ...`, fails whatever its first number is: `readings.mean(axis=0)` gives one mean per hour column, and `mean_sbp` is the mean of every reading, which `readings.mean()` gives.
 - mmHg values are accepted within 0.6 of the value recomputed from the data, so one decimal or every digit NumPy prints passes, and so does a whole number, whether rounded with `:.0f` or cut short with `int()`. A trailing unit such as `mmHg` is ignored. Counts and whole-number readings must match exactly.

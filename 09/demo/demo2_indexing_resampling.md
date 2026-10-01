@@ -19,18 +19,34 @@ jupyter:
 
 An ICU patient's bedside monitor records heart rate and temperature every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days. You summarize the readings by day and week, count what the monitor missed, lay sparse charted readings onto an hourly grid, resample two patients separately, and smooth the daily series with rolling windows and an EWM. Everything here comes from Lecture 09 up to the second demo break, plus Lectures 01 to 08. Patient values are synthetic.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
+
+- **In Colab:** open Demo 2 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **Locally in VS Code:** use the `~/09-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo2_indexing_resampling.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`. **In a new terminal**, `cd ~/09-demo` and then `source .venv/bin/activate` bring the environment back.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, all three cells in [4. Two patients: resample each separately](#4-two-patients-resample-each-separately), the first cell in [5. Each patient's hourly grid](#5-each-patients-hourly-grid), then [6. Compare two recent windows](#6-compare-two-recent-windows). |
+| Independent practice | After class, analyze the monitor, compare filling choices, count gap runs, repeat the full smoother and plot comparisons, and try the calendar reports and bin boundaries. EWM has an extended [BONUS](../BONUS.md#exponentially-weighted-means) reference. |
+
+**Core checkpoint:** Separate resampling returns 8 patient bins. The grid has 13 rows, 4 created gaps, and 1 charted missing value; at P02's 14:00 reading, the two-reading mean is 73 bpm and the two-hour mean is 72 bpm.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import matplotlib.pyplot as plt
@@ -67,6 +83,8 @@ print(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
 ```
 
 **Expect:** `(662, 2)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
+
+Two masks built the story. Comparing a DatetimeIndex with a date string compares instants, so `fever` is `True` from January 15 at 00:00 up to, but not including, January 18. `isin()` (Lecture 05) marks the 10 unplugged hours, and `~` keeps every other row.
 
 ## 2. Daily summaries: averages, extremes, and counts
 
@@ -190,7 +208,39 @@ print(grid[['grid_created', 'value_missing']].sum())
 
 **Expect:** `All on the hour: True`, then 13 rows: P01 from 08:00 to 14:00 (7 hours) and P02 from 09:00 to 14:00 (6 hours). Four rows are `grid_created` (P01 at 10:00 and 11:00, P02 at 12:00 and 13:00), and one is `value_missing` (P01 at 12:00). All five show `NaN` heart rate; only the flags tell the empty hours from the charted row with no value.
 
-## 6. Rolling windows and EWM on the daily means
+Now count each patient's **gap runs**, the stretches of consecutive hours with no charted row, as the lecture's "Count Gap Runs per Patient" snippet does. `source_observed` is the opposite of `grid_created`, so P01's 12:00 row counts as observed: a nurse charted it, even without a heart rate. The running count of observed rows stays flat through a gap, so each gap's hours share a `run_id`.
+
+```python
+grid['source_observed'] = ~grid['grid_created']
+grid['run_id'] = grid.groupby('patient_id')['source_observed'].cumsum()
+runs = (grid[~grid['source_observed']]
+        .groupby(['patient_id', 'run_id'])
+        .size()
+        .rename('gap_hours')
+        .reset_index())
+print(runs)
+print(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
+```
+
+**Expect:** two runs, one per patient, each 2 hours long: P01's 10:00 and 11:00 (`run_id` `2`) and P02's 12:00 and 13:00 (`run_id` `3`). The summary shows `count` `1` and `max` `2` for both patients. A patient with no gaps would have no rows in `runs`, so report 0 runs for them.
+
+## 6. Compare two recent windows
+
+Use P02's charted readings from section 4. Its last two readings are at 11:00 and 14:00; the earlier one is outside the two hours ending at 14:00.
+
+```python
+patient = charted[charted['patient_id'] == 'P02'].set_index('recorded_at')['heart_rate'].sort_index()
+patient_windows = pd.DataFrame({
+    'heart_rate': patient,
+    'last_2_readings': patient.rolling(2).mean(),
+    'last_2_hours': patient.rolling('2h').mean(),
+})
+print(patient_windows)
+```
+
+**Expect:** four rows. At 14:00, `last_2_readings` is `73.0`, averaging 74 and 72 bpm; `last_2_hours` is `72.0`, because only the 14:00 reading falls inside that window. A count window follows rows; a time window follows elapsed time.
+
+## 7. Rolling windows and EWM on the daily means
 
 Back to the four-week monitor. Smooth the daily mean heart rate four ways and watch how each responds to the fever.
 
@@ -213,7 +263,7 @@ print(smooth.loc['2024-01-11':'2024-01-21'].round(1))
 - `ewm_7` reacts faster than `rolling_7` on the way up (`86.9` against `84.7` on January 17) and on the way down (`80.7` against `84.4` on January 21, when the 7-day mean still carries all three fever days).
 - `centered_7` starts rising on January 12 (`80.2`), three days before the fever began, because each value averages three later days.
 
-## 7. Count window versus time window across the gap
+## 8. Count window versus time window across the gap
 
 On the hourly readings, a count window and a time window differ exactly where the monitor was unplugged.
 
@@ -229,7 +279,7 @@ print(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
 
 **Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
 
-## 8. Plot the counts and the smoothers
+## 9. Plot the counts and the smoothers
 
 The top panel shows the reading counts, so the gap is visible; the bottom panel shows the daily means with the 7-day rolling mean, the EWM, and a band of plus or minus one rolling standard deviation.
 
@@ -253,3 +303,74 @@ plt.show()
 ```
 
 **Expect:** in the top panel, 27 bars of height 24 and one short bar (14) on January 5. In the bottom panel, the daily means form a three-day plateau near 93 bpm; the dashed EWM climbs and falls sooner than the solid rolling mean, and the shaded band widens while the fever days are inside the 7-day window.
+## 10. Home weights: calendar, weekly, and monthly reports
+
+Build the same daily home-weight history used by Demo 3. This notebook constructs it here so the reports run independently.
+
+```python
+rng = np.random.default_rng(42)
+days = pd.date_range('2024-01-01', '2024-03-31', freq='D')
+scale_noise = rng.normal(0, 0.15, len(days))  # mean 0, standard deviation 0.15 kg
+weights = pd.Series(82 + scale_noise, index=days)
+
+# Fluid builds up from March 9, then a diuretic brings it back down
+weights.loc['2024-03-09':'2024-03-15'] += [0.5, 1.9, 2.6, 2.6, 1.9, 1.1, 0.4]
+
+home_weights = pd.DataFrame({'weight_kg': weights.round(1)})
+print(home_weights.shape)
+```
+
+**Expect:** `(91, 1)`, one weight per day from January 1 through March 31, 2024.
+
+Partial dates select whole months, and a date slice keeps both ends. `resample()` then turns the daily rows into weekly and monthly summaries.
+
+```python
+print(home_weights.loc['2024-02'].shape)
+print(home_weights.loc['2024-03-08':'2024-03-16', 'weight_kg'].tolist())
+
+print(home_weights['weight_kg'].resample('W').mean().head(3).round(2))
+print(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
+```
+
+**Expect:** `(29, 1)` for February, then nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
+
+## 11. ICU summaries and exact bin boundaries
+
+First build the same one-week ICU monitor used in Demo 1's optional clock filters; no earlier notebook output is needed.
+
+```python
+rng = np.random.default_rng(42)
+hours = pd.date_range('2024-03-04', periods=24 * 7, freq='h')
+icu = pd.DataFrame({
+    'heart_rate': rng.normal(84, 5, len(hours)).round().astype(int),
+    'spo2': rng.integers(93, 99, len(hours)),
+}, index=hours)
+icu.loc[icu.index.hour < 6, 'heart_rate'] -= 12
+print(icu.shape)
+print(icu.head(3))
+```
+
+**Expect:** `(168, 2)`, seven days of hourly heart rate and SpO2 readings.
+
+Resampling the hourly monitor to days gives one row per day. Select the numeric columns you want before resampling a DataFrame; a text column would raise `TypeError`.
+
+```python
+print(icu[['heart_rate', 'spo2']].resample('D').mean().round(1))
+print(icu['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count']).round(1).head(3))
+```
+
+**Expect:** seven rows labeled `2024-03-04` through `2024-03-10`, with daily mean heart rate between `79.8` and `81.9` and SpO2 near 95.5. Every `count` is `24`: the monitor never missed an hour.
+
+A nurse charts respiratory rate at irregular times. Two readings sit near the 08:00 bin boundary, one just before it and one exactly on it.
+
+```python
+resp_rate = pd.Series(
+    [18, 22, 26, 24, 20],
+    index=pd.to_datetime(['2024-03-05 06:00', '2024-03-05 07:59', '2024-03-05 08:00',
+                          '2024-03-05 09:30', '2024-03-05 10:00']),
+)
+print(resp_rate.resample('2h').agg(['mean', 'count']))
+print(resp_rate.resample('2h', closed='right', label='right').agg(['mean', 'count']))
+```
+
+**Expect:** with the default (left-closed, left-labeled) bins, the 08:00 reading opens the `08:00` bin: counts `2`, `2`, `1` for `06:00`, `08:00`, `10:00`. With `closed='right', label='right'`, each bin ends at its label, so 08:00 joins 07:59 in the bin labeled `08:00`: counts `1`, `2`, `2`. Same readings, different bins: state the rule whenever a report depends on it.

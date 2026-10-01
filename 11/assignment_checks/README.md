@@ -3,15 +3,17 @@
 These checks grade the final exam. The handout in `11/assignment/` ships none of them, with no checker, workflow, or test, so its README names every output file with the question that makes it, its first line, and its line count instead. After the deadline, `uv run scripts/grade_submissions.py 11` clones each fork and runs `check_assignment.py` from this folder on the fork's committed files. To grade one submission by hand:
 
 ```bash
-uv run --python 3.13 --with-requirements 11/assignment/requirements.txt \
-    python 11/assignment_checks/check_assignment.py path/to/submission          # readable report
-uv run --python 3.13 --with-requirements 11/assignment/requirements.txt \
-    python 11/assignment_checks/check_assignment.py path/to/submission --json   # datasci217/grading-result/v1
+uv run --isolated --project 11/assignment --locked \
+    python3 11/assignment_checks/check_assignment.py path/to/submission
+uv run --isolated --project 11/assignment --locked \
+    python3 11/assignment_checks/check_assignment.py path/to/submission --json
 ```
+
+The first prints a readable report; `--json` prints the `datasci217/grading-result/v1` report instead. `uv run --isolated --project 11/assignment --locked` runs the command in a temporary environment built from the handout's `pyproject.toml` and `uv.lock`, so it leaves no `.venv` in the handout folder.
 
 The report covers the 75 points graded from files; the other 25 come from human review of `report.md` and the notebooks, five 5-point categories that the handout README's Completion contract lists with the report sections and notebook cells each one reads. The command exits 0 only when every check passes, 1 when any does not, and 2 when the supplied release is missing or changed, so judge a run by its JSON, not its exit status. A run takes about 15 seconds.
 
-The checks read only the CSV and PNG files in the submission's `output/` and its `report.md`. They never import, run, or read submitted code, and they ignore the submission's own `data/`: every expected value is recomputed from `11/assignment/data/` in this repository, after its SHA-256 is checked against the frozen release. They need NumPy and pandas at the versions `11/assignment/requirements.txt` pins.
+The checks read only the CSV and PNG files in the submission's `output/` and its `report.md`. They never import, run, or read submitted code, and they ignore the submission's own `data/`: every expected value is recomputed from `11/assignment/data/` in this repository, after its SHA-256 is checked against the frozen release. They need NumPy, pandas, and scikit-learn at the versions `11/assignment/pyproject.toml` pins; run from any other Python, `check_assignment.py` says which package is missing and how to run it inside that environment.
 
 ## What each check scores
 
@@ -19,7 +21,7 @@ The checks read only the CSV and PNG files in the submission's `output/` and its
 | --- | ---: | --- |
 | `q1_release_audit.csv` | 2 | In proportion to the 7 checks with right `expected`, `observed`, and `passed` |
 | `q1_station_coverage.csv` | 2 | In proportion to the 12 station values right |
-| `q1_visualizations.png`, `q5_patterns.png`, `q8_final_visualizations.png` | 1 each | A PNG image at least 50 pixels on each side |
+| `q1_visualizations.png`, `q5_patterns.png`, `q8_final_visualizations.png` | 1 each | A complete PNG image with readable pixel data; visual quality belongs to human review |
 | `q2_cleaned_observations.csv: rows` | 2 | 1 for every valid release row present, 1 for no other, repeated, or unreadable row |
 | `q2_cleaned_observations.csv: measurement_timestamp_utc` | 2 | In proportion to the rows right, rounded down |
 | `q2_cleaned_observations.csv: solar_radiation_w_m2, interval_rain_mm, wind_speed_mps, maximum_wind_speed_mps` | 2 | In proportion to the 4 columns right (the only columns this release's rules change) |
@@ -41,7 +43,7 @@ The checks read only the CSV and PNG files in the submission's `output/` and its
 | `q6_X_*.csv: values` | 2 | In proportion to the 63 split columns right |
 | `q6_y_*.csv` | 3 | In proportion to the 6 parts (each split's rows and targets) right |
 | `q6_split_summary.csv` | 2 | In proportion to the 12 split values right |
-| `q7_model_spec.csv` | 4 | 1 each for the module and class, `parameters_json`, `feature_columns`, and `random_state` |
+| `q7_model_spec.csv` | 4 | 1 each for the module and class, `parameters_json` (with `random_state` 217 and `n_jobs` 1 where the estimator has them), `feature_columns`, and `random_state` |
 | `q7_validation_predictions.csv` | 4 | 1 each for the rows and a finite `model_prediction`; 2 in proportion to the 4 copied columns right (`station_name`, `target_timestamp_utc`, `actual`, `persistence_prediction`) |
 | `q7_validation_metrics.csv` | 2 | In proportion to the 8 metric values right |
 | `q7_permutation_importance.csv` | 2 | 1 for the 19 features, 1 for finite values with a nonnegative standard deviation |
@@ -54,13 +56,13 @@ The checks read only the CSV and PNG files in the submission's `output/` and its
 
 What never costs points: line endings, a byte-order mark, spaces around cells or header names, blank lines, a missing final newline, column order, extra columns, a leading unnamed index column, row order (rows are matched by key), number format (values within 0.006, which admits two-decimal rounding; percentages within 0.051; counts exact), the letter case of labels, boolean spellings (`True`, `true`, `1`, `yes`), missing-value spellings (empty, `NaN`, `<NA>`), and the form of a time (any offset or `Z`; a naive `_utc` time is read as UTC, and a naive coverage or split-summary time may be UTC or Chicago local). Also accepted: the `column_names` audit row written as a printed list, `missing_pct` as a fraction, the population standard deviation, an unnamed first column of correlation labels (or none, in the fixed order), `parameters_json` as a Python dict literal, comma-separated `feature_columns`, and the regressor's name in place of `student_model` when it is the only other model label.
 
-A missing or extra row costs only the rows check: the value checks compare the rows present, provided at least half of the expected rows are there. A downstream file also passes when it follows from the student's own upstream file: the Q3 panel from their Q2 table, Q4 features from their Q3 panel, the Q5 summaries and Q6 splits from their Q4 file, the Q7 and Q8 `actual` and `persistence_prediction` from their Q6 files, the Q2 missingness from their Q2 table, the Q3 summary from their panel, the split summary from their X files, and the metrics from their prediction files. So one mistake is charged once, where it was made. Model accuracy is never graded.
+A missing or extra row costs only the rows check: the value checks compare the rows present, provided at least half of the expected rows are there. A downstream file also passes when it follows from the student's own upstream file: the Q3 panel from their Q2 table, Q4 features (rows and values) from their Q3 panel, the Q5 summaries and Q6 splits from their Q4 file, the y rows from their X files, the Q7 and Q8 `actual` and `persistence_prediction` from their Q6 files, the Q2 missingness and audit totals from their Q2 table, the Q3 summary from their panel, the split summary from their X files, and the metrics from their prediction files. So one mistake is charged once, where it was made. When a predictions file lacks the split's rows or `model_prediction`, the model's metrics need only be numbers with the baseline's row count, `model_error` need only be numbers, and `model_absolute_error` is judged against `model_error`. A numeric metric also earns credit when invalid values in the prediction file make that metric impossible to recompute; the prediction check charges the invalid values. Model accuracy is never graded.
 
 ## Changing a check
 
 Edit `grading.py`, keep the handout README's checklist, question table, and Completion contract, each notebook's points line, and `assignment.md` in agreement with it (the self-test compares their points), and rerun both tests:
 
 ```bash
-uv run --python 3.13 --with-requirements 11/assignment/requirements.txt python 11/assignment_checks/_grader_selftest/run.py
+uv run --isolated --project 11/assignment --locked python3 11/assignment_checks/_grader_selftest/run.py
 uv run scripts/test_assignment_grading.py 11
 ```

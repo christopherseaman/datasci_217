@@ -14,119 +14,110 @@ jupyter:
 
 # Optional Demo 5: Map zone-level model error
 
-This notebook is **demo-only and non-graded**. It is not assumed prior knowledge
-and is never required by the assignment or grader. Run Demo 4 first so its zone
-error summary exists.
+This notebook is **demo-only and non-graded**: nothing in it is assumed prior knowledge, and the assignment never needs it. It maps Demo 4's test error for each of the 12 taxi zones. The course concepts are reading a results table, validating a join, and making an honest labeled figure; the geospatial machinery (the geo packages, the zone boundaries, the shapefile, and drawing polygons) is supplied.
 
-The course concepts are reading a results table, validating a join, and making an
-honest labeled figure. Package installation, geometry download, shapefile reading,
-coordinate handling, and polygon rendering are supplied geospatial machinery.
+**How to run:** in Colab, open this notebook from the lecture page's Colab link. Locally, open the `11-demo` folder from Demo 1 in VS Code and select the `.venv` kernel; the geo packages are not in `pyproject.toml`, so first add them in a terminal with the environment active, as Lecture 03 adds any new package. **In a new terminal**, start with the first two lines, after which the prompt starts with `(11-demo)`; in Git Bash, activate with `source .venv/Scripts/activate` instead:
 
-## Separate optional setup
+<!-- #region -->
+```bash
+cd ~/11-demo
+source .venv/bin/activate
+uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
+```
 
-These geo packages are intentionally absent from core requirements.
+The notebook reads Demo 4's `output/04_zone_error_summary.csv` when you ran Demo 4 in the same folder, and otherwise downloads a copy of that file from the course repository. Downloading the zone boundaries needs an internet connection. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, geopandas 1.1.1, and matplotlib 3.11.1.
+<!-- #endregion -->
+
+## Setup
+
+These geo packages are not part of the core demo environment. In Colab this cell installs them; locally, after `uv add`, it changes nothing.
 
 ```python
-import importlib.metadata as metadata
-import importlib.util
-import subprocess
-import sys
+%pip install -q pandas==3.0.5 geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
+```
 
-REQUIRED = {
-    "numpy": "2.3.3",
-    "pandas": "3.0.5",
-    "matplotlib": "3.11.1",
-    "geopandas": "1.1.1",
-    "shapely": "2.1.1",
-    "pyogrio": "0.11.1",
-}
-missing = []
-for package, version in REQUIRED.items():
-    try:
-        installed = metadata.version(package)
-    except metadata.PackageNotFoundError:
-        installed = None
-    if installed != version:
-        missing.append(f"{package}=={version}")
-if missing:
-    if importlib.util.find_spec("pip") is None:
-        subprocess.check_call([sys.executable, "-m", "ensurepip", "--upgrade"])
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", *missing])
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` If Colab asks you to restart the session, choose **Runtime → Restart session**, then continue with the next cell.
 
+```python
+import hashlib
 from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-import hashlib
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-print(f"geopandas {gpd.__version__}")
+print("geopandas", gpd.__version__)
 ```
 
-## Load Demo 4 evidence
+**Expect:** `geopandas 1.1.1`.
+
+This notebook reads two files. Demo 4's zone error summary comes from `output/` when Demo 4 ran in this folder; otherwise the cell downloads the course's committed copy of it into `data/`. The zone boundaries are the Taxi and Limousine Commission's (TLC) official shapefile, a zipped set of map files that holds each taxi zone's boundary as a polygon. This cell is supplied plumbing: it keeps any file already present and downloads the rest.
 
 ```python
-summary_candidates = [
-    Path("output/04_zone_error_summary.csv"),
-    Path("11/demo/output/04_zone_error_summary.csv"),
-]
-summary_path = next((path for path in summary_candidates if path.exists()), None)
-if summary_path is None:
-    raise FileNotFoundError(
-        "Run 04_modeling.ipynb first; it creates output/04_zone_error_summary.csv"
-    )
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
+GEO_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip"
 
+summary_path = Path("output/04_zone_error_summary.csv")
+if not summary_path.exists():
+    summary_path = Path("data/04_zone_error_summary.csv")
+    if not summary_path.exists():
+        summary_path.parent.mkdir(exist_ok=True)
+        urlretrieve(f"{REPO_RAW}/04_zone_error_summary.csv", summary_path)
+
+geo_dir = Path("output/geo")
+archive = geo_dir / "taxi_zones.zip"
+if not archive.exists():
+    geo_dir.mkdir(parents=True, exist_ok=True)
+    urlretrieve(GEO_URL, archive)
+
+for path in (summary_path, archive):
+    print(path, path.stat().st_size, "bytes")
+```
+
+**Expect:** `output/04_zone_error_summary.csv 1037 bytes` when Demo 4 ran in this folder, or `data/04_zone_error_summary.csv 1037 bytes` for the downloaded copy, then `output/geo/taxi_zones.zip 1022574 bytes`.
+
+## 1. Load Demo 4's zone errors
+
+```python
 zone_errors = pd.read_csv(summary_path)
 assert zone_errors["pickup_zone_id"].is_unique
 assert len(zone_errors) == 12
-zone_errors.head()
+print("Read", summary_path)
+zone_errors.round(1).head()
 ```
 
-## Download official TLC polygons
+**Expect:** `Read output/04_zone_error_summary.csv` (or `data/04_zone_error_summary.csv` for the downloaded copy) and the first five zones, starting with zone 132 at MAE 36.5, the same values as Demo 4's zone table.
 
-The geometry is official TLC taxi-zone data. Polygon-only rendering succeeds
-without a tile service. An OSM basemap is an optional enhancement, not a dependency.
+## 2. Check the zone boundaries and join them
+
+The supplied cell checks the shapefile archive's SHA-256 hash, as Demo 1 did for the release, then unzips it and reads it with geopandas. The join is the familiar part: a one-to-one inner merge on the zone ID (Lecture 06), which must keep all 12 zones.
 
 ```python
-GEO_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip"
-geo_dir = Path("output/geo")
-geo_dir.mkdir(parents=True, exist_ok=True)
-archive = geo_dir / "taxi_zones.zip"
 shapefile = geo_dir / "taxi_zones" / "taxi_zones.shp"
-
-if not archive.exists():
-    urlretrieve(GEO_URL, archive)
-
 expected_geo_sha256 = "f6d711917bb4340f8f644d5366c51665489eb2d426dd1a4a55677721ae5adf17"
 actual_geo_sha256 = hashlib.sha256(archive.read_bytes()).hexdigest()
-if actual_geo_sha256 != expected_geo_sha256:
-    raise ValueError(
-        f"Taxi-zone archive hash mismatch: expected {expected_geo_sha256}, got {actual_geo_sha256}"
-    )
-
+assert actual_geo_sha256 == expected_geo_sha256, "The zone archive changed: rename output/geo to preserve it, then rerun"
 if not shapefile.exists():
     with ZipFile(archive) as zipped:
         zipped.extractall(geo_dir)
 
 zones = gpd.read_file(shapefile)[["LocationID", "zone", "borough", "geometry"]]
 zones["LocationID"] = zones["LocationID"].astype("int64")
-mapped = zones.merge(
-    zone_errors,
-    left_on="LocationID",
-    right_on="pickup_zone_id",
-    how="inner",
-    validate="one_to_one",
-)
+mapped = zones.merge(zone_errors, left_on="LocationID", right_on="pickup_zone_id",
+                     how="inner", validate="one_to_one")
 
 assert len(mapped) == 12
 assert mapped.geometry.notna().all()
-print("Authenticated official taxi_zones.zip SHA-256 digest.")
-mapped[["LocationID", "zone", "borough", "MAE"]].sort_values("MAE", ascending=False)
+mapped[["LocationID", "zone", "borough", "MAE"]].sort_values("MAE", ascending=False).round(1)
 ```
 
-## Render the choropleth
+**Expect:** a 12-row table sorted by MAE, from `JFK Airport` (Queens, 36.5) and `LaGuardia Airport` (Queens, 35.5) down to `Upper West Side South` (Manhattan, 17.4).
+
+## 3. Draw the choropleth
+
+A **choropleth** colors each area by a value, here the zone's June MAE; darker red means larger misses. Only the 12 modeled zones are drawn, with no background map, so the figure needs no map-tile service.
 
 ```python
 figure, axis = plt.subplots(figsize=(9, 9))
@@ -136,7 +127,7 @@ mapped.plot(
     edgecolor="white",
     linewidth=0.7,
     legend=True,
-    legend_kwds={"label": "June mean absolute error"},
+    legend_kwds={"label": "June mean absolute error (pickups per zone-hour)"},
     ax=axis,
 )
 axis.set_title("Selected taxi-zone forecast error")
@@ -150,3 +141,5 @@ plt.show()
 assert map_path.stat().st_size > 0
 print(f"Final check passed: mapped {len(mapped)} zones and saved {map_path}.")
 ```
+
+**Expect:** a map with the ten small Manhattan zones at the upper left, shaded from pale yellow to red, and the two much larger airport zones in Queens, LaGuardia to the east and JFK to the southeast, in the darkest red; then `Final check passed: mapped 12 zones and saved output/05_zone_error_choropleth.png.`

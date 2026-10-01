@@ -360,7 +360,8 @@ def test_grading_forks(work: Path) -> None:
     urls["olga"] = publish_fork(forks, "olga", plausible)
 
     # A real mistake: the running total compared with the threshold instead of each measurement, and a
-    # space inside each Task 2 label's quotes. Spacing is not graded, so only the two wrong lines cost points.
+    # space inside each Task 2 label's quotes. Spacing is not graded, and Review count correctly
+    # follows the saved classifications, so only the wrong measurement classification costs points.
     running = work / "running-total"
     shutil.copytree(completed, running)
     summary = running / "measurement_summary.py"
@@ -376,10 +377,10 @@ def test_grading_forks(work: Path) -> None:
     assert saved[3:11] == ["Measurement:  18 within range", "Measurement:  21 review", "Measurement:  24 review",
                            "Measurement:  19 review", "Count:  4", "Total:  82", "Mean:  20.5", "Review count:  3"]
     local = value_report(running, checks=running)
-    assert local == value_report(running) and local["score"] == 90, local
+    assert local == value_report(running) and local["score"] == 95, local
     assert failing(local)["report: Measurement 4"].startswith(
         "The line should read `Measurement: 19 within range`; yours reads `Measurement: 19 review`."), local
-    assert sorted(failing(local)) == ["report: Measurement 4", "report: Review count"], local
+    assert sorted(failing(local)) == ["report: Measurement 4"], local
     urls["tess"] = publish_fork(forks, "tess", running)
 
     # A fork whose folders are symlinks into a classmate's clone beside it.
@@ -393,7 +394,7 @@ def test_grading_forks(work: Path) -> None:
     grades = read_grades(destination)
     assert {user: row["score"] for user, row in grades.items()} == {
         "alice": "100", "bob": "20", "carol": "0", "erin": "100", "mallory": "85", "olga": "80", "sam": "0",
-        "tess": "90"}
+        "tess": "95"}
     assert all(row["status"] == "graded" and row["max_score"] == "100" for row in grades.values())
     assert grades["alice"]["test: terminal-practice/source.txt"] == "10"
     assert grades["alice"]["test: report: Total"] == "5"
@@ -403,7 +404,7 @@ def test_grading_forks(work: Path) -> None:
     assert grades["bob"]["test: terminal-practice/path-check.txt"] == "10"
     assert grades["mallory"]["details"].startswith("identity hash on the roster: Run capture_identity.py"), grades
     assert "should read `Total: 82`; yours reads `Total: 83`" in grades["olga"]["details"], grades["olga"]["details"]
-    assert grades["tess"]["test: report: Review count"] == "0" and grades["tess"]["test: report: Total"] == "5"
+    assert grades["tess"]["test: report: Review count"] == "5" and grades["tess"]["test: report: Total"] == "5"
     assert len({row["checks"] for row in grades.values()}) == 1 and grades["alice"]["checks"]
     for user, url in urls.items():
         assert grades[user]["commit"] == head(url), user

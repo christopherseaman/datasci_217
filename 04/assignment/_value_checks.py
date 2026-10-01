@@ -35,6 +35,11 @@ SAVED_BY = {
     FRIDGE_FILE: ("Task 2.2", "label_block.to_csv(FRIDGE_OUTPUT_PATH)"),
     SUPPLIES_FILE: ("Task 3.2", "selected_supplies.to_csv(SUPPLIES_OUTPUT_PATH, index=False)"),
 }
+# The fix when one task's save call writes to the other task's path.
+SAVE_BOTH = (
+    f"{SAVED_BY[SUPPLIES_FILE][0]} saves with {SAVED_BY[SUPPLIES_FILE][1]}, and {SAVED_BY[FRIDGE_FILE][0]} with "
+    f"{SAVED_BY[FRIDGE_FILE][1]}; correct the path in the call that differs, then Restart and Run All."
+)
 
 # The supplied fridge_readings array in assignment.ipynb, with its row labels, in °C.
 FRIDGE_READINGS = {
@@ -83,6 +88,7 @@ class Table:
     name: str
     columns: tuple[str, ...]
     rows: tuple[dict[str, str], ...]
+    conflicting_columns: tuple[str, ...] = ()
 
 
 def line_total(item_id: str) -> float:
@@ -124,6 +130,8 @@ def _csv_rows(text: str) -> list[list[str]]:
     line into the most cells is used, and a tie keeps commas. A file separated
     by semicolons may write decimal commas, so there 12,5 reads as 12.5.
     """
+    if "\x00" in text:
+        raise csv.Error("embedded NUL bytes; save the table again as CSV text")
     lines = text.splitlines()
     header = next((line for line in lines if line.strip()), "")
     delimiter = max(DELIMITERS, key=lambda mark: len(next(csv.reader([header], delimiter=mark), [])))
@@ -164,8 +172,9 @@ def _look_alikes(root: Path, folder: Path, name: str) -> list[str]:
 
 
 def _missing(root: Path, name: str, task: str) -> str:
-    """Say the artifact is missing, and name a file of a similar name in output/ or the assignment folder."""
+    """Say the artifact is missing and why it may be: a file of a similar name, or the other artifact's path."""
     wanted = root / name
+    step, call = SAVED_BY[name]
     beside = _look_alikes(root, wanted.parent, wanted.name)
     if beside:
         return (
@@ -174,12 +183,18 @@ def _missing(root: Path, name: str, task: str) -> str:
         )
     misplaced = _look_alikes(root, root, wanted.name) if wanted.parent != root else []
     if misplaced:
-        step, call = SAVED_BY[name]
         return (
             f"{name} is missing, but the assignment folder itself has {_join(misplaced)}; "
             f"in {step}, save with {call}, which writes {name}, then commit it."
         )
-    return f"{name} is missing; run the {task} cells to write it, then commit it."
+    if name == SUPPLIES_FILE and _artifact(root, FRIDGE_FILE) is not None:
+        try:
+            fridge = read_table(root, FRIDGE_FILE, "Task 2")
+        except (AssertionError, OSError, csv.Error):
+            fridge = None
+        if fridge is not None and _holds_supply_lines(fridge):
+            return f"{name} is missing, and {FRIDGE_FILE} holds the supply order lines instead. {SAVE_BOTH}"
+    return f"{name} is missing; run the {task} cells to write it, then commit it. {step} saves it with {call}."
 
 
 def _clean(cell: str) -> str:
@@ -208,7 +223,11 @@ def read_table(root: Path, name: str, task: str) -> Table:
             f"{name} cannot be read as a CSV table ({error}); run the {task} cells again so to_csv() "
             "writes it, then compare it with the checkpoint in README.md."
         ) from None
-    _assert(bool(lines), f"{name} is empty; run the {task} cells again to write it.")
+    _assert(
+        bool(lines),
+        f"{name} is empty, with no header line and no rows; run the {task} cells again so to_csv() writes it, "
+        "then commit it.",
+    )
     header = [_clean(cell).casefold() for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
 
@@ -221,8 +240,27 @@ def read_table(root: Path, name: str, task: str) -> Table:
         header = header[1:]
         body = [row[1:] for row in body]
 
-    rows = tuple({column: (row[i] if i < len(row) else "") for i, column in enumerate(header)} for row in body)
-    return Table(name=name, columns=tuple(header), rows=rows)
+    rows = []
+    conflicting = set()
+    for row in body:
+        values = {}
+        for i, column in enumerate(header):
+            cell = row[i] if i < len(row) else ""
+            if values.get(column) and cell:
+                first_number, next_number = _number(values[column]), _number(cell)
+                equal = (
+                    abs(first_number - next_number) <= TOLERANCE
+                    if first_number is not None and next_number is not None
+                    else values[column].casefold() == cell.casefold()
+                )
+                if not equal:
+                    conflicting.add(column)
+            if not values.get(column):
+                values[column] = cell
+        rows.append(values)
+    rows = tuple(rows)
+    header = list(dict.fromkeys(header))
+    return Table(name=name, columns=tuple(header), rows=rows, conflicting_columns=tuple(sorted(conflicting)))
 
 
 def _number(cell: str) -> float | None:
@@ -245,18 +283,67 @@ def _join(items) -> str:
     return ", ".join(items[:-1]) + " and " + items[-1]
 
 
+def _columns(table: Table) -> str:
+    """The file's column names for a message, naming a blank header rather than printing nothing."""
+    return _join(column or "a column with no header" for column in table.columns) or "none"
+
+
 # Task 2: output/fridge_block.csv
 
 
+def _text_columns(table: Table) -> list[str]:
+    """The columns whose every cell is text rather than a number, such as a saved index of labels."""
+    return [
+        column
+        for column in table.columns
+        if table.rows and all(row[column] and _number(row[column]) is None for row in table.rows)
+    ]
+
+
 def _fridge_label_column(table: Table) -> str | None:
-    """The column holding fridge IDs: fridge_id, or else any column of text labels."""
+    """The column holding fridge IDs: fridge_id, or else a column of text that names a supplied fridge."""
     if FRIDGE_ID in table.columns:
         return FRIDGE_ID
-    for column in table.columns:
-        values = [row[column] for row in table.rows]
-        if values and all(value and _number(value) is None for value in values):
+    known = {fridge.casefold() for fridge in FRIDGE_READINGS}
+    for column in _text_columns(table):
+        if any(row[column].casefold() in known for row in table.rows):
             return column
     return None
+
+
+def _holds_supply_lines(table: Table) -> bool:
+    """The file has Task 3's columns and nothing of the fridge block: the supply lines saved to the wrong path."""
+    fridge_columns = (FRIDGE_ID, *TEMP_COLUMNS)
+    return (
+        any(column in table.columns for column in SUPPLY_COLUMNS)
+        and not any(column in table.columns for column in fridge_columns)
+        and _fridge_label_column(table) is None
+    )
+
+
+def _other_table(table: Table) -> str | None:
+    """The one fix when the fridge block's file holds another table, or None when it may be the block.
+
+    A file with no fridge IDs and no reading columns, under their own names or
+    standing in for them, holds another table: the supply lines saved to the
+    fridge block's path, or another object, such as latest_by_area, saved in
+    Task 2.2. It replaces the message of each fridge check that fails, never
+    whether a check passes.
+    """
+    if _holds_supply_lines(table):
+        return f"{FRIDGE_FILE} holds the supply order lines ({_columns(table)}), not the fridge block. {SAVE_BOTH}"
+    if _fridge_label_column(table) is None and all(saved is None for saved in _temperature_columns(table).values()):
+        step, call = SAVED_BY[FRIDGE_FILE]
+        return (
+            f"{FRIDGE_FILE} holds another table: its columns are {_columns(table)}, with no fridge IDs and no "
+            f"{' or '.join(TEMP_COLUMNS)} readings. In {step}, save the fridge block with {call}."
+        )
+    return None
+
+
+def _fridge_fix(table: Table, message: str) -> str:
+    """The check's own message, unless the file holds another table than the fridge block."""
+    return _other_table(table) or message
 
 
 def _column_label(column: str) -> str:
@@ -288,14 +375,16 @@ def _temperature_columns(table: Table) -> dict[str, str | None]:
 
 
 def _fridge_rows(table: Table) -> dict[str, dict[str, str]]:
-    """{fridge id: row} for every row that names or, without labels, matches a supplied fridge.
+    """{fridge id: row} for every row that names or, without fridge IDs, matches a supplied fridge.
 
-    Without a label column, a row is identified by its readings. No two
+    Without a column of fridge IDs, a row is identified by its readings. No two
     supplied readings are the same, so a row that matches exactly one fridge on
     either reading is that fridge. When the file has exactly two rows, the
-    block's size, a row that matches no fridge is the block's fridge at its
-    position, FRG-102 first. Leaving the index out then costs only the
-    fridge_id check, and wrong readings cost only their columns' value checks.
+    block's size, and no column of text labels, a row that matches no fridge is
+    the block's fridge at its position, FRG-102 first. Leaving the index out
+    then costs only the fridge_id check, and wrong readings cost only their
+    columns' value checks. Rows labeled with something else, such as another
+    Series' labels, are never taken by position.
     """
     label = _fridge_label_column(table)
     if label is not None:
@@ -311,7 +400,7 @@ def _fridge_rows(table: Table) -> dict[str, dict[str, str]]:
                 if any(saved[column] is not None and _same(row[saved[column]], readings[column]) for column in TEMP_COLUMNS)
             ]
             identified.append(matches[0] if len(matches) == 1 else None)
-        if len(identified) == len(BLOCK_IDS):
+        if len(identified) == len(BLOCK_IDS) and not _text_columns(table):
             identified = [
                 fridge if fridge is not None or BLOCK_IDS[position] in identified else BLOCK_IDS[position]
                 for position, fridge in enumerate(identified)
@@ -329,16 +418,26 @@ def check_fridge_id_column(root: Path) -> None:
     if FRIDGE_ID in table.columns:
         return
     label = _fridge_label_column(table)
+    text = _text_columns(table)
     if label is not None:
         where = f"a column headed {label}" if label else "a first column with no header"
-        raise AssertionError(
+        message = (
             f"{FRIDGE_FILE} saves the fridge IDs in {where}, not fridge_id; "
             'name the index with fridge_log.index.name = "fridge_id" in Task 2.1, then save again.'
         )
-    raise AssertionError(
-        f"{FRIDGE_FILE} has no fridge_id column (its columns are {_join(table.columns) or 'none'}); "
-        "in Task 2.2, save label_block with its index, so leave out index=False."
-    )
+    elif text and text[0] == table.columns[0]:
+        shown = list(dict.fromkeys(row[text[0]] for row in table.rows))
+        message = (
+            f"{FRIDGE_FILE} has no fridge_id column, and its row labels ({_join(shown[:4])}) are not fridge IDs; "
+            "in Task 2.1, build fridge_log with the index FRG-101, FRG-102, FRG-103, FRG-104 and name it with "
+            'fridge_log.index.name = "fridge_id", then save the Task 2.2 block again.'
+        )
+    else:
+        message = (
+            f"{FRIDGE_FILE} has no fridge_id column (its columns are {_columns(table)}); "
+            "in Task 2.2, save label_block with its index, so leave out index=False."
+        )
+    raise AssertionError(_fridge_fix(table, message))
 
 
 def check_fridge_rows(root: Path) -> None:
@@ -352,18 +451,21 @@ def check_fridge_rows(root: Path) -> None:
         problems.append(f"it is missing {_join(missing)}")
     if extra:
         problems.append(f"it also holds {_join(sorted(extra))}")
+    if len(table.rows) != len(BLOCK_IDS) and not extra:
+        problems.append(f"it holds {len(table.rows)} rows, expected exactly {len(BLOCK_IDS)}; extra or repeated rows must be removed")
     if not found:
         problems = [f"none of its {len(table.rows)} rows is one of the fridges FRG-101 to FRG-104"]
-    _assert(
-        not problems,
-        f"{FRIDGE_FILE} should hold the rows FRG-102 and FRG-103, but " + "; ".join(problems) + ". "
-        'In Task 2.2, .loc["FRG-102":"FRG-103"] includes its end label, while .iloc[1:3] stops before position 3.',
-    )
+    if problems:
+        raise AssertionError(_fridge_fix(
+            table,
+            f"{FRIDGE_FILE} should hold the rows FRG-102 and FRG-103, but " + "; ".join(problems) + ". "
+            'In Task 2.2, .loc["FRG-102":"FRG-103"] includes its end label, while .iloc[1:3] stops before position 3.',
+        ))
 
 
 def _missing_temperature(table: Table, column: str) -> str:
     return (
-        f"{FRIDGE_FILE} has no {column} column (its columns are {_join(table.columns) or 'none'}); "
+        f"{FRIDGE_FILE} has no {column} column (its columns are {_columns(table)}); "
         f"keep both {_join(TEMP_COLUMNS)} in the Task 2.2 selection."
     )
 
@@ -378,11 +480,12 @@ def _temperature_name_check(column: str) -> Callable[[Path], None]:
         stand_in = _temperature_columns(table)[column]
         if stand_in is not None:
             names = ", ".join(f'"{name}"' for name in TEMP_COLUMNS)
-            raise AssertionError(
+            raise AssertionError(_fridge_fix(
+                table,
                 f"{FRIDGE_FILE} has {_column_label(stand_in)} where Task 2.1 names it {column}; build fridge_log "
-                f"with columns=[{names}], then run Task 2.2 again to save it."
-            )
-        raise AssertionError(_missing_temperature(table, column))
+                f"with columns=[{names}], then run Task 2.2 again to save it.",
+            ))
+        raise AssertionError(_fridge_fix(table, _missing_temperature(table, column)))
 
     return check
 
@@ -390,7 +493,15 @@ def _temperature_name_check(column: str) -> Callable[[Path], None]:
 def _check_temperature(root: Path, column: str) -> None:
     table = read_table(root, FRIDGE_FILE, "Task 2")
     saved = _temperature_columns(table)[column]
-    _assert(saved is not None, _missing_temperature(table, column))
+    if column in table.conflicting_columns:
+        raise AssertionError(
+            f"{FRIDGE_FILE} has repeated {column} headers with conflicting readings; expected one reading "
+            "column with one value per fridge. Remove the extra column and save the selected block again."
+        )
+    if saved is None:
+        if _other_table(table) is None and any(fridge in _fridge_rows(table) for fridge in BLOCK_IDS):
+            return  # The column-name check charges an omission in recognizable data.
+        raise AssertionError(_fridge_fix(table, _missing_temperature(table, column)))
     where = column if saved == column else f"{saved or '(no header)'} (saved for {column})"
     found = {fridge: row for fridge, row in _fridge_rows(table).items() if fridge in BLOCK_IDS}
     if not found and _fridge_label_column(table) is None:
@@ -399,25 +510,32 @@ def _check_temperature(root: Path, column: str) -> None:
         expected = [FRIDGE_READINGS[fridge][column] for fridge in BLOCK_IDS]
         _assert(
             len(given) == len(expected) and all(_same(value, want) for value, want in zip(given, expected)),
-            f"{FRIDGE_FILE} lists {where} as {_join(given) or 'nothing'}; "
-            f"FRG-102 and FRG-103 read {_join(f'{value:.1f}' for value in expected)} °C in the supplied array.",
+            _fridge_fix(
+                table,
+                f"{FRIDGE_FILE} lists {where} as {_join(given) or 'nothing'}; "
+                f"FRG-102 and FRG-103 read {_join(f'{value:.1f}' for value in expected)} °C in the supplied array. "
+                "Build fridge_log from the supplied fridge_readings array with the columns in the order Task 2.1 "
+                "gives, keep the array unchanged, and save the Task 2.2 block with its index.",
+            ),
         )
         return
-    _assert(
-        bool(found),
-        f"{FRIDGE_FILE} has no row for FRG-102 or FRG-103, so its {column} values cannot be compared; "
-        'in Task 2.2, select the block with fridge_log.loc["FRG-102":"FRG-103", ...] and save it again.',
-    )
+    if not found:
+        raise AssertionError(_fridge_fix(
+            table,
+            f"{FRIDGE_FILE} has no row for FRG-102 or FRG-103, so its {column} values cannot be compared; "
+            'in Task 2.2, select the block with fridge_log.loc["FRG-102":"FRG-103", ...] and save it again.',
+        ))
     wrong = [
         f"{fridge} has {row[saved] or 'nothing'} where the supplied array has {FRIDGE_READINGS[fridge][column]:.1f} °C"
         for fridge, row in found.items()
         if not _same(row[saved], FRIDGE_READINGS[fridge][column])
     ]
-    _assert(
-        not wrong,
-        f"{FRIDGE_FILE}, column {where}: {'; '.join(wrong)}. Build fridge_log from the supplied fridge_readings "
-        "array with the columns in the order Task 2.1 gives, and keep the array unchanged.",
-    )
+    if wrong:
+        raise AssertionError(_fridge_fix(
+            table,
+            f"{FRIDGE_FILE}, column {where}: {'; '.join(wrong)}. Build fridge_log from the supplied fridge_readings "
+            "array with the columns in the order Task 2.1 gives, and keep the array unchanged.",
+        ))
 
 
 # Task 3: output/selected_supplies.csv
@@ -465,8 +583,8 @@ def _supply_rows(table: Table) -> list[tuple[str, dict[str, str]]]:
 def _require_line_key(table: Table) -> None:
     _assert(
         "item_id" in table.columns or "item" in table.columns,
-        f"{SUPPLIES_FILE} has no item_id column, so its lines cannot be matched to data/supply_order.csv; "
-        "keep item_id in the Task 3.1 .loc selection.",
+        f"{SUPPLIES_FILE} has no item_id column (its columns are {_columns(table)}), so its lines "
+        "cannot be matched to data/supply_order.csv; keep item_id in the Task 3.1 .loc selection.",
     )
 
 
@@ -488,7 +606,7 @@ def _column_check(column: str, hint: str) -> Callable[[Path], None]:
                 f"rename it to {column}. {hint}"
             )
         raise AssertionError(
-            f"{SUPPLIES_FILE} has no {column} column (its columns are {_join(table.columns) or 'none'}). {hint}"
+            f"{SUPPLIES_FILE} has no {column} column (its columns are {_columns(table)}). {hint}"
         )
 
     return check
@@ -575,17 +693,13 @@ def check_supply_line_totals(root: Path) -> None:
     line's own saved ones, so a wrong quantity costs only its line check.
     """
     table = read_table(root, SUPPLIES_FILE, "Task 3")
-    total = _total_column(table)
-    _assert(
-        total is not None,
-        f"{SUPPLIES_FILE} has no line_total_usd column (its columns are {_join(table.columns) or 'none'}), so no "
-        'line total can be checked; in Task 3.1, add selected_supplies["line_total_usd"] = '
-        'selected_supplies["quantity"] * selected_supplies["unit_price_usd"], then save again in Task 3.2.',
-    )
     _require_line_key(table)
     nothing = _no_lines(table)
     if nothing:
         raise AssertionError(nothing)
+    total = _total_column(table)
+    if total is None:
+        return  # The column check already charges the absent total column.
     wrong = []
     for item_id, row in _supply_rows(table):
         _, quantity, unit_price = SUPPLY_ORDER[item_id]
@@ -666,8 +780,9 @@ def _ordered_rows(root: Path) -> tuple[list[str], list[dict[str, float]]]:
     rows = _supply_rows(table)
     _assert(
         len(rows) >= 2,
-        f"{SUPPLIES_FILE} names fewer than two lines from data/supply_order.csv, so its order cannot be "
-        f"checked; Task 3.1 keeps {len(expected_selection())} lines, and the line checks say what to fix.",
+        f"{SUPPLIES_FILE} names {len(rows)} line{'' if len(rows) == 1 else 's'} from data/supply_order.csv, so "
+        f"its order cannot be checked; Task 3.1 keeps {len(expected_selection())} lines, and the line checks say "
+        "what to fix.",
     )
     return [item_id for item_id, _ in rows], _order_bases(table, rows)
 

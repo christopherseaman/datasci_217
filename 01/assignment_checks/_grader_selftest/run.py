@@ -510,10 +510,14 @@ def run() -> None:
                      .replace("Readiness:", "\n\nReadiness:", 1),
                      EXPECTED_READINESS.replace(FIRST_LINE, "3.13\n", 1).replace("Count: 4\n", "\nCount: 4\n")):
             assert report_scores(text) == 100, text
-        # Characters are graded: a letter's case counts, and the message shows the line with that label.
-        assert report_scores(EXPECTED_READINESS.replace("Project:", "project:")) == 95
-        assert failing(root) == {"report: Project": line_detail("Project: DataSci 217 Assignment 01",
-                                                                "project: DataSci 217 Assignment 01", "readiness.py")}
+        # Equivalent case and numeric notation show the same saved answers.
+        for text in (EXPECTED_READINESS.lower(),
+                     EXPECTED_READINESS.replace("Total: 82", "Total: 82.0").replace("Mean: 20.5", "Mean: 20.50"),
+                     EXPECTED_READINESS.replace("Total: 82", "Total: 8.2e1")):
+            assert report_scores(text) == 100, text
+        assert report_scores(EXPECTED_READINESS.replace("Total: 82", "Total: 80").replace("Mean: 20.5", "Mean: 20")) == 95
+        assert set(failing(root)) == {"report: Total"}
+        assert report_scores(EXPECTED_READINESS.replace("Total: 82", "Total: 80").replace("Mean: 20.5", "Mean: 99")) == 90
 
         # One wrong value costs only its own line, and says what the line should read.
         assert report_scores(EXPECTED_READINESS.replace("Total: 82", "Total: 83")) == 95
@@ -521,12 +525,11 @@ def run() -> None:
         assert report_scores(EXPECTED_READINESS.replace("Script: readiness.py", "Script: TODO")) == 95
         assert failing(root) == {"report: Script": line_detail("Script: readiness.py", "Script: TODO", "readiness.py")}
 
-        # The real submission that compared the running total, double spaced: two lines wrong, 90 points.
-        assert report_scores(RUNNING_TOTAL) == 90
+        # The wrong final classification propagates correctly into its review count: charge it once.
+        assert report_scores(RUNNING_TOTAL) == 95
         assert failing(root) == {
             "report: Measurement 4": line_detail("Measurement: 19 within range", "Measurement: 19 review",
                                                  "measurement_summary.py"),
-            "report: Review count": line_detail("Review count: 2", "Review count: 3", "measurement_summary.py"),
         }
 
         # A missing line costs only itself, and an extra line, such as a leftover debug print, costs nothing:
@@ -579,7 +582,7 @@ def run() -> None:
             "(Task 3.3), which create the folder, and commit the two files they save."}
 
     print("Assignment 01 checks: every roster hash, identity and report failures on their own, the running-total "
-          "submission at 90, whitespace, blank and extra lines, and the Python version line ungraded, a missing "
+          "submission at 95, whitespace, blank and extra lines, and the Python version line ungraded, a missing "
           "line costing only itself, and each failing line saying what it should read and which script and task "
           "to fix, all score as the contract states.")
 
@@ -639,9 +642,9 @@ def run_handout() -> None:
             assert local.stdout == course.stdout and local.returncode == course.returncode, (name, local, course)
             assert json.loads(local.stdout) == grade_submission(root), name
         shown = checker(ASSIGNMENT, submissions["running total"])
-        assert shown.returncode == 1 and "Score: 75/100\n" in shown.stdout, shown.stdout
+        assert shown.returncode == 1 and "Score: 80/100\n" in shown.stdout, shown.stdout
         assert "yours reads `Measurement: 19 review`" in shown.stdout, shown.stdout
-        assert shown.stdout.endswith("Left to fix (25 points): output/readiness.txt: Measurement 4 and Review count; "
+        assert shown.stdout.endswith("Left to fix (20 points): output/readiness.txt: Measurement 4; "
                                      "output/student_identity.txt: identity hash on the roster.\n"), shown.stdout
 
         # A fix shared by the checks right after it is printed once, and the report ends by naming what is left.
@@ -733,7 +736,7 @@ def run_equivalence() -> None:
             if name in ("complete", "extra files everywhere") or name.startswith("report expected + roster hash"):
                 assert new_score == 100, (name, now)
             if name == "report running total compared, double spaced + identity roster hash":
-                assert new_score == 90, (name, now)
+                assert new_score == 95, (name, now)
             if name in (f"report {report} + identity roster hash" for report in FULL_MARKS_REPORTS):
                 assert new_score == 100, (name, now)
             if name.endswith("unreadable + identity roster hash"):

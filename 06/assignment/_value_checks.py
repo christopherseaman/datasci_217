@@ -10,9 +10,17 @@ files in 06/assignment/data/.
 Each check scores one thing, so one mistake costs only its own points, and no
 check waits for another to pass. Values are compared after parsing: spacing,
 line endings, quoting, a byte-order mark, column order, row order, a leading
-row-number column, number formatting (2 == 2.0 == 2.00), and the letter case
-of labels and headers never cost points, and cells may be separated by
-commas, semicolons, or tabs.
+row-number column, number formatting (2 == 2.0 == 2.00), and the letter case,
+spaces, underscores, and hyphens of labels and headers never cost points, and
+cells may be separated by commas, semicolons, or tabs.
+
+A mistake is charged once. A column saved twice with the same values counts
+once; a column name used twice for different values costs the columns check,
+and the other checks read the copy that fits best. A row listed twice costs
+the rows check, and the values checks accept it when one copy is right. The
+batch labels may be any two labels that tell the batches apart, and the round
+trip is also judged against the student's own sbp_long.csv, so a mistake in
+Task 3.1 is not charged again in Task 3.2.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -24,7 +32,7 @@ import csv
 import difflib
 import re
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 
@@ -73,26 +81,46 @@ MISSING_SPELLINGS = frozenset({"", "nan", "na", "n/a", "none", "null", "<na>", "
 class Artifact:
     """One saved CSV: where it lives, which task writes it, and what it should hold.
 
+    `path_name` is the notebook's name for `path`, such as ALIGNED_PATH.
     `rows` maps each expected key, a tuple of the key columns' values, to the
     expected value of every other column; None means an empty cell.
-    `key_hint` says how the key column usually goes missing from this file.
+    `key_hint` says how the key column usually goes missing from this file, and
+    `repeated_hint` how a column comes to be named twice in it.
     """
 
     path: str
+    path_name: str
     task: str
     columns: tuple[str, ...]
     key: tuple[str, ...]
     rows: dict[tuple[str, ...], dict[str, object]]
     allowed_extra: tuple[str, ...] = ()
     key_hint: str = ""
+    repeated_hint: str = ""
 
 
 @dataclass(frozen=True)
 class Table:
-    """A saved CSV: its casefolded column names and one {column: cell} dict per data row."""
+    """A saved CSV: its column names in file order, one tuple of cells per data row
+    in the same order, and how many times each column name used more than once is used.
+
+    Checks find a column by its position, so every copy of a repeated name stays readable.
+    """
 
     columns: tuple[str, ...]
-    rows: tuple[dict[str, str], ...]
+    rows: tuple[tuple[str, ...], ...]
+    repeated: dict[str, int]
+
+
+@dataclass(frozen=True)
+class RowProblems:
+    """What a rows check found: expected keys with no row, expected keys on several
+    rows, the keys of rows that match no expected key, and rows with an empty key."""
+
+    missing: tuple[tuple[str, ...], ...]
+    repeated: tuple[tuple[str, ...], ...]
+    unknown: tuple[tuple[str, ...], ...]
+    empty: int
 
 
 @dataclass(frozen=True)
@@ -116,6 +144,7 @@ def _merge_audit_rows() -> dict[tuple[str, ...], dict[str, object]]:
 
 MERGE_AUDIT = Artifact(
     path="output/specimen_merge_audit.csv",
+    path_name="MERGE_AUDIT_PATH",
     task="Task 1.2",
     columns=(*SPECIMEN_COLUMNS, "clinic_name", "region", "_merge"),
     key=("specimen_id",),
@@ -126,6 +155,7 @@ MERGE_AUDIT = Artifact(
 
 COMBINED = Artifact(
     path="output/combined_specimens.csv",
+    path_name="COMBINED_PATH",
     task="Task 2.1",
     columns=(*SPECIMEN_COLUMNS, "source_partition"),
     key=("specimen_id",),
@@ -133,10 +163,13 @@ COMBINED = Artifact(
         (specimen_id,): {**values, "source_partition": "batch_a" if specimen_id in BATCH_A else "batch_b"}
         for specimen_id, values in SPECIMENS.items()
     },
+    repeated_hint="Putting the batches side by side with pd.concat(..., axis=1) repeats every column name; stack "
+    "them with the default axis=0 instead.",
 )
 
 ALIGNED = Artifact(
     path="output/aligned_features.csv",
+    path_name="ALIGNED_PATH",
     task="Task 2.3",
     columns=("specimen_id", "volume_ml", "transit_min"),
     key=("specimen_id",),
@@ -148,10 +181,13 @@ ALIGNED = Artifact(
         for specimen_id in dict.fromkeys([*BATCH_A, *TRANSIT_MIN])
     },
     key_hint="specimen_id is the index of aligned_features, so save it with the index: leave out index=False.",
+    repeated_hint="Both tables kept specimen_id as a column, so pd.concat(..., axis=1) lined their rows up by row "
+    'number: set_index("specimen_id") on both tables before pd.concat(..., axis=1).',
 )
 
 SBP_LONG = Artifact(
     path="output/sbp_long.csv",
+    path_name="SBP_LONG_PATH",
     task="Task 3.1",
     columns=("patient_id", "visit", "sbp"),
     key=("patient_id", "visit"),
@@ -160,6 +196,7 @@ SBP_LONG = Artifact(
 
 SBP_ROUND_TRIP = Artifact(
     path="output/sbp_round_trip.csv",
+    path_name="SBP_ROUND_TRIP_PATH",
     task="Task 3.2",
     columns=("patient_id", *VISITS),
     key=("patient_id",),
@@ -203,6 +240,11 @@ def _is_whole_number(cell: str) -> bool:
     return number is not None and number.is_integer()
 
 
+def _label(text: str) -> str:
+    """A label or header as it is compared: letter case, spaces, underscores, and hyphens set aside."""
+    return re.sub(r"[\W_]+", "", text.casefold())
+
+
 def _matches(cell: str, expected: object) -> bool:
     text = _clean(cell)
     if expected is None:
@@ -210,7 +252,17 @@ def _matches(cell: str, expected: object) -> bool:
     if isinstance(expected, (int, float)):
         number = _number(text)
         return number is not None and abs(number - expected) <= TOLERANCE
-    return text.casefold() == str(expected).casefold()
+    return _label(text) == _label(str(expected))
+
+
+def _same_cell(left: str, right: str) -> bool:
+    """Equivalent saved cells, including formatting differences between duplicated columns."""
+    if left.casefold() in MISSING_SPELLINGS and right.casefold() in MISSING_SPELLINGS:
+        return True
+    number = _number(right)
+    if number is not None:
+        return _matches(left, number)
+    return _label(left) == _label(right)
 
 
 def _show(value: object) -> str:
@@ -237,6 +289,50 @@ def _expected_keys(names: list[str]) -> str:
     return f"{', '.join(names[:3])}, ... and {names[-1]} ({len(names)} in all)"
 
 
+def _in_words(number: int) -> str:
+    """'a', 'two', ... 'nine', then digits: how many columns a message counts."""
+    words = ("no", "a", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+    return words[number] if number < len(words) else str(number)
+
+
+def _count(number: int, noun: str) -> str:
+    """'1 row', '4 rows'."""
+    return f"{number} {noun}{'' if number == 1 else 's'}"
+
+
+def _no_columns(names: list[str]) -> str:
+    """'no sbp column' or 'no clinic_name and region columns'."""
+    return f"no {_join(names)} column{'s' if len(names) > 1 else ''}"
+
+
+def _named_more_than_once(table: Table, names) -> str:
+    """'specimen_id twice' or 'visit and sbp twice', with the count past two."""
+    by_count: dict[int, list[str]] = {}
+    for name in names:
+        by_count.setdefault(table.repeated[name], []).append(name)
+    parts = []
+    for count, group in by_count.items():
+        times = "twice" if count == 2 else f"{count} times"
+        parts.append(f"{_join(group)} {times}")
+    return " and ".join(parts)
+
+
+# The fix for a column named twice, when the artifact names no likelier cause.
+REPEATED_HINT = "Save each column once; pd.concat(..., axis=1) repeats every column name the two tables share."
+
+
+def _repeated_cause(table: Table, artifact: Artifact, found: dict[str, int], columns) -> str:
+    """The likely cause when a column this check reads is named more than once, or ""."""
+    twice = list(dict.fromkeys(table.columns[found[column]] for column in columns if column in found))
+    twice = [name for name in twice if name in table.repeated]
+    if not twice:
+        return ""
+    return (
+        f"Its header line names {_named_more_than_once(table, twice)}, so the checks read the copy that fits best: "
+        f"{artifact.repeated_hint or REPEATED_HINT}"
+    )
+
+
 def _decode(raw: bytes) -> str:
     """An artifact's text without a byte-order mark; UTF-16 is read through its mark."""
     if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
@@ -260,6 +356,8 @@ def _csv_rows(text: str) -> list[list[str]]:
     line into the most cells is used, and a tie keeps commas. A file separated
     by semicolons may write decimal commas, so there 12,5 reads as 12.5.
     """
+    if "\x00" in text:
+        raise csv.Error("embedded NUL bytes; save the table again as CSV text")
     lines = text.splitlines()
     header = next((line for line in lines if line.strip()), "")
     delimiter = max(DELIMITERS, key=lambda mark: len(next(csv.reader([header], delimiter=mark), [])))
@@ -288,18 +386,31 @@ def _artifact_path(root: Path, name: str) -> Path | None:
     return same_name[0] if len(same_name) == 1 else None
 
 
+def _look_alikes(folder: Path, name: str) -> list[str]:
+    """Names of the files in `folder` whose names match or nearly match `name`."""
+    if not folder.is_dir():
+        return []
+    return sorted(
+        path.name
+        for path in folder.iterdir()
+        if path.is_file() and difflib.SequenceMatcher(None, name.casefold(), path.name.casefold()).ratio() >= 0.75
+    )
+
+
 def _missing(root: Path, artifact: Artifact) -> str:
+    """Say the artifact is missing, and where a file that looks like it was saved instead."""
     message = f"{artifact.path} is missing; run the {artifact.task} cell to write it, then commit it."
     wanted = root / artifact.path
-    if wanted.parent.is_dir():
-        look_alikes = sorted(
-            path.relative_to(root).as_posix()
-            for path in wanted.parent.iterdir()
-            if path.is_file()
-            and difflib.SequenceMatcher(None, wanted.name.casefold(), path.name.casefold()).ratio() >= 0.75
+    folder = wanted.parent.relative_to(root).as_posix()
+    in_output = [f"{folder}/{name}" for name in _look_alikes(wanted.parent, wanted.name)]
+    in_root = _look_alikes(root, wanted.name)
+    if in_output:
+        message += f" Found {_join(in_output)}; save it as {artifact.path} instead."
+    elif in_root:
+        message += (
+            f" Found {_join(in_root)} in the assignment folder, outside {folder}/; save it to "
+            f"{artifact.path_name}, which is {artifact.path}."
         )
-        if look_alikes:
-            message += f" Found {_join(look_alikes)}; save it as {artifact.path} instead."
     return message
 
 
@@ -313,7 +424,13 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     A leading column headed by nothing, `Unnamed: 0`, or `index` that holds only
     whole numbers is the row numbers pandas writes when `index=False` is left
     out, so it is set aside rather than counted as a column. So is an empty
-    column with no header, which a trailing comma on every line makes.
+    column with no header, which a trailing comma on every line makes. A
+    header that differs from an expected name only in letter case, spaces,
+    underscores, or hyphens is read as that name. A column that repeats an
+    earlier column of the same name cell for cell, as saving an index kept
+    with set_index(..., drop=False) does, is read once; a name used for
+    columns that differ is recorded in `repeated`, and every copy stays in
+    `rows`.
     """
     path = _artifact_path(root, artifact.path)
     _assert(path is not None, _missing(root, artifact))
@@ -335,63 +452,138 @@ def read_table(root: Path, artifact: Artifact) -> Table:
         header = header[1:]
         body = [row[1:] for row in body]
     keep = [i for i, column in enumerate(header) if column or any(row[i] for row in body)]
-    header = [header[i] for i in keep]
+    by_label = {_label(name): name for name in (*artifact.columns, *artifact.allowed_extra)}
+    header = [by_label.get(_label(header[i]), header[i]) if header[i] else "" for i in keep]
     body = [[row[i] for i in keep] for row in body]
 
-    rows = tuple({column: row[i] for i, column in enumerate(header)} for row in body)
-    return Table(columns=tuple(header), rows=rows)
+    # A named column identical to an earlier one of the same name adds nothing, so it is read once.
+    unique = []
+    for i, column in enumerate(header):
+        same = [j for j in unique if header[j] == column]
+        if column and same and all(_same_cell(row[i], row[same[0]]) for row in body):
+            continue
+        unique.append(i)
+    header = [header[i] for i in unique]
+    body = [[row[i] for i in unique] for row in body]
+
+    counts: dict[str, int] = {}
+    for column in header:
+        if column:
+            counts[column] = counts.get(column, 0) + 1
+    return Table(
+        columns=tuple(header),
+        rows=tuple(tuple(row) for row in body),
+        repeated={column: count for column, count in counts.items() if count > 1},
+    )
 
 
-def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
-    """Map each expected column to the saved column that holds it.
+def _positions(table: Table, name: str) -> list[int]:
+    return [i for i, column in enumerate(table.columns) if column == name]
 
-    A column saved under its own name is found by name. A key column saved
-    under another name, such as a blank header over saved index labels or
-    melt's default `variable`, is found by its values. If exactly one expected
-    column is still unplaced and exactly one unexpected column is left, such as
-    melt's default `value`, that column is taken to hold it. A misnamed column
-    then costs only the columns check.
+
+def _key_labels(artifact: Artifact, position: int) -> set[str]:
+    """The expected values of the key column at `position`, as they are compared."""
+    return {_label(key[position]) for key in artifact.rows}
+
+
+def _canonical_key(table_row: tuple[str, ...], artifact: Artifact, found: dict[str, int]):
+    """The expected key a saved row names, or None."""
+    canonical = {tuple(_label(part) for part in key): key for key in artifact.rows}
+    return canonical.get(tuple(_label(table_row[found[column]]) for column in artifact.key))
+
+
+def _resolve(table: Table, artifact: Artifact) -> dict[str, int]:
+    """Map each expected column to the position of the saved column that holds it.
+
+    A column saved under its own name is found by name; when the name is used
+    for several columns, a key column is read from the copy that holds the
+    most expected IDs, and any other column from its first copy (the values
+    checks then pick the copy that fits best). A key column saved under
+    another name, such as a blank header over saved index labels or melt's
+    default `variable`, is found by its values, and so is any other column
+    when exactly one unexpected column holds its expected value on every row.
+    If exactly one expected column is still unplaced and exactly one
+    unexpected column is left, such as melt's default `value`, that column is
+    taken to hold it. A misnamed column then costs only the columns check.
     """
-    found = {column: column for column in artifact.columns if column in table.columns}
-    spare = [column for column in table.columns if column not in artifact.columns and column not in artifact.allowed_extra]
+    found: dict[str, int] = {}
+    for column in artifact.columns:
+        places = _positions(table, column)
+        if len(places) > 1 and column in artifact.key:
+            wanted = _key_labels(artifact, artifact.key.index(column))
+            # max() keeps the first of equally good copies.
+            found[column] = max(places, key=lambda i: len({_label(row[i]) for row in table.rows} & wanted))
+        elif places:
+            found[column] = places[0]
+    spare = [
+        i for i, column in enumerate(table.columns)
+        if column not in artifact.columns and column not in artifact.allowed_extra
+    ]
     for position, column in enumerate(artifact.key):
         if column in found:
             continue
-        wanted = {key[position].casefold() for key in artifact.rows}
+        wanted = _key_labels(artifact, position)
         candidates = []
         for other in spare:
-            values = [row[other].casefold() for row in table.rows if row[other]]
+            values = [_label(row[other]) for row in table.rows if row[other]]
             if values and sum(value in wanted for value in values) * 2 > len(values):
                 candidates.append(other)
         if len(candidates) == 1:
             found[column] = candidates[0]
             spare.remove(candidates[0])
+    if all(column in found for column in artifact.key):
+        keyed = [(key, row) for key, row in ((_canonical_key(row, artifact, found), row) for row in table.rows) if key]
+        for column in artifact.columns:
+            if column in found or not keyed:
+                continue
+            candidates = [
+                other for other in spare
+                if all(_matches(row[other], artifact.rows[key][column]) for key, row in keyed)
+            ]
+            if len(candidates) == 1:
+                found[column] = candidates[0]
+                spare.remove(candidates[0])
     unplaced = [column for column in artifact.columns if column not in found]
     if len(unplaced) == 1 and len(spare) == 1:
         found[unplaced[0]] = spare[0]
+    _assert(
+        found,
+        f"{artifact.path} has no recognizable columns or values for {','.join(artifact.columns)}; "
+        f"found {_join(table.columns)}. In {artifact.task}, save the requested table again with to_csv().",
+    )
     return found
 
 
-def _group(table: Table, artifact: Artifact, found: dict[str, str]):
-    """({expected key: [rows]}, [rows naming no expected key]) for the saved table."""
+def _group(table: Table, artifact: Artifact, found: dict[str, int]):
+    """({expected key: [rows]}, [key cells of each row naming no expected key]) for the saved table."""
     absent = [column for column in artifact.key if column not in found]
     _assert(
         not absent,
-        f"{artifact.path} has no {_join(absent)} column (its columns are {_join(table.columns) or 'none'}), "
+        f"{artifact.path} has {_no_columns(absent)} (its columns are {_join(table.columns) or 'none'}), "
         f"so its rows cannot be matched; {artifact.task} saves the header line {','.join(artifact.columns)}. "
         f"{artifact.key_hint}".rstrip(),
     )
-    canonical = {tuple(part.casefold() for part in key): key for key in artifact.rows}
-    grouped: dict[tuple[str, ...], list[dict[str, str]]] = {}
+    grouped: dict[tuple[str, ...], list[tuple[str, ...]]] = {}
     unknown = []
     for row in table.rows:
-        cells = tuple(row[found[column]].casefold() for column in artifact.key)
-        key = canonical.get(cells)
+        key = _canonical_key(row, artifact, found)
         if key is None:
-            unknown.append(tuple(row[found[column]] or "blank" for column in artifact.key))
+            unknown.append(tuple(row[found[column]] for column in artifact.key))
         else:
             grouped.setdefault(key, []).append(row)
     return grouped, unknown
+
+
+def _best_copy(table: Table, artifact: Artifact, grouped, found: dict[str, int], column: str) -> int:
+    """The position of the copy of `column` that matches the expected value for the most keys."""
+    places = _positions(table, table.columns[found[column]])
+    if len(places) < 2:
+        return found[column]
+
+    def fits(i: int) -> int:
+        return sum(any(_matches(row[i], artifact.rows[key][column]) for row in rows) for key, rows in grouped.items())
+
+    return max(places, key=fits)
 
 
 def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
@@ -404,107 +596,155 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
         unheaded = {
             column: found[column]
             for column in artifact.key
-            if column not in table.columns and found.get(column) == table.columns[0] and _is_index_header(table.columns[0])
+            if column not in table.columns and found.get(column) == 0 and _is_index_header(table.columns[0])
         }
         missing = [column for column in artifact.columns if column not in table.columns and column not in unheaded]
         extra = [
-            column or "a column with no header"
-            for column in table.columns
-            if column not in artifact.columns and column not in artifact.allowed_extra and column not in unheaded.values()
+            column
+            for i, column in enumerate(table.columns)
+            if column not in artifact.columns and column not in artifact.allowed_extra and i not in unheaded.values()
         ]
+        unnamed = extra.count("")
+        extra = [column for column in extra if column]
+        if unnamed:
+            extra.append(f"{_in_words(unnamed)} column{'' if unnamed == 1 else 's'} with no header")
         problems = []
         if missing:
             problems.append(f"is missing {_join(missing)}")
         if extra:
             problems.append(f"also has {_join(extra)}")
+        if table.repeated:
+            problems.append(f"names {_named_more_than_once(table, table.repeated)}")
+        # A header whose only fault is a repeated name gets the cause of the repeat in place of the general hint.
+        advice = (artifact.repeated_hint or REPEATED_HINT) if table.repeated and not (missing or extra) else hint
         _assert(
             not problems,
             f"{artifact.path} " + " and ".join(problems) + f"; {artifact.task} saves the header line "
-            f"{','.join(artifact.columns)} (any column order). {hint}",
+            f"{','.join(artifact.columns)} (any column order). {advice}",
         )
 
     return check
 
 
-def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
-    """Each expected key appears on exactly one row, and no other key appears."""
+def rows_check(
+    artifact: Artifact, hint: str, cause: Callable[[RowProblems], str] | None = None
+) -> Callable[[Path], None]:
+    """Each expected key appears on exactly one row, and no other key appears.
+
+    `cause`, given what the check found, returns the likely cause of it, or "".
+    """
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
-        grouped, unknown = _group(table, artifact, _resolve(table, artifact))
-        missing = [key for key in artifact.rows if key not in grouped]
-        repeated = [key for key, rows in grouped.items() if len(rows) > 1]
+        found = _resolve(table, artifact)
+        if any(column not in found for column in artifact.key):
+            return  # The columns check charges missing keys once.
+        grouped, unknown = _group(table, artifact, found)
+        named = [cells for cells in unknown if any(cells)]
+        seen = RowProblems(
+            missing=tuple(key for key in artifact.rows if key not in grouped),
+            repeated=tuple(key for key, rows in grouped.items() if len(rows) > 1),
+            unknown=tuple(named),
+            empty=len(unknown) - len(named),
+        )
         problems = []
-        if missing:
-            problems.append(f"is missing {_join(_key_name(key) for key in missing)}")
-        if repeated:
+        if seen.missing:
+            problems.append(f"is missing {_join(_key_name(key) for key in seen.missing)}")
+        if seen.repeated:
             problems.append(
-                "lists " + _join(f"{_key_name(key)} {len(grouped[key])} times" for key in repeated)
+                "lists " + _join(f"{_key_name(key)} {len(grouped[key])} times" for key in seen.repeated)
             )
-        if unknown:
-            names = [_key_name(key) for key in unknown]
+        if seen.unknown:
+            names = [_key_name(tuple(cell or "blank" for cell in cells)) for cells in seen.unknown]
             shown = _join(names[:4]) + (f" and {len(names) - 4} more" if len(names) > 4 else "")
-            problems.append(f"also has {len(unknown)} row{'s' if len(unknown) != 1 else ''} for {shown}")
+            problems.append(f"also has {_count(len(names), 'row')} for {shown}")
+        if seen.empty:
+            problems.append(f"also has {_count(seen.empty, 'row')} with an empty {' and '.join(artifact.key)}")
+        likely = _repeated_cause(table, artifact, found, artifact.key) or (cause(seen) if cause else "")
         _assert(
             not problems,
             f"{artifact.path} " + "; ".join(problems) + "; it should hold one row for each of "
-            f"{_expected_keys([_key_name(key) for key in artifact.rows])}. Fix it in {artifact.task}: {hint}",
+            f"{_expected_keys([_key_name(key) for key in artifact.rows])}. Fix it in {artifact.task}: {hint}"
+            + (f" {likely}" if likely else ""),
         )
 
     return check
 
 
-def _unkeyed_values(table: Table, artifact: Artifact, found: dict[str, str], columns: tuple[str, ...], hint: str) -> None:
+def _same_values_any_order(saved: list[str], expected: list[object]) -> bool:
+    unmatched = list(expected)
+    for cell in saved:
+        match = next((i for i, value in enumerate(unmatched) if _matches(cell, value)), None)
+        if match is None:
+            return False
+        unmatched.pop(match)
+    return not unmatched
+
+
+def _unkeyed_values(table: Table, artifact: Artifact, found: dict[str, int], columns: tuple[str, ...], hint: str) -> None:
     """With the key column missing, each column's values match the expected ones in some row order.
 
     The missing key already costs the columns and rows checks; this keeps a
-    correct column from costing its values check too.
+    correct column from costing its values check too. Any copy of a repeated
+    column may be the one that matches.
     """
     wrong = []
     for column in columns:
-        saved = [row[found[column]] for row in table.rows]
         expected = [values[column] for values in artifact.rows.values()]
-        unmatched = list(expected)
-        all_matched = True
-        for cell in saved:
-            match = next((i for i, value in enumerate(unmatched) if _matches(cell, value)), None)
-            if match is None:
-                all_matched = False
-                break
-            unmatched.pop(match)
-        if all_matched and not unmatched:
+        copies = _positions(table, table.columns[found[column]])
+        if any(_same_values_any_order([row[i] for row in table.rows], expected) for i in copies):
             continue
+        saved = [row[found[column]] for row in table.rows]
         wrong.append(
             f"its {column} values are {_join(_given(cell) for cell in saved) or 'none'}, "
             f"expected {_join(_show(value) for value in expected)} in any order"
         )
     _assert(
         not wrong,
-        f"{artifact.path} has no {_join(column for column in artifact.key if column not in found)} column, "
+        f"{artifact.path} has {_no_columns([column for column in artifact.key if column not in found])}, "
         f"so its values were compared without matching rows, and " + "; ".join(wrong)
         + f". Fix it in {artifact.task}: {hint}",
     )
 
 
-def values_check(artifact: Artifact, columns: tuple[str, ...], hint: str) -> Callable[[Path], None]:
-    """Every saved row for an expected key holds the expected values in `columns`.
+def values_check(
+    artifact: Artifact,
+    columns: tuple[str, ...],
+    hint: str,
+    cause: Callable[[dict[tuple[str, ...], list[tuple[str, ...]]], dict[str, int]], str] | None = None,
+    own: Callable[[dict[tuple[str, ...], list[tuple[str, ...]]], int], dict[tuple[str, ...], object] | None] | None = None,
+) -> Callable[[Path], None]:
+    """Each expected key has a saved row holding the expected values in `columns`.
 
     A missing or repeated row costs the rows check, not this one: this check
-    compares whatever rows the file does hold for the expected keys. A file
-    without its key column is compared column by column in any row order.
+    compares whatever rows the file does hold for the expected keys, and a key
+    on several rows passes when one of them is right. A file without its key
+    column is compared column by column in any row order. A file without one
+    of `columns` pays its columns check once; present columns are still assessed. `cause`, given
+    the saved rows by key and the column map, returns the likely cause of
+    wrong values, or "". `own`, given the saved rows by key and the position
+    of a column, returns values the student chose that also count, by key, or
+    None.
     """
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
         found = _resolve(table, artifact)
+        present = tuple(column for column in columns if column in found)
         absent = [column for column in columns if column not in found]
-        _assert(
-            not absent,
-            f"{artifact.path} has no {_join(absent)} column (its columns are {_join(table.columns) or 'none'}), "
-            f"so those values cannot be compared. Fix it in {artifact.task}: {hint}",
-        )
+        if absent:
+            recognizable = bool(_group(table, artifact, found)[0]) if all(
+                column in found for column in artifact.key
+            ) else any(column in found for column in columns)
+            _assert(
+                recognizable,
+                f"{artifact.path} has no recognizable rows or {_join(columns)} values; expected source "
+                f"records with the columns {','.join(artifact.columns)}. In {artifact.task}, save the requested table again.",
+            )
+            if not present:
+                return  # The columns check charges missing values once.
         if any(column not in found for column in artifact.key):
-            _unkeyed_values(table, artifact, found, columns, hint)
+            _unkeyed_values(table, artifact, found, present, hint)
             return
         grouped, _ = _group(table, artifact, found)
         _assert(
@@ -512,16 +752,181 @@ def values_check(artifact: Artifact, columns: tuple[str, ...], hint: str) -> Cal
             f"{artifact.path} has no row for any of {_join(_key_name(key) for key in artifact.rows)}, so its "
             f"{_join(columns)} values cannot be compared; the rows check says what to fix in {artifact.task}.",
         )
+        places = {column: _best_copy(table, artifact, grouped, found, column) for column in present}
+        chosen = {column: (own(grouped, places[column]) if own else None) or {} for column in present}
         wrong = []
         for key, rows in grouped.items():
-            for column in columns:
+            for column in present:
                 expected = artifact.rows[key][column]
-                given = sorted({_given(row[found[column]]) for row in rows if not _matches(row[found[column]], expected)})
-                if given:
-                    wrong.append(f"{_key_name(key)} has {column} {_join(given)}, expected {_show(expected)}")
-        _assert(not wrong, f"{artifact.path}: " + _listed(wrong) + f". Fix it in {artifact.task}: {hint}")
+                cells = [row[places[column]] for row in rows]
+                if any(_matches(cell, expected) or (key in chosen[column] and _matches(cell, chosen[column][key]))
+                       for cell in cells):
+                    continue
+                wrong.append(f"{_key_name(key)} has {column} {_join(sorted({_given(cell) for cell in cells}))}, "
+                             f"expected {_show(expected)}")
+        likely = ""
+        if wrong:
+            likely = _repeated_cause(table, artifact, found, (*artifact.key, *present)) or (
+                cause(grouped, found) if cause else ""
+            )
+        _assert(
+            not wrong,
+            f"{artifact.path}: " + _listed(wrong) + f". Fix it in {artifact.task}: {hint}" + (f" {likely}" if likely else ""),
+        )
 
     return check
+
+
+# Likely causes, each returned only when the check found what that cause produces.
+
+
+def _merge_audit_rows_cause(seen: RowProblems) -> str:
+    causes = []
+    if seen.empty:
+        causes.append(
+            'A row with an empty specimen_id is a clinic with no specimens, such as K04, which how="outer" and '
+            'how="right" add; how="left" keeps only the specimens.'
+        )
+    if seen.repeated:
+        causes.append(
+            "K01 has a retired and a current record in clinics_history.csv, so merging every record repeats its "
+            'specimens: keep only the rows whose record_status is "current".'
+        )
+    if ("SP106",) in seen.missing and not seen.empty:
+        causes.append('Without how="left", merge() is an inner join and drops SP106, whose clinic K09 has no record.')
+    return " ".join(causes)
+
+
+def _combined_rows_cause(seen: RowProblems) -> str:
+    if seen.repeated:
+        return "A repeated specimen went into pd.concat twice; list each batch once."
+    return ""
+
+
+def _aligned_rows_cause(seen: RowProblems) -> str:
+    if seen.empty:
+        return (
+            "Rows with an empty specimen_id mean one table kept its row numbers as its index: "
+            'set_index("specimen_id") on both tables before pd.concat(..., axis=1).'
+        )
+    if seen.repeated:
+        return "A specimen listed twice means the tables were stacked: pass axis=1 to put them side by side."
+    if seen.missing:
+        return 'join="inner", or a merge other than how="outer", drops the labels that only one table has.'
+    return ""
+
+
+def _round_trip_rows_cause(seen: RowProblems) -> str:
+    if seen.repeated:
+        return "A patient on two rows, one per visit, means sbp_long was saved here; save the pivoted table."
+    return ""
+
+
+MISSING_LABELS = frozenset(_label(spelling) for spelling in MISSING_SPELLINGS)
+
+
+def _own_batch_labels(grouped: dict[tuple[str, ...], list[tuple[str, ...]]], place: int):
+    """The student's own batch labels by key, or None.
+
+    Any two labels tell the batches apart, such as A and B or the file names,
+    when every batch A row has one, every batch B row the other, and neither
+    names the other batch.
+    """
+    labels: dict[bool, set[str]] = {True: set(), False: set()}
+    for key, rows in grouped.items():
+        labels[key[0] in BATCH_A].update(_label(row[place]) for row in rows)
+    in_a, in_b = labels[True], labels[False]
+    if len(in_a) != 1 or len(in_b) != 1 or in_a == in_b or (in_a | in_b) & MISSING_LABELS:
+        return None
+    (label_a,), (label_b,) = in_a, in_b
+    if label_a == "b" or "batchb" in label_a.replace("_", "") or label_b == "a" or "batcha" in label_b.replace("_", ""):
+        return None
+    return {key: label_a if key[0] in BATCH_A else label_b for key in grouped}
+
+
+def _own_round_trip(root: Path) -> Artifact | None:
+    """The round trip that pivoting the student's own sbp_long.csv gives, or None.
+
+    The round-trip checks also accept this, so a mistake already charged in
+    Task 3.1 is not charged again in Task 3.2. None when that file is
+    unreadable, has no patient_id, visit, or sbp column, repeats a patient and
+    visit pair (pivot() refuses it), or matches sbp_wide.csv.
+    """
+    try:
+        table = read_table(root, SBP_LONG)
+        found = _resolve(table, SBP_LONG)
+    except AssertionError:
+        return None
+    if any(column not in found for column in SBP_LONG.columns):
+        return None
+    patients = {_label(key[0]): key[0] for key in SBP_ROUND_TRIP.rows}
+    visits = {_label(visit): visit for visit in VISITS}
+    readings: dict[tuple[str, ...], dict[str, object]] = {}
+    columns: list[str] = []
+    for row in table.rows:
+        patient, visit, sbp = (_clean(row[found[column]]) for column in SBP_LONG.columns)
+        if not patient or not visit:
+            continue
+        patient = patients.get(_label(patient), patient)
+        visit = visits.get(_label(visit), visit.casefold())
+        cells = readings.setdefault((patient,), {})
+        if visit in cells:
+            return None
+        number = _number(sbp)
+        cells[visit] = None if sbp.casefold() in MISSING_SPELLINGS else (sbp if number is None else number)
+        if visit not in columns:
+            columns.append(visit)
+    if not readings:
+        return None
+    rows = {key: {visit: cells.get(visit) for visit in columns} for key, cells in readings.items()}
+    if sorted(columns) == sorted(VISITS) and rows == SBP_ROUND_TRIP.rows:
+        return None
+    return replace(SBP_ROUND_TRIP, columns=("patient_id", *columns), rows=rows)
+
+
+def _passes(check: Callable[[Path], None], root: Path) -> bool:
+    try:
+        check(root)
+    except AssertionError:
+        return False
+    return True
+
+
+def _or_own_long(check_for: Callable[[Artifact], Callable[[Path], None]]) -> Callable[[Path], None]:
+    """A round-trip check that also passes against the pivot of the student's own sbp_long.csv."""
+
+    def check(root: Path) -> None:
+        try:
+            check_for(SBP_ROUND_TRIP)(root)
+        except AssertionError as error:
+            own = _own_round_trip(root)
+            if own is None or not _passes(check_for(own), root):
+                raise error from None
+
+    return check
+
+
+def _round_trip_values(visit: str, hint: str) -> Callable[[Path], None]:
+    """One visit's round-trip values; nothing to compare when the student's own sbp_long has no such visit."""
+    return _or_own_long(
+        lambda artifact: values_check(
+            artifact, tuple(column for column in (visit,) if column in artifact.columns), hint, _round_trip_swapped
+        )
+    )
+
+
+def _round_trip_swapped(grouped: dict[tuple[str, ...], list[tuple[str, ...]]], found: dict[str, int]) -> str:
+    def holds(column: str, other: str) -> bool:
+        return column in found and all(
+            _matches(row[found[column]], SBP_WIDE[key[0]][other]) for key, rows in grouped.items() for row in rows
+        )
+
+    if holds("baseline", "followup") and holds("followup", "baseline"):
+        return (
+            "The baseline and followup columns hold each other's readings, as when columns are renamed by "
+            "position: keep the names pivot() gives."
+        )
+    return ""
 
 
 CHECKS = (
@@ -538,9 +943,8 @@ CHECKS = (
         "merge audit: one row per specimen",
         rows_check(
             MERGE_AUDIT,
-            "K01 has a retired and a current record in clinics_history.csv, so merging every record repeats its "
-            'specimens: keep only the rows whose record_status is "current", then merge with how="left" so '
-            "SP106 stays.",
+            "The merge audit keeps every row of specimens.csv, the left table, once.",
+            _merge_audit_rows_cause,
         ),
     ),
     Check(
@@ -548,7 +952,8 @@ CHECKS = (
         values_check(
             MERGE_AUDIT,
             SPECIMEN_COLUMNS[1:],
-            "The merge copies each specimen's own columns unchanged from specimens.csv, the left table.",
+            "The merge copies each specimen's own columns unchanged from specimens.csv, the left table, so a "
+            "different value means a table changed before the merge: click Restart, then Run All.",
         ),
     ),
     Check(
@@ -576,18 +981,29 @@ CHECKS = (
     ),
     Check(
         "combined specimens: one row per specimen",
-        rows_check(COMBINED, "batch_a holds SP101 to SP104 and batch_b holds SP105 to SP107; stack both, once each."),
+        rows_check(
+            COMBINED,
+            "batch_a holds SP101 to SP104 and batch_b holds SP105 to SP107; stack both, once each.",
+            _combined_rows_cause,
+        ),
     ),
     Check(
         "combined specimens: specimen values",
-        values_check(COMBINED, SPECIMEN_COLUMNS[1:], "Stacking copies each row unchanged from its batch file."),
+        values_check(
+            COMBINED,
+            SPECIMEN_COLUMNS[1:],
+            "Stacking copies each row unchanged from its batch file, so a different value means a batch "
+            "changed before stacking: click Restart, then Run All.",
+        ),
     ),
     Check(
         "combined specimens: source_partition labels",
         values_check(
             COMBINED,
             ("source_partition",),
-            'Set source_partition to "batch_a" on every batch_a row and "batch_b" on every batch_b row before stacking.',
+            'Set source_partition to "batch_a" on every batch_a row and "batch_b" on every batch_b row before '
+            "stacking; any two labels that tell the batches apart also count.",
+            own=_own_batch_labels,
         ),
     ),
     # Task 2.3: output/aligned_features.csv
@@ -605,6 +1021,7 @@ CHECKS = (
             ALIGNED,
             "pd.concat(..., axis=1) keeps every specimen_id label from both tables: SP101 to SP104 from batch_a "
             "and SP108 from transit_times.",
+            _aligned_rows_cause,
         ),
     ),
     Check(
@@ -648,33 +1065,34 @@ CHECKS = (
         ),
     ),
     # Task 3.2: output/sbp_round_trip.csv
+    # Task 3.2: output/sbp_round_trip.csv, which may also match the pivot of the student's own sbp_long.csv.
     Check(
         "SBP round trip: columns",
-        columns_check(
-            SBP_ROUND_TRIP,
-            'Pivot with index="patient_id", columns="visit", values="sbp", then reset_index() so patient_id '
-            "is a column again.",
+        _or_own_long(
+            lambda artifact: columns_check(
+                artifact,
+                'Pivot with index="patient_id", columns="visit", values="sbp", then reset_index() so patient_id '
+                "is a column again.",
+            )
         ),
     ),
     Check(
         "SBP round trip: one row per patient",
-        rows_check(SBP_ROUND_TRIP, "Pivoting sbp_long gives one row per patient, P201 to P204."),
+        _or_own_long(
+            lambda artifact: rows_check(
+                artifact,
+                "Pivoting sbp_long gives one row per patient, P201 to P204.",
+                _round_trip_rows_cause,
+            )
+        ),
     ),
     Check(
         "SBP round trip: baseline values",
-        values_check(
-            SBP_ROUND_TRIP,
-            ("baseline",),
-            "The round trip puts every reading back in the cell it came from in sbp_wide.csv.",
-        ),
+        _round_trip_values("baseline", "The round trip puts every reading back in the cell it came from in sbp_wide.csv."),
     ),
     Check(
         "SBP round trip: followup values",
-        values_check(
-            SBP_ROUND_TRIP,
-            ("followup",),
-            "The round trip puts every reading back in the cell it came from in sbp_wide.csv.",
-        ),
+        _round_trip_values("followup", "The round trip puts every reading back in the cell it came from in sbp_wide.csv."),
     ),
 )
 

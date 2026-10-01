@@ -22,7 +22,8 @@ assignment/
 │   ├── chicago_beach_sensors_2022_2024.csv  # supplied frozen release; never edit it
 │   └── release_manifest.json                # supplied facts about the release, including its SHA-256
 ├── download_data.sh              # supplied: verifies the two data files (it downloads nothing)
-├── requirements.txt              # supplied: the pinned package versions
+├── pyproject.toml                # supplied: the packages the notebooks need, including ipykernel
+├── uv.lock                       # supplied: the exact versions `uv sync` installs
 ├── .python-version               # supplied: Python 3.13
 ├── .gitattributes, .gitignore    # supplied: keep the data byte for byte, keep .venv/ out of Git
 └── output/
@@ -69,20 +70,29 @@ Foster Weather Station,2022-01-01 00:00:00,3.39,,87,...
 
 Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `chicago_beach_sensors_2022_2024.csv  release_manifest.json`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup; `download_data.sh` is a Bash script. Git Bash also works; there the environment activates with `source .venv/Scripts/activate` instead.
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup; `download_data.sh` is a Bash script, which native PowerShell cannot run. Git Bash also works; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`.
 
-Create the project environment, activate it, and install the supplied requirements, as in Lecture 03. Then verify the data:
+### Create the environment
+
+The handout already lists the packages in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so `uv sync` installs them, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, sync it, and then verify the data:
 
 ```bash
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 bash download_data.sh
 ```
 
-The last command prints `Verified frozen release and manifest: data/chicago_beach_sensors_2022_2024.csv (4731351 bytes)`. If it reports a mismatch instead, discard your changes to the `data/` files in Source Control and run it again.
+`uv sync` prints a line for each package it installs, including `+ pandas==3.0.5`. Do not run `uv init`: the handout's `pyproject.toml` already exists. The last command prints `Verified frozen release and manifest: data/chicago_beach_sensors_2022_2024.csv (4731351 bytes)`. If it reports a mismatch instead, discard your changes to the `data/` files in Source Control and run it again.
 
-`requirements.txt` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so this one install is all the notebooks need. Open `q1_setup_exploration.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept. Run the first code cell: it prints the Python, NumPy, pandas, scikit-learn, and Matplotlib versions and shows the first rows of the release. Select the same kernel in each notebook.
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
+
+> **Checkpoint: the environment**
+> With it active, `python3 -c "import pandas as pd; print(pd.__version__)"` prints `3.0.5`, the version `pyproject.toml` lists.
+
+### Select the kernel
+
+`pyproject.toml` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so `uv sync` installed everything the notebooks need. Open `q1_setup_exploration.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept. Run the first code cell: it prints the Python, NumPy, pandas, scikit-learn, and Matplotlib versions and shows the first rows of the release. Select the same kernel in each notebook.
 
 ## How the exam works
 
@@ -104,7 +114,7 @@ Then complete the nine notebooks in order, Q1 through Q9. Each notebook starts b
 
 ## Check Your Work
 
-Restart each notebook's kernel and **Run All**, Q1 through Q8, and confirm every cell finishes without an error. Then open each file in `output/` in VS Code, where the number beside the last line is the file's line count, and check it against this list. A count written as a formula depends on your own earlier file; work it out from that file.
+Restart each notebook's kernel and **Run All**, Q1 through Q8, and confirm every cell finishes without an error. Then open each file in `output/` in VS Code and check it against this list. The line count is the number beside the last line that has text. When a file ends with a newline, VS Code also numbers the empty line after it; that one does not count. A count written as a formula depends on your own earlier file; work it out from that file.
 
 | File | Made in | First line | Lines |
 | --- | --- | --- | --- |
@@ -181,6 +191,7 @@ How the files are read:
 - Times are compared as instants: `2024-07-01 05:00:00+00:00`, `2024-07-01T05:00:00Z`, and `2024-07-01 00:00:00-05:00` are the same hour. In `q1_station_coverage.csv` and `q6_split_summary.csv`, a time written without an offset may be either UTC or Chicago local time.
 - `True`/`False`, `true`/`false`, `1`/`0`, and `yes`/`no` all read as booleans; an empty field, `NaN`, and `<NA>` all read as missing. Labels such as station names, `model`, `split`, `role`, and `result` may use any letter case.
 - Also accepted: `missing_pct` as a fraction instead of a percent, the population standard deviation (`ddof=0`) instead of the sample one, `q5_correlations.csv` saved with an unnamed first column, and your regressor's name, such as `Ridge`, in place of `student_model`.
+- Repeated column names are accepted when their values agree. Conflicting copies fail the affected value check rather than silently choosing one.
 - A missing or extra row costs only the rows part; the value parts judge the rows you have, as long as at least half of the expected rows are there.
 - A file built correctly from one of your own earlier files counts as right even when that earlier file has a mistake: for example, a Q3 panel joined from your Q2 table, Q4 features computed from your Q3 panel, Q6 splits taken from your Q4 file, and metrics computed from your prediction files. A mistake costs points once, where you made it.
 - The model's accuracy is not graded: it does not need to beat persistence.

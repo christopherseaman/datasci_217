@@ -1,0 +1,12 @@
+[project]
+name = "assignment-10"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "ipykernel==6.29.5",
+    "matplotlib==3.11.1",
+    "numpy==2.3.3",
+    "pandas==3.0.5",
+    "scikit-learn==1.9.0",
+    "statsmodels==0.14.6",
+]

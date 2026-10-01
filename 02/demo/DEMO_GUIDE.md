@@ -9,9 +9,20 @@ notion:
 
 # Lecture 02 Demo Guide: Git, Functions, and Modules
 
-Demos 2 and 3 run four files from the [Lecture 02 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/02/demo): [functions_demo.py](functions_demo.py), [vitals_tools.py](vitals_tools.py), [module_usage_demo.py](module_usage_demo.py), and [clinic_vitals.csv](clinic_vitals.csv). Clone the course repository the way Lecture 01 cloned your fork (Command Palette → **Git: Clone**, paste `https://github.com/christopherseaman/datasci_217.git`, pick a folder), and the files are in its `02/demo` folder. Without cloning, use **Download raw file** on GitHub for each of the four and save them together in one folder. Demo 1 needs neither: it builds a practice repository of its own. Run every command in **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac).
+Each demo has a **core walkthrough** for class and **independent practice** to work through on your own after class. If you missed class, complete the core route first, then the independent sections. All scripts and expected outputs remain here for the full walkthrough.
 
 # 1. Git workflow
+
+## Core walkthrough
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | Create the practice repository below; review, stage, commit, branch, and merge using VS Code; then [ignore a raw export](#ignore-a-file). |
+| Independent practice | [Resolve a merge conflict](#a-merge-conflict), [publish the completed practice repository](#publish-to-github), and [recall and edit commands](#less-typing-recall-and-edit). Try the terminal equivalents of the VS Code workflow. |
+
+Follow one path for each action; the terminal listings perform the same operations as the VS Code steps. The core route can jump from its first successful merge to **Ignore a file**. Work through the other sections on your own after class.
+
+Run every command in VS Code's **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). On Windows, use the **WSL: Ubuntu** window from Lecture 01. If you use Git Bash with an activated uv environment, type `python` wherever the guide says `python3`.
 
 Make a practice folder **outside** your cloned course repository, such as `ds217-practice` in your home folder, and open it with **File → Open Folder…**. It must sit outside the clone because VS Code hides **Initialize Repository** in any folder already inside a repository. Open **View → Source Control** (Ctrl+Shift+G, including Control on macOS) and select **Initialize Repository**. Or from the terminal, starting in your home folder:
 
@@ -70,6 +81,8 @@ M  notes.md      <- staging area: ready for the next commit
 
 ## A merge conflict
 
+Independent practice: return here after the core route to create and resolve a conflict. Start with `main` current and a clean working tree; the ignore-file commit can already be present.
+
 Now give each branch a different line 2 and merge again. Whichever path you took, paste this into the terminal; each `>` rewrites `notes.md` from its heading:
 
 ```bash
@@ -108,12 +121,13 @@ git add notes.md
 git commit -m "Merge branch 'experiment'"
 ```
 
-Either way, run `git status --short` (it prints nothing) and `git log --oneline`, which puts the merge commit on top:
+After completing the core route, run `git status --short` (it prints nothing) and `git log --oneline`. The merge commit is on top; the history also includes the earlier ignore-file commit. The middle two branch commits can appear in either order. If you followed the printed sections instead, the ignore-file commit is not in this history yet; complete **Ignore a file** next:
 
 ```text
 <hash> (HEAD -> main) Merge branch 'experiment'
 <hash> Compare median systolic
 <hash> (experiment) Compare three systolic summaries
+<hash> Ignore CSV exports
 <hash> Add experiment note
 <hash> Start practice notes
 ```
@@ -142,11 +156,15 @@ Once `.gitignore` covers the export, it leaves `git status --short` and Source C
 
 ## Publish to GitHub
 
+Independent practice: complete the merge-conflict section before comparing the six-commit history below. Publishing shares the completed practice repository; Assignment 02 uses its own fork.
+
 With `main` as the current branch, select **Publish Branch** in Source Control; sign in to GitHub if VS Code asks. Keep the name `ds217-practice` and select **Publish to GitHub private repository**. When VS Code reports `Successfully published the "<your-username>/ds217-practice" repository to GitHub.`, select **Open on GitHub**.
 
-On GitHub, the **Code** tab lists `.gitignore` and `notes.md` but not `raw_vitals.csv`: the ignored export never left your computer. Select the commit count (**6 Commits**) for the same six commits `git log --oneline` lists, newest first: `Ignore CSV exports` on top of the five above.
+On GitHub, the **Code** tab lists `.gitignore` and `notes.md` but not `raw_vitals.csv`: the ignored export never left your computer. Select the commit count (**6 Commits**) for the same six commits `git log --oneline` lists. The merge is newest when you followed the core route before conflict practice. If you followed the printed sections in order, the ignore-file commit is newest instead.
 
 ## Less typing: recall and edit
+
+Independent practice: try these shortcuts in your practice repository after class.
 
 1. In the `ds217-practice` terminal, type `cat no`, press **Tab** to complete `notes.md`, then **Enter**. Expect the heading and the three-summaries line.
 2. Press **↑** to recall it and **Ctrl+A** to jump to the start. Press **Delete** three times to remove `cat` (on Mac, **Fn+Delete**) and type `git diff`, so the line reads `git diff notes.md`. Press **Enter**: no output, because every change to `notes.md` is committed.
@@ -154,7 +172,62 @@ On GitHub, the **Code** tab lists `.gitignore` and `notes.md` but not `raw_vital
 
 # 2. Containers, functions, and imports
 
-Open the course clone's `02/demo` folder with **File → Open Folder…** (or the folder where you saved the four downloads), then **Terminal → New Terminal**:
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | Save and run [a clinic cutoff](#core-walkthrough-a-clinic-cutoff), using the imported helpers and one chosen cutoff. |
+| Independent practice | Run the [full clinic-session example](#independent-practice-the-full-clinic-session), then [change the cutoff](#change-the-cutoff) and compare the patient groups. |
+
+Work through the independent clinic-session example on your own after class; the core script below has its own smaller encounter list.
+
+Create a folder named `02-demo` in your home folder. Download [functions_demo.py](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/functions_demo.py), [vitals_tools.py](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/vitals_tools.py), [module_usage_demo.py](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/module_usage_demo.py), and [clinic_vitals.csv](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/clinic_vitals.csv) into it: open each link, then save the page with that filename. These four files are also in the [Lecture 02 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/02/demo).
+
+<span color="yellow_bg">**In a new terminal**</span>, open your `02-demo` folder with **File → Open Folder…**, then **Terminal → New Terminal**. If you already cloned the course repository, open its `02/demo` folder instead. `ls` should show all four files before you run:
+
+## Core walkthrough: a clinic cutoff
+
+Save this code as `core_functions.py` in this demo folder:
+
+```python
+from vitals_tools import get_systolic, mean_reading
+
+encounters = [
+    {"patient_id": "P001", "systolic": 128},
+    {"patient_id": "P002", "systolic": 142},
+    {"patient_id": "P003", "systolic": 118},
+]
+readings = get_systolic(encounters)
+print("Readings:", readings)
+print(f"Mean: {mean_reading(readings):.1f} mmHg")
+cutoff = int(input("Cutoff (mmHg): "))
+flagged = []
+for encounter in encounters:
+    if encounter["systolic"] >= cutoff:
+        flagged.append(encounter["patient_id"])
+print("Flagged:", flagged)
+```
+
+Run it from the terminal and type `120` at the prompt:
+
+```bash
+python3 core_functions.py
+```
+
+Expected output:
+
+```text
+Readings: [128, 142, 118]
+Mean: 129.3 mmHg
+Cutoff (mmHg): 120
+Flagged: ['P001', 'P002']
+```
+
+`get_systolic()` returns a list and `mean_reading()` returns its average. Open `vitals_tools.py` to compare the extraction loop with the named helper. Each dictionary keeps a patient ID with its reading; the cutoff chooses which IDs enter `flagged`.
+
+## Independent practice: the full clinic session
+
+Work through the full script after class. It adds a late encounter, dictionary-field inspection, empty-data behavior, and a comparison between groups.
 
 ```bash
 python3 functions_demo.py
@@ -248,7 +321,7 @@ Flagged (120 mmHg and above): ['P001', 'P002', 'P004']
 Flagged patients in the morning session: ['P001', 'P004']
 ```
 
-The `Average with no readings` and `Average of two zero pain scores` lines are the lecture's empty-list case. `mean_reading([])` returns `None`, and the demo asks `is None`, because a pain score of 0 is a patient answering "no pain," a real measurement that `if not empty_average` would throw away along with the empty list:
+Independent practice: the `Average with no readings` and `Average of two zero pain scores` lines are the lecture's empty-list case. `mean_reading([])` returns `None`, and the demo asks `is None`, because a pain score of 0 is a patient answering "no pain," a real measurement that `if not empty_average` would throw away along with the empty list:
 
 ```python
 empty_average = mean_reading([])
@@ -260,6 +333,8 @@ print(f"Average of two zero pain scores: {mean_reading([0, 0])}")
 ```
 
 ## Change the cutoff
+
+Independent practice: rerun with the default cutoff after completing the 120 mmHg run.
 
 Run the script again and press **Enter** alone. Only the last three lines change, because 130 leaves P001's 128 mmHg out:
 
@@ -284,6 +359,17 @@ print(f"Flagged patients in the morning session: {sorted(flagged & morning_sessi
 ```
 
 # 3. Files, exceptions, and a checkpoint
+
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | Import, then run `module_usage_demo.py`; inspect the skipped value and saved report; [write a short README](#document-how-to-run-it). |
+| Independent practice | [Trigger the assertion](#watch-the-checkpoint-fire), [add a blank row](#a-blank-row-in-the-export), and [add an extra field](#a-row-with-an-extra-field), correcting each edit before the next one. |
+
+Work through the independent failure-and-correction exercises on your own after class. They all start from the same unedited script and CSV. The [missing-file guidance](#if-the-script-cannot-find-the-data) is available whenever you need it.
+
+<span color="yellow_bg">**In a new terminal**</span>, open the folder holding the four downloads from Demo 2 with **File → Open Folder…**, then **Terminal → New Terminal**. `ls` should show `module_usage_demo.py`, `vitals_tools.py`, and `clinic_vitals.csv`. No files generated by Demo 2 are needed.
 
 ```bash
 python3 -c "import module_usage_demo"
@@ -346,6 +432,8 @@ Open `output/vitals_report.txt` in the Explorer: it holds only the five report l
 
 ## Watch the checkpoint fire
 
+Independent practice: intentionally break the saved-report checkpoint, then restore the script.
+
 An `assert` is worth having only if you know what it looks like when it fails. Save different text than the script built: find the first `with` block in `main()` and add `.upper()` to what it writes, so the two lines read
 
 ```python
@@ -363,6 +451,8 @@ Remove `.upper()` (**Ctrl+Z** undoes the edit, **Cmd+Z** on Mac), save, and run 
 
 ## A blank row in the export
 
+Independent practice: exercise the blank-row branch after restoring the script.
+
 Exports often end with a blank line, and the loop reports it rather than failing on it. Open `clinic_vitals.csv`, press **Enter** at the end of the `P004,136` line to add one, save, and run `python3 module_usage_demo.py` again. The report itself is unchanged; one extra line appears before the read-back:
 
 ```text
@@ -374,6 +464,8 @@ Read back from output/vitals_report.txt:
 Undo the edit (**Ctrl+Z**, **Cmd+Z** on Mac) and save.
 
 ## A row with an extra field
+
+Independent practice: exercise the field-count branch after restoring the CSV.
 
 A hand-edited export can also hand you a row with one comma too many, and `patient_id, raw_systolic = fields` needs exactly two pieces. Open `clinic_vitals.csv`, add `P005,134,extra` on a new line after `P004,136`, save, and run `python3 module_usage_demo.py` again. P005 is reported and left out, the report itself is unchanged, and one extra line appears before the read-back:
 
@@ -390,10 +482,10 @@ Undo the edit (**Ctrl+Z**, **Cmd+Z** on Mac) and save.
 `Path("clinic_vitals.csv")` is a relative path, so the script looks in the folder you ran it from. `path.exists()` checks first, so running from somewhere else prints one line and stops instead of raising `FileNotFoundError`:
 
 ```text
-Cannot find clinic_vitals.csv: run this script from the 02/demo folder.
+Cannot find clinic_vitals.csv: run this script from the folder containing clinic_vitals.csv.
 ```
 
-`cd` into `02/demo` and run it again.
+Open the folder holding `module_usage_demo.py` and `clinic_vitals.csv` (your downloads folder or the clone's `02/demo`), then run it again from that folder.
 
 ## Document how to run it
 

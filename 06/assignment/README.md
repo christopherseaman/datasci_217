@@ -12,7 +12,8 @@ assignment/
 │   ├── specimens_batch_b.csv
 │   ├── transit_times.csv
 │   └── sbp_wide.csv
-├── requirements.txt        # supplied: numpy, pandas, and ipykernel
+├── pyproject.toml          # supplied: the project's packages, numpy, pandas, and ipykernel
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
 ├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
@@ -52,17 +53,24 @@ P201,148,136
 
 Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect the six CSV files above. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-Create the project environment, activate it, and install the supplied requirements, as in Lecture 03:
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash and PowerShell also work: there the environment activates with `source .venv/Scripts/activate` (Git Bash) or `.\.venv\Scripts\Activate.ps1` (PowerShell), and you type `python` wherever these instructions say `python3`.
+
+The handout lists numpy, pandas, and ipykernel in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so `uv sync` rebuilds the environment, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
 
 ```bash
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`requirements.txt` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so this one install is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
+`uv sync` lists the packages it installs, including `+ pandas==3.0.5` and `+ ipykernel==6.29.5`. **ipykernel** is the package that lets a notebook run on this environment's Python (Lecture 04), so the notebook needs nothing more. Do not run `uv init`: the handout's `pyproject.toml` already exists. If you ever need another package, add it with `uv add` (Lecture 03), because the next `uv sync` removes anything installed with `uv pip install`.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. In PowerShell instead, activate with `.\.venv\Scripts\Activate.ps1`.
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
+
+> **Checkpoint: the environment**
+> With it active, `python3 -c "import pandas as pd; print(pd.__version__)"` prints `3.0.5`, the version `pyproject.toml` lists.
+
+Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
 
 Run the notebook's first two code cells. The first prints the pandas version and `data folder found: True`; `False` means the notebook is not running from the assignment directory, so open the folder itself in VS Code, not a folder above it. The second reads the six files and prints their shapes, starting with `specimens: (7, 6)`.
 
@@ -167,7 +175,7 @@ This step saves nothing. P202's follow-up blood pressure was rechecked, so the s
 Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then, with the environment active, run the checks from the assignment directory:
 
 ```bash
-python check_assignment.py
+python3 check_assignment.py
 ```
 
 `check_assignment.py` runs the same checks GitHub runs. They read only the five CSV files in `output/` and compare them with the supplied data. They never run or read your notebook, so any way of producing correct files counts.
@@ -190,7 +198,8 @@ All checks passed.
 
 How the files are read:
 
-- Each check is scored on its own, so one mistake costs only that check's points.
+- Each check is scored on its own, so one mistake costs only that check's points. The round trip also accepts the pivot of your own long table, so a mistake in Task 3.1 is not charged again in Task 3.2.
+- Any two nonempty source labels that distinguish batch A from batch B count.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `5`, `5.0`, and `5.00` are the same value.
 - IDs, labels, and column names are compared in any letter case.
@@ -214,7 +223,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/combined_specimens.csv` | Its columns are the seven in the Task 2.1 header line. | combined specimens: columns | 3 |
 | `output/combined_specimens.csv` | It holds SP101 to SP107, once each. | combined specimens: one row per specimen | 4 |
 | `output/combined_specimens.csv` | Each row's values match its batch file. | combined specimens: specimen values | 4 |
-| `output/combined_specimens.csv` | `source_partition` is `batch_a` for SP101 to SP104 and `batch_b` for SP105 to SP107. | combined specimens: source_partition labels | 4 |
+| `output/combined_specimens.csv` | `source_partition` consistently distinguishes SP101 to SP104 from SP105 to SP107 with two nonempty labels, such as `batch_a` and `batch_b`. | combined specimens: source_partition labels | 4 |
 | `output/aligned_features.csv` | Its columns are `specimen_id`, `volume_ml`, and `transit_min`. | aligned features: columns | 3 |
 | `output/aligned_features.csv` | It holds SP101 to SP104 and SP108, once each. | aligned features: one row per specimen | 4 |
 | `output/aligned_features.csv` | `volume_ml` matches batch A, and SP108's is empty. | aligned features: volume_ml values | 4 |

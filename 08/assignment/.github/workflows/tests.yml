@@ -45,8 +45,8 @@ jobs:
           cache-dependency-path: .github/test/requirements.txt
 
       # The checks only read the committed artifacts and need nothing beyond
-      # pytest, so the job never installs the assignment's own requirements.txt:
-      # a line there that does not install cannot stop grading. The committed
+      # pytest, so the job never installs the assignment's own pyproject.toml:
+      # a package there that does not install cannot stop grading. The committed
       # list comes first so the rest of the job always has a working Python and
       # pytest, whatever the download turns out to contain.
       - name: Install the test runner

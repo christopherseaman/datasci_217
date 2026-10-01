@@ -59,7 +59,7 @@ def demo_sources():
     }
 
 
-def terminal(argv, cwd, typed=None, env=None, check=True, script=None):
+def terminal(argv, cwd, typed=None, env=None, check=True, script=None, prompt=PROMPT):
     """Run a command under a pty; the transcript includes any typed echo.
 
     A script arrives through a pipe instead, so the transcript holds only what it prints.
@@ -80,7 +80,7 @@ def terminal(argv, cwd, typed=None, env=None, check=True, script=None):
         if not data:
             break
         chunks.append(data)
-        if not answered and PROMPT.encode() in b"".join(chunks):
+        if not answered and prompt.encode() in b"".join(chunks):
             answered = True                   # answer only once the prompt is on screen
             os.write(master, typed.encode())
     os.close(master)
@@ -120,7 +120,7 @@ def annotated(block):
     return [line.split("<-")[0].rstrip() for line in block.splitlines()]
 
 
-def check_git_demo(scratch, shell):
+def check_git_demo(scratch, shell, core_first=False):
     """Demo 1 in a fresh home with no Git identity, each block pasted in guide order."""
     guide = GUIDE.read_text(encoding="utf-8")
     for untaught in ("cd -", "git diff --", "Git: Merge Branch"):
@@ -179,6 +179,19 @@ def check_git_demo(scratch, shell):
     fast_forward = only(fences("text"), "(HEAD -> main, experiment)")
     assert HASH.sub("<hash> ", output_of(steps, "git log --oneline")) == fast_forward
 
+    def ignore_export():
+        steps = pasted(ignore, practice, env, shell)
+        statuses = [output.rstrip("\n") for command, output in steps if command == "git status --short"]
+        assert annotated(only(fences("text"), "?? raw_vitals.csv")) == statuses
+        pattern = re.search(r'^echo "(.+)" > \.gitignore$', ignore, re.M).group(1)
+        lecture = LECTURE.read_text(encoding="utf-8")
+        card = lecture[lecture.index("### Reference Card: Ignore Patterns"):]
+        assert f"- `{pattern}`:" in card, f"{pattern} is not on the lecture's ignore card"
+        assert (practice / "raw_vitals.csv").exists()
+
+    if core_first:
+        ignore_export()
+
     # The conflict is the lecture's example, marker for marker.
     steps = pasted(conflict, practice, env, shell)
     stops, unmerged = re.search(
@@ -197,18 +210,20 @@ def check_git_demo(scratch, shell):
     steps = pasted("git status --short\ngit log --oneline\ngit log --format=%an", practice, env, shell)
     assert output_of(steps, "git status") == ""
     merged = only(fences("text"), "(HEAD -> main) Merge branch 'experiment'")
-    assert HASH.sub("<hash> ", output_of(steps, "git log --oneline")) == merged
+    actual = HASH.sub("<hash> ", output_of(steps, "git log --oneline"))
+    assert actual.splitlines()[0] == merged.splitlines()[0]
+    expected_lines = merged.splitlines()
+    if not core_first:
+        expected_lines.remove("<hash> Ignore CSV exports")
+    assert set(actual.splitlines()) == set(expected_lines), actual
     assert set(output_of(steps, "git log --format").splitlines()) == {IDENTITY["user.name"]}
 
     # .gitignore hides the export with a pattern the lecture teaches; the file stays on disk.
-    steps = pasted(ignore, practice, env, shell)
-    statuses = [output.rstrip("\n") for command, output in steps if command == "git status --short"]
-    assert annotated(only(fences("text"), "?? raw_vitals.csv")) == statuses
-    pattern = re.search(r'^echo "(.+)" > \.gitignore$', ignore, re.M).group(1)
-    lecture = LECTURE.read_text(encoding="utf-8")
-    card = lecture[lecture.index("### Reference Card: Ignore Patterns"):]
-    assert f"- `{pattern}`:" in card, f"{pattern} is not on the lecture's ignore card"
-    assert (practice / "raw_vitals.csv").exists()
+    if not core_first:
+        ignore_export()
+    newest = pasted("git log -1 --format=%s", practice, env, shell)
+    expected_newest = "Merge branch 'experiment'" if core_first else "Ignore CSV exports"
+    assert output_of(newest, "git log") == expected_newest + "\n"
 
     # Publishing sends every commit on main, so GitHub's count matches the guide's.
     count = re.search(r"\(\*\*(\d+) Commits\*\*\) for the same", guide).group(1)
@@ -274,7 +289,7 @@ def check_guide_code(sources):
         f"the guide prints the checkpoint edit as code the script does not have:\n{edit}"
     )
     for block in fences("python"):
-        if block == edit:                     # the intentional edit, checked above
+        if block in (edit, core_example()):   # these complete examples have their own real runs
             continue
         variants = [
             "\n".join(indent + line if line.strip() else line for line in block.splitlines())
@@ -284,6 +299,15 @@ def check_guide_code(sources):
                    for variant in variants for source in sources.values()):
             raise AssertionError(f"the guide quotes code no demo runs as written:\n{block}")
     return edit, original
+
+
+def core_example():
+    """The small standalone script students save for the core cutoff walkthrough."""
+    guide = GUIDE.read_text(encoding="utf-8")
+    section = guide.split("## Core walkthrough: a clinic cutoff", 1)[1].split(
+        "## Independent practice: the full clinic session", 1
+    )[0]
+    return re.search(r"^```python\n(.*?)^```$", section, re.M | re.S).group(1)
 
 
 def check_excerpts_run(sources, demo, python, summary):
@@ -343,6 +367,17 @@ def run():
             git = demo / f"git-{shell}"
             git.mkdir()
             check_git_demo(git, shell)
+            core_git = demo / f"git-core-{shell}"
+            core_git.mkdir()
+            check_git_demo(core_git, shell, core_first=True)
+
+        # The short core route works on its own, before either full demo creates an output.
+        (demo / "core_functions.py").write_text(core_example(), encoding="utf-8")
+        core_expected = only(fences("text"), "Cutoff (mmHg): 120")
+        assert terminal([sys.executable, "core_functions.py"], demo, "120\n",
+                        prompt="Cutoff (mmHg): ") == core_expected
+        assert python("core_functions.py", stdin="130\n").stdout.endswith("Flagged: ['P002']\n")
+        assert not (demo / "output").exists()
 
         # Demo 3's import step is silent: no output, no report.
         assert python("-c", "import vitals_tools; import module_usage_demo").stdout == ""

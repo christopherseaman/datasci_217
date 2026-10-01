@@ -7,7 +7,8 @@ assignment/
 ├── assignment.ipynb        # the notebook you complete
 ├── data/
 │   └── clinic_visits.csv   # supplied visit log; keep it exactly as handed out
-├── requirements.txt        # supplied: numpy, pandas, and ipykernel
+├── pyproject.toml          # supplied: the project's packages, numpy, pandas, and ipykernel
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
 ├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
@@ -35,17 +36,21 @@ V003,Mission,P101,Follow-up,9,
 
 Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `clinic_visits.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-Create the project environment, activate it, and install the supplied requirements, as in Lecture 03:
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash also works; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`. In PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and type `python` as well.
+
+The handout lists numpy, pandas, and ipykernel in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so these three lines rebuild the environment, as in Lecture 03's "Recreate from the Records" snippet:
 
 ```bash
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`requirements.txt` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so this one install is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
+`uv sync` prints `+ pandas==3.0.5` among the packages it installs. Do not run `uv init`: the handout's `pyproject.toml` already exists.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. In PowerShell instead, activate with `.\.venv\Scripts\Activate.ps1`.
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
+
+**ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), is one of the handout's packages, so the notebook needs nothing more. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
 
 Run the notebook's first two code cells. The first prints the pandas version and `data folder found: True`; `False` means the notebook is not running from the assignment directory, so open the folder itself in VS Code, not a folder above it. The second reads the visit log and prints `visits: (15, 6)`.
 
@@ -135,7 +140,7 @@ This step saves nothing. In the Task 3.2 cell, count the visits in each clinic a
 Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then, with the environment active, run the checks from the assignment directory:
 
 ```bash
-python check_assignment.py
+python3 check_assignment.py
 ```
 
 `check_assignment.py` runs the same checks GitHub runs. They read only the five CSV files in `output/` and compare them with values computed from the supplied visit log. They never run or read your notebook, so any way of producing correct files counts.
@@ -159,6 +164,7 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
+- A missing column costs the columns check once; values in the remaining columns are still checked. An empty table or one with no recognizable rows earns no value points.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `6`, `6.0`, and `6.00` are the same value. A mean may keep every digit or be rounded to one or two decimals.
 - Clinic names, visit types, IDs, and column names are compared in any letter case.
@@ -196,7 +202,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/mean_wait_pivot.csv` | Its columns are `clinic`, `Follow-up`, `New`, and `Telehealth`. | mean wait pivot: columns | 4 |
 | `output/mean_wait_pivot.csv` | It holds Mission, Sunset, and Bayview, once each. | mean wait pivot: one row per clinic | 4 |
 | `output/mean_wait_pivot.csv` | Each filled cell is the mean wait for that clinic and visit type. | mean wait pivot: mean waits | 6 |
-| `output/mean_wait_pivot.csv` | Sunset's row is there and its `Telehealth` cell is empty, not 0. | mean wait pivot: empty cell stays empty | 4 |
+| `output/mean_wait_pivot.csv` | Sunset's `Telehealth` cell is empty, not 0; a missing row is charged by the row check. | mean wait pivot: empty cell stays empty | 4 |
 
 Extra files are ignored.
 

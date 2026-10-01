@@ -20,18 +20,45 @@ jupyter:
 
 A clinic sends a small visit export. Before anyone averages a blood pressure, find the gaps, tell a double entry from a repeat visit, turn disguised missing values into real ones, and convert text columns to numbers and dates. Everything here comes from Lecture 05 up to the first demo break, plus Lectures 01 to 04.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-24 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3; the whole notebook runs in a few seconds.
+Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
+
+| Route | Work and visible checkpoint |
+| --- | --- |
+| [Core walkthrough](#core-walkthrough) | Keep both P008 visits, remove one double entry, and expose invalid values: nine visits with review flags. |
+| [Independent practice](#independent-practice) | Recount, select an analysis sample, mark median imputation, and see why cross-patient forward fill fails. |
+
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
+
+- **In Colab:** open Demo 1 from the lecture page's Colab link and run the Setup cell below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **Locally in VS Code:** all three Lecture 05 demos share one folder, `~/05-demo`. In **Terminal → New Terminal** (on Windows, the **WSL: Ubuntu** window from Lecture 01), download the notebooks with the environment's records (`pyproject.toml`, `uv.lock`, and `.python-version`) and build the environment, as in Lecture 03:
+
+<!-- #region -->
+```bash
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
+cd ~/05-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+The script prints `Made ~/05-demo with the Lecture 05 demo notebooks and their environment files.`, `uv venv` prints `Using CPython 3.13.x` (whichever 3.13 release you have), and `uv sync` lists each package it installs, including `+ numpy==2.3.3`, `+ pandas==3.0.5`, and `+ ipykernel==6.29.5`, the package that lets a notebook run on this environment's Python (Lecture 04). In Git Bash, activate with `source .venv/Scripts/activate` instead.
+
+Then choose **File → Open Folder…**, pick `05-demo` in your home folder, open `demo1_missing_data.ipynb`, click **Select Kernel**, and choose the Python in `05-demo/.venv`.
+
+The script never overwrites earlier work: if `~/05-demo` already exists, `mkdir` reports `File exists` and nothing else happens. If that folder already holds the demo files, `cd ~/05-demo` and go on. To start over, rename the old folder first with `mv ~/05-demo ~/05-demo-old`, then run the `curl` line again. If a download fails partway, do the same. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep it, and ignore the `error: Failed to create virtual environment` that follows.
+<!-- #endregion -->
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import numpy as np
@@ -42,7 +69,9 @@ print('pandas', pd.__version__)
 
 **Expect:** `pandas 3.0.5`.
 
-## 1. The data contract
+## Core walkthrough
+
+### 1. The data contract
 
 Write down what the table should look like before changing anything.
 
@@ -57,7 +86,7 @@ Write down what the table should look like before changing anything.
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60 to 250 when present |
 | `cholesterol` | total cholesterol (mg/dL) | `float64` | blank allowed |
 
-## 2. Load the export
+### 2. Load the export
 
 The export stores age as typed text (`age_text`) and dates as text. It also hides several problems that are not blank yet.
 
@@ -76,7 +105,7 @@ print(visits.dtypes)
 
 **Expect:** 10 rows. `age_text` and `visit_date` are `str`; `sbp` and `cholesterol` are `float64`, and `sbp` shows `-999.0` for P004 and `1420.0` for P005.
 
-## 3. Count the gaps
+### 3. Count the gaps
 
 ```python
 print(visits.isna().sum())                    # gaps per column
@@ -87,7 +116,7 @@ print('Rows with any gap:', visits.isna().any(axis=1).sum(), 'of', len(visits))
 
 **Expect:** gaps of 1 in `visit_date`, 2 in `sbp`, and 4 in `cholesterol` (10.0, 20.0, and 40.0 percent), and `Rows with any gap: 5 of 10`. These counts miss `-999`, `1420`, `'unknown'`, `'forty'`, and `'2026-02-30'`, because none of them is blank yet.
 
-## 4. Double entry or repeat visit?
+### 4. Double entry or repeat visit?
 
 A repeated `patient_id` is evidence to investigate, not an instruction to delete. Compare an exact-row check with the candidate identifier from the contract.
 
@@ -112,7 +141,7 @@ print(clean['patient_id'].value_counts())
 
 **Expect:** `10 rows before, 9 after`. P008 is the only patient counted twice; row label 7 is gone.
 
-## 5. Sentinels and impossible values
+### 5. Sentinels and impossible values
 
 `-999` is the export's code for "not measured", and `1420` is not a possible systolic pressure. pandas averages both as if they were real readings.
 
@@ -129,7 +158,7 @@ print(clean[['patient_id', 'sbp']])
 
 `1420` is probably `142` with an extra zero, but that is a guess. Blanking it and flagging the visit for review (step 6) keeps a guess out of the data.
 
-## 6. Convert text columns
+### 6. Convert text columns
 
 `to_numeric(..., errors='coerce')` turns `'unknown'` and `'forty'` into missing values, and `Int64` keeps whole numbers whole even with gaps.
 
@@ -160,7 +189,11 @@ print(clean.dtypes)
 
 **Expect:** `parse_failed` is `True` only for P006 (`2026-02-30`). P003's date is also `NaT`, but it was never recorded, so it is not a parse failure. The dtypes now include `datetime64[us]`, `Int64`, and `boolean`.
 
-## 7. Recount, then drop or fill
+## Independent practice
+
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+
+### 7. Recount, then drop or fill
 
 The disguised problems are now real missing values, so the counts go up.
 
@@ -203,7 +236,7 @@ print(wrong)
 
 **Expect:** P003, P004, and P005 all receive `135`, P002's reading. Leave those gaps missing; `needs_review` already marks them.
 
-## 8. The result
+### 8. The result
 
 ```python
 print(analysis[['patient_id', 'visit_date', 'age', 'sbp', 'cholesterol', 'cholesterol_imputed', 'needs_review']])

@@ -9,9 +9,20 @@ notion:
 
 # Lecture 03 Demo Guide: Environments and NumPy
 
+Each demo has a **core walkthrough** for class and **independent practice** to work through on your own after class. If you missed class, complete the core route first, then the independent sections. Scripts print their full results; the route tables identify the checkpoints to inspect first.
+
 All three demos run in one folder, `~/03-demo`, which the first command of Demo 1 creates and fills. Run every command in VS Code's **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac); on Windows, use the **WSL: Ubuntu** window from Lecture 01. Apart from `setup_demo.sh` and the data file `encounters.csv`, each file name starts with the demo that runs it: `demo1_` for the shell pipeline, `demo2_` for types, lists, and array basics, `demo3_` for the analysis.
 
 # Demo 1: Virtual Environments, Shell Pipelines, and Scripts
+
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | [1.1: Download](#11-download-the-demo-files), [1.2: Create and verify the uv project](#12-create-the-environment-with-pyprojecttoml), then [1.7: Save a timestamped pipeline](#17-save-a-pipeline-as-a-script). |
+| Independent practice | [1.3: Rebuild from records](#13-recreate-it-from-the-records), [1.4: Export/install requirements](#14-share-it-as-requirementstxt), [1.5: Read setup plumbing](#15-read-a-shell-script), [1.6: Inspect a pipeline and its log](#16-run-a-pipeline-script), [1.8: Search files](#18-search-with-wildcards-and-grep). |
+
+Work through the independent sections on your own after class. Section 1.7 reads the downloaded `encounters.csv` and creates its own results folder, so it does not need 1.3–1.6. Check that your prompt starts with `(03-demo)` before the next demo.
 
 ## 1.1 Download the Demo Files
 
@@ -79,6 +90,8 @@ The `sys.executable` line shows which interpreter `python3` runs; it should sit 
 
 ## 1.3 Recreate It from the Records
 
+Independent practice: rebuild the environment in a second folder and correct an inactive-environment import.
+
 Sections 1.3 and 1.4 continue in `~/03-demo` with the environment from 1.2.
 
 <span color="yellow_bg">**In a new terminal**</span>, start with these two lines, after which the prompt starts with `(03-demo)`:
@@ -134,6 +147,8 @@ Using CPython 3.13.x
 
 ## 1.4 Share It as `requirements.txt`
 
+Independent practice: export the package records, then try the requirements-file alternative in its own folder.
+
 Tools such as pip and Colab read `requirements.txt` instead. Write one for the same environment from `uv.lock`, and look at it:
 
 ```bash
@@ -173,6 +188,8 @@ Among the lines these commands print, these show the install worked:
 Both routes installed NumPy 2.3.3. The last line matters: Demos 2 and 3 run in the `03-demo` environment, so check that the prompt starts with `(03-demo)` again.
 
 ## 1.5 Read a Shell Script
+
+Independent practice: inspect how the supplied downloader works.
 
 Sections 1.5 to 1.8 run from `~/03-demo` too.
 
@@ -235,6 +252,8 @@ Read it top to bottom, the order the shell ran it:
 
 ## 1.6 Run a Pipeline Script
 
+Independent practice: inspect a second dataset, timestamped summary, and log.
+
 [demo1_cli_pipeline.sh](demo1_cli_pipeline.sh) writes a six-record CSV of clinic encounters to `data/raw/encounters.csv`, counts the records with `wc -l`, and counts encounters per clinic with a `tail | cut | sort | uniq | head` pipeline, whose `head -n 5` caps what it prints at five lines. It creates `data/`, `logs/`, and `results/` in the current folder, so run it from `~/03-demo`:
 
 ```bash
@@ -285,6 +304,8 @@ One captured timestamp names the result file and labels both log lines. Run the 
 
 ## 1.7 Save a Pipeline as a Script
 
+Core walkthrough: continue here after 1.2 in `~/03-demo`. If you reopened the terminal, run `cd ~/03-demo` and `source .venv/bin/activate` first. The downloaded `encounters.csv` is the input; this script creates `results/` itself.
+
 Now write a script of your own, the way the lecture's "Save a Pipeline as a Script" snippet does, but for `encounters.csv`, the 1,500-row file Demo 3 analyzes. Run `cat > count_clinics.sh`, paste these lines, press **Enter**, then **Ctrl+C**:
 
 ```bash
@@ -322,6 +343,8 @@ Eight clinics, 1,500 encounters in all. Apart from its comment, only the input f
 
 ## 1.8 Search with Wildcards and `grep`
 
+Independent practice: compare file-name patterns with searches inside the data.
+
 Practice the lecture's "Wildcards and Searching" in the same folder: see what a wildcard expands to, count each file's Cardiology encounters a second way, and check the files' contents with patterns.
 
 ```bash
@@ -347,7 +370,16 @@ P0280,48,174,Neurology
 
 # Demo 2: Types, Lists, and NumPy Basics
 
-Run these three from `~/03-demo` with the `(03-demo)` environment active.
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | [A small patient-by-visit array](#core-walkthrough-a-small-array): convert numeric text, inspect shape, select a row/column, and apply a calibration offset. |
+| Independent practice | [2.1: Python list tools](#21-check-types-and-loop-over-lists), [2.2: Performance comparison](#22-compare-a-list-loop-with-array-arithmetic), and [2.3: Full array examples](#23-data-types-arrays-and-indexing), including 3D indexing and ufuncs. |
+
+Work through the independent examples on your own after class. The core script supplies its own data; it does not depend on the three larger scripts.
+
+Use `~/03-demo` with the `(03-demo)` environment active for either route.
 
 <span color="yellow_bg">**In a new terminal**</span>, start with these two lines, after which the prompt starts with `(03-demo)`:
 
@@ -356,7 +388,48 @@ cd ~/03-demo
 source .venv/bin/activate
 ```
 
+## Core walkthrough: a small array
+
+Rows are synthetic patients P001–P003 and columns are visits 1–3. All blood pressures are systolic mmHg.
+
+Save this code as `core_arrays.py` in this demo folder:
+
+```python
+import numpy as np
+
+text = np.array([["128", "131", "126"],
+                 ["142", "145", "139"],
+                 ["118", "121", "119"]])
+bp = text.astype(int)
+print("Shape:", bp.shape, "dtype:", bp.dtype)
+print("Patient P002:", bp[1])
+print("First visit:", bp[:, 0])
+calibrated = bp + 3
+print("Raw P001:", bp[0])
+print("Corrected P001:", calibrated[0])
+```
+
+Run it from the terminal:
+
+```bash
+python3 core_arrays.py
+```
+
+Expected output:
+
+```text
+Shape: (3, 3) dtype: int64
+Patient P002: [142 145 139]
+First visit: [128 142 118]
+Raw P001: [128 131 126]
+Corrected P001: [131 134 129]
+```
+
+`bp[1]` selects P002's whole row; `bp[:, 0]` selects visit 1 for every patient. Adding 3 corrects a cuff that reads 3 mmHg low and makes a new array, leaving the measured values unchanged.
+
 ## 2.1 Check Types and Loop over Lists
+
+Independent practice: practice Python list tools before comparing them with arrays.
 
 ```bash
 python3 demo2_types_and_lists.py
@@ -398,6 +471,8 @@ Tachycardic (100 bpm or above): ['P002', 'P003']
 
 ## 2.2 Compare a List Loop with Array Arithmetic
 
+Independent practice: measure vectorized arithmetic on a large input.
+
 ```bash
 python3 demo2_numpy_performance.py
 ```
@@ -430,11 +505,13 @@ The list prints with commas and the array without. The script builds the reading
 
 ## 2.3 Data Types, Arrays, and Indexing
 
+Independent practice: run this full script after the small-array core walkthrough. It extends the examples with array construction, ufuncs, random data, slicing, and 3D indexing. Before running, read the optional [three-dimensional selection reference](../BONUS.md#reference-card-three-dimensional-selection); the core walkthrough uses only the preceding main lecture.
+
 ```bash
 python3 demo2_numpy_arrays.py
 ```
 
-Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This follows the rest of the block in the lecture's order: data types, creating arrays, their properties, random arrays, arithmetic, ufuncs, and indexing in one, two, and three dimensions. It starts with numeric text, as a file delivers it, and six patients' body temperatures in °F:
+Source: [demo2_numpy_arrays.py](demo2_numpy_arrays.py). This follows the main lecture through data types, creating arrays, their properties, random arrays, arithmetic, ufuncs, and 1D/2D indexing, then adds the BONUS 3D selection extension. It starts with numeric text, as a file delivers it, and six patients' body temperatures in °F:
 
 ```text
 NumPy Basics: Types, Arrays, and Indexing
@@ -526,6 +603,15 @@ week[:, :, 0].shape (every patient's first reading each day): (2, 7)
 
 # Demo 3: Selecting, Reshaping, and Analyzing Arrays
 
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | [Patient and clinic summaries](#core-walkthrough-patients-and-clinics): means by axis, highest patient/visit, a threshold count, and the highest-clinic comparison. |
+| Independent practice | [Full blood-pressure analysis](#independent-practice-full-blood-pressure-analysis), through 3.1–3.3; [the full CSV analysis](#34-summarize-the-bundled-csv-by-clinic); [compare counts with the shell](#check-the-counts-against-the-shell). |
+
+Work through the independent scripts on your own after class. The core script uses its own small array and the downloaded `encounters.csv`; it needs no outputs from the larger scripts. Keep the patient/visit axes and group masks beside you when you start Assignment 03.
+
 Run these from `~/03-demo` with the `(03-demo)` environment active.
 
 <span color="yellow_bg">**In a new terminal**</span>, start with these two lines, after which the prompt starts with `(03-demo)`:
@@ -535,11 +621,82 @@ cd ~/03-demo
 source .venv/bin/activate
 ```
 
+## Core walkthrough: patients and clinics
+
+Rows are patients and columns are visits, so `axis=1` gives one mean per patient and `axis=0` one mean per visit. The CSV loader is the supplied, import-safe function in `demo3_csv_summary.py`; it uses Lecture 02's file-reading pattern.
+
+Save this code as `core_analysis.py` in this demo folder:
+
+```python
+import numpy as np
+from demo3_csv_summary import load_rows
+
+bp = np.array([[128, 131, 126], [142, 145, 139], [118, 121, 119]])
+ids = np.array(["P001", "P002", "P003"])
+patient_means = bp.mean(axis=1)
+visit_means = bp.mean(axis=0)
+highest = patient_means.argmax()
+print(f"Patients: {bp.shape[0]}, readings: {bp.size}")
+print(f"Overall mean: {bp.mean():.1f} mmHg, SD: {bp.std():.1f} mmHg")
+for patient, mean in zip(ids, patient_means):
+    print(f"{patient}: {mean:.1f} mmHg")
+print(f"Highest mean: {ids[highest]} ({patient_means[highest]:.1f} mmHg)")
+print("Peak visit:", visit_means.argmax() + 1)
+print("Patients averaging 140+:", (patient_means >= 140).sum())
+
+rows = load_rows("encounters.csv")
+systolic = np.array([row[2] for row in rows]).astype(int)
+clinics = np.array([row[3] for row in rows])
+names = sorted(set(clinics))
+averages = []
+for name in names:
+    averages.append(systolic[clinics == name].mean())
+highest = np.array(averages).argmax()
+in_highest = clinics == names[highest]
+others = ~in_highest
+other_mean = systolic[others].mean()
+print(f"Highest clinic: {names[highest]} ({averages[highest]:.1f} mmHg)")
+print(f"Other clinics: {others.sum()} encounters, mean {other_mean:.1f} mmHg")
+print(f"Difference: {averages[highest] - other_mean:.1f} mmHg")
+print("140+ outside highest clinic:", ((systolic >= 140) & others).sum())
+```
+
+Run it from the terminal:
+
+```bash
+python3 core_analysis.py
+```
+
+Expected output:
+
+```text
+Patients: 3, readings: 9
+Overall mean: 129.9 mmHg, SD: 9.5 mmHg
+P001: 128.3 mmHg
+P002: 142.0 mmHg
+P003: 119.3 mmHg
+Highest mean: P002 (142.0 mmHg)
+Peak visit: 2
+Patients averaging 140+: 1
+Highest clinic: Nephrology (140.3 mmHg)
+Other clinics: 1375 encounters, mean 128.6 mmHg
+Difference: 11.6 mmHg
+140+ outside highest clinic: 269
+```
+
+The arrays stay aligned: each patient ID matches the mean at the same position. Each clinic label similarly matches one systolic reading; `~in_highest` selects every other encounter, so the comparison pools those readings rather than averaging clinic averages.
+
+## Independent practice: full blood pressure analysis
+
+This full script includes optional selection and axis-sorting extensions. Read the BONUS references in [3.2](#32-masks-positions-and-shapes) and [3.3](#33-summaries-labels-and-rankings) before running it; the core walkthrough above uses only preceding main-lecture material.
+
+Work through the longer analysis on your own after class. It creates its own data, so it does not depend on the core script.
+
 ```bash
 python3 demo3_bp_analysis.py
 ```
 
-Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in 3.1 to 3.3 are the whole run, in order, following the lecture's two topics.
+Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in 3.1 to 3.3 are the whole run, in order, using the main lecture's two topics and the optional BONUS variations linked below.
 
 ```text
 Blood Pressure Analysis with NumPy
@@ -604,6 +761,8 @@ Original readings row 0, untouched: [72 93 90 83 83]
 `same is practice` is `True` because both names point to one array, so the write through `same` reached `practice`. The write through the view reached it too; the write into the copy did not. That is the difference to remember when you name or slice an array you still need unchanged.
 
 ## 3.2 Masks, Positions, and Shapes
+
+Independent practice: inspect these selection and reshaping variations after the core axis-and-group analysis. Read the optional [multidimensional mask reference](../BONUS.md#more-multidimensional-boolean-indexing) and [fancy-indexing examples](../BONUS.md#more-fancy-indexing) for the deeper row/column selections below.
 
 A comparison on the whole `(100, 5)` array gives one `True` or `False` per reading. `readings[mask]` keeps the matching readings as a 1-D array, and `.sum()` counts them. Assigning through a mask, `capped[capped > 95] = 95`, changes the array it indexes, so the script caps a `.copy()` of the readings and leaves the raw ones alone:
 
@@ -687,7 +846,7 @@ Visit averages:
   Visit 5: 85.5
 ```
 
-About a quarter of the readings fall below the 25th percentile, 78 mmHg, and about a quarter above the 75th, 93 mmHg; the 50th percentile is the median. `readings.std()` is the square root of the average squared distance from the mean. The script rebuilds it from that definition with the ufunc `np.sqrt()`:
+Independent practice: about a quarter of the readings fall below the 25th percentile, 78 mmHg, and about a quarter above the 75th, 93 mmHg; the 50th percentile is the median. `readings.std()` is the square root of the average squared distance from the mean. The script rebuilds it from that definition with the ufunc `np.sqrt()`:
 
 ```python
 by_hand = np.sqrt(((readings - readings.mean()) ** 2).mean())
@@ -703,7 +862,7 @@ By hand:        8.8560 mmHg
 
 The two agree, and the `Overall std dev` of 8.9 above is the same number rounded to one decimal.
 
-`np.where()` turns one comparison of the patient averages into two labels, or into substituted values, and `np.select()` gives three. Its conditions follow the usual diastolic thresholds, highest band first: 90 or above is stage 2 hypertension, 80-89 is stage 1, and below 80 is normal.
+Independent practice: `np.where()` turns one comparison of the patient averages into two labels, or into substituted values, and `np.select()` gives three. Its conditions follow the usual diastolic thresholds, highest band first: 90 or above is stage 2 hypertension, 80-89 is stage 1, and below 80 is normal.
 
 ```text
 === Conditional Labels (np.where and np.select) ===
@@ -722,7 +881,7 @@ First five stages: ['stage 1' 'stage 1' 'stage 2' 'stage 1' 'stage 1']
 
 The second `np.where` keeps a reading where it is 90 or above and substitutes `0` everywhere else, which picks out the visits that were in stage 2; the zeros mark positions that failed the test, not measured pressures. `np.select` checks `>= 90` before `>= 80`, so an average of 92.6 gets `stage 2`, and `default="normal"` fills every position where neither is true. The 9 stage-2 patients are the same 9 marked `refer`.
 
-The last section ranks visits and patients:
+The last section ranks visits and patients. Its row-wise sorting is an independent extension: read [Sort Within Rows or Order Whole Rows](../BONUS.md#sort-within-rows-or-order-whole-rows) before working through it:
 
 ```text
 === Sorting and Ranking ===
@@ -813,6 +972,8 @@ Stage 2 readings outside Nephrology: 269
 `systolic[others].mean()` pools all 1,375 of those encounters, which is not the same as averaging the seven other clinic averages, because the clinics differ in size. `stage_2 & others` keeps the stage 2 readings outside Nephrology, 269 of the 341.
 
 ### Check the counts against the shell
+
+Independent practice: compare the Python groups with the timestamped shell counts you saved in Demo 1.7.
 
 The encounter counts match the ones your `count_clinics.sh` saved in Demo 1.7. Straight from the shell, the same file gives them again; on macOS the counts sit at a different indent, as in Demo 1:
 

@@ -19,18 +19,34 @@ jupyter:
 
 A New York ICU exports charted heart rates on the local wall clock, and the export spans the night the clocks fell back. You convert clinic times to UTC, set aside the clock readings that happened twice, build lags and past-only means inside each patient's history, check which values were known at a prediction time, split the rows into a chronological holdout, and plot the panel and three years of emergency-department visits. Everything here comes from Lecture 09, plus Lectures 01 to 08. Patient values and visit counts are synthetic.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and seaborn 0.13.2; the whole notebook runs in a few seconds.
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and seaborn 0.13.2.
+
+- **In Colab:** open Demo 3 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **Locally in VS Code:** use the `~/09-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo3_visualization_automation.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`. **In a new terminal**, `cd ~/09-demo` and then `source .venv/bin/activate` bring the environment back.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, both cells in [3. The night the clocks fell back](#3-the-night-the-clocks-fell-back), both cells in [5. Previous readings within each patient](#5-previous-readings-within-each-patient), [6. Past-only means](#6-past-only-means), the first cell in [7. What was known at the prediction time?](#7-what-was-known-at-the-prediction-time), then [8. A chronological holdout](#8-a-chronological-holdout). |
+| Independent practice | After class, compare the clinic clocks and both DST days, audit candidate features, and plot patient/flu histories. Repeat the daily-weight lag/lead alert and its plot; that section labels its optional inference and percentage-change methods with BONUS references. |
+
+**Core checkpoint:** Set aside 1 ambiguous reading; each patient starts with an empty lag. Past count/time means can differ; reported-time lab flags and the holdout remain 9 earlier / 4 later rows.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import matplotlib.pyplot as plt
@@ -46,7 +62,7 @@ print('NumPy', np.__version__)
 
 ## 1. One instant on several clinic clocks
 
-A telehealth consult starts at 14:00 UTC. `tz_convert()` shows what each site's wall clock read at that instant. Zone names come from the IANA database, such as `'America/New_York'`.
+A telehealth consult starts at 14:00 UTC. `tz_convert()` shows what each site's wall clock read at that instant. Zone names come from the IANA time-zone database, the standard list of world time zones, such as `'America/New_York'`.
 
 ```python
 consult = pd.Timestamp('2024-03-15 14:00', tz='UTC')
@@ -244,12 +260,14 @@ plt.show()
 
 ## 10. Three years of flu-like illness visits
 
+Independent reference: `infer_freq()` below uses [Frequency Inference](../BONUS.md#frequency-inference-and-specialized-schedules); the date plots, reporting counts, and rolling mean use the main lecture.
+
 The emergency department counts visits for influenza-like illness (fever with cough or sore throat) every day. Visits peak each winter. The reporting feed failed for two weeks in February 2023, so those days have no rows at all.
 
 ```python
 rng = np.random.default_rng(42)
 days = pd.date_range('2021-01-01', '2023-12-31', freq='D')
-# np.cos, like the lecture's np.sin, makes a yearly wave; this one peaks in mid-January
+# Practice data only: np.cos makes a wave that repeats every 365.25 days and peaks on day 15 (mid-January)
 winter_wave = 20 * np.cos(2 * np.pi * (days.dayofyear - 15) / 365.25)
 noise = rng.normal(0, 4, len(days))  # mean 0, standard deviation 4 visits
 ili = pd.Series((40 + winter_wave + noise).round().astype(int), index=days)
@@ -308,3 +326,66 @@ plt.show()
 ```
 
 **Expect:** January is highest (`60.2`) and July lowest (`20.6`); the bars fall from January to July and rise again toward December (`56.8`).
+
+## 11. Daily weights: lags, leads, and a fluid-gain alert
+
+Independent practice: the lag, lead, difference, and alert use the main lecture. The frequency diagnostic and `pct_change()` use the optional [Frequency Inference](../BONUS.md#frequency-inference-and-specialized-schedules) and [Percentage Changes](../BONUS.md#percentage-changes) references. This section builds its own data.
+
+Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. Here is one patient's daily weight for January through March, with a fluid-gain episode in March. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
+
+```python
+rng = np.random.default_rng(42)
+days = pd.date_range('2024-01-01', '2024-03-31', freq='D')
+scale_noise = rng.normal(0, 0.15, len(days))  # mean 0, standard deviation 0.15 kg
+weights = pd.Series(82 + scale_noise, index=days)
+
+# Fluid builds up from March 9, then a diuretic brings it back down
+weights.loc['2024-03-09':'2024-03-15'] += [0.5, 1.9, 2.6, 2.6, 1.9, 1.1, 0.4]
+
+daily = pd.DataFrame({'weight_kg': weights.round(1)})
+print(daily.shape)
+print('Frequency:', pd.infer_freq(daily.index))
+```
+
+**Expect:** `(91, 1)` (31 + 29 + 31 days) and `Frequency: D`.
+
+`shift(1)` brings each row the previous day's value (a lag), `shift(-1)` the next day's (a lead), and `diff()` subtracts the lag. Because the rows are consecutive days, `shift(7)` is the weight one week earlier.
+
+```python
+daily['prev_day'] = daily['weight_kg'].shift(1)
+daily['next_day'] = daily['weight_kg'].shift(-1)
+daily['change_1d'] = daily['weight_kg'].diff()
+daily['change_7d'] = daily['weight_kg'] - daily['weight_kg'].shift(7)
+daily['pct_1d'] = daily['weight_kg'].pct_change() * 100
+print(daily.head(3).round(2))
+print(daily.loc['2024-03-08':'2024-03-13'].round(2))
+```
+
+**Expect:** on January 1, `prev_day`, `change_1d`, and `pct_1d` are `NaN` (nothing came before), and `change_7d` stays `NaN` through January 7. In March, the weight climbs from 81.9 kg on March 8 to 83.9 kg on March 10 (`change_1d` 1.3) and 84.4 kg on March 11 and 12 (`change_7d` 2.3).
+
+Apply both alert rules with a boolean filter (Lecture 04).
+
+```python
+alerts = daily[(daily['change_1d'] > 1.0) | (daily['change_7d'] > 2.0)]
+print(alerts[['weight_kg', 'change_1d', 'change_7d']].round(1))
+print('Largest daily change before March 9:', daily.loc[:'2024-03-08', 'change_1d'].abs().max().round(1), 'kg')
+```
+
+**Expect:** three alert days: March 10 (the 1-day rule, `1.3` kg) and March 11 and 12 (the 7-day rule, `2.3` kg). Before the episode, no day moved more than `0.4` kg, so ordinary scale noise never trips the rule.
+
+## 12. Plot the home-weight alerts
+
+Use `daily` and `alerts` from section 11. Marking the alert days on the raw series shows both the size of the change and when it happened.
+
+```python
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(daily.index, daily['weight_kg'], color='gray', label='Daily weight')
+ax.plot(alerts.index, alerts['weight_kg'], 'o', color='red', label='Alert day')  # markers only, no line
+ax.set(title='Home weights with fluid-gain alerts', xlabel='Date', ylabel='Weight (kg)')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+**Expect:** a flat gray line near 82 kg with a sharp hump in mid-March, and three red points at the top of the hump (March 10 to 12).

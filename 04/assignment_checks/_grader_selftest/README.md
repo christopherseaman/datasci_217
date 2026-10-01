@@ -25,8 +25,7 @@ notebook's supplied `fridge_readings` array, builds submissions in ignored
   readings or swapped columns in a two-row block saved without its index, and
   a wrong value in a semicolon- or tab-separated file. Column names, order
   lines, line totals, and sort rules are separate checks, so a renamed column
-  costs only its 2-point name check and a missing or wrong `line_total_usd`
-  costs no line check;
+  costs only its 2-point name check. A missing `line_total_usd` in recognizable data costs only its column check, while wrong present totals lose their totals points; header-only/unknown-key omissions earn no inferred reading or total credit;
 - the printed report gives a fix shared by consecutive checks once, marking
   the rest `(same fix as above)`, and ends with a `Left to fix` line naming
   the failing checks by file and the points they are worth;
@@ -37,7 +36,10 @@ notebook's supplied `fridge_readings` array, builds submissions in ignored
   every file the workflow lists in `CHECKS_FILES` is byte-identical in
   `04/assignment/` and here, the list names every checker file here, the
   handout ships no other Python and no self-test, and its notebook has no
-  saved outputs.
+  saved outputs;
+- the handout sets up as Lecture 03 does: `pyproject.toml` pins numpy 2.3.3,
+  pandas 3.0.5, and ipykernel 6.29.5, `uv.lock` locks those versions,
+  `.python-version` names 3.13, and no `requirements.txt` ships beside them.
 
 ```bash
 uv run --python 3.13 --with pandas==3.0.5 python 04/assignment_checks/_grader_selftest/run.py

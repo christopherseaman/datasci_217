@@ -17,13 +17,13 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 - Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
 - Selection: `cross_val_score` for cross-validation and `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
 
-**Cross-validation** splits the training rows into k parts (folds), fits on all but one of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on.
+**Cross-validation** splits the training rows into k parts (folds), fits on all but one of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on. Delayed targets still need Lecture 10's label-availability check: exclude training labels that would not yet be known at a fold's first prediction cutoff.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
 
 # Other Boosting Libraries
 
-Beyond `XGBoost`, two other gradient-boosting libraries are common. Neither is part of Lecture 10's recorded environment; install them in the active notebook environment with `%pip install lightgbm catboost` before trying them.
+Beyond `XGBoost`, two other gradient-boosting libraries are common. Neither is part of Lecture 10's recorded environment; add them to the demo folder's environment with `uv add lightgbm catboost` (Lecture 03), or run `%pip install lightgbm catboost` in Colab, before trying them.
 
 ## `LightGBM`
 
@@ -87,7 +87,7 @@ print(f"Best score: {grid_search.best_score_}")
 
 ## Bayesian Optimization
 
-This optional example requires `scikit-optimize`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install scikit-optimize` before running the example.
+This optional example requires `scikit-optimize`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add scikit-optimize` (Lecture 03), or run `%pip install scikit-optimize` in Colab, before running the example.
 
 ### Reference Card: Bayesian Optimization Tools
 
@@ -132,7 +132,7 @@ print(f"Best parameters: {result.x}")
 
 ## SHAP Values
 
-This optional example requires SHAP, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install shap` before running the example.
+This optional example requires SHAP, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add shap` (Lecture 03), or run `%pip install shap` in Colab, before running the example.
 
 ### Reference Card: SHAP Tools
 
@@ -246,7 +246,7 @@ print(result.summary())
 
 ## Generalized Additive Models (GAMs)
 
-This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install pygam` before running the example.
+This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add pygam` (Lecture 03), or run `%pip install pygam` in Colab, before running the example.
 
 ### Reference Card: GAM Tools
 
@@ -352,7 +352,7 @@ The lecture uses TensorFlow/Keras for its worked example. That is a teaching cho
 
 ## `PyTorch`
 
-`PyTorch` provides an eager, Python-oriented interface used in research and production. It is not part of Lecture 10's recorded environment; install it in the active notebook environment with `%pip install torch` before running the example.
+`PyTorch` provides an eager, Python-oriented interface used in research and production. It is not part of Lecture 10's recorded environment; add it to the demo folder's environment with `uv add torch` (Lecture 03), or run `%pip install torch` in Colab, before running the example.
 
 - **PyTorch:** Eager execution and a Python-oriented modeling ecosystem
 - **TensorFlow/Keras:** High-level Keras APIs within TensorFlow's broader modeling and deployment ecosystem
@@ -515,7 +515,7 @@ print(readings)
 5         P2      3  139        147.0
 ```
 
-P2's first visit gets `NaN`, not P1's last reading. Compare every approach on the same rows: those where the baseline has a value. On a complete hourly grid, `shift(168)` gives the same hour last week.
+P2's first visit gets `NaN`, not P1's last reading. Compare every approach on the same rows: those where the baseline has a value. On a complete elapsed-hour grid, `shift(168)` gives 168 hours earlier; across a daylight-saving change this can differ from the same local clock hour last week.
 
 ## ARIMA Models
 
@@ -552,7 +552,7 @@ conf_int = result.get_forecast(steps=10).conf_int()
 
 ## Prophet for Time Series
 
-This optional example requires `prophet`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install prophet` before running the example.
+This optional example requires `prophet`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add prophet` (Lecture 03), or run `%pip install prophet` in Colab, before running the example.
 
 ### Reference Card: Prophet Tools
 
@@ -637,7 +637,7 @@ Pickle/joblib files can execute arbitrary code while loading. Load them only fro
 
 ## Model Versioning
 
-This optional example requires `mlflow`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install mlflow` before running the example.
+This optional example requires `mlflow`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add mlflow` (Lecture 03), or run `%pip install mlflow` in Colab, before running the example.
 
 ### Reference Card: Model Versioning Approach
 
@@ -680,7 +680,7 @@ with mlflow.start_run():
 
 ## Automated Feature Engineering
 
-This optional example requires `featuretools`, which is not part of Lecture 10's recorded core environment. Install it in the active notebook environment with `%pip install featuretools` before running the example.
+This optional example requires `featuretools`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add featuretools` (Lecture 03), or run `%pip install featuretools` in Colab, before running the example.
 
 ### Reference Card: Featuretools Functions
 
@@ -885,5 +885,3 @@ model_b_predictions = np.where(rng.random(100) < 0.70, true_labels, 1 - true_lab
 
 print(compare_models(model_a_predictions, model_b_predictions, true_labels))
 ```
-
-These advanced topics will help you build production-ready models, understand model behavior, and maintain models over time in real-world applications.

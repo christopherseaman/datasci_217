@@ -43,8 +43,7 @@ syncs the fork, so until then the local run can lag the GitHub run, and the
 GitHub run counts.
 
 A change to the check list or to `POINTS` belongs in `_public_checks.py` and
-`grading.py` at once, in the same order: `grading.py` zips the checks against
-`POINTS` with `strict=True`. Keep the README's key table and completion
+`grading.py` at once, in the same order: `grading.py` verifies the lists have equal lengths before pairing the checks with `POINTS`, using syntax Python 3.9 supports. Keep the README's key table and completion
 contract in agreement with `POINTS`.
 
 ## Checking the checks

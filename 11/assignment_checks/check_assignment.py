@@ -4,8 +4,9 @@
 
 Course-side only: the exam handout ships no checks. Only the files in the
 submission's `output/` and its `report.md` are read; no submitted code runs.
-Exits 0 when every check passes, 1 otherwise, and 2 when the supplied release in
-`11/assignment/data/` is missing or changed, so nothing could be graded.
+Exits 0 when every check passes, 1 otherwise, and 2 when nothing could be
+graded: the supplied release in `11/assignment/data/` is missing or changed, or
+the Python running this file lacks the packages the checks need.
 """
 
 from __future__ import annotations
@@ -15,10 +16,20 @@ import json
 from pathlib import Path
 import sys
 
-from grading import InfrastructureError, SCHEMA, grade_submission
+try:
+    from grading import InfrastructureError, SCHEMA, grade_submission
+except ModuleNotFoundError as missing:
+    # Reported in main() instead of as a traceback, so a run from a Python without
+    # NumPy, pandas, or scikit-learn, such as macOS's system python3, says how to run it instead.
+    MISSING_PACKAGE = missing.name
+    SCHEMA = "datasci217/grading-result/v1"
+else:
+    MISSING_PACKAGE = None
 
 
 HUMAN_REVIEW_POINTS = 25
+RUN_COMMAND = ("uv run --isolated --project 11/assignment --locked "
+               "python3 11/assignment_checks/check_assignment.py <submission_dir>")
 
 
 def main() -> int:
@@ -27,6 +38,15 @@ def main() -> int:
                         help="the submission's assignment directory (default: the current directory)")
     parser.add_argument("--json", action="store_true", help="print the datasci217/grading-result/v1 report")
     args = parser.parse_args()
+    if MISSING_PACKAGE:
+        message = (f"this Python ({sys.executable}) has no {MISSING_PACKAGE} module, which the checks need. "
+                   f"Run them with the packages 11/assignment/pyproject.toml pins, from the course repository: "
+                   f"{RUN_COMMAND}")
+        if args.json:
+            print(json.dumps({"schema": SCHEMA, "error": message}))
+        else:
+            print(f"Cannot grade: {message}", file=sys.stderr)
+        return 2
     try:
         result = grade_submission(args.submission_dir)
     except InfrastructureError as error:

@@ -8,8 +8,8 @@ hold match the handout's data, that the README agrees with the checks, and that
 the handout in `07/assignment/` ships the course-owned checks byte for byte.
 Nothing here reads or runs student code.
 
-    uv run --python 3.13 --with-requirements 07/assignment/requirements.txt \\
-        python 07/assignment_checks/_grader_selftest/run.py
+    uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with matplotlib==3.11.1 \\
+        --with altair==5.5.0 python 07/assignment_checks/_grader_selftest/run.py
 """
 
 from __future__ import annotations
@@ -128,7 +128,7 @@ def evidence() -> dict:
         "question": "How often did patients in each program meet the exercise goal at each visit?",
         "audience": "The rehab program coordinator, deciding where to add follow-up support",
         "intended_claim": "By visit 4, Center-based patients met the goal 9 points more often.",
-        "displayed_unit": "Patients meeting the weekly exercise goal (%)",
+        "y_measure": "Patients meeting the weekly exercise goal (%)",
         "grain": "One program at one follow-up visit",
         "data_types": {"program": "categorical", "visit_number": "ordinal", "goal_met_pct": "quantitative"},
         "text_alternative": TEXT_ALTERNATIVE_TEXT,
@@ -243,7 +243,7 @@ def run() -> None:
         ]
         loose_evidence["critique"][1]["Category"] = "COLOUR ONLY ENCODING"
         loose_evidence["Intended Claim"] = loose_evidence.pop("intended_claim")
-        loose_evidence["displayed-unit"] = loose_evidence.pop("displayed_unit")
+        loose_evidence["y-measure"] = loose_evidence.pop("y_measure")
         loose_evidence["variables"] = {
             "Program": "Nominal: the group, by color and marker",
             "visit_number": "ordered categorical (the visits in sequence)",
@@ -297,6 +297,18 @@ def run() -> None:
         }))
         assert lost(phrased) == set(), details(phrased)
 
+        # The earlier handout's measure key remains accepted after the rename.
+        legacy = variant(workspace, "legacy-measure-key", correct)
+        edit_json(legacy, EVIDENCE, lambda value: value.update(displayed_unit=value.pop("y_measure")))
+        assert lost(legacy) == set(), details(legacy)
+        # A conflicting duplicate header costs once, whichever copy is last.
+        for first in (False, True):
+            duplicate = variant(workspace, f"duplicate-percentage-{first}", correct)
+            saved = pd.read_csv(correct / SUPPORTING)
+            wrong = saved[["goal_met_pct"]].copy().assign(goal_met_pct=0)
+            pd.concat([wrong, saved] if first else [saved, wrong], axis=1).to_csv(duplicate / SUPPORTING, index=False)
+            assert lost(duplicate) == {"supporting data: columns"}, details(duplicate)
+
         # The supporting data separated by semicolons or tabs, and the text alternative in another letter case.
         for label, separator in (("semicolons", ";"), ("tabs", "\t")):
             separated = variant(workspace, f"supporting-{label}-text-alternative-case", correct)
@@ -330,7 +342,7 @@ def run() -> None:
                 {"exploratory spec: color encoding"}, "type ordinal, not nominal")
         mistake("spec-axes-swapped",
                 save_chart(scatter(patients).encode(x="walk_distance_m:Q", y="sessions_attended:Q")),
-                {"exploratory spec: x encoding", "exploratory spec: y encoding"}, "encodes walk_distance_m as x")
+                {"exploratory spec: x encoding"}, "puts walk_distance_m on x")
         mistake("spec-one-patient-changed", save_chart(scatter(patients.replace({"walk_distance_m": {431: 413}}))),
                 {"exploratory spec: embedded patient rows"}, "R03 has walk_distance_m 413, expected 431")
         mistake("spec-one-program-only",
@@ -363,6 +375,8 @@ def run() -> None:
 
         mistake("explanatory-missing", lambda root: (root / EXPLANATORY).unlink(),
                 {"explanatory chart: PNG image"}, "run the Task 3.2 cell")
+        mistake("supporting-nul-bytes", lambda root: (root / SUPPORTING).write_bytes(b"\xff\xfe\x00"),
+                SUPPORTING_CHECKS, "embedded NUL")
         followup = pd.read_csv(HANDOUT / "data" / "followup_goals.csv")
         mistake("supporting-all-columns", lambda root: followup.to_csv(root / SUPPORTING, index=False),
                 {"supporting data: columns"}, "also has patients_seen")
@@ -375,7 +389,7 @@ def run() -> None:
         mistake("supporting-row-dropped",
                 lambda root: followup[["program", "visit_number", "goal_met_pct"]].iloc[:7].to_csv(
                     root / SUPPORTING, index=False),
-                {"supporting data: rows and values"}, "has no row for Center-based, visit 4")
+                {"supporting data: rows and values"}, "has no Center-based row for visit 4")
         mistake("supporting-row-repeated",
                 lambda root: pd.concat([followup[["program", "visit_number", "goal_met_pct"]]] * 2).iloc[:9].to_csv(
                     root / SUPPORTING, index=False),
@@ -396,7 +410,7 @@ def run() -> None:
                 {"evidence: question"}, "has no question key")
         mistake("data-type-temporal",
                 lambda root: edit_json(root, EVIDENCE, lambda value: value["data_types"].update(visit_number="temporal")),
-                {"data type: visit_number"}, "not ordinal")
+                set())
         mistake("data-type-numeric-program",
                 lambda root: edit_json(root, EVIDENCE, lambda value: value["data_types"].update(program="quantitative")),
                 {"data type: program"}, "not categorical")
@@ -422,7 +436,54 @@ def run() -> None:
         mistake("evidence-truncated", lambda root: edit_text(root, EVIDENCE, lambda text: text[:200]),
                 CRITIQUE_CHECKS | EVIDENCE_CHECKS, "is not valid JSON")
         mistake("evidence-critique-only", lambda root: write_json(root, EVIDENCE, {"critique": CRITIQUE}),
-                EVIDENCE_CHECKS, "in Task 3.3, add")
+                EVIDENCE_CHECKS, "holds only the critique that Task 2.2 saves")
+        critique_only = variant(workspace, "evidence-critique-only-one-message", correct)
+        write_json(critique_only, EVIDENCE, {"critique": CRITIQUE})
+        assert {detail(critique_only, name) for name in EVIDENCE_CHECKS} == {value_checks.ONLY_CRITIQUE}
+
+        # Slips a beginner makes, each named with its cause.
+        mistake("supporting-one-program",
+                lambda root: followup.loc[followup["program"] == "Home-based", ["program", "visit_number", "goal_met_pct"]]
+                .to_csv(root / SUPPORTING, index=False),
+                {"supporting data: rows and values"}, "has no Center-based rows at all")
+        mistake("evidence-python-dict",
+                lambda root: (root / EVIDENCE).write_text(str(evidence()), encoding="utf-8"),
+                CRITIQUE_CHECKS | EVIDENCE_CHECKS, "written with str() or print()")
+        mistake("text-alternative-json-quoted",
+                lambda root: write_json(root, TEXT_ALTERNATIVE, TEXT_ALTERNATIVE_TEXT),
+                {"text alternative file"}, "inside quotation marks")
+        mistake("text-alternative-whole-dict",
+                lambda root: (root / TEXT_ALTERNATIVE).write_text(str(evidence()), encoding="utf-8"),
+                {"text alternative file"}, "holds a whole dict")
+        mistake("data-type-pandas-dtype",
+                lambda root: edit_json(root, EVIDENCE, lambda value: value["data_types"].update(goal_met_pct="int64")),
+                {"data type: goal_met_pct"}, "how pandas stores the column")
+        mistake("data-type-visit-quantitative",
+                lambda root: edit_json(root, EVIDENCE, lambda value: value["data_types"].update(
+                    visit_number="quantitative")),
+                {"data type: visit_number"}, "not measured amounts")
+        mistake("redesign-bare-file-name", lambda root: (root / REDESIGN).rename(root / "critique_redesign.png"),
+                {"critique redesign: PNG image"}, "the assignment folder has critique_redesign.png")
+        mistake("spec-bare-file-name", lambda root: (root / SPEC).rename(root / "exploratory_spec.json"),
+                {"exploratory spec: point mark"}, "save to EXPLORATORY_SPEC_PATH")
+
+        def blank(name: str):
+            def save(root: Path) -> None:
+                plt.figure()
+                plt.savefig(root / name, dpi=150, bbox_inches="tight")  # what plt.savefig() after plt.show() saves
+                plt.close("all")
+            return save
+
+        mistake("redesign-blank", blank(REDESIGN), {"critique redesign: PNG image"}, "is blank")
+        mistake("explanatory-blank", blank(EXPLANATORY), {"explanatory chart: PNG image"}, "before plt.show()")
+        for filename, check in ((REDESIGN, "critique redesign: PNG image"),
+                                (EXPLANATORY, "explanatory chart: PNG image")):
+            original = (correct / filename).read_bytes()
+            for label, data in (("signature-only", original[:8]), ("truncated", original[:-12]),
+                                ("bad-crc", original[:29] + bytes([original[29] ^ 1]) + original[30:])):
+                mistake(f"{filename}-{label}",
+                        lambda root, filename=filename, data=data: (root / filename).write_bytes(data),
+                        {check}, "is damaged or incomplete")
 
         # A submission that stops after Task 2 scores Tasks 1 and 2 in full.
         tasks_1_2 = variant(workspace, "tasks-1-and-2-only", correct)

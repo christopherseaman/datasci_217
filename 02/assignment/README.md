@@ -109,7 +109,7 @@ Reason: <one line, 20-300 characters, saying why you chose it>
 
 List the patient ID of every patient with at least one usable reading at or above your cutoff, one per line. Order does not matter, a repeated ID counts once, the `mmHg` unit on the cutoff is optional, and any other line is ignored, whether it is a heading, a blank line, or a row of dashes.
 
-The checks recompute the list from the cutoff you declared, so every cutoff in range is correct, as long as the patients you list are the ones your cutoff selects.
+The checks recompute the list from the cutoff you declared, so every cutoff in range is correct, as long as the patients you list are the ones your cutoff selects. A numeric cutoff outside that range loses only its cutoff points when the list correctly follows it.
 
 > **Checkpoint: `output/followup_list.txt`**
 > Open the saved file and confirm it starts with your `Cutoff:` and `Reason:` lines, followed by one patient ID per line.
@@ -154,7 +154,7 @@ Commit these files at the assignment repository root. Grading totals 100 points.
 | `README.md` | `## Project description` holds 30-300 characters of your own text. | 5 |
 | `README.md` | `## Run` holds a Python command that runs a `.py` script; any Python version counts. | 5 |
 | `.gitignore` | It lists a standard pattern for Python's bytecode cache, such as `__pycache__/` or `*.py[cod]`. | 5 |
-| `output/vitals_report.txt` | UTF-8 text with all six labelled lines present. | 10 |
+| `output/vitals_report.txt` | UTF-8 text with at least one readable labelled numeric answer from Task 2.3; each missing answer is checked separately. | 10 |
 | `output/vitals_report.txt` | `Usable encounters` matches the supplied encounters. | 8 |
 | `output/vitals_report.txt` | `Skipped rows` matches the supplied encounters. | 7 |
 | `output/vitals_report.txt` | `Patients seen` matches the distinct patient IDs among the usable encounters. | 10 |
@@ -165,7 +165,7 @@ Commit these files at the assignment repository root. Grading totals 100 points.
 | `output/followup_list.txt` | `Reason` is 20-300 characters on one line. | 5 |
 | `output/followup_list.txt` | The listed patient IDs are exactly the patients with a usable reading at or above your cutoff. | 15 |
 
-Each row is scored on its own, so a right value earns its points whatever else is wrong. The one exception is the patient list: it is checked against your `Cutoff`, so it scores only when that cutoff is from 120 to 180. Extra files and extra lines are ignored.
+Each row is scored on its own, so a right value earns its points whatever else is wrong. The patient list is checked against your declared numeric `Cutoff`, even when the cutoff itself is outside the allowed range. Extra files and extra lines are ignored.
 
 ## Submit
 

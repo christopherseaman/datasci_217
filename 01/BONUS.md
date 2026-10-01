@@ -11,6 +11,8 @@ notion:
 
 These topics are **optional** and not required for future lectures. Explore them if you're curious or want to deepen your understanding!
 
+The shell reference listings marked `text` are for reading, not pasting. Type only the command you need, without its `#` note.
+
 # Python on Native Windows PowerShell
 
 The course demos use WSL, but uv can install Python for PowerShell itself:
@@ -39,7 +41,7 @@ Reopen the terminal and check `python --version`. Use `python` in place of `pyth
 
 Beyond the basic `ls`, there are many useful variations:
 
-```bash
+```text
 ls -la          # Long format with hidden files
 ls -lh          # Human-readable file sizes
 ls -lt          # Sort by modification time
@@ -68,7 +70,7 @@ len(text)          # Length of strings/lists
 
 Make your command line experience smoother:
 
-```bash
+```text
 # History navigation
 ↑/↓ arrows         # Previous/next command
 history            # Show recent commands
@@ -78,7 +80,7 @@ history            # Show recent commands
 # Editing shortcuts
 Ctrl+A             # Beginning of line
 Ctrl+E             # End of line
-Ctrl+U             # Delete from cursor back to start of line
+Ctrl+U             # Bash: delete back to start; Zsh: delete the whole line
 Tab                # Auto-complete (your best friend!)
 ```
 
@@ -105,7 +107,7 @@ str.upper.__doc__   # Method documentation
 
 Understanding what you can and can't do with files:
 
-```bash
+```text
 ls -l              # Shows permissions (rwxrwxrwx format)
 chmod +x script.py # Make file executable
 chmod 644 file.txt # Set specific permissions
@@ -119,7 +121,7 @@ chmod 644 file.txt # Set specific permissions
 
 Your computer stores settings in environment variables:
 
-```bash
+```text
 echo $HOME         # Your home directory
 echo $PATH         # Where computer looks for commands
 env                # Show all environment variables
@@ -157,7 +159,7 @@ text.replace("Hello", "Hi")  # Replace text
 
 Advanced file selection:
 
-```bash
+```text
 ls *.txt           # All .txt files
 ls data_*          # Files starting with "data_"
 ls ??.py           # Python files with 2-character names
@@ -182,4 +184,3 @@ math.pi            # 3.141592653589793
 large_number = 1.23e6    # 1,230,000
 small_number = 1.23e-3   # 0.00123
 ```
-

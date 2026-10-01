@@ -10,7 +10,8 @@ assignment/
 │   ├── feature_availability.csv  # supplied: Task 2.1's candidate features
 │   ├── followup_visits.csv       # supplied: Tasks 2.2 to 3.2's visits
 │   └── readmission_flags.csv     # supplied: Task 3.3's flags
-├── requirements.txt        # supplied: the packages the notebook uses, and ipykernel
+├── pyproject.toml          # supplied: the packages the notebook uses, and ipykernel
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
 ├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
@@ -62,17 +63,19 @@ From late April the program also enrolled patients referred from the emergency d
 
 Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect the four files above. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-Create the project environment, activate it, and install the supplied requirements, as in Lecture 03:
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash also works; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`. In PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and type `python` as well.
+
+The handout already lists the notebook's packages in `pyproject.toml` and records their exact versions in `uv.lock`, and `.python-version` pins Python 3.13, so `uv sync` rebuilds the environment, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
 
 ```bash
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`requirements.txt` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so this one install is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
+`uv sync` prints a `+ package==version` line for each package it installs, including `+ pandas==3.0.5`. Do not run `uv init`: the handout's `pyproject.toml` already exists. If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. In PowerShell instead, activate with `.\.venv\Scripts\Activate.ps1`.
+`pyproject.toml` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so `uv sync` is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
 
 Run the notebook's first two code cells. The first prints the package versions and `data folder found: True`; `False` means the notebook is not running from the assignment directory, so open the folder itself in VS Code, not a folder above it. The second reads the four files and prints `patients: (20, 4)`, `candidates: (5, 2)`, `visits: (48, 9)`, and `flags: (20, 4)`.
 
@@ -143,7 +146,7 @@ A feature the model will not have at prediction time is **leakage**, however use
 
 ### 2.2 Split on the target time
 
-Split on when each **target** is measured, `followup_time`, so no training outcome is measured during the validation or test weeks. Lecture 10's "Code Snippet: A Chronological Split" does the same with dates. In the Task 2.2 cell:
+Split on when each **target** is measured, `followup_time`, so no training outcome is measured during the validation or test weeks. This exercise is a **retrospective comparison** of records whose delayed outcomes are already known. It does not simulate forecasting at the original visit times: the latest training outcome is reported after the first validation visit, and a training-plus-validation refit also includes outcomes reported after the first test visit. For a prospective evaluation, the latest training target time must be on or before the first validation prediction time; apply the same rule before a refit predicts the test rows, leaving a gap or removing overlapping training rows when necessary. Lecture 10's "Code Snippet: A Chronological Split" does the same with dates. In the Task 2.2 cell:
 
 1. Select `train`, the visits whose `followup_time` is before `VALIDATION_START` (May 1, 2026, UTC); `valid`, those on or after `VALIDATION_START` and before `TEST_START` (May 9); and `test`, those on or after `TEST_START`. It prints `rows: 30 8 10`.
 2. Build `split_summary` with one row per partition and four columns: `partition` (`"train"`, `"validation"`, `"test"`), `row_count` (each part's `len()`), `first_target_time` (each part's `["followup_time"].min()`), and `last_target_time` (its `.max()`).
@@ -202,10 +205,10 @@ Flagging no one is right for 80% of patients and finds none of the four readmiss
 
 ## Check your work
 
-Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then, with the environment active, run the checks from the assignment directory:
+Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then run the checks from the assignment directory in the terminal:
 
 ```bash
-python check_assignment.py
+python3 check_assignment.py
 ```
 
 `check_assignment.py` runs the same checks GitHub runs. They read only the ten files in `output/` and compare them with values computed from the supplied data. They never run or read your notebook, so any way of producing correct files counts.
@@ -229,6 +232,7 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
+- A missing column costs the columns check once; values in the remaining columns are still checked. An empty table or one with no recognizable rows earns no value points.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `2`, `2.0`, and `2.00` are the same value. Any number may be rounded to one or two decimals, as `3.3` or `3.34` for an MAE of 3.3379. Accuracy, precision, recall, and R² may also be written as percents, as `85%` for 0.85.
 - Labels, IDs, and column names are compared in any letter case, with spaces and underscores alike.

@@ -18,8 +18,13 @@ POINTS = (5, 5, 5, 10, 8, 7, 10, 15, 5, 5, 5, 5, 15)
 def grade_submission(submission_dir: Path) -> dict:
     """Grade saved artifacts without importing or executing submitted student code."""
     diagnostics = run_checks(Path(submission_dir))
+    if len(diagnostics) != len(POINTS):
+        raise ValueError(
+            f"_value_checks.py runs {len(diagnostics)} checks but grading.py scores {len(POINTS)}; "
+            "update both files together."
+        )
     tests = []
-    for (name, detail), max_score in zip(diagnostics, POINTS, strict=True):
+    for (name, detail), max_score in zip(diagnostics, POINTS):
         passed = detail is None
         tests.append({"test-name": name, "passed": passed, "score": max_score if passed else 0,
                       "max-score": max_score, "detail": detail or ""})

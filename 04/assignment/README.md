@@ -6,7 +6,8 @@
 assignment/
 ├── assignment.ipynb        # the notebook you complete
 ├── data/supply_order.csv   # supplied order lines; keep this file exactly as handed out
-├── requirements.txt        # supplied: numpy, pandas, and ipykernel
+├── pyproject.toml          # supplied: the project's packages, numpy, pandas, and ipykernel
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
 ├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
@@ -33,19 +34,23 @@ C1022,Blood pressure cuff (adult),1,24.00
 
 Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it, so the terminal starts there. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `supply_order.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-Create the project environment, activate it, and install the supplied requirements, as in Lecture 03:
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash also works; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`. In PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and type `python` as well.
+
+The handout lists numpy, pandas, and **ipykernel** (the package that lets a notebook run on this environment's Python, Lecture 04) in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so `uv sync` installs everything the notebook needs, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
 
 ```bash
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`requirements.txt` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so this one install is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
+`uv venv` prints `Using CPython 3.13.x`, and `uv sync` prints `+ pandas==3.0.5` and `+ ipykernel==6.29.5` among the packages it installs. Do not run `uv init`: the handout's `pyproject.toml` already exists.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. In PowerShell instead, activate with `.\.venv\Scripts\Activate.ps1`.
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
 
-Run the notebook's first code cell. It prints the NumPy and pandas versions and `data file found: True`. `False` means the notebook cannot see `data/supply_order.csv` from the folder it runs in. Run `%pwd` in a new cell and `%ls` in another, as in Lecture 04: `%pwd` should end in your assignment folder, and `%ls` should list `data/` beside `assignment.ipynb`. Keep the notebook in the assignment folder, next to `data/`, and keep `data/supply_order.csv` under that name.
+Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
+
+Run the notebook's first code cell. It prints `NumPy: 2.3.3`, `pandas: 3.0.5`, and `data file found: True`. `ModuleNotFoundError: No module named 'numpy'` (or `'pandas'`) means the kernel is not this project's `.venv`: click the kernel name at the top right and choose it, as in Lecture 04. If the kernel already shows `.venv`, run `uv sync` in the terminal with the environment active, then run the cell again. `False` means the notebook cannot see `data/supply_order.csv` from the folder it runs in. Run `%pwd` in a new cell and `%ls` in another, as in Lecture 04: `%pwd` should end in your assignment folder, and `%ls` should list `data/` beside `assignment.ipynb`. Keep the notebook in the assignment folder, next to `data/`, and keep `data/supply_order.csv` under that name.
 
 ## Task 1: Put the cells in running order
 
@@ -136,7 +141,7 @@ In the Task 3.2 cell:
 Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then, with the environment active, run the checks from the assignment directory:
 
 ```bash
-python check_assignment.py
+python3 check_assignment.py
 ```
 
 `check_assignment.py` runs the same checks GitHub runs. They read only the two CSV files in `output/` and compare them with the supplied readings and order. They never run or read your notebook, so any way of producing correct files counts.
@@ -145,7 +150,7 @@ Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says wha
 
 ```text
 [FIX ]  0/10 fridge block: fridge_id index column
-         output/fridge_block.csv is missing; run the Task 2 cells to write it, then commit it.
+         output/fridge_block.csv is missing; run the Task 2 cells to write it, then commit it. Task 2.2 saves it with label_block.to_csv(FRIDGE_OUTPUT_PATH).
 [FIX ]  0/10 fridge block: rows FRG-102 and FRG-103  (same fix as above)
 ```
 
@@ -160,7 +165,7 @@ All checks passed.
 
 How the files are read:
 
-- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd`, for example, costs its column check and the line totals check, not the nine line checks.
+- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd` in a table of recognizable order lines costs only its column check; the line and sorting checks still assess the values present.
 - A column saved under another name, such as `am_temp` for `am_temp_c`, costs only its 2-point name check; its values are still graded.
 - Spacing, line endings, quoting, and column order never cost points.
 - Numbers are compared as numbers, so `57`, `57.0`, and `57.00` are the same value.

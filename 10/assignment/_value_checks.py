@@ -24,6 +24,12 @@ true/false, yes/no, or 1/0. Test predictions and test metrics are accepted
 from either refit the lecture allows: the pipeline fitted on training rows
 only, or refitted on training plus validation rows.
 
+Downstream decisions, fitted values, residuals, and test metrics also accept
+values calculated correctly from the student's earlier saved artifacts. A
+recognized common slip that affects several checks is charged once, by the
+first affected check. Duplicate headers cost the columns check; every stored
+copy is considered rather than silently discarding a column.
+
 Nothing here imports, runs, or inspects student code.
 """
 
@@ -33,6 +39,7 @@ import codecs
 import csv
 import difflib
 import re
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -81,6 +88,17 @@ class Either:
 
 
 @dataclass(frozen=True)
+class Slip:
+    """A common wrong answer: the values it leaves, by row key and column, and what causes it.
+
+    A values check names the cause when every wrong cell it found holds this slip's value.
+    """
+
+    cause: str
+    rows: dict[tuple, dict[str, object]]
+
+
+@dataclass(frozen=True)
 class Artifact:
     """One saved CSV: where it lives, which task writes it, and what it should hold.
 
@@ -105,6 +123,7 @@ class Table:
 
     columns: tuple[str, ...]
     rows: tuple[dict[str, str], ...]
+    repeated: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -183,6 +202,107 @@ READMISSION_VALUES = {
     "model_flag": {"accuracy": 0.85, "precision": 0.6, "recall": 0.75},
     "never_flag": {"accuracy": 0.8, "precision": 0.0, "recall": 0.0},
 }
+
+# Common wrong answers, computed from the same data, so feedback can name the likely cause.
+RESIDUAL_SIGN_FLIPPED = Slip(
+    "Those residuals have the opposite sign, fitted minus observed; a residual is observed minus fitted, as "
+    "results.resid holds it.",
+    {(patient,): {"residual": -values["residual"]} for patient, values in RESIDUAL_VALUES.items()},
+)
+RESIDUAL_COLUMNS_SWAPPED = Slip(
+    "fitted and residual have traded places: each column holds the other's values.",
+    {
+        (patient,): {"fitted": values["residual"], "residual": values["fitted"]}
+        for patient, values in RESIDUAL_VALUES.items()
+    },
+)
+ZERO_HOURS_EXCLUDED = Slip(
+    "That is what hours_after_visit < 0 gives: a feature known when the visit ends has 0 hours and counts "
+    "as available, so the test is <= 0.",
+    {
+        (feature,): {"available": Flag(hours < 0), "decision": Starts("keep" if hours < 0 else "exclude")}
+        for feature, hours in HOURS_AFTER_VISIT.items()
+    },
+)
+# The split on visit_time, the prediction time, at the same two boundaries; its test part is empty.
+SPLIT_ON_VISIT_TIME = Slip(
+    "That is what a split on visit_time gives, which trains on outcomes measured during the validation and "
+    "test weeks.",
+    {
+        ("train",): {"row_count": 44, "last_target_time": Instant("2026-05-14T16:57:00Z")},
+        ("validation",): {"row_count": 4, "first_target_time": Instant("2026-05-15T18:29:00Z"),
+                          "last_target_time": Instant("2026-05-18T21:51:00Z")},
+        ("test",): {"row_count": 0, "first_target_time": None, "last_target_time": None},
+    },
+)
+# The right split, with each partition's range read from visit_time instead of followup_time.
+RANGES_FROM_VISIT_TIME = Slip(
+    "Those are visit_time values; the target time is followup_time, when the outcome is measured.",
+    {
+        ("train",): {"first_target_time": Instant("2026-03-18T18:18:00Z"),
+                     "last_target_time": Instant("2026-04-16T17:07:00Z")},
+        ("validation",): {"first_target_time": Instant("2026-04-17T15:52:00Z"),
+                          "last_target_time": Instant("2026-04-24T16:25:00Z")},
+        ("test",): {"first_target_time": Instant("2026-04-25T18:30:00Z"),
+                    "last_target_time": Instant("2026-05-04T21:51:00Z")},
+    },
+)
+# The pipeline fitted with a leaky feature as well: callback_sbp, a1c_result, or both.
+LEAKY_VALIDATION = Slip(
+    "Those are the scores of a pipeline that also uses a1c_result or callback_sbp, which become known only "
+    "after the visit ends.",
+    {("linear_pipeline",): {"mae": Either((2.002328, 3.291011, 1.987482)),
+                            "rmse": Either((2.211588, 3.572686, 2.26713)),
+                            "r2": Either((0.924388, 0.802681, 0.920543))}},
+)
+BASELINE_FROM_VALIDATION = Slip(
+    "Those are the scores of a mean taken from the validation rows (130.25 mmHg); the baseline learns its "
+    "mean from the training rows (134.13 mmHg).",
+    {("mean_baseline",): {"mae": 6.75, "rmse": 8.042854, "r2": 0.0}},
+)
+RMSE_NOT_ROOTED = Slip(
+    "Those are mean squared errors, in mmHg squared; RMSE is their square root, back in mmHg.",
+    {("mean_baseline",): {"rmse": 79.767778}, ("linear_pipeline",): {"rmse": 13.539216}},
+)
+TEST_RMSE_NOT_ROOTED = Slip(
+    "That is the mean squared error, in mmHg squared; RMSE is its square root, back in mmHg.",
+    {("linear_pipeline",): {"rmse": Either((13.090932, 12.661851))}},
+)
+LEAKY_TEST = Slip(
+    "Those are the test scores of a pipeline that also uses a1c_result or callback_sbp, which become known "
+    "only after the visit ends.",
+    {("linear_pipeline",): {
+        "mae": Either((1.498487, 1.413093, 3.022684, 2.938991, 1.805593, 1.587947)),
+        "rmse": Either((2.111613, 1.822818, 4.008395, 3.949808, 2.508591, 2.103367)),
+        "r2": Either((0.935602, 0.952012, 0.767949, 0.774683, 0.909113, 0.936104)),
+    }},
+)
+# Each test visit's prediction from those pipelines, in the same order as LEAKY_TEST.
+LEAKY_TEST_PREDICTIONS = Slip(
+    "Those are the test predictions of a pipeline that also uses a1c_result or callback_sbp, which become "
+    "known only after the visit ends.",
+    {(visit,): {"predicted_sbp": Either(values)} for visit, values in {
+        "V39": (154.107989, 154.297714, 154.969607, 155.249774, 154.262047, 154.51704),
+        "V40": (143.370196, 143.77831, 144.332781, 145.015855, 144.573623, 144.548838),
+        "V41": (143.50126, 144.534232, 139.230442, 139.532285, 142.826741, 144.017881),
+        "V42": (149.726237, 150.223605, 148.645738, 148.983362, 149.189294, 149.9552),
+        "V43": (139.375486, 138.639418, 142.846835, 142.814134, 139.699589, 138.981356),
+        "V44": (149.95937, 149.929611, 150.655524, 150.612554, 150.182515, 150.14859),
+        "V45": (141.402865, 141.660062, 140.697595, 140.836802, 141.039486, 141.468741),
+        "V46": (136.337309, 135.848404, 139.470325, 139.66881, 136.991602, 136.359659),
+        "V47": (164.87556, 166.094788, 163.818391, 165.170387, 164.87074, 166.193853),
+        "V48": (150.750689, 150.514727, 152.283146, 152.210843, 150.71794, 150.631268),
+    }.items()},
+)
+TEST_SCORED_ON_VALIDATION = Slip(
+    "Those are the pipeline's validation scores from Task 3.1; score test[TARGET] against the test predictions.",
+    {("linear_pipeline",): dict(VALIDATION_VALUES["linear_pipeline"])},
+)
+FLAG_PASSED_FIRST = Slip(
+    "precision and recall have traded places, which is what passing the flag before the actual outcome "
+    'does; pass flags["readmitted_30d"] first.',
+    {("model_flag",): {"precision": 0.75, "recall": 0.6}},
+)
 
 
 COEFFICIENTS = Artifact(
@@ -303,6 +423,7 @@ ARTIFACTS = (
 )
 RESIDUAL_PLOT = "output/residuals_vs_fitted.png"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+_REPORTED_OUTSIDE: set[str] = set()
 
 
 def _assert(condition: object, message: str) -> None:
@@ -362,10 +483,25 @@ def _instant(cell: str) -> datetime | None:
     try:
         moment = datetime.fromisoformat(text)
     except ValueError:
-        return None
+        moment = None
+        dates = ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%m/%d/%Y", "%d/%m/%Y",
+                 "%d %b %Y", "%d %B %Y", "%d-%b-%Y", "%d-%B-%Y")
+        times = ("%H:%M", "%H:%M:%S", "%H:%M:%S.%f", "%I:%M %p", "%I:%M:%S %p")
+        spellings = ("%Y%m%dT%H%M%S", "%Y%m%d %H%M%S", *(f"{date} {time}" for date in dates for time in times))
+        for spelling in (*spellings, *(spelling + "%z" for spelling in spellings)):
+            try:
+                moment = datetime.strptime(text, spelling)
+                break
+            except ValueError:
+                continue
+        if moment is None:
+            return None
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
-    return moment.astimezone(timezone.utc)
+    try:
+        return moment.astimezone(timezone.utc)
+    except (OverflowError, ValueError):
+        return None
 
 
 def _flag(cell: str) -> bool | None:
@@ -482,6 +618,8 @@ def _csv_rows(text: str) -> list[list[str]]:
     line into the most cells is used, and a tie keeps commas. A file separated
     by semicolons may write decimal commas, so there 12,5 reads as 12.5.
     """
+    if "\x00" in text:
+        raise csv.Error("file contains a NUL byte instead of CSV text")
     lines = text.splitlines()
     header = next((line for line in lines if line.strip()), "")
     delimiter = max(DELIMITERS, key=lambda mark: len(next(csv.reader([header], delimiter=mark), [])))
@@ -541,6 +679,16 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     column with no header, which a trailing comma on every line makes.
     """
     path = _artifact_path(root, artifact.path)
+    if path is None:
+        outside = _artifact_path(root, Path(artifact.path).name)
+        if outside is not None:
+            if artifact.path not in _REPORTED_OUTSIDE:
+                _REPORTED_OUTSIDE.add(artifact.path)
+                raise AssertionError(
+                    f"{artifact.path} is missing, but {outside.name} is in the assignment folder; "
+                    f"in {artifact.task}, save it in output/. Later checks read the file where it is."
+                )
+            path = outside
     _assert(path is not None, _missing(root, artifact.path, artifact.task))
     try:
         lines = _csv_rows(_decode(path.read_bytes()))
@@ -568,8 +716,31 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     header = [header[i] for i in keep]
     body = [[row[i] for i in keep] for row in body]
 
-    rows = tuple({column: row[i] for i, column in enumerate(header)} for row in body)
-    return Table(columns=tuple(header), rows=rows)
+    positions = {column: [i for i, name in enumerate(header) if name == column] for column in header}
+    repeated = tuple(column for column, places in positions.items() if len(places) > 1)
+    # Keep every copy available: a duplicate header costs the columns check, while
+    # value checks use the copy that best preserves the requested data.
+    chosen = {}
+    for column, places in positions.items():
+        candidates = [values.get(column) for values in artifact.rows.values() if column in values]
+        if column in artifact.key:
+            candidates = [key[artifact.key.index(column)] for key in artifact.rows]
+        def preserved_values(position: int) -> int:
+            score = 0
+            for row in body:
+                matching = [key for key in artifact.rows if all(
+                    name in positions and any(_key_matches(row[i], part, artifact, name) for i in positions[name])
+                    for name, part in zip(artifact.key, key)
+                )]
+                expected = [artifact.rows[key][column] for key in matching if column in artifact.rows[key]]
+                if column in artifact.key:
+                    expected = [key[artifact.key.index(column)] for key in matching]
+                score += any(_matches(row[position], value, artifact.tolerance, column in PERCENT_COLUMNS)
+                             for value in (expected or candidates))
+            return score
+        chosen[column] = max(places, key=preserved_values)
+    rows = tuple({column: row[i] for column, i in chosen.items()} for row in body)
+    return Table(columns=tuple(header), rows=rows, repeated=repeated)
 
 
 def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
@@ -728,17 +899,35 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             if column not in expected and column not in unheaded.values()
         ]
         problems = []
+        if table.repeated:
+            problems.append("names columns more than once: " + _join(table.repeated))
         if missing:
             problems.append(f"is missing {_join(missing)}")
         if extra:
             problems.append(f"also has {_join(extra)}")
+        owner = _header_owner(table, artifact) if problems else None
+        cause = (
+            f" The saved header is the one {owner.task} writes to {owner.path}; check the path each cell passes "
+            "to to_csv()." if owner else ""
+        )
         _assert(
             not problems,
             f"{artifact.path} " + " and ".join(problems) + f"; {artifact.task} saves the header line "
-            f"{','.join(artifact.columns)} (any column order). {hint}",
+            f"{','.join(artifact.columns)} (any column order).{cause} {hint}",
         )
 
     return check
+
+
+def _header_owner(table: Table, artifact: Artifact) -> Artifact | None:
+    """Another artifact whose header this table holds, as when a cell saves to the wrong path, or None."""
+    saved = set(table.columns)
+    for other in ARTIFACTS:
+        required = {_fold(column) for column in other.columns}
+        allowed = required | {_fold(column) for column in other.optional_columns}
+        if other.columns != artifact.columns and required <= saved <= allowed:
+            return other
+    return None
 
 
 def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
@@ -767,51 +956,216 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
     return check
 
 
-def values_check(artifact: Artifact, columns: tuple[str, ...], hint: str) -> Callable[[Path], None]:
+def _cause(misses: list[tuple[tuple, str, str]], artifact: Artifact, slips: tuple[Slip, ...]) -> str:
+    """The cause of the first slip whose values every wrong (key, column, cell) holds, or ""."""
+    for slip in slips:
+        if all(
+            column in slip.rows.get(key, {})
+            and _matches(cell, slip.rows[key][column], artifact.tolerance, column in PERCENT_COLUMNS)
+            for key, column, cell in misses
+        ):
+            return f" {slip.cause}"
+    return ""
+
+
+CLINIC_PREDICTORS = {
+    'P01': (67.0, 24.2),
+    'P02': (72.0, 35.4),
+    'P03': (78.0, 21.3),
+    'P04': (66.0, 35.7),
+    'P05': (75.0, 26.7),
+    'P06': (66.0, 22.3),
+    'P07': (61.0, 29.5),
+    'P08': (63.0, 25.4),
+    'P09': (42.0, 30.3),
+    'P10': (49.0, 28.0),
+    'P11': (52.0, 20.7),
+    'P12': (74.0, 24.9),
+    'P13': (44.0, 27.6),
+    'P14': (64.0, 33.5),
+    'P15': (66.0, 27.2),
+    'P16': (66.0, 22.3),
+    'P17': (63.0, 28.8),
+    'P18': (74.0, 29.3),
+    'P19': (55.0, 28.2),
+    'P20': (34.0, 20.1),
+}
+
+
+def _saved_fit(root: Path, age: float, bmi: float) -> float | None:
+    try:
+        table = read_table(root, COEFFICIENTS)
+        grouped, _ = _group(table, COEFFICIENTS, _resolve(table, COEFFICIENTS))
+        coefficients = [_number(grouped[(term,)][0]["coef"]) for term in ("Intercept", "age", "bmi")]
+        if all(value is not None for value in coefficients):
+            return coefficients[0] + age * coefficients[1] + bmi * coefficients[2]
+    except (AssertionError, OSError, KeyError, ValueError):
+        pass
+    return None
+
+
+def _saved_test_metrics(root: Path) -> dict[str, float]:
+    """Score the submitted predictions, so an earlier prediction error costs once."""
+    try:
+        table = read_table(root, TEST_PREDICTIONS)
+        actual = [_number(row["sbp_followup"]) for row in table.rows]
+        predicted = [_number(row["predicted_sbp"]) for row in table.rows]
+        if not actual or any(value is None for value in actual + predicted):
+            return {}
+        errors = [observed - fitted for observed, fitted in zip(actual, predicted)]
+        mean = sum(actual) / len(actual)
+        squared = sum(error ** 2 for error in errors)
+        total = sum((value - mean) ** 2 for value in actual)
+        return {"mae": sum(abs(error) for error in errors) / len(errors),
+                "rmse": (squared / len(errors)) ** 0.5,
+                "r2": 1 - squared / total if total else 0.0}
+    except (AssertionError, OSError, KeyError, ValueError):
+        return {}
+
+
+def values_check(
+    artifact: Artifact, columns: tuple[str, ...], hint: str, slips: tuple[Slip, ...] = ()
+) -> Callable[[Path], None]:
     """Every saved row for an expected key holds the expected values in `columns`.
 
     A missing or repeated row costs the rows check, not this one: this check
-    compares whatever rows the file does hold for the expected keys.
+    compares whatever rows the file does hold for the expected keys. When the
+    wrong values are those a common slip leaves, the message names its cause.
     """
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
         found = _resolve(table, artifact)
-        absent = [column for column in columns if column not in found]
+        # Schema charges omitted columns; judge the present values without skipping sibling mistakes.
+        present = tuple(column for column in columns if column in found)
+        grouped, _ = _group(table, artifact, found, present)
         _assert(
-            not absent,
-            f"{artifact.path} has no {_join(absent)} column (its columns are {_join(table.columns) or 'none'}), "
-            f"so those values cannot be compared. Fix it in {artifact.task}: {hint}",
-        )
-        grouped, _ = _group(table, artifact, found, columns)
-        _assert(
-            grouped,
+            grouped and (present or any(
+                _key_matches(row[found[column]], key[position], artifact, column)
+                for key, rows in grouped.items() for row in rows
+                for position, column in enumerate(artifact.key) if column in found
+            )),
             f"{artifact.path} has no row for {_join(_key_name(key, artifact) for key in artifact.rows)}, so its "
             f"{_join(columns)} values cannot be compared; the rows check says what to fix in {artifact.task}.",
         )
         wrong = []
+        misses = []
         for key, rows in grouped.items():
-            for column in columns:
+            for column in present:
                 expected = artifact.rows[key][column]
-                given = sorted({
-                    _given(row[found[column]]) for row in rows
+                if artifact is TEST_METRICS:
+                    own = _saved_test_metrics(root).get(column)
+                    if own is not None:
+                        expected = Either((*expected.values, own)) if isinstance(expected, Either) else Either((expected, own))
+                if artifact is NEW_PATIENT_INTERVALS:
+                    age, bmi = (_number(rows[0][found[name]]) if name in found else None for name in ("age", "bmi"))
+                    own = _saved_fit(root, age, bmi) if age is not None and bmi is not None else None
+                    if own is not None:
+                        expected = Either((expected, expected + own - NEW_PATIENT_VALUES["mean"]))
+                if artifact is RESIDUALS and column == "fitted":
+                    own = _saved_fit(root, *CLINIC_PREDICTORS[key[0]])
+                    if own is not None:
+                        expected = Either((expected, own))
+                if artifact is AVAILABILITY and column == "available" and "hours_after_visit" in found:
+                    hours = _number(rows[0][found["hours_after_visit"]])
+                    if hours is not None and not _matches(rows[0][found[column]], expected, artifact.tolerance):
+                        expected = Flag(hours <= 0)
+                if artifact is AVAILABILITY and column == "decision" and "available" in found:
+                    available = _flag(rows[0][found["available"]])
+                    if available is not None and not _matches(rows[0][found[column]], expected, artifact.tolerance):
+                        expected = Starts("keep" if available else "exclude")
+                if artifact is RESIDUALS and column == "residual" and all(name in found for name in ("observed", "fitted")):
+                    observed, fitted = (_number(rows[0][found[name]]) for name in ("observed", "fitted"))
+                    if observed is not None and fitted is not None:
+                        expected = Either((expected, observed - fitted))
+                cells = [
+                    row[found[column]] for row in rows
                     if not _matches(row[found[column]], expected, artifact.tolerance, column in PERCENT_COLUMNS)
-                })
+                ]
+                misses += [(key, column, cell) for cell in cells]
+                given = sorted({_given(cell) for cell in cells})
                 if given:
-                    wrong.append(f"{_key_name(key, artifact)} has {column} {_join(given)}, expected {_show(expected)}")
-        _assert(not wrong, f"{artifact.path}: " + _listed(wrong) + f". Fix it in {artifact.task}: {hint}")
+                    wrong.append(f"{_key_name(key, artifact)} has {column} {_join(given)}, expected {_show(artifact.rows[key][column])}")
+        _assert(
+            not wrong,
+            f"{artifact.path}: " + _listed(wrong) + "." + _cause(misses, artifact, slips)
+            + f" Fix it in {artifact.task}: {hint}",
+        )
 
     return check
+
+
+def _png_complete(data: bytes) -> bool:
+    """Check PNG chunks and compressed pixels without an optional image library."""
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return False
+    position, chunks, compressed = 8, [], []
+    palette = None
+    while position + 12 <= len(data):
+        size = int.from_bytes(data[position:position + 4], "big")
+        kind = data[position + 4:position + 8]
+        payload = data[position + 8:position + 8 + size]
+        end = position + 12 + size
+        if end > len(data) or zlib.crc32(kind + payload) != int.from_bytes(data[end - 4:end], "big"):
+            return False
+        chunks.append(kind)
+        if kind == b"IHDR":
+            if len(chunks) != 1 or size != 13:
+                return False
+            header = payload
+        if kind == b"PLTE":
+            if palette is not None or compressed or not size or size % 3 or size > 768:
+                return False
+            palette = payload
+        if kind == b"IDAT":
+            compressed.append(payload)
+        position = end
+        if kind == b"IEND":
+            if size != 0 or position != len(data):
+                return False
+            break
+    if not chunks or chunks[0] != b"IHDR" or chunks[-1] != b"IEND" or not compressed:
+        return False
+    width, height = int.from_bytes(header[:4], "big"), int.from_bytes(header[4:8], "big")
+    depth, color, compression, filtering, interlace = header[8:]
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+    allowed_depths = {0: (1, 2, 4, 8, 16), 2: (8, 16), 3: (1, 2, 4, 8), 4: (8, 16), 6: (8, 16)}
+    if not width or not height or depth not in allowed_depths.get(color, ()) or compression or filtering or interlace > 1:
+        return False
+    if color == 3 and (palette is None or len(palette) // 3 > 2 ** depth):
+        return False
+    try:
+        decoder = zlib.decompressobj()
+        pixels = decoder.decompress(b"".join(compressed)) + decoder.flush()
+        if not decoder.eof or decoder.unused_data:
+            return False
+    except zlib.error:
+        return False
+    # Adam7 interlacing stores seven smaller images, each with its own filtered rows.
+    passes = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4),
+              (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2)) if interlace else ((0, 0, 1, 1),)
+    position = 0
+    for x, y, dx, dy in passes:
+        across, down = max(0, (width - x + dx - 1) // dx), max(0, (height - y + dy - 1) // dy)
+        if not across or not down:
+            continue
+        stride = 1 + (across * channels[color] * depth + 7) // 8
+        end = position + down * stride
+        if end > len(pixels) or any(pixels[offset] > 4 for offset in range(position, end, stride)):
+            return False
+        position = end
+    return position == len(pixels)
 
 
 def png_check(root: Path) -> None:
     """The residual plot is saved as a PNG image."""
     path = _artifact_path(root, RESIDUAL_PLOT)
     _assert(path is not None, _missing(root, RESIDUAL_PLOT, "Task 1.3"))
-    start = path.read_bytes()[:8]
+    data = path.read_bytes()
+    start = data[:8]
     _assert(
-        start == PNG_SIGNATURE,
-        f"{RESIDUAL_PLOT} is not a PNG image (its first bytes are {start!r}); in Task 1.3 save the figure with "
+        _png_complete(data),
+        f"{RESIDUAL_PLOT} is not a complete PNG image (its first bytes are {start!r}); in Task 1.3 save the figure with "
         f'fig.savefig(RESIDUAL_PLOT_PATH), keeping the .png ending so matplotlib writes a PNG.',
     )
 
@@ -898,10 +1252,16 @@ CHECKS = (
         "residuals: observed values",
         values_check(RESIDUALS, ("observed",), "observed is each patient's sbp from data/clinic_bp.csv, unchanged."),
     ),
-    Check("residuals: fitted values", values_check(RESIDUALS, ("fitted",), f"fitted is results.fittedvalues; {FIT_HINT}")),
+    Check(
+        "residuals: fitted values",
+        values_check(RESIDUALS, ("fitted",), f"fitted is results.fittedvalues; {FIT_HINT}", (RESIDUAL_COLUMNS_SWAPPED,)),
+    ),
     Check(
         "residuals: residual values",
-        values_check(RESIDUALS, ("residual",), "residual is results.resid, observed minus fitted."),
+        values_check(
+            RESIDUALS, ("residual",), "residual is results.resid, observed minus fitted.",
+            (RESIDUAL_SIGN_FLIPPED, RESIDUAL_COLUMNS_SWAPPED),
+        ),
     ),
     Check("residual plot: PNG image", png_check),
     # Task 2.1: output/availability_decisions.csv
@@ -928,6 +1288,7 @@ CHECKS = (
         values_check(
             AVAILABILITY, ("available",),
             "available is hours_after_visit <= 0: True when the feature is known by the end of the visit.",
+            (ZERO_HOURS_EXCLUDED,),
         ),
     ),
     Check(
@@ -936,6 +1297,7 @@ CHECKS = (
             AVAILABILITY, ("decision",),
             'decision is "Keep" where available is True and "Exclude (leakage)" where it is False, as '
             "np.where(available, ...) writes it; any label starting with keep or exclude counts.",
+            (ZERO_HOURS_EXCLUDED,),
         ),
     ),
     # Task 2.2: output/split_summary.csv
@@ -956,6 +1318,7 @@ CHECKS = (
             SPLIT, ("row_count",),
             "split on followup_time, the target time: train is before VALIDATION_START, validation runs from "
             "VALIDATION_START up to TEST_START, and test is from TEST_START on.",
+            (SPLIT_ON_VISIT_TIME,),
         ),
     ),
     Check(
@@ -963,6 +1326,7 @@ CHECKS = (
         values_check(
             SPLIT, ("first_target_time",),
             "first_target_time is the partition's followup_time.min(), the full timestamp.",
+            (SPLIT_ON_VISIT_TIME, RANGES_FROM_VISIT_TIME),
         ),
     ),
     Check(
@@ -970,6 +1334,7 @@ CHECKS = (
         values_check(
             SPLIT, ("last_target_time",),
             "last_target_time is the partition's followup_time.max(), the full timestamp.",
+            (SPLIT_ON_VISIT_TIME, RANGES_FROM_VISIT_TIME),
         ),
     ),
     # Task 3.1: output/validation_metrics.csv
@@ -983,15 +1348,23 @@ CHECKS = (
     ),
     Check(
         "validation metrics: mae values",
-        values_check(VALIDATION, ("mae",), f"mae is mean_absolute_error(actual, predicted); {PIPELINE_HINT}"),
+        values_check(
+            VALIDATION, ("mae",), f"mae is mean_absolute_error(actual, predicted); {PIPELINE_HINT}",
+            (LEAKY_VALIDATION, BASELINE_FROM_VALIDATION),
+        ),
     ),
     Check(
         "validation metrics: rmse values",
-        values_check(VALIDATION, ("rmse",), f"rmse is np.sqrt(mean_squared_error(actual, predicted)); {PIPELINE_HINT}"),
+        values_check(
+            VALIDATION, ("rmse",), f"rmse is np.sqrt(mean_squared_error(actual, predicted)); {PIPELINE_HINT}",
+            (LEAKY_VALIDATION, BASELINE_FROM_VALIDATION, RMSE_NOT_ROOTED),
+        ),
     ),
     Check(
         "validation metrics: r2 values",
-        values_check(VALIDATION, ("r2",), f"r2 is r2_score(actual, predicted); {PIPELINE_HINT}"),
+        values_check(
+            VALIDATION, ("r2",), f"r2 is r2_score(actual, predicted); {PIPELINE_HINT}", (LEAKY_VALIDATION, BASELINE_FROM_VALIDATION)
+        ),
     ),
     # Task 3.2: output/test_metrics.csv and output/test_predictions.csv
     Check(
@@ -1005,9 +1378,12 @@ CHECKS = (
             "validation chose linear_pipeline, so the test rows are scored once, for that approach only.",
         ),
     ),
-    Check("test metrics: mae value", values_check(TEST_METRICS, ("mae",), TEST_HINT)),
-    Check("test metrics: rmse value", values_check(TEST_METRICS, ("rmse",), TEST_HINT)),
-    Check("test metrics: r2 value", values_check(TEST_METRICS, ("r2",), TEST_HINT)),
+    Check("test metrics: mae value", values_check(TEST_METRICS, ("mae",), TEST_HINT, (LEAKY_TEST, TEST_SCORED_ON_VALIDATION))),
+    Check(
+        "test metrics: rmse value",
+        values_check(TEST_METRICS, ("rmse",), TEST_HINT, (LEAKY_TEST, TEST_SCORED_ON_VALIDATION, TEST_RMSE_NOT_ROOTED)),
+    ),
+    Check("test metrics: r2 value", values_check(TEST_METRICS, ("r2",), TEST_HINT, (LEAKY_TEST, TEST_SCORED_ON_VALIDATION))),
     Check(
         "test predictions: columns",
         columns_check(
@@ -1028,7 +1404,7 @@ CHECKS = (
     ),
     Check(
         "test predictions: predicted_sbp values",
-        values_check(TEST_PREDICTIONS, ("predicted_sbp",), TEST_HINT),
+        values_check(TEST_PREDICTIONS, ("predicted_sbp",), TEST_HINT, (LEAKY_TEST_PREDICTIONS,)),
     ),
     # Task 3.3: output/readmission_metrics.csv
     Check(
@@ -1049,23 +1425,36 @@ CHECKS = (
             READMISSION, ("precision",),
             "precision is precision_score(readmitted_30d, flag, zero_division=0), which is 0 for a flag that "
             "never fires.",
+            (FLAG_PASSED_FIRST,),
         ),
     ),
     Check(
         "readmission metrics: recall values",
-        values_check(READMISSION, ("recall",), "recall is recall_score(readmitted_30d, flag)."),
+        values_check(
+            READMISSION, ("recall",), "recall is recall_score(readmitted_30d, flag).", (FLAG_PASSED_FIRST,)
+        ),
     ),
 )
 
 
 def run_checks(root: Path) -> list[tuple[str, str | None]]:
     """Return one (check name, problem or None) pair per check; every check runs."""
+    _REPORTED_OUTSIDE.clear()
     results = []
+    charged_causes = set()
+    causes = tuple(slip.cause for slip in globals().values() if isinstance(slip, Slip))
     for check in CHECKS:
         try:
             check.action(Path(root))
         except (AssertionError, OSError, ValueError, UnicodeDecodeError, csv.Error) as error:
-            results.append((check.name, str(error)))
+            message = str(error)
+            cause = next((cause for cause in causes if cause in message), None)
+            if cause and cause in charged_causes:
+                results.append((check.name, None))
+            else:
+                results.append((check.name, message))
+                if cause:
+                    charged_causes.add(cause)
         else:
             results.append((check.name, None))
     return results

@@ -15,22 +15,54 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1: Parse, Index, Shift, and Select Patient Readings
+# Demo 1: Parse, Index, and Select Patient Readings
 
-A heart-failure clinic follows one patient's daily home weights, and an ICU monitor records another patient's vitals every hour. You parse text timestamps into a DatetimeIndex, build follow-up schedules, flag a rapid weight gain with lags, select rows by calendar date and by clock time, and resample into daily and two-hour bins. Everything here comes from Lecture 09 up to the first demo break, plus Lectures 01 to 08. Patient values are synthetic.
+A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date. Parse and inspect the dates, make a sorted DatetimeIndex, format an hour key, and select a calendar interval. These steps use Lecture 09 up to the first demo break, plus Lectures 01–08. The labeled optional sections use BONUS references for scalar datetime, frequency inference, specialized schedules, and clock-time filters. All patient data are synthetic.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
+
+- **In Colab:** open Demo 1 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **Locally in VS Code:** all three Lecture 09 demos share one folder, `~/09-demo`. In **Terminal → New Terminal** (on Windows, the **WSL: Ubuntu** window from Lecture 01), download the notebooks with the environment's records and build the environment, as in Lecture 03:
+
+<!-- #region -->
+```bash
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
+cd ~/09-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+The script prints `Made ~/09-demo with the three Lecture 09 demo notebooks, .python-version, pyproject.toml, and uv.lock.`, and `uv sync` lists each package it installs, including `+ pandas==3.0.5`, `+ matplotlib==3.11.1`, and `+ ipykernel==6.29.5`, the package that lets a notebook run on this environment's Python (Lecture 04). In Git Bash, activate with `source .venv/Scripts/activate` instead.
+
+Then choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo1_datetime_fundamentals.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`.
+
+If `~/09-demo` already exists, the script stops with `File exists` and changes nothing; `cd ~/09-demo` and go on. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep it, and ignore the `error: Failed to create virtual environment` that follows.
+<!-- #endregion -->
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, all cells in [2. A text column becomes a DatetimeIndex](#2-a-text-column-becomes-a-datetimeindex), then [4. Select a calendar interval](#4-select-a-calendar-interval). |
+| Independent practice | After class, repeat the main steps and try the explicitly optional scalar-date, schedule/inference, and clock-selection sections using their BONUS links. |
+
+**Core checkpoint:** One date becomes `NaT`; the repaired table has 4 sorted readings, and the March 1–2 slice contains 2 readings.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 from datetime import datetime, timedelta
@@ -45,7 +77,9 @@ print('NumPy', np.__version__)
 
 **Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
 
-## 1. One date at a time with `datetime`
+## 1. One date at a time with `datetime` (optional)
+
+Optional reference: [One Date at a Time with Python](../BONUS.md#one-date-at-a-time-with-python).
 
 A discharge time arrives as text. `strptime()` parses it, `strftime()` formats it for a letter, and a `timedelta` moves it forward to the follow-up contacts.
 
@@ -80,7 +114,7 @@ raw = pd.DataFrame({
 print(raw.dtypes)
 ```
 
-**Expect:** `recorded_at` is `str` and `weight_kg` is `float64`. Text cannot be subtracted or sorted by time.
+**Expect:** `recorded_at` is `str` and `weight_kg` is `float64`. Text has no calendar arithmetic; sorting it is chronological only when every date uses a consistent sortable pattern.
 
 `format=` states the pattern the export promises, and `errors='coerce'` turns anything that does not fit into `NaT` instead of stopping.
 
@@ -91,6 +125,14 @@ print('Unparseable dates:', raw['recorded_at'].isna().sum())
 ```
 
 **Expect:** row 2 shows `NaT` in `recorded_at`, and `Unparseable dates: 1`.
+
+`.dt.strftime()` formats a whole column with the same codes as `datetime.strftime()`. An hour key such as `2024030307` names the hour each weight was taken, which is handy as a row ID or a file name; `NaT` has no date to format, so its key stays missing.
+
+```python
+print(raw['recorded_at'].dt.strftime('%Y%m%d%H'))
+```
+
+**Expect:** `2024030307`, `2024030107`, `NaN` (row 2), `2024030207`, and `2024030406`, with `dtype: str`.
 
 Drop the bad row (Lecture 05), make the timestamps the index, and check the order before and after sorting.
 
@@ -106,7 +148,9 @@ print(log.index.day_name())
 
 **Expect:** `Sorted? False`, then `Sorted? True`, and four rows from `2024-03-01 07:05:00` (81.9 kg) to `2024-03-04 06:55:00` (83.4 kg). The day names run `Friday`, `Saturday`, `Sunday`, `Monday`.
 
-## 3. Follow-up schedules and frequencies
+## 3. Schedule and inference alternatives (optional)
+
+Optional references: [Frequency Inference and Specialized Schedules](../BONUS.md#frequency-inference-and-specialized-schedules) and [Calendar Schedule Examples](../BONUS.md#calendar-schedule-examples). This section uses the `log` prepared in section 2.
 
 `pd.date_range()` builds a schedule from a frequency alias, and `pd.infer_freq()` reads the spacing back from an index.
 
@@ -124,78 +168,21 @@ print('Home weigh-ins:', pd.infer_freq(log.index))
 
 **Expect:** Mondays `2024-03-04`, `03-11`, `03-18`, `03-25`; lab dates `2024-03-01`, `04-01`, `05-01`; `Clinic days: 10` (two weekends skipped). `infer_freq` returns `W-MON` for the calls and `None` for the weigh-ins: the patient steps on the scale at a slightly different minute each morning, so the log has no single frequency.
 
-## 4. Daily weights: lags and a fluid-gain alert
+## 4. Select a calendar interval
 
-Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. Here is one patient's daily weight for January through March, with a fluid-gain episode in March. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
-
-```python
-rng = np.random.default_rng(42)
-days = pd.date_range('2024-01-01', '2024-03-31', freq='D')
-scale_noise = rng.normal(0, 0.15, len(days))  # mean 0, standard deviation 0.15 kg
-weights = pd.Series(82 + scale_noise, index=days)
-
-# Fluid builds up from March 9, then a diuretic brings it back down
-weights.loc['2024-03-09':'2024-03-15'] += [0.5, 1.9, 2.6, 2.6, 1.9, 1.1, 0.4]
-
-daily = pd.DataFrame({'weight_kg': weights.round(1)})
-print(daily.shape)
-print('Frequency:', pd.infer_freq(daily.index))
-```
-
-**Expect:** `(91, 1)` (31 + 29 + 31 days) and `Frequency: D`.
-
-`shift(1)` brings each row the previous day's value (a lag), `shift(-1)` the next day's (a lead), and `diff()` subtracts the lag. Because the rows are consecutive days, `shift(7)` is the weight one week earlier.
+Use the sorted `log` from section 2. A partial month selects every reading in that month; a date slice includes both endpoint days.
 
 ```python
-daily['prev_day'] = daily['weight_kg'].shift(1)
-daily['next_day'] = daily['weight_kg'].shift(-1)
-daily['change_1d'] = daily['weight_kg'].diff()
-daily['change_7d'] = daily['weight_kg'] - daily['weight_kg'].shift(7)
-daily['pct_1d'] = daily['weight_kg'].pct_change() * 100
-print(daily.head(3).round(2))
-print(daily.loc['2024-03-08':'2024-03-13'].round(2))
+print(log.loc['2024-03'].shape)
+print(log.loc['2024-03-01':'2024-03-02'])
+print('Hours:', log.index.hour.tolist())
 ```
 
-**Expect:** on January 1, `prev_day`, `change_1d`, and `pct_1d` are `NaN` (nothing came before), and `change_7d` stays `NaN` through January 7. In March, the weight climbs from 81.9 kg on March 8 to 83.9 kg on March 10 (`change_1d` 1.3) and 84.4 kg on March 11 and 12 (`change_7d` 2.3).
+**Expect:** `(4, 1)` for March. The date slice has March 1 at 07:05 (81.9 kg) and March 2 at 07:15 (82.1 kg). `Hours: [7, 7, 7, 6]` extracts the clock hour without turning the dates back into text.
 
-Apply both alert rules with a boolean filter (Lecture 04).
+## 5. Hourly ICU vitals: select by clock time (optional)
 
-```python
-alerts = daily[(daily['change_1d'] > 1.0) | (daily['change_7d'] > 2.0)]
-print(alerts[['weight_kg', 'change_1d', 'change_7d']].round(1))
-print('Largest daily change before March 9:', daily.loc[:'2024-03-08', 'change_1d'].abs().max().round(1), 'kg')
-```
-
-**Expect:** three alert days: March 10 (the 1-day rule, `1.3` kg) and March 11 and 12 (the 7-day rule, `2.3` kg). Before the episode, no day moved more than `0.4` kg, so ordinary scale noise never trips the rule.
-
-## 5. Select by calendar, then summarize by week and month
-
-Partial dates select whole months, and a date slice keeps both ends. `resample()` then turns the daily rows into weekly and monthly summaries.
-
-```python
-print(daily.loc['2024-02'].shape)
-print(daily.loc['2024-03-08':'2024-03-16', 'weight_kg'].tolist())
-
-print(daily['weight_kg'].resample('W').mean().head(3).round(2))
-print(daily['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
-```
-
-**Expect:** `(29, 6)` for February, then nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
-
-```python
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(daily.index, daily['weight_kg'], color='gray', label='Daily weight')
-ax.plot(alerts.index, alerts['weight_kg'], 'o', color='red', label='Alert day')  # markers only, no line
-ax.set(title='Home weights with fluid-gain alerts', xlabel='Date', ylabel='Weight (kg)')
-ax.legend()
-ax.grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
-```
-
-**Expect:** a flat gray line near 82 kg with a sharp hump in mid-March, and three red points at the top of the hump (March 10 to 12).
-
-## 6. Hourly ICU vitals: select by clock time
+Optional reference: [Time-of-Day Selection Example](../BONUS.md#time-of-day-selection-example). This section builds its own ICU data; it needs no values from the schedule examples.
 
 A second patient's monitor records heart rate and oxygen saturation (SpO2, in percent) every hour for one week. Heart rate runs about 12 beats per minute lower between midnight and 06:00, while the patient sleeps.
 
@@ -238,28 +225,3 @@ print('Last 3 days:', last_3_days.shape, 'starts', last_3_days.index[0])
 ```
 
 **Expect:** `Slice: (73, 2) ends 2024-03-07 00:00:00`, `Strict <: (72, 2) ends 2024-03-06 23:00:00`, and `Last 3 days: (72, 2) starts 2024-03-08 00:00:00`.
-
-## 7. Resample into daily and two-hour bins
-
-Resampling the hourly monitor to days gives one row per day. Select the numeric columns you want before resampling a DataFrame; a text column would raise `TypeError`.
-
-```python
-print(icu[['heart_rate', 'spo2']].resample('D').mean().round(1))
-print(icu['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count']).round(1).head(3))
-```
-
-**Expect:** seven rows labeled `2024-03-04` through `2024-03-10`, with daily mean heart rate between `79.8` and `81.9` and SpO2 near 95.5. Every `count` is `24`: the monitor never missed an hour.
-
-A nurse charts respiratory rate at irregular times. Two readings sit near the 08:00 bin boundary, one just before it and one exactly on it.
-
-```python
-resp_rate = pd.Series(
-    [18, 22, 26, 24, 20],
-    index=pd.to_datetime(['2024-03-05 06:00', '2024-03-05 07:59', '2024-03-05 08:00',
-                          '2024-03-05 09:30', '2024-03-05 10:00']),
-)
-print(resp_rate.resample('2h').agg(['mean', 'count']))
-print(resp_rate.resample('2h', closed='right', label='right').agg(['mean', 'count']))
-```
-
-**Expect:** with the default (left-closed, left-labeled) bins, the 08:00 reading opens the `08:00` bin: counts `2`, `2`, `1` for `06:00`, `08:00`, `10:00`. With `closed='right', label='right'`, each bin ends at its label, so 08:00 joins 07:59 in the bin labeled `08:00`: counts `1`, `2`, `2`. Same readings, different bins: state the rule whenever a report depends on it.

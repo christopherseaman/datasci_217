@@ -443,21 +443,12 @@ def check_gitignore_cache(root: Path) -> None:
 def check_report_format(root: Path) -> None:
     text = _report_text(root)
     values = _labelled_values(text)
-    missing = [label for label in REPORT_LABELS if label not in values]
-    if not missing:
+    # Missing or unreadable individual lines are charged by their value checks.
+    if any(_parse_number(values[label]) is not None for label in REPORT_LABELS if label in values):
         return
-    closest = list(dict.fromkeys(
-        f"`{_shown(line)}`" for line in (_closest(text, label, REPORT_LABELS) for label in missing) if line
-    ))
-    found = ""
-    if closest:
-        found = (f"; the closest line reads {closest[0]}" if len(closest) == 1
-                 else f"; the closest lines read {_join(closest, limit=2)}")
     raise AssertionError(
-        f"{REPORT_FILE.as_posix()} has no "
-        + _join(f"`{label.capitalize()}:`" for label in missing)
-        + f" line{'s' if len(missing) > 1 else ''}{found}. Task 2.3 asks for six lines, each the label as "
-        "shown, a colon, and the number, as in `Patients seen: <number>`. " + REPORT_FIX
+        f"{REPORT_FILE.as_posix()} has no readable summary line. Task 2.3 asks for a label, a colon, "
+        "and the number, as in `Patients seen: <number>`. " + REPORT_FIX
     )
 
 
@@ -589,16 +580,17 @@ def _declared_cutoff(root: Path) -> float:
         + LIST_FIX,
     )
     cutoff = parsed[0]
-    _assert(
-        CUTOFF_MIN <= cutoff <= CUTOFF_MAX,
-        f"{name} declares a cutoff of {cutoff:g} mmHg, and Task 3.1 asks for one from {CUTOFF_MIN} to "
-        f"{CUTOFF_MAX} mmHg. Choose a cutoff in that range, rerun clinic_report.py, and commit the new list.",
-    )
     return cutoff
 
 
 def check_followup_cutoff(root: Path) -> None:
-    _declared_cutoff(root)
+    cutoff = _declared_cutoff(root)
+    _assert(
+        CUTOFF_MIN <= cutoff <= CUTOFF_MAX,
+        f"{FOLLOWUP_FILE.as_posix()} declares a cutoff of {cutoff:g} mmHg, and Task 3.1 asks for one from "
+        f"{CUTOFF_MIN} to {CUTOFF_MAX} mmHg. Choose a cutoff in that range, rerun clinic_report.py, "
+        "and commit the new list.",
+    )
 
 
 def check_followup_reason(root: Path) -> None:
@@ -631,9 +623,9 @@ def check_followup_patients(root: Path) -> None:
     try:
         cutoff = _declared_cutoff(root)
     except AssertionError as error:
-        # The list is read against the cutoff, so that line has to be right first.
+        # A list needs a readable cutoff to establish which patients it selects.
         raise AssertionError(
-            f"{error} The patient list is checked against your cutoff, so it scores once the `Cutoff:` line passes."
+            f"{error} The patient list is checked against your cutoff, so write a numeric `Cutoff:` line before checking its patients."
         ) from None
     listed = _listed_patients(root, encounters.all_ids)
     expected = encounters.patients_at_or_above(cutoff)

@@ -9,8 +9,13 @@ row-number columns, `NaN` for an empty cell, and `source_row` kept or left out
 where it is optional). An empty directory and the untouched handout earn 0, one
 wrong value or one misnamed column costs exactly its own check, a table saved
 without its key columns costs only the columns check, unconverted clock times
-cost only Task 1.1's UTC check, and a missing file costs only its own
-artifact's checks. It also confirms that the copies of the data in
+cost only Task 1.1's UTC check even where every later table is built from
+them, and a missing file costs only its own artifact's checks. A reading
+dropped or changed in Task 1.1 is charged there once, while correctly derived
+outputs keep their points; new downstream mistakes still lose theirs. A table
+saved over another and a summary resampled without grouping get feedback that
+names the cause. It also confirms that the
+copies of the data in
 `_value_checks.py` match `09/assignment/data/`, that the README's checkpoints,
 completion contract, and numbering agree with the checks and the notebook, that
 the handout ships every file in `CHECKS_FILES` byte for byte and no other Python
@@ -83,9 +88,35 @@ def grid_from(vitals: pd.DataFrame) -> pd.DataFrame:
     return grid
 
 
+def utc_clock() -> pd.DataFrame:
+    """Task 1.1 with tz_localize("UTC") in place of the New York zone: the unit's clock times labeled as UTC."""
+    vitals = prepare(convert=False)
+    vitals["recorded_at"] = vitals["recorded_at"].dt.tz_localize("UTC")
+    return vitals
+
+
 def summary_from(vitals: pd.DataFrame) -> pd.DataFrame:
     return (vitals.set_index("recorded_at").groupby("patient_id").resample("2h")
             .agg(mean_hr=("heart_rate", "mean"), n_rows=("source_row", "count")))
+
+
+def blocks_from(vitals: pd.DataFrame) -> pd.DataFrame:
+    blocks = vitals.copy()
+    blocks["block"] = np.where(blocks["recorded_at"] < PREDICTION_TIME, "earlier", "later_holdout")
+    return blocks
+
+
+def built_from(vitals: pd.DataFrame) -> dict[str, str]:
+    """The five tables the notebook builds from Task 1.1's prepared vitals, saved with index=False."""
+    frames = {
+        "output/prepared_vitals.csv": vitals,
+        "output/hourly_grid.csv": grid_from(vitals),
+        "output/two_hour_summary.csv": summary_from(vitals).reset_index(),
+        "output/past_features.csv": features_from(vitals),
+    }
+    if vitals["recorded_at"].dt.tz is not None:
+        frames["output/chronological_blocks.csv"] = blocks_from(vitals)
+    return as_files(frames)
 
 
 def features_from(vitals: pd.DataFrame) -> pd.DataFrame:
@@ -119,8 +150,7 @@ def solve() -> dict[str, pd.DataFrame]:
     labs["available"] = labs["resulted_at"] <= PREDICTION_TIME
     assert labs["available"].sum() == 3
 
-    blocks = vitals.copy()
-    blocks["block"] = np.where(blocks["recorded_at"] < PREDICTION_TIME, "earlier", "later_holdout")
+    blocks = blocks_from(vitals)
     assert pd.crosstab(blocks["patient_id"], blocks["block"]).to_numpy().tolist() == [[4, 2], [4, 2]]
 
     return {
@@ -209,11 +239,14 @@ def check_timestamp_spellings() -> None:
         "2026-01-20 18:00:00+00:00", "2026-01-20T18:00:00Z", "2026-01-20 18:00 UTC", "2026-01-20 18:00:00+00:00 UTC",
         "2026-01-20 18:00:00 +0000", "2026-01-20 13:00:00-05:00", "2026-01-20 13:00 EST", "2026-01-20 18:00:00",
         "2026/01/20 18:00", "01/20/2026 06:00 PM", "20/01/2026 18:00", "Jan 20, 2026 6:00 PM UTC",
-        "20 January 2026 13:00 -05:00",
+        "20 January 2026 13:00 -05:00", "2026-01-20 18:00:00 Z",
+        "20-Jan-2026 18:00 UTC", "20-01-2026 18:00", "2026.01.20 18:00", "20260120 18:00",
     ]
     for spelling in spellings:
         assert value_checks.instant(spelling) == PREDICTION_TIME, spelling
-    for other in ["", "84.0", "P01", "True", "later_holdout", "nan", "est"]:
+    # Near year 1 or 9999, or with an offset of a day or more, a cell names no instant rather than crashing the run.
+    for other in ["", "84.0", "P01", "True", "later_holdout", "nan", "est", "9999-12-31 23:00:00-05:00",
+                  "0001-01-01 00:00:00+05:00", "2026-01-20 12:00:00+99:99"]:
         assert value_checks.instant(other) is None, other
 
 
@@ -379,6 +412,29 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
 
+        # Schema owns an omitted column; recognizable present siblings still need correct values.
+        partial = frames["output/lab_availability.csv"].drop(columns="collected_at").copy()
+        for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
+            changed = partial.copy()
+            if label == "missing-and-wrong":
+                changed.loc[changed.index[0], "resulted_at"] = pd.Timestamp("2030-01-01", tz="UTC")
+            elif label == "header-only":
+                changed = changed.iloc[:0]
+            elif label == "unrecognizable":
+                changed = changed.iloc[:1].astype(object)
+                changed.iloc[0, :] = "WRONG"
+            files = dict(correct)
+            files["output/lab_availability.csv"] = changed.to_csv(index=False)
+            result = graded(submission("present-siblings-" + label, files))
+            if label == "missing":
+                assert failing(result) == {"lab availability: columns"}, failing(result)
+            elif label == "missing-and-wrong":
+                assert failing(result) == {"lab availability: columns", "lab availability: collected_at and resulted_at in UTC"}, failing(result)
+                message = detail(result, "lab availability: collected_at and resulted_at in UTC")
+                assert "expected" in message and "resulted_at" in message, message
+            else:
+                assert "lab availability: collected_at and resulted_at in UTC" in failing(result), failing(result)
+
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
         (root / "data" / "vitals.csv").write_text("poison\n", encoding="utf-8")
@@ -429,12 +485,10 @@ def run() -> None:
         assert failing(result) == {"two-hour summary: columns"}, {name: detail(result, name) for name in failing(result)}
         assert "is missing patient_id and recorded_at" in detail(result, "two-hour summary: columns")
 
-        # Task 1.1 left on the New York clock, and the grid and features built from it: only the UTC check fails.
-        naive = prepare(convert=False)
+        # Task 1.1 left on the New York clock, and the grid, summary, and features built from it: only the UTC
+        # check fails. With no zone, Task 3.3's comparison raises TypeError, so that notebook saves no blocks.
         files = dict(correct)
-        files["output/prepared_vitals.csv"] = naive.to_csv(index=False)
-        files["output/hourly_grid.csv"] = grid_from(naive).to_csv(index=False)
-        files["output/past_features.csv"] = features_from(naive).to_csv(index=False)
+        files.update(built_from(prepare(convert=False)))
         result = graded(submission("new-york-clock", files))
         assert failing(result) == {"prepared vitals: recorded_at in UTC"}, {
             name: detail(result, name) for name in failing(result)}
@@ -442,18 +496,138 @@ def run() -> None:
         assert "5 hours behind" in message and "reads 2026-01-20 07:00:00, expected 2026-01-20 12:00:00+00:00" in message
         assert 'tz_localize("America/New_York")' in message, message
 
+        # tz_localize("UTC") in Task 1.1, and every later table built from it, including two-hour bins drawn on
+        # that clock and holdout labels read from it: still only the UTC check fails.
+        files = dict(correct)
+        files.update(built_from(utc_clock()))
+        result = graded(submission("utc-clock", files))
+        assert failing(result) == {"prepared vitals: recorded_at in UTC"}, {
+            name: detail(result, name) for name in failing(result)}
+        # A second mistake on that clock costs its own check, and says which clock it was judged on.
+        summary_on_clock = summary_from(utc_clock()).reset_index()
+        summary_on_clock.loc[summary_on_clock["n_rows"].idxmax(), "n_rows"] -= 1
+        files["output/two_hour_summary.csv"] = summary_on_clock.to_csv(index=False)
+        result = graded(submission("utc-clock-and-count", files))
+        assert failing(result) == {"prepared vitals: recorded_at in UTC", "two-hour summary: n_rows values"}, {
+            name: detail(result, name) for name in failing(result)}
+        message = detail(result, "two-hour summary: n_rows values")
+        assert "5 hours behind UTC" in message and "judged on that clock" in message, message
+
+        # Earlier mistakes are charged once, including a dropped first reading and changed heart rate.
+        prepared = prepare()
+        variants = {
+            "dropped-missing": prepared[prepared["heart_rate"].notna()].reset_index(drop=True),
+            "dropped-first": prepared.iloc[1:].reset_index(drop=True),
+            "changed-heart-rate": prepared.assign(heart_rate=prepared["heart_rate"].fillna(92)),
+            "missing-source-marker": prepared.assign(source_row=prepared["source_row"].astype(float).mask(prepared.index == 0)),
+        }
+        for label, vitals in variants.items():
+            files = dict(correct)
+            files.update(built_from(vitals))
+            result = graded(submission(label, files))
+            expected = ("prepared vitals: source_row values" if label == "missing-source-marker" else
+                        "prepared vitals: heart_rate values" if label == "changed-heart-rate" else "prepared vitals: one row per reading")
+            assert failing(result) == {expected}, {name: detail(result, name) for name in failing(result)}
+            # An independent downstream error still loses its own points.
+            summary = summary_from(vitals).reset_index()
+            summary.loc[0, "mean_hr"] += 20
+            files["output/two_hour_summary.csv"] = summary.to_csv(index=False)
+            result = graded(submission(label + "-wrong-summary", files))
+            assert failing(result) == {expected, "two-hour summary: mean_hr values"}, failing(result)
+
+        # Saved instants in New York are equivalent; local two-hour bin origins also count.
+        vitals = prepare()
+        vitals["recorded_at"] = vitals["recorded_at"].dt.tz_convert("America/New_York")
+        files = dict(correct)
+        files.update(built_from(vitals))
+        assert graded(submission("new-york-zone-bins", files))["score"] == 100
+
+        # A written zone word carries the same local resampling origin as its numeric offset.
+        zone_files = dict(files)
+        for path, text in files.items():
+            if path != "output/lab_availability.csv":
+                zone_files[path] = text.replace("-05:00", " EST")
+        assert graded(submission("new-york-zone-word-bins", zone_files))["score"] == 100
+
+        # A wrong lab clock changes the derived availability flag without costing it twice.
+        labs = frames["output/lab_availability.csv"].copy()
+        for column in ("collected_at", "resulted_at"):
+            labs[column] -= pd.Timedelta(hours=5)
+        labs["available"] = labs["resulted_at"] <= PREDICTION_TIME
+        files = dict(correct)
+        files["output/lab_availability.csv"] = labs.to_csv(index=False)
+        assert failing(graded(submission("lab-clock-derived-flags", files))) == {"lab availability: collected_at and resulted_at in UTC"}
+
+        # Equivalent copies of named columns and unnamed index levels keep all their information.
+        files = dict(correct)
+        grid = frames["output/hourly_grid.csv"]
+        files["output/hourly_grid.csv"] = pd.concat([grid, grid[["patient_id", "recorded_at"]]], axis=1).to_csv(index=False)
+        assert graded(submission("duplicate-identical-columns", files))["score"] == 100
+        files["output/hourly_grid.csv"] = grid.set_index(["patient_id", "recorded_at"]).rename_axis([None, None]).to_csv()
+        assert graded(submission("two-blank-index-headers", files))["score"] == 100
+        files = dict(correct)
+        wrong = frames["output/two_hour_summary.csv"][["mean_hr"]].copy() + 50
+        files["output/two_hour_summary.csv"] = pd.concat([frames["output/two_hour_summary.csv"], wrong], axis=1).to_csv(index=False)
+        assert failing(graded(submission("duplicate-conflicting-column", files))) == {"two-hour summary: columns"}
+
+        # A conflicting copy that merely permutes valid readings cannot hide the correct copy.
+        files = dict(correct)
+        wrong = frames["output/hourly_grid.csv"][["heart_rate"]].iloc[::-1].reset_index(drop=True)
+        files["output/hourly_grid.csv"] = pd.concat([wrong, frames["output/hourly_grid.csv"]], axis=1).to_csv(index=False)
+        assert failing(graded(submission("permuted-duplicate-first", files))) == {"hourly grid: columns"}
+
+        # Task 3.3 saved over the prepared vitals: both files' feedback names the cell and the path to use.
+        files = dict(correct)
+        files["output/prepared_vitals.csv"] = files.pop("output/chronological_blocks.csv")
+        result = graded(submission("blocks-over-prepared", files))
+        assert failing(result) == {"prepared vitals: columns", *artifact_checks("output/chronological_blocks.csv")}, (
+            failing(result))
+        message = detail(result, "prepared vitals: columns")
+        assert "block is the column Task 3.3 adds" in message and "BLOCKS_PATH" in message, message
+        message = detail(result, "chronological blocks: columns")
+        assert "output/prepared_vitals.csv has its block column" in message and "BLOCKS_PATH" in message, message
+
+        # A summary resampled without grouping by patient: its feedback says to group first.
+        vitals = prepare()
+        ungrouped = (vitals.set_index("recorded_at").resample("2h")
+                     .agg(mean_hr=("heart_rate", "mean"), n_rows=("source_row", "count")).reset_index())
+        files = dict(correct)
+        files["output/two_hour_summary.csv"] = ungrouped.to_csv(index=False)
+        result = graded(submission("ungrouped-summary", files))
+        assert failing(result) == set(artifact_checks("output/two_hour_summary.csv")), failing(result)
+        for name in ("two-hour summary: columns", "two-hour summary: one row per patient and bin"):
+            assert 'Group by patient_id before .resample("2h")' in detail(result, name), detail(result, name)
+
+        files = dict(correct)
+        files["output/hourly_grid.csv"] = frames["output/hourly_grid.csv"].drop(columns="value_missing").to_csv(index=False)
+        assert failing(graded(submission("missing-value-column-once", files))) == {"hourly grid: columns"}
+
+        files = dict(correct)
+        duplicate = frames["output/hourly_grid.csv"][["heart_rate"]].map(lambda value: "NA" if pd.isna(value) else f"{value:.2f}")
+        files["output/hourly_grid.csv"] = pd.concat([frames["output/hourly_grid.csv"], duplicate], axis=1).to_csv(index=False)
+        assert graded(submission("duplicate-equivalent-number-format", files))["score"] == 100
+
+        files = dict(correct)
+        files["output/prepared_vitals.csv"] = files["output/prepared_vitals.csv"].replace("2026-01-20 12:00:00+00:00", "0001-01-01 12:00:00+00:00", 1)
+        malformed = submission("unbounded-grid-date", files)
+        assert value_checks._own_prepared(malformed, value_checks.HOURLY_GRID) is None
+
+        # CSV readers differ by Python version on NUL; a broken file is unreadable on both.
+        files = dict(correct)
+        files["output/prepared_vitals.csv"] = b"\xff\xfe\x00"
+        result = graded(submission("nul-byte-file", files))
+        assert failing(result) == {name for name in NAMES if name.startswith(PREFIX["output/prepared_vitals.csv"])}, failing(result)
+
         # One mistake costs exactly its own check.
         prepared, grid = correct["output/prepared_vitals.csv"], correct["output/hourly_grid.csv"]
         summary, features = correct["output/two_hour_summary.csv"], correct["output/past_features.csv"]
         labs, blocks = correct["output/lab_availability.csv"], correct["output/chronological_blocks.csv"]
-        as_utc_clock = prepare(convert=False)
-        as_utc_clock["recorded_at"] = as_utc_clock["recorded_at"].dt.tz_localize("UTC")
         stacked_shift = frames["output/past_features.csv"].copy()
         stacked_shift["previous_hr"] = stacked_shift["heart_rate"].shift(1)
         mistakes = {
             "prepared vitals: columns": ("output/prepared_vitals.csv", prepared.replace("source_row", "source", 1)),
             "prepared vitals: one row per reading": ("output/prepared_vitals.csv", drop_last_row(prepared)),
-            "prepared vitals: recorded_at in UTC": ("output/prepared_vitals.csv", as_utc_clock.to_csv(index=False)),
+            "prepared vitals: recorded_at in UTC": ("output/prepared_vitals.csv", utc_clock().to_csv(index=False)),
             "prepared vitals: heart_rate values": (
                 "output/prepared_vitals.csv", edit(prepared, "P01|2026-01-20 15:00:00+00:00", "heart_rate", "0.0")),
             "prepared vitals: source_row values": (
@@ -546,9 +720,10 @@ def run() -> None:
         "Assignment 09 checks: the data copies, README checkpoints, contract, and numbering, and the handout's "
         "byte-identical checks agree; empty and scaffold earn 0; correct, alternative, with-index, semicolon- and "
         "tab-separated, and index-key "
-        "submissions earn 100; lost key columns cost only the columns check; New York clock times cost only the "
-        f"UTC check; each of the {len(NAMES)} single mistakes and each missing file costs only its own checks; "
-        "feedback and pytest pass."
+        "submissions earn 100; lost key columns cost only the columns check; New York clock times, with every "
+        f"later table built from them, cost only the UTC check; each of the {len(NAMES)} single mistakes and each "
+        "missing file costs only its own checks; feedback names a dropped reading, a table saved over another, and "
+        "an ungrouped summary; feedback and pytest pass."
     )
 
 

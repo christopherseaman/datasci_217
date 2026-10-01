@@ -9,7 +9,7 @@ every student push from `christopherseaman/datasci_217@main:09/assignment_checks
 and grades with them.
 
 The handout ships a byte-identical copy of every file the workflow lists in
-`CHECKS_FILES`, so `python check_assignment.py` in a student's repository
+`CHECKS_FILES`, so `python3 check_assignment.py` in a student's repository
 prints each check's result, what to fix, and the score, exactly as GitHub will.
 The listed files:
 
@@ -43,8 +43,10 @@ GitHub run counts.
 clock times with a fixed UTC-5 offset, which holds because every time falls in
 January; data outside standard time needs a real time zone there. A change to
 the check list or to `POINTS` belongs in `_value_checks.py` and `grading.py`
-at once, in the same order: `grading.py` zips the checks against `POINTS` with
-`strict=True`. Keep the README's checkpoints and completion contract in
+at once, in the same order: `grading.py` pairs the checks with `POINTS` and
+raises when their lengths differ. It checks the lengths itself rather than
+using `zip(strict=True)`, because the checker must run on any Python 3 a
+student has, including macOS's system `python3` 3.9. Keep the README's checkpoints and completion contract in
 agreement with the checks; the self-test compares them.
 
 ## Checking the checks

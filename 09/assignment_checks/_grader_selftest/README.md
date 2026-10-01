@@ -16,13 +16,23 @@ ignored `scratch/`, and confirms that:
   optional, a summary saved with its index, and every file separated by
   semicolons (with decimal commas) or by tabs, where one wrong value still
   costs only its own check;
+- an omitted value column costs only the columns check, while an independently wrong present sibling still fails its values check; header-only and unrecognizable partial tables earn no vacuous value credit;
 - an empty directory and the untouched handout score 0;
 - each of 27 single mistakes, one per check, costs exactly that check,
   including a misnamed column; a summary saved with `index=False` without
   `reset_index()`, which drops its key columns, costs only the columns check;
-  a prepared table left on the New York clock, with the grid and features built
-  from it, costs only the UTC check; a missing file costs only its own
-  artifact's checks; the feedback says what was expected and what was found;
+  a prepared table left on the New York clock, or labeled UTC with
+  `tz_localize("UTC")`, with every later table built from it, costs only the
+  UTC check; a missing file costs only its own artifact's checks; the feedback
+  says what was expected and what was found, and names the cause of a reading
+  dropped in Task 1.1, a table saved over another, and a summary resampled
+  without grouping; a timestamp near year 1 or 9999, or with an offset of a day
+  or more, is reported rather than crashing the run;
+- a dropped reading, changed heart rate, or missing source marker costs points
+  only in preparation when the later tables correctly transform those saved
+  readings; incorrect new summaries still lose their own points; equivalent
+  duplicated headers and two unnamed index levels earn full marks, while
+  conflicting duplicate headers cost the columns check;
 - the checks read only `output/`: poisoned data and code in a submission change
   nothing;
 - the copies of the data in `_value_checks.py` match `09/assignment/data/`,

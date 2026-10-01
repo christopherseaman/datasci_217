@@ -4,8 +4,8 @@ Course-side QA, not a second grading mode. It answers the exam with pandas,
 NumPy, and scikit-learn from `11/assignment/data/` the way the handout asks,
 writes submissions in ignored `scratch/`, and confirms what each one scores:
 
-    uv run --python 3.13 --with-requirements 11/assignment/requirements.txt \
-        python 11/assignment_checks/_grader_selftest/run.py
+    uv run --isolated --project 11/assignment --locked \
+        python3 11/assignment_checks/_grader_selftest/run.py
 """
 
 from __future__ import annotations
@@ -105,6 +105,46 @@ def png(path: Path) -> None:
     axis.plot([0, 1], [0, 1])
     figure.savefig(path)
     plt.close(figure)
+
+
+def check_csv_boundaries(root: Path) -> None:
+    """Duplicate headers preserve contradictory evidence; decoded NUL is unusable CSV."""
+    import csv
+    import io
+    (root / "output").mkdir(parents=True, exist_ok=True)
+    path = root / "output/q7_model_spec.csv"
+    header = ["estimator_module", "estimator_class", "parameters_json", "feature_columns", "random_state"]
+    row = ["sklearn.linear_model", "Ridge", '{"random_state": 217}', "|".join(FEATURES), "217"]
+    for label, headings, cells, expected in (
+        ("equivalent duplicate", header + ["RANDOM_STATE"], row + ["217.0"], 4),
+        ("conflicting duplicate", header + ["random_state"], row + ["999"], 3),
+        ("NUL inside class", header, [row[0], "Ridge\x00FAKE", *row[2:]], 0),
+    ):
+        text = io.StringIO()
+        csv.writer(text).writerows([headings, cells])
+        path.write_text(text.getvalue(), encoding="utf-8")
+        score, detail = grading.check_model_spec(grading.Submission(root), 4)
+        assert score == expected, (label, score, detail)
+        if expected < 4:
+            assert ("conflicting duplicate" if expected == 3 else "NUL") in detail, detail
+    summary = root / "output/q6_split_summary.csv"
+    summary.write_text("split,n_rows,n_rows,target_start,target_start\n"
+                       "train,2,2.0,2024-01-01T06:00:00Z,2024-01-01 00:00:00-06:00\n", encoding="utf-8")
+    table, problem = grading.read_table(root, summary.name)
+    assert table is not None and not problem, problem
+    assert table.frame.columns.tolist() == ["split", "n_rows", "target_start"]
+    assert "conflicting" not in table.frame.to_csv(index=False)
+    audit = root / "output/q1_release_audit.csv"
+    audit.write_text("passed,passed\nTrue,1\nyes,True\nFalse,0\nTrue,False\n", encoding="utf-8")
+    table, problem = grading.read_table(root, audit.name)
+    assert table is not None and not problem, problem
+    assert not table.frame["passed"].iloc[:3].str.contains("conflicting").any()
+    assert "conflicting" in table.frame["passed"].iloc[3]
+    missing = root / "output/q2_cleaned_observations.csv"
+    missing.write_text("air_temperature_c,air_temperature_c\n,NaN\n<NA>,null\n", encoding="utf-8")
+    table, problem = grading.read_table(root, missing.name)
+    assert table is not None and not problem, problem
+    assert "conflicting" not in table.frame.to_csv(index=False)
 
 
 # ---------------------------------------------------------------------------
@@ -476,7 +516,7 @@ def mutations() -> list[tuple[str, str, object, dict[str, int]]]:
          {"Q3 q3_hourly_panel.csv: sensor columns": 1}),
         ("weekday Monday=1", "q3_hourly_panel.csv",
          column("day_of_week", lambda f: (f["day_of_week"].astype(int) + 1).astype(str)),
-         {"Q3 q3_hourly_panel.csv: hour, day_of_week, and month": 1}),
+         {}),
         ("dropped ineligible rows", "q4_features.csv", lambda f: f[f["model_eligible"] == "True"],
          {"Q4 q4_features.csv: rows": 1}),
         ("lag of 2 hours", "q4_features.csv",
@@ -501,13 +541,21 @@ def mutations() -> list[tuple[str, str, object, dict[str, int]]]:
          lambda f: f.assign(n_rows=["1"] + f["n_rows"].tolist()[1:]), {}),
         ("spec random_state 218", "q7_model_spec.csv", lambda f: f.assign(random_state="218"),
          {"Q7 q7_model_spec.csv": 1}),
+        ("regressor built without random_state", "q7_model_spec.csv",
+         column("parameters_json", lambda f: f["parameters_json"].str.replace('"random_state": 217',
+                                                                            '"random_state": null')),
+         {"Q7 q7_model_spec.csv": 1}),
         ("nonfinite model prediction", "q7_validation_predictions.csv",
          lambda f: f.assign(model_prediction=["inf"] + f["model_prediction"].tolist()[1:]),
-         {"Q7 q7_validation_predictions.csv: model_prediction": 1, "Q7 q7_validation_metrics.csv": 1}),
+         {"Q7 q7_validation_predictions.csv: model_prediction": 1, "Q7 q7_validation_metrics.csv": 0}),
         ("persistence set to the actual value", "q7_validation_predictions.csv",
          lambda f: f.assign(persistence_prediction=f["actual"]),
          {"Q7 q7_validation_predictions.csv: station_name, target_timestamp_utc, actual, and persistence_prediction": 1,
           "Q7 q7_validation_metrics.csv": 0}),
+        ("model_prediction column renamed", "q8_test_predictions.csv",
+         lambda f: f.rename(columns={"model_prediction": "prediction"}),
+         {"Q8 q8_test_predictions.csv: model_prediction": 1, "Q8 q8_test_predictions.csv: model_error": 0,
+          "Q8 q8_test_predictions.csv: model_absolute_error": 0}),
         ("error sign flipped", "q8_test_predictions.csv",
          column("model_error", lambda f: (-pd.to_numeric(f["model_error"])).astype(str)),
          {"Q8 q8_test_predictions.csv: model_error": 1}),
@@ -533,6 +581,7 @@ def run() -> None:
 
     with tempfile.TemporaryDirectory(dir=SCRATCH, prefix="a11-selftest-") as directory:
         base = Path(directory)
+        check_csv_boundaries(base / "csv-boundaries")
         empty = base / "empty"
         empty.mkdir()
         result, code = checker(empty)
@@ -540,6 +589,40 @@ def run() -> None:
         result, code = checker(HANDOUT)
         assert result["score"] == 0 and result["max-score"] == 75 and code == 1, losses(result)
         print("empty directory and untouched handout: 0/75")
+
+        # Model metadata must name a real regressor and include its supported fixed settings.
+        spec_root = base / "model-spec-validation"
+        (spec_root / "output").mkdir(parents=True)
+        from sklearn.ensemble import RandomForestRegressor
+        for module, cls, parameters, expected in (
+            ("sklearn.fake_module", "FakeRegressor", {}, 3),
+            ("sklearn", "Ridge", {"random_state": 217}, 3),
+            ("sklearn.ensemble", "RandomForestRegressor", {}, 3),
+            ("SKLEARN.ENSEMBLE", "RANDOMFORESTREGRESSOR",
+             RandomForestRegressor(random_state=217, n_jobs=1).get_params(deep=False), 4),
+        ):
+            pd.DataFrame([{"estimator_module": module, "estimator_class": cls,
+                           "parameters_json": json.dumps(parameters), "feature_columns": "|".join(FEATURES),
+                           "random_state": 217}]).to_csv(spec_root / "output/q7_model_spec.csv", index=False)
+            score, feedback = grading.check_model_spec(grading.Submission(spec_root), 4)
+            assert score == expected, (module, cls, score, feedback)
+        print("real regressor metadata and required fixed parameters checked; case variants accepted")
+
+        # Visual quality belongs to the rubric; automated checks require real PNG pixels.
+        from PIL import Image
+        image_root = base / "png-validation"
+        (image_root / "output").mkdir(parents=True)
+        image_path = image_root / "output/q1_visualizations.png"
+        for mode in ("1", "L", "P", "RGB", "RGBA", "I;16"):
+            Image.new(mode, (1, 1)).save(image_path)
+            assert grading.valid_png(image_root, image_path.name) == (True, ""), mode
+        image = image_path.read_bytes()
+        for label, broken in (("signature-only", image[:8]), ("header-only", image[:24]),
+                              ("missing-end", image[:-12]), ("bad-checksum", image[:-1] + b"x")):
+            image_path.write_bytes(broken)
+            valid, message = grading.valid_png(image_root, image_path.name)
+            assert not valid and "complete PNG" in message, (label, valid, message)
+        print("real PNG encodings accepted; truncated images and bad checksums rejected")
 
         correct = base / "correct"
         solve(correct)
@@ -575,7 +658,7 @@ def run() -> None:
                           if test not in expected and not test.startswith("Q9")}
             owned = [test for test in lost if name.split(".")[0] in test or test.startswith("Q9")]
             assert not unexpected or set(unexpected) <= set(owned), (label, unexpected, details(result))
-            assert sum(lost.values()) >= 1 and all(result["tests"][i]["detail"] for i, t in enumerate(result["tests"])
+            assert (not lost if label == "weekday Monday=1" else bool(lost)) and all(result["tests"][i]["detail"] for i, t in enumerate(result["tests"])
                                                    if t["score"] < t["max-score"]), (label, lost)
             print(f"single mistake '{label}': -{sum(lost.values())} ({', '.join(f'{k} -{v}' for k, v in lost.items())})")
 
@@ -592,6 +675,63 @@ def run() -> None:
         lost = losses(result)
         assert "Q3 q3_hourly_panel.csv: sensor columns" not in lost, details(result)
         print(f"an upstream Q2 mistake carried into Q3: charged once ({lost})")
+
+        # An audit that truthfully records a Q2 cleaning mistake is charged once, in the cleaned table.
+        kept = copy(correct, base / "kept-ambiguous-with-audit")
+        rewrite(kept / "output" / "q2_cleaned_observations.csv",
+                lambda f: pd.concat([f, f.iloc[[0]].assign(measurement_timestamp="2022-11-06 01:00:00-05:00",
+                                                             measurement_timestamp_utc="2022-11-06 06:00:00+00:00")]))
+        rewrite(kept / "output" / "q2_cleaning_audit.csv",
+                lambda f: f.assign(affected_values=np.where(f["result"] == "rows_rejected",
+                                                            str(int(f.loc[f["result"] == "rows_rejected",
+                                                                          "affected_values"].iloc[0]) - 1),
+                                                            f["affected_values"])))
+        result, _ = checker(kept)
+        assert losses(result) == {"Q2 q2_cleaned_observations.csv: rows": 1}, details(result)
+        print("a kept ambiguous row that the audit also records: -1, in the cleaned rows only")
+
+        # A panel that drops the hours without a source row (an inner join), carried into Q4: charged once, in Q3.
+        dropped = copy(correct, base / "panel-without-gaps")
+        panel = pd.read_csv(dropped / "output" / "q3_hourly_panel.csv", dtype=str, keep_default_na=False)
+        observed = panel["source_observed"] == "True"
+        gone = set(panel.loc[~observed, "station_name"] + "|" + panel.loc[~observed, "measurement_timestamp_utc"])
+        panel[observed].to_csv(dropped / "output" / "q3_hourly_panel.csv", index=False)
+        rewrite(dropped / "output" / "q4_features.csv",
+                lambda f: f[~(f["station_name"] + "|" + f["cutoff_timestamp_utc"]).isin(gone)])
+        result, _ = checker(dropped)
+        assert losses(result) == {"Q3 q3_hourly_panel.csv: rows": 1}, details(result)
+        assert "without a source row" in details(result), details(result)
+        print("a panel without its unobserved hours, and Q4 built from it: -1, in the Q3 rows only, naming the join")
+
+        # Splitting on cutoff time moves the boundary rows in X and y alike: charged once, in the X rows.
+        cutoff = copy(correct, base / "split-on-cutoff")
+        output = cutoff / "output"
+        frames = {kind: {split: pd.read_csv(output / f"q6_{kind}_{split}.csv", dtype=str, keep_default_na=False)
+                         for split in ("train", "validation")} for kind in ("X", "y")}
+        cutoffs = pd.to_datetime(frames["X"]["validation"]["cutoff_timestamp_utc"], utc=True).dt.tz_convert(TZ)
+        moved = set(frames["X"]["validation"].loc[cutoffs < pd.Timestamp("2024-01-01", tz=TZ), "row_id"])
+        assert moved, "no validation row has a cutoff before the boundary"
+        for kind, parts in frames.items():
+            move = parts["validation"]["row_id"].isin(moved)
+            pd.concat([parts["train"], parts["validation"][move]]).to_csv(output / f"q6_{kind}_train.csv", index=False)
+            parts["validation"][~move].to_csv(output / f"q6_{kind}_validation.csv", index=False)
+        result, _ = checker(cutoff)
+        assert losses(result) == {"Q6 q6_X_train/validation/test.csv: rows": 2}, details(result)
+        assert "target_timestamp_utc, not cutoff_timestamp_utc" in details(result), details(result)
+        print(f"split on cutoff time ({len(moved)} rows moved in X and y): -2, in the X rows only, naming the cause")
+
+        # Validation predictions overwritten by the test rows: the file's own checks, not the metrics built from
+        # the right rows, and the feedback names the split the rows came from.
+        overwritten = copy(correct, base / "validation-predictions-overwritten")
+        test_rows = pd.read_csv(overwritten / "output" / "q8_test_predictions.csv", dtype=str, keep_default_na=False)
+        test_rows.drop(columns=["model_error", "model_absolute_error"]).to_csv(
+            overwritten / "output" / "q7_validation_predictions.csv", index=False)
+        result, _ = checker(overwritten)
+        lost = losses(result)
+        assert all(name.startswith("Q7 q7_validation_predictions.csv") for name in lost) and sum(lost.values()) == 4, \
+            details(result)
+        assert "rows are the test split's rows" in details(result), details(result)
+        print("validation predictions overwritten with the test rows: -4, that file's checks only, naming the test split")
 
         # A wrong value in a semicolon-separated file costs only its own check.
         semicolons = copy(correct, base / "semicolon-wrong-value")

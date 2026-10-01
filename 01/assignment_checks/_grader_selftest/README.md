@@ -13,10 +13,9 @@ nothing else; a missing, non-UTF-8, or folder-shaped report fails every report
 line with the same advice, which names make_output.py. Whitespace of any
 kind (including a missing space or a no-break space), blank lines, extra lines,
 line endings, and the first line (any Python version, other text, or none) are
-never graded; a missing line costs only itself, and a wrong value or a letter's
-case costs that line's 5 points and says what the line should read and which
+never graded; letter case and equivalent numeric notation also cost nothing. A missing line costs only itself, and a wrong value costs that line's 5 points and says what the line should read and which
 script and task to fix. The real submission that compared the running total
-instead of each measurement, printed with double spaces, scores 90.
+instead of each measurement, printed with double spaces, scores 95: its review count correctly follows its one wrong measurement label. A mean correctly calculated from an incorrect declared total or count also retains its credit.
 
 For the handout: each file in the workflow's `CHECKS_FILES` is byte-identical
 in `01/assignment/` and here, and no shape-only checks remain; the README shows

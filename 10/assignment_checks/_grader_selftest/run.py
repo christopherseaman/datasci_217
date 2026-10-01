@@ -16,8 +16,8 @@ task numbering agree with the checks and the notebook, that the handout ships
 every file in `CHECKS_FILES` byte for byte and no other Python file, and that
 the handout notebook ships with its outputs cleared.
 
-    uv run --python 3.13 --with-requirements 10/assignment/requirements.txt --with 'pytest>=8,<9' \\
-        python 10/assignment_checks/_grader_selftest/run.py
+    uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with statsmodels==0.14.6 \\
+        --with scikit-learn==1.9.0 --with 'pytest>=8,<9' python 10/assignment_checks/_grader_selftest/run.py
 """
 
 from __future__ import annotations
@@ -223,6 +223,10 @@ def check_expected_values() -> None:
     """Every expected value in _value_checks.py matches a fresh computation from the handout's data."""
     assert sorted(path.name for path in DATA.iterdir()) == [
         "clinic_bp.csv", "feature_availability.csv", "followup_visits.csv", "readmission_flags.csv"]
+    patients = load()["patients"]
+    assert value_checks.CLINIC_PREDICTORS == {
+        row.patient_id: (row.age, row.bmi) for row in patients.itertuples()
+    }
     frames = solve()
     coefficients = frames["output/ols_coefficients.csv"]
     for term, expected in value_checks.COEFFICIENT_VALUES.items():
@@ -263,6 +267,7 @@ def check_expected_values() -> None:
     for approach, expected in value_checks.READMISSION_VALUES.items():
         for column, want in expected.items():
             assert near(readmission.loc[approach, column], want), (approach, column)
+    check_slip_values()
     # The two refits must be told apart from wrong answers, not from each other: both are accepted.
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
     source = "\n".join("".join(cell["source"]) for cell in notebook["cells"])
@@ -271,6 +276,74 @@ def check_expected_values() -> None:
                  'TEST_START = pd.Timestamp("2026-05-09", tz="UTC")',
                  'TARGET = "sbp_followup"'):
         assert line in source, line
+
+
+def check_slip_values() -> None:
+    """Every common wrong answer in _value_checks.py matches a fresh computation of that slip."""
+    data = load()
+    visits, flags = data["visits"], data["flags"]
+    train = visits[visits["followup_time"] < VALIDATION_START]
+    valid = visits[(visits["followup_time"] >= VALIDATION_START) & (visits["followup_time"] < TEST_START)]
+    test = visits[visits["followup_time"] >= TEST_START]
+    by_visit = {"train": visits[visits["visit_time"] < VALIDATION_START],
+                "validation": visits[(visits["visit_time"] >= VALIDATION_START) & (visits["visit_time"] < TEST_START)],
+                "test": visits[visits["visit_time"] >= TEST_START]}
+    for (partition,), expected in value_checks.SPLIT_ON_VISIT_TIME.rows.items():
+        part = by_visit[partition]
+        assert len(part) == expected["row_count"], partition
+        for column, stat in (("first_target_time", "min"), ("last_target_time", "max")):
+            if column in expected:
+                got = getattr(part["followup_time"], stat)()
+                want = expected[column]
+                assert (pd.isna(got) if want is None else got == pd.Timestamp(want.text)), (partition, column)
+    parts = {"train": train, "validation": valid, "test": test}
+    for (partition,), expected in value_checks.RANGES_FROM_VISIT_TIME.rows.items():
+        assert parts[partition]["visit_time"].min() == pd.Timestamp(expected["first_target_time"].text), partition
+        assert parts[partition]["visit_time"].max() == pd.Timestamp(expected["last_target_time"].text), partition
+    for (patient,), expected in value_checks.RESIDUAL_COLUMNS_SWAPPED.rows.items():
+        values = value_checks.RESIDUAL_VALUES[patient]
+        assert (expected["fitted"], expected["residual"]) == (values["residual"], values["fitted"]), patient
+    leaky_sets = [FEATURES + ["callback_sbp"], FEATURES + ["a1c_result"], FEATURES + ["a1c_result", "callback_sbp"]]
+    valid_scores, test_scores = [], []
+    test_predicted = {visit: [] for visit in test["visit_id"]}
+    for features in leaky_sets:
+        fitted = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())]).fit(train[features], train[TARGET])
+        valid_scores.append(metrics(valid[TARGET], fitted.predict(valid[features])))
+        for rows in (train, pd.concat([train, valid])):
+            final = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())]).fit(rows[features], rows[TARGET])
+            test_scores.append(metrics(test[TARGET], final.predict(test[features])))
+            for visit, predicted in zip(test["visit_id"], final.predict(test[features]), strict=True):
+                test_predicted[visit].append(predicted)
+    for slip, scores in ((value_checks.LEAKY_VALIDATION, valid_scores), (value_checks.LEAKY_TEST, test_scores)):
+        for column, either in slip.rows[("linear_pipeline",)].items():
+            assert len(either.values) == len(scores), column
+            for want, got in zip(either.values, [score[column] for score in scores]):
+                assert near(got, want), (column, got, want)
+    assert list(value_checks.LEAKY_TEST_PREDICTIONS.rows) == [(visit,) for visit in test_predicted]
+    for (visit,), expected in value_checks.LEAKY_TEST_PREDICTIONS.rows.items():
+        wanted = expected["predicted_sbp"].values
+        assert len(wanted) == len(test_predicted[visit]) == 6, visit
+        for want, got in zip(wanted, test_predicted[visit], strict=True):
+            assert near(got, want), (visit, got, want)
+    # RMSE saved without its square root: the mean squared error.
+    baseline = DummyRegressor(strategy="mean").fit(train[FEATURES], train[TARGET])
+    pipeline = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())]).fit(train[FEATURES], train[TARGET])
+    for (approach,), expected in value_checks.RMSE_NOT_ROOTED.rows.items():
+        fitted = baseline if approach == "mean_baseline" else pipeline
+        assert near(mean_squared_error(valid[TARGET], fitted.predict(valid[FEATURES])), expected["rmse"]), approach
+    squared = [
+        mean_squared_error(test[TARGET], Pipeline([("scale", StandardScaler()), ("model", LinearRegression())])
+                           .fit(rows[FEATURES], rows[TARGET]).predict(test[FEATURES]))
+        for rows in (train, pd.concat([train, valid]))
+    ]
+    wanted = value_checks.TEST_RMSE_NOT_ROOTED.rows[("linear_pipeline",)]["rmse"].values
+    assert all(near(got, want) for got, want in zip(squared, wanted, strict=True)), (squared, wanted)
+    baseline = DummyRegressor(strategy="mean").fit(valid[FEATURES], valid[TARGET])
+    for column, want in value_checks.BASELINE_FROM_VALIDATION.rows[("mean_baseline",)].items():
+        assert near(metrics(valid[TARGET], baseline.predict(valid[FEATURES]))[column], want), column
+    swapped = value_checks.FLAG_PASSED_FIRST.rows[("model_flag",)]
+    assert near(precision_score(flags["model_flag"], flags["readmitted_30d"]), swapped["precision"])
+    assert near(recall_score(flags["model_flag"], flags["readmitted_30d"]), swapped["recall"])
 
 
 def check_readme() -> None:
@@ -454,6 +527,35 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
 
+        # Schema owns an omitted column; recognizable present siblings still need correct values.
+        partial = frames["output/ols_coefficients.csv"].reset_index().drop(columns="ci_lower").copy()
+        for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
+            changed = partial.copy()
+            if label == "missing-and-wrong":
+                changed.loc[changed.index[0], "ci_upper"] += 17
+            elif label == "header-only":
+                changed = changed.iloc[:0]
+            elif label == "unrecognizable":
+                changed = changed.iloc[:1].astype(object)
+                changed.iloc[0, :] = "WRONG"
+            files = dict(correct)
+            files["output/ols_coefficients.csv"] = changed.to_csv(index=False)
+            result = graded(submission("present-siblings-" + label, files))
+            if label == "missing":
+                assert failing(result) == {"coefficients: columns"}, failing(result)
+            elif label == "missing-and-wrong":
+                assert failing(result) == {"coefficients: columns", "coefficients: confidence interval values"}, failing(result)
+                message = detail(result, "coefficients: confidence interval values")
+                assert "expected" in message and "ci_upper" in message, message
+            else:
+                assert "coefficients: confidence interval values" in failing(result), failing(result)
+
+        # A one-row artifact cannot earn missing values from an entirely unrecognizable key.
+        files = dict(correct)
+        files["output/new_patient_intervals.csv"] = "age,bmi\n999,999\n"
+        result = graded(submission("unrecognizable-patient-missing-values", files))
+        assert failing(result) == set(artifact_checks("output/new_patient_intervals.csv")), failing(result)
+
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
         (root / "data" / "followup_visits.csv").write_text("poison\n", encoding="utf-8")
@@ -539,6 +641,89 @@ def run() -> None:
         result = graded(submission("lost-terms", files))
         assert failing(result) == {"coefficients: columns"}, {name: detail(result, name) for name in failing(result)}
         assert "is missing term" in detail(result, "coefficients: columns")
+
+        # Compact ISO timestamps must work even with the student's Python 3.9.
+        files = dict(correct)
+        split_frame = frames["output/split_summary.csv"].copy()
+        for column in ("first_target_time", "last_target_time"):
+            split_frame[column] = pd.to_datetime(split_frame[column], utc=True).dt.strftime("%Y%m%dT%H%M%SZ")
+        files["output/split_summary.csv"] = split_frame.to_csv(index=False)
+        assert graded(submission("compact-timestamps", files))["score"] == 100
+        # A month name and a 12-hour clock still identify the same UTC instants.
+        files = dict(correct)
+        for path, columns in (("output/split_summary.csv", ("first_target_time", "last_target_time")),
+                              ("output/test_predictions.csv", ("followup_time",))):
+            frame = frames[path].copy()
+            for column in columns:
+                frame[column] = pd.to_datetime(frame[column], utc=True).dt.strftime("%d-%B-%Y %I:%M:%S %p UTC")
+            files[path] = frame.to_csv(index=False)
+        assert graded(submission("month-name-12-hour-timestamps", files))["score"] == 100
+
+        # A duplicated header costs once, regardless of which copy comes last.
+        for first in (False, True):
+            files = dict(correct)
+            frame = frames["output/validation_metrics.csv"]
+            wrong = frame[["mae"]].copy().assign(mae=999)
+            files["output/validation_metrics.csv"] = pd.concat([wrong, frame] if first else [frame, wrong], axis=1).to_csv(index=False)
+            assert failing(graded(submission(f"duplicate-mae-{first}", files))) == {"validation metrics: columns"}
+        files = dict(correct)
+        frame = frames["output/availability_decisions.csv"]
+        wrong = frame[["available"]].copy().assign(available=True)
+        files["output/availability_decisions.csv"] = pd.concat([wrong, frame], axis=1).to_csv(index=False)
+        assert failing(graded(submission("duplicate-boolean", files))) == {"availability: columns"}
+        # One early mistake does not remove credit for its correctly calculated follow-ons.
+        files = dict(correct)
+        frame = frames["output/availability_decisions.csv"].copy()
+        frame.loc[0, ["available", "decision"]] = [False, "Exclude (leakage)"]
+        files["output/availability_decisions.csv"] = frame.to_csv(index=False)
+        assert failing(graded(submission("own-availability-decision", files))) == {"availability: available values"}
+        files = dict(correct)
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame.loc[0, "fitted"] += 3
+        frame["residual"] = frame["observed"] - frame["fitted"]
+        files["output/ols_residuals.csv"] = frame.to_csv(index=False)
+        assert failing(graded(submission("own-fitted-residual", files))) == {"residuals: fitted values"}
+        files = dict(correct)
+        frame = frames["output/test_predictions.csv"].copy()
+        frame["predicted_sbp"] += 3
+        files["output/test_predictions.csv"] = frame.to_csv(index=False)
+        files["output/test_metrics.csv"] = pd.DataFrame([{
+            "approach": "linear_pipeline", **metrics(frame["sbp_followup"], frame["predicted_sbp"]),
+        }]).to_csv(index=False)
+        assert failing(graded(submission("own-prediction-metrics", files))) == {"test predictions: predicted_sbp values"}
+        files = dict(correct)
+        frame = frames["output/ols_coefficients.csv"].copy()
+        frame.loc["Intercept", "coef"] += 5
+        files["output/ols_coefficients.csv"] = frame.to_csv()
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame["fitted"] += 5
+        frame["residual"] -= 5
+        files["output/ols_residuals.csv"] = frame.to_csv(index=False)
+        frame = frames["output/new_patient_intervals.csv"].copy()
+        for column in ("mean", "mean_ci_lower", "mean_ci_upper", "obs_ci_lower", "obs_ci_upper"):
+            frame[column] += 5
+        files["output/new_patient_intervals.csv"] = frame.to_csv(index=False)
+        assert failing(graded(submission("own-coefficient-follow-ons", files))) == {"coefficients: coef values"}
+
+        misplaced = submission("coefficient-outside-output", correct)
+        (misplaced / "output/ols_coefficients.csv").rename(misplaced / "ols_coefficients.csv")
+        assert failing(graded(misplaced)) == {"coefficients: columns"}
+
+        # PNG magic bytes alone do not show a saved image.
+        image = minimal_png()
+        for label, broken in (("signature-only", image[:8]), ("header-only", image[:24]),
+                              ("missing-end", image[:-12]), ("bad-checksum", image[:-1] + b"x")):
+            files = dict(correct)
+            files[value_checks.RESIDUAL_PLOT] = broken
+            result = graded(submission("png-" + label, files))
+            assert failing(result) == {"residual plot: PNG image"}, failing(result)
+            assert "complete PNG" in detail(result, "residual plot: PNG image")
+
+        # CSV readers differ by Python version on NUL; a broken file is unreadable on both.
+        files = dict(correct)
+        files["output/ols_coefficients.csv"] = b"\xff\xfe\x00"
+        result = graded(submission("nul-byte-file", files))
+        assert failing(result) == {name for name in NAMES if name.startswith(PREFIX["output/ols_coefficients.csv"])}, failing(result)
 
         # One mistake costs exactly its own check.
         c = correct
@@ -657,6 +842,7 @@ def run() -> None:
         leaky = FEATURES + ["callback_sbp"]
         train = visits[visits["followup_time"] < VALIDATION_START]
         valid = visits[(visits["followup_time"] >= VALIDATION_START) & (visits["followup_time"] < TEST_START)]
+        test = visits[visits["followup_time"] >= TEST_START]
         pipeline = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())]).fit(train[leaky], train[TARGET])
         baseline = DummyRegressor(strategy="mean").fit(train[leaky], train[TARGET])
         files = dict(correct)
@@ -665,10 +851,10 @@ def run() -> None:
             for name, fitted in [("mean_baseline", baseline), ("linear_pipeline", pipeline)]
         ]).to_csv(index=False)
         result = graded(submission("leaky", files))
-        assert failing(result) == {"validation metrics: mae values", "validation metrics: rmse values",
-                                   "validation metrics: r2 values"}, failing(result)
+        assert failing(result) == {"validation metrics: mae values"}, failing(result)
         message = detail(result, "validation metrics: mae values")
         assert "linear_pipeline has mae" in message and "expected 3.34" in message and "age, bmi, and sbp_today" in message
+        assert "also uses a1c_result or callback_sbp" in message, message
 
         # Splitting on the visit time instead of the target time.
         by_visit = {"train": visits[visits["visit_time"] < VALIDATION_START],
@@ -685,6 +871,97 @@ def run() -> None:
         assert "split summary: row_count values" in failing(result), failing(result)
         message = detail(result, "split summary: row_count values")
         assert "train has row_count 44, expected 30" in message and "split on followup_time" in message, message
+        assert "a split on visit_time gives" in message, message
+        assert failing(result) == {"split summary: row_count values"}, failing(result)
+
+        # Other common slips cost only the checks they touch, and the feedback names their cause.
+        def slip(label: str, path: str, contents: str, names: set[str], cause: str) -> None:
+            files = dict(correct)
+            files[path] = contents
+            result = graded(submission(label, files))
+            assert failing(result) == names, (label, failing(result))
+            for name in names:
+                assert cause in detail(result, name), (label, detail(result, name))
+
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame["residual"] = frame["fitted"] - frame["observed"]
+        slip("residual-sign", "output/ols_residuals.csv", frame.to_csv(index=False),
+             {"residuals: residual values"}, "opposite sign")
+        # Only three flipped: the cause describes the rows listed, never every residual.
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame.loc[:2, "residual"] = -frame.loc[:2, "residual"]
+        slip("residual-sign-partial", "output/ols_residuals.csv", frame.to_csv(index=False),
+             {"residuals: residual values"}, "Those residuals have the opposite sign")
+        files = dict(correct)
+        files["output/ols_residuals.csv"] = frame.to_csv(index=False)
+        message = detail(graded(submission("residual-sign-partial-wording", files)), "residuals: residual values")
+        assert "P04" not in message and "Every" not in message, message
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame[["fitted", "residual"]] = frame[["residual", "fitted"]].to_numpy()
+        slip("residual-columns-swapped", "output/ols_residuals.csv", frame.to_csv(index=False),
+             {"residuals: fitted values"}, "traded places")
+        # The right split, with ranges taken from visit_time.
+        frame = frames["output/split_summary.csv"].copy()
+        frame["first_target_time"] = [part["visit_time"].min() for part in (train, valid, test)]
+        frame["last_target_time"] = [part["visit_time"].max() for part in (train, valid, test)]
+        slip("ranges-from-visit-time", "output/split_summary.csv", frame.to_csv(index=False),
+             {"split summary: first_target_time values"},
+             "Those are visit_time values")
+        # RMSE saved without np.sqrt(), on validation and on test rows.
+        frame = frames["output/validation_metrics.csv"].copy()
+        frame["rmse"] = frame["rmse"] ** 2
+        slip("rmse-not-rooted", "output/validation_metrics.csv", frame.to_csv(index=False),
+             {"validation metrics: rmse values"}, "mean squared errors")
+        frame = frames["output/test_metrics.csv"].copy()
+        frame["rmse"] = frame["rmse"] ** 2
+        slip("test-rmse-not-rooted", "output/test_metrics.csv", frame.to_csv(index=False),
+             {"test metrics: rmse value"}, "mean squared error")
+        # Test predictions from a pipeline that also uses a leaky feature.
+        leaky_final = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())]).fit(
+            train[FEATURES + ["a1c_result"]], train[TARGET])
+        frame = frames["output/test_predictions.csv"].copy()
+        frame["predicted_sbp"] = leaky_final.predict(test[FEATURES + ["a1c_result"]])
+        slip("leaky-test-predictions", "output/test_predictions.csv", frame.to_csv(index=False),
+             {"test predictions: predicted_sbp values"}, "also uses a1c_result or callback_sbp")
+        # The Task 3.3 save line copied from Task 3.1 writes the readmission table over validation_metrics.csv.
+        files = dict(correct)
+        files["output/validation_metrics.csv"] = readmission
+        del files["output/readmission_metrics.csv"]
+        message = detail(graded(submission("readmission-over-validation", files)), "validation metrics: columns")
+        assert "the one Task 3.3 writes to output/readmission_metrics.csv" in message, message
+        # Test metrics share validation's header, so a mix-up there names no other file.
+        files = dict(correct)
+        files["output/validation_metrics.csv"] = rename(validation, "r2", "r_squared")
+        message = detail(graded(submission("renamed-no-owner", files)), "validation metrics: columns")
+        assert "The saved header is" not in message, message
+        frame = data["candidates"].copy()
+        frame["available"] = frame["hours_after_visit"] < 0
+        frame["decision"] = np.where(frame["available"], "Keep", "Exclude (leakage)")
+        slip("strict-availability", "output/availability_decisions.csv", frame.to_csv(index=False),
+             {"availability: available values"}, "hours_after_visit < 0 gives")
+        frame = frames["output/validation_metrics.csv"].copy()
+        baseline = DummyRegressor(strategy="mean").fit(valid[FEATURES], valid[TARGET])
+        frame.loc[frame["approach"] == "mean_baseline", ["mae", "rmse", "r2"]] = list(
+            metrics(valid[TARGET], baseline.predict(valid[FEATURES])).values())
+        slip("baseline-from-validation", "output/validation_metrics.csv", frame.to_csv(index=False),
+             {"validation metrics: mae values"},
+             "a mean taken from the validation rows")
+        frame = frames["output/validation_metrics.csv"].query("approach == 'linear_pipeline'")
+        slip("test-scored-on-validation", "output/test_metrics.csv", frame.to_csv(index=False),
+             {"test metrics: mae value"}, "validation scores")
+        flags = data["flags"]
+        frame = frames["output/readmission_metrics.csv"].copy()
+        frame["precision"] = [precision_score(flags[column], flags["readmitted_30d"], zero_division=0)
+                              for column in frame["approach"]]
+        frame["recall"] = [recall_score(flags[column], flags["readmitted_30d"], zero_division=0)
+                           for column in frame["approach"]]
+        slip("flag-passed-first", "output/readmission_metrics.csv", frame.to_csv(index=False),
+             {"readmission metrics: precision values"}, "traded places")
+        # A wrong value that no slip explains names no cause.
+        files = dict(correct)
+        files["output/validation_metrics.csv"] = mistakes["validation metrics: mae values"][1]
+        message = detail(graded(submission("no-cause", files)), "validation metrics: mae values")
+        assert "Those are" not in message and "That is" not in message, message
 
         # Feedback names what was expected and what was found.
         files = dict(correct)
@@ -729,7 +1006,8 @@ def run() -> None:
         "numbering and the handout's byte-identical checks agree; empty and scaffold earn 0; correct, refit, "
         "alternative, with-index, semicolon- and tab-separated, one-decimal, and percent submissions earn 100; a coefficient table without its terms costs only the "
         f"columns check; each of the {len(NAMES)} single mistakes and each missing file costs only its own checks; "
-        "leaky features and a split on the visit time land on the checks that name them; feedback and pytest pass."
+        "leaky features, a split on the visit time, and the other common slips land on the checks that name "
+        "their cause; feedback and pytest pass."
     )
 
 

@@ -13,6 +13,10 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
+- McKinney, _Python for Data Analysis_, Chapter 2: §2.1 “The Python Interpreter” and §2.3 “Python Language Basics” (syntax, scalar types, and control flow).
+- Shotts, _The Linux Command Line_, Chapters 1–4 (the shell, navigation, exploring files, and file operations), Chapter 6 (output redirection), and Chapter 24 (a first shell script).
+- MIT _Missing Semester_: “Course Overview + The Shell” and “Version Control (Git)” (the basic Git/GitHub workflow).
+
 **Quick references**
 
 [WSL Troubleshooting](../wsl_troubleshooting.md)
@@ -23,7 +27,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 - [Official Python tutorial](https://docs.python.org/3/tutorial/): tutorials straight from the source
 
 <callout icon="🌉" color="green_bg">
-	#### _San Francisco is a walkable city and I will literally die on this hill_
+	## _San Francisco is a walkable city and I will literally die on this hill_
 </callout>
 
 # Class Structure
@@ -44,7 +48,7 @@ The **command line (CLI)** is a text-based interface.
 
 Think of it as texting your computer instead of playing charades with icons.
 
-- **Terminal:** The app displaying the session, such as Windows Terminal, macOS Terminal, or VS Code's terminal. My preference is using GhosTTY on MacOS and Linux, and I’ve made my own customized terminal app for iOS/iPadOS
+- **Terminal:** The app displaying the session, such as Windows Terminal, macOS Terminal, or VS Code's terminal. Use VS Code's terminal for this course.
 - **Shell:** The command interpreter running inside it, such as Bash, Zsh, or PowerShell.
 
 ## Getting to the Command Line
@@ -70,7 +74,7 @@ VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space
 
 [GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser, with no local VS Code, WSL, or Homebrew.
 
-1. Create your GitHub account and fork the assignment repository using **Creating Your GitHub Account** and **Fork on GitHub** below.
+1. Create your GitHub account and fork the assignment repository using **Starting with GitHub** and **Fork and Clone** below.
 2. On **your fork**: **Code → Codespaces → Create codespace on main**. Your repository opens automatically; skip cloning.
 3. In **Terminal → New Terminal**, run the uv/Python installation below, check `python3 --version` for **3.13.x**, then choose **Python: Select Interpreter**.
 4. Edit, run, commit, and sync in the browser as in desktop VS Code. Stop the codespace when finished; usage allowances are limited.
@@ -92,16 +96,19 @@ Open a new terminal, then check:
 
 ```bash
 python3 --version
-# Should show: Python 3.13.x
 ```
 
+Expect `Python 3.13.x`.
+
 [Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv for the course Python. Native Windows PowerShell setup is in [BONUS.md](BONUS.md); the course shell demos still require WSL.
+
+![xkcd 1654: Universal Install Script. What installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
 
 ## Text Editor Options
 
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. Other editors work too, including Sublime Text, PyCharm, nano, and Vim; see [BONUS.md](BONUS.md).
+We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. On macOS, first open the Command Palette and run **Shell Command: Install 'code' command in PATH**, then reopen the terminal ([macOS setup](https://code.visualstudio.com/docs/setup/mac#launch-vs-code-from-the-command-line)). Other editors work too, including Sublime Text, PyCharm, nano, and Vim; see [BONUS.md](BONUS.md).
 
 ### VS Code Basics
 
@@ -120,76 +127,49 @@ The editor changes files; the terminal runs commands. Saving a file does not run
 
 ## Starting with GitHub
 
-### Creating Your GitHub Account
+**GitHub** stores your project's files and history online. Create an account, verify your email, and use a username you would put on a professional portfolio. The GitHub Student Pack is optional.
 
-1. Go to [github.com](http://github.com/) and sign up with your UCSF email, so I can find you, or not. You can add or remove addresses later.
-2. Choose a username you can live with for years: your name or initials (`alice-smith`, `asmith-the-best-one-ever`), not `alice_smith_9847`. Future employers will see it, and you can change it later, but links might break.
-3. Verify your email address.
+### Keep Your Email Private
 
-With a .edu address, the GitHub Student Pack adds free premium features. Not needed for class, but nice to have!
-
-### DON'T USE YOUR REAL EMAIL IN GIT CONFIG
-
-You don't want to put your email all over the public internet, so GitHub provides a proxy service. You can see the proxy email address in your [GitHub email settings https://github.com/settings/emails](https://github.com/settings/emails).
+GitHub provides a `noreply` address in [email settings](https://github.com/settings/emails). Copy it for Git configuration; signing in authorizes access, while Git configuration identifies the author of a commit.
 
 ![GitHub Email Setup](media/github_email.png)
 
-### Setting Up Git in VS Code
-
-Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code. When **Clone from GitHub** or **Sync Changes** prompts you, choose **Sign in with GitHub** and authorize in your browser.
-
-If a commit reports a missing name or email, run these once in your cloned folder's terminal, using your GitHub `noreply` email:
+Install [Git](https://git-scm.com/downloads) if VS Code reports it missing, then restart VS Code. When cloning or syncing prompts you, choose **Sign in with GitHub** and authorize in your browser. If your first commit asks for a name or email, run these once in your cloned folder's terminal:
 
 ```bash
 git config user.name "Your Name"
 git config user.email "YOUR GITHUB NOREPLY EMAIL"
 ```
 
-GitHub login authorizes access to your repositories; these settings identify the author of your commits.
-
 ## Getting the First Assignment
 
-Lecture 02 explains Git properly; here’s what you’ll need to start Assignment 01. A **fork** is your copy of a repository on GitHub; a **clone** is the working copy on your computer.
-
-### Fork on GitHub
-
-1. Open the assignment repository linked for this term, sign in, and select **Fork**.
-
-![GitHub's Fork button](assignment/media/github-fork.png)
-
-2. Choose **your account** as Owner, keep the repository name and **Copy the main branch only** checked, then select **Create fork**.
-
-![GitHub's Create a new fork form: select your account as Owner, keep the repository name, and click Create fork.](assignment/media/github-create-fork.png)
-
-### Clone Your Fork in VS Code
-
-1. On **your fork**, select **Code → HTTPS** and copy the URL. The owner in the URL should be your GitHub username.
+A **fork** is your copy of a repository on GitHub; a **clone** is its working copy on your computer. Assignment 01 starts with a fork, so your changes go to your own account.
 
 ![Copy your fork's HTTPS URL from the Code menu](assignment/media/github-clone-url.png)
 
-2. In VS Code, open the Command Palette, choose **Git: Clone**, paste that URL, pick a folder, and open the cloned repository. Sign in if prompted. On Windows, do this in the **WSL: Ubuntu** window and pick a folder in your Linux home directory.
+### Reference Card: Fork and Clone
 
-![VS Code's Clone from URL prompt](assignment/media/vscode-clone.png)
+- On the assignment repository: **Fork → Create fork**, with your account as Owner.
+- On **your fork**: **Code → HTTPS**, then copy the URL; its owner should be your username.
+- In VS Code: Command Palette → **Git: Clone**, paste that URL, choose a folder, and open the clone. On Windows, stay in **WSL: Ubuntu** and choose a folder in your Linux home directory.
 
-The screenshots use example repositories; paste your own fork's URL. Keep your assignment work in this folder.
+[Demo 1](demo/DEMO_GUIDE.md#15-fork-and-clone) shows each screen. Keep assignment work in the cloned folder.
 
 ## Submit Your Assignment Files
 
-A **commit** saves a version of your files. **Staging** a file (the **+** button in Source Control) chooses which changes go into the next commit; unstaged changes stay on your computer. **Push** sends local commits to GitHub; VS Code's **Sync Changes** pushes your commits and pulls any new ones from GitHub in one click. Submit either way below.
-
-### VS Code: Commit and Sync
-
-1. Save your files. In **Source Control**, click each changed file to review it, then stage it with **+**. For Assignment 01, stage the completed scripts, both files in `terminal-practice/`, and both in `output/`.
+A **commit** saves a version of your files. **Staging** selects which changes go into that commit; unstaged edits stay on your computer. **Push** sends local commits to GitHub. VS Code's **Sync Changes** pushes yours and pulls any incoming commits.
 
 ![VS Code Source Control with the plus button highlighted to stage a file.](assignment/media/vscode-stage.png)
 
-2. Enter a message such as `Complete Assignment 01`, then select **Commit**.
+### Reference Card: Save, Commit, and Sync
 
-![VS Code's message field and Commit button above the staged changes.](assignment/media/vscode-commit.png)
+- Save your files, then review each changed file in **Source Control**.
+- Stage with **+**, enter a message such as `Complete Assignment 01`, and select **Commit**.
+- Select **Sync Changes** and sign in if prompted.
+- On GitHub, open the committed files to verify their contents. **Actions** shows the automatic checks; enable workflows once if a new fork prompts you.
 
-3. Select **Sync Changes** to send your commit to your fork. Sign in to GitHub if prompted.
-
-![VS Code's Sync Changes button highlighted.](assignment/media/vscode-sync.png)
+For Assignment 01, include the completed scripts, both files in `terminal-practice/`, and both in `output/`. Your fork is the submission; there is no pull request to the course repository. [Demo 1](demo/DEMO_GUIDE.md#17-save-a-change-on-github) practices the workflow.
 
 ### GitHub Website: Upload Files
 
@@ -199,10 +179,6 @@ A **commit** saves a version of your files. **Staging** a file (the **+** button
 
 2. Drag in the completed scripts and the `terminal-practice` and `output` folders, not the whole project folder. Keep the folders intact so paths such as `output/readiness.txt` stay correct.
 3. Enter `Complete Assignment 01`, choose **Commit directly to the main branch**, and click **Commit changes**. A web upload commits on GitHub; no separate push is needed.
-
-### Verify on GitHub
-
-Open your fork's `output/readiness.txt` and `output/student_identity.txt` and check their contents. Open **Actions** for the automatic checks; enable workflows once if a new fork prompts you. Your fork is the submission, so there is no pull request to the course repository.
 
 <synced_block url="https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696#3dcd9fdd1a1a806b8fb4fffbf0fdabab">
 
@@ -268,11 +244,11 @@ From `datasci217`, `data/visits.csv` and `/home/alice/datasci217/data/visits.csv
 ### Code Snippet: Navigation Commands
 
 ```bash
-cd ~        # go to your home directory
+cd ~
 pwd
-cd ..       # up one level
+cd ..
 pwd
-cd ~        # back home
+cd ~
 pwd
 ```
 
@@ -298,15 +274,17 @@ Your username replaces `alice`; macOS prints `/Users/alice` and `/Users`.
 
 ### Code Snippet: File and Directory Operations
 
+Create an empty visits file, copy it, and move the copy into `results`. `rm` deletes the temporary `draft.txt`; there is no trash can.
+
 ```bash
 mkdir clinic_project
 cd clinic_project
 mkdir data results
-touch data/visits.csv                        # empty placeholder file
-cp data/visits.csv data/backup.csv           # copy
-mv data/backup.csv results/visits_copy.csv   # move and rename
+touch data/visits.csv
+cp data/visits.csv data/backup.csv
+mv data/backup.csv results/visits_copy.csv
 touch results/draft.txt
-rm results/draft.txt                         # delete; there is no trash can
+rm results/draft.txt
 ls data results
 ```
 
@@ -361,7 +339,7 @@ A **shell script** is a text file of shell commands that Bash runs top to bottom
 ### Reference Card: Getting Help
 
 - `man [command]`: Manual page for command
-- `[command] --help`: Quick help for command
+- `[command] --help`: Quick help when the command supports it; macOS tools often use `man` instead.
 - `which [command]`: Find where command is located
 
 Other help: books, your favorite LLM, a buddy, or the course EAs and instructor.
@@ -413,11 +391,11 @@ In VS Code, save a `.py` file and click the triangle at its top right to run it 
 ### Code Snippet: Running Python
 
 ```bash
-python3                 # Start interactive Python
-python3 script.py       # Run a Python script
+python3
+python3 script.py
 ```
 
-These are Bash commands; native Windows PowerShell uses `python`. Enter `exit()` at the `>>>` prompt to leave the REPL.
+The first command starts interactive Python; the second runs a saved script. These are shell commands; native Windows PowerShell uses `python`. Enter `exit()` at the `>>>` prompt to leave the REPL.
 
 #### Interactive Mode Example
 
@@ -434,9 +412,9 @@ Hello, World!
 
 ### Indentation Matters!
 
-<callout icon="⚠️" color="green_bg">
-	Python uses indentation to group code together.
-	**Recommendation: Use four spaces per indentation level.**
+<callout icon="⚠️" color="yellow_bg">
+	## Indent each block four spaces
+	Python uses indentation to group code together. Use four spaces per indentation level.
 </callout>
 
 This previews an `if` conditional; Control Structures, below, explains the condition.
@@ -572,14 +550,11 @@ A **list** holds several values in order inside square brackets, such as one pat
 
 ### Duck Typing: Behavior Over Labels
 
-Python is dynamically typed: a variable can refer to values of different types, and code cares more about what a value can do than what type it is. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck. A string and a list are different types, yet both support `len()`:
+**Dynamic typing** means a name can refer to values of different types. **Duck typing** means an operation needs the right behavior: both text and lists support `len()`, even though their types differ. If it walks like a duck and quacks like a duck, Python lets us treat it like a duck.
 
 ```python
-label = "dataset"
-grades = [85, 92, 78]
-
-print(len(label))   # 7
-print(len(grades))  # 3
+print(len("dataset"))          # 7
+print(len([128, 142, 118]))    # 3
 ```
 
 Python checks the operation when it runs; unsupported operations raise `TypeError`.
@@ -655,8 +630,6 @@ print(x in [1, 2, 3], x not in [1, 2, 3])   # True False
 ```
 
 At the `>>>` prompt Python shows a bare expression's value; in a script, only `print()` shows it.
-
-![xkcd 1654: Universal Install Script. What installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
 
 # LIVE DEMO!
 
@@ -736,18 +709,20 @@ A list supplies its items in order, and `range()` supplies integers; Lecture 02 
 ### Code Snippet: Basic For Loops
 
 ```python
-# Count from 0 to 4
-for i in range(5):
-    print("Count:", i)
+for number in range(5):
+    print(number)   # 0, 1, 2, 3, 4 on separate lines
 ```
 
-```text
-Count: 0
-Count: 1
-Count: 2
-Count: 3
-Count: 4
+`range(5)` supplies the integers from 0 up to, but not including, 5.
+
+### Code Snippet: Positions and Values
+
+```python
+for position, reading in enumerate([128, 142], start=1):
+    print(position, reading)   # 1 128, then 2 142 on separate lines
 ```
+
+`enumerate()` supplies each position alongside its value; `start=1` numbers them from 1.
 
 ### Tracing a Loop
 
@@ -784,51 +759,30 @@ Average grade: 87.8
 
 ## While Loops and Loop Control
 
-A `while` loop repeats as long as its condition is `True`. Update the loop variable inside the loop so it can eventually finish:
+A `while` loop repeats as long as its condition stays `True`. Update something in its body so the loop can finish; **Ctrl+C** stops a loop that keeps running.
 
 ```python
 count = 1
 while count <= 3:
-    print("Count:", count)
+    print(count)   # 1, 2, 3 on separate lines
     count += 1
 ```
 
-```text
-Count: 1
-Count: 2
-Count: 3
-```
+### Reference Card: Stop or Skip a Loop Pass
 
-When a loop needs both a position and a value, `enumerate()` supplies them:
+- `break`: End the loop immediately, such as after finding the first high reading.
+- `continue`: Skip the rest of this pass and start the next one, such as for a missing measurement.
+- `total += value`: The short form of `total = total + value`.
 
 ```python
-grades = [85, 92, 78]
-for position, grade in enumerate(grades, start=1):
-    print("Assignment", position, "grade:", grade)
+for reading in [128, 142, 118]:
+    if reading < 130:
+        continue
+    print(reading)   # 142
+    break           # stop after the first reading at or above 130
 ```
 
-```text
-Assignment 1 grade: 85
-Assignment 2 grade: 92
-Assignment 3 grade: 78
-```
-
-`break` stops a loop early; `continue` skips the rest of the current pass and moves to the next item:
-
-```python
-grades = [85, 72, 92, 78]
-for grade in grades:
-    if grade < 80:
-        continue          # skip 72 and move on to the next grade
-    print("Processing", grade)
-    if grade >= 90:
-        break             # stop at 92; 78 is never visited
-```
-
-```text
-Processing 85
-Processing 92
-```
+[Demo 4.3](demo/DEMO_GUIDE.md#43-while-break-and-continue) practices each form separately.
 
 # Debugging and Error Handling Basics
 
@@ -893,12 +847,7 @@ The `^^^^` markers point at the part of the line that failed. `Did you mean` is 
 
 **Diagnosis:** Python cannot find that name. Check its spelling against the hint and whether the assignment ran before this line.
 
-**Correction:**
-
-```python
-student_name = "Alice"
-print(student_name)
-```
+**Correction:** Change `student_naem` to `student_name`, save, and rerun; it prints `Alice`.
 
 ## TypeError: Check the Operation and Types
 

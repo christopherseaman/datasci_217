@@ -4,7 +4,7 @@ Companion visualization script for Lecture 09: Time Series Analysis
 Generates visualizations for code examples in the lecture README.
 
 Run this script to generate all example visualizations:
-    python visualize_examples.py
+    python3 visualize_examples.py
 
 Output images are saved to the media/ directory.
 """

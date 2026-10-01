@@ -22,11 +22,12 @@ def main():
         ("Code Snippet: Density Comparisons", "fig", "distribution_reference.png"),
         ("Code Snippet: Encode the study table", "scatter", "altair_study_reference.png"),
     ):
+        import altair as alt
         import pandas as pd
         import seaborn as sns
 
         source = re.search(r"```python\n(.*?)\n```", lecture.split("### " + heading, 1)[1], re.S)[1]
-        namespace = {"np": np, "pd": pd, "sns": sns, "plt": plt}
+        namespace = {"alt": alt, "np": np, "pd": pd, "sns": sns, "plt": plt}
         exec(source.replace("plt.show()", ""), namespace)
         output = ROOT / "07/media" / filename
         if variable == "fig":

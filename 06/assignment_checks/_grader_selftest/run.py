@@ -7,8 +7,10 @@ order, CRLF, a BOM, quoting, padding, letter case, number format, row-number
 and index columns, melt's default column names, `NaN` for an empty cell, and
 the extra `record_status` column the lecture's merge keeps) earns 100 too, an
 empty directory and the untouched handout earn 0, one wrong value or one
-misnamed column costs exactly its own check, and a missing file costs only its
-own artifact's checks. It also confirms that the copies of the supplied data in
+misnamed column costs exactly its own check, a missing file costs only its
+own artifact's checks, and the feedback names the cause it found (a right or
+inner merge, tables put side by side with repeated column names, columns
+renamed by position, a file saved outside `output/`). It also confirms that the copies of the supplied data in
 `_value_checks.py` match `06/assignment/data/`, that the README's checkpoints
 and completion contract agree with the checks, that the handout ships every
 file in `CHECKS_FILES` byte for byte and no other Python file, and that the
@@ -283,6 +285,26 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, failing(result)
 
+        meaningless = dict(correct)
+        meaningless["output/sbp_long.csv"] = "wrong\n0\n"
+        result = graded(submission("no-recognizable-long-evidence", meaningless))
+        assert failing(result) == {name for name in NAMES if name.startswith("SBP long:")}, failing(result)
+        assert "no recognizable columns or values" in detail(result, "SBP long: sbp values")
+        partial_header = dict(correct)
+        partial_header["output/sbp_long.csv"] = "patient_id,visit\nwrong,wrong\n"
+        result = graded(submission("only-unrecognized-pairs-without-values", partial_header))
+        assert "SBP long: sbp values" in failing(result), failing(result)
+        nul_long = dict(correct)
+        nul_long["output/sbp_long.csv"] += "\x00"
+        result = graded(submission("long-nul-bytes", nul_long))
+        assert failing(result) == {name for name in NAMES if name.startswith("SBP long:")}, failing(result)
+        assert "embedded NUL" in detail(result, "SBP long: sbp values")
+        empty_long = dict(correct)
+        empty_long["output/sbp_long.csv"] = "patient_id,visit,sbp\n"
+        empty_long["output/sbp_round_trip.csv"] = "patient_id,baseline,followup\n"
+        result = graded(submission("empty-long-and-pivot", empty_long))
+        assert "SBP round trip: one row per patient" in failing(result), failing(result)
+
         # The checks read only output/: poisoned data and code in the submission change nothing.
         for name in ("specimens.csv", "sbp_wide.csv"):
             (root / "data").mkdir(exist_ok=True)
@@ -335,14 +357,59 @@ def run() -> None:
         files["output/aligned_features.csv"] = frames["output/aligned_features.csv"].drop(columns="specimen_id").to_csv(index=False)
         files["output/sbp_round_trip.csv"] = pivoted.to_csv(index=False)
         result = graded(submission("no-id-column", files))
-        assert failing(result) == {"aligned features: columns", "aligned features: one row per specimen",
-                                   "SBP round trip: columns", "SBP round trip: one row per patient"}, failing(result)
-        assert "leave out index=False" in detail(result, "aligned features: one row per specimen")
-        assert "reset_index()" in detail(result, "SBP round trip: one row per patient")
+        assert failing(result) == {"aligned features: columns", "SBP round trip: columns"}, failing(result)
+        assert "leave out index=False" in detail(result, "aligned features: columns")
+        assert "reset_index()" in detail(result, "SBP round trip: columns")
         files["output/sbp_round_trip.csv"] = pivoted.to_csv(index=False).replace("162", "126")
         result = graded(submission("no-id-column-wrong-value", files))
         assert "SBP round trip: baseline values" in failing(result), failing(result)
         assert "SBP round trip: followup values" not in failing(result), failing(result)
+
+        # Pivoting the student's own long table does not charge its earlier mistake again.
+        original_long = frames["output/sbp_long.csv"]
+        changed = original_long.copy()
+        changed.loc[0, "sbp"] += 20
+        variants = {
+            "changed-value": changed,
+            "dropped-patient": original_long[original_long["patient_id"] != "P201"],
+            "dropped-visit": original_long[original_long["visit"] != "followup"],
+            "renamed-visit": original_long.assign(visit=original_long["visit"].replace({"followup": "later"})),
+        }
+        for label, long in variants.items():
+            files = dict(correct)
+            files["output/sbp_long.csv"] = long.to_csv(index=False)
+            wide = long.pivot(index="patient_id", columns="visit", values="sbp").reset_index()
+            files["output/sbp_round_trip.csv"] = wide.to_csv(index=False)
+            expected = "SBP long: sbp values" if label == "changed-value" else "SBP long: one row per patient and visit"
+            assert failing(graded(submission(label, files))) == {expected}, label
+            wide.loc[0, "baseline"] += 30
+            files["output/sbp_round_trip.csv"] = wide.to_csv(index=False)
+            assert failing(graded(submission(label + "-wrong-pivot", files))) == {expected, "SBP round trip: baseline values"}, label
+
+        files = dict(correct)
+        files["output/sbp_long.csv"] = frames["output/sbp_long.csv"].drop(columns="sbp").to_csv(index=False)
+        assert failing(graded(submission("missing-value-column-once", files))) == {"SBP long: columns"}
+        # A missing sibling column must not suppress an independently wrong present value.
+        files = dict(correct)
+        merge = frames["output/specimen_merge_audit.csv"].drop(columns="volume_ml").copy()
+        files["output/specimen_merge_audit.csv"] = merge.to_csv(index=False)
+        assert failing(graded(submission("missing-volume-once", files))) == {"merge audit: columns"}
+        merge.loc[merge["specimen_id"] == "SP101", "patient_id"] = "P999"
+        files["output/specimen_merge_audit.csv"] = merge.to_csv(index=False)
+        assert failing(graded(submission("missing-volume-wrong-patient", files))) == {
+            "merge audit: columns", "merge audit: specimen values"}
+
+
+        files = dict(correct)
+        swapped_batches = frames["output/combined_specimens.csv"].copy()
+        swapped_batches["source_partition"] = swapped_batches["source_partition"].map({"batch_a": "batch_b", "batch_b": "batch_a"})
+        files["output/combined_specimens.csv"] = swapped_batches.to_csv(index=False)
+        assert failing(graded(submission("swapped-batch-labels", files))) == {"combined specimens: source_partition labels"}
+
+        files = dict(correct)
+        duplicate = frames["output/aligned_features.csv"][["volume_ml"]].map(lambda value: "NA" if pd.isna(value) else f"{value:.2f}")
+        files["output/aligned_features.csv"] = pd.concat([frames["output/aligned_features.csv"], duplicate], axis=1).to_csv(index=False)
+        assert graded(submission("duplicate-equivalent-number-format", files))["score"] == 100
 
         # One mistake costs exactly its own check.
         mistakes = {
@@ -362,7 +429,7 @@ def run() -> None:
             "SBP long: columns": ("output/sbp_long.csv", lambda text: text.replace("patient_id,visit,sbp", "patient_id,variable,value", 1)),
             "SBP long: one row per patient and visit": ("output/sbp_long.csv", lambda text: "\n".join(text.splitlines()[:-1]) + "\n"),
             "SBP long: sbp values": ("output/sbp_long.csv", lambda text: edit(text, "P203|followup", "sbp", "114")),
-            "SBP round trip: columns": ("output/sbp_round_trip.csv", lambda text: text.replace("followup", "follow_up", 1)),
+            "SBP round trip: columns": ("output/sbp_round_trip.csv", lambda text: text.replace("followup", "post_treatment", 1)),
             "SBP round trip: one row per patient": ("output/sbp_round_trip.csv", lambda text: text + "P205,150,140\n"),
             "SBP round trip: baseline values": ("output/sbp_round_trip.csv", lambda text: edit(text, "P201", "baseline", "184")),
             "SBP round trip: followup values": ("output/sbp_round_trip.csv", lambda text: edit(text, "P204", "followup", "124")),
@@ -381,19 +448,16 @@ def run() -> None:
             result = graded(submission(f"missing-{number}", files))
             assert failing(result) == set(artifact_checks(path)), (path, failing(result))
 
-        # Merging every clinic record repeats K01's specimens under both names: the rows and names
-        # checks fail, and the rows check says to keep the current records.
+        # Merging every clinic record repeats K01's specimens; correct copies retain their value points.
         specimens = read_data("specimens.csv")
         unfiltered = pd.merge(specimens, read_data("clinics_history.csv")[["clinic_id", "clinic_name", "region"]],
                               on="clinic_id", how="left", indicator=True)
         files = dict(correct)
         files["output/specimen_merge_audit.csv"] = unfiltered.to_csv(index=False)
         result = graded(submission("unfiltered-merge", files))
-        assert failing(result) == {"merge audit: one row per specimen", "merge audit: current clinic names and regions"}
+        assert failing(result) == {"merge audit: one row per specimen"}
         message = detail(result, "merge audit: one row per specimen")
         assert "SP101 2 times" in message and 'record_status is "current"' in message, message
-        message = detail(result, "merge audit: current clinic names and regions")
-        assert "SP101 has clinic_name Bayview Annex, expected Bayview Clinic" in message, message
 
         # An inner merge drops SP106, which costs the rows check alone.
         inner = pd.merge(specimens, read_data("clinics_history.csv").query("record_status == 'current'")
@@ -402,7 +466,76 @@ def run() -> None:
         files["output/specimen_merge_audit.csv"] = inner.to_csv(index=False)
         result = graded(submission("inner-merge", files))
         assert failing(result) == {"merge audit: one row per specimen"}, failing(result)
-        assert "is missing SP106" in detail(result, "merge audit: one row per specimen")
+        message = detail(result, "merge audit: one row per specimen")
+        assert "is missing SP106" in message and 'Without how="left"' in message and "K01" not in message, message
+
+        # A right merge adds K04, a clinic with no specimens, as a row with an empty specimen_id.
+        right = pd.merge(specimens, read_data("clinics_history.csv").query("record_status == 'current'")
+                         [["clinic_id", "clinic_name", "region"]], on="clinic_id", how="right", indicator=True)
+        files = dict(correct)
+        files["output/specimen_merge_audit.csv"] = right.to_csv(index=False)
+        result = graded(submission("right-merge", files))
+        assert failing(result) == {"merge audit: one row per specimen"}, failing(result)
+        message = detail(result, "merge audit: one row per specimen")
+        assert "1 row with an empty specimen_id" in message and 'how="right"' in message, message
+        assert "K01" not in message and "Without" not in message, message
+
+        # Conflicting duplicate columns cost their structural check; readable copies keep value points.
+        batch_a, batch_b = read_data("specimens_batch_a.csv"), read_data("specimens_batch_b.csv")
+        batch_a["source_partition"], batch_b["source_partition"] = "batch_a", "batch_b"
+        transit_times = read_data("transit_times.csv")
+        files = dict(correct)
+        files["output/combined_specimens.csv"] = pd.concat([batch_a, batch_b], axis=1).to_csv(index=False)
+        files["output/aligned_features.csv"] = pd.concat(
+            [batch_a[["specimen_id", "volume_ml"]], transit_times], axis=1).to_csv(index=False)
+        result = graded(submission("side-by-side", files))
+        assert failing(result) == {"combined specimens: columns", "combined specimens: one row per specimen",
+                                   "aligned features: columns", "aligned features: one row per specimen",
+                                   "aligned features: transit_min values"}, failing(result)
+        assert "source_partition twice" in detail(result, "combined specimens: columns")
+        assert "names specimen_id twice" in detail(result, "aligned features: columns")
+
+        # Only one table indexed: its partner's row numbers leave rows with an empty specimen_id.
+        files = dict(correct)
+        files["output/aligned_features.csv"] = pd.concat(
+            [batch_a[["specimen_id", "volume_ml"]].set_index("specimen_id"), transit_times], axis=1).to_csv()
+        message = detail(graded(submission("one-table-indexed", files)), "aligned features: one row per specimen")
+        assert "4 rows with an empty specimen_id" in message and "blank" not in message, message
+        assert 'set_index("specimen_id") on both tables' in message, message
+
+        # Batches labeled with keys= and saved with their index: two unheaded columns, counted once.
+        files = dict(correct)
+        files["output/combined_specimens.csv"] = pd.concat([batch_a, batch_b], keys=["batch_a", "batch_b"]).to_csv()
+        result = graded(submission("keys-with-index", files))
+        assert failing(result) == {"combined specimens: columns"}, failing(result)
+        assert "also has two columns with no header;" in detail(result, "combined specimens: columns")
+
+        # Round-trip columns renamed by position: both value checks say so; one wrong value does not.
+        swapped = frames["output/sbp_round_trip.csv"].copy()
+        swapped.columns = ["patient_id", "followup", "baseline"]
+        files = dict(correct)
+        files["output/sbp_round_trip.csv"] = swapped.to_csv(index=False)
+        result = graded(submission("round-trip-swapped", files))
+        assert failing(result) == {"SBP round trip: baseline values", "SBP round trip: followup values"}, failing(result)
+        for name in failing(result):
+            assert "renamed by position" in detail(result, name), detail(result, name)
+        files["output/sbp_round_trip.csv"] = edit(correct["output/sbp_round_trip.csv"], "P201", "baseline", "150")
+        message = detail(graded(submission("round-trip-one-value", files)), "SBP round trip: baseline values")
+        assert "P201 has baseline 150, expected 148" in message and "position" not in message, message
+
+        # sbp_long saved as the round trip: the value checks point to the columns check, not to a swap.
+        files = dict(correct)
+        files["output/sbp_round_trip.csv"] = correct["output/sbp_long.csv"]
+        result = graded(submission("long-as-round-trip", files))
+        assert "sbp_long was saved here" in detail(result, "SBP round trip: one row per patient")
+        assert "SBP round trip: baseline values" not in failing(result)
+
+        # Saved beside output/ rather than in it: the message says where the file went.
+        files = {path: text for path, text in correct.items() if path != "output/aligned_features.csv"}
+        root = submission("saved-outside-output", files)
+        (root / "aligned_features.csv").write_text(correct["output/aligned_features.csv"], encoding="utf-8")
+        message = detail(graded(root), "aligned features: columns")
+        assert "Found aligned_features.csv in the assignment folder" in message and "ALIGNED_PATH" in message, message
 
         # Feedback names what was expected and what was found.
         files = dict(correct)
@@ -435,7 +568,7 @@ def run() -> None:
         "Assignment 06 checks: supplied-data copies, README checkpoints and contract, and the handout's "
         "byte-identical checks agree; empty and scaffold earn 0; correct, alternative, with-index, "
         "pivot-with-index, and semicolon- and tab-separated submissions earn 100; each of the 20 single mistakes and each missing file costs "
-        "only its own checks; a file without its ID column keeps its value checks; feedback and pytest pass."
+        "only its own checks; a file without its ID column keeps its value checks; feedback names the cause it found; pytest passes."
     )
 
 

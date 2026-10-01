@@ -13,17 +13,19 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/01_setup.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/02_wrangling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/03_model_prep.ipynb) · [Demo 4](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/04_modeling.ipynb) · [Optional geo bonus](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/05_geo_bonus.ipynb)
 
-![xkcd 3172: Fifteen Years](media/fifteen_years_2x.png)
+![xkcd 3172: Fifteen Years. Every row of a health record is part of someone's story, which is why a result has to be one you can defend.](media/fifteen_years_2x.png)
 
 A hospital asking _how many patients will arrive at each emergency department (ED) in the next hour?_ needs tools from nearly every lecture in this course; the hard part is keeping the question, the table, and the evidence lined up.
 
+This lecture covers:
+
+- McKinney, _Python for Data Analysis_ (3rd ed.): 13.1 to 13.5 (data analysis examples: five public datasets carried from loading through cleaning, reshaping, aggregation, and plots)
+
 # A flexible capstone checklist
 
-A capstone project carries one question from source records to a stated result. You have already practiced each piece: Lecture 05's cleaning pipeline defined a data contract, then loaded, audited, decided, transformed, and validated before saving; Lecture 07's visualization contract named the question, claim, and grain before choosing a chart; Lecture 10's workflow kept an untouched test set for one final evaluation. The checklist below links those habits.
+A **capstone checklist** names the stages a project passes through on the way from one question to a result another person can check, and the evidence to keep from each. Without one, an ED arrivals analysis drifts: the question, the table, and the claim stop matching, and no one can retrace how the result was reached.
 
 ## Work in a loop, not a line
-
-Use the checklist as a map, not a recipe card: a surprising count can send you back to the source documentation, and a plot can show that the question needs revising.
 
 ```mermaid
 flowchart LR
@@ -38,7 +40,7 @@ flowchart LR
     S -. surprise .-> Q
 ```
 
-### Reference Card: project contract
+### Reference Card: Project Contract
 
 | Stage | Ask | Evidence to keep |
 | :--- | :--- | :--- |
@@ -53,9 +55,9 @@ _Report the result without making the conclusion wear a cape it has not earned._
 
 # Start with a question and a candidate claim
 
-A goal such as "analyze ED visits" gives no way to decide which rows, columns, or plots matter. An **answerable question** names the unit, the outcome, and the time frame; for a forecast, that includes when the answer must be known. A **candidate claim** is a statement the evidence could support or contradict. It is Lecture 07's "audience and claim" step, applied to a whole project.
+An **answerable question** names the unit, the outcome, and the time frame, including, for a forecast, when the answer must be known; a **candidate claim** is a statement the evidence could support or contradict. Together they decide which rows, columns, and plots matter, which a goal such as "analyze ED visits" never does.
 
-Today's worked example has the same shape with public data: a course release built from January–June 2023 NYC Yellow Taxi trip records for the 12 taxi zones with the most January pickups. Read "taxi zone" as "ED" and "pickups" as "arrivals", and every decision below carries over.
+The worked example has the same shape with public data: a course release built from January–June 2023 NYC Yellow Taxi trip records for the 12 taxi zones with the most January pickups. Read "taxi zone" as "ED" and "pickups" as "arrivals", and every decision below carries over.
 
 > Using information available before a target hour, how well can we predict the pickup count for each selected taxi zone in the next hour, and where are the largest errors?
 
@@ -72,15 +74,9 @@ _Your capstone is not Pokémon for obscure ML: you don't have to catch 'em all._
 
 # Grain, keys, and complete panels
 
-Lecture 05 called it **row meaning** and Lecture 06 called it **grain**: what one row of a table represents. In a capstone, the grain changes as you work. Raw records become summaries, and summaries become model rows. Every change is a chance to count something twice or drop it silently.
+The **grain** of a table is what one row represents, such as one lab result or one patient, and its **key** is the column or columns that identify one row at that grain (Lectures 05 and 06). A project changes grain as raw records become summaries and summaries become model rows, and each change is a chance to count something twice or drop it without noticing.
 
-Three more terms from earlier lectures keep the grain honest:
-
-- A **key** is the column or column combination that identifies one row at the intended grain. It is Lecture 05's candidate identifier and Lecture 06's primary key, and Lecture 06's `validate=` checks depend on it.
-- **Provenance** (Lecture 05) is the record of where data came from and what was done to it: source files, dates, selection rules, and file hashes. A **hash** is a short fingerprint computed from a file's bytes; change one byte and the hash changes. A **release manifest** is a file that writes provenance down so anyone can check it.
-- A **panel** (Lecture 09) holds one ordered history per entity. A **complete panel** has a row for every entity at every time step, even when nothing was recorded.
-
-In health data, a table with one row per lab result cannot be counted like a table with one row per patient. The taxi release has the same trap:
+The taxi release holds two grains:
 
 | Object | Row grain | Key | Rows | Pickups represented |
 | --- | --- | --- | --- | --- |
@@ -91,7 +87,7 @@ The sample exists for audit practice; the panel was built from all source rows. 
 
 ## Time keys: order in UTC, interpret in local time
 
-An hourly key looks simple until the clocks change. In most US time zones, one spring night jumps from 01:59 to 03:00, and one fall night repeats 01:00–01:59. Lecture 09 called these clock times **nonexistent** and **ambiguous**. A key built from local clock times breaks on both nights: the repeated hour creates duplicate keys, and the skipped hour creates a phantom gap that no data can ever fill.
+An hourly key breaks when the clocks change. In most US time zones one spring night jumps from 01:59 to 03:00 and one fall night repeats 01:00–01:59, the **nonexistent** and **ambiguous** times of Lecture 09. A key built from local clock times gets a duplicate on the repeated hour and a phantom gap, which no data can ever fill, on the skipped one.
 
 | UTC key | Chicago clock | Key built from the local clock |
 | --- | --- | --- |
@@ -99,23 +95,30 @@ An hourly key looks simple until the clocks change. In most US time zones, one s
 | 2024-11-03 07:00 | 01:00 CST (UTC−6) | `(station, 01:00)`, a duplicate |
 | 2024-11-03 08:00 | 02:00 CST (UTC−6) | `(station, 02:00)` |
 
-The capstone rule builds on Lecture 09's advice to store times in UTC: **order, join, lag, and split in UTC; convert to local time only to interpret patterns** such as hour of day or weekday. Lecture 09's [clock-change snippet](../09/README.md#clock-changes-repeated-and-skipped-times) shows how to set repeated and skipped readings aside when you localize.
+<callout icon="⚠️" color="yellow_bg">
+	## Order, join, lag, and split in UTC
+	Convert to local time only to interpret patterns such as hour of day or weekday. A UTC hour is always one elapsed hour, so `shift(1)` reaches the previous hour even on the nights the clocks change. Lecture 09's [clock-change snippet](../09/README.md#clock-changes-repeated-and-skipped-times) sets repeated and skipped readings aside when you localize.
+</callout>
 
 The taxi panel shows the effect: January–June 2023 has 181 local days but only 4,343 elapsed hours, not 181 × 24 = 4,344, because 12 March had 23.
 
 ## Absent row: true zero or missing?
 
-Completing a panel means left-merging the observed rows onto an expected grid, as in Lecture 06's [cross-join snippet](../06/README.md#listing-every-combination-with-a-cross-join). Every grid row without a source row comes back as `NaN`. What that `NaN` should become depends on how the data were recorded, the same line Lecture 08 drew for empty pivot-table cells:
+A **complete panel** has a row for every entity at every time step (Lecture 09), even when nothing was recorded. Building one means left-merging the observed rows onto an expected grid, as in Lecture 06's [cross-join snippet](../06/README.md#listing-every-combination-with-a-cross-join). Every grid row without a source row comes back as `NaN`, and what that `NaN` should become depends on how the data were recorded, the same line Lecture 08 drew for empty pivot-table cells:
 
-- **Tallied events** (taxi pickups, or ED arrivals counted from individual check-in records): no record means nothing happened, so the count is a true 0. The taxi panel has 375 zone-hours with 0 pickups for this reason; the release builder filled them before publishing.
-- **Measurements and reports** (a weather sensor's temperature, a clinic's hourly arrival report): no record means nobody measured or reported, so the value stays missing. Filling it with 0 invents data.
+- **Tallied events** (taxi pickups, or ED arrivals counted from individual check-in records): when the event feed is complete, no record means nothing happened, so the count is 0. The release builder treated the taxi feed as complete and filled its 375 empty zone-hours with 0 pickups. A missing or delayed event feed would be unknown, not zero.
+- **Measurements and reports** (a weather sensor's temperature, a clinic's hourly arrival report): no record means nobody measured or reported, so the value stays missing.
 
-Either way, keep a flag such as `source_observed` that records whether a source row existed, so the choice stays auditable.
+<callout icon="⚠️" color="yellow_bg">
+	## A missing measurement is not a zero
+	A temperature of 0 °C or a report of 0 arrivals is a real value that a model learns from, so filling a missing reading with 0 invents data. Leave it missing, and keep a flag such as `source_observed` that records whether a source row existed, so the choice stays auditable.
+</callout>
 
 ### Reference Card: Grain and Coverage Checks
 
 - `pd.read_parquet(path)`: Read a Parquet release table with its dtypes intact (Lecture 04).
-- `json.load(file)`: Read a JSON manifest into a `dict` of expected facts, such as row counts (Lecture 07).
+- `json.load(file)`: Read a JSON **release manifest**, the file that records a release's **provenance** (sources and selection rules) and expected facts such as row counts, into a `dict` (Lecture 07).
+- `hashlib.sha256(path.read_bytes()).hexdigest()`: A file's SHA-256 **hash**, a fingerprint that changes if one byte changes, to compare with the one the manifest records (Lecture 05).
 - `df.duplicated(subset=key).any()`: `True` if any key combination repeats (Lecture 05).
 - `pd.date_range(start, end, freq="h", tz="UTC", inclusive="left")`: Every elapsed UTC hour in the window (Lecture 09).
 - `pd.merge(entities, hours, how="cross")`: The expected grid, every entity at every hour (Lecture 06).
@@ -125,30 +128,13 @@ Either way, keep a flag such as `source_observed` that records whether a source 
 
 ### Code Snippet: A True Zero Beside a Missing Reading
 
-One ED's hourly table joins two sources onto the same three-hour grid. Both sources have nothing at 15:00.
+One ED's hourly table joins two sources onto the same grid. `hours` lists three UTC hours, 14:00 to 16:00; `arrivals` counts check-ins per hour and has no 15:00 row, because nobody arrived; `weather` has no 15:00 row, because the sensor sent nothing.
 
 ```python
-import pandas as pd
-
-hours = pd.DataFrame({"hour_utc": pd.date_range("2024-07-01 14:00", periods=3, freq="h", tz="UTC")})
-
-# Tallied events: one row per ED check-in; nobody arrived at 15:00
-checkins = pd.DataFrame({"hour_utc": pd.to_datetime(
-    ["2024-07-01 14:00", "2024-07-01 14:00", "2024-07-01 16:00"], utc=True
-)})
-arrivals = checkins.groupby("hour_utc").size().rename("arrivals").reset_index()
-
-# Measurements: one row per hourly weather reading; the sensor sent nothing at 15:00
-weather = pd.DataFrame({
-    "hour_utc": pd.to_datetime(["2024-07-01 14:00", "2024-07-01 16:00"], utc=True),
-    "temp_c": [31.5, 33.0],
-})
-
 panel = hours.merge(arrivals, on="hour_utc", how="left", validate="one_to_one")
-panel["arrivals"] = panel["arrivals"].fillna(0).astype("int64")  # no check-in: nobody arrived
-
+panel["arrivals"] = panel["arrivals"].fillna(0).astype("int64")
 panel = panel.merge(weather, on="hour_utc", how="left", validate="one_to_one", indicator=True)
-panel["source_observed"] = panel["_merge"].eq("both")  # no reading: temperature unknown
+panel["source_observed"] = panel["_merge"].eq("both")
 print(panel.drop(columns="_merge"))
 ```
 
@@ -161,17 +147,15 @@ print(panel.drop(columns="_merge"))
 
 The same 15:00 gap becomes 0 in one column and stays `NaN` in the other: an hour without check-ins is a count of zero, but an hour without a reading is unknown.
 
+![xkcd 974: The General Problem. Build the table the question needs before building a system for every question someone might ask.](media/pass_the_salt.png)
+
 # Prediction time, baselines, and one honest test
 
-A forecast is only useful if it could have been made when it was needed. The **prediction time** (Lecture 09), or **cutoff**, is when the forecast is made; the **target time** (Lecture 10) is the hour being predicted. Every feature must be known at the cutoff (Lecture 09's past-only lags and windows), and the target must never appear among the features. Using later information by accident is **leakage** (Lecture 10), and it makes a model look better than it can be in practice.
-
-Explore on training rows only. Demo 3's training summary shows mean pickups rising from about 10 per zone-hour at 04:00 to about 293 at 18:00, which is evidence that hour of day belongs among the features. Looking at validation or test rows to choose features would leak those periods into the decision.
+**Prediction time**, or the **cutoff**, is when a forecast is made, and the **target time** is the hour it predicts (Lectures 09 and 10). Every feature must be known at the cutoff: using later information is **leakage** (Lecture 10), and it makes a forecast look better than it can be in practice, like an ED staffing model that has already seen the arrivals it predicts.
 
 ## Baselines and a chronological split
 
-Two habits from Lecture 10 make the result honest:
-
-- A **baseline** is a simple rule a model must beat. Lecture 10's **persistence** baseline predicts that the next hour equals this hour; the taxi demo uses its weekly form, "same hour last week" (`lag_168`). Without a baseline, an average miss (MAE) of 25 pickups has no reference point.
+- A **baseline** is a simple rule a model must beat. Lecture 10's **persistence** baseline predicts that the next hour equals this hour; the taxi demo uses its weekly form, 168 elapsed hours earlier (`lag_168`), usually the same local hour last week; the local clock hour shifts across a daylight-saving change. Without a baseline, an average miss (MAE) of 25 pickups has no reference point.
 - A **chronological split** keeps time in order. Fit candidates on the earliest period and choose between them on the **validation** period. Then freeze that choice, refit it on training plus validation, and evaluate it once on the latest **test** period.
 
 | Split | Local target hours | Rows | Used for |
@@ -179,6 +163,8 @@ Two habits from Lecture 10 make the result honest:
 | train | 2023-01-08 to 2023-04-30 (the first week has no week-old lag) | 32,532 | fitting and exploring patterns |
 | validation | May 2023 | 8,928 | choosing between candidates |
 | test | June 2023 | 8,640 | one final evaluation |
+
+Explore on training rows only: choosing features from validation or test rows leaks those periods into the decision.
 
 | Split | Candidate | MAE | RMSE |
 | --- | --- | --- | --- |
@@ -203,49 +189,43 @@ Validation supports the candidate claim, so the pipeline is frozen. The test row
 
 ### Code Snippet: Split on a Local-Midnight Boundary
 
+`frame` holds four target hours, 02:00 to 05:00 UTC on 1 June 2023.
+
 ```python
-import numpy as np
-import pandas as pd
-
-target_utc = pd.Series(pd.date_range("2023-06-01 02:00", periods=4, freq="h", tz="UTC"))
-test_start = pd.Timestamp("2023-06-01 00:00", tz="America/New_York")  # local midnight
-
-frame = pd.DataFrame({
-    "target_utc": target_utc,
-    "target_local": target_utc.dt.tz_convert("America/New_York"),
-    "split": np.where(target_utc >= test_start, "test", "validation"),
-})
+test_start = pd.Timestamp("2023-06-01", tz="America/New_York")
+frame["target_local"] = frame["target_utc"].dt.tz_convert("America/New_York")
+frame["is_test"] = frame["target_utc"] >= test_start
 print(test_start.tz_convert("UTC"))
 print(frame)
 ```
 
 ```text
 2023-06-01 04:00:00+00:00
-                 target_utc              target_local       split
-0 2023-06-01 02:00:00+00:00 2023-05-31 22:00:00-04:00  validation
-1 2023-06-01 03:00:00+00:00 2023-05-31 23:00:00-04:00  validation
-2 2023-06-01 04:00:00+00:00 2023-06-01 00:00:00-04:00        test
-3 2023-06-01 05:00:00+00:00 2023-06-01 01:00:00-04:00        test
+                 target_utc              target_local  is_test
+0 2023-06-01 02:00:00+00:00 2023-05-31 22:00:00-04:00    False
+1 2023-06-01 03:00:00+00:00 2023-05-31 23:00:00-04:00    False
+2 2023-06-01 04:00:00+00:00 2023-06-01 00:00:00-04:00     True
+3 2023-06-01 05:00:00+00:00 2023-06-01 01:00:00-04:00     True
 ```
 
 Local midnight on 1 June is 04:00 UTC during daylight saving time, so the 02:00 and 03:00 UTC targets still belong to May.
 
 ![xkcd 2582: Data Trap. Analysis should produce understanding, not an unbounded pile of artifacts.](media/xkcd_2582.png)
 
-# Demo roadmap
+# The worked example
 
-The four core notebooks follow the taxi question from evidence to result:
+The **worked example** carries the taxi question through four notebooks, one or two checklist stages each, from a release you verify to a test result you report. Each notebook runs on its own, in a new Colab runtime or a local folder, and Demo 1 starts with that setup.
 
-1. **`01_setup.ipynb`: Trust the release before using it.** Check the release files against the manifest's hashes, inspect event-grain records, and make exclusions auditable.
-2. **`02_wrangling.ipynb`: Build a past-only model table.** Load the release's already completed zone-hour panel, verify its key and coverage, then construct calendar and history features.
+1. **`01_setup.ipynb`: Trust the release before using it.** Set up Colab or a local folder, check the release files against the manifest's hashes, inspect event-grain records, and make exclusions auditable.
+2. **`02_wrangling.ipynb`: Build a past-only model table.** Rebuild the expected zone-hour grid and confirm the release's panel fills it, then construct calendar and history features.
 3. **`03_model_prep.ipynb`: Analyze training patterns and freeze the split.** Use training data for exploratory summaries and keep later periods separate.
-4. **`04_modeling.ipynb`: Compare, freeze, and report.** Compare a weekly baseline with one pipeline, evaluate held-out performance, and examine error slices.
+4. **`04_modeling.ipynb`: Compare, freeze, and report.** Compare a weekly baseline with one pipeline on validation, evaluate both once on test, and examine error slices.
 
 **`05_geo_bonus.ipynb`** is an optional geographic view of zone-level results; see [BONUS.md](BONUS.md). It is enrichment, not a required part of the capstone pattern.
 
 ## Where this connects to earlier lectures
 
-Most of today's code is review; this crosswalk shows where each capstone decision, and each skill the final exam needs, was first taught. Each decision should still be justified by the question and data.
+Each capstone decision, and each skill the final exam needs, was first taught in an earlier lecture:
 
 | Capstone decision or concept | Earlier canonical lecture | Related demo stage or final question |
 | --- | --- | --- |
@@ -254,18 +234,18 @@ Most of today's code is review; this crosswalk shows where each capstone decisio
 | File fingerprint: SHA-256 hash (`hashlib.sha256`) and size in bytes (`path.stat().st_size`) | Lecture 05, Data Cleaning Pipeline | `01_setup.ipynb`: verify the release; final Q1: release audit |
 | Settings saved as JSON text in one CSV cell (`json.dumps`, `json.loads`) | Lecture 07, Save the Chart and Its Record | `03_model_prep.ipynb`: split manifest; final Q7 and Q8: model specification |
 | Missingness, row meaning, and keys | Lecture 05, What Clean Means: The Data Contract; Handling Missing Data | `01_setup.ipynb`: audit records |
-| Expected grid and coverage join | Lecture 06, Database-Style DataFrame Joins | `02_wrangling.ipynb`: verify that every zone-hour is present |
+| Expected grid, coverage join, and `source_observed` | Lecture 06, Database-Style DataFrame Joins | `02_wrangling.ipynb`: confirm that every zone-hour is present; final Q3: hourly panel |
 | Gap runs: consecutive missing hours within each entity | Lecture 09, Resampling Each Patient Separately | final Q3: gap summary (the taxi panel has no gaps, because an hour without trips is a true 0) |
 | UTC keys, local calendar fields, and daylight-saving transitions | Lecture 09, Time Zone Handling | `02_wrangling.ipynb`: local calendar fields; `03_model_prep.ipynb`: split boundaries |
 | Times written as text (`Series.dt.strftime`) | Lecture 09, pandas DatetimeIndex | `01_setup.ipynb`: audit records; final Q4: `row_id` |
 | Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb`: construct history features |
 | Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `03_model_prep.ipynb`: training-only summaries; `04_modeling.ipynb`: error slices |
-| Aware UTC target times compared with a zoned local cutoff | Lecture 10, Splitting on Target Time | final Q5 and Q6: split boundaries |
+| Aware UTC target times compared with a zoned local cutoff | Lecture 10, Splitting on Target Time | `03_model_prep.ipynb`: split boundaries; final Q5 and Q6: split boundaries |
 | Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb`: freeze the split; `04_modeling.ipynb`: compare and evaluate |
 
 # Transfer to the final project
 
-Assignment 11 applies the same reasoning to Chicago beach-weather sensor data. The decisions transfer, but several answers flip. The assignment's artifact contract, not the taxi notebooks, determines what you must produce.
+The **final project**, Assignment 11, applies the same checklist to hourly readings from two Chicago beach weather stations. The decisions transfer, but several answers flip, such as what an hour without a source row means, and the assignment's `assignment.md` contract, not the taxi notebooks, sets what you must produce.
 
 | Decision | Taxi demo | Beach-weather final |
 | --- | --- | --- |
@@ -283,29 +263,11 @@ Lecture 10 covers the cyclic features (sine and cosine put hour 23 next to hour 
 
 Do not copy taxi-specific values, features, or outputs; adapt each decision to the sensor data.
 
-# Getting started with the demo
-
-The commands below assume macOS, Linux, or WSL with Bash. On native Windows, open the repository in WSL because the data downloader is a Bash script and uses Unix checksum tools.
-
-From the course repository:
-
-```bash
-cd 11/demo
-uv venv --seed --python 3.13 .venv
-source .venv/bin/activate
-python --version  # should report Python 3.13
-uv pip install -r requirements.txt
-bash download_data.sh
-jupyter lab
-```
-
-JupyterLab opens in your browser; open `01_setup.ipynb` and continue through `04_modeling.ipynb` in order. To skip local setup, use the Colab links at the top of this page; each notebook downloads its own data. Each notebook explains the artifact it reads or rebuilds, so you can pause between them and inspect the intermediate reasoning, not just the final output.
-
-# Optional practice after class
+## Optional practice after class
 
 - [Advent of Code](https://adventofcode.com): short programming puzzles for continued practice.
 - [GameShell](https://github.com/phyver/GameShell): a game for practicing the Unix shell.
 
-![xkcd 1513: Code Quality](media/xkcd_1513.png)
+![xkcd 1513: Code Quality. Working code is the start; code another person can read, and a style guide to get there, is the goal.](media/xkcd_1513.png)
 
 # LIVE DEMO!

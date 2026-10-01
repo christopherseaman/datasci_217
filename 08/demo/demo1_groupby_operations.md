@@ -20,18 +20,45 @@ jupyter:
 
 A health system's visit log has one row per clinic visit: 100,000 synthetic visits across five clinics and six departments. This demo answers the questions a clinic manager asks of that log (how long each department's patients wait, how many patients each one sees, how the answers differ by clinic) with `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations. Everything here comes from Lecture 08 up to the first demo break, plus Lectures 01 to 07.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3; the whole notebook runs in under a minute. The patient IDs and values are synthetic.
+**How to run:** run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3. The patient IDs and values are synthetic.
+
+- **In Colab:** open this notebook from the lecture page's Demo 1 link and start with the Setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **On your computer:** in VS Code's terminal (on Windows, the **WSL: Ubuntu** window from Lecture 01), the first line downloads the three notebooks and the `pyproject.toml` and `uv.lock` that record their packages into a new folder, `~/08-demo`, with the `curl ... | sh` pattern Lecture 01 used to install uv; the rest build the environment as in Lecture 03:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
+cd ~/08-demo
+ls
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+**Expect:** `Made ~/08-demo with the Lecture 08 demo notebooks, pyproject.toml, and uv.lock.`; `ls` lists the three `.ipynb` files, `pyproject.toml`, `setup_demo.sh`, and `uv.lock`; `uv sync` installs about a hundred packages, among them `+ pandas==3.0.5` and `+ jupyterlab==4.4.10`. In Git Bash, activate with `source .venv/Scripts/activate`. Then open the folder in VS Code with **File → Open Folder…** (`08-demo` in your home folder), open `demo1_groupby_operations.ipynb`, click **Select Kernel**, and choose the Python in `.venv` (Lecture 04).
+
+The setup script never overwrites earlier work: run it again and `mkdir` reports that `~/08-demo` already exists (`File exists`), and nothing else happens. To start over, rename the old folder first with `mv ~/08-demo ~/08-demo-old`, then run the lines again; if a download fails partway, do the same. If you run the other lines again, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep the environment (uv then prints a harmless `error: Failed to create virtual environment`), and the last two lines still work.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, [Build the Visit Log](#build-the-visit-log), then [Named Aggregation: One Flat Row per Department](#named-aggregation-one-flat-row-per-department) (both cells). |
+| Independent practice | Work through basic aggregation and plotting, two-key groups, pivot tables, and cross-tabulations after class. The optional variants build on the same visit log. |
+
+**Core checkpoint:** The department report has 6 rows; its visit counts total 100,000. The size/count gap is 2,984 missing surveys.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell only confirms that.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell; you do not need to rerun the install.
 
 ```python
 import numpy as np

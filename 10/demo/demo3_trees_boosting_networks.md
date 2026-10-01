@@ -18,27 +18,36 @@ jupyter:
 
 # Demo 3: Flexible Models: Trees, Boosting, and Neural Networks
 
-A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant? You fit a baseline and logistic regression, then a random forest, gradient-boosted trees with XGBoost, and three small neural networks, all on the same training, validation, and test rows. A selection rule written before any model is fitted picks the winner, and the winner is evaluated on the test rows exactly once. Everything here comes from Lecture 10, plus Lectures 01 to 09. The 569 biopsies are real and de-identified.
+A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant? You fit a baseline and logistic regression, then a random forest, gradient-boosted trees with XGBoost, and three small neural networks, all on the same training, validation, and test rows. A selection rule written before any model is fitted picks the winner, and the winner is evaluated on the test rows exactly once. The core walkthrough uses Lecture 10, plus Lectures 01 to 09. Lecture 10 supplies the boosting and network APIs. The 569 biopsies are real and de-identified.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, XGBoost 2.1.4, TensorFlow 2.21.0, and matplotlib 3.11.1 on a CPU; the whole notebook runs in about a minute. Colab preinstalls other versions of scikit-learn, XGBoost, and TensorFlow. With Colab's XGBoost 3.2, the importances in Part 5 shift in the second decimal place and early stopping in Part 6 can pick a later round; the accuracies do not change. A GPU can change the neural-network numbers.
+**How to run:** in Colab, open this notebook from the lecture page's Colab link and run the cells from top to bottom; the first code cell installs the course's pandas, and **File → Save a copy in Drive** keeps your changes. On your own computer, the environment from Demo 1's setup is still in `~/10-demo` (if you skipped Demo 1, run the five setup lines at the top of Demo 1 first): open that folder in VS Code, open `demo3_trees_boosting_networks.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/10-demo` and `source .venv/bin/activate` bring the environment back. After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, XGBoost 2.1.4, TensorFlow 2.21.0, and matplotlib 3.11.1 on a CPU. Colab preinstalls other versions of scikit-learn, XGBoost, and TensorFlow. With Colab's XGBoost 3.2, the importances in Part 5 shift in the second decimal place and early stopping in Part 6 can pick a later round; the accuracies do not change. A GPU can change the neural-network numbers.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, [1. Load the biopsy measurements](#1-load-the-biopsy-measurements), [2. Split, scale, and fix the selection rule](#2-split-scale-and-fix-the-selection-rule), [3. A baseline and the simplest candidate](#3-a-baseline-and-the-simplest-candidate), and the first cell in [4. Random forest, and two ways to read it](#4-random-forest-and-two-ways-to-read-it). Run the import and first fit cell in [5. XGBoost](#5-xgboost), then all cells in [7. Build and compile a neural network](#7-build-and-compile-a-neural-network) and the first cell in [8. Train and read the curves](#8-train-and-read-the-curves). Stop at the network validation result. |
+| Independent practice | After class, compare permutation and tree importances, early stopping, learning curves, and the two network variants, then compare every candidate and freeze/test once. The final comparison needs every preceding model; restart and run all cells in order for that route. |
+
+**Core checkpoint:** The forest, fixed-round XGBoost, and one Keras network score on the same 114 validation biopsies as logistic regression and the majority baseline: 0.9737, 0.9649, and 0.9737 accuracy respectively. Test predictions have not been made.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell changes nothing.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, after `uv sync`, that note is all it prints, and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-import xgboost as xgb
 from sklearn.datasets import load_breast_cancer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance
@@ -46,23 +55,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from tensorflow import keras
-
-# Seed Python, NumPy, and TensorFlow, and make TensorFlow's operations
-# deterministic, so the numbers below repeat exactly on a rerun.
-keras.utils.set_random_seed(42)
-tf.config.experimental.enable_op_determinism()
-
 print('pandas', pd.__version__)
-print('XGBoost', xgb.__version__)
-print('TensorFlow', tf.__version__)
 ```
 
-**Expect:** `pandas 3.0.5`, `XGBoost 2.1.4`, and `TensorFlow 2.21.0` (Colab shows its own XGBoost and TensorFlow versions; that is fine).
+**Expect:** `pandas 3.0.5`. XGBoost and TensorFlow load when you reach their sections.
 
 ## 1. Load the biopsy measurements
 
-`load_breast_cancer(as_frame=True)` ships with scikit-learn. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (largest) value. Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
+`load_breast_cancer(as_frame=True)` ships with scikit-learn and returns the table in its `.frame`, the label in its `.target`, and the 30 measurement names in its `.feature_names`. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (mean of the three largest values). Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
 
 ```python
 cancer = load_breast_cancer(as_frame=True)
@@ -166,7 +166,7 @@ Calling every biopsy benign is right 71 times out of 114, so 0.623 is the score 
 
 ## 4. Random forest, and two ways to read it
 
-A random forest grows many trees on random resamples of the training rows and averages their votes. It can capture curved relationships and interactions, and it needs no scaling.
+A random forest grows many trees on random resamples of the training rows. This classifier averages their class probabilities and predicts the class with the largest average. It can capture curved relationships and interactions, and it needs no scaling.
 
 ```python
 rf_model = RandomForestClassifier(
@@ -210,31 +210,39 @@ perm = permutation_importance(
     scoring='accuracy', n_repeats=10, random_state=42, n_jobs=-1,
 )
 rf_importance = pd.DataFrame({
-    'feature': feature_cols,
     'impurity': rf_model.feature_importances_,
     'accuracy_drop': perm.importances_mean,
     'drop_std': perm.importances_std,
-}).sort_values('impurity', ascending=False)
-print(rf_importance.head(8).round(3).to_string(index=False))
+}, index=feature_cols).sort_values('impurity', ascending=False)
+print(rf_importance.head(8).round(3))
 ```
 
 **Expect:**
 
 ```text
-             feature  impurity  accuracy_drop  drop_std
+                      impurity  accuracy_drop  drop_std
 worst concave points     0.140          0.013     0.010
-          worst area     0.135          0.014     0.011
- mean concave points     0.112          0.000     0.000
-     worst perimeter     0.098          0.011     0.007
-         mean radius     0.068          0.000     0.000
-      mean perimeter     0.068          0.000     0.000
-      mean concavity     0.068          0.005     0.004
-        worst radius     0.062          0.006     0.006
+worst area               0.135          0.014     0.011
+mean concave points      0.112          0.000     0.000
+worst perimeter          0.098          0.011     0.007
+mean radius              0.068          0.000     0.000
+mean perimeter           0.068          0.000     0.000
+mean concavity           0.068          0.005     0.004
+worst radius             0.062          0.006     0.006
 ```
 
 The two columns agree at the top: `worst concave points` and `worst area` matter by both measures. Lower down they disagree. `mean concave points` is third by impurity, yet shuffling it costs no validation accuracy at all, and neither does shuffling `mean radius` or `mean perimeter`. Many of these 30 columns measure nearly the same thing (radius, perimeter, and area all describe size), so when one is shuffled the forest still has its twins, and the importance spreads across the group. Read the top of this ranking, not the bottom, and read neither column as a causal effect.
 
 ## 5. XGBoost
+
+Run the import and fixed-round fit below in the core walkthrough. The lecture's XGBoost reference supplies the settings. XGBoost is included in the local environment and preinstalled in Colab.
+
+```python
+import xgboost as xgb
+print('XGBoost', xgb.__version__)
+```
+
+**Expect:** `XGBoost 2.1.4` locally; Colab may show another version.
 
 XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern.
 
@@ -250,7 +258,12 @@ print(f"XGBoost validation accuracy: {xgb_acc:.4f}")
 print("Confusion matrix [[TN, FP], [FN, TP]]:")
 print(confusion_matrix(y_valid, xgb_model.predict(X_valid)))
 
-top_features = rf_importance['feature'].head(8).tolist()
+```
+
+The fit above stands alone. After class, run Part 4's permutation-importance cell before this comparison plot.
+
+```python
+top_features = rf_importance.index[:8].tolist()
 importance_comparison = pd.DataFrame({
     'random forest': rf_model.feature_importances_,
     'XGBoost': xgb_model.feature_importances_,
@@ -319,6 +332,19 @@ On a table this small the validation loss keeps creeping down for hundreds of ro
 
 ## 7. Build and compile a neural network
 
+Build and train this first network in the core walkthrough; the lecture's Keras reference supplies the API. TensorFlow is included in the local environment and preinstalled in Colab.
+
+```python
+import tensorflow as tf
+from tensorflow import keras
+
+keras.utils.set_random_seed(42)
+tf.config.experimental.enable_op_determinism()
+print('TensorFlow', tf.__version__)
+```
+
+**Expect:** `TensorFlow 2.21.0` locally; Colab may show another version. The seed and deterministic operations make this notebook's CPU numbers repeat.
+
 A `Sequential` model is a straight stack of layers. Two hidden ReLU layers followed by one sigmoid unit is a standard starting point for a yes/no target. Compiling attaches the **optimizer** that updates the weights (Adam), the **loss** it minimizes (`binary_crossentropy` for a yes/no target), and the metrics reported each epoch.
 
 ```python
@@ -350,7 +376,7 @@ history = model.fit(
 
 history_df = pd.DataFrame(history.history)
 history_df['epoch'] = range(1, len(history_df) + 1)
-print(history_df.tail(3).round(4).to_string(index=False))
+print(history_df.set_index('epoch').tail(3).round(4))
 
 best_row = history_df.loc[history_df['val_loss'].idxmin()]
 print(f"\nLowest validation loss: {best_row['val_loss']:.4f} at epoch {best_row['epoch']:.0f}")
@@ -366,10 +392,11 @@ print(confusion_matrix(y_valid, nn_pred))
 **Expect:** TensorFlow may first print log lines in red, such as `WARNING: All log messages before absl::InitializeLog() is called are written to STDERR` or a line starting `E0000` that mentions `use_unbounded_threadpool`. They come from TensorFlow's internals, not from your code, and do not change the results. Then:
 
 ```text
- accuracy   loss  val_accuracy  val_loss  epoch
-      1.0 0.0075        0.9737    0.0896     48
-      1.0 0.0071        0.9737    0.0898     49
-      1.0 0.0067        0.9737    0.0903     50
+       accuracy    loss  val_accuracy  val_loss
+epoch
+48          1.0  0.0075        0.9737    0.0896
+49          1.0  0.0071        0.9737    0.0898
+50          1.0  0.0067        0.9737    0.0903
 
 Lowest validation loss: 0.0726 at epoch 20
 Validation loss after epoch 50: 0.0903
@@ -434,7 +461,7 @@ print(pd.DataFrame({
     'network': ['64-32', '128-64-32-16', '64-32 + dropout/L2'],
     'weights': [model.count_params(), model_deep.count_params(), model_reg.count_params()],
     'valid_accuracy': [valid_accuracy, deep_acc, reg_acc],
-}).round(4).to_string(index=False))
+}).set_index('network').round(4))
 
 reg_history_df = pd.DataFrame(history_reg.history)
 fig, axes = plt.subplots(1, 2, figsize=(11, 4))
@@ -455,9 +482,10 @@ plt.close(fig)
 **Expect:** TensorFlow may print a `WARNING:tensorflow:... triggered tf.function retracing` message while the networks predict one after another; it is about speed, not a failure. Then:
 
 ```text
-           network  weights  valid_accuracy
-             64-32     4097          0.9737
-      128-64-32-16    14849          0.9649
+                    weights  valid_accuracy
+network
+64-32                  4097          0.9737
+128-64-32-16          14849          0.9649
 64-32 + dropout/L2     4097          0.9737
 ```
 
@@ -476,20 +504,21 @@ comparison = pd.DataFrame({
                        valid_accuracy, deep_acc, reg_acc],
 })
 comparison['correct_of_114'] = (comparison['valid_accuracy'] * len(y_valid)).round().astype(int)
-print(comparison.round(4).to_string(index=False))
+print(comparison.set_index('model').round(4))
 ```
 
 **Expect:**
 
 ```text
-                        model  valid_accuracy  correct_of_114
-      Majority-class baseline          0.6228              71
-          Logistic regression          0.9737             111
-                Random forest          0.9737             111
-         XGBoost (100 rounds)          0.9649             110
-      XGBoost (early stopped)          0.9825             112
-             Neural net 64-32          0.9737             111
-      Neural net 128-64-32-16          0.9649             110
+                               valid_accuracy  correct_of_114
+model
+Majority-class baseline                0.6228              71
+Logistic regression                    0.9737             111
+Random forest                          0.9737             111
+XGBoost (100 rounds)                   0.9649             110
+XGBoost (early stopped)                0.9825             112
+Neural net 64-32                       0.9737             111
+Neural net 128-64-32-16                0.9649             110
 Neural net 64-32 + dropout/L2          0.9737             111
 ```
 
@@ -527,11 +556,11 @@ Neural net 128-64-32-16        wrong on rows [9, 10, 34, 98], missed malignant [
 Neural net 64-32 + dropout/L2  wrong on rows [9, 10, 75], missed malignant [9]
 ```
 
-- **Row 9** is a malignant biopsy that every model calls benign. No choice of model family fixes it; it is worth a pathologist's look.
+- **Row 9** is a malignant biopsy that every model calls benign. None of these fitted candidates fixes it; it is worth a pathologist's look.
 - **Same score, different mistakes:** logistic regression and the forest both get 111 right, but the forest misses a second malignancy (row 45) where logistic regression raises a false alarm (row 75). For a screening tool that difference matters more than the tie in accuracy.
-- **The early-stopped XGBoost** is right on rows 10, 45, and 75, and its 112 of 114 is the best in the table. Those same 114 rows chose its round count, so its score is the most optimistic number here, not the most trustworthy.
+- **The early-stopped XGBoost** is right on rows 10, 45, and 75, and its 112 of 114 is the best in the table. Those same 114 rows chose its round count, so its score also reflects selection of the round count; that is another reason to reserve the independent test.
 
-Now apply Part 2's rule. The best candidate (112) and the runners-up (111) differ by one validation row, so they are tied, and the tie goes to the simplest candidate: **logistic regression**, 30 coefficients and an intercept, fitted in milliseconds. That is the honest reading of 114 validation rows. Deep learning did not fail; this table is too small to tell these families apart.
+Now apply Part 2's rule. The best candidate (112) and the runners-up (111) differ by one validation row, so they are tied, and the tie goes to the simplest candidate: **logistic regression**, 30 coefficients and an intercept, fitted in milliseconds. That follows the predeclared tie rule. This one small split does not establish that the model families perform equally well.
 
 ## 11. Freeze, then test once
 

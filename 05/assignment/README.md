@@ -7,7 +7,8 @@ assignment/
 ├── assignment.ipynb           # notebook scaffold: complete every TODO, then run it top to bottom
 ├── data/people_raw.csv        # supplied raw export; never edit it
 ├── data/fixture.json          # supplied description of the raw file, including its sha256 checksum
-├── requirements.txt           # supplied: numpy, pandas, and ipykernel
+├── pyproject.toml             # supplied: the project's packages, numpy, pandas, and ipykernel
+├── uv.lock                    # supplied: the exact versions `uv sync` installs
 ├── .python-version            # supplied: Python 3.13
 ├── .gitattributes, .gitignore # supplied: keep the data file byte for byte, keep .venv/ out of Git
 └── output/
@@ -39,17 +40,24 @@ The values arrive as someone typed them, so expect stray spaces, mixed letter ca
 
 Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `fixture.json  people_raw.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Task 1.1 uses `echo`, `head`, and `tail`, which native PowerShell does not have. Git Bash also provides them; there the environment activates with `source .venv/Scripts/activate` instead.
+> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Task 1.1 uses `echo`, `head`, and `tail`, which native PowerShell does not have. Git Bash also provides them; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`. In PowerShell, which cannot run Task 1.1, it activates with `.\.venv\Scripts\Activate.ps1`.
 
-Create the project environment, activate it, and install the supplied requirements, as in Lecture 03:
+The handout already lists numpy, pandas, and ipykernel in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so `uv sync` rebuilds the environment from those records, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
 
 ```bash
-uv venv --seed --python 3.13 .venv
+uv venv --seed
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`requirements.txt` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so this one install is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept. Run the first code cell. It prints the Python, NumPy, and pandas versions and `Verified data/people_raw.csv`. If it stops with a message about `data/people_raw.csv` instead, discard your changes to that file in Source Control and run the cell again.
+`uv sync` lists each package it installs, including `+ numpy==2.3.3` and `+ pandas==3.0.5`. Do not run `uv init`: the handout's `pyproject.toml` already exists.
+
+If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
+
+> **Checkpoint: the environment**
+> With it active, `python3 -c "import pandas as pd; print(pd.__version__)"` prints `3.0.5`, the version `pyproject.toml` lists.
+
+**ipykernel** is the package that lets a notebook run on this environment's Python (Lecture 04), so the notebook needs nothing more. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept. Run the first code cell. It prints the Python, NumPy, and pandas versions and `Verified data/people_raw.csv`. If it stops with `ModuleNotFoundError: No module named 'numpy'`, the kernel is not this project's `.venv`: select the kernel again (Lecture 03's "When `import numpy` Fails"). If it stops with a message about `data/people_raw.csv` instead, discard your changes to that file in Source Control and run the cell again.
 
 Work in the notebook from top to bottom. Its "Cumulative midterm checkpoint" cell, just below the first code cell, asks for an evidence map that human review reads; fill it in whenever you like. The first code cell supplies `DATA_PATH`, `OUTPUT_DIR`, a path for each output file, and `manifest`, the contents of `data/fixture.json`. The function names in the scaffold are suggestions: grading reads the files in `output/` and the notebook cells that the Completion contract names, not how your code is organized.
 
@@ -125,7 +133,7 @@ From `raw`, select the rows for `R001`, `R003`, and `R010` and the columns `reco
 
 ### 2.1 Write the data contract
 
-In the notebook's Task 2.1 Markdown cell, state the row meaning and the candidate identifier, say how the raw table differs from the cleaned table, and define **schema**, **sentinel**, **duplicate**, **missing value**, **validation invariant**, and **provenance** in your own words (Lecture 05's "What Clean Means" and "Data Cleaning Pipeline"). Human review reads this cell.
+In the notebook's Task 2.1 Markdown cell, state the row meaning and the candidate identifier, say how the raw table differs from the cleaned table, and define **schema**, **sentinel**, **duplicate**, **missing value**, **validation invariant**, and **provenance** in your own words (Lecture 05's "What Clean Means", "Handling Missing Data", "Detecting and Resolving Duplicates", and "Data Cleaning Pipeline"). Human review reads this cell.
 
 ### 2.2 Audit the raw table
 
@@ -296,7 +304,7 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 
 How the files are read:
 
-- Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, spaces that pad every separator in the header line and the rows alike, column order, a leading column of row numbers, and number format (`6`, `6.0`) do not matter, and neither do the letter case and spacing of labels: keys, metric names, issue names, decision text, and record IDs. Cleaned values must be exactly what the cleaning rules produce, such as `north` rather than `North` or ` north `.
+- Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, spaces that pad every separator in the header line and the rows alike, column order, a leading column of row numbers, and number format (`6`, `6.0`) do not matter. Letter case and surrounding spaces in labels and cleaned text values do not cost points: `north`, `North`, and ` north ` represent the same site. Save the normalized forms the cleaning rules describe.
 - `True`/`False`, `true`/`false`, `1`/`0`, and `yes`/`no` all read as booleans; an empty field, `NaN`, and `<NA>` all read as missing; a date may carry a `00:00:00` time after it.
 - `needs_review` is also right when it follows the rule from your own `age` and `visit_date` columns, and `rows_after` is also right when it equals the rows in your own `cleaned_people.csv`, so one mistake is not charged twice.
 

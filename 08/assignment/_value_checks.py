@@ -14,6 +14,8 @@ row-number column, number formatting (2 == 2.0 == 2.00), and the letter case
 of labels and headers never cost points, and cells may be separated by
 commas, semicolons, or tabs. A row for Excelsior, the clinic with
 no visits, is accepted when it shows zero visits, as observed=False writes it.
+A pivot saved with its rows and columns swapped is read the right way round,
+so the swap costs only its columns check.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -23,6 +25,7 @@ from __future__ import annotations
 import codecs
 import csv
 import difflib
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -66,6 +69,8 @@ class Artifact:
     `rows` maps each required key, a tuple of the key columns' values, to the
     expected value of every other column; None means an empty cell. `optional`
     holds rows that may appear but need not, checked like the others when they do.
+    `across` names the pivot's columns= key for a pivot table, whose value
+    columns are that key's labels.
     """
 
     path: str
@@ -74,17 +79,36 @@ class Artifact:
     key: tuple[str, ...]
     rows: dict[tuple[str, ...], dict[str, object]]
     optional: dict[tuple[str, ...], dict[str, object]] = field(default_factory=dict)
+    across: str = ""
 
     def expected(self, key: tuple[str, ...]) -> dict[str, object]:
         return self.rows[key] if key in self.rows else self.optional[key]
 
+    def labels(self) -> set[str]:
+        """The casefolded values of a one-column key, such as the clinic names."""
+        return {key[0].casefold() for key in (*self.rows, *self.optional)} if len(self.key) == 1 else set()
+
 
 @dataclass(frozen=True)
 class Table:
-    """A saved CSV: its casefolded column names and one {column: cell} dict per data row."""
+    """A saved CSV: its casefolded column names and one {column: cell} dict per data row.
+
+    `written` maps each casefolded column name to the header as the file wrote
+    it, for messages. `transposed` is True when a pivot was saved with its rows
+    and columns swapped and has been read the right way round.
+    """
 
     columns: tuple[str, ...]
     rows: tuple[dict[str, str], ...]
+    written: dict[str, str] = field(default_factory=dict)
+    transposed: bool = False
+    conflicting_columns: tuple[str, ...] = ()
+
+    def header(self, columns=None) -> str:
+        """The named columns (all of them by default) as the file wrote them: 'Mission, Sunset and Total'."""
+        shown = [self.written.get(column, column) or "a column with no header"
+                 for column in (self.columns if columns is None else columns)]
+        return _join(shown) or "none"
 
 
 @dataclass(frozen=True)
@@ -180,6 +204,7 @@ MEAN_WAIT_PIVOT = Artifact(
     key=("clinic",),
     rows={(clinic,): _pivot_row(clinic) for clinic in OBSERVED},
     optional={(clinic,): _pivot_row(clinic) for clinic in UNUSED},
+    across="visit_type",
 )
 
 ARTIFACTS = (CLINIC_COUNTS, CLINIC_SUMMARY, VISIT_CONTEXT, CLINIC_VISIT_TYPE, MEAN_WAIT_PIVOT)
@@ -281,6 +306,8 @@ def _csv_rows(text: str) -> list[list[str]]:
     line into the most cells is used, and a tie keeps commas. A file separated
     by semicolons may write decimal commas, so there 12,5 reads as 12.5.
     """
+    if "\x00" in text:
+        raise csv.Error("file contains a NUL byte instead of CSV text")
     lines = text.splitlines()
     header = next((line for line in lines if line.strip()), "")
     delimiter = max(DELIMITERS, key=lambda mark: len(next(csv.reader([header], delimiter=mark), [])))
@@ -310,13 +337,20 @@ def _artifact_path(root: Path, name: str) -> Path | None:
 
 
 def _missing(root: Path, artifact: Artifact) -> str:
+    """Say the artifact is missing, naming any saved file whose name looks like a typo of its name.
+
+    Another artifact's file is never suggested, however alike the names:
+    clinic_summary.csv and clinic_visit_type_summary.csv are both required.
+    """
     message = f"{artifact.path} is missing; run the {artifact.task} cell to write it, then commit it."
     wanted = root / artifact.path
+    required = {Path(other.path).name.casefold() for other in ARTIFACTS}
     if wanted.parent.is_dir():
         look_alikes = sorted(
             path.relative_to(root).as_posix()
             for path in wanted.parent.iterdir()
             if path.is_file()
+            and path.name.casefold() not in required
             and difflib.SequenceMatcher(None, wanted.name.casefold(), path.name.casefold()).ratio() >= 0.75
         )
         if look_alikes:
@@ -346,21 +380,71 @@ def read_table(root: Path, artifact: Artifact) -> Table:
             "to_csv() writes it, then compare it with the checkpoint in README.md."
         ) from None
     _assert(lines, f"{artifact.path} is empty; run the {artifact.task} cell again to write it.")
-    header = [_fold(cell) for cell in lines[0]]
+    written = [_clean(cell) for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
-    width = max(len(header), *(len(row) for row in body)) if body else len(header)
-    header += [""] * (width - len(header))
+    width = max(len(written), *(len(row) for row in body)) if body else len(written)
+    written += [""] * (width - len(written))
     body = [row + [""] * (width - len(row)) for row in body]
 
-    if len(header) > 1 and _is_index_header(header[0]) and body and all(_is_whole_number(row[0]) for row in body):
-        header = header[1:]
+    header = [cell.casefold() for cell in written]
+    while len(header) > 1 and _is_index_header(header[0]) and body and all(_is_whole_number(row[0]) for row in body):
+        written, header = written[1:], header[1:]
         body = [row[1:] for row in body]
     keep = [i for i, column in enumerate(header) if column or any(row[i] for row in body)]
-    header = [header[i] for i in keep]
+    written, header = [written[i] for i in keep], [header[i] for i in keep]
     body = [[row[i] for i in keep] for row in body]
 
-    rows = tuple({column: row[i] for i, column in enumerate(header)} for row in body)
-    return Table(columns=tuple(header), rows=rows)
+    if _is_transposed(artifact, header, body):
+        key = _fold(artifact.key[0])
+        down = [row[0] for row in body]
+        rows = tuple(
+            {key: label, **{name.casefold(): row[i] for name, row in zip(down, body)}}
+            for i, label in enumerate(written[1:], start=1)
+        )
+        return Table(
+            columns=(key, *(name.casefold() for name in down)),
+            rows=rows,
+            written={key: artifact.key[0], **{name.casefold(): name for name in down}},
+            transposed=True,
+        )
+    rows = []
+    conflicting = set()
+    for row in body:
+        values = {}
+        for i, column in enumerate(header):
+            cell = row[i] if i < len(row) else ""
+            if values.get(column) and cell:
+                first_number, next_number = _number(values[column]), _number(cell)
+                equal = (
+                    abs(first_number - next_number) <= TOLERANCE
+                    if first_number is not None and next_number is not None
+                    else values[column].casefold() == cell.casefold()
+                )
+                if not equal:
+                    conflicting.add(column)
+            if not values.get(column):
+                values[column] = cell
+        rows.append(values)
+    rows = tuple(rows)
+    names: dict[str, str] = {}
+    for column, as_written in zip(header, written):
+        names.setdefault(column, as_written)
+    header = list(dict.fromkeys(header))
+    return Table(columns=tuple(header), rows=rows, written=names, conflicting_columns=tuple(sorted(conflicting)))
+
+
+def _is_transposed(artifact: Artifact, header: list[str], body: list[list[str]]) -> bool:
+    """True when a pivot's key labels head its columns and its column labels run down the first column.
+
+    That is what swapping index= and columns= saves: the clinics across the
+    top and the visit types down the side.
+    """
+    if not artifact.across or len(header) < 2 or not body:
+        return False
+    across = {_fold(column) for column in artifact.columns if column not in artifact.key}
+    return all(column in artifact.labels() for column in header[1:]) and all(
+        row[0].casefold() in across for row in body
+    )
 
 
 def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
@@ -424,8 +508,9 @@ def _group(table: Table, artifact: Artifact, found: dict[str, str]):
     absent = [column for column in artifact.key if column not in found]
     _assert(
         values,
-        f"{artifact.path} has no {_join(absent)} column (its columns are {_join(table.columns) or 'none'}), "
-        f"so its rows cannot be matched; {artifact.task} saves the header line {','.join(artifact.columns)}.",
+        f"{artifact.path} has no {_join(absent)} column (its columns are {table.header()}), "
+        f"so its rows cannot be matched; {artifact.task} saves the header line {','.join(artifact.columns)}."
+        + _swap_note(artifact, table.columns),
     )
     for row in table.rows:
         candidates = [
@@ -445,11 +530,41 @@ def _group(table: Table, artifact: Artifact, found: dict[str, str]):
     return grouped, unknown
 
 
+# The labels margins=True gives its total row and column: its default, and the lecture's margins_name.
+MARGIN_NAMES = frozenset({"all", "total"})
+
+
+def _swapped(artifact: Artifact) -> str:
+    key = artifact.key[0]
+    return f'index= and columns= are swapped: use index="{key}" and columns="{artifact.across}".'
+
+
+def _swap_note(artifact: Artifact, columns) -> str:
+    """For a pivot whose header holds key labels, such as clinic names: say index= and columns= are swapped."""
+    if not artifact.across or not any(column in artifact.labels() for column in columns):
+        return ""
+    return f" Its header holds {artifact.key[0]} labels, so {_swapped(artifact)}"
+
+
+def _margins_note(artifact: Artifact, labels) -> str:
+    """For a pivot with a Total or All row or column: say it comes from margins=True."""
+    totals = sorted({label for label in labels if label.casefold() in MARGIN_NAMES})
+    if not artifact.across or not totals:
+        return ""
+    return f" {_join(totals)} comes from margins=True; leave margins out of {artifact.task}."
+
+
 def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
     """The saved header holds exactly the expected columns, in any order."""
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
+        _assert(
+            not table.transposed,
+            f"{artifact.path} has the {artifact.key[0]} labels across the top and the {artifact.across} labels "
+            f"down the side, so {_swapped(artifact)} {artifact.task} saves the header line "
+            f"{','.join(artifact.columns)}.",
+        )
         found = _resolve(table, artifact)
         # A saved index with no name leaves its column unheaded; holding the IDs, it is the key column.
         first = table.columns[0] if table.columns else None
@@ -465,7 +580,7 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             if _fold(column) not in table.columns and column not in unheaded
         ]
         extra = [
-            column or "a column with no header"
+            column
             for column in table.columns
             if column not in expected and column not in unheaded.values()
         ]
@@ -473,11 +588,12 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
         if missing:
             problems.append(f"is missing {_join(missing)}")
         if extra:
-            problems.append(f"also has {_join(extra)}")
+            problems.append(f"also has {table.header(extra)}")
+        notes = _swap_note(artifact, extra) or _margins_note(artifact, [table.written.get(c, c) for c in extra])
         _assert(
             not problems,
             f"{artifact.path} " + " and ".join(problems) + f"; {artifact.task} saves the header line "
-            f"{','.join(artifact.columns)} (any column order). {hint}",
+            f"{','.join(artifact.columns)} (any column order).{notes} {hint}",
         )
 
     return check
@@ -488,7 +604,15 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
-        grouped, unknown = _group(table, artifact, _resolve(table, artifact))
+        found = _resolve(table, artifact)
+        _assert(
+            not any(found.get(column) in table.conflicting_columns for column in artifact.key),
+            f"{artifact.path} has repeated key headers with conflicting labels; expected one key value per "
+            f"row. Remove the extra key column and save {artifact.task}'s table again.",
+        )
+        grouped, unknown = _group(table, artifact, found)
+        first_key = found.get(artifact.key[0])
+        notes = _margins_note(artifact, [row[first_key] for row in table.rows] if first_key else [])
         missing = [key for key in artifact.rows if key not in grouped]
         repeated = [key for key, rows in grouped.items() if len(rows) > 1]
         problems = []
@@ -502,63 +626,134 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
         _assert(
             not problems,
             f"{artifact.path} " + "; ".join(problems) + "; it should hold one row for each of "
-            f"{_expected_keys([_key_name(key) for key in artifact.rows])}. Fix it in {artifact.task}: {hint}",
+            f"{_expected_keys([_key_name(key) for key in artifact.rows])}.{notes} Fix it in {artifact.task}: {hint}",
         )
 
     return check
 
 
 def values_check(
-    artifact: Artifact, columns: tuple[str, ...], hint: str, cells: str = "all"
+    artifact: Artifact,
+    columns: tuple[str, ...],
+    hint: str,
+    cells: str = "all",
+    also: Callable[[dict[str, str], dict[str, str]], tuple[float, str] | None] | None = None,
+    cause: Callable[[Table, dict[str, str]], str] | None = None,
+    prior: Artifact | None = None,
 ) -> Callable[[Path], None]:
     """Every saved row for an expected key holds the expected values in `columns`.
 
     `cells` narrows the comparison to the cells expected to hold a value
     ("filled") or to be empty ("empty"). A missing or repeated row costs the
     rows check, not this one: this check compares whatever rows the file does
-    hold for the expected keys. The exception is a row whose cell should stay
-    empty: without the row that cell is gone, so the "empty" check fails too.
+    hold for the expected keys; absent rows are charged only by the rows check.
+
+    `also(row, found)`, for a column worked out from other saved columns, gives
+    the value the row's own saved cells imply and how, or None. A cell that
+    matches it passes too, so a mistake in the other column costs only that
+    column's check. `prior` accepts values copied from the named earlier artifact,
+    so that an earlier mistake costs points only once. `cause(table, found)`
+    names a likely cause, or returns "".
     """
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
         found = _resolve(table, artifact)
-        absent = [column for column in columns if column not in found]
+        # Schema charges omitted columns; judge the present values without skipping sibling mistakes.
+        present = tuple(column for column in columns if column in found)
+        conflicts = [column for column in present if found.get(column) in table.conflicting_columns]
         _assert(
-            not absent,
-            f"{artifact.path} has no {_join(absent)} column (its columns are {_join(table.columns) or 'none'}), "
-            f"so those values cannot be compared. Fix it in {artifact.task}: {hint}",
+            not conflicts,
+            f"{artifact.path} has repeated {_join(conflicts)} headers with conflicting values; expected one "
+            f"value per column on each row. Remove the extra columns and save {artifact.task}'s table again.",
         )
-        grouped, _ = _group(table, artifact, found)
+        grouped, unknown = _group(table, artifact, found)
+        held = [f"a row for {_key_name(key)}" for key in grouped] + unknown
+        if len(held) > 3:
+            holds = ", ".join(held[:3]) + f" and {len(held) - 3} more"
+        else:
+            holds = _join(held) or "no data rows"
         _assert(
             any(key in artifact.rows for key in grouped),
-            f"{artifact.path} has no row for any of {_join(_key_name(key) for key in artifact.rows)}, so its "
-            f"{_join(columns)} values cannot be compared; the rows check says what to fix in {artifact.task}.",
+            f"{artifact.path} has no row for any of {_join(_key_name(key) for key in artifact.rows)} (it holds "
+            f"{holds}), so its {_join(columns)} values cannot be compared; the rows check says what to fix in "
+            f"{artifact.task}.",
         )
-        if cells == "empty":
-            gone = [
-                f"{_key_name(key)}'s {column} cell"
-                for key, expected_row in artifact.rows.items() if key not in grouped
-                for column in columns if expected_row[column] is None
-            ]
-            _assert(
-                not gone,
-                f"{artifact.path} has no row holding {_join(gone)}, which should be there and empty. "
-                f"Fix it in {artifact.task}: {hint}",
-            )
+        previous = {}
+        if prior is not None:
+            try:
+                earlier = read_table(root, prior)
+                earlier_found = _resolve(earlier, prior)
+                previous, _ = _group(earlier, prior, earlier_found)
+                previous = {tuple(part.casefold() for part in key): rows for key, rows in previous.items()}
+            except AssertionError:
+                earlier_found = {}
         wrong = []
         for key, rows in grouped.items():
             expected_row = artifact.expected(key)
-            for column in columns:
+            for column in present:
                 expected = expected_row[column]
                 if (cells == "filled" and expected is None) or (cells == "empty" and expected is not None):
                     continue
-                given = sorted({_given(row[found[column]]) for row in rows if not _matches(row[found[column]], expected)})
+                given, implied = set(), set()
+                for row in rows:
+                    cell = row[found[column]]
+                    derived = also(row, found) if also else None
+                    if prior is not None:
+                        prior_key = tuple(row.get(found.get(name, ""), "").casefold() for name in prior.key)
+                        prior_column = "mean_wait_min" if column == "clinic_mean_wait" or artifact is MEAN_WAIT_PIVOT else column
+                        if artifact is MEAN_WAIT_PIVOT:
+                            prior_key = (key[0].casefold(), column.casefold())
+                        saved = previous.get(prior_key, [])
+                        if len(saved) == 1 and prior_column in earlier_found:
+                            if _matches(cell, _number(saved[0][earlier_found[prior_column]])):
+                                continue
+                    if also and derived is None and "clinic_mean_wait" in found and _number(row[found["clinic_mean_wait"]]) is None and _matches(cell, None):
+                        continue
+                    if _matches(cell, expected) or (derived is not None and _matches(cell, derived[0])):
+                        continue
+                    given.add(_given(cell))
+                    if derived is not None and not _matches(_show(derived[0]), expected):
+                        implied.add(f"{_show(derived[0])}, {derived[1]}")
                 if given:
-                    wrong.append(f"{_key_name(key)} has {column} {_join(given)}, expected {_show(expected)}")
-        _assert(not wrong, f"{artifact.path}: " + _listed(wrong) + f". Fix it in {artifact.task}: {hint}")
+                    wrong.append(
+                        f"{_key_name(key)} has {column} {_join(sorted(given))}, expected {_show(expected)}"
+                        + (f" (or {_join(sorted(implied))})" if implied else "")
+                    )
+        note = cause(table, found) if cause else ""
+        _assert(
+            not wrong,
+            f"{artifact.path}: " + _listed(wrong) + "." + (f" {note}" if note else "")
+            + f" Fix it in {artifact.task}: {hint}",
+        )
 
     return check
+
+
+def _finite(cell: str) -> float | None:
+    number = _number(cell)
+    return number if number is not None and math.isfinite(number) else None
+
+
+def _saved_wait_vs_clinic(row: dict[str, str], found: dict[str, str]) -> tuple[float, str] | None:
+    """wait_min minus clinic_mean_wait from the row's own saved cells, or None when either is not a number."""
+    wait, mean = (
+        _finite(row[found[column]]) if column in found else None for column in ("wait_min", "clinic_mean_wait")
+    )
+    if wait is None or mean is None:
+        return None
+    return wait - mean, "wait_min minus the clinic_mean_wait saved on that row"
+
+
+def _when_clinic_means_blank(note: str) -> Callable[[Table, dict[str, str]], str]:
+    """A cause that applies when every saved clinic_mean_wait is empty, as assigning a .mean() summary leaves it."""
+
+    def cause(table: Table, found: dict[str, str]) -> str:
+        column = found.get("clinic_mean_wait")
+        cells = [row[column] for row in table.rows] if column else []
+        return note if cells and all(_clean(cell).casefold() in MISSING_SPELLINGS for cell in cells) else ""
+
+    return cause
 
 
 COUNT_HINT = (
@@ -614,7 +809,7 @@ CHECKS = (
     ),
     Check(
         "clinic summary: count values",
-        values_check(CLINIC_SUMMARY, ("visit_count", "satisfaction_count", "patient_count"), COUNT_HINT),
+        values_check(CLINIC_SUMMARY, ("visit_count", "satisfaction_count", "patient_count"), COUNT_HINT, prior=CLINIC_COUNTS),
     ),
     Check(
         "clinic summary: total_wait_min values",
@@ -659,6 +854,11 @@ CHECKS = (
             ("clinic_mean_wait",),
             'clinic_mean_wait is groupby("clinic")["wait_min"].transform("mean"): every visit gets its own '
             "clinic's mean wait.",
+            prior=CLINIC_SUMMARY,
+            cause=_when_clinic_means_blank(
+                "Every clinic_mean_wait is blank, as happens when the column is assigned from .mean(): that "
+                "summary is labeled by clinic, not by row, so it lines up with no row (Lecture 08's callout)."
+            ),
         ),
     ),
     Check(
@@ -668,6 +868,11 @@ CHECKS = (
             ("wait_vs_clinic",),
             "wait_vs_clinic is wait_min minus clinic_mean_wait, so a visit that waited longer than its "
             "clinic's mean is positive.",
+            also=_saved_wait_vs_clinic,
+            cause=_when_clinic_means_blank(
+                "Every clinic_mean_wait is blank, so wait_min minus clinic_mean_wait is blank too; fix "
+                "clinic_mean_wait first."
+            ),
         ),
     ),
     # Task 2.3: output/clinic_visit_type_summary.csv
@@ -719,6 +924,7 @@ CHECKS = (
             VISIT_TYPES,
             'Each cell is the mean wait_min of that clinic\'s visits of that type: aggfunc="mean".',
             cells="filled",
+            prior=CLINIC_VISIT_TYPE,
         ),
     ),
     Check(

@@ -36,7 +36,7 @@ A **virtual environment** is a project's own Python **interpreter** (the program
     - Other packages, such as `numpy`, work only after they are installed
 - **Tool**:
     - `uv` and `pyproject.toml` will be used by default in this course
-    - Alternatives: `requirements.txt` instead of `pyproject.toml`, `python3 -m venv`, and Conda are touched on at the end of this topic
+    - Alternative record: `requirements.txt`; standard-library `venv` creates Python environments, while Conda also manages non-Python dependencies. Their workflows are in [BONUS.md](BONUS.md#other-environment-tools)
 
 ## Using uv
 
@@ -113,19 +113,11 @@ python3 -c "import numpy as np; print(np.__version__)"
 ```
 
 ```text
-Pinned `.python-version` to `3.13`
-Initialized project `clinic-project`
-Using CPython 3.13.14
-Creating virtual environment with seed packages at: .venv
- + pip==26.2.1
-Activate with: source .venv/bin/activate
-Resolved 2 packages in 3ms
-Installed 1 package in 13ms
  + numpy==2.3.3
 2.3.3
 ```
 
-Timings vary, and the first download of a package adds lines of its own. `.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild. Commit all three to Git; none of them belongs in `.gitignore`.
+uv prints additional setup and download messages; the lines above confirm the package version. `.python-version`, `pyproject.toml`, and `uv.lock` are now the project's records: which Python and which packages to rebuild. Commit all three to Git; none of them belongs in `.gitignore`.
 
 <callout icon="💡" color="blue_bg">
 	## Skip activation with `uv run`
@@ -147,12 +139,6 @@ uv run python3 -c "import numpy as np; print(np.__version__)"
 ```
 
 ```text
-Using CPython 3.13.14
-Creating virtual environment with seed packages at: .venv
- + pip==26.2.1
-Activate with: source .venv/bin/activate
-Resolved 2 packages in 0.77ms
-Installed 1 package in 13ms
  + numpy==2.3.3
 2.3.3
 ```
@@ -211,7 +197,7 @@ pandas==3.0.5
 
 - `uv pip install -r requirements.txt`: Install every listed package into the active environment; `pyproject.toml` is unchanged.
 - `uv export --no-hashes > requirements.txt`: Write the packages `uv.lock` records; `--no-hashes` leaves out download checksums.
-- `uv pip freeze > requirements.txt`: Write every package installed in the active environment, pip included.
+- `uv pip freeze > requirements.txt`: Record every package installed in the active environment, including pip; use `uv export` for a uv project's locked dependencies.
 - `python3 -m pip install -r requirements.txt`: The same install with pip, as Colab and the alternatives below do.
 
 ### Code Snippet: Share the Environment as `requirements.txt`
@@ -228,70 +214,13 @@ numpy==2.3.3
     # via clinic-project
 ```
 
-## Using standard-library venv (alternative)
-
-Python's standard library includes `venv`, which creates an environment with pip already in it; pip installs from `requirements.txt`, not `uv.lock`. Use one environment tool per project.
-
-### Reference Card: standard-library `venv`
-
-| Task | Command | Note |
-| :--- | :--- | :--- |
-| Create | `python3 -m venv .venv` | Uses the installed Python 3.13. |
-| Activate | `source .venv/bin/activate` | PowerShell: `.\.venv\Scripts\Activate.ps1`. |
-| Install | `python3 -m pip install -r requirements.txt` | Uses the active environment's pip. |
-| Leave | `deactivate` | Returns to the previous shell environment. |
-
-## Using Conda (alternative comparison)
-
-[Conda documentation](https://docs.conda.io/)
-
-Conda manages Python environments and packages, including non-Python dependencies.
-
-### Reference Card: Conda alternative
-
-| Task | Command | Result |
-| :--- | :--- | :--- |
-| Create | `conda create --prefix ./.venv python=3.13 pip` | Creates the same `.venv` location with Conda. |
-| Activate | `conda activate ./.venv` (PowerShell: `conda activate .\.venv`) | Selects the Conda environment. |
-| Install | `python3 -m pip install -r requirements.txt` | Installs the packages a requirements file lists. |
-| Leave | `conda deactivate` | Returns to the previous environment. |
+Standard-library `venv` and Conda are alternatives to uv; their workflows are in [BONUS.md](BONUS.md#other-environment-tools). Use one environment tool per project.
 
 ![xkcd 2347: Dependency. Every project stands on packages other people maintain, which is why yours records exactly which versions it needs](media/xkcd_2347.png)
 
 # Shell Pipelines and Scripts
 
 A **pipeline** chains shell commands so each works on the previous one's output, answering quick questions about a data file, such as visits per clinic, without Python. A **shell script** saves the commands in a file, so the analysis reruns with one command when new data arrives.
-
-## Shell Scripts
-
-### Reference Card: Shell Scripts
-
-- `cat > count_clinics.sh`: Paste the script, press **Enter**, then **Ctrl+C** (Lecture 01).
-- `#!/bin/bash`: The first line; names the shell the script expects.
-- `# note`: A comment; Bash skips it in a script. At a zsh prompt, the Mac default, `#` is not a comment, so type commands without notes.
-- `\` at the end of a line: Continue the same command on the next line.
-- `bash count_clinics.sh`: Run the script from top to bottom.
-
-### Code Snippet: Save a Pipeline as a Script
-
-The pipeline and the timestamp variable in this script are explained in the next sections.
-
-```bash
-#!/bin/bash
-# Count encounters per clinic; save the counts under this run's timestamp.
-timestamp=$(date +"%Y%m%d_%H%M%S")
-mkdir -p results
-tail -n +2 data/raw/encounters.csv \
-  | cut -d',' -f4 | sort | uniq -c > "results/clinic_counts_${timestamp}.txt"
-echo "Saved results/clinic_counts_${timestamp}.txt"
-```
-
-```text
-$ bash count_clinics.sh
-Saved results/clinic_counts_20260918_162310.txt
-```
-
-Scripts can also take arguments and stop at the first failing command; [the bonus page](BONUS.md) covers those.
 
 ## Pipelines
 
@@ -333,25 +262,16 @@ tail -n +2 data/raw/encounters.csv | wc -l
 
 A **wildcard** stands for part of a file name: `*` matches any run of characters and `?` exactly one, as in Lecture 02's `.gitignore` patterns such as `*.csv`. The shell replaces the pattern with every matching file name before the command runs. `grep` searches inside files instead: it prints each line that contains a pattern.
 
-### Examples of Wildcards
+### File Names Versus File Contents
 
-In Demo 1's `~/03-demo` folder, as the download leaves it:
-
-| Pattern | The shell replaces it with |
-| --- | --- |
-| `*.sh` | `demo1_cli_pipeline.sh setup_demo.sh` |
-| `demo2_*.py` | `demo2_numpy_arrays.py demo2_numpy_performance.py demo2_types_and_lists.py` |
-| `demo?_*.py` | The five `demo2_` and `demo3_` scripts |
-| `*.txt` | Nothing matches: Bash passes `*.txt` on as typed, so `ls *.txt` reports `No such file or directory`, and zsh stops with `no matches found: *.txt` |
-
-A `grep` pattern is a **regular expression**: most characters match themselves, and a few have special meanings. On `data/raw/encounters.csv`:
-
-| Pattern | Matches a line that | Matching lines |
+| Pattern | Where it matches | Example |
 | --- | --- | --- |
-| `Cardiology` | Contains `Cardiology` | `P001,54,128,Cardiology`, `P004,45,131,Cardiology`, `P006,58,126,Cardiology` |
-| `^P` | Starts with `P` | The six records, not the header |
-| `,Cardiology$` | Ends with `,Cardiology` | The same three records as `Cardiology` |
-| `,14.,` | Holds `,14`, any one character, then `,` | `P003,67,142,Nephrology`, `P005,72,145,Nephrology` |
+| `demo2_*.py` | File names, expanded by the shell | All three Demo 2 Python scripts |
+| `Cardiology` | Text inside a file, searched by `grep` | Any line containing this text |
+| `,Cardiology$` | Text at the end of a line | A record ending in the clinic name |
+| `^P` | Text at the start of a line | A patient row, excluding the header |
+
+A `grep` pattern is a **regular expression**: most characters match themselves, while `^`, `$`, and `.` have special meanings. Quote the pattern so the shell passes it unchanged.
 
 ### Reference Card: Wildcards and `grep`
 
@@ -362,7 +282,7 @@ A `grep` pattern is a **regular expression**: most characters match themselves, 
 - `grep -v`: Print the lines that do _not_ match.
 - `grep -i`: Ignore upper and lower case.
 - `^` / `$`: In a pattern, the start / end of the line.
-- `.`: In a pattern, any one character.
+- `.`: In a pattern, any one character; `',14.,'` matches a field from 140 to 149.
 - `command | grep 'PATTERN'`: Keep only the matching lines of another command's output.
 
 ### Code Snippet: Search the Encounter File
@@ -392,6 +312,8 @@ The shell stores text in a **variable** and captures a command's output with **c
 
 ### Code Snippet: Name and Log a Run
 
+In a folder with `results/` and `logs/` directories:
+
 ```bash
 timestamp=$(date +"%Y%m%d_%H%M%S")
 echo "$timestamp"
@@ -406,6 +328,37 @@ Your timestamp will differ:
 20260918_162001
 20260918_162001 complete
 ```
+
+## Shell Scripts
+
+### Reference Card: Shell Scripts
+
+- `cat > count_clinics.sh`: Paste the script, press **Enter**, then **Ctrl+C** (Lecture 01).
+- `#!/bin/bash`: The first line; names the shell the script expects.
+- `# note`: A comment; Bash skips it in a script. At a zsh prompt, the Mac default, `#` is not a comment, so type commands without notes.
+- `\` at the end of a line: Continue the same command on the next line.
+- `bash count_clinics.sh`: Run the script from top to bottom.
+
+### Code Snippet: Save a Pipeline as a Script
+
+Save this script as `count_clinics.sh`; the listing is script contents, not commands to paste at the prompt.
+
+```bash
+#!/bin/bash
+# Count encounters per clinic; save the counts under this run's timestamp.
+timestamp=$(date +"%Y%m%d_%H%M%S")
+mkdir -p results
+tail -n +2 data/raw/encounters.csv \
+  | cut -d',' -f4 | sort | uniq -c > "results/clinic_counts_${timestamp}.txt"
+echo "Saved results/clinic_counts_${timestamp}.txt"
+```
+
+```text
+$ bash count_clinics.sh
+Saved results/clinic_counts_20260918_162310.txt
+```
+
+Scripts can also take arguments and stop at the first failing command; [the bonus page](BONUS.md) covers those.
 
 # LIVE DEMO!
 
@@ -453,7 +406,7 @@ sum(readings)                 # TypeError: unsupported operand type(s) for +: 'i
 - `enumerate(items, start=0)`: Yield position-value pairs (Lecture 01).
 - `zip(left, right)`: Yield pairs until the shorter input ends.
 - `reversed(items)`: Iterate from the last item to the first.
-- `sorted(items)`: Return a new sorted list. For a NumPy array use `np.sort()` (Sorting and Ranking, below): `sorted()` on a 2-D array raises `ValueError`.
+- `sorted(items)`: Return a new sorted list. For a NumPy array use `np.sort()` (Sorting and Ranking, below): `sorted()` on a 2-D array can raise `ValueError` when Python tries to compare whole rows.
 
 ### Code Snippet: Keep Related Values Together
 
@@ -492,7 +445,7 @@ print([mg / 1000 for mg in [250, 500, 125]])  # [0.25, 0.5, 0.125]: mg to g
 
 ![It's pronounced "num pie": NumPy is short for Numerical Python, whatever the cat says](media/numpy.webp)
 
-**NumPy** (Numerical Python) is the package for calculating on many numbers at once; pandas (Lecture 04) is built on it. Its **array** is a grid of same-type values, such as patients × visits, and one expression like `readings * 2` works on every element with no loop, which is called **vectorization** and runs far faster than a loop.
+**NumPy** (Numerical Python) is the package for calculating on many numbers at once; pandas (Lecture 04) is built on it. Its **array** is a grid of same-type values, such as patients × visits, and one expression like `readings * 2` works on every element with no loop, which is called **vectorization** and usually runs faster than a loop on large arrays.
 
 ## Why NumPy
 
@@ -511,7 +464,7 @@ my_array = np.array(my_list)
 print(my_array * 2)               # [ 2  4  6  8 10]
 ```
 
-`import numpy as np` loads NumPy under its standard alias `np` (Lecture 02), which the snippets below assume, and `np.array()` turns a list into an array. On Demo 2's one million heart-rate readings, the list took about 24 ms and the array about 1 ms on one machine.
+`import numpy as np` loads NumPy under its standard alias `np` (Lecture 02), which the snippets below assume, and `np.array()` turns a list into an array. [Demo 2.2](demo/DEMO_GUIDE.md#22-compare-a-list-loop-with-array-arithmetic) measures the difference as independent practice.
 
 ## NumPy Data Types
 
@@ -694,7 +647,6 @@ bp[:, 0] is the visit 1 column: [128 142 118]
 | `arr[row, :]` or `arr[row]` | All columns in one row | 1-D row |
 | `arr[:, col]` | All rows in one column | 1-D column |
 | `arr[:2, 1:3]` | First two rows, columns 1 and 2 | 2-D block |
-| `arr3d[i]`, `arr3d[i, j]`, `arr3d[:, :, k]` | In a 3-D array, each single-number index removes one dimension; `:` keeps it | 2-D, 1-D, 2-D |
 
 #### Code Snippet: Select Cells, Rows, Columns, and Blocks
 
@@ -746,15 +698,11 @@ print(values, copied_values)  # [99 20 30] [10 20 30]
 ### Code Snippet: Functions Share the Caller's Array
 
 ```python
-def add_one(values):
-    values += 1          # changes the caller's array
-
-data = np.array([1, 2, 3])
-add_one(data)
-print(data)              # [2 3 4]
+def calibrate(values):
+    return values + 3   # a new array; values stays unchanged
 ```
 
-To leave an input unchanged, return a new array (`return values + 1`) or work on `values.copy()`.
+Using `values += 3` instead would change the caller's array, even without returning it. [Demo 3.1](demo/DEMO_GUIDE.md#31-aliases-views-and-copies) compares both versions.
 
 ## Views and Copies
 
@@ -815,80 +763,43 @@ print(bp[(bp >= 120) & (bp < 130)])   # [128 126 121]
 
 ## Multidimensional Boolean Indexing
 
-A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits) instead:
+A mask with one value per row keeps whole rows; put a mask with one value per column after the comma. Match the mask's length to that dimension.
 
-1. Build a 1-D mask with one `True` or `False` per row, such as `bp[:, 0] >= 140`, or one per column.
-2. Put it in that dimension's slot: `bp[row_mask]` keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D.
-3. Match the mask's length to that dimension; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0` (`axis 1` for a column mask).
-
-`.any()` and `.all()` build such a mask from every value at once. Given an axis, they collapse it:
-
-- `axis=1` checks across each row and gives one `True`/`False` per row (did this patient have any visit at 130 or above?).
-- `axis=0` checks down each column and gives one per column.
+In a 2-D array, `axis=1` works across each row: `(bp >= 140).any(axis=1)` gives one Boolean per patient, marking anyone with at least one reading of 140 or above. `axis=0` works down each column, giving one answer per visit.
 
 ```text
-              visit 1  visit 2  visit 3     bp[:, 0] >= 140   (row mask, one per patient)
-patient 0   [[  128      131      126 ]         False
-patient 1    [  142      145      139 ]         True      ← bp[row_mask] keeps this row
-patient 2    [  118      121      119 ]]        False
-
-(bp >= 140).any(axis=0)  →  [ True   True   False ]      (column mask, one per visit)
-                               ↑      ↑
-                    bp[:, col_mask] keeps visits 1 and 2
+bp[row_mask]      → selected patients × every visit
+bp[:, col_mask]   → every patient × selected visits
 ```
 
-### Reference Card: Masks Along One Dimension
-
-| Pattern | Purpose | Example |
-| :--- | :--- | :--- |
-| `arr2d[:, j] >= x` | Row mask from one column: one `True`/`False` per row. | `bp[:, 0] >= 140` → `[False  True False]` |
-| `arr2d[row_mask]` / `arr2d[row_mask, :]` | Keeps whole rows; the result stays 2-D. | `bp[bp[:, 0] >= 140]` → `[[142 145 139]]` |
-| `(arr2d > x).any(axis=1)` / `.all(axis=1)` | Row mask from every column: any / every value in the row passes. | `(bp >= 130).any(axis=1)` → `[ True  True False]` |
-| `(arr2d > x).any(axis=0)` | Column mask from every row. | `(bp >= 140).any(axis=0)` → `[ True  True False]` |
-| `arr2d[:, col_mask]` | Keeps whole columns. | `bp[:, [True, False, True]]` keeps visits 1 and 3 |
-| `arr2d[row_mask, j]` | Rows by mask, then one column by position. | `bp[bp[:, 0] >= 140, 2]` → `[139]` |
-
-### Code Snippet: Keep Rows or Columns by a Condition
+### Code Snippet: Keep Whole Rows
 
 ```python
-visit1_high = bp[:, 0] >= 140               # one True/False per patient
-print(bp[visit1_high])                      # [[142 145 139]]
-print(bp[(bp >= 130).any(axis=1)])          # patients with any visit at 130 or above
-# [[128 131 126]
-#  [142 145 139]]
-print(bp[:, (bp >= 140).any(axis=0)])       # visits where any patient reached 140
-# [[128 131]
-#  [142 145]
-#  [118 121]]
+bp = np.array([[128, 131, 126], [142, 145, 139], [118, 121, 119]])
+print(bp[bp[:, 0] >= 140])   # [[142 145 139]]
 ```
+
+[BONUS.md](BONUS.md#more-multidimensional-boolean-indexing) develops masks from several columns with `any()` and `all()`.
 
 ## Fancy Indexing
 
 **Fancy indexing** selects by a list of positions instead of a mask, in any order you choose. Like a mask, it returns a copy.
 
-### Reference Card: Fancy Indexing
+### Reference Card: Pick Positions
 
-- `arr[[i, j]]`: The elements at positions `i` and `j`, in that order; a new copy.
-- `arr2d[[i, j]]`: Rows `i` and `j`, in that order.
-- `arr2d[:, [j, k]]`: Columns `j` and `k` of every row, in that order.
-- `arr[[i, j]] = value`: Replaces those elements in place; changes `arr`.
+- `arr[[2, 0]]`: Select positions 2 and 0, in that order.
+- `arr2d[[2, 0]]`: Select rows 2 and 0.
+- `arr2d[:, [0, -1]]`: Select the first and last columns.
+- `arr[[i, j]] = value`: Replace those positions in the original array.
 
-### Code Snippet: Pick Positions, Rows, and Columns
+### Code Snippet: Pick Positions
 
 ```python
-ids = np.array(["P001", "P002", "P003"])   # one ID per row of bp
-print(ids[[2, 0]])       # ['P003' 'P001']
-print(bp[[2, 0]])        # [[118 121 119]
-                         #  [128 131 126]]: rows 2 and 0, in that order
-print(bp[:, [0, -1]])    # [[128 126]
-                         #  [142 139]
-                         #  [118 119]]: each patient's first and last visit
+readings = np.array([128, 142, 118])
+print(readings[[2, 0]])   # [118 128]
 ```
 
-<callout icon="🐼" color="blue_bg">
-	## Preview: pandas selects the same way, by name
-	Masks and lists of positions are how you will work in **pandas** (Lecture 04), the higher-level library that is the everyday workhorse for wrangling data tables. A pandas table labels its rows and columns, so the same moves use names: `df[df["systolic"] >= 140]` keeps rows by a condition, `df[["patient_id", "systolic"]]` picks columns by name, and `df.loc[mask, ["patient_id", "systolic"]]` does both at once.
-</callout>
+[BONUS.md](BONUS.md#more-fancy-indexing) contrasts selecting rows, columns, and paired cells.
 
 ## Array Reshaping
 
@@ -923,7 +834,11 @@ NumPy turns an array of readings into answers with one expression each, where pl
 
 ## Summary Statistics
 
-A **reduction** collapses many values into one, such as a mean. Passing `axis` reduces along one dimension instead, as `.any(axis=1)` did for masks: `axis=0` collapses the rows and gives one result per column, and `axis=1` collapses the columns and gives one result per row. For a patients × visits table, `axis=1` gives each patient's mean and `axis=0` each visit's.
+A **reduction** collapses many values into one, such as a mean. Passing `axis` chooses the dimension to reduce: across each row (`axis=1`) or down each column (`axis=0`).
+
+- `axis=0` collapses the rows: one result per column, or each visit's mean in a patients × visits table.
+- `axis=1` collapses the columns: one result per row, or each patient's mean.
+- **Standard deviation** (SD) measures spread around the mean in the original units: square the distances from the mean, average them, then take the square root.
 
 ```text
 [[1, 2, 3],  → axis=1 mean: 2.0 for this row
@@ -946,7 +861,7 @@ For `arr = np.array([[1, 2, 3], [4, 5, 6]])`:
 | Spread | `arr.std()` | Population SD (divides by n); `ddof=1` divides by n − 1, the sample SD pandas uses (Lecture 04) | `1.708`; `ddof=1` → `1.871` |
 | Variance | `arr.var()` | The SD squared; also takes `ddof` | `2.917` |
 | Extremes | `arr.min()` / `arr.max()` | Smallest / largest value | `1` / `6`; `axis=1` → `[1 4]` / `[3 6]` |
-| Percentile | `np.percentile(arr, q)` | Value below which `q` percent of values fall; `q` may be a list | `np.percentile(arr, [25, 75])` → `[2.25 4.75]` |
+| Percentile | `np.percentile(arr, q)` | Position `q` percent through the ordered values, interpolating when needed; `q` may be a list | `np.percentile(arr, [25, 75])` → `[2.25 4.75]` |
 | Running total | `arr.cumsum(axis=1)` | Cumulative sum along the axis | `[[ 1  3  6] [ 4  9 15]]` |
 | Count matches | `(arr > 2).sum(axis=1)` | Count of `True` values per row | `[1 3]` |
 
@@ -1006,9 +921,6 @@ print(np.select(bands, ["stage 2", "stage 1", "elevated"], default="normal"))
 | `arr.sort()` | `None`; sorts `arr` in place | Yes |
 | `np.argsort(arr)` | Positions that would sort the array | No |
 | `arr.argmin()` / `arr.argmax()` | Position of the smallest / largest value in a 1-D array; `ids[arr.argmax()]` looks up the matching ID | No |
-| `np.sort(arr2d, axis=1)` / `axis=0` | Each row / each column sorted on its own; rows by default | No |
-| `np.argsort(arr2d, axis=1)` | Sorting positions within each row | No |
-| `arr2d[np.argsort(arr2d[:, 0])]` | Whole rows, ordered by column 0 | No |
 
 ### Code Snippet: Find the Highest Values and Who Has Them
 
@@ -1022,18 +934,7 @@ print(ids[top_two], avg_glucose[top_two])   # ['P003' 'P005'] [145 130]
 print(ids[avg_glucose.argmax()])   # P003
 ```
 
-### Code Snippet: Sort Along an Axis and Order Rows
-
-```python
-# bp: the patients × visits array from "Select Cells, Rows, Columns, and Blocks"
-print(np.sort(bp, axis=1))           # [[126 128 131]
-                                     #  [139 142 145]
-                                     #  [118 119 121]]: each patient's readings in order
-order = np.argsort(bp[:, 0])[::-1]   # patients by visit 1, highest first
-print(bp[order])                     # [[142 145 139]
-                                     #  [128 131 126]
-                                     #  [118 121 119]]: each row stays intact
-```
+[BONUS.md](BONUS.md#sort-within-rows-or-order-whole-rows) distinguishes sorting each row's values from ordering whole rows by one column.
 
 ![Learning to code, day 1: a husky at the keyboard, which is how everyone starts](media/learning_to_code.png)
 

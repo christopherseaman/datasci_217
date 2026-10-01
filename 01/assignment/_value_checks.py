@@ -20,6 +20,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 import difflib
+from decimal import Decimal, DecimalException
 from pathlib import Path
 import re
 
@@ -233,8 +234,14 @@ def _readiness_report(root: Path) -> str:
 
 
 def _without_whitespace(line: str) -> str:
-    """The line with every whitespace character removed, which is how report lines are compared."""
-    return "".join(line.split())
+    """Compare case, whitespace, and equivalent numeric spellings equally."""
+    def number(match):
+        try:
+            return str(Decimal(match.group()).normalize())
+        except DecimalException:
+            return match.group()
+    line = re.sub(r"(?<![\w.])[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?", number, line)
+    return "".join(line.split()).casefold()
 
 
 def _label(line: str) -> str:
@@ -376,6 +383,37 @@ def report_line_check(index: int) -> Callable[[Path], None]:
 
     def check(root: Path) -> None:
         report = _readiness_report(root)
+        # Follow-on calculations use the student's declared earlier values.
+        label = expected.partition(":")[0]
+        values = {}
+        for line in report.splitlines():
+            key, colon, value = line.partition(":")
+            if colon:
+                values.setdefault(_label(key), value.strip())
+        if label == "Mean":
+            try:
+                total, count = Decimal(values["total"]), Decimal(values["count"])
+                own_mean = total / count
+            except (KeyError, DecimalException):
+                pass
+            else:
+                if own_mean.is_finite() and any(
+                    _without_whitespace(line) == _without_whitespace(f"Mean: {own_mean}")
+                    for line in report.splitlines()
+                ):
+                    return
+        if label == "Review count":
+            measurements = [value for line in report.splitlines()
+                            for key, colon, value in [line.partition(":")]
+                            if colon and _label(key) == "measurement"]
+            if len(measurements) == 4 and all(
+                re.fullmatch(r"\s*[-+]?\d+(?:\.\d+)?\s+(?:review|within\s+range)\s*", value, re.I)
+                for value in measurements
+            ):
+                own_reviews = sum(value.strip().casefold().endswith("review") for value in measurements)
+                if any(_without_whitespace(line) == _without_whitespace(f"Review count: {own_reviews}")
+                       for line in report.splitlines()):
+                    return
         unmatched = _unmatched_lines(report)
         if index not in unmatched:
             return

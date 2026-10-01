@@ -90,7 +90,7 @@ _Warning: Regular expressions are write-only code. You write them once, and six 
 
 ### Reference Card: Regex syntax
 
-- `\d`: Any digit (0-9)
+- `\d`: Any Unicode decimal digit; use `[0-9]` for only the digits 0 through 9
 - `\w`: Any word character (letter, digit, underscore)
 - `\s`: Any whitespace
 - `+`: One or more of previous
@@ -130,8 +130,8 @@ Beyond simple threshold-based outlier detection, statistical methods can identif
 ### Reference Card: Outlier detection methods
 
 - **IQR Method**: Values below `Q1 - 1.5 * IQR` or above `Q3 + 1.5 * IQR`
-- **Z-Score Method**: Values with |z-score| > 3
-- **Modified Z-Score**: More robust for skewed data
+- **Z-Score Method**: Values with |z-score| > 3; `scipy.stats.zscore` needs SciPy, which `uv add scipy` installs
+- **Modified Z-Score**: Uses the median and median absolute deviation (MAD), which resist extreme values; skewed distributions still need an appropriate outlier rule
 - **Isolation Forest**: Machine learning approach (sklearn)
 
 ### Code Snippet: Flag outliers with IQR and z-score
@@ -231,7 +231,7 @@ The core lecture finds exact repeats and repeated identifiers with `duplicated()
 
 ### Reference Card: Fuzzy matching
 
-- Fuzzy matching for near-duplicates (requires `fuzzywuzzy` or similar)
+- Fuzzy matching for near-duplicates (requires `fuzzywuzzy` or similar; `uv add fuzzywuzzy` installs it)
 
 ### Code Snippet: Find near-duplicate names
 

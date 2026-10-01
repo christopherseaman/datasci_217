@@ -55,9 +55,14 @@ SPANS = {
     "demo2_types_and_lists.py": ("## 2.1 Check Types", "## 2.2 Compare a List Loop"),
     "demo2_numpy_performance.py": ("## 2.2 Compare a List Loop", "## 2.3 Data Types"),
     "demo2_numpy_arrays.py": ("## 2.3 Data Types", "# Demo 3:"),
-    "demo3_bp_analysis.py": ("# Demo 3:", "## 3.4 Summarize the Bundled CSV by Clinic"),
+    "demo3_bp_analysis.py": ("## Independent practice: full blood pressure analysis", "## 3.4 Summarize the Bundled CSV by Clinic"),
     "demo3_csv_summary.py": ("## 3.4 Summarize the Bundled CSV by Clinic", "### Check the counts against the shell"),
 }
+CORE_SPANS = {
+    "core_arrays.py": ("## Core walkthrough: a small array", "## 2.1 Check Types"),
+    "core_analysis.py": ("## Core walkthrough: patients and clinics", "## Independent practice: full blood pressure analysis"),
+}
+SPANS.update(CORE_SPANS)
 # The span of the guide whose text blocks name, in order, the lines to look for among what uv prints.
 ENVIRONMENT_SPAN = ("## 1.2 Create the Environment", "## 1.5 Read a Shell Script")
 # The command Demo 1.3 runs with the environment off, to show the lecture's ModuleNotFoundError.
@@ -209,8 +214,15 @@ def guide_commands(setup_command):
     that pasting it by mistake cannot run it. The setup command downloads this repository's files.
     """
     commands, position = [], 0
-    for match in re.finditer(r"^```bash\n(.*?)^```$", GUIDE_TEXT, re.M | re.S):
-        block, before, position = match.group(1), GUIDE_TEXT[position:match.start()], match.end()
+    core_sources = {name: fenced(span(*headings), "python")[0] for name, headings in CORE_SPANS.items()}
+    for match in re.finditer(r"^```(bash|python)\n(.*?)^```$", GUIDE_TEXT, re.M | re.S):
+        language, block = match.group(1), match.group(2)
+        before, position = GUIDE_TEXT[position:match.start()], match.end()
+        if language == "python":
+            for name, source in core_sources.items():
+                if block == source:
+                    commands.append(f"cat > {name} <<'PASTED'\n{block}PASTED")
+            continue
         if block.startswith("#!"):
             target = re.findall(r"`cat > (\S+)`", before)
             assert target, f"a script to read goes in a ```text block, not a ```bash one: {block.splitlines()[0]!r}"
@@ -276,7 +288,7 @@ def check_pasted(shell, steps, look_for, shown_error):
         else:
             assert not SHELL_ERROR.search(output), (shell, command, output)
         # Demos 2 and 3 run in the (03-demo) environment, which the guide says the prompt shows.
-        if command.startswith("python3 demo"):
+        if command.startswith(("python3 demo", "python3 core")):
             assert prompt == "(03-demo) ", (shell, command, prompt)
     transcript = "".join(output for _, _, output in steps)
     assert in_order(transcript, "".join(look_for)), (shell, transcript)
@@ -286,7 +298,7 @@ def check_pasted(shell, steps, look_for, shown_error):
         "demo1_cli_pipeline.sh": output_of(steps, "bash demo1_cli_pipeline.sh"),
         "count_clinics.sh": output_of(steps, "bash count_clinics.sh") + output_of(steps, "cat results/clinic_counts_"),
         "search": "".join(output for command, _, output in steps if command in search),
-        **{name: output_of(steps, f"python3 {name}") for name in PYTHON_SCRIPTS},
+        **{name: output_of(steps, f"python3 {name}") for name in (*PYTHON_SCRIPTS, *CORE_SPANS)},
     }
     for name, (first_heading, last_heading) in SPANS.items():
         assert accounts_for(normalize(printed[name]), guide_blocks(first_heading, last_heading)), (shell, name)
@@ -329,6 +341,33 @@ def student_environment(home):
     return env
 
 
+def check_core_route(home, setup_command):
+    """Run just the advertised core route in a fresh home, without any independent exercise."""
+    home.mkdir()
+    env = student_environment(home)
+    demo = home / "03-demo"
+
+    def shell(command, cwd=demo):
+        return subprocess.run(["bash", "-c", "set -euo pipefail\n" + command], cwd=cwd,
+                              env=env, check=True, capture_output=True, text=True).stdout
+
+    shell(setup_command, cwd=home)
+    [create] = fenced(span("## 1.2 Create the Environment", "## 1.3 Recreate"), "bash")
+    created = shell(create)
+    assert f"{demo / '.venv/bin/python3'}\n" in created, created
+    pipeline, run_pipeline = fenced(span("## 1.7 Save a Pipeline", "## 1.8 Search"), "bash")
+    (demo / "count_clinics.sh").write_text(pipeline, encoding="utf-8")
+    counted = shell(run_pipeline)
+    assert accounts_for(normalize(counted), guide_blocks(*SPANS["count_clinics.sh"])), counted
+
+    for name, headings in CORE_SPANS.items():
+        [source] = fenced(span(*headings), "python")
+        (demo / name).write_text(source, encoding="utf-8")
+        output = shell(f"source .venv/bin/activate\npython3 {name}")
+        assert accounts_for(output, guide_blocks(*headings)), (name, output)
+    assert not any((demo / name).exists() for name in ("recreation-check", "pip-check", "data", "logs"))
+
+
 def run():
     # The setup script downloads from the address the guide's command names, file by file.
     setup = (DEMOS / "setup_demo.sh").read_text(encoding="utf-8")
@@ -353,6 +392,7 @@ def run():
         local_setup = Path(temporary) / "setup_demo.sh"
         local_setup.write_text(setup.replace(base_url_line, f'base_url="{DEMOS.as_uri()}"'), encoding="utf-8")
         setup_command = f"curl -fsSL {local_setup.as_uri()} | sh"
+        check_core_route(Path(temporary) / "core-home", setup_command)
 
         def shell(command, cwd=demo, check=True, merged=False):
             """Run a Bash command as the student's terminal would, with pipefail so a pipe cannot hide a failure.
@@ -481,7 +521,10 @@ def run():
         cardiology = [line.split()[0] for line in (first + counted).splitlines() if line.endswith(" Cardiology")]
         assert searched.splitlines()[1:3] == cardiology == ["3", "260"], (searched, cardiology)
 
-        runs = {name: python(name) for name in PYTHON_SCRIPTS}
+        for name, headings in CORE_SPANS.items():
+            [source] = fenced(span(*headings), "python")
+            (demo / name).write_text(source, encoding="utf-8")
+        runs = {name: python(name) for name in (*PYTHON_SCRIPTS, *CORE_SPANS)}
         # Apart from its timings, every Demo 2 and Demo 3 script repeats itself exactly.
         for name, text in runs.items():
             assert normalize(python(name)) == normalize(text), name
@@ -540,7 +583,7 @@ def run():
             check_pasted(name, steps, look_for, shown_error)
             pasted_into.append(name)
 
-    print("Lecture 03: no pasted command carries a # comment; setup, environment commands, demo outputs, "
+    print("Lecture 03: standalone core route passed; no pasted command carries a # comment; setup, environment commands, demo outputs, "
           "repeat runs, and every guide expectation matched real runs, and the whole guide pasted into "
           f"{' and '.join(pasted_into)} matched too.")
 

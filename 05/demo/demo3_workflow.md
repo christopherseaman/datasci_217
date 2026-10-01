@@ -18,23 +18,35 @@ jupyter:
 
 # Demo 3: From Raw Clinic Visits to a Validated Clean Table
 
-This demo runs the whole cleaning pipeline from Lecture 05 on a clinic visit export: state the contract, load and preserve the raw table, audit it with validation rules, record each decision, transform a working copy, and save only after the checks pass. Everything here comes from Lecture 05 and Lectures 01 to 04.
+This demo runs the whole cleaning pipeline from Lecture 05 on a clinic visit export: state the contract, load, fingerprint, and preserve the raw table, audit it with validation rules, record each decision, transform a working copy, and save only after the checks pass. Everything here comes from Lecture 05 and Lectures 01 to 04.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. The files it writes go to `output/`, which disappears when a Colab runtime shuts down. Tested 2026-09-24 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3; the whole notebook runs in a few seconds.
+Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
+
+| Route | Work and visible checkpoint |
+| --- | --- |
+| [Core walkthrough](#core-walkthrough) | Follow one raw-to-clean pipeline: a failed save gate, then 12 visits, five review flags, a decision log, and exact typed read-back. |
+| [Independent practice](#independent-practice) | Compute IQR candidates and spot-check random raw rows; confirm that valid 210 mmHg is kept. |
+
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. The files it writes go to `output/`, which disappears when a Colab runtime shuts down. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
+
+- **In Colab:** open Demo 3 from the lecture page's Colab link and run the Setup cell below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **Locally in VS Code:** use the `~/05-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `05-demo` in your home folder, open `demo3_workflow.ipynb`, click **Select Kernel**, and choose the Python in `05-demo/.venv`. **In a new terminal**, `cd ~/05-demo` and then `source .venv/bin/activate` bring the environment back.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 from pathlib import Path
+import hashlib
 
 import pandas as pd
 
@@ -43,7 +55,9 @@ print('pandas', pd.__version__)
 
 **Expect:** `pandas 3.0.5`.
 
-## 1. The data contract
+## Core walkthrough
+
+### 1. The data contract
 
 - **Row meaning:** one row is one clinic visit.
 - **Candidate identifier:** `visit_id`, unique for every visit.
@@ -54,11 +68,11 @@ print('pandas', pd.__version__)
 | `patient_id` | study patient | `string` | `P` + three digits |
 | `visit_date` | visit day | `datetime64` | exact `YYYY-MM-DD` text and a real date; missing allowed but flagged |
 | `site` | clinic | `string` | `north`, `south`, or `west`; missing allowed but flagged |
-| `age` | age at visit (years) | `Int64` | 0 to 120; missing allowed but flagged |
+| `age` | age at visit (years) | `Int64` | whole number, 0 to 120; missing allowed but flagged |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60 to 250; missing allowed but flagged |
 | `needs_review` | follow-up needed | `boolean` | `True` exactly when a date, site, age, or SBP is missing |
 
-## 2. Load the raw table and keep it unchanged
+### 2. Load the raw table and keep it unchanged
 
 The cell writes the export to `output/clinic_visits_raw.csv`, then reads every column as text, keeping blanks and the code `NA` exactly as written.
 
@@ -92,9 +106,19 @@ print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (
 
 **Expect:** 13 rows, all `string`. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
 
-## 3. Audit with validation rules
+Record the file itself too: its name, its size, and its SHA-256 hash. Step 8 saves the hash with the decisions, so anyone can check they are cleaning the same file.
 
-Each rule gives one `True`/`False` per row. Blank and `NA` are the export's missing codes: allowed, but flagged later.
+```python
+raw_sha256 = hashlib.sha256(raw_path.read_bytes()).hexdigest()
+print(raw_path.name, raw_path.stat().st_size, 'bytes')
+print('SHA-256:', raw_sha256)
+```
+
+**Expect:** `clinic_visits_raw.csv 482 bytes` and `SHA-256: 5275014743fb5d4055a20782c2e592a3e2d0f2fd7bda49e70464571faf56a402`. On Windows outside WSL, the file is `496 bytes` and the hash is completely different: Windows text files end each of the 14 lines with two characters instead of one, and any changed byte changes the hash.
+
+### 3. Audit with validation rules
+
+Each rule gives one `True`/`False` per row. Blank and `NA` are the export's missing codes: allowed, but flagged later. The numeric rules check both the range and whole-number form: an age of `40.5` fails even though it is between 0 and 120.
 
 ```python
 allowed_sites = ['north', 'south', 'west']
@@ -106,8 +130,8 @@ rules = pd.DataFrame({
     'patient_id P+3 digits': raw['patient_id'].str.fullmatch(r'P[0-9]{3}'),
     'date text YYYY-MM-DD': raw['visit_date'].str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}'),
     'site allowed': raw['site'].isin(allowed_sites),
-    'age 0-120 or missing': raw['age'].isin(missing_codes) | age_number.between(0, 120),
-    'sbp 60-250 or missing': raw['sbp'].isin(missing_codes) | sbp_number.between(60, 250),
+    'age whole 0-120 or missing': raw['age'].isin(missing_codes) | (age_number.between(0, 120) & age_number.mod(1).eq(0)),
+    'sbp whole 60-250 or missing': raw['sbp'].isin(missing_codes) | (sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)),
 })
 print((~rules).sum())               # rows failing each rule
 print(raw[~rules.all(axis=1)])      # rows to review
@@ -128,32 +152,7 @@ print('visit_id unique:', raw['visit_id'].is_unique)
 
 **Expect:** V004 and V005 cannot be parsed, `Exact repeated rows: 1`, and `visit_id unique: False`.
 
-## 4. Flag unusual readings
-
-The IQR rule flags candidates; it does not decide.
-
-```python
-q1 = sbp_number.quantile(0.25)
-q3 = sbp_number.quantile(0.75)
-iqr = q3 - q1
-sbp_flag = (sbp_number < q1 - 1.5 * iqr) | (sbp_number > q3 + 1.5 * iqr)
-print('Fences:', q1 - 1.5 * iqr, 'to', q3 + 1.5 * iqr)
-print(raw.loc[sbp_flag, ['visit_id', 'sbp']])
-```
-
-**Expect:** `Fences: 104.375 to 159.375`, and two flagged visits. V008's 1320 already fails the range rule: almost certainly a typing error. V009's 210 is inside the contract and possible in severe hypertension, so it stays; it is a reading to confirm, not to delete.
-
-## 5. Spot-check random rows
-
-`head()` shows only the top of the file. Three random rows show the middle.
-
-```python
-print(raw.sample(n=3, random_state=42))
-```
-
-**Expect:** V011, V009, and V001, in that order. One random draw already turns up `' North '` and the 210 reading, so problems are not confined to the top of the file.
-
-## 6. Record each decision
+### 6. Record each decision
 
 One row per decision: which field, what is wrong, what to do, and why. The table is saved with the cleaned data so someone else can repeat the steps.
 
@@ -175,7 +174,9 @@ print(decisions)
 
 **Expect:** 8 decisions. Every "set to missing" row also sets `needs_review` in the next step.
 
-## 7. Transform a working copy
+### 7. Transform a working copy
+
+`age_number` came from `string` text, so it is the nullable `Float64`, and `astype('Int64')` would silently cut an age such as 40.5 to 40. `age_number.mod(1).eq(0)` keeps only whole ages first. This export has no fractional age, but the rule belongs in the pipeline for the next file.
 
 ```python
 working = raw.copy(deep=True)
@@ -183,8 +184,8 @@ working['patient_id'] = working['patient_id'].replace({'P0003': 'P003'})
 working['site'] = working['site'].str.strip().str.lower()
 working['site'] = working['site'].where(working['site'].isin(allowed_sites))
 working['visit_date'] = parsed
-working['age'] = age_number.where(age_number.between(0, 120)).astype('Int64')
-working['sbp'] = sbp_number.where(sbp_number.between(60, 250)).astype('Int64')
+working['age'] = age_number.where(age_number.between(0, 120) & age_number.mod(1).eq(0)).astype('Int64')
+working['sbp'] = sbp_number.where(sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)).astype('Int64')
 working['needs_review'] = working[['visit_date', 'site', 'age', 'sbp']].isna().any(axis=1).astype('boolean')
 print(working)
 print(working.dtypes)
@@ -192,7 +193,7 @@ print(working.dtypes)
 
 **Expect:** 13 rows still (the repeated V007 is still there), with `<NA>` or `NaT` in place of every bad value, and `needs_review` `True` for V004, V005, V006, both V007 rows, and V008.
 
-## 8. Check the contract before saving
+### 8. Check the contract before saving
 
 Each invariant is one named `True`/`False`, collected in a Series so it prints as a report. A function lets the same checks run again after a fix.
 
@@ -200,12 +201,16 @@ Each invariant is one named `True`/`False`, collected in a Series so it prints a
 def run_checks(table):
     """Return one named True/False per contract rule."""
     return pd.Series({
+        'visit IDs present': table['visit_id'].notna().all() & (table['visit_id'] != '').all(),
         'visit IDs unique': table['visit_id'].is_unique,
-        'patient IDs are P + 3 digits': table['patient_id'].str.fullmatch(r'P[0-9]{3}').all(),
+        'patient IDs are P + 3 digits': table['patient_id'].str.fullmatch(r'P[0-9]{3}', na=False).all(),
         'sites allowed when present': table['site'].dropna().isin(allowed_sites).all(),
         'ages 0-120 when present': table['age'].dropna().between(0, 120).all(),
         'SBP 60-250 when present': table['sbp'].dropna().between(60, 250).all(),
         'only the repeated row removed': len(table) == len(raw) - raw.duplicated().sum(),
+        'review flags match missing values': table['needs_review'].equals(
+            table[['visit_date', 'site', 'age', 'sbp']].isna().any(axis=1).astype('boolean')),
+        'raw table unchanged': raw.equals(raw_snapshot),
     })
 
 
@@ -237,13 +242,26 @@ print(checks)
 
 assert checks.all(), checks[~checks]
 clean.to_csv(output_dir / 'clinic_visits_clean.csv', index=False)
-decisions.to_csv(output_dir / 'decision_log.csv', index=False)
 print('Saved', len(clean), 'visits;', clean['needs_review'].sum(), 'flagged for review')
 ```
 
 **Expect:** every check `True`, then `Saved 12 visits; 5 flagged for review`.
 
-## 9. Read the saved file back
+Save the decisions with the file's provenance: four columns that hold the same value on every row, so the log says which file it cleaned and how many rows went in and came out.
+
+```python
+decision_log = decisions.copy()
+decision_log['source'] = str(raw_path)
+decision_log['source_sha256'] = raw_sha256
+decision_log['rows_before'] = len(raw)
+decision_log['rows_after'] = len(clean)
+decision_log.to_csv(output_dir / 'decision_log.csv', index=False)
+print(decision_log[['field', 'action', 'source', 'rows_before', 'rows_after']])
+```
+
+**Expect:** the 8 decisions from step 6, each with `source` `output/clinic_visits_raw.csv` (`output\clinic_visits_raw.csv` on Windows outside WSL), `rows_before` 13, and `rows_after` 12. Every row also carries the step 2 hash in `source_sha256`.
+
+### 9. Read the saved file back
 
 A round trip proves the file holds what the table held. Give `read_csv` the intended dtypes, and put dates in `parse_dates`.
 
@@ -257,7 +275,36 @@ round_trip = pd.read_csv(
 print(round_trip.dtypes)
 print('Round trip equals clean:', round_trip.equals(clean))
 print('Raw table unchanged:', raw.equals(raw_snapshot))
+print('Raw file unchanged:', hashlib.sha256(raw_path.read_bytes()).hexdigest() == raw_sha256)
 print('Rows:', len(raw), 'raw,', len(clean), 'clean')
 ```
 
-**Expect:** the same dtypes as in step 7, `Round trip equals clean: True`, `Raw table unchanged: True`, and `Rows: 13 raw, 12 clean`. The checks show the table matches its contract; the decision table shows why each value changed.
+**Expect:** the same dtypes as in step 7, `Round trip equals clean: True`, `Raw table unchanged: True`, `Raw file unchanged: True`, and `Rows: 13 raw, 12 clean`. The checks show the table matches its contract; the decision log shows why each value changed and which file it came from.
+## Independent practice
+
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+
+### 4. Flag unusual readings
+
+The IQR rule flags candidates; it does not decide.
+
+```python
+q1 = sbp_number.quantile(0.25)
+q3 = sbp_number.quantile(0.75)
+iqr = q3 - q1
+sbp_flag = (sbp_number < q1 - 1.5 * iqr) | (sbp_number > q3 + 1.5 * iqr)
+print('Fences:', q1 - 1.5 * iqr, 'to', q3 + 1.5 * iqr)
+print(raw.loc[sbp_flag, ['visit_id', 'sbp']])
+```
+
+**Expect:** `Fences: 104.375 to 159.375`, and two flagged visits. V008's 1320 already fails the range rule: almost certainly a typing error. V009's 210 is inside the contract and possible in severe hypertension, so it stays; it is a reading to confirm, not to delete.
+
+### 5. Spot-check random rows
+
+`head()` shows only the top of the file. Three random rows show the middle.
+
+```python
+print(raw.sample(n=3, random_state=42))
+```
+
+**Expect:** V011, V009, and V001, in that order. One random draw already turns up `' North '` and the 210 reading, so problems are not confined to the top of the file.

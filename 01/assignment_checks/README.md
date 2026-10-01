@@ -18,10 +18,10 @@ order of `CHECKS` in `_value_checks.py`:
 | Checks | Passes when | Points |
 |---|---|---:|
 | `terminal-practice/source.txt`, `terminal-practice/path-check.txt` | The file is a regular file in a regular `terminal-practice` directory. | 10 each |
-| `report: Project` through `report: Next checkpoint`, one per line of `EXPECTED_READINESS` after the first | `output/readiness.txt` has that line in its place, with all whitespace ignored. | 5 each |
+| `report: Project` through `report: Next checkpoint`, one per line of `EXPECTED_READINESS` after the first | `output/readiness.txt` has that line in its place, with whitespace, letter case, and equivalent numeric spellings ignored. | 5 each |
 | `identity hash on the roster` | `output/student_identity.txt` holds a hash in `ROSTER_HASHES`, whatever the report says. | 15 |
 
-The report's lines are compared with every whitespace character removed.
+The report's lines are compared with whitespace removed, case ignored, and numeric spellings normalized. `Mean` also accepts the mean of the declared `Total` and `Count`, and `Review count` accepts the count of the four saved measurement classifications.
 Blank lines are dropped, and the rest are aligned in order with the expected
 lines (`difflib.SequenceMatcher`); an expected line passes when the alignment
 matches it. So an extra line costs nothing, whether it is the Python version

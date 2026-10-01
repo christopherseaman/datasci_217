@@ -166,7 +166,7 @@ Run the checks from the assignment directory:
 python3 check_assignment.py
 ```
 
-These are the same checks GitHub runs. They look only at the four files you commit in `terminal-practice/` and `output/`, and never run or read your Python code. Whitespace and blank lines are ignored, and so is the report's first line, your Python version.
+These are the same checks GitHub runs. They look only at the four files you commit in `terminal-practice/` and `output/`, and never run or read your Python code. Letter case, equivalent number formats, whitespace, and blank lines are ignored, and so is the report's first line, your Python version.
 
 Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. A report line that differs shows what it should read, what yours reads, and which script prints it.
 
@@ -188,10 +188,10 @@ Commit these files in your fork. Grading totals 100 points, and each check is sc
 | Artifact | Complete when | Points |
 |---|---|---:|
 | `terminal-practice/source.txt` and `terminal-practice/path-check.txt` | Each exists as a regular file in a regular `terminal-practice` directory. Their contents are not checked. | 20 (10 each) |
-| `output/readiness.txt` | A UTF-8 text file in a regular `output` directory holding the 13 lines this README shows after the Python version in Tasks 1.2, 2.2, and 3.1, in the same order. Whitespace, blank lines, and extra lines are ignored, and the Python version line is not checked. | 65 (5 each) |
+| `output/readiness.txt` | A UTF-8 text file in a regular `output` directory holding the 13 lines this README shows after the Python version in Tasks 1.2, 2.2, and 3.1, in the same order. Letter case, equivalent number formats, whitespace, blank lines, and extra lines are ignored, and the Python version line is not checked. | 65 (5 each) |
 | `output/student_identity.txt` | A regular file in a regular `output` directory holding one hash from the course roster; surrounding whitespace and letter case are ignored. | 15 |
 
-A wrong or missing report line costs only its own 5 points, and the identity hash is checked separately from the report. Extra files are ignored, but keep the supplied ones, because `capture_identity.py` needs `process_email.py` and the checks need their own files.
+A wrong or missing report line costs only its own 5 points. `Mean` also earns credit when it is calculated correctly from your declared `Total` and `Count`; `Review count` earns credit when it counts the four measurement labels you saved. The identity hash is checked separately from the report. Extra files are ignored, but keep the supplied ones, because `capture_identity.py` needs `process_email.py` and the checks need their own files.
 
 ## Submit
 

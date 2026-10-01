@@ -9,7 +9,7 @@ push from `christopherseaman/datasci_217@main:10/assignment_checks/` (its
 grades with them.
 
 The handout ships a byte-identical copy of every file the workflow lists in
-`CHECKS_FILES`, so `python check_assignment.py` in a student's repository
+`CHECKS_FILES`, so `python3 check_assignment.py` in a student's repository
 prints each check's result, what to fix, and the score, exactly as GitHub will.
 The listed files:
 
@@ -44,14 +44,15 @@ refits the lecture allows (training rows only, or training plus validation
 rows). Change them together with the data files and the notebook; the
 self-test recomputes every one. A change to the check list or to `POINTS`
 belongs in `_value_checks.py` and `grading.py` at once, in the same order:
-`grading.py` zips the checks against `POINTS` with `strict=True`. Keep the
+`grading.py` pairs the checks with `POINTS` and stops when their counts differ. Keep the
 README's checkpoints and completion contract in agreement with the checks; the
 self-test compares them.
 
 ## Checking the checks
 
 ```bash
-uv run --python 3.13 --with-requirements 10/assignment/requirements.txt --with 'pytest>=8,<9' python 10/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with statsmodels==0.14.6 \
+    --with scikit-learn==1.9.0 --with 'pytest>=8,<9' python 10/assignment_checks/_grader_selftest/run.py
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this

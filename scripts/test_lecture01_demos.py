@@ -154,6 +154,11 @@ def check_text_rules():
         text = page.read_text(encoding="utf-8")
         assert "Ctrl+D" not in text, f"{page.name} still finishes cat with Ctrl+D"
         assert "\u2014" not in text, f"{page.name} has an em dash"
+        for block in fences(text, "bash"):
+            if block == (DEMOS / SHELL_DEMO).read_text(encoding="utf-8"):
+                continue  # Script contents are pasted into cat, not run at the shell prompt.
+            for line in block.splitlines():
+                assert not re.search(r"(^|\s)#", line), f"{page}: Zsh treats # as an argument: {line!r}"
     # Demo 1 in the guide is the setup guide, word for word.
     guide = GUIDE.read_text(encoding="utf-8")
     start = guide.index("\n\n", guide.index("[Setup source on GitHub]")) + 2

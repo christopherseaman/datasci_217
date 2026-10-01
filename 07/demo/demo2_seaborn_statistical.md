@@ -17,17 +17,30 @@ jupyter:
 
 # Demo 2: pandas plotting, seaborn, and density
 
-Quick pandas plots of clinic visit tables, then seaborn on real health-spending data, a correlation matrix saved to CSV, a check on what a seaborn line actually averages, and density plots of fasting glucose. Everything here comes from Lecture 07 up to the second demo break, plus Lectures 01 to 06. The clinic tables and glucose values are synthetic; `healthexp` is real OECD data that seaborn downloads.
+Quick pandas plots of clinic visit tables, then seaborn on real health-spending data, a correlation matrix saved to CSV, a check on what a seaborn line actually averages, and density plots of fasting glucose. Everything here comes from Lecture 07 up to the second demo break, plus Lectures 01 to 06. The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a CSV for this demo.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. `sns.load_dataset()` needs an internet connection. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-24 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, seaborn 0.13.2, and SciPy 1.18.1; the whole notebook runs in under a minute.
+Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
+
+| Route | Work and visible checkpoint |
+| --- | --- |
+| [Core walkthrough](#core-walkthrough) | Inspect 274 country-year rows and compare spending with life expectancy in one labeled scatter. |
+| [Independent practice](#independent-practice) | Repair the pandas x-axis; compare plot kinds and small multiples; save a correlation matrix; inspect aggregation and KDE bandwidth. |
+
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The setup downloads the health-spending CSV when it is missing. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, seaborn 0.13.2, and SciPy 1.18.1.
+
+**In Colab:** open this notebook from the lecture page's Colab link. A new runtime needs only the setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+
+**Locally in VS Code:** open the `~/07-demo` folder that Demo 1's setup made (**File → Open Folder…**), open `demo2_seaborn_statistical.ipynb`, and choose the Python in `.venv` with **Select Kernel**. Its environment is already built. In a new terminal, `cd ~/07-demo` and `source .venv/bin/activate` bring the folder and environment back. If the folder does not exist yet, run the five setup lines under "How to run" in Demo 1 first.
 
 ## Setup
 
-Run this cell first. It installs pandas 3.0.5, the course version, into the notebook's environment: in Colab, which ships an older pandas, and in your local `.venv` alike. Colab already has seaborn and SciPy.
+Run this cell first. In Colab, which ships an older pandas, it installs pandas 3.0.5, the course version; Colab already has seaborn and SciPy.
 
 - pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
 - If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- Locally, the `.venv` you made with `uv venv --seed` includes pip, so `%pip` installs into it too. When pandas 3.0.5 is already there, the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
+- Locally, `uv sync` already installed pandas 3.0.5, so the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
@@ -35,18 +48,59 @@ Run this cell first. It installs pandas 3.0.5, the course version, into the note
 ```
 
 ```python
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo"
+if not Path("healthexp.csv").exists():
+    urlretrieve(f"{REPO_RAW}/healthexp.csv", "healthexp.csv")
+print("Ready: healthexp.csv")
 print("pandas:", pd.__version__)
 print("seaborn:", sns.__version__)
 ```
 
-Expect `pandas: 3.0.5` and `seaborn: 0.13.2` (Colab may show a newer seaborn, which is fine). If Colab shows an older pandas, it was imported before the install finished: restart the session and run all cells again.
+Expect `Ready: healthexp.csv`, `pandas: 3.0.5`, and `seaborn: 0.13.2` (Colab may show a newer seaborn, which is fine). If Colab shows an older pandas, it was imported before the install finished: restart the session and run all cells again.
 
-## 1. pandas `.plot()`: the index becomes the x-axis
+## Core walkthrough
+
+### 4. seaborn on real data: health spending and life expectancy
+
+`healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
+
+```python
+sns.set_style('whitegrid')
+health = pd.read_csv('healthexp.csv')
+print(health.shape)
+print(health.head())
+print(health['Country'].nunique(), 'countries,', health['Year'].min(), 'to', health['Year'].max())
+print(health.loc[(health['Country'] == 'USA') & (health['Year'] == 2020)])
+```
+
+Expect `(274, 4)`, then `6 countries, 1970 to 2020`, and one USA row for 2020 with spending of about 11,860 USD and a life expectancy of 77.0 years.
+
+seaborn takes the DataFrame and column names, and maps each column to an encoding: position (`x=`, `y=`) and color (`hue=`).
+
+```python
+fig, ax = plt.subplots(figsize=(7, 4.5))
+sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy',
+                hue='Country', style='Country', ax=ax)
+ax.set(title='Health spending and life expectancy, six countries, 1970-2020',
+       xlabel='Health spending per person (USD)', ylabel='Life expectancy (years)')
+plt.show()
+```
+
+Expect one point per country-year, with color and shape identifying the country. USA observations extend farthest right without having the highest life expectancy. Shared time trends and country differences prevent a causal claim from this comparison.
+
+## Independent practice
+
+Continue on your own after class. Run Setup and the core first in a fresh runtime.
+
+### 1. pandas `.plot()`: the index becomes the x-axis
 
 One row per week of flu visits, one column per clinic. `df.plot()` draws the index on the x-axis and one line per numeric column.
 
@@ -76,7 +130,7 @@ print(ax.get_xlabel())
 
 Expect two lines, North and South, over weeks 1 to 10, and `week` printed as the x-axis label.
 
-## 2. One table, four views
+### 2. One table, four views
 
 `kind=` picks the mark, and `ax=` draws into one panel of a `plt.subplots()` grid.
 
@@ -93,7 +147,7 @@ plt.show()
 
 Expect four panels from the same ten rows. The bar panel has ten pairs of bars, one pair per week, starting at 0. The box panel shows North's box taller and higher than South's, because North's weekly counts vary more.
 
-## 3. Small multiples with a shared y-axis
+### 3. Small multiples with a shared y-axis
 
 `subplots=True` gives each clinic its own panel; `sharey=True` puts every panel on one y-scale, so the levels compare directly.
 
@@ -115,40 +169,24 @@ print(axes[0].get_ylim() == axes[2].get_ylim())  # get_ylim() reads back the lim
 
 Expect three stacked panels on the same y-scale: North high and falling, South rising, East lowest. `(3,)` and `True` print: one Axes per clinic, and North's and East's panels share limits.
 
-## 4. seaborn on real data: health spending and life expectancy
+### Country trends and distributions
 
-`healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
-
-```python
-sns.set_style('whitegrid')
-health = sns.load_dataset('healthexp')
-print(health.shape)
-print(health.head())
-print(health['Country'].nunique(), 'countries,', health['Year'].min(), 'to', health['Year'].max())
-print(health.loc[(health['Country'] == 'USA') & (health['Year'] == 2020)])
-```
-
-Expect `(274, 4)`, then `6 countries, 1970 to 2020`, and one USA row for 2020 with spending of about 11,860 USD and a life expectancy of 77.0 years.
-
-seaborn takes the DataFrame and column names, and maps each column to an encoding: position (`x=`, `y=`) and color (`hue=`).
+Continue comparing the same country-year table with line and box plots.
 
 ```python
-fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
-sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy', hue='Country', ax=axes[0])
-axes[0].set(xlabel='Health spending per person (USD)', ylabel='Life expectancy (years)')
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+sns.lineplot(data=health, x='Year', y='Spending_USD', hue='Country', legend=False, ax=axes[0])
+axes[0].set(ylabel='Health spending per person (USD)')
 
-sns.lineplot(data=health, x='Year', y='Spending_USD', hue='Country', legend=False, ax=axes[1])
-axes[1].set(ylabel='Health spending per person (USD)')
-
-sns.boxplot(data=health, x='Life_Expectancy', y='Country', ax=axes[2])
-axes[2].set(xlabel='Life expectancy (years)', ylabel='')
+sns.boxplot(data=health, x='Life_Expectancy', y='Country', ax=axes[1])
+axes[1].set(xlabel='Life expectancy (years)', ylabel='')
 fig.tight_layout()
 plt.show()
 ```
 
-Expect three panels. Left: one point per country-year; the USA's points run far to the right, spending the most per person without the highest life expectancy. Middle: one line per country in the same colors as the left legend, all rising, the USA's (purple) steepest. Right: one box per country; the USA's middle line (its median) sits furthest left, and Japan's whisker reaches furthest right.
+Expect two panels: health spending rises over the years at all six countries, steepest in the USA; the life-expectancy boxes compare the country-year distributions. These summaries describe observations, not a spending effect.
 
-## 5. A correlation matrix, its heatmap, and a CSV
+### 5. A correlation matrix, its heatmap, and a CSV
 
 `corr()` needs numeric columns. `Country` holds words, so asking for every column fails.
 
@@ -193,7 +231,7 @@ with open('health_corr.csv', encoding='utf-8') as file:
 
 Expect four lines: a header starting `feature,Year,Spending_USD,Life_Expectancy`, then one line per variable, such as `Spending_USD,0.826,1.0,0.579`.
 
-## 6. Watch the grain: what a seaborn line averages
+### 6. Watch the grain: what a seaborn line averages
 
 Three patients each have a systolic reading in each of four weeks. `sns.lineplot()` draws one value per week: the mean of the three readings.
 
@@ -219,20 +257,20 @@ print(readings.loc[readings['week'] == 1, 'systolic_bp'].mean())
 
 Expect 12 points on the left and a four-point line on the right. The line's y-values print as `[145.         141.66666667 139.         135.66666667]`, and the week-1 mean computed by hand is `145.0`, the first of them. The unit displayed changed from one reading to a weekly mean, so the right panel's axis label says so.
 
-## 7. Density plots: a distribution a mean would hide
+### 7. Density plots: a distribution a mean would hide
 
-Fasting glucose in a clinic that serves people with and without diabetes: 300 readings centered near 95 mg/dL and 100 near 165 mg/dL. `np.concatenate()` joins the two arrays end to end.
+Fasting glucose in a clinic that serves people with and without diabetes: 300 readings centered near 95 mg/dL and 100 near 165 mg/dL. `95 + 8 * rng.standard_normal(300)` gives 300 bell-curve values around 95 that spread by about 8 mg/dL, and `pd.concat(..., ignore_index=True)` (Lecture 06) stacks the two groups into one Series.
 
 ```python
 rng = np.random.default_rng(42)
-glucose = pd.Series(np.concatenate([
-    rng.normal(95, 8, 300),     # without diabetes, mg/dL
-    rng.normal(165, 25, 100),   # with diabetes, mg/dL
-]), name='fasting_glucose')
+without_diabetes = pd.Series(95 + 8 * rng.standard_normal(300))   # mg/dL
+with_diabetes = pd.Series(165 + 25 * rng.standard_normal(100))    # mg/dL
+glucose = pd.concat([without_diabetes, with_diabetes], ignore_index=True)
+print(len(glucose))
 print(round(glucose.mean(), 1), round(glucose.median(), 1))
 ```
 
-Expect `112.9 97.5`: a mean of 112.9 mg/dL and a median of 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
+Expect `400`, then `112.9 97.5`: a mean of 112.9 mg/dL and a median of 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
 
 ```python
 fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))

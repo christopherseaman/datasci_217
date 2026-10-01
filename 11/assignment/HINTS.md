@@ -41,7 +41,7 @@ Use these nudges after trying the question yourself. Each names the lecture that
 - For the rolling mean, `groupby("station_name")["air_temperature_c"].transform(lambda s: s.rolling(24, min_periods=1).mean())` includes the cutoff row; do not shift before rolling (Lecture 09).
 - The cyclic features use Lecture 10's "Cyclic Time Features" card, `np.sin(2 * np.pi * value / cycle_length)`: 360 for wind direction, 24 for the hour, and 366 for the day of the year minus 1.
 - The target's calendar features describe cutoff plus one hour in Chicago local time: `.dt.tz_convert("America/Chicago").dt.hour` and `.dt.dayofyear` (Lecture 09).
-- A station slug comes from `.str.lower().str.replace(" ", "_")` (Lecture 05); `.dt.strftime("%Y%m%d%H")` writes the cutoff hour (Lecture 09).
+- A station slug comes from `.str.lower().str.replace(r" +", "_", regex=True)` (Lecture 05); `.dt.strftime("%Y%m%d%H")` writes the cutoff hour (Lecture 09).
 - Eligibility depends on the cutoff and next-hour temperatures only. The training-fitted imputer handles other missing predictors.
 
 ## Q5: Training-Only Exploration

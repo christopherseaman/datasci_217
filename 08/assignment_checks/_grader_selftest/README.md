@@ -12,6 +12,7 @@ lecture does, builds submissions in ignored `scratch/`, and confirms that:
   summaries saved with their index, the zero-visit rows `observed=False`
   adds, and every file separated by semicolons (with decimal commas) or by
   tabs, where one wrong value still costs only its own check;
+- an omitted value column costs only the columns check, while an independently wrong present sibling still fails its values check; header-only and unrecognizable partial tables earn no vacuous value credit;
 - an empty directory and the untouched handout score 0;
 - each of 23 single mistakes, one per check, costs exactly that check,
   including a misnamed column; a summary saved with `index=False` after
@@ -21,6 +22,13 @@ lecture does, builds submissions in ignored `scratch/`, and confirms that:
   the rows and empty-cell checks; a file holding only the optional Excelsior
   row earns no value checks; the feedback says what was expected and what was
   found;
+- a missing file is never told to take another required file's name; a pivot
+  with `index=` and `columns=` swapped costs only its columns check and says
+  so; a pivot with `margins=True` costs the columns and rows checks, and both
+  name `margins=True`; `wait_vs_clinic` worked out from a wrong
+  `clinic_mean_wait` costs only the `clinic_mean_wait` check; a
+  `clinic_mean_wait` column assigned from `.mean()` gets a message naming that
+  cause;
 - the checks read only `output/`: poisoned data and code in a submission change
   nothing;
 - the copy of the visit log in `_value_checks.py` matches

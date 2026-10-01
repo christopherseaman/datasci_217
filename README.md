@@ -2,7 +2,7 @@
 
 ## Lecture authoring
 
-The course runtime is Python 3.13 across lectures, demos, assignments, and grading, with pandas 3.0.5 where used. Create environments with `uv venv --python 3.13` and install the relevant directory's pinned requirements.
+The course runtime is Python 3.13, with pandas 3.0.5 where used. Supplied projects ship `pyproject.toml` and `uv.lock`: run `uv venv --seed`, activate the environment, and run `uv sync`. Add packages with `uv add`; `requirements.txt` is the labeled alternative. Artifact checks also support Python 3.9 and never grade a reported Python version.
 
 Notion is the primary publishing surface. Write lectures and bonus pages with `#` for major sections, `##` for subsections, and `###` for deeper topics; multiple H1 sections are intentional. Keep each prose paragraph on one physical line, with no line-length limit. Preserve code-block formatting and list nesting. Do not add horizontal rules or prose that merely repeats a heading. Preserve humor.
 
@@ -12,7 +12,7 @@ Keep course navigation inside Notion: link to mapped Markdown sources, not websi
 
 Use bare live-demo markers without descriptions beneath them. The final demo comes after all lecture content, including any closing humor. Do not append summaries, worked examples, key takeaways, or meta-content after it; integrated walkthroughs belong in the demos, and optional reference material belongs in the bonus page.
 
-From the repository root, run `python3 scripts/notion_publish.py SOURCE.md CURRENT_NOTION_CONTENT.md` to prepare a page from a fresh Notion content snapshot. It preserves headings and paragraphs; only links, native tables, child-page navigation, and metadata need publishing adaptation. The optional `notion.title_line` identifies the exact local title to omit because Notion already displays its page title. Review the output before publishing, then fetch the page again to verify its structure.
+Publish only when the instructor asks. Fetch the live page and reconcile its content and child pages with the local source first, preserving unrecognized edits. From the repository root, run `python3 scripts/notion_push.py SOURCE.md --dry-run` to rehearse, then `python3 scripts/notion_push.py SOURCE.md` to publish. The command preserves child pages, uploads and attaches local media, and re-reads the result to verify it. The optional `notion.title_line` identifies the exact local title to omit because Notion already displays its page title.
 
 ## Resources
 
@@ -43,9 +43,9 @@ The Fall 2026 repositories are listed in [assignments-26f.json](assignments-26f.
 
 ### Grading
 
-Students and graders use the same public artifact checks, milestone points, and rubric. From an assignment directory, run `python check_assignment.py`; GitHub Actions runs the same checks through pytest. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions.
+Homework handouts ship the course's artifact checks. From a homework directory, run `python3 check_assignment.py`; GitHub Actions downloads the current whole checker set and runs it through pytest. On PowerShell or Git Bash in a uv environment, use `python` instead of `python3`. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions. Exam handouts ship no checks; their course-owned checks run after the deadline.
 
-Points are awarded only for documented student grading materials, not supplied notebooks, input files, grader files, or repository bookkeeping. A grading target can contain just the required outputs and written responses; extra files are ignored. Expected results use the trusted grader's input data. Untouched scaffolds earn zero. Run `python scripts/test_assignment_grading.py` with the assignment grading dependencies installed to verify the empty/scaffold contract across all eleven assignments; each assignment's `_grader_selftest` exercises completed and incorrect artifacts.
+Points are awarded only for documented student grading materials, not supplied notebooks, input files, grader files, or repository bookkeeping. A grading target can contain just the required outputs and written responses; extra files are ignored. Expected results use the trusted grader's input data. Untouched scaffolds earn zero. Run `uv run scripts/test_assignment_grading.py` to verify the empty/scaffold contract across all eleven assignments; each course-owned `_grader_selftest` exercises completed and incorrect artifacts.
 
 For grading another submission, run the trusted assignment's `check_assignment.py /path/to/submission --json`. Use the published assignment version and its dependencies, not checker code supplied by the submission. The JSON report contains the same milestone results and automated score shown to students; batch collection and reporting do not change grading criteria.
 

@@ -28,6 +28,12 @@ files, builds submissions in ignored `scratch/`, and confirms that:
   truncated JSON file) costs exactly the checks it gets wrong, with a message
   that names the fix, and a submission that stops after Task 2 keeps its 62
   points;
+- a beginner's slip is named with its cause: a blank PNG saved after
+  `plt.show()`, a file saved with a bare name outside `output/`, evidence
+  written with `str()`, a text alternative written with `json.dump` or as the
+  whole dict, a pandas dtype or `quantitative` given as a data type, one
+  program's supporting rows, and an evidence file that holds only the critique,
+  which gives every Task 3 evidence check one message;
 - a fresh handout prints the README's "Before Task 1" example, and the
   README's clean-run example and completion contract agree with the checks;
 - the values the checks hold match `data/rehab_patients.csv` and
@@ -38,8 +44,8 @@ files, builds submissions in ignored `scratch/`, and confirms that:
   README's.
 
 ```bash
-uv run --python 3.13 --with-requirements 07/assignment/requirements.txt \
-    python 07/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with matplotlib==3.11.1 \
+    --with altair==5.5.0 python 07/assignment_checks/_grader_selftest/run.py
 ```
 
 Run it before committing a change to the checks.

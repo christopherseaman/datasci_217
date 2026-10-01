@@ -24,4 +24,4 @@ The notebook supplies the unfamiliar mechanics: installing separately pinned geo
 
 Polygon-only rendering is the successful default. An OpenStreetMap basemap could be added as an optional enhancement, but it would introduce tile-network and projection dependencies and is not required here.
 
-Run Demo 4 first so `output/04_zone_error_summary.csv` exists, then run `05_geo_bonus.ipynb`. The required four demos do not import geo packages and do not depend on this notebook.
+`05_geo_bonus.ipynb` maps Demo 4's `output/04_zone_error_summary.csv`, and downloads a copy of it when Demo 4 has not run in the same folder or Colab runtime. Locally, add the geo packages first with `uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1`. The required four demos do not import geo packages and do not depend on this notebook.

@@ -17,7 +17,13 @@ builds submissions in ignored `scratch/`, and confirms that:
   a misnamed column such as melt's default `variable` and `value`; a missing
   file costs only its own artifact's checks; an unfiltered or inner merge costs
   only the checks it gets wrong; a file saved without its ID column costs its
-  columns and rows checks, not its values; and the feedback says what to fix;
+  columns check, not its rows or values; and the feedback says what to fix
+  and names the cause it found, such as a right or inner merge, tables put side
+  by side with `axis=1` (repeated column names), round-trip columns renamed by
+  position, or a file saved outside `output/`;
+- a changed value, dropped patient or visit, or renamed visit in the long table
+  costs only its own check when the round trip correctly pivots that table; a
+  new wrong pivot value still costs its own check;
 - the checks read only `output/`: poisoned data and code in a submission change
   nothing;
 - the copies of the supplied data in `_value_checks.py` match

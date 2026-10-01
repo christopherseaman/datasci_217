@@ -11,7 +11,9 @@ notion:
 
 Everything in this document is optional for Lecture 09. It collects specialized material on periods, time-series patterns and decomposition, forecasting, more window options, high-frequency data, custom frequencies, advanced time zones, and additional visualization.
 
-The forecasting, stationarity, and temporal-modeling material below previews ideas Lecture 10 covers in depth. Treat it as specialized reference rather than required content.
+The forecasting and stationarity tools below are specialized reference. Lecture 10 teaches the general prediction workflow, including temporal splits and feature availability; it does not require these dedicated time-series models.
+
+The decomposition, forecasting, and autocorrelation examples use `statsmodels`, and the interactive plot uses `plotly`. Colab includes both, but the course environment does not: add them to a project with `uv add statsmodels plotly` (Lecture 03).
 
 # Period Arithmetic and Fiscal Year Handling
 
@@ -465,3 +467,274 @@ plt.show()
 ```
 
 These advanced topics will help you handle complex time series analysis scenarios in specialized applications. For most daily data science work, the content in the main lecture is sufficient.
+
+# One Date at a Time with Python
+
+## Python datetime Module
+
+| Operation | Starting value | Result |
+| --- | --- | --- |
+| Parse a lab time | Text `"2023-12-25 14:30:00"` | A datetime representing December 25 at 14:30 |
+| Format it for a letter | That datetime | Text `"December 25, 2023 at 02:30 PM"` |
+| Add 30 days | That datetime | `2024-01-24 14:30:00` |
+
+### Reference Card: Python `datetime`
+
+- `datetime.now()`: Current date and time
+- `datetime(year, month, day)`: Create specific date
+- `datetime.strptime(string, format)`: Parse string to datetime
+- `datetime.strftime(format)`: Format datetime to string
+- `timedelta(days=30)`: A duration (also `hours=`, `weeks=`); add it to a `datetime` to move it; subtracting two datetimes returns one
+- Format codes: `%Y` four-digit year, `%m` month 01-12, `%d` day, `%H` 24-hour hour, `%M` minute, `%S` second, `%I` with `%p` 12-hour clock with AM/PM, `%B` full month name
+
+### Code Snippet: Python `datetime`
+
+```python
+from datetime import datetime, timedelta
+lab_time = datetime.strptime("2023-12-25 14:30:00", "%Y-%m-%d %H:%M:%S")   # text in
+print(lab_time.strftime("%B %d, %Y at %I:%M %p"))   # December 25, 2023 at 02:30 PM
+print(lab_time + timedelta(days=30))                 # 2024-01-24 14:30:00: the 30-day follow-up
+age = datetime(2024, 3, 1) - datetime(1990, 5, 15)
+print(age.days)                                      # 12344: age in days on March 1, 2024
+```
+
+_A datetime is the Swiss Army knife of temporal data: precise to the microsecond, and `pandas` wields a million at a time._
+
+# Calendar Schedule Examples
+
+## Code Snippet: Date Ranges
+
+```python
+print(pd.date_range('2024-01-01', '2024-01-04', freq='D'))    # daily symptom diary
+print(pd.bdate_range('2024-01-05', '2024-01-09'))             # weekday clinic days
+print(pd.date_range('2024-01-01', periods=3, freq='W-MON'))   # Monday check-ins
+print(pd.date_range('2024-01-01', periods=3, freq='MS'))      # monthly lab draws
+print(pd.date_range('2024-01-01', periods=3, freq='ME'))      # monthly reports
+```
+
+```text
+DatetimeIndex(['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04'], dtype='datetime64[us]', freq='D')
+DatetimeIndex(['2024-01-05', '2024-01-08', '2024-01-09'], dtype='datetime64[us]', freq='B')
+DatetimeIndex(['2024-01-01', '2024-01-08', '2024-01-15'], dtype='datetime64[us]', freq='W-MON')
+DatetimeIndex(['2024-01-01', '2024-02-01', '2024-03-01'], dtype='datetime64[us]', freq='MS')
+DatetimeIndex(['2024-01-31', '2024-02-29', '2024-03-31'], dtype='datetime64[us]', freq='ME')
+```
+
+The business-day range skips the weekend of January 6-7. The default business-day rule skips weekends, but keeps holidays; custom holiday calendars are in `BONUS.md`.
+
+_Every Monday? Business days only? `pandas` generates just about any date pattern you can imagine, and some you probably can't._
+
+# Time-of-Day Selection Example
+
+## Selecting Repeated Clock Times
+
+### Reference Card: Time-of-Day Selection
+
+- `ts.between_time('09:00', '17:00')`: Readings from 09:00 to 17:00 each day, both ends included
+- `ts.at_time('12:00')`: Readings at 12:00 each day
+- `ts.loc[ts.index < ts.index.min() + pd.Timedelta(days=10)]`: First 10 days; a `.loc` slice would add the reading exactly 10 days in
+- `ts.loc[ts.index > ts.index.max() - pd.Timedelta(days=10)]`: Last 10 days
+
+### Code Snippet: Time-of-Day Selection
+
+```python
+hourly = pd.Series(range(24 * 7), index=pd.date_range('2023-01-01', periods=24 * 7, freq='h'))
+print(hourly.between_time('09:00', '17:00').shape)   # 9 readings a day for 7 days
+print(hourly.at_time('12:00').head(3))              # one noon reading per day
+print(hourly.loc[hourly.index < hourly.index.min() + pd.Timedelta(days=3)].shape)
+```
+
+```text
+(63,)
+2023-01-01 12:00:00    12
+2023-01-02 12:00:00    36
+2023-01-03 12:00:00    60
+Freq: 24h, dtype: int64
+(72,)
+```
+
+# Window Alignment Example
+
+## Code Snippet: Rolling Statistics
+
+```python
+temps = pd.Series([98.6, 98.9, 99.4, 100.1, 99.8, 99.2, 98.8],
+                  index=pd.date_range('2023-01-01', periods=7, freq='D'))
+print(pd.DataFrame({
+    'temperature': temps,
+    'rolling_3': temps.rolling(window=3).mean(),
+    'early_3': temps.rolling(window=3, min_periods=2).mean(),
+    'centered_3': temps.rolling(window=3, center=True).mean(),
+}).round(2))
+```
+
+```text
+            temperature  rolling_3  early_3  centered_3
+2023-01-01         98.6        NaN      NaN         NaN
+2023-01-02         98.9        NaN    98.75       98.97
+2023-01-03         99.4      98.97    98.97       99.47
+2023-01-04        100.1      99.47    99.47       99.77
+2023-01-05         99.8      99.77    99.77       99.70
+2023-01-06         99.2      99.70    99.70       99.27
+2023-01-07         98.8      99.27    99.27         NaN
+```
+
+The centered mean on January 2 equals the trailing mean on January 3: it already used a reading that had not happened yet.
+
+# Exponentially Weighted Means
+
+## Exponentially Weighted Functions
+
+An **exponentially weighted moving average (EWM)** uses every earlier reading but gives each older one less weight, while a rolling mean weights its window equally and ignores anything older. It reacts faster to a change, such as blood pressure climbing after a new medication, while still smoothing day-to-day noise; `span=7` is comparable to a 7-reading rolling mean.
+
+![EWM against a simple moving average: the EWM line responds faster to recent changes.](media/ewm_comparison.png)
+
+### Reference Card: Exponentially Weighted Windows
+
+- `ts.ewm(span=5).mean()`: Weighted mean with decay `alpha = 2 / (span + 1)`; larger span means slower decay
+
+### Code Snippet: Exponentially Weighted Features
+
+```python
+sbp = pd.Series([120, 121, 119, 120, 132, 134, 135],
+                index=pd.date_range('2023-01-01', periods=7, freq='D'))
+print(pd.DataFrame({'sbp': sbp, 'rolling_3': sbp.rolling(3).mean(),
+                    'ewm_3': sbp.ewm(span=3).mean()}).round(1))
+```
+
+```text
+            sbp  rolling_3  ewm_3
+2023-01-01  120        NaN  120.0
+2023-01-02  121        NaN  120.7
+2023-01-03  119      120.0  119.7
+2023-01-04  120      120.0  119.9
+2023-01-05  132      123.7  126.1
+2023-01-06  134      128.7  130.1
+2023-01-07  135      133.7  132.6
+```
+
+On January 5, when blood pressure jumps, the EWM moves to 126.1 while the 3-reading mean moves only to 123.7.
+
+# Frequency Inference and Specialized Schedules
+
+## Checking Date Spacing
+
+The main lecture uses a declared frequency for hourly grids and ordinary calendar reports. **Frequency inference** asks whether an existing index follows one repeating rule; `None` means it does not. Business-day and longer reporting schedules are alternatives to the main daily/hourly/monthly path.
+
+### Reference Card: Frequency and Alignment
+
+- `pd.infer_freq(ts.index)`: Infer the frequency alias, such as `'D'`; `None` for irregular spacing
+- `ts.asfreq(freq)`: Conform to a new timestamp grid without combining observations
+
+### Code Snippet: Frequency Inference
+
+`days` numbers consecutive dates from January 1, 2023, starting at 0. The irregular `visits` fall on January 2, January 9, and February 6, 2024.
+
+```python
+print(pd.infer_freq(days.index))
+print(days.asfreq('W').head(3))   # keeps Sunday values; averages nothing
+print(pd.infer_freq(visits))     # irregular clinic visits
+```
+
+```text
+D
+2023-01-01     0
+2023-01-08     7
+2023-01-15    14
+Freq: W-SUN, dtype: int64
+None
+```
+
+## Specialized Schedule Aliases
+
+| Alias | Meaning | Typical use |
+| --- | --- | --- |
+| `'B'` | Business days; `pd.bdate_range()` skips weekends, but keeps holidays | Weekday clinic schedule |
+| `'QS'` / `'QE'` | Quarter start / end | Quarterly assessment |
+| `'YS'` / `'YE'` | Year start / end | Annual summary |
+
+Custom holiday calendars are in [Custom Business Day Frequencies](#custom-business-day-frequencies). Use the current timestamp aliases: pandas 3 rejects older `'Q'`, `'A'`, and `'Y'` aliases.
+
+### Code Snippet: Quarterly and Annual Schedules
+
+```python
+print(pd.date_range('2024-01-01', periods=3, freq='QS'))
+print(pd.date_range('2024-01-01', periods=3, freq='YE'))
+```
+
+```text
+DatetimeIndex(['2024-01-01', '2024-04-01', '2024-07-01'], dtype='datetime64[us]', freq='QS-JAN')
+DatetimeIndex(['2024-12-31', '2025-12-31', '2026-12-31'], dtype='datetime64[us]', freq='YE-DEC')
+```
+
+# Percentage Changes
+
+## Relative Changes Between Readings
+
+A **percentage change** divides the difference by the previous value. `pct_change()` returns a fraction: `0.1` means 10%, so multiply by 100 for percent. Sort first; for a panel, calculate within each entity.
+
+| Weight (kg) | Previous weight (kg) | Difference (kg) | Percentage change |
+| ---: | ---: | ---: | ---: |
+| 70.5 | none | none | none |
+| 70.8 | 70.5 | 0.3 | 0.43% |
+
+### Reference Card: Relative Change
+
+- `ts.pct_change()`: Current value divided by the previous value, minus 1; the first row is `NaN`.
+- `ts.pct_change() * 100`: The same change as a percentage.
+
+### Code Snippet: Daily Weight Changes
+
+`weight` contains the five daily weights in the main lecture's lag example.
+
+```python
+weight['pct_change'] = weight['weight'].pct_change()
+print(weight[['weight', 'pct_change']])
+```
+
+```text
+            weight  pct_change
+2023-01-01    70.5         NaN
+2023-01-02    70.8    0.004255
+2023-01-03    70.2   -0.008475
+2023-01-04    71.0    0.011396
+2023-01-05    70.9   -0.001408
+```
+
+# Grouped Resampling with Grouper
+
+## Empty Time Bins
+
+`pd.Grouper` expresses time bins as another grouping key. Use it when a combined grouping expression suits the report; the main lecture's grouped `resample()` is the default route. The bin edges agree, but the empty-bin behavior differs:
+
+| P1 reading time | Heart rate (bpm) |
+| --- | ---: |
+| 08:00 | 70 |
+| 12:00 | 80 |
+
+### Reference Card: Time as a Grouping Key
+
+- `df.set_index('recorded_at').groupby(['patient_id', pd.Grouper(freq='2h')])['heart_rate'].mean()`: Mean per patient and bin, omitting bins with no readings.
+- `df.set_index('recorded_at').groupby('patient_id')['heart_rate'].resample('2h').mean()`: Includes empty bins between each patient's first and last reading.
+
+### Code Snippet: Empty Bins Differ
+
+`vitals` contains the two readings above on March 1, 2024, with datetime `recorded_at` values.
+
+```python
+indexed = vitals.set_index('recorded_at')
+print(indexed.groupby(['patient_id', pd.Grouper(freq='2h')])['heart_rate'].mean())
+print(indexed.groupby('patient_id')['heart_rate'].resample('2h').mean())
+```
+
+```text
+patient_id  recorded_at
+P1          2024-03-01 08:00:00    70.0
+            2024-03-01 12:00:00    80.0
+Name: heart_rate, dtype: float64
+patient_id  recorded_at
+P1          2024-03-01 08:00:00    70.0
+            2024-03-01 10:00:00     NaN
+            2024-03-01 12:00:00    80.0
+Name: heart_rate, dtype: float64
+```

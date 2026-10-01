@@ -1,0 +1,9 @@
+[project]
+name = "assignment-04"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy==2.3.3",
+    "pandas==3.0.5",
+    "ipykernel==6.29.5",
+]

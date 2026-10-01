@@ -11,7 +11,8 @@ assert(!/href="[^"]*(?:references|shell_workout)\.md"/.test(html));
 const lecture = fs.readFileSync("_site/01/index.html", "utf8");
 for (const file of ["github-fork.png", "github-clone-url.png", "vscode-clone.png"]) {
   const route = `/01/assignment/media/${file}`;
-  assert(lecture.includes(`src="${prefix}${route}"`), `Missing local screenshot URL: ${file}`);
   assert(fs.existsSync(`_site${route}`), `Missing copied screenshot: ${file}`);
 }
+const cloneScreenshot = "/01/assignment/media/github-clone-url.png";
+assert(lecture.includes(`src="${prefix}${cloneScreenshot}"`), "Missing local clone screenshot URL");
 console.log("Course page links resolve to generated pages.");

@@ -9,6 +9,8 @@ notion:
 
 # DLC: Advanced Git Concepts
 
+Annotated command listings in `text` blocks are for reading, not pasting. Enter only the command you need, without its `#` note; macOS's zsh passes pasted notes as arguments.
+
 _This content is optional and not required for assignments. It's here for students who want to dive deeper into Git._
 
 # VS Code Extensions, Themes, and Settings
@@ -47,7 +49,7 @@ While VS Code's Git interface is excellent for daily use, command line Git offer
 
 ### Repository Setup
 
-```bash
+```text
 # Initialize new repository
 git init
 
@@ -63,7 +65,7 @@ git remote -v
 
 ### Daily Workflow
 
-```bash
+```text
 # Check status
 git status
 
@@ -87,7 +89,7 @@ git fetch origin
 
 ### Viewing History
 
-```bash
+```text
 # Show commit history
 git log --oneline
 git log --graph --oneline --all
@@ -100,7 +102,7 @@ git diff HEAD~1          # Compare with previous commit
 
 ### Visiting an older version
 
-```bash
+```text
 # Check out one commit by its hash; new commits here belong to no branch
 git checkout abc123
 ```
@@ -111,7 +113,7 @@ This leaves you in a detached HEAD state, described under **Troubleshooting Comm
 
 ## Feature Branch Workflow
 
-```bash
+```text
 # Create and switch to new branch
 git checkout -b feature/user-authentication
 # or in newer Git versions:
@@ -154,7 +156,7 @@ For larger projects, consider the Git Flow model:
 
 Each dot is a commit. This illustration calls its main branch `master`; our repositories use `main`.
 
-```bash
+```text
 # Example Git Flow workflow
 git checkout develop
 git checkout -b feature/data-visualization
@@ -180,28 +182,28 @@ Under the hood, Git stores a project as a handful of object types. Knowing their
 
 ### Review Working-Directory Changes
 
-```bash
+```text
 git diff file.txt                  # Review edits first
 git restore --staged file.txt     # Unstage, keep edits
 ```
 
 ### Undo Staged Changes
 
-```bash
+```text
 git reset file.txt                 # Unstage file
 git reset                          # Unstage all files
 ```
 
 ### Undo Commits
 
-```bash
+```text
 git reset --soft HEAD~1            # Undo last commit, keep changes staged
 git reset --mixed HEAD~1           # Undo last commit, unstage changes
 ```
 
 ### Revert Published Commits
 
-```bash
+```text
 git revert HEAD                    # Create new commit that undoes last commit
 git revert abc123                  # Revert specific commit by hash
 ```
@@ -210,7 +212,7 @@ git revert abc123                  # Revert specific commit by hash
 
 Clean up commit history before sharing:
 
-```bash
+```text
 # Rebase last 3 commits interactively
 git rebase -i HEAD~3
 ```
@@ -226,7 +228,7 @@ Options in interactive rebase:
 
 Temporarily save work without committing:
 
-```bash
+```text
 # Stash current changes
 git stash
 git stash push -m "Work in progress on user auth"
@@ -254,7 +256,7 @@ Automate code quality checks:
 # Run tests before allowing commit
 
 echo "Running tests..."
-python -m pytest tests/
+python3 -m pytest tests/
 
 if [ $? -ne 0 ]; then
     echo "Tests failed! Commit aborted."
@@ -296,7 +298,7 @@ repos:
         language_version: python3
 ```
 
-```bash
+```text
 # Install hooks
 pre-commit install
 
@@ -310,7 +312,7 @@ pre-commit run --all-files
 
 More secure and convenient than HTTPS with passwords:
 
-```bash
+```text
 # Generate SSH key
 ssh-keygen -t ed25519 -C "your.email@ucsf.edu"
 
@@ -331,7 +333,7 @@ Add the public key to your GitHub account:
 
 ## Convert HTTPS to SSH
 
-```bash
+```text
 # Check current remote
 git remote -v
 
@@ -360,7 +362,7 @@ Beyond the Code and Actions tabs the lecture uses, a shared repository is run fr
 
 ## Handling Merge Conflicts
 
-```bash
+```text
 # When merge conflicts occur
 git status                         # See which files have conflicts
 ```
@@ -375,7 +377,7 @@ Their changes
 >>>>>>> branch-name
 ```
 
-```bash
+```text
 # After resolving conflicts
 git add conflicted_file.txt
 git commit -m "Resolve merge conflict in conflicted_file.txt"
@@ -383,7 +385,7 @@ git commit -m "Resolve merge conflict in conflicted_file.txt"
 
 ## Advanced Merging Strategies
 
-```bash
+```text
 # Merge without fast-forward (preserves branch history)
 git merge --no-ff feature-branch
 
@@ -402,7 +404,7 @@ git merge feature-branch
 
 ## Global Configuration
 
-```bash
+```text
 # User information
 git config --global user.name "Your Name"
 git config --global user.email "YOUR GITHUB NOREPLY EMAIL"
@@ -423,7 +425,7 @@ git config --global alias.last 'log -1 HEAD'
 
 ## Repository-Specific Configuration
 
-```bash
+```text
 # Set different email for work projects
 git config user.email "work.email@company.com"
 
@@ -435,7 +437,7 @@ git config merge.tool vimdiff
 
 ## Speeding Up Git
 
-```bash
+```text
 # For large repositories
 git config core.preloadindex true
 git config core.fscache true
@@ -449,7 +451,7 @@ git clone --depth 1 https://github.com/user/huge-repo.git
 
 For tracking large files (datasets, models, media):
 
-```bash
+```text
 # Install Git LFS
 git lfs install
 
@@ -471,7 +473,7 @@ git commit -m "Add training dataset"
 
 ## Detached HEAD State
 
-```bash
+```text
 # If you're in detached HEAD
 git checkout -b temp-branch        # Create branch from current state
 git checkout main                  # Switch to main
@@ -481,7 +483,7 @@ git branch -d temp-branch          # Clean up
 
 ## Accidental Commits
 
-```bash
+```text
 # Undo last commit but keep changes
 git reset --soft HEAD~1
 
@@ -540,7 +542,7 @@ Professional Git workflows emphasize clear commit messages, logical change organ
 
 ## Code Snippet: Multi-line Commit Message
 
-```bash
+```text
 # Good commit message format
 git commit -m "Add data validation to analysis script
 
@@ -565,7 +567,7 @@ Use these as a reference while practicing in a disposable directory.
 
 ### Navigation
 
-```bash
+```text
 pwd                 # print the current directory
 ls                  # list its contents
 cd data             # move into data
@@ -574,7 +576,7 @@ cd ..               # move up one directory
 
 ### Files and directories
 
-```bash
+```text
 mkdir results       # create a directory
 touch notes.txt     # create an empty file (or update its timestamp)
 cp notes.txt copy.txt
@@ -584,7 +586,7 @@ rm archive.txt      # remove a file; check the path first
 
 ### Inspecting and searching text
 
-```bash
+```text
 cat notes.txt           # print a small text file
 head -n 5 data.csv      # first five lines
 tail -n 5 data.csv      # last five lines
@@ -594,7 +596,7 @@ wc -l data.csv          # count lines
 
 ### Directory trees, history, and shortcuts
 
-```bash
+```text
 tree .              # show this directory's hierarchy, when tree is installed
 history             # list prior commands
 ```
@@ -655,7 +657,7 @@ done
 
 Small Unix tools are useful for inspection before a Python program takes over:
 
-```bash
+```text
 cut -d',' -f1,3 data.csv |        # select fields
   tr '[:lower:]' '[:upper:]' |   # normalize case
   sort -t',' -k2,2n |            # order by field 2

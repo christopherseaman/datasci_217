@@ -20,18 +20,38 @@ jupyter:
 
 A small hypertension study records systolic blood pressure (SBP, mmHg) at baseline, week 4, and week 12. This demo gives the table meaningful row labels, reshapes it from wide to long and back, and fixes the repeated reading that stops `pivot()`. Everything here comes from Lecture 06 up to the second demo break, plus Lectures 01 to 05.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13 and pandas 3.0.5; the whole notebook runs in a few seconds. The patient IDs and values are synthetic.
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The patient IDs and values are synthetic. Tested 2026-09-30 with Python 3.13 and pandas 3.0.5.
+
+Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
+
+| Route | Work and visible checkpoint |
+| --- | --- |
+| [Core walkthrough](#core-walkthrough) | Match reordered patient goals by label, reshape four patients to 12 visits, and recover the exact wide table. |
+| [Independent practice](#independent-practice) | Renumber filtered rows, select two-level labels, and repair a repeated pair using the documented later recheck. |
+
+## Where to run it
+
+**In Colab:** open this notebook from the lecture page's Colab link. A new runtime starts empty, so run every cell from Setup down. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+
+**In VS Code:** this notebook runs in the `~/06-demo` folder that Demo 1's "Where to run it" sets up; if you skipped Demo 1, do those steps first. After VS Code or the terminal was closed, choose **File → Open Folder…** and pick `06-demo` in your home folder, open `demo2_pivot_melt.ipynb`, and check that the kernel picker at the top right names the Python in `06-demo/.venv`; if it does not, click **Select Kernel** and choose it. The kernel starts empty, so run every cell from Setup down. To use the environment for a command, such as `uv add`, in a new terminal:
+
+```shell
+cd ~/06-demo
+source .venv/bin/activate
+```
+
+The prompt then starts with `(06-demo)`.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, into the notebook's environment. Colab ships an older pandas (2.2); in `~/06-demo`, `uv sync` already installed 3.0.5, so there the cell changes nothing.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import pandas as pd
@@ -41,7 +61,9 @@ print('pandas', pd.__version__)
 
 **Expect:** `pandas 3.0.5`.
 
-## 1. The study table (wide)
+## Core walkthrough
+
+### 1. The study table (wide)
 
 One row per patient, one SBP column per visit.
 
@@ -59,7 +81,7 @@ bp_wide
 
 **Expect:** `(4, 5)`: 4 patients, and the columns `patient_id`, `clinic`, `baseline`, `week_04`, `week_12`. The row labels down the left are `0` to `3`, a RangeIndex that only counts rows.
 
-## 2. Patient IDs as row labels
+### 2. Patient IDs as row labels
 
 Move `patient_id` into the index and check that each patient appears once.
 
@@ -98,22 +120,7 @@ print(bp.reset_index().equals(bp_wide))
 
 **Expect:** `True`.
 
-## 3. Renumber rows after a filter
-
-Filtering keeps the original row labels, so the numbers now have gaps.
-
-```python
-high_baseline = bp_wide[bp_wide['baseline'] >= 140]
-print(list(high_baseline.index))
-
-high_baseline = high_baseline.reset_index(drop=True)
-print(list(high_baseline.index))
-high_baseline[['patient_id', 'baseline']]
-```
-
-**Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
-
-## 4. Wide to long with `melt()`
+### 4. Wide to long with `melt()`
 
 Plotting SBP over time and grouping by visit both want one row per patient-visit.
 
@@ -141,7 +148,43 @@ bp_long.sort_values(['patient_id', 'week']).head(3)
 
 **Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
 
-## 5. Two-level row labels on the long table
+### 6. Long back to wide with `pivot()`
+
+`pivot()` rebuilds the wide table: `visit` supplies the headers and `sbp` fills the cells. With two identifier columns, the result has two-level row labels, so `reset_index()` turns them back into columns.
+
+```python
+bp_wide_again = bp_long.pivot(
+    index=['patient_id', 'clinic'],
+    columns='visit',
+    values='sbp',
+).reset_index()
+bp_wide_again.columns.name = None
+print(bp_wide_again.equals(bp_wide))
+bp_wide_again
+```
+
+**Expect:** `True`: the round trip reproduces the original table exactly, the same 4 rows, 5 columns, values, and dtypes. The extra `week` column is simply not used, because `values='sbp'` names the one column that fills the cells.
+
+## Independent practice
+
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+
+### 3. Renumber rows after a filter
+
+Filtering keeps the original row labels, so the numbers now have gaps.
+
+```python
+high_baseline = bp_wide[bp_wide['baseline'] >= 140]
+print(list(high_baseline.index))
+
+high_baseline = high_baseline.reset_index(drop=True)
+print(list(high_baseline.index))
+high_baseline[['patient_id', 'baseline']]
+```
+
+**Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
+
+### 5. Two-level row labels on the long table
 
 In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
 
@@ -165,24 +208,7 @@ print(by_visit.reset_index().shape)
 
 **Expect:** `(12, 5)`: both label levels are ordinary columns again.
 
-## 6. Long back to wide with `pivot()`
-
-`pivot()` rebuilds the wide table: `visit` supplies the headers and `sbp` fills the cells. With two identifier columns, the result has two-level row labels, so `reset_index()` turns them back into columns.
-
-```python
-bp_wide_again = bp_long.pivot(
-    index=['patient_id', 'clinic'],
-    columns='visit',
-    values='sbp',
-).reset_index()
-bp_wide_again.columns.name = None
-print(bp_wide_again.equals(bp_wide))
-bp_wide_again
-```
-
-**Expect:** `True`: the round trip reproduces the original table exactly, the same 4 rows, 5 columns, values, and dtypes. The extra `week` column is simply not used, because `values='sbp'` names the one column that fills the cells.
-
-## 7. When `pivot()` finds a repeated pair
+### 7. When `pivot()` finds a repeated pair
 
 The BP cuff's own export for the week 4 visit arrives. Pivot it to one column per visit.
 

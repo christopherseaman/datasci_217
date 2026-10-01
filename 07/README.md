@@ -17,20 +17,20 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
 
+This lecture covers:
+
+- McKinney, _Python for Data Analysis_ (3rd ed.): 5.3 (correlation), 6.1 (JSON data), 9.1 (the matplotlib API: figures and subplots; colors, markers, and line styles; ticks, labels, and legends; annotations; saving plots to file), 9.2 (line, bar, histogram, density, and scatter plots with pandas and seaborn), and 9.3 (other Python visualization tools)
+- Tufte, _The Visual Display of Quantitative Information_ (2nd ed.): Chapters 2 (graphical integrity), 4 (data-ink), 5 (chartjunk), and 8 (small multiples)
+
 # Start with a visualization contract
 
-A **visualization** maps data values to visible properties so a reader can make a comparison: each column becomes something the eye can compare, such as a position, a length, or a color. Decide what the reader should compare before you draw anything. A **visualization contract** is that decision written down as four plain-language statements:
-
-1. **Question:** What comparison or pattern should the chart help the reader understand?
-2. **Audience and claim:** Who reads the chart, and what descriptive conclusion should it support? A visible pattern alone does not prove why that pattern occurred.
-3. **Unit and grain:** What does one mark represent, and what does one row of the plotting table represent?
-4. **Variables:** What is each variable's data type and role, and which visible property encodes it?
+A **visualization contract** is four statements, written before any plotting code, about what a chart must let its reader compare: the question, the audience and claim, the unit and grain, and each variable's type and role. It decides which values become positions, lengths, and colors, so the chart answers a real question, such as which clinic's blood pressure changed, instead of showing whatever the default plot draws.
 
 ![Florence Nightingale's 1858 diagram of British Army deaths in the Crimean War: blue wedges (preventable disease) dwarf red wedges (wounds), the one comparison it was drawn to make.](media/Nightingale-mortality-1600.jpg)
 
 ## State the unit and grain shown
 
-The **unit displayed** is what one mark in the chart represents. You met this idea as row meaning in Lecture 05 (one row is one clinic visit, not one patient) and as long format in Lecture 06. A **plotting table** is a table whose rows match the marks you want to draw.
+The **unit displayed** is what one mark in the chart represents, as a table's grain (Lecture 06) is what one row represents. A **plotting table** is a table whose rows match the marks you want to draw.
 
 | Plotting table | One row is | One mark is | Question it can answer |
 | --- | --- | --- | --- |
@@ -46,30 +46,28 @@ A variable's **data type** is what its values mean and which operations make sen
 - **ordinal** values are categories with a meaningful order; and
 - **temporal** values are dates or times, whose order and spacing may matter.
 
-A variable's **role** is the job it does here: the measure compared, the grouping, the observation order, or an **identifier** that labels or links records. An identifier stored as a number is still not a quantitative measure. One data type can play different roles in different charts, so record both before choosing x, y, or color.
+A variable's **role** is the job it does here: the measure compared, the grouping, the observation order, or an **identifier** that labels or links records. One data type can play different roles in different charts, so record both before choosing x, y, or color.
 
 ## Separate exploratory and explanatory work
 
-An **exploratory visualization** helps you inspect patterns, distributions, or surprises while the question is still forming. It can be quick, but it still needs truthful scales and labels.
+An **exploratory visualization** helps you inspect patterns, distributions, or surprises while the question is still forming. It can be quick but still needs truthful scales and labels.
 
 An **explanatory visualization** communicates one finding to a named audience. It drops irrelevant alternatives, adds annotation, and uses a title that states what the reader should notice without overstating the evidence.
 
 ## Think in marks and encodings
 
-A **mark** is a visible object such as a point, line, or rectangle. An **encoding** maps a data value to a visible property: position, length, color, marker shape, or line style.
+A **mark** is a visible object such as a point, line, or rectangle, and an **encoding** maps a data value to a visible property: position, length, color, marker shape, or line style.
 
-Position along a common scale supports more precise comparison than area or volume. Color alone is fragile: some readers cannot tell the hues apart, and grayscale printing removes the difference. When category identity matters, pair color with a redundant encoding such as marker shape, line style, or a direct label.
+Position along a common scale supports more precise comparison than area or volume. Color alone fails readers who cannot tell the hues apart and disappears in grayscale printing, so when category identity matters, pair it with a **redundant encoding** such as marker shape, line style, or a direct label.
 
 ## Write the contract down
-
-Record the four answers before you write any plotting code. The card adds a fifth row for accessibility, developed later in this lecture.
 
 ### Reference Card: Visualization Contract
 
 | Question | What to record | Useful output |
 | :--- | :--- | :--- |
 | **Question** | The comparison or pattern the reader should inspect | One-sentence chart claim |
-| **Audience and claim** | Who reads it and the one descriptive conclusion it supports | Appropriate labels, title, and annotation |
+| **Audience and claim** | Who reads it and the one descriptive conclusion it supports; a visible pattern does not show why it occurred | Appropriate labels, title, and annotation |
 | **Unit and grain** | What one mark and one plotting-table row represent | A defensible aggregation level |
 | **Variable role** | Type plus role: measure, group, time, or identifier | Candidate x, y, color, or shape encoding |
 | **Accessibility** | A redundant cue and text alternative for the main comparison | A chart usable without color or hover |
@@ -79,8 +77,6 @@ Record the four answers before you write any plotting code. The card adds a fift
 A pandas dtype (Lecture 04) records how values are stored; the visualization data type records what they mean.
 
 ```python
-import pandas as pd
-
 visits = pd.DataFrame({
     'patient_id': [101, 101, 102, 102],
     'clinic': ['North', 'North', 'South', 'South'],
@@ -102,24 +98,22 @@ Three columns are `int64`, but only `systolic_bp` (mmHg) is a quantitative measu
 
 ## The Right Chart for the Job
 
-The question and the variable types narrow the choice of chart.
-
 ![Six common jobs and the chart each one calls for. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.](media/chart_selection.png)
 
 ![xkcd 1845: State Word Map. If flexible method choices can produce any headline, the chart is not evidence.](media/xkcd_1845.png)
 
 # matplotlib: Foundation Layer
 
-**matplotlib** is Python's foundational plotting library: you build each chart step by step, placing every mark, label, and legend yourself. pandas and seaborn draw through matplotlib, so their charts are matplotlib objects you can adjust with the same methods. Two objects are enough to fix almost any of them:
-
-- A **Figure** is the whole canvas: the image you display or save with `fig.savefig()`.
-- An **Axes** is one painting on that canvas: a plotting area with its own x-axis, y-axis, title, and marks, set with methods such as `ax.set_title()`. "Axes" names one plotting area; it is not the plural of "axis".
-
-The main path is `fig, ax = plt.subplots()` plus Axes methods such as `ax.plot()` and `ax.set_xlabel()`. Older examples use the pyplot shortcut style (`plt.plot()`, `plt.title()`), which draws on whichever Axes is current: fine for a sketch, confusing with several panels, so this course uses Axes methods.
+**matplotlib** is Python's foundational plotting library: you build a chart step by step, placing each mark, label, and legend yourself. pandas and seaborn draw their charts through it, so the matplotlib methods in this section adjust their charts too.
 
 ## Figures and Subplots
 
-With several panels, `plt.subplots(rows, cols)` returns the Axes in a NumPy array, so Lecture 03 indexing applies: one row of panels gives a 1-D array (`axes[0]`), and a grid gives a 2-D array (`axes[0, 1]` is row 0, column 1).
+Every matplotlib chart is made of two objects:
+
+- A **Figure** is the whole canvas: the image you display or save with `fig.savefig()`.
+- An **Axes** is one plotting area on that canvas, with its own x-axis, y-axis, title, and marks. "Axes" names one plotting area; it is not the plural of "axis".
+
+`fig, ax = plt.subplots()` creates both objects, and Axes methods such as `ax.plot()` and `ax.set_xlabel()` draw on them. With several panels, `plt.subplots(rows, cols)` returns the Axes in a NumPy array, so Lecture 03 indexing applies: one row of panels gives a 1-D array (`axes[0]`), and a grid gives a 2-D array (`axes[0, 1]` is row 0, column 1). Older examples use pyplot shortcuts (`plt.plot()`, `plt.title()`) that draw on whichever Axes is current: fine for a sketch, confusing with several panels.
 
 ```text
 Figure (fig)
@@ -131,6 +125,7 @@ Figure (fig)
 
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
+| `import matplotlib.pyplot as plt` | Load pyplot under its standard alias; the snippets below also assume `import numpy as np` and `import pandas as pd` | `plt` |
 | `plt.subplots(rows, cols, figsize=(w, h))` | Create a figure and a grid of Axes, with dimensions in inches | `Figure` plus one Axes or an array of Axes |
 | `plt.figure(figsize=(w, h))` | Create an empty figure (pyplot shortcut style) | `Figure` |
 | `plt.plot()`, `plt.title()`, `plt.xlabel()` | Pyplot shortcuts for `ax.plot()`, `ax.set_title()`, `ax.set_xlabel()` on the current Axes | Updated current Axes |
@@ -141,8 +136,6 @@ Figure (fig)
 ### Code Snippet: What `plt.subplots()` Returns
 
 ```python
-import matplotlib.pyplot as plt
-
 fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 print(type(fig))
 print(axes.shape)
@@ -159,7 +152,7 @@ Read each class name from its last part: one `Figure`, and an array of two `Axes
 
 ## Draw Marks on an Axes
 
-Most chart types have a matching Axes method.
+![One Figure, four Axes: each panel names its comparison and measurement units.](media/matplotlib_subplots.png)
 
 ### Reference Card: Axes Plotting Methods
 
@@ -168,37 +161,49 @@ Most chart types have a matching Axes method.
 - `ax.bar(categories, heights)`: Draw one bar per category, starting at zero.
 - `ax.hist(values, bins=30)`: Count values in 30 equal-width bins and draw one bar per bin.
 - `ax.boxplot([group_a, group_b], tick_labels=['A', 'B'])`: Draw the median, quartiles, and outliers of each group.
+- `ax.set(title=..., xlabel=..., ylabel=...)`: Name the comparison and label each axis with its measurement unit.
 
-### Code Snippet: One Mark Type per Panel
+### Code Snippet: Draw a Line
+
+The snippets here use an existing `ax` (one Axes). `weeks` is `[1, 2, 3, 4]` and `north` is `[42, 45, 51, 48]` flu visits.
 
 ```python
-import matplotlib.pyplot as plt
-import numpy as np
-
-rng = np.random.default_rng(42)
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-axes[0, 0].plot([1, 2, 3, 4], [1, 4, 2, 3])
-axes[0, 0].set_title('Line Plot')
-
-axes[0, 1].hist(rng.normal(0, 1, 1000), bins=30)  # 1,000 draws: mean 0, standard deviation 1
-axes[0, 1].set_title('Histogram')
-
-axes[1, 0].scatter(rng.standard_normal(100), rng.standard_normal(100))
-axes[1, 0].set_title('Scatter Plot')
-
-axes[1, 1].bar(['A', 'B', 'C'], [3, 7, 2])
-axes[1, 1].set_title('Bar Chart')
-
-plt.tight_layout()
-plt.show()
+ax.plot(weeks, north)
 ```
 
-![One Figure, four Axes: each panel has its own title and its own scales.](media/matplotlib_subplots.png)
+Expected result: four points joined in week order, highest at week 3.
+
+### Code Snippet: Count Readings in Bins
+
+`pressures` holds twelve readings in mmHg: `[118, 124, 126, 129, 131, 133, 134, 136, 139, 142, 147, 155]`.
+
+```python
+ax.hist(pressures, bins=4)
+```
+
+Expected result: four bars with counts 3, 5, 2, and 2.
+
+### Code Snippet: Draw Patient Observations
+
+`ages` is `[34, 45, 52, 61, 68, 74]`; `systolic` is `[116, 123, 128, 134, 139, 146]` mmHg.
+
+```python
+ax.scatter(ages, systolic)
+```
+
+Expected result: six points rising with age.
+
+### Code Snippet: Compare Clinic Counts
+
+```python
+ax.bar(['North', 'South', 'East'], [42, 30, 25])
+```
+
+Expected result: three bars rising from zero to 42, 30, and 25 visits. [Demo 1's independent practice](demo/demo1_matplotlib_basics.md#independent-practice) builds the complete labeled comparison grid.
 
 ## Customizing Plots
 
-Titles, axis labels with units, deliberate limits, and a restrained grid give the reader the context the contract asks for.
+![Two labeled series with a title, axis labels, a legend, and a light grid.](media/matplotlib_customization.png)
 
 ### Reference Card: Axes Customization
 
@@ -214,33 +219,21 @@ Titles, axis labels with units, deliberate limits, and a restrained grid give th
 | `ax.legend()` | Decode labeled series when direct labels are not enough | Legend artist |
 | `plt.style.use(name)` | Apply a named style before creating figures | Global style setting |
 
-### Code Snippet: Axes Customization
+### Code Snippet: Label the Comparison
+
+On the weekly flu-visits chart:
 
 ```python
-fig, ax = plt.subplots(figsize=(8, 6))
-
-x = np.linspace(0, 10, 100)  # 100 evenly spaced values from 0 to 10
-y1 = np.sin(x)               # sine of every value, element-wise like Lecture 03's np.sqrt()
-y2 = np.cos(x)
-
-ax.plot(x, y1, label='sin(x)', color='blue', linewidth=2)
-ax.plot(x, y2, label='cos(x)', color='red', linewidth=2, linestyle='--')
-
-ax.set_title('Trigonometric Functions')
-ax.set_xlabel('X values')
-ax.set_ylabel('Y values')
-ax.grid(True, alpha=0.3)
-ax.legend()
-
-plt.tight_layout()
-plt.show()
+ax.set(title='Weekly flu visits by clinic', xlabel='Week', ylabel='Flu clinic visits')
 ```
 
-![Two labeled series with a title, axis labels, a legend, and a light grid.](media/matplotlib_customization.png)
+Expected result: a visible title and unit-bearing axis labels. A line drawn with `label='North'` is named North in `ax.legend()`; [Demo 1](demo/demo1_matplotlib_basics.md#independent-practice) adds ticks, a grid, and a legend to a complete chart.
 
 ## Colors, Markers, and Line Styles
 
-Each series can combine a color, a marker, and a line style. Together they keep lines distinguishable even in grayscale, as the accessibility section revisits.
+Each series can combine a color, a marker, and a line style, which keeps lines distinguishable even in grayscale.
+
+![Each series combines its own color, marker, and line style.](media/matplotlib_styles.png)
 
 ### Reference Card: Colors, Markers, and Line Styles
 
@@ -251,29 +244,18 @@ Each series can combine a color, a marker, and a line style. Together they keep 
 | **Marker** | `'o'`, `'s'`, `'^'`, `'*'` | Reinforce category identity and show observations; set size with `markersize=` |
 | **Format string** | `'o-'`, `'s--'` | Shorthand for marker + line style: `'o--'` equals `marker='o', linestyle='--'` |
 
-### Code Snippet: Visual Styles
+### Code Snippet: Reinforce a Series with Shape and Dashes
 
 ```python
-fig, ax = plt.subplots(figsize=(10, 6))
-
-x = np.linspace(0, 10, 20)
-
-ax.plot(x, x, 'o-', label='circles', color='blue', markersize=8)
-ax.plot(x, x**0.5, 's--', label='squares', color='red', markersize=6)
-ax.plot(x, np.log(x+1), '^-.', label='triangles', color='green', markersize=8)
-ax.plot(x, np.sin(x), '*:', label='stars', color='purple', markersize=10)
-
-ax.set_title('Different Line Styles and Markers')
-ax.legend()
-ax.grid(True, alpha=0.3)
-plt.show()
+ax.plot(weeks, north, 's--', color='#0072B2', markersize=6, label='North')
 ```
 
-![Each series combines its own color, marker, and line style.](media/matplotlib_styles.png)
+Expected result: blue squares joined by a dashed line. The format string combines `marker='s'` and `linestyle='--'`. Choose cues that carry group meaning and remain readable in grayscale; [Demo 1's flu chart](demo/demo1_matplotlib_basics.md#independent-practice) applies them to both clinics.
+
 
 ## Annotate, Declutter, and Save
 
-An explanatory chart usually points at one thing. An **annotation** is text attached to a data point, often with an arrow, so the reader does not have to hunt for it. The top and right frame lines (**spines**) carry no data, so hiding them leaves more attention for the marks. `fig.savefig()` writes the whole Figure to a file, and the extension picks the file type.
+An **annotation** is text attached to a data point, often with an arrow, so the reader of an explanatory chart finds its one point without hunting. The top and right frame lines (**spines**) carry no data, so hiding them leaves more attention for the marks. `fig.savefig()` writes the whole Figure to a file whose extension picks the file type.
 
 ### Reference Card: Annotate, Declutter, and Save
 
@@ -283,25 +265,29 @@ An explanatory chart usually points at one thing. An **annotation** is text atta
 - `ax.legend(title='Clinic', loc='upper left', bbox_to_anchor=(1, 1), frameon=False)`: Place a legend headed Clinic just outside the right edge, without a box. With `loc=` alone, such as `loc='lower right'`, the legend stays inside the Axes in that corner.
 - `fig.savefig('chart.png', dpi=150, bbox_inches='tight')`: Save a PNG at 150 dots per inch; `bbox_inches='tight'` trims extra margin so labels are not cut off. Use `.svg` or `.pdf` for vector output.
 
-### Code Snippet: Point to the Peak and Save
+### Code Snippet: Point to the Peak
+
+On the existing North chart, week 3 has 51 visits:
 
 ```python
-import matplotlib.pyplot as plt
-
-weeks = [1, 2, 3, 4]
-flu_visits = [42, 45, 51, 48]
-
-fig, ax = plt.subplots(figsize=(6, 4))
-ax.plot(weeks, flu_visits, marker='o')
 ax.annotate('Peak: 51 visits', xy=(3, 51), xytext=(1.5, 55),
             arrowprops=dict(arrowstyle='->'))
-ax.set(xlabel='Week', ylabel='Flu clinic visits', ylim=(0, 60))
-ax.set_xticks(weeks)
-ax.spines[['top', 'right']].set_visible(False)
+```
+
+Expected result: text above the line, with an arrow ending at the week-3 point.
+
+### Code Snippet: Save the Figure
+
+```python
 fig.savefig('flu_visits.png', dpi=150, bbox_inches='tight')
 ```
 
-Expected result: `flu_visits.png` appears next to your notebook, showing one line with an arrow from 'Peak: 51 visits' to the week-3 point and no top or right frame line.
+Expected result: `flu_visits.png` contains the whole Figure, including its labels and annotation. [Demo 1's independent practice](demo/demo1_matplotlib_basics.md#independent-practice) annotates, declutters, and checks a saved flu chart.
+
+<callout icon="⚠️" color="yellow_bg">
+	## Save before `plt.show()`
+	In a notebook, `plt.show()` displays the figure and then closes it, so a `plt.savefig()` after it saves a new, empty figure: a blank PNG. Call `fig.savefig()` before `plt.show()`.
+</callout>
 
 ![xkcd 833: Convincing. "I just think I can do better than someone who doesn't label her axes." Label your axes.](media/xkcd_833.png)
 
@@ -309,11 +295,9 @@ Expected result: `flu_visits.png` appears next to your notebook, showing one lin
 
 # The Visualization Ecosystem
 
-_Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart._
+Python's **visualization ecosystem** is a family of plotting libraries built on a few **plotting backends**, the engines that do the drawing: matplotlib draws images from Python, and **Vega-Lite** draws charts in a web browser. Libraries that share a backend share its output files and its adjustments, so choose a library by the job: a quick look, full control, statistical summaries, or an interactive web chart.
 
-A **plotting backend** is the engine that actually draws a library's charts: matplotlib draws images from Python, and **Vega-Lite** draws charts in a web browser.
-
-```
+```text
 matplotlib ← pandas .plot() (default backend)
            ← seaborn
            ← plotnine
@@ -338,7 +322,9 @@ plotnine, Bokeh, and Plotly are surveyed in [BONUS.md](BONUS.md).
 
 # pandas: Quick Data Exploration
 
-`df.plot()` is the fastest look at a table you have just loaded: one call on the DataFrame you already have (Lecture 04). It returns a matplotlib `Axes`, so matplotlib methods still work afterward, and `ax=` draws into one panel of a `plt.subplots()` grid.
+**pandas plotting**, `df.plot()`, draws a DataFrame in one call, the fastest first look at a table you have just loaded. It draws through matplotlib and returns an `Axes`, so matplotlib methods still work afterward, and `ax=` draws into one panel of a `plt.subplots()` grid.
+
+![One table, four views: each `kind=` answers a different question about the same rows.](media/pandas_plotting.png)
 
 ## Index to x, Columns to Series
 
@@ -347,19 +333,16 @@ pandas hands the data to matplotlib using two rules:
 - The **index** becomes the x-axis.
 - Each numeric **column** becomes one series (a line, a set of bars, ...), and the column names fill the legend.
 
-Check the index before plotting: if it is the default 0, 1, 2, ..., the x-axis shows row numbers. `set_index()` from Lecture 06 makes it meaningful, such as the week.
+<callout icon="⚠️" color="yellow_bg">
+	## Set the index before `df.plot()`
+	With the default index (0, 1, 2, ...), the x-axis shows row numbers, and a numeric column meant for x, such as `week`, is drawn as one more line. Run `set_index('week')` (Lecture 06) first.
+</callout>
+
+`weekly` is indexed by weeks 1 to 4, with North counts `[42, 45, 51, 48]` and South counts `[30, 33, 31, 36]`.
 
 ### Code Snippet: The Index Becomes the x-Axis
 
 ```python
-import pandas as pd
-
-weekly = pd.DataFrame({
-    'week': [1, 2, 3, 4],
-    'North': [42, 45, 51, 48],
-    'South': [30, 33, 31, 36],
-}).set_index('week')
-
 ax = weekly.plot(marker='o', ylabel='Flu clinic visits', title='Weekly visits by clinic')
 print(ax.get_xlabel())  # week
 ```
@@ -368,9 +351,9 @@ Expected output: two lines, one per clinic, with `week` on the x-axis and a lege
 
 ## Plot Kinds
 
-One table, many views: `kind=` picks the mark, and when the question is how two columns relate, `corr()` answers with a table of numbers rather than a picture: the **Pearson correlation** of every pair of selected columns.
+`kind=` picks the mark, so one table gives many views. When the question is how two columns relate, `corr()` answers with numbers rather than a picture: the **Pearson correlation** of every pair of selected columns.
 
-A correlation runs from `-1`, one column rising as the other falls, through `0`, no straight-line link, to `1`, both moving the same way. Pearson is the default. Select the numeric columns yourself rather than trusting the error: a text column of words raises `ValueError`, but a text column whose values happen to parse as numbers, such as zero-padded patient IDs or ZIP codes, is correlated silently as though it were a measurement. And a correlation measures straight-line association only, so a strong number is still not causation.
+A correlation runs from `-1` (one column rises as the other falls) through `0` (no straight-line link) to `1` (both move the same way); it measures straight-line association only, not causation. Select the numeric columns yourself: a text column of words raises `ValueError`, but text that parses as numbers, such as zero-padded patient IDs or ZIP codes, is correlated silently as though it were a measurement.
 
 ### Reference Card: pandas Plotting and Correlation
 
@@ -387,21 +370,14 @@ A correlation runs from `-1`, one column rising as the other falls, through `0`,
 | `corr = df[['age', 'bmi']].corr()` | **Correlation matrix**: the Pearson correlation of every pair of the listed columns; `method=` also accepts `'spearman'` and `'kendall'` | Square `DataFrame`, one row and column per listed column. `1.0` down the diagonal, except that a column with nothing to vary (one repeated value, or only one non-missing value) is `NaN` throughout |
 | `corr.to_csv(path, index=True, index_label='feature')` | Write a frame whose row labels are data, not row numbers: `index=True` keeps them (Lecture 04) and `index_label=` names the column they land in | CSV file whose first column is headed `feature` |
 
-### Code Snippet: Several Plot Kinds in One Grid
+### Code Snippet: Change the Plot Kind
 
 ```python
-import matplotlib.pyplot as plt
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-weekly.plot(ax=axes[0, 0], marker='o', title='Line: visits each week')
-weekly.plot(kind='bar', ax=axes[0, 1], title='Bar: visits each week')
-weekly.plot(kind='scatter', x='North', y='South', ax=axes[1, 0], title='Scatter: one point per week')
-weekly.plot(kind='box', ax=axes[1, 1], title='Box: spread of weekly visits')
-plt.tight_layout()
-plt.show()
+weekly.plot(kind='bar', ylabel='Flu visits')
 ```
 
-![One table, four views: each `kind=` answers a different question about the same rows.](media/pandas_plotting.png)
+Expected result: one pair of bars per week, starting at zero. Changing `kind=` changes the comparison; [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) compares several views of the same clinic table.
+
 
 ### Code Snippet: A Correlation Matrix
 
@@ -424,40 +400,40 @@ print(weekly[['North', 'South']].corr())
 | `title=...`, `xlabel=...`, `ylabel=...` | Add reader-facing context | Labeled plot |
 | `legend=True`, `grid=True` | Decode series or add restrained guides | Updated `Axes` |
 
-### Code Snippet: DataFrame Plot Options
+**Small multiples** put each group in its own panel with the same axes, so both the pattern and level compare fairly.
 
-```python
-monthly = pd.DataFrame({
-    'month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    'North': [100, 120, 110, 130, 140, 135],
-    'South': [80, 90, 95, 105, 110, 115],
-    'East': [60, 70, 75, 80, 85, 90],
-}).set_index('month')
-
-monthly.plot(subplots=True, sharey=True, figsize=(10, 8),
-             title='Clinic visits by month', ylabel='Visits', grid=True)
-plt.tight_layout()
-plt.show()
+```text
+North panel ┐
+South panel ├── same y-scale: a higher line means a higher count
+East panel  ┘
 ```
 
-Expected output: three stacked panels (North, South, East), each labeled Visits, that share one y-axis running from about 56 to 144, so East's lower counts sit visibly lower than North's.
+### Code Snippet: Separate Groups on a Shared Scale
+
+`monthly` has a month index and three visit-count columns: North, South, and East.
+
+```python
+axes = monthly.plot(subplots=True, sharey=True, ylabel='Visits')
+```
+
+Expected result: three stacked panels with matching y-limits. [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) builds the full table and checks those limits.
+
 
 # seaborn: Statistical Graphics
 
-seaborn builds on matplotlib to draw statistical graphics from a DataFrame in one call, picking readable colors and styles and computing summaries such as group means for you. It expects long data from Lecture 06: one row per observation, one column per variable. You pass column names, and seaborn maps each one to an encoding:
+**seaborn** draws statistical graphics from a long DataFrame (Lecture 06) in one call, computing summaries such as group means for you. You pass column names and seaborn maps each to an encoding, so the contract becomes code: `sns.scatterplot(data=visits, x='visit_month', y='systolic_bp', hue='clinic')` is one point per visit, month across, blood pressure up, clinic by color.
 
-- `data=`: the DataFrame the column names come from
-- `x=` and `y=`: horizontal and vertical position
-- `hue=`: color, one color per category
-
-That is the visualization contract written as code: `sns.scatterplot(data=visits, x='visit_month', y='systolic_bp', hue='clinic')` means one point per visit, month across, blood pressure up, clinic by color. Each function in the card below returns an `Axes` and accepts `ax=`.
+![Left: one point per country-year. Middle: one line per country. Right: each box summarizes one country's yearly values.](media/seaborn_statistical.png)
 
 ## Statistical Plots from Long Data
+
+Each plotting function below takes the DataFrame as `data=` and column names for `x=`, `y=`, and `hue=` (one color per category), returns an `Axes`, and accepts `ax=`.
 
 ### Reference Card: seaborn Statistical Graphics
 
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
+| `import seaborn as sns` | Load seaborn under its standard alias, which the snippets assume | `sns` |
 | `sns.load_dataset(name)` | Download a small example table, such as `'healthexp'` (needs internet) | `DataFrame` |
 | `sns.set_style(name)` / `sns.set_palette(name)` | Set defaults for readable plots | Updated seaborn defaults |
 | `sns.scatterplot(data=df, x=..., y=..., hue=...)` | Show relationships and optional groups | `Axes` |
@@ -469,38 +445,39 @@ That is the visualization contract written as code: `sns.scatterplot(data=visits
 | `sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, vmin=-1, vmax=1)` | Color a correlation matrix with two hues that meet at 0: blue for negative, white near 0, red for positive, over the full range from -1 to 1 | `Axes` |
 | `errorbar=None` | Hide the error band or bar on lineplot/barplot | Updated `Axes` |
 
-### Code Snippet: Statistical Plots
+### Code Snippet: Load a Teaching Dataset
 
 ```python
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-sns.set_style('whitegrid')
-health = sns.load_dataset('healthexp')  # one row per country-year, 1970-2020
-
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy', hue='Country', ax=axes[0])
-axes[0].set(xlabel='Health spending per person (USD)', ylabel='Life expectancy (years)')
-sns.lineplot(data=health, x='Year', y='Life_Expectancy', hue='Country', legend=False, ax=axes[1])
-axes[1].set(ylabel='Life expectancy (years)')
-sns.boxplot(data=health, x='Life_Expectancy', y='Country', ax=axes[2])
-axes[2].set(xlabel='Life expectancy (years)', ylabel='')
-fig.tight_layout()
-plt.show()
+health = sns.load_dataset('healthexp')
 ```
 
-![Left: one point per country-year. Middle: one line per country. Right: each box summarizes one country's yearly values.](media/seaborn_statistical.png)
+Expected result: 274 rows and four columns (`Year`, `Country`, `Spending_USD`, `Life_Expectancy`). This downloads a dataset; the demo supplies its own guarded file download so it also works alone.
+
+### Code Snippet: Set a Plotting Style
+
+```python
+sns.set_style('whitegrid')
+```
+
+Expected result: later seaborn plots have a white background with grid lines. Set defaults before creating the figures.
+
+### Code Snippet: Encode country-year observations
+
+```python
+ax = sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy',
+                     hue='Country', style='Country')
+ax.set(xlabel='Health spending per person (USD)', ylabel='Life expectancy (years)')
+```
+
+Each point is one country-year. Country uses both color and shape; [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) compares country lines and boxes.
 
 ## Watch the Grain
 
-When several rows share an x value, `sns.lineplot()` and `sns.barplot()` draw the **mean** of those rows plus an error band showing its uncertainty, not the rows themselves. The unit displayed silently changes from one reading to an average, so say so in the axis label or title. Lecture 08 builds such summaries explicitly.
+When several rows share an x value, `sns.lineplot()` and `sns.barplot()` draw the **mean** of those rows plus an error band showing its uncertainty, not the rows themselves. The unit displayed silently changes from one reading to an average, so say so in the axis label or title.
 
 ### Code Snippet: seaborn Averages Repeated x Values
 
 ```python
-import pandas as pd
-import seaborn as sns
-
 readings = pd.DataFrame({
     'week': [1, 1, 1, 2, 2, 2],
     'patient_id': ['A', 'B', 'C', 'A', 'B', 'C'],
@@ -510,17 +487,17 @@ ax = sns.lineplot(data=readings, x='week', y='systolic_bp', errorbar=None)
 print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week: [143.33333333 139.66666667]
 ```
 
+![xkcd 2739: Data Quality. A mean is a lossy copy of the readings behind it, so say when a chart shows one](media/xkcd_2739.png)
+
 # Density Plots and Distribution Visualization
 
-A histogram counts values in bins, so its shape depends on where the bins start and how wide they are. A **density plot**, or **KDE** (kernel density estimate), instead puts a small smooth bump on every observation and adds them up. Its total area is 1, so the y-axis is **density**, not a count. The bump width is the **bandwidth**: wider bumps smooth more, narrower ones show more detail and more noise.
+A **density plot**, or **KDE** (kernel density estimate), draws a distribution as a smooth curve by putting a small bump on every observation and adding them up, so its shape does not depend on where histogram bins start. It shows shapes a mean or box plot hides, such as the two peaks (**bimodal**) of fasting glucose in a clinic that serves people with and without diabetes.
 
-Fasting glucose readings from a clinic serving people with and without diabetes may show two peaks (**bimodal**), which a single mean or box plot would hide.
-
-![KDE curves for a normal sample centered near zero and a bimodal sample with peaks near minus two and two.](media/distribution_reference.png)
+![Twelve fasting glucose readings (mg/dL): the pandas (left) and seaborn (middle) density curves peak near 94 and 163, and `bw_adjust=0.5` sharpens both peaks.](media/distribution_reference.png)
 
 ## Density Plots in pandas and seaborn
 
-`df.plot.density()` computes the KDE with SciPy, so it needs `scipy` installed (Colab has it); seaborn's `kdeplot()` and `histplot(kde=True)` work without it.
+The curve's total area is 1, so the y-axis is **density**, not a count. The bump width is the **bandwidth**: wider bumps smooth more, narrower ones show more detail and more noise. `df.plot.density()` computes the KDE with SciPy, so it needs `scipy` installed (Colab has it); seaborn's `kdeplot()` and `histplot(kde=True)` work without it.
 
 ### Reference Card: Distribution Plots
 
@@ -531,39 +508,37 @@ Fasting glucose readings from a clinic serving people with and without diabetes 
 | `sns.kdeplot(data=df, x='col')` | Show a smoothed distribution alone | `Axes` |
 | `sns.kdeplot(..., bw_adjust=0.5)` | Narrower bumps: less smoothing, more detail | `Axes` |
 
-### Code Snippet: Density Comparisons
+### Code Snippet: Show shape beside the counts
 
 ```python
-rng = np.random.default_rng(42)
-normal_data = rng.normal(0, 1, 1000)  # mean 0, standard deviation 1
-bimodal_data = np.concatenate([       # join two arrays end to end
-    rng.normal(-2, 0.5, 500),
-    rng.normal(2, 0.5, 500),
-])
-
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-
-pd.Series(normal_data).plot.density(ax=axes[0], title='Normal (pandas)')
-
-sns.kdeplot(data=bimodal_data, ax=axes[1])
-axes[1].set_title('Bimodal (seaborn)')
-
-sns.histplot(data=normal_data, kde=True, ax=axes[2])
-axes[2].set_title('Histogram + density')
-
-plt.tight_layout()
-plt.show()
+ax = sns.histplot(x=glucose, kde=True)
+ax.set_xlabel('Fasting glucose (mg/dL)')
 ```
 
-Expected output: a single-peaked pandas KDE, a two-peaked seaborn KDE with peaks near -2 and 2, and a histogram overlaid with its density curve.
+`glucose` holds the twelve readings in the visual: `[84, 88, 91, 93, 95, 96, 98, 101, 156, 161, 166, 172]` mg/dL. Expect peaks near 94 and 163 mg/dL; the histogram retains counts on its y-axis.
+
+### Code Snippet: Draw a pandas Density Curve
+
+```python
+glucose.plot.density(xlabel='Fasting glucose (mg/dL)')
+```
+
+Expected result: a curve with those two peaks and density on its y-axis.
+
+### Code Snippet: Adjust the Bandwidth
+
+```python
+sns.kdeplot(x=glucose, bw_adjust=0.5)
+```
+
+Expected result: sharper peaks and a deeper dip between them than with the default bandwidth. Small bandwidths can amplify noise; large ones can hide groups. [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) compares both libraries and smoothing choices on clinical readings.
+
 
 # LIVE DEMO!
 
 # Edward Tufte's Principles of Data Visualization
 
-A chart can get every number right and still mislead. Picture a hospital dashboard showing hand-hygiene compliance of 96% in March and 97% in April, drawn as bars on a y-axis that starts at 95%. The April bar is twice as tall, so readers see compliance double when it rose one point. Nothing in the data is wrong; the drawing is.
-
-Edward Tufte, a statistician who writes about chart design, sums up his principles as **"Above all else, show the data."** They check that the drawing lets the reader make the contract's comparison honestly, and they are the vocabulary you use to critique and redesign a chart in the assignment.
+**Tufte's principles**, from the statistician Edward Tufte, check that a chart's drawing is as honest as its numbers: **"Above all else, show the data."** Hand-hygiene compliance of 96% in March and 97% in April, drawn as bars on an axis starting at 95%, makes April's bar twice as tall, so readers see compliance double when it rose one point.
 
 ## Five Principles
 
@@ -586,9 +561,9 @@ Raise it by removing ink that carries no data:
 
 ### Chartjunk
 
-**Chartjunk** is non-data ink that competes with the marks: 3D effects, heavy grid lines, decorative fills and patterns, excessive colors, and redundant labels. Color or a fill pattern is data ink only when it encodes something: a pattern that marks a group, as in the accessibility section below, carries data, but the same pattern on every bar does not.
+**Chartjunk** is non-data ink that competes with the marks: 3D effects, heavy grid lines, decorative fills and patterns, excessive colors, and redundant labels. Color or a fill pattern is data ink only when it encodes something, such as which group a bar belongs to; the same pattern on every bar is chartjunk.
 
-![Before (left): five colors and one hatch pattern on five clinics, so neither encodes anything. After (right): one color, sorted bars, and each value written at the bar's end.](media/tufte_bar_comparison.png)
+![Before (left): five colors repeat the clinic labels, and one hatch pattern carries no information. After (right): one color, sorted bars, and each value written at the bar's end.](media/tufte_bar_comparison.png)
 
 ### Lie Factor
 
@@ -598,7 +573,7 @@ The **lie factor** measures how much a visualization distorts the data:
 Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
 ```
 
-A lie factor close to 1.0 means no distortion. In the hand-hygiene dashboard, the April bar grows 100% (from 1 to 2 units above the 95% baseline) while compliance grows about 1% (96 → 97), so the lie factor is roughly 100 / 1.04 ≈ 96.
+A lie factor close to 1.0 means no distortion. In the hand-hygiene example, the April bar grows 100% (from 1 to 2 units above the 95% baseline) while compliance grows about 1% (96 → 97), so the lie factor is roughly 100 / 1.04 ≈ 96.
 
 ![Hand-hygiene compliance of 96% and 97%: on a 95% baseline (left) April's bar is twice as tall; from zero (right) the bars differ by one point, as the data do.](media/tufte_lie_factor.png)
 
@@ -609,15 +584,19 @@ Common distortions to avoid:
 - Inconsistent scales
 - Cherry-picked time ranges
 
+![xkcd 1725: Linear Regression. Finding a dog-shaped constellation in the points does not make it evidence.](media/xkcd_1725.png)
+
 ### Small Multiples
 
-Use small, repeated charts with the same scale to enable easy comparison across categories or time; `sharey=True` from the pandas section does this.
+**Small multiples** are small, repeated charts on one shared scale, so readers compare categories or time periods at a glance; `sharey=True` from the pandas section draws them.
 
 ![Six clinics on one shared y-axis, so Central's tall flu peak and West's flat season compare at a glance.](media/tufte_small_multiples.png)
 
 ### Show the Detail
 
-Show as much detail as the data allows; don't oversimplify or aggregate unnecessarily. Tufte calls these high-resolution data graphics.
+Show as much detail as the data allow instead of aggregating it away; Tufte calls these **high-resolution data graphics**.
+
+![Charles Minard's 1869 map of Napoleon's march on Moscow: the band's width is the army's size, its path the route, and the line below the temperature on the retreat, six variables in one drawing](media/napoleon.webp)
 
 ### Reference Card: Tufte's Checks
 
@@ -640,7 +619,7 @@ Match the palette to the data type:
 
 ## Make the chart accessible
 
-An accessible chart is designed so more readers can recover its comparison.
+An **accessible** chart lets readers recover its comparison whatever their eyesight, screen, or printer.
 
 - Use readable type, complete labels, and adequate contrast against the background.
 - Use a colorblind-safe palette, tested with a tool such as [ColorBrewer](https://colorbrewer2.org/), but do not treat palette choice as the whole task.
@@ -658,74 +637,54 @@ Example text alternative:
 - `ax.plot(x, y, color=..., marker='o', linestyle='-')`: Pair each line color with its own marker and line style.
 - `x = np.arange(n)`: One position per category group (Lecture 03); `ax.set_xticks(x, labels)` names the positions.
 - `ax.bar(x - width / 2, heights, width, label=..., hatch='//')`: Draw one set of side-by-side bars, shifted left by half a bar width. A fill pattern (**hatch**) such as `'//'` or `'..'` keeps groups distinguishable in grayscale; because it encodes the group, it is data ink, not chartjunk. `edgecolor=` colors each bar's outline and its hatch lines, and `linewidth=` sets the outline's thickness.
-- `ax.bar_label(bars, fmt='%d%%')`: Write each bar's value on it, such as `64%`; `bars` is what `ax.bar()` returns.
+- `labels = ax.bar_label(bars, fmt='%d%%')`: Write each bar's value on it, such as `64%`; `bars` is what `ax.bar()` returns. The returned list holds the text labels; `labels[0].get_text()` reads the first label, `'64%'`.
 - `ax.set_ylim(0, 100)`: Start bar axes at zero, because bar length encodes magnitude.
 
-### Code Snippet: Redundant Cues on a Line Chart
+### Code Snippet: Directly Label a Line
 
-The text alternative above describes this chart: color is reinforced with marker shape, line style, and direct labels, so the comparison never depends on color alone.
+On the chart described above, the nurse-led series ends at 135 mmHg at visit 5:
 
 ```python
-import matplotlib.pyplot as plt
-
-visits = [1, 2, 3, 4, 5]
-standard = [152, 149, 147, 145, 144]
-nurse_led = [153, 147, 142, 138, 135]
-
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.plot(visits, standard, color='#E69F00', marker='s', linestyle='--')
-ax.plot(visits, nurse_led, color='#0072B2', marker='o', linestyle='-')
-
-ax.text(5.08, standard[-1], 'Standard care', va='center')
-ax.text(5.08, nurse_led[-1], 'Nurse-led', va='center')
-ax.set(xlabel='Follow-up visit', ylabel='Mean systolic BP (mmHg)',
-       title='Nurse-led clinic finishes 9 mmHg lower by visit 5')
-ax.set_xticks(visits)
-ax.set_xlim(1, 5.9)
-ax.grid(axis='y', alpha=0.25)
-fig.tight_layout()
-plt.show()
+ax.text(5.08, 135, 'Nurse-led', va='center')
 ```
 
-Expected output: two falling lines labeled at their right ends, orange dashed squares for Standard care (ending at 144) and blue solid circles for Nurse-led (ending at 135), with no legend needed.
+Expected result: the label sits beside that endpoint. A direct label ties the name to the line; pair the lines' colors with distinct markers and dashes.
 
-### Code Snippet: Grouped Bars That Work in Grayscale
+### Code Snippet: Give a Bar Series Its Own Hatch
+
+`x` holds positions `[0, 1]`, `north` holds uptake `[58, 64]` (%), and `width` is 0.35. The neighboring South series uses `hatch='..'`.
 
 ```python
-import matplotlib.pyplot as plt
-import numpy as np
-
-seasons = ['2023-24', '2024-25']
-north = [58, 64]
-south = [55, 58]
-x = np.arange(len(seasons))  # [0 1]: one position per season
-width = 0.35
-
-fig, ax = plt.subplots(figsize=(6, 4))
 north_bars = ax.bar(x - width / 2, north, width, label='North', color='#0072B2', hatch='//')
-south_bars = ax.bar(x + width / 2, south, width, label='South', color='#D55E00', hatch='..')
-ax.bar_label(north_bars, fmt='%d%%')
-ax.bar_label(south_bars, fmt='%d%%')
-ax.set_xticks(x, seasons)
-ax.set(ylim=(0, 100), xlabel='Flu season', ylabel='Adults vaccinated (%)')
-ax.legend(title='Clinic', loc='upper left', bbox_to_anchor=(1, 1), frameon=False)
-plt.show()
 ```
 
-Expected output: two pairs of bars rising from 0, labeled 58% and 55% for 2023-24 and 64% and 58% for 2024-25. North's bars are striped and South's dotted, and the legend sits just outside the right edge.
+Expected result: two blue striped bars, left of each season's tick, distinguishable from South's dotted bars in grayscale.
+
+### Code Snippet: Write Values on Bars
+
+```python
+ax.bar_label(north_bars, fmt='%d%%')
+```
+
+Expected result: `58%` and `64%` appear above North's bars. [Demo 3](demo/demo3_pandas_altair.md#core-walkthrough) builds a full grouped-bar redesign with hatches, values, a zero baseline, and a saved chart record; its independent practice directly labels two clinical trend lines.
+
+![xkcd 2537: Painbow Award. A color scale should make values easier to compare, not win an award for confusion.](media/xkcd_2537.png)
 
 # Altair: Declarative Charts and Interaction
 
-Altair is **declarative**: you describe _what_ the chart shows and Altair works out _how_ to draw it, like ordering from a menu instead of cooking; matplotlib gives drawing steps one at a time. An Altair chart is **data → mark → typed encodings**; it becomes a **Vega-Lite specification**, a JSON document a browser renders and you can save and share. Each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
+**Altair** is a **declarative** plotting library: you state _what_ the chart shows, as data, a mark, and typed encodings, and Altair works out _how_ to draw it, where matplotlib takes drawing steps one at a time. The chart becomes a **Vega-Lite specification**, a JSON document that a browser renders with hover tooltips and zoom and that you can save and share.
 
 ![Six patients: systolic BP rises with age at both clinics, and color and shape both mark the clinic. Six points describe these patients, not a population.](media/altair_study_reference.png)
 
 ## Data, Mark, and Typed Encodings
 
+An Altair chart is **data → mark → typed encodings**, and each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
+
 ### Reference Card: Altair chart construction
 
 | Task | Call | Purpose / arguments | Result |
 | :--- | :--- | :--- | :--- |
+| Import | `import altair as alt` | Load Altair under its standard alias, which the snippets assume | `alt` |
 | Build | `alt.Chart(study)` | Supply the source DataFrame | Chart to configure |
 | Build | `.mark_point(filled=True, size=90)` | Choose filled points and their area; `.mark_bar()` and `.mark_line()` draw bars or lines, and `color='gray'` gives every mark one fixed color | Chart with marks |
 | Build | `.properties(title=..., width=360, height=260)` | Add a visible title and set size in pixels | Chart |
@@ -737,20 +696,13 @@ Altair is **declarative**: you describe _what_ the chart shows and Altair works 
 | Interact | `.encode(tooltip=['field:Q'])` | Choose values shown on hover | Chart with tooltips |
 | Interact | `alt.Tooltip('field:Q', title=..., format='.1f')` | Name and format a tooltip value | Tooltip channel |
 | Interact | `.interactive()` | Add scale-bound pan/zoom interaction | Interactive chart |
-| Compose | `alt.hconcat(left, right)` | Place two charts side by side | Compound chart |
+| Compose | `alt.hconcat(left, right)` / `alt.vconcat(top, bottom)` | Place two charts side by side / one above the other | Compound chart |
+
+`study` has six patient rows with age (years), systolic BP (mmHg), and clinic: three North and three South. The full table and interactive workflow are in [Demo 3](demo/demo3_pandas_altair.md#core-walkthrough).
 
 ### Code Snippet: Encode the study table
 
 ```python
-import altair as alt
-import pandas as pd
-
-study = pd.DataFrame({  # six patients in a small blood-pressure study
-    'age': [38, 52, 67, 41, 55, 70],
-    'systolic_bp': [118, 129, 141, 124, 136, 150],
-    'clinic': ['North', 'North', 'North', 'South', 'South', 'South'],
-})
-
 scatter = alt.Chart(study).mark_point(filled=True, size=90).encode(
     x=alt.X('age:Q', title='Age (years)'),
     y=alt.Y('systolic_bp:Q', title='Systolic BP (mmHg)', scale=alt.Scale(zero=False)),
@@ -762,13 +714,11 @@ scatter = alt.Chart(study).mark_point(filled=True, size=90).encode(
 scatter.interactive()
 ```
 
-The color-plus-shape encodings identify the clinics redundantly. Tooltips and `.interactive()` help a reader inspect or zoom, but the title, axes, legend, and main comparison must stay visible without hover. `alt.hconcat(left, right)` and `alt.vconcat(top, bottom)` compose two already honest charts, as Demo 3 does.
-
-Altair does not replace the contract: state grain and roles first, choose truthful scales and marks, add redundant cues, and supply a text alternative for the shared view.
+Color and shape both mark the clinic, a redundant encoding. Tooltips and `.interactive()` help a reader inspect or zoom, but the title, axes, legend, and main comparison must stay visible without hover, and a shared chart still needs its text alternative.
 
 ## Save the Chart and Its Record
 
-Saving a chart as JSON keeps the Vega-Lite specification and its rows together, so anyone with the file can render the same chart. The standard-library `json` module saves what you keep beside it: the contract and the text alternative.
+Saving a chart as JSON keeps the Vega-Lite specification and its rows together, so anyone with the file can render the same chart. The standard-library `json` module (`import json`) saves what you keep beside it: the contract and the text alternative.
 
 ### Reference Card: Saving Charts and Records
 
@@ -790,19 +740,18 @@ print(spec['mark'])                 # {'type': 'point', 'filled': True, 'size': 
 
 ### Code Snippet: Save a Chart Record as JSON
 
-`open()` and `with` come from Lecture 02; `json.dump()` also accepts the dictionary `chart.to_dict()` returns.
+`chart_record` is a dictionary containing the question, grain (`'one patient at one visit'`), and text alternative. `open()` and `with` come from Lecture 02; `json.dump()` also accepts the dictionary `chart.to_dict()` returns.
 
 ```python
-import json
-
-chart_record = {
-    'question': 'Does systolic BP rise with age at both clinics?',
-    'grain': 'one patient at one visit',
-    'text_alternative': 'Scatter plot of systolic BP (mmHg) against age (years) for six patients at two clinics.',
-}
 with open('study_record.json', 'w', encoding='utf-8') as file:
     json.dump(chart_record, file, indent=2, ensure_ascii=False)
+```
 
+Expected result: `study_record.json` preserves the contract and text alternative.
+
+### Code Snippet: Read the Record Back
+
+```python
 with open('study_record.json', encoding='utf-8') as file:
     saved = json.load(file)
 print(saved['grain'])  # one patient at one visit

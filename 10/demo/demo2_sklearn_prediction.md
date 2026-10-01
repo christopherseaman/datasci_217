@@ -20,18 +20,29 @@ jupyter:
 
 Demo 1 asked how disease progression _relates_ to BMI in 442 diabetes patients. This demo asks a prediction question about the same records: from a new patient's baseline measurements, how close can we get to their progression score one year later? You split the patients into training, validation, and test rows, set a baseline to beat, write down a selection rule, compare linear pipelines, read what the chosen one relies on, turn its predictions into a yes/no flag, and evaluate it on the test rows exactly once. Everything here comes from Lecture 10 up to the second demo break, plus Lectures 01 to 09. The records are real and de-identified.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03). Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1; the whole notebook runs in a few seconds.
+**How to run:** in Colab, open this notebook from the lecture page's Colab link and run the cells from top to bottom; the first code cell installs the course's pandas, and **File → Save a copy in Drive** keeps your changes. On your own computer, the environment from Demo 1's setup is still in `~/10-demo` (if you skipped Demo 1, run the five setup lines at the top of Demo 1 first): open that folder in VS Code, open `demo2_sklearn_prediction.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/10-demo` and `source .venv/bin/activate` bring the environment back. After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, [1. Load the diabetes records](#1-load-the-diabetes-records), [2. Train, validation, and test rows](#2-train-validation-and-test-rows), [4. A baseline, and the rule for choosing](#4-a-baseline-and-the-rule-for-choosing), and [5. A linear regression pipeline](#5-a-linear-regression-pipeline). Stop at the validation comparison; the test rows stay untouched. |
+| Independent practice | Work through the standalone mixed-type preprocessing example after class, then continue in order from Ridge/Lasso through comparison, permutation importance, classification flags, and the single frozen test. These sections reuse the core split and fitted linear pipeline. |
+
+**Core checkpoint:** The mean baseline has validation MAE 64.13; the linear pipeline reduces it to 42.94. There are 264 training, 89 validation, and 89 untouched test rows.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell changes nothing.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, after `uv sync`, that note is all it prints, and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
 
 ```python
 import matplotlib.pyplot as plt
@@ -218,7 +229,7 @@ dtype: float64
 ```
 
 - **Better than guessing:** the typical miss drops from 64 points to 43.
-- **No overfitting:** training R² (0.520) and validation R² (0.522) are nearly equal, so the model is not memorizing its 264 training rows.
+- **No large overfitting gap on this split:** training R² (0.520) and validation R² (0.522) are nearly equal. One split does not prove how well the model will generalize to other patients.
 - **Coefficients that cancel:** `tc` (-51.1) and `ldl` (+27.5) are large and opposite. Total cholesterol and LDL move together (their correlation is 0.90), so the unpenalized fit can trade a big negative on one against a big positive on the other. Neither number means much on its own.
 
 ## 6. Ridge and Lasso
@@ -263,7 +274,7 @@ glu     3.8    4.4    2.6
 Features Lasso keeps: 7 of 10
 ```
 
-Ridge pulls `tc` from -51.1 to -11.7 and `ldl` from 27.5 to -2.9: the penalty stops the two correlated columns from canceling each other with large opposite coefficients. Lasso goes further and sets `age`, `ldl`, and `tch` to exactly zero (`-0.0` is still zero). The strong predictors, `bmi`, `bp`, and `ltg`, barely move.
+Ridge pulls `tc` from -51.1 to -11.7 and `ldl` from 27.5 to -2.9: the penalty stops the two correlated columns from canceling each other with large opposite coefficients. Lasso goes further and sets `age`, `ldl`, and `tch` to exactly zero (`-0.0` is still zero). BMI and BP remain strong predictors. The triglyceride coefficient also shrinks, but stays large.
 
 ## 7. Compare the candidates and apply the rule
 
@@ -272,20 +283,21 @@ One table, one metric set, one validation set.
 ```python
 comparison = pd.DataFrame(results)
 comparison['features_used'] = [0, 10, 10, (coefficients['lasso'] != 0).sum()]
-print(comparison.round(3).to_string(index=False))
+print(comparison.set_index('model').round(3))
 ```
 
 **Expect:**
 
 ```text
-            model  valid_MAE  valid_RMSE  valid_R2  features_used
-    mean baseline     64.129      75.639    -0.044              0
+                   valid_MAE  valid_RMSE  valid_R2  features_used
+model
+mean baseline         64.129      75.639    -0.044              0
 linear regression     42.939      51.194     0.522             10
- ridge (alpha=10)     42.620      51.160     0.522             10
-  lasso (alpha=2)     42.451      51.034     0.525              7
+ridge (alpha=10)      42.620      51.160     0.522             10
+lasso (alpha=2)       42.451      51.034     0.525              7
 ```
 
-Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42.939) and Ridge (42.620) are within 1 point of it, so all three count as tied: on 89 patients a half-point gap is noise. The tie goes to the fewest features, which is the Lasso with 7 of 10. **Selected: the Lasso pipeline with `alpha=2`.** All three cut the baseline's typical miss by about a third.
+Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42.939) and Ridge (42.620) are within 1 point of it, so all three count as tied: the predeclared 1-point tolerance treats these small gaps as ties, without claiming a statistical test of equal performance. The tie goes to the fewest features, which is the Lasso with 7 of 10. **Selected: the Lasso pipeline with `alpha=2`.** All three cut the baseline's typical miss by about a third.
 
 ## 8. Look at the validation predictions
 
@@ -324,27 +336,26 @@ permutation_result = permutation_importance(
     scoring='neg_mean_absolute_error', n_repeats=10, random_state=42,
 )
 importance = pd.DataFrame({
-    'feature': feature_cols,
     'mae_increase': permutation_result.importances_mean,
     'std': permutation_result.importances_std,
-}).sort_values('mae_increase', ascending=False)
-print(importance.round(2).to_string(index=False))
+}, index=feature_cols).sort_values('mae_increase', ascending=False)
+print(importance.round(2))
 ```
 
 **Expect:**
 
 ```text
-feature  mae_increase  std
-    bmi         10.50 1.98
-    ltg         10.43 2.06
-     bp          3.79 1.07
-    hdl          2.90 1.01
-     tc          0.78 0.59
-    glu          0.42 0.27
-    sex          0.23 0.49
-    age          0.00 0.00
-    ldl          0.00 0.00
-    tch          0.00 0.00
+     mae_increase   std
+bmi         10.50  1.98
+ltg         10.43  2.06
+bp           3.79  1.07
+hdl          2.90  1.01
+tc           0.78  0.59
+glu          0.42  0.27
+sex          0.23  0.49
+age          0.00  0.00
+ldl          0.00  0.00
+tch          0.00  0.00
 ```
 
 BMI and triglycerides carry the pipeline: shuffling either one adds about 10.5 points to the validation MAE. `age`, `ldl`, and `tch` show exactly 0.00 because the Lasso set their coefficients to zero, so shuffling them cannot change a single prediction. Two cautions: correlated features such as `tc` and `ldl` can share or hide importance, and these numbers describe what this fitted pipeline relies on. They do not say that lowering a patient's triglycerides would slow their disease.
@@ -369,7 +380,7 @@ for name, predicted in [('lasso_flag', lasso_flag), ('never_flag', never_flag)]:
         'precision': precision_score(actual_high, predicted, zero_division=0),
         'recall': recall_score(actual_high, predicted),
     })
-print(pd.DataFrame(binary_rows).round(3).to_string(index=False))
+print(pd.DataFrame(binary_rows).set_index('policy').round(3))
 
 print("\nLasso flag, confusion matrix [[TN, FP], [FN, TP]]:")
 print(confusion_matrix(actual_high, lasso_flag))
@@ -379,7 +390,8 @@ print(confusion_matrix(actual_high, lasso_flag))
 
 ```text
 Validation patients above 200: 29 of 89
-    policy  accuracy  precision  recall
+            accuracy  precision  recall
+policy
 lasso_flag     0.753      0.706   0.414
 never_flag     0.674      0.000   0.000
 
@@ -395,7 +407,7 @@ Never flagging anyone is right 67.4% of the time and finds nobody: accuracy most
 Validation chose the Lasso pipeline, so **freeze** it: same steps, same `alpha`, no more changes. Record what is frozen, refit that configuration on the training and validation rows together (more data, no new choices), and score it on the test rows. This is the first and only time the test rows are used.
 
 ```python
-print("Frozen steps:", [name for name, _ in lasso.steps])
+print("Frozen steps:", list(lasso.named_steps))
 print("Frozen alpha:", lasso.named_steps['model'].get_params()['alpha'])
 
 final_model = Pipeline([('scale', StandardScaler()), ('model', Lasso(alpha=2.0))])

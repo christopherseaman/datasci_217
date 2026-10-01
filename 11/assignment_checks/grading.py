@@ -18,10 +18,12 @@ common spellings of booleans and missing values, and the letter case of labels
 never cost points. Rows are matched by their key, not their position. A missing
 or extra row costs only the rows check; a value check judges the rows that are
 present. A downstream value also passes when it follows from the student's own
-upstream file (Q3 from Q2, Q4 from Q3, Q5 and Q6 from Q4, Q7 and Q8 from Q6,
-and metrics from the predictions they summarize), so one mistake is charged
-once, where it was made. Without the predictions, the student model's metrics
-cannot be recomputed, so they need only be numbers with the right row count.
+upstream file (the Q2 audit from the Q2 table, Q3 from Q2, Q4 from Q3, Q5 and
+Q6 from Q4, the y files from the X files, Q7 and Q8 from Q6, and metrics from
+the predictions they summarize), so one mistake is charged once, where it was
+made. Without predictions for the split's rows, the student model's metrics
+cannot be recomputed, so they need only be numbers with the right row count;
+without model_prediction, model_error need only hold numbers.
 """
 
 from __future__ import annotations
@@ -31,14 +33,18 @@ import csv
 from dataclasses import dataclass, field
 from hashlib import sha256
 import io
+import inspect
+import importlib
 import json
 import math
 from pathlib import Path
 import re
+import zlib
 from typing import Callable
 
 import numpy as np
 import pandas as pd
+from sklearn.utils import all_estimators
 
 
 SCHEMA = "datasci217/grading-result/v1"
@@ -157,6 +163,9 @@ OFFSET_SUFFIX = r"(?:[+-]\d{2}:?\d{2}|[zZ]|\s*UTC)$"
 DELIMITERS = (",", ";", "\t")  # a CSV may separate its cells with commas, semicolons, or tabs
 DECIMAL_COMMA = r"^([+-]?\d*),(\d+)$"  # 12,5 for 12.5, as a semicolon-separated spreadsheet file writes it
 NAT = np.iinfo(np.int64).min
+DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+               "november", "december"]
 
 
 class InfrastructureError(RuntimeError):
@@ -178,6 +187,20 @@ def numbers(values: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     blank = (lowered.isin(MISSING_TOKENS) | values.isna()).to_numpy(dtype=bool)
     parsed = pd.to_numeric(values.where(~blank, np.nan), errors="coerce").to_numpy(dtype=float)
     return parsed, np.isnan(parsed) & ~blank
+
+
+def named_numbers(names: list[str], first: int) -> Callable[[pd.Series], tuple[np.ndarray, np.ndarray]]:
+    """A parser for numbers that also reads English names or their first three letters, as day_name() writes them."""
+    lookup = {**{name: first + i for i, name in enumerate(names)}, **{name[:3]: first + i for i, name in enumerate(names)}}
+
+    def parse(values: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+        parsed, invalid = numbers(values)
+        named = values.astype(str).str.strip().str.lower().map(lookup).to_numpy(dtype=float)
+        use = invalid & ~np.isnan(named)
+        parsed = parsed.copy()
+        parsed[use] = named[use]
+        return parsed, invalid & ~use
+    return parse
 
 
 def flags(values: pd.Series) -> tuple[np.ndarray, np.ndarray]:
@@ -362,6 +385,31 @@ def build_clean(raw: pd.DataFrame, stations: list[str]) -> tuple[pd.DataFrame, d
     return clean, totals
 
 
+def build_release_values(raw: pd.DataFrame) -> pd.DataFrame:
+    """The release's sensor values under station and Chicago wall-clock keys, for the keys that occur once."""
+    keys = station_time_key(station_key(raw["station_name"]),
+                            _ns(pd.to_datetime(raw["measurement_timestamp"], errors="coerce")), wall=True)
+    once = (keys.notna() & ~keys.duplicated(keep=False)).to_numpy(dtype=bool)
+    values = raw.loc[once, SENSOR_COLUMNS].apply(pd.to_numeric, errors="coerce")
+    return values.set_axis(pd.Index(keys[once].to_numpy(), dtype="str"))
+
+
+def build_audit_totals(clean: pd.DataFrame, rows: int, release: pd.DataFrame) -> dict:
+    """The audit totals a cleaned table implies: the release rows it lacks, and the values it made missing or 0."""
+    keys = station_time_key(clean["station"], clean["wall"], wall=True)
+    once = (keys.notna() & ~keys.duplicated(keep=False)).to_numpy(dtype=bool)
+    after = clean.loc[once, SENSOR_COLUMNS].set_axis(pd.Index(keys[once].to_numpy(), dtype="str"))
+    shared = after.index.intersection(release.index)
+    totals = {"rows_rejected": RELEASE_ROWS - rows, "set_missing": 0, "set_to_zero": 0}
+    for column in SENSOR_COLUMNS:
+        before = release.loc[shared, column].to_numpy(dtype=float)
+        now = after.loc[shared, column].to_numpy(dtype=float)
+        totals["set_missing"] += int((~np.isnan(before) & np.isnan(now)).sum())
+        if column == "solar_radiation_w_m2":
+            totals["set_to_zero"] += int((~np.isnan(before) & (before != 0) & (now == 0)).sum())
+    return totals
+
+
 def build_missingness(clean: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for station, group in clean.groupby("station", sort=True):
@@ -503,6 +551,7 @@ class Reference:
     correlations: pd.DataFrame
     splits: dict
     split_summary: pd.DataFrame
+    release: pd.DataFrame
 
 
 _REFERENCE: Reference | None = None
@@ -519,7 +568,8 @@ def reference() -> Reference:
         splits = build_splits(features)
         _REFERENCE = Reference(manifest, stations, clean, totals, build_missingness(clean), panel,
                                gap_summary(panel), features, build_monthly(features),
-                               build_correlations(features), splits, summarize_splits(splits))
+                               build_correlations(features), splits, summarize_splits(splits),
+                               build_release_values(raw))
     return _REFERENCE
 
 
@@ -544,6 +594,13 @@ class Table:
         return self.frame[column]
 
 
+def unreadable(name: str) -> str:
+    """Feedback for a file that exists but whose cells could not be parsed into its table."""
+    return (f"output/{name} exists but its rows cannot be read as the table its checkpoint describes, "
+            f"usually because it was not written by to_csv() or its header differs from the checkpoint's "
+            f"first line; save it with to_csv(path, index=False) in {ARTIFACTS[name][1]}.")
+
+
 def read_table(root: Path, name: str, keep_first: bool = False) -> tuple[Table | None, str]:
     """Read output/<name> as text cells; return (table, problem).
 
@@ -558,17 +615,44 @@ def read_table(root: Path, name: str, keep_first: bool = False) -> tuple[Table |
     text = path.read_bytes().decode("utf-8-sig", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
     if not text.strip():
         return None, f"output/{name} is empty; make it, with its header line and rows, in {task}."
+    if "\x00" in text:
+        return None, (f"output/{name} contains embedded NUL bytes, so it cannot be read as CSV text; "
+                      f"save the complete table with to_csv() in {task}.")
     try:
         header = next((line for line in text.split("\n") if line.strip()), "")
         delimiter = max(DELIMITERS, key=lambda mark: len(next(csv.reader([header], delimiter=mark), [])))
         frame = pd.read_csv(io.StringIO(text), sep=delimiter, dtype="str", keep_default_na=False,
                             skip_blank_lines=True)
+        # pandas renames repeated headers; restore them so a good copy cannot hide a conflicting one.
+        frame.columns = [cell.strip().lower() for cell in next(csv.reader([header], delimiter=delimiter))]
     except Exception as error:  # noqa: BLE001 - any parse failure is reported to the student
         return None, f"output/{name} cannot be read as a CSV ({error}); save it with to_csv() in {task}."
     frame.columns = [str(column).strip().lower() for column in frame.columns]
     frame = frame.apply(lambda column: column.astype("str").str.strip())
     if delimiter == ";":
         frame = frame.apply(lambda column: column.str.replace(DECIMAL_COMMA, r"\1.\2", regex=True))
+    if frame.columns.duplicated().any():
+        merged = {}
+        for column in dict.fromkeys(frame.columns):
+            copies = frame.loc[:, frame.columns == column]
+            values = copies.iloc[:, 0].copy()
+            for position in range(1, copies.shape[1]):
+                other = copies.iloc[:, position]
+                equal = values.str.lower().eq(other.str.lower()).to_numpy(copy=True)
+                left, left_invalid = numbers(values)
+                right, right_invalid = numbers(other)
+                equal |= same(left, right, "exact") & ~left_invalid & ~right_invalid
+                if column in {"passed", "source_observed", "model_eligible"}:
+                    left, left_invalid = flags(values)
+                    right, right_invalid = flags(other)
+                    equal |= same(left, right, "exact") & ~left_invalid & ~right_invalid
+                if not equal.all():
+                    left_times, right_times = instants(values), instants(other)
+                    equal |= (left_times != NAT) & (left_times == right_times)
+                values.loc[~equal] = ("conflicting duplicate " + column + ": " + values[~equal]
+                                      + " versus " + other[~equal])
+            merged[column] = values
+        frame = pd.DataFrame(merged)
     if not keep_first and len(frame.columns) > 1:
         first = frame.columns[0]
         if first == "" or first.startswith("unnamed:"):
@@ -626,7 +710,7 @@ class Submission:
 
     def table(self, name: str, keep_first: bool = False) -> tuple[Table | None, str]:
         result = self.cached(f"table:{name}:{keep_first}", lambda: read_table(self.root, name, keep_first))
-        return result if result is not None else (None, f"output/{name} cannot be read; make it again in {ARTIFACTS[name][1]}.")
+        return result if result is not None else (None, unreadable(name))
 
     def clean(self) -> pd.DataFrame | None:
         """The student's Q2 table as station, wall, utc, and sensor values."""
@@ -662,6 +746,7 @@ class Submission:
             for column in SENSOR_COLUMNS:
                 frame[column] = numbers(table.text(column))[0] if table.has(column) else np.nan
             frame["source_observed"] = flags(table.text("source_observed"))[0] if table.has("source_observed") else np.nan
+            frame["hour"] = numbers(table.text("hour"))[0] if table.has("hour") else np.nan
             return frame
         return self.cached("panel", build)
 
@@ -749,10 +834,6 @@ class ColumnResult:
         return self.total > 0 and self.right == self.total
 
 
-def parse_text(cells: pd.Series) -> tuple[np.ndarray, np.ndarray]:
-    return cells.str.lower().to_numpy(dtype=object), np.zeros(len(cells), dtype=bool)
-
-
 def parse_station(cells: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     return station_key(cells).to_numpy(dtype=object), np.zeros(len(cells), dtype=bool)
 
@@ -760,6 +841,28 @@ def parse_station(cells: pd.Series) -> tuple[np.ndarray, np.ndarray]:
 def parse_time(cells: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     values = instants(cells)
     return values, values == NAT
+
+
+parse_weekday = named_numbers(DAY_NAMES, 0)  # Monday 0, as dt.dayofweek numbers the days
+parse_month = named_numbers(MONTH_NAMES, 1)
+
+
+def parse_row_id(cells: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+    """row_id in the handout's form, station_slug_YYYYMMDDHH, whatever its separators or time format.
+
+    A row_id that spells a station name and then the cutoff's UTC date and hour, with any separators, trailing
+    zero minutes and seconds, and a UTC marker, such as Foster Weather Station-2024-07-01T05:00Z, reads as its
+    handout form; anything else is kept as written, lowercased.
+    """
+    written = cells.str.strip().str.lower()
+    compact = written.str.replace(r"[^a-z0-9]", "", regex=True).str.replace(r"(?:utc|z)$", "", regex=True)
+    out = written.copy()
+    for station in slug(station_key(text_series(reference().stations))):
+        letters = station.replace("_", "")
+        rest = compact.str.slice(len(letters))
+        match = compact.str.startswith(letters) & rest.str.fullmatch(r"\d{10}0*").fillna(False)
+        out[match] = station + "_" + rest[match].str.slice(0, 10)
+    return out.to_numpy(dtype=object), np.zeros(len(cells), dtype=bool)
 
 
 LABELS = {"number": number_label, "exact": number_label, "time": time_label, "text": str}
@@ -800,11 +903,12 @@ def compare_column(found: Keyed, column: str, candidates: list[pd.DataFrame | No
 
 
 def rows_check(points: int, found: Keyed, expected: pd.Index, name: str, what: str, task: str,
-               alternatives: list[pd.Index] = ()) -> tuple[int, str]:
+               alternatives: list[pd.Index] = (), hint: Callable[[pd.Index, pd.Index], str] | None = None
+               ) -> tuple[int, str]:
     """Half the points for every expected row present, half for no extra, repeated, or unreadable rows.
 
     A one-point rows check needs both. An alternative row set (from the student's own upstream file)
-    is accepted in place of the reference when it fits better.
+    is accepted in place of the reference when it fits better. `hint(missing, extra)` may name the likely cause.
     """
     present = pd.Index(found.unique.index)
     best = None
@@ -827,7 +931,26 @@ def rows_check(points: int, found: Keyed, expected: pd.Index, name: str, what: s
     if found.unreadable:
         problems.append(f"{found.unreadable:,} rows have a key that cannot be read")
     earned = 0 if points == 1 else points * score // 2
-    return earned, f"output/{name}: {'; '.join(problems)}. Expected one row for each of the {what}; fix {task}."
+    cause = hint(missing, extra) if hint else ""
+    return earned, (f"output/{name}: {'; '.join(problems)}.{f' {cause}.' if cause else ''} "
+                    f"Expected one row for each of the {what}; fix {task}.")
+
+
+def split_rows_hint(split: str) -> Callable[[pd.Index, pd.Index], str]:
+    """Name the other split when a split file's extra rows all belong to it."""
+    def hint(missing: pd.Index, extra: pd.Index) -> str:
+        if not len(extra):
+            return ""
+        for other in SPLITS:
+            if other != split and extra.isin(reference().splits[other].index).all():
+                if len(missing) >= MIN_PRESENT * len(reference().splits[split]):
+                    return (f"Its rows are the {other} split's rows, so the {other} table was saved under this "
+                            f"name; save the {split} rows here")
+                return (f"The extra rows belong to the {other} period by their target time; assign each row to a "
+                        f"split by comparing target_timestamp_utc, not cutoff_timestamp_utc, with the local-midnight "
+                        f"boundary")
+        return ""
+    return hint
 
 
 def proportional(points: int, right: int, total: int) -> int:
@@ -841,10 +964,11 @@ def cell_matches(cell: str, want, kind: str, candidate: pd.DataFrame | None = No
     series = text_series([cell])
     if kind == "time":
         return int(want) in (int(instants(series, "utc")[0]), int(instants(series, "local")[0]))
-    value = numbers(series)[0]
     if kind == "percent":
+        value = numbers(series.str.replace(r"\s*%$", "", regex=True))[0]  # 99.5% reads as 99.5
         return bool(same(value, [want], "number", PERCENT_TOLERANCE)[0]
                     or same(value, [want / 100], "number", PERCENT_TOLERANCE / 100)[0])
+    value = numbers(series)[0]
     if same(value, [want], kind)[0]:
         return True
     if column == "std_air_temperature_c" and candidate is not None and "std_population" in candidate.columns:
@@ -854,10 +978,12 @@ def cell_matches(cell: str, want, kind: str, candidate: pd.DataFrame | None = No
 
 def cells_check(points: int, table: Table, keys: pd.Series, candidates: list[pd.DataFrame | None],
                 columns: dict[str, str], expected_keys, name: str, task: str, advice: str,
-                unverifiable: frozenset = frozenset()) -> tuple[int, str]:
-    """Score every (row, column) cell of a small table against any candidate; extra rows count against it.
+                unverifiable: frozenset = frozenset(), extra_rows_cost: bool = False) -> tuple[int, str]:
+    """Score every (row, column) cell of a small table against any candidate.
 
-    A (key, column) cell in `unverifiable`, which no file can check, needs only hold a finite number.
+    A (key, column) cell in `unverifiable`, which no file can check, needs only hold a finite number. An extra row,
+    such as a total or a row for another column, is ignored unless `extra_rows_cost`, for a table whose extra rows
+    show a mistake: training months after the training period, or a second model scored on the test rows.
     """
     rows = keyed(table.frame, keys).unique
     right, total, problems = 0, 0, []
@@ -882,15 +1008,77 @@ def cells_check(points: int, table: Table, keys: pd.Series, candidates: list[pd.
                 reference_value = candidates[0].loc[key, column] if key in candidates[0].index else None
                 shown = time_label(reference_value) if kind == "time" else number_label(reference_value)
                 problems.append(f"{describe_key(key)} {column}: expected {shown}, found {cell or 'an empty cell'}")
-    extra = len(set(rows.index) - {str(key) for key in expected_keys})
-    total += extra * len(columns)
-    if extra:
-        problems.append(f"{extra} rows are not expected")
+    extra_keys = sorted(set(rows.index) - {str(key) for key in expected_keys}) if extra_rows_cost else []
+    total += len(extra_keys) * len(columns)
+    if extra_keys:
+        problems.insert(0, f"{len(extra_keys)} rows are not expected (first: {describe_key(extra_keys[0])})")
     if not problems:
         return points, ""
     return proportional(points, right, total), (
         f"output/{name}: {right} of {total} values right; {'; '.join(problems[:3])}"
         f"{' ...' if len(problems) > 3 else ''}. {advice}; fix {task}.")
+
+
+def _png_complete(data: bytes) -> bool:
+    """Check PNG chunks and compressed pixels without an optional image library."""
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return False
+    position, chunks, compressed = 8, [], []
+    palette = None
+    while position + 12 <= len(data):
+        size = int.from_bytes(data[position:position + 4], "big")
+        kind = data[position + 4:position + 8]
+        payload = data[position + 8:position + 8 + size]
+        end = position + 12 + size
+        if end > len(data) or zlib.crc32(kind + payload) != int.from_bytes(data[end - 4:end], "big"):
+            return False
+        chunks.append(kind)
+        if kind == b"IHDR":
+            if len(chunks) != 1 or size != 13:
+                return False
+            header = payload
+        if kind == b"PLTE":
+            if palette is not None or compressed or not size or size % 3 or size > 768:
+                return False
+            palette = payload
+        if kind == b"IDAT":
+            compressed.append(payload)
+        position = end
+        if kind == b"IEND":
+            if size != 0 or position != len(data):
+                return False
+            break
+    if not chunks or chunks[0] != b"IHDR" or chunks[-1] != b"IEND" or not compressed:
+        return False
+    width, height = int.from_bytes(header[:4], "big"), int.from_bytes(header[4:8], "big")
+    depth, color, compression, filtering, interlace = header[8:]
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+    allowed_depths = {0: (1, 2, 4, 8, 16), 2: (8, 16), 3: (1, 2, 4, 8), 4: (8, 16), 6: (8, 16)}
+    if not width or not height or depth not in allowed_depths.get(color, ()) or compression or filtering or interlace > 1:
+        return False
+    if color == 3 and (palette is None or len(palette) // 3 > 2 ** depth):
+        return False
+    try:
+        decoder = zlib.decompressobj()
+        pixels = decoder.decompress(b"".join(compressed)) + decoder.flush()
+        if not decoder.eof or decoder.unused_data:
+            return False
+    except zlib.error:
+        return False
+    # Adam7 interlacing stores seven smaller images, each with its own filtered rows.
+    passes = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4),
+              (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2)) if interlace else ((0, 0, 1, 1),)
+    position = 0
+    for x, y, dx, dy in passes:
+        across, down = max(0, (width - x + dx - 1) // dx), max(0, (height - y + dy - 1) // dy)
+        if not across or not down:
+            continue
+        stride = 1 + (across * channels[color] * depth + 7) // 8
+        end = position + down * stride
+        if end > len(pixels) or any(pixels[offset] > 4 for offset in range(position, end, stride)):
+            return False
+        position = end
+    return position == len(pixels)
 
 
 def valid_png(root: Path, name: str) -> tuple[bool, str]:
@@ -899,11 +1087,8 @@ def valid_png(root: Path, name: str) -> tuple[bool, str]:
     if path.is_symlink() or not path.is_file():
         return False, f"output/{name} is missing; save it with plt.savefig() in {task}."
     data = path.read_bytes()
-    if not data.startswith(b"\x89PNG\r\n\x1a\n") or data[12:16] != b"IHDR":
-        return False, f"output/{name} is not a PNG image; save the figure with plt.savefig('output/{name}') in {task}."
-    width, height = int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
-    if width < 50 or height < 50:
-        return False, f"output/{name} is only {width}x{height} pixels; save the whole figure in {task}."
+    if not _png_complete(data):
+        return False, f"output/{name} is not a complete PNG image; save the whole figure with plt.savefig('output/{name}') in {task}."
     return True, ""
 
 
@@ -945,13 +1130,15 @@ def check_release_audit(sub: Submission, points: int) -> tuple[int, str]:
         "column_names": lambda v: name_list(v) == [c.lower() for c in manifest["columns"]],
         "source_timezone": lambda v: v.lower() == manifest["source_timezone"].lower(),
     }
-    rows = keyed(table.frame, label_key(table.text("check_name"))).unique
+    # Check names match whatever their case, spaces, or punctuation (Release SHA-256 is release_sha256), and an
+    # extra row, such as one more check of your own, is ignored.
+    rows = keyed(table.frame, label_key(table.text("check_name")).str.replace("_", "", regex=False)).unique
     right, problems = 0, []
     for check_name, test in tests.items():
-        if check_name not in rows.index:
+        if check_name.replace("_", "") not in rows.index:
             problems.append(f"no {check_name} row")
             continue
-        row = rows.loc[check_name]
+        row = rows.loc[check_name.replace("_", "")]
         bad = [column for column in ("expected", "observed") if column not in row.index or not test(row[column])]
         if "passed" not in row.index or flags(text_series([row["passed"]]))[0][0] != 1.0:
             bad.append("passed")
@@ -959,12 +1146,9 @@ def check_release_audit(sub: Submission, points: int) -> tuple[int, str]:
             problems.append(f"{check_name} has a wrong {' and '.join(bad)}")
         else:
             right += 1
-    extra = len(set(rows.index) - set(tests))
-    if extra:
-        problems.append(f"{extra} rows name no required check")
     if not problems:
         return points, ""
-    return proportional(points, right, len(tests) + extra), (
+    return proportional(points, right, len(tests)), (
         f"output/{name}: {right} of 7 checks right; {join(*problems)}. Each row holds the manifest value in "
         f"expected, the value you measured from the CSV file in observed, and passed True; fix {task}.")
 
@@ -1020,7 +1204,7 @@ def _clean_found(sub: Submission) -> tuple[Keyed | None, str]:
             return None, ("output/q2_cleaned_observations.csv needs its station_name and measurement_timestamp "
                           "columns to match rows; fix Q2 section 2.3.")
         return keyed(table.frame, station_time_key(clean["station"], clean["wall"], wall=True)), ""
-    return sub.cached("found:clean", build) or (None, "output/q2_cleaned_observations.csv cannot be read.")
+    return sub.cached("found:clean", build) or (None, unreadable("q2_cleaned_observations.csv"))
 
 
 def check_clean_rows(sub: Submission, points: int) -> tuple[int, str]:
@@ -1062,6 +1246,15 @@ def clean_columns_check(columns: list[str], rule: str):
     return check
 
 
+def _own_audit_totals(sub: Submission) -> dict | None:
+    """The audit totals the student's own cleaned table implies, so one Q2 cleaning mistake is charged once."""
+    table, _ = sub.table("q2_cleaned_observations.csv")
+    clean = sub.clean()
+    if table is None or clean is None:
+        return None
+    return build_audit_totals(clean, len(table.frame), reference().release)
+
+
 def check_cleaning_audit(sub: Submission, points: int) -> tuple[int, str]:
     name = "q2_cleaning_audit.csv"
     task = ARTIFACTS[name][1]
@@ -1078,14 +1271,20 @@ def check_cleaning_audit(sub: Submission, points: int) -> tuple[int, str]:
          (labels.str.contains("missing") | labels.str.contains("nan")).to_numpy(dtype=bool)],
         ["rows_rejected", "set_to_zero", "set_missing"], default="")
     counts, invalid = numbers(table.text("affected_values"))
+    own = sub.cached("own:audit", lambda: _own_audit_totals(sub))
     right, problems = 0, []
     for result, wanted in reference().totals.items():
         chosen = (category == result) & ~invalid & ~np.isnan(counts)
-        if chosen.any() and counts[chosen].sum() == wanted:
+        options = [wanted] + ([own[result]] if own else [])
+        if chosen.any() and counts[chosen].sum() in options:
             right += 1
         else:
             found = f"{counts[chosen].sum():g}" if chosen.any() else "no such rows"
-            problems.append(f"the {result} rows add up to {found}, expected {wanted:,}")
+            problem = f"the {result} rows add up to {found}, expected {wanted:,}"
+            if result == "set_missing" and chosen.any() and counts[chosen].sum() > max(options):
+                problem += (" (count only values that were present and outside the valid range: a value already "
+                            "missing in the release is not changed by a rule)")
+            problems.append(problem)
     unknown = int((category == "").sum())
     if unknown:
         problems.append(f"{unknown} rows have a result other than rows_rejected, set_missing, or set_to_zero")
@@ -1138,7 +1337,7 @@ def _panel_found(sub: Submission) -> tuple[Keyed | None, str]:
         keys = station_time_key(station_key(table.text("station_name")),
                                 instants(table.text("measurement_timestamp_utc")))
         return keyed(table.frame, keys), ""
-    return sub.cached("found:panel", build) or (None, "output/q3_hourly_panel.csv cannot be read.")
+    return sub.cached("found:panel", build) or (None, unreadable("q3_hourly_panel.csv"))
 
 
 def _panel_candidates(sub: Submission) -> list[pd.DataFrame | None]:
@@ -1152,8 +1351,17 @@ def check_panel_rows(sub: Submission, points: int) -> tuple[int, str]:
     found, problem = _panel_found(sub)
     if found is None:
         return 0, problem
-    return rows_check(points, found, _panel_candidates(sub)[0].index, "q3_hourly_panel.csv",
-                      "station and UTC hour pairs (both stations at every elapsed hour of the window)", "Q3 section 3.2")
+    expected = _panel_candidates(sub)[0]
+
+    def hint(missing: pd.Index, extra: pd.Index) -> str:
+        if len(missing) and (expected.loc[missing, "source_observed"] == 0).all():
+            return ("Every missing row is an hour without a source row, which an inner join or dropna() removes; "
+                    "left-join the cleaned rows onto the full station-hour grid and keep those hours with missing "
+                    "sensor values")
+        return ""
+    return rows_check(points, found, expected.index, "q3_hourly_panel.csv",
+                      "station and UTC hour pairs (both stations at every elapsed hour of the window)", "Q3 section 3.2",
+                      hint=hint)
 
 
 def check_panel_sensors(sub: Submission, points: int) -> tuple[int, str]:
@@ -1192,7 +1400,15 @@ def check_calendar(sub: Submission, points: int) -> tuple[int, str]:
     found, problem = _panel_found(sub)
     if found is None:
         return 0, problem
-    results = [compare_column(found, column, _panel_candidates(sub)[:1], "exact", numbers, "q3_hourly_panel.csv")
+    expected = _panel_candidates(sub)[0][CALENDAR_COLUMNS]
+    weekday = expected["day_of_week"]
+    # Another weekday numbering used throughout shows the same skill: Monday 1 to Sunday 7 (isoweekday) or
+    # Sunday 0 to Saturday 6 (strftime("%w")). Names, as day_name() and month_name() write them, also read.
+    candidates = {"hour": [expected], "month": [expected],
+                  "day_of_week": [expected, expected.assign(day_of_week=weekday + 1),
+                                  expected.assign(day_of_week=(weekday + 1) % 7)]}
+    parsers = {"hour": numbers, "day_of_week": parse_weekday, "month": parse_month}
+    results = [compare_column(found, column, candidates[column], "exact", parsers[column], "q3_hourly_panel.csv")
                for column in CALENDAR_COLUMNS]
     right = sum(result.ok for result in results)
     if right == len(results):
@@ -1233,7 +1449,7 @@ def _features_found(sub: Submission) -> tuple[Keyed | None, str]:
             return None, f"output/{name} is missing column(s) {', '.join(missing)}; fix Q4 section 4.2."
         keys = station_time_key(station_key(table.text("station_name")), instants(table.text("cutoff_timestamp_utc")))
         return keyed(table.frame, keys), ""
-    return sub.cached("found:features", build) or (None, "output/q4_features.csv cannot be read.")
+    return sub.cached("found:features", build) or (None, unreadable("q4_features.csv"))
 
 
 def _feature_candidates(sub: Submission) -> list[pd.DataFrame | None]:
@@ -1251,8 +1467,43 @@ def check_feature_rows(sub: Submission, points: int) -> tuple[int, str]:
     found, problem = _features_found(sub)
     if found is None:
         return 0, problem
-    return rows_check(points, found, _feature_candidates(sub)[0].index, "q4_features.csv",
-                      "station and cutoff-hour pairs (every panel row, eligible or not)", "Q4 section 4.2")
+    candidates = _feature_candidates(sub)
+    return rows_check(points, found, candidates[0].index, "q4_features.csv",
+                      "station and cutoff-hour pairs (every panel row, eligible or not)", "Q4 section 4.2",
+                      [candidate.index for candidate in candidates[1:] if candidate is not None])
+
+
+def _feature_derived(sub: Submission) -> list[pd.DataFrame]:
+    """Columns that follow from other columns of the student's own q4_features.csv, or from their Q3 hour.
+
+    The 1-hour change from their own cutoff temperature and 1-hour lag, model_eligible from their own cutoff
+    temperature and target, and the target calendar features from their own target time, or from their Q3 panel's
+    local hour at the target hour. A wrong input column is then charged once, in its own check.
+    """
+    def build():
+        features = sub.features()
+        if features is None:
+            return []
+        own = _indexed(features, "cutoff")
+        derived = pd.DataFrame(index=own.index)
+        derived[CHANGE_FEATURE] = own["air_temperature_c_t"] - own["air_temperature_lag_1h_c"]
+        derived["model_eligible"] = (own["air_temperature_c_t"].notna() & own[TARGET].notna()).astype(float)
+        target_local = as_utc(own["target_ts"]).dt.tz_convert(LOCAL_TZ)
+        hour = target_local.dt.hour.to_numpy(dtype=float)
+        day = target_local.dt.dayofyear.to_numpy(dtype=float) - 1
+        derived["target_hour_sin"], derived["target_hour_cos"] = np.sin(2 * np.pi * hour / 24), np.cos(2 * np.pi * hour / 24)
+        derived["target_day_of_year_sin"] = np.sin(2 * np.pi * day / 366)
+        derived["target_day_of_year_cos"] = np.cos(2 * np.pi * day / 366)
+        frames = [derived]
+        panel = sub.panel()
+        if panel is not None and panel["hour"].notna().any():
+            hours = _indexed(panel, "utc")["hour"]
+            target_keys = station_time_key(own["station"], own["target_ts"])
+            panel_hour = hours.reindex(pd.Index(target_keys.to_numpy(), dtype="str")).to_numpy(dtype=float)
+            frames.append(pd.DataFrame({"target_hour_sin": np.sin(2 * np.pi * panel_hour / 24),
+                                        "target_hour_cos": np.cos(2 * np.pi * panel_hour / 24)}, index=own.index))
+        return frames
+    return sub.cached("derived:features", build) or []
 
 
 def feature_check(columns: list[str], rule: str, own: bool | list[str] = True, kind: str = "number", parse=numbers,
@@ -1260,7 +1511,8 @@ def feature_check(columns: list[str], rule: str, own: bool | list[str] = True, k
     """Score q4_features.csv columns in proportion to those right.
 
     `own` names the columns that may instead follow from the student's own Q3 panel: all of them (True), none
-    (False), or the ones listed.
+    (False), or the ones listed. A column that other columns of the same file determine (see `_feature_derived`)
+    may also follow from them.
     """
     own_columns = set(columns) if own is True else set(own or ())
 
@@ -1269,8 +1521,9 @@ def feature_check(columns: list[str], rule: str, own: bool | list[str] = True, k
         if found is None:
             return 0, problem
         candidates = _feature_candidates(sub)
-        results = [compare_column(found, column, candidates if column in own_columns else candidates[:1], kind, parse,
-                                  "q4_features.csv", label=label)
+        derived = _feature_derived(sub)
+        results = [compare_column(found, column, (candidates if column in own_columns else candidates[:1]) + derived,
+                                  kind, parse, "q4_features.csv", label=label)
                    for column in columns]
         right = sum(result.ok for result in results)
         if right == len(results):
@@ -1331,12 +1584,13 @@ def check_monthly(sub: Submission, points: int) -> tuple[int, str]:
         return 0, f"output/{name} is missing column(s) {', '.join(missing)} ({task})."
     own = sub.cached("own:monthly", lambda: build_monthly(sub.features()) if sub.features() is not None else None)
     year = pd.Series(numbers(table.text("year"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
-    month = pd.Series(numbers(table.text("month"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
+    month = pd.Series(parse_month(table.text("month"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
     keys = station_key(table.text("station_name")) + "|" + year + "-" + month
     columns = {"n_observed": "exact", **{column: "number" for column in ARTIFACTS[name][0][4:]}}
+    # A month after the training period shows validation or test rows in the summary, so extra rows cost here.
     return cells_check(points, table, keys, [reference().monthly, own], columns, reference().monthly.index, name,
                        task, "Summarize the target temperatures of the eligible training rows by station and by the "
-                             "target's local year and month")
+                             "target's local year and month", extra_rows_cost=True)
 
 
 def check_correlations(sub: Submission, points: int) -> tuple[int, str]:
@@ -1385,7 +1639,7 @@ def _split_found(sub: Submission, name: str) -> tuple[Keyed | None, str]:
         if not table.has("row_id"):
             return None, f"output/{name} has no row_id column; fix {ARTIFACTS[name][1]}."
         return keyed(table.frame, table.text("row_id").str.lower()), ""
-    return sub.cached(f"found:{name}", build) or (None, f"output/{name} cannot be read.")
+    return sub.cached(f"found:{name}", build) or (None, unreadable(name))
 
 
 def check_x_rows(sub: Submission, points: int) -> tuple[int, str]:
@@ -1399,7 +1653,8 @@ def check_x_rows(sub: Submission, points: int) -> tuple[int, str]:
         candidates = _split_candidates(sub, split)
         score, detail = rows_check(1, found, candidates[0].index, name,
                                    f"eligible Q4 rows whose target time falls in the {split} period",
-                                   "Q6 section 6.2", [candidate.index for candidate in candidates[1:]])
+                                   "Q6 section 6.2", [candidate.index for candidate in candidates[1:]],
+                                   split_rows_hint(split))
         earned += score
         details.append(detail)
     return earned * points // len(SPLITS), join(*details)
@@ -1440,9 +1695,14 @@ def check_y(sub: Submission, points: int) -> tuple[int, str]:
             details.append(problem)
             continue
         candidates = _split_candidates(sub, split)
+        # Each y file matches its own X file's rows, so a split mistake is charged once, in the X rows check.
+        own_x, _ = _split_found(sub, f"q6_X_{split}.csv")
+        alternatives = [candidate.index for candidate in candidates[1:]]
+        if own_x is not None:
+            alternatives.append(pd.Index(own_x.unique.index))
         score, detail = rows_check(1, found, candidates[0].index, name,
                                    f"eligible Q4 rows whose target time falls in the {split} period",
-                                   "Q6 section 6.3", [candidate.index for candidate in candidates[1:]])
+                                   "Q6 section 6.3", alternatives, split_rows_hint(split))
         right += score
         details.append(detail)
         result = compare_column(found, TARGET, candidates, "number", numbers, name)
@@ -1493,10 +1753,21 @@ def check_model_spec(sub: Submission, points: int) -> tuple[int, str]:
     row = frame.iloc[0]
     right, problems = 0, []
     module, estimator = str(row.get("estimator_module", "")), str(row.get("estimator_class", ""))
-    if len(frame) == 1 and re.fullmatch(r"sklearn(\.\w+)+", module) and re.fullmatch(r"[A-Za-z_]\w*", estimator):
+    # Resolve only installed scikit-learn regressors, never an import path from the submission.
+    registered = {name.casefold(): cls for name, cls in all_estimators(type_filter="regressor")}
+    cls = registered.get(estimator.casefold())
+    known = False
+    if cls is not None:
+        parts = cls.__module__.split(".")
+        aliases = {".".join(parts[:length]).casefold(): ".".join(parts[:length])
+                   for length in range(2, len(parts) + 1)}
+        if module.casefold() in aliases:
+            trusted_module = importlib.import_module(aliases[module.casefold()])
+            known = getattr(trusted_module, cls.__name__, None) is cls
+    if len(frame) == 1 and known:
         right += 1
     else:
-        problems.append(f"expected one row naming a scikit-learn module (such as sklearn.linear_model) and a class, "
+        problems.append(f"expected one row naming an installed scikit-learn regressor and its module (such as sklearn.linear_model), "
                         f"found {len(frame)} row(s) with module {module or 'blank'!r} and class {estimator or 'blank'!r}")
     text = str(row.get("parameters_json", ""))
     try:
@@ -1506,9 +1777,15 @@ def check_model_spec(sub: Submission, points: int) -> tuple[int, str]:
             parameters = ast.literal_eval(text)
         except (ValueError, SyntaxError):
             parameters = None
-    if isinstance(parameters, dict) and parameters.get("random_state", 217) in (217, None) \
-            and parameters.get("n_jobs", 1) in (1, None):
+    supported = set(inspect.signature(cls).parameters) if known else set()
+    wrong = [f"{key} {parameters.get(key, 'missing')}" for key, wanted in (("random_state", 217), ("n_jobs", 1))
+             if isinstance(parameters, dict) and (key in parameters or key in supported)
+             and not is_number(str(parameters.get(key, "")), wanted)]
+    if isinstance(parameters, dict) and not wrong:
         right += 1
+    elif wrong:
+        problems.append(f"parameters_json has {' and '.join(wrong)}; build the regressor with random_state=217 and "
+                        f"n_jobs=1 where it has them, then save json.dumps(model.get_params(deep=False))")
     else:
         problems.append("parameters_json must be a JSON object of get_params(deep=False), with random_state 217 and "
                         "n_jobs 1 when the estimator has them")
@@ -1554,7 +1831,7 @@ def prediction_check(name: str, split: str, part: str):
         candidates = _prediction_candidates(sub, split)
         if part == "rows":
             return rows_check(points, found, candidates[0].index, name, f"rows of q6_X_{split}.csv", task,
-                              [candidate.index for candidate in candidates[1:]])
+                              [candidate.index for candidate in candidates[1:]], split_rows_hint(split))
         if part == "copied":
             results = [compare_column(found, "station_name", candidates, "text", parse_station, name),
                        compare_column(found, "target_timestamp_utc", candidates, "time", parse_time, name),
@@ -1582,26 +1859,40 @@ def prediction_check(name: str, split: str, part: str):
                 return 0, (f"output/{name}: {bad:,} rows have no finite model_prediction; predict every row with "
                            f"your fitted pipeline; fix {task}.")
             return points, ""
-        # model_error and model_absolute_error follow from the file's own columns.
+        # model_error and model_absolute_error follow from the file's own columns. Without model_prediction, which
+        # its own check charges, model_error cannot be recomputed and need only hold numbers, and
+        # model_absolute_error is judged against model_error.
         table, _ = sub.table(name)
-        missing = table.missing(["actual", "model_prediction", part])
-        if missing:
-            return 0, f"output/{name} is missing column(s) {', '.join(missing)}; fix {task}."
+        if table.missing([part]):
+            return 0, f"output/{name} is missing column {part}; fix {task}."
         if not len(table.frame):
             return 0, f"output/{name} has no rows; fix {task}."
-        error = numbers(table.text("model_prediction"))[0] - numbers(table.text("actual"))[0]
         value, invalid = numbers(table.text(part))
-        options = [error] if part == "model_error" else [np.abs(error)]
+        options = []
+        if not table.missing(["actual", "model_prediction"]):
+            error = numbers(table.text("model_prediction"))[0] - numbers(table.text("actual"))[0]
+            options.append(error if part == "model_error" else np.abs(error))
+        elif part == "model_error":
+            options.append(np.where(np.isfinite(value), value, np.nan))  # unverifiable: any finite number
         if part == "model_absolute_error" and table.has("model_error"):
             options.append(np.abs(numbers(table.text("model_error"))[0]))
+        if not options:
+            missing = table.missing(["actual", "model_prediction", "model_error"])
+            return 0, f"output/{name} is missing column(s) {', '.join(missing)}; fix {task}."
         ok = np.zeros(len(value), dtype=bool)
         for option in options:
             ok |= same(value, option) & ~invalid & ~np.isnan(option)
         if ok.all():
             return points, ""
+        if part == "model_error" and table.missing(["actual", "model_prediction"]):
+            return 0, (f"output/{name}: {int((~ok).sum()):,} of {len(value):,} rows have no finite model_error; "
+                       f"model_error is model_prediction minus actual; fix {task}.")
         meaning = "model_prediction minus actual" if part == "model_error" else "the absolute value of model_error"
-        return 0, (f"output/{name}: {part} differs from {meaning} in {int((~ok).sum()):,} of {len(value):,} rows; "
-                   f"fix {task}.")
+        cause = ""
+        if part == "model_error" and (same(value, -options[0]) | np.isnan(options[0])).all():
+            cause = " (the sign is flipped: subtract actual from model_prediction, not the reverse)"
+        return 0, (f"output/{name}: {part} differs from {meaning} in {int((~ok).sum()):,} of {len(value):,} rows"
+                   f"{cause}; fix {task}.")
     return check
 
 
@@ -1628,6 +1919,15 @@ def _metric_candidates(sub: Submission, predictions_name: str, split: str, by_st
     return candidates
 
 
+def _predictions_cover(sub: Submission, predictions_name: str, split: str) -> bool:
+    """Whether a predictions file holds at least half of the split's rows, from the reference or the student's X."""
+    found, _ = _split_found(sub, predictions_name)
+    if found is None:
+        return False
+    return any(len(candidate) and len(candidate.index.intersection(found.unique.index)) >= MIN_PRESENT * len(candidate)
+               for candidate in _prediction_candidates(sub, split))
+
+
 def metrics_check(name: str, predictions_name: str, split: str, by_station: bool):
     task = ARTIFACTS[name][1]
 
@@ -1644,18 +1944,26 @@ def metrics_check(name: str, predictions_name: str, split: str, by_station: bool
         stations = sorted(set(reference().splits[split]["station"]))
         expected = [f"{model}|{station}" for model in MODELS for station in stations] if by_station else list(MODELS)
         candidates = _metric_candidates(sub, predictions_name, split, by_station)
-        unverifiable = frozenset()
-        if sub.predictions(predictions_name) is None:
-            # Without its predictions the student model's errors cannot be recomputed. That file's own checks charge
-            # its absence, so here the model's rows need only hold numbers, with the same n as the baseline's.
+        # Invalid prediction values are charged in the predictions artifact. Metrics that
+        # cannot be recomputed from them still earn credit for a numeric result.
+        unverifiable = frozenset((key, metric) for key in expected for metric in METRICS
+                                 if sub.predictions(predictions_name) is not None and candidates
+                                 and key in candidates[0].index
+                                 and not np.isfinite(candidates[0].loc[key, metric]))
+        if sub.predictions(predictions_name) is None or not _predictions_cover(sub, predictions_name, split):
+            # Without predictions for this split's rows the student model's errors cannot be recomputed. The
+            # predictions file's own checks charge that, so here the model's rows need only hold numbers, with the
+            # same n as the baseline's.
             reference_rows = candidates[-1]
             for key in list(reference_rows.index):
                 reference_rows.loc[key.replace(MODELS[0], MODELS[1], 1), "n"] = reference_rows.loc[key, "n"]
             unverifiable = frozenset((key, metric) for key in expected if key.startswith(MODELS[1])
                                      for metric in METRICS)
+        # Validation may score several candidates, but a second model scored on the test rows costs.
         return cells_check(points, table, keys, candidates,
                            {"mae": "number", "rmse": "number", "r2": "number", "n": "exact"}, expected, name, task,
-                           f"Compute MAE, RMSE, R2, and n from the rows of {predictions_name}", unverifiable)
+                           f"Compute MAE, RMSE, R2, and n from the rows of {predictions_name}", unverifiable,
+                           extra_rows_cost=split == "test")
     return check
 
 
@@ -1767,7 +2075,7 @@ CHECKS = [
     ("Q4 q4_features.csv: rows", 1, check_feature_rows),
     ("Q4 q4_features.csv: row_id", 1, feature_check(
         ["row_id"], "row_id is the lowercase station name with underscores, then _ and the cutoff UTC hour as "
-                    "YYYYMMDDHH.", own=False, kind="text", parse=parse_text)),
+                    "YYYYMMDDHH.", own=False, kind="text", parse=parse_row_id)),
     ("Q4 q4_features.csv: target_timestamp_utc", 1, feature_check(
         ["target_timestamp_utc"], "The target time is the cutoff plus one elapsed hour.", own=False, kind="time",
         parse=parse_time)),

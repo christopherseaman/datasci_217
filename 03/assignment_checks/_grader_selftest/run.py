@@ -883,6 +883,19 @@ def run() -> None:
         assert failing(result) == {"answer: highest_patient"}, failing(result)
         assert "is a position" not in detail(result, "answer: highest_patient")
 
+        # Means are checked against the student's chosen earlier patient/hour.
+        for name, label_key, label_value, mean_key, mean_value in (
+            ("own-patient-mean", "highest_patient", patient_ids[0], "highest_patient_mean", readings[0].mean()),
+            ("own-hour-mean", "peak_hour_column", hour_columns[0], "peak_hour_mean", readings[:, 0].mean()),
+        ):
+            own_mean = workspace / name
+            build(own_mean, replaced(summary, **{label_key: label_value, mean_key: str(mean_value)}), counts, records)
+            result = graded(own_mean)
+            assert failing(result) == {f"answer: {label_key}"}, (name, failing(result))
+            build(own_mean, replaced(summary, **{label_key: label_value, mean_key: "999"}), counts, records)
+            result = graded(own_mean)
+            assert failing(result) == {f"answer: {label_key}", f"answer: {mean_key}"}, failing(result)
+
         # Stage 2 counts of readings rather than patients say that the question counts patients.
         monitors = np.array([line.split(",")[1] for line in data_lines[1:]])
         on_others = monitors != answers["high_monitor"]

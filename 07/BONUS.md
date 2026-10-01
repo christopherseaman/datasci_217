@@ -314,8 +314,6 @@ plt.colorbar()
 
 # Interactive Visualizations
 
-_The Python visualization ecosystem is constantly evolving. While matplotlib and seaborn are the workhorses, modern libraries offer exciting new approaches._
-
 This survey names alternatives to the lecture's tools; the same visible-context rules still apply. Extended Altair, Bokeh, and Plotly examples follow it.
 
 ## Ecosystem at a Glance
@@ -396,7 +394,7 @@ x = rng.standard_normal(100)
 y = rng.standard_normal(100)
 
 # Add scatter plot
-p.circle(x, y, size=10, alpha=0.6, color='blue')
+p.scatter(x, y, marker='circle', size=10, alpha=0.6, color='blue')
 
 # Show plot
 show(p)
@@ -497,20 +495,22 @@ while time.time() - start_time < 10:
 
 ## Colorblind-Friendly Palettes
 
+Use a qualitative palette for unordered groups and a sequential palette for ordered magnitudes, as in the lecture. seaborn's named `colorblind` palette is qualitative; `viridis` and `plasma` are sequential, so using them for groups can imply an order those groups do not have. Keep marker shapes or direct labels as redundant cues.
+
 ### Reference Card: Colorblind-Friendly Palettes
 
 ```python
 import seaborn as sns
 
-# Colorblind-friendly palettes
-colorblind_palettes = {
-    'colorblind': ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'],
-    'viridis': ['#440154', '#31688e', '#35b779', '#fde725'],
-    'plasma': ['#0d0887', '#7e03a8', '#cc4778', '#f0f921']
+# Use the library's named palettes rather than relabeling a custom list.
+palettes = {
+    'colorblind': sns.color_palette('colorblind', n_colors=4),
+    'viridis': sns.color_palette('viridis', n_colors=4),
+    'plasma': sns.color_palette('plasma', n_colors=4),
 }
 
-# Use in plots
-sns.set_palette(colorblind_palettes['viridis'])
+# Set a qualitative palette for category plots.
+sns.set_palette(palettes['colorblind'])
 ```
 
 ## Color Psychology in Data Visualization

@@ -14,15 +14,14 @@ _This material builds on the lecture essentials in [README.md](README.md). Revis
 
 # Running Notebooks Non-Interactively
 
-Notebooks are interactive by default, but you can also run one from the command line, as a reproducibility check or as one step in a batch workflow. The `jupyter nbconvert` command comes with JupyterLab; in an environment without it, install it once with `uv pip install nbconvert`.
+Notebooks are interactive by default, but you can also run one from the command line, as a reproducibility check or as one step in a batch workflow. The `jupyter nbconvert` command comes with JupyterLab; in a project without it, add it once with `uv add nbconvert`. This command executes every cell in order and writes a separate output notebook:
 
 ```bash
-# Execute every cell in order and write a separate output notebook.
 jupyter nbconvert --execute --to notebook \
     --output executed_analysis.ipynb analysis.ipynb
 ```
 
-By default, a cell error makes the command fail with a nonzero exit status. In a script, `set -euo pipefail` stops at that failure instead of running the next notebook:
+By default, a cell error makes the command fail with a nonzero exit status. In a script, `set -euo pipefail` stops at that failure instead of running the next notebook. Save this as `run_notebooks.sh` and run it with `bash run_notebooks.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -253,7 +252,7 @@ The lecture covers core CSV reading and writing. Use this section when you need 
 
 ## Excel Integration
 
-Ideal for business spreadsheets or multi-sheet workbooks. Excel files need the `openpyxl` package in the kernel's environment; without it pandas raises `ModuleNotFoundError: No module named 'openpyxl'`.
+Ideal for business spreadsheets or multi-sheet workbooks. Excel files need the `openpyxl` package in the kernel's environment (`uv add openpyxl` in a local project); without it pandas raises `ModuleNotFoundError: No module named 'openpyxl'`.
 
 ```python
 # Read entire workbook

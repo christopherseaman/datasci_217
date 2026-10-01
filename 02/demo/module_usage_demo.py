@@ -39,7 +39,7 @@ def main():
     """Build, save, and verify a small vitals report."""
     data_path = Path("clinic_vitals.csv")
     if not data_path.exists():
-        print(f"Cannot find {data_path}: run this script from the 02/demo folder.")
+        print(f"Cannot find {data_path}: run this script from the folder containing clinic_vitals.csv.")
         return
 
     encounters = read_encounters(data_path)

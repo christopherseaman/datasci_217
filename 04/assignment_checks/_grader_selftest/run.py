@@ -172,6 +172,24 @@ def run() -> None:
         assert "FRG-102;3,8;6,2" in (separated / FRIDGE_FILE).read_text(encoding="utf-8")
         assert lost(separated) == set(), {name: detail(separated, name) for name in lost(separated)}
 
+        duplicate = variant(workspace, "duplicate-header", correct)
+        edit(duplicate, FRIDGE_FILE, lambda text: "\n".join(
+            line + "," + line.split(",")[1] for line in text.splitlines()))
+        assert lost(duplicate) == set(), lost(duplicate)
+        edit(duplicate, FRIDGE_FILE, lambda text: text.replace("FRG-102,3.8,", "FRG-102,99,"))
+        assert lost(duplicate) == {"fridge block: am_temp_c values"}, lost(duplicate)
+
+        duplicate_last = variant(workspace, "duplicate-header-wrong-later", correct)
+        edit(duplicate_last, FRIDGE_FILE, lambda text: "\n".join(
+            line + "," + (line.split(",")[1] if number == 0 else "99")
+            for number, line in enumerate(text.splitlines())))
+        assert lost(duplicate_last) == {"fridge block: am_temp_c values"}, lost(duplicate_last)
+        for label, extra in (("unknown-fridge-row", "WRONG,99,99"),
+                             ("repeated-fridge-row", "FRG-102,3.8,6.2")):
+            root = variant(workspace, label, correct)
+            edit(root, FRIDGE_FILE, lambda text: text.rstrip() + "\n" + extra + "\n")
+            assert lost(root) == {"fridge block: rows FRG-102 and FRG-103"}, lost(root)
+
         # Each mistake costs only the check it gets wrong.
         mistakes = []
 
@@ -202,7 +220,7 @@ def run() -> None:
         mistake("fridge-slice-long", lambda root: fridge.loc["FRG-101":"FRG-103"].to_csv(root / FRIDGE_FILE),
                 {"fridge block: rows FRG-102 and FRG-103"}, "also holds FRG-101")
         mistake("fridge-am-only", lambda root: fridge.loc["FRG-102":"FRG-103", ["am_temp_c"]].to_csv(root / FRIDGE_FILE),
-                {"fridge block: pm_temp_c column", "fridge block: pm_temp_c values"}, "no pm_temp_c column")
+                {"fridge block: pm_temp_c column"}, "no pm_temp_c column")
 
         # A reading column saved under another name costs only its name check; its values are still graded.
         def renamed_columns(*names: str):
@@ -221,6 +239,8 @@ def run() -> None:
                 lambda root: edit(root, FRIDGE_FILE, lambda text: text.replace("FRG-103,5.0,", "FRG-103,5.5,")),
                 {"fridge block: am_temp_c values"}, "FRG-103 has 5.5")
         mistake("fridge-missing", lambda root: (root / FRIDGE_FILE).unlink(), FRIDGE_CHECKS)
+        mistake("fridge-nul-bytes", lambda root: (root / FRIDGE_FILE).write_bytes(b"\xff\xfe\x00"),
+                FRIDGE_CHECKS, "embedded NUL")
         mistake("fridge-semicolons-one-wrong-value",
                 lambda root: pd.read_csv(correct / FRIDGE_FILE).replace({5.0: 5.5}).to_csv(
                     root / FRIDGE_FILE, sep=";", decimal=",", index=False),
@@ -262,6 +282,54 @@ def run() -> None:
         mistake("fridge-saved-at-root", saved_at_root, FRIDGE_CHECKS,
                 "the assignment folder itself has fridge_block.csv; in Task 2.2, save with "
                 "label_block.to_csv(FRIDGE_OUTPUT_PATH)")
+
+        # Task 2.2's save line copied into Task 3.2 writes the supply lines over the fridge block.
+        def supplies_over_fridge(root: Path) -> None:
+            (root / SUPPLIES_FILE).replace(root / FRIDGE_FILE)
+
+        mistake("supplies-saved-over-fridge", supplies_over_fridge, FRIDGE_CHECKS | SUPPLY_CHECKS,
+                "holds the supply order lines")
+        for name in FRIDGE_CHECKS | SUPPLY_CHECKS:
+            assert "correct the path in the call that differs" in detail(workspace / "supplies-saved-over-fridge", name)
+
+        # Another labeled object saved in Task 2.2: its labels are not fridge IDs, and it has no readings.
+        def other_series(root: Path) -> None:
+            latest_by_area = pd.Series([4.5, 5.0, 3.5, 6.0], name="temp_c",
+                                       index=["pharmacy", "pediatrics", "family_medicine", "urgent_care"])
+            latest_by_area.to_csv(root / FRIDGE_FILE)
+
+        mistake("fridge-another-object", other_series, FRIDGE_CHECKS, "holds another table")
+        for name in FRIDGE_CHECKS:
+            assert "save the fridge block with label_block.to_csv(FRIDGE_OUTPUT_PATH)" in detail(
+                workspace / "fridge-another-object", name), name
+
+        # Row labels that are not fridge IDs cost only the fridge_id check: the readings still name the rows.
+        def wrong_labels(root: Path) -> None:
+            block = fridge.loc["FRG-102":"FRG-103"].copy()
+            block.index = ["F2", "F3"]
+            block.to_csv(root / FRIDGE_FILE)
+
+        mistake("fridge-index-wrong-labels", wrong_labels, {"fridge block: fridge_id index column"},
+                "its row labels (F2 and F3) are not fridge IDs")
+
+        # A column saved with no header is named in the list of columns, never left blank.
+        def unnamed_am_only(root: Path) -> None:
+            block = fridge.loc["FRG-102":"FRG-103", ["am_temp_c"]].copy()
+            block.index.name = None
+            block.to_csv(root / FRIDGE_FILE)
+
+        mistake("fridge-index-unnamed-am-only", unnamed_am_only,
+                {"fridge block: fridge_id index column", "fridge block: pm_temp_c column"})
+        assert "(its columns are a column with no header and am_temp_c)" in detail(
+            workspace / "fridge-index-unnamed-am-only", "fridge block: pm_temp_c column")
+
+        # A header or unknown labels alone do not establish omitted reading values.
+        for label, text in (("header-only", "fridge_id\n"), ("unknown-id", "fridge_id\nwrong\n")):
+            mistake("fridge-missing-readings-" + label,
+                    lambda root, text=text: (root / FRIDGE_FILE).write_text(text),
+                    {"fridge block: rows FRG-102 and FRG-103", "fridge block: am_temp_c column",
+                     "fridge block: pm_temp_c column", "fridge block: am_temp_c values",
+                     "fridge block: pm_temp_c values"})
 
         source = pd.read_csv(HANDOUT / "data" / "supply_order.csv")
 
@@ -317,9 +385,7 @@ def run() -> None:
         mistake("supplies-no-total",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).drop(
                     columns=["line_total_usd"])),
-                {"selected supplies: line_total_usd column", "selected supplies: line totals"}, None)
-        assert 'add selected_supplies["line_total_usd"]' in detail(workspace / "supplies-no-total",
-                                                                  "selected supplies: line totals")
+                {"selected supplies: line_total_usd column"}, None)
         mistake("supplies-header-only",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] > 10])),
                 line_checks | {"selected supplies: line totals", "selected supplies: highest line total first",
@@ -364,13 +430,16 @@ def run() -> None:
         assert report.rstrip().endswith("Left to fix (2 points): selected supplies: quantity column."), report
         report = printed(workspace / "supplies-no-total")
         assert report.rstrip().endswith(
-            "Left to fix (11 points): selected supplies: line_total_usd column and line totals."), report
+            "Left to fix (2 points): selected supplies: line_total_usd column."), report
         report = printed(workspace / "fridge-am-renamed")
         assert report.rstrip().endswith("Left to fix (2 points): fridge block: am_temp_c column."), report
         report = printed(workspace / "supplies-header-only")
         assert report.count("has a header but no order lines") == 1, report
         report = printed(workspace / "supplies-not-reassigned")
         assert report.count("so assign the result back") == 1, report
+        report = printed(workspace / "supplies-saved-over-fridge")
+        assert report.count("correct the path in the call that differs") == 2, report
+        assert "saves the fridge IDs" not in report, report
         assert printed(correct).rstrip().endswith("Score: 100/100\nAll checks passed."), printed(correct)
 
         single_mistakes = len(mistakes)
@@ -431,13 +500,22 @@ def run_handout() -> None:
     assert handout_python == set(files) - {".github/test/requirements.txt"}, sorted(handout_python)
     assert not (HANDOUT / "_grader_selftest").exists()
 
+    # Setup follows Lecture 03: uv sync builds the notebook's environment from pyproject.toml and uv.lock.
+    assert not (HANDOUT / "requirements.txt").exists(), "the handout ships pyproject.toml and uv.lock, not requirements.txt"
+    project = (HANDOUT / "pyproject.toml").read_text(encoding="utf-8")
+    lock = (HANDOUT / "uv.lock").read_text(encoding="utf-8")
+    for name, version in (("numpy", "2.3.3"), ("pandas", "3.0.5"), ("ipykernel", "6.29.5")):
+        assert f'"{name}=={version}"' in project, f"pyproject.toml does not pin {name}=={version}"
+        assert f'name = "{name}"\nversion = "{version}"' in lock, f"uv.lock does not lock {name} {version}; run uv lock"
+    assert (HANDOUT / ".python-version").read_text(encoding="utf-8").strip() == "3.13", ".python-version should name 3.13"
+
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
     for cell in notebook["cells"]:
         if cell["cell_type"] == "code":
             assert cell["outputs"] == [] and cell["execution_count"] is None, "clear the handout notebook's outputs"
 
-    print(f"Assignment 04 handout: data and notebook match the checks, and all {len(files)} check files "
-          "match 04/assignment_checks byte for byte.")
+    print(f"Assignment 04 handout: data and notebook match the checks, pyproject.toml and uv.lock pin the course "
+          f"packages, and all {len(files)} check files match 04/assignment_checks byte for byte.")
 
 
 if __name__ == "__main__":

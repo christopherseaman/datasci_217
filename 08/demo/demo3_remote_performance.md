@@ -20,18 +20,32 @@ jupyter:
 
 Part 1 runs here in the notebook: it times grouped summaries of one million synthetic fasting-glucose results and measures how much memory a repeated text key costs. Part 2 runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you will repeat on a remote server. Everything here comes from Lecture 08 up to the third demo break, plus Lectures 01 to 07.
 
-**How to run:** open this notebook in Colab from the lecture page's Colab link, or locally in VS Code with the kernel set to a `.venv` made by `uv venv --seed` and `uv pip install -r requirements.txt` in this folder (Lecture 03), and run Part 1 from top to bottom; after each step, an **Expect** line says what you should see. Timings depend on the computer, so compare the ratios between two timings, not the exact milliseconds; Colab is usually slower than a recent laptop. Part 1 takes about a minute, most of it in the `%timeit` cells. Part 2 needs a terminal on your own computer (macOS Terminal, Linux, WSL Ubuntu on Windows, or VS Code's integrated terminal), not Colab. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-25 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, OpenSSH 10.2, and tmux 3.6. The patient IDs and values are synthetic.
+**How to run:** run Part 1's cells from top to bottom; after each step, an **Expect** line says what you should see. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds; Colab is usually slower than a recent laptop. Part 2 needs a terminal on your own computer (macOS Terminal, Linux, WSL Ubuntu on Windows, or VS Code's integrated terminal), not Colab. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, OpenSSH 10.2, and tmux 3.6. The patient IDs and values are synthetic.
+
+- **In Colab:** open this notebook from the lecture page's Demo 3 link and start with the Setup cell below; a new runtime needs nothing else, because Part 1 builds its own data. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **On your computer:** Demo 1's local setup already downloaded this notebook into `~/08-demo` and built its environment there. In VS Code, open that folder with **File → Open Folder…**, open `demo3_remote_performance.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/08-demo` and `source .venv/bin/activate` bring back the environment, which Part 2's last step uses. If `~/08-demo` does not exist yet, run the commands under "On your computer" at the top of Demo 1 first.
+
+## Choose Your Route
+
+The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
+
+| Route | Cells to run |
+| --- | --- |
+| Core walkthrough | Run Setup, [Build One Million Lab Results](#build-one-million-lab-results), and [One `.agg()` Instead of Three `groupby()` Calls](#one-agg-instead-of-three-groupby-calls) (both cells). |
+| Independent practice | Compare built-ins, lambdas, transform, and category memory after class. [Part 2: Keep a Long Job Running (Terminal)](#part-2-keep-a-long-job-running-terminal) is independent terminal practice; it is not part of the in-class notebook walkthrough. |
+
+**Core checkpoint:** The equality check prints `True True True`, followed by two timings for the same answer.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version. Colab ships an older pandas (2.2). A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally too.
+The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell only confirms that.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
 %pip install -q pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. Locally, with the requirements already installed, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell; you do not need to rerun the install.
 
 ```python
 import numpy as np
@@ -108,7 +122,7 @@ print("Largest difference:", (fast - slow).abs().max())
 %timeit by_patient.agg(lambda s: s.std())
 ```
 
-**Expect:** about 10 ms against about 450 ms, so the lambda is roughly 50 times slower. It runs as Python once for each of the 10,000 patients; `"std"` runs as one compiled loop over all of them. This cell takes several seconds, because `%timeit` runs the slow version seven times.
+**Expect:** about 10 ms against about 450 ms, so the lambda is roughly 50 times slower. It runs as Python once for each of the 10,000 patients; `"std"` runs as one compiled loop over all of them.
 
 ### `transform`: Built-in vs Lambda
 
@@ -126,7 +140,7 @@ print("Same index as labs?", centered_fast.index.equals(labs.index))
 %timeit by_patient.transform(lambda s: s - s.mean())
 ```
 
-**Expect:** about 10 ms against more than a second: over 100 times slower. This cell takes about ten seconds.
+**Expect:** about 10 ms against more than a second: over 100 times slower.
 
 ### Memory: Text Key vs `category`
 
@@ -144,7 +158,7 @@ print(f"clinic as category: {category_mb:.1f} MB")
 
 ## Part 2: Keep a Long Job Running (Terminal)
 
-This part runs on your own computer, which plays the server: you run the commands you would type after `ssh`, and closing a terminal window stands in for a dropped connection. Type the commands below into a terminal, not into this notebook.
+This part runs on your own computer, which plays the server: you run the commands you would type after `ssh`, and closing a terminal window stands in for a dropped connection. This rehearses key creation and tmux locally; it does not test an SSH login, file copy, or tunnel. Those need an actual server account and its administrator's connection instructions. Type the commands below into a terminal, not into this notebook.
 
 Check that tmux is installed:
 
@@ -218,7 +232,7 @@ tmux new -s analysis
 time python3 long_job.py
 ```
 
-**Expect:** a status bar across the bottom with `[analysis]` at its left, then `step 1 of 120`, `step 2 of 120`, ... once a second. (If `python3` is not found, run `uv run python long_job.py` instead.)
+**Expect:** a status bar across the bottom with `[analysis]` at its left, then `step 1 of 120`, `step 2 of 120`, ... once a second. (If `python3` is not found, run `uv run python3 long_job.py` instead.)
 
 Press `Ctrl+b`, let go, then press `d`.
 
@@ -230,7 +244,7 @@ tmux ls
 
 **Expect:** `analysis: 1 windows (created Thu Sep 24 23:50:11 2026)`, with your date and time.
 
-Now drop the connection: open a **new** terminal window, then close the old one. (Open the new one first; on Windows, closing every WSL window can shut WSL down.) In the new window:
+Now rehearse losing your terminal: open a **new** terminal window, then close the old one. (Open the new one first; on Windows, closing every WSL window can shut WSL down.) In the new window:
 
 ```shell
 tmux ls
@@ -246,13 +260,14 @@ exit
 tmux ls
 ```
 
-**Expect:** `[exited]`, then `no server running on /tmp/tmux-1000/default` (the path differs by computer): no sessions are left.
+**Expect:** `[exited]`. If this was your only session, `tmux ls` then says `no server running on /tmp/tmux-1000/default` (the path differs by computer); any other sessions you already had stay listed.
 
 ### Step 3: Run Jupyter Inside tmux
 
-On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. On your own computer you can rehearse everything except the tunnel. Go to a project folder whose `.venv` has JupyterLab (the Lecture 03 setup; add it with `uv pip install jupyterlab` if needed):
+On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. On your own computer you can rehearse everything except the tunnel. `~/08-demo` from Demo 1's local setup has JupyterLab, because its `pyproject.toml` lists it (in another project, `uv add jupyterlab` adds it). If you ran the demos in Colab and have no `~/08-demo` yet, run the commands under "On your computer" at the top of Demo 1 first.
 
 ```shell
+cd ~/08-demo
 tmux new -s notebooks
 source .venv/bin/activate
 jupyter lab --ip=127.0.0.1 --port=8888 --no-browser
@@ -264,10 +279,6 @@ Detach with `Ctrl+b`, then `d`, and reload the browser page.
 
 **Expect:** JupyterLab still works, because Jupyter keeps running inside tmux. On a server, the one extra step is the `ssh -N -L 8888:127.0.0.1:8888 ...` tunnel from the lecture, in a second terminal on your laptop.
 
-Clean up: `tmux attach -t notebooks`, press `Ctrl+C` twice to stop Jupyter, type `exit`, and delete the practice folder:
+Clean up the running session: `tmux attach -t notebooks`, press `Ctrl+C` twice to stop Jupyter, then type `exit`.
 
-```shell
-rm -r ~/ds217_ssh_practice
-```
-
-**Expect:** `[exited]` after `exit`, and no output from `rm`. The practice key pair is gone, and your real `~/.ssh` was never touched.
+**Expect:** `[exited]` after `exit`. The practice files remain in `~/ds217_ssh_practice`; keep its private key out of Git, just like a real one.

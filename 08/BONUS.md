@@ -327,7 +327,7 @@ df.groupby('category')['value'].apply(percentile_agg)
 
 ## Statistical Tests in Groups
 
-This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Install it in the active notebook environment with `%pip install scipy` before running the example.
+This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Add it to the project with `uv add scipy` (in Colab, run `%pip install scipy` in a cell) before running the example.
 
 ### Reference Card: Statistical Tests in Groups
 
@@ -613,7 +613,7 @@ The core lecture introduces SSH, file transfer, Jupyter port forwarding, and per
 
 ## Distributed Computing
 
-Dask is not part of Lecture 08's core environment. Install it with `%pip install "dask[dataframe]"` before running this example.
+Dask is not part of Lecture 08's core environment. Add it to the project with `uv add "dask[dataframe]"` (in Colab, `%pip install "dask[dataframe]"`) before running this example.
 
 ### Reference Card: Distributed Computing with Dask
 
@@ -635,7 +635,7 @@ result.to_csv('distributed_results.csv')
 
 ## Cloud Computing
 
-pandas reads and writes `s3://` paths directly once the `s3fs` package is installed (`%pip install s3fs`) and your AWS credentials are configured. Without `s3fs`, `pd.read_csv('s3://...')` raises `ImportError: Install s3fs to access S3`.
+pandas reads and writes `s3://` paths directly once the `s3fs` package is installed (`uv add s3fs`; in Colab, `%pip install s3fs`) and your AWS credentials are configured. Without `s3fs`, `pd.read_csv('s3://...')` raises `ImportError: Install s3fs to access S3`.
 
 ### Reference Card: Cloud Computing with S3
 
@@ -658,7 +658,7 @@ Under pandas 3, inferred text uses the `str` dtype and Copy-on-Write makes view-
 
 ## Memory Profiling and Optimization
 
-The example below needs the `psutil` and `memory_profiler` packages (`%pip install psutil memory_profiler`).
+The example below needs the `psutil` and `memory_profiler` packages (`uv add psutil memory_profiler`; in Colab, `%pip install psutil memory_profiler`).
 
 ### Understanding Memory Usage in pandas
 
@@ -1056,7 +1056,7 @@ class PerformanceAnalyzer:
                     'time_per_row': execution_time / size
                 })
 
-                print(f"  Size {size:,}: {execution_time:.4f}s ({execution_time/size*1000:.2f}ms per 1000 rows)")
+                print(f"  Size {size:,}: {execution_time:.4f}s ({execution_time/size*1_000_000:.2f}ms per 1000 rows)")
 
             except Exception as e:
                 print(f"  Size {size:,}: FAILED: {str(e)}")

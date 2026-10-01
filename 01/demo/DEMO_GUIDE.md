@@ -9,18 +9,29 @@ notion:
 
 # Lecture 01 Demo Guide: Setup, the Shell, and Python Basics
 
-There are four live demos:
+Each demo has a **core walkthrough** for class and **independent practice** to work through on your own after class. The full guide also works if you missed class: complete the core route first, then the independent sections.
 
 1. Git/GitHub and VS Code setup
 2. Shell navigation
 3. Python basics
 4. Control structures and debugging
 
-All files are in the [Lecture 01 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/01/demo). Follow the setup below, then create a practice folder and open it in VS Code with **File → Open Folder**. Each code block has a source link; use **Download raw file** on GitHub or paste the code into a new file with the shown filename. Save with **File → Save** (Ctrl+S; Cmd+S on Mac).
+All files are in the [Lecture 01 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/01/demo). Follow Demo 1 in your assignment clone. For Demos 2–4, create a separate folder named `01-practice` in your home directory and open it in VS Code with **File → Open Folder**. Each code block has a source link; use **Download raw file** on GitHub or paste the code into a new file with the shown filename. Save with **File → Save** (Ctrl+S; Cmd+S on Mac).
 
 Run commands in **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). A separate Terminal or WSL Ubuntu window also works; use `cd` to enter your working folder first.
 
 # Demo 1: Git setup
+
+## Core walkthrough
+
+Start at [1.1](#11-github-account-and-email-privacy) and continue through [1.7](#17-save-a-change-on-github): verify your account, terminal, Python and Git, open your fork, then save and sync a change. If a tool is already installed, check it in 1.4 and continue; if it is missing, follow the installation steps there before running later demos.
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | [Account](#11-github-account-and-email-privacy), [editor and shell](#12-install-and-open-vs-code), [Python and Git](#14-install-python-and-git), [fork and clone](#15-fork-and-clone), [sign in](#16-sign-in-to-github-in-vs-code), [save and sync](#17-save-a-change-on-github) |
+| Independent practice | Explore the optional Student Developer Pack and editor extensions after your first change appears on GitHub. |
+
+The setup steps below include the full installation route; later demos depend on a working terminal and Python.
 
 [Setup source on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/01_github_vscode_setup_guide.md)
 
@@ -125,9 +136,27 @@ You have a copy on GitHub and a working copy on your computer. Lecture 02 develo
 
 # Demo 2: Shell navigation
 
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | [2.1: Enter commands at the shell prompt](#21-enter-commands-at-the-shell-prompt), through creating, viewing, copying, and renaming the visits file. |
+| Independent practice | [2.2: Save the commands as a script](#22-create-a-script-by-pasting), then [2.3: Run the saved script](#23-run-the-saved-script). This repeats the same file workflow in a second folder. |
+
+Work through the independent sections on your own after class. The next demo needs only the `01-practice` folder.
+
+<span color="yellow_bg">**In a new terminal**</span> Open your `01-practice` folder in VS Code and select **Terminal → New Terminal**, or enter it from a separate Bash/Zsh terminal:
+
+```bash
+cd ~/01-practice
+pwd
+```
+
+Expect a path ending in `01-practice`. Use the Python 3.13 installation from Demo 1.
+
 ## 2.1 Enter commands at the shell prompt
 
-Start in your practice folder. Enter each line separately and inspect the result before continuing. The shell reads a command, runs it, and returns to its prompt.
+Start in your `01-practice` folder. Enter each line separately and inspect the result before continuing. The shell reads a command, runs it, and returns to its prompt.
 
 ```bash
 pwd
@@ -188,6 +217,8 @@ pwd
 `ls results` shows `visits_raw.csv`; the final `pwd` is back in your practice folder.
 
 ## 2.2 Create a script by pasting
+
+Independent practice: save and replay the shell workflow after completing 2.1.
 
 From that same practice folder, run:
 
@@ -265,7 +296,27 @@ Watch `pwd`, `ls`, `head`, and `tail` as the script writes, views, copies, and r
 
 # Demo 3: Python basics
 
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | Save and run [3.2: Values and types](#32-values-and-types) and [3.4: Calculations](#34-calculations); compare their printed results. |
+| Independent practice | [3.1: Interactive Python](#31-start-interactive-python) and [3.3: Strings](#33-strings); repeat the examples at the Python prompt. |
+
+Work through the independent sections on your own after class. Each script supplies its own values, so you can follow the core links directly.
+
+<span color="yellow_bg">**In a new terminal**</span> Open your `01-practice` folder in VS Code and select **Terminal → New Terminal**, or enter it from a separate Bash/Zsh terminal:
+
+```bash
+cd ~/01-practice
+pwd
+```
+
+Expect a path ending in `01-practice`. Use the Python 3.13 installation from Demo 1.
+
 ## 3.1 Start interactive Python
+
+Independent practice: try the interactive prompt after running the saved scripts.
 
 In your terminal, run `python3`. The `>>>` prompt means Python is ready. Enter the following examples one line at a time; do not type the prompt itself. Inspect each result before continuing.
 
@@ -311,6 +362,8 @@ readings: [118, 142, 131] count: 3
 A comparison gives `True` or `False`: 37.8 is below the 38.0 °C fever cutoff, and 67 is at least 65 with consent recorded, so `and` gives `True`. `len()` counts the three readings in the list.
 
 ## 3.3 Strings
+
+Independent practice: save this string example, run it, and compare the output.
 
 [03b_strings.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/03b_strings.py)
 
@@ -372,11 +425,33 @@ Change the doses or the weight and watch which outputs change.
 
 # Demo 4: Control structures and debugging
 
+## Choose a route
+
+| Route | Work through |
+| --- | --- |
+| Core walkthrough | Run [4.5: Combine the pieces](#45-combine-the-pieces) and trace one loop pass; then use [4.4: Debugging](#44-debugging) to reveal and correct the `NameError`. |
+| Independent practice | [4.1: Decisions](#41-decisions), [4.2: Running totals](#42-for-loops-and-running-totals), [4.3: Loop control](#43-while-break-and-continue), the other errors in [4.4](#44-debugging), and the changed threshold in [4.5](#45-combine-the-pieces). |
+
+Work through the independent sections on your own after class. The scripts are separate examples: 4.5 does not read anything the earlier scripts write. For the core error correction, remove the `#` from `#print("heart rate:", heart_rat)`, save, run, inspect the final error line, then restore the `#` and rerun.
+
+<span color="yellow_bg">**In a new terminal**</span> Open your `01-practice` folder in VS Code and select **Terminal → New Terminal**, or enter it from a separate Bash/Zsh terminal:
+
+```bash
+cd ~/01-practice
+pwd
+```
+
+Expect a path ending in `01-practice`. Use the Python 3.13 installation from Demo 1.
+
 Run each saved file from your shell, for example `python3 04a_decisions.py`. Every file includes its own starting values.
 
 To type a block at the `python3` prompt instead, leave out the indentation shown here: after a line ending in `:`, Python 3.13 starts the next `...` line four spaces in for you. Press **Backspace** once for each level you move back out (before `elif` or `else`), and press **Enter** on an empty `...` line to finish the block. Typing the spaces yourself doubles the indentation, and the second line of a block then raises `IndentationError: unexpected indent`.
 
+All systolic readings in Demo 4 are in **mmHg** (millimeters of mercury), and heart rates are in **bpm** (beats per minute). These are synthetic practice values.
+
 ## 4.1 Decisions
+
+Independent practice: compare the branches with the supplied and changed blood pressures.
 
 [04a_decisions.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04a_decisions.py)
 
@@ -410,9 +485,11 @@ systolic category: stage 1 hypertension
 eligible for fall-risk screening
 ```
 
-Python checks the conditions top to bottom: 135 fails `systolic >= 140` and passes `systolic >= 130`, so only the stage 1 block runs. These are systolic cutoffs only; a full blood-pressure category also uses diastolic pressure. Set `systolic` to 145, then 118, and rerun (stage 2 hypertension, then normal).
+Python checks the conditions top to bottom: 135 fails `systolic >= 140` and passes `systolic >= 130`, so only the stage 1 block runs. These are the [American Heart Association's systolic cutoffs](https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings); a full blood-pressure category also uses diastolic pressure. Set `systolic` to 145, then 118, and rerun (stage 2 hypertension, then normal).
 
 ## 4.2 For loops and running totals
+
+Independent practice: follow the total and count after each loop pass.
 
 [04b_for_loops.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04b_for_loops.py)
 
@@ -457,6 +534,8 @@ visit 5 systolic 151
 `total = total + systolic` is the long form of `total += systolic`; both do the same thing, and 4.3 and 4.5 use `+=`.
 
 ## 4.3 While, break, and continue
+
+Independent practice: compare repeating, stopping, and skipping a loop pass.
 
 [04c_loop_control.py on GitHub](https://github.com/christopherseaman/datasci_217/blob/main/01/demo/04c_loop_control.py)
 
