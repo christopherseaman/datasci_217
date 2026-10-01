@@ -280,7 +280,7 @@ def test_fork_names_and_listing() -> None:
         # GitHub's refusals become a sentence a TA can act on, not a traceback.
         for failure, advice in (
             (urllib.error.HTTPError("u", 403, "rate limit exceeded", {}, None), "GITHUB_TOKEN"),
-            (urllib.error.HTTPError("u", 404, "Not Found", {}, None), "assignments-26f.json"),
+            (urllib.error.HTTPError("u", 404, "Not Found", {}, None), "assignments.json"),
             (urllib.error.HTTPError("u", 401, "Bad credentials", {}, None), "gh auth login"),
             (urllib.error.URLError("no network"), "Could not reach GitHub"),
         ):

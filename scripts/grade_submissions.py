@@ -10,7 +10,9 @@ For teaching assistants, from a clone of this course repository:
     uv run scripts/grade_submissions.py 02 --fork octocat/ds217-26f-02
 
 The first form grades every fork of the assignment's course repository named
-in assignments-26f.json; `--fork` (repeatable) grades only the forks named.
+in assignments.json, read from this course's main branch on GitHub (the local
+copy is used when GitHub cannot be reached); `--fork` (repeatable) grades only
+the forks named.
 Each fork is cloned, or updated on later runs, under
 scratch/submissions/NN/<github-user>/ so it can be opened afterwards.
 Results go to scratch/submissions/NN/grades.csv, one row per fork, updated
@@ -48,7 +50,8 @@ import urllib.request
 
 
 REPO = Path(__file__).resolve().parents[1]
-ASSIGNMENTS_FILE = REPO / "assignments-26f.json"
+ASSIGNMENTS_FILE = REPO / "assignments.json"
+ASSIGNMENTS_URL = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/assignments.json"
 GRADE_TIMEOUT_SECONDS = 300
 GIT_TIMEOUT_SECONDS = 600
 GIT_ENVIRONMENT = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
@@ -59,8 +62,18 @@ class SubmissionError(Exception):
     """A fork that could not be fetched or graded; reported, never scored."""
 
 
+def load_assignments() -> list[dict]:
+    """The term's assignment list from GitHub's main, or the local copy when GitHub is unreachable."""
+    try:
+        with urllib.request.urlopen(ASSIGNMENTS_URL, timeout=30) as response:
+            return json.load(response)["assignments"]
+    except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as error:
+        print(f"Warning: could not read {ASSIGNMENTS_URL} ({error}); using {ASSIGNMENTS_FILE.name}.")
+        return json.loads(ASSIGNMENTS_FILE.read_text(encoding="utf-8"))["assignments"]
+
+
 def load_assignment(number: str) -> dict:
-    assignments = json.loads(ASSIGNMENTS_FILE.read_text(encoding="utf-8"))["assignments"]
+    assignments = load_assignments()
     for assignment in assignments:
         if assignment["number"] == number:
             return assignment
@@ -300,7 +313,7 @@ def first_full_score(path: Path) -> dict | None:
     return min(full, key=lambda row: datetime.fromisoformat(row["commit_date"]), default=None)
 
 
-def main(argv: list[str] | None = None, show_names: bool = True) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("assignment", help="two-digit assignment number, such as 02")
     parser.add_argument("--fork", action="append", default=[], metavar="USER/REPO",
@@ -326,13 +339,9 @@ def main(argv: list[str] | None = None, show_names: bool = True) -> int:
     print(f"Checks: {checks.relative_to(REPO)} at {version}  Clones: {destination}")
 
     errors = 0
-    for number_graded, fork in enumerate(forks, start=1):
+    for fork in forks:
         row = write_grades(grade_fork(fork, checks, destination, version), grades)
         label, details = row["github_user"], row.get("details", "")
-        if not show_names:
-            # Error details can quote the clone path or URL, which hold the user name.
-            label = f"student {number_graded}"
-            details = re.sub(re.escape(row["github_user"]), "<student>", details, flags=re.IGNORECASE)
         if row["status"] == "graded":
             print(f"{label:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "
                   f"{local_time(row['commit_date'])}")
