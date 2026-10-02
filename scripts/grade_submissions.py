@@ -15,9 +15,10 @@ copy is used when GitHub cannot be reached); `--fork` (repeatable) grades only
 the forks named. It also runs straight from its URL, `uv run URL 02`, outside
 any clone; it then downloads the checks from GitHub's main.
 
-Each fork is cloned, or updated on later runs, under scratch/submissions/NN/
-(./submissions/NN/ when run from a URL), one folder per GitHub user, so it can
-be opened afterwards. Results go to grades.csv there, one row per fork, updated
+Each fork is cloned, or updated on later runs, under scratch/ds217/NN/
+(./ds217/NN/ when run from a URL), one folder per GitHub user, so it can be
+opened afterwards; `ds217` is the course id, the start of the assignment's
+repository name in assignments.json. Results go to grades.csv there, one row per fork, updated
 after every fork: a fork graded again replaces its own row, and every other
 row stays. A fork that cannot be regraded keeps its last score, marked with
 the error, and the `checks` column records which version of the checks
@@ -84,6 +85,11 @@ def load_assignment(number: str) -> dict:
             return assignment
     known = ", ".join(assignment["number"] for assignment in assignments)
     raise SystemExit(f"No assignment {number} in {ASSIGNMENTS_FILE.name}; choose one of {known}.")
+
+
+def course_id(assignment: dict) -> str:
+    """The course's short name, such as `ds217` from `UCSF-DataSci/ds217-26f-02`."""
+    return assignment["repository"].rsplit("/", 1)[-1].split("-", 1)[0]
 
 
 def in_course_clone() -> bool:
@@ -364,13 +370,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("assignment", help="two-digit assignment number, such as 02")
     parser.add_argument("--fork", action="append", default=[], metavar="USER/REPO",
                         help="grade only this fork; repeat for several")
-    parser.add_argument("--dest", type=Path, help="where clones and grades.csv go (default scratch/submissions/NN in a course clone, else ./submissions/NN)")
+    parser.add_argument("--dest", type=Path, help="where clones and grades.csv go (default scratch/COURSE/NN in a course clone, else ./COURSE/NN, "
+                             "where COURSE is the course id such as ds217)")
     args = parser.parse_args(argv)
 
     number = args.assignment.zfill(2)
     assignment = load_assignment(number)
     local = in_course_clone()
-    default_root = REPO / "scratch" / "submissions" if local else Path.cwd() / "submissions"
+    course = course_id(assignment)
+    default_root = REPO / "scratch" / course if local else Path.cwd() / course
     destination = (args.dest or default_root / number).resolve()
     destination.mkdir(parents=True, exist_ok=True)
     if local:
