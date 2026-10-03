@@ -28,7 +28,7 @@ Start at [1.1](#11-github-account-and-email-privacy) and continue through [1.7](
 
 | Route | Work through |
 | --- | --- |
-| Core walkthrough | [Account](#11-github-account-and-email-privacy), [editor and shell](#12-install-and-open-vs-code), [Python and Git](#14-install-python-and-git), [fork and clone](#15-fork-and-clone), [sign in](#16-sign-in-to-github-in-vs-code), [save and sync](#17-save-a-change-on-github) |
+| Core walkthrough | [Account](#11-github-account-and-email-privacy), [editor](#12-install-and-open-vs-code), [terminal and WSL](#13-choose-a-terminal-and-shell), [Python and Git](#14-install-python-and-git), [fork and clone](#15-fork-and-clone), [sign in](#16-sign-in-to-github-in-vs-code), [save and sync](#17-save-a-change-on-github) |
 | Independent practice | Explore the optional Student Developer Pack and editor extensions after your first change appears on GitHub. |
 
 The setup steps below include the full installation route; later demos depend on a working terminal and Python.
@@ -95,7 +95,7 @@ Open **View → Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac), ch
 
 ## 1.5 Fork and clone
 
-1. Open the assignment repository linked for this term on GitHub and select **Fork**.
+1. Open the Assignment 01 repository on GitHub and select **Fork**.
 
     ![GitHub's Fork button](../assignment/media/github-fork.png)
 
@@ -145,14 +145,15 @@ You have a copy on GitHub and a working copy on your computer. Lecture 02 develo
 
 Work through the independent sections on your own after class. The next demo needs only the `01-practice` folder.
 
-<span color="yellow_bg">**In a new terminal**</span> Open your `01-practice` folder in VS Code and select **Terminal → New Terminal**, or enter it from a separate Bash/Zsh terminal:
+<span color="yellow_bg">**In a new terminal**</span> Create your `01-practice` folder and enter it. `mkdir -p` makes the folder only if it does not already exist, so this is safe to rerun:
 
 ```bash
+mkdir -p ~/01-practice
 cd ~/01-practice
 pwd
 ```
 
-Expect a path ending in `01-practice`. Use the Python 3.13 installation from Demo 1.
+Expect a path ending in `01-practice`. Open the same folder in VS Code with **File → Open Folder** so you can edit files there. Use the Python 3.13 installation from Demo 1.
 
 ## 2.1 Enter commands at the shell prompt
 

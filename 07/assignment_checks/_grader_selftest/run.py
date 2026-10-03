@@ -87,7 +87,7 @@ def scatter(patients: pd.DataFrame) -> alt.Chart:
 
 
 def redesign(path: Path) -> None:
-    """Task 2.3's grouped bars, as Lecture 07's "Grouped Bars That Work in Grayscale" snippet draws them."""
+    """Task 2.3's grouped bars, following Lecture 07's "Give a Bar Series Its Own Hatch" and "Write Values on Bars" snippets."""
     attendance = pd.read_csv(HANDOUT / "data" / "session_attendance.csv")
     x = np.arange(2)
     width = 0.38
@@ -107,7 +107,7 @@ def redesign(path: Path) -> None:
 
 
 def explanatory(supporting: pd.DataFrame, path: Path) -> None:
-    """Task 3.2's line chart, as Lecture 07's "Redundant Cues on a Line Chart" snippet draws it."""
+    """Task 3.2's line chart, following Lecture 07's "Directly Label a Line" snippet and "Redundant Cues for Bars and Lines" card."""
     home = supporting.loc[supporting["program"] == "Home-based"]
     center = supporting.loc[supporting["program"] == "Center-based"]
     fig, ax = plt.subplots(figsize=(8, 4.8))

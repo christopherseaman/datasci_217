@@ -1,0 +1,39 @@
+{
+  "chart": "vaccination_redesign.png",
+  "question": "How did adult flu vaccination change at each clinic between seasons?",
+  "audience_and_claim": "Clinic managers; uptake rose at all three clinics, most at North",
+  "grain": "one clinic in one season",
+  "variables": {
+    "clinic": "categorical group (x)",
+    "season": "ordinal group (color and hatch)",
+    "vaccinated_pct": "quantitative measure (bar length)"
+  },
+  "critique_of_draft": [
+    {
+      "category": "unsupported claim",
+      "problem": "The title says reminder texts caused the rise, but the table only shows that uptake rose, and it rose at South and East too.",
+      "repair": "Use a descriptive title: uptake rose at all three clinics, most at North."
+    },
+    {
+      "category": "truncated baseline",
+      "problem": "The y-axis starts at 50%, so North's 12.5% rise is drawn as a 117% rise (lie factor 9.3).",
+      "repair": "Start the bar axis at zero with ax.set_ylim(0, 100)."
+    },
+    {
+      "category": "missing unit",
+      "problem": "The y-axis has no label, so readers cannot tell the values are percentages of adult patients.",
+      "repair": "Label the axis \"Adults vaccinated against flu (%)\" and write each value on its bar."
+    },
+    {
+      "category": "color-only encoding",
+      "problem": "Only red versus green separates the seasons, a pair many colorblind readers cannot tell apart.",
+      "repair": "Use colorblind-safe colors plus a different hatch for each season."
+    },
+    {
+      "category": "distracting decoration",
+      "problem": "Thick black edges, a heavy grid, and the same hatch on every bar carry no data.",
+      "repair": "Drop the edges and grid, hide the top and right spines, and keep hatches only where they mark the season."
+    }
+  ],
+  "text_alternative": "Grouped bar chart of adults vaccinated against flu (%) at three clinics in the 2024-25 and 2025-26 seasons, on a 0 to 100% axis. All three rose: North from 56% to 63%, South from 57% to 60%, and East from 61% to 62%. These are clinic records only; they do not show that North's reminder texts caused its larger rise."
+}

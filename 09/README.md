@@ -56,15 +56,57 @@ P2          2024-03-01 10:00           86   ┘
 
 A **datetime** is one value holding a date and a clock time, which Python can compare, subtract, and print in any format; text such as `"2023-12-25 14:30"` cannot, so subtracting two text times raises `TypeError`. **Parsing** turns text into datetimes and **formatting** turns datetimes into text, one value at a time with Python's `datetime` module or a whole column with pandas.
 
-## Parsing a Column of Dates
+## Python datetime Module
 
-For a table, start with `pd.to_datetime()`. Python's one-value `datetime` interface is an optional alternative in [BONUS.md](BONUS.md#one-date-at-a-time-with-python).
+Python's built-in `datetime` module handles one value at a time, such as stamping a lab report or scheduling a follow-up visit.
 
-Format codes used below: `%Y` is the four-digit year, `%m` month, `%d` day, `%H` 24-hour hour, and `%M` minute.
+| Operation | Starting value | Result |
+| --- | --- | --- |
+| Parse a lab time | Text `"2023-12-25 14:30:00"` | A datetime for December 25 at 14:30 |
+| Format it for a letter | That datetime | Text `"December 25, 2023 at 02:30 PM"` |
+| Add 30 days | That datetime | `2024-01-24 14:30:00` |
+
+### Reference Card: Python `datetime`
+
+- `datetime(year, month, day, hour, minute)`: Create a specific date and time; hour and minute default to 0.
+- `datetime.now()`: The current date and time from the computer's clock.
+- `datetime.strptime(text, format)`: Parse text into a datetime ("string parse time").
+- `dt.strftime(format)`: Format a datetime as text ("string format time").
+- `timedelta(days=30)`: A duration (also `hours=`, `weeks=`); add it to a datetime to move it. Subtracting two datetimes returns one, and `.days` reads its whole days.
+- Format codes: `%Y` four-digit year, `%m` month 01-12, `%d` day, `%H` 24-hour hour, `%M` minute, `%S` second, `%I` with `%p` 12-hour clock with AM/PM, `%B` full month name.
+
+### Code Snippet: Python `datetime`
+
+```python
+from datetime import datetime, timedelta
+
+lab_time = datetime.strptime("2023-12-25 14:30:00", "%Y-%m-%d %H:%M:%S")
+print(lab_time.strftime("%B %d, %Y at %I:%M %p"))
+print(lab_time + timedelta(days=30))
+age = datetime(2024, 3, 1) - datetime(1990, 5, 15)
+print(age.days)
+```
+
+```text
+December 25, 2023 at 02:30 PM
+2024-01-24 14:30:00
+12344
+```
+
+The last two lines are the 30-day follow-up visit and a patient's age in days on March 1, 2024.
+
+_A datetime is the Swiss Army knife of temporal data: precise to the microsecond, and `pandas` wields a million at a time._
 
 ## pandas DatetimeIndex
 
-`pd.to_datetime()` converts a text column into **`datetime64`** values, which sort by time rather than character by character (as text, `"3/10/2024"` lands before `"3/9/2024"`). Each single value is a **`Timestamp`**, and a missing date becomes **`NaT`** ("Not a Time"), the datetime version of `NaN`. Invalid text raises `ValueError` unless `errors='coerce'` marks it as `NaT` instead. Timestamps used as row labels form a **`DatetimeIndex`**, which date selection, resampling, and time windows all read.
+For a whole column, use `pd.to_datetime()`. It converts a text column into **`datetime64`** values, which sort by time rather than character by character:
+
+| Two clinic dates | As text (dtype `str`) | After `pd.to_datetime()` (dtype `datetime64[us]`) |
+| --- | --- | --- |
+| Sorted | `'3/10/2024'`, then `'3/9/2024'` | `2024-03-09`, then `2024-03-10` |
+| Second minus first | `TypeError` | `1 days 00:00:00` |
+
+Each single value is a **`Timestamp`**, and a missing date becomes **`NaT`** ("Not a Time"), the datetime version of `NaN`. Invalid text raises `ValueError` unless `errors='coerce'` marks it as `NaT` instead. Timestamps used as row labels form a **`DatetimeIndex`**, which date selection, resampling, and time windows all read.
 
 ### Reference Card: Parsing and Indexing Dates
 
@@ -80,6 +122,8 @@ Format codes used below: `%Y` is the four-digit year, `%m` month, `%d` day, `%H`
 | Round | `s.dt.floor('h')` | Round each time down to the hour (`'D'` for the day) | Series |
 | Format | `s.dt.strftime('%Y%m%d%H')` | Write each time as text with `strftime` codes, such as `'2024030108'` for 08:00 on 1 March 2024 | Series of text |
 | Duration | `pd.Timedelta(days=2)`, `pd.Timedelta(hours=6)` | pandas' `timedelta`; add it to or subtract it from a timestamp | `Timedelta` |
+
+`pd.to_datetime(format=...)` and `.dt.strftime()` use the same format codes as the `datetime` card above.
 
 ### Code Snippet: Text Column to DatetimeIndex
 
@@ -103,7 +147,7 @@ Index([8, 20, 8], dtype='int32', name='recorded_at')
 
 <callout icon="⚠️" color="yellow_bg">
 	## Sort by time before you slice, shift, or roll
-	Exports often arrive out of order. On unsorted rows, a date-range slice can raise `KeyError`, and `shift()` quietly pairs each reading with whatever row sits above it, so run `sort_index()` first, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
+	Exports often arrive out of order. On unsorted rows, a date-range slice can raise `KeyError`, and `shift()` (taught below) quietly pairs each reading with whatever row sits above it, so run `sort_index()` first, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
 </callout>
 
 ![xkcd 2867: DateTime. T2 minus T1 looks like simple subtraction until time zones and clock changes, later in this lecture, get involved.](media/xkcd_2867.png)
@@ -114,7 +158,7 @@ A **frequency** is the repeating rule of a regular series, written as a short te
 
 ## Date Range Generation
 
-`pd.date_range(start, end, freq=...)` or `pd.date_range(start, periods=n, freq=...)` builds timestamps at a chosen frequency. pandas 3 rejects the older aliases in the last column below with `ValueError`.
+`pd.date_range(start, end, freq=...)` or `pd.date_range(start, periods=n, freq=...)` builds timestamps at a chosen frequency.
 
 | Schedule starting January 1, 2024 | First three dates |
 | --- | --- |
@@ -132,6 +176,8 @@ A **frequency** is the repeating rule of a regular series, written as a short te
 | `'W'` / `'W-MON'` | Every Sunday / every Monday (weeks end on that day) | Weekly check-in | |
 | `'MS'` / `'ME'` | Month start / month end | Monthly lab draw / monthly report | `'M'` |
 
+pandas 3 rejects the older aliases in the last column with `ValueError`.
+
 ### Code Snippet: An Hourly Grid
 
 ```python
@@ -145,6 +191,8 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 ```
 
 Frequency inference and business-day, quarterly, and annual schedules are optional [BONUS.md](BONUS.md#frequency-inference-and-specialized-schedules) references.
+
+_Every Monday? Business days only? `pandas` generates just about any date pattern you can imagine, and some you probably can't._
 
 # Time Series Indexing and Selection
 
@@ -260,8 +308,6 @@ print(readings.resample('2h').agg(['mean', 'count']))
 2024-03-01 10:00:00  79.000000      2
 ```
 
-Unlike `asfreq()`, `resample()` assigns every reading to a bin.
-
 ![xkcd 1985: Meteorologist. Five hourly 20% chances of rain do not say how likely rain is this afternoon; a longer bin needs an aggregation that answers the question being asked.](media/xkcd_1985.png)
 
 # Resampling Summaries, Grids, and Groups
@@ -317,7 +363,7 @@ Filled values are estimates, not measurements; keep a flag or the original colum
 
 ### Code Snippet: Upsampling Choices
 
-`pulse` records 70 and 76 bpm at 08:00 and 11:00 on March 1, 2024, with a DatetimeIndex.
+`pulse` records 70.0 and 76.0 bpm (floats) at 08:00 and 11:00 on March 1, 2024, with a DatetimeIndex.
 
 ```python
 print(pd.DataFrame({
@@ -352,7 +398,6 @@ Resample inside each patient's group (Lecture 08's split-apply-combine); the who
 - `df['source_row'] = 1` before `asfreq()`: Grid-created rows get `NaN` in `source_row`, so `grid['source_row'].isna()` tells them apart from real readings with a missing value.
 - `df.set_index('recorded_at').groupby('patient_id').resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))`: Named summaries in Lecture 08's `(column, function)` form; `count()` skips missing values, so count `source_row` to include readings with a missing heart rate.
 - `.reset_index()`: Turn the MultiIndex back into ordinary `patient_id` and `recorded_at` columns.
-- `df['run_id'] = df.groupby('patient_id')['source_observed'].cumsum()`: Running count of each patient's real readings (`cumsum()` counts `True` as 1), flat through a gap. Then `df[~df['source_observed']].groupby(['patient_id', 'run_id']).size()` gives each gap run's length in hours; count the runs and take their `max()` per patient.
 
 ### Code Snippet: Two-Hour Summaries per Patient
 
@@ -403,7 +448,7 @@ True
 
 P1's three `NaN` rows look alike; only the flags show that the grid created 09:00 and 10:00, while 11:00 is a real reading with no heart rate.
 
-### Code Snippet: Count Gap Runs per Patient
+### Reference Card: Gap Runs
 
 A **gap run** is a stretch of consecutive grid hours with no reading, such as a monitor unplugged for three hours. With `source_observed` `True` for real readings (the opposite of `grid_created`), a running count of readings stays flat through each run, so its hours share a number:
 
@@ -412,6 +457,12 @@ source_observed   True  False  False  True  False  False  False
 cumsum()             1      1      1     2      2      2      2
 gap run                     1      1            2      2      2   → 2 runs; the longest is 3 hours
 ```
+
+- `df['source_observed'] = ~df['grid_created']`: `True` for real readings, including a charted row with a missing value.
+- `df['run_id'] = df.groupby('patient_id')['source_observed'].cumsum()`: Running count of each patient's real readings (`cumsum()` counts `True` as 1), flat through a gap.
+- `df[~df['source_observed']].groupby(['patient_id', 'run_id']).size()`: Each gap run's length in hours; count the runs and take their `max()` per patient.
+
+### Code Snippet: Count Gap Runs per Patient
 
 `hours` is sorted by patient and hour: P1 has the sequence above, and P2 has `True, True, False, True`.
 
@@ -751,34 +802,34 @@ A **time-series plot** draws readings against time on the x-axis, in order, show
 
 ## Basic Time Series Plots
 
-![Daily temperatures (gray) with the 30-day rolling mean (blue), which follows the yearly wave without the daily noise](media/viz_temp_rolling.png)
+![Daily influenza-like illness visits (gray) with the 30-day rolling mean (blue), which follows the winter peak without the daily noise](media/viz_ili_rolling.png)
 
-![Bar chart of each calendar month's mean temperature minus 98.6 °F](media/viz_temp_monthly.png)
+![Bar chart of mean daily visits for each calendar month, highest in January and lowest in July](media/viz_ili_monthly.png)
 
 ### Reference Card: Time Series Plotting
 
 - `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
 - `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
 - `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them
-- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month averages as bars, to show a seasonal pattern; draw them on a new `fig, ax = plt.subplots()`, because bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), so plot temperature minus 98.6 °F
+- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month averages as bars, to show a seasonal pattern; draw them on a new `fig, ax = plt.subplots()`, because bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
 - `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
 
 ### Code Snippet: Time-Series Plotting
 
-`ts` is a year of daily patient temperatures (°F) with a DatetimeIndex. The calendar-month bars need separate Axes.
+`ts` is a year of daily influenza-like illness visits at a clinic, with a DatetimeIndex. The calendar-month bars need separate Axes.
 
 ```python
 ax = ts.plot(alpha=0.5, label='Daily', color='gray')
 ts.rolling(window=30).mean().plot(ax=ax, linewidth=2, label='30-Day Rolling Mean', color='blue')
-ax.set(title='Patient Temperature with Rolling Mean', xlabel='Date', ylabel='Temperature (°F)')
+ax.set(title='Influenza-like Illness Visits with Rolling Mean', xlabel='Date', ylabel='Visits per day')
 ax.legend()
 ax.grid(True, alpha=0.3)
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 4))
-monthly_diff = ts.groupby(ts.index.month).mean() - 98.6
-monthly_diff.plot(kind='bar', ax=ax, rot=0, title='Monthly Mean Temperature vs 98.6 °F',
-                  xlabel='Month', ylabel='Difference from 98.6 (°F)')
+monthly_mean = ts.groupby(ts.index.month).mean()
+monthly_mean.plot(kind='bar', ax=ax, rot=0, title='Mean Daily Visits by Calendar Month',
+                  xlabel='Month', ylabel='Visits per day')
 plt.show()
 ```
 

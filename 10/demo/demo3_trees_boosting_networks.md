@@ -235,14 +235,14 @@ The two columns agree at the top: `worst concave points` and `worst area` matter
 
 ## 5. XGBoost
 
-Run the import and fixed-round fit below in the core walkthrough. The lecture's XGBoost reference supplies the settings. XGBoost is included in the local environment and preinstalled in Colab.
+Run the import and fixed-round fit below in the core walkthrough. The lecture's XGBoost reference supplies the settings. XGBoost is included in the local environment and preinstalled in Colab. On an Apple Silicon Mac it also needs the OpenMP runtime from Demo 1's setup note: run `brew install libomp` in a terminal before this cell.
 
 ```python
 import xgboost as xgb
 print('XGBoost', xgb.__version__)
 ```
 
-**Expect:** `XGBoost 2.1.4` locally; Colab may show another version.
+**Expect:** `XGBoost 2.1.4` locally; Colab may show another version. On a Mac without the OpenMP runtime, the import instead fails with `XGBoostError: XGBoost Library (libxgboost.dylib) could not be loaded.` and a list of likely causes that tells Mac users to run `brew install libomp`. Run that command, restart the kernel, and run this cell again.
 
 XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern.
 
@@ -257,8 +257,18 @@ xgb_acc = accuracy_score(y_valid, xgb_model.predict(X_valid))
 print(f"XGBoost validation accuracy: {xgb_acc:.4f}")
 print("Confusion matrix [[TN, FP], [FN, TP]]:")
 print(confusion_matrix(y_valid, xgb_model.predict(X_valid)))
-
 ```
+
+**Expect:**
+
+```text
+XGBoost validation accuracy: 0.9649
+Confusion matrix [[TN, FP], [FN, TP]]:
+[[69  2]
+ [ 2 41]]
+```
+
+XGBoost gets 110 of 114, one fewer than the forest.
 
 The fit above stands alone. After class, run Part 4's permutation-importance cell before this comparison plot.
 
@@ -279,13 +289,9 @@ plt.show()
 plt.close(fig)
 ```
 
-**Expect:**
+**Expect:** this table, then a bar chart of the same numbers:
 
 ```text
-XGBoost validation accuracy: 0.9649
-Confusion matrix [[TN, FP], [FN, TP]]:
-[[69  2]
- [ 2 41]]
                       random forest  XGBoost
 worst concave points          0.140    0.084
 worst area                    0.135    0.038
@@ -297,7 +303,7 @@ mean concavity                0.068    0.058
 worst radius                  0.062    0.152
 ```
 
-XGBoost gets 110 of 114, one fewer than the forest. In the bar chart it leans hardest on `worst perimeter` (0.251), which the forest ranks fourth, and it ignores `mean perimeter` entirely. Each library computes importance its own way, and among near-twin columns a model can pick any one, so compare rankings, not numbers.
+In the bar chart XGBoost leans hardest on `worst perimeter` (0.251), which the forest ranks fourth, and it ignores `mean perimeter` entirely. Each library computes importance its own way, and among near-twin columns a model can pick any one, so compare rankings, not numbers.
 
 ## 6. Early stopping
 

@@ -468,38 +468,6 @@ plt.show()
 
 These advanced topics will help you handle complex time series analysis scenarios in specialized applications. For most daily data science work, the content in the main lecture is sufficient.
 
-# One Date at a Time with Python
-
-## Python datetime Module
-
-| Operation | Starting value | Result |
-| --- | --- | --- |
-| Parse a lab time | Text `"2023-12-25 14:30:00"` | A datetime representing December 25 at 14:30 |
-| Format it for a letter | That datetime | Text `"December 25, 2023 at 02:30 PM"` |
-| Add 30 days | That datetime | `2024-01-24 14:30:00` |
-
-### Reference Card: Python `datetime`
-
-- `datetime.now()`: Current date and time
-- `datetime(year, month, day)`: Create specific date
-- `datetime.strptime(string, format)`: Parse string to datetime
-- `datetime.strftime(format)`: Format datetime to string
-- `timedelta(days=30)`: A duration (also `hours=`, `weeks=`); add it to a `datetime` to move it; subtracting two datetimes returns one
-- Format codes: `%Y` four-digit year, `%m` month 01-12, `%d` day, `%H` 24-hour hour, `%M` minute, `%S` second, `%I` with `%p` 12-hour clock with AM/PM, `%B` full month name
-
-### Code Snippet: Python `datetime`
-
-```python
-from datetime import datetime, timedelta
-lab_time = datetime.strptime("2023-12-25 14:30:00", "%Y-%m-%d %H:%M:%S")   # text in
-print(lab_time.strftime("%B %d, %Y at %I:%M %p"))   # December 25, 2023 at 02:30 PM
-print(lab_time + timedelta(days=30))                 # 2024-01-24 14:30:00: the 30-day follow-up
-age = datetime(2024, 3, 1) - datetime(1990, 5, 15)
-print(age.days)                                      # 12344: age in days on March 1, 2024
-```
-
-_A datetime is the Swiss Army knife of temporal data: precise to the microsecond, and `pandas` wields a million at a time._
-
 # Calendar Schedule Examples
 
 ## Code Snippet: Date Ranges
@@ -521,8 +489,6 @@ DatetimeIndex(['2024-01-31', '2024-02-29', '2024-03-31'], dtype='datetime64[us]'
 ```
 
 The business-day range skips the weekend of January 6-7. The default business-day rule skips weekends, but keeps holidays; custom holiday calendars are in `BONUS.md`.
-
-_Every Monday? Business days only? `pandas` generates just about any date pattern you can imagine, and some you probably can't._
 
 # Time-of-Day Selection Example
 

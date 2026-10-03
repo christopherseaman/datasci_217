@@ -17,7 +17,8 @@ jupyter:
 
 # Demo 1: Parse, Index, and Select Patient Readings
 
-A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date. Parse and inspect the dates, make a sorted DatetimeIndex, format an hour key, and select a calendar interval. These steps use Lecture 09 up to the first demo break, plus Lectures 01–08. The labeled optional sections use BONUS references for scalar datetime, frequency inference, specialized schedules, and clock-time filters. All patient data are synthetic.
+A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date. Parse and inspect the dates, make a sorted DatetimeIndex, format an hour key, and select a calendar interval. These steps use Lecture 09 up to the first demo break, plus Lectures 01–08. Section 1 practices the lecture's Python `datetime` module; the labeled optional sections cover frequency inference, specialized schedules, and clock-time filters from BONUS.md. All patient data are synthetic.
+
 
 ## How to run
 
@@ -49,9 +50,10 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 | Route | Cells to run |
 | --- | --- |
 | Core walkthrough | Run Setup, all cells in [2. A text column becomes a DatetimeIndex](#2-a-text-column-becomes-a-datetimeindex), then [4. Select a calendar interval](#4-select-a-calendar-interval). |
-| Independent practice | After class, repeat the main steps and try the explicitly optional scalar-date, schedule/inference, and clock-selection sections using their BONUS links. |
+| Independent practice | After class, repeat the main steps and try section 1 (Python `datetime`, from the lecture) and the explicitly optional schedule/inference and clock-selection sections, whose topics are in BONUS.md. |
 
 **Core checkpoint:** One date becomes `NaT`; the repaired table has 4 sorted readings, and the March 1–2 slice contains 2 readings.
+
 
 ## Setup
 
@@ -77,9 +79,10 @@ print('NumPy', np.__version__)
 
 **Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
 
-## 1. One date at a time with `datetime` (optional)
 
-Optional reference: [One Date at a Time with Python](../BONUS.md#one-date-at-a-time-with-python).
+## 1. One date at a time with `datetime`
+
+Independent practice of the lecture's Python datetime Module section.
 
 A discharge time arrives as text. `strptime()` parses it, `strftime()` formats it for a letter, and a `timedelta` moves it forward to the follow-up contacts.
 
@@ -100,6 +103,7 @@ print('Age in years:', round(age.days / 365.25, 1))
 ```
 
 **Expect:** `2024-03-01 14:30:00`, then `March 01, 2024 at 02:30 PM`. The phone call falls on `2024-03-08` and the clinic visit on `2024-03-31` (2024 is a leap year, so February has 29 days). Age: `23982` days, `65.7` years.
+
 
 ## 2. A text column becomes a DatetimeIndex
 
@@ -148,9 +152,10 @@ print(log.index.day_name())
 
 **Expect:** `Sorted? False`, then `Sorted? True`, and four rows from `2024-03-01 07:05:00` (81.9 kg) to `2024-03-04 06:55:00` (83.4 kg). The day names run `Friday`, `Saturday`, `Sunday`, `Monday`.
 
+
 ## 3. Schedule and inference alternatives (optional)
 
-Optional references: [Frequency Inference and Specialized Schedules](../BONUS.md#frequency-inference-and-specialized-schedules) and [Calendar Schedule Examples](../BONUS.md#calendar-schedule-examples). This section uses the `log` prepared in section 2.
+Optional references: Frequency Inference and Specialized Schedules and Calendar Schedule Examples, in BONUS.md. This section uses the `log` prepared in section 2.
 
 `pd.date_range()` builds a schedule from a frequency alias, and `pd.infer_freq()` reads the spacing back from an index.
 
@@ -168,6 +173,7 @@ print('Home weigh-ins:', pd.infer_freq(log.index))
 
 **Expect:** Mondays `2024-03-04`, `03-11`, `03-18`, `03-25`; lab dates `2024-03-01`, `04-01`, `05-01`; `Clinic days: 10` (two weekends skipped). `infer_freq` returns `W-MON` for the calls and `None` for the weigh-ins: the patient steps on the scale at a slightly different minute each morning, so the log has no single frequency.
 
+
 ## 4. Select a calendar interval
 
 Use the sorted `log` from section 2. A partial month selects every reading in that month; a date slice includes both endpoint days.
@@ -180,9 +186,10 @@ print('Hours:', log.index.hour.tolist())
 
 **Expect:** `(4, 1)` for March. The date slice has March 1 at 07:05 (81.9 kg) and March 2 at 07:15 (82.1 kg). `Hours: [7, 7, 7, 6]` extracts the clock hour without turning the dates back into text.
 
+
 ## 5. Hourly ICU vitals: select by clock time (optional)
 
-Optional reference: [Time-of-Day Selection Example](../BONUS.md#time-of-day-selection-example). This section builds its own ICU data; it needs no values from the schedule examples.
+Optional reference: Time-of-Day Selection Example, in BONUS.md. This section builds its own ICU data; it needs no values from the schedule examples.
 
 A second patient's monitor records heart rate and oxygen saturation (SpO2, in percent) every hour for one week. Heart rate runs about 12 beats per minute lower between midnight and 06:00, while the patient sleeps.
 

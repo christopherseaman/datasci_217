@@ -107,13 +107,22 @@ _Warning: Regular expressions are write-only code. You write them once, and six 
 ```python
 # Extract phone numbers from text
 import re
-text = pd.Series(['Call me at 555-1234', 'My number is (555) 555-5678', 'No phone here'])
+text = pd.Series(['Call me at 415-555-1234', 'My number is (555) 555-5678', 'No phone here'])
 
 # Pattern for phone numbers
 pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
 phones = text.str.extract(f'({pattern})')
 print(phones)
+```
 
+```text
+                0
+0    415-555-1234
+1  (555) 555-5678
+2             NaN
+```
+
+```python
 # Validate email addresses
 emails = pd.Series(['alice@test.com', 'invalid.email', 'bob@example.org'])
 email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -156,7 +165,15 @@ print(f"Found {len(outliers)} outliers")
 from scipy import stats
 z_scores = np.abs(stats.zscore(df['value']))
 outliers_z = df[z_scores > 3]
+print(f"Found {len(outliers_z)} outlier")
 ```
+
+```text
+Found 2 outliers
+Found 1 outlier
+```
+
+The z-score rule misses 450: the two extreme values inflate the standard deviation they are measured against, so 450 scores only 2.93. That masking is why the IQR rule or the modified z-score, built on quartiles or the median, is more robust.
 
 # Complex String Transformations
 

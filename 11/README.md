@@ -120,7 +120,7 @@ A **complete panel** has a row for every entity at every time step (Lecture 09),
 - `json.load(file)`: Read a JSON **release manifest**, the file that records a release's **provenance** (sources and selection rules) and expected facts such as row counts, into a `dict` (Lecture 07).
 - `hashlib.sha256(path.read_bytes()).hexdigest()`: A file's SHA-256 **hash**, a fingerprint that changes if one byte changes, to compare with the one the manifest records (Lecture 05).
 - `df.duplicated(subset=key).any()`: `True` if any key combination repeats (Lecture 05).
-- `pd.date_range(start, end, freq="h", tz="UTC", inclusive="left")`: Every elapsed UTC hour in the window (Lecture 09).
+- `pd.date_range(start_utc, end_utc, freq="h", inclusive="left")`: Every elapsed UTC hour in the window, where `start_utc` and `end_utc` are local midnights converted with `.tz_convert("UTC")` (Lecture 09).
 - `pd.merge(entities, hours, how="cross")`: The expected grid, every entity at every hour (Lecture 06).
 - `expected.merge(obs, on=key, how="left", validate="one_to_one", indicator=True)`: Keeps every expected row, raises `MergeError` if a key repeats, and adds `_merge` with `"both"` or `"left_only"` (Lecture 06).
 - `panel["_merge"].eq("both")`: Boolean `source_observed` flag; `True` where a source row existed.
@@ -155,7 +155,7 @@ The same 15:00 gap becomes 0 in one column and stays `NaN` in the other: an hour
 
 ## Baselines and a chronological split
 
-- A **baseline** is a simple rule a model must beat. Lecture 10's **persistence** baseline predicts that the next hour equals this hour; the taxi demo uses its weekly form, 168 elapsed hours earlier (`lag_168`), usually the same local hour last week; the local clock hour shifts across a daylight-saving change. Without a baseline, an average miss (MAE) of 25 pickups has no reference point.
+- A **baseline** is a simple rule a model must beat. Lecture 10's **persistence** baseline predicts that the next hour equals this hour. The taxi demo uses its weekly form, `lag_168`: the count 168 elapsed hours earlier, usually the same local hour last week. In a week with a clock change it lands one local hour off. Without a baseline, an average miss (MAE) of 25 pickups has no reference point.
 - A **chronological split** keeps time in order. Fit candidates on the earliest period and choose between them on the **validation** period. Then freeze that choice, refit it on training plus validation, and evaluate it once on the latest **test** period.
 
 | Split | Local target hours | Rows | Used for |
@@ -263,7 +263,9 @@ Lecture 10 covers the cyclic features (sine and cosine put hour 23 next to hour 
 
 Do not copy taxi-specific values, features, or outputs; adapt each decision to the sensor data.
 
-## Optional practice after class
+# Keep Practicing After the Course
+
+Coding skill fades without use, so keep a small habit going after the final:
 
 - [Advent of Code](https://adventofcode.com): short programming puzzles for continued practice.
 - [GameShell](https://github.com/phyver/GameShell): a game for practicing the Unix shell.

@@ -189,6 +189,7 @@ def run() -> None:
             root = variant(workspace, label, correct)
             edit(root, FRIDGE_FILE, lambda text: text.rstrip() + "\n" + extra + "\n")
             assert lost(root) == {"fridge block: rows FRG-102 and FRG-103"}, lost(root)
+        assert "remove the extra or repeated rows" in detail(root, "fridge block: rows FRG-102 and FRG-103")
 
         # Each mistake costs only the check it gets wrong.
         mistakes = []
@@ -217,8 +218,14 @@ def run() -> None:
                 'fridge_log.index.name = "fridge_id"')
         mistake("fridge-slice-short", lambda root: fridge.iloc[1:2].to_csv(root / FRIDGE_FILE),
                 {"fridge block: rows FRG-102 and FRG-103"}, "missing FRG-103")
+        # A short block is missing a fridge, not holding extra rows.
+        assert "rows, expected" not in detail(workspace / "fridge-slice-short", "fridge block: rows FRG-102 and FRG-103")
         mistake("fridge-slice-long", lambda root: fridge.loc["FRG-101":"FRG-103"].to_csv(root / FRIDGE_FILE),
                 {"fridge block: rows FRG-102 and FRG-103"}, "also holds FRG-101")
+        mistake("fridge-whole-table-saved", lambda root: fridge.to_csv(root / FRIDGE_FILE),
+                {"fridge block: rows FRG-102 and FRG-103"}, "it looks like fridge_log was saved")
+        assert "includes its end label" not in detail(workspace / "fridge-whole-table-saved",
+                                                      "fridge block: rows FRG-102 and FRG-103")
         mistake("fridge-am-only", lambda root: fridge.loc["FRG-102":"FRG-103", ["am_temp_c"]].to_csv(root / FRIDGE_FILE),
                 {"fridge block: pm_temp_c column"}, "no pm_temp_c column")
 
@@ -233,6 +240,8 @@ def run() -> None:
         mistake("fridge-am-renamed", renamed_columns("am_tmp_c", "pm_temp_c"), {"fridge block: am_temp_c column"},
                 'a column named am_tmp_c where Task 2.1 names it am_temp_c; build fridge_log with '
                 'columns=["am_temp_c", "pm_temp_c"]')
+        mistake("fridge-columns-swapped", renamed_columns("pm_temp_c", "am_temp_c"),
+                {"fridge block: am_temp_c values"}, "column labels swapped")
         mistake("fridge-both-renamed", renamed_columns("am_temp", "pm_temp"),
                 {"fridge block: am_temp_c column", "fridge block: pm_temp_c column"}, "Task 2.1 names it")
         mistake("fridge-one-wrong-value",
@@ -269,7 +278,11 @@ def run() -> None:
                             "fridge block: pm_temp_c values"}
         mistake("fridge-index-dropped-row-wrong", unlabeled_rows((3.8, 6.2), (5.5, 7.9)), unlabeled_values)
         assert "FRG-103 has 7.9" in detail(workspace / "fridge-index-dropped-row-wrong", "fridge block: pm_temp_c values")
-        mistake("fridge-index-dropped-columns-swapped", unlabeled_rows((6.2, 3.8), (7.4, 5.0)), unlabeled_values)
+        # Swapped column labels are one mistake, charged once on the am_temp_c values check.
+        mistake("fridge-index-dropped-columns-swapped", unlabeled_rows((6.2, 3.8), (7.4, 5.0)),
+                {"fridge block: fridge_id index column", "fridge block: am_temp_c values"})
+        assert "column labels swapped" in detail(workspace / "fridge-index-dropped-columns-swapped",
+                                                 "fridge block: am_temp_c values")
         mistake("fridge-index-dropped-wrong-slice", unlabeled_rows((4.1, 5.6), (3.8, 6.2)),
                 {"fridge block: fridge_id index column", "fridge block: rows FRG-102 and FRG-103"})
         assert "missing FRG-103; it also holds FRG-101" in detail(workspace / "fridge-index-dropped-wrong-slice",
@@ -346,8 +359,14 @@ def run() -> None:
                 {"selected supplies: no other lines"}, "C1022, C1407 and C1560, which have quantity 1")
         mistake("supplies-mask-greater-than",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] > 2])),
-                {"selected supplies: line C1833", "selected supplies: line C4105", "selected supplies: line C2655"},
-                '>= 2 keeps it, while > 2 drops it')
+                {"selected supplies: line C1833"},
+                '>= 2 keeps it, while > 2 drops it, along with C4105 and C2655')
+        # A truncated table is not the > mistake: every missing line is charged, quantity-2 lines included.
+        truncated = with_totals(source.loc[source["quantity"] >= 2]).head(2)
+        mistake("supplies-truncated",
+                lambda root: rewrite(root, truncated),
+                {f"selected supplies: line {item_id}" for item_id in expected_selection()[2:]},
+                'build the mask quantity_at_least_two = supplies["quantity"] >= 2')
         mistake("supplies-no-tiebreak",
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] >= 2]).sort_index()
                                      .sort_values("line_total_usd", ascending=False)),
@@ -400,8 +419,7 @@ def run() -> None:
             selected.sort_values(by=["line_total_usd", "item_id"], ascending=[False, True])
             rewrite(root, selected)
 
-        mistake("supplies-not-reassigned", not_reassigned,
-                {"selected supplies: highest line total first", "selected supplies: ties in item_id order"},
+        mistake("supplies-not-reassigned", not_reassigned, {"selected supplies: highest line total first"},
                 "so assign the result back: selected_supplies = selected_supplies.sort_values(")
         mistake("supplies-missing", lambda root: (root / SUPPLIES_FILE).unlink(), SUPPLY_CHECKS)
         mistake("supplies-tabs-one-wrong-total",
@@ -425,7 +443,7 @@ def run() -> None:
         assert report.rstrip().endswith("Score: 91/100\nLeft to fix (9 points): selected supplies: line totals."), report
         report = printed(workspace / "supplies-mask-greater-than")
         assert report.rstrip().endswith(
-            "Left to fix (9 points): selected supplies: line C1833, line C4105 and line C2655."), report
+            "Left to fix (3 points): selected supplies: line C1833."), report
         report = printed(workspace / "supplies-quantity-misnamed")
         assert report.rstrip().endswith("Left to fix (2 points): selected supplies: quantity column."), report
         report = printed(workspace / "supplies-no-total")

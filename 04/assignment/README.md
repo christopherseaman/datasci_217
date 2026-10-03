@@ -165,8 +165,10 @@ All checks passed.
 
 How the files are read:
 
-- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd` in a table of recognizable order lines costs only its column check; the line and sorting checks still assess the values present.
+- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd` in a table of recognizable order lines costs only its column check; the line and sorting checks still assess the values present. Leaving out every quantity-2 line, as a `>` mask does, is one mistake and costs only the `line C1833` check.
 - A column saved under another name, such as `am_temp` for `am_temp_c`, costs only its 2-point name check; its values are still graded.
+- Swapping the `am_temp_c` and `pm_temp_c` labels is one mistake and costs only the `am_temp_c` values check.
+- Lines saved unsorted, as `sort_values()` without assigning the result back leaves them, cost only the highest-line-total-first check; ties are judged once the lines run from the highest total down.
 - Spacing, line endings, quoting, and column order never cost points.
 - Numbers are compared as numbers, so `57`, `57.0`, and `57.00` are the same value.
 - IDs, item descriptions, and column names are compared in any letter case.
@@ -210,6 +212,6 @@ Extra files are ignored.
 
 ## Submit
 
-Before you commit a notebook, follow Lecture 04's "Before You Commit a Notebook": click **Clear All Outputs**, then save. In VS Code Source Control, stage `assignment.ipynb` and both files in `output/`. Commit with `Complete Assignment 04 notebook` and select **Sync Changes**. Keep `.venv/` out of the commit; `.gitignore` already lists it.
+After **Restart** and **Run All**, save the notebook with its outputs: they hold only synthetic data and show your results, as Lecture 04's "Before You Commit a Notebook" says for course assignments. In VS Code Source Control, check the notebook's diff, then stage `assignment.ipynb` and both files in `output/`. Commit with `Complete Assignment 04 notebook` and select **Sync Changes**. Keep `.venv/` out of the commit; `.gitignore` already lists it.
 
 Confirm the notebook and both CSV files on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a run cannot download the course's current checks, it grades with the copy in your repository and says so in its log. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks. If a required VS Code control is unavailable, record its message and contact the instructor.

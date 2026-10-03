@@ -120,7 +120,7 @@ print(bp.reset_index().equals(bp_wide))
 
 **Expect:** `True`.
 
-### 4. Wide to long with `melt()`
+### 3. Wide to long with `melt()`
 
 Plotting SBP over time and grouping by visit both want one row per patient-visit.
 
@@ -148,7 +148,7 @@ bp_long.sort_values(['patient_id', 'week']).head(3)
 
 **Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
 
-### 6. Long back to wide with `pivot()`
+### 4. Long back to wide with `pivot()`
 
 `pivot()` rebuilds the wide table: `visit` supplies the headers and `sbp` fills the cells. With two identifier columns, the result has two-level row labels, so `reset_index()` turns them back into columns.
 
@@ -169,7 +169,7 @@ bp_wide_again
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
 
-### 3. Renumber rows after a filter
+### 5. Renumber rows after a filter
 
 Filtering keeps the original row labels, so the numbers now have gaps.
 
@@ -184,7 +184,7 @@ high_baseline[['patient_id', 'baseline']]
 
 **Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
 
-### 5. Two-level row labels on the long table
+### 6. Two-level row labels on the long table
 
 In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
 

@@ -16,7 +16,10 @@ cells may be separated by commas, semicolons, or tabs.
 
 A mistake is charged once. A column saved twice with the same values counts
 once; a column name used twice for different values costs the columns check,
-and the other checks read the copy that fits best. A row listed twice costs
+and the other checks read the copy that fits best. An ID column named twice,
+which putting tables side by side with pd.concat(..., axis=1) makes, costs
+only the columns check, and aligned_features.csv lined up by row position
+rather than by specimen_id costs only one check. A row listed twice costs
 the rows check, and the values checks accept it when one copy is right. The
 batch labels may be any two labels that tell the batches apart, and the round
 trip is also judged against the student's own sbp_long.csv, so a mistake in
@@ -639,6 +642,8 @@ def rows_check(
         found = _resolve(table, artifact)
         if any(column not in found for column in artifact.key):
             return  # The columns check charges missing keys once.
+        if any(table.columns[found[column]] in table.repeated for column in artifact.key):
+            return  # The columns check charges an ID column named twice, with its cause, once.
         grouped, unknown = _group(table, artifact, found)
         named = [cells for cells in unknown if any(cells)]
         seen = RowProblems(
@@ -660,7 +665,7 @@ def rows_check(
             problems.append(f"also has {_count(len(names), 'row')} for {shown}")
         if seen.empty:
             problems.append(f"also has {_count(seen.empty, 'row')} with an empty {' and '.join(artifact.key)}")
-        likely = _repeated_cause(table, artifact, found, artifact.key) or (cause(seen) if cause else "")
+        likely = cause(seen) if cause else ""
         _assert(
             not problems,
             f"{artifact.path} " + "; ".join(problems) + "; it should hold one row for each of "
@@ -814,6 +819,66 @@ def _aligned_rows_cause(seen: RowProblems) -> str:
     if seen.missing:
         return 'join="inner", or a merge other than how="outer", drops the labels that only one table has.'
     return ""
+
+
+# The fix for aligned_features.csv lined up by row position rather than by specimen_id.
+BY_POSITION_CAUSE = (
+    "Its rows were lined up by row number, not by specimen_id: pd.concat(..., axis=1) matches row labels, and "
+    'a table that keeps specimen_id as a column still has row numbers as its labels. set_index("specimen_id") '
+    "on both tables first."
+)
+
+
+def _in_file_order(table: Table, position: int | None, expected: list[object]) -> bool:
+    filled = [row[position] for row in table.rows if row[position]] if position is not None else []
+    return len(filled) == len(expected) and all(_matches(cell, value) for cell, value in zip(filled, expected))
+
+
+def _lined_up_by_position(root: Path) -> bool:
+    """aligned_features.csv holds every source value in file order, but not beside its own specimen_id.
+
+    That is pd.concat(..., axis=1) with row numbers still the index of one or
+    both tables, in either order: one mistake, charged once.
+    """
+    try:
+        table = read_table(root, ALIGNED)
+        found = _resolve(table, ALIGNED)
+    except AssertionError:
+        return False
+    volumes = [SPECIMENS[specimen_id]["volume_ml"] for specimen_id in BATCH_A]
+    return (
+        _in_file_order(table, found.get("volume_ml"), volumes)
+        and _in_file_order(table, found.get("transit_min"), list(TRANSIT_MIN.values()))
+        and not all(_passes(values_check(ALIGNED, (column,), ""), root) for column in ("volume_ml", "transit_min"))
+    )
+
+
+def _aligned_columns(hint: str) -> Callable[[Path], None]:
+    def check(root: Path) -> None:
+        columns_check(ALIGNED, BY_POSITION_CAUSE if _lined_up_by_position(root) else hint)(root)
+
+    return check
+
+
+def _aligned_rows(hint: str) -> Callable[[Path], None]:
+    def check(root: Path) -> None:
+        by_position = _lined_up_by_position(root)
+        if by_position and not _passes(columns_check(ALIGNED, ""), root):
+            return  # The columns check charges the misaligned rows once, naming the cause.
+        rows_check(ALIGNED, hint, (lambda seen: BY_POSITION_CAUSE) if by_position else _aligned_rows_cause)(root)
+
+    return check
+
+
+def _aligned_values(column: str, hint: str) -> Callable[[Path], None]:
+    def check(root: Path) -> None:
+        if _lined_up_by_position(root) and not (
+            _passes(columns_check(ALIGNED, ""), root) and _passes(rows_check(ALIGNED, ""), root)
+        ):
+            return  # The columns or rows check charges the shifted values once, naming the cause.
+        values_check(ALIGNED, (column,), hint)(root)
+
+    return check
 
 
 def _round_trip_rows_cause(seen: RowProblems) -> str:
@@ -1009,34 +1074,29 @@ CHECKS = (
     # Task 2.3: output/aligned_features.csv
     Check(
         "aligned features: columns",
-        columns_check(
-            ALIGNED,
+        _aligned_columns(
             "Move specimen_id into the index of both tables, put batch_a's volume_ml beside transit_times with "
             "pd.concat(..., axis=1), and save with the index, so leave out index=False.",
         ),
     ),
     Check(
         "aligned features: one row per specimen",
-        rows_check(
-            ALIGNED,
+        _aligned_rows(
             "pd.concat(..., axis=1) keeps every specimen_id label from both tables: SP101 to SP104 from batch_a "
             "and SP108 from transit_times.",
-            _aligned_rows_cause,
         ),
     ),
     Check(
         "aligned features: volume_ml values",
-        values_check(
-            ALIGNED,
-            ("volume_ml",),
+        _aligned_values(
+            "volume_ml",
             "volume_ml comes from batch_a; SP108 is not in batch_a, so its volume_ml stays blank.",
         ),
     ),
     Check(
         "aligned features: transit_min values",
-        values_check(
-            ALIGNED,
-            ("transit_min",),
+        _aligned_values(
+            "transit_min",
             "transit_min comes from transit_times.csv; SP101 and SP104 have no transit time, so theirs stay blank.",
         ),
     ),

@@ -123,9 +123,50 @@ def run() -> None:
             ),
             # A patient listed twice counts once.
             followup + f"{listed[0]}\n",
+            # IDs written together on one line, by print(ids) or joined with commas.
+            f"Cutoff: {cutoff} mmHg\n{REASON}{listed}\n",
+            f"Cutoff: {cutoff} mmHg\n{REASON}" + ", ".join(listed) + "\n",
+            # A printed set, as print(ids) writes one.
+            f"Cutoff: {cutoff} mmHg\n{REASON}{set(listed)}\n",
         ):
             write_submission(root, report=report, followup=variant)
             assert grade_submission(root)["score"] == 100, variant
+
+        # A cutoff that selects one patient, printed as a one-ID list or set, is read as that patient.
+        only = sorted(encounters.patients_at_or_above(175))
+        assert len(only) == 1, only
+        for printed in (str(only), str(set(only))):
+            write_submission(root, report=report, followup=f"Cutoff: 175 mmHg\n{REASON}{printed}\n")
+            assert grade_submission(root)["score"] == 100, printed
+        # A line with an ID among other words is not read, and the feedback shows the line it found.
+        write_submission(root, report=report, followup=f"Cutoff: 175 mmHg\n{REASON}call {only[0]} today\n")
+        detail = [t["detail"] for t in grade_submission(root)["tests"] if t["test-name"] == "follow-up patient list"][0]
+        assert f"found `call {only[0]} today`" in detail and "the 1 patient with" in detail, detail
+        # One line read and another not: the unread ID is shown on its line, not called left out.
+        pair = sorted(encounters.patients_at_or_above(165))
+        assert len(pair) == 2, pair
+        write_submission(root, report=report, followup=f"Cutoff: 165 mmHg\n{REASON}{pair[0]}\n{pair[1]} (186 mmHg)\n")
+        detail = [t["detail"] for t in grade_submission(root)["tests"] if t["test-name"] == "follow-up patient list"][0]
+        assert f"found `{pair[1]} (186 mmHg)`" in detail and "leaves out" not in detail, detail
+
+        # Leaving out the 60-250 mmHg range rule is one mistake, charged once in the usable count: the
+        # skipped count, later values, and list are judged against the student's own rows.
+        loose = summarize_encounters(SUPPLIED_ENCOUNTERS, check_range=False)
+        assert (len(loose.usable), loose.skipped_rows) == (27, 4), loose
+        loose_readings = loose.readings
+        write_submission(
+            root,
+            report=(
+                f"Usable encounters: {len(loose.usable)}\nSkipped rows: {loose.skipped_rows}\n"
+                f"Patients seen: {len(loose.patients)}\n"
+                f"Mean systolic: {sum(loose_readings) / len(loose_readings):.1f}\n"
+                f"Highest systolic: {max(loose_readings)}\nLowest systolic: {min(loose_readings)}\n"
+            ),
+            followup=f"Cutoff: {cutoff} mmHg\n{REASON}" + "".join(f"{p}\n" for p in sorted(loose.patients_at_or_above(cutoff))),
+        )
+        lost = {name: CHECK_POINTS[name] - score for name, score in scores(root).items() if score != CHECK_POINTS[name]}
+        assert set(lost) == {"usable encounters"}, lost
+        assert "range rule is likely missing" in str(grade_submission(root)), grade_submission(root)
 
         # Every cutoff in range is right when the list matches it.
         for alternative in range(120, 181):

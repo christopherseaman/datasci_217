@@ -688,15 +688,13 @@ The arrays stay aligned: each patient ID matches the mean at the same position. 
 
 ## Independent practice: full blood pressure analysis
 
-This full script includes optional selection and axis-sorting extensions. Read the BONUS references in [3.2](#32-masks-positions-and-shapes) and [3.3](#33-summaries-labels-and-rankings) before running it; the core walkthrough above uses only preceding main-lecture material.
-
 Work through the longer analysis on your own after class. It creates its own data, so it does not depend on the core script.
 
 ```bash
 python3 demo3_bp_analysis.py
 ```
 
-Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in 3.1 to 3.3 are the whole run, in order, using the main lecture's two topics and the optional BONUS variations linked below.
+Source: [demo3_bp_analysis.py](demo3_bp_analysis.py). The generator is seeded with `42`, so every number below is what you should see. It creates a `(100, 5)` array of diastolic blood-pressure readings in mmHg: 100 patients, five visits each. The blocks in 3.1 to 3.3 are the whole run, in order, using only the main lecture's two topics.
 
 ```text
 Blood Pressure Analysis with NumPy
@@ -762,7 +760,7 @@ Original readings row 0, untouched: [72 93 90 83 83]
 
 ## 3.2 Masks, Positions, and Shapes
 
-Independent practice: inspect these selection and reshaping variations after the core axis-and-group analysis. Read the optional [multidimensional mask reference](../BONUS.md#more-multidimensional-boolean-indexing) and [fancy-indexing examples](../BONUS.md#more-fancy-indexing) for the deeper row/column selections below.
+Independent practice: inspect these selection and reshaping variations after the core axis-and-group analysis. The row and column masks below follow the lecture's [Multidimensional Boolean Indexing](../README.md#multidimensional-boolean-indexing); the row and column picks by position follow its [Fancy Indexing](../README.md#fancy-indexing).
 
 A comparison on the whole `(100, 5)` array gives one `True` or `False` per reading. `readings[mask]` keeps the matching readings as a 1-D array, and `.sum()` counts them. Assigning through a mask, `capped[capped > 95] = 95`, changes the array it indexes, so the script caps a `.copy()` of the readings and leaves the raw ones alone:
 
@@ -881,7 +879,7 @@ First five stages: ['stage 1' 'stage 1' 'stage 2' 'stage 1' 'stage 1']
 
 The second `np.where` keeps a reading where it is 90 or above and substitutes `0` everywhere else, which picks out the visits that were in stage 2; the zeros mark positions that failed the test, not measured pressures. `np.select` checks `>= 90` before `>= 80`, so an average of 92.6 gets `stage 2`, and `default="normal"` fills every position where neither is true. The 9 stage-2 patients are the same 9 marked `refer`.
 
-The last section ranks visits and patients. Its row-wise sorting is an independent extension: read [Sort Within Rows or Order Whole Rows](../BONUS.md#sort-within-rows-or-order-whole-rows) before working through it:
+The last section ranks visits and patients, sorting along an axis as in the lecture's [Sorting and Ranking](../README.md#sorting-and-ranking):
 
 ```text
 === Sorting and Ranking ===

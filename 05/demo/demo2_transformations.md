@@ -16,7 +16,7 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 2: Reshaping a Clinic Intake Export
+# Demo 2: Transforming a Clinic Intake Export
 
 A clinic's intake form exports column names with spaces and units, smoking status and site typed several ways, age as text, and pain as `'7/10'`. This demo renames the columns, normalizes the text, turns labels and text into numbers, groups values into bands, and prepares indicator columns for a model. Everything here comes from Lecture 05 up to the second demo break, plus Lectures 01 to 04.
 
@@ -25,7 +25,7 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 | Route | Work and visible checkpoint |
 | --- | --- |
 | [Core walkthrough](#core-walkthrough) | Normalize nine intake rows, preserve two missing ages, stage BP from both pressures, and create age bands. |
-| [Independent practice](#independent-practice) | Compare category storage and indicators; diagnose repeated `qcut()` edges. |
+| [Independent practice](#independent-practice) | Compare category storage and indicators; diagnose repeated `qcut()` edges; normalize multiword clinic labels to `north_clinic`. |
 
 ## How to run
 
@@ -171,7 +171,7 @@ print(pd.Series(['never', 'Former', 'current']).map({'never': 0, 'former': 1, 'c
 
 ### 6. Group values into bands
 
-Age bands with edges chosen to match a clinical table (`cut`), then SBP quartiles chosen by the data (`qcut`).
+Age bands with edges chosen to match a clinical table (`cut`). Independent practice adds SBP quartiles chosen by the data (`qcut`).
 
 ```python
 intake['age_band'] = pd.cut(intake['age'], bins=[17, 39, 64, 120], labels=['18-39', '40-64', '65+'])

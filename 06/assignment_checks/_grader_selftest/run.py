@@ -9,8 +9,9 @@ the extra `record_status` column the lecture's merge keeps) earns 100 too, an
 empty directory and the untouched handout earn 0, one wrong value or one
 misnamed column costs exactly its own check, a missing file costs only its
 own artifact's checks, and the feedback names the cause it found (a right or
-inner merge, tables put side by side with repeated column names, columns
-renamed by position, a file saved outside `output/`). It also confirms that the copies of the supplied data in
+inner merge, tables put side by side with repeated column names or lined
+up by row position, each charged once, columns renamed by position, a file
+saved outside `output/`). It also confirms that the copies of the supplied data in
 `_value_checks.py` match `06/assignment/data/`, that the README's checkpoints
 and completion contract agree with the checks, that the handout ships every
 file in `CHECKS_FILES` byte for byte and no other Python file, and that the
@@ -489,19 +490,37 @@ def run() -> None:
         files["output/aligned_features.csv"] = pd.concat(
             [batch_a[["specimen_id", "volume_ml"]], transit_times], axis=1).to_csv(index=False)
         result = graded(submission("side-by-side", files))
-        assert failing(result) == {"combined specimens: columns", "combined specimens: one row per specimen",
-                                   "aligned features: columns", "aligned features: one row per specimen",
-                                   "aligned features: transit_min values"}, failing(result)
+        assert failing(result) == {"combined specimens: columns", "aligned features: columns"}, failing(result)
         assert "source_partition twice" in detail(result, "combined specimens: columns")
-        assert "names specimen_id twice" in detail(result, "aligned features: columns")
+        message = detail(result, "aligned features: columns")
+        assert "names specimen_id twice" in message and 'set_index("specimen_id") on both tables' in message, message
+
+        # Lined up by position with one specimen_id column: the shifted transit times cost one check.
+        files = dict(correct)
+        files["output/aligned_features.csv"] = pd.concat(
+            [batch_a[["specimen_id", "volume_ml"]], transit_times[["transit_min"]]], axis=1).to_csv(index=False)
+        result = graded(submission("by-position", files))
+        assert failing(result) == {"aligned features: one row per specimen"}, failing(result)
+        message = detail(result, "aligned features: one row per specimen")
+        assert "lined up by row number" in message and 'set_index("specimen_id") on both tables' in message, message
+        assert 'join="inner"' not in message, message
 
         # Only one table indexed: its partner's row numbers leave rows with an empty specimen_id.
         files = dict(correct)
         files["output/aligned_features.csv"] = pd.concat(
             [batch_a[["specimen_id", "volume_ml"]].set_index("specimen_id"), transit_times], axis=1).to_csv()
-        message = detail(graded(submission("one-table-indexed", files)), "aligned features: one row per specimen")
-        assert "4 rows with an empty specimen_id" in message and "blank" not in message, message
-        assert 'set_index("specimen_id") on both tables' in message, message
+        result = graded(submission("one-table-indexed", files))
+        assert failing(result) == {"aligned features: columns"}, failing(result)
+        message = detail(result, "aligned features: columns")
+        assert "no header" in message and 'set_index("specimen_id") on both tables' in message, message
+
+        # Both tables unindexed, transit times first: one check, the rows check, names the cause.
+        files = dict(correct)
+        files["output/aligned_features.csv"] = pd.concat(
+            [transit_times, batch_a[["volume_ml"]]], axis=1).to_csv(index=False)
+        result = graded(submission("by-position-reversed", files))
+        assert failing(result) == {"aligned features: one row per specimen"}, failing(result)
+        assert "lined up by row number" in detail(result, "aligned features: one row per specimen")
 
         # Batches labeled with keys= and saved with their index: two unheaded columns, counted once.
         files = dict(correct)

@@ -1,0 +1,4 @@
+feature,Year,Spending_USD,Life_Expectancy
+Year,1.0,0.826,0.902
+Spending_USD,0.826,1.0,0.579
+Life_Expectancy,0.902,0.579,1.0

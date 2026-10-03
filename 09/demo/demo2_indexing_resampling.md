@@ -19,12 +19,14 @@ jupyter:
 
 An ICU patient's bedside monitor records heart rate and temperature every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days. You summarize the readings by day and week, count what the monitor missed, lay sparse charted readings onto an hourly grid, resample two patients separately, and smooth the daily series with rolling windows and an EWM. Everything here comes from Lecture 09 up to the second demo break, plus Lectures 01 to 08. Patient values are synthetic.
 
+
 ## How to run
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
 
 - **In Colab:** open Demo 2 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
 - **Locally in VS Code:** use the `~/09-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo2_indexing_resampling.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`. **In a new terminal**, `cd ~/09-demo` and then `source .venv/bin/activate` bring the environment back.
+
 
 ## Choose Your Route
 
@@ -33,9 +35,10 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 | Route | Cells to run |
 | --- | --- |
 | Core walkthrough | Run Setup, all three cells in [4. Two patients: resample each separately](#4-two-patients-resample-each-separately), the first cell in [5. Each patient's hourly grid](#5-each-patients-hourly-grid), then [6. Compare two recent windows](#6-compare-two-recent-windows). |
-| Independent practice | After class, analyze the monitor, compare filling choices, count gap runs, repeat the full smoother and plot comparisons, and try the calendar reports and bin boundaries. EWM has an extended [BONUS](../BONUS.md#exponentially-weighted-means) reference. |
+| Independent practice | After class, analyze the monitor, compare filling choices, count gap runs, repeat the full smoother and plot comparisons, and try the calendar reports and bin boundaries. BONUS.md has an extended Exponentially Weighted Means reference. |
 
 **Core checkpoint:** Separate resampling returns 8 patient bins. The grid has 13 rows, 4 created gaps, and 1 charted missing value; at P02's 14:00 reading, the two-reading mean is 73 bpm and the two-hour mean is 72 bpm.
+
 
 ## Setup
 
@@ -58,6 +61,7 @@ print('NumPy', np.__version__)
 ```
 
 **Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
+
 
 ## 1. One patient's monitor export
 
@@ -85,6 +89,7 @@ print(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
 **Expect:** `(662, 2)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
 
 Two masks built the story. Comparing a DatetimeIndex with a date string compares instants, so `fever` is `True` from January 15 at 00:00 up to, but not including, January 18. `isin()` (Lecture 05) marks the 10 unplugged hours, and `~` keeps every other row.
+
 
 ## 2. Daily summaries: averages, extremes, and counts
 
@@ -121,6 +126,7 @@ print(weekly.round(1))
 
 **Expect:** four rows labeled `2024-01-07`, `01-14`, `01-21`, and `01-28`. Only the week ending January 21 stands out: mean heart rate `84.4`, maximum temperature `101.5`.
 
+
 ## 3. Upsampling charted temperatures
 
 During the fever, a nurse also charted temperature by hand every four hours. To line these up with the hourly monitor, lay them on an hourly grid and choose how to fill the new slots.
@@ -141,6 +147,7 @@ print(hourly.isna().sum())
 ```
 
 **Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `99.2` at 02:00. The filled values are estimates, not measurements.
+
 
 ## 4. Two patients: resample each separately
 
@@ -186,6 +193,7 @@ print(per_patient)
 
 **Expect:** eight rows, four two-hour bins per patient. P01's 08:00 bin has `mean_hr` `90.0` from 2 readings; P02's is `71.0` from 1. P01's 12:00 bin shows `n_hr` `1` but `n_rows` `2`: two rows were charted, and only one had a heart rate. Empty bins (P01 at 10:00, P02 at 12:00) show `NaN` and counts of `0`.
 
+
 ## 5. Each patient's hourly grid
 
 An hourly grid gives every patient one row per hour from their first reading to their last. `asfreq()` keeps only readings exactly on the grid, so check that every timestamp sits on the hour first.
@@ -224,6 +232,7 @@ print(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
 
 **Expect:** two runs, one per patient, each 2 hours long: P01's 10:00 and 11:00 (`run_id` `2`) and P02's 12:00 and 13:00 (`run_id` `3`). The summary shows `count` `1` and `max` `2` for both patients. A patient with no gaps would have no rows in `runs`, so report 0 runs for them.
 
+
 ## 6. Compare two recent windows
 
 Use P02's charted readings from section 4. Its last two readings are at 11:00 and 14:00; the earlier one is outside the two hours ending at 14:00.
@@ -239,6 +248,7 @@ print(patient_windows)
 ```
 
 **Expect:** four rows. At 14:00, `last_2_readings` is `73.0`, averaging 74 and 72 bpm; `last_2_hours` is `72.0`, because only the 14:00 reading falls inside that window. A count window follows rows; a time window follows elapsed time.
+
 
 ## 7. Rolling windows and EWM on the daily means
 
@@ -263,6 +273,7 @@ print(smooth.loc['2024-01-11':'2024-01-21'].round(1))
 - `ewm_7` reacts faster than `rolling_7` on the way up (`86.9` against `84.7` on January 17) and on the way down (`80.7` against `84.4` on January 21, when the 7-day mean still carries all three fever days).
 - `centered_7` starts rising on January 12 (`80.2`), three days before the fever began, because each value averages three later days.
 
+
 ## 8. Count window versus time window across the gap
 
 On the hourly readings, a count window and a time window differ exactly where the monitor was unplugged.
@@ -278,6 +289,7 @@ print(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
 ```
 
 **Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
+
 
 ## 9. Plot the counts and the smoothers
 
@@ -303,6 +315,8 @@ plt.show()
 ```
 
 **Expect:** in the top panel, 27 bars of height 24 and one short bar (14) on January 5. In the bottom panel, the daily means form a three-day plateau near 93 bpm; the dashed EWM climbs and falls sooner than the solid rolling mean, and the shaded band widens while the fever days are inside the 7-day window.
+
+
 ## 10. Home weights: calendar, weekly, and monthly reports
 
 Build the same daily home-weight history used by Demo 3. This notebook constructs it here so the reports run independently.
@@ -333,6 +347,7 @@ print(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
 ```
 
 **Expect:** `(29, 1)` for February, then nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
+
 
 ## 11. ICU summaries and exact bin boundaries
 

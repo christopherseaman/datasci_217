@@ -123,6 +123,28 @@ ISSUE_AUDIT = (
     ("unexpected site values", 0),
     ("unexpected non-sentinel status values", 0),
 )
+# The likely cause of a wrong count for each issue, added to the shared hint below.
+ISSUE_HINTS = {
+    "schema mismatch": "compare raw's columns with the six in \"The data\"; a file read correctly has all six and no more",
+    "empty full-name tokens": "compare with '' in raw as the Task 1 cell loads it (keep_default_na=False keeps an empty cell as '')",
+    "empty date tokens": "compare with '' in raw as the Task 1 cell loads it (keep_default_na=False keeps an empty cell as '')",
+    "age sentinel tokens": "count both 'unknown' and '-9'",
+    "status sentinel tokens": "count the text 'NA' in raw as the Task 1 cell loads it; without keep_default_na=False, pandas turns NA into a missing value",
+    "age parse failures": "leave out empty values and the 'unknown' and '-9' sentinels before pd.to_numeric(..., errors='coerce')",
+    "numeric but noninteger age values": "count numbers whose .mod(1) is not 0",
+    "age values outside 0 through 120": "count only whole numbers, leave out the -9 sentinel, and keep 0 and 120 inside the range",
+    "date parse failures": "check the text with .str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}') first, because "
+                           "format='%Y-%m-%d' alone accepts 2026-7-01, then let to_datetime(..., errors='coerce') "
+                           "catch impossible dates; leave out empty dates",
+    "rows in exact duplicate sets": "use duplicated(keep=False), which counts the first copy too",
+    "rows with repeated candidate IDs": "use duplicated(subset=['record_id'], keep=False), which counts the first copy too",
+    "site values needing format normalization": "count every raw site that .str.strip().str.lower() changes, by spaces or capitals",
+    "status values needing format normalization": "leave out the NA sentinel and count every other status that "
+                                                  ".str.strip().str.lower() changes",
+    "unexpected site values": "strip and lowercase each site before comparing it with north, south, and west",
+    "unexpected non-sentinel status values": "leave out the NA sentinel, then strip and lowercase each status before "
+                                             "comparing it with active, pending, and complete",
+}
 
 CLEANED_COLUMNS = ("record_id", "full_name", "site", "status", "age", "visit_date", "needs_review")
 # A column the cleaned table may hold under another name, used when the task's name is absent:
@@ -752,9 +774,11 @@ def check_issue_audit(root: Path) -> Outcome:
         elif number(row["count"]) == expected:
             outcome.right += 1
         else:
+            hint = ISSUE_HINTS.get(issue)
             outcome.problems.append(
-                f"'{issue}' should count {expected}, found {shown(row['count'])} (count it in raw, every row "
-                "before duplicates are removed, comparing values after .str.strip(), as Task 2.2's table defines it)")
+                f"'{issue}' should count {expected}, found {shown(row['count'])} ("
+                + (hint + "; " if hint else "")
+                + "count it in raw, every row before duplicates are removed, as Task 2.2's table defines it)")
     return outcome
 
 

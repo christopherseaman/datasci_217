@@ -601,8 +601,6 @@ tree .              # show this directory's hierarchy, when tree is installed
 history             # list prior commands
 ```
 
-The ↑ and ↓ keys cycle through earlier commands, `Tab` completes names, and `Ctrl+R` searches command history.
-
 ## Shell scripts with arguments
 
 Shell scripts can turn a repeatable pipeline into a small command-line tool. Quote paths and validate inputs before processing them.
@@ -808,6 +806,7 @@ def require_columns(columns, required):
 ## Debugging with Breakpoints
 
 <callout icon="📝" color="blue_bg">
+	## More debugging in DataSci 223
 	We will dive deeper into debugging in DataSci-223. Preview: [https://code.visualstudio.com/docs/debugtest/debugging](https://code.visualstudio.com/docs/debugtest/debugging)
 </callout>
 

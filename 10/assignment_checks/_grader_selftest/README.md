@@ -26,7 +26,8 @@ assignment with statsmodels, scikit-learn, and pandas from
   including a misnamed column; a coefficient table saved without its terms
   costs only the columns check; approaches saved under other labels cost only
   the rows check; a missing file costs only its own artifact's
-  checks; leaky features (in the metrics and in the test predictions), a split
+  checks; leaky features (in the metrics and in the test predictions; test
+  metrics that only land near a leaky score get the neutral hint), a split
   on the visit time, ranges read from `visit_time`, a residual sign flipped on
   every row or on a few, fitted and residual columns swapped, `< 0` for
   `<= 0`, a baseline mean from the validation rows, RMSE saved without its

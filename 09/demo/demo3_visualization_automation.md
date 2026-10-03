@@ -19,12 +19,14 @@ jupyter:
 
 A New York ICU exports charted heart rates on the local wall clock, and the export spans the night the clocks fell back. You convert clinic times to UTC, set aside the clock readings that happened twice, build lags and past-only means inside each patient's history, check which values were known at a prediction time, split the rows into a chronological holdout, and plot the panel and three years of emergency-department visits. Everything here comes from Lecture 09, plus Lectures 01 to 08. Patient values and visit counts are synthetic.
 
+
 ## How to run
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and seaborn 0.13.2.
 
 - **In Colab:** open Demo 3 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
 - **Locally in VS Code:** use the `~/09-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo3_visualization_automation.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`. **In a new terminal**, `cd ~/09-demo` and then `source .venv/bin/activate` bring the environment back.
+
 
 ## Choose Your Route
 
@@ -33,9 +35,10 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 | Route | Cells to run |
 | --- | --- |
 | Core walkthrough | Run Setup, both cells in [3. The night the clocks fell back](#3-the-night-the-clocks-fell-back), both cells in [5. Previous readings within each patient](#5-previous-readings-within-each-patient), [6. Past-only means](#6-past-only-means), the first cell in [7. What was known at the prediction time?](#7-what-was-known-at-the-prediction-time), then [8. A chronological holdout](#8-a-chronological-holdout). |
-| Independent practice | After class, compare the clinic clocks and both DST days, audit candidate features, and plot patient/flu histories. Repeat the daily-weight lag/lead alert and its plot; that section labels its optional inference and percentage-change methods with BONUS references. |
+| Independent practice | After class, compare the clinic clocks and both DST days, audit candidate features, and plot patient/flu histories. Repeat the daily-weight lag/lead alert and its plot; that section labels its optional inference and percentage-change methods as BONUS.md topics. |
 
-**Core checkpoint:** Set aside 1 ambiguous reading; each patient starts with an empty lag. Past count/time means can differ; reported-time lab flags and the holdout remain 9 earlier / 4 later rows.
+**Core checkpoint:** Set aside 1 ambiguous reading; each patient starts with an empty lag. At P01's 08:00 UTC reading, `mean_prev_2` is 97.5 and `mean_prev_2h` is `NaN`; 2 of 4 labs are available at the prediction time; the holdout has 9 earlier and 4 later rows.
+
 
 ## Setup
 
@@ -60,6 +63,7 @@ print('NumPy', np.__version__)
 
 **Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
 
+
 ## 1. One instant on several clinic clocks
 
 A telehealth consult starts at 14:00 UTC. `tz_convert()` shows what each site's wall clock read at that instant. Zone names come from the IANA time-zone database, the standard list of world time zones, such as `'America/New_York'`.
@@ -71,6 +75,7 @@ for zone in ['UTC', 'America/New_York', 'America/Chicago', 'America/Los_Angeles'
 ```
 
 **Expect:** the same instant as `10:00-04:00` in New York, `09:00-05:00` in Chicago, `07:00-07:00` in Los Angeles, and `14:00+00:00` in London. The US had already switched to daylight saving time on March 10, and the UK had not yet (it switches on March 31).
+
 
 ## 2. Two clinics' visit times, ordered in UTC
 
@@ -93,6 +98,7 @@ print(visits.sort_values('visit_utc'))
 ```
 
 **Expect:** sorted by the local text, Chicago's 08:30 visit comes first. Sorted by `visit_utc`, New York's 09:00 visit (`13:00+00:00`) comes first and Chicago's 08:30 (`13:30+00:00`) second: 08:30 in Chicago happened half an hour after 09:00 in New York.
+
 
 ## 3. The night the clocks fell back
 
@@ -130,6 +136,7 @@ print(vitals)
 
 **Expect:** `Set aside: 1`, the P02 row at `2024-11-03 01:30`. `vitals` has 13 rows, sorted by patient and then time, all in UTC. P01's local 00:30 and 03:00 look 2.5 hours apart, but in UTC they are `04:30` and `08:00`: 3.5 hours passed, because the 01:00 hour happened twice.
 
+
 ## 4. Check both clock-change days
 
 A monitor that records every hour produces 24 readings on an ordinary day. On clock-change days, count the elapsed hours in the local day instead of assuming 24.
@@ -148,6 +155,7 @@ print('Set aside:', spring.isna().sum())
 ```
 
 **Expect:** `2024-03-10 23 hours`, `2024-11-03 25 hours`, and `2024-11-04 24 hours`. The 02:30 dose becomes `NaT` (`Set aside: 1`); the 01:30 and 03:30 doses keep offsets of `-05:00` and `-04:00`, one hour of elapsed time apart.
+
 
 ## 5. Previous readings within each patient
 
@@ -169,6 +177,7 @@ print(vitals[['patient_id', 'heart_rate', 'previous_hr', 'hr_change']])
 ```
 
 **Expect:** P01's changes are all positive (`6.0`, `7.0`, `11.0`, `6.0`); P03's are all negative (`-5.0`, `-4.0`, `-3.0`).
+
 
 ## 6. Past-only means
 
@@ -192,6 +201,7 @@ print(vitals[['patient_id', 'recorded_at', 'heart_rate', 'mean_prev_2', 'mean_pr
 ```
 
 **Expect:** `(13, 7)`: the merge kept one row per reading. At P01's `08:00` reading, `mean_prev_2` is `97.5` (the 94 and 101 readings) but `mean_prev_2h` is `NaN`, because nothing was recorded in the two hours before 08:00 UTC. At P03's `09:00` reading, the two-hour mean is `95.0`, only the 07:15 reading.
+
 
 ## 7. What was known at the prediction time?
 
@@ -229,6 +239,7 @@ print(audit)
 
 **Expect:** the first three candidates are `True` and `keep`; `next heart rate` and `centered 3-reading mean` are `False` and `reject`.
 
+
 ## 8. A chronological holdout
 
 To test a score honestly, build it on the earlier rows and hold out the rows from the prediction time onward, the way it would meet later patients.
@@ -240,6 +251,7 @@ print(pd.crosstab(vitals['patient_id'], vitals['block']))
 ```
 
 **Expect:** 9 `earlier` rows and 4 `later_holdout` rows: 3 and 2 for P01 (its 08:00 reading is held out, because `<` keeps the cutoff itself out of `earlier`), 3 and 1 for P02, and 3 and 1 for P03.
+
 
 ## 9. Plot the panel in UTC
 
@@ -258,9 +270,10 @@ plt.show()
 
 **Expect:** P01's line climbs across the dashed line between 03:30 and 04:30 UTC and keeps rising to 118; P03's starts above it and falls below; P02's stays near 70. There is no P02 point between 04:00 and 07:00 UTC, where the ambiguous reading was set aside.
 
+
 ## 10. Three years of flu-like illness visits
 
-Independent reference: `infer_freq()` below uses [Frequency Inference](../BONUS.md#frequency-inference-and-specialized-schedules); the date plots, reporting counts, and rolling mean use the main lecture.
+Independent reference: `infer_freq()` below uses Frequency Inference from BONUS.md; the date plots, reporting counts, and rolling mean use the main lecture.
 
 The emergency department counts visits for influenza-like illness (fever with cough or sore throat) every day. Visits peak each winter. The reporting feed failed for two weeks in February 2023, so those days have no rows at all.
 
@@ -327,9 +340,10 @@ plt.show()
 
 **Expect:** January is highest (`60.2`) and July lowest (`20.6`); the bars fall from January to July and rise again toward December (`56.8`).
 
+
 ## 11. Daily weights: lags, leads, and a fluid-gain alert
 
-Independent practice: the lag, lead, difference, and alert use the main lecture. The frequency diagnostic and `pct_change()` use the optional [Frequency Inference](../BONUS.md#frequency-inference-and-specialized-schedules) and [Percentage Changes](../BONUS.md#percentage-changes) references. This section builds its own data.
+Independent practice: the lag, lead, difference, and alert use the main lecture. The frequency diagnostic and `pct_change()` use the optional Frequency Inference and Percentage Changes topics in BONUS.md. This section builds its own data.
 
 Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. Here is one patient's daily weight for January through March, with a fluid-gain episode in March. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
 
@@ -372,6 +386,7 @@ print('Largest daily change before March 9:', daily.loc[:'2024-03-08', 'change_1
 ```
 
 **Expect:** three alert days: March 10 (the 1-day rule, `1.3` kg) and March 11 and 12 (the 7-day rule, `2.3` kg). Before the episode, no day moved more than `0.4` kg, so ordinary scale noise never trips the rule.
+
 
 ## 12. Plot the home-weight alerts
 

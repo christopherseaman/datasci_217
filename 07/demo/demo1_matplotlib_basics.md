@@ -115,7 +115,7 @@ print(weekly)
 
 Expect ten rows. North peaks at 51 visits in week 6; South peaks at 34 in week 7.
 
-### 4. Customize: units, a legend, and a redundant cue
+### 2. Customize: units, a legend, and a redundant cue
 
 The question is whether BP varies with age and clinic. One point is one reading; age and BP are quantitative, and clinic is nominal. The chart describes these synthetic rows and supports no causal claim. Draw each clinic as its own series, giving each a color **and** a marker shape, so the groups stay distinct in grayscale.
 
@@ -139,7 +139,7 @@ Expect blue circles and orange squares that both rise with age, a legend titled 
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
 
-### 2. Write the contract before plotting
+### 1. Write the contract before plotting
 
 Three `int64` columns do not mean three measures. The contract records what each column means and which job it does, and that is what picks the chart.
 
@@ -168,7 +168,7 @@ The question compares a distribution across two groups, so the chart-selection f
 | How many flu visits did each clinic have in total? | Quantitative by categorical, one value each | Bar chart from zero |
 | How did weekly flu visits change? | Quantitative over temporal | Line chart |
 
-### 3. An exploratory look: one Figure, four Axes
+### 2. An exploratory look: one Figure, four Axes
 
 `plt.subplots(2, 2)` returns one Figure and a 2-D array of Axes, so `axes[0, 1]` is row 0, column 1. The two clinics' readings come from boolean selection with `.loc` (Lecture 04).
 
@@ -207,7 +207,7 @@ Expect `<class 'matplotlib.figure.Figure'>`, `(2, 2)`, and four panels. The hist
 
 This is exploratory work: quick, but with honest scales and units on every axis.
 
-### 5. An explanatory chart: annotate, declutter, and save
+### 3. An explanatory chart: annotate, declutter, and save
 
 Now one finding for one audience. Write its contract, then build the chart it asks for.
 

@@ -325,7 +325,7 @@ A GroupBy method's **result shape** is how many rows it returns and at which gra
 | `agg` | What is the mean wait at each clinic? | 3 | One row per clinic |
 | `transform` | How does each visit compare with its clinic's mean? | 6, same index as `visits` | One row per visit |
 | `filter` | Which visits belong to clinics with at least two visits? | 5 (East dropped) | One row per visit |
-| `apply` | Which visit (the whole row) had the longest wait at each clinic? | Depends on the function (3 here) | Depends on the function (one visit per clinic here) |
+| `apply` | Which two visits (the whole rows) had the longest waits at each clinic? | Depends on the function (5 here) | Depends on the function (up to two visits per clinic here) |
 
 Use `agg`, `transform`, or `filter` whenever one fits; a single number such as the longest wait is just `agg('max')`. `apply` is the slower fallback for custom per-group work, such as returning whole rows.
 
@@ -367,35 +367,89 @@ East's one visit sits exactly at its clinic's mean: it is easy to be average whe
 
 <callout icon="⚠️" color="yellow_bg">
 	## A group summary does not line up with the rows
-	`visits['clinic_mean_wait'] = visits.groupby('clinic')['wait_min'].mean()` fills every row with `NaN`, and no error says why: pandas matches a new column to rows by index label (Lecture 04), and the summary is labeled by clinic name while the rows are labeled 0 to 5. `transform('mean')` returns one value per row with the table's own index, so it lines up. Demo 2 shows the mistake and the fix.
+	`visits['clinic_mean_wait'] = visits.groupby('clinic')['wait_min'].mean()` fills every row with `NaN`, and no error says why: pandas matches a new column to rows by index label (Lecture 04), and the summary is labeled by clinic name while the rows are labeled 0 to 5. Copying the three numbers by position with `.mean().values` fails instead: `ValueError: Length of values (3) does not match length of index (6)`. `transform('mean')` returns one value per row with the table's own index, so it lines up. Demo 2 shows the mistake and the fix.
 </callout>
 
-## Filter and Custom Results
+## Filter Operations
 
-**filter** tests each whole group and keeps its original rows when the test passes. **apply** hands each group to your function and combines its results; the result can be a number, a summary, or several original rows.
+**filter** runs a test on each whole group and keeps every original row of the groups that pass. Rows are kept or dropped, never changed.
 
-| Method | Result grain |
-| --- | --- |
-| `filter` | Original visits from qualifying clinics |
-| `apply` returning rows | Selected visits, with clinic and original row index |
+### Reference Card: Filter Operations
 
-### Reference Card: Keep Groups or Return Custom Rows
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `grouped.filter(lambda g: len(g) >= n)` | Keep groups with at least `n` rows | Original rows from passing groups |
+| `grouped.filter(lambda g: g['col'].sum() > threshold)` | Keep groups meeting a total threshold | Original rows from passing groups |
+| `grouped.filter(lambda g: g['col'].mean() > threshold)` | Keep groups meeting a mean threshold | Original rows from passing groups |
 
-- `grouped.filter(lambda g: len(g) >= 2)`: Keep every visit from clinics with at least two visits; replace the test with a group mean or sum threshold.
-- `grouped.apply(func, include_groups=False)`: Run a custom function on each group's columns, excluding the grouping column; the returned objects determine the result shape.
-- `g.nlargest(1, 'wait_min')`: Return the longest-wait visit in one group.
-
-### Code Snippet: Keep Whole Groups or One Row per Group
+### Code Snippet: Keep Clinics by Size, Mean, or Total
 
 ```python
 busy = visits.groupby('clinic').filter(lambda g: len(g) >= 2)
-longest = visits.groupby('clinic').apply(
-    lambda g: g.nlargest(1, 'wait_min'), include_groups=False,
-)
-print(len(busy), longest['wait_min'].tolist())  # 5 [9, 15, 30]
+slow = visits.groupby('clinic').filter(lambda g: g['wait_min'].mean() > 10)
+heavy = visits.groupby('clinic').filter(lambda g: g['wait_min'].sum() > 40)
+print(slow[['clinic', 'patient_id', 'wait_min']])
+print(len(busy), heavy['clinic'].unique().tolist())
 ```
 
-Use `agg` or `transform` whenever one fits; `apply` is the slower fallback for custom work. In pandas 3, `include_groups=False` is the only allowed setting: the function does not receive the clinic column. Demo 2's independent practice develops the full filtering and custom-summary workflow.
+```text
+  clinic patient_id  wait_min
+0  North        P01        12
+1  North        P02        15
+2  North        P01         6
+3  South        P03        20
+4  South        P04        30
+5 ['South']
+```
+
+East (one visit, mean 9) fails both the size and the mean test. Only South's waits total more than 40 minutes (North's add up to 33).
+
+## Apply Operations
+
+**apply** hands each group to your function as a small DataFrame and stitches the results together. The result can be a number, a summary, or several original rows, so its shape depends on what your function returns.
+
+### Reference Card: Apply Operations
+
+| Call | Purpose and key arguments | Output |
+| :--- | :--- | :--- |
+| `grouped.apply(func, include_groups=False)` | Run your own function on each group's columns, excluding the grouping column | Depends on `func` |
+| `grouped.apply(lambda g: g.sort_values('col'), include_groups=False)` | Sort rows inside each group | Every row, grouped and sorted |
+| `grouped.apply(lambda g: g.nlargest(2, 'col'), include_groups=False)` | Keep the top two rows in each group | Up to two rows per group |
+
+### Code Snippet: Sort Within Clinics and Keep the Two Longest Waits
+
+```python
+by_wait = visits.groupby('clinic').apply(
+    lambda g: g.sort_values('wait_min'), include_groups=False,
+)
+top2 = visits.groupby('clinic').apply(
+    lambda g: g.nlargest(2, 'wait_min'), include_groups=False,
+)
+print(by_wait[['patient_id', 'wait_min']])
+print(top2[['patient_id', 'wait_min']])
+```
+
+```text
+         patient_id  wait_min
+clinic
+East   5        P05         9
+North  2        P01         6
+       0        P01        12
+       1        P02        15
+South  3        P03        20
+       4        P04        30
+         patient_id  wait_min
+clinic
+East   5        P05         9
+North  1        P02        15
+       0        P01        12
+South  4        P04        30
+       3        P03        20
+```
+
+The index has two levels (a MultiIndex): the clinic, then each visit's original row number. North's rows come back in wait order, and East keeps its single visit because `nlargest(2)` returns as many rows as the group has.
+
+In pandas 3, `include_groups=False` is the default and the only allowed value, so your function never receives the clinic column; writing it out keeps the code working on older pandas, such as Colab's 2.2. Demo 2's independent practice develops the full filtering and custom-summary workflow.
 
 ![xkcd 1172: Workflow. Every change breaks someone's workflow, including pandas 3's change to what apply hands your function](media/xkcd_1172.png)
 
@@ -408,7 +462,7 @@ Use `agg` or `transform` whenever one fits; `apply` is the slower fallback for c
 ![Performance benchmarks on about 100 million rows (lower is better): three separate groupby calls vs one agg, a per-group z-score with apply vs transform, and memory before and after categorical keys](media/perf_combined.png)
 
 - One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
-- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code. A Python `lambda` or `apply` runs once per group and can be 20-50× slower.
+- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code. A Python `lambda` or `apply` runs once per group and is often 20 to 100 times slower or more.
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
 ## Measure, Then Optimize
@@ -573,6 +627,7 @@ laptop browser → localhost:8888 ══ SSH tunnel ══> server localhost:888
 - `jupyter lab --ip=127.0.0.1 --port=8888 --no-browser` (on the server, inside tmux): Start Jupyter for localhost only; it prints a URL ending in `?token=...`, a password generated for this session.
 - `ssh -N -L 8888:127.0.0.1:8888 user@host` (in a second, local terminal): `-L laptop_port:server_address:server_port` builds the tunnel; `-N` opens no remote shell, so the terminal shows nothing while the tunnel is open.
 - Paste the printed `http://127.0.0.1:8888/lab?token=...` URL into your laptop's browser.
+- If the server's 8888 is taken (common on a shared server), Jupyter quietly moves to 8889 or higher. Read the port in the URL it prints and use that number as the last field of `-L`, such as `-L 8888:127.0.0.1:8889` for a URL on `:8889`; then open the URL with 8888 in place of the server's port.
 - `Ctrl+C` in the tunnel terminal: Close the tunnel; Jupyter keeps running in tmux.
 - If port 8888 is already in use on your laptop (for example, by a local Jupyter), use `-L 8889:127.0.0.1:8888` and change 8888 to 8889 in the URL.
 

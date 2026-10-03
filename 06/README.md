@@ -19,6 +19,8 @@ This lecture covers:
 
 - McKinney, _Python for Data Analysis_ (3rd ed.): 8.1 (hierarchical indexing, and indexing with a DataFrame's columns), 8.2 (database-style DataFrame joins, concatenating along an axis, and combining data with overlap), and 8.3 (pivoting "long" to "wide" format and "wide" to "long" format)
 
+_Reality check: merging datasets is the single most common data wrangling task you'll perform. Master `pd.merge()` and you'll save yourself countless hours of frustration._
+
 # Database-Style DataFrame Joins
 
 A **join**, called a **merge** in pandas, puts related rows from two tables side by side by matching a **key**: a column, such as `patient_id`, whose values name the same thing in both tables. Health data rarely arrives in one table, so asking whether older patients have higher A1c means joining the patients table to the lab results first.
@@ -42,6 +44,8 @@ patients                    labs (A1c in %, LDL in mg/dL)
 └────────────┴────────────┘ │ P004       │ A1c  │   7.9 │
                             └────────────┴──────┴───────┘
 ```
+
+_Join keys are the table's name tags: if two rows share a tag, pandas brings their columns together. A good key makes matching boring; a bad key turns the merge into an enthusiastic photocopier._
 
 ![xkcd 2801: Contact Merge. Two contact names turn out to belong to one person. A shared key connects records; verify what that key identifies](media/xkcd_2801.png)
 
@@ -97,20 +101,40 @@ Every row either table can contribute, and the join types (`how=`) that keep it:
 
 Add `indicator=True` to any merge to get a `_merge` column that says where each row came from: `both`, `left_only`, or `right_only`.
 
-### Code Snippet: Keep and audit the patient list
+### Code Snippet: Compare join types
 
 ```python
-left = pd.merge(patients, labs, on='patient_id', how='left', indicator=True)
-print(len(left))                      # 4: P001 twice, P002 once, P003 once
-print(left.loc[left['_merge'] == 'left_only', 'patient_id'].tolist())  # ['P003']
+inner = pd.merge(patients, labs, on='patient_id', how='inner')
+print(len(inner))    # 3: P001 twice, P002 once
+
+left = pd.merge(patients, labs, on='patient_id', how='left')
+display(left)
+#   patient_id  birth_year test  value
+# 0       P001        1958  A1c    6.8
+# 1       P001        1958  LDL  131.0
+# 2       P002        1971  A1c    5.4
+# 3       P003        1985  NaN    NaN   <- no labs yet
+
+right = pd.merge(patients, labs, on='patient_id', how='right')
+print(len(right))    # 4: includes P004's A1c with birth_year NaN
+
+outer = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
+display(outer)
+#   patient_id  birth_year test  value      _merge
+# 0       P001      1958.0  A1c    6.8        both
+# 1       P001      1958.0  LDL  131.0        both
+# 2       P002      1971.0  A1c    5.4        both
+# 3       P003      1985.0  NaN    NaN   left_only
+# 4       P004         NaN  A1c    7.9  right_only
 ```
 
-P003 stays with missing lab fields. [Compare all four outputs](BONUS.md#extended-example-compare-join-types) using the same inputs.
+`birth_year` prints as `1958.0` in the outer join because P004's missing birth year makes the whole column `float64` (Lecture 05).
 
 <callout icon="⚠️" color="yellow_bg">
 	## `merge()` is an inner join unless you say otherwise!
 	Without `how=`, unmatched rows vanish without a warning: the inner join above drops P003, the patient with no lab result in this extract. Use `how='left'` when the left table is your master list, such as every patient in the registry, and compare row counts before and after.
 </callout>
+
 _“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”_
 
 ## Merging on Multiple Columns
@@ -146,15 +170,26 @@ print(list(wrong.columns))   # ['patient_id', 'visit_x', 'sbp', 'visit_y', 'a1c'
 
 A report that never arrived leaves no row, so no keyed join can flag it. Build the **expected grid** of every combination, such as every clinic at every hour, with `how='cross'`, then left-merge the observed reports onto it: each missing report shows up as `left_only`.
 
-### Code Snippet: Build the expected reporting grid
+### Code Snippet: Find missing reports with a cross join
+
+`clinic_list` has North and South; `hours` has 8, 9, and 10.
 
 ```python
 expected = pd.merge(clinic_list, hours, how='cross')
-print(len(expected))  # two clinics × three hours = 6
+print(len(expected))   # 6: 2 clinics × 3 hours
+
+reports = pd.DataFrame({'clinic': ['North', 'North', 'South', 'South'],
+                        'hour': [8, 10, 8, 9], 'arrivals': [3, 0, 5, 2]})
+coverage = pd.merge(expected, reports, on=['clinic', 'hour'], how='left', indicator=True)
+display(coverage)
+#   clinic  hour  arrivals     _merge
+# 0  North     8       3.0       both
+# 1  North     9       NaN  left_only   <- North sent no 9:00 report: NaN, not 0
+# 2  North    10       0.0       both    <- a real report of zero arrivals
+# 3  South     8       5.0       both
+# 4  South     9       2.0       both
+# 5  South    10       NaN  left_only
 ```
-
-`clinic_list` has North and South; `hours` has 8, 9, and 10. A left merge onto this grid distinguishes a missing report from a reported zero; [the full audit](BONUS.md#extended-example-find-missing-reports-with-a-cross-join) works through both.
-
 
 ## Handling Overlapping Column Names
 
@@ -276,6 +311,8 @@ display(indexed.loc['P002'])     # one patient's record, found by label
 # Name: P002, dtype: object
 ```
 
+_Pro tip: knowing when to move columns into the index (and back) is like knowing when to keep your keys in your hand or in your pocket: it's all about what you need to reach quickly!_
+
 ## reset_index(): Moving Index to Columns
 
 `reset_index()` moves the index labels back into an ordinary column. With `drop=True` it discards them instead, which renumbers a table whose labels carry no information, such as the gaps a filter leaves in a RangeIndex.
@@ -346,6 +383,7 @@ at a glance                               └───────────�
 
 - In long data, the **identifier columns** (`patient_id`, `visit`) say which observation a row is, and the **value column** (`sbp`) holds the measurement.
 - Long data with one observation per row and one variable per column is often called **tidy** data.
+- The same readings can be built in either shape; [Demo 2](demo/demo2_pivot_melt.md#3-wide-to-long-with-melt) builds the wide study table, melts it to long, and pivots it back.
 
 | Shape | One row represents | Best for | Conversion |
 | --- | --- | --- | --- |
@@ -435,7 +473,7 @@ If an `index`/`columns` pair identifies more than one value, `pivot()` cannot ch
 print(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
 ```
 
-Expected result: both rows above; `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error. [Demo 2's independent practice](demo/demo2_pivot_melt.md#independent-practice) executes the error and applies the documented rule to record the later recheck (`drop_duplicates(subset=['patient_id', 'visit'], keep='last')`), giving P002 a follow-up value of 136.
+Expected result: both rows above; `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error. [Demo 2's independent practice](demo/demo2_pivot_melt.md#independent-practice) executes the error on a repeated week-4 reading in the cuff's export and applies the documented rule to keep the later recheck (`sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`), recording P003's recheck of 140.
 
 A recheck is a real repeated observation, so the fix is a documented rule, not a guess. If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations) teaches aggregation and pivot tables.
 

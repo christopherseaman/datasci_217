@@ -60,7 +60,7 @@ Open **View → Command Palette** (**Ctrl+Shift+P**; **Cmd+Shift+P** on Mac), ch
 
 ## 1.5 Fork and clone
 
-1. Open the assignment repository linked for this term on GitHub and select **Fork**.
+1. Open the Assignment 01 repository on GitHub and select **Fork**.
 
     ![GitHub's Fork button](../assignment/media/github-fork.png)
 

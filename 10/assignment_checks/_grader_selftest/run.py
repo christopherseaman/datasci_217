@@ -923,6 +923,24 @@ def run() -> None:
         frame["predicted_sbp"] = leaky_final.predict(test[FEATURES + ["a1c_result"]])
         slip("leaky-test-predictions", "output/test_predictions.csv", frame.to_csv(index=False),
              {"test predictions: predicted_sbp values"}, "also uses a1c_result or callback_sbp")
+        # Test metrics that only happen to land near a leaky score get the neutral hint, and each wrong
+        # metric is reported; leaky test metrics are named when the validation metrics show the leak.
+        files = dict(correct)
+        files["output/test_metrics.csv"] = "approach,mae,rmse,r2\nlinear_pipeline,3.0,4.0,1.0\n"
+        result = graded(submission("near-leaky-test-metrics", files))
+        names = {"test metrics: mae value", "test metrics: rmse value", "test metrics: r2 value"}
+        assert failing(result) == names, failing(result)
+        assert not any("also uses" in detail(result, name) for name in names), result
+        files["output/validation_metrics.csv"] = pd.DataFrame([
+            {"approach": name, **metrics(valid[TARGET], fitted.predict(valid[leaky]))}
+            for name, fitted in [("mean_baseline", baseline), ("linear_pipeline", pipeline)]
+        ]).to_csv(index=False)
+        files["output/test_metrics.csv"] = pd.DataFrame([
+            {"approach": "linear_pipeline", **metrics(test[TARGET], pipeline.predict(test[leaky]))}
+        ]).to_csv(index=False)
+        result = graded(submission("leaky-validation-and-test-metrics", files))
+        assert failing(result) == {"validation metrics: mae values", "test metrics: mae value"}, failing(result)
+        assert "test scores of a pipeline that also uses" in detail(result, "test metrics: mae value"), result
         # The Task 3.3 save line copied from Task 3.1 writes the readmission table over validation_metrics.csv.
         files = dict(correct)
         files["output/validation_metrics.csv"] = readmission

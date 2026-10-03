@@ -13,6 +13,8 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_sklearn_prediction.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_trees_boosting_networks.ipynb)
 
+_Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards: mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!_
+
 ![xkcd 1838: Machine Learning. Stirring the pile of linear algebra until the answers look right is not the same as checking them.](media/xkcd_1838.png)
 
 This lecture covers:
@@ -41,11 +43,15 @@ Python's modeling libraries offer different levels of flexibility and interpreta
 | **XGBoost** | Candidate for tabular prediction | Gradient-boosted trees, feature-importance summaries | Benchmarking alongside simpler tabular models |
 | **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops | Deep-learning workflows (PyTorch is in BONUS) |
 
+_Pro tip: Start simple. "But why male models?" Because sometimes the simplest model is the right model!_
+
 ![xkcd 882: Significant. Test twenty jelly-bean colors at p < 0.05 and one of them will look significant by chance.](media/xkcd_882.png)
 
 # Statistical Modeling with `statsmodels`
 
 **`statsmodels`** is Python's library for statistical inference. Its workhorse, **linear regression**, estimates an outcome as an intercept plus a weighted sum of predictors, as in `sbp = b0 + b1 * age + b2 * bmi`, and reports how uncertain each weight is, so it can say whether higher BMI goes with higher SBP among patients of the same age.
+
+_Think of linear regression as the Derek Zoolander of modeling: simple, reliable, and it can turn left, turn right, or even turn statistically significant._
 
 ## Linear Regression by Least Squares
 
@@ -82,7 +88,7 @@ Array:   sm.OLS(clinic['sbp'], sm.add_constant(clinic[['age', 'bmi']]))  interce
 
 | Method / attribute | Purpose & arguments | Typical output |
 | :--- | :--- | :--- |
-| `results.params` | Fitted intercept and coefficients by term. | Series (array with the array interface) |
+| `results.params` | Fitted intercept and coefficients by term. | Series indexed by term (an array only when the inputs are NumPy arrays) |
 | `results.rsquared` | Share of the outcome's variation the fitted model explains in these rows (0 to 1). | Float |
 | `results.predict(new_rows)` | Fitted values for new rows with the same columns. | Series |
 | `results.rsquared_adj`, `results.fvalue` / `results.f_pvalue`, `results.aic` / `results.bic` | Other numbers in the summary header: R² adjusted for the number of predictors; the F-test that all slopes are 0; information criteria for comparing models fit to the same rows (lower is better). | Float |
@@ -137,7 +143,7 @@ Predicting for a new patient takes two intervals: a **mean-response interval**, 
 | `results.pvalues` | p-value for each coefficient, testing "the true coefficient is 0". | Series |
 | `results.fittedvalues` / `results.resid` | One fitted value and one residual (observed minus fitted) per row. | Series |
 | `results.get_prediction(new_rows).summary_frame(alpha=0.05)` | Intervals for new rows: `mean`, `mean_ci_lower`, `mean_ci_upper` (mean response) and `obs_ci_lower`, `obs_ci_upper` (individual prediction); `.conf_int(obs=True)` returns only the prediction bounds (Demo 1 uses it). | DataFrame |
-| `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot with Lecture 07's Axes methods; the reference line sits at 0. | Axes |
+| `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot with Lecture 07's Axes methods and Lecture 09's `ax.axhline`; the reference line sits at 0. | Axes |
 | `fig.savefig(path)`, `plt.show()`, `plt.close(fig)` | Save, display, then close; an unclosed figure stays in memory. | PNG on disk |
 
 ### Code Snippet: Uncertainty and a New-Patient Interval
@@ -249,7 +255,7 @@ To estimate performance honestly, give rows three roles:
 - **Validation set**: compares candidate models and settings.
 - **Test set**: opened once, after the choice is frozen, to report final performance.
 
-**Overfitting** is a model memorizing its training rows instead of learning patterns that carry over. A much lower training error than validation error can warn of overfitting, but changed patient mix or time-period conditions can also create a gap:
+**Overfitting** is a model memorizing its training rows instead of learning patterns that carry over, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of overfitting, but changed patient mix or time-period conditions can also create a gap:
 
 ```text
 Good fit:                       Overfitting:
@@ -309,7 +315,7 @@ print(valid[['visit_date', 'target_date']])
 
 # scikit-learn: One Pattern for Every Model
 
-**scikit-learn** is a widely used Python package for prediction: every model is an **estimator**, an object that learns from training rows with `fit()` and predicts new rows with `predict()`, so once you can fit one model you can fit them all. It takes pandas objects directly: `X` is a DataFrame of features such as `df[['age', 'bmi']]`, and `y` a Series such as `df['sbp']`.
+**scikit-learn** is a widely used Python package for prediction: every model is an **estimator**, an object that learns from training rows with `fit()` and predicts new rows with `predict()`, so once you can fit one model you can fit them all. It works like a hospital lab analyzer: the lab calibrates it against standards of known concentration (`fit`), then measures new patient samples (`predict`). It takes pandas objects directly: `X` is a DataFrame of features such as `df[['age', 'bmi']]`, and `y` a Series such as `df['sbp']`.
 
 ## The Estimator Pattern
 
@@ -327,7 +333,8 @@ Create estimator and choose settings
 | `model.fit(X, y)` | Learn parameters from features and targets. | The fitted estimator (`model`) |
 | `model.predict(X)` | Generate predictions for new rows. | NumPy array |
 | `model.score(X, y)` | Return the estimator's default score (R² for regressors, accuracy for classifiers). | Float |
-| `scaler.fit_transform(X_train)` / `scaler.transform(X_valid)` | Learn each feature's mean and scale from training rows, then reuse them unchanged on other rows. | NumPy array (column names dropped) |
+
+_Think of `scikit-learn` as the Swiss Army knife of machine learning: it has a tool for almost everything, it's reliable, and it's been around long enough that everyone knows how to use it._
 
 ## Linear Regression for Prediction
 
@@ -361,6 +368,7 @@ X_valid --predict--> [same fitted steps]  --> predictions
 
 - `DummyRegressor(strategy='mean')`: Regression baseline; predicts the training mean for every row (`from sklearn.dummy import DummyRegressor`).
 - `df.groupby('patient_id')['sbp'].shift(1)`: Persistence baseline: each patient's previous reading, `NaN` on their first row (Lecture 09's grouped `shift()`).
+- `scaler = StandardScaler()`, then `scaler.fit_transform(X_train)` / `scaler.transform(X_valid)`: Learn each feature's mean and scale from training rows, then reuse them unchanged on other rows; returns a NumPy array without column names (`from sklearn.preprocessing import StandardScaler`).
 - `Pipeline([('scale', StandardScaler()), ('model', LinearRegression())])`: Chains named steps; the last is the model (`from sklearn.pipeline import Pipeline`, `from sklearn.preprocessing import StandardScaler`).
 - `pipeline.fit(X_train, y_train)` / `pipeline.predict(X_valid)`: Fit every step on training rows only, then reuse that scaling; returns an array.
 - `pipeline.named_steps['model'].coef_`: Reach one named step inside a fitted pipeline to read its coefficients, or its settings with `.get_params()`.
@@ -466,7 +474,7 @@ always_no: accuracy=0.625 precision=0.000 recall=0.000
 
 ## Permutation Importance: What Does the Model Rely On?
 
-A metric says how well a model predicts, not which columns it leans on. **Permutation importance** measures that for any fitted model or pipeline: score it on validation rows, shuffle one feature column to break its link to the target, and score again; the bigger the drop, the more the model relied on that feature.
+A metric says how well a model predicts, not which columns it leans on. **Permutation importance** measures that for any fitted model or pipeline: score it on validation rows, shuffle one feature column to break its link to the target, and score again; the bigger the drop, the more the model relied on that feature. It is like scrambling one lab value across a stack of charts to see how much worse a clinician's diagnoses get.
 
 Correlated features can share or hide importance, and reliance is not causation. The same call works on the next topic's tree models, where Demo 3 sets it beside their built-in importances.
 
@@ -518,6 +526,8 @@ After validation picks a winner, **freeze** it: features, preprocessing, and set
 
 Demo 2 ends with that refit and single test evaluation.
 
+_"Did you ever think that maybe there's more to life than being really, really, ridiculously good at machine learning?"_
+
 !["I'm not an ambi-turner. I can't turn left. I can't turn right. But I CAN fit, predict, and score!"](media/really_really__really_ridiculously_good_looking.jpg)
 
 # LIVE DEMO!
@@ -526,11 +536,13 @@ Demo 2 ends with that refit and single test evaluation.
 
 A **decision tree** predicts by asking yes/no questions about the features ("Is age > 60?", then "Is BMI > 30?") and reporting the average outcome of the training patients in the same final group, a **leaf**. It can bend where a linear model's straight line cannot, but one tree is jumpy: change a few training rows and its questions change.
 
+_Random Forest is like having a committee of decision trees vote on the answer. It's democracy in action, except the trees are actually smart and the voting actually works._
+
 ## From One Tree to a Forest
 
-A **random forest** grows many trees, each on a random resample of the rows, then averages their predictions; `max_features` decides how many features each question may consider. A group of models combined into one prediction is an **ensemble**, and averaging many jumpy trees gives a steadier answer than any one of them.
+A **random forest** grows many trees, each on a random resample of the rows, then averages their predictions; `max_features` decides how many features each question may consider. A group of models combined into one prediction is an **ensemble**, and averaging many jumpy trees gives a steadier answer than any one of them: wisdom of crowds.
 
-![Decision tree: one model, one prediction. Random forest: trees trained in parallel on random feature subsets, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
+![Decision tree: one model, one prediction. Random forest: trees trained in parallel on resampled rows, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
 
 Forests capture **nonlinear** (curved) relationships and **interactions**, where one feature's effect depends on another (age might matter more at high BMI), usually without scaling. Categorical text columns still need encoding.
 
@@ -572,6 +584,8 @@ The forest leans on the two columns that built the label.
 
 **Gradient boosting** builds trees in sequence instead of in parallel, each small tree aimed at what the ensemble so far still gets wrong (the bottom row of the trees figure). Boosted trees are a standard strong candidate for tables such as clinic records, and XGBoost is the widely used library for them.
 
+_Gradient boosting is the Magnum of machine learning: a signature look, built one small correction at a time._
+
 ## How Boosting Learns
 
 A **hyperparameter** is a setting you choose before fitting, such as the number of trees, depth, or learning rate; the model does not learn it. The **learning rate** scales each new tree's correction: at 0.1 add a tenth of that tree's fitted update, so the ensemble learns in smaller steps. The update approximates the remaining error; it does not necessarily remove a tenth of it.
@@ -585,6 +599,8 @@ For squared-error regression each tree fits the ordinary residuals; the "gradien
 | 3 | A new tree predicts those targets | Fitted updates: [0.4, 0.3, -0.1] |
 | 4 | Add the scaled update to the ensemble | With learning rate 1: [5.4, 3.3, 6.9] |
 | 5 | Recompute targets and repeat | For N rounds, or until validation stops improving |
+
+_It's like having a tutor who only helps with your mistakes!_
 
 ## `XGBoost` Basics
 

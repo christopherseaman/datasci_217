@@ -11,8 +11,6 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
-**Midterm (Assignment 5):** [assignment instructions](assignment/README.md)
-
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
 _Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120%; data science is just that intense!)_
@@ -146,6 +144,11 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
 | Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one gap in a row |
 | Fill between neighbors | `df['col'].interpolate()` | Linear interpolation; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
 
+<callout icon="⚠️" color="yellow_bg">
+	## `fillna()` returns a new table!
+	`dropna()`, `fillna()`, `replace()`, `rename()`, and the other cleaning methods in this lecture leave the original unchanged, so `labs.fillna(0)` on a line by itself changes nothing. Assign the result to keep it: `labs = labs.fillna(0)`, or `labs['glucose'] = labs['glucose'].fillna(0)` for one column.
+</callout>
+
 ### Code Snippet: Keep visits with at least one lab
 
 ```python
@@ -171,12 +174,9 @@ print(readings.ffill(limit=1).tolist())  # [10.0, 10.0, nan, 15.0]
 
 Only the first gap is filled. `bfill()` uses the next observation instead; `interpolate()` estimates values between observations. Keep patient boundaries separate, and use these rules only when their time-order assumptions fit. [Demo 1's independent practice](demo/demo1_missing_data.md#independent-practice) records imputation and demonstrates why carrying a value across patients is wrong.
 
-![xkcd 1827: Survivorship Bias. Dropping incomplete records can leave a convincing but biased sample](media/xkcd_1827.png)
-<callout icon="⚠️" color="yellow_bg">
-	## `fillna()` returns a new table!
-	`dropna()`, `fillna()`, `replace()`, `rename()`, and the other cleaning methods in this lecture leave the original unchanged, so `labs.fillna(0)` on a line by itself changes nothing. Assign the result to keep it: `labs = labs.fillna(0)`, or `labs['glucose'] = labs['glucose'].fillna(0)` for one column.
-</callout>
 _Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."_
+
+![xkcd 1827: Survivorship Bias. Dropping incomplete records can leave a convincing but biased sample](media/xkcd_1827.png)
 
 # Repeated Rows, Sentinels, and Wrong Types
 
@@ -392,7 +392,7 @@ A table has two **axis indexes**: the row labels (`df.index`) and the column lab
 | `df.rename(columns={old: new})` | Rename columns | `DataFrame` with revised labels |
 | `df.rename(columns=str.lower)` | Lowercase every string column label | `DataFrame` with revised labels |
 | `df.rename(columns=str.strip)` | Remove leading/trailing whitespace from each column label | `DataFrame` with revised labels |
-| `series.rename('new_name')` | Set a Series' name; it becomes the column header when the Series turns into a table column, as after `reset_index()` | `Series` with the new name |
+| `series.rename('new_name')` | Set a Series' name, which prints as `Name: new_name` below its values | `Series` with the new name |
 
 ### Code Snippet: Rename columns
 
@@ -600,7 +600,7 @@ print(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64'))  #
 | Missing Values | `df.isna().sum()` plus sentinel checks | Retain, flag, impute, or drop according to variable meaning and analysis purpose |
 | Duplicate Candidates | exact-row and candidate-identifier checks | Confirm row meaning and source history; consolidate or remove only records shown to be redundant |
 | Wrong Data Type | `df.dtypes` plus conversion probes | Parse with an explicit failure policy, then validate the intended dtype |
-| Outliers | `df.describe()`<br>Box plots<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
+| Outliers | `df.describe()`<br>IQR fences<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
 | Inconsistent Categories | `df['col'].unique()` | Normalize only differences known to share a meaning; map documented aliases explicitly |
 
 Run the Lecture 04 inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning and compare the outputs: counts should change only where you meant them to.
@@ -659,7 +659,7 @@ dtype: datetime64[us]
 
 ## Detecting and Filtering Outliers
 
-An **outlier** is an extreme value: an error, a rare but valid observation, or an important anomaly. A statistical rule flags candidates, and the source, the domain, and the analysis decide whether to keep, correct, cap, or exclude each one. The **interquartile range (IQR)** is the distance from the 25th to the 75th percentile. The usual rule sets **fences** 1.5 IQRs outside those quartiles; a box plot's whiskers end at the most extreme observed values inside the fences, and values beyond them are plotted separately. [The bonus](BONUS.md#advanced-outlier-detection-methods) covers z-scores and other methods.
+An **outlier** is an extreme value: an error, a rare but valid observation, or an important anomaly. A statistical rule flags candidates, and the source, the domain, and the analysis decide whether to keep, correct, cap, or exclude each one. The **interquartile range (IQR)** is the distance from the 25th to the 75th percentile. The usual rule sets **fences** 1.5 IQRs outside those quartiles. A **box plot** (drawn in Lecture 07) shows the quartiles as a box with lines, called **whiskers**, reaching toward the fences, as in the figure below; the whiskers end at the most extreme observed values inside the fences, and values beyond them are plotted separately. [The bonus](BONUS.md#advanced-outlier-detection-methods) covers z-scores and other methods.
 
 ![Theoretical IQR fences on a normal curve. A sample's whiskers stop at observed values within these limits](media/boxplot_vs_pdf.png)
 
@@ -709,15 +709,13 @@ Capping changes the value to a bound rather than dropping its row; record why th
 - `df.sample(n=5, random_state=42)`: Five random rows without replacement; errors if `df` has fewer than five rows.
 - `df.sample(frac=0.1, random_state=42)`: Ten percent of the rows.
 
-For the five visits shown earlier, this draw selects labels 1, 4, and 2: both copies of P002's record are candidates, even though the row labels differ.
-
 ### Code Snippet: Draw Three Rows to Inspect
 
 ```python
 print(visits.sample(n=3, random_state=42).index.tolist())  # [1, 4, 2]
 ```
 
-`random_state=42` repeats the same selection. A sample reveals examples of problems and cannot prove every row is valid. [Demo 3's independent practice](demo/demo3_workflow.md#independent-practice) spot-checks a cleaned clinical table; see [sampling designs](BONUS.md#optional-reference-sampling-designs-and-resampling) for advanced variations.
+Labels 1 and 2 are both copies of P002's double entry from the duplicates example, so this small draw happens to surface the repeat; in a 10,000-row file, look in the sampled rows for anything the contract does not allow. `random_state=42` repeats the same selection. A sample reveals examples of problems and cannot prove every row is valid. [Demo 3's independent practice](demo/demo3_workflow.md#independent-practice) spot-checks raw clinic visits; see [sampling designs](BONUS.md#optional-reference-sampling-designs-and-resampling) for advanced variations.
 
 ![xkcd 2054: Data Pipeline. A pipeline that collapses on the first weird input is why the last step is validation](media/data_pipeline_intro.png)
 

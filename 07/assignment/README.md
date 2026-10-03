@@ -114,7 +114,7 @@ In the Task 2.2 cell, fill in each entry's `problem` (what is wrong, and how it 
 
 ### 2.3 Redesign the chart
 
-In the Task 2.3 cell, reuse `quarters`, `x`, `width`, `home`, and `center` from the Task 2.1 cell to draw the same four bars on `redesign_ax`, repairing each problem, as Lecture 07's "Grouped Bars That Work in Grayscale" snippet does:
+In the Task 2.3 cell, reuse `quarters`, `x`, `width`, `home`, and `center` from the Task 2.1 cell to draw the same four bars on `redesign_ax`, repairing each problem, as Lecture 07's "Give a Bar Series Its Own Hatch" and "Write Values on Bars" snippets and Demo 3's core redesign do:
 
 - start the y-axis at zero with `redesign_ax.set_ylim(0, 100)`, because bar length encodes the value;
 - label the y-axis with its unit, such as `Scheduled sessions attended (%)`, and the x-axis `Quarter`;
@@ -148,7 +148,7 @@ The cell reads the file back and prints `shape: (8, 3)` and `same as saved: True
 
 ### 3.2 Draw the explanatory chart
 
-The Task 3.2 cell supplies `home_goals` and `center_goals`, each program's four rows. Draw one line per program on `explanatory_ax`, as Lecture 07's "Redundant Cues on a Line Chart" snippet does:
+The Task 3.2 cell supplies `home_goals` and `center_goals`, each program's four rows. Draw one line per program on `explanatory_ax`, using Lecture 07's "Directly Label a Line" snippet, its "Redundant Cues for Bars and Lines" card, and Demo 3's HbA1c practice chart:
 
 - `visit_number` on x and `goal_met_pct` on y;
 - each program with its own color, marker, and line style, such as `ORANGE`, `'s'`, and `'--'` for Home-based and `BLUE`, `'o'`, and `'-'` for Center-based, named by a direct label at its right end or by a legend;

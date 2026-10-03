@@ -451,10 +451,19 @@ def check_fridge_rows(root: Path) -> None:
         problems.append(f"it is missing {_join(missing)}")
     if extra:
         problems.append(f"it also holds {_join(sorted(extra))}")
-    if len(table.rows) != len(BLOCK_IDS) and not extra:
-        problems.append(f"it holds {len(table.rows)} rows, expected exactly {len(BLOCK_IDS)}; extra or repeated rows must be removed")
+    # Too few rows already show as missing fridges; only extra or repeated rows need the count.
+    if len(table.rows) > len(BLOCK_IDS) and not extra:
+        problems.append(f"it holds {len(table.rows)} rows, expected exactly {len(BLOCK_IDS)}; remove the extra or repeated rows")
     if not found:
         problems = [f"none of its {len(table.rows)} rows is one of the fridges FRG-101 to FRG-104"]
+    if not missing and {"FRG-101", "FRG-104"} <= set(extra):
+        # Extras on both sides of the block are not a slice endpoint: the whole table was saved.
+        raise AssertionError(_fridge_fix(
+            table,
+            f"{FRIDGE_FILE} should hold the rows FRG-102 and FRG-103, but it holds all four fridges, "
+            f"so it looks like fridge_log was saved; {SAVED_BY[FRIDGE_FILE][0]} saves the selected block with "
+            f"{SAVED_BY[FRIDGE_FILE][1]}.",
+        ))
     if problems:
         raise AssertionError(_fridge_fix(
             table,
@@ -490,8 +499,42 @@ def _temperature_name_check(column: str) -> Callable[[Path], None]:
     return check
 
 
+def _swapped_readings(table: Table) -> bool:
+    """The two reading columns hold each other's block values, one mistake charged on am_temp_c values alone."""
+    saved = _temperature_columns(table)
+    if None in saved.values():
+        return False
+    found = _fridge_rows(table)
+    if found:
+        rows = [found.get(fridge) for fridge in BLOCK_IDS]
+    elif _fridge_label_column(table) is None:
+        rows = list(table.rows)
+    else:
+        return False
+    if len(rows) != len(BLOCK_IDS) or None in rows:
+        return False
+    am, pm = TEMP_COLUMNS
+    return all(
+        _same(row[saved[am]], FRIDGE_READINGS[fridge][pm]) and _same(row[saved[pm]], FRIDGE_READINGS[fridge][am])
+        for fridge, row in zip(BLOCK_IDS, rows)
+    )
+
+
 def _check_temperature(root: Path, column: str) -> None:
     table = read_table(root, FRIDGE_FILE, "Task 2")
+    if _swapped_readings(table):
+        if column != TEMP_COLUMNS[0]:
+            return  # Charged once, on the am_temp_c values check.
+        am, pm = TEMP_COLUMNS
+        names = ", ".join(f'"{name}"' for name in TEMP_COLUMNS)
+        raise AssertionError(_fridge_fix(
+            table,
+            f"{FRIDGE_FILE} has the column labels swapped: its {am} column holds "
+            f"{_join(f'{FRIDGE_READINGS[f][pm]:.1f}' for f in BLOCK_IDS)}, the {pm} readings, and its {pm} column "
+            f"holds {_join(f'{FRIDGE_READINGS[f][am]:.1f}' for f in BLOCK_IDS)}, the {am} readings. The supplied "
+            f"array's first column is the morning reading, so build fridge_log with columns=[{names}] in that order, "
+            "then run Task 2.2 again to save it.",
+        ))
     saved = _temperature_columns(table)[column]
     if column in table.conflicting_columns:
         raise AssertionError(
@@ -658,10 +701,17 @@ def _line_check(item_id: str) -> Callable[[Path], None]:
         lines = _supply_rows(table)
         rows = [row for found, row in lines if found == item_id]
         if not rows:
-            # Only a mask written with > drops every quantity-2 line and keeps the larger ones.
-            greater_than = quantity == MIN_QUANTITY and all(SUPPLY_ORDER[found][1] > MIN_QUANTITY for found, _ in lines)
+            # Only a mask written with > keeps exactly the larger lines and drops every quantity-2 line;
+            # a truncated table also lacks larger lines, so each of its missing lines is charged.
+            above = {found for found in expected_selection() if SUPPLY_ORDER[found][1] > MIN_QUANTITY}
+            greater_than = quantity == MIN_QUANTITY and {found for found, _ in lines} == above
+            # That one mistake drops every quantity-2 line, so it is charged once, to the first of them.
+            at_minimum = [found for found in expected_selection() if SUPPLY_ORDER[found][1] == MIN_QUANTITY]
+            if greater_than and item_id != at_minimum[0]:
+                return
             why = (
-                f'supplies["quantity"] >= {MIN_QUANTITY} keeps it, while > {MIN_QUANTITY} drops it'
+                f'supplies["quantity"] >= {MIN_QUANTITY} keeps it, while > {MIN_QUANTITY} drops it, '
+                f"along with {_join(at_minimum[1:])}"
                 if greater_than
                 else f'build the mask quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY} and select with it'
             )
@@ -787,16 +837,21 @@ def _ordered_rows(root: Path) -> tuple[list[str], list[dict[str, float]]]:
     return [item_id for item_id, _ in rows], _order_bases(table, rows)
 
 
+def _first_rise(ids: list[str], totals: dict[str, float]) -> tuple[str, str] | None:
+    return next(((a, b) for a, b in zip(ids, ids[1:]) if totals[a] < totals[b] - TOLERANCE), None)
+
+
+def _descending(ids: list[str], bases: list[dict[str, float]]) -> bool:
+    """True when the lines run from the highest line total down, by recomputed or saved totals."""
+    return any(_first_rise(ids, totals) is None for totals in bases)
+
+
 def check_supply_descending(root: Path) -> None:
     """Each line's total is at least the next line's: the highest line total comes first."""
     ids, bases = _ordered_rows(root)
-
-    def first_rise(totals: dict[str, float]) -> tuple[str, str] | None:
-        return next(((a, b) for a, b in zip(ids, ids[1:]) if totals[a] < totals[b] - TOLERANCE), None)
-
-    rises = [first_rise(totals) for totals in bases]
-    if None in rises:
+    if _descending(ids, bases):
         return
+    rises = [_first_rise(ids, totals) for totals in bases]
     unsorted = _unsorted(ids)
     if unsorted:
         raise AssertionError(unsorted)
@@ -822,9 +877,8 @@ def check_supply_ties(root: Path) -> None:
     found = [first_tie_out_of_order(totals) for totals in bases]
     if None in found:
         return
-    unsorted = _unsorted(ids)
-    if unsorted:
-        raise AssertionError(unsorted)
+    if not _descending(ids, bases):
+        return  # A file not sorted by line total is charged once, by the descending check.
     first, second = found[0]
     raise AssertionError(
         f"{SUPPLIES_FILE} lists {first} before {second}, but both have the line total {line_total(first):.2f}, "

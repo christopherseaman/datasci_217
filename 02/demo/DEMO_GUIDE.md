@@ -183,7 +183,7 @@ Work through the independent clinic-session example on your own after class; the
 
 Create a folder named `02-demo` in your home folder. Download [functions_demo.py](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/functions_demo.py), [vitals_tools.py](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/vitals_tools.py), [module_usage_demo.py](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/module_usage_demo.py), and [clinic_vitals.csv](https://raw.githubusercontent.com/christopherseaman/datasci_217/main/02/demo/clinic_vitals.csv) into it: open each link, then save the page with that filename. These four files are also in the [Lecture 02 demo folder on GitHub](https://github.com/christopherseaman/datasci_217/tree/main/02/demo).
 
-<span color="yellow_bg">**In a new terminal**</span>, open your `02-demo` folder with **File → Open Folder…**, then **Terminal → New Terminal**. If you already cloned the course repository, open its `02/demo` folder instead. `ls` should show all four files before you run:
+<span color="yellow_bg">**In a new terminal**</span>, open your `02-demo` folder with **File → Open Folder…**, then **Terminal → New Terminal**. If you already cloned the course repository, open its `02/demo` folder instead. `ls` should show all four files.
 
 ## Core walkthrough: a clinic cutoff
 

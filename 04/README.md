@@ -172,6 +172,8 @@ In Colab, pip may also print `ERROR: pip's dependency resolver does not currentl
 	`%pip install` suits Colab. In a local project, run `uv add` in the terminal instead: it records the package in `pyproject.toml`, while `uv sync` removes any package that `pyproject.toml` does not list (Lecture 03). Locally, the demos' `%pip` cell runs the pip that `uv venv --seed` put in `.venv` and changes nothing, since `uv sync` already installed pandas 3.0.5; if `.venv` was made without `--seed`, it prints `No module named pip` instead, which is just as harmless.
 </callout>
 
+_Think of magic commands as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch._
+
 ## Notebook Outputs and Git
 
 <callout icon="⚠️" color="yellow_bg">
@@ -266,6 +268,8 @@ Name: temp_c, dtype: float64
 38.1
 ```
 
+_Think of Series inside DataFrames like Russian nesting dolls: one labeled column fits inside the larger labeled table._
+
 ### Reference Card: DataFrame attributes and methods
 
 | Item | Purpose / arguments | Output / note |
@@ -328,6 +332,8 @@ Expected output: `info()` reports three rows and three non-null values per colum
 
 Every column has 3 non-null values, so nothing is missing; the memory figure varies with installed packages. `describe()` summarizes only the numeric columns, so `smoker` is left out, and its `std` row is the sample standard deviation, which divides by n − 1 (`0.665833` for `temp_c`); NumPy's `np.std(visits["temp_c"])` divides by n and gives about `0.544` unless you pass `ddof=1` (Lecture 03).
 
+_Pro tip: DataFrames are like Excel spreadsheets, but with superpowers. They can handle millions of rows without breaking a sweat, and they never ask you to "save as" or complain about circular references._
+
 ## Selecting Columns
 
 Brackets select columns by label. One label gives a Series; a list of labels (double brackets) gives a DataFrame, even when the list holds one name.
@@ -358,6 +364,8 @@ P001         34    36.8
 P002         58    38.1
 P003         41    37.2
 ```
+
+_Think of column selection like picking your team for dodgeball: sometimes you want just your star player (single column), and sometimes you want your entire A-team (multiple columns)._
 
 ## Selecting with `.loc` and `.iloc`
 
@@ -564,6 +572,8 @@ P003,41,37.2,North
 
 A path such as `"data/visits.csv"` is **relative** to the notebook's working directory (`%pwd`); from the wrong folder, `pd.read_csv()` raises `FileNotFoundError: [Errno 2] No such file or directory: 'data/visits.csv'`. It also accepts a web address (URL), which suits Colab, where the files on your computer are not available.
 
+_CSV stands for "Comma-Separated Values," unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day._
+
 ### Reference Card: CSV and Parquet input and output
 
 | Task | Call | Key arguments | Result |
@@ -645,9 +655,9 @@ clinic            str
 dtype: object
 ```
 
-[Demo 3's independent practice](demo/demo3_data_io.md#save-a-typed-parquet-table) checks a complete saved-table round trip. pandas also has readers such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
+[Demo 3's independent practice](demo/demo3_data_io.md#save-a-typed-parquet-table) checks a complete saved-table round trip.
 
-_CSV stands for "Comma-Separated Values," unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day._
+_Pro tip: if you're ever stuck with a weird file format, remember: "There's a pandas function for that!"_ pandas also has readers such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
 
 ![xkcd 927: Standards. Each file format was meant to be the one everyone uses, which is why pandas has a reader for so many of them](media/xkcd_927.png)
 
@@ -662,6 +672,8 @@ print(visits)    # Plain text, works everywhere
 display(visits)  # Formatted table in Jupyter
 len(visits)      # Last line: shown automatically as 5
 ```
+
+_Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter._
 
 ## Inspecting a Loaded Table
 

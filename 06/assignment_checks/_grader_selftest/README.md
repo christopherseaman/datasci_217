@@ -19,7 +19,8 @@ builds submissions in ignored `scratch/`, and confirms that:
   only the checks it gets wrong; a file saved without its ID column costs its
   columns check, not its rows or values; and the feedback says what to fix
   and names the cause it found, such as a right or inner merge, tables put side
-  by side with `axis=1` (repeated column names), round-trip columns renamed by
+  by side with `axis=1` (repeated column names or rows lined up by position,
+  each charged once), round-trip columns renamed by
   position, or a file saved outside `output/`;
 - a changed value, dropped patient or visit, or renamed visit in the long table
   costs only its own check when the round trip correctly pivots that table; a

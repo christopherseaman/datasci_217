@@ -68,7 +68,7 @@ Python 3.13.14
 | Set the default Python | `uv python pin --global 3.13` | New environments use 3.13; `--default` alone sets only the `python` commands. |
 | Pin one project | `uv python pin 3.13` | Writes `.python-version`; `uv venv` in this folder uses it over the global pin. |
 | Create environment | `uv venv --seed` | Creates `.venv` with the pinned Python; `--seed` adds pip, which Lecture 04's notebooks use. |
-| Activate | `source .venv/bin/activate`<br>PowerShell: `.\.venv\Scripts\Activate.ps1`, then type `python` where this lecture says `python3` | The prompt starts with the folder name, such as `(assignment-03)`. |
+| Activate | `source .venv/bin/activate`<br>PowerShell: `.\.venv\Scripts\Activate.ps1`<br>Git Bash: `source .venv/Scripts/activate`<br>On Windows, type `python` where this lecture says `python3` | The prompt starts with the folder name, such as `(assignment-03)`. |
 | Verify | `python3 --version` | The environment's Python version, such as `Python 3.13.14`. |
 | Leave environment | `deactivate` | Returns to the previous shell environment. |
 
@@ -147,7 +147,7 @@ uv run python3 -c "import numpy as np; print(np.__version__)"
 
 ## Which Python Is Running?
 
-After `source .venv/bin/activate`, the prompt starts with the project's name, such as `(assignment-03)`. To check, ask the shell which `python3` it runs and which version:
+After `source .venv/bin/activate`, the prompt starts with the project folder's name, such as `(assignment-03)`; in an assignment it is the name of the folder you cloned into. To check, ask the shell which `python3` it runs and which version:
 
 ```text
 (assignment-03) ~/assignment-03 $ which python3
@@ -262,16 +262,25 @@ tail -n +2 data/raw/encounters.csv | wc -l
 
 A **wildcard** stands for part of a file name: `*` matches any run of characters and `?` exactly one, as in Lecture 02's `.gitignore` patterns such as `*.csv`. The shell replaces the pattern with every matching file name before the command runs. `grep` searches inside files instead: it prints each line that contains a pattern.
 
-### File Names Versus File Contents
+### Examples of Wildcards
 
-| Pattern | Where it matches | Example |
+In Demo 1's `~/03-demo` folder, as the download leaves it:
+
+| Pattern | The shell replaces it with |
+| --- | --- |
+| `*.sh` | `demo1_cli_pipeline.sh setup_demo.sh` |
+| `demo2_*.py` | `demo2_numpy_arrays.py demo2_numpy_performance.py demo2_types_and_lists.py` |
+| `demo?_*.py` | The five `demo2_` and `demo3_` scripts |
+| `*.txt` | Nothing matches: Bash passes `*.txt` on as typed, so `ls *.txt` reports `No such file or directory`, and zsh stops with `no matches found: *.txt` |
+
+A `grep` pattern is a **regular expression**: most characters match themselves, and a few have special meanings. On `data/raw/encounters.csv`:
+
+| Pattern | Matches a line that | Matching lines |
 | --- | --- | --- |
-| `demo2_*.py` | File names, expanded by the shell | All three Demo 2 Python scripts |
-| `Cardiology` | Text inside a file, searched by `grep` | Any line containing this text |
-| `,Cardiology$` | Text at the end of a line | A record ending in the clinic name |
-| `^P` | Text at the start of a line | A patient row, excluding the header |
-
-A `grep` pattern is a **regular expression**: most characters match themselves, while `^`, `$`, and `.` have special meanings. Quote the pattern so the shell passes it unchanged.
+| `Cardiology` | Contains `Cardiology` | `P001,54,128,Cardiology`, `P004,45,131,Cardiology`, `P006,58,126,Cardiology` |
+| `^P` | Starts with `P` | The six records, not the header |
+| `,Cardiology$` | Ends with `,Cardiology` | The same three records as `Cardiology` |
+| `,14.,` | Holds `,14`, any one character, then `,` | `P003,67,142,Nephrology`, `P005,72,145,Nephrology` |
 
 ### Reference Card: Wildcards and `grep`
 
@@ -406,7 +415,7 @@ sum(readings)                 # TypeError: unsupported operand type(s) for +: 'i
 - `enumerate(items, start=0)`: Yield position-value pairs (Lecture 01).
 - `zip(left, right)`: Yield pairs until the shorter input ends.
 - `reversed(items)`: Iterate from the last item to the first.
-- `sorted(items)`: Return a new sorted list. For a NumPy array use `np.sort()` (Sorting and Ranking, below): `sorted()` on a 2-D array can raise `ValueError` when Python tries to compare whole rows.
+- `sorted(items)`: Return a new sorted list.
 
 ### Code Snippet: Keep Related Values Together
 
@@ -698,11 +707,15 @@ print(values, copied_values)  # [99 20 30] [10 20 30]
 ### Code Snippet: Functions Share the Caller's Array
 
 ```python
-def calibrate(values):
-    return values + 3   # a new array; values stays unchanged
+def calibrate_in_place(values):
+    values += 3   # changes the caller's array in place
+
+readings = np.array([72, 93, 90, 83, 83])
+calibrate_in_place(readings)
+print(readings)  # [75 96 93 86 86]
 ```
 
-Using `values += 3` instead would change the caller's array, even without returning it. [Demo 3.1](demo/DEMO_GUIDE.md#31-aliases-views-and-copies) compares both versions.
+A `calibrate` function that returns `values + 3` instead builds a new array and leaves the caller's unchanged. [Demo 3.1](demo/DEMO_GUIDE.md#31-aliases-views-and-copies) compares both versions.
 
 ## Views and Copies
 
@@ -763,23 +776,52 @@ print(bp[(bp >= 120) & (bp < 130)])   # [128 126 121]
 
 ## Multidimensional Boolean Indexing
 
-A mask with one value per row keeps whole rows; put a mask with one value per column after the comma. Match the mask's length to that dimension.
+A mask the same shape as `bp` picks out single values and flattens them. To keep whole **rows** (patients) or whole **columns** (visits) instead:
 
-In a 2-D array, `axis=1` works across each row: `(bp >= 140).any(axis=1)` gives one Boolean per patient, marking anyone with at least one reading of 140 or above. `axis=0` works down each column, giving one answer per visit.
+1. Build a 1-D mask with one `True` or `False` per row, such as `bp[:, 0] >= 140`, or one per column.
+2. Put it in that dimension's slot: `bp[row_mask]` keeps rows, and `bp[:, col_mask]` keeps columns. The result stays 2-D.
+3. Match the mask's length to that dimension; otherwise NumPy raises `IndexError: boolean index did not match indexed array along axis 0` (`axis 1` for a column mask).
+
+`.any()` and `.all()` build such a mask from every value at once. Given an axis, they collapse it:
+
+- `axis=1` checks across each row and gives one `True`/`False` per row (did this patient have any visit at 130 or above?).
+- `axis=0` checks down each column and gives one per column.
 
 ```text
-bp[row_mask]      → selected patients × every visit
-bp[:, col_mask]   → every patient × selected visits
+              visit 1  visit 2  visit 3     bp[:, 0] >= 140   (row mask, one per patient)
+patient 0   [[  128      131      126 ]         False
+patient 1    [  142      145      139 ]         True      ← bp[row_mask] keeps this row
+patient 2    [  118      121      119 ]]        False
+
+(bp >= 140).any(axis=0)  →  [ True   True   False ]      (column mask, one per visit)
+                               ↑      ↑
+                    bp[:, col_mask] keeps visits 1 and 2
 ```
 
-### Code Snippet: Keep Whole Rows
+### Reference Card: Masks Along One Dimension
+
+| Pattern | Purpose | Example |
+| :--- | :--- | :--- |
+| `arr2d[:, j] >= x` | Row mask from one column: one `True`/`False` per row. | `bp[:, 0] >= 140` → `[False  True False]` |
+| `arr2d[row_mask]` / `arr2d[row_mask, :]` | Keeps whole rows; the result stays 2-D. | `bp[bp[:, 0] >= 140]` → `[[142 145 139]]` |
+| `(arr2d > x).any(axis=1)` / `.all(axis=1)` | Row mask from every column: any / every value in the row passes. | `(bp >= 130).any(axis=1)` → `[ True  True False]` |
+| `(arr2d > x).any(axis=0)` | Column mask from every row. | `(bp >= 140).any(axis=0)` → `[ True  True False]` |
+| `arr2d[:, col_mask]` | Keeps whole columns. | `bp[:, [True, False, True]]` keeps visits 1 and 3 |
+| `arr2d[row_mask, j]` | Rows by mask, then one column by position. | `bp[bp[:, 0] >= 140, 2]` → `[139]` |
+
+### Code Snippet: Keep Rows or Columns by a Condition
 
 ```python
-bp = np.array([[128, 131, 126], [142, 145, 139], [118, 121, 119]])
-print(bp[bp[:, 0] >= 140])   # [[142 145 139]]
+visit1_high = bp[:, 0] >= 140               # one True/False per patient
+print(bp[visit1_high])                      # [[142 145 139]]
+print(bp[(bp >= 130).any(axis=1)])          # patients with any visit at 130 or above
+# [[128 131 126]
+#  [142 145 139]]
+print(bp[:, (bp >= 140).any(axis=0)])       # visits where any patient reached 140
+# [[128 131]
+#  [142 145]
+#  [118 121]]
 ```
-
-[BONUS.md](BONUS.md#more-multidimensional-boolean-indexing) develops masks from several columns with `any()` and `all()`.
 
 ## Fancy Indexing
 
@@ -911,7 +953,7 @@ print(np.select(bands, ["stage 2", "stage 1", "elevated"], default="normal"))
 
 ## Sorting and Ranking
 
-`np.sort()` returns the _values_ in order. `np.argsort()` returns the _positions_ that would put them in order, so indexing a matching array of patient IDs with them tells you _which_ patient has each value; `[::-1]` reverses an order. On a 2-D array both sort each row on its own; to reorder whole rows, `argsort` one column and index the rows with the result.
+`np.sort()` returns the _values_ in order. `np.argsort()` returns the _positions_ that would put them in order, so indexing a matching array of patient IDs with them tells you _which_ patient has each value; `[::-1]` reverses an order. On a 2-D array both sort each row on its own; to reorder whole rows, `argsort` one column and index the rows with the result. Use `np.sort()` rather than Python's `sorted()` on an array: `sorted()` on a 2-D array raises `ValueError` when it tries to compare whole rows.
 
 ### Reference Card: Values Versus Positions
 
@@ -921,6 +963,9 @@ print(np.select(bands, ["stage 2", "stage 1", "elevated"], default="normal"))
 | `arr.sort()` | `None`; sorts `arr` in place | Yes |
 | `np.argsort(arr)` | Positions that would sort the array | No |
 | `arr.argmin()` / `arr.argmax()` | Position of the smallest / largest value in a 1-D array; `ids[arr.argmax()]` looks up the matching ID | No |
+| `np.sort(arr2d, axis=1)` / `axis=0` | Each row / each column sorted on its own; rows by default | No |
+| `np.argsort(arr2d, axis=1)` | Sorting positions within each row | No |
+| `arr2d[np.argsort(arr2d[:, 0])]` | Whole rows, ordered by column 0 | No |
 
 ### Code Snippet: Find the Highest Values and Who Has Them
 
@@ -934,7 +979,18 @@ print(ids[top_two], avg_glucose[top_two])   # ['P003' 'P005'] [145 130]
 print(ids[avg_glucose.argmax()])   # P003
 ```
 
-[BONUS.md](BONUS.md#sort-within-rows-or-order-whole-rows) distinguishes sorting each row's values from ordering whole rows by one column.
+### Code Snippet: Sort Along an Axis and Order Rows
+
+```python
+# bp: the patients × visits array from "Select Cells, Rows, Columns, and Blocks"
+print(np.sort(bp, axis=1))           # [[126 128 131]
+                                     #  [139 142 145]
+                                     #  [118 119 121]]: each patient's readings in order
+order = np.argsort(bp[:, 0])[::-1]   # patients by visit 1, highest first
+print(bp[order])                     # [[142 145 139]
+                                     #  [128 131 126]
+                                     #  [118 121 119]]: each row stays intact
+```
 
 ![Learning to code, day 1: a husky at the keyboard, which is how everyone starts](media/learning_to_code.png)
 

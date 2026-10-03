@@ -16,26 +16,39 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
-    # Execute only these two bounded examples, not the lecture as a notebook.
-    lecture = (ROOT / "07/README.md").read_text()
-    for heading, variable, filename in (
-        ("Code Snippet: Density Comparisons", "fig", "distribution_reference.png"),
-        ("Code Snippet: Encode the study table", "scatter", "altair_study_reference.png"),
-    ):
-        import altair as alt
-        import pandas as pd
-        import seaborn as sns
+    import altair as alt
+    import pandas as pd
+    import seaborn as sns
 
-        source = re.search(r"```python\n(.*?)\n```", lecture.split("### " + heading, 1)[1], re.S)[1]
-        namespace = {"alt": alt, "np": np, "pd": pd, "sns": sns, "plt": plt}
-        exec(source.replace("plt.show()", ""), namespace)
-        output = ROOT / "07/media" / filename
-        if variable == "fig":
-            namespace[variable].savefig(output, dpi=150, bbox_inches="tight")
-            plt.close(namespace[variable])
-        else:
-            namespace[variable].save(str(output), scale_factor=2)
-        assert output.stat().st_size > 0
+    # Lecture 07's density figure: the glucose readings its snippets use.
+    glucose = pd.Series([84, 88, 91, 93, 95, 96, 98, 101, 156, 161, 166, 172], name="fasting_glucose")
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    glucose.plot.density(ax=axes[0], title="pandas density")
+    sns.kdeplot(x=glucose, ax=axes[1], label="default")
+    sns.kdeplot(x=glucose, bw_adjust=0.5, ax=axes[1], label="bw_adjust=0.5")
+    axes[1].legend()
+    sns.histplot(x=glucose, kde=True, ax=axes[2])
+    for ax in axes:
+        ax.set_xlabel("Fasting glucose (mg/dL)")
+    fig.tight_layout()
+    output = ROOT / "07/media/distribution_reference.png"
+    fig.savefig(output, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    # Execute only this bounded Altair example, not the lecture as a notebook.
+    lecture = (ROOT / "07/README.md").read_text()
+    source = re.search(r"```python\n(.*?)\n```", lecture.split("### Code Snippet: Encode the study table", 1)[1], re.S)[1]
+    # The lecture lists the snippet's six study rows in prose, not code.
+    study = pd.DataFrame({
+        "age": [38, 52, 67, 41, 55, 70],
+        "systolic_bp": [118, 129, 141, 124, 136, 150],
+        "clinic": ["North"] * 3 + ["South"] * 3,
+    })
+    namespace = {"alt": alt, "pd": pd, "study": study}
+    exec(source, namespace)
+    output = ROOT / "07/media/altair_study_reference.png"
+    namespace["scatter"].save(str(output), scale_factor=2)
+    assert output.stat().st_size > 0
 
     x = np.arange(1, 7)
     y = np.array([3, 6, 5, 9, 8, 11])

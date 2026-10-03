@@ -15,9 +15,9 @@ notebook's supplied `fridge_readings` array, builds submissions in ignored
   `reset_index()`, whether or not `index=False` is left out, and cells
   separated by semicolons (with decimal commas) or tabs;
 - each single mistake (index left out or unnamed, a slice one row short or
-  long, a missing column, a renamed reading column, a wrong value, no mask,
+  long, the whole `fridge_log` saved, swapped reading column labels, a missing column, a renamed reading column, a wrong value, no mask,
   `>` for `>=`, a mask that keeps nothing, no tie-break, the wrong sort
-  direction or both keys descending, `sort_values()` not assigned back, one
+  direction or both keys descending, `sort_values()` not assigned back (charged only by the descending check), one
   wrong line total or quantity, every total computed wrongly, a missing or
   misnamed total, a misnamed column, an extra column, a missing file, a file
   saved in the assignment folder instead of `output/`) costs exactly the

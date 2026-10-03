@@ -61,7 +61,18 @@ These work while the terminal has focus, and **Ctrl** means Control even on Mac.
 
 Make it Py-pretty: extensions, themes, window layouts, and format-on-save are in [BONUS.md](BONUS.md#vs-code-extensions-themes-and-settings).
 
-The [shell reference](BONUS.md#command-line-essentials) collects Lecture 01's commands and optional extensions.
+## Command-Line Catalog
+
+Commands to recognize from the shell; the [command-line bonus](BONUS.md#command-line-essentials) has examples.
+
+| Area | Commands | Purpose |
+| --- | --- | --- |
+| Navigation | `pwd`, `ls`, `cd` | Show where you are, list contents, and move between directories. |
+| Files and directories | `mkdir`, `touch`, `cp`, `mv` | Create directories or empty files, copy items, and rename or move them. |
+| Removal | `rm` | Remove a file; destructive, so check the path first. |
+| Inspect and search text | `cat`, `head`, `tail`, `grep`, `wc` | Read, preview, search, and count text. |
+| Directory overview | `tree` | Display a directory hierarchy when the command is available. |
+| Recall and shortcuts | `history`, ↑/↓, `Tab`, `Ctrl+R` | Reuse earlier commands and complete or search command text. |
 
 # Git Version Control
 
@@ -85,11 +96,11 @@ analysis_fixed_broken_computer_recovery.py
 
 Git records a project as a series of **commits**: snapshots of the tracked files, each with an author, time, and message saying why. A change moves through these steps:
 
-![git add stages, git commit records in your local repository, and git push and git pull sync it with the remote](media/git_local_remote_areas.png)
+![git add stages, git commit records in your local repository, and git push and git pull sync it with the remote; the git reset arrow, which unstages, is covered in BONUS.md](media/git_local_remote_areas.png)
 
 ### Reference Card: Git Vocabulary
 
-- **Working tree**: Your files as they are now, including uncommitted edits.
+- **Working tree (working directory)**: Your files as they are now, including uncommitted edits.
 - **Diff**: Line-by-line comparison of two versions; click a changed file in Source Control.
 - **Staging area**: Changes selected for the next commit; a later edit needs staging again.
 - **Commit**: A snapshot with author, time, and message.
@@ -106,6 +117,10 @@ Git records a project as a series of **commits**: snapshots of the tracked files
 Source Control runs the diagram's steps: review a change, stage it, commit, then sync to GitHub.
 
 ![Stage a changed file using the plus button in VS Code](media/vscode-stage.png)
+
+![Enter a message and commit the staged files](media/vscode-commit.png)
+
+![Sync committed changes with the GitHub copy](media/vscode-sync.png)
 
 ### Reference Card: VS Code Git Actions
 
@@ -147,7 +162,7 @@ A **branch** is a separate line of commits. Build a change on one, such as a new
 
 ## Merge Conflicts
 
-A conflict happens when two branches, or your commits and a teammate's, changed the same lines, so Git cannot pick a version. The merge or sync stops, the file appears under **Merge Changes** in Source Control, and `git status --short` marks it `UU`.
+A conflict happens when two branches, or your commits and a teammate's, changed the same lines, so Git cannot pick a version. The merge or sync stops, and the file appears under **Merge Changes** in Source Control with a `!` badge.
 
 ![Dev A and Dev B both update file A; after Dev A pushes, Dev B's pull or push hits a merge conflict](media/git_merge_conflict.png)
 
@@ -175,6 +190,8 @@ Open the file from **Merge Changes**. Select **Accept Current Change**, **Accept
 
 **Resolve in Merge Editor** shows Incoming on the left, Current on the right, and Result below. Select **Accept Incoming** or **Accept Current**, review Result, then **Complete Merge** to save and stage it; **Commit** finishes the merge. [Demo 1](demo/DEMO_GUIDE.md#a-merge-conflict) gives a complete conflict to resolve independently.
 
+Microsoft's [VS Code merge-conflict guide](https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts) walks through both views with screenshots.
+
 ### Reference Card: Finish a Conflict in the Terminal
 
 - Edit the file to keep the intended result and delete all three marker lines.
@@ -190,7 +207,7 @@ Every Source Control button runs a Git command. Demo 1's terminal path uses thes
 | Task | Command | Result |
 | --- | --- | --- |
 | Start a repository | `git init` | A hidden `.git` folder |
-| Check state | `git status` | Modified, staged, or "working tree clean"; `--short` prints one line per file |
+| Check state | `git status` | Modified, staged, or "working tree clean"; `--short` prints one line per file, `UU` for a conflict |
 | Inspect edits | `git diff` | Unstaged line changes: `+` added, `-` removed |
 | Stage | `git add FILE` | FILE's changes go into the next commit |
 | Commit | `git commit -m "message"` | A new local commit |
@@ -216,10 +233,11 @@ GitHub's website shows the remote copy: check what arrived after **Sync Changes*
 ## `.gitignore`
 
 <callout icon="⚠️" color="yellow_bg">
+	## Never commit patient data or secrets
 	Never commit protected health information (**PHI**), personally identifiable information (**PII**), passwords, or keys. A commit is permanent: deleting the file later leaves it in every earlier snapshot and every clone.
 </callout>
 
-A **`.gitignore`** file lists **patterns** for files Git should not track. List clutter there too, such as Python's `__pycache__/` folder. A pattern does not untrack files already committed and pushed commits with unwanted files are difficult-to-impossible to undo cleanly.
+A **`.gitignore`** file lists **patterns** for files Git should not track. List clutter there too, such as Python's `__pycache__/` folder. A pattern does not untrack files already committed. Pushed commits that contain unwanted files are difficult or impossible to undo cleanly.
 
 `git status --short` marks untracked files `??`. Before and after a `.gitignore` with `__pycache__/`, `*.pyc`, and `data/raw/*.csv`:
 
@@ -264,15 +282,19 @@ A leading `!` reverses an earlier match. Put exceptions after the pattern they o
 
 # Python Fundamentals
 
-![xkcd 1429: Data. In Python, everything is an object; in Star Trek, Data is too](media/xkcd_1429.png)
+![xkcd 1429: Data. Is "data" singular or plural? Python does not care; a list holds one value or many](media/xkcd_1429.png)
 
-Health data rarely fits one value per variable: a patient has several readings, a visit pairs an ID with a date, and a clinic session has a set of patients.
+Health data rarely fits one value per variable, and results need clear formatting. This block covers:
+
+- **F-strings** format output, such as a mean rounded to one decimal, and `input()` reads values typed at the keyboard.
+- **Containers** hold many values at once: a patient has several readings (a list), a visit pairs an ID with a date (a tuple), a lookup maps patient IDs to readings (a dictionary), and a clinic session has a set of unique patients (a set).
+- **Functions** package a repeated calculation under a name, and **modules** let other scripts import those functions.
 
 ## F-Strings and Input
 
 <columns>
 	<column ratio="50">
-		![An f-string with a format spec after the colon](media/fstring_price.png)
+		![An f-string with a format spec after the colon: .2f rounds 1299.516 to 1299.52](media/fstring_price.png)
 	</column>
 	<column ratio="50">
 		![Format specs for decimals, thousands separators, and percentages](media/fstring_format_examples.png)
@@ -583,7 +605,13 @@ Run `python3 report.py` from that folder. The first import creates a `__pycache_
 
 # Files and Reusable Scripts
 
-A script's variables vanish when it ends, so results worth keeping go in files.
+A script's variables vanish when it ends, so results worth keeping go in files. This block turns the pieces from the last one into a script that reads data, survives bad rows, and documents itself:
+
+- **String methods** take a line of a data file apart and build output text.
+- **Files** are read and written with `open()` so results last after the script ends.
+- **Exceptions** let a script handle a bad value instead of crashing, and **assertions** check that each step did what it claimed.
+- The **`__main__`** guard lets one file run as a script and still be imported as a module.
+- **Markdown** in a `README.md` tells others what the project does and how to run it.
 
 ## String Methods
 
@@ -705,6 +733,7 @@ An **assertion**, `assert condition, message`, states what must be true at that 
 
 - `try:` / `except ValueError as error:`: Run the risky line; on that error only, run the handler, with the message in `error`.
 - `else:`: Runs only when the `try` block succeeded.
+- `finally:`: Runs whether or not an exception occurred, for cleanup such as a closing message.
 - `ValueError`: Right type, unusable value, such as `int("not recorded")`.
 - `KeyError`: A dictionary has no such key.
 - `FileNotFoundError`: `open()` on a path that does not exist; check with `path.exists()` first.

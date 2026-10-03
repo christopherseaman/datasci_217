@@ -162,6 +162,10 @@ A **commit** saves a version of your files. **Staging** selects which changes go
 
 ![VS Code Source Control with the plus button highlighted to stage a file.](assignment/media/vscode-stage.png)
 
+![VS Code's message field and Commit button above the staged changes.](assignment/media/vscode-commit.png)
+
+![VS Code's Sync Changes button highlighted.](assignment/media/vscode-sync.png)
+
 ### Reference Card: Save, Commit, and Sync
 
 - Save your files, then review each changed file in **Source Control**.
@@ -701,6 +705,8 @@ else:
 ```text
 Can drive
 ```
+
+![xkcd 1195: Flowchart. A condition that can only answer yes sends you back around forever](media/xkcd_1195.png)
 
 ## For Loops
 

@@ -296,9 +296,9 @@ ts = pd.Series(70 + np.cumsum(np.random.randn(30) * 0.2), index=dates)
 
 # Shifting
 axes[0].plot(ts.index, ts.values, linewidth=2, label='Original', color='blue')
-axes[0].plot(ts.index, ts.shift(1), linewidth=2, label='Lag 1 (shift forward)', 
+axes[0].plot(ts.index, ts.shift(1), linewidth=2, label='shift(1): lag', 
              color='red', linestyle='--', alpha=0.7)
-axes[0].plot(ts.index, ts.shift(-1), linewidth=2, label='Lead 1 (shift backward)', 
+axes[0].plot(ts.index, ts.shift(-1), linewidth=2, label='shift(-1): lead', 
              color='green', linestyle='--', alpha=0.7)
 axes[0].set_title('Shifting Operations', fontweight='bold')
 axes[0].set_xlabel('Date')
@@ -307,26 +307,47 @@ axes[0].legend()
 axes[0].tick_params(axis='x', rotation=45)
 axes[0].grid(True, alpha=0.3)
 
-# Difference and percentage change
-ax2_twin = axes[1].twinx()
-axes[1].plot(ts.index, ts.diff(), marker='o', markersize=4, linewidth=2, 
-             label='First Difference', color='blue')
-ax2_twin.plot(ts.index, ts.pct_change() * 100, marker='s', markersize=3, 
-               linewidth=1, label='Percentage Change (%)', color='red', alpha=0.7)
-axes[1].set_title('First Difference and Percentage Change', fontweight='bold')
+# Difference
+axes[1].plot(ts.index, ts.diff(), marker='o', markersize=4, linewidth=2,
+             label='diff(): current minus previous', color='blue')
+axes[1].axhline(y=0, color='gray', linewidth=1)
+axes[1].set_title('Day-to-Day Change', fontweight='bold')
 axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Difference', color='blue')
-ax2_twin.set_ylabel('Percentage Change (%)', color='red')
+axes[1].set_ylabel('Weight Change (kg)')
 axes[1].tick_params(axis='x', rotation=45)
-axes[1].tick_params(axis='y', labelcolor='blue')
-ax2_twin.tick_params(axis='y', labelcolor='red')
 axes[1].grid(True, alpha=0.3)
 axes[1].legend(loc='upper left')
-ax2_twin.legend(loc='upper right')
 
 plt.tight_layout()
 plt.savefig('media/shifting_lagging.png', dpi=150, bbox_inches='tight')
 print("   ✓ Saved: media/shifting_lagging.png")
+plt.close()
+
+# ============================================================================
+# Visualization 7: Time Series Plotting (lecture snippet figures)
+# ============================================================================
+print("7. Creating 'Influenza-like Illness Visits' plots...")
+
+# One year of daily influenza-like-illness (ILI) visits with a winter peak
+days = pd.date_range('2023-01-01', '2023-12-31', freq='D')
+winter_wave = 20 * np.cos(2 * np.pi * (days.dayofyear - 15) / 365.25)
+ts = pd.Series((40 + winter_wave + np.random.default_rng(9).normal(0, 4, len(days))).round(), index=days)
+
+fig, ax = plt.subplots(figsize=(12, 6))
+ts.plot(ax=ax, alpha=0.5, label='Daily', color='gray')
+ts.rolling(window=30).mean().plot(ax=ax, linewidth=2, label='30-Day Rolling Mean', color='blue')
+ax.set(title='Influenza-like Illness Visits with Rolling Mean', xlabel='Date', ylabel='Visits per day')
+ax.legend()
+ax.grid(True, alpha=0.3)
+plt.savefig('media/viz_ili_rolling.png', dpi=100, bbox_inches='tight')
+print("   ✓ Saved: media/viz_ili_rolling.png")
+plt.close()
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax, rot=0, title='Mean Daily Visits by Calendar Month',
+                                       xlabel='Month', ylabel='Visits per day')
+plt.savefig('media/viz_ili_monthly.png', dpi=100, bbox_inches='tight')
+print("   ✓ Saved: media/viz_ili_monthly.png")
 plt.close()
 
 print("\n✓ All visualizations generated successfully!")

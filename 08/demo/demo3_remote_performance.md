@@ -273,7 +273,7 @@ source .venv/bin/activate
 jupyter lab --ip=127.0.0.1 --port=8888 --no-browser
 ```
 
-**Expect:** log lines ending in a URL such as `http://127.0.0.1:8888/lab?token=...`. Copy that URL into your browser, and JupyterLab opens. (If port 8888 is busy, Jupyter picks 8889 and prints that URL instead.)
+**Expect:** log lines ending in a URL such as `http://127.0.0.1:8888/lab?token=...`. Copy that URL into your browser, and JupyterLab opens. (If port 8888 is busy, Jupyter picks 8889 and prints that URL instead. On a server, use the printed port as the last field of the tunnel, such as `-L 8888:127.0.0.1:8889`, and open the URL with 8888 in place of 8889.)
 
 Detach with `Ctrl+b`, then `d`, and reload the browser page.
 

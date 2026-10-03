@@ -307,6 +307,8 @@ Vega-Lite  ← Altair
 Arrows mean “renders through,” not a required learning order.
 ```
 
+_Reality check: There are more Python visualization libraries than there are ways to mess up a bar chart._
+
 ## Choosing the Right Tool
 
 ### Reference Card: Choosing a Plotting Tool
@@ -515,12 +517,13 @@ ax = sns.histplot(x=glucose, kde=True)
 ax.set_xlabel('Fasting glucose (mg/dL)')
 ```
 
-`glucose` holds the twelve readings in the visual: `[84, 88, 91, 93, 95, 96, 98, 101, 156, 161, 166, 172]` mg/dL. Expect peaks near 94 and 163 mg/dL; the histogram retains counts on its y-axis.
+`glucose` is a pandas Series holding the twelve readings in the visual: `[84, 88, 91, 93, 95, 96, 98, 101, 156, 161, 166, 172]` mg/dL. Expect peaks near 94 and 163 mg/dL; the histogram retains counts on its y-axis.
 
 ### Code Snippet: Draw a pandas Density Curve
 
 ```python
-glucose.plot.density(xlabel='Fasting glucose (mg/dL)')
+ax = glucose.plot.density()
+ax.set_xlabel('Fasting glucose (mg/dL)')
 ```
 
 Expected result: a curve with those two peaks and density on its y-axis.
@@ -698,7 +701,7 @@ An Altair chart is **data → mark → typed encodings**, and each field carries
 | Interact | `.interactive()` | Add scale-bound pan/zoom interaction | Interactive chart |
 | Compose | `alt.hconcat(left, right)` / `alt.vconcat(top, bottom)` | Place two charts side by side / one above the other | Compound chart |
 
-`study` has six patient rows with age (years), systolic BP (mmHg), and clinic: three North and three South. The full table and interactive workflow are in [Demo 3](demo/demo3_pandas_altair.md#core-walkthrough).
+`study` is a DataFrame with one row per patient: `age` (years) `[38, 52, 67, 41, 55, 70]`, `systolic_bp` (mmHg) `[118, 129, 141, 124, 136, 150]`, and `clinic`, North for the first three and South for the last three. [Demo 3](demo/demo3_pandas_altair.md#core-walkthrough) builds the interactive workflow on a 12-patient version of this table.
 
 ### Code Snippet: Encode the study table
 
@@ -740,7 +743,7 @@ print(spec['mark'])                 # {'type': 'point', 'filled': True, 'size': 
 
 ### Code Snippet: Save a Chart Record as JSON
 
-`chart_record` is a dictionary containing the question, grain (`'one patient at one visit'`), and text alternative. `open()` and `with` come from Lecture 02; `json.dump()` also accepts the dictionary `chart.to_dict()` returns.
+`chart_record` is a dictionary containing the question, grain (`'one patient'`), and text alternative. `open()` and `with` come from Lecture 02; `json.dump()` also accepts the dictionary `chart.to_dict()` returns.
 
 ```python
 with open('study_record.json', 'w', encoding='utf-8') as file:
@@ -754,7 +757,7 @@ Expected result: `study_record.json` preserves the contract and text alternative
 ```python
 with open('study_record.json', encoding='utf-8') as file:
     saved = json.load(file)
-print(saved['grain'])  # one patient at one visit
+print(saved['grain'])  # one patient
 ```
 
 ![xkcd 1138: Heatmap. "Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.](media/xkcd_1138.png)

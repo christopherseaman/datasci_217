@@ -68,7 +68,7 @@ Expect `Ready: healthexp.csv`, `pandas: 3.0.5`, and `seaborn: 0.13.2` (Colab may
 
 ## Core walkthrough
 
-### 4. seaborn on real data: health spending and life expectancy
+### 1. seaborn on real data: health spending and life expectancy
 
 `healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
 
@@ -169,7 +169,7 @@ print(axes[0].get_ylim() == axes[2].get_ylim())  # get_ylim() reads back the lim
 
 Expect three stacked panels on the same y-scale: North high and falling, South rising, East lowest. `(3,)` and `True` print: one Axes per clinic, and North's and East's panels share limits.
 
-### Country trends and distributions
+### 4. Country trends and distributions
 
 Continue comparing the same country-year table with line and box plots.
 

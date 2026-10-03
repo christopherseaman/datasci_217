@@ -108,7 +108,7 @@ Before merging, note three things the join types will reveal:
 - P004 and P005 have **no** lab results yet.
 - P006 has a lab result but **no registry record**, for example a referral that was never registered.
 
-### 6. Check the cardinality before you trust a merge
+### 2. Check the cardinality before you trust a merge
 
 Next month's registry export arrives. Looking up each lab's patient is a **many-to-one** merge (many lab rows, one registry row per patient). Watch the row count.
 
@@ -165,7 +165,7 @@ labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']]
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
 
-### 2. Inner join: only matching keys
+### 3. Inner join: only matching keys
 
 **Question:** "Which lab results can I attach to a registered patient?"
 
@@ -179,7 +179,7 @@ inner_merge
 
 Always check row counts: if you expected every patient, the inner join silently dropped two of them.
 
-### 3. Left join: every patient
+### 4. Left join: every patient
 
 **Question:** "Show every registered patient, with labs where they exist."
 
@@ -200,7 +200,7 @@ no_labs[['patient_id', 'clinic']]
 
 **Expect:** 2 rows: P004 (South) and P005 (North).
 
-### 4. Right join: every lab result
+### 5. Right join: every lab result
 
 **Question:** "Show every lab result, even when the patient is not registered."
 
@@ -213,7 +213,7 @@ orphans[['lab_id', 'patient_id', 'test', 'value']]
 
 **Expect:** 7 rows in the right join, one per lab. The orphan table has 1 row: `L05`, `P006`, `A1c`, `6.4`. An orphaned lab is a data-quality issue to send back to registration.
 
-### 5. Outer join with `indicator=True`: the full audit
+### 6. Outer join with `indicator=True`: the full audit
 
 **Question:** "Show everything, and say where each row came from."
 

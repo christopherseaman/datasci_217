@@ -46,11 +46,16 @@ DataSci 217 is a practical introduction to the tools and reasoning used in Pytho
 
 # Assignments
 
-1. [https://github.com/UCSF-DataSci/ds217-26f-01](https://github.com/UCSF-DataSci/ds217-26f-01)
+1. 2026-09-25 [https://github.com/UCSF-DataSci/ds217-26f-01](https://github.com/UCSF-DataSci/ds217-26f-01)
+2. 2026-10-02 [https://github.com/UCSF-DataSci/ds217-26f-02](https://github.com/UCSF-DataSci/ds217-26f-02)
+3. 2026-10-09 [https://github.com/UCSF-DataSci/ds217-26f-03](https://github.com/UCSF-DataSci/ds217-26f-03)
 
 Just for fun:
 
 [Shell Workout](shell_workout.md)
+
+- [Advent of Code](https://adventofcode.com): short programming puzzles for continued practice.
+- [GameShell](https://github.com/phyver/GameShell): a game for practicing the Unix shell.
 
 # Lectures
 

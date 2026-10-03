@@ -301,7 +301,7 @@ Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42
 
 ## 8. Look at the validation predictions
 
-Two plots of the selected pipeline's validation predictions, with Lecture 07's Axes methods: predicted against actual, where perfect predictions would sit on the dashed diagonal, and residuals against predictions, where we hope for a shapeless cloud around zero.
+Two plots of the selected pipeline's validation predictions, with Lecture 07's Axes methods and Lecture 09's `axhline`: predicted against actual, where perfect predictions would sit on the dashed diagonal, and residuals against predictions, where we hope for a shapeless cloud around zero.
 
 ```python
 lasso_valid_pred = lasso.predict(X_valid)

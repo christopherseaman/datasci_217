@@ -84,7 +84,7 @@ In the Task 1.1 cells:
 
 1. Set `specimen_ids_unique` to `specimens["specimen_id"].is_unique`. It prints `specimen_id unique: True`.
 2. Select every `clinics_history` row whose `clinic_id` appears more than once, with `duplicated(subset=["clinic_id"], keep=False)` as the mask, and name the result `repeated_clinic_rows`. It shows K01's two rows: `Bayview Annex` (retired) and `Bayview Clinic` (current).
-3. In the next cell, try the merge with the contract written down, and catch the error it raises, as the lecture's "Catch a broken merge contract" snippet does:
+3. In the next cell, try the merge with the contract written down, and catch the error it raises with `try`/`except` (Lecture 02), as Demo 1's core step 2 does. The lecture's "Catch a Broken Merge Contract" snippet shows the merge that raises it:
 
 ```python
 try:
@@ -168,7 +168,7 @@ In the Task 3.2 cell:
 This step saves nothing. P202's follow-up blood pressure was rechecked, so the supplied lines at the top of the cell add a second P202 `followup` reading, 147 mmHg, in `sbp_rechecked`.
 
 1. Select every `sbp_rechecked` row whose `patient_id` and `visit` pair appears more than once, with `duplicated(subset=["patient_id", "visit"], keep=False)` as the mask, and name the result `repeated_pairs`. It shows two rows: P202 `followup` 151 and P202 `followup` 147.
-2. Try the Task 3.2 pivot on `sbp_rechecked` inside `try`, catch `ValueError`, and print it, as the lecture's "Find the pair that stops pivot()" snippet does. It prints `ValueError: Index contains duplicate entries, cannot reshape`.
+2. Try the Task 3.2 pivot on `sbp_rechecked` inside `try`, catch `ValueError`, and print it, as Demo 2's practice step 7 does. The lecture's "Find the Pair that Stops a Pivot" snippet explains the error. It prints `ValueError: Index contains duplicate entries, cannot reshape`.
 
 ## Check your work
 

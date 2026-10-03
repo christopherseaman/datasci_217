@@ -854,8 +854,8 @@ def _check_data_type(root: Path, column: str) -> None:
         hint = ""
     _assert(
         found in expected,
-        f"{EVIDENCE_FILE} gives {column} the data type {_brief(given)}, not {_join(expected)}; in Task 3.1, "
-        f"use one of Lecture 07's words: categorical, quantitative, ordinal, or temporal.{hint}",
+        f"{EVIDENCE_FILE} gives {column} the data type {_brief(given)}, not {' or '.join(expected)}; in Task 3.1, "
+        f"use {expected[0]}{''.join(f' (or {other})' for other in expected[1:])}.{hint}",
     )
 
 

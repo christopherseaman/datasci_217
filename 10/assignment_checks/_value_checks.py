@@ -1023,6 +1023,27 @@ def _saved_test_metrics(root: Path) -> dict[str, float]:
         return {}
 
 
+def _holds(root: Path, artifact: Artifact, slip: Slip) -> bool:
+    """Whether the saved artifact holds this slip's value in every cell the slip names."""
+    try:
+        table = read_table(root, artifact)
+        found = _resolve(table, artifact)
+        grouped, _ = _group(table, artifact, found)
+        return all(
+            grouped.get(key) and column in found and all(
+                _matches(row[found[column]], value, artifact.tolerance) for row in grouped[key]
+            )
+            for key, values in slip.rows.items() for column, value in values.items()
+        )
+    except (AssertionError, OSError, KeyError, ValueError, UnicodeDecodeError, csv.Error):
+        return False
+
+
+def _leak_confirmed(root: Path) -> bool:
+    """Leaky test metrics are named only when another artifact shows the leak, not on a coincidental match."""
+    return _holds(root, TEST_PREDICTIONS, LEAKY_TEST_PREDICTIONS) or _holds(root, VALIDATION, LEAKY_VALIDATION)
+
+
 def values_check(
     artifact: Artifact, columns: tuple[str, ...], hint: str, slips: tuple[Slip, ...] = ()
 ) -> Callable[[Path], None]:
@@ -1048,6 +1069,9 @@ def values_check(
             f"{artifact.path} has no row for {_join(_key_name(key, artifact) for key in artifact.rows)}, so its "
             f"{_join(columns)} values cannot be compared; the rows check says what to fix in {artifact.task}.",
         )
+        named = slips
+        if LEAKY_TEST in slips and not _leak_confirmed(root):
+            named = tuple(slip for slip in slips if slip is not LEAKY_TEST)
         wrong = []
         misses = []
         for key, rows in grouped.items():
@@ -1088,7 +1112,7 @@ def values_check(
                     wrong.append(f"{_key_name(key, artifact)} has {column} {_join(given)}, expected {_show(artifact.rows[key][column])}")
         _assert(
             not wrong,
-            f"{artifact.path}: " + _listed(wrong) + "." + _cause(misses, artifact, slips)
+            f"{artifact.path}: " + _listed(wrong) + "." + _cause(misses, artifact, named)
             + f" Fix it in {artifact.task}: {hint}",
         )
 
@@ -1378,12 +1402,27 @@ CHECKS = (
             "validation chose linear_pipeline, so the test rows are scored once, for that approach only.",
         ),
     ),
-    Check("test metrics: mae value", values_check(TEST_METRICS, ("mae",), TEST_HINT, (LEAKY_TEST, TEST_SCORED_ON_VALIDATION))),
+    Check(
+        "test metrics: mae value",
+        values_check(
+            TEST_METRICS, ("mae",), f"mae is mean_absolute_error(test[TARGET], test_predicted); {TEST_HINT}",
+            (LEAKY_TEST, TEST_SCORED_ON_VALIDATION),
+        ),
+    ),
     Check(
         "test metrics: rmse value",
-        values_check(TEST_METRICS, ("rmse",), TEST_HINT, (LEAKY_TEST, TEST_SCORED_ON_VALIDATION, TEST_RMSE_NOT_ROOTED)),
+        values_check(
+            TEST_METRICS, ("rmse",), f"rmse is np.sqrt(mean_squared_error(test[TARGET], test_predicted)); {TEST_HINT}",
+            (LEAKY_TEST, TEST_SCORED_ON_VALIDATION, TEST_RMSE_NOT_ROOTED),
+        ),
     ),
-    Check("test metrics: r2 value", values_check(TEST_METRICS, ("r2",), TEST_HINT, (LEAKY_TEST, TEST_SCORED_ON_VALIDATION))),
+    Check(
+        "test metrics: r2 value",
+        values_check(
+            TEST_METRICS, ("r2",), f"r2 is r2_score(test[TARGET], test_predicted), actual first; {TEST_HINT}",
+            (LEAKY_TEST, TEST_SCORED_ON_VALIDATION),
+        ),
+    ),
     Check(
         "test predictions: columns",
         columns_check(

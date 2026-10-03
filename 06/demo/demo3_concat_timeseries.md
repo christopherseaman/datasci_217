@@ -145,7 +145,7 @@ admissions
 
 **Expect:** `(9, 6)` and missing counts of `age` 3 and `payer` 6, everything else 0. The 3 March rows have no `age`, and the 6 January and February rows have no `payer`. These gaps come from the files' layouts, not from missing measurements, so note them rather than filling them.
 
-### 8. Patch gaps with `combine_first()`
+### 5. Patch gaps with `combine_first()`
 
 The census system (ADT, the admission-discharge-transfer feed) is the primary source, but it failed to report February and April and has not reported June yet. Finance keeps its own estimate for every month.
 
@@ -201,7 +201,7 @@ print(list(filled_flat.columns))
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
 
-### 5. `concat()` then `merge()`: add unit details
+### 6. `concat()` then `merge()`: add unit details
 
 Stacking made one admissions table. Unit names and bed counts live in a separate lookup table, so they are joined by key with `merge()`. Each admission should find exactly one unit: many-to-one.
 
@@ -234,7 +234,7 @@ enriched.sort_values('los_days', ascending=False)[
 
 `concat()` stacks pieces of one table; `merge()` joins different tables by key.
 
-### 6. Side by side: monthly metrics from three systems
+### 7. Side by side: monthly metrics from three systems
 
 Each system reports one row per month. Put `month` in the index of each so that `concat(axis=1)` lines rows up by label. The month labels are plain text such as `'2026-01'`.
 
@@ -270,7 +270,7 @@ monthly
 
 **Expect:** `(6, 6)`: one row per month with columns from all three systems plus the new ratio. Nurse hours per bed day range from 7.71 in April, the busiest month, to 8.27 in February.
 
-### 7. When the labels don't all match
+### 8. When the labels don't all match
 
 Infection control audits hand hygiene only in some months, and its file already includes July.
 
@@ -321,7 +321,8 @@ yoy
 ```
 
 **Expect:** `['Feb', 'Jan', 'Mar']` first, because `pivot()` sorts the labels alphabetically; after `.loc` the rows are in calendar order. Growth is 7.1% in January, 8.1% in February, and 8.7% in March, so admissions rose every month and March grew the most.
-### Source labels as index levels
+
+### 10. Source labels as index levels
 
 `keys=` is the alternative: it labels each piece with an outer index level instead of a column. Here the outer label repeats what `source_file` already says, so you can compare the two.
 
@@ -338,7 +339,7 @@ print(list(by_file.reset_index().columns))
 
 **Expect:** `['source', 'row', 'admission_id', 'unit', 'age', 'los_days', 'source_file']`: `reset_index()` turns both label levels into ordinary columns. The course uses the `source_file` column form, because it stays a plain column from the start.
 
-### Keep only shared columns
+### 11. Keep only shared columns
 
 `join='inner'` keeps only the columns every file shares.
 

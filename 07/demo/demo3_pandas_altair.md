@@ -158,7 +158,7 @@ print([label.get_text() for label in after_labels])  # each label's text
 
 `ax.bar_label()` returns one text label per bar, and `.get_text()` reads a label's words. Expect `0.0 100.0` and `['63%', '60%', '62%']`. Three pairs of bars rise from 0: orange dotted bars for 2024-25 and blue striped bars for 2025-26, each labeled with its value, and the legend just outside the right edge. Here the hatch is data ink: it marks the season, so the pairs stay distinguishable in grayscale.
 
-### 5. Write the text alternatives and save the chart record
+### 4. Write the text alternative and save the chart record
 
 A **text alternative** states the chart type, axes, main pattern, and a relevant limitation, so a reader who cannot see the chart still gets its comparison.
 
@@ -167,14 +167,10 @@ bar_alt = ('Grouped bar chart of adults vaccinated against flu (%) at three clin
            'and 2025-26 seasons, on a 0 to 100% axis. All three rose: North from 56% to 63%, '
            'South from 57% to 60%, and East from 61% to 62%. These are clinic records only; they '
            "do not show that North's reminder texts caused its larger rise.")
-line_alt = ('Line chart of mean HbA1c (%) at four quarterly visits for standard care and group '
-            'education. Both fall; group education drops from 8.5% to 7.5% and ends 0.5 points below '
-            'standard care. Patients chose their program, so the gap is descriptive, not a program effect.')
 print(bar_alt)
-print(line_alt)
 ```
 
-Expect the two paragraphs printed in full.
+Expect the paragraph printed in full.
 
 The chart record keeps the contract, the critique, and the text alternative beside the saved PNG. `json.dump()` writes it; `json.load()` reads it back.
 
@@ -204,7 +200,7 @@ print(len(saved['critique_of_draft']), 'critique entries')
 
 Expect the seven keys from `chart` to `text_alternative`, then `one clinic in one season` and `5 critique entries`.
 
-### 6. Altair: data, mark, and typed encodings
+### 5. Altair: data, mark, and typed encodings
 
 Twelve patients, one row each: age in years, systolic blood pressure in mmHg, and clinic. Each Altair field carries its data type: `:Q` quantitative, `:N` nominal (categorical).
 
@@ -256,7 +252,7 @@ combined
 
 Expect the scatter on the left and two gray bars from 0 on the right, North near 131 and South near 139 mmHg, with one legend of colored circles and squares. Hovering over a bar shows its mean to one decimal.
 
-### 7. Save the Altair chart and check the specification
+### 6. Save the Altair chart and check the specification
 
 `chart.save()` writes the Vega-Lite specification with the twelve rows embedded, so anyone with the file can render the same chart.
 
@@ -289,11 +285,12 @@ print(bp_alt)
 ```
 
 Expect the paragraph printed in full. Check its two means against the bars' tooltips.
+
 ## Independent practice
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
 
-### 4. A line chart with redundant cues and one annotation
+### 1. A line chart with redundant cues and one annotation
 
 A second prepared table: mean HbA1c (%) at four quarterly visits for patients in two diabetes programs. Lower is better. Each series gets its own color, marker, and line style, plus a direct label, so the chart needs no legend.
 
@@ -319,7 +316,18 @@ print(round(standard[-1] - education[-1], 1))
 
 Expect two falling lines, orange dashed squares for Standard care and blue solid circles for Group education, each labeled at its right end, and an arrow from the annotation to the last blue point. `0.5` prints. This y-axis starts at 7 rather than 0: a line chart need not start at zero because position, not length, encodes the value, and the axis labels make the range clear.
 
-### Calculate the lie factor
+Its text alternative names the chart type, both programs, the pattern, and the limitation.
+
+```python
+line_alt = ('Line chart of mean HbA1c (%) at four quarterly visits for standard care and group '
+            'education. Both fall; group education drops from 8.5% to 7.5% and ends 0.5 points below '
+            'standard care. Patients chose their program, so the gap is descriptive, not a program effect.')
+print(line_alt)
+```
+
+Expect the paragraph printed in full.
+
+### 2. Calculate the lie factor
 
 The **lie factor** compares the change the drawing shows with the change in the data. On a y-axis that starts at 50, North's bars are 6 and 13 units tall.
 

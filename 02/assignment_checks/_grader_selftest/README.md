@@ -8,7 +8,11 @@ line endings, decimal places, `mm Hg`, a UTF-8 BOM, NumPy scalar reprs, line
 order, extra lines) still score 100; every cutoff from 120 to 180 mmHg scores
 100 when its patient list matches; each wrong value costs only its own check;
 the documented `.gitignore` and run-command forms all pass; a repeated patient
-ID counts once; and editing or deleting a supplied file, the data or a
+ID counts once, and IDs written together on one line still count; a report that
+leaves out the 60-250 mmHg range rule loses only the usable count; its skipped
+count, later values, and list are judged against its own rows; an ID on an
+unread list line is shown on that line, not called left out; a one-ID list or a
+printed set reads as patient IDs; and editing or deleting a supplied file, the data or a
 scaffold script, changes neither a score nor a word of feedback, because the
 checks read only `README.md`, `.gitignore`, and `output/`. A report made from
 an edited data file is marked against the supplied one, and its fix says so.
