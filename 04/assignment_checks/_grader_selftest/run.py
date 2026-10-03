@@ -247,6 +247,19 @@ def run() -> None:
         mistake("fridge-one-wrong-value",
                 lambda root: edit(root, FRIDGE_FILE, lambda text: text.replace("FRG-103,5.0,", "FRG-103,5.5,")),
                 {"fridge block: am_temp_c values"}, "FRG-103 has 5.5")
+        mistake("fridge-transposed", lambda root: fridge.loc["FRG-102":"FRG-103"].T.to_csv(root / FRIDGE_FILE),
+                {"fridge block: fridge_id index column"}, "is saved sideways")
+
+        def written_twice(frame: pd.DataFrame, path: Path, header: bool = True, **options) -> None:
+            frame.to_csv(path, **options)
+            frame.to_csv(path, mode="a", header=header, **options)
+
+        mistake("fridge-written-twice",
+                lambda root: written_twice(fridge.loc["FRG-102":"FRG-103"], root / FRIDGE_FILE),
+                {"fridge block: rows FRG-102 and FRG-103"}, 'holds the same table 2 times')
+        mistake("fridge-appended-no-header",
+                lambda root: written_twice(fridge.loc["FRG-102":"FRG-103"], root / FRIDGE_FILE, header=False),
+                {"fridge block: rows FRG-102 and FRG-103"}, 'holds the same table 2 times')
         mistake("fridge-missing", lambda root: (root / FRIDGE_FILE).unlink(), FRIDGE_CHECKS)
         mistake("fridge-nul-bytes", lambda root: (root / FRIDGE_FILE).write_bytes(b"\xff\xfe\x00"),
                 FRIDGE_CHECKS, "embedded NUL")
@@ -361,6 +374,17 @@ def run() -> None:
                 lambda root: rewrite(root, with_totals(source.loc[source["quantity"] > 2])),
                 {"selected supplies: line C1833"},
                 '>= 2 keeps it, while > 2 drops it, along with C4105 and C2655')
+        # A mask written < 2 for >= 2 keeps exactly the dropped lines: one mistake, charged once.
+        mistake("supplies-mask-inverted",
+                lambda root: rewrite(root, with_totals(source.loc[source["quantity"] < 2])),
+                {"selected supplies: no other lines"}, 'so the mask is inverted')
+        mistake("supplies-written-twice",
+                lambda root: written_twice(pd.read_csv(correct / SUPPLIES_FILE), root / SUPPLIES_FILE, index=False),
+                {"selected supplies: no other lines"}, 'holds the same table 2 times')
+        mistake("supplies-appended-no-header",
+                lambda root: written_twice(pd.read_csv(correct / SUPPLIES_FILE), root / SUPPLIES_FILE, index=False,
+                                           header=False),
+                {"selected supplies: no other lines"}, 'holds the same table 2 times')
         # A truncated table is not the > mistake: every missing line is charged, quantity-2 lines included.
         truncated = with_totals(source.loc[source["quantity"] >= 2]).head(2)
         mistake("supplies-truncated",
@@ -444,6 +468,8 @@ def run() -> None:
         report = printed(workspace / "supplies-mask-greater-than")
         assert report.rstrip().endswith(
             "Left to fix (3 points): selected supplies: line C1833."), report
+        report = printed(workspace / "supplies-mask-inverted")
+        assert report.rstrip().endswith("Left to fix (4 points): selected supplies: no other lines."), report
         report = printed(workspace / "supplies-quantity-misnamed")
         assert report.rstrip().endswith("Left to fix (2 points): selected supplies: quantity column."), report
         report = printed(workspace / "supplies-no-total")

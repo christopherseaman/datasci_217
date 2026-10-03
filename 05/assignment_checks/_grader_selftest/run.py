@@ -50,6 +50,13 @@ HEADERS = {
 }
 
 
+def nan_age_summary() -> dict[str, float]:
+    """The summary of Lecture 05's `where` array, which blanks the invalid ages but keeps their rows as NaN."""
+    num = pd.to_numeric(pd.read_csv(DATA, dtype="string")["age_text"], errors="coerce")
+    ages = np.array(num.where(num.between(0, 120) & num.mod(1).eq(0)), dtype=float)
+    return {"count": ages.size, "min": ages.min(), "max": ages.max(), "sum": ages.sum(), "mean": ages.mean()}
+
+
 def readme_audit_labels() -> list[str]:
     """The issue labels, in order, from the README's issue_audit.csv block."""
     block = re.search(r"```text\nissue,count\n(.*?)```", README.read_text(encoding="utf-8"), re.S)
@@ -427,6 +434,18 @@ def run() -> None:
             "a wrong mean": (
                 {"numpy_age_summary.csv": files["numpy_age_summary.csv"].replace("mean,33.0", "mean,39.6")},
                 {"numpy_age_summary.csv": 1}, ("mean",)),
+            "the blanked ages kept as NaN, written with f-strings": (
+                {"numpy_age_summary.csv": "metric,value\n" + "".join(
+                    f"{metric},{value}\n" for metric, value in nan_age_summary().items())},
+                {"numpy_age_summary.csv": 1}, ("dropna", "nan")),
+            "the blanked ages kept as NaN, saved with to_csv": (
+                {"numpy_age_summary.csv": pd.DataFrame({"metric": list(nan_age_summary()),
+                                                        "value": list(nan_age_summary().values())})
+                 .to_csv(index=False)},
+                {"numpy_age_summary.csv": 1}, ("dropna",)),
+            "the metric names listed with no values": (
+                {"numpy_age_summary.csv": "metric,value\ncount,\nmin,\nmax,\nsum,\nmean,\n"},
+                {"numpy_age_summary.csv": 5}, ("count",)),
             "the whole raw table saved as the selection": (
                 {"pandas_selection.csv": pd.read_csv(DATA, dtype="string", keep_default_na=False)
                  .to_csv(index=False)},

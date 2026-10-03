@@ -165,9 +165,11 @@ All checks passed.
 
 How the files are read:
 
-- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd` in a table of recognizable order lines costs only its column check; the line and sorting checks still assess the values present. Leaving out every quantity-2 line, as a `>` mask does, is one mistake and costs only the `line C1833` check.
+- Each check is scored on its own, so one mistake costs only the checks it gets wrong. A missing `line_total_usd` in a table of recognizable order lines costs only its column check; the line and sorting checks still assess the values present. Leaving out every quantity-2 line, as a `>` mask does, is one mistake and costs only the `line C1833` check. Keeping only the quantity-1 lines, as a `< 2` mask does, is one mistake and costs only the `no other lines` check.
 - A column saved under another name, such as `am_temp` for `am_temp_c`, costs only its 2-point name check; its values are still graded.
 - Swapping the `am_temp_c` and `pm_temp_c` labels is one mistake and costs only the `am_temp_c` values check.
+- A fridge block saved sideways, with `.T`, is one mistake and costs only the `fridge_id` index column check; its readings are still graded.
+- A table written into its file twice, as `to_csv(..., mode="a")` does, is one mistake: the last copy is graded, and the repeat costs only the fridge block's rows check or the selected supplies' `no other lines` check.
 - Lines saved unsorted, as `sort_values()` without assigning the result back leaves them, cost only the highest-line-total-first check; ties are judged once the lines run from the highest total down.
 - Spacing, line endings, quoting, and column order never cost points.
 - Numbers are compared as numbers, so `57`, `57.0`, and `57.00` are the same value.

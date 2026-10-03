@@ -24,7 +24,7 @@ import csv
 import difflib
 import re
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 
@@ -89,6 +89,10 @@ class Table:
     columns: tuple[str, ...]
     rows: tuple[dict[str, str], ...]
     conflicting_columns: tuple[str, ...] = ()
+    # How many times the table is in the file: to_csv(mode="a") writes it again below the first copy.
+    copies: int = 1
+    # The fridge block saved sideways, with .T: rows are reading columns and columns are fridge IDs.
+    transposed: bool = False
 
 
 def line_total(item_id: str) -> float:
@@ -229,7 +233,16 @@ def read_table(root: Path, name: str, task: str) -> Table:
         "then commit it.",
     )
     header = [_clean(cell).casefold() for cell in lines[0]]
-    body = [[_clean(cell) for cell in row] for row in lines[1:]]
+    # A table written again with to_csv(mode="a") repeats its header line; the last copy is the latest write.
+    starts = [i for i, row in enumerate(lines) if [_clean(cell).casefold() for cell in row] == header]
+    copies = len(starts)
+    body = [[_clean(cell) for cell in row] for row in lines[starts[-1] + 1:]]
+    # mode="a" with header=False repeats only the rows: a body that is one block of rows over and over.
+    for size in range(1, len(body) // 2 + 1):
+        if len(body) % size == 0 and body == body[:size] * (len(body) // size):
+            copies *= len(body) // size
+            body = body[:size]
+            break
 
     while (
         len(header) > 1
@@ -260,7 +273,18 @@ def read_table(root: Path, name: str, task: str) -> Table:
         rows.append(values)
     rows = tuple(rows)
     header = list(dict.fromkeys(header))
-    return Table(name=name, columns=tuple(header), rows=rows, conflicting_columns=tuple(sorted(conflicting)))
+    return Table(name=name, columns=tuple(header), rows=rows, conflicting_columns=tuple(sorted(conflicting)),
+                 copies=copies)
+
+
+def _written_again(table: Table) -> str:
+    """The fix when the file holds its table more than once, as to_csv(mode="a") leaves it."""
+    step, call = SAVED_BY[table.name]
+    return (
+        f"{table.name} holds the same table {table.copies} times, so it was written into the file "
+        f'{table.copies} times: to_csv() with mode="a" adds to the end of the file instead of replacing it. '
+        f"The checks graded the last copy; in {step}, save once with {call}, which replaces the file."
+    )
 
 
 def _number(cell: str) -> float | None:
@@ -412,9 +436,37 @@ def _fridge_rows(table: Table) -> dict[str, dict[str, str]]:
     return found
 
 
+def read_fridge(root: Path) -> Table:
+    """The saved fridge block, turned back the right way when it was saved sideways with .T.
+
+    The transposed block holds the right readings, so only the fridge_id check
+    charges it, and the other checks grade the readings as if it were upright.
+    """
+    table = read_table(root, FRIDGE_FILE, "Task 2")
+    if not table.columns or not table.rows:
+        return table
+    label, fridges = table.columns[0], table.columns[1:]
+    known = {fridge.casefold() for fridge in FRIDGE_READINGS}
+    if not (all(row[label].casefold() in TEMP_COLUMNS for row in table.rows) and any(f in known for f in fridges)):
+        return table
+    readings = [row[label].casefold() for row in table.rows]
+    rows = tuple(
+        {FRIDGE_ID: fridge, **{column: row[fridge] for column, row in zip(readings, table.rows)}} for fridge in fridges
+    )
+    return replace(table, columns=(FRIDGE_ID, *dict.fromkeys(readings)), rows=rows, conflicting_columns=(),
+                   transposed=True)
+
+
 def check_fridge_id_column(root: Path) -> None:
     """The saved block keeps its named index as a fridge_id column."""
-    table = read_table(root, FRIDGE_FILE, "Task 2")
+    table = read_fridge(root)
+    if table.transposed:
+        step, call = SAVED_BY[FRIDGE_FILE]
+        raise AssertionError(
+            f"{FRIDGE_FILE} is saved sideways: its rows are {_join(TEMP_COLUMNS)} and its columns are the fridge "
+            f"IDs, as .T leaves the block. Expected one row per fridge under the header fridge_id,"
+            f"{','.join(TEMP_COLUMNS)}; in {step}, save the block itself with {call}, without .T."
+        )
     if FRIDGE_ID in table.columns:
         return
     label = _fridge_label_column(table)
@@ -442,7 +494,7 @@ def check_fridge_id_column(root: Path) -> None:
 
 def check_fridge_rows(root: Path) -> None:
     """The block holds exactly FRG-102 and FRG-103."""
-    table = read_table(root, FRIDGE_FILE, "Task 2")
+    table = read_fridge(root)
     found = _fridge_rows(table)
     missing = [fridge for fridge in BLOCK_IDS if fridge not in found]
     extra = [fridge for fridge in found if fridge not in BLOCK_IDS]
@@ -456,6 +508,8 @@ def check_fridge_rows(root: Path) -> None:
         problems.append(f"it holds {len(table.rows)} rows, expected exactly {len(BLOCK_IDS)}; remove the extra or repeated rows")
     if not found:
         problems = [f"none of its {len(table.rows)} rows is one of the fridges FRG-101 to FRG-104"]
+    if table.copies > 1 and not problems:
+        raise AssertionError(_fridge_fix(table, _written_again(table)))
     if not missing and {"FRG-101", "FRG-104"} <= set(extra):
         # Extras on both sides of the block are not a slice endpoint: the whole table was saved.
         raise AssertionError(_fridge_fix(
@@ -483,7 +537,7 @@ def _temperature_name_check(column: str) -> Callable[[Path], None]:
     """The saved block has this reading column, under its own name."""
 
     def check(root: Path) -> None:
-        table = read_table(root, FRIDGE_FILE, "Task 2")
+        table = read_fridge(root)
         if column in table.columns:
             return
         stand_in = _temperature_columns(table)[column]
@@ -521,7 +575,7 @@ def _swapped_readings(table: Table) -> bool:
 
 
 def _check_temperature(root: Path, column: str) -> None:
-    table = read_table(root, FRIDGE_FILE, "Task 2")
+    table = read_fridge(root)
     if _swapped_readings(table):
         if column != TEMP_COLUMNS[0]:
             return  # Charged once, on the am_temp_c values check.
@@ -684,6 +738,12 @@ def _no_lines(table: Table) -> str | None:
     )
 
 
+def _inverted(lines: list[tuple[str, dict[str, str]]]) -> bool:
+    """The file holds exactly the lines Task 3.1 drops, as a mask written < 2 for >= 2 selects."""
+    named = {item_id for item_id, _ in lines}
+    return bool(named) and named == set(SUPPLY_ORDER) - set(expected_selection())
+
+
 def _line_check(item_id: str) -> Callable[[Path], None]:
     """This selected order line is in the file with its supplied item, quantity, and unit price.
 
@@ -699,6 +759,8 @@ def _line_check(item_id: str) -> Callable[[Path], None]:
         if nothing:
             raise AssertionError(nothing)
         lines = _supply_rows(table)
+        if _inverted(lines):
+            return  # One mistake, charged once by the no-other-lines check.
         rows = [row for found, row in lines if found == item_id]
         if not rows:
             # Only a mask written with > keeps exactly the larger lines and drops every quantity-2 line;
@@ -780,6 +842,15 @@ def check_supply_other_lines(root: Path) -> None:
     key = "item_id" if "item_id" in table.columns else "item"
     matched = {id(row) for _, row in rows}
     unknown = [row[key] or "blank" for row in table.rows if id(row) not in matched]
+    if _inverted(rows):
+        kept = expected_selection()
+        raise AssertionError(
+            f"{SUPPLIES_FILE} holds only {_join(extra)}, the lines with quantity 1, and none of the {len(kept)} "
+            f"lines with quantity {MIN_QUANTITY} or more, so the mask is inverted: a comparison such as "
+            f'supplies["quantity"] < {MIN_QUANTITY} keeps exactly the lines Task 3.1 drops. Build it as '
+            f'quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY} (the cell prints selected lines: '
+            f"{len(kept)}), then save again."
+        )
     problems = []
     if extra:
         verb = "has" if len(extra) == 1 else "have"
@@ -789,11 +860,14 @@ def check_supply_other_lines(root: Path) -> None:
     if unknown:
         shown = _join(unknown[:4]) + (f" and {len(unknown) - 4} more" if len(unknown) > 4 else "")
         problems.append(f"has {key} {shown}, which {'is' if len(unknown) == 1 else 'are'} not in data/supply_order.csv")
+    again = _written_again(table) if table.copies > 1 else ""
+    if again and not problems:
+        raise AssertionError(again)
     _assert(
         not problems,
-        f"{SUPPLIES_FILE} " + "; ".join(problems) + f". Task 3.1 keeps only the lines with quantity "
-        f"{MIN_QUANTITY} or more, once each: select them with the mask quantity_at_least_two = "
-        f'supplies["quantity"] >= {MIN_QUANTITY}.',
+        (again + " In that copy, the file " if again else f"{SUPPLIES_FILE} ") + "; ".join(problems)
+        + f". Task 3.1 keeps only the lines with quantity {MIN_QUANTITY} or more, once each: select them with the "
+        f'mask quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY}.',
     )
 
 

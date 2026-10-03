@@ -686,6 +686,20 @@ def check_numpy_age_summary(root: Path) -> Outcome:
     own_ages = max((ages for size in range(1, len(AGE_CANDIDATES) + 1) for ages in combinations(AGE_CANDIDATES, size)),
                    key=lambda ages: (len(summary_matches(values, age_summary(ages))), sorted(ages) == sorted(VALID_AGES)))
     own = summary_matches(values, age_summary(own_ages))
+    # NumPy's min, max, sum, and mean of an array holding NaN are all nan, and pandas writes nan as a blank, so
+    # four such metrics beside a full count (the blanked rows are still in the array) mean the blanked ages were
+    # never dropped: one mistake, charged once. Without a numeric count, blanks mean nothing was computed.
+    kept_nan = [metric for metric in ("min", "max", "sum", "mean")
+                if metric in rows and unwrap(rows[metric]["value"]).lower() in ("nan", "")]
+    count = values["count"]
+    if len(kept_nan) == 4 and count is not None and count >= len(VALID_AGES):
+        outcome.problems.append(
+            f"`min`, `max`, `sum`, and `mean` read nan or blank and `count` is {shown(rows['count']['value'])}, "
+            "so the array still holds the blanked ages as NaN (`where` and `mask` blank values but keep their "
+            "rows); drop them before `np.array(...)` with `.dropna()` or a boolean selection such as `num[mask]`, "
+            "so the array holds only the valid ages, which costs 1 point")
+        outcome.right = len(NUMPY_AGE_SUMMARY) - 1
+        return outcome
     if len(right) < len(NUMPY_AGE_SUMMARY) and sorted(own_ages) != sorted(VALID_AGES) and len(own) >= 4:
         extra = sorted(set(own_ages) - set(VALID_AGES))
         left_out = sorted(set(VALID_AGES) - set(own_ages))
