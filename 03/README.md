@@ -36,7 +36,7 @@ A **virtual environment** is a project's own Python **interpreter** (the program
     - Other packages, such as `numpy`, work only after they are installed
 - **Tool**:
     - `uv` and `pyproject.toml` will be used by default in this course
-    - Alternative record: `requirements.txt`; standard-library `venv` creates Python environments, while Conda also manages non-Python dependencies. Their workflows are in [BONUS.md](BONUS.md#other-environment-tools)
+    - Alternative record: `requirements.txt`; standard-library `venv` creates Python environments, while Conda also manages non-Python dependencies. Their workflows are in BONUS.md
 
 ## Using uv
 
@@ -214,7 +214,7 @@ numpy==2.3.3
     # via clinic-project
 ```
 
-Standard-library `venv` and Conda are alternatives to uv; their workflows are in [BONUS.md](BONUS.md#other-environment-tools). Use one environment tool per project.
+Standard-library `venv` and Conda are alternatives to uv; their workflows are in BONUS.md. Use one environment tool per project.
 
 ![xkcd 2347: Dependency. Every project stands on packages other people maintain, which is why yours records exactly which versions it needs](media/xkcd_2347.png)
 
@@ -367,7 +367,7 @@ $ bash count_clinics.sh
 Saved results/clinic_counts_20260918_162310.txt
 ```
 
-Scripts can also take arguments and stop at the first failing command; [the bonus page](BONUS.md) covers those.
+Scripts can also take arguments and stop at the first failing command; the bonus page covers those.
 
 # LIVE DEMO!
 
@@ -429,7 +429,7 @@ print(list(reversed(patients)))       # ['P003', 'P002', 'P001']
 
 ## List Comprehensions
 
-`[expression for item in items if condition]` reads as "make this, for each item, keeping only items that pass." A plain loop always works too; [the bonus page](BONUS.md) shows more forms.
+`[expression for item in items if condition]` reads as "make this, for each item, keeping only items that pass." A plain loop always works too; the bonus page shows more forms.
 
 ### Reference Card: List Comprehensions
 
@@ -473,7 +473,7 @@ my_array = np.array(my_list)
 print(my_array * 2)               # [ 2  4  6  8 10]
 ```
 
-`import numpy as np` loads NumPy under its standard alias `np` (Lecture 02), which the snippets below assume, and `np.array()` turns a list into an array. [Demo 2.2](demo/DEMO_GUIDE.md#22-compare-a-list-loop-with-array-arithmetic) measures the difference as independent practice.
+`import numpy as np` loads NumPy under its standard alias `np` (Lecture 02), which the snippets below assume, and `np.array()` turns a list into an array. Demo 2.2 measures the difference as independent practice.
 
 ## NumPy Data Types
 
@@ -577,7 +577,7 @@ Older tutorials call `np.random.seed()` and `np.random.randn()`; use `default_rn
 
 ### Vectorized Arithmetic
 
-The operators `+`, `-`, `*`, `/`, and `**` work on whole arrays and return a new array of the same shape. Two arrays of the same shape combine position by position, and an array and a single number combine by applying that number to every element, which NumPy calls **broadcasting**; [the bonus page](BONUS.md) covers other shapes.
+The operators `+`, `-`, `*`, `/`, and `**` work on whole arrays and return a new array of the same shape. Two arrays of the same shape combine position by position, and an array and a single number combine by applying that number to every element, which NumPy calls **broadcasting**; the bonus page covers other shapes.
 
 | Expression | Printed result | Meaning |
 | --- | --- | --- |
@@ -715,7 +715,7 @@ calibrate_in_place(readings)
 print(readings)  # [75 96 93 86 86]
 ```
 
-A `calibrate` function that returns `values + 3` instead builds a new array and leaves the caller's unchanged. [Demo 3.1](demo/DEMO_GUIDE.md#31-aliases-views-and-copies) compares both versions.
+A `calibrate` function that returns `values + 3` instead builds a new array and leaves the caller's unchanged. Demo 3.1 compares both versions.
 
 ## Views and Copies
 
@@ -841,7 +841,7 @@ readings = np.array([128, 142, 118])
 print(readings[[2, 0]])   # [118 128]
 ```
 
-[BONUS.md](BONUS.md#more-fancy-indexing) contrasts selecting rows, columns, and paired cells.
+BONUS.md contrasts selecting rows, columns, and paired cells.
 
 ## Array Reshaping
 

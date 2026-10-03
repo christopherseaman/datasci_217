@@ -172,7 +172,7 @@ print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0
 print(readings.ffill(limit=1).tolist())  # [10.0, 10.0, nan, 15.0]
 ```
 
-Only the first gap is filled. `bfill()` uses the next observation instead; `interpolate()` estimates values between observations. Keep patient boundaries separate, and use these rules only when their time-order assumptions fit. [Demo 1's independent practice](demo/demo1_missing_data.md#independent-practice) records imputation and demonstrates why carrying a value across patients is wrong.
+Only the first gap is filled. `bfill()` uses the next observation instead; `interpolate()` estimates values between observations. Keep patient boundaries separate, and use these rules only when their time-order assumptions fit. Demo 1's independent practice records imputation and demonstrates why carrying a value across patients is wrong.
 
 _Unofficially, missing data has 47 types. The most common? "I forgot to fill this out" and "The system crashed again."_
 
@@ -376,7 +376,7 @@ print(vitals[['sbp', 'dbp', 'bp_stage']])
 3  126   92        stage 2
 ```
 
-Row 3 reaches stage 2 on its diastolic pressure alone. [The bonus](BONUS.md#conditional-data-replacement) stages whole columns at once with Lecture 03's `np.select()`, which is faster on large tables.
+Row 3 reaches stage 2 on its diastolic pressure alone. The bonus stages whole columns at once with Lecture 03's `np.select()`, which is faster on large tables.
 
 ![xkcd 1205: Is It Worth the Time? Automating a rule pays off when the time saved exceeds the time spent writing it](media/xkcd_1205_apply.png)
 
@@ -491,7 +491,7 @@ dtype: str
 dtype: bool
 ```
 
-One column sometimes holds several facts at once: a full name, a `city, state` pair, or a delimited list of codes. [The bonus](BONUS.md#splitting-and-joining-values) covers `str.split()`, `str.cat()`, and `str.join()` for taking those apart and putting them back together.
+One column sometimes holds several facts at once: a full name, a `city, state` pair, or a delimited list of codes. The bonus covers `str.split()`, `str.cat()`, and `str.join()` for taking those apart and putting them back together.
 
 ### Code Snippet: Collapse Repeated Spaces
 
@@ -501,7 +501,7 @@ One column sometimes holds several facts at once: a full name, a `city, state` p
 print(labels.str.replace(r' +', '_', regex=True).tolist())  # ['north_clinic', 'south_clinic']
 ```
 
-The pattern matches one or more spaces as one group, so each group becomes one underscore. [Demo 2's independent practice](demo/demo2_transformations.md#normalize-multiword-clinic-labels) runs the complete strip, lowercase, and spacing workflow.
+The pattern matches one or more spaces as one group, so each group becomes one underscore. Demo 2's independent practice runs the complete strip, lowercase, and spacing workflow.
 
 ![xkcd 1171: Perl Problems. "I got 99 problems, so I used regular expressions. Now I have 100 problems."](media/xkcd_1171.png)
 
@@ -659,7 +659,7 @@ dtype: datetime64[us]
 
 ## Detecting and Filtering Outliers
 
-An **outlier** is an extreme value: an error, a rare but valid observation, or an important anomaly. A statistical rule flags candidates, and the source, the domain, and the analysis decide whether to keep, correct, cap, or exclude each one. The **interquartile range (IQR)** is the distance from the 25th to the 75th percentile. The usual rule sets **fences** 1.5 IQRs outside those quartiles. A **box plot** (drawn in Lecture 07) shows the quartiles as a box with lines, called **whiskers**, reaching toward the fences, as in the figure below; the whiskers end at the most extreme observed values inside the fences, and values beyond them are plotted separately. [The bonus](BONUS.md#advanced-outlier-detection-methods) covers z-scores and other methods.
+An **outlier** is an extreme value: an error, a rare but valid observation, or an important anomaly. A statistical rule flags candidates, and the source, the domain, and the analysis decide whether to keep, correct, cap, or exclude each one. The **interquartile range (IQR)** is the distance from the 25th to the 75th percentile. The usual rule sets **fences** 1.5 IQRs outside those quartiles. A **box plot** (drawn in Lecture 07) shows the quartiles as a box with lines, called **whiskers**, reaching toward the fences, as in the figure below; the whiskers end at the most extreme observed values inside the fences, and values beyond them are plotted separately. The bonus covers z-scores and other methods.
 
 ![Theoretical IQR fences on a normal curve. A sample's whiskers stop at observed values within these limits](media/boxplot_vs_pdf.png)
 
@@ -715,7 +715,7 @@ Capping changes the value to a bound rather than dropping its row; record why th
 print(visits.sample(n=3, random_state=42).index.tolist())  # [1, 4, 2]
 ```
 
-Labels 1 and 2 are both copies of P002's double entry from the duplicates example, so this small draw happens to surface the repeat; in a 10,000-row file, look in the sampled rows for anything the contract does not allow. `random_state=42` repeats the same selection. A sample reveals examples of problems and cannot prove every row is valid. [Demo 3's independent practice](demo/demo3_workflow.md#independent-practice) spot-checks raw clinic visits; see [sampling designs](BONUS.md#optional-reference-sampling-designs-and-resampling) for advanced variations.
+Labels 1 and 2 are both copies of P002's double entry from the duplicates example, so this small draw happens to surface the repeat; in a 10,000-row file, look in the sampled rows for anything the contract does not allow. `random_state=42` repeats the same selection. A sample reveals examples of problems and cannot prove every row is valid. Demo 3's independent practice spot-checks raw clinic visits; see sampling designs for advanced variations.
 
 ![xkcd 2054: Data Pipeline. A pipeline that collapses on the first weird input is why the last step is validation](media/data_pipeline_intro.png)
 
@@ -762,7 +762,7 @@ working = raw.copy(deep=True)
 print(working.equals(raw))  # True: same values and types, a separate table
 ```
 
-Changes such as `working['site'] = working['site'].str.strip().str.lower()` affect only the copy. Keep a `raw_snapshot` too if you want `raw.equals(raw_snapshot)` to verify that later steps left the raw table unchanged. [Demo 3](demo/demo3_workflow.md#core-walkthrough) runs the complete load, audit, clean, and save workflow.
+Changes such as `working['site'] = working['site'].str.strip().str.lower()` affect only the copy. Keep a `raw_snapshot` too if you want `raw.equals(raw_snapshot)` to verify that later steps left the raw table unchanged. Demo 3 runs the complete load, audit, clean, and save workflow.
 
 ### Code Snippet: Fingerprint the source file
 

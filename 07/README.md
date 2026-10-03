@@ -199,7 +199,7 @@ Expected result: six points rising with age.
 ax.bar(['North', 'South', 'East'], [42, 30, 25])
 ```
 
-Expected result: three bars rising from zero to 42, 30, and 25 visits. [Demo 1's independent practice](demo/demo1_matplotlib_basics.md#independent-practice) builds the complete labeled comparison grid.
+Expected result: three bars rising from zero to 42, 30, and 25 visits. Demo 1's independent practice builds the complete labeled comparison grid.
 
 ## Customizing Plots
 
@@ -227,7 +227,7 @@ On the weekly flu-visits chart:
 ax.set(title='Weekly flu visits by clinic', xlabel='Week', ylabel='Flu clinic visits')
 ```
 
-Expected result: a visible title and unit-bearing axis labels. A line drawn with `label='North'` is named North in `ax.legend()`; [Demo 1](demo/demo1_matplotlib_basics.md#independent-practice) adds ticks, a grid, and a legend to a complete chart.
+Expected result: a visible title and unit-bearing axis labels. A line drawn with `label='North'` is named North in `ax.legend()`; Demo 1 adds ticks, a grid, and a legend to a complete chart.
 
 ## Colors, Markers, and Line Styles
 
@@ -250,7 +250,7 @@ Each series can combine a color, a marker, and a line style, which keeps lines d
 ax.plot(weeks, north, 's--', color='#0072B2', markersize=6, label='North')
 ```
 
-Expected result: blue squares joined by a dashed line. The format string combines `marker='s'` and `linestyle='--'`. Choose cues that carry group meaning and remain readable in grayscale; [Demo 1's flu chart](demo/demo1_matplotlib_basics.md#independent-practice) applies them to both clinics.
+Expected result: blue squares joined by a dashed line. The format string combines `marker='s'` and `linestyle='--'`. Choose cues that carry group meaning and remain readable in grayscale; Demo 1's flu chart applies them to both clinics.
 
 
 ## Annotate, Declutter, and Save
@@ -282,7 +282,7 @@ Expected result: text above the line, with an arrow ending at the week-3 point.
 fig.savefig('flu_visits.png', dpi=150, bbox_inches='tight')
 ```
 
-Expected result: `flu_visits.png` contains the whole Figure, including its labels and annotation. [Demo 1's independent practice](demo/demo1_matplotlib_basics.md#independent-practice) annotates, declutters, and checks a saved flu chart.
+Expected result: `flu_visits.png` contains the whole Figure, including its labels and annotation. Demo 1's independent practice annotates, declutters, and checks a saved flu chart.
 
 <callout icon="⚠️" color="yellow_bg">
 	## Save before `plt.show()`
@@ -320,7 +320,7 @@ _Reality check: There are more Python visualization libraries than there are way
 | seaborn | You want statistical plots from long data, with groups shown by color (`hue=`) | matplotlib | `Axes` |
 | Altair | You want encodings that state each column's data type, hover tooltips, or a chart for a web page or JSON file | Vega-Lite | Altair `Chart` object; HTML, JSON |
 
-plotnine, Bokeh, and Plotly are surveyed in [BONUS.md](BONUS.md).
+plotnine, Bokeh, and Plotly are surveyed in BONUS.md.
 
 # pandas: Quick Data Exploration
 
@@ -378,7 +378,7 @@ A correlation runs from `-1` (one column rises as the other falls) through `0` (
 weekly.plot(kind='bar', ylabel='Flu visits')
 ```
 
-Expected result: one pair of bars per week, starting at zero. Changing `kind=` changes the comparison; [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) compares several views of the same clinic table.
+Expected result: one pair of bars per week, starting at zero. Changing `kind=` changes the comparison; Demo 2's independent practice compares several views of the same clinic table.
 
 
 ### Code Snippet: A Correlation Matrix
@@ -418,7 +418,7 @@ East panel  ┘
 axes = monthly.plot(subplots=True, sharey=True, ylabel='Visits')
 ```
 
-Expected result: three stacked panels with matching y-limits. [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) builds the full table and checks those limits.
+Expected result: three stacked panels with matching y-limits. Demo 2's independent practice builds the full table and checks those limits.
 
 
 # seaborn: Statistical Graphics
@@ -471,7 +471,7 @@ ax = sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy',
 ax.set(xlabel='Health spending per person (USD)', ylabel='Life expectancy (years)')
 ```
 
-Each point is one country-year. Country uses both color and shape; [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) compares country lines and boxes.
+Each point is one country-year. Country uses both color and shape; Demo 2's independent practice compares country lines and boxes.
 
 ## Watch the Grain
 
@@ -534,7 +534,7 @@ Expected result: a curve with those two peaks and density on its y-axis.
 sns.kdeplot(x=glucose, bw_adjust=0.5)
 ```
 
-Expected result: sharper peaks and a deeper dip between them than with the default bandwidth. Small bandwidths can amplify noise; large ones can hide groups. [Demo 2's independent practice](demo/demo2_seaborn_statistical.md#independent-practice) compares both libraries and smoothing choices on clinical readings.
+Expected result: sharper peaks and a deeper dip between them than with the default bandwidth. Small bandwidths can amplify noise; large ones can hide groups. Demo 2's independent practice compares both libraries and smoothing choices on clinical readings.
 
 
 # LIVE DEMO!
@@ -669,7 +669,7 @@ Expected result: two blue striped bars, left of each season's tick, distinguisha
 ax.bar_label(north_bars, fmt='%d%%')
 ```
 
-Expected result: `58%` and `64%` appear above North's bars. [Demo 3](demo/demo3_pandas_altair.md#core-walkthrough) builds a full grouped-bar redesign with hatches, values, a zero baseline, and a saved chart record; its independent practice directly labels two clinical trend lines.
+Expected result: `58%` and `64%` appear above North's bars. Demo 3 builds a full grouped-bar redesign with hatches, values, a zero baseline, and a saved chart record; its independent practice directly labels two clinical trend lines.
 
 ![xkcd 2537: Painbow Award. A color scale should make values easier to compare, not win an award for confusion.](media/xkcd_2537.png)
 
@@ -701,7 +701,7 @@ An Altair chart is **data → mark → typed encodings**, and each field carries
 | Interact | `.interactive()` | Add scale-bound pan/zoom interaction | Interactive chart |
 | Compose | `alt.hconcat(left, right)` / `alt.vconcat(top, bottom)` | Place two charts side by side / one above the other | Compound chart |
 
-`study` is a DataFrame with one row per patient: `age` (years) `[38, 52, 67, 41, 55, 70]`, `systolic_bp` (mmHg) `[118, 129, 141, 124, 136, 150]`, and `clinic`, North for the first three and South for the last three. [Demo 3](demo/demo3_pandas_altair.md#core-walkthrough) builds the interactive workflow on a 12-patient version of this table.
+`study` is a DataFrame with one row per patient: `age` (years) `[38, 52, 67, 41, 55, 70]`, `systolic_bp` (mmHg) `[118, 129, 141, 124, 136, 150]`, and `clinic`, North for the first three and South for the last three. Demo 3 builds the interactive workflow on a 12-patient version of this table.
 
 ### Code Snippet: Encode the study table
 

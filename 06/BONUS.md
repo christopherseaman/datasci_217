@@ -11,7 +11,7 @@ notion:
 
 _These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques._
 
-See [README.md](README.md) for the core data wrangling operations; master those first!
+See README.md for the core data wrangling operations; master those first!
 
 # 1. Advanced MultiIndex Operations
 

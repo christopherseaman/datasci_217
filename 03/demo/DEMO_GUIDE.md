@@ -505,7 +505,7 @@ The list prints with commas and the array without. The script builds the reading
 
 ## 2.3 Data Types, Arrays, and Indexing
 
-Independent practice: run this full script after the small-array core walkthrough. It extends the examples with array construction, ufuncs, random data, slicing, and 3D indexing. Before running, read the optional [three-dimensional selection reference](../BONUS.md#reference-card-three-dimensional-selection); the core walkthrough uses only the preceding main lecture.
+Independent practice: run this full script after the small-array core walkthrough. It extends the examples with array construction, ufuncs, random data, slicing, and 3D indexing. Before running, read the optional three-dimensional selection reference; the core walkthrough uses only the preceding main lecture.
 
 ```bash
 python3 demo2_numpy_arrays.py
@@ -760,7 +760,7 @@ Original readings row 0, untouched: [72 93 90 83 83]
 
 ## 3.2 Masks, Positions, and Shapes
 
-Independent practice: inspect these selection and reshaping variations after the core axis-and-group analysis. The row and column masks below follow the lecture's [Multidimensional Boolean Indexing](../README.md#multidimensional-boolean-indexing); the row and column picks by position follow its [Fancy Indexing](../README.md#fancy-indexing).
+Independent practice: inspect these selection and reshaping variations after the core axis-and-group analysis. The row and column masks below follow the lecture's Multidimensional Boolean Indexing; the row and column picks by position follow its Fancy Indexing.
 
 A comparison on the whole `(100, 5)` array gives one `True` or `False` per reading. `readings[mask]` keeps the matching readings as a 1-D array, and `.sum()` counts them. Assigning through a mask, `capped[capped > 95] = 95`, changes the array it indexes, so the script caps a `.copy()` of the readings and leaves the raw ones alone:
 
@@ -879,7 +879,7 @@ First five stages: ['stage 1' 'stage 1' 'stage 2' 'stage 1' 'stage 1']
 
 The second `np.where` keeps a reading where it is 90 or above and substitutes `0` everywhere else, which picks out the visits that were in stage 2; the zeros mark positions that failed the test, not measured pressures. `np.select` checks `>= 90` before `>= 80`, so an average of 92.6 gets `stage 2`, and `default="normal"` fills every position where neither is true. The 9 stage-2 patients are the same 9 marked `refer`.
 
-The last section ranks visits and patients, sorting along an axis as in the lecture's [Sorting and Ranking](../README.md#sorting-and-ranking):
+The last section ranks visits and patients, sorting along an axis as in the lecture's Sorting and Ranking:
 
 ```text
 === Sorting and Ranking ===
@@ -997,4 +997,4 @@ P0002,25,141,Neurology
     380 Primary Care
 ```
 
-Two tools, one answer: the pipeline counts lines of text, the script counts array positions. The [bonus page](../BONUS.md) shows shell tools such as `awk` and `sparklines`, which are beyond this lecture; `uv add sparklines` adds the second to the demo project if you want to try it.
+Two tools, one answer: the pipeline counts lines of text, the script counts array positions. The bonus page shows shell tools such as `awk` and `sparklines`, which are beyond this lecture; `uv add sparklines` adds the second to the demo project if you want to try it.

@@ -492,7 +492,7 @@ by_patient = labs.groupby('patient_id')['glucose']
 %timeit by_patient.agg(lambda s: s.std())                       # about 450 ms: same values, ~50x slower
 ```
 
-Colab has the `pyarrow` package installed, which stores text more compactly, so there the text column takes 12.5 MB instead of 53.5; the category takes 1.0 MB either way. When data do not fit in memory at all, [BONUS.md](BONUS.md#scaling-past-memory-chunks-and-processes) covers chunked reading and parallel processing.
+Colab has the `pyarrow` package installed, which stores text more compactly, so there the text column takes 12.5 MB instead of 53.5; the category takes 1.0 MB either way. When data do not fit in memory at all, BONUS.md covers chunked reading and parallel processing.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 

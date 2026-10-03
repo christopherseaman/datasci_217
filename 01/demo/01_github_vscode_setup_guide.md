@@ -10,7 +10,7 @@
 
 ## 1.2 Install and open VS Code
 
-For browser-only setup, use the **Alternative: Codespaces** subsection in [Lecture 01](../README.md). Then run the Python setup in 1.4, skip 1.5 (your fork is already open), and continue at 1.6.
+For browser-only setup, use the **Alternative: Codespaces** subsection in Lecture 01. Then run the Python setup in 1.4, skip 1.5 (your fork is already open), and continue at 1.6.
 
 1. Install [Visual Studio Code](https://code.visualstudio.com/).
 2. Open **View → Extensions** (Ctrl+Shift+X; Cmd+Shift+X on Mac) and install **Python** by Microsoft. GitLens and Rainbow CSV are optional.

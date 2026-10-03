@@ -109,7 +109,7 @@ print("total doses:", total_doses)  # total doses: 36
 
 If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'days' is not defined`. Fix it by moving the producer cell above the dependent cell (**Move a cell** in the controls card), not by copying the definition into another cell.
 
-A `.py` script starts fresh on every run, so scripts suit analyses that rerun unattended, and notebooks suit exploring and explaining. To run a whole notebook from the terminal instead, see [Running notebooks non-interactively](BONUS.md#running-notebooks-non-interactively).
+A `.py` script starts fresh on every run, so scripts suit analyses that rerun unattended, and notebooks suit exploring and explaining. BONUS.md shows how to run a whole notebook from the terminal instead.
 
 ![xkcd 2200: Unreachable State. Cells run out of order can leave the kernel in a state no top-to-bottom run would reach, and Restart & Run All brings it back](media/xkcd_2200.png)
 
@@ -655,9 +655,9 @@ clinic            str
 dtype: object
 ```
 
-[Demo 3's independent practice](demo/demo3_data_io.md#save-a-typed-parquet-table) checks a complete saved-table round trip.
+Demo 3's independent practice checks a complete saved-table round trip.
 
-_Pro tip: if you're ever stuck with a weird file format, remember: "There's a pandas function for that!"_ pandas also has readers such as `pd.read_excel()` and `pd.read_json()`; see [Extended I/O and Performance](BONUS.md#extended-io-and-performance).
+_Pro tip: if you're ever stuck with a weird file format, remember: "There's a pandas function for that!"_ pandas also has readers such as `pd.read_excel()` and `pd.read_json()`; BONUS.md covers them along with performance tips.
 
 ![xkcd 927: Standards. Each file format was meant to be the one everyone uses, which is why pandas has a reader for so many of them](media/xkcd_927.png)
 

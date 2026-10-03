@@ -433,7 +433,7 @@ The grouped weighted-mean workflow in [Pivot Table with Custom Functions](#pivot
 
 # Advanced GroupBy Transformations
 
-Lecture 09 teaches grouped lags and rolling windows for time-ordered rows, including past-only windows for prediction: [Entity-Aware Features and Past-Only Windows](../09/README.md#entity-aware-features-and-past-only-windows).
+Lecture 09 teaches grouped lags and rolling windows for time-ordered rows, including past-only windows for prediction.
 
 ## Ranking Within Groups
 

@@ -355,7 +355,7 @@ _Think of `scikit-learn` as the Swiss Army knife of machine learning: it has a t
 
 ## Baselines and Pipelines
 
-A **baseline** is the simplest honest prediction: for a number, the training mean for everyone; for time-ordered rows, **persistence**, the patient's last value again ([worked example](BONUS.md#persistence-baselines-for-time-ordered-rows)). A model that cannot beat the baseline on validation rows has learned nothing useful.
+A **baseline** is the simplest honest prediction: for a number, the training mean for everyone; for time-ordered rows, **persistence**, the patient's last value again. A model that cannot beat the baseline on validation rows has learned nothing useful.
 
 A **transformer**, such as `StandardScaler`, reshapes columns instead of predicting, and one that learns its means from validation or test rows leaks information about rows the model should see for the first time. A **Pipeline** bundles transformers and a model into one estimator:
 

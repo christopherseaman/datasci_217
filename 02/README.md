@@ -59,11 +59,11 @@ These work while the terminal has focus, and **Ctrl** means Control even on Mac.
 
 ![Python: Select Interpreter with Python 3.13 chosen; your list shows the Pythons on your computer](media/vscode-selected-interpreter.png)
 
-Make it Py-pretty: extensions, themes, window layouts, and format-on-save are in [BONUS.md](BONUS.md#vs-code-extensions-themes-and-settings).
+Make it Py-pretty: extensions, themes, window layouts, and format-on-save are in BONUS.md.
 
 ## Command-Line Catalog
 
-Commands to recognize from the shell; the [command-line bonus](BONUS.md#command-line-essentials) has examples.
+Commands to recognize from the shell; the command-line bonus has examples.
 
 | Area | Commands | Purpose |
 | --- | --- | --- |
@@ -188,7 +188,7 @@ Experiment: compare three systolic summaries.
 
 Open the file from **Merge Changes**. Select **Accept Current Change**, **Accept Incoming Change**, or **Accept Both Changes** above the block, or edit the result yourself and delete the marker lines. Use **Compare Changes** to inspect both versions before choosing. Save, review the result, stage with **+**, then **Commit** to finish the merge.
 
-**Resolve in Merge Editor** shows Incoming on the left, Current on the right, and Result below. Select **Accept Incoming** or **Accept Current**, review Result, then **Complete Merge** to save and stage it; **Commit** finishes the merge. [Demo 1](demo/DEMO_GUIDE.md#a-merge-conflict) gives a complete conflict to resolve independently.
+**Resolve in Merge Editor** shows Incoming on the left, Current on the right, and Result below. Select **Accept Incoming** or **Accept Current**, review Result, then **Complete Merge** to save and stage it; **Commit** finishes the merge. Demo 1 gives a complete conflict to resolve independently.
 
 Microsoft's [VS Code merge-conflict guide](https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts) walks through both views with screenshots.
 
@@ -200,7 +200,7 @@ Microsoft's [VS Code merge-conflict guide](https://code.visualstudio.com/docs/so
 
 ## Alternative: Git in the Terminal
 
-Every Source Control button runs a Git command. Demo 1's terminal path uses these; [BONUS.md](BONUS.md) covers the rest.
+Every Source Control button runs a Git command. Demo 1's terminal path uses these; BONUS.md covers the rest.
 
 ### Reference Card: Git in the Terminal
 

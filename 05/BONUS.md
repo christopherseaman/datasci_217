@@ -361,7 +361,7 @@ The core lecture uses `df.sample()` to spot-check rows. The techniques below sho
 
 ## Stratified Sampling
 
-Stratified sampling divides the sampling frame into defined strata, then samples within each stratum. Use `GroupBy.sample` when the design calls for a fixed number or fraction from every group ([Lecture 08](../08/README.md#basic-groupby-operations) teaches `groupby()`). The strata and allocation are analytical choices; every group must have enough rows unless sampling with replacement is deliberate. For a train/test split that preserves a label's proportions, see `sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
+Stratified sampling divides the sampling frame into defined strata, then samples within each stratum. Use `GroupBy.sample` when the design calls for a fixed number or fraction from every group (Lecture 08 teaches `groupby()`). The strata and allocation are analytical choices; every group must have enough rows unless sampling with replacement is deliberate. For a train/test split that preserves a label's proportions, see `sklearn.model_selection.train_test_split(..., stratify=labels, random_state=...)`.
 
 ```python
 frame = pd.DataFrame({

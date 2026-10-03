@@ -485,7 +485,7 @@ When each observation depends on the ones just before it, `statsmodels` offers d
 - Seasonal decomposition
 - Use when: You have temporal dependencies in your data
 
-Lecture 09's bonus has worked examples of [decomposition](../09/BONUS.md#advanced-time-series-decomposition) and [ARIMA and exponential smoothing](../09/BONUS.md#time-series-forecasting).
+Lecture 09's bonus has worked examples of decomposition and ARIMA and exponential smoothing.
 
 ## Persistence Baselines for Time-Ordered Rows
 

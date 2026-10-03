@@ -190,7 +190,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
               dtype='datetime64[us]', freq='h')
 ```
 
-Frequency inference and business-day, quarterly, and annual schedules are optional [BONUS.md](BONUS.md#frequency-inference-and-specialized-schedules) references.
+Frequency inference and business-day, quarterly, and annual schedules are optional BONUS.md references.
 
 _Every Monday? Business days only? `pandas` generates just about any date pattern you can imagine, and some you probably can't._
 
@@ -229,7 +229,7 @@ print(study_day.loc['2024-01-30':'2024-02-02'])
 Freq: D, dtype: int64
 ```
 
-February 2024 has 29 days (a leap year). Clock-time selection alternatives are in [BONUS.md](BONUS.md#time-of-day-selection-example).
+February 2024 has 29 days (a leap year). Clock-time selection alternatives are in BONUS.md.
 
 # LIVE DEMO!
 
@@ -507,7 +507,7 @@ A **rolling window** slides a fixed-size frame along a series and computes a sta
 - `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after, so each value uses later readings
 - `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the band in the figure above on a Lecture 07 `Axes`; `alpha` keeps the lines visible through it
 
-A centered window reads future rows: its smooth curve is useful for describing a completed series, but unsuitable as a feature available at the current row. The extended window comparison is in [BONUS.md](BONUS.md#window-alignment-example).
+A centered window reads future rows: its smooth curve is useful for describing a completed series, but unsuitable as a feature available at the current row. The extended window comparison is in BONUS.md.
 
 ### Code Snippet: Count Window vs Time Window
 
@@ -536,7 +536,7 @@ _A rolling window is a security camera that keeps only the last seven days of fo
 
 ## Another Smoother: Exponentially Weighted Means
 
-An **exponentially weighted moving average (EWM)** weights recent readings more heavily than older ones: `ts.ewm(span=7).mean()` returns one smoothed value per row. Larger `span` means slower decay. This is an optional alternative to rolling means; [BONUS.md](BONUS.md#exponentially-weighted-means) and Demo 2's independent practice compare them.
+An **exponentially weighted moving average (EWM)** weights recent readings more heavily than older ones: `ts.ewm(span=7).mean()` returns one smoothed value per row. Larger `span` means slower decay. This is an optional alternative to rolling means; BONUS.md and Demo 2's independent practice compare them.
 
 ![EWM against a simple moving average: recent readings receive more weight in EWM.](media/ewm_comparison.png)
 
@@ -833,6 +833,6 @@ monthly_mean.plot(kind='bar', ax=ax, rot=0, title='Mean Daily Visits by Calendar
 plt.show()
 ```
 
-Decomposition and component plots are in [BONUS.md](BONUS.md).
+Decomposition and component plots are in BONUS.md.
 
 # LIVE DEMO!

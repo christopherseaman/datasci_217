@@ -100,7 +100,7 @@ python3 --version
 
 Expect `Python 3.13.x`.
 
-[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv for the course Python. Native Windows PowerShell setup is in [BONUS.md](BONUS.md); the course shell demos still require WSL.
+[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv for the course Python. Native Windows PowerShell setup is in BONUS.md; the course shell demos still require WSL.
 
 ![xkcd 1654: Universal Install Script. What installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
 
@@ -108,7 +108,7 @@ Expect `Python 3.13.x`.
 
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. On macOS, first open the Command Palette and run **Shell Command: Install 'code' command in PATH**, then reopen the terminal ([macOS setup](https://code.visualstudio.com/docs/setup/mac#launch-vs-code-from-the-command-line)). Other editors work too, including Sublime Text, PyCharm, nano, and Vim; see [BONUS.md](BONUS.md).
+We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. On macOS, first open the Command Palette and run **Shell Command: Install 'code' command in PATH**, then reopen the terminal ([macOS setup](https://code.visualstudio.com/docs/setup/mac#launch-vs-code-from-the-command-line)). Other editors work too, including Sublime Text, PyCharm, nano, and Vim; see BONUS.md.
 
 ### VS Code Basics
 
@@ -154,7 +154,7 @@ A **fork** is your copy of a repository on GitHub; a **clone** is its working co
 - On **your fork**: **Code → HTTPS**, then copy the URL; its owner should be your username.
 - In VS Code: Command Palette → **Git: Clone**, paste that URL, choose a folder, and open the clone. On Windows, stay in **WSL: Ubuntu** and choose a folder in your Linux home directory.
 
-[Demo 1](demo/DEMO_GUIDE.md#15-fork-and-clone) shows each screen. Keep assignment work in the cloned folder.
+Demo 1 shows each screen. Keep assignment work in the cloned folder.
 
 ## Submit Your Assignment Files
 
@@ -173,7 +173,7 @@ A **commit** saves a version of your files. **Staging** selects which changes go
 - Select **Sync Changes** and sign in if prompted.
 - On GitHub, open the committed files to verify their contents. **Actions** shows the automatic checks; enable workflows once if a new fork prompts you.
 
-For Assignment 01, include the completed scripts, both files in `terminal-practice/`, and both in `output/`. Your fork is the submission; there is no pull request to the course repository. [Demo 1](demo/DEMO_GUIDE.md#17-save-a-change-on-github) practices the workflow.
+For Assignment 01, include the completed scripts, both files in `terminal-practice/`, and both in `output/`. Your fork is the submission; there is no pull request to the course repository. Demo 1 practices the workflow.
 
 ### GitHub Website: Upload Files
 
@@ -493,7 +493,7 @@ average_grade = 87.3     # float: has a decimal part
 height_meters = 1.75
 ```
 
-Scientific notation, such as `1.4e9`, and the `math` module are in [BONUS.md](BONUS.md).
+Scientific notation, such as `1.4e9`, and the `math` module are in BONUS.md.
 
 ### Text: Essential for Data Labels and Categories
 
@@ -788,7 +788,7 @@ for reading in [128, 142, 118]:
     break           # stop after the first reading at or above 130
 ```
 
-[Demo 4.3](demo/DEMO_GUIDE.md#43-while-break-and-continue) practices each form separately.
+Demo 4.3 practices each form separately.
 
 # Debugging and Error Handling Basics
 

@@ -260,7 +260,7 @@ V4        K9
 pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 ```
 
-Expected error: `MergeError` because the right lookup repeats K2. Without validation, four visits become six rows: V2 and V3 each match twice. Inspect all repeated keys, then apply a documented lookup rule (here, keep `record_status == 'current'`) and merge again with both validation and `indicator=True`. The repaired result has four rows; V4's K9 remains `left_only`. [Demo 1's core walkthrough](demo/demo1_merge_operations.md#core-walkthrough) executes the rejection, inspection, repair, and match audit.
+Expected error: `MergeError` because the right lookup repeats K2. Without validation, four visits become six rows: V2 and V3 each match twice. Inspect all repeated keys, then apply a documented lookup rule (here, keep `record_status == 'current'`) and merge again with both validation and `indicator=True`. The repaired result has four rows; V4's K9 remains `left_only`. Demo 1's core walkthrough executes the rejection, inspection, repair, and match audit.
 
 # LIVE DEMO!
 
@@ -359,7 +359,7 @@ summary = quarterly.set_index(['clinic', 'quarter']).sort_index()
 print(summary.loc[('South', 'Q2'), 'visits'])  # 362
 ```
 
-`quarterly` has North/South rows for Q1/Q2. `summary.loc['South']` keeps both South quarters; [the complete layout](BONUS.md#extended-example-build-a-multiindex) shows the labels and reset.
+`quarterly` has North/South rows for Q1/Q2. `summary.loc['South']` keeps both South quarters; the complete layout shows the labels and reset.
 
 
 # Reshaping: Wide vs Long Format
@@ -383,7 +383,7 @@ at a glance                               └───────────�
 
 - In long data, the **identifier columns** (`patient_id`, `visit`) say which observation a row is, and the **value column** (`sbp`) holds the measurement.
 - Long data with one observation per row and one variable per column is often called **tidy** data.
-- The same readings can be built in either shape; [Demo 2](demo/demo2_pivot_melt.md#3-wide-to-long-with-melt) builds the wide study table, melts it to long, and pivots it back.
+- The same readings can be built in either shape; Demo 2 builds the wide study table, melts it to long, and pivots it back.
 
 | Shape | One row represents | Best for | Conversion |
 | --- | --- | --- | --- |
@@ -473,9 +473,9 @@ If an `index`/`columns` pair identifies more than one value, `pivot()` cannot ch
 print(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
 ```
 
-Expected result: both rows above; `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error. [Demo 2's independent practice](demo/demo2_pivot_melt.md#independent-practice) executes the error on a repeated week-4 reading in the cuff's export and applies the documented rule to keep the later recheck (`sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`), recording P003's recheck of 140.
+Expected result: both rows above; `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error. Demo 2's independent practice executes the error on a repeated week-4 reading in the cuff's export and applies the documented rule to keep the later recheck (`sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`), recording P003's recheck of 140.
 
-A recheck is a real repeated observation, so the fix is a documented rule, not a guess. If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered. [BONUS.md](BONUS.md) shows that one call; [Lecture 08](../08/README.md#pivot-tables-and-cross-tabulations) teaches aggregation and pivot tables.
+A recheck is a real repeated observation, so the fix is a documented rule, not a guess. If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered. BONUS.md shows that one call; Lecture 08 teaches aggregation and pivot tables.
 
 _If a reshape feels mysterious, write down what one row represents before choosing `pivot()` or `melt()`. Your future self will thank you for the labels._
 

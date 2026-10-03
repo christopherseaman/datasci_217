@@ -9,7 +9,7 @@ notion:
 
 # DLC: Jupyter Workflows and Advanced Pandas Operations
 
-_This material builds on the lecture essentials in [README.md](README.md). Revisit the lecture for Series/DataFrame basics, selection and Boolean masks, column creation, and the core CSV workflow before tackling these extensions._
+_This material builds on the lecture essentials in README.md. Revisit the lecture for Series/DataFrame basics, selection and Boolean masks, column creation, and the core CSV workflow before tackling these extensions._
 
 
 # Running Notebooks Non-Interactively
@@ -152,7 +152,7 @@ For the version-specific details behind these examples, see the official [pandas
 
 # Function Application and Method Chaining
 
-The lecture adds columns with bracket assignment and vectorized arithmetic; reach for the tools below when you need custom logic or a readable chain of steps. A `lambda` is a one-line function without a name: `lambda d: d['salary'] * 0.05` takes `d` and returns the expression. Lecture 05 teaches `apply()` and `map()` in the core path: [Applying Custom Functions](../05/README.md#applying-custom-functions).
+The lecture adds columns with bracket assignment and vectorized arithmetic; reach for the tools below when you need custom logic or a readable chain of steps. A `lambda` is a one-line function without a name: `lambda d: d['salary'] * 0.05` takes `d` and returns the expression. Lecture 05 teaches `apply()` and `map()` in the core path: Applying Custom Functions.
 
 ## Reference Card: Apply, map, and column helpers
 
@@ -308,7 +308,7 @@ for chunk in chunk_iter:
 final = pd.concat(results, axis=0).groupby(level=0).sum()
 ```
 
-Use chunking when files exceed memory or when you only need aggregated results. The loop uses `groupby()` (Lecture 08) and `pd.concat()` (Lecture 06); Lecture 08's bonus covers chunked summaries in more depth, including why chunk means cannot simply be averaged: [Scaling Past Memory](../08/BONUS.md#scaling-past-memory-chunks-and-processes).
+Use chunking when files exceed memory or when you only need aggregated results. The loop uses `groupby()` (Lecture 08) and `pd.concat()` (Lecture 06); Lecture 08's bonus covers chunked summaries in more depth, including why chunk means cannot simply be averaged: Scaling Past Memory.
 
 ## Advanced CSV Options
 

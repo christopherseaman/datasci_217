@@ -97,14 +97,14 @@ An hourly key breaks when the clocks change. In most US time zones one spring ni
 
 <callout icon="⚠️" color="yellow_bg">
 	## Order, join, lag, and split in UTC
-	Convert to local time only to interpret patterns such as hour of day or weekday. A UTC hour is always one elapsed hour, so `shift(1)` reaches the previous hour even on the nights the clocks change. Lecture 09's [clock-change snippet](../09/README.md#clock-changes-repeated-and-skipped-times) sets repeated and skipped readings aside when you localize.
+	Convert to local time only to interpret patterns such as hour of day or weekday. A UTC hour is always one elapsed hour, so `shift(1)` reaches the previous hour even on the nights the clocks change. Lecture 09's clock-change snippet sets repeated and skipped readings aside when you localize.
 </callout>
 
 The taxi panel shows the effect: January–June 2023 has 181 local days but only 4,343 elapsed hours, not 181 × 24 = 4,344, because 12 March had 23.
 
 ## Absent row: true zero or missing?
 
-A **complete panel** has a row for every entity at every time step (Lecture 09), even when nothing was recorded. Building one means left-merging the observed rows onto an expected grid, as in Lecture 06's [cross-join snippet](../06/README.md#listing-every-combination-with-a-cross-join). Every grid row without a source row comes back as `NaN`, and what that `NaN` should become depends on how the data were recorded, the same line Lecture 08 drew for empty pivot-table cells:
+A **complete panel** has a row for every entity at every time step (Lecture 09), even when nothing was recorded. Building one means left-merging the observed rows onto an expected grid, as in Lecture 06's cross-join snippet. Every grid row without a source row comes back as `NaN`, and what that `NaN` should become depends on how the data were recorded, the same line Lecture 08 drew for empty pivot-table cells:
 
 - **Tallied events** (taxi pickups, or ED arrivals counted from individual check-in records): when the event feed is complete, no record means nothing happened, so the count is 0. The release builder treated the taxi feed as complete and filled its 375 empty zone-hours with 0 pickups. A missing or delayed event feed would be unknown, not zero.
 - **Measurements and reports** (a weather sensor's temperature, a clinic's hourly arrival report): no record means nobody measured or reported, so the value stays missing.
@@ -221,7 +221,7 @@ The **worked example** carries the taxi question through four notebooks, one or 
 3. **`03_model_prep.ipynb`: Analyze training patterns and freeze the split.** Use training data for exploratory summaries and keep later periods separate.
 4. **`04_modeling.ipynb`: Compare, freeze, and report.** Compare a weekly baseline with one pipeline on validation, evaluate both once on test, and examine error slices.
 
-**`05_geo_bonus.ipynb`** is an optional geographic view of zone-level results; see [BONUS.md](BONUS.md). It is enrichment, not a required part of the capstone pattern.
+**`05_geo_bonus.ipynb`** is an optional geographic view of zone-level results; see BONUS.md. It is enrichment, not a required part of the capstone pattern.
 
 ## Where this connects to earlier lectures
 
