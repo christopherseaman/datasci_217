@@ -18,6 +18,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,8 +29,13 @@ def blocks(page: str) -> list[dict] | None:
     cursor, found = None, []
     while True:
         query = f"/v1/blocks/{page}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
-        result = subprocess.run(["ntn", "api", query], capture_output=True, text=True,
-                                stdin=subprocess.DEVNULL, env=ENV)
+        # Notion rate-limits bursts (HTTP 429), as after a bulk publish; wait and retry.
+        for delay in (0, 5, 15, 30, 60, 120):
+            time.sleep(delay)
+            result = subprocess.run(["ntn", "api", query], capture_output=True, text=True,
+                                    stdin=subprocess.DEVNULL, env=ENV)
+            if result.returncode == 0 or "429" not in result.stderr + result.stdout:
+                break
         if result.returncode != 0:
             return None
         data = json.loads(result.stdout)
