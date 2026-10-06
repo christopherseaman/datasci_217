@@ -29,29 +29,26 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 | [Core walkthrough](#core-walkthrough) | Stack nine admissions with source labels and schema gaps; fill six months by source priority and retain month labels. |
 | [Independent practice](#independent-practice) | Enrich by merge; align three systems and unmatched months by index; compare inner schemas, source index levels, and year-over-year pivoting. |
 
-## Where to run it
-
-**In Colab:** open this notebook from the lecture page's Colab link. A new runtime starts empty, so run every cell from Setup down. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-**In VS Code:** this notebook runs in the `~/06-demo` folder that Demo 1's "Where to run it" sets up; if you skipped Demo 1, do those steps first. After VS Code or the terminal was closed, choose **File → Open Folder…** and pick `06-demo` in your home folder, open `demo3_concat_timeseries.ipynb`, and check that the kernel picker at the top right names the Python in `06-demo/.venv`; if it does not, click **Select Kernel** and choose it. The kernel starts empty, so run every cell from Setup down. To use the environment for a command, such as `uv add`, in a new terminal:
-
-```shell
-cd ~/06-demo
-source .venv/bin/activate
-```
-
-The prompt then starts with `(06-demo)`.
-
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, into the notebook's environment. Colab ships an older pandas (2.2); in `~/06-demo`, `uv sync` already installed 3.0.5, so there the cell changes nothing.
+**In Colab**, run the install cell below.
+
+**On your computer**, a `06-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
+cd ~/06-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import pandas as pd
@@ -111,7 +108,7 @@ jan['source_file'] = 'jan_admissions.csv'
 feb['source_file'] = 'feb_admissions.csv'
 
 stacked = pd.concat([jan, feb], ignore_index=True)
-print(stacked['source_file'].value_counts())
+display(stacked['source_file'].value_counts())
 stacked
 ```
 
@@ -139,7 +136,7 @@ print(list(mar.columns))
 ```python
 admissions = pd.concat([jan, feb, mar], ignore_index=True)
 print(admissions.shape)
-print(admissions.isna().sum())
+display(admissions.isna().sum())
 admissions
 ```
 
@@ -215,7 +212,7 @@ units = pd.DataFrame({
 enriched = pd.merge(admissions, units, left_on='unit', right_on='unit_code',
                     how='left', validate='many_to_one', indicator=True)
 print(len(enriched))
-print(enriched['_merge'].value_counts())
+display(enriched['_merge'].value_counts())
 ```
 
 **Expect:** `9` rows (no admission gained or lost) with `both` 9, `left_only` 0, and `right_only` 0.

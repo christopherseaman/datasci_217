@@ -31,34 +31,28 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
 
-- **In Colab:** open Demo 1 from the lecture page's Colab link and run the Setup cell below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **Locally in VS Code:** all three Lecture 05 demos share one folder, `~/05-demo`. In **Terminal → New Terminal** (on Windows, the **WSL: Ubuntu** window from Lecture 01), download the notebooks with the environment's records (`pyproject.toml`, `uv.lock`, and `.python-version`) and build the environment, as in Lecture 03:
+- **In Colab:** run the install cell below first.
+- **Locally:** run these commands in a terminal.
 
 <!-- #region -->
-```bash
+```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
 cd ~/05-demo
 uv venv --seed
 source .venv/bin/activate
 uv sync
 ```
-
-The script prints `Made ~/05-demo with the Lecture 05 demo notebooks and their environment files.`, `uv venv` prints `Using CPython 3.13.x` (whichever 3.13 release you have), and `uv sync` lists each package it installs, including `+ numpy==2.3.3`, `+ pandas==3.0.5`, and `+ ipykernel==6.29.5`, the package that lets a notebook run on this environment's Python (Lecture 04). In Git Bash, activate with `source .venv/Scripts/activate` instead.
-
-Then choose **File → Open Folder…**, pick `05-demo` in your home folder, open `demo1_missing_data.ipynb`, click **Select Kernel**, and choose the Python in `05-demo/.venv`.
-
-The script never overwrites earlier work: if `~/05-demo` already exists, `mkdir` reports `File exists` and nothing else happens. If that folder already holds the demo files, `cd ~/05-demo` and go on. To start over, rename the old folder first with `mv ~/05-demo ~/05-demo-old`, then run the `curl` line again. If a download fails partway, do the same. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep it, and ignore the `error: Failed to create virtual environment` that follows.
 <!-- #endregion -->
+
+Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
-
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import numpy as np
@@ -99,8 +93,8 @@ visits = pd.DataFrame({
     'sbp': [120, 135, None, -999, 1420, None, 125, 125, 130, 128],               # mmHg
     'cholesterol': [200, None, 185, 190, 220, None, None, None, 210, 205],       # mg/dL
 })
-print(visits)
-print(visits.dtypes)
+display(visits)
+display(visits.dtypes)
 ```
 
 **Expect:** 10 rows. `age_text` and `visit_date` are `str`; `sbp` and `cholesterol` are `float64`, and `sbp` shows `-999.0` for P004 and `1420.0` for P005.
@@ -108,9 +102,9 @@ print(visits.dtypes)
 ### 3. Count the gaps
 
 ```python
-print(visits.isna().sum())                    # gaps per column
-print((visits.isna().mean() * 100).round(1))  # percent missing per column
-print(visits.isna().sum(axis=1))              # gaps per row
+display(visits.isna().sum())                    # gaps per column
+display((visits.isna().mean() * 100).round(1))  # percent missing per column
+display(visits.isna().sum(axis=1))              # gaps per row
 print('Rows with any gap:', visits.isna().any(axis=1).sum(), 'of', len(visits))
 ```
 
@@ -122,7 +116,7 @@ A repeated `patient_id` is evidence to investigate, not an instruction to delete
 
 ```python
 print('Exact repeats:', visits.duplicated().sum())
-print(visits[visits.duplicated(keep=False)])   # every row in a repeated set
+display(visits[visits.duplicated(keep=False)])   # every row in a repeated set
 
 print('Rows sharing a patient_id:', visits.duplicated(subset=['patient_id'], keep=False).sum())
 print('Rows sharing patient_id + visit_date:',
@@ -136,7 +130,7 @@ P007's two rows match in every column: one visit entered twice. P008's two rows 
 ```python
 clean = visits.drop_duplicates()
 print(len(visits), 'rows before,', len(clean), 'after')
-print(clean['patient_id'].value_counts())
+display(clean['patient_id'].value_counts())
 ```
 
 **Expect:** `10 rows before, 9 after`. P008 is the only patient counted twice; row label 7 is gone.
@@ -151,7 +145,7 @@ print('Mean SBP with the bad values:', clean['sbp'].mean())
 clean['sbp'] = clean['sbp'].replace(-999, np.nan)   # a fixed code: replace it
 clean['sbp'] = clean['sbp'].mask(clean['sbp'] > 250)  # a rule: blank anything above 250
 print('Mean SBP after:', clean['sbp'].mean())
-print(clean[['patient_id', 'sbp']])
+display(clean[['patient_id', 'sbp']])
 ```
 
 **Expect:** `Mean SBP with the bad values: 151.28571428571428`, then `Mean SBP after: 127.6`. P004 and P005 now show `NaN`.
@@ -165,10 +159,10 @@ print(clean[['patient_id', 'sbp']])
 ```python
 clean['age'] = pd.to_numeric(clean['age_text'], errors='coerce').astype('Int64')
 clean['sbp'] = clean['sbp'].astype('Int64')
-print(clean[['patient_id', 'age_text', 'age', 'sbp']])
+display(clean[['patient_id', 'age_text', 'age', 'sbp']])
 ```
 
-**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` prints whole numbers such as `120` with `<NA>` in the gaps.
+**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps.
 
 A date that does not exist becomes `NaT` with an explicit format. Separate a blank date (never recorded) from a date that failed to parse (recorded but wrong).
 
@@ -180,11 +174,11 @@ date_audit = pd.DataFrame({
     'parsed_date': parsed,
     'parse_failed': parsed.isna() & clean['visit_date'].notna(),
 })
-print(date_audit)
+display(date_audit)
 
 clean['visit_date'] = parsed
 clean['needs_review'] = (clean['age'].isna() | clean['visit_date'].isna() | clean['sbp'].isna()).astype('boolean')
-print(clean.dtypes)
+display(clean.dtypes)
 ```
 
 **Expect:** `parse_failed` is `True` only for P006 (`2026-02-30`). P003's date is also `NaT`, but it was never recorded, so it is not a parse failure. The dtypes now include `datetime64[us]`, `Int64`, and `boolean`.
@@ -198,7 +192,7 @@ Continue on your own after class. These cells reuse the core results; if the run
 The disguised problems are now real missing values, so the counts go up.
 
 ```python
-print(clean.isna().sum())
+display(clean.isna().sum())
 ```
 
 **Expect:** `visit_date 2`, `sbp 4`, `cholesterol 3`, and `age 2`. Before the conversions, only one date and two pressures looked missing.
@@ -208,7 +202,7 @@ For a blood-pressure and cholesterol analysis, a visit with neither measurement 
 ```python
 analysis = clean.dropna(subset=['sbp', 'cholesterol'], how='all')
 print(len(clean), 'rows before,', len(analysis), 'after')
-print(clean.loc[clean['sbp'].isna() & clean['cholesterol'].isna(), ['patient_id', 'age', 'sbp', 'cholesterol']])
+display(clean.loc[clean['sbp'].isna() & clean['cholesterol'].isna(), ['patient_id', 'age', 'sbp', 'cholesterol']])
 ```
 
 **Expect:** `9 rows before, 8 after`. P006 is the one row with neither measurement. P003 and P004 lost their pressure but keep a cholesterol value, so they stay.
@@ -221,7 +215,7 @@ median_chol = analysis['cholesterol'].median()
 analysis['cholesterol'] = analysis['cholesterol'].fillna(median_chol)
 print('Rule: fill missing cholesterol with the median,', median_chol, 'mg/dL;',
       analysis['cholesterol_imputed'].sum(), 'values filled')
-print(analysis[['patient_id', 'cholesterol', 'cholesterol_imputed']])
+display(analysis[['patient_id', 'cholesterol', 'cholesterol_imputed']])
 ```
 
 **Expect:** `Rule: fill missing cholesterol with the median, 202.5 mg/dL; 2 values filled`. P002 and P007 show `202.5` and `True`.
@@ -231,7 +225,7 @@ print(analysis[['patient_id', 'cholesterol', 'cholesterol_imputed']])
 ```python
 wrong = analysis[['patient_id', 'sbp']].copy()
 wrong['sbp_ffill'] = analysis['sbp'].ffill()
-print(wrong)
+display(wrong)
 ```
 
 **Expect:** P003, P004, and P005 all receive `135`, P002's reading. Leave those gaps missing; `needs_review` already marks them.
@@ -239,7 +233,7 @@ print(wrong)
 ### 8. The result
 
 ```python
-print(analysis[['patient_id', 'visit_date', 'age', 'sbp', 'cholesterol', 'cholesterol_imputed', 'needs_review']])
+display(analysis[['patient_id', 'visit_date', 'age', 'sbp', 'cholesterol', 'cholesterol_imputed', 'needs_review']])
 print('Rows:', len(visits), 'raw,', len(analysis), 'for analysis;',
       analysis['needs_review'].sum(), 'flagged for review')
 ```

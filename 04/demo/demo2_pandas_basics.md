@@ -17,9 +17,7 @@ jupyter:
 
 # Demo 2: From NumPy arrays to labeled pandas
 
-This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. Each step says what to expect, so you can tell whether it worked.
-
-**Coming back to it:** in Colab, open this notebook from the lecture page's **Live notebooks in Colab** link; a new runtime needs only the setup cell below. On your computer, open the `04-demo` folder that Demo 1's setup made (**File → Open Folder…** in VS Code), open this notebook, and choose the `.venv` kernel; if that folder does not exist yet, run Demo 1's five setup lines in a terminal first. Colab does not save your edits back to the course repository; to keep them, use **File → Save a copy in Drive**. The patient IDs and values here are synthetic.
+This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. Each step says what to expect, so you can tell whether it worked. The patient IDs and values are synthetic.
 
 Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
 
@@ -30,16 +28,24 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 ## Setup
 
-Run this cell first. It installs pandas 3.0.5, the course version, into the kernel's environment; Colab ships an older pandas.
+**In Colab**, run the install cell below.
 
-- In Colab, pip may print `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed...` and a line such as `google-colab ... requires pandas==..., but you have pandas 3.0.5 which is incompatible.` That is expected: the install still succeeded, this demo does not use those Colab packages, and the version check in the next cell confirms pandas 3.0.5.
-- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- On your computer, `uv sync` already installed pandas 3.0.5, so the cell changes nothing. It prints `Note: you may need to restart the kernel to use updated packages.`, perhaps with a notice that a newer pip exists; neither needs any action.
+**On your computer**, a `04-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
+cd ~/04-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
+
+Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import sys
@@ -70,7 +76,7 @@ temp_by_patient = pd.Series(
     name="temp_c",
 )
 
-print(temp_by_patient)
+display(temp_by_patient)
 print("index:", temp_by_patient.index)
 print("P002:", temp_by_patient["P002"])
 ```
@@ -133,7 +139,7 @@ print("one cell by position:", by_position)
 
 label_block = sbp.loc["P002":"P003", ["baseline_sbp", "follow_up_sbp"]]
 position_block = sbp.iloc[1:3, 0:2]
-print(label_block)
+display(label_block)
 print("same block:", label_block.equals(position_block))
 ```
 
@@ -146,7 +152,7 @@ A **mask** is a Boolean Series with the same index as the table. Build it on its
 ```python
 high_at_follow_up = sbp["follow_up_sbp"] >= 130
 
-print(high_at_follow_up)
+display(high_at_follow_up)
 print("rows:", high_at_follow_up.sum())
 sbp.loc[high_at_follow_up, ["baseline_sbp", "follow_up_sbp"]]
 ```
@@ -202,12 +208,12 @@ Continue on your own after class. These cells reuse the core results; if the run
 `head(3)` shows the first three rows. `info()` prints the index, column names, **non-null counts** (values present rather than missing), dtypes, and memory; it prints its report and returns `None`, so call it on its own line. `describe()` summarizes each numeric column.
 
 ```python
-print(sbp.head(3))
+display(sbp.head(3))
 
 sbp.info()
 
 sbp_summary = sbp.describe()
-print(sbp_summary)
+display(sbp_summary)
 ```
 
 Expect `4 non-null` for both columns (nothing is missing), and in the summary a `mean` of `134.5` mmHg for `baseline_sbp` and `132.25` for `follow_up_sbp`, with minimums of `118` and `124`.

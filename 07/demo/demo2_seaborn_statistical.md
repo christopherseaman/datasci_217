@@ -30,22 +30,28 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The setup downloads the health-spending CSV when it is missing. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, seaborn 0.13.2, and SciPy 1.18.1.
 
-**In Colab:** open this notebook from the lecture page's Colab link. A new runtime needs only the setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/07-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
 
-**Locally in VS Code:** open the `~/07-demo` folder that Demo 1's setup made (**File → Open Folder…**), open `demo2_seaborn_statistical.ipynb`, and choose the Python in `.venv` with **Select Kernel**. Its environment is already built. In a new terminal, `cd ~/07-demo` and `source .venv/bin/activate` bring the folder and environment back. If the folder does not exist yet, run the five setup lines under "How to run" in Demo 1 first.
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
+cd ~/07-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-Run this cell first. In Colab, which ships an older pandas, it installs pandas 3.0.5, the course version; Colab already has seaborn and SciPy.
-
-- pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
-- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- Locally, `uv sync` already installed pandas 3.0.5, so the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
-
 ```python
-# Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
+
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 from pathlib import Path
@@ -76,9 +82,9 @@ Expect `Ready: healthexp.csv`, `pandas: 3.0.5`, and `seaborn: 0.13.2` (Colab may
 sns.set_style('whitegrid')
 health = pd.read_csv('healthexp.csv')
 print(health.shape)
-print(health.head())
+display(health.head())
 print(health['Country'].nunique(), 'countries,', health['Year'].min(), 'to', health['Year'].max())
-print(health.loc[(health['Country'] == 'USA') & (health['Year'] == 2020)])
+display(health.loc[(health['Country'] == 'USA') & (health['Year'] == 2020)])
 ```
 
 Expect `(274, 4)`, then `6 countries, 1970 to 2020`, and one USA row for 2020 with spending of about 11,860 USD and a life expectancy of 77.0 years.
@@ -205,7 +211,7 @@ Expect a `ValueError` that mentions a country name such as `'Germany'`: pandas c
 
 ```python
 corr = health[['Year', 'Spending_USD', 'Life_Expectancy']].corr()
-print(corr.round(2))
+display(corr.round(2))
 ```
 
 Expect a 3-by-3 table with `1.0` down the diagonal, `0.83` for Year and spending, `0.90` for Year and life expectancy, and `0.58` for spending and life expectancy. All three rise together over time; a correlation measures straight-line association, not cause.

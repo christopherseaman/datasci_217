@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
+cd ~/04-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 This lecture covers:
 
 - McKinney, _Python for Data Analysis_ (3rd ed.): 2.2 (running the Jupyter notebook), 5.1 (Series and DataFrame), 5.2 (dropping columns; indexing, selection, and filtering, including pitfalls with chained indexing; sorting), 5.3 (descriptive statistics, unique values, and value counts), 6.1 (reading and writing CSV files), 6.2 (Parquet), 7.2 (removing duplicates with `duplicated()`), and Appendix B.2 and B.5 (magic commands, and timing code with `%timeit`)
@@ -109,8 +121,6 @@ print("total doses:", total_doses)  # total doses: 36
 
 If Cell 2 sits above Cell 1, Restart & Run All stops with `NameError: name 'days' is not defined`. Fix it by moving the producer cell above the dependent cell (**Move a cell** in the controls card), not by copying the definition into another cell.
 
-A `.py` script starts fresh on every run, so scripts suit analyses that rerun unattended, and notebooks suit exploring and explaining. BONUS.md shows how to run a whole notebook from the terminal instead.
-
 ![xkcd 2200: Unreachable State. Cells run out of order can leave the kernel in a state no top-to-bottom run would reach, and Restart & Run All brings it back](media/xkcd_2200.png)
 
 ## Jupyter Magic Commands
@@ -124,7 +134,7 @@ A `.py` script starts fresh on every run, so scripts suit analyses that rerun un
 | `%pwd` | None | Current working directory, as a quoted string |
 | `%ls` | None | Directory contents |
 | `%timeit expression` | Python expression | Timing summary |
-| `%pip install -q pandas==3.0.5` | Package and exact version; `-q` prints less | Package installed into the kernel's environment; restart the kernel if it was already imported |
+| `%pip install -q --no-warn-conflicts pandas==3.0.5` | Package and exact version; `-q` prints less; `--no-warn-conflicts` skips warnings about other installed packages | Package installed into the kernel's environment; restart the kernel if it was already imported |
 | `%pip show package_name` | Package name | Installed version and location |
 
 ### Code Snippet: Where is the notebook running?
@@ -156,16 +166,14 @@ Times vary by machine.
 Each demo notebook's first cell installs the course's pandas, since Colab ships an older one:
 
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
 ```text
 Note: you may need to restart the kernel to use updated packages.
 ```
 
-A package that was already imported keeps its old version until the kernel restarts, which is what the note means. If Colab asks you to restart after the install, choose **Runtime → Restart session** and run the notebook from the top; the install then finishes at once.
-
-In Colab, pip may also print `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed...` followed by a line such as `google-colab ... requires pandas==..., but you have pandas 3.0.5 which is incompatible.` The install still succeeded: the demos do not use those Colab packages, and Demos 2 and 3 confirm the version with `pd.__version__` in the next cell.
+A package that was already imported keeps its old version until the kernel restarts, which is what the note means. If Colab asks you to restart after the install, choose **Runtime → Restart session** and run the notebook from the top; the install then finishes at once. `--no-warn-conflicts` hides pip's complaint that Colab's own `google-colab` package wants an older pandas; the demos do not use it.
 
 <callout icon="💡" color="blue_bg">
 	## On your computer, add packages with `uv add`
@@ -173,6 +181,31 @@ In Colab, pip may also print `ERROR: pip's dependency resolver does not currentl
 </callout>
 
 _Think of magic commands as the Konami code of Jupyter: instead of 30 extra lives, you get shell shortcuts and a stopwatch._
+
+## Notebooks vs Scripts
+
+The same Python runs in a notebook cell and in a `.py` script, but four things behave differently:
+
+| | Notebook cell | `.py` script |
+| --- | --- | --- |
+| A bare last expression, such as `len(temps_c)` | Shown below the cell automatically | Shown nowhere |
+| `display(table)` | Draws a table (pandas DataFrame, next topic) as a formatted grid, like the JupyterLab screenshot (a Series stays plain text); `print()` shows plain text | Unavailable; use `print()` |
+| Magic commands (`%pwd`, `%ls`, `%pip`, `%timeit`) | Work | `SyntaxError` |
+| Values from earlier runs | Kept by the kernel until it restarts | Every run starts fresh |
+
+Scripts suit analyses that rerun unattended; notebooks suit exploring and explaining. BONUS.md shows how to run a whole notebook from the terminal.
+
+### Code Snippet: Three ways to show a result
+
+```python
+print(temps_c)    # Plain text, works everywhere: [36.8, 37.4, 38.1]
+display(temps_c)  # Same list; a DataFrame would draw as a formatted table
+max(temps_c)      # Last line: shown automatically as 38.1
+```
+
+A cell shows only its last line's value automatically, so anything earlier needs `print()` or `display()`.
+
+_Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter._
 
 ## Notebook Outputs and Git
 
@@ -213,6 +246,8 @@ Then check the notebook's diff in VS Code Source Control (Lecture 02) before you
 > Never be afraid to make a mistake. Unless it's in Git. Then be afraid. Be very afraid.
 
 # LIVE DEMO!
+
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo1_jupyter_basics.ipynb)
 
 # Introduction to Pandas
 
@@ -458,6 +493,8 @@ P002         58    38.1
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo2_pandas_basics.ipynb)
+
 # Deriving and Ordering Data
 
 A **derived column** is computed from columns the table already has, such as a temperature in Fahrenheit or a change from baseline, because a clinic export rarely stores the number you report. **Sorting** then reorders whole rows by a column, so the patients who matter most, such as the highest temperatures, come first with their other values attached.
@@ -661,20 +698,6 @@ _Pro tip: if you're ever stuck with a weird file format, remember: "There's a pa
 
 ![xkcd 927: Standards. Each file format was meant to be the one everyone uses, which is why pandas has a reader for so many of them](media/xkcd_927.png)
 
-## Showing a Table: `display()` vs `print()`
-
-`print()` shows plain text in scripts and notebooks alike. In a notebook, `display()` renders a DataFrame as a formatted table, like the one in the JupyterLab screenshot, which is easier to scan; a Series still shows as plain text. As in the `%pwd` example, a cell shows only its last line's value automatically, so anything earlier needs `print()` or `display()`.
-
-### Code Snippet: Choose notebook output
-
-```python
-print(visits)    # Plain text, works everywhere
-display(visits)  # Formatted table in Jupyter
-len(visits)      # Last line: shown automatically as 5
-```
-
-_Think of `print()` as the reliable Honda Civic that works almost anywhere, while `display()` is the sports car: prettier, but happiest in Jupyter._
-
 ## Inspecting a Loaded Table
 
 Each check below is one line; its output shows what Lecture 05's cleaning tools must fix.
@@ -737,3 +760,5 @@ dtype: float64
 pandas skips missing values in summaries, so the mean averages the four recorded temperatures; NumPy's `.mean()` returns `nan` when any value is missing. The trailing `...006` is binary rounding: most decimals cannot be stored exactly, so format the value with `:.1f` (Lecture 02) when you report it. The duplicated P003 visit is counted twice here, one more reason to find repeats before summarizing.
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/04/demo/demo3_data_io.ipynb)

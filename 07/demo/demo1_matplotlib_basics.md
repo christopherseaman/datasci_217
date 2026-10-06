@@ -30,36 +30,28 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
 
-**In Colab:** open this notebook from the lecture page's Colab link. A new runtime needs only the setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-**Locally in VS Code:** the three Lecture 07 demo notebooks share one folder, `~/07-demo`, with its own environment. In a terminal (on Windows, the **WSL: Ubuntu** window from Lecture 01), download the notebooks with the environment's records (`.python-version`, `pyproject.toml`, and `uv.lock`), then rebuild the environment from them as in Lecture 03's "Recreate from the Records":
+- **In Colab:** run the install cell below first.
+- **Locally:** run these commands in a terminal.
 
 <!-- #region -->
-```bash
+```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
 cd ~/07-demo
 uv venv --seed
 source .venv/bin/activate
 uv sync
 ```
-
-The first line prints `Made ~/07-demo with the Lecture 07 demo notebooks and their environment records.`, and `uv sync` ends by listing what it installed, including `+ matplotlib==3.11.1` and `+ pandas==3.0.5`. The environment also holds **ipykernel**, which lets VS Code run notebook cells with it. In VS Code, choose **File → Open Folder…** and open `07-demo` in your home folder, open `demo1_matplotlib_basics.ipynb`, click **Select Kernel**, and choose the Python in `.venv`.
-
-If `~/07-demo` already exists, the script stops with `File exists` and overwrites nothing; rename the old folder first (`mv ~/07-demo ~/07-demo-old`) to start over. If `uv venv` asks `Do you want to replace it? [y/n]`, answer `n` to keep the environment you have.
 <!-- #endregion -->
+
+Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-Run this cell first. In Colab, which ships an older pandas, it installs pandas 3.0.5, the course version.
-
-- pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
-- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- Locally, `uv sync` already installed pandas 3.0.5, so the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
-
 ```python
-# Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
+
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 from pathlib import Path
@@ -96,8 +88,8 @@ readings = pd.DataFrame({
     'systolic_bp': systolic.round().astype(int),
 })
 print(readings.shape)
-print(readings.head())
-print(readings.dtypes)
+display(readings.head())
+display(readings.dtypes)
 ```
 
 Expect `(40, 4)`, five rows starting with patient `1001`, and three `int64` columns plus `clinic` as `str`.
@@ -110,7 +102,7 @@ weekly = pd.DataFrame({
     'North': [12, 15, 21, 30, 42, 51, 47, 36, 24, 17],
     'South': [10, 11, 14, 18, 23, 29, 34, 33, 27, 20],
 })
-print(weekly)
+display(weekly)
 ```
 
 Expect ten rows. North peaks at 51 visits in week 6; South peaks at 34 in week 7.

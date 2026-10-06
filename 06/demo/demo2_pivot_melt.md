@@ -29,29 +29,26 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 | [Core walkthrough](#core-walkthrough) | Match reordered patient goals by label, reshape four patients to 12 visits, and recover the exact wide table. |
 | [Independent practice](#independent-practice) | Renumber filtered rows, select two-level labels, and repair a repeated pair using the documented later recheck. |
 
-## Where to run it
-
-**In Colab:** open this notebook from the lecture page's Colab link. A new runtime starts empty, so run every cell from Setup down. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-**In VS Code:** this notebook runs in the `~/06-demo` folder that Demo 1's "Where to run it" sets up; if you skipped Demo 1, do those steps first. After VS Code or the terminal was closed, choose **File → Open Folder…** and pick `06-demo` in your home folder, open `demo2_pivot_melt.ipynb`, and check that the kernel picker at the top right names the Python in `06-demo/.venv`; if it does not, click **Select Kernel** and choose it. The kernel starts empty, so run every cell from Setup down. To use the environment for a command, such as `uv add`, in a new terminal:
-
-```shell
-cd ~/06-demo
-source .venv/bin/activate
-```
-
-The prompt then starts with `(06-demo)`.
-
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, into the notebook's environment. Colab ships an older pandas (2.2); in `~/06-demo`, `uv sync` already installed 3.0.5, so there the cell changes nothing.
+**In Colab**, run the install cell below.
+
+**On your computer**, a `06-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
+cd ~/06-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import pandas as pd
@@ -96,7 +93,7 @@ bp
 Now a patient's row is one label away.
 
 ```python
-print(bp.loc['P003'])
+display(bp.loc['P003'])
 print(bp.loc['P003', 'week_12'])
 ```
 

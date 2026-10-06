@@ -20,34 +20,6 @@ jupyter:
 
 A diabetes clinic recorded age, sex, BMI, average blood pressure, and six blood tests for 442 patients, then scored how far each patient's disease had progressed one year later. You fit linear regressions with `statsmodels`, read coefficients with their uncertainty, check residuals, compare models, and add a categorical predictor. Then you switch to a home blood-pressure program and frame a prediction problem: the target and its time, a feature audit, clock-face hour features, and a chronological split. Everything here comes from Lecture 10 up to the first demo break, plus Lectures 01 to 09. The diabetes records are real and de-identified; the blood-pressure readings are synthetic.
 
-**How to run in Colab:** open this notebook from the lecture page's Colab link and run the cells from top to bottom; the first code cell installs the course's pandas. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-**How to run on your own computer:** run these lines once in VS Code's terminal (**Terminal → New Terminal**; on Windows, the **WSL: Ubuntu** window from Lecture 01). The first line downloads the three demo notebooks and their environment files (`pyproject.toml`, `uv.lock`, and `.python-version`) into a new folder, `~/10-demo`; the rest create, activate, and fill its environment, as in Lecture 03:
-
-<!-- #region -->
-```bash
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
-cd ~/10-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-
-Among the lines they print, these show each step worked; `3.13.x` is whichever 3.13 release you have:
-
-```text
-Made ~/10-demo with the Lecture 10 demo notebooks and their environment files.
-Using CPython 3.13.x
- + ipykernel==6.29.5
- + pandas==3.0.5
- + tensorflow==2.21.0
-```
-
-TensorFlow, which Demo 3 uses, makes the first `uv sync` a large download, and it has no Intel Mac version, so on an Intel Mac `uv sync` fails: run the demos in Colab instead. On an Apple Silicon Mac, XGBoost (also in Demo 3) needs the OpenMP runtime, which its package does not include: run `brew install libomp` once with [Homebrew](https://brew.sh/) (Lecture 01), or run Demo 3 in Colab. `pyproject.toml` lists **ipykernel**, the package a notebook kernel needs (Lecture 04), so VS Code can run the notebooks on this environment: choose **File → Open Folder…**, open `10-demo` in your home folder, open `demo1_statistical_modeling.ipynb`, click **Select Kernel** at the top right, and choose the Python in `.venv`. In Git Bash, activate with `source .venv/Scripts/activate` instead.
-
-If `~/10-demo` already exists, the script stops with `File exists` and changes nothing; `cd ~/10-demo` and go on. To start over, or if a download failed partway, rename the old folder with `mv ~/10-demo ~/10-demo-old`, then run the `curl` line again. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before.
-<!-- #endregion -->
-
 After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, statsmodels 0.14.6, scikit-learn 1.9.0, and matplotlib 3.11.1.
 
 ## Choose Your Route
@@ -63,14 +35,30 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell changes nothing.
+**In Colab**, run the install cell below; **File → Save a copy in Drive** keeps your changes.
+
+**On your computer**, run these lines in VS Code's terminal, then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
+cd ~/10-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+TensorFlow (Demo 3) has no Intel Mac version, so `uv sync` fails there: run the demos in Colab.
+
+On an Apple Silicon Mac, XGBoost (Demo 3) needs the OpenMP runtime: run `brew install libomp` once.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, after `uv sync`, that note is all it prints, and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import matplotlib.pyplot as plt
@@ -110,8 +98,8 @@ diabetes = load_diabetes(scaled=False, as_frame=True).frame
 diabetes = diabetes.rename(columns={'s1': 'tc', 's2': 'ldl', 's3': 'hdl', 's4': 'tch',
                                     's5': 'ltg', 's6': 'glu', 'target': 'progression'})
 print(diabetes.shape)
-print(diabetes.head(3))
-print(diabetes[['age', 'bmi', 'bp', 'progression']].describe().round(1))
+display(diabetes.head(3))
+display(diabetes[['age', 'bmi', 'bp', 'progression']].describe().round(1))
 ```
 
 **Expect:** `(442, 11)`, and these summary rows:
@@ -125,7 +113,7 @@ min     19.0   18.0   62.0         25.0
 max     79.0   42.2  133.0        346.0
 ```
 
-The printed table also has the 25%, 50%, and 75% rows between `min` and `max`.
+The table also has the 25%, 50%, and 75% rows between `min` and `max`.
 
 Look before you model: plot the outcome against each candidate predictor.
 
@@ -167,7 +155,7 @@ The same numbers are available as attributes, which is how you use them in later
 ```python
 print(f"R-squared: {results_formula.rsquared:.4f}")
 print(f"Adjusted R-squared: {results_formula.rsquared_adj:.4f}")
-print(pd.DataFrame({'coef': results_formula.params.round(3),
+display(pd.DataFrame({'coef': results_formula.params.round(3),
                     'p_value': results_formula.pvalues.round(4)}))
 ```
 
@@ -198,7 +186,7 @@ The array API asks you to build the table of predictors yourself, including the 
 
 ```python
 X = sm.add_constant(diabetes[['age', 'bmi', 'bp']])
-print(X.head(3))
+display(X.head(3))
 
 results_array = sm.OLS(diabetes['progression'], X).fit()
 
@@ -206,7 +194,7 @@ side_by_side = pd.DataFrame({'formula': results_formula.params.values,
                              'array': results_array.params.values},
                             index=results_array.params.index)
 side_by_side['difference'] = side_by_side['formula'] - side_by_side['array']
-print(side_by_side)
+display(side_by_side)
 ```
 
 **Expect:** the first rows of `X` with a `const` column of 1.0 in front of `age`, `bmi`, and `bp`, then:
@@ -238,7 +226,7 @@ coef_summary = pd.DataFrame({
     'ci_lower': results_formula.conf_int()[0],
     'ci_upper': results_formula.conf_int()[1],
 })
-print(coef_summary.round(3))
+display(coef_summary.round(3))
 ```
 
 **Expect:**
@@ -259,7 +247,7 @@ The residual degrees of freedom are 442 rows minus 4 estimated coefficients. The
 Coefficients only mean something if the straight-line form fits. Plot each patient's residual (observed minus fitted) against the fitted value: a shapeless cloud around zero is what we want, a curve says the form is wrong, and a funnel says the spread is not constant.
 
 ```python
-print(results_formula.resid.describe().round(1))
+display(results_formula.resid.describe().round(1))
 
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.scatter(results_formula.fittedvalues, results_formula.resid, alpha=0.5)
@@ -286,8 +274,8 @@ new_patients = pd.DataFrame({'age': [50, 50, 50],
                              'bmi': [22.0, 28.0, 34.0],
                              'bp': [85, 95, 105]})
 intervals = results_formula.get_prediction(new_patients).summary_frame(alpha=0.05)
-print(new_patients)
-print(intervals.drop(columns='mean_se').round(1))
+display(new_patients)
+display(intervals.drop(columns='mean_se').round(1))
 ```
 
 **Expect:**
@@ -324,7 +312,7 @@ for name, formula in formulas.items():
                  'r2': fitted.rsquared, 'adj_r2': fitted.rsquared_adj,
                  'aic': fitted.aic, 'bic': fitted.bic})
 comparison = pd.DataFrame(rows).set_index('model')
-print(comparison.round(4))
+display(comparison.round(4))
 ```
 
 **Expect:**
@@ -351,12 +339,12 @@ Clinics often report BMI in bands. `pd.cut()` (Lecture 05) makes the bands; `C()
 ```python
 diabetes['bmi_group'] = pd.cut(diabetes['bmi'], bins=[0, 25, 30, 60],
                                labels=['25 or under', 'over 25 to 30', 'over 30'])
-print(diabetes['bmi_group'].value_counts())
+display(diabetes['bmi_group'].value_counts())
 print(f"Patients without a band: {diabetes['bmi_group'].isna().sum()}")
 
 results_cat = smf.ols('progression ~ age + bp + C(bmi_group)', data=diabetes).fit()
 print(f"\nRows used: {results_cat.nobs:.0f}")
-print(results_cat.params.round(2))
+display(results_cat.params.round(2))
 ```
 
 **Expect:**
@@ -415,7 +403,7 @@ readings = readings.dropna(subset=['sbp_next']).reset_index(drop=True)
 
 print('Prediction unit: one reading. Target: sbp_next, measured at target_time.')
 print(f'Rows with a target: {len(readings)}')
-print(readings[['patient_id', 'reading_time', 'sbp_today', 'sbp_next', 'target_time']].head(3))
+display(readings[['patient_id', 'reading_time', 'sbp_today', 'sbp_next', 'target_time']].head(3))
 ```
 
 **Expect:** 210 rows: 30 patients times eight readings, minus each patient's last reading, which has no next one. The first rows show the shift at work: each row's `sbp_next` is the next row's `sbp_today`, and its `target_time` is the next row's `reading_time`.
@@ -439,7 +427,7 @@ candidates = pd.DataFrame({
 })
 candidates['available'] = candidates['hours_after'] <= 0
 candidates['decision'] = np.where(candidates['available'], 'Keep', 'Exclude (leakage)')
-print(candidates)
+display(candidates)
 ```
 
 **Expect:**
@@ -464,7 +452,7 @@ readings['hour_sin'] = np.sin(2 * np.pi * readings['reading_hour'] / 24)
 readings['hour_cos'] = np.cos(2 * np.pi * readings['reading_hour'] / 24)
 
 clock = readings[['reading_hour', 'hour_sin', 'hour_cos']].drop_duplicates().set_index('reading_hour')
-print(clock.loc[[0, 1, 9, 22, 23]].round(2))
+display(clock.loc[[0, 1, 9, 22, 23]].round(2))
 ```
 
 **Expect:**
@@ -495,7 +483,7 @@ split_summary = pd.DataFrame({
     'first_target': [train['target_time'].min(), valid['target_time'].min(), test['target_time'].min()],
     'last_target': [train['target_time'].max(), valid['target_time'].max(), test['target_time'].max()],
 }, index=['train', 'valid', 'test'])
-print(split_summary)
+display(split_summary)
 ```
 
 **Expect:**
@@ -522,14 +510,14 @@ fit_rows = train[train['target_time'] <= first_valid_cutoff]
 assert fit_rows['target_time'].max() <= first_valid_cutoff
 print('Rows with labels available at first validation cutoff:', len(fit_rows))
 honest_fit = smf.ols('sbp_next ~ age + sbp_today + hour_sin + hour_cos', data=fit_rows).fit()
-print(honest_fit.params.round(3))
+display(honest_fit.params.round(3))
 
 valid_bounds = honest_fit.get_prediction(valid).conf_int(obs=True)
 check = valid[['reading_hour', 'sbp_today', 'sbp_next']].head(3).copy()
 check['predicted'] = honest_fit.predict(valid).head(3).round(1)
 check['pi_lower'] = valid_bounds[:3, 0].round(1)
 check['pi_upper'] = valid_bounds[:3, 1].round(1)
-print(check)
+display(check)
 ```
 
 **Expect:**

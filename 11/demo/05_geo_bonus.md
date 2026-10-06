@@ -16,27 +16,34 @@ jupyter:
 
 This notebook is **demo-only and non-graded**: nothing in it is assumed prior knowledge, and the assignment never needs it. It maps Demo 4's test error for each of the 12 taxi zones. The course concepts are reading a results table, validating a join, and making an honest labeled figure; the geospatial machinery (the geo packages, the zone boundaries, the shapefile, and drawing polygons) is supplied.
 
-**How to run:** in Colab, open this notebook from the lecture page's Colab link. Locally, open the `11-demo` folder from Demo 1 in VS Code and select the `.venv` kernel; the geo packages are not in `pyproject.toml`, so first add them in a terminal with the environment active, as Lecture 03 adds any new package. **In a new terminal**, start with the first two lines, after which the prompt starts with `(11-demo)`; in Git Bash, activate with `source .venv/Scripts/activate` instead:
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook reads Demo 4's `output/04_zone_error_summary.csv` when you ran Demo 4 in the same folder, and otherwise downloads a copy; the zone boundaries need an internet connection. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, geopandas 1.1.1, and matplotlib 3.11.1.
+
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/11-demo` folder already set up for Demo 1 needs only the `uv add` line below and then its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal, then the `uv add` line.
 
 <!-- #region -->
-```bash
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
 cd ~/11-demo
+uv venv --seed
 source .venv/bin/activate
-uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
+uv sync
 ```
-
-The notebook reads Demo 4's `output/04_zone_error_summary.csv` when you ran Demo 4 in the same folder, and otherwise downloads a copy of that file from the course repository. Downloading the zone boundaries needs an internet connection. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, geopandas 1.1.1, and matplotlib 3.11.1.
 <!-- #endregion -->
+
+Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
+The geo packages are not in `pyproject.toml`: locally, with the environment active, run `uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1` once.
 
 ## Setup
 
-These geo packages are not part of the core demo environment. In Colab this cell installs them; locally, after `uv add`, it changes nothing.
-
 ```python
-%pip install -q pandas==3.0.5 geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
+%pip install -q --no-warn-conflicts pandas==3.0.5 geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` If Colab asks you to restart the session, choose **Runtime → Restart session**, then continue with the next cell.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import hashlib

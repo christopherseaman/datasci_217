@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
+cd ~/05-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 _Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120%; data science is just that intense!)_
 
 This lecture covers:
@@ -306,6 +318,8 @@ print(form)
 
 # LIVE DEMO!
 
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb)
+
 # Data Transformation Techniques
 
 **Data transformation** changes how correct values are expressed, by a rule you choose: turn a text answer into a score, give columns consistent names, or group exact ages into bands. Write each rule where others can read it, as a dictionary, a function, or a list of bin edges, so anyone can check how every value changed.
@@ -591,6 +605,8 @@ print(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64'))  #
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo2_transformations.ipynb)
+
 # Data Validation and Quality Assessment
 
 **Validation** checks a table against its data contract, where inspection only describes it. A **validation rule** is a yes/no question asked of every row, such as "is the age between 0 and 120?"; rows that fail are listed for review rather than deleted, because an age of 150 is almost certainly a typo while a systolic pressure of 220 may be a real emergency.
@@ -844,3 +860,5 @@ True
 ```
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo3_workflow.ipynb)

@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo1_matplotlib_basics.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo2_seaborn_statistical.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo3_pandas_altair.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
+cd ~/07-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 ![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 
 This lecture uses prepared plotting tables so you can focus on choosing honest encodings; Lecture 08 teaches how to build such tables from raw rows.
@@ -293,6 +305,8 @@ Expected result: `flu_visits.png` contains the whole Figure, including its label
 
 # LIVE DEMO!
 
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo1_matplotlib_basics.ipynb)
+
 # The Visualization Ecosystem
 
 Python's **visualization ecosystem** is a family of plotting libraries built on a few **plotting backends**, the engines that do the drawing: matplotlib draws images from Python, and **Vega-Lite** draws charts in a web browser. Libraries that share a backend share its output files and its adjustments, so choose a library by the job: a quick look, full control, statistical summaries, or an interactive web chart.
@@ -539,6 +553,8 @@ Expected result: sharper peaks and a deeper dip between them than with the defau
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo2_seaborn_statistical.ipynb)
+
 # Edward Tufte's Principles of Data Visualization
 
 **Tufte's principles**, from the statistician Edward Tufte, check that a chart's drawing is as honest as its numbers: **"Above all else, show the data."** Hand-hygiene compliance of 96% in March and 97% in April, drawn as bars on an axis starting at 95%, makes April's bar twice as tall, so readers see compliance double when it rose one point.
@@ -763,3 +779,5 @@ print(saved['grain'])  # one patient
 ![xkcd 1138: Heatmap. "Pet peeve #208: Geographic profile maps which are basically just population maps." Before mapping counts, ask whether the pattern is just where people live.](media/xkcd_1138.png)
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/07/demo/demo3_pandas_altair.ipynb)

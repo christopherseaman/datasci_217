@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_coverage_result_shapes.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
+cd ~/08-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `08-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is what a groupby does with scattered rows._
 
 This lecture covers:
@@ -246,6 +258,8 @@ Total              30   62     92
 
 # LIVE DEMO!
 
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb)
+
 # Which Groups Appear in a Summary
 
 **Group coverage**, which groups a summary lists, shrinks under two pandas defaults without warning: rows with a missing key are dropped before the split, and a categorical key (Lecture 05) lists only the categories that occur in the data. A report can then silently leave out visits with no clinic recorded, or a new clinic with no visits yet.
@@ -455,6 +469,8 @@ In pandas 3, `include_groups=False` is the default and the only allowed value, s
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_coverage_result_shapes.ipynb)
+
 # Performance Optimization
 
 **Performance optimization** means making an analysis run faster or use less memory, which matters once a summary that takes a second on a class example takes minutes on a year of hospital lab results. Measure first, with `%timeit` (Lecture 04) for time and `df.memory_usage(deep=True)` (Lecture 05) for memory, and change only the step where the time or memory goes.
@@ -648,3 +664,5 @@ ssh -N -L 8888:127.0.0.1:8888 username@server.example
 ```
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)

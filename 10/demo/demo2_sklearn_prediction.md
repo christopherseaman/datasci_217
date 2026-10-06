@@ -20,7 +20,7 @@ jupyter:
 
 Demo 1 asked how disease progression _relates_ to BMI in 442 diabetes patients. This demo asks a prediction question about the same records: from a new patient's baseline measurements, how close can we get to their progression score one year later? You split the patients into training, validation, and test rows, set a baseline to beat, write down a selection rule, compare linear pipelines, read what the chosen one relies on, turn its predictions into a yes/no flag, and evaluate it on the test rows exactly once. Everything here comes from Lecture 10 up to the second demo break, plus Lectures 01 to 09. The records are real and de-identified.
 
-**How to run:** in Colab, open this notebook from the lecture page's Colab link and run the cells from top to bottom; the first code cell installs the course's pandas, and **File → Save a copy in Drive** keeps your changes. On your own computer, the environment from Demo 1's setup is still in `~/10-demo` (if you skipped Demo 1, run the five setup lines at the top of Demo 1 first): open that folder in VS Code, open `demo2_sklearn_prediction.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/10-demo` and `source .venv/bin/activate` bring the environment back. After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
+After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
 
 ## Choose Your Route
 
@@ -35,14 +35,29 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell changes nothing.
+**In Colab**, run the install cell below; **File → Save a copy in Drive** keeps your changes.
+
+**On your computer**, run these lines in VS Code's terminal, then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
+cd ~/10-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+If `~/10-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
+
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, after `uv sync`, that note is all it prints, and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import matplotlib.pyplot as plt
@@ -205,7 +220,7 @@ score_candidate('linear regression', linear)
 
 print(f"Training R²: {r2_score(y_train, linear.predict(X_train)):.3f}")
 print("\nCoefficients on scaled features (score points per standard deviation):")
-print(pd.Series(linear.named_steps['model'].coef_, index=feature_cols).round(1))
+display(pd.Series(linear.named_steps['model'].coef_, index=feature_cols).round(1))
 ```
 
 **Expect:**
@@ -250,7 +265,7 @@ coefficients = pd.DataFrame({
     'ridge': ridge.named_steps['model'].coef_,
     'lasso': lasso.named_steps['model'].coef_,
 }, index=feature_cols)
-print(coefficients.round(1))
+display(coefficients.round(1))
 print(f"\nFeatures Lasso keeps: {(coefficients['lasso'] != 0).sum()} of {len(feature_cols)}")
 ```
 
@@ -283,7 +298,7 @@ One table, one metric set, one validation set.
 ```python
 comparison = pd.DataFrame(results)
 comparison['features_used'] = [0, 10, 10, (coefficients['lasso'] != 0).sum()]
-print(comparison.set_index('model').round(3))
+display(comparison.set_index('model').round(3))
 ```
 
 **Expect:**
@@ -339,7 +354,7 @@ importance = pd.DataFrame({
     'mae_increase': permutation_result.importances_mean,
     'std': permutation_result.importances_std,
 }, index=feature_cols).sort_values('mae_increase', ascending=False)
-print(importance.round(2))
+display(importance.round(2))
 ```
 
 **Expect:**
@@ -380,7 +395,7 @@ for name, predicted in [('lasso_flag', lasso_flag), ('never_flag', never_flag)]:
         'precision': precision_score(actual_high, predicted, zero_division=0),
         'recall': recall_score(actual_high, predicted),
     })
-print(pd.DataFrame(binary_rows).set_index('policy').round(3))
+display(pd.DataFrame(binary_rows).set_index('policy').round(3))
 
 print("\nLasso flag, confusion matrix [[TN, FP], [FN, TP]]:")
 print(confusion_matrix(actual_high, lasso_flag))

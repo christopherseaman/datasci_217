@@ -31,18 +31,28 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. The files it writes go to `output/`, which disappears when a Colab runtime shuts down. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
 
-- **In Colab:** open Demo 3 from the lecture page's Colab link and run the Setup cell below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **Locally in VS Code:** use the `~/05-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `05-demo` in your home folder, open `demo3_workflow.ipynb`, click **Select Kernel**, and choose the Python in `05-demo/.venv`. **In a new terminal**, `cd ~/05-demo` and then `source .venv/bin/activate` bring the environment back.
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/05-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
+cd ~/05-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
-
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 from pathlib import Path
@@ -100,7 +110,7 @@ with raw_path.open('w', encoding='utf-8') as file:
 
 raw = pd.read_csv(raw_path, dtype='string', keep_default_na=False)
 raw_snapshot = raw.copy(deep=True)
-print(raw)
+display(raw)
 print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (raw == 'NA').sum().sum())
 ```
 
@@ -133,8 +143,8 @@ rules = pd.DataFrame({
     'age whole 0-120 or missing': raw['age'].isin(missing_codes) | (age_number.between(0, 120) & age_number.mod(1).eq(0)),
     'sbp whole 60-250 or missing': raw['sbp'].isin(missing_codes) | (sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)),
 })
-print((~rules).sum())               # rows failing each rule
-print(raw[~rules.all(axis=1)])      # rows to review
+display((~rules).sum())               # rows failing each rule
+display(raw[~rules.all(axis=1)])      # rows to review
 ```
 
 **Expect:** failures `patient_id` 1 (V003's `P0003`), date text 1 (V004's `2026-7-01`), site 3 (`South`, `east`, and `' North '`), age 1 (V004's 150), and SBP 1 (V008's 1320). Six rows to review: V002, V003, V004, V006, V008, and V011.
@@ -144,7 +154,7 @@ Two problems pass every text rule. `2026-02-30` has the right shape but is not a
 ```python
 exact_date = raw['visit_date'].str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 parsed = pd.to_datetime(raw['visit_date'].where(exact_date), format='%Y-%m-%d', errors='coerce')
-print(raw.loc[parsed.isna(), ['visit_id', 'visit_date']])
+display(raw.loc[parsed.isna(), ['visit_id', 'visit_date']])
 
 print('Exact repeated rows:', raw.duplicated().sum())
 print('visit_id unique:', raw['visit_id'].is_unique)
@@ -162,7 +172,7 @@ q3 = sbp_number.quantile(0.75)
 iqr = q3 - q1
 sbp_flag = (sbp_number < q1 - 1.5 * iqr) | (sbp_number > q3 + 1.5 * iqr)
 print('Fences:', q1 - 1.5 * iqr, 'to', q3 + 1.5 * iqr)
-print(raw.loc[sbp_flag, ['visit_id', 'sbp']])
+display(raw.loc[sbp_flag, ['visit_id', 'sbp']])
 ```
 
 **Expect:** `Fences: 104.375 to 159.375`, and two flagged visits. V008's 1320 already fails the range rule: almost certainly a typing error. V009's 210 is inside the contract and possible in severe hypertension, so it stays; it is a reading to confirm, not to delete. Step 5 records that decision.
@@ -184,7 +194,7 @@ decisions = pd.DataFrame({
                'the intended date cannot be known', '150 is probably a typo, but a guess is not data',
                '1320 is probably 132, but a guess is not data', 'inside the contract and clinically possible'],
 })
-print(decisions)
+display(decisions)
 ```
 
 **Expect:** 8 decisions. Every "set to missing" row also sets `needs_review` in the next step.
@@ -202,15 +212,15 @@ working['visit_date'] = parsed
 working['age'] = age_number.where(age_number.between(0, 120) & age_number.mod(1).eq(0)).astype('Int64')
 working['sbp'] = sbp_number.where(sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)).astype('Int64')
 working['needs_review'] = working[['visit_date', 'site', 'age', 'sbp']].isna().any(axis=1).astype('boolean')
-print(working)
-print(working.dtypes)
+display(working)
+display(working.dtypes)
 ```
 
 **Expect:** 13 rows still (the repeated V007 is still there), with `<NA>` or `NaT` in place of every bad value, and `needs_review` `True` for V004, V005, V006, both V007 rows, and V008.
 
 ### 7. Check the contract before saving
 
-Each invariant is one named `True`/`False`, collected in a Series so it prints as a report. A function lets the same checks run again after a fix.
+Each invariant is one named `True`/`False`, collected in a Series so it shows as a report. A function lets the same checks run again after a fix.
 
 ```python
 def run_checks(table):
@@ -230,7 +240,7 @@ def run_checks(table):
 
 
 checks = run_checks(working)
-print(checks)
+display(checks)
 ```
 
 **Expect:** two `False` checks, `visit IDs unique` and `only the repeated row removed`. The duplicate decision from step 5 was never applied.
@@ -253,7 +263,7 @@ except AssertionError as error:
 ```python
 clean = working[~raw.duplicated()].reset_index(drop=True)
 checks = run_checks(clean)
-print(checks)
+display(checks)
 
 assert checks.all(), checks[~checks]
 clean.to_csv(output_dir / 'clinic_visits_clean.csv', index=False)
@@ -271,7 +281,7 @@ decision_log['source_sha256'] = raw_sha256
 decision_log['rows_before'] = len(raw)
 decision_log['rows_after'] = len(clean)
 decision_log.to_csv(output_dir / 'decision_log.csv', index=False)
-print(decision_log[['field', 'action', 'source', 'rows_before', 'rows_after']])
+display(decision_log[['field', 'action', 'source', 'rows_before', 'rows_after']])
 ```
 
 **Expect:** the 8 decisions from step 5, each with `source` `output/clinic_visits_raw.csv` (`output\clinic_visits_raw.csv` on Windows outside WSL), `rows_before` 13, and `rows_after` 12. Every row also carries the step 2 hash in `source_sha256`.
@@ -287,7 +297,7 @@ round_trip = pd.read_csv(
            'age': 'Int64', 'sbp': 'Int64', 'needs_review': 'boolean'},
     parse_dates=['visit_date'],
 )
-print(round_trip.dtypes)
+display(round_trip.dtypes)
 print('Round trip equals clean:', round_trip.equals(clean))
 print('Raw table unchanged:', raw.equals(raw_snapshot))
 print('Raw file unchanged:', hashlib.sha256(raw_path.read_bytes()).hexdigest() == raw_sha256)
@@ -305,7 +315,7 @@ Continue on your own after class. This cell reuses the core results; if the runt
 `head()` shows only the top of the file. Three random rows show the middle.
 
 ```python
-print(raw.sample(n=3, random_state=42))
+display(raw.sample(n=3, random_state=42))
 ```
 
 **Expect:** V011, V009, and V001, in that order. One random draw already turns up `' North '` and the 210 reading, so problems are not confined to the top of the file.

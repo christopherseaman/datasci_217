@@ -22,8 +22,18 @@ Part 1 runs here in the notebook: it times grouped summaries of one million synt
 
 **How to run:** run Part 1's cells from top to bottom; after each step, an **Expect** line says what you should see. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds; Colab is usually slower than a recent laptop. Part 2 needs a terminal on your own computer (macOS Terminal, Linux, WSL Ubuntu on Windows, or VS Code's integrated terminal), not Colab. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, OpenSSH 10.2, and tmux 3.6. The patient IDs and values are synthetic.
 
-- **In Colab:** open this notebook from the lecture page's Demo 3 link and start with the Setup cell below; a new runtime needs nothing else, because Part 1 builds its own data. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **On your computer:** Demo 1's local setup already downloaded this notebook into `~/08-demo` and built its environment there. In VS Code, open that folder with **File → Open Folder…**, open `demo3_remote_performance.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/08-demo` and `source .venv/bin/activate` bring back the environment, which Part 2's last step uses. If `~/08-demo` does not exist yet, run the commands under "On your computer" at the top of Demo 1 first.
+- **In Colab:** run the install cell under Setup first. Use **File → Save a copy in Drive** to keep your changes.
+- **On your computer:** run these lines in VS Code's terminal, then open the `08-demo` folder in VS Code, open `demo3_remote_performance.ipynb`, and choose the `.venv` Python as the notebook kernel.
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
+cd ~/08-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+If `~/08-demo` is already set up from Demo 1, just open this notebook and choose the `.venv` kernel.
 
 ## Choose Your Route
 
@@ -38,14 +48,12 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell only confirms that.
-
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell; you do not need to rerun the install.
+**Expect:** nothing, or a note to restart; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import numpy as np
@@ -145,7 +153,7 @@ print("Same index as labs?", centered_fast.index.equals(labs.index))
 ### Memory: Text Key vs `category`
 
 ```python
-print(labs.memory_usage(deep=True))
+display(labs.memory_usage(deep=True))
 
 text_mb = labs["clinic"].memory_usage(deep=True) / 1e6
 labs["clinic"] = labs["clinic"].astype("category")

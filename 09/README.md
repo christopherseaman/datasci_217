@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
+cd ~/09-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 ![xkcd 2048: Curve-Fitting. One scatter plot, twelve fitted curves, twelve different messages; not every pattern in a time series is meaningful.](media/xkcd_2048.png)
 
 This lecture covers:
@@ -232,6 +244,8 @@ Freq: D, dtype: int64
 February 2024 has 29 days (a leap year). Clock-time selection alternatives are in BONUS.md.
 
 # LIVE DEMO!
+
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb)
 
 # Resampling and Frequency Conversion
 
@@ -542,6 +556,8 @@ An **exponentially weighted moving average (EWM)** weights recent readings more 
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb)
+
 # Time Zone Handling
 
 A **time zone** is a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks. A multi-site trial records each visit on its clinic's wall clock, so 09:00 in New York and 09:00 in Chicago are different moments, and ordering the visits needs every timestamp tied to one instant.
@@ -836,3 +852,5 @@ plt.show()
 Decomposition and component plots are in BONUS.md.
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)

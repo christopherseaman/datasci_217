@@ -16,15 +16,32 @@ jupyter:
 
 Before any model, fix which target hours each part of the data may be used for, then explore patterns in the training rows only. The split follows the target's local time: training before May 2023, validation in May, and test in June. The test rows stay unopened here; Demo 4 uses validation to choose a model and opens test exactly once. It uses Lecture 11 up to the demo break, plus aggregation (Lecture 08), zoned split boundaries and leakage (Lecture 10), and JSON (Lecture 07). Assignment 11's Q5 and Q6 follow the same pattern with sensor data.
 
-**How to run:** in Colab, open this notebook from the lecture page's Colab link. Locally, open the `11-demo` folder from Demo 1 in VS Code, open `03_model_prep.ipynb`, and select the `.venv` kernel if VS Code does not show it; without that folder, follow Demo 1's "How to run locally" first. This notebook downloads the panel and rebuilds Demo 2's model table itself, so it does not need Demo 2's output. Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and pyarrow 25.0.0.
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. This notebook downloads the panel and rebuilds Demo 2's model table itself, so it does not need Demo 2's output. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and pyarrow 25.0.0.
+
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/11-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
+cd ~/11-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` If Colab asks you to restart the session, choose **Runtime → Restart session**, then continue with the next cell.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import hashlib

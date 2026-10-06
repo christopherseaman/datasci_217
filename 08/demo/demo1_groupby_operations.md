@@ -22,21 +22,16 @@ A health system's visit log has one row per clinic visit: 100,000 synthetic visi
 
 **How to run:** run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3. The patient IDs and values are synthetic.
 
-- **In Colab:** open this notebook from the lecture page's Demo 1 link and start with the Setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **On your computer:** in VS Code's terminal (on Windows, the **WSL: Ubuntu** window from Lecture 01), the first line downloads the three notebooks and the `pyproject.toml` and `uv.lock` that record their packages into a new folder, `~/08-demo`, with the `curl ... | sh` pattern Lecture 01 used to install uv; the rest build the environment as in Lecture 03:
+- **In Colab:** run the install cell under Setup first. Use **File → Save a copy in Drive** to keep your changes.
+- **On your computer:** run these lines in VS Code's terminal, then open the `08-demo` folder in VS Code, open `demo1_groupby_operations.ipynb`, and choose the `.venv` Python as the notebook kernel.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
 cd ~/08-demo
-ls
 uv venv --seed
 source .venv/bin/activate
 uv sync
 ```
-
-**Expect:** `Made ~/08-demo with the Lecture 08 demo notebooks, pyproject.toml, and uv.lock.`; `ls` lists the three `.ipynb` files, `pyproject.toml`, `setup_demo.sh`, and `uv.lock`; `uv sync` installs about a hundred packages, among them `+ pandas==3.0.5` and `+ jupyterlab==4.4.10`. In Git Bash, activate with `source .venv/Scripts/activate`. Then open the folder in VS Code with **File → Open Folder…** (`08-demo` in your home folder), open `demo1_groupby_operations.ipynb`, click **Select Kernel**, and choose the Python in `.venv` (Lecture 04).
-
-The setup script never overwrites earlier work: run it again and `mkdir` reports that `~/08-demo` already exists (`File exists`), and nothing else happens. To start over, rename the old folder first with `mv ~/08-demo ~/08-demo-old`, then run the lines again; if a download fails partway, do the same. If you run the other lines again, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep the environment (uv then prints a harmless `error: Failed to create virtual environment`), and the last two lines still work.
 
 ## Choose Your Route
 
@@ -51,14 +46,12 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell only confirms that.
-
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell; you do not need to rerun the install.
+**Expect:** nothing, or a note to restart; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import numpy as np
@@ -141,7 +134,7 @@ visits.head()
 ```python
 # One mean per department: split by department, average wait_min, combine
 dept_wait = visits.groupby("department")["wait_min"].mean()
-print(dept_wait.round(1))
+display(dept_wait.round(1))
 
 # Several summaries per column: a dictionary gives two-level column labels
 dept_stats = visits.groupby("department").agg({
@@ -189,7 +182,7 @@ dept_report = visits.groupby("department", as_index=False).agg(
     median_wait=("wait_min", "median"),
     longest_wait=("wait_min", "max"),
 )
-print(dept_report.round(1))
+display(dept_report.round(1))
 
 # Checkpoint: name the grain before and after
 print(f"\nInput grain:  one row per visit      -> {len(visits):,} rows")
@@ -250,14 +243,12 @@ daily = pd.DataFrame({
     "visits": [42, 35, 38, 51, 40, 30, 36, 18],
     "no_shows": [3, 5, 2, 6, 4, 2, 1, 2],
 })
-print(daily)
+display(daily)
 
 # Select the numeric columns first: summing "day" would glue the text together
 two_day = daily.groupby(["clinic", "department"])[["visits", "no_shows"]].sum()
-print()
-print(two_day)
-print()
-print(two_day["visits"].unstack())
+display(two_day)
+display(two_day["visits"].unstack())
 ```
 
 **Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, North–Dermatology is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
@@ -269,11 +260,11 @@ print(two_day["visits"].unstack())
 ```python
 # .loc on the outer level keeps the inner level as the index
 print("North only:")
-print(two_day.loc["North"])
+display(two_day.loc["North"])
 
 # reset_index() (Lecture 06) turns both levels back into ordinary columns
 print("\nFlattened:")
-print(two_day.reset_index())
+display(two_day.reset_index())
 ```
 
 **Expect:** North's two departments, Cardiology and Pediatrics, with `department` as the index; then 5 rows with `clinic` and `department` as ordinary columns and a `0..4` index.
@@ -288,7 +279,7 @@ A pivot table is the two-key grouping from Part 2 in one call: `index` picks the
 wait_pivot = pd.pivot_table(
     visits, values="wait_min", index="department", columns="clinic", aggfunc="mean",
 )
-print(wait_pivot.round(1))
+display(wait_pivot.round(1))
 print("\nSame table as groupby(...).mean().unstack()?", wait_pivot.equals(wait_grid))
 
 # sort=False keeps whichever key turned up first in the rows
@@ -311,9 +302,9 @@ wait_multi = pd.pivot_table(
     aggfunc=["count", "mean"],
 )
 print("=== Visits behind each cell ===")
-print(wait_multi["count"])
+display(wait_multi["count"])
 print("\n=== Mean wait in each cell ===")
-print(wait_multi["mean"].round(1))
+display(wait_multi["mean"].round(1))
 # .sum() adds up each clinic's column; the second .sum() adds those totals
 print("\nTotal visits counted:", wait_multi["count"].sum().sum())
 ```
@@ -328,7 +319,7 @@ wait_totals = pd.pivot_table(
     visits, values="wait_min", index="department", columns="clinic",
     aggfunc="sum", margins=True, margins_name="Total",
 )
-print(wait_totals)
+display(wait_totals)
 
 # Checkpoint: the corner cell is every minute of waiting in the log
 print(f"\nCorner cell:     {wait_totals.loc['Total', 'Total']:,.0f}")
@@ -349,12 +340,12 @@ nurses = pd.DataFrame({
 
 raw = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic", aggfunc="sum")
 print("=== The absent combination shows as NaN ===")
-print(raw)
+display(raw)
 
 filled = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic",
                         aggfunc="sum", fill_value=0)
 print("\n=== fill_value=0: Dermatology really has no nurses in the South ===")
-print(filled)
+display(filled)
 ```
 
 **Expect:** Dermatology–South is `NaN` in the first table and `0` in the second, and the other cells are unchanged. For a count of nurses, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean wait: filling an empty cell with 0 would report a zero-minute wait that never happened.
@@ -373,14 +364,14 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Expect:** horizontal bands of color: Orthopedics darkest, Pediatrics palest, and each row nearly one color across the clinics. A heatmap makes that pattern obvious in a way 30 printed numbers do not.
+**Expect:** horizontal bands of color: Orthopedics darkest, Pediatrics palest, and each row nearly one color across the clinics. A heatmap makes that pattern obvious in a way a table of 30 numbers does not.
 
 ### Back to Long Form
 
 ```python
 # stack() moves the columns back into the index, undoing unstack()
 long_form = wait_pivot.stack()
-print(long_form.head(6).round(1))
+display(long_form.head(6).round(1))
 print("\nRows in long form:", len(long_form))
 print("Round trip back to the grid?", long_form.unstack().equals(wait_pivot))
 ```
@@ -395,7 +386,7 @@ print("Round trip back to the grid?", long_form.unstack().equals(wait_pivot))
 
 ```python
 visit_counts = pd.crosstab(visits["department"], visits["clinic"], margins=True)
-print(visit_counts)
+display(visit_counts)
 print("\nGrand total:", visit_counts.loc["All", "All"])
 ```
 
@@ -407,7 +398,7 @@ print("\nGrand total:", visit_counts.loc["All", "All"])
 # values= plus aggfunc= turns crosstab into a pivot table
 mean_wait = pd.crosstab(visits["department"], visits["clinic"],
                         values=visits["wait_min"], aggfunc="mean")
-print(mean_wait.round(1))
+display(mean_wait.round(1))
 print("\nSame numbers as the pivot table?", mean_wait.round(6).equals(wait_pivot.round(6)))
 ```
 
@@ -421,7 +412,7 @@ visits["age_band"] = pd.cut(
     visits["age"], bins=[-1, 17, 39, 64, 120], labels=["0-17", "18-39", "40-64", "65+"],
 )
 band_counts = pd.crosstab([visits["department"], visits["age_band"]], visits["clinic"])
-print(band_counts)
+display(band_counts)
 print("\nRows in the table:", len(band_counts))
 ```
 

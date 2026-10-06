@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/01_setup.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/02_wrangling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/03_model_prep.ipynb) · [Demo 4](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/04_modeling.ipynb) · [Optional geo bonus](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/05_geo_bonus.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
+cd ~/11-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 ![xkcd 3172: Fifteen Years. Every row of a health record is part of someone's story, which is why a result has to be one you can defend.](media/fifteen_years_2x.png)
 
 A hospital asking _how many patients will arrive at each emergency department (ED) in the next hour?_ needs tools from nearly every lecture in this course; the hard part is keeping the question, the table, and the evidence lined up.
@@ -273,3 +285,5 @@ Coding skill fades without use, so keep a small habit going after the final:
 ![xkcd 1513: Code Quality. Working code is the start; code another person can read, and a style guide to get there, is the goal.](media/xkcd_1513.png)
 
 # LIVE DEMO!
+
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/11/demo/01_setup.ipynb)

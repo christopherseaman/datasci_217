@@ -22,10 +22,7 @@ An ICU patient's bedside monitor records heart rate and temperature every hour f
 
 ## How to run
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
-
-- **In Colab:** open Demo 2 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **Locally in VS Code:** use the `~/09-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo2_indexing_resampling.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`. **In a new terminal**, `cd ~/09-demo` and then `source .venv/bin/activate` bring the environment back.
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
 
 
 ## Choose Your Route
@@ -42,14 +39,27 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
+- **In Colab:** run the install cell below first.
+- **Locally:** run these commands in a terminal, then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
+cd ~/09-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+If `~/09-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+# Setup: install the course's pandas version
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note to restart the kernel; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import matplotlib.pyplot as plt
@@ -83,7 +93,7 @@ unplugged = pd.date_range('2024-01-05 08:00', periods=10, freq='h')
 monitor = monitor[~monitor.index.isin(unplugged)]
 
 print(monitor.shape)
-print(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
+display(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
 ```
 
 **Expect:** `(662, 2)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
@@ -98,7 +108,7 @@ A daily mean alone hides the disconnection. Adding `count` shows how many readin
 ```python
 daily = monitor['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count'])
 print(daily.shape)
-print(daily.loc['2024-01-04':'2024-01-06'].round(1))
+display(daily.loc['2024-01-04':'2024-01-06'].round(1))
 print('Days with fewer than 24 readings:', (daily['count'] < 24).sum())
 ```
 
@@ -112,7 +122,7 @@ daily_named = monitor.resample('D').agg(
     max_temp=('temperature', 'max'),
     n_readings=('heart_rate', 'count'),
 )
-print(daily_named.loc['2024-01-13':'2024-01-19'].round(1))
+display(daily_named.loc['2024-01-13':'2024-01-19'].round(1))
 ```
 
 **Expect:** the fever days, January 15 to 17, show `mean_hr` near 93 (`93.2`, `93.6`, `92.7`) and `max_temp` above 101 °F (`101.2`, `101.4`, `101.5`); the days around them sit near 78 bpm and 98.8 °F.
@@ -121,7 +131,7 @@ A dictionary asks for different summaries of different columns. Weeks end on Sun
 
 ```python
 weekly = monitor.resample('W').agg({'heart_rate': ['mean', 'max'], 'temperature': ['mean', 'max']})
-print(weekly.round(1))
+display(weekly.round(1))
 ```
 
 **Expect:** four rows labeled `2024-01-07`, `01-14`, `01-21`, and `01-28`. Only the week ending January 21 stands out: mean heart rate `84.4`, maximum temperature `101.5`.
@@ -141,9 +151,9 @@ hourly = pd.DataFrame({
     'ffill_2': charted_temp.resample('h').ffill(limit=2),
     'interpolate': charted_temp.resample('h').interpolate(),
 })
-print(hourly.head(9))
+display(hourly.head(9))
 print(hourly.shape)
-print(hourly.isna().sum())
+display(hourly.isna().sum())
 ```
 
 **Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `99.2` at 02:00. The filled values are estimates, not measurements.
@@ -162,7 +172,7 @@ charted = pd.DataFrame({
     ]),
     'heart_rate': [88, 92, np.nan, 104, 110, 71, 69, 74, 72],
 })
-print(charted)
+display(charted)
 ```
 
 **Expect:** nine rows, five for P01 and four for P02; row 2 (P01 at 12:00) has `NaN` heart rate.
@@ -170,7 +180,7 @@ print(charted)
 Resampling the whole table averages the two patients together.
 
 ```python
-print(charted.set_index('recorded_at')['heart_rate'].resample('2h').mean().round(1))
+display(charted.set_index('recorded_at')['heart_rate'].resample('2h').mean().round(1))
 ```
 
 **Expect:** `83.7` for the 08:00 bin, a mix of P01's 88 and 92 with P02's 71 that describes neither patient.
@@ -188,7 +198,7 @@ per_patient = (
          n_rows=('source_row', 'count'))
     .reset_index()
 )
-print(per_patient)
+display(per_patient)
 ```
 
 **Expect:** eight rows, four two-hour bins per patient. P01's 08:00 bin has `mean_hr` `90.0` from 2 readings; P02's is `71.0` from 1. P01's 12:00 bin shows `n_hr` `1` but `n_rows` `2`: two rows were charted, and only one had a heart rate. Empty bins (P01 at 10:00, P02 at 12:00) show `NaN` and counts of `0`.
@@ -210,8 +220,8 @@ grid = (
 )
 grid['grid_created'] = grid['source_row'].isna()
 grid['value_missing'] = grid['source_row'].notna() & grid['heart_rate'].isna()
-print(grid.drop(columns='source_row'))
-print(grid[['grid_created', 'value_missing']].sum())
+display(grid.drop(columns='source_row'))
+display(grid[['grid_created', 'value_missing']].sum())
 ```
 
 **Expect:** `All on the hour: True`, then 13 rows: P01 from 08:00 to 14:00 (7 hours) and P02 from 09:00 to 14:00 (6 hours). Four rows are `grid_created` (P01 at 10:00 and 11:00, P02 at 12:00 and 13:00), and one is `value_missing` (P01 at 12:00). All five show `NaN` heart rate; only the flags tell the empty hours from the charted row with no value.
@@ -226,8 +236,8 @@ runs = (grid[~grid['source_observed']]
         .size()
         .rename('gap_hours')
         .reset_index())
-print(runs)
-print(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
+display(runs)
+display(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
 ```
 
 **Expect:** two runs, one per patient, each 2 hours long: P01's 10:00 and 11:00 (`run_id` `2`) and P02's 12:00 and 13:00 (`run_id` `3`). The summary shows `count` `1` and `max` `2` for both patients. A patient with no gaps would have no rows in `runs`, so report 0 runs for them.
@@ -244,7 +254,7 @@ patient_windows = pd.DataFrame({
     'last_2_readings': patient.rolling(2).mean(),
     'last_2_hours': patient.rolling('2h').mean(),
 })
-print(patient_windows)
+display(patient_windows)
 ```
 
 **Expect:** four rows. At 14:00, `last_2_readings` is `73.0`, averaging 74 and 72 bpm; `last_2_hours` is `72.0`, because only the 14:00 reading falls inside that window. A count window follows rows; a time window follows elapsed time.
@@ -263,8 +273,8 @@ smooth = pd.DataFrame({
     'centered_7': daily_hr.rolling(7, center=True).mean(),
     'ewm_7': daily_hr.ewm(span=7).mean(),
 })
-print(smooth.head(4).round(1))
-print(smooth.loc['2024-01-11':'2024-01-21'].round(1))
+display(smooth.head(4).round(1))
+display(smooth.loc['2024-01-11':'2024-01-21'].round(1))
 ```
 
 **Expect:** in the first rows, `rolling_7` is `NaN` until January 7, `early_7` starts on January 3 (`78.1`), `centered_7` starts on January 4, and `ewm_7` has a value from the first day. Around the fever:
@@ -285,7 +295,7 @@ windows = pd.DataFrame({
     'last_3_readings': hr.rolling(3).mean(),
     'last_3_hours': hr.rolling('3h').mean(),
 })
-print(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
+display(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
 ```
 
 **Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
@@ -342,8 +352,8 @@ Partial dates select whole months, and a date slice keeps both ends. `resample()
 print(home_weights.loc['2024-02'].shape)
 print(home_weights.loc['2024-03-08':'2024-03-16', 'weight_kg'].tolist())
 
-print(home_weights['weight_kg'].resample('W').mean().head(3).round(2))
-print(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
+display(home_weights['weight_kg'].resample('W').mean().head(3).round(2))
+display(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
 ```
 
 **Expect:** `(29, 1)` for February, then nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
@@ -362,7 +372,7 @@ icu = pd.DataFrame({
 }, index=hours)
 icu.loc[icu.index.hour < 6, 'heart_rate'] -= 12
 print(icu.shape)
-print(icu.head(3))
+display(icu.head(3))
 ```
 
 **Expect:** `(168, 2)`, seven days of hourly heart rate and SpO2 readings.
@@ -370,8 +380,8 @@ print(icu.head(3))
 Resampling the hourly monitor to days gives one row per day. Select the numeric columns you want before resampling a DataFrame; a text column would raise `TypeError`.
 
 ```python
-print(icu[['heart_rate', 'spo2']].resample('D').mean().round(1))
-print(icu['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count']).round(1).head(3))
+display(icu[['heart_rate', 'spo2']].resample('D').mean().round(1))
+display(icu['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count']).round(1).head(3))
 ```
 
 **Expect:** seven rows labeled `2024-03-04` through `2024-03-10`, with daily mean heart rate between `79.8` and `81.9` and SpO2 near 95.5. Every `count` is `24`: the monitor never missed an hour.
@@ -384,8 +394,8 @@ resp_rate = pd.Series(
     index=pd.to_datetime(['2024-03-05 06:00', '2024-03-05 07:59', '2024-03-05 08:00',
                           '2024-03-05 09:30', '2024-03-05 10:00']),
 )
-print(resp_rate.resample('2h').agg(['mean', 'count']))
-print(resp_rate.resample('2h', closed='right', label='right').agg(['mean', 'count']))
+display(resp_rate.resample('2h').agg(['mean', 'count']))
+display(resp_rate.resample('2h', closed='right', label='right').agg(['mean', 'count']))
 ```
 
 **Expect:** with the default (left-closed, left-labeled) bins, the 08:00 reading opens the `08:00` bin: counts `2`, `2`, `1` for `06:00`, `08:00`, `10:00`. With `closed='right', label='right'`, each bin ends at its label, so 08:00 joins 07:59 in the bin labeled `08:00`: counts `1`, `2`, `2`. Same readings, different bins: state the rule whenever a report depends on it.

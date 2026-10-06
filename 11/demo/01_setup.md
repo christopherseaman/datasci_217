@@ -16,33 +16,32 @@ jupyter:
 
 This demo starts Lecture 11's worked example: predict the **next-hour pickup count** for each of 12 New York taxi zones, the way a hospital would predict next-hour arrivals at each emergency department. Before any analysis, you get the course's frozen data release, check every file against the hashes its manifest records, audit a sample of trip events, and see why the sample and the hourly panel the later demos use cannot be compared row for row. It uses Lecture 11 up to the demo break, plus Parquet (Lecture 04), file hashes and cleaning rules (Lecture 05), JSON (Lecture 07), and times written as text (Lecture 09). Assignment 11's Q1 and Q2 follow the same pattern with sensor data.
 
-**How to run in Colab:** open this notebook from the lecture page's Colab link and run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+## How to run
 
-**How to run locally:** in VS Code's **Terminal → New Terminal** (on Windows, the **WSL: Ubuntu** window from Lecture 01), download the demo folder and build its environment from the supplied `pyproject.toml` and `uv.lock`, as in Lecture 03:
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and pyarrow 25.0.0.
+
+- **In Colab:** run the install cell below first.
+- **Locally:** run these commands in a terminal.
 
 <!-- #region -->
-```bash
+```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
 cd ~/11-demo
 uv venv --seed
 source .venv/bin/activate
 uv sync
 ```
-
-The first command prints `Made ~/11-demo with the Lecture 11 demo notebooks, pyproject.toml, and uv.lock.`, and `uv sync` lists the packages it installs, including `+ pandas==3.0.5`. Then use **File → Open Folder…** to open `11-demo` in your home folder, open `01_setup.ipynb`, click **Select Kernel** at the top right, and choose the Python inside `.venv`. The script never overwrites earlier work: if `~/11-demo` already exists, `mkdir` stops it with `File exists`; rename the old folder with `mv ~/11-demo ~/11-demo-old` to start over. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep it, and the harmless `error: Failed to create virtual environment` that follows changes nothing. In Git Bash, activate with `source .venv/Scripts/activate` instead.
 <!-- #endregion -->
 
-Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and pyarrow 25.0.0.
+Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version; Colab ships an older pandas. A `.venv` made with `uv venv --seed` includes pip, so the same `%pip` cell works locally, where `uv sync` has already installed it.
-
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally the cell changes nothing. In Colab, pip may also print a dependency conflict because some preinstalled packages expect an older pandas; that is expected, and this demo does not use them. If Colab asks you to restart the session, choose **Runtime → Restart session**, then continue with the next cell.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import hashlib

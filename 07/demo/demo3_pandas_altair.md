@@ -30,22 +30,28 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and Altair 5.5.0.
 
-**In Colab:** open this notebook from the lecture page's Colab link. A new runtime needs only the setup cell below. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/07-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
 
-**Locally in VS Code:** open the `~/07-demo` folder that Demo 1's setup made (**File → Open Folder…**), open `demo3_pandas_altair.ipynb`, and choose the Python in `.venv` with **Select Kernel**. Its environment is already built. In a new terminal, `cd ~/07-demo` and `source .venv/bin/activate` bring the folder and environment back. If the folder does not exist yet, run the five setup lines under "How to run" in Demo 1 first.
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
+cd ~/07-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-Run this cell first. It installs pandas 3.0.5 and Altair 5.5.0, the versions used below, into the notebook's environment.
-
-- pip may print a warning that other Colab packages expect a different pandas. That is expected; this demo does not use those packages.
-- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- Locally, `uv sync` already installed both versions, so the cell only prints `Note: you may need to restart the kernel to use updated packages.`; nothing needs doing.
-
 ```python
-# Setup: install the course versions (Colab and local)
-%pip install -q pandas==3.0.5 altair==5.5.0
+%pip install -q --no-warn-conflicts pandas==3.0.5 altair==5.5.0
 ```
+
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import json
@@ -73,7 +79,7 @@ uptake = pd.DataFrame({
     '2024-25': [56, 57, 61],
     '2025-26': [63, 60, 62],
 })
-print(uptake)
+display(uptake)
 ```
 
 Expect three rows. North rose from 56% to 63%, South from 57% to 60%, and East from 61% to 62%.

@@ -25,14 +25,14 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 | Route | Work and visible checkpoint |
 | --- | --- |
-| [Core walkthrough](#core-walkthrough) | Predict, run, repair stale state, and restart: `total_doses = 36`. |
+| [Core walkthrough](#core-walkthrough) | Show a clinic table, predict, run, repair stale state, and restart: `total_doses = 25`. |
 | [Independent practice](#independent-practice) | Move a dependent cell; inspect magic commands, runtime files, and saved outputs. |
 
 ## Setup
 
-**In Colab**, open this notebook from the lecture page's **Live notebooks in Colab** link. A new runtime needs only the install cell below. Colab does not save your edits back to the course repository; to keep them, use **File → Save a copy in Drive**.
+**In Colab**, run the install cell below. Colab does not save edits back to the course repository; **File → Save a copy in Drive** keeps them.
 
-**On your computer**, run these lines once in VS Code's terminal (**Terminal → New Terminal**; on Windows, the **WSL: Ubuntu** window from Lecture 01). The first line downloads the three demo notebooks, their data, and the project's environment files (`pyproject.toml`, `uv.lock`, and `.python-version`) into a new folder, `~/04-demo`; the rest create, activate, and fill its environment, as in Lecture 03:
+**On your computer**, run these lines in VS Code's terminal, then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
@@ -42,39 +42,24 @@ source .venv/bin/activate
 uv sync
 ```
 
-Among the lines they print, these show each step worked; `3.13.x` is whichever 3.13 release you have:
-
-```text
-Made ~/04-demo with the Lecture 04 demo notebooks, their environment files, and data/clinic_visits.csv.
-Using CPython 3.13.x
- + ipykernel==6.29.5
- + pandas==3.0.5
-```
-
-`pyproject.toml` lists **ipykernel**, the package a notebook kernel needs, so `uv sync` installed it with pandas. In VS Code, choose **File → Open Folder…**, open `04-demo` in your home folder, open `demo1_jupyter_basics.ipynb`, click **Select Kernel** at the top right, and choose the Python in `.venv` (VS Code lists it under **Python Environments**). In Git Bash, activate with `source .venv/Scripts/activate` instead.
-
-The setup script never overwrites earlier work: run it a second time and `mkdir` reports that `~/04-demo` already exists (`File exists`), and nothing else happens. To start over, rename the old folder first with `mv ~/04-demo ~/04-demo-old`, then run the `curl` line again. To come back to the demos later, open the `04-demo` folder in VS Code and choose the `.venv` kernel; the environment stays in the folder.
-
-## Install the course's pandas
-
-Every demo notebook in this course starts with this cell. It installs pandas 3.0.5, the course version, into the kernel's environment. This demo does not use pandas yet; Demos 2 and 3 do.
-
-- In Colab, which ships an older pandas, pip may print `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed...` and a line such as `google-colab ... requires pandas==..., but you have pandas 3.0.5 which is incompatible.` That is expected: the install still succeeded, and the demos do not use those Colab packages.
-- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- On your computer, `uv sync` already installed pandas 3.0.5, so the cell changes nothing. It prints `Note: you may need to restart the kernel to use updated packages.`, perhaps with a notice that a newer pip exists; neither needs any action.
-
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
+
+Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import sys
 
+import pandas as pd
+
 print("Python:", sys.version.split()[0])
+print("pandas:", pd.__version__)
+assert pd.__version__ == "3.0.5", "Restart the session (Runtime → Restart session), then run all cells from the top"
 ```
 
-Expect a Python version: Colab manages its runtime's version, while `~/04-demo`'s `.venv` uses the course's Python 3.13. A version other than 3.13 on your computer means the kernel is not that `.venv`: click the kernel name at the top right and choose it.
+Expect `pandas: 3.0.5`. On your computer, a Python other than 3.13 means the kernel is not `~/04-demo`'s `.venv`: click the kernel name at the top right and choose it.
 
 ## Core walkthrough
 
@@ -82,62 +67,86 @@ Expect a Python version: Colab manages its runtime's version, while `~/04-demo`'
 
 Markdown cells explain, predict, and interpret. Code cells send Python to the kernel. Running a code cell can change state and create stored output; merely editing its visible source does neither.
 
-Before you change anything, add a Markdown cell (**+ Text** in Colab, **+ Markdown** in VS Code) and write what you expect the next code cells to print. Predicting first is what turns a surprise into information.
+Before you change anything, add a Markdown cell (**+ Text** in Colab, **+ Markdown** in VS Code) and write what you expect the next code cells to show. Predicting first is what turns a surprise into information.
 
 ### Producer and dependent cells
 
-The producer cell defines names. The dependent cell requires those names and computes another value. Run top to bottom, they always give the same answer; run out of order, or in a fresh kernel, they may not.
+The producer cell defines names: here a dictionary of lists (Lecture 02) holding ten synthetic clinic visits, one list per column. `pd.DataFrame()` turns it into a table so `display()` can draw it; here the table is just something to look at. The dependent cell needs those names and computes another value. Run top to bottom, they always give the same answer; run out of order, or in a fresh kernel, they may not.
 
 ```python
-days = 12
-doses_per_day = 3
+clinic_data = {
+    "patient_id": ["P001", "P002", "P003", "P004", "P005", "P006", "P007", "P008", "P009", "P010"],
+    "clinic": ["North", "North", "South", "East", "South", "North", "East", "South", "North", "East"],
+    "visit_date": ["2026-09-01", "2026-09-01", "2026-09-02", "2026-09-02", "2026-09-03",
+                   "2026-09-03", "2026-09-04", "2026-09-04", "2026-09-05", "2026-09-05"],
+    "age": [34, 58, 71, 45, 29, 66, 52, 80, 39, 62],
+    "temp_c": [36.8, 37.2, 38.4, 36.9, 37.6, 36.6, 38.1, 37.0, 36.7, 37.9],
+    "systolic_bp": [118, 132, 145, 124, 112, 138, 128, 150, 116, 141],
+    "vaccine_doses": [2, 3, 4, 2, 1, 3, 2, 4, 1, 3],
+}
 
-print("days:", days)
-print("doses per day:", doses_per_day)
+visits = pd.DataFrame(clinic_data)  # pandas & dataframes are coming up next in lecture
+display(visits)
 ```
 
+Expect a formatted table of ten rows, `P001` to `P010`, with seven columns from `patient_id` to `vaccine_doses`.
+
 ```python
-total_doses = days * doses_per_day
+doses = clinic_data["vaccine_doses"]
+total_doses = sum(doses)
+
+print("visits:", len(doses))
 print("total doses:", total_doses)
 ```
 
 ```python
-print("doses per day in kernel:", doses_per_day)
+print("P005 doses in kernel:", clinic_data["vaccine_doses"][4])
 print("total doses in kernel:", total_doses)
 ```
 
-Expect `total doses: 36` from the dependent cell. The third cell, the **check cell**, reports what the kernel holds right now: expect `total doses in kernel: 36`.
+Expect `visits: 10` and `total doses: 25` from the dependent cell. The third cell, the **check cell**, reports what the kernel holds right now: expect `P005 doses in kernel: 1` and `total doses in kernel: 25`.
+
+### Show a result three ways
+
+`display()` drew the table above; `print()` shows the same table as plain text, and a cell's bare last line is shown without either.
+
+```python
+print(visits)
+len(visits)
+```
+
+Expect the table in plain monospaced text, then `10` below it, shown because `len(visits)` is the cell's last line.
 
 ### Repair the hidden dependency
 
-The cell above printed `36` because the producer cell ran first. Do this by hand now, in this notebook, to see the two failures for yourself:
+The check cell printed `25` because the producer cell ran first. Do this by hand now, in this notebook, to see the two failures for yourself:
 
-1. Change `doses_per_day = 3` to `doses_per_day = 2` in the producer cell and run **only** that cell. Then run the check cell again. It prints `total doses in kernel: 36`, a stale value: `total_doses` still holds the old product, because nothing recomputed it.
-2. Run the dependent cell (`total_doses = days * doses_per_day`) and the check cell again. Now it prints `24`. The notebook's visible source never said `36` or `24` was correct; execution order decided.
-3. Change `doses_per_day` back to `3`, then restart the kernel (Colab: **Runtime → Restart session**; VS Code: **Restart**) and run the check cell on its own. It raises `NameError: name 'doses_per_day' is not defined`, because a fresh kernel holds nothing at all.
+1. In the producer cell, change P005's dose count, the fifth `vaccine_doses` value, from `1` to `2`, and run **only** that cell. The table now shows `2`. Run the check cell again: it prints `P005 doses in kernel: 2` but `total doses in kernel: 25`, a stale value: `total_doses` still holds the old sum, because nothing recomputed it.
+2. Run the dependent cell and the check cell again. Now the total is `26`. The notebook's visible source never said `25` or `26` was correct; execution order decided.
+3. Change the value back to `1`, then restart the kernel (Colab: **Runtime → Restart session**; VS Code: **Restart**) and run the check cell on its own. It raises `NameError: name 'clinic_data' is not defined`, because a fresh kernel holds nothing at all.
 
-**Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. For the core route, restart (Colab: **Runtime → Restart session**; VS Code: **Restart**) and run Setup and the core cells in order: the check cell must print `36` again. Use **Run All** when completing both routes. Stored output alone is never evidence that this happened.
+**Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. For the core route, restart and run Setup and the core cells in order: the check cell must print `25` again. Use **Run All** when completing both routes. Stored output alone is never evidence that this happened.
 
 ### Fresh-run check
 
 Restart, then run Setup and the core cells in order once more. This cell checks the values a fresh run should produce.
 
 ```python
-assert days == 12
-assert doses_per_day == 3
-assert total_doses == 36
+assert len(clinic_data["patient_id"]) == 10
+assert clinic_data["vaccine_doses"][4] == 1
+assert total_doses == 25
 
-print("Demo 1 fresh-run check passed: total_doses = 36")
+print("Demo 1 fresh-run check passed: total_doses = 25")
 ```
 
-Expect `Demo 1 fresh-run check passed: total_doses = 36`. An `AssertionError` means a value was changed without rerunning the cells after it; restart and run all again.
+Expect `Demo 1 fresh-run check passed: total_doses = 25`. An `AssertionError` means a value was changed without rerunning the cells after it; restart and run all again.
 ## Independent practice
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
 
 ### Move a dependent cell
 
-Now break the order on purpose: move the dependent cell (`total_doses = days * doses_per_day`) above the producer cell. In VS Code, drag it by the bar at its left, or click into it, press `Esc`, then `Alt+Up` (`Option+Up` on Mac); in Colab, click into it and press `Ctrl+M K`. Restart and run all: the run stops at the moved cell with `NameError: name 'days' is not defined`. Move it back below the producer (`Alt+Down`, or `Ctrl+M J` in Colab), then restart and run all once more; the check cell prints `36`.
+Now break the order on purpose: move the dependent cell (`total_doses = sum(doses)`) above the producer cell. In VS Code, drag it by the bar at its left, or click into it, press `Esc`, then `Alt+Up` (`Option+Up` on Mac); in Colab, click into it and press `Ctrl+M K`. Restart and run all: the run stops at the moved cell with `NameError: name 'clinic_data' is not defined`. Move it back below the producer (`Alt+Down`, or `Ctrl+M J` in Colab), then restart and run all once more; the check cell prints `25`.
 
 ### Magic commands
 

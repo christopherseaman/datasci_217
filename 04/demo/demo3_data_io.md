@@ -17,9 +17,7 @@ jupyter:
 
 # Demo 3: From a clinic CSV to a saved result
 
-A clinic exported a small file of visits, and the nurse lead wants every visit with a temperature of 37.5 °C or higher, hottest first, with the temperature in Fahrenheit and a fever flag. This demo reads the file, takes a first look, derives the new columns, sorts the rows so the order never changes between runs, saves the result, and reads it back. Each step says what to expect.
-
-**Coming back to it:** in Colab, open this notebook from the lecture page's **Live notebooks in Colab** link; a new runtime needs only the setup cells below, which also download the data file. On your computer, open the `04-demo` folder that Demo 1's setup made (**File → Open Folder…** in VS Code), open this notebook, and choose the `.venv` kernel; if that folder does not exist yet, run Demo 1's five setup lines in a terminal first. Colab does not save your edits back to the course repository; to keep them, use **File → Save a copy in Drive**. The patient IDs and values are synthetic.
+A clinic exported a small file of visits, and the nurse lead wants every visit with a temperature of 37.5 °C or higher, hottest first, with the temperature in Fahrenheit and a fever flag. This demo reads the file, takes a first look, derives the new columns, sorts the rows so the order never changes between runs, saves the result, and reads it back. Each step says what to expect. The patient IDs and values are synthetic.
 
 Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
 
@@ -30,16 +28,24 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 ## Setup
 
-Run this cell first. It installs pandas 3.0.5 and the Parquet backend pyarrow 25.0.0 into the kernel's environment.
+**In Colab**, run the install cell below; the cells after it also download the data file.
 
-- In Colab, pip may print `ERROR: pip's dependency resolver does not currently take into account all the packages that are installed...` and a line such as `google-colab ... requires pandas==..., but you have pandas 3.0.5 which is incompatible.` That is expected: the install still succeeded, this demo does not use those Colab packages, and the version check in the next cell confirms pandas 3.0.5.
-- If Colab asks you to restart after the install, choose **Runtime → Restart session**, then run the notebook from the top.
-- On your computer, `uv sync` already installed pandas 3.0.5 and pyarrow 25.0.0, so the cell changes nothing. It prints `Note: you may need to restart the kernel to use updated packages.`, perhaps with a notice that a newer pip exists; neither needs any action.
+**On your computer**, a `04-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
+cd ~/04-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
 
 ```python
 # Setup: install pandas and the Parquet backend (Colab and local)
-%pip install -q pandas==3.0.5 pyarrow==25.0.0
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
+
+Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import sys
@@ -114,8 +120,8 @@ Before any analysis, ask what is missing, which categories the table holds, and 
 ```python
 visits.info()
 
-print(visits.isna().sum())
-print(visits["clinic"].value_counts(dropna=False))
+display(visits.isna().sum())
+display(visits["clinic"].value_counts(dropna=False))
 print("distinct clinics:", visits["clinic"].nunique())
 print("repeated rows:", visits.duplicated().sum())
 visits.loc[visits.duplicated()]
@@ -128,7 +134,7 @@ Expect `11 non-null` for `clinic`, `age`, `temp_c`, and `systolic` in `info()`, 
 `describe()` summarizes every numeric column; one-column summaries answer a single question. Missing values are skipped.
 
 ```python
-print(visits.describe())
+display(visits.describe())
 
 print("mean temp_c:", visits["temp_c"].mean())
 print(f"mean temp_c, rounded: {visits['temp_c'].mean():.2f}")
@@ -179,7 +185,7 @@ warm_visits["flag"] = "elevated"
 has_fever = warm_visits["temp_c"] >= 38.0
 warm_visits.loc[has_fever, "flag"] = "fever"
 
-print(warm_visits["flag"].value_counts())
+display(warm_visits["flag"].value_counts())
 warm_visits
 ```
 
@@ -193,10 +199,10 @@ Expect `fever 4` and `elevated 2`: `P007` (37.8) and `P011` (37.6) are warm but 
 by_systolic = warm_visits.sort_values("systolic")
 
 print("temp_c only, rows as selected:")
-print(warm_visits.sort_values("temp_c", ascending=False)[["patient_id", "temp_c"]])
+display(warm_visits.sort_values("temp_c", ascending=False)[["patient_id", "temp_c"]])
 
 print("temp_c only, rows arranged by systolic first:")
-print(by_systolic.sort_values("temp_c", ascending=False)[["patient_id", "temp_c"]])
+display(by_systolic.sort_values("temp_c", ascending=False)[["patient_id", "temp_c"]])
 ```
 
 Expect `P004` before `P005` in the first result and `P005` before `P004` in the second: same rows, same key, different order. A unique second key, `patient_id`, settles every tie, so both starting orders give one answer:
@@ -205,7 +211,7 @@ Expect `P004` before `P005` in the first result and `P005` before `P004` in the 
 ordered = warm_visits.sort_values(by=["temp_c", "patient_id"], ascending=[False, True])
 ordered_other = by_systolic.sort_values(by=["temp_c", "patient_id"], ascending=[False, True])
 
-print(ordered[["patient_id", "temp_c"]])
+display(ordered[["patient_id", "temp_c"]])
 print("same order both ways:", list(ordered["patient_id"]) == list(ordered_other["patient_id"]))
 ```
 
@@ -267,7 +273,7 @@ mistake["flag"] = "elevated"
 # Intentional mistake: two bracket steps change a temporary copy
 mistake[mistake["temp_c"] >= 38.0]["flag"] = "fever"
 
-print(mistake["flag"].value_counts())
+display(mistake["flag"].value_counts())
 ```
 
 Expect a `ChainedAssignmentError` warning and `elevated 6`: no row became `fever`. The fix is one `.loc` step, with the mask and the column together:
@@ -276,7 +282,7 @@ Expect a `ChainedAssignmentError` warning and `elevated 6`: no row became `fever
 has_fever = warm_visits["temp_c"] >= 38.0
 warm_visits.loc[has_fever, "flag"] = "fever"
 
-print(warm_visits["flag"].value_counts())
+display(warm_visits["flag"].value_counts())
 warm_visits
 ```
 
@@ -306,7 +312,7 @@ A patient ID is a meaningful label. `index_col="patient_id"` reads that column a
 
 ```python
 by_patient = pd.read_csv(result_path, index_col="patient_id")
-print(by_patient.loc["P009"])
+display(by_patient.loc["P009"])
 
 by_patient_path = OUTPUT_DIR / "warm_visits_by_patient.csv"
 by_patient.to_csv(by_patient_path)

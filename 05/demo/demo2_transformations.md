@@ -31,18 +31,28 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
 
-- **In Colab:** open Demo 2 from the lecture page's Colab link and run the Setup cell below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **Locally in VS Code:** use the `~/05-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `05-demo` in your home folder, open `demo2_transformations.ipynb`, click **Select Kernel**, and choose the Python in `05-demo/.venv`. **In a new terminal**, `cd ~/05-demo` and then `source .venv/bin/activate` bring the environment back.
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/05-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
+cd ~/05-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
-
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 from pathlib import Path
@@ -79,7 +89,7 @@ with raw_path.open('w', encoding='utf-8') as file:
     file.write(export_text)
 
 intake = pd.read_csv(raw_path)
-print(intake)
+display(intake)
 print(intake.columns.tolist())
 ```
 
@@ -114,12 +124,12 @@ print(intake.columns.tolist())
 ### 3. Normalize the text columns
 
 ```python
-print(intake['site'].value_counts())
+display(intake['site'].value_counts())
 
 intake['site'] = intake['site'].str.strip().str.lower()
 intake['smoking_status'] = intake['smoking_status'].str.strip().str.lower()
-print(intake['site'].value_counts())
-print(intake['smoking_status'].value_counts())
+display(intake['site'].value_counts())
+display(intake['smoking_status'].value_counts())
 ```
 
 **Expect:** before, 9 different spellings, each counted once; two look like `north`, but one has a trailing space. After, `north 4`, `south 3`, `west 2`, and smoking status `never 4`, `former 3`, `current 2`.
@@ -130,7 +140,7 @@ print(intake['smoking_status'].value_counts())
 
 ```python
 intake['age'] = pd.to_numeric(intake['age'], errors='coerce').astype('Int64')
-print(intake[['patient_id', 'age']])
+display(intake[['patient_id', 'age']])
 print('Ages missing after conversion:', intake['age'].isna().sum())
 ```
 
@@ -156,7 +166,7 @@ def bp_stage(row):
 
 
 intake['bp_stage'] = intake.apply(bp_stage, axis=1)
-print(intake[['patient_id', 'smoking_status', 'smoking_code', 'pain', 'pain_score', 'sbp', 'dbp', 'bp_stage']])
+display(intake[['patient_id', 'smoking_status', 'smoking_code', 'pain', 'pain_score', 'sbp', 'dbp', 'bp_stage']])
 ```
 
 **Expect:** `smoking_code` 0, 2, 1, 0, 2, 1, 0, 0, 1 down the rows; `pain_score` matches the number before each slash; P104 (126/92) and P108 (130/90) reach `stage 2` on the diastolic pressure.
@@ -164,7 +174,7 @@ print(intake[['patient_id', 'smoking_status', 'smoking_code', 'pain', 'pain_scor
 A label the dictionary does not know becomes missing, which is how `map` tells you a spelling slipped through:
 
 ```python
-print(pd.Series(['never', 'Former', 'current']).map({'never': 0, 'former': 1, 'current': 2}))
+display(pd.Series(['never', 'Former', 'current']).map({'never': 0, 'former': 1, 'current': 2}))
 ```
 
 **Expect:** `0.0`, `NaN`, `2.0`. The unnormalized `'Former'` has no code.
@@ -175,7 +185,7 @@ Age bands with edges chosen to match a clinical table (`cut`). Independent pract
 
 ```python
 intake['age_band'] = pd.cut(intake['age'], bins=[17, 39, 64, 120], labels=['18-39', '40-64', '65+'])
-print(intake[['patient_id', 'age', 'age_band']])
+display(intake[['patient_id', 'age', 'age_band']])
 ```
 
 **Expect:** P101 and P107 are `18-39`, P105 is `65+`, and the two missing ages stay `NaN` instead of landing in a band.
@@ -199,7 +209,7 @@ except ValueError as error:
 
 ```python
 intake['sbp_band'] = pd.qcut(intake['sbp'], q=4, duplicates='drop')
-print(intake['sbp_band'].value_counts())
+display(intake['sbp_band'].value_counts())
 ```
 
 **Expect:** `(126.0, 130.0]` 4, `(117.999, 126.0]` 3, `(130.0, 152.0]` 2. Three bins, not four; report them that way.
@@ -221,13 +231,13 @@ print(intake['site'].cat.codes.tolist())
 
 ```python
 smoking_dummies = pd.get_dummies(intake['smoking_status'], prefix='smoking', drop_first=True, dtype='int64')
-print(pd.concat([intake[['patient_id', 'smoking_status']], smoking_dummies], axis=1))
+display(pd.concat([intake[['patient_id', 'smoking_status']], smoking_dummies], axis=1))
 ```
 
 **Expect:** two columns, `smoking_former` and `smoking_never`. `drop_first=True` dropped the alphabetically first label, `current`, so current smokers (P102 and P105) are 0 in both columns: `current` is the reference.
 
 ```python
-print(intake.dtypes)
+display(intake.dtypes)
 ```
 
 **Expect:** `age` is `Int64`, `smoking_code` and `pain_score` are `int64`, `age_band`, `sbp_band`, and `site` are `category`, and `bp_stage` is `str`.
@@ -241,8 +251,8 @@ A second export uses full clinic names with repeated spaces. Keep its original l
 clinic_labels = pd.DataFrame({'raw_label': [' North  Clinic ', 'South   Clinic', ' NORTH CLINIC ']})
 clinic_labels['normalized'] = (clinic_labels['raw_label'].str.strip().str.lower()
                                .str.replace(r' +', '_', regex=True))
-print(clinic_labels)
-print(clinic_labels['normalized'].value_counts())
+display(clinic_labels)
+display(clinic_labels['normalized'].value_counts())
 assert clinic_labels['normalized'].tolist() == ['north_clinic', 'south_clinic', 'north_clinic']
 ```
 

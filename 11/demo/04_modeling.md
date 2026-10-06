@@ -16,15 +16,32 @@ jupyter:
 
 Compare the weekly baseline, "same hour last week" (`lag_168`), with one transparent scikit-learn pipeline on the validation rows. The lower validation MAE freezes the choice. Only then refit the pipeline on training plus validation rows and evaluate both candidates on June exactly once, then look at where the errors fall. It uses Lecture 11 up to the demo break, plus pipelines, baselines, and metrics (Lecture 10), aggregation (Lecture 08), and saved figures (Lecture 07). Assignment 11's Q7 to Q9 follow the same pattern; Q7 also runs the permutation-importance check from Lecture 10's Demo 2, which this demo leaves out. There is no performance threshold: honest evaluation and clear evidence are the goals.
 
-**How to run:** in Colab, open this notebook from the lecture page's Colab link. Locally, open the `11-demo` folder from Demo 1 in VS Code, open `04_modeling.ipynb`, and select the `.venv` kernel if VS Code does not show it; without that folder, follow Demo 1's "How to run locally" first. This notebook downloads the panel and rebuilds the model table and split itself, so it does not need the earlier demos' output. Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. This notebook downloads the panel and rebuilds the model table and split itself, so it does not need the earlier demos' output. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
+
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/11-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
+cd ~/11-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` If Colab asks you to restart the session, choose **Runtime → Restart session**, then continue with the next cell.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import hashlib

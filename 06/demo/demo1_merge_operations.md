@@ -29,41 +29,26 @@ Choose a route below. The **core walkthrough** is the demonstration path; **inde
 | [Core walkthrough](#core-walkthrough) | Catch registry key duplication, keep current records, and preserve all seven labs: six matched and P006 unmatched. |
 | [Independent practice](#independent-practice) | Compare join retention; audit both sides; use composite keys, expected grids, descriptive suffixes, and a patient-first join. |
 
-## Where to run it
+## Setup
 
-**In Colab:** open this notebook from the lecture page's Colab link, then go on to Setup. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
+**In Colab**, run the install cell below.
 
-**In VS Code:** all three Lecture 06 demos run in one folder, `~/06-demo`, with its own environment. In a terminal (on Windows, the **WSL: Ubuntu** window from Lecture 01), this line downloads the three notebooks and the environment's records, `.python-version`, `pyproject.toml`, and `uv.lock`, with the `curl ... | sh` pattern Lecture 01 used to install uv:
+**On your computer**, run these lines in VS Code's terminal, then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
-```
-
-**Expect:** `Made ~/06-demo with the Lecture 06 demo notebooks and their environment files.`, then `Next: cd ~/06-demo`. The script never overwrites earlier work: if `~/06-demo` already exists, `mkdir` reports `File exists` and nothing else happens. To start over, rename the old folder with `mv ~/06-demo ~/06-demo-old`, then run the line again; if a download fails partway, do the same.
-
-Build the environment from the records, as in Lecture 03's "Recreate from the Records". They list **ipykernel**, the package that lets a notebook run on the environment's Python (Lecture 04), so `uv sync` installs it with pandas:
-
-```shell
 cd ~/06-demo
 uv venv --seed
 source .venv/bin/activate
 uv sync
 ```
 
-**Expect:** `uv venv` prints `Using CPython 3.13.x`, where `x` is whichever 3.13 release you have. After `source`, the prompt starts with `(06-demo)`. `uv sync` lists what it installs, including `+ ipykernel==6.29.5`, `+ numpy==2.3.3`, and `+ pandas==3.0.5`. In Git Bash, activate with `source .venv/Scripts/activate` instead. If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep it. uv then stops with `error: Failed to create virtual environment`, which is harmless, and the other lines work as before.
-
-In VS Code, choose **File → Open Folder…** and pick `06-demo` in your home folder. Open `demo1_merge_operations.ipynb`, click **Select Kernel** at the top right, and choose the Python in `06-demo/.venv`.
-
-## Setup
-
-The first cell installs pandas 3.0.5, the course version, into the notebook's environment. Colab ships an older pandas (2.2); in `~/06-demo`, `uv sync` already installed 3.0.5, so there the cell changes nothing.
-
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import pandas as pd
@@ -95,8 +80,8 @@ labs = pd.DataFrame({
                   '2026-02-05', '2026-04-14', '2026-04-22'],
 })
 
-print(patients)
-print(labs)
+display(patients)
+display(labs)
 print(patients['patient_id'].is_unique, labs['patient_id'].is_unique)
 ```
 
@@ -155,7 +140,7 @@ print(current['patient_id'].is_unique)
 labs_with_clinic = pd.merge(labs, current, on='patient_id', how='left',
                             validate='many_to_one', indicator=True)
 print(len(labs_with_clinic))
-print(labs_with_clinic['_merge'].value_counts())
+display(labs_with_clinic['_merge'].value_counts())
 labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']]
 ```
 
@@ -220,7 +205,7 @@ orphans[['lab_id', 'patient_id', 'test', 'value']]
 ```python
 audit = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
 print(len(audit))
-print(audit['_merge'].value_counts())
+display(audit['_merge'].value_counts())
 ```
 
 **Expect:** 9 rows, with `both` 6, `left_only` 2, and `right_only` 1: the 6 matched labs, the 2 patients without labs, and the 1 orphaned lab.
@@ -333,7 +318,7 @@ Merge the registry with the labs, keep every patient, check the cardinality, and
 patient_labs = pd.merge(patients, labs, on='patient_id', how='left',
                         validate='one_to_many', indicator=True)
 patient_labs['has_lab'] = patient_labs['_merge'] == 'both'
-print(patient_labs['has_lab'].value_counts())
+display(patient_labs['has_lab'].value_counts())
 patient_labs.sort_values(['clinic', 'patient_id'])[
     ['clinic', 'patient_id', 'test', 'value', 'collected', 'has_lab']
 ]

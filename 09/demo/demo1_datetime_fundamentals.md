@@ -22,26 +22,8 @@ A heart-failure clinic receives a home-scale log with text timestamps, out-of-or
 
 ## How to run
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
 
-- **In Colab:** open Demo 1 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **Locally in VS Code:** all three Lecture 09 demos share one folder, `~/09-demo`. In **Terminal → New Terminal** (on Windows, the **WSL: Ubuntu** window from Lecture 01), download the notebooks with the environment's records and build the environment, as in Lecture 03:
-
-<!-- #region -->
-```bash
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
-cd ~/09-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-
-The script prints `Made ~/09-demo with the three Lecture 09 demo notebooks, .python-version, pyproject.toml, and uv.lock.`, and `uv sync` lists each package it installs, including `+ pandas==3.0.5`, `+ matplotlib==3.11.1`, and `+ ipykernel==6.29.5`, the package that lets a notebook run on this environment's Python (Lecture 04). In Git Bash, activate with `source .venv/Scripts/activate` instead.
-
-Then choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo1_datetime_fundamentals.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`.
-
-If `~/09-demo` already exists, the script stops with `File exists` and changes nothing; `cd ~/09-demo` and go on. If `.venv` already exists, `uv venv` asks `Do you want to replace it? [y/n]`: answer `n` to keep it, and ignore the `error: Failed to create virtual environment` that follows.
-<!-- #endregion -->
 
 ## Choose Your Route
 
@@ -57,14 +39,25 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
+- **In Colab:** run the install cell below first.
+- **Locally:** run these commands in a terminal, then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
+cd ~/09-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+# Setup: install the course's pandas version
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note to restart the kernel; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 from datetime import datetime, timedelta
@@ -115,7 +108,7 @@ raw = pd.DataFrame({
                     '2024-03-02 07:15', '2024-03-04 06:55'],
     'weight_kg': [82.3, 81.9, 82.0, 82.1, 83.4],
 })
-print(raw.dtypes)
+display(raw.dtypes)
 ```
 
 **Expect:** `recorded_at` is `str` and `weight_kg` is `float64`. Text has no calendar arithmetic; sorting it is chronological only when every date uses a consistent sortable pattern.
@@ -124,7 +117,7 @@ print(raw.dtypes)
 
 ```python
 raw['recorded_at'] = pd.to_datetime(raw['recorded_at'], format='%Y-%m-%d %H:%M', errors='coerce')
-print(raw)
+display(raw)
 print('Unparseable dates:', raw['recorded_at'].isna().sum())
 ```
 
@@ -133,7 +126,7 @@ print('Unparseable dates:', raw['recorded_at'].isna().sum())
 `.dt.strftime()` formats a whole column with the same codes as `datetime.strftime()`. An hour key such as `2024030307` names the hour each weight was taken, which is handy as a row ID or a file name; `NaT` has no date to format, so its key stays missing.
 
 ```python
-print(raw['recorded_at'].dt.strftime('%Y%m%d%H'))
+display(raw['recorded_at'].dt.strftime('%Y%m%d%H'))
 ```
 
 **Expect:** `2024030307`, `2024030107`, `NaN` (row 2), `2024030207`, and `2024030406`, with `dtype: str`.
@@ -146,7 +139,7 @@ print('Sorted?', log.index.is_monotonic_increasing)
 
 log = log.sort_index()
 print('Sorted?', log.index.is_monotonic_increasing)
-print(log)
+display(log)
 print(log.index.day_name())
 ```
 
@@ -180,7 +173,7 @@ Use the sorted `log` from section 2. A partial month selects every reading in th
 
 ```python
 print(log.loc['2024-03'].shape)
-print(log.loc['2024-03-01':'2024-03-02'])
+display(log.loc['2024-03-01':'2024-03-02'])
 print('Hours:', log.index.hour.tolist())
 ```
 
@@ -202,7 +195,7 @@ icu = pd.DataFrame({
 }, index=hours)
 icu.loc[icu.index.hour < 6, 'heart_rate'] -= 12
 print(icu.shape)
-print(icu.head(3))
+display(icu.head(3))
 ```
 
 **Expect:** `(168, 2)` and three rows starting at `2024-03-04 00:00:00`.
@@ -214,7 +207,7 @@ day_shift = icu.between_time('09:00', '17:00')
 overnight = icu.between_time('00:00', '05:00')
 print('Day readings:', day_shift.shape, 'mean HR', round(day_shift['heart_rate'].mean(), 1))
 print('Overnight readings:', overnight.shape, 'mean HR', round(overnight['heart_rate'].mean(), 1))
-print(icu.at_time('12:00').head(3))
+display(icu.at_time('12:00').head(3))
 ```
 
 **Expect:** `Day readings: (63, 2)` (9 hours × 7 days, both ends included) with mean heart rate `83.5`, and `Overnight readings: (42, 2)` with mean `71.7`. The noon table starts `2024-03-04 12:00:00` with heart rate `84`.

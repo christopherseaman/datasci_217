@@ -22,8 +22,18 @@ A clinic network's quarterly report groups 100,000 synthetic visits by clinic an
 
 **How to run:** run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3. The patient IDs and values are synthetic.
 
-- **In Colab:** open this notebook from the lecture page's Demo 2 link and start with the Setup cell below; a new runtime needs nothing else, because this notebook builds its own data. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **On your computer:** Demo 1's local setup already downloaded this notebook into `~/08-demo` and built its environment there. In VS Code, open that folder with **File → Open Folder…**, open `demo2_coverage_result_shapes.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/08-demo` and `source .venv/bin/activate` bring back the environment. If `~/08-demo` does not exist yet, run the commands under "On your computer" at the top of Demo 1 first.
+- **In Colab:** run the install cell under Setup first. Use **File → Save a copy in Drive** to keep your changes.
+- **On your computer:** run these lines in VS Code's terminal, then open the `08-demo` folder in VS Code, open `demo2_coverage_result_shapes.ipynb`, and choose the `.venv` Python as the notebook kernel.
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
+cd ~/08-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+If `~/08-demo` is already set up from Demo 1, just open this notebook and choose the `.venv` kernel.
 
 ## Choose Your Route
 
@@ -38,14 +48,12 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell only confirms that.
-
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.`, perhaps after a notice that a newer pip is available; neither needs any action. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell; you do not need to rerun the install.
+**Expect:** nothing, or a note to restart; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import numpy as np
@@ -147,11 +155,11 @@ default_counts = reported.groupby("clinic")["wait_min"].count()
 kept_counts = reported.groupby("clinic", dropna=False)["wait_min"].count()
 
 print("=== Default: dropna=True ===")
-print(default_counts)
+display(default_counts)
 print(f"Visits counted: {default_counts.sum():,} of {len(reported):,}")
 
 print("\n=== dropna=False ===")
-print(kept_counts)
+display(kept_counts)
 print(f"Visits counted: {kept_counts.sum():,} of {len(reported):,}")
 ```
 
@@ -167,9 +175,9 @@ present_only = reported.groupby("clinic", observed=True, dropna=False)["wait_min
 every_clinic = reported.groupby("clinic", observed=False, dropna=False)["wait_min"].agg(["count", "mean"])
 
 print("=== observed=True: only clinics with visits ===")
-print(present_only.round(1))
+display(present_only.round(1))
 print("\n=== observed=False: every declared clinic ===")
-print(every_clinic.round(1))
+display(every_clinic.round(1))
 ```
 
 **Expect:** both tables follow the declared order (North, South, East, West, Central) instead of alphabetical order, and both keep the `NaN` group last because of `dropna=False`. Only the second shows Bayview, with a count of `0` and a mean of `NaN`: no waits to average is not a mean wait of zero.
@@ -181,13 +189,13 @@ print(every_clinic.round(1))
 counts_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
                              aggfunc="count", observed=False, dropna=False, fill_value=0)
 print("=== Visit counts, dropna=False ===")
-print(counts_kept)
+display(counts_kept)
 print("Rows:", len(counts_kept))
 
 counts_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
                                 aggfunc="count", observed=False, dropna=True, fill_value=0)
 print("\n=== Visit counts, dropna=True ===")
-print(counts_default)
+display(counts_default)
 print("Rows:", len(counts_default))
 ```
 
@@ -198,13 +206,13 @@ print("Rows:", len(counts_default))
 means_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
                                aggfunc="mean", observed=False, dropna=True)
 print("=== Mean wait, dropna=True ===")
-print(means_default.round(1))
+display(means_default.round(1))
 print("Rows:", len(means_default))
 
 means_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
                             aggfunc="mean", observed=False, dropna=False)
 print("\n=== Mean wait, dropna=False ===")
-print(means_kept.round(1))
+display(means_kept.round(1))
 print("Rows:", len(means_kept))
 ```
 
@@ -242,7 +250,7 @@ dept_mean = visits.groupby("department")["wait_min"].mean()
 
 wrong = visits.copy()
 wrong["dept_mean_wait"] = dept_mean
-print(wrong[["department", "wait_min", "dept_mean_wait"]].head())
+display(wrong[["department", "wait_min", "dept_mean_wait"]].head())
 print("Missing values in the new column:", wrong["dept_mean_wait"].isna().sum())
 ```
 
@@ -260,7 +268,7 @@ visits["wait_z"] = visits["wait_vs_dept"] / visits["dept_sd_wait"]
 # The same z-score with a lambda: the function receives one department's waits at a time
 z_lambda = by_dept.transform(lambda x: (x - x.mean()) / x.std())
 
-print(visits[["department", "wait_min", "dept_mean_wait", "wait_vs_dept", "wait_z"]].head().round(2))
+display(visits[["department", "wait_min", "dept_mean_wait", "wait_vs_dept", "wait_z"]].head().round(2))
 print("\nRows:", len(visits))
 print("Same index as visits?", z_lambda.index.equals(visits.index))
 print("Largest difference between the two z-scores:", (visits["wait_z"] - z_lambda).abs().max())
@@ -271,7 +279,7 @@ print("Largest difference between the two z-scores:", (visits["wait_z"] - z_lamb
 ```python
 # The same 30-minute wait, measured against each department's own waits
 thirty = visits[visits["wait_min"] == 30]
-print(thirty.groupby("department")["wait_z"].mean().round(2))
+display(thirty.groupby("department")["wait_z"].mean().round(2))
 ```
 
 **Expect:** the same 30-minute wait is ordinary in Cardiology (z = 0.01), about 3 standard deviations above the Pediatrics mean (2.99), and shorter than usual in Orthopedics (-0.8). Group context changes what one number means.
@@ -283,7 +291,7 @@ print(thirty.groupby("department")["wait_z"].mean().round(2))
 visits["wait_quartile"] = by_dept.transform(
     lambda x: pd.qcut(x, q=4, labels=["Q1", "Q2", "Q3", "Q4"])
 )
-print(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True))
+display(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True))
 ```
 
 **Expect:** each department split into Q1 to Q4 by its own waits, with row totals equal to its visit counts and 100,000 in the corner. The quarters are not exactly equal (Pediatrics Q1 has 4,628 visits, Q3 has 3,153) because many visits share the same whole-minute wait, and tied waits always land in the same quartile.
@@ -338,14 +346,14 @@ def wait_summary(group):
     })
 
 dept_summary = visits.groupby("department").apply(wait_summary, include_groups=False)
-print(dept_summary)
+display(dept_summary)
 
 # Checkpoint: the medians match the built-in aggregation
 builtin = visits.groupby("department")["wait_min"].median()
 print("\nSame medians as agg('median')?", dept_summary["median"].equals(builtin))
 ```
 
-**Expect:** one row per department, like `agg`, with the columns your function named. Every number prints with `.0` because a `Series` that holds a median stores all its values as floats. Family Medicine has the widest interquartile range (18 minutes) and Orthopedics the most waits over an hour (187). Then `True`.
+**Expect:** one row per department, like `agg`, with the columns your function named. Every number shows `.0` because a `Series` that holds a median stores all its values as floats. Family Medicine has the widest interquartile range (18 minutes) and Orthopedics the most waits over an hour (187). Then `True`.
 
 ### The Longest Waits in Each Department
 
@@ -353,7 +361,7 @@ print("\nSame medians as agg('median')?", dept_summary["median"].equals(builtin)
 longest = visits.groupby("department").apply(
     lambda g: g.nlargest(2, "wait_min"), include_groups=False
 )
-print(longest[["patient_id", "clinic", "wait_min"]])
+display(longest[["patient_id", "clinic", "wait_min"]])
 print("\nRows:", len(longest))
 ```
 

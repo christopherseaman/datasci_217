@@ -22,10 +22,7 @@ A New York ICU exports charted heart rates on the local wall clock, and the expo
 
 ## How to run
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and seaborn 0.13.2.
-
-- **In Colab:** open Demo 3 from the lecture page's Colab link and run the Setup cells below first; every new runtime starts empty. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-- **Locally in VS Code:** use the `~/09-demo` folder and environment from Demo 1's local setup (do that setup first if you skipped Demo 1). Choose **File → Open Folder…**, pick `09-demo` in your home folder, open `demo3_visualization_automation.ipynb`, click **Select Kernel**, and choose the Python in `09-demo/.venv`. **In a new terminal**, `cd ~/09-demo` and then `source .venv/bin/activate` bring the environment back.
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and seaborn 0.13.2. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
 
 
 ## Choose Your Route
@@ -42,14 +39,27 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv venv --seed` put pip in `.venv`, so the same cell runs there and finds pandas 3.0.5 already installed.
+- **In Colab:** run the install cell below first.
+- **Locally:** run these commands in a terminal, then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
+cd ~/09-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+If `~/09-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+# Setup: install the course's pandas version
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, the cell changes nothing and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note to restart the kernel; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import matplotlib.pyplot as plt
@@ -93,8 +103,8 @@ chicago['visit_utc'] = (pd.to_datetime(chicago['visit_local'], format='%Y-%m-%d 
                         .dt.tz_localize('America/Chicago').dt.tz_convert('UTC'))
 visits = pd.concat([new_york, chicago], ignore_index=True)
 
-print(visits.sort_values('visit_local'))
-print(visits.sort_values('visit_utc'))
+display(visits.sort_values('visit_local'))
+display(visits.sort_values('visit_utc'))
 ```
 
 **Expect:** sorted by the local text, Chicago's 08:30 visit comes first. Sorted by `visit_utc`, New York's 09:00 visit (`13:00+00:00`) comes first and Chicago's 08:30 (`13:30+00:00`) second: 08:30 in Chicago happened half an hour after 09:00 in New York.
@@ -125,13 +135,13 @@ Localize with `ambiguous='NaT'` and `nonexistent='NaT'`, so pandas marks the unc
 local = pd.to_datetime(raw['recorded_local'], format='%Y-%m-%d %H:%M')
 aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
 print('Set aside:', aware.isna().sum())
-print(raw[aware.isna()])
+display(raw[aware.isna()])
 
 raw['recorded_at'] = aware.dt.tz_convert('UTC')
 vitals = (raw.dropna(subset=['recorded_at'])[['patient_id', 'recorded_at', 'heart_rate']]
           .sort_values(['patient_id', 'recorded_at'])
           .reset_index(drop=True))
-print(vitals)
+display(vitals)
 ```
 
 **Expect:** `Set aside: 1`, the P02 row at `2024-11-03 01:30`. `vitals` has 13 rows, sorted by patient and then time, all in UTC. P01's local 00:30 and 03:00 look 2.5 hours apart, but in UTC they are `04:30` and `08:00`: 3.5 hours passed, because the 01:00 hour happened twice.
@@ -150,7 +160,7 @@ for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
 # A dose charted at 02:30 on the spring-forward night names a time that never happened
 charted = pd.Series(pd.to_datetime(['2024-03-10 01:30', '2024-03-10 02:30', '2024-03-10 03:30']))
 spring = charted.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
-print(spring)
+display(spring)
 print('Set aside:', spring.isna().sum())
 ```
 
@@ -165,7 +175,7 @@ The table stacks three patients. A plain `shift(1)` runs straight down the stack
 vitals['wrong_previous'] = vitals['heart_rate'].shift(1)
 by_patient = vitals.groupby('patient_id')['heart_rate']
 vitals['previous_hr'] = by_patient.shift(1)
-print(vitals[['patient_id', 'heart_rate', 'wrong_previous', 'previous_hr']])
+display(vitals[['patient_id', 'heart_rate', 'wrong_previous', 'previous_hr']])
 ```
 
 **Expect:** the two columns agree except on each patient's first row. Row 5, P02's first reading, has `wrong_previous` `118.0`, P01's last heart rate, and row 9, P03's first, has `69.0` from P02. `previous_hr` is `NaN` on all three first rows.
@@ -173,7 +183,7 @@ print(vitals[['patient_id', 'heart_rate', 'wrong_previous', 'previous_hr']])
 ```python
 vitals = vitals.drop(columns='wrong_previous')
 vitals['hr_change'] = by_patient.diff()
-print(vitals[['patient_id', 'heart_rate', 'previous_hr', 'hr_change']])
+display(vitals[['patient_id', 'heart_rate', 'previous_hr', 'hr_change']])
 ```
 
 **Expect:** P01's changes are all positive (`6.0`, `7.0`, `11.0`, `6.0`); P03's are all negative (`-5.0`, `-4.0`, `-3.0`).
@@ -197,7 +207,7 @@ prev_2h = (
 )
 vitals = vitals.merge(prev_2h, on=['patient_id', 'recorded_at'], validate='one_to_one')
 print(vitals.shape)
-print(vitals[['patient_id', 'recorded_at', 'heart_rate', 'mean_prev_2', 'mean_prev_2h']])
+display(vitals[['patient_id', 'recorded_at', 'heart_rate', 'mean_prev_2', 'mean_prev_2h']])
 ```
 
 **Expect:** `(13, 7)`: the merge kept one row per reading. At P01's `08:00` reading, `mean_prev_2` is `97.5` (the 94 and 101 readings) but `mean_prev_2h` is `NaN`, because nothing was recorded in the two hours before 08:00 UTC. At P03's `09:00` reading, the two-hour mean is `95.0`, only the 07:15 reading.
@@ -218,7 +228,7 @@ labs = pd.DataFrame({
                                    '2024-11-03 08:20', '2024-11-03 07:45'], utc=True),
 })
 labs['available'] = labs['resulted_at'] <= prediction_time
-print(labs[['patient_id', 'test', 'resulted_at', 'available']])
+display(labs[['patient_id', 'test', 'resulted_at', 'available']])
 ```
 
 **Expect:** lactate and troponin are `True`; the blood culture (resulted the next day) and the creatinine (drawn at 07:30, resulted at 08:20) are `False`, even though both were collected before 08:00.
@@ -234,7 +244,7 @@ audit = pd.DataFrame({
 })
 audit['available'] = audit['latest_timestamp'] <= prediction_time
 audit['decision'] = np.where(audit['available'], 'keep', 'reject')
-print(audit)
+display(audit)
 ```
 
 **Expect:** the first three candidates are `True` and `keep`; `next heart rate` and `centered 3-reading mean` are `False` and `reject`.
@@ -246,8 +256,8 @@ To test a score honestly, build it on the earlier rows and hold out the rows fro
 
 ```python
 vitals['block'] = np.where(vitals['recorded_at'] < prediction_time, 'earlier', 'later_holdout')
-print(vitals[['patient_id', 'recorded_at', 'block']])
-print(pd.crosstab(vitals['patient_id'], vitals['block']))
+display(vitals[['patient_id', 'recorded_at', 'block']])
+display(pd.crosstab(vitals['patient_id'], vitals['block']))
 ```
 
 **Expect:** 9 `earlier` rows and 4 `later_holdout` rows: 3 and 2 for P01 (its 08:00 reading is held out, because `<` keeps the cutoff itself out of `earlier`), 3 and 1 for P02, and 3 and 1 for P03.
@@ -289,7 +299,7 @@ outage = pd.date_range('2023-02-01', '2023-02-14', freq='D')
 ili = ili[~ili.index.isin(outage)]
 print(len(ili), 'days reported')
 print('Frequency:', pd.infer_freq(ili.index))
-print(ili.resample('W').count().loc['2023-01-29':'2023-02-19'])
+display(ili.resample('W').count().loc['2023-01-29':'2023-02-19'])
 ```
 
 **Expect:** `1081 days reported` (1,095 days minus the 14-day outage), and `Frequency: None`, because the missing days break the daily spacing. The weekly counts of reported days drop to `2`, `0`, and `5` for the weeks ending February 5, 12, and 19. A weekly _sum_ of visits would fall the same way, which is a reporting gap, not fewer patients.
@@ -328,7 +338,7 @@ Averaging by calendar month shows the seasonal pattern directly. Bars go on a ne
 
 ```python
 monthly_mean = ili.groupby(ili.index.month).mean()
-print(monthly_mean.round(1))
+display(monthly_mean.round(1))
 
 fig, ax = plt.subplots(figsize=(8, 4))
 monthly_mean.plot(kind='bar', ax=ax, rot=0, color='steelblue',
@@ -371,8 +381,8 @@ daily['next_day'] = daily['weight_kg'].shift(-1)
 daily['change_1d'] = daily['weight_kg'].diff()
 daily['change_7d'] = daily['weight_kg'] - daily['weight_kg'].shift(7)
 daily['pct_1d'] = daily['weight_kg'].pct_change() * 100
-print(daily.head(3).round(2))
-print(daily.loc['2024-03-08':'2024-03-13'].round(2))
+display(daily.head(3).round(2))
+display(daily.loc['2024-03-08':'2024-03-13'].round(2))
 ```
 
 **Expect:** on January 1, `prev_day`, `change_1d`, and `pct_1d` are `NaN` (nothing came before), and `change_7d` stays `NaN` through January 7. In March, the weight climbs from 81.9 kg on March 8 to 83.9 kg on March 10 (`change_1d` 1.3) and 84.4 kg on March 11 and 12 (`change_7d` 2.3).
@@ -381,7 +391,7 @@ Apply both alert rules with a boolean filter (Lecture 04).
 
 ```python
 alerts = daily[(daily['change_1d'] > 1.0) | (daily['change_7d'] > 2.0)]
-print(alerts[['weight_kg', 'change_1d', 'change_7d']].round(1))
+display(alerts[['weight_kg', 'change_1d', 'change_7d']].round(1))
 print('Largest daily change before March 9:', daily.loc[:'2024-03-08', 'change_1d'].abs().max().round(1), 'kg')
 ```
 

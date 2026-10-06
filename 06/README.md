@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo2_pivot_melt.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo3_concat_timeseries.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
+cd ~/06-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 _“Wrangle” comes from the Low German “wrangeln,” to dispute or wrestle, which is about how getting data to cooperate feels._
 
 This lecture covers:
@@ -264,6 +276,8 @@ Expected error: `MergeError` because the right lookup repeats K2. Without valida
 
 # LIVE DEMO!
 
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb)
+
 # Working with DataFrame Indexes
 
 An **index** is a DataFrame's row labels, printed down its left side; a table built from a dict or read from a CSV gets a **RangeIndex**, `0, 1, 2, …`, that only counts rows. Moving an identifier such as `patient_id` into the index lets `.loc['P002']` find a patient by label (Lecture 04) and lets pandas line up rows from two tables by label.
@@ -481,6 +495,8 @@ _If a reshape feels mysterious, write down what one row represents before choosi
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo2_pivot_melt.ipynb)
+
 # Concatenating DataFrames Along an Axis
 
 **Concatenation** glues together tables that are pieces of one table, such as monthly admission extracts with the same columns, along an **axis**: `axis=0` stacks rows and `axis=1` puts columns side by side (Lecture 03). It matches no key values the way `merge()` does: stacking lines columns up by name, and placing side by side lines rows up by index label.
@@ -655,3 +671,5 @@ display(complete)
 ```
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo3_concat_timeseries.ipynb)

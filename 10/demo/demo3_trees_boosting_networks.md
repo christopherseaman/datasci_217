@@ -20,7 +20,7 @@ jupyter:
 
 A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant? You fit a baseline and logistic regression, then a random forest, gradient-boosted trees with XGBoost, and three small neural networks, all on the same training, validation, and test rows. A selection rule written before any model is fitted picks the winner, and the winner is evaluated on the test rows exactly once. The core walkthrough uses Lecture 10, plus Lectures 01 to 09. Lecture 10 supplies the boosting and network APIs. The 569 biopsies are real and de-identified.
 
-**How to run:** in Colab, open this notebook from the lecture page's Colab link and run the cells from top to bottom; the first code cell installs the course's pandas, and **File → Save a copy in Drive** keeps your changes. On your own computer, the environment from Demo 1's setup is still in `~/10-demo` (if you skipped Demo 1, run the five setup lines at the top of Demo 1 first): open that folder in VS Code, open `demo3_trees_boosting_networks.ipynb`, click **Select Kernel**, and choose the Python in `.venv`. In a new terminal, `cd ~/10-demo` and `source .venv/bin/activate` bring the environment back. After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, XGBoost 2.1.4, TensorFlow 2.21.0, and matplotlib 3.11.1 on a CPU. Colab preinstalls other versions of scikit-learn, XGBoost, and TensorFlow. With Colab's XGBoost 3.2, the importances in Part 5 shift in the second decimal place and early stopping in Part 6 can pick a later round; the accuracies do not change. A GPU can change the neural-network numbers.
+After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, XGBoost 2.1.4, TensorFlow 2.21.0, and matplotlib 3.11.1 on a CPU. Colab preinstalls other versions of scikit-learn, XGBoost, and TensorFlow. With Colab's XGBoost 3.2, the importances in Part 5 shift in the second decimal place and early stopping in Part 6 can pick a later round; the accuracies do not change. A GPU can change the neural-network numbers.
 
 ## Choose Your Route
 
@@ -35,14 +35,32 @@ The **core walkthrough** is the part practiced in class. Work through **independ
 
 ## Setup
 
-The first cell installs pandas 3.0.5, the course version, because Colab ships an older pandas (2.2). Locally, `uv sync` already installed it, so the cell changes nothing.
+**In Colab**, run the install cell below; **File → Save a copy in Drive** keeps your changes.
+
+**On your computer**, run these lines in VS Code's terminal, then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
+cd ~/10-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+If `~/10-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
+
+TensorFlow (Demo 3) has no Intel Mac version, so `uv sync` fails there: run the demos in Colab.
+
+On an Apple Silicon Mac, XGBoost (Demo 3) needs the OpenMP runtime: run `brew install libomp` once.
 
 ```python
 # Setup: install the course's pandas version (Colab and local)
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` Locally, after `uv sync`, that note is all it prints, and you can go on. In Colab, pip may also print a dependency conflict because some preinstalled packages expect pandas 2.2; that is expected, and this demo does not use them. If Colab asks you to restart the session (or says pandas was previously imported), choose **Runtime → Restart session**, then continue with the next cell. You do not need to rerun the install.
+**Expect:** nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
 
 ```python
 import matplotlib.pyplot as plt
@@ -72,7 +90,7 @@ feature_cols = cancer.feature_names.tolist()
 
 print(biopsies.shape)
 print(feature_cols[:4])
-print(biopsies['malignant'].value_counts())
+display(biopsies['malignant'].value_counts())
 print(f"Share malignant: {biopsies['malignant'].mean():.1%}")
 ```
 
@@ -214,7 +232,7 @@ rf_importance = pd.DataFrame({
     'accuracy_drop': perm.importances_mean,
     'drop_std': perm.importances_std,
 }, index=feature_cols).sort_values('impurity', ascending=False)
-print(rf_importance.head(8).round(3))
+display(rf_importance.head(8).round(3))
 ```
 
 **Expect:**
@@ -235,14 +253,14 @@ The two columns agree at the top: `worst concave points` and `worst area` matter
 
 ## 5. XGBoost
 
-Run the import and fixed-round fit below in the core walkthrough. The lecture's XGBoost reference supplies the settings. XGBoost is included in the local environment and preinstalled in Colab. On an Apple Silicon Mac it also needs the OpenMP runtime from Demo 1's setup note: run `brew install libomp` in a terminal before this cell.
+Run the import and fixed-round fit below in the core walkthrough. The lecture's XGBoost reference supplies the settings. XGBoost is included in the local environment and preinstalled in Colab. On an Apple Silicon Mac it also needs the OpenMP runtime: run `brew install libomp` once, as in Setup.
 
 ```python
 import xgboost as xgb
 print('XGBoost', xgb.__version__)
 ```
 
-**Expect:** `XGBoost 2.1.4` locally; Colab may show another version. On a Mac without the OpenMP runtime, the import instead fails with `XGBoostError: XGBoost Library (libxgboost.dylib) could not be loaded.` and a list of likely causes that tells Mac users to run `brew install libomp`. Run that command, restart the kernel, and run this cell again.
+**Expect:** `XGBoost 2.1.4` locally; Colab may show another version. If it fails on a Mac with `XGBoostError: XGBoost Library (libxgboost.dylib) could not be loaded.`, run `brew install libomp`, restart the kernel, and rerun this cell.
 
 XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern.
 
@@ -278,7 +296,7 @@ importance_comparison = pd.DataFrame({
     'random forest': rf_model.feature_importances_,
     'XGBoost': xgb_model.feature_importances_,
 }, index=feature_cols).loc[top_features]
-print(importance_comparison.round(3))
+display(importance_comparison.round(3))
 
 fig, ax = plt.subplots(figsize=(9, 4))
 importance_comparison.plot(kind='bar', ax=ax)
@@ -382,7 +400,7 @@ history = model.fit(
 
 history_df = pd.DataFrame(history.history)
 history_df['epoch'] = range(1, len(history_df) + 1)
-print(history_df.set_index('epoch').tail(3).round(4))
+display(history_df.set_index('epoch').tail(3).round(4))
 
 best_row = history_df.loc[history_df['val_loss'].idxmin()]
 print(f"\nLowest validation loss: {best_row['val_loss']:.4f} at epoch {best_row['epoch']:.0f}")
@@ -463,7 +481,7 @@ history_reg = model_reg.fit(X_train_scaled, y_train, epochs=50, batch_size=32,
 reg_loss, reg_acc = model_reg.evaluate(X_valid_scaled, y_valid, verbose=0)
 reg_pred = (model_reg.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
 
-print(pd.DataFrame({
+display(pd.DataFrame({
     'network': ['64-32', '128-64-32-16', '64-32 + dropout/L2'],
     'weights': [model.count_params(), model_deep.count_params(), model_reg.count_params()],
     'valid_accuracy': [valid_accuracy, deep_acc, reg_acc],
@@ -510,7 +528,7 @@ comparison = pd.DataFrame({
                        valid_accuracy, deep_acc, reg_acc],
 })
 comparison['correct_of_114'] = (comparison['valid_accuracy'] * len(y_valid)).round().astype(int)
-print(comparison.set_index('model').round(4))
+display(comparison.set_index('model').round(4))
 ```
 
 **Expect:**

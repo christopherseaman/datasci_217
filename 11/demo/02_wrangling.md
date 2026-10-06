@@ -16,17 +16,32 @@ jupyter:
 
 The model table has one row per zone and target hour: the `pickup_count` to predict, plus features known before that hour starts. You rebuild the expected zone-hour grid and confirm that the release's panel fills it, then add local calendar fields and past-only lags and rolling means. It uses Lecture 11 up to the demo break, plus joins and the expected grid (Lecture 06), time zones, grouped shifts, and rolling windows (Lecture 09), and Parquet (Lecture 04). Assignment 11's Q3 and Q4 build the same kind of table from sensor data.
 
-**How to run:** in Colab, open this notebook from the lecture page's Colab link. Locally, open the `11-demo` folder from Demo 1 in VS Code (**File → Open Recent**), open `02_wrangling.ipynb`, and select the `.venv` kernel if VS Code does not show it at the top right; without that folder, follow Demo 1's "How to run locally" first. This notebook does not need Demo 1's results: it downloads what it uses. Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and pyarrow 25.0.0.
+## How to run
+
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see. This notebook does not need Demo 1's results: it downloads what it uses. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and pyarrow 25.0.0.
+
+- **In Colab:** run the install cell below first.
+- **Locally:** a `~/11-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
+
+<!-- #region -->
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
+cd ~/11-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+<!-- #endregion -->
+
+Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
 ## Setup
 
-As in Demo 1, the first cell installs the course's pandas in Colab and changes nothing in a synced local `.venv`.
-
 ```python
-%pip install -q pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** `Note: you may need to restart the kernel to use updated packages.` If Colab asks you to restart the session, choose **Runtime → Restart session**, then continue with the next cell.
+**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 import hashlib
@@ -93,7 +108,7 @@ coverage = expected.merge(panel, on=["pickup_zone_id", "target_hour_utc"], how="
                           validate="one_to_one", indicator=True)
 print("Elapsed hours in the window:", len(hours))
 print("Expected zone-hours:", len(expected))
-print(coverage["_merge"].value_counts())
+display(coverage["_merge"].value_counts())
 print("Zone-hours with 0 pickups:", (panel["pickup_count"] == 0).sum())
 
 assert (coverage["_merge"] == "both").all() and len(panel) == len(expected)

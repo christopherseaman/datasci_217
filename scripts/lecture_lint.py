@@ -9,6 +9,7 @@ from pathlib import Path
 
 MEDIA = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
 DEMO = "# LIVE DEMO!"
+COLAB_LINK = re.compile(r"^\[Open Demo \d+ in Colab\]\(https://colab\.research\.google\.com/github/christopherseaman/datasci_217/blob/main/\S+\.ipynb\)$")
 
 
 def body(path):
@@ -53,12 +54,17 @@ def check(path):
 
     demos = [n for n, l in lines if l.strip() == DEMO]
     for number in demos:
-        # A demo marker may sit inside a Notion synced block, so an XML tag may follow it.
+        # A demo marker may sit inside a Notion synced block, so an XML tag may follow it,
+        # and in Lectures 04-11 one line linking that demo's Colab notebook follows it.
         following = [l for n, l in lines if n > number and l.strip() and not l.lstrip().startswith("<")]
+        if following and COLAB_LINK.match(following[0].strip()):
+            following = following[1:]
         if following and not following[0].startswith("# "):
             problems.append(f"{path}:{number}: demo marker is followed by {following[0][:40]!r}, not a '#' topic")
     if demos:
         trailing = [(n, l) for n, l in lines if n > demos[-1] and l.strip() and not l.lstrip().startswith("<")]
+        if trailing and COLAB_LINK.match(trailing[0][1].strip()):
+            trailing = trailing[1:]
         if trailing:
             problems.append(f"{path}:{trailing[0][0]}: content after the final demo marker")
 

@@ -13,6 +13,18 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 **Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_sklearn_prediction.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_trees_boosting_networks.ipynb)
 
+**Run locally:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
+cd ~/10-demo
+uv venv --seed
+source .venv/bin/activate
+uv sync
+```
+
+Then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+
 _Fun fact: The word "model" comes from the Latin "modulus" meaning "measure" or "standard." In data science, we're literally creating standards: mathematical representations that measure and predict patterns in our data. But unlike Zoolander, we can turn left AND right!_
 
 ![xkcd 1838: Machine Learning. Stirring the pile of linear algebra until the answers look right is not the same as checking them.](media/xkcd_1838.png)
@@ -313,6 +325,8 @@ print(valid[['visit_date', 'target_date']])
 
 # LIVE DEMO!
 
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo1_statistical_modeling.ipynb)
+
 # scikit-learn: One Pattern for Every Model
 
 **scikit-learn** is a widely used Python package for prediction: every model is an **estimator**, an object that learns from training rows with `fit()` and predicts new rows with `predict()`, so once you can fit one model you can fit them all. It works like a hospital lab analyzer: the lab calibrates it against standards of known concentration (`fit`), then measures new patient samples (`predict`). It takes pandas objects directly: `X` is a DataFrame of features such as `df[['age', 'bmi']]`, and `y` a Series such as `df['sbp']`.
@@ -532,6 +546,8 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 
 # LIVE DEMO!
 
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo2_sklearn_prediction.ipynb)
+
 # Trees and Forests
 
 A **decision tree** predicts by asking yes/no questions about the features ("Is age > 60?", then "Is BMI > 30?") and reporting the average outcome of the training patients in the same final group, a **leaf**. It can bend where a linear model's straight line cannot, but one tree is jumpy: change a few training rows and its questions change.
@@ -726,3 +742,5 @@ Start simple: a well-tuned linear regression often beats a poorly tuned neural n
 ![xkcd 2400: Statistics. When the data are good enough, the answer is obvious without any statistics; better data settles what no model choice can.](media/xkcd_2400.png)
 
 # LIVE DEMO!
+
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/10/demo/demo3_trees_boosting_networks.ipynb)
