@@ -1,5 +1,7 @@
 # TODO
 
+- [ ] **Review AGENTS.md once Lecture 04 (lecture, demos, assignment) is put to bed:** a full pass to trim and consolidate the rules, starting with the 2026-10-06 notebook-setup rule ("A notebook needs almost no setup text..."), which is longer than it needs to be.
+
 - [ ] **Validate classroom pacing:** rehearse the selected route against 90 minutes total, aiming for 60 minutes of lecture and 30 minutes of demos, including setup, questions, and transitions. Lecture 11 retains its project-workflow exception.
 
 ## Lectures 05-11: carry over the instructor's Lecture 04 notes (2026-10-06)
