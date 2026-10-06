@@ -20,43 +20,12 @@ jupyter:
 
 A hospital quality team receives admissions one month at a time, plus monthly unit metrics from three separate systems. This demo stacks the monthly files and records where each row came from, handles a March file whose columns changed, lines up the systems' metrics by month, patches a gappy census from a backup source, and compares this year's first quarter with last year's. Everything here comes from Lecture 06, plus Lectures 01 to 05.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The admission IDs and values are synthetic. Tested 2026-09-30 with Python 3.13 and pandas 3.0.5.
-
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Stack nine admissions with source labels and schema gaps; fill six months by source priority and retain month labels. |
-| [Independent practice](#independent-practice) | Enrich by merge; align three systems and unmatched months by index; compare inner schemas, source index levels, and year-over-year pivoting. |
-
-## Setup
-
-**In Colab**, run the install cell below.
-
-**On your computer**, a `06-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
-cd ~/06-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Core walkthrough
 
@@ -65,6 +34,8 @@ print('pandas', pd.__version__)
 Each file has one row per admission and the same columns. `los_days` is the length of stay in days.
 
 ```python
+import pandas as pd
+
 jan = pd.DataFrame({
     'admission_id': ['A101', 'A102', 'A103'],
     'unit': ['ICU', 'MED', 'SURG'],
@@ -196,7 +167,7 @@ print(list(filled_flat.columns))
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### 6. `concat()` then `merge()`: add unit details
 

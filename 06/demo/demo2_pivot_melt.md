@@ -20,43 +20,12 @@ jupyter:
 
 A small hypertension study records systolic blood pressure (SBP, mmHg) at baseline, week 4, and week 12. This demo gives the table meaningful row labels, reshapes it from wide to long and back, and fixes the repeated reading that stops `pivot()`. Everything here comes from Lecture 06 up to the second demo break, plus Lectures 01 to 05.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The patient IDs and values are synthetic. Tested 2026-09-30 with Python 3.13 and pandas 3.0.5.
-
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Match reordered patient goals by label, reshape four patients to 12 visits, and recover the exact wide table. |
-| [Independent practice](#independent-practice) | Renumber filtered rows, select two-level labels, and repair a repeated pair using the documented later recheck. |
-
-## Setup
-
-**In Colab**, run the install cell below.
-
-**On your computer**, a `06-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
-cd ~/06-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Core walkthrough
 
@@ -65,6 +34,8 @@ print('pandas', pd.__version__)
 One row per patient, one SBP column per visit.
 
 ```python
+import pandas as pd
+
 bp_wide = pd.DataFrame({
     'patient_id': ['P001', 'P002', 'P003', 'P004'],
     'clinic': ['North', 'South', 'North', 'South'],
@@ -164,7 +135,7 @@ bp_wide_again
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### 5. Renumber rows after a filter
 

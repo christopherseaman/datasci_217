@@ -16,32 +16,14 @@ jupyter:
 
 Before any model, fix which target hours each part of the data may be used for, then explore patterns in the training rows only. The split follows the target's local time: training before May 2023, validation in May, and test in June. The test rows stay unopened here; Demo 4 uses validation to choose a model and opens test exactly once. It uses Lecture 11 up to the demo break, plus aggregation (Lecture 08), zoned split boundaries and leakage (Lecture 10), and JSON (Lecture 07). Assignment 11's Q5 and Q6 follow the same pattern with sensor data.
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. This notebook downloads the panel and rebuilds Demo 2's model table itself, so it does not need Demo 2's output. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and pyarrow 25.0.0.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/11-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
-cd ~/11-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
+This notebook reads the release manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
 
 ```python
 import hashlib
@@ -51,14 +33,6 @@ from urllib.request import urlretrieve
 
 import pandas as pd
 
-print("pandas", pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
-
-This notebook reads the release manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
-
-```python
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
@@ -78,7 +52,7 @@ This supplied cell repeats Demo 2's first step and its `build_model_table()` fun
 ```python
 manifest_path = data_dir / "demo_release_manifest.json"
 published_manifest_sha256 = "558c28a8ab5a16769ac6ef9d170e7bd7f4ae4ef5d2a9e2b11fd2fb84d79b2c9d"
-assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == published_manifest_sha256, "The manifest changed: rename it in data/ and rerun setup"
+assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == published_manifest_sha256, "The manifest changed: rename it in data/ and rerun from the top"
 with open(manifest_path) as file:
     manifest = json.load(file)
 panel_path = data_dir / manifest["artifacts"]["panel"]["filename"]

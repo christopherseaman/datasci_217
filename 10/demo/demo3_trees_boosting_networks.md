@@ -18,49 +18,19 @@ jupyter:
 
 # Demo 3: Flexible Models: Trees, Boosting, and Neural Networks
 
-A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant? You fit a baseline and logistic regression, then a random forest, gradient-boosted trees with XGBoost, and three small neural networks, all on the same training, validation, and test rows. A selection rule written before any model is fitted picks the winner, and the winner is evaluated on the test rows exactly once. The core walkthrough uses Lecture 10, plus Lectures 01 to 09. Lecture 10 supplies the boosting and network APIs. The 569 biopsies are real and de-identified.
+A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant? You fit a baseline and logistic regression, then a random forest, gradient-boosted trees with XGBoost, and three small neural networks, all on the same training, validation, and test rows. A selection rule written before any model is fitted picks the winner, and the winner is evaluated on the test rows exactly once. Everything here comes from Lecture 10, plus Lectures 01 to 09. The 569 biopsies are real and de-identified.
 
-After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, XGBoost 2.1.4, TensorFlow 2.21.0, and matplotlib 3.11.1 on a CPU. Colab preinstalls other versions of scikit-learn, XGBoost, and TensorFlow. With Colab's XGBoost 3.2, the importances in Part 5 shift in the second decimal place and early stopping in Part 6 can pick a later round; the accuracies do not change. A GPU can change the neural-network numbers.
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, [1. Load the biopsy measurements](#1-load-the-biopsy-measurements), [2. Split, scale, and fix the selection rule](#2-split-scale-and-fix-the-selection-rule), [3. A baseline and the simplest candidate](#3-a-baseline-and-the-simplest-candidate), and the first cell in [4. Random forest, and two ways to read it](#4-random-forest-and-two-ways-to-read-it). Run the import and first fit cell in [5. XGBoost](#5-xgboost), then all cells in [7. Build and compile a neural network](#7-build-and-compile-a-neural-network) and the first cell in [8. Train and read the curves](#8-train-and-read-the-curves). Stop at the network validation result. |
-| Independent practice | After class, compare permutation and tree importances, early stopping, learning curves, and the two network variants, then compare every candidate and freeze/test once. The final comparison needs every preceding model; restart and run all cells in order for that route. |
-
-**Core checkpoint:** The forest, fixed-round XGBoost, and one Keras network score on the same 114 validation biopsies as logistic regression and the majority baseline: 0.9737, 0.9649, and 0.9737 accuracy respectively. Test predictions have not been made.
-
-## Setup
-
-**In Colab**, run the install cell below; **File → Save a copy in Drive** keeps your changes.
-
-**On your computer**, run these lines in VS Code's terminal, then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
-cd ~/10-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-If `~/10-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
-
-TensorFlow (Demo 3) has no Intel Mac version, so `uv sync` fails there: run the demos in Colab.
-
-On an Apple Silicon Mac, XGBoost (Demo 3) needs the OpenMP runtime: run `brew install libomp` once.
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+# On an Intel Mac, TensorFlow has no local version: use Colab. On another Mac, if XGBoost fails to load, run `brew install libomp`
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
+## 1. Load the biopsy measurements
+
+`load_breast_cancer(as_frame=True)` ships with scikit-learn and returns the table in its `.frame`, the label in its `.target`, and the 30 measurement names in its `.feature_names`. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (mean of the three largest values). Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
 
 ```python
 import matplotlib.pyplot as plt
@@ -73,16 +43,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-print('pandas', pd.__version__)
-```
 
-**Expect:** `pandas 3.0.5`. XGBoost and TensorFlow load when you reach their sections.
-
-## 1. Load the biopsy measurements
-
-`load_breast_cancer(as_frame=True)` ships with scikit-learn and returns the table in its `.frame`, the label in its `.target`, and the 30 measurement names in its `.feature_names`. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (mean of the three largest values). Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
-
-```python
 cancer = load_breast_cancer(as_frame=True)
 biopsies = cancer.frame
 biopsies['malignant'] = (cancer.target == 0).astype(int)
@@ -253,18 +214,13 @@ The two columns agree at the top: `worst concave points` and `worst area` matter
 
 ## 5. XGBoost
 
-Run the import and fixed-round fit below in the core walkthrough. The lecture's XGBoost reference supplies the settings. XGBoost is included in the local environment and preinstalled in Colab. On an Apple Silicon Mac it also needs the OpenMP runtime: run `brew install libomp` once, as in Setup.
+The lecture's XGBoost reference supplies the settings.
+
+XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern. Colab's XGBoost version can shift the importances and early-stopping round slightly, not the accuracies.
 
 ```python
 import xgboost as xgb
-print('XGBoost', xgb.__version__)
-```
 
-**Expect:** `XGBoost 2.1.4` locally; Colab may show another version. If it fails on a Mac with `XGBoostError: XGBoost Library (libxgboost.dylib) could not be loaded.`, run `brew install libomp`, restart the kernel, and rerun this cell.
-
-XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern.
-
-```python
 xgb_model = xgb.XGBClassifier(
     n_estimators=100, max_depth=3, learning_rate=0.1,
     subsample=0.8, colsample_bytree=0.8,
@@ -356,7 +312,7 @@ On a table this small the validation loss keeps creeping down for hundreds of ro
 
 ## 7. Build and compile a neural network
 
-Build and train this first network in the core walkthrough; the lecture's Keras reference supplies the API. TensorFlow is included in the local environment and preinstalled in Colab.
+The lecture's Keras reference supplies the API.
 
 ```python
 import tensorflow as tf
@@ -364,10 +320,9 @@ from tensorflow import keras
 
 keras.utils.set_random_seed(42)
 tf.config.experimental.enable_op_determinism()
-print('TensorFlow', tf.__version__)
 ```
 
-**Expect:** `TensorFlow 2.21.0` locally; Colab may show another version. The seed and deterministic operations make this notebook's CPU numbers repeat.
+The seed and deterministic operations make this notebook's CPU numbers repeat.
 
 A `Sequential` model is a straight stack of layers. Two hidden ReLU layers followed by one sigmoid unit is a standard starting point for a yes/no target. Compiling attaches the **optimizer** that updates the weights (Adam), the **loss** it minimizes (`binary_crossentropy` for a yes/no target), and the metrics reported each epoch.
 

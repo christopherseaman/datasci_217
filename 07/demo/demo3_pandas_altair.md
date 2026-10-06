@@ -19,53 +19,12 @@ jupyter:
 
 A draft dashboard chart about flu vaccination misleads its readers. You critique it with Tufte's checks, one problem and repair at a time, redesign it so it works without color, draw a line chart with redundant cues, write text alternatives, and save the chart record as JSON. Then you build an Altair chart of patient blood pressure and save its Vega-Lite specification. Everything here comes from Lecture 07 up to the last demo break, plus Lectures 01 to 06. All values are synthetic.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Record five repairs, save the accessible vaccination redesign and JSON record, and save/check typed Altair encodings with embedded rows. |
-| [Independent practice](#independent-practice) | Draw directly labeled HbA1c lines and compute the misleading draft's lie factor. |
-
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and Altair 5.5.0.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/07-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
-cd ~/07-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5 altair==5.5.0
 ```
-
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
-
-```python
-import json
-
-import altair as alt
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-print("pandas:", pd.__version__)
-print("Altair:", alt.__version__)
-```
-
-Expect `pandas: 3.0.5` and `Altair: 5.5.0`. If either version differs, it was imported before the install finished: restart the session and run all cells again.
 
 ## Core walkthrough
 
@@ -74,6 +33,10 @@ Expect `pandas: 3.0.5` and `Altair: 5.5.0`. If either version differs, it was im
 The prepared table has one row per clinic: the percentage of adult patients vaccinated against flu in two seasons. North started sending reminder texts before the 2025-26 season.
 
 ```python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 uptake = pd.DataFrame({
     'clinic': ['North', 'South', 'East'],
     '2024-25': [56, 57, 61],
@@ -181,6 +144,8 @@ Expect the paragraph printed in full.
 The chart record keeps the contract, the critique, and the text alternative beside the saved PNG. `json.dump()` writes it; `json.load()` reads it back.
 
 ```python
+import json
+
 chart_record = {
     'chart': 'vaccination_redesign.png',
     'question': 'How did adult flu vaccination change at each clinic between seasons?',
@@ -226,6 +191,8 @@ Expect `(12, 4)`.
 Color and shape both encode the clinic, so the groups survive grayscale printing. Tooltips show the values behind a point on hover, and `.interactive()` adds pan and zoom, but the title, axes, and legend stay visible without them.
 
 ```python
+import altair as alt
+
 scatter = alt.Chart(patients).mark_point(filled=True, size=90).encode(
     x=alt.X('age:Q', title='Age (years)', scale=alt.Scale(zero=False)),
     y=alt.Y('systolic_bp:Q', title='Systolic BP (mmHg)', scale=alt.Scale(zero=False)),
@@ -294,7 +261,7 @@ Expect the paragraph printed in full. Check its two means against the bars' tool
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### 1. A line chart with redundant cues and one annotation
 

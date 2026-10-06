@@ -20,50 +20,21 @@ jupyter:
 
 Demo 1 asked how disease progression _relates_ to BMI in 442 diabetes patients. This demo asks a prediction question about the same records: from a new patient's baseline measurements, how close can we get to their progression score one year later? You split the patients into training, validation, and test rows, set a baseline to beat, write down a selection rule, compare linear pipelines, read what the chosen one relies on, turn its predictions into a yes/no flag, and evaluate it on the test rows exactly once. Everything here comes from Lecture 10 up to the second demo break, plus Lectures 01 to 09. The records are real and de-identified.
 
-After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, [1. Load the diabetes records](#1-load-the-diabetes-records), [2. Train, validation, and test rows](#2-train-validation-and-test-rows), [4. A baseline, and the rule for choosing](#4-a-baseline-and-the-rule-for-choosing), and [5. A linear regression pipeline](#5-a-linear-regression-pipeline). Stop at the validation comparison; the test rows stay untouched. |
-| Independent practice | Work through the standalone mixed-type preprocessing example after class, then continue in order from Ridge/Lasso through comparison, permutation importance, classification flags, and the single frozen test. These sections reuse the core split and fitted linear pipeline. |
-
-**Core checkpoint:** The mean baseline has validation MAE 64.13; the linear pipeline reduces it to 42.94. There are 264 training, 89 validation, and 89 untouched test rows.
-
-## Setup
-
-**In Colab**, run the install cell below; **File → Save a copy in Drive** keeps your changes.
-
-**On your computer**, run these lines in VS Code's terminal, then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
-cd ~/10-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-If `~/10-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
-
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
+## 1. Load the diabetes records
+
+The same table as Demo 1: ten baseline measurements per patient (age, sex, BMI, average blood pressure, and six blood tests) and the progression score one year later, which runs from 25 to 346. Every error below is in those score points.
 
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import sklearn
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import load_diabetes
 from sklearn.dummy import DummyRegressor
@@ -76,17 +47,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-print('pandas', pd.__version__)
-print('scikit-learn', sklearn.__version__)
-```
-
-**Expect:** `pandas 3.0.5` and `scikit-learn 1.9.0` (Colab may show an older scikit-learn; that is fine).
-
-## 1. Load the diabetes records
-
-The same table as Demo 1: ten baseline measurements per patient (age, sex, BMI, average blood pressure, and six blood tests) and the progression score one year later, which runs from 25 to 346. Every error below is in those score points.
-
-```python
 diabetes = load_diabetes(scaled=False, as_frame=True).frame
 diabetes = diabetes.rename(columns={'s1': 'tc', 's2': 'ldl', 's3': 'hdl', 's4': 'tch',
                                     's5': 'ltg', 's6': 'glu', 'target': 'progression'})

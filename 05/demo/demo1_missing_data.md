@@ -20,48 +20,12 @@ jupyter:
 
 A clinic sends a small visit export. Before anyone averages a blood pressure, find the gaps, tell a double entry from a repeat visit, turn disguised missing values into real ones, and convert text columns to numbers and dates. Everything here comes from Lecture 05 up to the first demo break, plus Lectures 01 to 04.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Keep both P008 visits, remove one double entry, and expose invalid values: nine visits with review flags. |
-| [Independent practice](#independent-practice) | Recount, select an analysis sample, mark median imputation, and see why cross-patient forward fill fails. |
-
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
-cd ~/05-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
-
-```python
-import numpy as np
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Core walkthrough
 
@@ -85,6 +49,8 @@ Write down what the table should look like before changing anything.
 The export stores age as typed text (`age_text`) and dates as text. It also hides several problems that are not blank yet.
 
 ```python
+import pandas as pd
+
 visits = pd.DataFrame({
     'patient_id': ['P001', 'P002', 'P003', 'P004', 'P005', 'P006', 'P007', 'P007', 'P008', 'P008'],
     'visit_date': ['2026-01-15', '2026-01-16', None, '2026-01-18', '2026-01-19',
@@ -140,6 +106,8 @@ display(clean['patient_id'].value_counts())
 `-999` is the export's code for "not measured", and `1420` is not a possible systolic pressure. pandas averages both as if they were real readings.
 
 ```python
+import numpy as np
+
 print('Mean SBP with the bad values:', clean['sbp'].mean())
 
 clean['sbp'] = clean['sbp'].replace(-999, np.nan)   # a fixed code: replace it
@@ -185,7 +153,7 @@ display(clean.dtypes)
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### 7. Recount, then drop or fill
 

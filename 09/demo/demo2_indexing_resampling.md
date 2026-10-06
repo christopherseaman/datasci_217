@@ -20,58 +20,18 @@ jupyter:
 An ICU patient's bedside monitor records heart rate and temperature every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days. You summarize the readings by day and week, count what the monitor missed, lay sparse charted readings onto an hourly grid, resample two patients separately, and smooth the daily series with rolling windows and an EWM. Everything here comes from Lecture 09 up to the second demo break, plus Lectures 01 to 08. Patient values are synthetic.
 
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, all three cells in [4. Two patients: resample each separately](#4-two-patients-resample-each-separately), the first cell in [5. Each patient's hourly grid](#5-each-patients-hourly-grid), then [6. Compare two recent windows](#6-compare-two-recent-windows). |
-| Independent practice | After class, analyze the monitor, compare filling choices, count gap runs, repeat the full smoother and plot comparisons, and try the calendar reports and bin boundaries. BONUS.md has an extended Exponentially Weighted Means reference. |
-
-**Core checkpoint:** Separate resampling returns 8 patient bins. The grid has 13 rows, 4 created gaps, and 1 charted missing value; at P02's 14:00 reading, the two-reading mean is 73 bpm and the two-hour mean is 72 bpm.
-
-
-## Setup
-
-- **In Colab:** run the install cell below first.
-- **Locally:** run these commands in a terminal, then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
-cd ~/09-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-If `~/09-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-print('pandas', pd.__version__)
-print('NumPy', np.__version__)
 ```
-
-**Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
-
 
 ## 1. One patient's monitor export
 

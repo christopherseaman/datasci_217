@@ -20,50 +20,12 @@ jupyter:
 
 This demo runs the whole cleaning pipeline from Lecture 05 on a clinic visit export: state the contract, load, fingerprint, and preserve the raw table, audit it with validation rules, flag unusual readings, record each decision, transform a working copy, and save only after the checks pass. Everything here comes from Lecture 05 and Lectures 01 to 04.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Follow one raw-to-clean pipeline: a failed save gate, then 12 visits, five review flags, a decision log, and exact typed read-back. |
-| [Independent practice](#independent-practice) | Spot-check random raw rows; `' North '` and the 210 mmHg reading turn up beyond the first rows. |
-
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. The files it writes go to `output/`, which disappears when a Colab runtime shuts down. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/05-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
-cd ~/05-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
-
-```python
-from pathlib import Path
-import hashlib
-
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Core walkthrough
 
@@ -87,6 +49,10 @@ print('pandas', pd.__version__)
 The cell writes the export to `output/clinic_visits_raw.csv`, then reads every column as text, keeping blanks and the code `NA` exactly as written.
 
 ```python
+from pathlib import Path
+
+import pandas as pd
+
 export_text = """visit_id,patient_id,visit_date,site,age,sbp
 V001,P001,2026-01-05,north,34,122
 V002,P002,2026-01-06,South,41,135
@@ -119,6 +85,8 @@ print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (
 Record the file itself too: its name, its size, and its SHA-256 hash. Step 7 saves the hash with the decisions, so anyone can check they are cleaning the same file.
 
 ```python
+import hashlib
+
 raw_sha256 = hashlib.sha256(raw_path.read_bytes()).hexdigest()
 print(raw_path.name, raw_path.stat().st_size, 'bytes')
 print('SHA-256:', raw_sha256)
@@ -308,7 +276,7 @@ print('Rows:', len(raw), 'raw,', len(clean), 'clean')
 
 ## Independent practice
 
-Continue on your own after class. This cell reuses the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. This cell reuses the core results; if the runtime closed, run the cells above again first.
 
 ### Spot-check random rows
 

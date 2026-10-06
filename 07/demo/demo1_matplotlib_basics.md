@@ -19,54 +19,12 @@ jupyter:
 
 A clinic network hands you two prepared plotting tables: one row per blood-pressure reading, and one row per week of flu visits. You write the visualization contract first, let it pick the chart, then draw exploratory and explanatory charts with `fig, ax = plt.subplots()` and Axes methods. Everything here comes from Lecture 07 up to the first demo break, plus Lectures 01 to 06. The patient IDs and values are synthetic.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Draw one age-versus-BP scatter with units, a descriptive question, and color plus shape: 20 points per clinic. |
-| [Independent practice](#independent-practice) | Compare four exploratory chart types, write distribution contracts, and annotate/save the seasonal flu lines. |
-
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
-cd ~/07-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
-
-```python
-from pathlib import Path
-
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-print("pandas:", pd.__version__)
-print("NumPy:", np.__version__)
-print("matplotlib:", matplotlib.__version__)
-```
-
-Expect `pandas: 3.0.5`. If Colab shows an older pandas, it was imported before the install finished: restart the session and run all cells again.
 
 ## Core walkthrough
 
@@ -75,6 +33,10 @@ Expect `pandas: 3.0.5`. If Colab shows an older pandas, it was imported before t
 The first table has one row per systolic blood-pressure reading: 20 patients at the North clinic and 20 at the South clinic. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below. Each reading rises with age, runs 6 mmHg higher at South, and varies by a random amount: `rng.standard_normal(40) * 8` gives 40 bell-curve values spread around 0 by about 8 mmHg.
 
 ```python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 rng = np.random.default_rng(42)
 ages = rng.integers(30, 80, size=40)             # 30 through 79 years
 noise = rng.standard_normal(40) * 8              # reading-to-reading variation, mmHg
@@ -129,7 +91,7 @@ Expect blue circles and orange squares that both rise with age, a legend titled 
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### 1. Write the contract before plotting
 
@@ -232,6 +194,9 @@ ax.legend(title='Clinic', loc='upper left', bbox_to_anchor=(1, 1), frameon=False
 
 fig.savefig('weekly_flu_visits.png', dpi=150, bbox_inches='tight')
 plt.show()
+
+from pathlib import Path
+
 print(Path('weekly_flu_visits.png').exists())
 ```
 

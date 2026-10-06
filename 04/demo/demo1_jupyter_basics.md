@@ -19,47 +19,12 @@ jupyter:
 
 A **notebook** is a document made of Markdown cells and code cells. A **kernel** is the Python process that executes code. The kernel's **state** is the collection of names and values currently held in memory. A Colab **runtime** includes that kernel and the files it can see. **Stored output** is text or another result saved beneath a cell; it can remain visible even when it no longer describes current state.
 
-Run the cells from top to bottom, in Colab or on your computer; after each step, the text says what to expect. Never put credentials, tokens, or real patient data in a notebook's source or output.
-
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Show a clinic table, predict, run, repair stale state, and restart: `total_doses = 25`. |
-| [Independent practice](#independent-practice) | Move a dependent cell; inspect magic commands, runtime files, and saved outputs. |
-
-## Setup
-
-**In Colab**, run the install cell below. Colab does not save edits back to the course repository; **File → Save a copy in Drive** keeps them.
-
-**On your computer**, run these lines in VS Code's terminal, then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
-cd ~/04-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
+Run the cells from top to bottom; after each step, the text says what to expect. Never put credentials, tokens, or real patient data in a notebook's source or output.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import sys
-
-import pandas as pd
-
-print("Python:", sys.version.split()[0])
-print("pandas:", pd.__version__)
-assert pd.__version__ == "3.0.5", "Restart the session (Runtime → Restart session), then run all cells from the top"
-```
-
-Expect `pandas: 3.0.5`. On your computer, a Python other than 3.13 means the kernel is not `~/04-demo`'s `.venv`: click the kernel name at the top right and choose it.
 
 ## Core walkthrough
 
@@ -84,6 +49,8 @@ clinic_data = {
     "systolic_bp": [118, 132, 145, 124, 112, 138, 128, 150, 116, 141],
     "vaccine_doses": [2, 3, 4, 2, 1, 3, 2, 4, 1, 3],
 }
+
+import pandas as pd
 
 visits = pd.DataFrame(clinic_data)  # pandas & dataframes are coming up next in lecture
 display(visits)
@@ -125,11 +92,11 @@ The check cell printed `25` because the producer cell ran first. Do this by hand
 2. Run the dependent cell and the check cell again. Now the total is `26`. The notebook's visible source never said `25` or `26` was correct; execution order decided.
 3. Change the value back to `1`, then restart the kernel (Colab: **Runtime → Restart session**; VS Code: **Restart**) and run the check cell on its own. It raises `NameError: name 'clinic_data' is not defined`, because a fresh kernel holds nothing at all.
 
-**Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. For the core route, restart and run Setup and the core cells in order: the check cell must print `25` again. Use **Run All** when completing both routes. Stored output alone is never evidence that this happened.
+**Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. Restart, then **Run All**: the check cell must print `25` again. Stored output alone is never evidence that this happened.
 
 ### Fresh-run check
 
-Restart, then run Setup and the core cells in order once more. This cell checks the values a fresh run should produce.
+Restart, then run every cell above in order once more. This cell checks the values a fresh run should produce.
 
 ```python
 assert len(clinic_data["patient_id"]) == 10
@@ -142,7 +109,7 @@ print("Demo 1 fresh-run check passed: total_doses = 25")
 Expect `Demo 1 fresh-run check passed: total_doses = 25`. An `AssertionError` means a value was changed without rerunning the cells after it; restart and run all again.
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### Move a dependent cell
 

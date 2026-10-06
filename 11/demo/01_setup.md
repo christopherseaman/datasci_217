@@ -16,32 +16,16 @@ jupyter:
 
 This demo starts Lecture 11's worked example: predict the **next-hour pickup count** for each of 12 New York taxi zones, the way a hospital would predict next-hour arrivals at each emergency department. Before any analysis, you get the course's frozen data release, check every file against the hashes its manifest records, audit a sample of trip events, and see why the sample and the hourly panel the later demos use cannot be compared row for row. It uses Lecture 11 up to the demo break, plus Parquet (Lecture 04), file hashes and cleaning rules (Lecture 05), JSON (Lecture 07), and times written as text (Lecture 09). Assignment 11's Q1 and Q2 follow the same pattern with sensor data.
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and pyarrow 25.0.0.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
-cd ~/11-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
+## 1. Get the release files
+
+The course froze its taxi data as a **release**: three data files and a manifest, kept in the course repository so everyone analyzes the same bytes. This cell is supplied plumbing: it keeps any file already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
 
 ```python
 import hashlib
@@ -52,16 +36,6 @@ from urllib.request import urlretrieve
 import numpy as np
 import pandas as pd
 
-print("pandas", pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
-
-## 1. Get the release files
-
-The course froze its taxi data as a **release**: three data files and a manifest, kept in the course repository so everyone analyzes the same bytes. This cell is supplied plumbing: it keeps any file already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
-
-```python
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 FILENAMES = [
     "demo_release_manifest.json",

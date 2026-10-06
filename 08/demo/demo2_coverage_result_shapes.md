@@ -20,50 +20,12 @@ jupyter:
 
 A clinic network's quarterly report groups 100,000 synthetic visits by clinic and by department. This demo checks which visits and which clinics the default report silently leaves out, then adds department context to every visit with `transform`, keeps or drops whole departments with `filter`, and runs custom per-department summaries with `apply`. The core walkthrough uses Lecture 08 up to the second demo break, plus Lectures 01 to 07. Independent practice develops the filter/apply methods taught in the lecture.
 
-**How to run:** run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3. The patient IDs and values are synthetic.
-
-- **In Colab:** run the install cell under Setup first. Use **File → Save a copy in Drive** to keep your changes.
-- **On your computer:** run these lines in VS Code's terminal, then open the `08-demo` folder in VS Code, open `demo2_coverage_result_shapes.ipynb`, and choose the `.venv` Python as the notebook kernel.
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
-cd ~/08-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-
-If `~/08-demo` is already set up from Demo 1, just open this notebook and choose the `.venv` kernel.
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup and the first data-building cell in [Part 1: Which Groups Appear in a Summary](#part-1-which-groups-appear-in-a-summary). Continue through [Two Realities the Default Summary Hides](#two-realities-the-default-summary-hides), [Missing Keys: `dropna`](#missing-keys-dropna), and [Reporting Order and Empty Groups: `pd.Categorical` and `observed`](#reporting-order-and-empty-groups-pdcategorical-and-observed). Then run the first cell in [Add Department Context to Every Visit](#add-department-context-to-every-visit). |
-| Independent practice | After class, compare pivot-table coverage, plot the hidden groups, reproduce the alignment mistake, compare 30-minute waits and quartiles, and work through the filter/apply examples below. |
-
-**Core checkpoint:** The default report counts 99,750 visits; the complete report keeps 100,000 and Bayview has 0 visits. Transform keeps 100,000 original rows.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what to expect. The patient IDs and values are synthetic.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart; if Colab asks to restart the session, do it and rerun from the top.
-
-```python
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Part 1: Which Groups Appear in a Summary
 
@@ -72,6 +34,9 @@ This demo builds the same visit log Demo 1 used, so it runs on its own. Rerun th
 ### Build the Visit Log
 
 ```python
+import numpy as np
+import pandas as pd
+
 rng = np.random.default_rng(42)
 n_visits = 100_000
 n_patients = 30_000
@@ -221,6 +186,8 @@ print("Rows:", len(means_kept))
 ### Show the Difference
 
 ```python
+import matplotlib.pyplot as plt
+
 # Every group the data can produce, from the observed=False, dropna=False table above
 full_counts = every_clinic["count"]
 # One label and color per row, in the same order; red marks the two the default report hides

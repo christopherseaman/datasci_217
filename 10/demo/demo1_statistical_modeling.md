@@ -20,60 +20,12 @@ jupyter:
 
 A diabetes clinic recorded age, sex, BMI, average blood pressure, and six blood tests for 442 patients, then scored how far each patient's disease had progressed one year later. You fit linear regressions with `statsmodels`, read coefficients with their uncertainty, check residuals, compare models, and add a categorical predictor. Then you switch to a home blood-pressure program and frame a prediction problem: the target and its time, a feature audit, clock-face hour features, and a chronological split. Everything here comes from Lecture 10 up to the first demo break, plus Lectures 01 to 09. The diabetes records are real and de-identified; the blood-pressure readings are synthetic.
 
-After each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, statsmodels 0.14.6, scikit-learn 1.9.0, and matplotlib 3.11.1.
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup and the first code cell in [1. Load the diabetes records](#1-load-the-diabetes-records). Run both cells in [2. The formula API](#2-the-formula-api), the first cell in [4. Uncertainty and residuals](#4-uncertainty-and-residuals), and [5. Intervals for new patients](#5-intervals-for-new-patients). |
-| Independent practice | After class, make the exploratory and residual plots, compare the array interface and formulas, add categories, and frame the time-dependent prediction problem. Main Lecture 10 teaches availability, cycles, and honest splits before this demo. |
-
-**Core checkpoint:** The BMI coefficient is about 8.5 progression points per kg/m²; its interval is 7.1–9.9. Individual-patient intervals are wider than mean-response intervals.
-
-## Setup
-
-**In Colab**, run the install cell below; **File → Save a copy in Drive** keeps your changes.
-
-**On your computer**, run these lines in VS Code's terminal, then open the `10-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
-cd ~/10-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-TensorFlow (Demo 3) has no Intel Mac version, so `uv sync` fails there: run the demos in Colab.
-
-On an Apple Silicon Mac, XGBoost (Demo 3) needs the OpenMP runtime: run `brew install libomp` once.
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import statsmodels
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from sklearn.datasets import load_diabetes
-
-print('pandas', pd.__version__)
-print('statsmodels', statsmodels.__version__)
-```
-
-**Expect:** `pandas 3.0.5` and `statsmodels 0.14.6`.
 
 ## 1. Load the diabetes records
 
@@ -94,6 +46,13 @@ scikit-learn ships a few small real datasets. `load_diabetes(scaled=False, as_fr
 The source lists the blood tests without units; their ranges match mg/dL.
 
 ```python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from sklearn.datasets import load_diabetes
+
 diabetes = load_diabetes(scaled=False, as_frame=True).frame
 diabetes = diabetes.rename(columns={'s1': 'tc', 's2': 'ldl', 's3': 'hdl', 's4': 'tch',
                                     's5': 'ltg', 's6': 'glu', 'target': 'progression'})

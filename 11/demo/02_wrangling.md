@@ -16,32 +16,14 @@ jupyter:
 
 The model table has one row per zone and target hour: the `pickup_count` to predict, plus features known before that hour starts. You rebuild the expected zone-hour grid and confirm that the release's panel fills it, then add local calendar fields and past-only lags and rolling means. It uses Lecture 11 up to the demo break, plus joins and the expected grid (Lecture 06), time zones, grouped shifts, and rolling windows (Lecture 09), and Parquet (Lecture 04). Assignment 11's Q3 and Q4 build the same kind of table from sensor data.
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. This notebook does not need Demo 1's results: it downloads what it uses. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and pyarrow 25.0.0.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/11-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
-cd ~/11-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
+This notebook reads two of Demo 1's release files: the manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
 
 ```python
 import hashlib
@@ -51,14 +33,6 @@ from urllib.request import urlretrieve
 
 import pandas as pd
 
-print("pandas", pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
-
-This notebook reads two of Demo 1's release files: the manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
-
-```python
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
@@ -78,7 +52,7 @@ Check the panel against the hash the manifest records before trusting it, as Dem
 ```python
 manifest_path = data_dir / "demo_release_manifest.json"
 published_manifest_sha256 = "558c28a8ab5a16769ac6ef9d170e7bd7f4ae4ef5d2a9e2b11fd2fb84d79b2c9d"
-assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == published_manifest_sha256, "The manifest changed: rename it in data/ and rerun setup"
+assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == published_manifest_sha256, "The manifest changed: rename it in data/ and rerun from the top"
 with open(manifest_path) as file:
     manifest = json.load(file)
 panel_path = data_dir / manifest["artifacts"]["panel"]["filename"]

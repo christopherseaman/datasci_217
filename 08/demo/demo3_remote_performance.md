@@ -20,55 +20,21 @@ jupyter:
 
 Part 1 runs here in the notebook: it times grouped summaries of one million synthetic fasting-glucose results and measures how much memory a repeated text key costs. Part 2 runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you will repeat on a remote server. Everything here comes from Lecture 08 up to the third demo break, plus Lectures 01 to 07.
 
-**How to run:** run Part 1's cells from top to bottom; after each step, an **Expect** line says what you should see. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds; Colab is usually slower than a recent laptop. Part 2 needs a terminal on your own computer (macOS Terminal, Linux, WSL Ubuntu on Windows, or VS Code's integrated terminal), not Colab. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, OpenSSH 10.2, and tmux 3.6. The patient IDs and values are synthetic.
-
-- **In Colab:** run the install cell under Setup first. Use **File → Save a copy in Drive** to keep your changes.
-- **On your computer:** run these lines in VS Code's terminal, then open the `08-demo` folder in VS Code, open `demo3_remote_performance.ipynb`, and choose the `.venv` Python as the notebook kernel.
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
-cd ~/08-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-
-If `~/08-demo` is already set up from Demo 1, just open this notebook and choose the `.venv` kernel.
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, [Build One Million Lab Results](#build-one-million-lab-results), and [One `.agg()` Instead of Three `groupby()` Calls](#one-agg-instead-of-three-groupby-calls) (both cells). |
-| Independent practice | Compare built-ins, lambdas, transform, and category memory after class. [Part 2: Keep a Long Job Running (Terminal)](#part-2-keep-a-long-job-running-terminal) is independent terminal practice; it is not part of the in-class notebook walkthrough. |
-
-**Core checkpoint:** The equality check prints `True True True`, followed by two timings for the same answer.
-
-## Setup
+Run Part 1's cells from top to bottom; after each step, an **Expect** line says what to expect. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds. The patient IDs and values are synthetic.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart; if Colab asks to restart the session, do it and rerun from the top.
-
-```python
-import numpy as np
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Part 1: Measure, Then Optimize
 
 ### Build One Million Lab Results
 
 ```python
+import numpy as np
+import pandas as pd
+
 rng = np.random.default_rng(0)
 n = 1_000_000
 labs = pd.DataFrame({
@@ -272,7 +238,7 @@ tmux ls
 
 ### Step 3: Run Jupyter Inside tmux
 
-On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. On your own computer you can rehearse everything except the tunnel. `~/08-demo` from Demo 1's local setup has JupyterLab, because its `pyproject.toml` lists it (in another project, `uv add jupyterlab` adds it). If you ran the demos in Colab and have no `~/08-demo` yet, run the commands under "On your computer" at the top of Demo 1 first.
+On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. On your own computer you can rehearse everything except the tunnel. `~/08-demo` from the lecture's local setup has JupyterLab, because its `pyproject.toml` lists it (in another project, `uv add jupyterlab` adds it). If you ran the demos in Colab and have no `~/08-demo` yet, run the setup commands at the top of the Lecture 08 page first.
 
 ```shell
 cd ~/08-demo

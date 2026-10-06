@@ -20,44 +20,12 @@ jupyter:
 A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date. Parse and inspect the dates, make a sorted DatetimeIndex, format an hour key, and select a calendar interval. These steps use Lecture 09 up to the first demo break, plus Lectures 01–08. Section 1 practices the lecture's Python `datetime` module; the labeled optional sections cover frequency inference, specialized schedules, and clock-time filters from BONUS.md. All patient data are synthetic.
 
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs no other files. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, and matplotlib 3.11.1. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, all cells in [2. A text column becomes a DatetimeIndex](#2-a-text-column-becomes-a-datetimeindex), then [4. Select a calendar interval](#4-select-a-calendar-interval). |
-| Independent practice | After class, repeat the main steps and try section 1 (Python `datetime`, from the lecture) and the explicitly optional schedule/inference and clock-selection sections, whose topics are in BONUS.md. |
-
-**Core checkpoint:** One date becomes `NaT`; the repaired table has 4 sorted readings, and the March 1–2 slice contains 2 readings.
-
-
-## Setup
-
-- **In Colab:** run the install cell below first.
-- **Locally:** run these commands in a terminal, then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
-cd ~/09-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 from datetime import datetime, timedelta
@@ -65,13 +33,7 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-print('pandas', pd.__version__)
-print('NumPy', np.__version__)
 ```
-
-**Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
-
 
 ## 1. One date at a time with `datetime`
 

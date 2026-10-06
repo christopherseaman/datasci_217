@@ -16,32 +16,14 @@ jupyter:
 
 Compare the weekly baseline, "same hour last week" (`lag_168`), with one transparent scikit-learn pipeline on the validation rows. The lower validation MAE freezes the choice. Only then refit the pipeline on training plus validation rows and evaluate both candidates on June exactly once, then look at where the errors fall. It uses Lecture 11 up to the demo break, plus pipelines, baselines, and metrics (Lecture 10), aggregation (Lecture 08), and saved figures (Lecture 07). Assignment 11's Q7 to Q9 follow the same pattern; Q7 also runs the permutation-importance check from Lecture 10's Demo 2, which this demo leaves out. There is no performance threshold: honest evaluation and clear evidence are the goals.
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. This notebook downloads the panel and rebuilds the model table and split itself, so it does not need the earlier demos' output. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, scikit-learn 1.9.0, and matplotlib 3.11.1.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/11-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
-cd ~/11-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
+This notebook reads the release manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
 
 ```python
 import hashlib
@@ -52,7 +34,6 @@ from urllib.request import urlretrieve
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import sklearn
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge
@@ -60,15 +41,6 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-print("pandas", pd.__version__)
-print("scikit-learn", sklearn.__version__)
-```
-
-**Expect:** `pandas 3.0.5` and `scikit-learn 1.9.0` (Colab may show an older scikit-learn; the steps work the same way).
-
-This notebook reads the release manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
-
-```python
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
@@ -88,7 +60,7 @@ This supplied cell repeats Demo 2's hash check and `build_model_table()`, and De
 ```python
 manifest_path = data_dir / "demo_release_manifest.json"
 published_manifest_sha256 = "558c28a8ab5a16769ac6ef9d170e7bd7f4ae4ef5d2a9e2b11fd2fb84d79b2c9d"
-assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == published_manifest_sha256, "The manifest changed: rename it in data/ and rerun setup"
+assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == published_manifest_sha256, "The manifest changed: rename it in data/ and rerun from the top"
 with open(manifest_path) as file:
     manifest = json.load(file)
 panel_path = data_dir / manifest["artifacts"]["panel"]["filename"]

@@ -17,49 +17,14 @@ jupyter:
 
 # Demo 2: From NumPy arrays to labeled pandas
 
-This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. Each step says what to expect, so you can tell whether it worked. The patient IDs and values are synthetic.
+This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. The patient IDs and values are synthetic.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Label a `(4, 2)` BP table, match label/position selections, and find P004 newly above 130 mmHg. |
-| [Independent practice](#independent-practice) | Inspect `info()`/`describe()` and repair a position passed to `.loc`. |
-
-## Setup
-
-**In Colab**, run the install cell below.
-
-**On your computer**, a `04-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
-cd ~/04-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import sys
-
-import numpy as np
-import pandas as pd
-
-print("Python:", sys.version.split()[0])
-print("NumPy:", np.__version__)
-print("pandas:", pd.__version__)
-assert pd.__version__ == "3.0.5", "Restart the session (Runtime → Restart session), then run all cells from the top"
-```
-
-Expect `pandas: 3.0.5`. If the check fails in Colab, pandas was imported before the install finished: restart the session and run all cells again.
 
 ## Core walkthrough
 
@@ -68,6 +33,9 @@ Expect `pandas: 3.0.5`. If the check fails in Colab, pandas was imported before 
 Lecture 03 stored measurements in a NumPy **ndarray** and selected them by integer position. A pandas **Series** adds an **index**: a label for each value, here the patient ID. Its `dtype` describes the stored values, and its `name` identifies the Series.
 
 ```python
+import numpy as np
+import pandas as pd
+
 temps_c = np.array([36.8, 38.1, 37.2])
 
 temp_by_patient = pd.Series(
@@ -180,7 +148,7 @@ Expect `1 row` twice, `same mask: True`, and one row: `P004`, which went from 11
 
 ### Fresh-run check
 
-Restart, then run Setup and the core cells in order. This cell checks the core checkpoints; use **Run All** when completing both routes.
+Restart, then **Run All** up to here. This cell checks the walkthrough's checkpoints.
 
 ```python
 assert temp_by_patient["P002"] == 38.1
@@ -201,7 +169,7 @@ print("Demo 2 fresh-run check passed")
 Expect `Demo 2 fresh-run check passed`.
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### First look at the table
 

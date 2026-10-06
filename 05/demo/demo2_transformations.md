@@ -20,49 +20,12 @@ jupyter:
 
 A clinic's intake form exports column names with spaces and units, smoking status and site typed several ways, age as text, and pain as `'7/10'`. This demo renames the columns, normalizes the text, turns labels and text into numbers, groups values into bands, and prepares indicator columns for a model. Everything here comes from Lecture 05 up to the second demo break, plus Lectures 01 to 04.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Normalize nine intake rows, preserve two missing ages, stage BP from both pressures, and create age bands. |
-| [Independent practice](#independent-practice) | Compare category storage and indicators; diagnose repeated `qcut()` edges; normalize multiword clinic labels to `north_clinic`. |
-
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/05-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
-cd ~/05-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `05-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
-
-```python
-from pathlib import Path
-
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Core walkthrough
 
@@ -71,6 +34,10 @@ print('pandas', pd.__version__)
 The cell writes the export to `output/intake_raw.csv` (Lecture 02's file writing), then reads it the Lecture 04 way.
 
 ```python
+from pathlib import Path
+
+import pandas as pd
+
 export_text = """Patient ID ,AGE,SBP (mmHg),DBP (mmHg),Smoking Status,Site,Pain
 P101,34,118,76,never,North,2/10
 P102,thirty-two,142,84,Current,north ,7/10
@@ -192,7 +159,7 @@ display(intake[['patient_id', 'age', 'age_band']])
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### SBP quantiles with repeated edges
 

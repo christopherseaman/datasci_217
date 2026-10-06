@@ -16,34 +16,14 @@ jupyter:
 
 This notebook is **demo-only and non-graded**: nothing in it is assumed prior knowledge, and the assignment never needs it. It maps Demo 4's test error for each of the 12 taxi zones. The course concepts are reading a results table, validating a join, and making an honest labeled figure; the geospatial machinery (the geo packages, the zone boundaries, the shapefile, and drawing polygons) is supplied.
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook reads Demo 4's `output/04_zone_error_summary.csv` when you ran Demo 4 in the same folder, and otherwise downloads a copy; the zone boundaries need an internet connection. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, geopandas 1.1.1, and matplotlib 3.11.1.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/11-demo` folder already set up for Demo 1 needs only the `uv add` line below and then its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal, then the `uv add` line.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
-cd ~/11-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `11-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-The geo packages are not in `pyproject.toml`: locally, with the environment active, run `uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1` once.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
+# Colab installs these here; locally, run `uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1` once. If Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5 geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
 ```
 
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
+This notebook reads two files. Demo 4's zone error summary comes from `output/` when Demo 4 ran in this folder; otherwise the cell downloads the course's committed copy of it into `data/`. The zone boundaries are the Taxi and Limousine Commission's (TLC) official shapefile, a zipped set of map files that holds each taxi zone's boundary as a polygon. This cell is supplied plumbing: it keeps any file already present and downloads the rest.
 
 ```python
 import hashlib
@@ -55,14 +35,6 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-print("geopandas", gpd.__version__)
-```
-
-**Expect:** `geopandas 1.1.1`.
-
-This notebook reads two files. Demo 4's zone error summary comes from `output/` when Demo 4 ran in this folder; otherwise the cell downloads the course's committed copy of it into `data/`. The zone boundaries are the Taxi and Limousine Commission's (TLC) official shapefile, a zipped set of map files that holds each taxi zone's boundary as a polygon. This cell is supplied plumbing: it keeps any file already present and downloads the rest.
-
-```python
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/data"
 GEO_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip"
 

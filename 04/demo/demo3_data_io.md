@@ -17,53 +17,20 @@ jupyter:
 
 # Demo 3: From a clinic CSV to a saved result
 
-A clinic exported a small file of visits, and the nurse lead wants every visit with a temperature of 37.5 °C or higher, hottest first, with the temperature in Fahrenheit and a fever flag. This demo reads the file, takes a first look, derives the new columns, sorts the rows so the order never changes between runs, saves the result, and reads it back. Each step says what to expect. The patient IDs and values are synthetic.
+A clinic exported a small file of visits, and the nurse lead wants every visit with a temperature of 37.5 °C or higher, hottest first, with the temperature in Fahrenheit and a fever flag. This demo reads the file, takes a first look, derives the new columns, sorts the rows so the order never changes between runs, saves the result, and reads it back. The patient IDs and values are synthetic.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Read the missing marker, select and flag six warm visits, sort ties, and read `warm_visits.csv` back as `(6, 6)`. |
-| [Independent practice](#independent-practice) | Trigger and repair chained assignment; compare saved patient labels; save and verify a typed Parquet table. |
-
-## Setup
-
-**In Colab**, run the install cell below; the cells after it also download the data file.
-
-**On your computer**, a `04-demo` folder already set up for Demo 1 just needs this notebook opened with its `.venv` kernel chosen. Otherwise, run these lines in VS Code's terminal, then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
-cd ~/04-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install pandas and the Parquet backend (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
-
-Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import sys
-
-import pandas as pd
-
-print("Python:", sys.version.split()[0])
-print("pandas:", pd.__version__)
-assert pd.__version__ == "3.0.5", "Restart the session (Runtime → Restart session), then run all cells from the top"
-```
-
-Expect `pandas: 3.0.5`. If the check fails in Colab, pandas was imported before the install finished: restart the session and run all cells again.
 
 ## Core walkthrough
 
 ### Get the data file
 
-This demo reads one file, `data/clinic_visits.csv`. On your computer, Demo 1's setup already saved it in the `data/` folder next to this notebook. Colab opens only the notebook, so this cell downloads the file from the course repository on GitHub when it is missing. It is supplied plumbing: it keeps a file that is already there, and `urlretrieve(url, path)` saves the file at a web address to `path`. Results go to an `output/` folder, created here so a fresh runtime has it.
+This cell downloads `data/clinic_visits.csv` if it is missing and creates the `output/` folder.
 
 ```python
 from pathlib import Path
@@ -84,13 +51,15 @@ OUTPUT_DIR = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 ```
 
-Expect `data/clinic_visits.csv already here 302 bytes` in `~/04-demo`, or `data/clinic_visits.csv downloaded 302 bytes` in Colab. If a run in `~/04-demo` says `downloaded`, the kernel's working directory is not the notebook's folder, so the copy landed somewhere else; check it with `%pwd` from Demo 1.
+Expect `data/clinic_visits.csv downloaded 302 bytes`, or `already here` if the file was there.
 
 ### Read the file as it is
 
 Read the file with no options first and look at the dtypes. A numeric column that comes back as text means some entry in it is not a number.
 
 ```python
+import pandas as pd
+
 raw = pd.read_csv(DATA_PATH)
 
 print(raw.dtypes)
@@ -236,7 +205,7 @@ Expect `round-trip shape: (6, 6)`, the columns `patient_id`, `clinic`, `temp_c`,
 
 ### Fresh-run check
 
-Restart, then run Setup and the core cells in order. This cell checks the core checkpoints; use **Run All** when completing both routes.
+Restart, then **Run All** up to here. This cell checks the walkthrough's checkpoints.
 
 ```python
 assert raw["temp_c"].dtype == "str"
@@ -260,7 +229,7 @@ print("Demo 3 fresh-run check passed")
 Expect `Demo 3 fresh-run check passed`.
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### Intentional mistake: chained assignment
 
@@ -322,10 +291,9 @@ with open(by_patient_path, "r", encoding="utf-8") as file:
 
 Expect `P009`'s row (South, 39.0, 158.0, 102.2, fever) and `header: patient_id,clinic,temp_c,systolic,temp_f,flag`.
 
-
 ### Save a typed Parquet table
 
-This uses `ordered`, the six warm visits from the core, and saves a separate file. Parquet preserves the dtypes and missing cells; the saved index is omitted because these old row numbers have no meaning. The Setup installer and the supplied local project both include `pyarrow`, the Parquet backend.
+This uses `ordered`, the six warm visits from the core, and saves a separate file. Parquet preserves the dtypes and missing cells; the saved index is omitted because these old row numbers have no meaning. The install cell at the top includes `pyarrow`, the Parquet backend.
 
 ```python
 parquet_path = OUTPUT_DIR / "warm_visits.parquet"

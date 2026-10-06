@@ -20,43 +20,12 @@ jupyter:
 
 A clinic keeps a patient registry and a separate lab results table. This demo joins them every way Lecture 06 teaches, finds the patients with no labs and the labs with no patient, matches monthly visit counts to targets on several keys, names overlapping columns, and catches a registry export that would silently duplicate lab rows. Everything here comes from Lecture 06 up to the first demo break, plus Lectures 01 to 05.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The patient IDs and values are synthetic. Tested 2026-09-30 with Python 3.13 and pandas 3.0.5.
-
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Catch registry key duplication, keep current records, and preserve all seven labs: six matched and P006 unmatched. |
-| [Independent practice](#independent-practice) | Compare join retention; audit both sides; use composite keys, expected grids, descriptive suffixes, and a patient-first join. |
-
-## Setup
-
-**In Colab**, run the install cell below.
-
-**On your computer**, run these lines in VS Code's terminal, then open the `06-demo` folder in VS Code and choose its `.venv` as the notebook kernel:
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
-cd ~/06-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
+Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-Expect nothing, or a note that you may need to restart the kernel. If Colab asks to restart the session, do it and run the notebook again from the top.
-
-```python
-import pandas as pd
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Core walkthrough
 
@@ -65,6 +34,8 @@ print('pandas', pd.__version__)
 The registry has one row per patient, so `patient_id` is its primary key. The lab table has one row per test; its `patient_id` is a foreign key that can repeat.
 
 ```python
+import pandas as pd
+
 patients = pd.DataFrame({
     'patient_id': ['P001', 'P002', 'P003', 'P004', 'P005'],
     'birth_year': [1958, 1971, 1964, 1990, 1983],
@@ -148,7 +119,7 @@ labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']]
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run Setup and the core again first.
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### 3. Inner join: only matching keys
 

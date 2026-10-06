@@ -19,58 +19,24 @@ jupyter:
 
 Quick pandas plots of clinic visit tables, then seaborn on real health-spending data, a correlation matrix saved to CSV, a check on what a seaborn line actually averages, and density plots of fasting glucose. Everything here comes from Lecture 07 up to the second demo break, plus Lectures 01 to 06. The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a CSV for this demo.
 
-Choose a route below. The **core walkthrough** is the demonstration path; **independent practice** is for you to work through after class. In a fresh runtime, run Setup and the core first. **Run all** completes both routes.
-
-| Route | Work and visible checkpoint |
-| --- | --- |
-| [Core walkthrough](#core-walkthrough) | Inspect 274 country-year rows and compare spending with life expectancy in one labeled scatter. |
-| [Independent practice](#independent-practice) | Repair the pandas x-axis; compare plot kinds and small multiples; save a correlation matrix; inspect aggregation and KDE bandwidth. |
-
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The setup downloads the health-spending CSV when it is missing. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, seaborn 0.13.2, and SciPy 1.18.1.
-
-- **In Colab:** run the install cell below first.
-- **Locally:** a `~/07-demo` folder already set up for Demo 1 just needs its `.venv` chosen as the notebook kernel. Otherwise, run these commands in a terminal.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
-cd ~/07-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-Then open the `07-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-## Setup
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel. If Colab asks you to restart the session, do it and rerun from the top.
 
 ```python
 from pathlib import Path
 from urllib.request import urlretrieve
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo"
 if not Path("healthexp.csv").exists():
     urlretrieve(f"{REPO_RAW}/healthexp.csv", "healthexp.csv")
 print("Ready: healthexp.csv")
-print("pandas:", pd.__version__)
-print("seaborn:", sns.__version__)
 ```
 
-Expect `Ready: healthexp.csv`, `pandas: 3.0.5`, and `seaborn: 0.13.2` (Colab may show a newer seaborn, which is fine). If Colab shows an older pandas, it was imported before the install finished: restart the session and run all cells again.
+Expect `Ready: healthexp.csv`.
 
 ## Core walkthrough
 
@@ -79,6 +45,11 @@ Expect `Ready: healthexp.csv`, `pandas: 3.0.5`, and `seaborn: 0.13.2` (Colab may
 `healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
 
 ```python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
 sns.set_style('whitegrid')
 health = pd.read_csv('healthexp.csv')
 print(health.shape)
@@ -104,7 +75,7 @@ Expect one point per country-year, with color and shape identifying the country.
 
 ## Independent practice
 
-Continue on your own after class. Run Setup and the core first in a fresh runtime.
+Continue on your own after class. If the runtime closed, run the cells above again first.
 
 ### 1. pandas `.plot()`: the index becomes the x-axis
 

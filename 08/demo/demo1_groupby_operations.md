@@ -20,49 +20,12 @@ jupyter:
 
 A health system's visit log has one row per clinic visit: 100,000 synthetic visits across five clinics and six departments. This demo answers the questions a clinic manager asks of that log (how long each department's patients wait, how many patients each one sees, how the answers differ by clinic) with `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations. Everything here comes from Lecture 08 up to the first demo break, plus Lectures 01 to 07.
 
-**How to run:** run the cells from top to bottom; after each step, an **Expect** line says what you should see. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, and NumPy 2.3.3. The patient IDs and values are synthetic.
-
-- **In Colab:** run the install cell under Setup first. Use **File → Save a copy in Drive** to keep your changes.
-- **On your computer:** run these lines in VS Code's terminal, then open the `08-demo` folder in VS Code, open `demo1_groupby_operations.ipynb`, and choose the `.venv` Python as the notebook kernel.
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
-cd ~/08-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, [Build the Visit Log](#build-the-visit-log), then [Named Aggregation: One Flat Row per Department](#named-aggregation-one-flat-row-per-department) (both cells). |
-| Independent practice | Work through basic aggregation and plotting, two-key groups, pivot tables, and cross-tabulations after class. The optional variants build on the same visit log. |
-
-**Core checkpoint:** The department report has 6 rows; its visit counts total 100,000. The size/count gap is 2,984 missing surveys.
-
-## Setup
+Run the cells from top to bottom; after each step, an **Expect** line says what to expect. The patient IDs and values are synthetic.
 
 ```python
-# Setup: install the course's pandas version (Colab and local)
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart; if Colab asks to restart the session, do it and rerun from the top.
-
-```python
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-print('pandas', pd.__version__)
-```
-
-**Expect:** `pandas 3.0.5`.
 
 ## Part 1: One Row per Group
 
@@ -73,6 +36,9 @@ The visit log has one row per visit. Every question in this part has an answer w
 The next cell generates the log. You do not need to follow every line: it draws a fixed set of patients, gives each visit a clinic, a department, a wait, a blood pressure, and a satisfaction score, and leaves some surveys blank. The seed makes every run produce the same table.
 
 ```python
+import numpy as np
+import pandas as pd
+
 rng = np.random.default_rng(42)
 n_visits = 100_000
 n_patients = 30_000
@@ -148,6 +114,9 @@ dept_stats.round(1)
 **Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9). Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
 
 ```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # Two views of the same groups (Lecture 07): the means, and the spread behind them
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 

@@ -20,59 +20,19 @@ jupyter:
 A New York ICU exports charted heart rates on the local wall clock, and the export spans the night the clocks fell back. You convert clinic times to UTC, set aside the clock readings that happened twice, build lags and past-only means inside each patient's history, check which values were known at a prediction time, split the rows into a chronological holdout, and plot the panel and three years of emergency-department visits. Everything here comes from Lecture 09, plus Lectures 01 to 08. Patient values and visit counts are synthetic.
 
 
-## How to run
-
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see. The notebook builds its own data, so it needs nothing from an earlier demo. Tested 2026-09-30 with Python 3.13, pandas 3.0.5, NumPy 2.3.3, matplotlib 3.11.1, and seaborn 0.13.2. Colab does not save your changes back to GitHub; use **File → Save a copy in Drive** to keep them.
-
-
-## Choose Your Route
-
-The **core walkthrough** is the part practiced in class. Work through **independent practice** on your own after class. For a full repeat, restart and run every cell from top to bottom; both routes use the same code below.
-
-| Route | Cells to run |
-| --- | --- |
-| Core walkthrough | Run Setup, both cells in [3. The night the clocks fell back](#3-the-night-the-clocks-fell-back), both cells in [5. Previous readings within each patient](#5-previous-readings-within-each-patient), [6. Past-only means](#6-past-only-means), the first cell in [7. What was known at the prediction time?](#7-what-was-known-at-the-prediction-time), then [8. A chronological holdout](#8-a-chronological-holdout). |
-| Independent practice | After class, compare the clinic clocks and both DST days, audit candidate features, and plot patient/flu histories. Repeat the daily-weight lag/lead alert and its plot; that section labels its optional inference and percentage-change methods as BONUS.md topics. |
-
-**Core checkpoint:** Set aside 1 ambiguous reading; each patient starts with an empty lag. At P01's 08:00 UTC reading, `mean_prev_2` is 97.5 and `mean_prev_2h` is `NaN`; 2 of 4 labs are available at the prediction time; the holdout has 9 earlier and 4 later rows.
-
-
-## Setup
-
-- **In Colab:** run the install cell below first.
-- **Locally:** run these commands in a terminal, then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
-
-<!-- #region -->
-```shell
-curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
-cd ~/09-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
-```
-<!-- #endregion -->
-
-If `~/09-demo` is already set up from Demo 1, just open it and choose its `.venv` kernel.
+Run the cells from top to bottom; after each step, the text says what to expect.
 
 ```python
-# Setup: install the course's pandas version
+# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
-
-**Expect:** nothing, or a note to restart the kernel; if Colab asks to restart the session, do it and rerun from the top.
 
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
-print('pandas', pd.__version__)
-print('NumPy', np.__version__)
 ```
-
-**Expect:** `pandas 3.0.5` and `NumPy 2.3.3` (Colab may show a different NumPy; that is fine).
-
 
 ## 1. One instant on several clinic clocks
 
