@@ -25,9 +25,12 @@ uv sync
 
 Then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
 
-This lecture covers:
+This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
-- McKinney, _Python for Data Analysis_ (3rd ed.): 2.2, Chapters 5 and 6, and Appendix B.2 and B.5
+- 2.2 (running the Jupyter notebook)
+- Chapter 5 (getting started with pandas)
+- Chapter 6 (data loading, storage, and file formats)
+- Appendix B.2 and B.5 (magic commands, and timing code with `%timeit`)
 
 # Jupyter Notebooks: Interactive Data Analysis
 
